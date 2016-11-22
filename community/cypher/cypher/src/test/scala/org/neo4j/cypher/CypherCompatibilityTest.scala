@@ -81,15 +81,6 @@ class CypherCompatibilityTest extends ExecutionEngineFunSuite with RunWithConfig
     }
   }
 
-  //TODO fix this test
-  ignore("should handle profile in compiled runtime") {
-    runWithConfig() {
-      db =>
-        assertProfiled(db, "CYPHER 2.3 runtime=compiled PROFILE MATCH (n) RETURN n")
-        assertProfiled(db, "CYPHER 3.0 runtime=compiled PROFILE MATCH (n) RETURN n")
-    }
-  }
-
   test("should handle profile in interpreted runtime") {
     runWithConfig() {
       engine =>
@@ -152,8 +143,8 @@ class CypherCompatibilityTest extends ExecutionEngineFunSuite with RunWithConfig
     runWithConfig(GraphDatabaseSettings.cypher_hints_error -> "true") {
       db =>
         db.execute("MATCH (n:Movie) RETURN n")
-        db.execute("CYPHER runtime=compiled MATCH (n:Movie) RETURN n")
-        shouldHaveNoWarnings(db.execute("EXPLAIN CYPHER runtime=compiled MATCH (n:Movie) RETURN n"))
+        db.execute("CYPHER runtime=compiledExperimentalFeatureNotSupportedForProductionUse MATCH (n:Movie) RETURN n")
+        shouldHaveNoWarnings(db.execute("EXPLAIN CYPHER runtime=compiledExperimentalFeatureNotSupportedForProductionUse MATCH (n:Movie) RETURN n"))
     }
   }
 
@@ -161,7 +152,7 @@ class CypherCompatibilityTest extends ExecutionEngineFunSuite with RunWithConfig
     runWithConfig(GraphDatabaseSettings.cypher_hints_error -> "true") {
       db =>
         intercept[QueryExecutionException](
-          db.execute(s"EXPLAIN CYPHER runtime=compiled $querySupportedByCostButNotCompiledRuntime")
+          db.execute(s"EXPLAIN CYPHER runtime=compiledExperimentalFeatureNotSupportedForProductionUse $querySupportedByCostButNotCompiledRuntime")
         ).getStatusCode should equal("Neo.ClientError.Statement.ArgumentError")
     }
   }
@@ -169,7 +160,7 @@ class CypherCompatibilityTest extends ExecutionEngineFunSuite with RunWithConfig
   test("should not fail if asked to execute query with runtime=compiled and instead fallback to interpreted and return a warning if hint errors turned off") {
     runWithConfig(GraphDatabaseSettings.cypher_hints_error -> "false") {
       db =>
-        val result = db.execute(s"EXPLAIN CYPHER runtime=compiled $querySupportedByCostButNotCompiledRuntime")
+        val result = db.execute(s"EXPLAIN CYPHER runtime=compiledExperimentalFeatureNotSupportedForProductionUse $querySupportedByCostButNotCompiledRuntime")
         shouldHaveWarning(result, Status.Statement.RuntimeUnsupportedWarning)
     }
   }
@@ -177,7 +168,7 @@ class CypherCompatibilityTest extends ExecutionEngineFunSuite with RunWithConfig
   test("should not fail if asked to execute query with runtime=compiled and instead fallback to interpreted and return a warning by default") {
     runWithConfig() {
       db =>
-        val result = db.execute(s"EXPLAIN CYPHER runtime=compiled $querySupportedByCostButNotCompiledRuntime")
+        val result = db.execute(s"EXPLAIN CYPHER runtime=compiledExperimentalFeatureNotSupportedForProductionUse $querySupportedByCostButNotCompiledRuntime")
         shouldHaveWarning(result, Status.Statement.RuntimeUnsupportedWarning)
     }
   }

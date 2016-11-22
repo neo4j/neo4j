@@ -20,7 +20,6 @@
 package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.compiler.v3_1._
-import org.neo4j.kernel.impl.query.TransactionalContext
 
 class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
 
@@ -214,7 +213,8 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
         case _ =>
           val version = cypherVersion.map(_.name).getOrElse("")
           val plannerString = planner.map("planner=" + _.name).getOrElse("")
-          val runtimeString = runtime.map("runtime=" + _.name).getOrElse("")
+          // TODO: Remove this in the 3.2 branch
+          val runtimeString = runtime.map("runtime=" + _.name.replaceAll("COMPILED","compiledExperimentalFeatureNotSupportedForProductionUse")).getOrElse("")
           s"CYPHER $version $plannerString $runtimeString"
       }
       val result = eengine.profile(s"$prepend $query", Map.empty[String, Object])

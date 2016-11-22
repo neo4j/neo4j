@@ -631,7 +631,7 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     val db = new TestGraphDatabaseFactory().newImpermanentDatabase()
 
     // when
-    val result = db.execute("CYPHER runtime=compiled MATCH (n) RETURN n")
+    val result = db.execute("CYPHER runtime=compiledExperimentalFeatureNotSupportedForProductionUse MATCH (n) RETURN n")
     result.accept(new ResultVisitor[RuntimeException] {
       def visit(row: ResultRow) = true
     })

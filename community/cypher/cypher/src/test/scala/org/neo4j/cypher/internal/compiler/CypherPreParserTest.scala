@@ -41,20 +41,15 @@ class CypherPreParserTest extends CypherFunSuite with TableDrivenPropertyChecks 
       DPPlannerOption))), (1, 20, 19))),
 
     ("CYPHER runtime=interpreted RETURN", PreParsedStatement("RETURN", Seq(ConfigurationOptions(None, Seq(InterpretedRuntimeOption))), (1, 28, 27))),
-    ("CYPHER runtime=compiled RETURN", PreParsedStatement("RETURN", Seq(ConfigurationOptions(None, Seq(CompiledRuntimeOption))), (1, 25, 24))),
+    ("CYPHER runtime=compiledExperimentalFeatureNotSupportedForProductionUse RETURN", PreParsedStatement("RETURN", Seq(ConfigurationOptions(None, Seq(CompiledRuntimeOption))), (1, 72, 71))),
 
     ("CYPHER 2.3 planner=cost runtime=interpreted RETURN", PreParsedStatement("RETURN", Seq(
       ConfigurationOptions(Some(VersionOption("2.3")), Seq(CostPlannerOption, InterpretedRuntimeOption))), (1, 45, 44))),
-    ("CYPHER 2.3 planner=cost runtime=compiled RETURN", PreParsedStatement("RETURN", Seq(ConfigurationOptions(
-      Some(VersionOption("2.3")), Seq(CostPlannerOption, CompiledRuntimeOption))), (1, 42, 41))),
     ("CYPHER 2.3 planner=dp runtime=interpreted RETURN", PreParsedStatement("RETURN", Seq(ConfigurationOptions(
       Some(VersionOption("2.3")), Seq(DPPlannerOption, InterpretedRuntimeOption))), (1, 43, 42))),
-    ("CYPHER 2.3 planner=dp runtime=compiled RETURN", PreParsedStatement("RETURN", Seq(ConfigurationOptions(
-      Some(VersionOption("2.3")), Seq(DPPlannerOption, CompiledRuntimeOption))), (1, 40, 39))),
     ("CYPHER 2.3 planner=idp runtime=interpreted RETURN", PreParsedStatement("RETURN", Seq(ConfigurationOptions
       (Some(VersionOption("2.3")), Seq(IDPPlannerOption, InterpretedRuntimeOption))), (1, 44, 43))),
-    ("CYPHER 2.3 planner=idp runtime=compiled RETURN", PreParsedStatement("RETURN", Seq(ConfigurationOptions(
-      Some(VersionOption("2.3")), Seq(IDPPlannerOption, CompiledRuntimeOption))), (1, 41, 40))), ("CYPHER 2.3 planner=idp runtime=interpreted RETURN", PreParsedStatement("RETURN", Seq(ConfigurationOptions
+    ("CYPHER 2.3 planner=idp runtime=interpreted RETURN", PreParsedStatement("RETURN", Seq(ConfigurationOptions
       (Some(VersionOption("2.3")), Seq(IDPPlannerOption, InterpretedRuntimeOption))), (1, 44, 43))),
     ("explainmatch", PreParsedStatement("explainmatch", Seq.empty, (1, 1, 0))),
     ("CYPHER updateStrategy=eager RETURN", PreParsedStatement("RETURN", Seq(ConfigurationOptions(None, Seq(EagerOption))), (1, 29, 28)))

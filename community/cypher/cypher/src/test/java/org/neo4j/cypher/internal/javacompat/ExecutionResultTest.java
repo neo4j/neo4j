@@ -121,7 +121,7 @@ public class ExecutionResultTest
 
         // When
         List<Map<String,Object>> listResult;
-        try ( Result result = db.execute( "CYPHER runtime=compiled MATCH (n) RETURN n" ) )
+        try ( Result result = db.execute( "CYPHER runtime=compiledExperimentalFeatureNotSupportedForProductionUse MATCH (n) RETURN n" ) )
         {
             listResult = Iterators.asList( result );
         }
@@ -139,7 +139,7 @@ public class ExecutionResultTest
 
         // When
         Map<String,Object> firstRow = null;
-        try ( Result result = db.execute( "CYPHER runtime=compiled MATCH (n) RETURN n" ) )
+        try ( Result result = db.execute( "CYPHER runtime=compiledExperimentalFeatureNotSupportedForProductionUse MATCH (n) RETURN n" ) )
         {
             if ( result.hasNext() )
             {
@@ -160,7 +160,7 @@ public class ExecutionResultTest
 
         // When
         final List<Result.ResultRow> listResult = new ArrayList<>();
-        try ( Result result = db.execute( "CYPHER runtime=compiled MATCH (n) RETURN n" ) )
+        try ( Result result = db.execute( "CYPHER runtime=compiledExperimentalFeatureNotSupportedForProductionUse MATCH (n) RETURN n" ) )
         {
             result.accept( row -> {
                 listResult.add( row );
@@ -181,7 +181,7 @@ public class ExecutionResultTest
 
         // When
         final List<Result.ResultRow> listResult = new ArrayList<>();
-        try ( Result result = db.execute( "CYPHER runtime=compiled MATCH (n) RETURN n" ) )
+        try ( Result result = db.execute( "CYPHER runtime=compiledExperimentalFeatureNotSupportedForProductionUse MATCH (n) RETURN n" ) )
         {
             result.accept( row -> {
                 listResult.add( row );
@@ -201,7 +201,7 @@ public class ExecutionResultTest
         createNode();
 
         // When
-        try ( Result ignore = db.execute( "CYPHER runtime=compiled MATCH (n) RETURN n" ) )
+        try ( Result ignore = db.execute( "CYPHER runtime=compiledExperimentalFeatureNotSupportedForProductionUse MATCH (n) RETURN n" ) )
         {
             // Then
             // just close result without consuming it

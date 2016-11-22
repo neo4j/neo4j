@@ -51,7 +51,7 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
   }
 
   test("Warn for cartesian product with runtime=compiled") {
-    val result = innerExecute("explain cypher runtime=compiled match (a)-->(b), (c)-->(d) return count(*)")
+    val result = innerExecute("explain cypher runtime=compiledExperimentalFeatureNotSupportedForProductionUse match (a)-->(b), (c)-->(d) return count(*)")
 
     result.notifications.toList should equal(List(CartesianProductNotification(InputPosition(0, 1, 1), Set("c", "d")),
                                                   RuntimeUnsupportedNotification))
@@ -129,7 +129,7 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
   }
 
   test("warn when requesting runtime=compiled on an unsupported query") {
-    val result = innerExecute("EXPLAIN CYPHER runtime=compiled MATCH (a)-->(b), (c)-->(d) RETURN count(*)")
+    val result = innerExecute("EXPLAIN CYPHER runtime=compiledExperimentalFeatureNotSupportedForProductionUse MATCH (a)-->(b), (c)-->(d) RETURN count(*)")
     result.notifications should contain(RuntimeUnsupportedNotification)
   }
 
