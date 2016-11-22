@@ -132,7 +132,7 @@ public abstract class LuceneLegacyIndex implements LegacyIndex
         }
     }
 
-    protected void assertValidValue( Object value )
+    private static void assertValidValue( Object value )
     {
         Validators.LEGACY_INDEX_VALUE_VALIDATOR.validate( value );
     }
