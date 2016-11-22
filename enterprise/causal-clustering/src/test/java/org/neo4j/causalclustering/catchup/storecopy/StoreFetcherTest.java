@@ -133,7 +133,7 @@ public class StoreFetcherTest
     {
         TransactionLogCatchUpFactory factory = mock( TransactionLogCatchUpFactory.class );
         when( factory.create( any( File.class ), any( FileSystemAbstraction.class ),
-                any( PageCache.class ), any( LogProvider.class ) ) ).thenReturn( writer );
+                any( PageCache.class ), any( LogProvider.class ), anyLong() ) ).thenReturn( writer );
         return factory;
     }
 }
