@@ -52,29 +52,27 @@ public class LastCommittedIndexFinder
         long lastCommittedIndex;
         long lastTxId = transactionIdStore.getLastCommittedTransactionId();
 
-        if ( lastTxId == BASE_TX_ID )
+        byte[] lastHeaderFound = null;
+        try ( IOCursor<CommittedTransactionRepresentation> transactions =
+                      transactionStore.getTransactions( lastTxId ) )
         {
-            lastCommittedIndex = -1;
+            while ( transactions.next() )
+            {
+                CommittedTransactionRepresentation committedTransactionRepresentation = transactions.get();
+                lastHeaderFound = committedTransactionRepresentation.getStartEntry().getAdditionalHeader();
+            }
         }
-        else
+        catch ( Exception e )
         {
-            byte[] lastHeaderFound = null;
-            try ( IOCursor<CommittedTransactionRepresentation> transactions =
-                          transactionStore.getTransactions( lastTxId ) )
-            {
-                while ( transactions.next() )
-                {
-                    CommittedTransactionRepresentation committedTransactionRepresentation = transactions.get();
-                    lastHeaderFound = committedTransactionRepresentation.getStartEntry().getAdditionalHeader();
-                }
-            }
-            catch ( Exception e )
-            {
-                throw new RuntimeException( e );
-            }
-            lastCommittedIndex = decodeLogIndexFromTxHeader( lastHeaderFound );
+            throw new RuntimeException( e );
         }
 
+        if ( lastHeaderFound == null )
+        {
+            throw new RuntimeException( "We must have at least one transaction telling us where we are at in the consensus log." );
+        }
+
+        lastCommittedIndex = decodeLogIndexFromTxHeader( lastHeaderFound );
         log.info( "Last committed index %d", lastCommittedIndex );
         return lastCommittedIndex;
     }
