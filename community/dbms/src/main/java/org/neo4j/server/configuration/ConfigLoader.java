@@ -22,10 +22,8 @@ package org.neo4j.server.configuration;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Pair;
@@ -36,38 +34,37 @@ public class ConfigLoader
 {
     public static final String DEFAULT_CONFIG_FILE_NAME = "neo4j.conf";
 
-    private final Function<Map<String, String> ,Iterable<Class<?>>> settingsClassesSupplier;
-
-    public ConfigLoader( Function<Map<String, String> ,Iterable<Class<?>>> settingsClassesSupplier )
+    public ConfigLoader()
     {
-        this.settingsClassesSupplier = settingsClassesSupplier;
     }
 
-    public ConfigLoader( List<Class<?>> settingsClasses )
-    {
-        this( settings -> settingsClasses );
-    }
-
-    public Config loadConfig( Optional<File> configFile, Pair<String,String>... configOverrides ) throws IOException
+    public static Config loadConfig( Optional<File> configFile, Pair<String,String>... configOverrides ) throws
+            IOException
     {
         return loadConfig( Optional.empty(), configFile, configOverrides );
     }
 
-    public Config loadConfig( Optional<File> homeDir, Optional<File> configFile,
+    public static Config loadConfig( Optional<File> homeDir, Optional<File> configFile,
             Pair<String,String>... configOverrides )
     {
         Map<String,String> overriddenSettings = calculateSettings( homeDir, configOverrides );
-        return new Config( configFile, overriddenSettings, ConfigLoader::overrideEmbeddedDefaults,
-                settingsClassesSupplier );
+        return Config.embeddedDefaults(configFile).with( overriddenSettings );
     }
 
-    public Config loadOfflineConfig( Optional<File> homeDir, Optional<File> configFile )
+    public static Config loadServerConfig( Optional<File> homeDir, Optional<File> configFile,
+            Pair<String,String>[] configOverrides )
+    {
+        Map<String,String> overriddenSettings = calculateSettings( homeDir, configOverrides );
+        return Config.serverDefaults(configFile).with( overriddenSettings );
+    }
+
+    public static Config loadOfflineConfig( Optional<File> homeDir, Optional<File> configFile )
     {
         return overrideBoltSettings( loadConfig( homeDir, configFile,
                 Pair.of( GraphDatabaseSettings.auth_enabled.name(), Settings.FALSE ) ) );
     }
 
-    private Map<String, String> calculateSettings( Optional<File> homeDir,
+    private static Map<String, String> calculateSettings( Optional<File> homeDir,
             Pair<String, String>[] configOverrides )
     {
         HashMap<String, String> settings = new HashMap<>();
@@ -77,7 +74,7 @@ public class ConfigLoader
         return settings;
     }
 
-    private Map<String, String> toMap( Pair<String, String>[] configOverrides )
+    private static Map<String, String> toMap( Pair<String, String>[] configOverrides )
     {
         Map<String, String> overrides = new HashMap<>();
         for ( Pair<String, String> configOverride : configOverrides )
