@@ -125,14 +125,19 @@ class TraversalBranchImpl implements TraversalBranch
         setEvaluation( context.evaluate( this, null ) );
     }
 
+    @Override
     public void initialize( final PathExpander expander, TraversalContext metadata )
     {
         evaluate( metadata );
-        expandRelationships( expander );
     }
 
+    @Override
     public TraversalBranch next( PathExpander expander, TraversalContext context )
     {
+        if ( relationships == null )
+        {
+            expandRelationships( expander );
+        }
         while ( relationships.hasNext() )
         {
             Relationship relationship = relationships.next();
@@ -172,16 +177,19 @@ class TraversalBranchImpl implements TraversalBranch
         relationships = PRUNED_ITERATOR;
     }
 
+    @Override
     public int length()
     {
         return depthAndEvaluationBits&0x3FFFFFFF;
     }
 
+    @Override
     public TraversalBranch parent()
     {
         return this.parent;
     }
 
+    @Override
     public int expanded()
     {
         return expandedCount;
@@ -205,6 +213,7 @@ class TraversalBranchImpl implements TraversalBranch
         setEvaluation( Evaluation.of( includes() & eval.includes(), continues() & eval.continues() ) );
     }
 
+    @Override
     public Node startNode()
     {
         return findStartBranch().endNode();
@@ -220,16 +229,19 @@ class TraversalBranchImpl implements TraversalBranch
         return branch;
     }
 
+    @Override
     public Node endNode()
     {
         return source;
     }
 
+    @Override
     public Relationship lastRelationship()
     {
         return howIGotHere;
     }
 
+    @Override
     public Iterable<Relationship> relationships()
     {
         LinkedList<Relationship> relationships = new LinkedList<Relationship>();
@@ -271,6 +283,7 @@ class TraversalBranchImpl implements TraversalBranch
         };
     }
 
+    @Override
     public Iterable<Node> nodes()
     {
         LinkedList<Node> nodes = new LinkedList<Node>();
@@ -313,6 +326,7 @@ class TraversalBranchImpl implements TraversalBranch
         };
     }
 
+    @Override
     public Iterator<PropertyContainer> iterator()
     {
         LinkedList<PropertyContainer> entities = new LinkedList<PropertyContainer>();
