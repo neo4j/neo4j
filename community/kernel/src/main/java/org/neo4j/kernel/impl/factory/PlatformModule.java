@@ -53,8 +53,6 @@ import org.neo4j.kernel.impl.spi.SimpleKernelContext;
 import org.neo4j.kernel.impl.transaction.TransactionCounters;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerMonitor;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
-import org.neo4j.kernel.impl.transaction.tracing.CheckPointTracer;
-import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.info.DiagnosticsManager;
@@ -157,12 +155,10 @@ public class PlatformModule
         tracers = dependencies.satisfyDependency(
                 new Tracers( desiredImplementationName, logging.getInternalLog( Tracers.class ) ) );
         dependencies.satisfyDependency( tracers.pageCacheTracer );
-        TransactionTracer transactionTracer = tracers.transactionTracer;
-        dependencies.satisfyDependency(
-                transactionTracer instanceof LogRotationMonitor? transactionTracer : LogRotationMonitor.NULL );
-        CheckPointTracer checkPointTracer = tracers.checkPointTracer;
-        dependencies.satisfyDependency(
-                checkPointTracer instanceof CheckPointerMonitor? checkPointTracer : CheckPointerMonitor.NULL );
+        dependencies.satisfyDependency( firstImplementor(
+                LogRotationMonitor.class, tracers.transactionTracer, LogRotationMonitor.NULL ) );
+        dependencies.satisfyDependency( firstImplementor(
+                CheckPointerMonitor.class, tracers.checkPointTracer, CheckPointerMonitor.NULL ) );
 
         pageCache = dependencies.satisfyDependency( createPageCache( fileSystem, config, logging, tracers ) );
         life.add( new PageCacheLifecycle( pageCache ) );
@@ -193,6 +189,19 @@ public class PlatformModule
         urlAccessRule = dependencies.satisfyDependency( URLAccessRules.combined( externalDependencies.urlAccessRules() ) );
 
         publishPlatformInfo( dependencies.resolveDependency( UsageData.class ) );
+    }
+
+    @SuppressWarnings( "unchecked" )
+    private <T> T firstImplementor( Class<T> type, Object... candidates )
+    {
+        for ( Object candidate : candidates )
+        {
+            if ( type.isInstance( candidate ) )
+            {
+                return (T) candidate;
+            }
+        }
+        return null;
     }
 
     private void publishPlatformInfo( UsageData sysInfo )
