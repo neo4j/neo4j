@@ -475,6 +475,13 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
         expression.accept( this );
     }
 
+    @Override
+    public void box( Expression expression )
+    {
+        //For source code we rely on autoboxing
+        expression.accept( this );
+    }
+
     private void binaryOperation(Expression lhs, Expression rhs, String operator)
     {
         lhs.accept( this );

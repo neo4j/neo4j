@@ -265,6 +265,49 @@ public abstract class Expression extends ExpressionTemplate
         };
     }
 
+    /** box expression */
+    public static Expression box( final Expression expression)
+    {
+        TypeReference type;
+        switch ( expression.type.simpleName() )
+        {
+        case "byte":
+            type = TypeReference.typeReference( Byte.class );
+            break;
+        case "short":
+            type = TypeReference.typeReference( Short.class );
+            break;
+        case "int":
+            type = TypeReference.typeReference( Integer.class );
+            break;
+        case "long":
+            type = TypeReference.typeReference( Long.class );
+            break;
+        case "char":
+            type = TypeReference.typeReference( Character.class );
+            break;
+        case "boolean":
+            type = TypeReference.typeReference( Boolean.class );
+            break;
+        case "float":
+            type = TypeReference.typeReference( Float.class );
+            break;
+        case "double":
+            type = TypeReference.typeReference( Double.class );
+            break;
+        default:
+            type = expression.type();
+        }
+        return new Expression( type )
+        {
+            @Override
+            public void accept( ExpressionVisitor visitor )
+            {
+                visitor.box(expression);
+            }
+        };
+    }
+
     /** get static field */
     public static Expression get( final FieldReference field )
     {

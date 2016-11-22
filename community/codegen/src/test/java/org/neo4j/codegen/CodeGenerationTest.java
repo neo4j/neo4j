@@ -1673,6 +1673,41 @@ public class CodeGenerationTest
         assertEquals( "Tobias", getField( instance, "foo" ) );
     }
 
+    @Test
+    public void shouldBeAbleToBox() throws Throwable
+    {
+        assertThat( boxTest( boolean.class, true ), equalTo( Boolean.TRUE ) );
+        assertThat( boxTest( boolean.class, false ), equalTo( Boolean.FALSE ) );
+        assertThat( boxTest( byte.class, (byte) 12 ), equalTo( (byte) 12 ) );
+        assertThat( boxTest( short.class, (short) 12 ), equalTo( (short) 12 ) );
+        assertThat( boxTest( int.class, 12 ), equalTo( 12 ) );
+        assertThat( boxTest( long.class, 12L ), equalTo( 12L ) );
+        assertThat( boxTest( float.class, 12F ), equalTo( 12F ) );
+        assertThat( boxTest( double.class, 12D ), equalTo( 12D ) );
+        assertThat( boxTest( char.class, 'a' ), equalTo( 'a' ) );
+    }
+
+    private <T> Object boxTest(Class<T> unboxedType, T value)
+            throws Throwable
+    {
+        createGenerator();
+        // given
+        ClassHandle handle;
+        try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
+        {
+            try ( CodeBlock method = simple.generateMethod( Object.class, "box",
+                    param( unboxedType, "test" ) ) )
+            {
+                method.returns( Expression.box( method.load( "test" ) ) );
+            }
+
+            handle = simple.handle();
+        }
+
+        // when
+        return instanceMethod( handle.newInstance(), "box", unboxedType ).invoke( value );
+    }
+
     static MethodHandle method( Class<?> target, String name, Class<?>... parameters ) throws Exception
     {
         return MethodHandles.lookup().unreflect( target.getMethod( name, parameters ) );

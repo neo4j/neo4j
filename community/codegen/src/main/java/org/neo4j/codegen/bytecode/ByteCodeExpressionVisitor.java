@@ -511,6 +511,41 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
         }
     }
 
+    @Override
+    public void box( Expression expression )
+    {
+        expression.accept( this );
+        switch ( expression.type().simpleName() )
+        {
+            case "byte":
+                methodVisitor.visitMethodInsn( INVOKESTATIC, "java/lang/Byte", "valueOf", "(B)Ljava/lang/Byte;", false );
+                break;
+            case "short":
+                methodVisitor.visitMethodInsn( INVOKESTATIC, "java/lang/Short", "valueOf", "(S)Ljava/lang/Short;", false );
+                break;
+            case "int":
+                methodVisitor.visitMethodInsn( INVOKESTATIC, "java/lang/Integer", "valueOf", "(I)Ljava/lang/Integer;", false );
+                break;
+            case "long":
+                methodVisitor.visitMethodInsn( INVOKESTATIC, "java/lang/Long", "valueOf", "(J)Ljava/lang/Long;", false );
+                break;
+            case "char":
+                methodVisitor.visitMethodInsn( INVOKESTATIC, "java/lang/Character", "valueOf", "(C)Ljava/lang/Character;", false );
+                break;
+            case "boolean":
+                methodVisitor.visitMethodInsn( INVOKESTATIC, "java/lang/Boolean", "valueOf", "(Z)Ljava/lang/Boolean;", false );
+                break;
+            case "float":
+                methodVisitor.visitMethodInsn( INVOKESTATIC, "java/lang/Float", "valueOf", "(F)Ljava/lang/Float;", false );
+                break;
+            case "double":
+                methodVisitor.visitMethodInsn( INVOKESTATIC, "java/lang/Double", "valueOf", "(D)Ljava/lang/Double;", false );
+                break;
+            default:
+                //do nothing, expression is already boxed
+        }
+    }
+
     private void compareIntOrReferenceType( Expression lhs, Expression rhs, int opcode )
     {
         lhs.accept( this );
