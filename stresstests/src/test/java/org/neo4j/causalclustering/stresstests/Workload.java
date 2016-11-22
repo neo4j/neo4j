@@ -69,7 +69,7 @@ class Workload extends RepeatUntilCallable
         }
     }
 
-    public static void setupIndexes( Cluster cluster )
+    static void setupIndexes( Cluster cluster )
     {
         try
         {
