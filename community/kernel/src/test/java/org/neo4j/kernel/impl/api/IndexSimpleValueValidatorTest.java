@@ -53,6 +53,16 @@ public class IndexSimpleValueValidatorTest
     }
 
     @Test
+    public void stringOverExceedLimitNotAllowed()
+    {
+        expectedException.expect( IllegalArgumentException.class );
+        expectedException.expectMessage(
+                "Property value bytes length: 32767 is longer then 32766, " +
+                        "which is maximum supported length of indexed property value." );
+        getValidator().validate( RandomStringUtils.randomAlphabetic( IndexValueLengthValidator.MAX_TERM_LENGTH + 1 ) );
+    }
+
+    @Test
     public void numberIsValidValue()
     {
         getValidator().validate( 5 );
@@ -68,6 +78,7 @@ public class IndexSimpleValueValidatorTest
         getValidator().validate( RandomStringUtils.randomAlphabetic( 10 ) );
         getValidator().validate( RandomStringUtils.randomAlphabetic( 250 ) );
         getValidator().validate( RandomStringUtils.randomAlphabetic( 450 ) );
+        getValidator().validate( RandomStringUtils.randomAlphabetic( IndexValueLengthValidator.MAX_TERM_LENGTH ) );
     }
 
     protected Validator<Object> getValidator()

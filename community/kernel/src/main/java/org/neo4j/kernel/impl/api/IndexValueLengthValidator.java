@@ -28,7 +28,7 @@ public class IndexValueLengthValidator implements Validator<byte[]>
     // encoded as UTF8.  If a term arrives from the analyzer
     // longer than this length, an IllegalArgumentException
     // when lucene writer trying to add or update document
-    private static final int MAX_TERM_LENGTH = (1 << 15) - 2;
+    static final int MAX_TERM_LENGTH = (1 << 15) - 2;
 
     public static final IndexValueLengthValidator INSTANCE = new IndexValueLengthValidator();
 

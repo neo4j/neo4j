@@ -40,6 +40,16 @@ public class IndexValueLengthValidatorTest
     }
 
     @Test
+    public void stringOverExceedLimitNotAllowed()
+    {
+        expectedException.expect( IllegalArgumentException.class );
+        expectedException.expectMessage(
+                "Property value bytes length: 32767 is longer then 32766, " +
+                        "which is maximum supported length of indexed property value." );
+        INSTANCE.validate( RandomUtils.nextBytes( IndexValueLengthValidator.MAX_TERM_LENGTH + 1 ) );
+    }
+
+    @Test
     public void shortByteArrayIsValid()
     {
         INSTANCE.validate( RandomUtils.nextBytes( 3 ) );
@@ -47,6 +57,7 @@ public class IndexValueLengthValidatorTest
         INSTANCE.validate( RandomUtils.nextBytes( 300 ) );
         INSTANCE.validate( RandomUtils.nextBytes( 4303 ) );
         INSTANCE.validate( RandomUtils.nextBytes( 13234 ) );
+        INSTANCE.validate( RandomUtils.nextBytes( IndexValueLengthValidator.MAX_TERM_LENGTH ) );
     }
 
 }
