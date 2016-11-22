@@ -36,7 +36,7 @@ public class RecordDistributorTest
     public void shouldDistributeRelationshipRecordsByNodeId() throws Exception
     {
         // GIVEN
-        QueueDistributor<RelationshipRecord> distributor = new RelationshipNodesQueueDistributor( 5 );
+        QueueDistributor<RelationshipRecord> distributor = new RelationshipNodesQueueDistributor( 5, 100 );
         RecordConsumer<RelationshipRecord> consumer = mock( RecordConsumer.class );
 
         // WHEN/THEN
