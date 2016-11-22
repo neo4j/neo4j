@@ -39,7 +39,7 @@ class LabelScanViewIdIterator implements PrimitiveLongResourceIterator
     private PrimitiveLongIterator idIterator;
     private LabelScanStore labelScanStore;
     private int[] labelIds;
-    private long currentId = 0;
+    private long currentId = -1;
 
     LabelScanViewIdIterator( LabelScanViewNodeStoreScan labelScanViewNodeStoreScan,
             LabelScanStore labelScanStore, int[] labelIds )
