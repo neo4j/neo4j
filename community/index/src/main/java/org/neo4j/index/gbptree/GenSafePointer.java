@@ -26,7 +26,7 @@ import org.neo4j.io.pagecache.PageCursor;
  * All interaction is made using a {@link PageCursor}. These methods are about a single GSP,
  * whereas the normal use case of a GSP is in pairs ({@link GenSafePointerPair GSPP}).
  * <p>
- * A GSP consists of [generation,pointer,checksum] where checksum is updated
+ * A GSP consists of [generation,pointer,checksum]. Checksum is calculated from generation and pointer.
  * <p>
  * Due to how java has one a single return type and objects produce/is garbage
  * the design of the methods below for reading GSP requires some documentation
