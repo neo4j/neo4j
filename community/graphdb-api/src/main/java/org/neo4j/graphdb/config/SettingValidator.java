@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,21 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphdb.factory;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+package org.neo4j.graphdb.config;
 
-/**
- * Used to add description of settings in {@link GraphDatabaseSettings}.
- *
- * This is deprecated, it will be moved out of the public API in 1.11.
- */
-@Retention( RetentionPolicy.RUNTIME )
-@Target( {ElementType.TYPE, ElementType.FIELD} )
-public @interface Description
+import java.util.Collection;
+import java.util.Map;
+
+public interface SettingValidator
 {
-    String value();
+    /**
+     * Validate a setting value, throwing on invalid values.
+     *
+     * @param settings available to be validated
+     * @return the set of validated keys
+     * @throws InvalidSettingException if invalid value detected
+     */
+    Collection<String> validate( Map<String, String> settings ) throws InvalidSettingException;
 }
+
