@@ -24,12 +24,12 @@ import org.neo4j.cypher.internal.frontend.v3_1.{Rewriter, SemanticState, topDown
 
 case class recordScopes(semanticState: SemanticState) extends Rewriter {
 
-  def apply(that: AnyRef): AnyRef = topDown(instance).apply(that)
+  def apply(that: AnyRef): AnyRef = instance.apply(that)
 
-  private val instance: Rewriter = Rewriter.lift {
+  private val instance: Rewriter = topDown(Rewriter.lift {
     case x: PatternComprehension =>
       x.withOuterScope(semanticState.recordedScopes(x).symbolDefinitions.map(_.asVariable))
     case x: MapProjection =>
       x.withOuterScope(semanticState.recordedScopes(x))
-  }
+  })
 }
