@@ -38,8 +38,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.ByteUnit;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.storemigration.LogFiles;
@@ -49,6 +47,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.AdversarialPageCacheGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
@@ -63,6 +62,8 @@ public class RecoveryIT
 {
     @Rule
     public final TestDirectory directory = TestDirectory.testDirectory();
+    @Rule
+    public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
     @Test
     public void idGeneratorsRebuildAfterRecovery() throws IOException
@@ -149,9 +150,8 @@ public class RecoveryIT
                 Command.RelationshipCommand.class );
         adversary.disable();
 
-        FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         File storeDir = directory.graphDbDir();
-        GraphDatabaseService db = AdversarialPageCacheGraphDatabaseFactory.create( fs, adversary )
+        GraphDatabaseService db = AdversarialPageCacheGraphDatabaseFactory.create( fileSystemRule.get(), adversary )
                 .newEmbeddedDatabaseBuilder( storeDir )
                 .newGraphDatabase();
         try
@@ -273,7 +273,7 @@ public class RecoveryIT
     private File copyTransactionLogs() throws IOException
     {
         File restoreDbStoreDir = this.directory.directory( "restore-db" );
-        LogFiles.move( new DefaultFileSystemAbstraction(), this.directory.graphDbDir(), restoreDbStoreDir );
+        LogFiles.move( fileSystemRule.get(), this.directory.graphDbDir(), restoreDbStoreDir );
         return restoreDbStoreDir;
     }
 }

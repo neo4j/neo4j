@@ -55,6 +55,7 @@ import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStoreExtension;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.apache.lucene.search.NumericRangeQuery.newIntRange;
 import static org.hamcrest.core.Is.is;
@@ -76,6 +77,8 @@ public class TestLuceneBatchInsert
 {
     @Rule
     public final TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Rule
+    public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
     private File storeDir;
     private BatchInserter inserter;
@@ -88,7 +91,7 @@ public class TestLuceneBatchInsert
         storeDir = testDirectory.graphDbDir();
         Iterable filteredKernelExtensions = filter( onlyRealLuceneExtensions(),
                 Service.load( KernelExtensionFactory.class ) );
-        inserter = BatchInserters.inserter( storeDir, stringMap(), filteredKernelExtensions );
+        inserter = BatchInserters.inserter( storeDir, fileSystemRule.get(), stringMap(), filteredKernelExtensions );
     }
 
     @After

@@ -76,7 +76,9 @@ public class PropertyKeyTest
     {
         Map<String, Object> properties = new HashMap<String, Object>();
         for ( int i = 0; i < count; i++ )
+        {
             properties.put( "key:" + i, "value" );
+        }
         return properties;
     }
 }

@@ -281,18 +281,14 @@ public class IndexRecoveryIT
         db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
     }
 
-    private void killDb()
+    private void killDb() throws Exception
     {
         if ( db != null )
         {
-            fs.snapshot( new Runnable()
+            fs.snapshot( () ->
             {
-                @Override
-                public void run()
-                {
-                    db.shutdown();
-                    db = null;
-                }
+                db.shutdown();
+                db = null;
             } );
         }
     }

@@ -23,10 +23,13 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCountsCommand;
@@ -61,41 +64,40 @@ public class KernelRecoveryTest
         // And given the power goes out
         EphemeralFileSystemAbstraction crashedFs = fs.snapshot();
         db.shutdown();
-        db = newDB( crashedFs );
+        try
+        {
+            db = newDB( crashedFs );
 
-        long node2 = createNode( db );
-        db.shutdown();
+            long node2 = createNode( db );
+            db.shutdown();
 
-        // Then the logical log should be in sync
-        File logFile = new File( storeDir,
-                PhysicalLogFile.DEFAULT_NAME + PhysicalLogFile.DEFAULT_VERSION_SUFFIX + "0" );
-        assertThat(
-                logEntries( crashedFs, logFile ),
-                containsExactly(
+            // Then the logical log should be in sync
+            File logFile =
+                    new File( storeDir, PhysicalLogFile.DEFAULT_NAME + PhysicalLogFile.DEFAULT_VERSION_SUFFIX + "0" );
+            assertThat( logEntries( crashedFs, logFile ), containsExactly(
                     // Tx before recovery
-                    startEntry( -1, -1 ),
-                    commandEntry( node1, NodeCommand.class ),
-                    commandEntry( ReadOperations.ANY_LABEL, NodeCountsCommand.class ),
-                    commitEntry( 2 ),
+                    startEntry( -1, -1 ), commandEntry( node1, NodeCommand.class ),
+                    commandEntry( ReadOperations.ANY_LABEL, NodeCountsCommand.class ), commitEntry( 2 ),
 
                     // Tx after recovery
-                    startEntry( -1, -1 ),
-                    commandEntry( node2, NodeCommand.class ),
-                    commandEntry( ReadOperations.ANY_LABEL, NodeCountsCommand.class ),
-                    commitEntry( 3 ),
+                    startEntry( -1, -1 ), commandEntry( node2, NodeCommand.class ),
+                    commandEntry( ReadOperations.ANY_LABEL, NodeCountsCommand.class ), commitEntry( 3 ),
 
                     // checkpoint
-                    checkPoint( new LogPosition(0, 250) )
-                )
-        );
+                    checkPoint( new LogPosition( 0, 250 ) ) ) );
+        }
+        finally
+        {
+            crashedFs.close();
+        }
     }
 
-    private GraphDatabaseService newDB( EphemeralFileSystemAbstraction fs )
+    private GraphDatabaseService newDB( FileSystemAbstraction fs ) throws IOException
     {
         fs.mkdirs( storeDir );
         return new TestGraphDatabaseFactory()
-                    .setFileSystem( fs )
-                    .newImpermanentDatabase( storeDir );
+                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
+                .newImpermanentDatabase( storeDir );
     }
 
     private long createNode( GraphDatabaseService db )

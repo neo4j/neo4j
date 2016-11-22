@@ -101,7 +101,7 @@ public class NeoStoresRule extends ExternalResource
         }
         if ( efs != null )
         {
-            efs.shutdown();
+            efs.close();
         }
     }
 

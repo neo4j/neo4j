@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.core;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
@@ -31,14 +32,12 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AnonymousContext;
-import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -52,6 +51,7 @@ import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 
@@ -61,6 +61,22 @@ import static org.junit.Assert.assertEquals;
  */
 public class ManyPropertyKeysIT
 {
+    private final PageCacheRule pageCacheRule = new PageCacheRule();
+    private final TestDirectory testDirectory = TestDirectory.testDirectory();
+    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+
+    @Rule
+    public final RuleChain ruleChain = RuleChain.outerRule( testDirectory )
+            .around( fileSystemRule ).around( pageCacheRule );
+
+    private File storeDir;
+
+    @Before
+    public void setup()
+    {
+        storeDir  = testDirectory.graphDbDir();
+    }
+
     @Test
     public void creating_many_property_keys_should_have_all_loaded_the_next_restart() throws Exception
     {
@@ -104,18 +120,6 @@ public class ManyPropertyKeysIT
         db.shutdown();
     }
 
-    @Rule
-    public final PageCacheRule pageCacheRule = new PageCacheRule();
-    @Rule
-    public final TestDirectory testDirectory = TestDirectory.testDirectory();
-    private File storeDir;
-
-    @Before
-    public void setup()
-    {
-        storeDir  = testDirectory.graphDbDir();
-    }
-
     private GraphDatabaseAPI database()
     {
         return (GraphDatabaseAPI) new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir.getAbsoluteFile() );
@@ -123,9 +127,10 @@ public class ManyPropertyKeysIT
 
     private GraphDatabaseAPI databaseWithManyPropertyKeys( int propertyKeyCount ) throws IOException
     {
-        DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-        PageCache pageCache = pageCacheRule.getPageCache( fs );
-        StoreFactory storeFactory = new StoreFactory( storeDir, pageCache, fs, NullLogProvider.getInstance() );
+
+        PageCache pageCache = pageCacheRule.getPageCache( fileSystemRule.get() );
+        StoreFactory storeFactory = new StoreFactory( storeDir, pageCache, fileSystemRule.get(),
+                NullLogProvider.getInstance() );
         NeoStores neoStores = storeFactory.openAllNeoStores( true );
         PropertyKeyTokenStore store = neoStores.getPropertyKeyTokenStore();
         for ( int i = 0; i < propertyKeyCount; i++ )

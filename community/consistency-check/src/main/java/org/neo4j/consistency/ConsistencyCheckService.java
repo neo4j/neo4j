@@ -85,8 +85,24 @@ public class ConsistencyCheckService
             ProgressMonitorFactory progressFactory, LogProvider logProvider, boolean verbose )
             throws ConsistencyCheckIncompleteException, IOException
     {
-        return runFullConsistencyCheck( storeDir, tuningConfiguration, progressFactory, logProvider,
-                new DefaultFileSystemAbstraction(), verbose );
+        FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+        try
+        {
+            return runFullConsistencyCheck( storeDir, tuningConfiguration, progressFactory, logProvider,
+                    fileSystem, verbose );
+        }
+        finally
+        {
+            try
+            {
+                fileSystem.close();
+            }
+            catch ( IOException e )
+            {
+                Log log = logProvider.getLog( getClass() );
+                log.error( "Failure during shutdown of file system", e );
+            }
+        }
     }
 
     public Result runFullConsistencyCheck( File storeDir, Config tuningConfiguration,

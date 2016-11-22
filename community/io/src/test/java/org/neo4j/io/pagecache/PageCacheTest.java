@@ -364,7 +364,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test( timeout = SEMI_LONG_TIMEOUT_MILLIS )
-    public void repeatablyWritesFlushedFromPageFileMustBeExternallyObservable() throws IOException
+    public void repeatablyWritesFlushedFromPageFileMustBeExternallyObservable() throws Exception
     {
         // This test exposed a race in the EphemeralFileSystemAbstraction, that made the previous
         // writesFlushedFromPageFileMustBeExternallyObservable test flaky.

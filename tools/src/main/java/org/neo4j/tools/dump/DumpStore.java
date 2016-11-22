@@ -66,10 +66,11 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends RecordSt
             System.err.println( "SYNTAX: [file[:id[,id]*]]+" );
             return;
         }
-        final DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-        final DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
-        try ( PageCache pageCache = createPageCache( fs ) )
+
+        try ( DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+              PageCache pageCache = createPageCache( fs ) )
         {
+            final DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
             Function<File,StoreFactory> createStoreFactory = file -> new StoreFactory( file.getParentFile(),
                     Config.defaults(), idGeneratorFactory, pageCache, fs, logProvider() );
 

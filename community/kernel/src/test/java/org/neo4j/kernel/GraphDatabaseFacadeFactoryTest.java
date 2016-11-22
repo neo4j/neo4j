@@ -22,6 +22,7 @@ package org.neo4j.kernel;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 import org.mockito.Mockito;
 
 import java.io.File;
@@ -29,7 +30,6 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.function.Supplier;
 
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.factory.DataSourceModule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
@@ -42,6 +42,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -54,8 +55,12 @@ import static org.mockito.Mockito.when;
 
 public class GraphDatabaseFacadeFactoryTest
 {
+
+    private final EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
+    private final TestDirectory dir = TestDirectory.testDirectory( fileSystemRule.get() );
+
     @Rule
-    public final TestDirectory dir = TestDirectory.testDirectory( new EphemeralFileSystemAbstraction() );
+    public final RuleChain ruleChain = RuleChain.outerRule( dir ).around( fileSystemRule );
 
     private final GraphDatabaseFacade mockFacade = mock( GraphDatabaseFacade.class );
     private final GraphDatabaseFacadeFactory.Dependencies deps =

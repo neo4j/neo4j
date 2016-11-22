@@ -99,7 +99,6 @@ public class CheckConsistencyCommand implements AdminCommand
     private final Path configDir;
     private final OutsideWorld outsideWorld;
     private final ConsistencyCheckService consistencyCheckService;
-    private final FileSystemAbstraction fileSystemAbstraction;
 
     public CheckConsistencyCommand( Path homeDir, Path configDir, OutsideWorld outsideWorld )
     {
@@ -113,7 +112,6 @@ public class CheckConsistencyCommand implements AdminCommand
         this.configDir = configDir;
         this.outsideWorld = outsideWorld;
         this.consistencyCheckService = consistencyCheckService;
-        this.fileSystemAbstraction = new DefaultFileSystemAbstraction();
     }
 
     @Override
@@ -139,13 +137,13 @@ public class CheckConsistencyCommand implements AdminCommand
 
         Config config = loadNeo4jConfig( homeDir, configDir, database, loadAdditionalConfig( additionalConfigFile ) );
 
-        try
+        try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
         {
             File storeDir = config.get( database_path );
             checkDbState( storeDir, config );
             ConsistencyCheckService.Result consistencyCheckResult = consistencyCheckService
                     .runFullConsistencyCheck( storeDir, config, ProgressMonitorFactory.textual( System.err ),
-                            FormattedLogProvider.toOutputStream( System.out ), this.fileSystemAbstraction, verbose,
+                            FormattedLogProvider.toOutputStream( System.out ), fileSystem, verbose,
                             reportDir.toFile() );
 
             if ( !consistencyCheckResult.isSuccessful() )
@@ -180,10 +178,10 @@ public class CheckConsistencyCommand implements AdminCommand
 
     private void checkDbState( File storeDir, Config additionalConfiguration ) throws CommandFailed
     {
-        try ( PageCache pageCache = StandalonePageCacheFactory
-                .createPageCache( this.fileSystemAbstraction, additionalConfiguration ) )
+        try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+              PageCache pageCache = StandalonePageCacheFactory.createPageCache( fileSystem, additionalConfiguration ) )
         {
-            if ( new RecoveryRequiredChecker( this.fileSystemAbstraction, pageCache ).isRecoveryRequiredAt( storeDir ) )
+            if ( new RecoveryRequiredChecker( fileSystem, pageCache ).isRecoveryRequiredAt( storeDir ) )
             {
                 throw new CommandFailed(
                         Strings.joinAsLines( "Active logical log detected, this might be a source of inconsistencies.",

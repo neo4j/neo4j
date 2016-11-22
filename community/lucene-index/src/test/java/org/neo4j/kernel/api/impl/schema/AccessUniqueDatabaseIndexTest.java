@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.IndexStorageFactory;
@@ -34,6 +34,7 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
@@ -41,6 +42,8 @@ import static org.junit.Assert.assertEquals;
 
 public class AccessUniqueDatabaseIndexTest
 {
+    @Rule
+    public final EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
     private final DirectoryFactory directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
     private final File indexDirectory = new File( "index1" );
 
@@ -138,7 +141,7 @@ public class AccessUniqueDatabaseIndexTest
     private PartitionedIndexStorage getIndexStorage() throws IOException
     {
         IndexStorageFactory storageFactory =
-                new IndexStorageFactory( directoryFactory, new EphemeralFileSystemAbstraction(), indexDirectory );
+                new IndexStorageFactory( directoryFactory, fileSystemRule.get(), indexDirectory );
         return storageFactory.indexStorageOf( 1, false );
     }
 

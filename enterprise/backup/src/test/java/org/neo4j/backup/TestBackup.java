@@ -46,7 +46,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.Index;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.configuration.Settings;
@@ -71,6 +70,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.test.subprocess.SubProcess;
 
 import static java.lang.Integer.parseInt;
@@ -87,10 +87,12 @@ import static org.neo4j.kernel.impl.MyRelTypes.TEST;
 public class TestBackup
 {
     private final TestDirectory testDir = TestDirectory.testDirectory();
+    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
     private final PageCacheRule pageCacheRule = new PageCacheRule();
 
     @Rule
     public final RuleChain ruleChain = RuleChain.outerRule( testDir )
+            .around( fileSystemRule )
             .around( pageCacheRule )
             .around( SuppressOutput.suppressAll() );
 
@@ -177,7 +179,7 @@ public class TestBackup
             assertTrue( "Should be consistent", backup.isConsistent() );
             shutdownServer( server );
             server = null;
-            PageCache pageCache = pageCacheRule.getPageCache( new DefaultFileSystemAbstraction() );
+            PageCache pageCache = pageCacheRule.getPageCache( fileSystemRule.get() );
 
             long firstChecksum = lastTxChecksumOf( serverPath, pageCache );
             assertEquals( firstChecksum, lastTxChecksumOf( backupPath, pageCache ) );
@@ -308,7 +310,7 @@ public class TestBackup
             OnlineBackup backup = OnlineBackup.from( "127.0.0.1" );
             backup.full( backupPath.getPath() );
             assertTrue( "Should be consistent", backup.isConsistent() );
-            PageCache pageCache = pageCacheRule.getPageCache( new DefaultFileSystemAbstraction() );
+            PageCache pageCache = pageCacheRule.getPageCache( fileSystemRule.get() );
             long lastCommittedTx = getLastCommittedTx( backupPath.getPath(), pageCache );
 
             for ( int i = 0; i < 5; i++ )
@@ -483,7 +485,7 @@ public class TestBackup
                 File idFile = new File( path, file.fileName( StoreFileType.ID ) );
                 assertTrue( "Missing id file " + idFile, idFile.exists() );
                 assertTrue( "Id file " + idFile + " had 0 highId",
-                        IdGeneratorImpl.readHighId( new DefaultFileSystemAbstraction(), idFile ) > 0 );
+                        IdGeneratorImpl.readHighId( fileSystemRule.get(), idFile ) > 0 );
             }
         }
     }

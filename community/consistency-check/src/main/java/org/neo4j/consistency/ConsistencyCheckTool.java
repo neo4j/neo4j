@@ -66,9 +66,24 @@ public class ConsistencyCheckTool
     public static ConsistencyCheckService.Result runConsistencyCheckTool( String[] args )
             throws ToolFailureException, IOException
     {
-        ConsistencyCheckTool tool = new ConsistencyCheckTool( new ConsistencyCheckService(),
-                new DefaultFileSystemAbstraction(), System.err );
-        return tool.run( args );
+        FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+        try
+        {
+            ConsistencyCheckTool tool =
+                    new ConsistencyCheckTool( new ConsistencyCheckService(), fileSystem, System.err );
+            return tool.run( args );
+        }
+        finally
+        {
+            try
+            {
+                fileSystem.close();
+            }
+            catch ( IOException e )
+            {
+                System.err.print( "Failure during file system shutdown." );
+            }
+        }
     }
 
     private final ConsistencyCheckService consistencyCheckService;

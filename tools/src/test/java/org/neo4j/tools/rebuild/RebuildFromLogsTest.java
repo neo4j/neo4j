@@ -21,6 +21,7 @@ package org.neo4j.tools.rebuild;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -35,8 +36,6 @@ import java.util.Set;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -44,6 +43,7 @@ import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
@@ -51,12 +51,13 @@ import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_I
 @RunWith(Parameterized.class)
 public class RebuildFromLogsTest
 {
-    @Rule
-    public final TestDirectory dir = TestDirectory.testDirectory();
-    @Rule
-    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+    private final TestDirectory dir = TestDirectory.testDirectory();
+    private final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
-    private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+    @Rule
+    public RuleChain ruleChain = RuleChain.outerRule( dir )
+            .around( suppressOutput ).around( fileSystemRule );
 
     @Test
     public void shouldRebuildFromLog() throws Exception
@@ -78,7 +79,7 @@ public class RebuildFromLogsTest
 
         // when
         File rebuildPath = new File( dir.graphDbDir(), "rebuild" );
-        new RebuildFromLogs( fs ).rebuild( prototypePath, rebuildPath, BASE_TX_ID );
+        new RebuildFromLogs( fileSystemRule.get() ).rebuild( prototypePath, rebuildPath, BASE_TX_ID );
 
         // then
         assertEquals( getDbRepresentation( prototypePath ), getDbRepresentation( rebuildPath ) );
@@ -124,7 +125,7 @@ public class RebuildFromLogsTest
 
         // when
         File rebuildPath = new File( dir.graphDbDir(), "rebuild" );
-        new RebuildFromLogs( fs ).rebuild( copy, rebuildPath, txId );
+        new RebuildFromLogs( fileSystemRule.get() ).rebuild( copy, rebuildPath, txId );
 
         // then
         assertEquals( getDbRepresentation( prototypePath ), getDbRepresentation( rebuildPath ) );

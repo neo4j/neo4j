@@ -65,6 +65,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import org.neo4j.io.ByteUnit;
+import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.fs.StoreFileChannel;
@@ -135,26 +136,26 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         files.values().forEach( EphemeralFileSystemAbstraction.EphemeralFileData::crash );
     }
 
-    public synchronized void shutdown()
+    @Override
+    public synchronized void close() throws IOException
+    {
+        closeFiles();
+        closeFileSystems();
+    }
+
+    private void closeFileSystems() throws IOException
+    {
+        IOUtils.closeAll( thirdPartyFileSystems.values() );
+        thirdPartyFileSystems.clear();
+    }
+
+    private void closeFiles()
     {
         for ( EphemeralFileData file : files.values() )
         {
             file.free();
         }
         files.clear();
-
-        for ( ThirdPartyFileSystem thirdPartyFileSystem : thirdPartyFileSystems.values() )
-        {
-            thirdPartyFileSystem.close();
-        }
-        thirdPartyFileSystems.clear();
-    }
-
-    @Override
-    protected void finalize() throws Throwable
-    {
-        shutdown();
-        super.finalize();
     }
 
     public void assertNoOpenFiles() throws Exception

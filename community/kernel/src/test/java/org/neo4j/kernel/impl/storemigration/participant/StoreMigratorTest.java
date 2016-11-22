@@ -27,8 +27,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Optional;
 
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
@@ -39,13 +37,12 @@ import org.neo4j.kernel.impl.logging.SimpleLogService;
 import org.neo4j.kernel.impl.store.TransactionId;
 import org.neo4j.kernel.impl.storemigration.legacylogs.LegacyLogs;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -58,18 +55,18 @@ import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTIO
 import static org.neo4j.kernel.impl.store.MetaDataStore.getRecord;
 import static org.neo4j.kernel.impl.store.MetaDataStore.setRecord;
 import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.FIELD_NOT_PRESENT;
-import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.UNKNOWN_TX_COMMIT_TIMESTAMP;
 
 public class StoreMigratorTest
 {
-    private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
     private final TestDirectory directory = TestDirectory.testDirectory();
+    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
     private final PageCacheRule pageCacheRule = new PageCacheRule();
     private final RandomRule random = new RandomRule();
     private final SchemaIndexProvider schemaIndexProvider = new InMemoryIndexProvider();
 
     @Rule
     public final RuleChain ruleChain = RuleChain.outerRule( directory )
+            .around( fileSystemRule )
             .around( pageCacheRule )
             .around( random );
 
@@ -84,7 +81,7 @@ public class StoreMigratorTest
         TransactionId expected = new TransactionId( txId, checksum, timestamp );
 
         // ... and files
-        PageCache pageCache = pageCacheRule.getPageCache( fs );
+        PageCache pageCache = pageCacheRule.getPageCache( fileSystemRule.get() );
         File storeDir = directory.graphDbDir();
         File neoStore = new File( storeDir, DEFAULT_NAME );
         neoStore.createNewFile();
@@ -100,7 +97,7 @@ public class StoreMigratorTest
         setRecord( pageCache, neoStore, LAST_TRANSACTION_COMMIT_TIMESTAMP, timestamp );
 
         // ... and with migrator
-        StoreMigrator migrator = new StoreMigrator( fs, pageCache, config, logService, NO_INDEX_PROVIDER );
+        StoreMigrator migrator = new StoreMigrator( fileSystemRule.get(), pageCache, config, logService, NO_INDEX_PROVIDER );
         TransactionId actual = migrator.extractTransactionIdInformation( neoStore, storeDir, txId );
 
         // then
@@ -118,7 +115,7 @@ public class StoreMigratorTest
         TransactionId expected = new TransactionId( txId, checksum, timestamp );
 
         // ... and files
-        PageCache pageCache = pageCacheRule.getPageCache( fs );
+        PageCache pageCache = pageCacheRule.getPageCache( fileSystemRule.get() );
 
         File storeDir = directory.graphDbDir();
         File neoStore = new File( storeDir, DEFAULT_NAME );
@@ -133,7 +130,7 @@ public class StoreMigratorTest
         // when
         // ... neoStore is empty and with migrator
         StoreMigrator migrator =
-                new StoreMigrator( fs, pageCache, config, logService, schemaIndexProvider, legacyLogs );
+                new StoreMigrator( fileSystemRule.get(), pageCache, config, logService, schemaIndexProvider, legacyLogs );
         TransactionId actual = migrator.extractTransactionIdInformation( neoStore, storeDir, txId );
 
         // then
@@ -145,7 +142,7 @@ public class StoreMigratorTest
     {
         // given
         long txId = 42;
-        PageCache pageCache = pageCacheRule.getPageCache( fs );
+        PageCache pageCache = pageCacheRule.getPageCache( fileSystemRule.get() );
         File storeDir = directory.graphDbDir();
         File neoStore = new File( storeDir, DEFAULT_NAME );
         neoStore.createNewFile();
@@ -161,7 +158,8 @@ public class StoreMigratorTest
         // ... and transaction not in log
         when( legacyLogs.getTransactionInformation( storeDir, txId ) ).thenReturn( Optional.empty() );
         // ... and with migrator
-        StoreMigrator migrator = new StoreMigrator( fs, pageCache, config, logService, schemaIndexProvider );
+        StoreMigrator migrator = new StoreMigrator( fileSystemRule.get(), pageCache, config, logService,
+                schemaIndexProvider );
         TransactionId actual = migrator.extractTransactionIdInformation( neoStore, storeDir, txId );
 
         // then
@@ -175,7 +173,7 @@ public class StoreMigratorTest
     {
         // given
         long txId = 1;
-        PageCache pageCache = pageCacheRule.getPageCache( fs );
+        PageCache pageCache = pageCacheRule.getPageCache( fileSystemRule.get() );
         File storeDir = directory.graphDbDir();
         File neoStore = new File( storeDir, DEFAULT_NAME );
         neoStore.createNewFile();
@@ -191,7 +189,8 @@ public class StoreMigratorTest
         // ... and transaction not in log
         when( legacyLogs.getTransactionInformation( storeDir, txId ) ).thenReturn( Optional.empty() );
         // ... and with migrator
-        StoreMigrator migrator = new StoreMigrator( fs, pageCache, config, logService, schemaIndexProvider );
+        StoreMigrator migrator = new StoreMigrator( fileSystemRule.get(), pageCache, config, logService,
+                schemaIndexProvider );
         TransactionId actual = migrator.extractTransactionIdInformation( neoStore, storeDir, txId );
 
         // then
@@ -228,7 +227,7 @@ public class StoreMigratorTest
 
     private StoreMigrator newStoreMigrator()
     {
-        return new StoreMigrator( fs, pageCacheRule.getPageCache( fs ),
+        return new StoreMigrator( fileSystemRule.get(), pageCacheRule.getPageCache( fileSystemRule.get() ),
                 Config.empty(), NullLogService.getInstance(), schemaIndexProvider );
     }
 }

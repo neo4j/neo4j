@@ -19,6 +19,7 @@
  */
 package org.neo4j.io.fs;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
@@ -36,10 +37,13 @@ import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Stream;
+
+import org.neo4j.io.IOUtils;
 
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
@@ -50,6 +54,7 @@ import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 public class DelegateFileSystemAbstraction implements FileSystemAbstraction
 {
     private final FileSystem fs;
+    private final Map<Class<?>, ThirdPartyFileSystem> thirdPartyFs = new HashMap<>();
 
     public DelegateFileSystemAbstraction( FileSystem fs )
     {
@@ -249,8 +254,6 @@ public class DelegateFileSystemAbstraction implements FileSystemAbstraction
         }
     }
 
-    private final Map<Class<?>,Object> thirdPartyFs = new HashMap<>();
-
     @Override
     public synchronized <K extends ThirdPartyFileSystem> K getOrCreateThirdPartyFileSystem(
             Class<K> clazz, Function<Class<K>,K> creator )
@@ -284,5 +287,14 @@ public class DelegateFileSystemAbstraction implements FileSystemAbstraction
     public void deleteFileOrThrow( File file ) throws IOException
     {
         Files.delete( path( file ) );
+    }
+
+    @Override
+    public void close() throws IOException
+    {
+        ArrayList<Closeable> fsToClose = new ArrayList<>( thirdPartyFs.size() + 1 );
+        fsToClose.add( fs );
+        fsToClose.addAll( thirdPartyFs.values() );
+        IOUtils.closeAll( fsToClose );
     }
 }

@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.store.counts;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
@@ -33,6 +34,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
@@ -61,6 +63,18 @@ import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_I
 
 public class CountsComputerTest
 {
+    private EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+    private PageCacheRule pcRule = new PageCacheRule();
+    private TestDirectory testDir = TestDirectory.testDirectory( fsRule.get() );
+
+    @Rule
+    public RuleChain ruleChain = RuleChain.outerRule( pcRule ).around( fsRule ).around( testDir );
+
+    private FileSystemAbstraction fs;
+    private File dir;
+    private GraphDatabaseBuilder dbBuilder;
+    private PageCache pageCache;
+
     @Test
     public void shouldCreateAnEmptyCountsStoreFromAnEmptyDatabase() throws IOException
     {
@@ -260,24 +274,13 @@ public class CountsComputerTest
         }
     }
 
-    @Rule
-    public PageCacheRule pcRule = new PageCacheRule();
-    @Rule
-    public EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-    @Rule
-    public TestDirectory testDir = TestDirectory.testDirectory( fsRule.get() );
-
-    private FileSystemAbstraction fs;
-    private File dir;
-    private GraphDatabaseBuilder dbBuilder;
-    private PageCache pageCache;
-
     @Before
     public void setup()
     {
         fs = fsRule.get();
         dir = testDir.directory( "dir" ).getAbsoluteFile();
-        dbBuilder = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentDatabaseBuilder( dir );
+        dbBuilder = new TestGraphDatabaseFactory().setFileSystem( new UncloseableDelegatingFileSystemAbstraction(fs) )
+                .newImpermanentDatabaseBuilder( dir );
         pageCache = pcRule.getPageCache( fs );
     }
 

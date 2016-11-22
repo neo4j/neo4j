@@ -60,7 +60,10 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
             System.err.println( "Expecting exactly one argument describing the path to the store" );
             System.exit( 1 );
         }
-        dumpCountsStore( new DefaultFileSystemAbstraction(), new File( args[0] ), System.out );
+        try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
+        {
+            dumpCountsStore( fileSystem, new File( args[0] ), System.out );
+        }
     }
 
     public static void dumpCountsStore( FileSystemAbstraction fs, File path, PrintStream out ) throws IOException

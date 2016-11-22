@@ -19,15 +19,23 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
+import org.junit.Rule;
+
 import java.util.Map;
 
+import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 public class EmbeddedAuthScenariosInteractionTest extends AuthScenariosInteractionTestBase<EnterpriseSecurityContext>
 {
+
+    @Rule
+    public EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
+
     @Override
     protected NeoInteractionLevel<EnterpriseSecurityContext> setUpNeoServer( Map<String, String> config ) throws Throwable
     {
-        return new EmbeddedInteraction( config );
+        return new EmbeddedInteraction( config, () -> new UncloseableDelegatingFileSystemAbstraction( fileSystemRule.get() ) );
     }
 }

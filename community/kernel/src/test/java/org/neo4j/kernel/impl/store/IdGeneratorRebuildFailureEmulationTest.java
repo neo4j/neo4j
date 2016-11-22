@@ -213,13 +213,12 @@ public class IdGeneratorRebuildFailureEmulationTest
             //Collection<String> open = openFiles();
             //assertTrue( "Open files: " + open, open.isEmpty() );
             assertNoOpenFiles();
-            super.shutdown();
+            super.close();
         }
 
         @Override
-        public void shutdown()
+        public void close()
         {
-            // no-op, it's pretty odd to have EphemeralFileSystemAbstraction implement Lifecycle by default
         }
     }
 

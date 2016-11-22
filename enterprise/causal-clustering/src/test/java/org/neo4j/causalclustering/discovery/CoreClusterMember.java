@@ -20,6 +20,7 @@
 package org.neo4j.causalclustering.discovery;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
@@ -43,7 +44,6 @@ import org.neo4j.server.configuration.ClientConnectorSettings.HttpConnector.Encr
 
 import static java.lang.String.format;
 import static java.util.stream.Collectors.joining;
-
 import static org.neo4j.causalclustering.core.EnterpriseCoreEditionModule.CLUSTER_STATE_DIRECTORY_NAME;
 import static org.neo4j.causalclustering.core.consensus.log.RaftLog.PHYSICAL_LOG_DIRECTORY_NAME;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -170,11 +170,14 @@ public class CoreClusterMember implements ClusterMember
         return database.getDependencyResolver().resolveDependency( RaftMachine.class ).identity();
     }
 
-    public SortedMap<Long, File> getLogFileNames()
+    public SortedMap<Long, File> getLogFileNames() throws IOException
     {
         File clusterStateDir = new File( storeDir, CLUSTER_STATE_DIRECTORY_NAME );
         File logFilesDir = new File( clusterStateDir, PHYSICAL_LOG_DIRECTORY_NAME );
-        return new FileNames( logFilesDir ).getAllFiles( new DefaultFileSystemAbstraction(), null );
+        try ( DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
+        {
+            return new FileNames( logFilesDir ).getAllFiles( fileSystem, null );
+        }
     }
 
     public File homeDir()

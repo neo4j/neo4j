@@ -30,30 +30,18 @@ public class DefaultFileSystemRule extends ExternalResource
     @Override
     protected void after()
     {
-
+        try
+        {
+            fs.close();
+        }
+        catch ( Exception e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 
     public DefaultFileSystemAbstraction get()
     {
         return fs;
-    }
-
-    public DefaultFileSystemAbstraction snapshot( Runnable action )
-    {
-        DefaultFileSystemAbstraction snapshot = fs;
-        try
-        {
-            action.run();
-        }
-        finally
-        {
-            fs = snapshot;
-        }
-        return fs;
-    }
-
-    public void clear()
-    {
-        fs = new DefaultFileSystemAbstraction();
     }
 }

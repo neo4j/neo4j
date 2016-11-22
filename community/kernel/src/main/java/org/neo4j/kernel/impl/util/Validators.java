@@ -21,12 +21,14 @@ package org.neo4j.kernel.impl.util;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Pattern;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
 
@@ -83,24 +85,37 @@ public class Validators
 
     public static final Validator<File> CONTAINS_NO_EXISTING_DATABASE = value ->
     {
-        if ( isExistingDatabase( value ) )
+        try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
         {
-            throw new IllegalArgumentException( "Directory '" + value + "' already contains a database" );
+            if ( isExistingDatabase( fileSystem, value ) )
+            {
+                throw new IllegalArgumentException( "Directory '" + value + "' already contains a database" );
+            }
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
         }
     };
 
     public static final Validator<File> CONTAINS_EXISTING_DATABASE = value ->
     {
-        if ( !isExistingDatabase( value ) )
+        try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
         {
-            throw new IllegalArgumentException( "Directory '" + value + "' does not contain a database" );
+            if ( !isExistingDatabase( fileSystem, value ) )
+            {
+                throw new IllegalArgumentException( "Directory '" + value + "' does not contain a database" );
+            }
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
         }
     };
 
-    private static boolean isExistingDatabase( File value )
+    private static boolean isExistingDatabase( FileSystemAbstraction fileSystem, File value )
     {
-        return new DefaultFileSystemAbstraction()
-                .fileExists( new File( value, StoreFileType.STORE.augment( MetaDataStore.DEFAULT_NAME ) ) );
+        return fileSystem.fileExists( new File( value, StoreFileType.STORE.augment( MetaDataStore.DEFAULT_NAME ) ) );
     }
 
     public static Validator<String> inList( String[] validStrings )

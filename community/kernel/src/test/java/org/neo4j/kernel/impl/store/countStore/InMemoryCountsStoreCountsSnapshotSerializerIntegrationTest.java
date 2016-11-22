@@ -81,39 +81,41 @@ public class InMemoryCountsStoreCountsSnapshotSerializerIntegrationTest
     public void largeWorkloadOnPhysicalLogTest() throws IOException
     {
         //GIVEN
-        FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-        File tempFile = new File( testDir.directory(), "temp" );
-        StoreChannel rawChannel = fs.create( tempFile );
-
-        Map<CountsKey, long[]> map = CountsStoreMapGenerator.simpleCountStoreMap( 100000 );
-        CountsSnapshot countsSnapshot = new CountsSnapshot( 1, map );
-        CountsSnapshot recovered;
-
-        //WHEN
-        try( FlushableChannel tempChannel = new PhysicalFlushableChannel( rawChannel ) )
+        try ( FileSystemAbstraction fs = new DefaultFileSystemAbstraction() )
         {
-            serialize( tempChannel, countsSnapshot );
-        } // close() here is necessary to flush the temp buffer into the channel so we can read it next
+            File tempFile = new File( testDir.directory(), "temp" );
+            StoreChannel rawChannel = fs.create( tempFile );
 
-        rawChannel = fs.open( tempFile, "r" ); // The try-with-resources closes the channel, need to reopen
-        try ( ReadAheadChannel<StoreChannel> readAheadChannel = new ReadAheadChannel<>( rawChannel ) )
-        {
-            recovered = deserialize( readAheadChannel );
+            Map<CountsKey,long[]> map = CountsStoreMapGenerator.simpleCountStoreMap( 100000 );
+            CountsSnapshot countsSnapshot = new CountsSnapshot( 1, map );
+            CountsSnapshot recovered;
 
-            //THEN
-            Assert.assertEquals( countsSnapshot.getTxId(), recovered.getTxId() );
-            for ( Map.Entry<CountsKey, long[]> pair : countsSnapshot.getMap().entrySet() )
+            //WHEN
+            try ( FlushableChannel tempChannel = new PhysicalFlushableChannel( rawChannel ) )
             {
-                long[] value = recovered.getMap().get( pair.getKey() );
-                Assert.assertNotNull( value );
-                Assert.assertArrayEquals( value, pair.getValue() );
-            }
+                serialize( tempChannel, countsSnapshot );
+            } // close() here is necessary to flush the temp buffer into the channel so we can read it next
 
-            for ( Map.Entry<CountsKey, long[]> pair : recovered.getMap().entrySet() )
+            rawChannel = fs.open( tempFile, "r" ); // The try-with-resources closes the channel, need to reopen
+            try ( ReadAheadChannel<StoreChannel> readAheadChannel = new ReadAheadChannel<>( rawChannel ) )
             {
-                long[] value = countsSnapshot.getMap().get( pair.getKey() );
-                Assert.assertNotNull( value );
-                Assert.assertArrayEquals( value, pair.getValue() );
+                recovered = deserialize( readAheadChannel );
+
+                //THEN
+                Assert.assertEquals( countsSnapshot.getTxId(), recovered.getTxId() );
+                for ( Map.Entry<CountsKey,long[]> pair : countsSnapshot.getMap().entrySet() )
+                {
+                    long[] value = recovered.getMap().get( pair.getKey() );
+                    Assert.assertNotNull( value );
+                    Assert.assertArrayEquals( value, pair.getValue() );
+                }
+
+                for ( Map.Entry<CountsKey,long[]> pair : recovered.getMap().entrySet() )
+                {
+                    long[] value = countsSnapshot.getMap().get( pair.getKey() );
+                    Assert.assertNotNull( value );
+                    Assert.assertArrayEquals( value, pair.getValue() );
+                }
             }
         }
     }

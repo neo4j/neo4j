@@ -28,6 +28,7 @@ import java.util.function.BooleanSupplier;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.impl.transaction.DeadSimpleLogVersionRepository;
@@ -67,13 +68,14 @@ public class Runner implements Callable<Long>
     {
         long lastCommittedTransactionId;
 
-        try ( Lifespan life = new Lifespan() )
+        try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+                Lifespan life = new Lifespan() )
         {
             TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore();
             TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache( 100_000 );
             LogHeaderCache logHeaderCache = new LogHeaderCache( 1000 );
 
-            LogFile logFile = life.add( createPhysicalLogFile( transactionIdStore, logHeaderCache ) );
+            LogFile logFile = life.add( createPhysicalLogFile( transactionIdStore, logHeaderCache, fileSystem ) );
 
             TransactionAppender transactionAppender = life.add(
                     createBatchingTransactionAppender( transactionIdStore, transactionMetadataCache, logFile ) );
@@ -118,15 +120,14 @@ public class Runner implements Callable<Long>
                 transactionMetadataCache, transactionIdStore, IdOrderingQueue.BYPASS, databaseHealth );
     }
 
-    private PhysicalLogFile createPhysicalLogFile( TransactionIdStore transactionIdStore,
-            LogHeaderCache logHeaderCache )
+    private PhysicalLogFile createPhysicalLogFile( TransactionIdStore transactionIdStore, LogHeaderCache logHeaderCache,
+            FileSystemAbstraction fileSystemAbstraction )
     {
-        DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-        PhysicalLogFiles logFiles = new PhysicalLogFiles( workingDirectory, fs );
+        PhysicalLogFiles logFiles = new PhysicalLogFiles( workingDirectory, fileSystemAbstraction );
         long rotateAtSize = Settings.BYTES.apply(
                 GraphDatabaseSettings.logical_log_rotation_threshold.getDefaultValue() );
         DeadSimpleLogVersionRepository logVersionRepository = new DeadSimpleLogVersionRepository( 0 );
-        return new PhysicalLogFile( fs, logFiles, rotateAtSize,
+        return new PhysicalLogFile( fileSystemAbstraction, logFiles, rotateAtSize,
                 transactionIdStore::getLastCommittedTransactionId, logVersionRepository, NOOP_LOGFILE_MONITOR,
                 logHeaderCache );
     }

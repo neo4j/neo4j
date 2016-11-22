@@ -21,6 +21,7 @@ package org.neo4j.commandline.dbms;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -37,10 +38,10 @@ import org.neo4j.commandline.admin.CommandLocator;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.admin.Usage;
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
@@ -55,14 +56,18 @@ import static org.neo4j.kernel.internal.StoreLocker.STORE_LOCK_FILENAME;
 
 public class UnbindFromClusterCommandTest
 {
+
+    private final TestDirectory testDir = TestDirectory.testDirectory();
+    private final EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
+
     @Rule
-    public TestDirectory testDir = TestDirectory.testDirectory();
+    public final RuleChain ruleChain = RuleChain.outerRule( fileSystemRule ).around( testDir );
 
     @Test
     public void shouldFailIfSpecifiedDatabaseDoesNotExist() throws Exception
     {
         // given
-        FileSystemAbstraction fsa = new EphemeralFileSystemAbstraction();
+        FileSystemAbstraction fsa = fileSystemRule.get();
         fsa.mkdir( testDir.directory() );
 
         UnbindFromClusterCommand command =
@@ -86,29 +91,31 @@ public class UnbindFromClusterCommandTest
     public void shouldFailToUnbindLiveDatabase() throws Exception
     {
         // given
-        FileSystemAbstraction fsa = new DefaultFileSystemAbstraction(); // because locking
-        fsa.mkdir( testDir.directory() );
-
-        UnbindFromClusterCommand command =
-                new UnbindFromClusterCommand( testDir.directory().toPath(), testDir.directory( "conf" ).toPath(),
-                        mock( OutsideWorld.class ) );
-
-        FileLock fileLock = createLockedFakeDbDir( testDir.directory().toPath() );
-
-        try
+        try ( FileSystemAbstraction fsa = new DefaultFileSystemAbstraction() ) // because locking
         {
-            // when
-            command.execute( databaseName( "graph.db" ) );
-            fail();
-        }
-        catch ( CommandFailed e )
-        {
-            // then
-            assertThat( e.getMessage(), containsString( "Database is currently locked. Please shutdown Neo4j." ) );
-        }
-        finally
-        {
-            fileLock.release();
+            fsa.mkdir( testDir.directory() );
+
+            UnbindFromClusterCommand command =
+                    new UnbindFromClusterCommand( testDir.directory().toPath(), testDir.directory( "conf" ).toPath(),
+                            mock( OutsideWorld.class ) );
+
+            FileLock fileLock = createLockedFakeDbDir( testDir.directory().toPath() );
+
+            try
+            {
+                // when
+                command.execute( databaseName( "graph.db" ) );
+                fail();
+            }
+            catch ( CommandFailed e )
+            {
+                // then
+                assertThat( e.getMessage(), containsString( "Database is currently locked. Please shutdown Neo4j." ) );
+            }
+            finally
+            {
+                fileLock.release();
+            }
         }
     }
 
@@ -118,7 +125,7 @@ public class UnbindFromClusterCommandTest
         // given
         final int numberOfFilesAndDirsInANormalNeo4jStoreDir = 35;
 
-        FileSystemAbstraction fsa = new EphemeralFileSystemAbstraction();
+        FileSystemAbstraction fsa = fileSystemRule.get();
         fsa.mkdir( testDir.directory() );
 
         Path fakeDbDir = createUnlockedFakeDbDir( testDir.directory().toPath() );
@@ -137,7 +144,7 @@ public class UnbindFromClusterCommandTest
     public void shouldReportWhenClusterStateDirectoryIsNotPresent() throws Exception
     {
         // given
-        FileSystemAbstraction fsa = new EphemeralFileSystemAbstraction();
+        FileSystemAbstraction fsa = fileSystemRule.get();
         fsa.mkdir( testDir.directory() );
 
         Path fakeDbDir = createUnlockedFakeDbDir( testDir.directory().toPath() );

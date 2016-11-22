@@ -19,6 +19,8 @@
  */
 package org.neo4j.server.enterprise;
 
+import org.jboss.netty.channel.ChannelException;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
@@ -26,8 +28,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Timer;
 import java.util.TimerTask;
-
-import org.jboss.netty.channel.ChannelException;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.client.ClusterClientModule;
@@ -38,6 +38,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemLifecycleAdapter;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.StoreLogService;
@@ -63,14 +64,15 @@ public class ArbiterBootstrapper implements Bootstrapper, AutoCloseable
         Config config = getConfig( configFile, configOverrides );
         try
         {
+            DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+            life.add( new FileSystemLifecycleAdapter( fileSystem ) );
             life.add( new Neo4jJobScheduler() );
-
             new ClusterClientModule(
                     life,
                     new Dependencies(),
                     new Monitors(),
                     config,
-                    logService( new DefaultFileSystemAbstraction(), config ),
+                    logService( fileSystem, config ),
                     new NotElectableElectionCredentialsProvider() );
         }
         catch ( LifecycleException e )

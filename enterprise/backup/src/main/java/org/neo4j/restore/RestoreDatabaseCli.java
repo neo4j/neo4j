@@ -36,6 +36,7 @@ import org.neo4j.commandline.arguments.OptionalBooleanArg;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.configuration.ConfigLoader;
 
@@ -93,11 +94,10 @@ public class RestoreDatabaseCli implements AdminCommand
 
         Config config = loadNeo4jConfig( homeDir, configDir, databaseName );
 
-        RestoreDatabaseCommand restoreDatabaseCommand = new RestoreDatabaseCommand( new DefaultFileSystemAbstraction(),
-                new File( fromPath ), config, databaseName, forceOverwrite );
-
-        try
+        try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
         {
+            RestoreDatabaseCommand restoreDatabaseCommand = new RestoreDatabaseCommand( fileSystem,
+                    new File( fromPath ), config, databaseName, forceOverwrite );
             restoreDatabaseCommand.execute();
         }
         catch ( IOException e )

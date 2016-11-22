@@ -44,7 +44,6 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.kernel.GraphDatabaseDependencies.newDependencies;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
 import static org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Configuration.ephemeral;
-import static org.neo4j.test.GraphDatabaseServiceCleaner.cleanDatabaseContent;
 
 /**
  * A database meant to be used in unit tests. It will always be empty on start.
@@ -182,11 +181,6 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
             result.put( pagecache_memory.name(), "8M" );
         }
         return result;
-    }
-
-    public void cleanContent()
-    {
-        cleanDatabaseContent( this );
     }
 
     protected static class ImpermanentPlatformModule extends PlatformModule

@@ -111,96 +111,89 @@ public class LegacyLogsTest
     }
 
     @Test
-    public void shouldMoveFiles() throws IOException
+    public void shouldMoveFiles() throws Exception
     {
         // given
-        final EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
-        fs.mkdirs( storeDir );
-        fs.mkdirs( migrationDir );
-
-        final Set<File> logsInStoreDir = new HashSet<>( Arrays.asList(
-                new File( storeDir, getLegacyLogFilename( 1 ) ),
-                new File( storeDir, getLegacyLogFilename( 2 ) )
-        ) );
-
-        final List<File> logsInMigrationDir = Arrays.asList(
-                new File( migrationDir, getLegacyLogFilename( 1 ) ),
-                new File( migrationDir, getLegacyLogFilename( 2 ) )
-        );
-
-        for ( File file : logsInMigrationDir )
+        try ( EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction() )
         {
-            try ( StoreChannel channel = fs.create( file ) )
+            fs.mkdirs( storeDir );
+            fs.mkdirs( migrationDir );
+
+            final Set<File> logsInStoreDir = new HashSet<>( Arrays.asList( new File( storeDir, getLegacyLogFilename( 1 ) ),
+                    new File( storeDir, getLegacyLogFilename( 2 ) ) ) );
+
+            final List<File> logsInMigrationDir = Arrays.asList( new File( migrationDir, getLegacyLogFilename( 1 ) ),
+                    new File( migrationDir, getLegacyLogFilename( 2 ) ) );
+
+            for ( File file : logsInMigrationDir )
             {
-                ByteBuffer buffer = ByteBuffer.allocate( 8 );
-                buffer.putLong( 42 );
-                buffer.flip();
-                channel.write( buffer );
+                try ( StoreChannel channel = fs.create( file ) )
+                {
+                    ByteBuffer buffer = ByteBuffer.allocate( 8 );
+                    buffer.putLong( 42 );
+                    buffer.flip();
+                    channel.write( buffer );
+                }
             }
-        }
 
-        // should override older files
-        for ( File file : logsInStoreDir )
-        {
-            try ( StoreChannel channel = fs.create( file ) )
+            // should override older files
+            for ( File file : logsInStoreDir )
             {
-                ByteBuffer buffer = ByteBuffer.allocate( 8 );
-                buffer.putLong( 13 );
-                buffer.flip();
-                channel.write( buffer );
+                try ( StoreChannel channel = fs.create( file ) )
+                {
+                    ByteBuffer buffer = ByteBuffer.allocate( 8 );
+                    buffer.putLong( 13 );
+                    buffer.flip();
+                    channel.write( buffer );
+                }
             }
-        }
 
-        // when
-        new LegacyLogs( fs, reader, writer ).operate( FileOperation.MOVE, migrationDir, storeDir );
+            // when
+            new LegacyLogs( fs, reader, writer ).operate( FileOperation.MOVE, migrationDir, storeDir );
 
-        // then
-        assertEquals( logsInStoreDir, new HashSet<>( Arrays.asList( fs.listFiles( storeDir ) ) ) );
-        for ( File file : logsInStoreDir )
-        {
-            try ( StoreChannel channel = fs.open( file, "r" ) )
+            // then
+            assertEquals( logsInStoreDir, new HashSet<>( Arrays.asList( fs.listFiles( storeDir ) ) ) );
+            for ( File file : logsInStoreDir )
             {
-                ByteBuffer buffer = ByteBuffer.allocate( 8 );
-                channel.read( buffer );
-                buffer.flip();
-                assertEquals( 42, buffer.getLong() );
+                try ( StoreChannel channel = fs.open( file, "r" ) )
+                {
+                    ByteBuffer buffer = ByteBuffer.allocate( 8 );
+                    channel.read( buffer );
+                    buffer.flip();
+                    assertEquals( 42, buffer.getLong() );
+                }
             }
         }
     }
 
     @Test
-    public void shouldRenameFiles() throws IOException
+    public void shouldRenameFiles() throws Exception
     {
         // given
-        final EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
-        fs.mkdirs( storeDir );
-        final File unrelated = new File( storeDir, "unrelated" );
-        final List<File> files = Arrays.asList(
-                new File( storeDir, "active_tx_log" ),
-                new File( storeDir, "tm_tx_log.v0" ),
-                new File( storeDir, "tm_tx_log.v1" ),
-                new File( storeDir, "nioneo_logical.log.1" ),
-                new File( storeDir, "nioneo_logical.log.2" ),
-                new File( storeDir, getLegacyLogFilename( 1 ) ),
-                new File( storeDir, getLegacyLogFilename( 2 ) ),
-                unrelated
-        );
-
-        for ( File file : files )
+        try ( EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction() )
         {
-            fs.create( file ).close();
+            fs.mkdirs( storeDir );
+            final File unrelated = new File( storeDir, "unrelated" );
+            final List<File> files =
+                    Arrays.asList( new File( storeDir, "active_tx_log" ), new File( storeDir, "tm_tx_log.v0" ),
+                            new File( storeDir, "tm_tx_log.v1" ), new File( storeDir, "nioneo_logical.log.1" ),
+                            new File( storeDir, "nioneo_logical.log.2" ), new File( storeDir, getLegacyLogFilename( 1 ) ),
+                            new File( storeDir, getLegacyLogFilename( 2 ) ), unrelated );
+
+            for ( File file : files )
+            {
+                fs.create( file ).close();
+            }
+
+            // when
+            new LegacyLogs( fs, reader, writer ).renameLogFiles( storeDir );
+
+            // then
+            final Set<File> expected = new HashSet<>(
+                    Arrays.asList( unrelated, new File( storeDir, getLogFilenameForVersion( 1 ) ),
+                            new File( storeDir, getLogFilenameForVersion( 2 ) ) ) );
+            assertEquals( expected, new HashSet<>( Arrays.asList( fs.listFiles( storeDir ) ) ) );
         }
-
-        // when
-        new LegacyLogs( fs, reader, writer ).renameLogFiles( storeDir );
-
-        // then
-        final Set<File> expected = new HashSet<>( Arrays.asList(
-                unrelated,
-                new File( storeDir, getLogFilenameForVersion( 1 ) ),
-                new File( storeDir, getLogFilenameForVersion( 2 ) )
-        ) );
-        assertEquals( expected, new HashSet<>( Arrays.asList( fs.listFiles( storeDir ) ) ) );
     }
 
     @Test

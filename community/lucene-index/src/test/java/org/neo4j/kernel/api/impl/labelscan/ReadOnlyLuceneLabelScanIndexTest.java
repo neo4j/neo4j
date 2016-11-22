@@ -24,23 +24,27 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
 
 import java.io.IOException;
 
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.impl.labelscan.storestrategy.BitmapDocumentFormat;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertTrue;
 
 public class ReadOnlyLuceneLabelScanIndexTest
 {
+    private final TestDirectory testDirectory = TestDirectory.testDirectory();
+    private final ExpectedException expectedException = ExpectedException.none();
+    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+
     @Rule
-    public final TestDirectory testDirectory = TestDirectory.testDirectory();
-    @Rule
-    public final ExpectedException expectedException = ExpectedException.none();
+    public final RuleChain ruleChain = RuleChain.outerRule( testDirectory ).around( expectedException )
+            .around( fileSystemRule );
 
     private ReadOnlyDatabaseLabelScanIndex luceneLabelScanIndex;
 
@@ -48,7 +52,7 @@ public class ReadOnlyLuceneLabelScanIndexTest
     public void setUp()
     {
         PartitionedIndexStorage indexStorage = new PartitionedIndexStorage( DirectoryFactory.PERSISTENT,
-                new DefaultFileSystemAbstraction(), testDirectory.directory(), "1", false );
+                fileSystemRule.get(), testDirectory.directory(), "1", false );
         luceneLabelScanIndex = new ReadOnlyDatabaseLabelScanIndex( BitmapDocumentFormat._32, indexStorage );
     }
 

@@ -31,8 +31,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.txstate.TransactionState;
@@ -55,6 +53,7 @@ import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RecordStorageEngineRule;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.Workers;
 
 import static java.util.Arrays.asList;
@@ -68,13 +67,14 @@ import static org.neo4j.kernel.impl.transaction.log.Commitment.NO_COMMITMENT;
 
 public class IndexWorkSyncTransactionApplicationStressIT
 {
-    private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
     private final RecordStorageEngineRule storageEngineRule = new RecordStorageEngineRule();
     private final TestDirectory directory = TestDirectory.testDirectory();
     private final PageCacheRule pageCacheRule = new PageCacheRule();
 
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( directory )
+                                          .around( fileSystemRule )
                                           .around( pageCacheRule )
                                           .around( storageEngineRule );
 
@@ -89,7 +89,7 @@ public class IndexWorkSyncTransactionApplicationStressIT
         int numThreads = Integer.getInteger( getClass().getName() + ".numThreads",
                 Runtime.getRuntime().availableProcessors() );
         RecordStorageEngine storageEngine = storageEngineRule
-                .getWith( fs, pageCacheRule.getPageCache( fs ) )
+                .getWith( fileSystemRule.get(), pageCacheRule.getPageCache( fileSystemRule.get() ) )
                 .storeDirectory( directory.directory() )
                 .indexProvider( new InMemoryIndexProvider() )
                 .build();

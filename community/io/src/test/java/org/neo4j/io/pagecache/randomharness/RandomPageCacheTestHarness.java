@@ -19,6 +19,7 @@
  */
 package org.neo4j.io.pagecache.randomharness;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -54,7 +55,7 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
  *
  * See {@link org.neo4j.test.LinearHistoryPageCacheTracerTest} for an example of how to configure and use the harness.
  */
-public class RandomPageCacheTestHarness
+public class RandomPageCacheTestHarness implements Closeable
 {
     private double mischiefRate;
     private double failureRate;
@@ -338,6 +339,12 @@ public class RandomPageCacheTestHarness
         }
     }
 
+    @Override
+    public void close() throws IOException
+    {
+        fs.close();
+    }
+
     @SuppressWarnings( "unchecked" )
     private void runIteration( long timeout, TimeUnit unit ) throws Exception
     {
@@ -421,7 +428,7 @@ public class RandomPageCacheTestHarness
 
             if ( this.fs instanceof EphemeralFileSystemAbstraction )
             {
-                ((EphemeralFileSystemAbstraction) this.fs).shutdown();
+                this.fs.close();
                 this.fs = new EphemeralFileSystemAbstraction();
             }
             else

@@ -19,6 +19,7 @@
  */
 package org.neo4j.causalclustering.core.consensus.log.segmented;
 
+import org.junit.After;
 import org.junit.Test;
 
 import java.io.File;
@@ -46,6 +47,12 @@ public class EntryCursorTest
 
     {
         fsa.mkdir( bam );
+    }
+
+    @After
+    public void tearDown() throws Exception
+    {
+        fsa.close();
     }
 
     @Test

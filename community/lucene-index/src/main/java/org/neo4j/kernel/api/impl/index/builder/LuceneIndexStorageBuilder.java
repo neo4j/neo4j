@@ -22,7 +22,6 @@ package org.neo4j.kernel.api.impl.index.builder;
 import java.io.File;
 import java.util.Objects;
 
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
@@ -35,7 +34,7 @@ import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 public class LuceneIndexStorageBuilder
 {
     private DirectoryFactory directoryFactory = DirectoryFactory.PERSISTENT;
-    private FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+    private FileSystemAbstraction fileSystem;
     private File indexRootFolder;
     private String indexIdentifier;
     private PartitionedIndexStorage indexStorage;

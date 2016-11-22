@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.storemigration.legacylogs;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
@@ -27,7 +28,6 @@ import java.io.IOException;
 import java.util.function.Function;
 
 import org.neo4j.cursor.IOCursor;
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -40,6 +40,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -57,7 +58,9 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LO
 
 public class LegacyLogEntryReaderTest
 {
-    private final FileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
+    @Rule
+    public final EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
+    private final FileSystemAbstraction fs = fileSystemRule.get();
     private final File input = new File( getLegacyLogFilename( 3 ) );
 
     @Before

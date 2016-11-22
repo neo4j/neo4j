@@ -35,6 +35,9 @@ import org.neo4j.kernel.impl.logging.AbstractLogService;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.logging.LogProvider;
 
+/**
+ * Factory for test graph database.
+ */
 public class TestEnterpriseGraphDatabaseFactory extends TestGraphDatabaseFactory
 {
     @Override

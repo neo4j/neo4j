@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.index;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
@@ -59,6 +60,12 @@ public class TestIndexProviderStore
         fileSystem = new DefaultFileSystemAbstraction();
         file.mkdirs();
         fileSystem.deleteFile( file );
+    }
+
+    @After
+    public void tearDown() throws IOException
+    {
+        fileSystem.close();
     }
 
     @Test

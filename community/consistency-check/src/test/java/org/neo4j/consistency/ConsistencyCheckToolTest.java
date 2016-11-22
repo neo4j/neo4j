@@ -182,7 +182,7 @@ public class ConsistencyCheckToolTest
         runConsistencyCheckToolWith( fs.get(), storeDirectory.graphDbDir().getAbsolutePath() );
     }
 
-    private void createGraphDbAndKillIt()
+    private void createGraphDbAndKillIt() throws Exception
     {
         final GraphDatabaseService db = new TestGraphDatabaseFactory()
                 .setFileSystem( fs.get() )
@@ -208,6 +208,9 @@ public class ConsistencyCheckToolTest
     private void runConsistencyCheckToolWith( ConsistencyCheckService
             consistencyCheckService, PrintStream systemError, String... args ) throws ToolFailureException, IOException
     {
-        new ConsistencyCheckTool( consistencyCheckService, new DefaultFileSystemAbstraction(), systemError ).run( args );
+        try ( FileSystemAbstraction fileSystemAbstraction = new DefaultFileSystemAbstraction() )
+        {
+            new ConsistencyCheckTool( consistencyCheckService, fileSystemAbstraction, systemError ).run( args );
+        }
     }
 }

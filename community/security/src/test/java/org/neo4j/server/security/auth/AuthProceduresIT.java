@@ -68,6 +68,22 @@ public class AuthProceduresIT
     private BasicAuthManager authManager;
     private BasicSecurityContext admin;
 
+    @Before
+    public void setup() throws InvalidAuthTokenException, IOException
+    {
+        fs = new EphemeralFileSystemAbstraction();
+        db = (GraphDatabaseAPI) createGraphDatabase( fs );
+        authManager = db.getDependencyResolver().resolveDependency( BasicAuthManager.class );
+        admin = login( "neo4j", "neo4j" );
+    }
+
+    @After
+    public void cleanup() throws Exception
+    {
+        db.shutdown();
+        fs.close();
+    }
+
     //---------- change password -----------
 
     @Test
@@ -217,22 +233,6 @@ public class AuthProceduresIT
     }
 
     //---------- utility -----------
-
-    @Before
-    public void setup() throws InvalidAuthTokenException, IOException
-    {
-        fs = new EphemeralFileSystemAbstraction();
-        db = (GraphDatabaseAPI) createGraphDatabase( fs );
-        authManager = db.getDependencyResolver().resolveDependency( BasicAuthManager.class );
-        admin = login( "neo4j", "neo4j" );
-    }
-
-    @After
-    public void cleanup() throws Exception
-    {
-        db.shutdown();
-        fs.shutdown();
-    }
 
     private GraphDatabaseService createGraphDatabase( EphemeralFileSystemAbstraction fs ) throws IOException
     {

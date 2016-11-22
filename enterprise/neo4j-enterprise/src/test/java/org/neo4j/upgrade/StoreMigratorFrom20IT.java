@@ -23,6 +23,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
@@ -40,7 +41,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.EnterpriseGraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
@@ -72,6 +72,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -84,13 +85,16 @@ import static org.neo4j.upgrade.StoreMigratorTestUtil.buildClusterWithMasterDirI
 @RunWith( Parameterized.class )
 public class StoreMigratorFrom20IT
 {
-    @Rule
-    public final TestDirectory storeDir = TestDirectory.testDirectory();
-    @Rule
-    public final PageCacheRule pageCacheRule = new PageCacheRule();
+    private final TestDirectory storeDir = TestDirectory.testDirectory();
+    private final PageCacheRule pageCacheRule = new PageCacheRule();
+    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
-    private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+    @Rule
+    public RuleChain ruleChain = RuleChain.outerRule( storeDir )
+                                          .around( fileSystemRule ).around( pageCacheRule );
+
     private final ListAccumulatorMigrationProgressMonitor monitor = new ListAccumulatorMigrationProgressMonitor();
+    private FileSystemAbstraction fs;
     private PageCache pageCache;
     private final LifeSupport life = new LifeSupport();
     private UpgradableDatabase upgradableDatabase;
@@ -113,6 +117,7 @@ public class StoreMigratorFrom20IT
     @Before
     public void setUp()
     {
+        fs = fileSystemRule.get();
         pageCache = pageCacheRule.getPageCache( fs );
 
         schemaIndexProvider = new LuceneSchemaIndexProvider( fs, DirectoryFactory.PERSISTENT, storeDir.directory(),

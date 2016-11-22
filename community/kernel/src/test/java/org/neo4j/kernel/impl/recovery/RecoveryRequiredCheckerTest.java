@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.recovery;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
@@ -34,6 +35,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
@@ -41,18 +43,21 @@ import static org.junit.Assert.assertThat;
 public class RecoveryRequiredCheckerTest
 
 {
-    private final EphemeralFileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
-    @Rule
-    public final PageCacheRule pageCacheRule = new PageCacheRule();
-    @Rule
-    public TestDirectory testDirectory = TestDirectory.testDirectory( fileSystem );
+    private final EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
+    private final PageCacheRule pageCacheRule = new PageCacheRule();
+    private final TestDirectory testDirectory = TestDirectory.testDirectory( fileSystemRule.get() );
 
+    @Rule
+    public RuleChain ruleChain = RuleChain.outerRule( pageCacheRule ).around( fileSystemRule ).around( testDirectory );
+
+    private EphemeralFileSystemAbstraction fileSystem;
     private File storeDir;
 
     @Before
     public void setup()
     {
         storeDir = testDirectory.graphDbDir();
+        fileSystem = fileSystemRule.get();
         new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( storeDir ).shutdown();
     }
 
@@ -68,28 +73,31 @@ public class RecoveryRequiredCheckerTest
     @Test
     public void shouldWantToRecoverBrokenStore() throws Exception
     {
-        FileSystemAbstraction fileSystemAbstraction = createSomeDataAndCrash( storeDir, fileSystem );
+        try ( FileSystemAbstraction fileSystemAbstraction = createSomeDataAndCrash( storeDir, fileSystem ) )
+        {
 
-        PageCache pageCache = pageCacheRule.getPageCache( fileSystemAbstraction );
-        RecoveryRequiredChecker recoverer = new RecoveryRequiredChecker( fileSystemAbstraction, pageCache );
+            PageCache pageCache = pageCacheRule.getPageCache( fileSystemAbstraction );
+            RecoveryRequiredChecker recoverer = new RecoveryRequiredChecker( fileSystemAbstraction, pageCache );
 
-        assertThat( recoverer.isRecoveryRequiredAt( storeDir ), is( true ) );
+            assertThat( recoverer.isRecoveryRequiredAt( storeDir ), is( true ) );
+        }
     }
 
     @Test
     public void shouldBeAbleToRecoverBrokenStore() throws Exception
     {
-        FileSystemAbstraction fileSystemAbstraction = createSomeDataAndCrash( storeDir, fileSystem );
-        PageCache pageCache = pageCacheRule.getPageCache( fileSystemAbstraction );
+        try ( FileSystemAbstraction fileSystemAbstraction = createSomeDataAndCrash( storeDir, fileSystem ) )
+        {
+            PageCache pageCache = pageCacheRule.getPageCache( fileSystemAbstraction );
 
-        RecoveryRequiredChecker recoverer = new RecoveryRequiredChecker( fileSystemAbstraction, pageCache );
+            RecoveryRequiredChecker recoverer = new RecoveryRequiredChecker( fileSystemAbstraction, pageCache );
 
-        assertThat( recoverer.isRecoveryRequiredAt( storeDir ), is( true ) );
+            assertThat( recoverer.isRecoveryRequiredAt( storeDir ), is( true ) );
 
-        new TestGraphDatabaseFactory().setFileSystem( fileSystemAbstraction )
-                .newImpermanentDatabase( storeDir ).shutdown();
+            new TestGraphDatabaseFactory().setFileSystem( fileSystemAbstraction ).newImpermanentDatabase( storeDir ).shutdown();
 
-        assertThat( recoverer.isRecoveryRequiredAt( storeDir ), is( false ) );
+            assertThat( recoverer.isRecoveryRequiredAt( storeDir ), is( false ) );
+        }
     }
 
     private FileSystemAbstraction createSomeDataAndCrash( File store, EphemeralFileSystemAbstraction fileSystem )

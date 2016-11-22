@@ -19,11 +19,12 @@
  */
 package org.neo4j.causalclustering.core.state;
 
-import java.io.File;
-import java.util.Set;
-
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
+
+import java.io.File;
+import java.util.Set;
 
 import org.neo4j.causalclustering.backup.RestoreClusterUtils;
 import org.neo4j.causalclustering.core.replication.session.GlobalSessionTrackerState;
@@ -45,34 +46,34 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.util.UUID.randomUUID;
-
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class CoreBootstrapperTest
 {
-    @Rule
-    public TestDirectory testDirectory = TestDirectory.testDirectory();
+    private final TestDirectory testDirectory = TestDirectory.testDirectory();
+    private final PageCacheRule pageCacheRule = new PageCacheRule();
+    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
     @Rule
-    public PageCacheRule pageCacheRule = new PageCacheRule();
-
-    private DefaultFileSystemAbstraction fsa = new DefaultFileSystemAbstraction();
+    public RuleChain ruleChain = RuleChain.outerRule( pageCacheRule )
+                                          .around( pageCacheRule ).around( testDirectory );
 
     @Test
     public void shouldSetAllCoreState() throws Exception
     {
         // given
         int nodeCount = 100;
+        DefaultFileSystemAbstraction fileSystem = fileSystemRule.get();
         File classicNeo4jStore = RestoreClusterUtils.createClassicNeo4jStore(
-                testDirectory.directory(), fsa, nodeCount, StandardV3_0.NAME );
+                testDirectory.directory(), fileSystem, nodeCount, StandardV3_0.NAME );
 
-        PageCache pageCache = pageCacheRule.getPageCache( fsa );
-        CoreBootstrapper bootstrapper = new CoreBootstrapper(
-                classicNeo4jStore, pageCache, fsa, Config.defaults(), NullLogProvider.getInstance() );
+        PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
+        CoreBootstrapper bootstrapper = new CoreBootstrapper( classicNeo4jStore, pageCache, fileSystem,
+                Config.defaults(), NullLogProvider.getInstance() );
 
         // when
         Set<MemberId> membership = asSet( randomMember(), randomMember(), randomMember() );
@@ -96,7 +97,7 @@ public class CoreBootstrapperTest
         assertEquals( new GlobalSessionTrackerState(), snapshot.get( CoreStateType.SESSION_TRACKER ) );
 
         LastCommittedIndexFinder lastCommittedIndexFinder = new LastCommittedIndexFinder( new ReadOnlyTransactionIdStore( pageCache, classicNeo4jStore ), new ReadOnlyTransactionStore(
-                pageCache, fsa, classicNeo4jStore, new Monitors() ), NullLogProvider.getInstance() );
+                pageCache, fileSystem, classicNeo4jStore, new Monitors() ), NullLogProvider.getInstance() );
 
         long lastCommittedIndex = lastCommittedIndexFinder.getLastCommittedIndex();
         assertEquals( -1, lastCommittedIndex );

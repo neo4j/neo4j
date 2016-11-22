@@ -54,7 +54,6 @@ public class DumpCommand implements AdminCommand
     private static final Arguments arguments = new Arguments()
             .withDatabase()
             .withTo( "Destination (file or folder) of database dump." );
-    private final StoreLockChecker storeLockChecker;
 
     public static class Provider extends AdminCommand.Provider
     {
@@ -99,7 +98,6 @@ public class DumpCommand implements AdminCommand
         this.homeDir = homeDir;
         this.configDir = configDir;
         this.dumper = dumper;
-        this.storeLockChecker = new StoreLockChecker();
     }
 
     @Override
@@ -118,7 +116,7 @@ public class DumpCommand implements AdminCommand
             throw new CommandFailed( "database does not exist: " + database, e );
         }
 
-        try ( Closeable ignored = storeLockChecker.withLock( databaseDirectory ) )
+        try ( Closeable ignored = StoreLockChecker.check( databaseDirectory ) )
         {
             dump( database, databaseDirectory, archive );
         }

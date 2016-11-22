@@ -21,6 +21,7 @@ package org.neo4j.kernel.internal;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -31,9 +32,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -43,11 +44,10 @@ import static org.junit.Assert.fail;
 
 public class KernelDataTest
 {
-    @Rule
-    public final PageCacheRule pageCacheRule = new PageCacheRule();
 
-    @Rule
-    public final TestRule shutDownRemainingKernels = new TestRule()
+    private final PageCacheRule pageCacheRule = new PageCacheRule();
+    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+    private final TestRule shutDownRemainingKernels = new TestRule()
     {
         @Override
         public Statement apply( final Statement base, Description description )
@@ -73,6 +73,10 @@ public class KernelDataTest
             };
         }
     };
+
+    @Rule
+    public final RuleChain ruleChain = RuleChain.outerRule( fileSystemRule )
+            .around( pageCacheRule ).around( shutDownRemainingKernels );
 
     @Test
     public void shouldGenerateUniqueInstanceIdentifiers() throws Exception
@@ -172,7 +176,7 @@ public class KernelDataTest
     {
         Kernel( String desiredId )
         {
-            super( new DefaultFileSystemAbstraction(), pageCacheRule.getPageCache( new DefaultFileSystemAbstraction() ),
+            super( fileSystemRule.get(), pageCacheRule.getPageCache( fileSystemRule.get() ),
                     new File( "graph.db" ), new Config( config( desiredId ) ) );
             kernels.add( this );
         }

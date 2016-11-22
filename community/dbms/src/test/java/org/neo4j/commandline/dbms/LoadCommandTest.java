@@ -44,6 +44,7 @@ import org.neo4j.dbms.archive.IncorrectFormat;
 import org.neo4j.dbms.archive.Loader;
 import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.internal.StoreLocker;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -178,7 +179,8 @@ public class LoadCommandTest
         Path databaseDirectory = homeDir.resolve( "data/databases/foo.db" );
         Files.createDirectories( databaseDirectory );
 
-        try ( StoreLocker locker = new StoreLocker( new DefaultFileSystemAbstraction() ) )
+        try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+              StoreLocker locker = new StoreLocker( fileSystem ) )
         {
             locker.checkLock( databaseDirectory.toFile() );
             execute( "foo.db", "--force" );

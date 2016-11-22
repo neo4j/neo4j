@@ -31,6 +31,7 @@ import java.util.List;
 import org.neo4j.commandline.admin.RealOutsideWorld;
 import org.neo4j.helpers.Args;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertTrue;
@@ -39,6 +40,8 @@ public class CsvImporterTest
 {
     @Rule
     public final TestDirectory testDir = TestDirectory.testDirectory();
+    @Rule
+    public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
     @Test
     public void writesReportToSpecifiedReportFile() throws Exception
@@ -49,12 +52,14 @@ public class CsvImporterTest
         List<String> lines = Arrays.asList( "foo,bar,baz" );
         Files.write( inputFile.toPath(), lines, Charset.defaultCharset() );
 
-        CsvImporter csvImporter = new CsvImporter(
-                Args.parse( String.format( "--report-file=%s", reportLocation.getAbsolutePath() ),
-                        String.format( "--nodes=%s", inputFile.getAbsolutePath() ) ), Config.defaults(),
-                new RealOutsideWorld() );
-
-        csvImporter.doImport();
+        try ( RealOutsideWorld outsideWorld = new RealOutsideWorld() )
+        {
+            CsvImporter csvImporter = new CsvImporter(
+                    Args.parse( String.format( "--report-file=%s", reportLocation.getAbsolutePath() ),
+                            String.format( "--nodes=%s", inputFile.getAbsolutePath() ) ), Config.defaults(),
+                    outsideWorld );
+            csvImporter.doImport();
+        }
 
         assertTrue( reportLocation.exists() );
     }

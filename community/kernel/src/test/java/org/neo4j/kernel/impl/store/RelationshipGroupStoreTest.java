@@ -25,6 +25,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -81,12 +82,13 @@ public class RelationshipGroupStoreTest
     }
 
     @After
-    public void after()
+    public void after() throws IOException
     {
         if(db != null)
         {
             db.shutdown();
         }
+        fs.close();
     }
 
     @Test

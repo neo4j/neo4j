@@ -19,26 +19,39 @@
  */
 package org.neo4j.io.fs;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.UUID;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.neo4j.graphdb.mockfs.CloseTrackingFileSystem;
 
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class DefaultFileSystemAbstractionTest
 {
-    private final DefaultFileSystemAbstraction defaultFileSystemAbstraction = new DefaultFileSystemAbstraction();
-
+    private DefaultFileSystemAbstraction defaultFileSystemAbstraction;
     private File path;
 
     @Before
     public void before() throws Exception
     {
         path = new File( "target/" + UUID.randomUUID() );
+        defaultFileSystemAbstraction = new DefaultFileSystemAbstraction();
+    }
+
+    @After
+    public void tearDown() throws IOException
+    {
+        defaultFileSystemAbstraction.close();
     }
 
     @Test
@@ -106,4 +119,22 @@ public class DefaultFileSystemAbstractionTest
                     .UNABLE_TO_CREATE_DIRECTORY_FORMAT, path ) ) );
         }
     }
+
+    @Test
+    public void closeThirdPartyFileSystemsOnClose() throws IOException
+    {
+        CloseTrackingFileSystem closeTrackingFileSystem = new CloseTrackingFileSystem();
+
+        CloseTrackingFileSystem fileSystem = defaultFileSystemAbstraction
+                .getOrCreateThirdPartyFileSystem( CloseTrackingFileSystem.class,
+                        thirdPartyFileSystemClass -> closeTrackingFileSystem );
+
+        assertSame( closeTrackingFileSystem, fileSystem );
+        assertFalse( closeTrackingFileSystem.isClosed() );
+
+        defaultFileSystemAbstraction.close();
+
+        assertTrue( closeTrackingFileSystem.isClosed() );
+    }
+
 }

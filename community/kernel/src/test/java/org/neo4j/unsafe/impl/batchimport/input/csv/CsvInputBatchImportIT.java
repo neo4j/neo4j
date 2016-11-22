@@ -45,8 +45,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.NullLogService;
@@ -58,6 +56,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.Token;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.Configuration.Default;
@@ -83,11 +82,25 @@ import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors.invisi
 
 public class CsvInputBatchImportIT
 {
+    /** Don't support these counts at the moment so don't compute them */
+    private static final boolean COMPUTE_DOUBLE_SIDED_RELATIONSHIP_COUNTS = false;
+    private String nameOf( InputNode node )
+    {
+        return (String) node.properties()[1];
+    }
+
+    @Rule
+    public final TestDirectory directory = TestDirectory.testDirectory();
+    @Rule
+    public  final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+    private final long seed = currentTimeMillis();
+    private final Random random = new Random( seed );
+
     @Test
     public void shouldImportDataComingFromCsvFiles() throws Exception
     {
         // GIVEN
-        BatchImporter importer = new ParallelBatchImporter( directory.graphDbDir(),
+        BatchImporter importer = new ParallelBatchImporter( directory.graphDbDir(), fileSystemRule.get(),
                 smallBatchSizeConfig(), NullLogService.getInstance(), invisible(), Config.empty() );
         List<InputNode> nodeData = randomNodeData();
         List<InputRelationship> relationshipData = randomRelationshipData( nodeData );
@@ -173,7 +186,7 @@ public class CsvInputBatchImportIT
     private File relationshipDataAsFile( List<InputRelationship> relationshipData ) throws IOException
     {
         File file = directory.file( "relationships.csv" );
-        try ( Writer writer = fs.openAsWriter( file, StandardCharsets.UTF_8, false ) )
+        try ( Writer writer = fileSystemRule.get().openAsWriter( file, StandardCharsets.UTF_8, false ) )
         {
             // Header
             println( writer, ":start_id,:end_id,:type" );
@@ -190,7 +203,7 @@ public class CsvInputBatchImportIT
     private File nodeDataAsFile( List<InputNode> nodeData ) throws IOException
     {
         File file = directory.file( "nodes.csv" );
-        try ( Writer writer = fs.openAsWriter( file, StandardCharsets.UTF_8, false ) )
+        try ( Writer writer = fileSystemRule.get().openAsWriter( file, StandardCharsets.UTF_8, false ) )
         {
             // Header
             println( writer, "id:ID,name,some-labels:LABEL" );
@@ -392,14 +405,7 @@ public class CsvInputBatchImportIT
         {
             translationTable.put( token.name(), token.id() );
         }
-        return new Function<String, Integer>()
-        {
-            @Override
-            public Integer apply( String from )
-            {
-                return from == null ? anyValue : translationTable.get( from );
-            }
-        };
+        return from -> from == null ? anyValue : translationTable.get( from );
     }
 
     private Set<String> names( Iterable<Label> labels )
@@ -478,16 +484,4 @@ public class CsvInputBatchImportIT
         }
     }
 
-    /** Don't support these counts at the moment so don't compute them */
-    private static final boolean COMPUTE_DOUBLE_SIDED_RELATIONSHIP_COUNTS = false;
-    private String nameOf( InputNode node )
-    {
-        return (String) node.properties()[1];
-    }
-
-    private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-    @Rule
-    public final TestDirectory directory = TestDirectory.testDirectory();
-    private final long seed = currentTimeMillis();
-    private final Random random = new Random( seed );
 }

@@ -45,8 +45,6 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.TimeUtil;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.api.index.BatchingMultipleIndexPopulator;
@@ -60,6 +58,7 @@ import org.neo4j.test.RepeatRule;
 import org.neo4j.test.rule.CleanupRule;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
@@ -99,12 +98,11 @@ public class MultipleIndexPopulationStressIT
     private final RandomRule random = new RandomRule();
     private final CleanupRule cleanup = new CleanupRule();
     private final RepeatRule repeat = new RepeatRule();
+    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
     @Rule
     public final RuleChain ruleChain = RuleChain.outerRule( random ).around( repeat ).around( directory )
-                                                .around( cleanup );
-
-    private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+                                                .around( cleanup ).around( fileSystemRule );
 
     @Test
     @RepeatRule.Repeat( times = 10 )
@@ -303,7 +301,7 @@ public class MultipleIndexPopulationStressIT
         Config config = Config.empty();
         RecordFormats recordFormats =
                 RecordFormatSelector.selectForConfig( config, NullLogProvider.getInstance() );
-        BatchImporter importer = new ParallelBatchImporter( directory.graphDbDir(), fs,
+        BatchImporter importer = new ParallelBatchImporter( directory.graphDbDir(), fileSystemRule.get(),
                 DEFAULT, NullLogService.getInstance(), ExecutionMonitors.invisible(), EMPTY, config, recordFormats );
         importer.doImport( new RandomDataInput( count ) );
     }
@@ -404,7 +402,7 @@ public class MultipleIndexPopulationStressIT
         {
             try
             {
-                return new BadCollector( fs.openAsOutputStream(
+                return new BadCollector( fileSystemRule.get().openAsOutputStream(
                         new File( directory.graphDbDir(), "bad" ), false ), 0, 0 );
             }
             catch ( IOException e )

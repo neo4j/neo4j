@@ -19,6 +19,7 @@
  */
 package org.neo4j.graphdb.mockfs;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -39,9 +40,11 @@ import org.neo4j.io.fs.StoreChannel;
 
 import static java.nio.ByteBuffer.allocateDirect;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-public class EphemeralFileSystemAbstractionCrashTest
+public class EphemeralFileSystemAbstractionTest
 {
 
     private EphemeralFileSystemAbstraction fs;
@@ -50,6 +53,12 @@ public class EphemeralFileSystemAbstractionCrashTest
     public void setUp()
     {
         fs = new EphemeralFileSystemAbstraction();
+    }
+
+    @After
+    public void tearDown() throws IOException
+    {
+        fs.close();
     }
 
     @Test
@@ -94,67 +103,75 @@ public class EphemeralFileSystemAbstractionCrashTest
     @Test
     public void shouldNotLoseDataForcedBeforeFileSystemCrashes() throws Exception
     {
-        // given
-        int numberOfBytesForced = 8;
+        try ( EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction() )
+        {
+            // given
+            int numberOfBytesForced = 8;
 
-        File aFile = new File( "yo" );
+            File aFile = new File( "yo" );
 
-        StoreChannel channel = fs.open( aFile, "rw" );
-        writeLong( channel, 1111 );
+            StoreChannel channel = fs.open( aFile, "rw" );
+            writeLong( channel, 1111 );
 
-        // when
-        channel.force( true );
-        writeLong( channel, 2222 );
-        fs.crash();
+            // when
+            channel.force( true );
+            writeLong( channel, 2222 );
+            fs.crash();
 
-        // then
-        StoreChannel readChannel = fs.open( aFile, "r" );
-        assertEquals( numberOfBytesForced, readChannel.size() );
+            // then
+            StoreChannel readChannel = fs.open( aFile, "r" );
+            assertEquals( numberOfBytesForced, readChannel.size() );
 
-        assertEquals( 1111, readLong( readChannel ).getLong() );
+            assertEquals( 1111, readLong( readChannel ).getLong() );
+        }
     }
 
     @Test
     public void shouldBeConsistentAfterConcurrentWritesAndCrashes() throws Exception
     {
-        File aFile = new File( "contendedFile" );
-
         ExecutorService executorService = Executors.newCachedThreadPool();
-
-        for ( int attempt = 0; attempt < 100; attempt++ )
+        try ( EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction() )
         {
-            Collection<Callable<Void>> workers = new ArrayList<>();
-            for ( int i = 0; i < 100; i++ )
+            File aFile = new File( "contendedFile" );
+            for ( int attempt = 0; attempt < 100; attempt++ )
             {
-                workers.add( () -> {
-                    try
+                Collection<Callable<Void>> workers = new ArrayList<>();
+                for ( int i = 0; i < 100; i++ )
+                {
+                    workers.add( () ->
                     {
-                        StoreChannel channel = fs.open( aFile, "rw" );
-                        channel.position( 0 );
-                        writeLong( channel, 1 );
-                    }
-                    catch ( IOException e )
+                        try
+                        {
+                            StoreChannel channel = fs.open( aFile, "rw" );
+                            channel.position( 0 );
+                            writeLong( channel, 1 );
+                        }
+                        catch ( IOException e )
+                        {
+                            throw new RuntimeException( e );
+                        }
+                        return null;
+                    } );
+
+                    workers.add( () ->
                     {
-                        throw new RuntimeException( e );
-                    }
-                    return null;
-                } );
+                        fs.crash();
+                        return null;
+                    } );
+                }
 
-                workers.add( () -> {
-                    fs.crash();
-                    return null;
-                } );
+                List<Future<Void>> futures = executorService.invokeAll( workers );
+                for ( Future<Void> future : futures )
+                {
+                    future.get();
+                }
+                verifyFileIsEitherEmptyOrContainsLongIntegerValueOne( fs.open( aFile, "rw" ) );
             }
-
-            List<Future<Void>> futures = executorService.invokeAll( workers );
-            for ( Future<Void> future : futures )
-            {
-                future.get();
-            }
-            verifyFileIsEitherEmptyOrContainsLongIntegerValueOne( fs.open( aFile, "rw" ) );
         }
-
-        executorService.shutdown();
+        finally
+        {
+            executorService.shutdown();
+        }
     }
 
     @Test
@@ -162,46 +179,80 @@ public class EphemeralFileSystemAbstractionCrashTest
     {
         ExecutorService executorService = Executors.newCachedThreadPool();
 
-        for ( int attempt = 0; attempt < 100; attempt++ )
+        try
         {
-            EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
-            File aFile = new File( "contendedFile" );
-
-            Collection<Callable<Void>> workers = new ArrayList<>();
-            for ( int i = 0; i < 100; i++ )
+            for ( int attempt = 0; attempt < 100; attempt++ )
             {
-                workers.add( () -> {
-                    try
+                try ( EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction() )
+                {
+                    File aFile = new File( "contendedFile" );
+
+                    Collection<Callable<Void>> workers = new ArrayList<>();
+                    for ( int i = 0; i < 100; i++ )
                     {
-                        StoreChannel channel = fs.open( aFile, "rw" );
-                        channel.position( channel.size() );
-                        writeLong( channel, 1 );
+                        workers.add( () ->
+                        {
+                            try
+                            {
+                                StoreChannel channel = fs.open( aFile, "rw" );
+                                channel.position( channel.size() );
+                                writeLong( channel, 1 );
+                            }
+                            catch ( IOException e )
+                            {
+                                throw new RuntimeException( e );
+                            }
+                            return null;
+                        } );
+
+                        workers.add( () ->
+                        {
+                            StoreChannel channel = fs.open( aFile, "rw" );
+                            channel.force( true );
+                            return null;
+                        } );
                     }
-                    catch ( IOException e )
+
+                    List<Future<Void>> futures = executorService.invokeAll( workers );
+                    for ( Future<Void> future : futures )
                     {
-                        throw new RuntimeException( e );
+                        future.get();
                     }
-                    return null;
-                } );
 
-                workers.add( () -> {
-                    StoreChannel channel = fs.open( aFile, "rw" );
-                    channel.force( true );
-                    return null;
-                } );
+                    fs.crash();
+                    verifyFileIsFullOfLongIntegerOnes( fs.open( aFile, "rw" ) );
+                }
             }
-
-            List<Future<Void>> futures = executorService.invokeAll( workers );
-            for ( Future<Void> future : futures )
-            {
-                future.get();
-            }
-
-            fs.crash();
-            verifyFileIsFullOfLongIntegerOnes( fs.open( aFile, "rw" ) );
         }
+        finally
+        {
+            executorService.shutdown();
+        }
+    }
 
-        executorService.shutdown();
+    @Test
+    public void releaseResourcesOnClose() throws IOException
+    {
+        try ( EphemeralFileSystemAbstraction fileSystemAbstraction = new EphemeralFileSystemAbstraction() )
+        {
+            CloseTrackingFileSystem closeTrackingFileSystem = new CloseTrackingFileSystem();
+            fileSystemAbstraction.getOrCreateThirdPartyFileSystem( CloseTrackingFileSystem.class,
+                    closeTrackingFileSystemClass -> closeTrackingFileSystem );
+            File testDir = new File( "testDir" );
+            File testFile = new File( "testFile" );
+            fileSystemAbstraction.mkdir( testDir );
+            fileSystemAbstraction.create( testFile );
+
+            assertTrue( fileSystemAbstraction.fileExists( testFile ) );
+            assertTrue( fileSystemAbstraction.fileExists( testFile ) );
+            assertFalse( closeTrackingFileSystem.isClosed() );
+
+            fileSystemAbstraction.close();
+
+            assertTrue( closeTrackingFileSystem.isClosed() );
+            assertFalse( fileSystemAbstraction.fileExists( testFile ) );
+            assertFalse( fileSystemAbstraction.fileExists( testFile ) );
+        }
     }
 
     private void verifyFileIsFullOfLongIntegerOnes( StoreChannel channel )

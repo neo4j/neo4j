@@ -19,6 +19,7 @@
  */
 package org.neo4j.logging;
 
+import org.junit.After;
 import org.junit.Test;
 
 import java.io.File;
@@ -76,6 +77,12 @@ public class RotatingFileOutputStreamSupplierTest
     private File archiveLogFile7 = new File( "/tmp/logfile.log.7" );
     private File archiveLogFile8 = new File( "/tmp/logfile.log.8" );
     private File archiveLogFile9 = new File( "/tmp/logfile.log.9" );
+
+    @After
+    public void tearDown() throws Exception
+    {
+        fileSystem.close();
+    }
 
     @Test
     public void createsLogOnConstruction() throws Exception

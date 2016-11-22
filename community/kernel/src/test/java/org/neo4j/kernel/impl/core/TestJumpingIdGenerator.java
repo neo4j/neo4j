@@ -70,29 +70,31 @@ public class TestJumpingIdGenerator
     @Test
     public void testOffsettedFileChannel() throws Exception
     {
-        File fileName = new File("target/var/neostore.nodestore.db");
-        JumpingFileSystemAbstraction offsettedFileSystem = new JumpingFileSystemAbstraction( 10 );
-        offsettedFileSystem.deleteFile( fileName );
-        offsettedFileSystem.mkdirs( fileName.getParentFile() );
-        IdGenerator idGenerator = new JumpingIdGeneratorFactory( 10 ).get( IdType.NODE );
-        JumpingFileChannel channel = (JumpingFileChannel) offsettedFileSystem.open( fileName, "rw" );
-
-        for ( int i = 0; i < 16; i++ )
+        try ( JumpingFileSystemAbstraction offsettedFileSystem = new JumpingFileSystemAbstraction( 10 ) )
         {
-            writeSomethingLikeNodeRecord( channel, idGenerator.nextId(), i );
+            File fileName = new File( "target/var/neostore.nodestore.db" );
+            offsettedFileSystem.deleteFile( fileName );
+            offsettedFileSystem.mkdirs( fileName.getParentFile() );
+            IdGenerator idGenerator = new JumpingIdGeneratorFactory( 10 ).get( IdType.NODE );
+
+            try ( JumpingFileChannel channel = (JumpingFileChannel) offsettedFileSystem.open( fileName, "rw" ) )
+            {
+                for ( int i = 0; i < 16; i++ )
+                {
+                    writeSomethingLikeNodeRecord( channel, idGenerator.nextId(), i );
+                }
+
+            }
+            try ( JumpingFileChannel channel = (JumpingFileChannel) offsettedFileSystem.open( fileName, "rw" ) )
+            {
+                idGenerator = new JumpingIdGeneratorFactory( 10 ).get( IdType.NODE );
+
+                for ( int i = 0; i < 16; i++ )
+                {
+                    assertEquals( i, readSomethingLikeNodeRecord( channel, idGenerator.nextId() ) );
+                }
+            }
         }
-
-        channel.close();
-        channel = (JumpingFileChannel) offsettedFileSystem.open( fileName, "rw" );
-        idGenerator = new JumpingIdGeneratorFactory( 10 ).get( IdType.NODE );
-
-        for ( int i = 0; i < 16; i++ )
-        {
-            assertEquals( i, readSomethingLikeNodeRecord( channel, idGenerator.nextId() ) );
-        }
-
-        channel.close();
-        offsettedFileSystem.shutdown();
     }
 
     private byte readSomethingLikeNodeRecord( JumpingFileChannel channel, long id ) throws IOException

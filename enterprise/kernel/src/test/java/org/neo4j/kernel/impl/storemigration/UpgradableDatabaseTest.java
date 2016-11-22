@@ -24,6 +24,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.runners.Enclosed;
+import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -33,7 +34,6 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
@@ -50,6 +50,7 @@ import org.neo4j.kernel.internal.Version;
 import org.neo4j.string.UTF8;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -65,16 +66,23 @@ import static org.neo4j.kernel.impl.storemigration.StoreUpgrader.UnexpectedUpgra
 @RunWith( Enclosed.class )
 public class UpgradableDatabaseTest
 {
-    private static final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
     @RunWith( Parameterized.class )
     public static class SupportedVersions
     {
+
+        private final TestDirectory testDirectory = TestDirectory.testDirectory();
+        private final PageCacheRule pageCacheRule = new PageCacheRule();
+        private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+
         @Rule
-        public final TestDirectory testDirectory = TestDirectory.testDirectory();
+        public RuleChain ruleChain = RuleChain.outerRule( testDirectory )
+                                              .around( fileSystemRule ).around( pageCacheRule );
+
+        private File workingDirectory;
+        private FileSystemAbstraction fileSystem;
 
         @Parameterized.Parameter( 0 )
         public String version;
-        private File workingDirectory;
 
         @Parameterized.Parameters( name = "{0}" )
         public static Collection<String> versions()
@@ -87,12 +95,10 @@ public class UpgradableDatabaseTest
             );
         }
 
-        @Rule
-        public final PageCacheRule pageCacheRule = new PageCacheRule();
-
         @Before
         public void setup() throws IOException
         {
+            fileSystem = fileSystemRule.get();
             workingDirectory = testDirectory.graphDbDir();
             MigrationTestUtils.findFormatStoreDirectoryForVersion( version, workingDirectory );
         }
@@ -204,13 +210,21 @@ public class UpgradableDatabaseTest
     @RunWith( Parameterized.class )
     public static class UnsupportedVersions
     {
+        private static final String neostoreFilename = "neostore";
+
+        private final TestDirectory testDirectory = TestDirectory.testDirectory();
+        private final PageCacheRule pageCacheRule = new PageCacheRule();
+        private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+
         @Rule
-        public final TestDirectory testDirectory = TestDirectory.testDirectory();
+        public RuleChain ruleChain = RuleChain.outerRule( testDirectory )
+                .around( fileSystemRule ).around( pageCacheRule );
+
+        private File workingDirectory;
+        private FileSystemAbstraction fileSystem;
 
         @Parameterized.Parameter( 0 )
         public String version;
-        private File workingDirectory;
-        private static final String neostoreFilename = "neostore";
 
         @Parameterized.Parameters( name = "{0}" )
         public static Collection<String> versions()
@@ -218,12 +232,10 @@ public class UpgradableDatabaseTest
             return Arrays.asList( "v0.A.4", StoreVersion.HIGH_LIMIT_V3_0_0.versionString() );
         }
 
-        @Rule
-        public final PageCacheRule pageCacheRule = new PageCacheRule();
-
         @Before
         public void setup() throws IOException
         {
+            fileSystem = fileSystemRule.get();
             workingDirectory = testDirectory.graphDbDir();
             // doesn't matter which version we pick we are changing it to the wrong one...
             MigrationTestUtils.findFormatStoreDirectoryForVersion( StandardV2_1.STORE_VERSION, workingDirectory );

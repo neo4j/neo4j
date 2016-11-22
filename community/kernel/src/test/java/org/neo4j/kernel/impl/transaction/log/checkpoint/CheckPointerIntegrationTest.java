@@ -27,10 +27,12 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
@@ -52,11 +54,9 @@ import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import static java.lang.System.currentTimeMillis;
 import static java.lang.System.getProperty;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionRepository.INITIAL_LOG_VERSION;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
@@ -76,7 +76,8 @@ public class CheckPointerIntegrationTest
     {
         fs = fsRule.get();
         fs.deleteRecursively( storeDir );
-        builder = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentDatabaseBuilder( storeDir );
+        builder = new TestGraphDatabaseFactory().setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
+                .newImpermanentDatabaseBuilder( storeDir );
     }
 
     @Test

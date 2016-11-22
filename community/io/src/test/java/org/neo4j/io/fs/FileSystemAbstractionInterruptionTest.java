@@ -103,6 +103,7 @@ public class FileSystemAbstractionInterruptionTest
                 // This is good. What we expect to see.
             }
         }
+        fs.close();
     }
 
     private StoreChannel chan( boolean channelShouldBeClosed ) throws IOException

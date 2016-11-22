@@ -28,6 +28,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -36,11 +37,14 @@ public class LuceneSchemaIndexBuilderTest
 {
     @Rule
     public final TestDirectory testDir = TestDirectory.testDirectory();
+    @Rule
+    public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
     @Test
     public void readOnlyIndexCreation() throws Exception
     {
         try ( SchemaIndex schemaIndex = LuceneSchemaIndexBuilder.create()
+                .withFileSystem( fileSystemRule.get() )
                 .withConfig( getReadOnlyConfig() )
                 .withOperationalMode( OperationalMode.single )
                 .withIndexRootFolder( testDir.graphDbDir() )
@@ -56,6 +60,7 @@ public class LuceneSchemaIndexBuilderTest
     {
         try ( SchemaIndex schemaIndex = LuceneSchemaIndexBuilder.create()
                 .withConfig( getDefaultConfig() )
+                .withFileSystem( fileSystemRule.get() )
                 .withOperationalMode( OperationalMode.single )
                 .withIndexRootFolder( testDir.graphDbDir() )
                 .withIndexIdentifier( "b" )

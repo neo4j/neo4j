@@ -43,21 +43,23 @@ public class StandalonePageCacheFactoryTest
     @Test( timeout = 10000 )
     public void mustAutomaticallyStartEvictionThread() throws IOException
     {
-        FileSystemAbstraction fs = new DelegateFileSystemAbstraction( Jimfs.newFileSystem( jimConfig() ) );
-        File file = new File( "/a" ).getCanonicalFile();
-        fs.create( file ).close();
-
-        try ( PageCache cache = StandalonePageCacheFactory.createPageCache( fs );
-              PagedFile pf = cache.map( file, 4096 );
-              PageCursor cursor = pf.io( 0, PagedFile.PF_SHARED_WRITE_LOCK ) )
+        try ( FileSystemAbstraction fs = new DelegateFileSystemAbstraction( Jimfs.newFileSystem( jimConfig() ) ) )
         {
-            // The default size is currently 8MBs.
-            // It should be possible to write more than that.
-            // If the eviction thread has not been started, then this test will block forever.
-            for ( int i = 0; i < 10_000; i++ )
+            File file = new File( "/a" ).getCanonicalFile();
+            fs.create( file ).close();
+
+            try ( PageCache cache = StandalonePageCacheFactory.createPageCache( fs );
+                    PagedFile pf = cache.map( file, 4096 );
+                    PageCursor cursor = pf.io( 0, PagedFile.PF_SHARED_WRITE_LOCK ) )
             {
-                assertTrue( cursor.next() );
-                cursor.putInt( 42 );
+                // The default size is currently 8MBs.
+                // It should be possible to write more than that.
+                // If the eviction thread has not been started, then this test will block forever.
+                for ( int i = 0; i < 10_000; i++ )
+                {
+                    assertTrue( cursor.next() );
+                    cursor.putInt( 42 );
+                }
             }
         }
     }

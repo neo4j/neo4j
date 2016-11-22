@@ -22,6 +22,7 @@ package org.neo4j.server.security.enterprise.auth;
 import java.util.Collections;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import org.neo4j.bolt.BoltKernelExtension;
 import org.neo4j.graphdb.ResourceIterator;
@@ -37,7 +38,6 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.BoltConnector.EncryptionLevel.OPTIONAL;
@@ -52,8 +52,13 @@ public class EmbeddedInteraction implements NeoInteractionLevel<EnterpriseSecuri
 
     EmbeddedInteraction( Map<String, String> config ) throws Throwable
     {
+        this (config, EphemeralFileSystemAbstraction::new);
+    }
+
+    EmbeddedInteraction( Map<String, String> config, Supplier<FileSystemAbstraction> fileSystemSupplier ) throws Throwable
+    {
         TestEnterpriseGraphDatabaseFactory factory = new TestEnterpriseGraphDatabaseFactory();
-        factory.setFileSystem( new EphemeralFileSystemAbstraction() );
+        factory.setFileSystem( fileSystemSupplier.get() );
         GraphDatabaseBuilder builder = factory.newImpermanentDatabaseBuilder();
         this.fileSystem = factory.getFileSystem();
         init( builder, config );

@@ -49,14 +49,16 @@ public class TestStoreAccess
     @Test
     public void openingThroughStoreAccessShouldNotTriggerRecovery() throws Exception
     {
-        EphemeralFileSystemAbstraction snapshot = produceUncleanStore();
-        assertTrue( "Store should be unclean", isUnclean( snapshot ) );
-        File messages = new File( storeDir, "debug.log" );
-        snapshot.deleteFile( messages );
+        try ( EphemeralFileSystemAbstraction snapshot = produceUncleanStore() )
+        {
+            assertTrue( "Store should be unclean", isUnclean( snapshot ) );
+            File messages = new File( storeDir, "debug.log" );
+            snapshot.deleteFile( messages );
 
-        PageCache pageCache = pageCacheRule.getPageCache( snapshot );
-        new StoreAccess( snapshot, pageCache, storeDir ).initialize().close();
-        assertTrue( "Store should be unclean", isUnclean( snapshot ) );
+            PageCache pageCache = pageCacheRule.getPageCache( snapshot );
+            new StoreAccess( snapshot, pageCache, storeDir ).initialize().close();
+            assertTrue( "Store should be unclean", isUnclean( snapshot ) );
+        }
     }
 
     private EphemeralFileSystemAbstraction produceUncleanStore()

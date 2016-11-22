@@ -24,6 +24,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
@@ -33,7 +34,6 @@ import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.io.IOUtils;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
@@ -50,6 +50,7 @@ import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.rule.CleanupRule;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -65,10 +66,12 @@ import static org.neo4j.kernel.api.properties.Property.stringProperty;
 
 public class UniqueDatabaseIndexPopulatorTest
 {
+    private final CleanupRule cleanup = new CleanupRule();
+    private final TestDirectory testDir = TestDirectory.testDirectory();
+    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+
     @Rule
-    public final CleanupRule cleanup = new CleanupRule();
-    @Rule
-    public TestDirectory testDir = TestDirectory.testDirectory();
+    public final RuleChain ruleChain = RuleChain.outerRule( testDir ).around( cleanup ).around( fileSystemRule );
 
     private static final int LABEL_ID = 1;
     private static final int PROPERTY_KEY_ID = 2;
@@ -86,9 +89,9 @@ public class UniqueDatabaseIndexPopulatorTest
     @Before
     public void setUp() throws Exception
     {
-        DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         File folder = testDir.directory( "folder" );
-        indexStorage = new PartitionedIndexStorage( directoryFactory, fs, folder, INDEX_IDENTIFIER, false );
+        indexStorage = new PartitionedIndexStorage( directoryFactory, fileSystemRule.get(), folder, INDEX_IDENTIFIER,
+                false );
         index = LuceneSchemaIndexBuilder.create()
                 .withIndexStorage( indexStorage )
                 .build();

@@ -37,6 +37,7 @@ import org.neo4j.kernel.extension.dependency.HighestSelectionStrategy;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
@@ -48,6 +49,8 @@ public class TestLuceneSchemaBatchInsertIT
 {
     @Rule
     public final TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Rule
+    public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
     private static final Label LABEL = label( "Person" );
 
@@ -56,7 +59,7 @@ public class TestLuceneSchemaBatchInsertIT
     {
         // GIVEN
         File storeDir = testDirectory.graphDbDir();
-        BatchInserter inserter = BatchInserters.inserter( storeDir );
+        BatchInserter inserter = BatchInserters.inserter( storeDir, fileSystemRule.get() );
         inserter.createDeferredSchemaIndex( LABEL ).on( "name" ).create();
 
         // WHEN

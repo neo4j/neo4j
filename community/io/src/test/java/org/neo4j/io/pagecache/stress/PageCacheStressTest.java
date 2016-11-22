@@ -22,13 +22,13 @@ package org.neo4j.io.pagecache.stress;
 import java.io.File;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 
-import static java.lang.System.getProperty;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.Assert.assertThat;
@@ -80,16 +80,18 @@ public class PageCacheStressTest
 
     public void run() throws Exception
     {
-        DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-        PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory();
-        swapperFactory.setFileSystemAbstraction( fs );
-
-        try ( PageCache pageCacheUnderTest = new MuninnPageCache(
-                swapperFactory, numberOfCachePages, cachePageSize, tracer ) )
+        try ( FileSystemAbstraction fs = new DefaultFileSystemAbstraction() )
         {
-            PageCacheStresser pageCacheStresser = new PageCacheStresser(
-                    numberOfPages, numberOfThreads, workingDirectory );
-            pageCacheStresser.stress( pageCacheUnderTest, condition );
+            PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory();
+            swapperFactory.setFileSystemAbstraction( fs );
+
+            try ( PageCache pageCacheUnderTest = new MuninnPageCache( swapperFactory, numberOfCachePages, cachePageSize,
+                    tracer ) )
+            {
+                PageCacheStresser pageCacheStresser =
+                        new PageCacheStresser( numberOfPages, numberOfThreads, workingDirectory );
+                pageCacheStresser.stress( pageCacheUnderTest, condition );
+            }
         }
     }
 

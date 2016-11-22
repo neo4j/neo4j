@@ -33,10 +33,11 @@ import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.SharedDiscoveryService;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.backup.BackupEmbeddedIT.runBackupToolFromOtherJvmToGetExitCode;
@@ -48,14 +49,17 @@ public class ClusterSeedingIT
 {
     private Cluster backupCluster;
     private Cluster cluster;
-    private DefaultFileSystemAbstraction fsa = new DefaultFileSystemAbstraction();
+    private FileSystemAbstraction fsa;
 
     @Rule
     public TestDirectory testDir = TestDirectory.testDirectory();
+    @Rule
+    public DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
     @Before
     public void setup() throws Exception
     {
+        fsa = fileSystemRule.get();
         HashMap<String,IntFunction<String>> instanceCoreParams = new HashMap<>();
         instanceCoreParams.put(
                 OnlineBackupSettings.online_backup_server.name(),

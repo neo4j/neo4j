@@ -112,9 +112,8 @@ public abstract class DumpStoreChain<RECORD extends AbstractBaseRecord>
 
     void dump( File storeDir ) throws IOException
     {
-        DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-
-        try ( PageCache pageCache = createPageCache( fs ) )
+        try ( DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+              PageCache pageCache = createPageCache( fs ) )
         {
             DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
             Config config = Config.defaults();

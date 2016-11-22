@@ -20,6 +20,7 @@
 package org.neo4j.causalclustering.core.consensus.log.segmented;
 
 import org.hamcrest.Matchers;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -54,6 +55,12 @@ public class ReaderPoolTest
     public void before()
     {
         fsa.mkdirs( base );
+    }
+
+    @After
+    public void tearDown() throws Exception
+    {
+        fsa.close();
     }
 
     @Test

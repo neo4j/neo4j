@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
@@ -82,6 +83,7 @@ import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createP
  */
 class BackupService
 {
+
     class BackupOutcome
     {
         private final boolean consistent;
@@ -111,7 +113,7 @@ class BackupService
 
     static final String DIFFERENT_STORE = "Target directory contains full backup of a logically different store.";
 
-    private final FileSystemAbstraction fileSystem;
+    private final Supplier<FileSystemAbstraction> fileSystemSupplier;
     private final LogProvider logProvider;
     private final Log log;
     private final Monitors monitors;
@@ -123,13 +125,13 @@ class BackupService
 
     BackupService( OutputStream logDestination )
     {
-        this( new DefaultFileSystemAbstraction(), FormattedLogProvider.toOutputStream( logDestination ),
+        this( DefaultFileSystemAbstraction::new, FormattedLogProvider.toOutputStream( logDestination ),
                 new Monitors() );
     }
 
-    BackupService( FileSystemAbstraction fileSystem, LogProvider logProvider, Monitors monitors )
+    BackupService( Supplier<FileSystemAbstraction> fileSystemSupplier, LogProvider logProvider, Monitors monitors)
     {
-        this.fileSystem = fileSystem;
+        this.fileSystemSupplier = fileSystemSupplier;
         this.logProvider = logProvider;
         this.log = logProvider.getLog( getClass() );
         this.monitors = monitors;
@@ -138,7 +140,21 @@ class BackupService
     BackupOutcome doFullBackup( final String sourceHostNameOrIp, final int sourcePort, File targetDirectory,
             ConsistencyCheck consistencyCheck, Config tuningConfiguration, final long timeout, final boolean forensics )
     {
-        if ( !directoryIsEmpty( targetDirectory ) )
+        try ( FileSystemAbstraction fileSystem = fileSystemSupplier.get() )
+        {
+            return fullBackup( fileSystem, sourceHostNameOrIp, sourcePort, targetDirectory, consistencyCheck,
+                    tuningConfiguration, timeout, forensics );
+        }
+        catch ( IOException e )
+        {
+            throw Exceptions.launderedException( e );
+        }
+    }
+
+    private BackupOutcome fullBackup( FileSystemAbstraction fileSystem, String sourceHostNameOrIp, int sourcePort,
+            File targetDirectory, ConsistencyCheck consistencyCheck, Config tuningConfiguration, long timeout, boolean forensics )
+    {
+        if ( !directoryIsEmpty( fileSystem, targetDirectory ) )
         {
             throw new RuntimeException( "Can only perform a full backup into an empty directory but " +
                     targetDirectory + " is not empty" );
@@ -148,7 +164,7 @@ class BackupService
         try ( PageCache pageCache = createPageCache( fileSystem, tuningConfiguration ) )
         {
             StoreCopyClient storeCopier = new StoreCopyClient( targetDirectory, tuningConfiguration,
-                    loadKernelExtensions(), logProvider, new DefaultFileSystemAbstraction(), pageCache,
+                    loadKernelExtensions(), logProvider, fileSystem, pageCache,
                     monitors.newMonitor( StoreCopyClient.Monitor.class, getClass() ), forensics );
             FullBackupStoreCopyRequester storeCopyRequester =
                     new FullBackupStoreCopyRequester( sourceHostNameOrIp, sourcePort, timeout, forensics, monitors );
@@ -168,7 +184,7 @@ class BackupService
             {
                 log.error( "Consistency check incomplete", e );
             }
-            clearIdFiles( targetDirectory );
+            clearIdFiles( fileSystem, targetDirectory );
             return new BackupOutcome( lastCommittedTx, consistent );
         }
         catch ( Exception e )
@@ -180,14 +196,27 @@ class BackupService
     BackupOutcome doIncrementalBackup( String sourceHostNameOrIp, int sourcePort, File targetDirectory, long timeout,
             Config config ) throws IncrementalBackupNotPossibleException
     {
-        if ( !directoryContainsDb( targetDirectory ) )
+        try ( FileSystemAbstraction fileSystem = fileSystemSupplier.get() )
+        {
+            return incrementalBackup( fileSystem, sourceHostNameOrIp, sourcePort, targetDirectory, timeout, config );
+        }
+        catch ( IOException e )
+        {
+            throw Exceptions.launderedException( e );
+        }
+    }
+
+    private BackupOutcome incrementalBackup( FileSystemAbstraction fileSystem, String sourceHostNameOrIp,
+            int sourcePort, File targetDirectory, long timeout, Config config )
+    {
+        if ( !directoryContainsDb( fileSystem, targetDirectory ) )
         {
             throw new RuntimeException( targetDirectory + " doesn't contain a database" );
         }
 
         Map<String,String> temporaryDbConfig = getTemporaryDbConfig();
         config = config.with( temporaryDbConfig );
-        try ( PageCache pageCache = createPageCache( new DefaultFileSystemAbstraction(), config ) )
+        try ( PageCache pageCache = createPageCache( fileSystem, config ) )
         {
             GraphDatabaseAPI targetDb = startTemporaryDb( targetDirectory, pageCache, config.getParams() );
             long backupStartTime = System.currentTimeMillis();
@@ -201,7 +230,7 @@ class BackupService
                 targetDb.shutdown();
             }
             bumpDebugDotLogFileVersion( targetDirectory, backupStartTime );
-            clearIdFiles( targetDirectory );
+            clearIdFiles( fileSystem, targetDirectory );
             return outcome;
         }
         catch ( IOException e )
@@ -222,42 +251,49 @@ class BackupService
     BackupOutcome doIncrementalBackupOrFallbackToFull( String sourceHostNameOrIp, int sourcePort, File targetDirectory,
             ConsistencyCheck consistencyCheck, Config config, long timeout, boolean forensics )
     {
-        if ( directoryIsEmpty( targetDirectory ) )
+        try ( FileSystemAbstraction fileSystem = fileSystemSupplier.get() )
         {
-            log.info( "Previous backup not found, a new full backup will be performed." );
-            return doFullBackup( sourceHostNameOrIp, sourcePort, targetDirectory, consistencyCheck, config, timeout,
-                    forensics );
-        }
-        try
-        {
-            log.info( "Previous backup found, trying incremental backup." );
-            return doIncrementalBackup( sourceHostNameOrIp, sourcePort, targetDirectory, timeout, config );
-        }
-        catch ( IncrementalBackupNotPossibleException e )
-        {
+            if ( directoryIsEmpty( fileSystem, targetDirectory ) )
+            {
+                log.info( "Previous backup not found, a new full backup will be performed." );
+                return fullBackup( fileSystem, sourceHostNameOrIp, sourcePort, targetDirectory, consistencyCheck,
+                        config, timeout, forensics );
+            }
             try
             {
-                log.warn( "Attempt to do incremental backup failed.", e );
-                log.info( "Existing backup is too far out of date, a new full backup will be performed." );
-                FileUtils.deleteRecursively( targetDirectory );
-                return doFullBackup( sourceHostNameOrIp, sourcePort, targetDirectory, consistencyCheck, config, timeout,
-                        forensics );
+                log.info( "Previous backup found, trying incremental backup." );
+                return incrementalBackup( fileSystem, sourceHostNameOrIp, sourcePort, targetDirectory, timeout, config );
             }
-            catch ( Exception fullBackupFailure )
+            catch ( IncrementalBackupNotPossibleException e )
             {
-                throw new RuntimeException( "Failed to perform incremental backup, fell back to full backup, " +
-                        "but that failed as well: '" + fullBackupFailure.getMessage() + "'.", fullBackupFailure );
+                try
+                {
+                    log.warn( "Attempt to do incremental backup failed.", e );
+                    log.info( "Existing backup is too far out of date, a new full backup will be performed." );
+                    FileUtils.deleteRecursively( targetDirectory );
+                    return fullBackup( fileSystem, sourceHostNameOrIp, sourcePort, targetDirectory, consistencyCheck,
+                            config, timeout, forensics );
+                }
+                catch ( Exception fullBackupFailure )
+                {
+                    throw new RuntimeException( "Failed to perform incremental backup, fell back to full backup, " +
+                            "but that failed as well: '" + fullBackupFailure.getMessage() + "'.", fullBackupFailure );
+                }
             }
         }
         catch ( RuntimeException e )
         {
             if ( rootCause( e ) instanceof UpgradeNotAllowedByConfigurationException )
             {
-                throw new UnexpectedStoreVersionException( "Failed to perform backup because existing backup is from " +
-                        "a different version.", e );
+                throw new UnexpectedStoreVersionException(
+                        "Failed to perform backup because existing backup is from " + "a different version.", e );
             }
 
             throw e;
+        }
+        catch ( IOException io )
+        {
+            throw Exceptions.launderedException( io );
         }
     }
 
@@ -274,12 +310,12 @@ class BackupService
         return anonymous( transactionIdStore.getLastCommittedTransactionId() );
     }
 
-    boolean directoryContainsDb( File targetDirectory )
+    boolean directoryContainsDb( FileSystemAbstraction fileSystem, File targetDirectory )
     {
         return fileSystem.fileExists( new File( targetDirectory, MetaDataStore.DEFAULT_NAME ) );
     }
 
-    private boolean directoryIsEmpty( File targetDirectory )
+    private boolean directoryIsEmpty( FileSystemAbstraction fileSystem, File targetDirectory )
     {
         return !fileSystem.isDirectory( targetDirectory ) || 0 == fileSystem.listFiles( targetDirectory ).length;
     }
@@ -372,7 +408,7 @@ class BackupService
         return kernelExtensions;
     }
 
-    private void clearIdFiles( File targetDirectory ) throws IOException
+    private void clearIdFiles( FileSystemAbstraction fileSystem, File targetDirectory ) throws IOException
     {
         for ( File file : fileSystem.listFiles( targetDirectory ) )
         {

@@ -29,6 +29,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
@@ -71,6 +72,7 @@ public class TestLogPruning
         {
             db.shutdown();
         }
+        fs.close();
     }
 
     @Test
@@ -176,7 +178,7 @@ public class TestLogPruning
         this.rotateEveryNTransactions = rotateEveryNTransactions;
         fs = new EphemeralFileSystemAbstraction();
         TestGraphDatabaseFactory gdf = new TestGraphDatabaseFactory();
-        gdf.setFileSystem( fs );
+        gdf.setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) );
         GraphDatabaseBuilder builder = gdf.newImpermanentDatabaseBuilder();
         builder.setConfig( keep_logical_logs, logPruning );
         this.db = (GraphDatabaseAPI) builder.newGraphDatabase();

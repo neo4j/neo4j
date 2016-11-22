@@ -65,73 +65,84 @@ public class ImportCommandTest
                 .getImporterForMode( eq( "csv" ), any( Args.class ), any( Config.class ), any( OutsideWorld.class ) ) )
                 .thenReturn( mock( Importer.class ) );
 
-        ImportCommand importCommand =
-                new ImportCommand( homeDir.toPath(), testDir.directory( "conf" ).toPath(), new RealOutsideWorld(),
-                        mockImporterFactory );
+        try ( RealOutsideWorld outsideWorld = new RealOutsideWorld() )
+        {
+            ImportCommand importCommand =
+                    new ImportCommand( homeDir.toPath(), testDir.directory( "conf" ).toPath(), outsideWorld,
+                            mockImporterFactory );
 
-        String[] arguments = {"--database=foo", "--from=bar"};
+            String[] arguments = {"--database=foo", "--from=bar"};
 
-        importCommand.execute( arguments );
+            importCommand.execute( arguments );
 
-        verify( mockImporterFactory )
-                .getImporterForMode( eq( "csv" ), any( Args.class ), any( Config.class ), any( OutsideWorld.class ) );
+            verify( mockImporterFactory ).getImporterForMode( eq( "csv" ), any( Args.class ), any( Config.class ),
+                    any( OutsideWorld.class ) );
+        }
     }
 
     @Test
     public void requiresDatabaseArgument() throws Exception
     {
-        ImportCommand importCommand =
-                new ImportCommand( testDir.directory( "home" ).toPath(), testDir.directory( "conf" ).toPath(),
-                        new NullOutsideWorld() );
+        try ( NullOutsideWorld outsideWorld = new NullOutsideWorld() )
+        {
+            ImportCommand importCommand =
+                    new ImportCommand( testDir.directory( "home" ).toPath(), testDir.directory( "conf" ).toPath(),
+                            outsideWorld );
 
-        String[] arguments = {"--mode=database", "--from=bar"};
-        try
-        {
-            importCommand.execute( arguments );
-            fail( "Should have thrown an exception." );
-        }
-        catch ( IncorrectUsage e )
-        {
-            assertThat( e.getMessage(), containsString( "database" ) );
+            String[] arguments = {"--mode=database", "--from=bar"};
+            try
+            {
+                importCommand.execute( arguments );
+                fail( "Should have thrown an exception." );
+            }
+            catch ( IncorrectUsage e )
+            {
+                assertThat( e.getMessage(), containsString( "database" ) );
+            }
         }
     }
 
     @Test
     public void failIfInvalidModeSpecified() throws Exception
     {
-        ImportCommand importCommand =
-                new ImportCommand( testDir.directory( "home" ).toPath(), testDir.directory( "conf" ).toPath(),
-                        new NullOutsideWorld() );
+        try ( NullOutsideWorld outsideWorld = new NullOutsideWorld() )
+        {
+            ImportCommand importCommand =
+                    new ImportCommand( testDir.directory( "home" ).toPath(), testDir.directory( "conf" ).toPath(),
+                            outsideWorld );
 
-        String[] arguments = {"--mode=foo", "--database=bar", "--from=baz"};
-        try
-        {
-            importCommand.execute( arguments );
-            fail( "Should have thrown an exception." );
-        }
-        catch ( IncorrectUsage e )
-        {
-            assertThat( e.getMessage(), containsString( "foo" ) );
+            String[] arguments = {"--mode=foo", "--database=bar", "--from=baz"};
+            try
+            {
+                importCommand.execute( arguments );
+                fail( "Should have thrown an exception." );
+            }
+            catch ( IncorrectUsage e )
+            {
+                assertThat( e.getMessage(), containsString( "foo" ) );
+            }
         }
     }
 
     @Test
     public void failIfDestinationDatabaseAlreadyExists() throws Exception
     {
-        Path homeDir = testDir.directory( "home" ).toPath();
-        ImportCommand importCommand =
-                new ImportCommand( homeDir, testDir.directory( "conf" ).toPath(), new NullOutsideWorld() );
+        try ( NullOutsideWorld outsideWorld = new NullOutsideWorld() )
+        {
+            Path homeDir = testDir.directory( "home" ).toPath();
+            ImportCommand importCommand = new ImportCommand( homeDir, testDir.directory( "conf" ).toPath(), outsideWorld );
 
-        putStoreInDirectory( homeDir.resolve( "data" ).resolve( "databases" ).resolve( "existing.db" ) );
-        String[] arguments = {"--mode=csv", "--database=existing.db"};
-        try
-        {
-            importCommand.execute( arguments );
-            fail( "Should have thrown an exception." );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e.getMessage(), containsString( "already contains a database" ) );
+            putStoreInDirectory( homeDir.resolve( "data" ).resolve( "databases" ).resolve( "existing.db" ) );
+            String[] arguments = {"--mode=csv", "--database=existing.db"};
+            try
+            {
+                importCommand.execute( arguments );
+                fail( "Should have thrown an exception." );
+            }
+            catch ( Exception e )
+            {
+                assertThat( e.getMessage(), containsString( "already contains a database" ) );
+            }
         }
     }
 

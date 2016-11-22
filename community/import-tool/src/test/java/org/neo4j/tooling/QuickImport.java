@@ -28,6 +28,8 @@ import org.neo4j.csv.reader.CharSeekers;
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.csv.reader.Readables;
 import org.neo4j.helpers.Args;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.SimpleLogService;
 import org.neo4j.logging.FormattedLogProvider;
@@ -40,7 +42,6 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.Header;
 import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 
 import static java.lang.System.currentTimeMillis;
-
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.kernel.configuration.Settings.parseLongWithUnit;
 import static org.neo4j.tooling.DataGeneratorInput.bareboneNodeHeader;
@@ -107,19 +108,20 @@ public class QuickImport
                 generator.nodes(), generator.relationships(),
                 idType, silentBadCollector( 0 ) );
 
-        BatchImporter consumer;
-        if ( args.getBoolean( "to-csv" ) )
+        try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
         {
-            consumer = new CsvOutput( dir, nodeHeader, relationshipHeader, config );
+            BatchImporter consumer;
+            if ( args.getBoolean( "to-csv" ) )
+            {
+                consumer = new CsvOutput( dir, nodeHeader, relationshipHeader, config );
+            }
+            else
+            {
+                consumer = new ParallelBatchImporter( dir, fileSystem, importConfig,
+                        new SimpleLogService( sysoutLogProvider, sysoutLogProvider ), defaultVisible(), Config.defaults() );
+            }
+            consumer.doImport( input );
         }
-        else
-        {
-            consumer = new ParallelBatchImporter( dir, importConfig,
-                    new SimpleLogService( sysoutLogProvider, sysoutLogProvider ),
-                    defaultVisible(),
-                    Config.defaults() );
-        }
-        consumer.doImport( input );
     }
 
     private static Header parseNodeHeader( Args args, IdType idType, Extractors extractors )

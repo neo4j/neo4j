@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api;
 
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -44,7 +45,6 @@ import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema.IndexState;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -75,6 +75,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.ha.ClusterRule;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
@@ -89,6 +90,8 @@ import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
 
 public class SchemaIndexHaIT
 {
+    @ClassRule
+    public static DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
     @Rule
     public ClusterRule clusterRule = new ClusterRule( getClass() );
 
@@ -560,7 +563,7 @@ public class SchemaIndexHaIT
             if(injectLatchPredicate.test( deps.db() ))
             {
                 ControlledSchemaIndexProvider provider = new ControlledSchemaIndexProvider(
-                        new LuceneSchemaIndexProvider( new DefaultFileSystemAbstraction(),
+                        new LuceneSchemaIndexProvider( fileSystemRule.get(),
                                 DirectoryFactory.PERSISTENT, context.storeDir(), NullLogProvider.getInstance(),
                                 deps.config(), context.databaseInfo().operationalMode ) );
                 perDbIndexProvider.put( deps.db(), provider );
@@ -568,7 +571,7 @@ public class SchemaIndexHaIT
             }
             else
             {
-                return new LuceneSchemaIndexProvider( new DefaultFileSystemAbstraction(),
+                return new LuceneSchemaIndexProvider( fileSystemRule.get(),
                         DirectoryFactory.PERSISTENT, context.storeDir(), NullLogProvider.getInstance(), deps.config(),
                         context.databaseInfo().operationalMode );
             }

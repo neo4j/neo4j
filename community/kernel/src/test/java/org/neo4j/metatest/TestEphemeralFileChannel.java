@@ -19,6 +19,7 @@
  */
 package org.neo4j.metatest;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
@@ -27,6 +28,7 @@ import java.util.Arrays;
 
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.nio.ByteBuffer.allocateDirect;
 import static org.junit.Assert.assertEquals;
@@ -35,10 +37,14 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class TestEphemeralFileChannel
 {
+
+    @Rule
+    public final EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
+
     @Test
     public void smoke() throws Exception
     {
-        EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
+        EphemeralFileSystemAbstraction fs = fileSystemRule.get();
         StoreChannel channel = fs.open( new File( "yo" ), "rw" );
 
         // Clear it because we depend on it to be zeros where we haven't written
@@ -95,7 +101,7 @@ public class TestEphemeralFileChannel
         channel.read( buffer, 15 );
         buffer.flip();
         assertEquals( longValue, buffer.getLong() );
-        fs.shutdown();
+        fs.close();
     }
 
     @Test
@@ -103,7 +109,7 @@ public class TestEphemeralFileChannel
     {
         // GIVEN
         File file = new File( "myfile" );
-        EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
+        EphemeralFileSystemAbstraction fs = fileSystemRule.get();
         StoreChannel channel = fs.open( file, "rw" );
         byte[] bytes = "test".getBytes();
         channel.write( ByteBuffer.wrap( bytes ) );
@@ -117,7 +123,7 @@ public class TestEphemeralFileChannel
         // THEN
         assertEquals( bytes.length, nrOfReadBytes );
         assertTrue( Arrays.equals( bytes, readBytes ) );
-        fs.shutdown();
+        fs.close();
     }
 
     @Test
@@ -132,7 +138,7 @@ public class TestEphemeralFileChannel
          *       |
          *     file
          */
-        EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
+        EphemeralFileSystemAbstraction fs = fileSystemRule.get();
         File root = new File( "/root" ).getCanonicalFile();
         File dir1 = new File( root, "dir1" );
         File dir2 = new File( root, "dir2" );
@@ -156,6 +162,6 @@ public class TestEphemeralFileChannel
         assertEquals( asSet( subdir1, file1, file2 ), asSet( fs.listFiles( dir1 ) ) );
         assertEquals( asSet( file3 ), asSet( fs.listFiles( dir2 ) ) );
         assertEquals( asSet( file4 ), asSet( fs.listFiles( subdir1 ) ) );
-        fs.shutdown();
+        fs.close();
     }
 }

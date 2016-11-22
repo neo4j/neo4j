@@ -31,6 +31,7 @@ import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemLifecycleAdapter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
@@ -132,6 +133,7 @@ public class PlatformModule
         this.storeDir = providedStoreDir.getAbsoluteFile();
 
         fileSystem = dependencies.satisfyDependency( createFileSystemAbstraction() );
+        life.add( new FileSystemLifecycleAdapter( fileSystem ) );
 
         // Component monitoring
         monitors = externalDependencies.monitors() == null ? new Monitors() : externalDependencies.monitors();

@@ -33,6 +33,7 @@ import org.neo4j.kernel.api.impl.index.builder.LuceneIndexStorageBuilder;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.core.IsEqual.equalTo;
@@ -44,6 +45,8 @@ public class ConstraintIndexFailureIT
 {
     @Rule
     public final TestDirectory storeDir = TestDirectory.testDirectory();
+    @Rule
+    public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
     @Test
     public void shouldFailToValidateConstraintsIfUnderlyingIndexIsFailed() throws Exception
@@ -102,6 +105,7 @@ public class ConstraintIndexFailureIT
     {
         File luceneRootDirectory = new File( storeDir.directory(), "schema/index/lucene" );
         PartitionedIndexStorage indexStorage = LuceneIndexStorageBuilder.create()
+                .withFileSystem( fileSystemRule.get() )
                 .withIndexRootFolder( luceneRootDirectory )
                 .withIndexIdentifier( "1" ).build();
         indexStorage.storeIndexFailure( failure );

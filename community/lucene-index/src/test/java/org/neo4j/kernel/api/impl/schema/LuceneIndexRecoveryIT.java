@@ -222,7 +222,7 @@ public class LuceneIndexRecoveryIT
         db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
     }
 
-    private void killDb()
+    private void killDb() throws Exception
     {
         if ( db != null )
         {

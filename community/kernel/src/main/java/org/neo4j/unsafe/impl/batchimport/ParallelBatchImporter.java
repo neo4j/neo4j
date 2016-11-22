@@ -26,7 +26,6 @@ import java.util.Set;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Format;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CountsAccessor;
@@ -116,10 +115,10 @@ public class ParallelBatchImporter implements BatchImporter
      * The provided {@link ExecutionMonitor} will be decorated with {@link DynamicProcessorAssigner} for
      * optimal assignment of processors to bottleneck steps over time.
      */
-    public ParallelBatchImporter( File storeDir, Configuration config, LogService logService,
-            ExecutionMonitor executionMonitor, Config dbConfig )
+    public ParallelBatchImporter( File storeDir, FileSystemAbstraction fileSystem, Configuration config,
+            LogService logService, ExecutionMonitor executionMonitor, Config dbConfig )
     {
-        this( storeDir, new DefaultFileSystemAbstraction(), config, logService,
+        this( storeDir, fileSystem, config, logService,
                 withDynamicProcessorAssignment( executionMonitor, config ), EMPTY, dbConfig,
                 RecordFormatSelector.selectForConfig( dbConfig, NullLogProvider.getInstance() ));
     }

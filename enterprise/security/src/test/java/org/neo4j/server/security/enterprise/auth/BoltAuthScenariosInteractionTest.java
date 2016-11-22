@@ -19,10 +19,17 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
+import org.junit.Rule;
+
 import java.util.Map;
+
+import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 public class BoltAuthScenariosInteractionTest extends AuthScenariosInteractionTestBase<BoltInteraction.BoltSubject>
 {
+    @Rule
+    public EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
 
     public BoltAuthScenariosInteractionTest()
     {
@@ -35,6 +42,6 @@ public class BoltAuthScenariosInteractionTest extends AuthScenariosInteractionTe
     public NeoInteractionLevel<BoltInteraction.BoltSubject> setUpNeoServer( Map<String, String> config )
             throws Throwable
     {
-        return new BoltInteraction( config );
+        return new BoltInteraction( config, () -> new UncloseableDelegatingFileSystemAbstraction( fileSystemRule.get() ) );
     }
 }

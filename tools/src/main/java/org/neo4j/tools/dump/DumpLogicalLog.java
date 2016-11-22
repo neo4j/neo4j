@@ -300,11 +300,12 @@ public class DumpLogicalLog
         TimeZone timeZone = parseTimeZoneConfig( arguments );
         Predicate<LogEntry[]> filter = parseFilter( arguments, timeZone );
         Function<LogEntry,String> serializer = parseSerializer( filter, timeZone );
-        try ( Printer printer = getPrinter( arguments ) )
+        try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+              Printer printer = getPrinter( arguments ) )
         {
             for ( String fileAsString : arguments.orphans() )
             {
-                new DumpLogicalLog( new DefaultFileSystemAbstraction() )
+                new DumpLogicalLog( fileSystem )
                         .dump( fileAsString, printer.getFor( fileAsString ), filter, serializer );
             }
         }

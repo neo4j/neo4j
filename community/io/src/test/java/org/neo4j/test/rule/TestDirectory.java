@@ -193,25 +193,33 @@ public class TestDirectory implements TestRule
         return dir;
     }
 
-    private void complete( boolean success )
+    private void complete( boolean success ) throws IOException
     {
-        if ( success && testDirectory != null && !keepDirectoryAfterSuccessfulTest )
+        try
         {
-            try
+            if ( success && testDirectory != null && !keepDirectoryAfterSuccessfulTest )
             {
-                fileSystem.deleteRecursively( testDirectory );
+                try
+                {
+                    fileSystem.deleteRecursively( testDirectory );
+                }
+                catch ( MaybeWindowsMemoryMappedFileReleaseProblem fme )
+                {
+                    System.err.println(
+                            "Failed to delete test directory, " + "maybe due to Windows memory-mapped file problem: " +
+                                    fme.getMessage() );
+                }
+                catch ( IOException e )
+                {
+                    throw new RuntimeException( e );
+                }
             }
-            catch ( MaybeWindowsMemoryMappedFileReleaseProblem fme )
-            {
-                System.err.println( "Failed to delete test directory, " +
-                                    "maybe due to Windows memory-mapped file problem: " + fme.getMessage() );
-            }
-            catch ( IOException e )
-            {
-                throw new RuntimeException( e );
-            }
+            testDirectory = null;
         }
-        testDirectory = null;
+        finally
+        {
+            fileSystem.close();
+        }
     }
 
     private File directoryForDescription( Description description ) throws IOException

@@ -23,6 +23,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
@@ -46,6 +47,7 @@ import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.causalclustering.ClusterRule;
 import org.neo4j.test.rule.SuppressOutput;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertEquals;
@@ -60,22 +62,25 @@ import static org.neo4j.test.rule.SuppressOutput.suppress;
 
 public class ClusterIdentityIT
 {
-    @Rule
-    public SuppressOutput suppressOutput = suppress( SuppressOutput.System.err );
+    private final SuppressOutput suppressOutput = suppress( SuppressOutput.System.err );
+    private final ClusterRule clusterRule = new ClusterRule( ClusterIdentityIT.class )
+                        .withNumberOfCoreMembers( 3 )
+                        .withNumberOfReadReplicas( 0 )
+                        .withSharedCoreParam( CausalClusteringSettings.raft_log_pruning_strategy, "3 entries" )
+                        .withSharedCoreParam( CausalClusteringSettings.raft_log_rotation_size, "1K" );
+    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
     @Rule
-    public ClusterRule clusterRule = new ClusterRule( ClusterIdentityIT.class )
-            .withNumberOfCoreMembers( 3 )
-            .withNumberOfReadReplicas( 0 )
-            .withSharedCoreParam( CausalClusteringSettings.raft_log_pruning_strategy, "3 entries" )
-            .withSharedCoreParam( CausalClusteringSettings.raft_log_rotation_size, "1K" );
+    public RuleChain ruleChain = RuleChain.outerRule( suppressOutput )
+                                          .around( fileSystemRule ).around( clusterRule );
 
     private Cluster cluster;
-    private DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+    private DefaultFileSystemAbstraction fs;
 
     @Before
     public void setup() throws Exception
     {
+        fs = fileSystemRule.get();
         cluster = clusterRule.startCluster();
     }
 

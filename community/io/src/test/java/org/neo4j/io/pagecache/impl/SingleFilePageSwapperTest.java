@@ -41,6 +41,7 @@ import org.neo4j.adversaries.fs.AdversarialFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.DelegatingStoreChannel;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
@@ -59,19 +60,22 @@ import static org.neo4j.test.ByteArrayMatcher.byteArray;
 
 public class SingleFilePageSwapperTest extends PageSwapperTest
 {
-    private EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
+    private EphemeralFileSystemAbstraction ephemeralFileSystem;
+    private DefaultFileSystemAbstraction fileSystem;
     private File file;
 
     @Before
     public void setUp() throws IOException
     {
         file = new File( "file" ).getCanonicalFile();
+        ephemeralFileSystem = new EphemeralFileSystemAbstraction();
+        fileSystem = new DefaultFileSystemAbstraction();
     }
 
     @After
-    public void tearDown()
+    public void tearDown() throws Exception
     {
-        fs.shutdown();
+        IOUtils.closeAll( ephemeralFileSystem, fileSystem );
     }
 
     protected PageSwapperFactory swapperFactory()
@@ -100,7 +104,17 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
 
     protected FileSystemAbstraction getFs()
     {
-        return fs;
+        return getEphemeralFileSystem();
+    }
+
+    protected FileSystemAbstraction getEphemeralFileSystem()
+    {
+        return ephemeralFileSystem;
+    }
+
+    protected FileSystemAbstraction getRealFileSystem()
+    {
+        return fileSystem;
     }
 
     protected void assumeFalse( String message, boolean test )
@@ -215,16 +229,15 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         assumeFalse( "No file locking on Windows", SystemUtils.IS_OS_WINDOWS );
 
         PageSwapperFactory factory = createSwapperFactory();
-        DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-        factory.setFileSystemAbstraction( fs );
+        factory.setFileSystemAbstraction( fileSystem );
         File file = testDir.file( "file" );
-        fs.create( file ).close();
+        fileSystem.create( file ).close();
 
         PageSwapper pageSwapper = createSwapper( factory, file, 4, NO_CALLBACK, false );
 
         try
         {
-            StoreChannel channel = fs.open( file, "rw" );
+            StoreChannel channel = fileSystem.open( file, "rw" );
             expectedException.expect( OverlappingFileLockException.class );
             channel.tryLock();
         }
@@ -240,11 +253,10 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         assumeFalse( "No file locking on Windows", SystemUtils.IS_OS_WINDOWS ); // no file locking on Windows.
 
         PageSwapperFactory factory = createSwapperFactory();
-        DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-        factory.setFileSystemAbstraction( fs );
+        factory.setFileSystemAbstraction( fileSystem );
         File file = testDir.file( "file" );
 
-        StoreFileChannel channel = fs.create( file );
+        StoreFileChannel channel = fileSystem.create( file );
 
         try ( FileLock fileLock = channel.tryLock() )
         {
@@ -260,11 +272,10 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         assumeFalse( "No file locking on Windows", SystemUtils.IS_OS_WINDOWS ); // no file locking on Windows.
 
         PageSwapperFactory factory = createSwapperFactory();
-        DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-        factory.setFileSystemAbstraction( fs );
+        factory.setFileSystemAbstraction( fileSystem );
         File file = testDir.file( "file" );
 
-        fs.create( file ).close();
+        fileSystem.create( file ).close();
 
         ProcessBuilder pb = new ProcessBuilder(
                 ProcessUtil.getJavaExecutable().toString(),
@@ -295,14 +306,13 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         assumeFalse( "No file locking on Windows", SystemUtils.IS_OS_WINDOWS ); // no file locking on Windows.
 
         PageSwapperFactory factory = createSwapperFactory();
-        DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-        factory.setFileSystemAbstraction( fs );
+        factory.setFileSystemAbstraction( fileSystem );
         File file = testDir.file( "file" );
-        fs.create( file ).close();
+        fileSystem.create( file ).close();
 
         createSwapper( factory, file, 4, NO_CALLBACK, false ).close();
 
-        try ( StoreFileChannel channel = fs.open( file, "rw" );
+        try ( StoreFileChannel channel = fileSystem.open( file, "rw" );
               FileLock fileLock = channel.tryLock() )
         {
             assertThat( fileLock, is( not( nullValue() ) ) );
@@ -315,16 +325,15 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         assumeFalse( "No file locking on Windows", SystemUtils.IS_OS_WINDOWS ); // no file locking on Windows.
 
         PageSwapperFactory factory = createSwapperFactory();
-        DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-        factory.setFileSystemAbstraction( fs );
+        factory.setFileSystemAbstraction( fileSystem );
         File file = testDir.file( "file" );
-        fs.create( file ).close();
+        fileSystem.create( file ).close();
 
         PageSwapper pageSwapper = createSwapper( factory, file, 4, NO_CALLBACK, false );
 
         try
         {
-            StoreChannel channel = fs.open( file, "rw" );
+            StoreChannel channel = fileSystem.open( file, "rw" );
 
             Thread.currentThread().interrupt();
             pageSwapper.force();
@@ -345,8 +354,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
 
         final AtomicInteger openFilesCounter = new AtomicInteger();
         PageSwapperFactory factory = createSwapperFactory();
-        DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-        factory.setFileSystemAbstraction( new DelegatingFileSystemAbstraction( fs )
+        factory.setFileSystemAbstraction( new DelegatingFileSystemAbstraction( fileSystem )
         {
             @Override
             public StoreChannel open( File fileName, String mode ) throws IOException
@@ -364,8 +372,8 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
             }
         } );
         File file = testDir.file( "file" );
-        try ( StoreChannel ch = fs.create( file );
-              FileLock ignore = ch.tryLock() )
+        try ( StoreChannel ch = fileSystem.create( file );
+                FileLock ignore = ch.tryLock() )
         {
             createSwapper( factory, file, 4, NO_CALLBACK, false ).close();
             fail( "Creating a page swapper for a locked channel should have thrown" );

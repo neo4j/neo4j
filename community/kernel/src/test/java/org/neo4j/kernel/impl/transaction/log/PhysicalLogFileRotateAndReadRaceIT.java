@@ -30,13 +30,12 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.DeadSimpleLogVersionRepository;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.storageengine.api.ReadPastEndException;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.concurrent.OtherThreadRule;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -59,9 +58,10 @@ public class PhysicalLogFileRotateAndReadRaceIT
 {
     private final TestDirectory directory = TestDirectory.testDirectory( getClass() );
     private final LifeRule life = new LifeRule( true );
+    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
     private final OtherThreadRule<Void> t2 = new OtherThreadRule<>( getClass().getName() + "-T2" );
     @Rule
-    public final RuleChain rules = RuleChain.outerRule( directory ).around( life ).around( t2 );
+    public final RuleChain rules = RuleChain.outerRule( directory ).around( life ).around( t2 ).around( fileSystemRule );
 
     // If any of these limits are reached the test ends, that or if there's a failure of course
     private static final long LIMIT_TIME = SECONDS.toMillis( 5 );
@@ -72,12 +72,11 @@ public class PhysicalLogFileRotateAndReadRaceIT
     public void shouldNotSeeEmptyLogFileWhenReadingTransactionStream() throws Exception
     {
         // GIVEN
-        FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-        PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), fileSystem );
+        PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), fileSystemRule.get() );
         LogVersionRepository logVersionRepository = new DeadSimpleLogVersionRepository( 0 );
         PhysicalLogFile.Monitor monitor = mock( PhysicalLogFile.Monitor.class );
         LogHeaderCache headerCache = new LogHeaderCache( 10 );
-        PhysicalLogFile logFile = life.add( new PhysicalLogFile( fileSystem, logFiles, kibiBytes( 1 ),
+        PhysicalLogFile logFile = life.add( new PhysicalLogFile( fileSystemRule.get(), logFiles, kibiBytes( 1 ),
                 () -> 2L, logVersionRepository, monitor, headerCache ) );
         FlushablePositionAwareChannel writer = logFile.getWriter();
         LogPositionMarker startPosition = new LogPositionMarker();

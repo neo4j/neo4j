@@ -88,18 +88,21 @@ public class CheckTxLogs
         CheckType<?,?>[] checkTypes = parseChecks( arguments );
         File dir = parseDir( out, arguments );
 
-        FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-        PhysicalLogFiles logFiles = new PhysicalLogFiles( dir, fs );
-        int numberOfLogFilesFound = (int) (logFiles.getHighestLogVersion() - logFiles.getLowestLogVersion() + 1);
-        out.println( "Found " + numberOfLogFilesFound + " log files to verify in " + dir.getCanonicalPath() );
-
-        CheckTxLogs tool = new CheckTxLogs( out, fs );
-        PrintingInconsistenciesHandler handler = new PrintingInconsistenciesHandler( out );
-        boolean success = tool.scan( logFiles, handler, checkTypes );
-
-        if ( validateCheckPoints )
+        boolean success = false;
+        try ( FileSystemAbstraction fs = new DefaultFileSystemAbstraction() )
         {
-            success &= tool.validateCheckPoints( logFiles, handler );
+            PhysicalLogFiles logFiles = new PhysicalLogFiles( dir, fs );
+            int numberOfLogFilesFound = (int) (logFiles.getHighestLogVersion() - logFiles.getLowestLogVersion() + 1);
+            out.println( "Found " + numberOfLogFilesFound + " log files to verify in " + dir.getCanonicalPath() );
+
+            CheckTxLogs tool = new CheckTxLogs( out, fs );
+            PrintingInconsistenciesHandler handler = new PrintingInconsistenciesHandler( out );
+            success = tool.scan( logFiles, handler, checkTypes );
+
+            if ( validateCheckPoints )
+            {
+                success &= tool.validateCheckPoints( logFiles, handler );
+            }
         }
 
         if ( !success )

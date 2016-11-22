@@ -20,6 +20,7 @@
 package org.neo4j.causalclustering.core.consensus.log.segmented;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
@@ -32,6 +33,7 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalFlushableChannel;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import org.neo4j.time.Clocks;
 
 import static org.junit.Assert.assertEquals;
@@ -41,13 +43,15 @@ import static org.neo4j.logging.NullLogProvider.getInstance;
 
 public class RecoveryProtocolTest
 {
-    private EphemeralFileSystemAbstraction fsa = new EphemeralFileSystemAbstraction();
+    @Rule
+    public final EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
+
+    private EphemeralFileSystemAbstraction fsa = fileSystemRule.get();
     private ChannelMarshal<ReplicatedContent> contentMarshal = new DummyRaftableContentSerializer();
     private final File root = new File( "root" );
     private FileNames fileNames = new FileNames( root );
     private SegmentHeader.Marshal headerMarshal = new SegmentHeader.Marshal();
-    private ReaderPool readerPool = new ReaderPool( 0, getInstance(), fileNames, fsa,
-            Clocks.fakeClock() );
+    private ReaderPool readerPool = new ReaderPool( 0, getInstance(), fileNames, fsa, Clocks.fakeClock() );
 
     @Before
     public void setup()

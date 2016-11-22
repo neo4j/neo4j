@@ -43,7 +43,6 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
@@ -66,11 +65,11 @@ public class StoreMigratorTest
                 .setConfig( GraphDatabaseSettings.record_format, HighLimitV3_0_0.NAME )
                 .newGraphDatabase()
                 .shutdown();
-        FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         Config config = new Config( stringMap( pagecache_memory.name(), "8m" ) );
 
-        try ( PageCache pageCache = new ConfiguringPageCacheFactory( fs, config,
-                NULL, NullLog.getInstance() ).getOrCreatePageCache() )
+        try ( FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+              PageCache pageCache = new ConfiguringPageCacheFactory( fs, config, NULL, NullLog.getInstance() )
+                     .getOrCreatePageCache() )
         {
             // For test code sanity
             String fromStoreVersion = StoreVersion.HIGH_LIMIT_V3_0_0.versionString();

@@ -22,6 +22,7 @@ package org.neo4j.causalclustering.scenarios;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.time.Clock;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -176,12 +177,12 @@ public class CoreToCoreCopySnapshotIT
         }
     }
 
-    private int getOldestLogIdOn( CoreClusterMember clusterMember ) throws TimeoutException
+    private int getOldestLogIdOn( CoreClusterMember clusterMember ) throws TimeoutException, IOException
     {
         return clusterMember.getLogFileNames().firstKey().intValue();
     }
 
-    private int getMostRecentLogIdOn( CoreClusterMember clusterMember ) throws TimeoutException
+    private int getMostRecentLogIdOn( CoreClusterMember clusterMember ) throws TimeoutException, IOException
     {
         return clusterMember.getLogFileNames().lastKey().intValue();
     }

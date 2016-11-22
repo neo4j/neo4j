@@ -32,6 +32,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
@@ -192,7 +193,7 @@ public class RebuildCountsTest
         TestGraphDatabaseFactory dbFactory = new TestGraphDatabaseFactory();
         db = dbFactory.setUserLogProvider( userLogProvider )
                       .setInternalLogProvider( internalLogProvider )
-                      .setFileSystem( fs )
+                      .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
                       .addKernelExtension( new InMemoryIndexProviderFactory( indexProvider ) )
                       .newImpermanentDatabaseBuilder( storeDir )
                       .setConfig( index_background_sampling_enabled, "false" )

@@ -19,34 +19,39 @@
  */
 package org.neo4j.test;
 
+import java.io.File;
+import java.util.Collections;
+import java.util.Map;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.impl.factory.*;
+import org.neo4j.kernel.impl.factory.CommunityEditionModule;
+import org.neo4j.kernel.impl.factory.DatabaseInfo;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
+import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.logging.AbstractLogService;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Collections;
-import java.util.Map;
-
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.Connector.ConnectorType.BOLT;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
 
+
 /**
- * Test factory for graph databases
+ * Test factory for graph databases.
+ * Please be aware that since it's a database it will close filesystem as part of its lifecycle.
+ * If you expect your file system to be open after database is closed, use {@link UncloseableDelegatingFileSystemAbstraction}
  */
 public class TestGraphDatabaseFactory extends GraphDatabaseFactory
 {
@@ -240,20 +245,8 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
                     }
                 }.newFacade( storeDir, config,
                         GraphDatabaseDependencies.newDependencies( state.databaseDependencies() ) );
+
             }
         };
-    }
-
-    private Path tempFile( String name )
-    {
-        try
-        {
-            return Files.createTempFile( name, "tmp" );
-
-        }
-        catch ( IOException e )
-        {
-            throw new AssertionError( e );
-        }
     }
 }

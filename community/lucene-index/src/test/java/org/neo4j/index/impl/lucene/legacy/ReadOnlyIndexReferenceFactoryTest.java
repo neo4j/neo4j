@@ -31,23 +31,25 @@ import java.io.IOException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.test.rule.CleanupRule;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertSame;
 
 public class ReadOnlyIndexReferenceFactoryTest
 {
-    private TestDirectory testDirectory = TestDirectory.testDirectory();
-    private ExpectedException expectedException = ExpectedException.none();
-    private CleanupRule cleanupRule = new CleanupRule();
+    private final TestDirectory testDirectory = TestDirectory.testDirectory();
+    private final ExpectedException expectedException = ExpectedException.none();
+    private final CleanupRule cleanupRule = new CleanupRule();
+    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
     @Rule
-    public RuleChain ruleChain = RuleChain.outerRule( cleanupRule ).around( expectedException ).around( testDirectory );
+    public RuleChain ruleChain = RuleChain.outerRule( cleanupRule ).around( expectedException )
+                                          .around( testDirectory ).around( fileSystemRule );
 
     private static final String INDEX_NAME = "testIndex";
     private LuceneDataSource.LuceneFilesystemFacade filesystemFacade = LuceneDataSource.LuceneFilesystemFacade.FS;
@@ -84,12 +86,11 @@ public class ReadOnlyIndexReferenceFactoryTest
 
     private void setupIndexInfrastructure() throws IOException
     {
-        DefaultFileSystemAbstraction fileSystemAbstraction = new DefaultFileSystemAbstraction();
         File storeDir = getStoreDir();
-        indexStore = new IndexConfigStore( storeDir, fileSystemAbstraction );
+        indexStore = new IndexConfigStore( storeDir, fileSystemRule.get() );
         indexStore.set( Node.class, INDEX_NAME, MapUtil.stringMap( IndexManager.PROVIDER, "lucene", "type", "fulltext" ) );
         LuceneDataSource luceneDataSource = new LuceneDataSource( storeDir, new Config( MapUtil.stringMap() ),
-                indexStore, fileSystemAbstraction );
+                indexStore, fileSystemRule.get() );
         try
         {
             luceneDataSource.init();

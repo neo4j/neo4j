@@ -35,12 +35,11 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -53,7 +52,9 @@ import static org.neo4j.graphdb.RelationshipType.withName;
 public class RecoveryTest
 {
     @Rule
-    public DatabaseRule db = new EmbeddedDatabaseRule();
+    public final DatabaseRule db = new EmbeddedDatabaseRule();
+    @Rule
+    public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
     @Test
     public void testRecovery() throws Exception
@@ -163,10 +164,9 @@ public class RecoveryTest
 
         db.shutdown();
 
-        FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         Config config = new Config( MapUtil.stringMap(), GraphDatabaseSettings.class );
-        LuceneDataSource ds = new LuceneDataSource( storeDir, config, new IndexConfigStore( storeDir, fileSystem ),
-                fileSystem );
+        IndexConfigStore indexStore = new IndexConfigStore( storeDir, fileSystemRule.get() );
+        LuceneDataSource ds = new LuceneDataSource( storeDir, config, indexStore, fileSystemRule.get() );
         ds.start();
         ds.stop();
     }

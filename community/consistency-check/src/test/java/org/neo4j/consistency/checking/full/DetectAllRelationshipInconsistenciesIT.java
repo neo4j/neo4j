@@ -54,6 +54,7 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.Label.label;
@@ -63,10 +64,9 @@ public class DetectAllRelationshipInconsistenciesIT
 {
     private final TestDirectory directory = TestDirectory.testDirectory();
     private final RandomRule random = new RandomRule();
-    private final DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-
+    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
     @Rule
-    public final RuleChain rules = RuleChain.outerRule( random ).around( directory );
+    public final RuleChain rules = RuleChain.outerRule( random ).around( directory ).around( fileSystemRule );
 
     @Test
     public void shouldDetectSabotagedRelationshipWhereEverItIs() throws Exception
@@ -146,6 +146,7 @@ public class DetectAllRelationshipInconsistenciesIT
 
     private StoreFactory newStoreFactory( PageCache pageCache )
     {
+        DefaultFileSystemAbstraction fileSystem = fileSystemRule.get();
         return new StoreFactory( directory.directory(), getTuningConfiguration(),
                 new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem, NullLogProvider.getInstance() );
     }

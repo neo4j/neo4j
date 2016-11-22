@@ -237,4 +237,11 @@ public class AdversarialFileSystemAbstraction implements FileSystemAbstraction
         ClassLoader loader = Thread.currentThread().getContextClassLoader();
         return (ThirdPartyFileSystem) Proxy.newProxyInstance( loader, new Class[] { clazz }, handler );
     }
+
+    @Override
+    public void close() throws IOException
+    {
+        adversary.injectFailure( IOException.class, SecurityException.class );
+        delegate.close();
+    }
 }

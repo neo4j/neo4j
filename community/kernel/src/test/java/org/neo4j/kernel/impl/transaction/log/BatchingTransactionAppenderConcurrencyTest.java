@@ -24,6 +24,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.Flushable;
@@ -43,6 +44,7 @@ import org.neo4j.adversaries.CountingAdversary;
 import org.neo4j.adversaries.fs.AdversarialFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemLifecycleAdapter;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -55,10 +57,9 @@ import org.neo4j.kernel.impl.transaction.tracing.LogForceWaitEvent;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifeRule;
-import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.NullLog;
 import org.neo4j.test.Race;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.is;
@@ -96,8 +97,11 @@ public class BatchingTransactionAppenderConcurrencyTest
         executor = null;
     }
 
+    private final LifeRule life = new LifeRule();
+    private final EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
+
     @Rule
-    public final LifeRule life = new LifeRule();
+    public final RuleChain ruleChain = RuleChain.outerRule( fileSystemRule ).around( life );
 
     private final LogAppendEvent logAppendEvent = LogAppendEvent.NULL;
     private final LogFile logFile = mock( LogFile.class );
@@ -261,18 +265,17 @@ public class BatchingTransactionAppenderConcurrencyTest
         Adversary adversary = new ClassGuardedAdversary( new CountingAdversary( 1, true ),
                 failMethod( BatchingTransactionAppender.class, "force" ) );
         EphemeralFileSystemAbstraction efs = new EphemeralFileSystemAbstraction();
-        life.add( asLifecycle( efs ) ); // <-- so that it gets automatically shut down after the test
         File directory = new File( "dir" ).getCanonicalFile();
         efs.mkdirs( directory );
         FileSystemAbstraction fs = new AdversarialFileSystemAbstraction( adversary, efs );
+        life.add( new FileSystemLifecycleAdapter( fs ) );
         DatabaseHealth databaseHealth = new DatabaseHealth( mock( DatabasePanicEventGenerator.class ), NullLog.getInstance() );
         PhysicalLogFiles logFiles = new PhysicalLogFiles( directory, fs );
         LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, kibiBytes( 10 ), transactionIdStore::getLastCommittedTransactionId,
-                new DeadSimpleLogVersionRepository( 0 ), new PhysicalLogFile.Monitor.Adapter(),
-                logHeaderCache ) );
-        final BatchingTransactionAppender appender = life.add( new BatchingTransactionAppender(
-                logFile, logRotation, transactionMetadataCache, transactionIdStore,
-                legacyIndexTransactionOrdering, databaseHealth ) );
+                new DeadSimpleLogVersionRepository( 0 ), new PhysicalLogFile.Monitor.Adapter(), logHeaderCache ) );
+        final BatchingTransactionAppender appender = life.add(
+                new BatchingTransactionAppender( logFile, logRotation, transactionMetadataCache, transactionIdStore,
+                        legacyIndexTransactionOrdering, databaseHealth ) );
         life.start();
 
         // WHEN
@@ -313,18 +316,6 @@ public class BatchingTransactionAppenderConcurrencyTest
 
         // THEN perform the race. The relevant assertions are made inside the contestants.
         race.go();
-    }
-
-    private Lifecycle asLifecycle( final EphemeralFileSystemAbstraction efs )
-    {
-        return new LifecycleAdapter()
-        {
-            @Override
-            public void shutdown() throws Throwable
-            {
-                efs.shutdown();
-            }
-        };
     }
 
     protected TransactionToApply tx()

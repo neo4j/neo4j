@@ -38,6 +38,7 @@ import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -461,7 +462,8 @@ public class ClusterTest
 
     private static void clearLastTransactionCommitTimestampField( File storeDir ) throws IOException
     {
-        try ( PageCache pageCache = createPageCache( new DefaultFileSystemAbstraction() ) )
+        try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+              PageCache pageCache = createPageCache( fileSystem ) )
         {
             File neoStore = new File( storeDir, MetaDataStore.DEFAULT_NAME );
             MetaDataStore.setRecord( pageCache, neoStore, LAST_TRANSACTION_COMMIT_TIMESTAMP,

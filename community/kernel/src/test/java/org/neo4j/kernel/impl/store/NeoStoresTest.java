@@ -24,6 +24,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -35,10 +36,12 @@ import java.util.Map;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
@@ -489,7 +492,7 @@ public class NeoStoresTest
     {
         FileSystemAbstraction fileSystem = fs.get();
         File storeDir = new File( "target/test-data/set-version" ).getAbsoluteFile();
-        new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( storeDir ).shutdown();
+        createTestDatabase( fileSystem, storeDir ).shutdown();
         assertEquals( 0, MetaDataStore.setRecord( pageCache, new File( storeDir,
                 MetaDataStore.DEFAULT_NAME ).getAbsoluteFile(), Position.LOG_VERSION, 10 ) );
         assertEquals( 10, MetaDataStore.setRecord( pageCache, new File( storeDir,
@@ -1433,5 +1436,12 @@ public class NeoStoresTest
                 relDelete( relationships.next() );
             }
         }
+    }
+
+    private GraphDatabaseService createTestDatabase( FileSystemAbstraction fileSystem, File storeDir )
+    {
+        return new TestGraphDatabaseFactory()
+                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fileSystem ) )
+                .newImpermanentDatabase( storeDir );
     }
 }

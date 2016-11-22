@@ -21,12 +21,11 @@ package org.neo4j.kernel.impl.store;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.nio.ByteBuffer;
 
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -35,6 +34,7 @@ import org.neo4j.kernel.impl.storemigration.StoreFileType;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -43,18 +43,20 @@ import static org.neo4j.kernel.impl.store.id.IdGeneratorImpl.markAsSticky;
 
 public class FreeIdsAfterRecoveryTest
 {
+    private final TestDirectory directory = TestDirectory.testDirectory();
+    private final PageCacheRule pageCacheRule = new PageCacheRule();
+    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+
     @Rule
-    public final TestDirectory directory = TestDirectory.testDirectory();
-    @Rule
-    public final PageCacheRule pageCacheRule = new PageCacheRule();
-    private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+    public final RuleChain ruleChain = RuleChain.outerRule( directory ).around( fileSystemRule )
+            .around( pageCacheRule );
 
     @Test
     public void shouldCompletelyRebuildIdGeneratorsAfterCrash() throws Exception
     {
         // GIVEN
-        StoreFactory storeFactory = new StoreFactory( directory.directory(), pageCacheRule.getPageCache( fs ), fs,
-                NullLogProvider.getInstance() );
+        StoreFactory storeFactory = new StoreFactory( directory.directory(),
+                pageCacheRule.getPageCache( fileSystemRule.get() ), fileSystemRule.get(), NullLogProvider.getInstance() );
         long highId;
         try ( NeoStores stores = storeFactory.openAllNeoStores( true ) )
         {
@@ -67,14 +69,14 @@ public class FreeIdsAfterRecoveryTest
 
         // populating its .id file with a bunch of ids
         File nodeIdFile = new File( directory.directory(), StoreFile.NODE_STORE.fileName( StoreFileType.ID ) );
-        IdGeneratorImpl idGenerator = new IdGeneratorImpl( fs, nodeIdFile, 10, 10_000, false, highId );
+        IdGeneratorImpl idGenerator = new IdGeneratorImpl( fileSystemRule.get(), nodeIdFile, 10, 10_000, false, highId );
         for ( long id = 0; id < 15; id++ )
         {
             idGenerator.freeId( id );
         }
         idGenerator.close();
         // marking as sticky to simulate a crash
-        try ( StoreChannel channel = fs.open( nodeIdFile, "rw" ) )
+        try ( StoreChannel channel = fileSystemRule.get().open( nodeIdFile, "rw" ) )
         {
             markAsSticky( channel, ByteBuffer.allocate( HEADER_SIZE ) );
         }

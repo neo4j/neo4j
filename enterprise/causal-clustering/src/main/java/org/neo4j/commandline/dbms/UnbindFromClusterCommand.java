@@ -19,6 +19,7 @@
  */
 package org.neo4j.commandline.dbms;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -102,16 +103,19 @@ public class UnbindFromClusterCommand implements AdminCommand
         {
             throw new IncorrectUsage( e.getMessage() );
         }
-        catch ( UnbindFailureException | CannotWriteException e )
+        catch ( UnbindFailureException | CannotWriteException | IOException e )
         {
             throw new CommandFailed( "Unbind failed: " + e.getMessage(), e );
         }
     }
 
     private void confirmTargetDirectoryIsWritable( Path pathToSpecificDatabase )
-            throws CommandFailed, CannotWriteException
+            throws CommandFailed, CannotWriteException, IOException
     {
-        new StoreLockChecker().withLock( pathToSpecificDatabase );
+        try ( Closeable ignored = StoreLockChecker.check( pathToSpecificDatabase ) )
+        {
+            // empty
+        }
     }
 
     private Path clusterStateFrom( Path target )

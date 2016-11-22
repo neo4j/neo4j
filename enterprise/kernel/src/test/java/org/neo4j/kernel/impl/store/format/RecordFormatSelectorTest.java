@@ -19,14 +19,14 @@
  */
 package org.neo4j.kernel.impl.store.format;
 
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.RuleChain;
+
 import java.io.File;
 import java.io.IOException;
 
-import org.junit.Rule;
-import org.junit.Test;
-
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
@@ -42,6 +42,7 @@ import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
@@ -69,9 +70,13 @@ public class RecordFormatSelectorTest
 {
     private static final LogProvider LOG = NullLogProvider.getInstance();
 
+    private final PageCacheRule pageCacheRule = new PageCacheRule();
+    private final EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
+
     @Rule
-    public final PageCacheRule pageCacheRule = new PageCacheRule();
-    private final FileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
+    public RuleChain ruleChain = RuleChain.outerRule( pageCacheRule ).around( fileSystemRule );
+
+    private final FileSystemAbstraction fs = fileSystemRule.get();
     private final File storeDir = new File( "graph.db" );
 
     @Test

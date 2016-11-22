@@ -28,6 +28,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -61,7 +62,8 @@ public class DatabaseStartupTest
         db.shutdown();
 
         // mess up the version in the metadatastore
-        try ( PageCache pageCache = StandalonePageCacheFactory.createPageCache( new DefaultFileSystemAbstraction() ))
+        try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+                PageCache pageCache = StandalonePageCacheFactory.createPageCache( fileSystem ) )
         {
             MetaDataStore.setRecord( pageCache, new File(storeDir, MetaDataStore.DEFAULT_NAME ),
                     MetaDataStore.Position.STORE_VERSION, MetaDataStore.versionStringToLong( "bad" ));
@@ -100,7 +102,8 @@ public class DatabaseStartupTest
 
         // mess up the version in the metadatastore
         String badStoreVersion = "bad";
-        try ( PageCache pageCache = StandalonePageCacheFactory.createPageCache( new DefaultFileSystemAbstraction() ) )
+        try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+              PageCache pageCache = StandalonePageCacheFactory.createPageCache( fileSystem ) )
         {
             MetaDataStore.setRecord( pageCache, new File(storeDir, MetaDataStore.DEFAULT_NAME ),
                     MetaDataStore.Position.STORE_VERSION, MetaDataStore.versionStringToLong( badStoreVersion ) );

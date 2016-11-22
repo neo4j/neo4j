@@ -31,7 +31,6 @@ import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.io.IOUtils;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexBuilder;
@@ -42,6 +41,7 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -50,6 +50,8 @@ public class NonUniqueDatabaseIndexPopulatorTest
 {
     @Rule
     public final TestDirectory testDir = TestDirectory.testDirectory();
+    @Rule
+    public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
     private final DirectoryFactory dirFactory = new DirectoryFactory.InMemoryDirectoryFactory();
 
@@ -59,9 +61,9 @@ public class NonUniqueDatabaseIndexPopulatorTest
     @Before
     public void setUp() throws Exception
     {
-        DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         File folder = testDir.directory( "folder" );
-        PartitionedIndexStorage indexStorage = new PartitionedIndexStorage( dirFactory, fs, folder, "testIndex", false );
+        PartitionedIndexStorage indexStorage = new PartitionedIndexStorage( dirFactory, fileSystemRule.get(), folder,
+                "testIndex", false );
 
         index = LuceneSchemaIndexBuilder.create()
                 .withIndexStorage( indexStorage )

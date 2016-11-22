@@ -95,7 +95,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
     }
 
     @After
-    public void tearDown() throws IOException
+    public void tearDown() throws Exception
     {
         Thread.interrupted(); // Clear stray interrupts
 
@@ -103,11 +103,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
         {
             tearDownPageCache( pageCache );
         }
-
-        if ( fs instanceof EphemeralFileSystemAbstraction )
-        {
-            ((EphemeralFileSystemAbstraction) fs).shutdown();
-        }
+        fs.close();
     }
 
     protected final T createPageCache(

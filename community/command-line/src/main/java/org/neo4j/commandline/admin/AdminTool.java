@@ -19,6 +19,7 @@
  */
 package org.neo4j.commandline.admin;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -29,14 +30,17 @@ import static java.lang.String.format;
 
 public class AdminTool
 {
-    public static void main( String[] args )
+    public static void main( String[] args ) throws IOException
     {
         Path homeDir = Paths.get( System.getenv().getOrDefault( "NEO4J_HOME", "" ) );
         Path configDir = Paths.get( System.getenv().getOrDefault( "NEO4J_CONF", "" ) );
         boolean debug = System.getenv( "NEO4J_DEBUG" ) != null;
 
-        new AdminTool( CommandLocator.fromServiceLocator(), BlockerLocator.fromServiceLocator(), new RealOutsideWorld(),
-                debug ).execute( homeDir, configDir, args );
+        try ( RealOutsideWorld outsideWorld = new RealOutsideWorld() )
+        {
+            new AdminTool( CommandLocator.fromServiceLocator(), BlockerLocator.fromServiceLocator(), outsideWorld,
+                    debug ).execute( homeDir, configDir, args );
+        }
     }
 
     private final String scriptName = "neo4j-admin";

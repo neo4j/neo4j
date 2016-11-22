@@ -47,12 +47,11 @@ import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
+import static java.lang.Integer.parseInt;
+import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static java.lang.Integer.parseInt;
-import static java.util.Arrays.asList;
-
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class PartitionedIndexStorageTest
@@ -173,7 +172,7 @@ public class PartitionedIndexStorageTest
     public void shouldListIndexPartitionsSorted() throws Exception
     {
         // GIVEN
-        FileSystemAbstraction scramblingFs = new DefaultFileSystemAbstraction()
+        try ( FileSystemAbstraction scramblingFs = new DefaultFileSystemAbstraction()
                 {
                     @Override
                     public File[] listFiles( File directory )
@@ -182,28 +181,30 @@ public class PartitionedIndexStorageTest
                         Collections.shuffle( files );
                         return files.toArray( new File[files.size()] );
                     }
-                };
-        PartitionedIndexStorage myStorage = new PartitionedIndexStorage( getOrCreateDirFactory( scramblingFs ),
-                scramblingFs, testDir.graphDbDir(), INDEX_ID, false );
-        File parent = myStorage.getIndexFolder();
-        int directoryCount = 10;
-        for ( int i = 0; i < directoryCount; i++ )
+                } )
         {
-            scramblingFs.mkdirs( new File( parent, String.valueOf( i + 1 ) ) );
-        }
+            PartitionedIndexStorage myStorage =
+                    new PartitionedIndexStorage( getOrCreateDirFactory( scramblingFs ), scramblingFs, testDir.graphDbDir(), INDEX_ID, false );
+            File parent = myStorage.getIndexFolder();
+            int directoryCount = 10;
+            for ( int i = 0; i < directoryCount; i++ )
+            {
+                scramblingFs.mkdirs( new File( parent, String.valueOf( i + 1 ) ) );
+            }
 
-        // WHEN
-        Map<File,Directory> directories = myStorage.openIndexDirectories();
+            // WHEN
+            Map<File,Directory> directories = myStorage.openIndexDirectories();
 
-        // THEN
-        assertEquals( directoryCount, directories.size() );
-        int previous = 0;
-        for ( Map.Entry<File,Directory> directory : directories.entrySet() )
-        {
-            int current = parseInt( directory.getKey().getName() );
-            assertTrue( "Wanted directory " + current + " to have higher id than previous " + previous,
-                    current > previous );
-            previous = current;
+            // THEN
+            assertEquals( directoryCount, directories.size() );
+            int previous = 0;
+            for ( Map.Entry<File,Directory> directory : directories.entrySet() )
+            {
+                int current = parseInt( directory.getKey().getName() );
+                assertTrue( "Wanted directory " + current + " to have higher id than previous " + previous,
+                        current > previous );
+                previous = current;
+            }
         }
     }
 

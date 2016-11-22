@@ -21,6 +21,7 @@ package org.neo4j.server.security.auth;
 
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
+import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -85,6 +86,12 @@ public class FileUserRepositoryTest
     public FileUserRepositoryTest( Configuration fsConfig, String fsType )
     {
         fs = new DelegateFileSystemAbstraction( Jimfs.newFileSystem( fsConfig ) );
+    }
+
+    @After
+    public void tearDown() throws IOException
+    {
+        fs.close();
     }
 
     @Test

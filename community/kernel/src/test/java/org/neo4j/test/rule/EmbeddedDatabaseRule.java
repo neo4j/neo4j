@@ -73,7 +73,8 @@ public class EmbeddedDatabaseRule extends DatabaseRule
     {
         this.temp = new TempDirectory()
         {
-            private final TestDirectory testDirectory = TestDirectory.testDirectory( testClass, new DefaultFileSystemAbstraction() );
+            private final DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+            private final TestDirectory testDirectory = TestDirectory.testDirectory( testClass, fs );
             private File dbDir;
 
             @Override
@@ -86,6 +87,7 @@ public class EmbeddedDatabaseRule extends DatabaseRule
             public void delete() throws IOException
             {
                 testDirectory.cleanup();
+                fs.close();
             }
 
             @Override

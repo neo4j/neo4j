@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import org.neo4j.bolt.security.auth.AuthenticationException;
 import org.neo4j.bolt.v1.messaging.message.FailureMessage;
@@ -74,13 +75,18 @@ class BoltInteraction implements NeoInteractionLevel<BoltInteraction.BoltSubject
     private final Factory<TransportConnection> connectionFactory = SocketConnection::new;
     private final Neo4jWithSocket server;
     private Map<String,BoltSubject> subjects = new HashMap<>();
-    private EphemeralFileSystemAbstraction fileSystem;
+    private FileSystemAbstraction fileSystem;
     private EnterpriseAuthManager authManager;
 
     BoltInteraction( Map<String, String> config ) throws IOException
     {
+        this(config, EphemeralFileSystemAbstraction::new);
+    }
+
+    BoltInteraction( Map<String, String> config, Supplier<FileSystemAbstraction> fileSystemSupplier ) throws IOException
+    {
         TestEnterpriseGraphDatabaseFactory factory = new TestEnterpriseGraphDatabaseFactory();
-        fileSystem = new EphemeralFileSystemAbstraction();
+        fileSystem = fileSystemSupplier.get();
         server = new Neo4jWithSocket( getClass(),
                 factory,
                 () -> fileSystem,
@@ -194,7 +200,7 @@ class BoltInteraction implements NeoInteractionLevel<BoltInteraction.BoltSubject
         }
         subjects.clear();
         server.graphDatabaseService().shutdown();
-        fileSystem.shutdown();
+        fileSystem.close();
     }
 
     @Override
