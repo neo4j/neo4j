@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps
+package org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps
 
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.compiler.v3_2.planner._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.Cost
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{IdName, LegacyIndexSeek, LogicalPlan}
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps.legacyHintLeafPlanner
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 
 class LegacyHintLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupport {
