@@ -33,10 +33,13 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.test.TargetDirectory;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -55,28 +58,35 @@ public class MetricsKernelExtensionFactoryIT
 
     GraphDatabaseService db;
     private File outputFile;
+    private File dbPath;
 
     @Before
     public void setup() throws IOException
     {
-        File dbPath = folder.directory( "data" );
+        dbPath = folder.directory( "data" );
         outputFile = folder.file( "metrics.csv" );
-        db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( dbPath ).
-                setConfig( MetricsSettings.neoEnabled, Settings.TRUE ).
-                setConfig( csvEnabled, Settings.TRUE ).
-                setConfig( csvFile, single.name() ).
-                setConfig( csvPath, outputFile.getAbsolutePath() ).newGraphDatabase();
     }
 
     @After
     public void shutdown()
     {
-        db.shutdown();
+        if ( db != null )
+        {
+            db.shutdown();
+        }
     }
 
     @Test
     public void mustLoadMetricsExtensionWhenConfigured() throws Exception
     {
+        // Start the database
+        GraphDatabaseBuilder builder = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( dbPath );
+        db = builder.setConfig( MetricsSettings.neoEnabled, Settings.TRUE )
+                    .setConfig( csvEnabled, Settings.TRUE )
+                    .setConfig( csvFile, single.name() )
+                    .setConfig( csvPath, outputFile.getAbsolutePath() )
+                    .newGraphDatabase();
+
         // Create some activity that will show up in the metrics data.
         for ( int i = 0; i < 1000; i++ )
         {
@@ -108,5 +118,27 @@ public class MetricsKernelExtensionFactoryIT
                 committedTransactions = newCommittedTransactions;
             }
         }
+    }
+
+    @Test
+    public void mustBeAbleToStartWithNullTracer() throws Exception
+    {
+        // Start the database
+        GraphDatabaseBuilder builder = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( dbPath );
+        db = builder.setConfig( MetricsSettings.neoEnabled, Settings.TRUE )
+                    .setConfig( csvEnabled, Settings.TRUE )
+                    .setConfig( csvFile, single.name() )
+                    .setConfig( csvPath, outputFile.getAbsolutePath() )
+                    .setConfig( GraphDatabaseFacadeFactory.Configuration.tracer, "null" ) // key point!
+                    .newGraphDatabase();
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode();
+            node.setProperty( "all", "is well" );
+            tx.success();
+        }
+
+        // We assert that no exception is thrown during startup or the operation of the database.
     }
 }
