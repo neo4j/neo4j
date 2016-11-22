@@ -71,11 +71,11 @@ public class TreeNodeTest
         node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
 
         // WHEN
-        node.setGen( cursor, 0xFFFFFFFFL );
+        node.setGen( cursor, GenSafePointer.MAX_GENERATION );
 
         // THEN
         long gen = node.gen( cursor );
-        assertEquals( 0xFFFFFFFFL, gen );
+        assertEquals( GenSafePointer.MAX_GENERATION, gen );
     }
 
     @Test

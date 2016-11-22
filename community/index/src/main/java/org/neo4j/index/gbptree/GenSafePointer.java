@@ -43,11 +43,11 @@ import org.neo4j.io.pagecache.PageCursor;
  */
 class GenSafePointer
 {
-    public static final long MIN_GENERATION = 1L;
+    static final long MIN_GENERATION = 1L;
     // unsigned int
-    public static final long MAX_GENERATION = 0xFFFFFFFFL;
-    public static final long GENERATION_MASK = 0xFFFFFFFFL;
-    public static final int UNSIGNED_SHORT_MASK = 0xFFFF;
+    static final long MAX_GENERATION = 0xFFFFFFFFL;
+    static final long GENERATION_MASK = 0xFFFFFFFFL;
+    static final int UNSIGNED_SHORT_MASK = 0xFFFF;
 
     static final int CHECKSUM_SIZE = 2;
     static final int SIZE =

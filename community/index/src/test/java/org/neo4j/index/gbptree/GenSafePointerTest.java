@@ -172,7 +172,7 @@ public class GenSafePointerTest
         short reference = 0;
         for ( int i = 0; i < count; i++ )
         {
-            gsp.generation = random.nextLong( 0xFFFFFFFFL );
+            gsp.generation = random.nextLong( GenSafePointer.MAX_GENERATION );
             gsp.pointer = random.nextLong( 0xFFFF_FFFFFFFFL );
             short checksum = checksumOf( gsp );
             if ( i == 0 )
