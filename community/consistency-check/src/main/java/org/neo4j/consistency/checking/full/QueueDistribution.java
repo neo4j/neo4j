@@ -60,14 +60,14 @@ public interface QueueDistribution
         @Override
         public QueueDistributor<RelationshipRecord> distributor( long recordsPerCpu, int numberOfThreads )
         {
-            return new RelationshipNodesQueueDistributor( recordsPerCpu );
+            return new RelationshipNodesQueueDistributor( recordsPerCpu, numberOfThreads );
         }
     };
 
     class RoundRobinQueueDistributor<RECORD> implements QueueDistributor<RECORD>
     {
         private final int numberOfThreads;
-        private int nextQIndex;
+        private int nextQIndex = 0;
 
         RoundRobinQueueDistributor( int numberOfThreads )
         {
@@ -91,18 +91,22 @@ public interface QueueDistribution
     class RelationshipNodesQueueDistributor implements QueueDistributor<RelationshipRecord>
     {
         private final long recordsPerCpu;
+        private final int maxAvailableThread;
+        private final int numberOfThreads;
 
-        RelationshipNodesQueueDistributor( long recordsPerCpu )
+        RelationshipNodesQueueDistributor( long recordsPerCpu, int numberOfThreads )
         {
             this.recordsPerCpu = recordsPerCpu;
+            this.numberOfThreads = numberOfThreads;
+            this.maxAvailableThread = numberOfThreads - 1;
         }
 
         @Override
         public void distribute( RelationshipRecord relationship, RecordConsumer<RelationshipRecord> consumer )
                 throws InterruptedException
         {
-            int qIndex1 = (int) (relationship.getFirstNode() / recordsPerCpu);
-            int qIndex2 = (int) (relationship.getSecondNode() / recordsPerCpu);
+            int qIndex1 = (int) Math.min( maxAvailableThread, (Math.abs( relationship.getFirstNode() ) / recordsPerCpu) );
+            int qIndex2 = (int) Math.min( maxAvailableThread, (Math.abs( relationship.getSecondNode() ) / recordsPerCpu) );
             try
             {
                 consumer.accept( relationship, qIndex1 );
@@ -114,7 +118,8 @@ public interface QueueDistribution
             catch ( ArrayIndexOutOfBoundsException e )
             {
                 throw Exceptions.withMessage( e, e.getMessage() + ", recordsPerCPU:" + recordsPerCpu +
-                        ", relationship:" + relationship );
+                        ", relationship:" + relationship +
+                        ", number of threads: " + numberOfThreads );
             }
         }
     }
