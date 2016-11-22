@@ -143,7 +143,7 @@ public class DefaultCacheAccess implements CacheAccess
             }
 
             return id >= threadIndex * recordsPerCPU &&
-                   id <= (threadIndex + 1) * recordsPerCPU;
+                   id < (threadIndex + 1) * recordsPerCPU;
         }
 
         @Override
