@@ -95,7 +95,8 @@ public class StoreFetcherTest
         fetcher.copyStore( localhost, wantedStoreId, new File( "destination" ) );
 
         // then
-        verify( txPullClient ).pullTransactions( eq( localhost ), eq( wantedStoreId ), eq( lastFlushedTxId - 1 ), any( TxPullResponseListener.class ) );
+        long previousTxId = lastFlushedTxId - 1; // the interface is defined as asking for the one preceding
+        verify( txPullClient ).pullTransactions( eq( localhost ), eq( wantedStoreId ), eq( previousTxId ), any( TxPullResponseListener.class ) );
     }
 
     @Test

@@ -67,7 +67,7 @@ public class StoreFetcher
     {
         ReadOnlyTransactionIdStore transactionIdStore = new ReadOnlyTransactionIdStore( pageCache, storeDir );
         long lastCommittedTxId = transactionIdStore.getLastCommittedTransactionId();
-        return pullTransactions( from, expectedStoreId, storeDir, lastCommittedTxId );
+        return pullTransactions( from, expectedStoreId, storeDir, lastCommittedTxId + 1 );
     }
 
     public void copyStore( MemberId from, StoreId expectedStoreId, File destDir )
@@ -78,13 +78,9 @@ public class StoreFetcher
             log.info( "Copying store from %s", from );
             long lastFlushedTxId = storeCopyClient.copyStoreFiles( from, expectedStoreId, new StreamToDisk( destDir, fs ) );
 
-            // We require at least one transaction for extracting the log index of the consensus log.
-            // Given there might not have been any activity on the source server we need to ask for the
-            // log entry for the lastFlushedTxId even though we've already applied its contents
-            long pullTxIndex = lastFlushedTxId - 1;
-            log.info( "Store files need to be recovered starting from: %d", pullTxIndex );
+            log.info( "Store files need to be recovered starting from: %d", lastFlushedTxId );
 
-            CatchupResult catchupResult = pullTransactions( from, expectedStoreId, destDir, pullTxIndex );
+            CatchupResult catchupResult = pullTransactions( from, expectedStoreId, destDir, lastFlushedTxId );
             if ( catchupResult != SUCCESS_END_OF_STREAM )
             {
                 throw new StreamingTransactionsFailedException( "Failed to pull transactions: " + catchupResult );
@@ -102,14 +98,14 @@ public class StoreFetcher
         {
             log.info( "Pulling transactions from: %d", fromTxId );
 
-            long pullRequestTxId = fromTxId;
+            long previousTxId = fromTxId - 1;
 
             CatchupResult lastStatus;
             do
             {
-                TxPullRequestResult result = txPullClient.pullTransactions( from, expectedStoreId, pullRequestTxId, writer );
+                TxPullRequestResult result = txPullClient.pullTransactions( from, expectedStoreId, previousTxId, writer );
                 lastStatus = result.catchupResult();
-                pullRequestTxId = result.lastTxId();
+                previousTxId = result.lastTxId();
             }
             while ( lastStatus == SUCCESS_END_OF_BATCH );
 
