@@ -20,6 +20,7 @@
 package org.neo4j.causalclustering.core;
 
 import java.io.File;
+import java.util.Collections;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -47,13 +48,28 @@ public class CoreGraphDatabase extends GraphDatabaseFacade
         this( storeDir, params, dependencies, new HazelcastDiscoveryServiceFactory() );
     }
 
+    public CoreGraphDatabase( File storeDir, Config config,
+            GraphDatabaseFacadeFactory.Dependencies dependencies )
+    {
+        this( storeDir, config, dependencies, new HazelcastDiscoveryServiceFactory() );
+    }
+
     public CoreGraphDatabase( File storeDir, Map<String,String> params,
             GraphDatabaseFacadeFactory.Dependencies dependencies, DiscoveryServiceFactory discoveryServiceFactory )
     {
-        CustomIOConfigValidator.assertCustomIOConfigNotUsed( new Config( params ), CUSTOM_IO_EXCEPTION_MESSAGE );
+        this( storeDir,
+                Config.embeddedDefaults( params ),
+                dependencies, discoveryServiceFactory );
+    }
+
+    public CoreGraphDatabase( File storeDir, Config config,
+            GraphDatabaseFacadeFactory.Dependencies dependencies, DiscoveryServiceFactory discoveryServiceFactory )
+    {
+        CustomIOConfigValidator.assertCustomIOConfigNotUsed( config,
+                CUSTOM_IO_EXCEPTION_MESSAGE );
         Function<PlatformModule,EditionModule> factory =
                 ( platformModule ) -> new EnterpriseCoreEditionModule( platformModule, discoveryServiceFactory );
-        new GraphDatabaseFacadeFactory( DatabaseInfo.CORE, factory ).initFacade( storeDir, params, dependencies, this );
+        new GraphDatabaseFacadeFactory( DatabaseInfo.CORE, factory ).initFacade( storeDir, config, dependencies, this );
     }
 
     public MemberId id()

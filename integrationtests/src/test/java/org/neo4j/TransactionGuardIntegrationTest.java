@@ -569,7 +569,7 @@ public class TransactionGuardIntegrationTest
         protected GraphDatabaseBuilder.DatabaseCreator createImpermanentDatabaseCreator( File storeDir,
                 TestGraphDatabaseFactoryState state )
         {
-            return config -> customFacadeFactory.newFacade( storeDir, config,
+            return config -> customFacadeFactory.newFacade( storeDir, Config.embeddedDefaults().with( config ),
                     GraphDatabaseDependencies.newDependencies( state.databaseDependencies() ) );
         }
     }

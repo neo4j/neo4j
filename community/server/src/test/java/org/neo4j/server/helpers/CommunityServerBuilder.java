@@ -77,9 +77,9 @@ public class CommunityServerBuilder
 
     private static LifecycleManagingDatabase.GraphFactory  IN_MEMORY_DB = ( config, dependencies ) -> {
         File storeDir = config.get( DatabaseManagementSystemSettings.database_path );
-        Map<String, String> params = config.getParams();
-        params.put( GraphDatabaseFacadeFactory.Configuration.ephemeral.name(), "true" );
-        return new ImpermanentGraphDatabase( storeDir, params, GraphDatabaseDependencies.newDependencies(dependencies) );
+        return new ImpermanentGraphDatabase( storeDir,
+                config.with( stringMap( GraphDatabaseFacadeFactory.Configuration.ephemeral.name(), "true" ) ),
+                GraphDatabaseDependencies.newDependencies( dependencies ) );
     };
 
     private Clock clock = null;

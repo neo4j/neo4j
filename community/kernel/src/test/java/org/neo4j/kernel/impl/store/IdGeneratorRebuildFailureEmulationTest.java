@@ -236,9 +236,9 @@ public class IdGeneratorRebuildFailureEmulationTest
             new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
             {
                 @Override
-                protected PlatformModule createPlatform( File storeDir, Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade facade )
+                protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies, GraphDatabaseFacade facade )
                 {
-                    return new ImpermanentPlatformModule( storeDir, params, databaseInfo, dependencies, facade )
+                    return new ImpermanentPlatformModule( storeDir, config, databaseInfo, dependencies, facade )
                     {
                         @Override
                         protected FileSystemAbstraction createFileSystemAbstraction()

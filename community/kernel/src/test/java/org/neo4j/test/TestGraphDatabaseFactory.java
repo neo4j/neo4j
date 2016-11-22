@@ -32,6 +32,7 @@ import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseDependencies;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
@@ -196,10 +197,10 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
                 return new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
                 {
                     @Override
-                    protected PlatformModule createPlatform( File storeDir, Map<String,String> params,
+                    protected PlatformModule createPlatform( File storeDir, Config config,
                             Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
                     {
-                        return new ImpermanentGraphDatabase.ImpermanentPlatformModule( storeDir, params, databaseInfo,
+                        return new ImpermanentGraphDatabase.ImpermanentPlatformModule( storeDir, config, databaseInfo,
                                 dependencies, graphDatabaseFacade )
                         {
                             @Override
@@ -244,7 +245,7 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
 
                         };
                     }
-                }.newFacade( storeDir, config,
+                }.newFacade( storeDir, Config.embeddedDefaults().with( config ),
                         GraphDatabaseDependencies.newDependencies( state.databaseDependencies() ) );
 
             }

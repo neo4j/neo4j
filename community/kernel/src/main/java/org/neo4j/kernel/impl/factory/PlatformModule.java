@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.factory;
 import java.io.File;
 import java.io.IOException;
 import java.time.Clock;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -66,6 +65,8 @@ import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
+
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 /**
  * Platform module for {@link org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory}. This creates
@@ -111,7 +112,14 @@ public class PlatformModule
 
     public final SystemNanoClock clock;
 
-    public PlatformModule( File providedStoreDir, Map<String, String> params, DatabaseInfo databaseInfo,
+    public PlatformModule( File providedStoreDir, Map<String,String> params, DatabaseInfo databaseInfo,
+            GraphDatabaseFacadeFactory.Dependencies externalDependencies, GraphDatabaseFacade graphDatabaseFacade )
+    {
+        this( providedStoreDir, Config.embeddedDefaults().with( params ), databaseInfo, externalDependencies,
+                graphDatabaseFacade );
+    }
+
+    public PlatformModule( File providedStoreDir, Config config, DatabaseInfo databaseInfo,
             GraphDatabaseFacadeFactory.Dependencies externalDependencies, GraphDatabaseFacade graphDatabaseFacade )
     {
         this.databaseInfo = databaseInfo;
@@ -123,15 +131,10 @@ public class PlatformModule
         life = dependencies.satisfyDependency( createLife() );
         this.graphDatabaseFacade = dependencies.satisfyDependency( graphDatabaseFacade );
 
-        if ( !params.containsKey( GraphDatabaseSettings.neo4j_home.name() ) )
-        {
-            params = new HashMap<>( params );
-            params.put( GraphDatabaseSettings.neo4j_home.name(), providedStoreDir.getAbsolutePath() );
-        }
-
         // SPI - provided services
-        config = dependencies.satisfyDependency( new Config( params, getSettingsClasses(
-                externalDependencies.settingsClasses(), externalDependencies.kernelExtensions() ) ) );
+        this.config = dependencies.satisfyDependency( config.withDefaults(
+                stringMap( GraphDatabaseSettings.neo4j_home.name(), providedStoreDir.getAbsolutePath() )
+        ) );
 
         this.storeDir = providedStoreDir.getAbsoluteFile();
 

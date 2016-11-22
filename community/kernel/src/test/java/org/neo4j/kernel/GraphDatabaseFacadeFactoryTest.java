@@ -27,7 +27,6 @@ import org.mockito.Mockito;
 
 import java.io.File;
 import java.util.Collections;
-import java.util.Map;
 import java.util.function.Supplier;
 
 import org.neo4j.helpers.Exceptions;
@@ -121,14 +120,14 @@ public class GraphDatabaseFacadeFactoryTest
                 (p) -> Mockito.mock( EditionModule.class, Mockito.RETURNS_DEEP_STUBS ))
         {
             @Override
-            protected PlatformModule createPlatform( File storeDir, Map<String,String> params,
+            protected PlatformModule createPlatform( File storeDir, Config config,
                     Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
             {
                 final LifeSupport lifeMock = mock( LifeSupport.class );
                 doThrow( startupError ).when( lifeMock ).start();
                 doAnswer( invocation -> invocation.getArguments()[0] ).when( lifeMock ).add( any( Lifecycle.class ) );
 
-                return new PlatformModule( storeDir, params, databaseInfo, dependencies, graphDatabaseFacade )
+                return new PlatformModule( storeDir, config, databaseInfo, dependencies, graphDatabaseFacade )
                 {
                     @Override
                     public LifeSupport createLife()

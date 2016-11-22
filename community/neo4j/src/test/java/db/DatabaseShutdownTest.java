@@ -102,10 +102,10 @@ public class DatabaseShutdownTest
                 }
 
                 @Override
-                protected PlatformModule createPlatform( File storeDir, Map<String,String> params,
+                protected PlatformModule createPlatform( File storeDir, Config config,
                         Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
                 {
-                    return new PlatformModule( storeDir, params, databaseInfo, dependencies, graphDatabaseFacade )
+                    return new PlatformModule( storeDir, config, databaseInfo, dependencies, graphDatabaseFacade )
                     {
                         @Override
                         protected PageCache createPageCache( FileSystemAbstraction fileSystem, Config config,
@@ -124,7 +124,7 @@ public class DatabaseShutdownTest
                         }
                     };
                 }
-            }.newFacade( storeDir, config, dependencies );
+            }.newFacade( storeDir, Config.embeddedDefaults().with( config ), dependencies );
         }
 
         LifecycleStatus getNeoStoreDataSourceStatus() throws NoSuchFieldException, IllegalAccessException

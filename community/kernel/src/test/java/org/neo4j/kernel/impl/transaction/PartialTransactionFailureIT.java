@@ -38,6 +38,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStoreExtension;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
@@ -85,9 +86,9 @@ public class PartialTransactionFailureIT
                 new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
                 {
                     @Override
-                    protected PlatformModule createPlatform( File storeDir, Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
+                    protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
                     {
-                        return new PlatformModule( storeDir, params, databaseInfo, dependencies, graphDatabaseFacade )
+                        return new PlatformModule( storeDir, config, databaseInfo, dependencies, graphDatabaseFacade )
                         {
                             @Override
                             protected FileSystemAbstraction createFileSystemAbstraction()

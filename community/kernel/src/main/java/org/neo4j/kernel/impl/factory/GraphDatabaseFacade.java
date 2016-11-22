@@ -205,14 +205,14 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
      *
      * Any required dependencies are resolved using the resolver obtained from the SPI.
      */
-    public final void init( SPI spi, Config config )
+    public final void init( SPI spi )
     {
         DependencyResolver resolver = spi.resolver();
         init(
             spi,
             resolver.resolveDependency( Guard.class ),
             resolver.resolveDependency( ThreadToStatementContextBridge.class ),
-            config
+            resolver.resolveDependency( Config.class )
         );
     }
 

@@ -20,9 +20,11 @@
 package org.neo4j.causalclustering.readreplica;
 
 import java.io.File;
+import java.util.Collections;
 import java.util.Map;
 import java.util.function.Function;
 
+import org.neo4j.causalclustering.core.CausalClusterConfigurationValidator;
 import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
 import org.neo4j.causalclustering.discovery.HazelcastDiscoveryServiceFactory;
 import org.neo4j.kernel.configuration.Config;
@@ -44,12 +46,26 @@ public class ReadReplicaGraphDatabase extends GraphDatabaseFacade
         this( storeDir, params, dependencies, new HazelcastDiscoveryServiceFactory() );
     }
 
+    public ReadReplicaGraphDatabase( File storeDir, Config config, Dependencies dependencies )
+    {
+        this( storeDir, config, dependencies, new HazelcastDiscoveryServiceFactory() );
+    }
+
     public ReadReplicaGraphDatabase( File storeDir, Map<String,String> params, Dependencies dependencies,
             DiscoveryServiceFactory discoveryServiceFactory )
     {
-        CustomIOConfigValidator.assertCustomIOConfigNotUsed( new Config( params ), CUSTOM_IO_EXCEPTION_MESSAGE );
+        this( storeDir,
+                Config.embeddedDefaults( params, Collections.emptyList() ),
+                dependencies, discoveryServiceFactory );
+    }
+
+    public ReadReplicaGraphDatabase( File storeDir, Config config, Dependencies dependencies,
+            DiscoveryServiceFactory discoveryServiceFactory )
+    {
+        CustomIOConfigValidator.assertCustomIOConfigNotUsed( config, CUSTOM_IO_EXCEPTION_MESSAGE );
         Function<PlatformModule,EditionModule> factory =
                 ( platformModule ) -> new EnterpriseReadReplicaEditionModule( platformModule, discoveryServiceFactory );
-        new GraphDatabaseFacadeFactory( DatabaseInfo.READ_REPLICA, factory ).initFacade( storeDir, params, dependencies, this );
+        new GraphDatabaseFacadeFactory( DatabaseInfo.READ_REPLICA, factory ).initFacade( storeDir, config,
+                dependencies, this );
     }
 }

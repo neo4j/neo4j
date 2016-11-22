@@ -25,6 +25,7 @@ import java.util.Map;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseDependencies;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -72,6 +73,16 @@ public class EmbeddedGraphDatabase extends GraphDatabaseFacade
         create( storeDir, params, dependencies );
     }
 
+    /**
+     * Internal constructor
+     */
+    public EmbeddedGraphDatabase( File storeDir,
+            Config config,
+            GraphDatabaseFacadeFactory.Dependencies dependencies )
+    {
+        create( storeDir, config, dependencies );
+    }
+
     protected void create( File storeDir, Map<String, String> params,
                                       GraphDatabaseFacadeFactory.Dependencies dependencies)
     {
@@ -79,5 +90,14 @@ public class EmbeddedGraphDatabase extends GraphDatabaseFacade
                 .settingsClasses( asList( append( GraphDatabaseSettings.class, dependencies.settingsClasses() ) ) );
         new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
                 .initFacade( storeDir, params, newDependencies, this );
+    }
+
+    protected void create( File storeDir, Config config,
+            GraphDatabaseFacadeFactory.Dependencies dependencies)
+    {
+        GraphDatabaseDependencies newDependencies = newDependencies( dependencies )
+                .settingsClasses( asList( append( GraphDatabaseSettings.class, dependencies.settingsClasses() ) ) );
+        new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
+                .initFacade( storeDir, config, newDependencies, this );
     }
 }

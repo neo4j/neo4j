@@ -31,6 +31,7 @@ import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
@@ -52,12 +53,12 @@ import static org.neo4j.kernel.impl.query.QueryEngineProvider.noEngine;
  * This is the main factory for creating database instances. It delegates creation to three different modules
  * ({@link PlatformModule}, {@link EditionModule}, and {@link DataSourceModule}),
  * which create all the specific services needed to run a graph database.
- * <p/>
+ * <p>
  * It is abstract in order for subclasses to specify their own {@link org.neo4j.kernel.impl.factory.EditionModule}
- * implementations. Subclasses also have to set the edition name
- * in overridden version of {@link #initFacade(File, Map, GraphDatabaseFacadeFactory.Dependencies, GraphDatabaseFacade)},
+ * implementations. Subclasses also have to set the edition name in overridden version of
+ * {@link #initFacade(File, Map, GraphDatabaseFacadeFactory.Dependencies, GraphDatabaseFacade)},
  * which is used for logging and similar.
- * <p/>
+ * <p>
  * To create test versions of databases, override an edition factory (e.g. {@link org.neo4j.kernel.impl.factory
  * .CommunityFacadeFactory}), and replace modules
  * with custom versions that instantiate alternative services.
@@ -116,15 +117,14 @@ public class GraphDatabaseFacadeFactory
      * Instantiate a graph database given configuration and dependencies.
      *
      * @param storeDir the directory where the Neo4j data store is located
-     * @param params configuration parameters
+     * @param config configuration
      * @param dependencies the dependencies required to construct the {@link GraphDatabaseFacade}
      * @return the newly constructed {@link GraphDatabaseFacade}
      */
-    public GraphDatabaseFacade newFacade( File storeDir, Map<String,String> params, final Dependencies dependencies )
+    public GraphDatabaseFacade newFacade( File storeDir, Config config, final Dependencies dependencies )
     {
-        return initFacade( storeDir, params, dependencies, new GraphDatabaseFacade() );
+        return initFacade( storeDir, config, dependencies, new GraphDatabaseFacade() );
     }
-
     /**
      * Instantiate a graph database given configuration, dependencies, and a custom implementation of {@link org
      * .neo4j.kernel.impl.factory.GraphDatabaseFacade}.
@@ -138,7 +138,23 @@ public class GraphDatabaseFacadeFactory
     public GraphDatabaseFacade initFacade( File storeDir, Map<String,String> params, final Dependencies dependencies,
             final GraphDatabaseFacade graphDatabaseFacade )
     {
-        PlatformModule platform = createPlatform( storeDir, params, dependencies, graphDatabaseFacade );
+        return initFacade( storeDir, Config.embeddedDefaults().with( params ), dependencies, graphDatabaseFacade );
+    }
+
+    /**
+     * Instantiate a graph database given configuration, dependencies, and a custom implementation of {@link org
+     * .neo4j.kernel.impl.factory.GraphDatabaseFacade}.
+     *
+     * @param storeDir the directory where the Neo4j data store is located
+     * @param config configuration
+     * @param dependencies the dependencies required to construct the {@link GraphDatabaseFacade}
+     * @param graphDatabaseFacade the already created facade which needs initialisation
+     * @return the initialised {@link GraphDatabaseFacade}
+     */
+    public GraphDatabaseFacade initFacade( File storeDir, Config config, final Dependencies dependencies,
+            final GraphDatabaseFacade graphDatabaseFacade )
+    {
+        PlatformModule platform = createPlatform( storeDir, config, dependencies, graphDatabaseFacade );
         EditionModule edition = editionFactory.apply( platform );
 
         AtomicReference<QueryExecutionEngine> queryEngine = new AtomicReference<>( noEngine() );
@@ -221,10 +237,10 @@ public class GraphDatabaseFacadeFactory
     /**
      * Create the platform module. Override to replace with custom module.
      */
-    protected PlatformModule createPlatform( File storeDir, Map<String,String> params, final Dependencies dependencies,
+    protected PlatformModule createPlatform( File storeDir, Config config, final Dependencies dependencies,
             final GraphDatabaseFacade graphDatabaseFacade )
     {
-        return new PlatformModule( storeDir, params, databaseInfo, dependencies, graphDatabaseFacade );
+        return new PlatformModule( storeDir, config, databaseInfo, dependencies, graphDatabaseFacade );
     }
 
     /**

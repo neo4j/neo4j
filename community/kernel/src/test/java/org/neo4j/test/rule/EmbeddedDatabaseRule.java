@@ -28,7 +28,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 
@@ -41,7 +40,6 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 public class EmbeddedDatabaseRule extends DatabaseRule
 {
     private final TempDirectory temp;
-    private Config config = Config.empty();
 
     public EmbeddedDatabaseRule()
     {
@@ -130,12 +128,12 @@ public class EmbeddedDatabaseRule extends DatabaseRule
     {
         return (EmbeddedDatabaseRule) super.startLazily();
     }
-
+/*
     public EmbeddedDatabaseRule withConfig(Config config )
     {
         this.config = config;
         return this;
-    }
+    }*/
 
     @Override
     public String getStoreDir()
@@ -158,8 +156,7 @@ public class EmbeddedDatabaseRule extends DatabaseRule
     @Override
     protected GraphDatabaseBuilder newBuilder( GraphDatabaseFactory factory )
     {
-        return factory.newEmbeddedDatabaseBuilder( temp.root().getAbsoluteFile() )
-                .setConfig( config.getParams() );
+        return factory.newEmbeddedDatabaseBuilder( temp.root().getAbsoluteFile() );
     }
 
     @Override

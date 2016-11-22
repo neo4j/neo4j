@@ -130,9 +130,10 @@ public class ExternallyManagedPageCache implements PageCache
             return new GraphDatabaseFacadeFactory( DatabaseInfo.ENTERPRISE, EnterpriseEditionModule::new )
             {
                 @Override
-                protected PlatformModule createPlatform( File storeDir, Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
+                protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies,
+                        GraphDatabaseFacade graphDatabaseFacade )
                 {
-                    return new PlatformModule( storeDir, params, databaseInfo, dependencies, graphDatabaseFacade )
+                    return new PlatformModule( storeDir, config, databaseInfo, dependencies, graphDatabaseFacade )
                     {
 
                         @Override
@@ -142,7 +143,7 @@ public class ExternallyManagedPageCache implements PageCache
                         }
                     };
                 }
-            }.newFacade( storeDir, config, dependencies );
+            }.newFacade( storeDir, Config.embeddedDefaults().with( config ), dependencies );
         }
 
         public GraphDatabaseFactoryWithPageCacheFactory setKernelExtensions( Iterable<KernelExtensionFactory<?>> newKernelExtensions )

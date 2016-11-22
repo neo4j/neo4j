@@ -22,6 +22,7 @@ package org.neo4j.graphdb;
 import java.io.File;
 import java.util.Map;
 
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.enterprise.EnterpriseEditionModule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -34,5 +35,12 @@ public class EnterpriseGraphDatabase extends GraphDatabaseFacade
     {
         new GraphDatabaseFacadeFactory( DatabaseInfo.ENTERPRISE, EnterpriseEditionModule::new )
                 .initFacade( storeDir, params, dependencies, this );
+    }
+
+    public EnterpriseGraphDatabase( File storeDir, Config config,
+            GraphDatabaseFacadeFactory.Dependencies dependencies )
+    {
+        new GraphDatabaseFacadeFactory( DatabaseInfo.ENTERPRISE, EnterpriseEditionModule::new )
+                .initFacade( storeDir, config, dependencies, this );
     }
 }
