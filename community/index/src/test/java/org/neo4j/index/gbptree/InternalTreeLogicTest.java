@@ -40,7 +40,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-import static org.neo4j.index.Modifier.Options.DEFAULTS;
+import static org.neo4j.index.IndexWriter.Options.DEFAULTS;
 import static org.neo4j.index.ValueAmenders.insertNew;
 import static org.neo4j.index.ValueAmenders.overwrite;
 
@@ -58,7 +58,7 @@ public class InternalTreeLogicTest
     private final SimpleIdProvider id = new SimpleIdProvider();
     private final Layout<MutableLong,MutableLong> layout = new SimpleLongLayout();
     private final TreeNode<MutableLong,MutableLong> node = new TreeNode<>( pageSize, layout );
-    private final InternalTreeLogic<MutableLong,MutableLong> indexModifier = new InternalTreeLogic<>( id, node, layout );
+    private final InternalTreeLogic<MutableLong,MutableLong> treeLogic = new InternalTreeLogic<>( id, node, layout );
 
     private final PageAwareByteArrayCursor cursor = new PageAwareByteArrayCursor( pageSize );
     private final int maxKeyCount = node.leafMaxKeyCount();
@@ -686,14 +686,14 @@ public class InternalTreeLogicTest
     {
         insertKey.setValue( key );
         insertValue.setValue( value );
-        return indexModifier.insert( cursor, insertKey, insertValue, amender, DEFAULTS,
+        return treeLogic.insert( cursor, insertKey, insertValue, amender, DEFAULTS,
                 STABLE_GENERATION, UNSTABLE_GENERATION );
     }
 
     private MutableLong remove( long key, MutableLong into ) throws IOException
     {
         insertKey.setValue( key );
-        return indexModifier.remove( cursor, insertKey, into, STABLE_GENERATION, UNSTABLE_GENERATION );
+        return treeLogic.remove( cursor, insertKey, into, STABLE_GENERATION, UNSTABLE_GENERATION );
     }
 
     private class SimpleIdProvider implements IdProvider

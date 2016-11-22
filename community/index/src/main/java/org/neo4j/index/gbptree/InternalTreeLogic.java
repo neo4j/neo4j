@@ -21,7 +21,7 @@ package org.neo4j.index.gbptree;
 
 import java.io.IOException;
 
-import org.neo4j.index.Modifier;
+import org.neo4j.index.IndexWriter;
 import org.neo4j.index.ValueAmender;
 import org.neo4j.io.pagecache.PageCursor;
 
@@ -88,7 +88,7 @@ class InternalTreeLogic<KEY,VALUE>
     private final KEY readKey;
     private final VALUE readValue;
 
-    public InternalTreeLogic( IdProvider idProvider, TreeNode<KEY,VALUE> bTreeNode, Layout<KEY,VALUE> layout )
+    InternalTreeLogic( IdProvider idProvider, TreeNode<KEY,VALUE> bTreeNode, Layout<KEY,VALUE> layout )
     {
         this.idProvider = idProvider;
         this.bTreeNode = bTreeNode;
@@ -116,7 +116,7 @@ class InternalTreeLogic<KEY,VALUE>
      * @throws IOException  on cursor failure
      */
     public SplitResult<KEY> insert( PageCursor cursor, KEY key, VALUE value, ValueAmender<VALUE> amender,
-            Modifier.Options options, int stableGeneration, int unstableGeneration ) throws IOException
+            IndexWriter.Options options, int stableGeneration, int unstableGeneration ) throws IOException
     {
         if ( bTreeNode.isLeaf( cursor ) )
         {
@@ -165,7 +165,7 @@ class InternalTreeLogic<KEY,VALUE>
      * @throws IOException  on cursor failure
      */
     private SplitResult<KEY> insertInInternal( PageCursor cursor, long nodeId, int keyCount,
-            KEY primKey, long rightChild, Modifier.Options options, int stableGeneration, int unstableGeneration )
+            KEY primKey, long rightChild, IndexWriter.Options options, int stableGeneration, int unstableGeneration )
                     throws IOException
     {
         if ( keyCount < bTreeNode.internalMaxKeyCount() )
@@ -205,7 +205,7 @@ class InternalTreeLogic<KEY,VALUE>
      * @throws IOException  on cursor failure
      */
     private SplitResult<KEY> splitInternal( PageCursor cursor, long fullNode, KEY primKey, long newRightChild,
-            int keyCount, Modifier.Options options, int stableGeneration, int unstableGeneration ) throws IOException
+            int keyCount, IndexWriter.Options options, int stableGeneration, int unstableGeneration ) throws IOException
     {
         long current = cursor.getCurrentPageId();
         long newLeft = current;
@@ -299,7 +299,7 @@ class InternalTreeLogic<KEY,VALUE>
      * @throws IOException  on cursor failure
      */
     private SplitResult<KEY> insertInLeaf( PageCursor cursor, KEY key, VALUE value, ValueAmender<VALUE> amender,
-            Modifier.Options options, int stableGeneration, int unstableGeneration ) throws IOException
+            IndexWriter.Options options, int stableGeneration, int unstableGeneration ) throws IOException
     {
         int keyCount = bTreeNode.keyCount( cursor );
         int search = search( cursor, bTreeNode, key, readKey, keyCount );
@@ -345,7 +345,7 @@ class InternalTreeLogic<KEY,VALUE>
      * @throws IOException  if cursor.next( newRight ) fails
      */
     private SplitResult<KEY> splitLeaf( PageCursor cursor, KEY newKey, VALUE newValue, ValueAmender<VALUE> amender,
-            int keyCount, Modifier.Options options, int stableGeneration, int unstableGeneration ) throws IOException
+            int keyCount, IndexWriter.Options options, int stableGeneration, int unstableGeneration ) throws IOException
     {
         // To avoid moving cursor between pages we do all operations on left node first.
         // Save data that needs transferring and then add it to right node.

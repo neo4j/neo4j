@@ -44,7 +44,7 @@ import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.Hit;
 import org.neo4j.index.Index;
-import org.neo4j.index.Modifier;
+import org.neo4j.index.IndexWriter;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageSwapperFactory;
@@ -63,7 +63,7 @@ import static java.lang.Integer.max;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-import static org.neo4j.index.Modifier.Options.DEFAULTS;
+import static org.neo4j.index.IndexWriter.Options.DEFAULTS;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 
 public class GBPTreeTest
@@ -290,12 +290,12 @@ public class GBPTreeTest
     {
         // GIVEN
         index = createIndex( 256 );
-        Modifier<MutableLong,MutableLong> modifier = index.modifier( DEFAULTS );
+        IndexWriter<MutableLong,MutableLong> writer = index.writer( DEFAULTS );
 
         // WHEN
         try
         {
-            index.modifier( DEFAULTS );
+            index.writer( DEFAULTS );
             fail( "Should have failed" );
         }
         catch ( IllegalStateException e )
@@ -303,7 +303,7 @@ public class GBPTreeTest
             // THEN good
         }
 
-        modifier.close();
+        writer.close();
     }
 
     /* Insertion and read tests */
@@ -313,11 +313,11 @@ public class GBPTreeTest
     {
         index = createIndex( 256 );
         int count = 1000;
-        try ( Modifier<MutableLong,MutableLong> inserter = index.modifier( DEFAULTS ) )
+        try ( IndexWriter<MutableLong,MutableLong> writer = index.writer( DEFAULTS ) )
         {
             for ( int i = 0; i < count; i++ )
             {
-                inserter.insert( new MutableLong( i ), new MutableLong( i ) );
+                writer.insert( new MutableLong( i ), new MutableLong( i ) );
             }
         }
 
@@ -349,11 +349,11 @@ public class GBPTreeTest
         }
 
         // WHEN
-        try ( Modifier<MutableLong,MutableLong> inserter = index.modifier( DEFAULTS ) )
+        try ( IndexWriter<MutableLong,MutableLong> writer = index.writer( DEFAULTS ) )
         {
             for ( Map.Entry<MutableLong,MutableLong> entry : data.entrySet() )
             {
-                inserter.insert( entry.getKey(), entry.getValue() );
+                writer.insert( entry.getKey(), entry.getValue() );
             }
         }
 
@@ -410,7 +410,7 @@ public class GBPTreeTest
         // WHEN
         int count = 1_000;
         PrimitiveLongSet seen = Primitive.longSet( count );
-        try ( Modifier<MutableLong,MutableLong> inserter = index.modifier( DEFAULTS ) )
+        try ( IndexWriter<MutableLong,MutableLong> writer = index.writer( DEFAULTS ) )
         {
             for ( int i = 0; i < count; i++ )
             {
@@ -421,7 +421,7 @@ public class GBPTreeTest
                 }
                 while ( !seen.add( key.longValue() ) );
                 MutableLong value = new MutableLong( i );
-                inserter.insert( key, value );
+                writer.insert( key, value );
                 seen.add( key.longValue() );
             }
         }
@@ -530,13 +530,13 @@ public class GBPTreeTest
             readerThreads[i].start();
         }
 
-        // and then starting the modifier
+        // and then starting the writer
         try
         {
             assertTrue( readerReadySignal.await( 10, SECONDS ) );
             startSignal.countDown();
             Random random = ThreadLocalRandom.current();
-            try ( Modifier<MutableLong,MutableLong> inserter = index.modifier( DEFAULTS ) )
+            try ( IndexWriter<MutableLong,MutableLong> writer = index.writer( DEFAULTS ) )
             {
                 int inserted = 0;
                 while ( (inserted < 100_000 || numberOfReads.get() < 100) && readerError.get() == null )
@@ -545,7 +545,7 @@ public class GBPTreeTest
                     for ( int i = 0; i < groupCount; i++, inserted++ )
                     {
                         MutableLong thing = new MutableLong( inserted );
-                        inserter.insert( thing, thing );
+                        writer.insert( thing, thing );
                         highestId.set( inserted );
                     }
                     // Sleep a little in between update groups (transactions, sort of)
@@ -574,7 +574,7 @@ public class GBPTreeTest
             Map<MutableLong,MutableLong> data, Random random ) throws IOException
     {
         int changeCount = random.nextInt( 10 ) + 10;
-        try ( Modifier<MutableLong,MutableLong> modifier = index.modifier( DEFAULTS ) )
+        try ( IndexWriter<MutableLong,MutableLong> writer = index.writer( DEFAULTS ) )
         {
             for ( int i = 0; i < changeCount; i++ )
             {
@@ -582,14 +582,14 @@ public class GBPTreeTest
                 {   // remove
                     MutableLong key = randomKey( data, random );
                     MutableLong value = data.remove( key );
-                    MutableLong removedValue = modifier.remove( key );
+                    MutableLong removedValue = writer.remove( key );
                     assertEquals( "For " + key, value, removedValue );
                 }
                 else
                 {   // insert
                     MutableLong key = randomKey( random );
                     MutableLong value = randomKey( random );
-                    modifier.insert( key, value );
+                    writer.insert( key, value );
                     data.put( key, value );
                 }
             }

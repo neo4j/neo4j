@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.Hit;
 import org.neo4j.index.Index;
-import org.neo4j.index.Modifier;
+import org.neo4j.index.IndexWriter;
 import org.neo4j.index.ValueAmender;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
@@ -37,7 +37,7 @@ import org.neo4j.io.pagecache.PagedFile;
 /**
  * A generation-aware B+tree (GB+Tree) implementation directly atop a {@link PageCache} with no caching in between.
  * Additionally internal and leaf nodes on same level are linked both left and right (sibling pointers),
- * this to provide correct reading when concurrently {@link #modifier(org.neo4j.index.Modifier.Options) modifying}
+ * this to provide correct reading when concurrently {@link #writer(IndexWriter.Options) modifying}
  * the tree.
  * <p>
  * Generation is incremented on {@link #flush() flushing a.k.a check-pointing}.
@@ -56,7 +56,7 @@ import org.neo4j.io.pagecache.PagedFile;
  * while at the same time keeping one pointer to the stable version, in case there's a crash or non-clean
  * shutdown, followed by recovery.
  * <p>
- * Currently no leaves will be removed or merged as part of {@link Modifier#remove(Object) removals}.
+ * Currently no leaves will be removed or merged as part of {@link IndexWriter#remove(Object) removals}.
  * <p>
  * A single writer w/ multiple concurrent readers is supported. Assuming usage adheres to this
  * constraint neither writer nor readers are blocking. Readers are virtually garbage-free.
@@ -91,11 +91,11 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
     private final TreeNode<KEY,VALUE> bTreeNode;
 
     /**
-     * Currently an index only supports one concurrent updater and so this reference will act both as
+     * Currently an index only supports one concurrent writer and so this reference will act both as
      * guard so that only one thread can have it at any given time and also as synchronization between threads
      * wanting it.
      */
-    private final AtomicReference<SingleWriterModifier> modifier;
+    private final AtomicReference<SingleIndexWriter> writer;
 
     /**
      * Page size, i.e. tree node size, of the tree nodes in this tree. The page size is determined on
@@ -152,8 +152,8 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         this.layout = layout;
         this.pagedFile = openOrCreate( pageCache, indexFile, tentativePageSize, layout );
         this.bTreeNode = new TreeNode<>( pageSize, layout );
-        this.modifier = new AtomicReference<>(
-                new SingleWriterModifier( new InternalTreeLogic<>( this, bTreeNode, layout ) ) );
+        this.writer = new AtomicReference<>(
+                new SingleIndexWriter( new InternalTreeLogic<>( this, bTreeNode, layout ) ) );
 
         if ( created )
         {
@@ -384,15 +384,15 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
     }
 
     /**
-     * @return the single {@link Modifier} for this index. The returned modifier must be
-     * {@link Modifier#close() closed} before another caller can acquire this modifier.
+     * @return the single {@link IndexWriter} for this index. The returned writer must be
+     * {@link IndexWriter#close() closed} before another caller can acquire this writer.
      * @throws IllegalStateException for calls made between a successful call to this method and closing the
-     * returned modifier.
+     * returned writer.
      */
     @Override
-    public Modifier<KEY,VALUE> modifier( Modifier.Options options ) throws IOException
+    public IndexWriter<KEY,VALUE> writer( IndexWriter.Options options ) throws IOException
     {
-        SingleWriterModifier result = this.modifier.getAndSet( null );
+        SingleIndexWriter result = this.writer.getAndSet( null );
         if ( result == null )
         {
             throw new IllegalStateException( "Only supports one concurrent writer" );
@@ -400,19 +400,19 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         return result.take( rootId, options );
     }
 
-    class SingleWriterModifier implements Modifier<KEY,VALUE>
+    class SingleIndexWriter implements IndexWriter<KEY,VALUE>
     {
-        private final InternalTreeLogic<KEY,VALUE> indexModifier;
+        private final InternalTreeLogic<KEY,VALUE> treeLogic;
         private PageCursor cursor;
-        private Modifier.Options options;
+        private IndexWriter.Options options;
         private final byte[] tmp = new byte[0];
 
-        SingleWriterModifier( InternalTreeLogic<KEY,VALUE> modifier )
+        SingleIndexWriter( InternalTreeLogic<KEY,VALUE> treeLogic )
         {
-            this.indexModifier = modifier;
+            this.treeLogic = treeLogic;
         }
 
-        SingleWriterModifier take( long rootId, Modifier.Options options ) throws IOException
+        SingleIndexWriter take( long rootId, IndexWriter.Options options ) throws IOException
         {
             this.options = options;
             cursor = pagedFile.io( rootId, PagedFile.PF_SHARED_WRITE_LOCK );
@@ -420,11 +420,11 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         }
 
         @Override
-        public void insert( KEY key, VALUE value, ValueAmender<VALUE> ammender ) throws IOException
+        public void insert( KEY key, VALUE value, ValueAmender<VALUE> amender ) throws IOException
         {
             cursor.next( rootId );
 
-            SplitResult<KEY> split = indexModifier.insert( cursor, key, value, ammender, options,
+            SplitResult<KEY> split = treeLogic.insert( cursor, key, value, amender, options,
                     stableGeneration, unstableGeneration );
 
             if ( cursor.checkAndClearBoundsFlag() )
@@ -452,7 +452,7 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         {
             cursor.next( rootId );
 
-            return indexModifier.remove( cursor, key, layout.newValue(), stableGeneration, unstableGeneration );
+            return treeLogic.remove( cursor, key, layout.newValue(), stableGeneration, unstableGeneration );
         }
 
         @Override
@@ -464,9 +464,9 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
             }
             finally
             {
-                if ( !GBPTree.this.modifier.compareAndSet( null, this ) )
+                if ( !GBPTree.this.writer.compareAndSet( null, this ) )
                 {
-                    throw new IllegalStateException( "Tried to give back the inserter, but somebody else already did" );
+                    throw new IllegalStateException( "Tried to give back the writer, but somebody else already did" );
                 }
             }
         }

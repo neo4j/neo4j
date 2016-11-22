@@ -24,7 +24,7 @@ import java.io.IOException;
 import org.neo4j.cursor.RawCursor;
 
 /**
- * An index which can have data {@link #modifier(org.neo4j.index.Modifier.Options) added/removed} and
+ * An index which can have data {@link #writer(IndexWriter.Options) added/removed} and
  * {@link #seek(Object, Object) looked up} using key range.
  *
  * @param <KEY> type of keys in the index
@@ -47,14 +47,14 @@ public interface Index<KEY,VALUE> extends Closeable
     RawCursor<Hit<KEY,VALUE>,IOException> seek( KEY fromInclusive, KEY toExclusive ) throws IOException;
 
     /**
-     * Returns a {@link Modifier} able to modify the index, i.e. insert and remove keys/values.
-     * After usage the returned modifier must be closed, typically by using try-with-resource clause.
+     * Returns a {@link IndexWriter} able to modify the index, i.e. insert and remove keys/values.
+     * After usage the returned writer must be closed, typically by using try-with-resource clause.
      *
-     * @param options {@link Modifier.Options} which will apply to all modifications by the returned {@link Modifier}.
-     * @return {@link Modifier} able to modify the index.
+     * @param options {@link IndexWriter.Options} which will apply to all modifications by the returned {@link IndexWriter}.
+     * @return {@link IndexWriter} able to modify the index.
      * @throws IOException on error accessing the index.
      */
-    Modifier<KEY,VALUE> modifier( Modifier.Options options ) throws IOException;
+    IndexWriter<KEY,VALUE> writer( IndexWriter.Options options ) throws IOException;
 
     /**
      * Flushes any pending changes to storage.

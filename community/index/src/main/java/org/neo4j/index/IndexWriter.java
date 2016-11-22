@@ -26,13 +26,13 @@ import static org.neo4j.index.ValueAmenders.overwrite;
 
 /**
  * Able to {@link #insert(Object, Object, ValueAmender)} and {@link #remove(Object)} key/value pairs
- * into an {@link Index}. After all modifications have taken place the modifier must be {@link #close() closed},
+ * into an {@link Index}. After all modifications have taken place the writer must be {@link #close() closed},
  * typically using try-with-resource clause.
  *
  * @param <KEY> type of keys to insert/remove
  * @param <VALUE> type of values to insert/removed
  */
-public interface Modifier<KEY,VALUE> extends Closeable
+public interface IndexWriter<KEY,VALUE> extends Closeable
 {
     /**
      * Defaults to {@link ValueAmenders#overwrite() overwriting values} for existing key.
