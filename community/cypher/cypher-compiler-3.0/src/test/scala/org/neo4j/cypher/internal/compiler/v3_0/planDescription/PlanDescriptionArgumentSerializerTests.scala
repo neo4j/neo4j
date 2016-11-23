@@ -20,13 +20,14 @@
 package org.neo4j.cypher.internal.compiler.v3_0.planDescription
 
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.ProjectedPath.{nilProjector, singleNodeProjector}
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{NestedPipeExpression, ProjectedPath}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Literal, NestedPipeExpression, ProjectedPath}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.{ArgumentPipe, PipeMonitor}
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.PlanDescriptionArgumentSerializer.serialize
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
+
 class PlanDescriptionArgumentSerializerTests extends CypherFunSuite {
 
   test("serialization should leave numeric arguments as numbers") {
@@ -55,5 +56,10 @@ class PlanDescriptionArgumentSerializerTests extends CypherFunSuite {
     ))
 
     serialize(LegacyExpression(nested)) should equal("NestedExpression(Argument)")
+  }
+
+  test("projection should show multiple expressions") {
+    serialize(LegacyExpressions(Map("1" -> Literal(42), "2" -> Literal(56)))) should equal(
+      "{1 : Literal(42), 2 : Literal(56)}")
   }
 }

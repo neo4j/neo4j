@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.pipes
 import org.neo4j.cypher.internal.compiler.v3_0.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.Effects._
-import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.LegacyExpression
+import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.LegacyExpressions
 
 /*
 Projection evaluates expressions and stores their values into new slots in the execution context.
@@ -55,7 +55,7 @@ case class ProjectionPipe(source: Pipe, expressions: Map[String, Expression])(va
 
   def planDescriptionWithoutCardinality =
     source.planDescription
-      .andThen(this.id, "Projection", variables, expressions.values.toSeq.map(LegacyExpression):_*)
+      .andThen(this.id, "Projection", variables, LegacyExpressions(expressions))
 
   def dup(sources: List[Pipe]): Pipe = {
     val (source :: Nil) = sources
