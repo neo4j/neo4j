@@ -285,14 +285,13 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
     @Override
     public RawCursor<Hit<KEY,VALUE>,IOException> seek( KEY fromInclusive, KEY toExclusive ) throws IOException
     {
-        long localRootId = rootId;
-        PageCursor cursor = pagedFile.io( localRootId, PagedFile.PF_SHARED_READ_LOCK );
+        PageCursor cursor = pagedFile.io( rootId, PagedFile.PF_SHARED_READ_LOCK );
         KEY key = layout.newKey();
         VALUE value = layout.newValue();
         cursor.next();
 
         boolean isInternal;
-        int keyCount = 0; // initialized to satisfy compiler
+        int keyCount;
         long childId = 0; // initialized to satisfy compiler
         int pos;
         do
@@ -302,12 +301,10 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
                 isInternal = bTreeNode.isInternal( cursor );
                 // Find the left-most key within from-range
                 keyCount = bTreeNode.keyCount( cursor );
-                pos = 0;
                 int search = KeySearch.search( cursor, bTreeNode, fromInclusive, key, keyCount );
                 pos = KeySearch.positionOf( search );
 
-                // TODO: if we don't have unique keys we cannot make this assumption,
-                // but instead we'd need to go to the previous child
+                // Assuming unique keys
                 if ( isInternal && KeySearch.isHit( search ) )
                 {
                     pos++;
@@ -323,7 +320,7 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
             if ( cursor.checkAndClearBoundsFlag() )
             {
                 // Something's wrong, get a new fresh rootId and go from the top again
-                cursor.next( localRootId = rootId );
+                cursor.next( rootId );
                 continue;
             }
             if ( isInternal )
@@ -364,7 +361,7 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
     }
 
     // Utility method
-    public boolean consistencyCheck() throws IOException
+    boolean consistencyCheck() throws IOException
     {
         try ( PageCursor cursor = pagedFile.io( rootId, PagedFile.PF_SHARED_READ_LOCK ) )
         {
@@ -409,7 +406,7 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         return result.take( rootId, options );
     }
 
-    class SingleIndexWriter implements IndexWriter<KEY,VALUE>
+    private class SingleIndexWriter implements IndexWriter<KEY,VALUE>
     {
         private final InternalTreeLogic<KEY,VALUE> treeLogic;
         private PageCursor cursor;
@@ -473,13 +470,16 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         @Override
         public void close() throws IOException
         {
+            boolean success = false;
             try
             {
                 cursor.close();
+                success = true;
             }
             finally
             {
-                if ( !GBPTree.this.writer.compareAndSet( null, this ) )
+                // Check success to avoid suppressing exception from cursor.close()
+                if ( success && !GBPTree.this.writer.compareAndSet( null, this ) )
                 {
                     throw new IllegalStateException( "Tried to give back the writer, but somebody else already did" );
                 }
