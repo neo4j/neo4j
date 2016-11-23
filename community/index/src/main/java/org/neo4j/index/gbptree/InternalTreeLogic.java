@@ -224,7 +224,7 @@ class InternalTreeLogic<KEY,VALUE>
                 pos+1, keyCount+2, tmpForChildren );
 
         int keyCountAfterInsert = keyCount + 1;
-        int middlePos = middle( keyCountAfterInsert, options.splitLeftChildSize() );
+        int middlePos = middle( keyCountAfterInsert, options.splitRetentionFactor() );
 
         SplitResult<KEY> split = internalSplitResult;
         split.left = newLeft;
@@ -415,7 +415,7 @@ class InternalTreeLogic<KEY,VALUE>
                 c -> layout.writeValue( c, newValue ), pos, bTreeNode.leafMaxKeyCount() + 1, tmpForValues );
 
         int keyCountAfterInsert = keyCount + 1;
-        int middlePos = middle( keyCountAfterInsert, options.splitLeftChildSize() );
+        int middlePos = middle( keyCountAfterInsert, options.splitRetentionFactor() );
 
         // allKeysIncludingNewKey should now contain all keys in sorted order and
         // allValuesIncludingNewValue should now contain all values in same order as corresponding keys

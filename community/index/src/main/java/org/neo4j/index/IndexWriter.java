@@ -72,19 +72,41 @@ public interface IndexWriter<KEY,VALUE> extends Closeable
     interface Options
     {
         /**
-         * Decides relatively where a split happens, i.e. which position will be the split key.
-         * Keys (and its values/children) including the split key will go to the right tree node,
-         * everything before it goes into the left.
+         * Decides relatively how many keys (with values/children) that are retained in left node during a split.
+         * Using 0.5 will spread the keys as evenly as possible among the nodes. However, in certain scenarios it can
+         * be beneficial to use a different factor.
+         * <p>
+         * When batch inserting keys in order it is possible to leave every node completely full.
+         * This will make the batch insert finish quicker, but the first subsequent writes will all cause splits all
+         * the way to the root. If the tree is not expected to change after the batch insert, this
+         * can be a good trade off.
+         * <p>
+         * Factor 1 will leave all keys in left part of split, use when batch inserting in order.
+         * Factor 0 will move all keys to right part of split, use when batch inserting in reverse order.
+         * <p>
+         * <pre>
+         *     Retention factor = 0.5
+         *     [K1 K2 K3 K4] // insert K5
+         *     [K1 K2 __ __] [K3 K4 K5 __]
          *
-         * @return a factor between 0..1 where 0 means far to the left, 1 means far to the right and
-         * as an example 0.5 will select the middle item (floor division).
+         *     Retention factor = 1
+         *     [K1 K2 K3 K4] // insert K5
+         *     [K1 K2 K3 K4] [K5 __ __ __]
+         *
+         *     Retention factor = 0
+         *     [K2 K3 K4 K5] // insert K1 (note reversed insert order)
+         *     [K1 __ __ __] [K2 K3 K4 K5]
+         * </pre>
+         *
+         * @return a factor between 0..1 where lower means more keys moved to right sibling,
+         * and higher means more keys retained in left sibling. 0.5 will split keys evenly among left and right.
          */
-        float splitLeftChildSize();
+        float splitRetentionFactor();
 
         class Defaults implements Options
         {
             @Override
-            public float splitLeftChildSize()
+            public float splitRetentionFactor()
             {
                 return 0.5f;
             }
@@ -102,7 +124,7 @@ public interface IndexWriter<KEY,VALUE> extends Closeable
         Options BATCHING_SEQUENTIAL = new Defaults()
         {
             @Override
-            public float splitLeftChildSize()
+            public float splitRetentionFactor()
             {
                 return 1f;
             }
