@@ -99,6 +99,10 @@ public class PhysicalTransactionCursor<T extends ReadableClosablePositionAwareCh
             transaction.setHeader( startEntry.getAdditionalHeader(), startEntry.getMasterId(),
                     startEntry.getLocalId(), startEntry.getTimeWritten(),
                     startEntry.getLastCommittedTxWhenTransactionStarted(), commitEntry.getTimeWritten(), -1 );
+            if ( current != null && commitEntry.getTxId() != current.getCommitEntry().getTxId() + 1 )
+            {
+                throw new RuntimeException( "Log is not strictly monotonic" );
+            }
             current = new CommittedTransactionRepresentation( startEntry, transaction, commitEntry );
             channel.getCurrentPosition( lastGoodPositionMarker );
             return true;
