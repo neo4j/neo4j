@@ -74,4 +74,6 @@ public interface ExpressionVisitor
     void pop( Expression expression );
 
     void box( Expression expression );
+
+    void unbox( Expression expression );
 }

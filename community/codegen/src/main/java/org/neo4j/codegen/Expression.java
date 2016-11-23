@@ -308,6 +308,49 @@ public abstract class Expression extends ExpressionTemplate
         };
     }
 
+    /** box expression */
+    public static Expression unbox( final Expression expression)
+    {
+        TypeReference type;
+        switch ( expression.type.name() )
+        {
+        case "java.lang.Byte":
+            type = TypeReference.typeReference( byte.class );
+            break;
+        case "java.lang.Short":
+            type = TypeReference.typeReference( short.class );
+            break;
+        case "java.lang.Integer":
+            type = TypeReference.typeReference( int.class );
+            break;
+        case "java.lang.Long":
+            type = TypeReference.typeReference( long.class );
+            break;
+        case "java.lang.Character":
+            type = TypeReference.typeReference( char.class );
+            break;
+        case "java.lang.Boolean":
+            type = TypeReference.typeReference( boolean.class );
+            break;
+        case "java.lang.Float":
+            type = TypeReference.typeReference( float.class );
+            break;
+        case "java.lang.Double":
+            type = TypeReference.typeReference( double.class );
+            break;
+        default:
+            throw new IllegalStateException( "Cannot unbox " + expression.type.name() );
+        }
+        return new Expression( type )
+        {
+            @Override
+            public void accept( ExpressionVisitor visitor )
+            {
+                visitor.unbox(expression);
+            }
+        };
+    }
+
     /** get static field */
     public static Expression get( final FieldReference field )
     {

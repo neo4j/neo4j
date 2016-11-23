@@ -546,6 +546,41 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
         }
     }
 
+    @Override
+    public void unbox( Expression expression )
+    {
+        expression.accept( this );
+        switch ( expression.type().name() )
+        {
+        case "java.lang.Byte":
+            methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Byte", "byteValue", "()B", false);
+            break;
+        case "java.lang.Short":
+            methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Short", "shortValue", "()S", false);
+            break;
+        case "java.lang.Integer":
+            methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Integer", "intValue", "()I", false);
+            break;
+        case "java.lang.Long":
+            methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Long", "longValue", "()J", false);
+            break;
+        case "java.lang.Character":
+            methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Character", "charValue", "()C", false);
+            break;
+        case "java.lang.Boolean":
+            methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Boolean", "booleanValue", "()Z", false);
+            break;
+        case "java.lang.Float":
+            methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Float", "floatValue", "()F", false);
+            break;
+        case "java.lang.Double":
+            methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Double", "doubleValue", "()D", false);
+            break;
+        default:
+            throw new IllegalStateException( "Cannot unbox " + expression.type().name() );
+        }
+    }
+
     private void compareIntOrReferenceType( Expression lhs, Expression rhs, int opcode )
     {
         lhs.accept( this );

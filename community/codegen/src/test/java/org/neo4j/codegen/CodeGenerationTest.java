@@ -1687,6 +1687,41 @@ public class CodeGenerationTest
         assertThat( boxTest( char.class, 'a' ), equalTo( 'a' ) );
     }
 
+    @Test
+    public void shouldBeAbleToUnbox() throws Throwable
+    {
+        assertThat( unboxTest( Boolean.class, boolean.class, true ), equalTo( true ) );
+        assertThat( unboxTest( Boolean.class, boolean.class, false ), equalTo( false ) );
+        assertThat( unboxTest( Byte.class, byte.class, (byte) 12 ), equalTo( (byte) 12 ) );
+        assertThat( unboxTest( Short.class, short.class, (short) 12 ), equalTo( (short) 12 ) );
+        assertThat( unboxTest( Integer.class, int.class, 12 ), equalTo( 12 ) );
+        assertThat( unboxTest( Long.class, long.class, 12L ), equalTo( 12L ) );
+        assertThat( unboxTest( Float.class, float.class, 12F ), equalTo( 12F ) );
+        assertThat( unboxTest( Double.class, double.class, 12D ), equalTo( 12D ) );
+        assertThat( unboxTest( Character.class, char.class, 'a' ), equalTo( 'a' ) );
+    }
+
+    private <T> Object unboxTest(Class<T> boxedType, Class<?> unboxedType, T value)
+            throws Throwable
+    {
+        createGenerator();
+        // given
+        ClassHandle handle;
+        try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
+        {
+            try ( CodeBlock method = simple.generateMethod( unboxedType, "unbox",
+                    param( boxedType, "test" ) ) )
+            {
+                method.returns( Expression.unbox( method.load( "test" ) ) );
+            }
+
+            handle = simple.handle();
+        }
+
+        // when
+        return instanceMethod( handle.newInstance(), "unbox", boxedType ).invoke( value );
+    }
+
     private <T> Object boxTest(Class<T> unboxedType, T value)
             throws Throwable
     {

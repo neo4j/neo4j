@@ -304,4 +304,12 @@ class ExpressionToString implements ExpressionVisitor
         expression.accept( this );
         result.append( ")" );
     }
+
+    @Override
+    public void unbox( Expression expression )
+    {
+        result.append( "unbox(" );
+        expression.accept( this );
+        result.append( ")" );
+    }
 }
