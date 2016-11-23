@@ -28,8 +28,8 @@ import org.neo4j.logging.LogProvider;
 
 public class TransactionLogCatchUpFactory
 {
-    public TransactionLogCatchUpWriter create( File storeDir, FileSystemAbstraction fs, PageCache pageCache, LogProvider logProvider, long fromTxId ) throws IOException
+    public TransactionLogCatchUpWriter create( File storeDir, FileSystemAbstraction fs, PageCache pageCache, LogProvider logProvider, long fromTxId, boolean asPartOfStoreCopy ) throws IOException
     {
-        return new TransactionLogCatchUpWriter( storeDir, fs, pageCache, logProvider, fromTxId );
+        return new TransactionLogCatchUpWriter( storeDir, fs, pageCache, logProvider, fromTxId, asPartOfStoreCopy );
     }
 }

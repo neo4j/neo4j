@@ -48,6 +48,7 @@ public class TransactionLogCatchUpWriter implements TxPullResponseListener, Auto
     private final Lifespan lifespan = new Lifespan();
     private final PageCache pageCache;
     private final Log log;
+    private final boolean asPartOfStoreCopy;
     private final TransactionLogWriter writer;
     private final PhysicalLogFiles logFiles;
     private final File storeDir;
@@ -55,11 +56,12 @@ public class TransactionLogCatchUpWriter implements TxPullResponseListener, Auto
     private long lastTxId = -1;
     private long expectedTxId;
 
-    TransactionLogCatchUpWriter( File storeDir, FileSystemAbstraction fs, PageCache pageCache, LogProvider logProvider, long fromTxId )
+    TransactionLogCatchUpWriter( File storeDir, FileSystemAbstraction fs, PageCache pageCache, LogProvider logProvider, long fromTxId, boolean asPartOfStoreCopy )
             throws IOException
     {
         this.pageCache = pageCache;
         this.log = logProvider.getLog( getClass() );
+        this.asPartOfStoreCopy = asPartOfStoreCopy;
         this.logFiles = new PhysicalLogFiles( storeDir, fs );
         ReadOnlyLogVersionRepository logVersionRepository = new ReadOnlyLogVersionRepository( pageCache, storeDir );
         LogFile logFile = lifespan.add( new PhysicalLogFile( fs, logFiles, Long.MAX_VALUE /*don't rotate*/,
@@ -97,26 +99,30 @@ public class TransactionLogCatchUpWriter implements TxPullResponseListener, Auto
     @Override
     public synchronized void close() throws IOException
     {
-        /* A checkpoint which points to the beginning of the log file, meaning that
-           all the streamed transactions will be applied as part of recovery. */
-        long logVersion = logFiles.getHighestLogVersion();
-        writer.checkPoint( new LogPosition( logVersion, LOG_HEADER_SIZE ) );
-        lifespan.close();
+        if ( asPartOfStoreCopy )
+        {
+            /* A checkpoint which points to the beginning of the log file, meaning that
+            all the streamed transactions will be applied as part of recovery. */
+            long logVersion = logFiles.getHighestLogVersion();
+            writer.checkPoint( new LogPosition( logVersion, LOG_HEADER_SIZE ) );
 
-        // * comment copied from old StoreCopyClient *
-        // since we just create new log and put checkpoint into it with offset equals to
-        // LOG_HEADER_SIZE we need to update last transaction offset to be equal to this newly defined max
-        // offset otherwise next checkpoint that use last transaction offset will be created for non
-        // existing offset that is in most of the cases bigger than new log size.
-        // Recovery will treat that as last checkpoint and will not try to recover store till new
-        // last closed transaction offset will not overcome old one. Till that happens it will be
-        // impossible for recovery process to restore the store
-        File neoStore = new File( storeDir, MetaDataStore.DEFAULT_NAME );
-        MetaDataStore.setRecord(
-                pageCache,
-                neoStore,
-                MetaDataStore.Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET,
-                LOG_HEADER_SIZE );
+            // * comment copied from old StoreCopyClient *
+            // since we just create new log and put checkpoint into it with offset equals to
+            // LOG_HEADER_SIZE we need to update last transaction offset to be equal to this newly defined max
+            // offset otherwise next checkpoint that use last transaction offset will be created for non
+            // existing offset that is in most of the cases bigger than new log size.
+            // Recovery will treat that as last checkpoint and will not try to recover store till new
+            // last closed transaction offset will not overcome old one. Till that happens it will be
+            // impossible for recovery process to restore the store
+            File neoStore = new File( storeDir, MetaDataStore.DEFAULT_NAME );
+            MetaDataStore.setRecord(
+                    pageCache,
+                    neoStore,
+                    MetaDataStore.Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET,
+                    LOG_HEADER_SIZE );
+        }
+
+        lifespan.close();
 
         if ( lastTxId != -1 )
         {

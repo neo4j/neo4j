@@ -67,7 +67,7 @@ public class StoreFetcher
     {
         ReadOnlyTransactionIdStore transactionIdStore = new ReadOnlyTransactionIdStore( pageCache, storeDir );
         long lastCommittedTxId = transactionIdStore.getLastCommittedTransactionId();
-        return pullTransactions( from, expectedStoreId, storeDir, lastCommittedTxId + 1 );
+        return pullTransactions( from, expectedStoreId, storeDir, lastCommittedTxId + 1, false );
     }
 
     public void copyStore( MemberId from, StoreId expectedStoreId, File destDir )
@@ -80,7 +80,7 @@ public class StoreFetcher
 
             log.info( "Store files need to be recovered starting from: %d", lastFlushedTxId );
 
-            CatchupResult catchupResult = pullTransactions( from, expectedStoreId, destDir, lastFlushedTxId );
+            CatchupResult catchupResult = pullTransactions( from, expectedStoreId, destDir, lastFlushedTxId, true );
             if ( catchupResult != SUCCESS_END_OF_STREAM )
             {
                 throw new StreamingTransactionsFailedException( "Failed to pull transactions: " + catchupResult );
@@ -92,9 +92,9 @@ public class StoreFetcher
         }
     }
 
-    private CatchupResult pullTransactions( MemberId from, StoreId expectedStoreId, File storeDir, long fromTxId ) throws IOException, StoreCopyFailedException
+    private CatchupResult pullTransactions( MemberId from, StoreId expectedStoreId, File storeDir, long fromTxId, boolean asPartOfStoreCopy ) throws IOException, StoreCopyFailedException
     {
-        try ( TransactionLogCatchUpWriter writer = transactionLogFactory.create( storeDir, fs, pageCache, logProvider, fromTxId ) )
+        try ( TransactionLogCatchUpWriter writer = transactionLogFactory.create( storeDir, fs, pageCache, logProvider, fromTxId, asPartOfStoreCopy ) )
         {
             log.info( "Pulling transactions from: %d", fromTxId );
 

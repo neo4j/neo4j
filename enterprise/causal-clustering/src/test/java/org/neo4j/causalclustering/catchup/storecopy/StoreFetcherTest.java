@@ -38,6 +38,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doThrow;
@@ -133,7 +134,7 @@ public class StoreFetcherTest
     {
         TransactionLogCatchUpFactory factory = mock( TransactionLogCatchUpFactory.class );
         when( factory.create( any( File.class ), any( FileSystemAbstraction.class ),
-                any( PageCache.class ), any( LogProvider.class ), anyLong() ) ).thenReturn( writer );
+                any( PageCache.class ), any( LogProvider.class ), anyLong(), anyBoolean() ) ).thenReturn( writer );
         return factory;
     }
 }

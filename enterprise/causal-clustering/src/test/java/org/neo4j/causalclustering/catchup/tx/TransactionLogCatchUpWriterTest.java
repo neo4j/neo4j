@@ -97,7 +97,7 @@ public class TransactionLogCatchUpWriterTest
         int fromTxId = 37;
         int endTxId = fromTxId + 5;
 
-        TransactionLogCatchUpWriter catchUpWriter = new TransactionLogCatchUpWriter( storeDir, fs, pageCache, NullLogProvider.getInstance(), fromTxId );
+        TransactionLogCatchUpWriter catchUpWriter = new TransactionLogCatchUpWriter( storeDir, fs, pageCache, NullLogProvider.getInstance(), fromTxId, true );
 
         // when
         for ( int i = fromTxId; i <= endTxId; i++ )
