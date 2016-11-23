@@ -25,6 +25,9 @@ import org.neo4j.io.pagecache.PageCursor;
 
 class KeySearch
 {
+    private static final int POSITION_MASK = 0x7FFFFFFF;
+    private static final int HIT_MASK = 0x80000000;
+
     /**
      * Search for left most pos such that keyAtPos obeys key <= keyAtPos.
      * Return pos (not offset) of keyAtPos, or key count if no such key exist.
@@ -45,7 +48,7 @@ class KeySearch
      * @return first position i for which bTreeNode.keyComparator().compare( key, bTreeNode.keyAt( i ) <= 0,
      * or keyCount if no such key exists.
      */
-    public static <KEY,VALUE> int search( PageCursor cursor, TreeNode<KEY,VALUE> bTreeNode, KEY key,
+    static <KEY,VALUE> int search( PageCursor cursor, TreeNode<KEY,VALUE> bTreeNode, KEY key,
             KEY readKey, int keyCount )
     {
         if ( keyCount == 0 )
@@ -110,16 +113,16 @@ class KeySearch
 
     private static int searchResult( int pos, boolean hit )
     {
-        return (pos & 0x7FFFFFFF) | ((hit ? 1 : 0) << 31);
+        return (pos & POSITION_MASK) | ((hit ? 1 : 0) << 31);
     }
 
-    public static int positionOf( int searchResult )
+    static int positionOf( int searchResult )
     {
-        return searchResult & 0x7FFFFFFF;
+        return searchResult & POSITION_MASK;
     }
 
-    public static boolean isHit( int searchResult )
+    static boolean isHit( int searchResult )
     {
-        return (searchResult & 0x80000000) != 0;
+        return (searchResult & HIT_MASK) != 0;
     }
 }
