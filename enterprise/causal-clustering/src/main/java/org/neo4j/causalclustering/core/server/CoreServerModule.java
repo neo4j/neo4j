@@ -118,7 +118,7 @@ public class CoreServerModule
 
         StoreFetcher storeFetcher = new StoreFetcher( logProvider, fileSystem, platformModule.pageCache,
                 new StoreCopyClient( catchUpClient, logProvider ), new TxPullClient( catchUpClient, platformModule.monitors ),
-                new TransactionLogCatchUpFactory() );
+                new TransactionLogCatchUpFactory(), platformModule.monitors );
 
         CoreStateApplier coreStateApplier = new CoreStateApplier( logProvider );
 

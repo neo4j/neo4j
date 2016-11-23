@@ -33,6 +33,7 @@ import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.transaction.log.ReadOnlyTransactionIdStore;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -42,6 +43,7 @@ import static org.neo4j.causalclustering.catchup.CatchupResult.SUCCESS_END_OF_ST
 public class StoreFetcher
 {
     private final Log log;
+    private final Monitors monitors;
     private FileSystemAbstraction fs;
     private PageCache pageCache;
     private final LogProvider logProvider;
@@ -52,7 +54,8 @@ public class StoreFetcher
     public StoreFetcher( LogProvider logProvider,
                          FileSystemAbstraction fs, PageCache pageCache,
                          StoreCopyClient storeCopyClient, TxPullClient txPullClient,
-                         TransactionLogCatchUpFactory transactionLogFactory )
+                         TransactionLogCatchUpFactory transactionLogFactory,
+                         Monitors monitors )
     {
         this.logProvider = logProvider;
         this.storeCopyClient = storeCopyClient;
@@ -61,6 +64,7 @@ public class StoreFetcher
         this.pageCache = pageCache;
         this.transactionLogFactory = transactionLogFactory;
         log = logProvider.getLog( getClass() );
+        this.monitors = monitors;
     }
 
     public CatchupResult tryCatchingUp( MemberId from, StoreId expectedStoreId, File storeDir ) throws StoreCopyFailedException, IOException
@@ -76,7 +80,7 @@ public class StoreFetcher
         try
         {
             log.info( "Copying store from %s", from );
-            long lastFlushedTxId = storeCopyClient.copyStoreFiles( from, expectedStoreId, new StreamToDisk( destDir, fs ) );
+            long lastFlushedTxId = storeCopyClient.copyStoreFiles( from, expectedStoreId, new StreamToDisk( destDir, fs, monitors ) );
 
             // We require at least one transaction for extracting the log index of the consensus log.
             // Given there might not have been any activity on the source server we need to ask for the

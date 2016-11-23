@@ -34,6 +34,7 @@ import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
@@ -59,7 +60,7 @@ public class StoreFetcherTest
         TransactionLogCatchUpWriter writer = mock( TransactionLogCatchUpWriter.class );
 
         StoreFetcher fetcher = new StoreFetcher( NullLogProvider.getInstance(), mock( FileSystemAbstraction.class ),
-                null, storeCopyClient, txPullClient, factory( writer ) );
+                null, storeCopyClient, txPullClient, factory( writer ), new Monitors() );
 
         // when
         MemberId localhost = new MemberId( UUID.randomUUID() );
@@ -89,7 +90,7 @@ public class StoreFetcherTest
         TransactionLogCatchUpWriter writer = mock( TransactionLogCatchUpWriter.class );
 
         StoreFetcher fetcher = new StoreFetcher( NullLogProvider.getInstance(), mock( FileSystemAbstraction.class ),
-                null, storeCopyClient, txPullClient, factory( writer ) );
+                null, storeCopyClient, txPullClient, factory( writer ), new Monitors() );
 
         // when
         fetcher.copyStore( localhost, wantedStoreId, new File( "destination" ) );
@@ -109,7 +110,7 @@ public class StoreFetcherTest
 
         StoreFetcher fetcher = new StoreFetcher( NullLogProvider.getInstance(), mock( FileSystemAbstraction.class ),
                 null,
-                storeCopyClient, txPullClient, factory( writer ) );
+                storeCopyClient, txPullClient, factory( writer ), new Monitors() );
 
         doThrow( StoreCopyFailedException.class ).when( txPullClient )
                 .pullTransactions( any( MemberId.class ), eq( storeId ), anyLong(), any( TransactionLogCatchUpWriter.class ) );

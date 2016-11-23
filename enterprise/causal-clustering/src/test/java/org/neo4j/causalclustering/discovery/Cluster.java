@@ -56,6 +56,7 @@ import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
 import org.neo4j.test.DbRepresentation;
 
@@ -167,6 +168,15 @@ public class Cluster
     public ReadReplica addReadReplicaWithId( int memberId )
     {
         return addReadReplicaWithIdAndRecordFormat( memberId, StandardV3_0.NAME );
+    }
+
+    public ReadReplica addReadReplicaWithIdAndMonitors( int memberId, Monitors monitors )
+    {
+        List<AdvertisedSocketAddress> hazelcastAddresses = buildAddresses( coreMembers.keySet() );
+        ReadReplica member = new ReadReplica( parentDir, memberId, discoveryServiceFactory,
+                hazelcastAddresses, stringMap(), emptyMap(), StandardV3_0.NAME, monitors );
+        readReplicas.put( memberId, member );
+        return member;
     }
 
     public void shutdown() throws ExecutionException, InterruptedException
