@@ -31,9 +31,9 @@ public interface ValueMerger<VALUE>
      * Merge an existing value with a new value, returning potentially a combination of the two, or {@code null}
      * if no merge was done effectively meaning that nothing should be written.
      *
-     * @param value existing value
-     * @param withValue new value
+     * @param existingValue existing value
+     * @param newValue new value
      * @return {@code value}, now merged with {@code withValue}, or {@code null} if no merge was done.
      */
-    VALUE merge( VALUE value, VALUE withValue );
+    VALUE merge( VALUE existingValue, VALUE newValue );
 }
