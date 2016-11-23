@@ -265,4 +265,16 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Ne
 
     executeWithCostPlannerOnly(query).toList //does not throw
   }
+
+  test("pattern comprehension play nice with map projections") {
+    val movie = createLabeledNode(Map("title" -> "The Shining"), "Movie")
+    val actor1 = createNode("name" -> "Actor1")
+    val actor2 = createNode("name" -> "Actor2")
+    relate(actor1, movie, "ACTED_IN")
+    relate(actor2, movie, "ACTED_IN")
+    val query = """match (m:Movie) return m { .title, cast: [(m)<-[:ACTED_IN]-(p) | p.name] }"""
+
+    executeWithCostPlannerOnly(query).toList //does not throw
+  }
+
 }
