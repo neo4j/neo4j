@@ -59,11 +59,7 @@ class ConsistencyChecker<KEY>
 
     public boolean check( PageCursor cursor ) throws IOException
     {
-        KEY leftSideOfRange = layout.newKey();
-        layout.minKey( leftSideOfRange );
-        KEY rightSideOfRange = layout.newKey();
-        layout.maxKey( rightSideOfRange );
-        KeyRange<KEY> openRange = new KeyRange<>( comparator, leftSideOfRange, rightSideOfRange, layout, null );
+        KeyRange<KEY> openRange = new KeyRange<>( comparator, null, null, layout, null );
         boolean result = checkSubtree( cursor, openRange, 0 );
 
         // Assert that rightmost node on each level has empty right sibling.
@@ -181,10 +177,8 @@ class ConsistencyChecker<KEY>
         {
             this.comparator = comparator;
             this.superRange = superRange;
-            this.fromInclusive = layout.newKey();
-            layout.copyKey( fromInclusive, this.fromInclusive );
-            this.toExclusive = layout.newKey();
-            layout.copyKey( toExclusive, this.toExclusive );
+            this.fromInclusive = fromInclusive == null ? null : layout.copyKey( fromInclusive, layout.newKey() );
+            this.toExclusive = toExclusive == null ? null : layout.copyKey( toExclusive, layout.newKey() );
             this.layout = layout;
         }
 
@@ -203,7 +197,7 @@ class ConsistencyChecker<KEY>
 
         KeyRange<KEY> restrictLeft( KEY left )
         {
-            if ( comparator.compare( fromInclusive, left ) < 0 )
+            if ( fromInclusive == null || comparator.compare( fromInclusive, left ) < 0 )
             {
                 return new KeyRange<>( comparator, left, toExclusive, layout, this );
             }
@@ -212,7 +206,7 @@ class ConsistencyChecker<KEY>
 
         KeyRange<KEY> restrictRight( KEY right )
         {
-            if ( comparator.compare( toExclusive, right ) > 0 )
+            if ( toExclusive == null || comparator.compare( toExclusive, right ) > 0 )
             {
                 return new KeyRange<>( comparator, fromInclusive, right, layout, this );
             }

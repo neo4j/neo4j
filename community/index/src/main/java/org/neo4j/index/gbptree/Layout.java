@@ -40,28 +40,13 @@ public interface Layout<KEY,VALUE> extends Comparator<KEY>
     KEY newKey();
 
     /**
-     * Populates {@code into} with minimum key that can ever exist in a tree with this layout.
-     *
-     * @param into instance to write minimum key into.
-     * @return the provided {@code into} instance for convenience.
-     */
-    KEY minKey( KEY into );
-
-    /**
-     * Populates {@code into} with maximum key that can ever exist in a tree with this layout.
-     *
-     * @param into instance to write maximum key into.
-     * @return the provided {@code into} instance for convenience.
-     */
-    KEY maxKey( KEY into );
-
-    /**
      * Copies contents of {@code key} to {@code into}.
      *
      * @param key key (left unchanged as part of this call) to copy contents from.
      * @param into key (changed as part of this call) to copy contents into.
+     * @return the provided {@code into} instance for convenience.
      */
-    void copyKey( KEY key, KEY into );
+    KEY copyKey( KEY key, KEY into );
 
     /**
      * @return new value instance.
