@@ -96,7 +96,7 @@ public class PointerCheckingTest
     {
         // GIVEN
         PageCursor cursor = ByteArrayPageCursor.wrap( GenSafePointerPair.SIZE );
-        int generation = 1;
+        long generation = 1;
         PointerChecking.checkChildPointer( write( cursor, 123, 0, generation ) );
         cursor.setOffset( 0 );
 
@@ -112,7 +112,7 @@ public class PointerCheckingTest
     {
         // GIVEN
         PageCursor cursor = ByteArrayPageCursor.wrap( GenSafePointerPair.SIZE );
-        int generation = 1;
+        long generation = 1;
 
         // WHEN
         long result = write( cursor, 123, 0, generation );

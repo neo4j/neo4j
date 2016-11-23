@@ -33,13 +33,13 @@ import static org.neo4j.index.gbptree.TreeNode.NO_NODE_FLAG;
 class RightmostInChain<KEY>
 {
     private final TreeNode<KEY,?> node;
-    private final int stableGeneration;
-    private final int unstableGeneration;
+    private final long stableGeneration;
+    private final long unstableGeneration;
 
     private long currentRightmost;
     private long expectedNextRightmost;
 
-    RightmostInChain( TreeNode<KEY,?> node, int stableGeneration, int unstableGeneration )
+    RightmostInChain( TreeNode<KEY,?> node, long stableGeneration, long unstableGeneration )
     {
         this.node = node;
         this.stableGeneration = stableGeneration;
