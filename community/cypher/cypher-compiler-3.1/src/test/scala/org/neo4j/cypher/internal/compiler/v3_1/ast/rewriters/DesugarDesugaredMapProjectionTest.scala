@@ -75,9 +75,10 @@ class DesugarDesugaredMapProjectionTest extends CypherFunSuite {
         val mkException = new SyntaxExceptionCreator(originalQuery, InputPosition.NONE)
         val sequence: Rewriter = inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException))
         val originalAst = parser.parse(q).endoRewrite(sequence)
-        val semanticCheckResult: SemanticCheckResult = originalAst.semanticCheck(SemanticState.clean)
+        val semanticCheckResult = originalAst.semanticCheck(SemanticState.clean)
+        val withScopes = originalAst.endoRewrite(recordScopes(semanticCheckResult.state))
 
-        originalAst.endoRewrite(desugarMapProjection(semanticCheckResult.state))
+        withScopes.endoRewrite(desugarMapProjection(semanticCheckResult.state))
       }
 
       val rewrittenOriginal = rewrite(originalQuery)

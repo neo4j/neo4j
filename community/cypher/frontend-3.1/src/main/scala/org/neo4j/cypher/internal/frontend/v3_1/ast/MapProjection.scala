@@ -19,11 +19,12 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_1.ast
 
-import org.neo4j.cypher.internal.frontend.v3_1.ast.Expression.{SemanticContext, _}
+import org.neo4j.cypher.internal.frontend.v3_1.ast.Expression._
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 import org.neo4j.cypher.internal.frontend.v3_1.{InputPosition, _}
 
-case class MapProjection(name: Variable, items: Seq[MapProjectionElement])(val position: InputPosition)
+case class MapProjection(name: Variable, items: Seq[MapProjectionElement], outerScope: Scope = Scope.empty)
+                        (val position: InputPosition)
   extends Expression with SimpleTyping {
   protected def possibleTypes = CTMap
 
@@ -31,6 +32,9 @@ case class MapProjection(name: Variable, items: Seq[MapProjectionElement])(val p
     items.semanticCheck(ctx) chain
     super.semanticCheck(ctx) ifOkChain // We need to remember the scope to later rewrite this ASTNode
     recordCurrentScope
+
+  def withOuterScope(outerScope: Scope) =
+    copy(outerScope = outerScope)(position)
 }
 
 sealed trait MapProjectionElement extends SemanticCheckableWithContext with ASTNode
