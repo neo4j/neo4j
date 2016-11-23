@@ -434,11 +434,6 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
             SplitResult<KEY> split = treeLogic.insert( cursor, key, value, valueMerger, options,
                     stableGeneration, unstableGeneration );
 
-            if ( cursor.checkAndClearBoundsFlag() )
-            {
-                throw new IllegalStateException( "Some internal problem causing out of bounds" );
-            }
-
             if ( split != null )
             {
                 // New root
@@ -451,6 +446,11 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
                 bTreeNode.setChildAt( cursor, split.left, 0, stableGeneration, unstableGeneration );
                 bTreeNode.setChildAt( cursor, split.right, 1, stableGeneration, unstableGeneration );
                 rootId = newRootId;
+            }
+
+            if ( cursor.checkAndClearBoundsFlag() )
+            {
+                throw new IllegalStateException( "Some internal problem causing out of bounds" );
             }
         }
 
