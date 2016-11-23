@@ -164,9 +164,10 @@ class TreeNode<KEY,VALUE>
         return GenSafePointerPair.read( cursor, stableGeneration, unstableGeneration );
     }
 
-    void setGen( PageCursor cursor, long unstableGeneration )
+    void setGen( PageCursor cursor, long generation )
     {
-        cursor.putInt( BYTE_POS_GEN, (int) (unstableGeneration & GenSafePointer.GENERATION_MASK) );
+        GenSafePointer.assertGeneration( generation );
+        cursor.putInt( BYTE_POS_GEN, (int) generation );
     }
 
     void setKeyCount( PageCursor cursor, int count )
