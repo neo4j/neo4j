@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.planDescription
 
-import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{NestedPipeExpression, ProjectedPath}
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.ProjectedPath.{nilProjector, singleNodeProjector}
+import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{Literal, NestedPipeExpression, ProjectedPath}
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.{ArgumentPipe, PipeMonitor}
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.PlanDescriptionArgumentSerializer.serialize
@@ -56,5 +56,10 @@ class PlanDescriptionArgumentSerializerTests extends CypherFunSuite {
     ))
 
     serialize(LegacyExpression(nested)) should equal("NestedExpression(Argument)")
+  }
+
+  test("projection should show multiple expressions") {
+    serialize(LegacyExpressions(Map("1" -> Literal(42), "2" -> Literal(56)))) should equal(
+      "{1 : Literal(42), 2 : Literal(56)}")
   }
 }
