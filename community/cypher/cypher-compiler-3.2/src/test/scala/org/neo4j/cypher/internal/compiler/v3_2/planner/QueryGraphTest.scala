@@ -19,10 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.planner
 
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{PatternRelationship, SimplePatternLength}
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_2.IdName
+import org.neo4j.cypher.internal.ir.v3_2.{IdName, PatternRelationship, SimplePatternLength}
 
 class QueryGraphTest extends CypherFunSuite {
   val x = IdName("x")

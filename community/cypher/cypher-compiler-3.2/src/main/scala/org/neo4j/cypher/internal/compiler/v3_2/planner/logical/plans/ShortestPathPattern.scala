@@ -17,32 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_2.planner.logical
+package org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v3_2.planner.QueryGraph
-import org.neo4j.cypher.internal.ir.v3_2.PatternRelationship
+import org.neo4j.cypher.internal.frontend.v3_2.ast
+import org.neo4j.cypher.internal.ir.v3_2.{IdName, PatternLength, PatternRelationship}
 
-sealed trait Solvable {
-  def solvables: Set[SolvableLeaf]
+// TODO: Remove ast representation
+final case class ShortestPathPattern(name: Option[IdName], rel: PatternRelationship, single: Boolean)
+                                    (val expr: ast.ShortestPaths) {
 
-  def solvedRelationship: Option[PatternRelationship] = None
+  def isFindableFrom(symbols: Set[IdName]) = symbols.contains(rel.left) && symbols.contains(rel.right)
+
+  def availableSymbols: Set[IdName] = name.toSet ++ rel.coveredIds
 }
 
-sealed trait SolvableLeaf extends Solvable {
-  self =>
-
-  override def solvables: Set[SolvableLeaf] = Set(self)
+object ShortestPathPattern {
+  implicit val byRelName = Ordering.by { (sp: ShortestPathPattern) => sp.rel }
 }
-
-final case class SolvableBlock(solvables: Set[SolvableLeaf]) extends Solvable
-
-final case class SolvableRelationship(relationship: PatternRelationship) extends SolvableLeaf {
-  override def solvedRelationship = Some(relationship)
-}
-
-object Solvables {
-  def apply(qg: QueryGraph): Set[Solvable] = qg.patternRelationships.map(SolvableRelationship)
-}
-
-
-

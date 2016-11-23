@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection.{BOTH, INCOMING
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_2.IdName
+import org.neo4j.cypher.internal.ir.v3_2.{IdName, PatternRelationship, SimplePatternLength, VarPatternLength}
 
 class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSupport {
 

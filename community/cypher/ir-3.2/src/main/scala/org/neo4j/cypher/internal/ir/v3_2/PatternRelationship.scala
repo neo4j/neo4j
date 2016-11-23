@@ -17,11 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans
+package org.neo4j.cypher.internal.ir.v3_2
 
-import org.neo4j.cypher.internal.frontend.v3_2.{SemanticDirection, ast}
+import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_2.ast.RelTypeName
-import org.neo4j.cypher.internal.ir.v3_2.IdName
 
 final case class PatternRelationship(name: IdName, nodes: (IdName, IdName), dir: SemanticDirection,
                                      types: Seq[RelTypeName], length: PatternLength) {
@@ -44,19 +43,6 @@ final case class PatternRelationship(name: IdName, nodes: (IdName, IdName), dir:
 
 object PatternRelationship {
   implicit val byName = Ordering.by { (patternRel: PatternRelationship) => patternRel.name }
-}
-
-// TODO: Remove ast representation
-final case class ShortestPathPattern(name: Option[IdName], rel: PatternRelationship, single: Boolean)
-                                    (val expr: ast.ShortestPaths) {
-
-  def isFindableFrom(symbols: Set[IdName]) = symbols.contains(rel.left) && symbols.contains(rel.right)
-
-  def availableSymbols: Set[IdName] = name.toSet ++ rel.coveredIds
-}
-
-object ShortestPathPattern {
-  implicit val byRelName = Ordering.by { (sp: ShortestPathPattern) => sp.rel }
 }
 
 trait PatternLength {
@@ -83,4 +69,3 @@ object VarPatternLength {
 
   def fixed(length: Int) = VarPatternLength(length, Some(length))
 }
-

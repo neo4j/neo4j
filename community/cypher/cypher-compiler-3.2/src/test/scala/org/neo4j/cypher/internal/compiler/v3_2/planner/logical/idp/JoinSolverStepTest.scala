@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.planner._
 import org.neo4j.cypher.internal.compiler.v3_2.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_2.{SemanticDirection, SemanticTable}
-import org.neo4j.cypher.internal.ir.v3_2.{Cardinality, IdName}
+import org.neo4j.cypher.internal.ir.v3_2.{Cardinality, IdName, PatternRelationship, SimplePatternLength}
 
 class JoinSolverStepTest extends CypherFunSuite with LogicalPlanConstructionTestSupport {
 

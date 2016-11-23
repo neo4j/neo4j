@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.planner.{DeleteExpression, _}
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 import org.neo4j.cypher.internal.frontend.v3_2.{InternalException, SemanticDirection, ast, _}
-import org.neo4j.cypher.internal.ir.v3_2.IdName
+import org.neo4j.cypher.internal.ir.v3_2.{IdName, PatternRelationship, VarPatternLength}
 
 /*
  * The responsibility of this class is to produce the correct solved PlannerQuery when creating logical plans.
