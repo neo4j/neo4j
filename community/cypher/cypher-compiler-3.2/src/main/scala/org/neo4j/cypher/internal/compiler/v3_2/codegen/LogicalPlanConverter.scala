@@ -507,7 +507,6 @@ object LogicalPlanConverter {
     override val logicalPlan: LogicalPlan = aggregation
 
     override def consume(context: CodeGenContext, child: CodeGenPlan): (Option[JoinTableMethod], List[Instruction]) = {
-      if (aggregation.groupingExpressions.size > 1) throw new CantCompileQueryException("Not yet able to compile")
       implicit val codeGenContext = context
 
       val opName = context.registerOperator(aggregation)
@@ -521,9 +520,8 @@ object LogicalPlanConverter {
           case func: ast.FunctionInvocation => func.function match {
             case ast.functions.Count if groupingVariables.isEmpty =>
               SimpleCount(variable, createExpression(func.args(0)), func.distinct)
-            case ast.functions.Count if groupingVariables.size == 1  =>
-              val arg = createExpression(func.args(0))
-              new DynamicCount(opName, variable, arg, groupingVariables, func.distinct)
+            case ast.functions.Count  =>
+              new DynamicCount(opName, variable, createExpression(func.args(0)), groupingVariables, func.distinct)
 
             case f => throw new CantCompileQueryException(s"$f is not supported")
           }
