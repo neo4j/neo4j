@@ -154,7 +154,8 @@ class PrettifierTest extends CypherFunSuite {
   }
 
   test("MERGE should start on a new line") {
-    actual("MERGE (a:A) RETURN a, labels(a)") should equal(expected("MERGE (a:A)%nRETURN a, labels(a)"))
+    actual("MERGE (a:A) MERGE (b:B) MERGE (a)-[:T]->(b) RETURN *") should equal(expected(
+      "MERGE (a:A)%nMERGE (b:B)%nMERGE (a)-[:T]->(b)%nRETURN *"))
   }
 
   test("UNWIND should start on a new line") {
@@ -164,5 +165,3 @@ class PrettifierTest extends CypherFunSuite {
   private def actual(text: String) = Prettifier(text)
   private def expected(text: String) = String.format(text)
 }
-
-

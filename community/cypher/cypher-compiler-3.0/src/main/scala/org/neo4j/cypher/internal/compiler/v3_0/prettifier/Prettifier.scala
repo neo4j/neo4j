@@ -150,7 +150,6 @@ class PrettifierParser extends Parser with Base with Strings {
       keyword("SCAN") |
       keyword("CALL") |
       keyword("UNION") |
-      keyword("YIELD") |
       keyword("UNWIND")
     ) ~> BreakingKeywords
   }
