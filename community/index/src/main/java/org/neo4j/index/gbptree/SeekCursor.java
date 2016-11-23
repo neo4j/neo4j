@@ -130,7 +130,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
                 }
             }
             while ( resetPosition = reread = cursor.shouldRetry() );
-            if ( !cursor.checkAndClearBoundsFlag() )
+            if ( cursor.checkAndClearBoundsFlag() )
             {
                 throw new IllegalStateException( "Read out of bounds" );
             }
