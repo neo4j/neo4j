@@ -24,25 +24,9 @@ package org.neo4j.index;
  */
 public class ValueMergers
 {
-    @SuppressWarnings( "rawtypes" )
-    private static final ValueMerger OVERWRITE = new ValueMerger()
-    {
-        @Override
-        public Object merge( Object value, Object withValue )
-        {
-            return withValue;
-        }
-    };
+    private static final ValueMerger OVERWRITE = ( value, withValue ) -> withValue;
 
-    @SuppressWarnings( "rawtypes" )
-    private static final ValueMerger KEEP_EXISTING = new ValueMerger()
-    {
-        @Override
-        public Object merge( Object value, Object withValue )
-        {
-            return null;
-        }
-    };
+    private static final ValueMerger KEEP_EXISTING = ( value, withValue ) -> null;
 
     /**
      * @return {@link ValueMerger} which overwrites value for existing key when inserting.
