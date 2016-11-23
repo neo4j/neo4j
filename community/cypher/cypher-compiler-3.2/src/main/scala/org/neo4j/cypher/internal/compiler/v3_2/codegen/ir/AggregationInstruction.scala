@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.codegen.ir
 
-import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions.AggregateExpression
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.aggregation.AggregateExpression
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.{CodeGenContext, MethodStructure}
 
 case class AggregationInstruction(opName: String, aggregationFunctions: Iterable[AggregateExpression])

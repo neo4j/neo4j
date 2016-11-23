@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_2.codegen
 
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir._
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.aggregation.AggregationConverter.aggregateExpressionConverter
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions.ExpressionConverter._
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.{ManyQueryExpression, QueryExpression, RangeQueryExpression, SingleQueryExpression}
@@ -511,28 +512,13 @@ object LogicalPlanConverter {
 
       val opName = context.registerOperator(aggregation)
 
-      val groupingVariables = aggregation.groupingExpressions.keys.map(context.getProjection)
-
-      def aggregateExpressionConverter(name: String, e: ast.Expression) = {
-        val variable = Variable(context.namer.newVarName(), CodeGenType.primitiveInt)
-        context.addVariable(name, variable)
-        e match {
-          case func: ast.FunctionInvocation => func.function match {
-            case ast.functions.Count if groupingVariables.isEmpty =>
-              SimpleCount(variable, createExpression(func.args(0)), func.distinct)
-            case ast.functions.Count  =>
-              new DynamicCount(opName, variable, createExpression(func.args(0)), groupingVariables, func.distinct)
-
-            case f => throw new CantCompileQueryException(s"$f is not supported")
-          }
-          case _ => throw new CantCompileQueryException(s"$e is not supported")
-        }
-      }
+      val groupingVariables: Iterable[Variable] = aggregation.groupingExpressions.keys.map(context.getProjection)
 
       val aggregationExpression =
         if (aggregation.aggregationExpression.isEmpty) throw new CantCompileQueryException("not yet")
         else aggregation.aggregationExpression.map {
-          case (name, e) => aggregateExpressionConverter(name, e)
+          case (name, e) =>
+            aggregateExpressionConverter(opName, groupingVariables, name, e)
         }
 
       val (methodHandle, innerBlock :: tl) = context.popParent().consume(context, this)
