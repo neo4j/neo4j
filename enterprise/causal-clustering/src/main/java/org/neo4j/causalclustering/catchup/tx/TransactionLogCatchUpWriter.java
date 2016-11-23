@@ -93,6 +93,14 @@ public class TransactionLogCatchUpWriter implements TxPullResponseListener, Auto
         writer.checkPoint( new LogPosition( logVersion, LOG_HEADER_SIZE ) );
         lifespan.close();
 
+        // * comment copied from old StoreCopyClient *
+        // since we just create new log and put checkpoint into it with offset equals to
+        // LOG_HEADER_SIZE we need to update last transaction offset to be equal to this newly defined max
+        // offset otherwise next checkpoint that use last transaction offset will be created for non
+        // existing offset that is in most of the cases bigger than new log size.
+        // Recovery will treat that as last checkpoint and will not try to recover store till new
+        // last closed transaction offset will not overcome old one. Till that happens it will be
+        // impossible for recovery process to restore the store
         File neoStore = new File( storeDir, MetaDataStore.DEFAULT_NAME );
         MetaDataStore.setRecord(
                 pageCache,
