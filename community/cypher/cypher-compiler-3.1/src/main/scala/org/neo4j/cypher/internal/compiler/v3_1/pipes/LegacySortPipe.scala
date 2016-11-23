@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_1.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_1._
 import org.neo4j.cypher.internal.compiler.v3_1.commands.SortItem
-import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription.Arguments.LegacyExpression
+import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription.Arguments.LegacyExpressions
 
 import scala.math.signum
 
@@ -37,8 +37,13 @@ case class LegacySortPipe(source: Pipe, sortDescription: List[SortItem])
       sortWith((a, b) => compareBy(a, b, sortDescription)(state)).iterator
   }
 
-  def planDescription =
-    source.planDescription.andThen(this.id, "Sort", variables, sortDescription.map(item => LegacyExpression(item.expression)):_*)
+  def planDescription = {
+    val sorting = sortDescription.zipWithIndex.map {
+      case (sortItem, idx) => s"o$idx" -> sortItem.expression
+    }
+
+    source.planDescription.andThen(this.id, "Sort", variables, LegacyExpressions(sorting.toMap))
+  }
 
   override def dup(sources: List[Pipe]): Pipe = {
     val (source :: Nil) = sources

@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v3_1.commands.predicates.Equivalent
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.Effects
-import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription.Arguments
+import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription.Arguments.LegacyExpressions
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.{InternalPlanDescription, PlanDescriptionImpl, TwoChildren}
 
 import scala.collection.mutable
@@ -59,11 +59,11 @@ case class ValueHashJoinPipe(lhsExpression: Expression, rhsExpression: Expressio
 
 
   override def planDescriptionWithoutCardinality: InternalPlanDescription = {
-    new PlanDescriptionImpl(
+    PlanDescriptionImpl(
       id = id,
       name = "ValueHashJoin",
       children = TwoChildren(left.planDescription, right.planDescription),
-      arguments = Seq(Arguments.LegacyExpression(lhsExpression), Arguments.LegacyExpression(rhsExpression)),
+      arguments = Seq(LegacyExpressions(Map("lhs" -> lhsExpression, "rhs" -> rhsExpression))),
       variables
     )
   }
