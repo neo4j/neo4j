@@ -46,6 +46,8 @@ class GenSafePointer
     public static final long MIN_GENERATION = 1L;
     // unsigned int
     public static final long MAX_GENERATION = 0xFFFFFFFFL;
+    public static final long GENERATION_MASK = 0xFFFFFFFFL;
+    public static final int UNSIGNED_SHORT_MASK = 0xFFFF;
 
     static final int CHECKSUM_SIZE = 2;
     static final int SIZE =
@@ -70,7 +72,7 @@ class GenSafePointer
 
     public static long readGeneration( PageCursor cursor )
     {
-        return cursor.getInt() & 0xFFFFFFFFL;
+        return cursor.getInt() & GENERATION_MASK;
     }
 
     public static long readPointer( PageCursor cursor )
@@ -93,8 +95,8 @@ class GenSafePointer
 
     private static long get6BLong( PageCursor cursor )
     {
-        long lsb = cursor.getInt() & 0xFFFFFFFFL;
-        long msb = cursor.getShort() & 0xFFFF;
+        long lsb = cursor.getInt() & GENERATION_MASK;
+        long msb = cursor.getShort() & UNSIGNED_SHORT_MASK;
         return lsb | (msb << Integer.SIZE);
     }
 
@@ -117,11 +119,11 @@ class GenSafePointer
     public static short checksumOf( long generation, long pointer )
     {
         short result = 0;
-        result ^= ((short) generation) & 0xFFFF;
-        result ^= ((short) (generation >>> Short.SIZE)) & 0xFFFF;
-        result ^= ((short) pointer) & 0xFFFF;
-        result ^= ((short) (pointer >>> Short.SIZE)) & 0xFFFF;
-        result ^= ((short) (pointer >>> Integer.SIZE)) & 0xFFFF;
+        result ^= ((short) generation) & UNSIGNED_SHORT_MASK;
+        result ^= ((short) (generation >>> Short.SIZE)) & UNSIGNED_SHORT_MASK;
+        result ^= ((short) pointer) & UNSIGNED_SHORT_MASK;
+        result ^= ((short) (pointer >>> Short.SIZE)) & UNSIGNED_SHORT_MASK;
+        result ^= ((short) (pointer >>> Integer.SIZE)) & UNSIGNED_SHORT_MASK;
         return result;
     }
 
