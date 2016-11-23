@@ -65,6 +65,22 @@ public class TreeNodeTest
     }
 
     @Test
+    public void shouldInitializeInternal() throws Exception
+    {
+        // WHEN
+        node.initializeInternal( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+
+        // THEN
+        assertFalse( node.isLeaf( cursor ) );
+        assertTrue( node.isInternal( cursor ) );
+        assertEquals( UNSTABLE_GENERATION, node.gen( cursor ) );
+        assertEquals( 0, node.keyCount( cursor ) );
+        assertEquals( NO_NODE_FLAG, node.leftSibling( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
+        assertEquals( NO_NODE_FLAG, node.rightSibling( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
+        assertEquals( NO_NODE_FLAG, node.newGen( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
+    }
+
+    @Test
     public void shouldWriteAndReadMaxGen() throws Exception
     {
         // GIVEN
@@ -79,19 +95,39 @@ public class TreeNodeTest
     }
 
     @Test
-    public void shouldInitializeInternal() throws Exception
+    public void shouldThrowIfWriteTooLargeGen() throws Exception
     {
-        // WHEN
-        node.initializeInternal( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        // GIVEN
+        node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
 
         // THEN
-        assertFalse( node.isLeaf( cursor ) );
-        assertTrue( node.isInternal( cursor ) );
-        assertEquals( UNSTABLE_GENERATION, node.gen( cursor ) );
-        assertEquals( 0, node.keyCount( cursor ) );
-        assertEquals( NO_NODE_FLAG, node.leftSibling( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
-        assertEquals( NO_NODE_FLAG, node.rightSibling( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
-        assertEquals( NO_NODE_FLAG, node.newGen( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
+        try
+        {
+            node.setGen( cursor, GenSafePointer.MAX_GENERATION + 1 );
+            fail( "Expected throw" );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // Good
+        }
+    }
+
+    @Test
+    public void shouldThrowIfWriteTooSmallGen() throws Exception
+    {
+        // GIVEN
+        node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+
+        // THEN
+        try
+        {
+            node.setGen( cursor, GenSafePointer.MIN_GENERATION - 1 );
+            fail( "Expected throw" );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // Good
+        }
     }
 
     private void shouldSetAndGetKey() throws Exception

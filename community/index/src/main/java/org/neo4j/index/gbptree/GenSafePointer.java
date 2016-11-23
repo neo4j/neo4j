@@ -64,14 +64,19 @@ class GenSafePointer
      */
     public static void write( PageCursor cursor, long generation, long pointer )
     {
+        assertGeneration( generation );
+        cursor.putInt( (int) generation );
+        put6BLong( cursor, pointer );
+        cursor.putShort( checksumOf( generation, pointer ) );
+    }
+
+    static void assertGeneration( long generation )
+    {
         if ( generation < MIN_GENERATION || generation > MAX_GENERATION )
         {
             throw new IllegalArgumentException( "Can not write pointer with generation " + generation +
                     " because outside boundary for valid generation." );
         }
-        cursor.putInt( (int) generation );
-        put6BLong( cursor, pointer );
-        cursor.putShort( checksumOf( generation, pointer ) );
     }
 
     public static long readGeneration( PageCursor cursor )

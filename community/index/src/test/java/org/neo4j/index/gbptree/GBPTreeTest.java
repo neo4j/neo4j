@@ -71,7 +71,7 @@ public class GBPTreeTest
     @Rule
     public final TemporaryFolder folder = new TemporaryFolder( new File( "target" ) );
     @Rule
-    public final RandomRule random = new RandomRule().withSeed( 1 );
+    public final RandomRule random = new RandomRule();
     private PageCache pageCache;
     private File indexFile;
     private final Layout<MutableLong,MutableLong> layout = new SimpleLongLayout();
