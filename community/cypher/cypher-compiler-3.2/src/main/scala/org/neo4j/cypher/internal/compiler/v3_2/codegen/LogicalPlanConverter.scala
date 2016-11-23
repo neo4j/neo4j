@@ -103,7 +103,7 @@ object LogicalPlanConverter {
       val produceResultOpName = context.registerOperator(produceResults)
       val projections = (produceResults.lhs.get match {
         // if lhs is projection than we can simply load things that it projected
-        case _: plans.Projection => produceResults.columns.map(c => c -> LoadVariable(context.getVariable(c)))
+        case _: plans.Projection => produceResults.columns.map(c => c -> LoadVariable(context.getProjection(c)))
         // else we have to evaluate all expressions ourselves
         case _ => produceResults.columns.map(c => c -> ExpressionConverter.createExpressionForVariable(c)(context))
       }).toMap

@@ -86,10 +86,14 @@ object ExpressionConverter {
 
     expression match {
       case node@ast.Variable(name) if context.semanticTable.isNode(node) =>
-        NodeProjection(context.getVariable(name))
+        val variable = context.getProjection(name)
+        if (variable.codeGenType.isPrimitive) NodeProjection(variable)
+        else LoadVariable(variable)
 
       case rel@ast.Variable(name) if context.semanticTable.isRelationship(rel) =>
-        RelationshipProjection(context.getVariable(name))
+        val variable = context.getProjection(name)
+        if (variable.codeGenType.isPrimitive) RelationshipProjection(variable)
+        else LoadVariable(variable)
 
       case e => expressionConverter(e, createProjection)
     }
@@ -166,6 +170,8 @@ object ExpressionConverter {
       case ast.Not(inner) => Not(callback(inner))
 
       case f: ast.FunctionInvocation => functionConverter(f, callback)
+
+      case ast.Variable(name) => LoadVariable(context.getProjection(name))
 
       case other => throw new CantCompileQueryException(s"Expression of $other not yet supported")
     }

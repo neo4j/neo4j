@@ -67,11 +67,12 @@ trait MethodStructure[E] {
   def newSet(name: String)
   def setContains(name: String, value: E): E
   def addToSet(name: String, value: E): Unit
+  def newUniqueAggregationKey(varName: String, structure: Map[String, (CodeGenType,E)]): Unit
   def newAggregationMap(name: String, keyTypes: IndexedSeq[CodeGenType], distinct: Boolean)
-  def aggregationMapGet(name: String, varName: String, key: IndexedSeq[(CodeGenType,E)])
-  def aggregationMapPut(name: String, key: IndexedSeq[(CodeGenType,E)], value: E): Unit
-  def aggregationMapIterate(name: String, key: IndexedSeq[(String,CodeGenType)], valueVar: String)(block: MethodStructure[E] => Unit): Unit
-  def checkDistinct(name: String, key: IndexedSeq[(CodeGenType, E)], value: E)(block: MethodStructure[E] => Unit)
+  def aggregationMapGet(name: String, varName: String, key: Map[String,(CodeGenType,E)], keyVar: String)
+  def aggregationMapPut(name: String, key: Map[String,(CodeGenType,E)], keyVar: String, value: E): Unit
+  def aggregationMapIterate(name: String, key: Map[String,CodeGenType], valueVar: String)(block: MethodStructure[E] => Unit): Unit
+  def checkDistinct(name: String, key: Map[String,(CodeGenType, E)], keyVar: String, value: E, valueType: CodeGenType)(block: MethodStructure[E] => Unit)
 
   def castToCollection(value: E): E
 

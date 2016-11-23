@@ -25,9 +25,11 @@ import java.util.Collections.singletonMap
 
 import org.neo4j.cypher.internal.compiler.v3_2.{CRS, GeographicPoint}
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.spatial.{Coordinate, Point, CRS => JavaCRS}
+import org.neo4j.graphdb.spatial.{CRS => JavaCRS, Coordinate, Point}
 
 class EquivalentTest extends CypherFunSuite {
+  shouldNotMatch(23.toByte, 23.5)
+
   shouldMatch(1.0, 1L)
   shouldMatch(1.0, 1)
   shouldMatch(1.0, 1.0)
@@ -58,7 +60,6 @@ class EquivalentTest extends CypherFunSuite {
   shouldMatch(43.toByte, 43.toLong)
   shouldMatch(23.toByte, 23.0d)
   shouldMatch(23.toByte, 23.0f)
-  shouldNotMatch(23.toByte, 23.5)
   shouldNotMatch(23.toByte, 23.5f)
   shouldMatch(11.toShort, 11.toByte)
   shouldMatch(42.toShort, 42.toShort)

@@ -22,51 +22,91 @@ package org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.Instruction
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.{CodeGenContext, MethodStructure, Variable}
 
-trait AggregateExpression {
+abstract class AggregateExpression(expression: CodeGenExpression, distinct: Boolean) {
 
   def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext): Unit
 
   def update[E](generator: MethodStructure[E])(implicit context: CodeGenContext): Unit
 
   def continuation(instruction: Instruction): Instruction = instruction
+
+  def distinctCondition[E](value: E, valueType: CodeGenType, structure: MethodStructure[E])(block: MethodStructure[E] => Unit)
+                          (implicit context: CodeGenContext)
+
+  protected def ifNotNull[E](structure: MethodStructure[E])(block: MethodStructure[E] => Unit)
+                          (implicit context: CodeGenContext) = {
+    expression match {
+      case NodeExpression(v) => primitiveIfNot(v, structure)(block(_))
+      case NodeProjection(v) => primitiveIfNot(v, structure)(block(_))
+      case RelationshipExpression(v) => primitiveIfNot(v, structure)(block(_))
+      case RelationshipProjection(v) => primitiveIfNot(v, structure)(block(_))
+      case _ =>
+        val tmpName = context.namer.newVarName()
+        structure.assign(tmpName, expression.codeGenType, expression.generateExpression(structure))
+        structure.ifNonNullStatement(structure.loadVariable(tmpName)) { body =>
+          if (distinct) {
+            distinctCondition(structure.loadVariable(tmpName),expression.codeGenType, body) { inner =>
+              block(inner)
+            }
+          }
+          else block(body)
+        }
+    }
+  }
+
+  private def primitiveIfNot[E](v: Variable, structure: MethodStructure[E])(block: MethodStructure[E] => Unit)
+                               (implicit context: CodeGenContext) = {
+    structure.ifNotStatement(structure.equalityExpression(structure.loadVariable(v.name),
+                                                          structure.constantExpression(Long.box(-1)),
+                                                          CodeGenType.primitiveInt)) { body =>
+      if (distinct) {
+        distinctCondition(structure.loadVariable(v.name), CodeGenType.primitiveInt, body) { inner =>
+          block(inner)
+        }
+      }
+      else block(body)
+    }
+  }
 }
 
-
-
-case class SimpleCount(variable: Variable, expression: CodeGenExpression, distinct: Boolean) extends AggregateExpression {
+case class SimpleCount(variable: Variable, expression: CodeGenExpression, distinct: Boolean)
+  extends AggregateExpression(expression, distinct) {
 
   def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
     expression.init(generator)
     generator.assign(variable.name, CodeGenType.primitiveInt, generator.constantExpression(Long.box(0L)))
-    if (distinct) generator.newSet(setName(variable))
-  }
-
-  def update[E](structure: MethodStructure[E])(implicit context: CodeGenContext) = {
-    val tmpName = context.namer.newVarName()
-    structure.assign(tmpName, CodeGenType.Any, expression.generateExpression(structure))
-    structure.ifNonNullStatement(structure.loadVariable(tmpName)) { body =>
-      condition(tmpName, body) { inner =>
-        inner.incrementInteger(variable.name)
-      }
+    if (distinct) {
+      generator.newSet(setName(variable))
     }
   }
 
-  private def condition[E](name: String, structure: MethodStructure[E])(block: MethodStructure[E] => Unit) = {
-    if (distinct) {
-      structure.ifNotStatement(structure.setContains(setName(variable), structure.loadVariable(name))) { inner =>
-        inner.addToSet(setName(variable), inner.loadVariable(name))
-        block(inner)
-      }
-    } else block(structure)
+  def update[E](structure: MethodStructure[E])(implicit context: CodeGenContext) = {
+    ifNotNull(structure) { inner =>
+      inner.incrementInteger(variable.name)
+    }
+  }
+
+  def distinctCondition[E](value: E, valueType: CodeGenType, structure: MethodStructure[E])
+                          (block: MethodStructure[E] => Unit)
+                          (implicit context: CodeGenContext) = {
+    val tmpName = context.namer.newVarName()
+    structure.newUniqueAggregationKey(tmpName, Map(typeName(variable) -> (valueType -> value)))
+    structure.ifNotStatement(structure.setContains(setName(variable), structure.loadVariable(tmpName))) { inner =>
+      inner.addToSet(setName(variable), inner.loadVariable(tmpName))
+      block(inner)
+    }
   }
 
   private def setName(variable: Variable) = variable.name + "Set"
+
+  private def typeName(variable: Variable) = variable.name + "Type"
 }
 
 class DynamicCount(opName: String, variable: Variable, expression: CodeGenExpression,
-                   groupingKey: Iterable[Variable], distinct: Boolean) extends AggregateExpression {
+                   groupingKey: Iterable[Variable], distinct: Boolean) extends AggregateExpression(expression, distinct) {
 
   private var mapName: String = null
+  private var keyVar: String = null
 
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
     expression.init(generator)
@@ -75,31 +115,24 @@ class DynamicCount(opName: String, variable: Variable, expression: CodeGenExpres
   }
 
   override def update[E](structure: MethodStructure[E])(implicit context: CodeGenContext) = {
-    val localVar = context.namer.newVarName()
-    structure.aggregationMapGet(mapName, localVar, createKey(structure))
-    condition(structure, expression.generateExpression(structure)) { inner =>
-      inner.incrementInteger(localVar)
+    keyVar = context.namer.newVarName()
+    val valueVar = context.namer.newVarName()
+    structure.aggregationMapGet(mapName, valueVar, createKey(structure), keyVar)
+    ifNotNull(structure) { inner =>
+      inner.incrementInteger(valueVar)
     }
-    structure.aggregationMapPut(mapName, createKey(structure),
-                                structure.loadVariable(localVar))
+    structure.aggregationMapPut(mapName, createKey(structure), keyVar, structure.loadVariable(valueVar))
   }
 
-  private def condition[E](structure: MethodStructure[E], value: E)(block: MethodStructure[E] => Unit)(implicit context: CodeGenContext) = {
-    if (distinct) {
-      structure.ifNonNullStatement(value) { i1 =>
-        i1.checkDistinct(mapName, createKey(structure), value) { i2 =>
-          block(i2)
-        }
-      }
-    } else {
-      structure.ifNonNullStatement(value) { inner =>
-        block(inner)
-      }
+  def distinctCondition[E](value: E, valueType: CodeGenType, structure: MethodStructure[E])(block: MethodStructure[E] => Unit)
+                          (implicit context: CodeGenContext) = {
+    structure.checkDistinct(mapName, createKey(structure), keyVar, value, expression.codeGenType) { inner =>
+      block(inner)
     }
   }
 
-  private def createKey[E](body: MethodStructure[E])(implicit context: CodeGenContext): IndexedSeq[(CodeGenType, E)] = {
-    groupingKey.map(e => (e.codeGenType, body.loadVariable(e.name))).toIndexedSeq
+  private def createKey[E](body: MethodStructure[E])(implicit context: CodeGenContext) = {
+    groupingKey.map(e => e.name -> (e.codeGenType -> body.loadVariable(e.name))).toMap
   }
 
   override def continuation(instruction: Instruction): Instruction = new Instruction {
@@ -110,7 +143,7 @@ class DynamicCount(opName: String, variable: Variable, expression: CodeGenExpres
 
     override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext): Unit = {
       generator.trace(opName) { body =>
-        val keyArg = groupingKey.map(k => k.name -> k.codeGenType).toIndexedSeq
+        val keyArg = groupingKey.map(k => k.name -> k.codeGenType).toMap
         body.aggregationMapIterate(mapName, keyArg, variable.name) { inner =>
           instruction.body(inner)
         }
