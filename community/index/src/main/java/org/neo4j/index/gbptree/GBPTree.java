@@ -316,18 +316,13 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
                 }
             }
             while ( cursor.shouldRetry() );
-            cursor.checkAndClearCursorException();
             if ( cursor.checkAndClearBoundsFlag() )
             {
-                // Something's wrong, get a new fresh rootId and go from the top again
-                cursor.next( rootId );
-                continue;
+                throw new IllegalStateException( "Reading out of bounds." );
+
             }
             if ( isInternal )
             {
-                // TODO perhaps detect being too far to the left and so follow right siblings,
-                // to reduce unnecessary seek in leafs (concurrent splits would be the cause)
-
                 PointerChecking.checkChildPointer( childId );
 
                 if ( !cursor.next( childId ) )
