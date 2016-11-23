@@ -32,6 +32,11 @@ import org.neo4j.io.pagecache.PageCursor;
  * and manipulating that data by standard means (which are designed to work on {@link PageCursor}
  * can stay the same if wrapping the byte array as such. If splitting code later changes to not
  * do this temporary copy then this class won't be needed anymore.
+ *
+ * All the accessor methods (getXXX, putXXX) are implemented and delegates calls to its internal {@link ByteBuffer}.
+ * {@link #setOffset(int)}, {@link #getOffset()} and {@link #rewind()} positions the internal {@link ByteBuffer}.
+ * {@link #shouldRetry()} always returns {@code false}. No other methods should be used and will throw
+ * {@link UnsupportedOperationException}.
  */
 class ByteArrayPageCursor extends PageCursor
 {
