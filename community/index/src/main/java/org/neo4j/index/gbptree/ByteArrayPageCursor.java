@@ -27,12 +27,18 @@ import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
 
 /**
+ * TODO: Adding another implementation of PageCursor (this implementation)
+ * TODO: will mean Neo as a whole have three implementations in total.
+ * TODO: This results in a slower method dispatch for ALL PageCursors. Is it worth it?
+ * <p>
+ * Wraps a byte array and present it as a PageCursor.
+ * <p>
  * This class is bridging something which would otherwise make {@link InternalTreeLogic} code slightly more
  * complicated. Currently when splitting nodes keys/values/children are read into temporary arrays
  * and manipulating that data by standard means (which are designed to work on {@link PageCursor}
  * can stay the same if wrapping the byte array as such. If splitting code later changes to not
  * do this temporary copy then this class won't be needed anymore.
- *
+ * <p>
  * All the accessor methods (getXXX, putXXX) are implemented and delegates calls to its internal {@link ByteBuffer}.
  * {@link #setOffset(int)}, {@link #getOffset()} and {@link #rewind()} positions the internal {@link ByteBuffer}.
  * {@link #shouldRetry()} always returns {@code false}. No other methods should be used and will throw
