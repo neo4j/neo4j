@@ -61,6 +61,14 @@ import org.neo4j.io.pagecache.PagedFile;
  * <p>
  * A single writer w/ multiple concurrent readers is supported. Assuming usage adheres to this
  * constraint neither writer nor readers are blocking. Readers are virtually garbage-free.
+ * <p>
+ * An reader of GB+Tree is a {@link SeekCursor} that returns result as it finds them.
+ * As the cursor move over keys/values, returned results are considered "behind" it
+ * and likewise keys not yet returned "in front of".
+ * Readers will always read latest written changes in front of it but will not see changes that appear behind.
+ * The isolation level is thus read committed.
+ * The tree have no knowledge about transactions and apply updates as isolated units of work one entry at the time.
+ * Therefore, readers can see parts of transactions that are not fully applied yet.
  *
  * @param <KEY> type of keys
  * @param <VALUE> type of values
