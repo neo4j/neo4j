@@ -63,7 +63,7 @@ public class LatestCheckPointFinder
                     PhysicalLogFile.tryOpenForVersion( logFiles, fileSystem, version, false );
             if ( channel == null )
             {
-                return new LatestCheckPoint( null, false, oldestVersionFound );
+                break;
             }
 
             oldestVersionFound = version;
