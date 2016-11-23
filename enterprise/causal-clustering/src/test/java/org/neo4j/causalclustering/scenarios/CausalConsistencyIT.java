@@ -26,6 +26,7 @@ import org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess;
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.readreplica.ReadReplicaGraphDatabase;
+import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.txtracking.TransactionIdTracker;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
@@ -33,7 +34,6 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.causalclustering.ClusterRule;
 
 import static java.time.Duration.ofSeconds;
-
 import static org.junit.Assert.fail;
 
 public class CausalConsistencyIT
@@ -98,7 +98,10 @@ public class CausalConsistencyIT
 
     private TransactionIdTracker transactionIdTracker( GraphDatabaseAPI database )
     {
-        return new TransactionIdTracker( database
-                    .getDependencyResolver().resolveDependency( TransactionIdStore.class ) );
+        TransactionIdStore transactionIdStore =
+                database.getDependencyResolver().resolveDependency( TransactionIdStore.class );
+        AvailabilityGuard availabilityGuard =
+                database.getDependencyResolver().resolveDependency( AvailabilityGuard.class );
+        return new TransactionIdTracker( transactionIdStore, availabilityGuard );
     }
 }

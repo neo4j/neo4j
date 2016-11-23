@@ -28,11 +28,11 @@ import org.neo4j.bolt.v1.runtime.cypher.CypherAdapterStream;
 import org.neo4j.bolt.v1.runtime.spi.BoltResult;
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.graphdb.Result;
+import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.txtracking.TransactionIdTracker;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -64,16 +64,16 @@ class TransactionStateMachineSPI implements TransactionStateMachine.SPI
                                 ThreadToStatementContextBridge txBridge,
                                 QueryExecutionEngine queryExecutionEngine,
                                 TransactionIdStore transactionIdStoreSupplier,
+                                AvailabilityGuard availabilityGuard,
                                 GraphDatabaseQueryService queryService,
                                 Clock clock )
     {
         this.db = db;
         this.txBridge = txBridge;
         this.queryExecutionEngine = queryExecutionEngine;
-        this.transactionIdTracker = new TransactionIdTracker( transactionIdStoreSupplier );
+        this.transactionIdTracker = new TransactionIdTracker( transactionIdStoreSupplier, availabilityGuard );
         this.contextFactory = Neo4jTransactionalContextFactory.create( queryService, locker );
         this.queryService = queryService;
-
         this.clock = clock;
     }
 
