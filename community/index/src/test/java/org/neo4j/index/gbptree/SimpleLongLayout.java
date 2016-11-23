@@ -21,14 +21,12 @@ package org.neo4j.index.gbptree;
 
 import org.apache.commons.lang3.mutable.MutableLong;
 
-import java.nio.charset.Charset;
-
 import org.neo4j.io.pagecache.PageCursor;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 class SimpleLongLayout implements Layout<MutableLong,MutableLong>
 {
-    private static final Charset UTF_8 = Charset.forName( "UTF-8" );
-
     private String customNameAsMetaData;
 
     SimpleLongLayout( String customNameAsMetaData )
