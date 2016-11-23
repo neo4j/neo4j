@@ -39,13 +39,13 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
+import static java.lang.String.format;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_ID;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 
 public class TransactionLogCatchUpWriter implements TxPullResponseListener, AutoCloseable
 {
     private final Lifespan lifespan = new Lifespan();
-    private final File neoStoreFile;
     private final PageCache pageCache;
     private final Log log;
     private final TransactionLogWriter writer;
@@ -53,29 +53,39 @@ public class TransactionLogCatchUpWriter implements TxPullResponseListener, Auto
     private final File storeDir;
 
     private long lastTxId = -1;
+    private long expectedTxId;
 
-    TransactionLogCatchUpWriter( File storeDir, FileSystemAbstraction fs, PageCache pageCache, LogProvider logProvider, long lastCommittedTxId )
+    TransactionLogCatchUpWriter( File storeDir, FileSystemAbstraction fs, PageCache pageCache, LogProvider logProvider, long fromTxId )
             throws IOException
     {
-        this.neoStoreFile = new File( storeDir, MetaDataStore.DEFAULT_NAME );
         this.pageCache = pageCache;
         this.log = logProvider.getLog( getClass() );
         this.logFiles = new PhysicalLogFiles( storeDir, fs );
         ReadOnlyLogVersionRepository logVersionRepository = new ReadOnlyLogVersionRepository( pageCache, storeDir );
         LogFile logFile = lifespan.add( new PhysicalLogFile( fs, logFiles, Long.MAX_VALUE /*don't rotate*/,
-                () -> lastCommittedTxId - 1, logVersionRepository,
+                () -> fromTxId - 1, logVersionRepository,
                 new Monitors().newMonitor( PhysicalLogFile.Monitor.class ), new LogHeaderCache( 10 ) ) );
         this.writer = new TransactionLogWriter( new LogEntryWriter( logFile.getWriter() ) );
         this.storeDir = storeDir;
+        this.expectedTxId = fromTxId;
     }
 
     @Override
     public synchronized void onTxReceived( TxPullResponse txPullResponse )
     {
         CommittedTransactionRepresentation tx = txPullResponse.tx();
+        long receivedTxId = tx.getCommitEntry().getTxId();
+
+        if ( receivedTxId != expectedTxId )
+        {
+            throw new RuntimeException( format( "Expected txId: %d but got: %d", expectedTxId, receivedTxId ) );
+        }
+
+        lastTxId = receivedTxId;
+        expectedTxId++;
+
         try
         {
-            lastTxId = tx.getCommitEntry().getTxId();
             writer.append( tx.getTransactionRepresentation(), lastTxId );
         }
         catch ( IOException e )
@@ -110,6 +120,7 @@ public class TransactionLogCatchUpWriter implements TxPullResponseListener, Auto
 
         if ( lastTxId != -1 )
         {
+            File neoStoreFile = new File( storeDir, MetaDataStore.DEFAULT_NAME );
             MetaDataStore.setRecord( pageCache, neoStoreFile, LAST_TRANSACTION_ID, lastTxId );
         }
     }
