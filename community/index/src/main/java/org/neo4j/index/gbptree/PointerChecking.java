@@ -28,7 +28,7 @@ class PointerChecking
      * if failure. Must be called after a consistent read from page cache (after {@link PageCursor#shouldRetry()}.
      *
      * @param result result from {@link GenSafePointerPair#READ} or
-     * {@link GenSafePointerPair#write(PageCursor, long, int, int)}.
+     * {@link GenSafePointerPair#write(PageCursor, long, long, long)}.
      */
     static void checkChildPointer( long result )
     {

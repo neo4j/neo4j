@@ -123,14 +123,16 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
 
     /**
      * Stable generation, i.e. generation which has survived the last {@link #flush()}.
+     * Unsigned int.
      */
-    private volatile int stableGeneration = 0;
+    private volatile long stableGeneration = 0;
 
     /**
      * Unstable generation, i.e. the current generation under evolution. This generation will be the
      * {@link #stableGeneration} in the next {@link #flush()}.
+     * Unsigned int.
      */
-    private volatile int unstableGeneration = 1;
+    private volatile long unstableGeneration = 1;
 
     /**
      * Opens an index {@code indexFile} in the {@code pageCache}, creating and initializing it if it doesn't exist.

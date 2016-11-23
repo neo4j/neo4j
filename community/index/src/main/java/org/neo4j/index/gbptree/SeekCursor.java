@@ -57,11 +57,12 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
     private boolean currentContainsEnd;
     private boolean reread;
     private boolean resetPosition;
-    private final int stableGeneration;
-    private final int unstableGeneration;
+    private final long stableGeneration;
+    private final long unstableGeneration;
 
     SeekCursor( PageCursor leafCursor, KEY mutableKey, VALUE mutableValue, TreeNode<KEY,VALUE> bTreeNode,
-            KEY fromInclusive, KEY toExclusive, Layout<KEY,VALUE> layout, int stableGeneration, int unstableGeneration,
+            KEY fromInclusive, KEY toExclusive, Layout<KEY,VALUE> layout,
+            long stableGeneration, long unstableGeneration,
             int firstPosToRead, int keyCount )
     {
         this.cursor = leafCursor;

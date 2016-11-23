@@ -104,7 +104,7 @@ class TreeNode<KEY,VALUE>
         }
     }
 
-    private void initialize( PageCursor cursor, byte type, int stableGeneration, int unstableGeneration )
+    private void initialize( PageCursor cursor, byte type, long stableGeneration, long unstableGeneration )
     {
         cursor.putByte( BYTE_POS_TYPE, type );
         setGen( cursor, unstableGeneration );
@@ -114,12 +114,12 @@ class TreeNode<KEY,VALUE>
         setNewGen( cursor, NO_NODE_FLAG, stableGeneration, unstableGeneration );
     }
 
-    void initializeLeaf( PageCursor cursor, int stableGeneration, int unstableGeneration )
+    void initializeLeaf( PageCursor cursor, long stableGeneration, long unstableGeneration )
     {
         initialize( cursor, LEAF_FLAG, stableGeneration, unstableGeneration );
     }
 
-    void initializeInternal( PageCursor cursor, int stableGeneration, int unstableGeneration )
+    void initializeInternal( PageCursor cursor, long stableGeneration, long unstableGeneration )
     {
         initialize( cursor, INTERNAL_FLAG, stableGeneration, unstableGeneration );
     }
@@ -146,19 +146,19 @@ class TreeNode<KEY,VALUE>
         return cursor.getInt( BYTE_POS_KEYCOUNT );
     }
 
-    long rightSibling( PageCursor cursor, int stableGeneration, int unstableGeneration )
+    long rightSibling( PageCursor cursor, long stableGeneration, long unstableGeneration )
     {
         cursor.setOffset( BYTE_POS_RIGHTSIBLING );
         return GenSafePointerPair.read( cursor, stableGeneration, unstableGeneration );
     }
 
-    long leftSibling( PageCursor cursor, int stableGeneration, int unstableGeneration )
+    long leftSibling( PageCursor cursor, long stableGeneration, long unstableGeneration )
     {
         cursor.setOffset( BYTE_POS_LEFTSIBLING );
         return GenSafePointerPair.read( cursor, stableGeneration, unstableGeneration );
     }
 
-    long newGen( PageCursor cursor, int stableGeneration, int unstableGeneration )
+    long newGen( PageCursor cursor, long stableGeneration, long unstableGeneration )
     {
         cursor.setOffset( BYTE_POS_NEWGEN );
         return GenSafePointerPair.read( cursor, stableGeneration, unstableGeneration );
@@ -175,19 +175,19 @@ class TreeNode<KEY,VALUE>
         cursor.putInt( BYTE_POS_KEYCOUNT, count );
     }
 
-    void setRightSibling( PageCursor cursor, long rightSiblingId, int stableGeneration, int unstableGeneration )
+    void setRightSibling( PageCursor cursor, long rightSiblingId, long stableGeneration, long unstableGeneration )
     {
         cursor.setOffset( BYTE_POS_RIGHTSIBLING );
         GenSafePointerPair.write( cursor, rightSiblingId, stableGeneration, unstableGeneration );
     }
 
-    void setLeftSibling( PageCursor cursor, long leftSiblingId, int stableGeneration, int unstableGeneration )
+    void setLeftSibling( PageCursor cursor, long leftSiblingId, long stableGeneration, long unstableGeneration )
     {
         cursor.setOffset( BYTE_POS_LEFTSIBLING );
         GenSafePointerPair.write( cursor, leftSiblingId, stableGeneration, unstableGeneration );
     }
 
-    void setNewGen( PageCursor cursor, long pageId, int stableGeneration, int unstableGeneration )
+    void setNewGen( PageCursor cursor, long pageId, long stableGeneration, long unstableGeneration )
     {
         cursor.setOffset( BYTE_POS_NEWGEN );
         GenSafePointerPair.write( cursor, pageId, stableGeneration, unstableGeneration );
@@ -273,26 +273,26 @@ class TreeNode<KEY,VALUE>
         layout.writeValue( cursor, value );
     }
 
-    long childAt( PageCursor cursor, int pos, int stableGeneration, int unstableGeneration )
+    long childAt( PageCursor cursor, int pos, long stableGeneration, long unstableGeneration )
     {
         cursor.setOffset( childOffset( pos ) );
         return GenSafePointerPair.read( cursor, stableGeneration, unstableGeneration );
     }
 
     void insertChildAt( PageCursor cursor, long child, int pos, int keyCount, byte[] tmp,
-            int stableGeneration, int unstableGeneration )
+            long stableGeneration, long unstableGeneration )
     {
         insertSlotAt( cursor, pos, keyCount + 1, childOffset( 0 ), SIZE_PAGE_REFERENCE, tmp );
         setChildAt( cursor, child, pos, stableGeneration, unstableGeneration );
     }
 
-    void setChildAt( PageCursor cursor, long child, int pos, int stableGeneration, int unstableGeneration )
+    void setChildAt( PageCursor cursor, long child, int pos, long stableGeneration, long unstableGeneration )
     {
         cursor.setOffset( childOffset( pos ) );
         writeChild( cursor, child, stableGeneration, unstableGeneration );
     }
 
-    void writeChild( PageCursor cursor, long child, int stableGeneration, int unstableGeneration)
+    void writeChild( PageCursor cursor, long child, long stableGeneration, long unstableGeneration)
     {
         GenSafePointerPair.write( cursor, child, stableGeneration, unstableGeneration );
     }

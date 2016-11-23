@@ -973,19 +973,19 @@ public class GenSafePointerPairTest
         return GenSafePointerPair.write( cursor, pointer, STABLE_GENERATION, UNSTABLE_GENERATION );
     }
 
-    private void writeSlotA( int generation )
+    private void writeSlotA( long generation )
     {
         cursor.setOffset( 0 );
         writeSlot( generation, POINTER_A );
     }
 
-    private void writeSlotB( int generation )
+    private void writeSlotB( long generation )
     {
         cursor.setOffset( GenSafePointer.SIZE );
         writeSlot( generation, POINTER_B );
     }
 
-    private void writeSlot( int generation, long pointer )
+    private void writeSlot( long generation, long pointer )
     {
         GenSafePointer.write( cursor, generation, pointer );
     }
