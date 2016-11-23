@@ -169,8 +169,9 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
             // Initialize index root node to a leaf node.
             try ( PageCursor cursor = pagedFile.io( rootId, PagedFile.PF_SHARED_WRITE_LOCK ) )
             {
-                cursor.next();
+                goToRoot( cursor );
                 bTreeNode.initializeLeaf( cursor, stableGeneration, unstableGeneration );
+                checkOutOfBounds( cursor );
             }
         }
     }
@@ -202,6 +203,7 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
                         layout.readMetaData( metaCursor );
                     }
                     while ( metaCursor.shouldRetry() );
+                    checkOutOfBounds( metaCursor );
                 }
                 if ( layoutIdentifier != layout.identifier() )
                 {
@@ -265,6 +267,7 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
                 metaCursor.putInt( layout.majorVersion() );
                 metaCursor.putInt( layout.minorVersion() );
                 layout.writeMetaData( metaCursor );
+                checkOutOfBounds( metaCursor );
             }
             pagedFile.flushAndForce();
             created = true;
@@ -277,7 +280,7 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         PageCursor metaCursor = pagedFile.io( META_PAGE_ID, PagedFile.PF_SHARED_WRITE_LOCK );
         if ( !metaCursor.next() )
         {
-            throw new IllegalStateException( "Couldn't go to meta data page " + META_PAGE_ID );
+            throw new IllegalStateException( "Could not go to meta data page " + META_PAGE_ID );
         }
         return metaCursor;
     }
@@ -288,7 +291,7 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         PageCursor cursor = pagedFile.io( rootId, PagedFile.PF_SHARED_READ_LOCK );
         KEY key = layout.newKey();
         VALUE value = layout.newValue();
-        cursor.next();
+        goToRoot( cursor );
 
         boolean isInternal;
         int keyCount;
@@ -316,11 +319,7 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
                 }
             }
             while ( cursor.shouldRetry() );
-            if ( cursor.checkAndClearBoundsFlag() )
-            {
-                throw new IllegalStateException( "Reading out of bounds." );
-
-            }
+            checkOutOfBounds( cursor );
             if ( isInternal )
             {
                 PointerChecking.checkChildPointer( childId );
@@ -374,6 +373,7 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
             cursor.putLong( 4, rootId );
             cursor.putLong( 12, lastId );
             // generations should be incremented as part of flush, but this functionality doesn't exist yet.
+            checkOutOfBounds( cursor );
         }
     }
 
@@ -399,6 +399,22 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
             throw new IllegalStateException( "Only supports one concurrent writer" );
         }
         return result.take( rootId, options );
+    }
+
+    private void goToRoot( PageCursor cursor ) throws IOException
+    {
+        if ( !cursor.next( rootId ) )
+        {
+            throw new IllegalStateException( "Could not go to root " + rootId );
+        }
+    }
+
+    private void checkOutOfBounds( PageCursor cursor )
+    {
+        if ( cursor.checkAndClearBoundsFlag() )
+        {
+            throw new IllegalStateException( "Some internal problem causing out of bounds" );
+        }
     }
 
     private class SingleIndexWriter implements IndexWriter<KEY,VALUE>
@@ -429,7 +445,7 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         @Override
         public void merge( KEY key, VALUE value, ValueMerger<VALUE> valueMerger ) throws IOException
         {
-            cursor.next( rootId );
+            goToRoot( cursor );
 
             SplitResult<KEY> split = treeLogic.insert( cursor, key, value, valueMerger, options,
                     stableGeneration, unstableGeneration );
@@ -438,7 +454,10 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
             {
                 // New root
                 long newRootId = acquireNewId();
-                cursor.next( newRootId );
+                if ( !cursor.next( newRootId ) )
+                {
+                    throw new IllegalStateException( "Could not go to new root " + newRootId );
+                }
 
                 bTreeNode.initializeInternal( cursor, stableGeneration, unstableGeneration );
                 bTreeNode.insertKeyAt( cursor, split.primKey, 0, 0, tmp );
@@ -448,18 +467,18 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
                 rootId = newRootId;
             }
 
-            if ( cursor.checkAndClearBoundsFlag() )
-            {
-                throw new IllegalStateException( "Some internal problem causing out of bounds" );
-            }
+            checkOutOfBounds( cursor );
         }
 
         @Override
         public VALUE remove( KEY key ) throws IOException
         {
-            cursor.next( rootId );
+            goToRoot( cursor );
 
-            return treeLogic.remove( cursor, key, layout.newValue(), stableGeneration, unstableGeneration );
+            VALUE result = treeLogic.remove( cursor, key, layout.newValue(), stableGeneration, unstableGeneration );
+
+            checkOutOfBounds( cursor );
+            return result;
         }
 
         @Override

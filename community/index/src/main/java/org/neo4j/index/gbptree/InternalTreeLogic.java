@@ -135,12 +135,12 @@ class InternalTreeLogic<KEY,VALUE>
         long childId = bTreeNode.childAt( cursor, pos, stableGeneration, unstableGeneration );
         PointerChecking.checkChildPointer( childId );
 
-        cursor.next( childId );
+        goTo( cursor, childId );
 
         SplitResult<KEY> split = insert( cursor, key, value, valueMerger, options, stableGeneration,
                 unstableGeneration );
 
-        cursor.next( currentId );
+        goTo( cursor, currentId );
 
         if ( split != null )
         {
@@ -232,7 +232,7 @@ class InternalTreeLogic<KEY,VALUE>
 
         {   // Update new right
             // NOTE: don't include middle
-            cursor.next( newRight );
+            goTo( cursor, newRight );
             bTreeNode.initializeInternal( cursor, stableGeneration, unstableGeneration );
             bTreeNode.setRightSibling( cursor, oldRight, stableGeneration, unstableGeneration );
             bTreeNode.setLeftSibling( cursor, newLeft, stableGeneration, unstableGeneration );
@@ -252,13 +252,13 @@ class InternalTreeLogic<KEY,VALUE>
         // Update old right with new left sibling (newRight)
         if ( oldRight != TreeNode.NO_NODE_FLAG )
         {
-            cursor.next( oldRight );
+            goTo( cursor, oldRight );
             bTreeNode.setLeftSibling( cursor, newRight, stableGeneration, unstableGeneration );
         }
 
         // Update left node
         // Move cursor back to left
-        cursor.next( fullNode );
+        goTo( cursor, fullNode );
         bTreeNode.setKeyCount( cursor, middlePos );
         if ( pos < middlePos )
         {
@@ -438,7 +438,7 @@ class InternalTreeLogic<KEY,VALUE>
         }
 
         {   // Update new right
-            cursor.next( newRight );
+            goTo( cursor, newRight );
             bTreeNode.initializeLeaf( cursor, stableGeneration, unstableGeneration );
             bTreeNode.setRightSibling( cursor, oldRight, stableGeneration, unstableGeneration );
             bTreeNode.setLeftSibling( cursor, newLeft, stableGeneration, unstableGeneration );
@@ -450,12 +450,12 @@ class InternalTreeLogic<KEY,VALUE>
         // Update old right with new left sibling (newRight)
         if ( oldRight != TreeNode.NO_NODE_FLAG )
         {
-            cursor.next( oldRight );
+            goTo( cursor, oldRight );
             bTreeNode.setLeftSibling( cursor, newRight, stableGeneration, unstableGeneration );
         }
 
         // Update left child
-        cursor.next( current );
+        goTo( cursor, current );
         bTreeNode.setKeyCount( cursor, middlePos );
         // If pos < middle. Write shifted values to left node. Else, don't write anything.
         if ( pos < middlePos )
@@ -485,11 +485,11 @@ class InternalTreeLogic<KEY,VALUE>
         }
 
         long currentId = cursor.getCurrentPageId();
-        cursor.next( bTreeNode.childAt( cursor, pos, stableGeneration, unstableGeneration ) );
+        goTo( cursor, bTreeNode.childAt( cursor, pos, stableGeneration, unstableGeneration ) );
 
         VALUE result = remove( cursor, key, into, stableGeneration, unstableGeneration );
 
-        cursor.next( currentId );
+        goTo( cursor, currentId );
 
         return result;
     }
@@ -516,5 +516,13 @@ class InternalTreeLogic<KEY,VALUE>
         bTreeNode.setKeyCount( cursor, keyCount - 1 );
 
         return into;
+    }
+
+    private void goTo( PageCursor cursor, long childId ) throws IOException
+    {
+        if ( !cursor.next( childId ) )
+        {
+            throw new IllegalStateException( "Could not go to " + childId );
+        }
     }
 }

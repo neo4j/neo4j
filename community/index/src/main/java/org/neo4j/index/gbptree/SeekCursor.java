@@ -130,6 +130,10 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
                 }
             }
             while ( resetPosition = reread = cursor.shouldRetry() );
+            if ( !cursor.checkAndClearBoundsFlag() )
+            {
+                throw new IllegalStateException( "Read out of bounds" );
+            }
 
             if ( pos >= keyCount )
             {
@@ -137,8 +141,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
                 {
                     if ( !cursor.next( rightSibling ) )
                     {
-                        // TODO: Perhaps re-read if this happens instead?
-                        return false;
+                        throw new IllegalStateException( "Could not go to right sibling " + rightSibling );
                     }
                     pos = -1;
                     reread = true;
