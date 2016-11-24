@@ -187,10 +187,10 @@ class TreeNode<KEY,VALUE>
         GenSafePointerPair.write( cursor, leftSiblingId, stableGeneration, unstableGeneration );
     }
 
-    void setNewGen( PageCursor cursor, long pageId, long stableGeneration, long unstableGeneration )
+    void setNewGen( PageCursor cursor, long newGenId, long stableGeneration, long unstableGeneration )
     {
         cursor.setOffset( BYTE_POS_NEWGEN );
-        GenSafePointerPair.write( cursor, pageId, stableGeneration, unstableGeneration );
+        GenSafePointerPair.write( cursor, newGenId, stableGeneration, unstableGeneration );
     }
 
     // BODY METHODS
