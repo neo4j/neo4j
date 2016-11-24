@@ -172,8 +172,8 @@ public class PlatformModule
         // Anyways please fix this.
         dependencies.satisfyDependency( dataSourceManager );
 
-        availabilityGuard = new AvailabilityGuard( Clocks.systemClock(), logging.getInternalLog(
-                AvailabilityGuard.class ) );
+        availabilityGuard = dependencies.satisfyDependency(
+                new AvailabilityGuard( Clocks.systemClock(), logging.getInternalLog( AvailabilityGuard.class ) ) );
 
         transactionMonitor = dependencies.satisfyDependency( createTransactionStats() );
 

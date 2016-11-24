@@ -19,14 +19,15 @@
  */
 package org.neo4j.kernel.api.txtracking;
 
+import java.time.Duration;
+import java.util.concurrent.TimeUnit;
+
+import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 
-import java.time.Duration;
-import java.util.concurrent.TimeUnit;
-
-import static org.neo4j.function.Predicates.tryAwait;
+import static org.neo4j.function.Predicates.tryAwaitEx;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
 /**
@@ -39,9 +40,11 @@ public class TransactionIdTracker
     private static final TimeUnit POLL_UNIT = TimeUnit.MILLISECONDS;
 
     private final TransactionIdStore transactionIdStore;
+    private final AvailabilityGuard availabilityGuard;
 
-    public TransactionIdTracker( TransactionIdStore transactionIdStore )
+    public TransactionIdTracker( TransactionIdStore transactionIdStore, AvailabilityGuard availabilityGuard )
     {
+        this.availabilityGuard = availabilityGuard;
         this.transactionIdStore = transactionIdStore;
     }
 
@@ -74,13 +77,23 @@ public class TransactionIdTracker
             return;
         }
 
-        if ( !tryAwait( () -> oldestAcceptableTxId <= transactionIdStore.getLastClosedTransactionId(),
-                timeout.toMillis(), TimeUnit.MILLISECONDS, POLL_INTERVAL, POLL_UNIT ) )
+        if ( !tryAwaitEx( () -> isReady( oldestAcceptableTxId ), timeout.toMillis(), TimeUnit.MILLISECONDS,
+                POLL_INTERVAL, POLL_UNIT ) )
         {
             throw new TransactionFailureException( Status.Transaction.InstanceStateChanged,
                     "Database not up to the requested version: %d. Latest database version is %d", oldestAcceptableTxId,
                     transactionIdStore.getLastClosedTransactionId() );
         }
+    }
+
+    private boolean isReady( long oldestAcceptableTxId ) throws TransactionFailureException
+    {
+        if ( !availabilityGuard.isAvailable() )
+        {
+            throw new TransactionFailureException( Status.General.DatabaseUnavailable,
+                    "Database had become unavailable while waiting for requested version %d.", oldestAcceptableTxId );
+        }
+        return oldestAcceptableTxId <= transactionIdStore.getLastClosedTransactionId();
     }
 
     /**
