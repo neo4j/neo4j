@@ -509,9 +509,7 @@ object LogicalPlanConverter {
 
     override def consume(context: CodeGenContext, child: CodeGenPlan): (Option[JoinTableMethod], List[Instruction]) = {
       implicit val codeGenContext = context
-
       val opName = context.registerOperator(aggregation)
-
       val groupingVariables: Iterable[Variable] = aggregation.groupingExpressions.keys.map(context.getProjection)
 
       val aggregationExpression =

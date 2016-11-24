@@ -64,14 +64,15 @@ trait MethodStructure[E] {
   def asList(values: Seq[E]): E
 
   def toSet(value: E): E
-  def newSet(name: String)
-  def setContains(name: String, value: E): E
-  def addToSet(name: String, value: E): Unit
+  def newSet(name: String, codeGenType: CodeGenType)
+  def setContains(name: String, value: E, codeGenType: CodeGenType): E
+  def addToSet(name: String, value: E, codeGenType: CodeGenType): Unit
   def newUniqueAggregationKey(varName: String, structure: Map[String, (CodeGenType,E)]): Unit
-  def newAggregationMap(name: String, keyTypes: IndexedSeq[CodeGenType], distinct: Boolean)
+  def newAggregationMap(name: String, keyTypes: IndexedSeq[CodeGenType])
   def aggregationMapGet(name: String, varName: String, key: Map[String,(CodeGenType,E)], keyVar: String)
   def aggregationMapPut(name: String, key: Map[String,(CodeGenType,E)], keyVar: String, value: E): Unit
   def aggregationMapIterate(name: String, key: Map[String,CodeGenType], valueVar: String)(block: MethodStructure[E] => Unit): Unit
+  def newMapOfSets(name: String, keyTypes: IndexedSeq[CodeGenType], elementType: CodeGenType)
   def checkDistinct(name: String, key: Map[String,(CodeGenType, E)], keyVar: String, value: E, valueType: CodeGenType)(block: MethodStructure[E] => Unit)
 
   def castToCollection(value: E): E

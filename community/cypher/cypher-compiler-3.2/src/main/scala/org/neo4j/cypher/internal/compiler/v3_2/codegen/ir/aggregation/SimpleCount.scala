@@ -33,7 +33,7 @@ case class SimpleCount(variable: Variable, expression: CodeGenExpression, distin
     expression.init(generator)
     generator.assign(variable.name, CodeGenType.primitiveInt, generator.constantExpression(Long.box(0L)))
     if (distinct) {
-      generator.newSet(setName(variable))
+      generator.newSet(setName(variable), internalExpressionType)
     }
   }
 
@@ -46,11 +46,18 @@ case class SimpleCount(variable: Variable, expression: CodeGenExpression, distin
   def distinctCondition[E](value: E, valueType: CodeGenType, structure: MethodStructure[E])
                           (block: MethodStructure[E] => Unit)
                           (implicit context: CodeGenContext) = {
-    val tmpName = context.namer.newVarName()
-    structure.newUniqueAggregationKey(tmpName, Map(typeName(variable) -> (valueType -> value)))
-    structure.ifNotStatement(structure.setContains(setName(variable), structure.loadVariable(tmpName))) { inner =>
-      inner.addToSet(setName(variable), inner.loadVariable(tmpName))
-      block(inner)
+    if (internalExpressionType.repr == IntType) {
+      structure.ifNotStatement(structure.setContains(setName(variable), internalExpression(structure), internalExpressionType)) { inner =>
+        inner.addToSet(setName(variable), internalExpression(structure), internalExpressionType)
+        block(inner)
+      }
+    } else {
+      val tmpName = context.namer.newVarName()
+      structure.newUniqueAggregationKey(tmpName, Map(typeName(variable) -> (valueType -> value)))
+      structure.ifNotStatement(structure.setContains(setName(variable), structure.loadVariable(tmpName), internalExpressionType)) { inner =>
+        inner.addToSet(setName(variable), inner.loadVariable(tmpName), expression.codeGenType)
+        block(inner)
+      }
     }
   }
 

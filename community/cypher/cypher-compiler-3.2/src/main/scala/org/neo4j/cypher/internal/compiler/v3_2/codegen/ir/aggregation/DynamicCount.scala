@@ -36,7 +36,11 @@ class DynamicCount(opName: String, variable: Variable, expression: CodeGenExpres
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
     expression.init(generator)
     mapName = context.namer.newVarName()
-    generator.newAggregationMap(mapName, groupingKey.map(_.codeGenType).toIndexedSeq, distinct)
+    val key = groupingKey.map(_.codeGenType).toIndexedSeq
+    generator.newAggregationMap(mapName, key)
+    if (distinct) {
+      generator.newMapOfSets(seenSet, key, internalExpressionType)
+    }
   }
 
   override def update[E](structure: MethodStructure[E])(implicit context: CodeGenContext) = {
@@ -51,10 +55,12 @@ class DynamicCount(opName: String, variable: Variable, expression: CodeGenExpres
 
   def distinctCondition[E](value: E, valueType: CodeGenType, structure: MethodStructure[E])(block: MethodStructure[E] => Unit)
                           (implicit context: CodeGenContext) = {
-    structure.checkDistinct(mapName, createKey(structure), keyVar, value, expression.codeGenType) { inner =>
+    structure.checkDistinct(seenSet, createKey(structure), keyVar, value, valueType) { inner =>
       block(inner)
     }
   }
+
+  private def seenSet = mapName + "Seen"
 
   private def createKey[E](body: MethodStructure[E])(implicit context: CodeGenContext) = {
     groupingKey.map(e => e.name -> (e.codeGenType -> body.loadVariable(e.name))).toMap
