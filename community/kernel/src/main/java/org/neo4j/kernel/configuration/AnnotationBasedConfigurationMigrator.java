@@ -17,41 +17,93 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.kernel.configuration;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
+import javax.annotation.Nonnull;
+
+import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.logging.Log;
 
-public class AnnotationBasedConfigurationMigrator implements ConfigurationMigrator {
-
+public class AnnotationBasedConfigurationMigrator implements ConfigurationMigrator
+{
     private ArrayList<ConfigurationMigrator> migrators = new ArrayList<>();
-    private AnnotatedFieldHarvester fieldHarvester = new AnnotatedFieldHarvester();
 
-    public AnnotationBasedConfigurationMigrator(
-            Iterable<Class<?>> settingsClasses)
+    public AnnotationBasedConfigurationMigrator( @Nonnull Iterable<LoadableConfig> settingsClasses )
     {
-        for( Class<?> settingsClass : settingsClasses )
+        for ( LoadableConfig loadableConfig : settingsClasses )
         {
-            for( Pair<Field,ConfigurationMigrator> field : fieldHarvester.findStatic(settingsClass, ConfigurationMigrator.class, Migrator.class) )
+            for ( Pair<Field,ConfigurationMigrator> field : findStatic( loadableConfig.getClass(),
+                    ConfigurationMigrator.class, Migrator.class ) )
             {
-                migrators.add(field.other());
+                migrators.add( field.other() );
             }
         }
     }
 
     @Override
-    public Map<String, String> apply(Map<String, String> rawConfiguration,
-            Log log)
+    @Nonnull
+    public Map<String,String> apply( @Nonnull Map<String,String> rawConfiguration, @Nonnull Log log )
     {
-        for(ConfigurationMigrator migrator : migrators)
+        for ( ConfigurationMigrator migrator : migrators )
         {
-            rawConfiguration = migrator.apply(rawConfiguration, log);
+            rawConfiguration = migrator.apply( rawConfiguration, log );
         }
         return rawConfiguration;
     }
 
+    /**
+     * Find all static fields of a given type, annotated with some given
+     * annotation.
+     *
+     * @param clazz
+     * @param type
+     * @param annotation
+     */
+    @SuppressWarnings( {"rawtypes", "unchecked"} )
+    public static <T> Iterable<Pair<Field,T>> findStatic( Class<?> clazz, Class<T> type, Class annotation )
+    {
+        List<Pair<Field,T>> found = new ArrayList<Pair<Field,T>>();
+        for ( Field field : clazz.getDeclaredFields() )
+        {
+            try
+            {
+                field.setAccessible( true );
+
+                Object fieldValue = field.get( null );
+                if ( type.isInstance( fieldValue ) &&
+                        (annotation == null || field.getAnnotation( annotation ) != null) )
+                {
+                    found.add( Pair.<Field,T>of( field, (T) fieldValue ) );
+                }
+            }
+            catch ( IllegalAccessException e )
+            {
+                assert false : "Field " + clazz.getName() + "#" + field.getName() + " is not public";
+            }
+            catch ( NullPointerException npe )
+            {
+                assert false : "Field " + clazz.getName() + "#" + field.getName() + " is not static";
+            }
+        }
+
+        return found;
+    }
+
+    /**
+     * Find all static fields of a given type.
+     *
+     * @param clazz
+     * @param type
+     */
+    public static <T> Iterable<Pair<Field,T>> findStatic( Class<?> clazz, Class<T> type )
+    {
+        return findStatic( clazz, type, null );
+    }
 }

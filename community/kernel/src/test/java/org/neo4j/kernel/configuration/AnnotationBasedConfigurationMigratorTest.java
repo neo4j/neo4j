@@ -17,6 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.kernel.configuration;
 
 import org.junit.Test;
@@ -25,8 +26,11 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.neo4j.logging.Log;
+
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
 
 public class AnnotationBasedConfigurationMigratorTest
 {
@@ -35,6 +39,7 @@ public class AnnotationBasedConfigurationMigratorTest
 
     static class SomeSettings
     {
+        @SuppressWarnings( "unused" )
         @Migrator
         private static ConfigurationMigrator migrator = ( rawConfiguration, log ) ->
         {
@@ -48,13 +53,14 @@ public class AnnotationBasedConfigurationMigratorTest
     {
 
         // Given
-        AnnotationBasedConfigurationMigrator migrator = new AnnotationBasedConfigurationMigrator( Arrays.asList( new Class<?>[]{SomeSettings.class} ) );
+        AnnotationBasedConfigurationMigrator migrator =
+                new AnnotationBasedConfigurationMigrator( Arrays.asList( new Class<?>[]{SomeSettings.class} ) );
 
         // When
-        migrator.apply( new HashMap<>(), null );
+        migrator.apply( new HashMap<>(), mock( Log.class ) );
 
         // Then
-        assertThat(wasCalled.get(), is(true));
+        assertThat( wasCalled.get(), is( true ) );
 
     }
 

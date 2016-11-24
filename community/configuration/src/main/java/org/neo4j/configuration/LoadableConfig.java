@@ -24,6 +24,9 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.ServiceLoader;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import org.neo4j.graphdb.config.SettingGroup;
 
@@ -70,5 +73,26 @@ public interface LoadableConfig
             }
         }
         return configOptions;
+    }
+
+    /**
+     * @return instances of all classes with loadable configuration options
+     */
+    static List<LoadableConfig> allConfigClasses()
+    {
+        return StreamSupport.stream( ServiceLoader.load( LoadableConfig.class ).spliterator(), false )
+                .collect( Collectors.toList() );
+    }
+
+    /**
+     * Collects and returns settings of all known implementors.
+     * @return all ConfigOptions known at runtime.
+     */
+    static List<ConfigOptions> loadAllAvailableConfigOptions()
+    {
+        return StreamSupport.stream( ServiceLoader.load( LoadableConfig.class ).spliterator(), false )
+                .map( LoadableConfig::getConfigOptions )
+                .flatMap( List::stream )
+                .collect( Collectors.toList() );
     }
 }

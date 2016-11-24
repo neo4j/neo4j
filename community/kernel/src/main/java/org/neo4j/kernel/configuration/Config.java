@@ -23,18 +23,27 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import javax.annotation.Nonnull;
 
+import org.neo4j.configuration.ConfigOptions;
+import org.neo4j.configuration.ConfigValue;
+import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.graphdb.config.SettingValidator;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.info.DiagnosticsPhase;
 import org.neo4j.kernel.info.DiagnosticsProvider;
@@ -43,7 +52,8 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.Logger;
 
 import static java.util.Arrays.asList;
-import static org.neo4j.helpers.collection.Iterables.concat;
+import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
 
 /**
  * This class holds the overall configuration of a Neo4j database instance. Use the accessors to convert the internal
@@ -54,57 +64,98 @@ import static org.neo4j.helpers.collection.Iterables.concat;
  */
 public class Config implements DiagnosticsProvider, Configuration
 {
-    private final Map<String, String> params = new ConcurrentHashMap<>();
-    private final Iterable<Class<?>> settingsClasses;
+    private final List<ConfigOptions> configOptions;
+
+    private final Map<String,String> params = new ConcurrentHashMap<>();
     private final ConfigurationMigrator migrator;
-    private final ConfigurationValidator validator;
     private final Optional<File> configFile;
+    private final List<ConfigurationValidator> validators = new ArrayList<>();
+
 
     private ConfigValues settingsFunction;
 
     // Messages to this log get replayed into a real logger once logging has been instantiated.
-    private final BufferingLog bufferedLog = new BufferingLog();
-    private Log log = bufferedLog;
+    private Log log;
 
-    public static Config empty()
-    {
-        return new Config();
-    }
-
+    /**
+     * @return a configuration with embedded defaults
+     */
     public static Config defaults()
     {
-        return new Config();
+        return embeddedDefaults( Optional.empty() );
     }
 
-    private Config()
+    /**
+     * @return a configuration with embedded defaults
+     */
+    public static Config embeddedDefaults( Map<String,String> additionalConfig )
     {
-        this( new HashMap<>() );
+        return embeddedDefaults( Optional.empty(), additionalConfig );
     }
 
-    public Config( Map<String, String> inputParams )
+    /**
+     * @return a configuration with embedded defaults
+     */
+    public static Config embeddedDefaults( Optional<File> configFile )
     {
-        this( inputParams, Collections.<Class<?>>emptyList() );
+        return embeddedDefaults( configFile, emptyMap() );
     }
 
-    public Config( Map<String, String> inputParams, Class<?>... settingsClasses )
+    /**
+     * @return a configuration with embedded defaults
+     */
+    public static Config embeddedDefaults( ConfigurationValidator... validators )
     {
-        this( inputParams, asList( settingsClasses ) );
+        return embeddedDefaults( Optional.empty(), emptyMap(), asList( validators ) );
     }
 
-    public Config( Map<String, String> params, Iterable<Class<?>> settingsClasses )
+    /**
+     * @return a configuration with embedded defaults
+     */
+    public static Config embeddedDefaults( Optional<File> configFile, Map<String,String> additionalConfig )
     {
-        this( Optional.empty(), params, settings -> {}, ( classes ) -> settingsClasses );
+        return embeddedDefaults( configFile, additionalConfig, emptyList() );
     }
 
-    public Config( Optional<File> configFile, Map<String, String> overriddenSettings,
-            Consumer<Map<String, String>> settingsPostProcessor,
-            Function<Map<String, String> ,Iterable<Class<?>>> settingClassesProvider)
+    /**
+     * @return a configuration with embedded defaults
+     */
+    public static Config embeddedDefaults( Map<String,String> additionalConfig,
+            Collection<ConfigurationValidator> additionalValidators )
     {
+        return new Config( Optional.empty(), additionalConfig, settings -> {}, additionalValidators, Optional.empty() );
+    }
+
+    /**
+     * @return a configuration with embedded defaults
+     */
+    public static Config embeddedDefaults( Optional<File> configFile, Map<String,String> additionalConfig,
+            Collection<ConfigurationValidator> additionalValidators )
+    {
+        return new Config( configFile, additionalConfig, settings ->
+        {
+        }, additionalValidators, Optional.empty() );
+    }
+
+    public Config( Optional<File> configFile,
+            Map<String,String> overriddenSettings,
+            Consumer<Map<String,String>> settingsPostProcessor,
+            Collection<ConfigurationValidator> additionalValidators,
+            Optional<Log> log )
+    {
+        this.log = log.orElse( new BufferingLog() );
         this.configFile = configFile;
-        Map<String,String> settings = initSettings( configFile, settingsPostProcessor, overriddenSettings );
-        this.settingsClasses = settingClassesProvider.apply( settings );
+        List<LoadableConfig> settingsClasses = LoadableConfig.allConfigClasses();
+
+        configOptions = settingsClasses.stream()
+                .map( LoadableConfig::getConfigOptions )
+                .flatMap( List::stream )
+                .collect( Collectors.toList() );
+
+        validators.addAll( additionalValidators );
         migrator = new AnnotationBasedConfigurationMigrator( settingsClasses );
-        validator = new ConfigurationValidator( settingsClasses );
+
+        Map<String,String> settings = initSettings( configFile, settingsPostProcessor, overriddenSettings, this.log );
         replaceSettings( settings );
     }
 
@@ -113,19 +164,36 @@ public class Config implements DiagnosticsProvider, Configuration
      *
      * @return a new modified config, leaves this config unchanged.
      */
-    public Config with( Map<String, String> additionalConfig, Class<?>... settingsClasses )
+    public Config with( Map<String,String> additionalConfig )
     {
-        Map<String, String> newParams = getParams(); // copy is returned
+        Map<String,String> newParams = getParams(); // copy is returned
         newParams.putAll( additionalConfig );
-        return new Config( newParams, concat( this.settingsClasses, asList( settingsClasses ) ) );
+        return new Config( Optional.empty(), newParams, settings ->
+        {
+        }, validators, Optional.of( log ) );
     }
 
     // TODO: Get rid of this, to allow us to have something more
     // elaborate as internal storage (eg. something that can keep meta data with
     // properties).
-    public Map<String, String> getParams()
+    public Map<String,String> getParams()
     {
         return new HashMap<>( this.params );
+    }
+
+    /**
+     * Returns a copy of this config with the given modifications except for any settings which already have a
+     * specified value.
+     *
+     * @return a new modified config, leaves this config unchanged.
+     */
+    public Config withDefaults( Map<String,String> additionalDefaults )
+    {
+        Map<String,String> newParams = new HashMap<>( this.params ); // copy is returned
+        additionalDefaults.entrySet().forEach( s -> newParams.putIfAbsent( s.getKey(), s.getValue() ) );
+        return new Config( Optional.empty(), newParams, settings ->
+        {
+        }, validators, Optional.of( log ) );
     }
 
     /**
@@ -142,7 +210,7 @@ public class Config implements DiagnosticsProvider, Configuration
      * the raw setting data, meaning it can provide functionality that cross multiple settings
      * and other more advanced use cases.
      */
-    public <T> T view( Function<ConfigValues, T> projection )
+    public <T> T view( Function<ConfigValues,T> projection )
     {
         return projection.apply( settingsFunction );
     }
@@ -153,26 +221,70 @@ public class Config implements DiagnosticsProvider, Configuration
      *
      * @param changes settings to add and override
      */
-    public Config augment( Map<String, String> changes )
+    public Config augment( Map<String,String> changes )
     {
-        Map<String, String> params = getParams();
+        Map<String,String> params = getParams();
         params.putAll( changes );
         replaceSettings( params );
         return this;
     }
 
-    public Iterable<Class<?>> getSettingsClasses()
-    {
-        return settingsClasses;
-    }
-
+    /**
+     * Replays possible existing messages into this log
+     *
+     * @param log to use
+     */
     public void setLogger( Log log )
     {
-        if ( this.log == bufferedLog )
+        if ( this.log instanceof BufferingLog )
         {
-            bufferedLog.replayInto( log );
+            ((BufferingLog) this.log).replayInto( log );
         }
         this.log = log;
+    }
+
+    /**
+     * Return the keys of settings which have been configured (via a file or code).
+     *
+     * @return setting keys
+     */
+    public Set<String> getConfiguredSettingKeys()
+    {
+        return new HashSet<>( params.keySet() );
+    }
+
+
+    /**
+     * @param key to lookup in the config
+     * @return the value or none if it doesn't exist in the config
+     */
+    public Optional<String> getRaw( @Nonnull String key )
+    {
+        return Optional.ofNullable( params.get( key ) );
+    }
+
+    /**
+     * @return a configured setting
+     */
+    public Optional<?> getSettingValue( @Nonnull String key )
+    {
+        return configOptions.stream()
+                .map( it -> it.asConfigValues( params ) )
+                .flatMap( List::stream )
+                .filter( it -> it.name().equals( key ) )
+                .map( ConfigValue::value )
+                .findFirst();
+    }
+
+    /**
+     * @return all effective config values
+     */
+    public Map<String,ConfigValue> getConfigValues()
+    {
+        return configOptions.stream()
+                .map( it -> it.asConfigValues( params ) )
+                .flatMap( List::stream )
+                .collect( Collectors.toMap( ConfigValue::name, it -> it ) );
     }
 
     @Override
@@ -193,7 +305,7 @@ public class Config implements DiagnosticsProvider, Configuration
         if ( phase.isInitialization() || phase.isExplicitlyRequested() )
         {
             logger.log( "Neo4j Kernel properties:" );
-            for ( Map.Entry<String, String> param : params.entrySet() )
+            for ( Map.Entry<String,String> param : params.entrySet() )
             {
                 logger.log( "%s=%s", param.getKey(), param.getValue() );
             }
@@ -210,7 +322,7 @@ public class Config implements DiagnosticsProvider, Configuration
     {
         List<String> keys = new ArrayList<>( params.keySet() );
         Collections.sort( keys );
-        LinkedHashMap<String, String> output = new LinkedHashMap<>();
+        LinkedHashMap<String,String> output = new LinkedHashMap<>();
         for ( String key : keys )
         {
             output.put( key, params.get( key ) );
@@ -219,26 +331,35 @@ public class Config implements DiagnosticsProvider, Configuration
         return output.toString();
     }
 
-    private synchronized void replaceSettings( Map<String, String> newSettings )
+    private synchronized void replaceSettings( Map<String,String> newSettings )
     {
-        Map<String,String> migratedSettings = migrator.apply( newSettings, log );
-        validator.validate( migratedSettings );
+        Map<String,String> validSettings = migrator.apply( newSettings, log );
+        List<SettingValidator> settingValidators = configOptions.stream()
+                .map( ConfigOptions::settingGroup )
+                .collect( Collectors.toList() );
+        validSettings = new IndividualSettingsValidator().validate( settingValidators, validSettings, log );
+        for ( ConfigurationValidator validator : validators )
+        {
+            validSettings = validator.validate( settingValidators, validSettings, log );
+        }
         params.clear();
-        params.putAll( migratedSettings );
+        params.putAll( validSettings );
         settingsFunction = new ConfigValues( params );
     }
 
-    private Map<String,String> initSettings( Optional<File> configFile,
-            Consumer<Map<String,String>> settingsPostProcessor, Map<String,String> overriddenSettings )
+    private static Map<String,String> initSettings( @Nonnull Optional<File> configFile,
+            @Nonnull Consumer<Map<String,String>> settingsPostProcessor,
+            @Nonnull Map<String,String> overriddenSettings,
+            @Nonnull Log log )
     {
         Map<String,String> settings = new HashMap<>();
-        configFile.ifPresent( file -> settings.putAll( loadFromFile( file) ) );
+        configFile.ifPresent( file -> settings.putAll( loadFromFile( file, log ) ) );
         settingsPostProcessor.accept( settings );
         settings.putAll( overriddenSettings );
         return settings;
     }
 
-    private Map<String, String> loadFromFile( File file )
+    private static Map<String,String> loadFromFile( @Nonnull File file, @Nonnull Log log )
     {
         if ( !file.exists() )
         {
