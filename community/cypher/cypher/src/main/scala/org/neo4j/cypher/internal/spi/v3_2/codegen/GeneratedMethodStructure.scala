@@ -354,12 +354,9 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   override def unbox(expression: Expression, cType: CodeGenType) = cType match {
     case c if c.isPrimitive => expression
-    case CodeGenType(symbols.CTBoolean, ReferenceType) => invoke(expression, Methods.unboxBoolean)
-    case CodeGenType(symbols.CTInteger, ReferenceType) => invoke(expression, Methods.unboxLong)
-    case CodeGenType(symbols.CTFloat, ReferenceType) => invoke(expression, Methods.unboxDouble)
     case CodeGenType(symbols.CTNode, ReferenceType) => invoke(expression, Methods.unboxNode)
     case CodeGenType(symbols.CTRelationship, ReferenceType) => invoke(expression, Methods.unboxRel)
-    case _ => throw new IllegalStateException(s"$expression cannot be unboxed")
+    case _ => Expression.unbox(expression)
   }
 
   override def toFloat(expression: Expression) = toDouble(expression)
