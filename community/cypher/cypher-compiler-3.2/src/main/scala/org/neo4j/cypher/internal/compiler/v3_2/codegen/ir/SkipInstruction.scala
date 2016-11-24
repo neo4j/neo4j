@@ -28,7 +28,7 @@ case class SkipInstruction(opName: String, variableName: String, action: Instruc
 
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext): Unit = {
     numberToSkip.init(generator)
-    val expression = generator.box(numberToSkip.generateExpression(generator), numberToSkip.codeGenType)
+    val expression = generator.box(numberToSkip.generateExpression(generator))
     generator.declareCounter(variableName, expression)
     action.init(generator)
   }

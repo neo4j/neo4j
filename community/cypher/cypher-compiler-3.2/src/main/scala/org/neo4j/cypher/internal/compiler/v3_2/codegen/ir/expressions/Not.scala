@@ -32,10 +32,10 @@ case class Not(inner: CodeGenExpression) extends CodeGenExpression {
   override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) =
     if (!nullable) inner.codeGenType match {
       case t if t.isPrimitive => structure.notExpression (inner.generateExpression (structure) )
-      case t => structure.unbox(structure.threeValuedNotExpression(structure.box(inner.generateExpression(structure), t)),
+      case t => structure.unbox(structure.threeValuedNotExpression(structure.box(inner.generateExpression(structure))),
                                 CodeGenType.primitiveBool)
     }
-    else structure.threeValuedNotExpression(structure.box(inner.generateExpression(structure), inner.codeGenType))
+    else structure.threeValuedNotExpression(structure.box(inner.generateExpression(structure)))
 
   override def nullable(implicit context: CodeGenContext) = inner.nullable
 

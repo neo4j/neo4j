@@ -30,7 +30,7 @@ case class AcceptVisitor(produceResultOpName: String, columns: Map[String, CodeG
     generator.trace(produceResultOpName) { body =>
       body.incrementRows()
       columns.foreach { case (k, v) =>
-        body.setInRow(k, generator.box(v.generateExpression(body), v.codeGenType))
+        body.setInRow(k, generator.box(v.generateExpression(body)))
       }
       body.visitorAccept()
     }

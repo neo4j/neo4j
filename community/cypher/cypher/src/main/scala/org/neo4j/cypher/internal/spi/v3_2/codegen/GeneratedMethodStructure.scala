@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.commands.DirectionCon
 import org.neo4j.cypher.internal.compiler.v3_2.codegen._
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions.{Parameter => _, _}
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi._
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions.{CodeGenType, IntType, ReferenceType}
 import org.neo4j.cypher.internal.compiler.v3_2.helpers._
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_2.symbols.{CTNode, CTRelationship}
@@ -349,12 +350,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   override def notNull(varName: String, codeGenType: CodeGenType) = not(isNull(varName, codeGenType))
 
-  override def box(expression: Expression, cType: CodeGenType) = cType match {
-    case CodeGenType(symbols.CTBoolean, BoolType) => invoke(Methods.boxBoolean, expression)
-    case CodeGenType(symbols.CTInteger, IntType) => invoke(Methods.boxLong, expression)
-    case CodeGenType(symbols.CTFloat, FloatType) => invoke(Methods.boxDouble, expression)
-    case _ => expression
-  }
+  override def box(expression: Expression) = Expression.box(expression)
 
   override def unbox(expression: Expression, cType: CodeGenType) = cType match {
     case c if c.isPrimitive => expression
@@ -488,7 +484,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     if (structure.size == 1) {
       generator.put(generator.load(varName), FieldReference.field(typ, typeRef[Int], "hashCode"),
                     invoke(method[CompiledEquivalenceUtils, Int]("hashCode", typeRef[Object]),
-                           box(structure.values.head._2, structure.values.head._1)))
+                           box(structure.values.head._2)))
     } else {
       generator.put(generator.load(varName), FieldReference.field(typ, typeRef[Int], "hashCode"),
                     invoke(method[CompiledEquivalenceUtils, Int]("hashCode", typeRef[Array[Object]]),
@@ -543,7 +539,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
              invoke(generator.load(mapName),
                     method[util.HashMap[Object, java.lang.Long], Object]("getOrDefault", typeRef[Object],
                                                                          typeRef[Object]),
-                    generator.load(keyVar), box(constant(Long.box(0L)), CodeGenType.primitiveInt))),
+                    generator.load(keyVar), box(constant(Long.box(0L))))),
         CodeGenType(symbols.CTInteger, ReferenceType)))
     }
   }
@@ -672,7 +668,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
       generator.expression(pop(invoke(generator.load(name),
                                       method[util.HashMap[Object, java.lang.Long], Object]("put", typeRef[Object],
                                                                                            typeRef[Object]),
-                                      generator.load(keyVar), box(value, CodeGenType.primitiveInt))))
+                                      generator.load(keyVar), box(value))))
     }
   }
 
@@ -812,12 +808,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
           invoke(generator.load(tableVar), countingTableCompositeKeyPut,
                  generator.load(keyName),
                  ternaryOnNull(generator.load(countName),
-                               invoke(boxInteger,
-                                      constant(1)), invoke(boxInteger,
-                                                           add(
-                                                             invoke(generator.load(countName),
-                                                                    unboxInteger),
-                                                             constant(1)))))))
+                               box(constant(1)), box(add(invoke(generator.load(countName), unboxInteger), constant(1)))))))
   }
 
   override def probe(tableVar: String, tableType: JoinTableType, keyVars: Seq[String])

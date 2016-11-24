@@ -38,8 +38,7 @@ case class Projection(projectionOpName: String, variables: Map[Variable, CodeGen
       body.incrementRows()
       variables.foreach {
         case (variable, expr) => body.projectVariable(variable.name,
-                                                      generator.box(expr.generateExpression(body),
-                                                                    expr.codeGenType))
+                                                      generator.box(expr.generateExpression(body)))
       }
       action.body(body)
     }

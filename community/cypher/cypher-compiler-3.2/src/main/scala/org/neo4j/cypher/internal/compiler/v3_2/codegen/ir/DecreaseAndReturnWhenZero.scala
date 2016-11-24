@@ -28,7 +28,7 @@ case class DecreaseAndReturnWhenZero(opName: String, variableName: String, actio
 
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext): Unit = {
     startValue.init(generator)
-    val expression = generator.box(startValue.generateExpression(generator), startValue.codeGenType)
+    val expression = generator.box(startValue.generateExpression(generator))
     generator.declareCounter(variableName, expression)
     generator.ifStatement(generator.checkInteger(variableName, Equal, 0L)) { onTrue =>
       onTrue.returnSuccessfully()
