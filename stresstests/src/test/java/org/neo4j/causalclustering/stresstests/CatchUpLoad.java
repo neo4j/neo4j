@@ -31,9 +31,10 @@ import java.util.function.Supplier;
 import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.ClusterMember;
-import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.causalclustering.discovery.ReadReplica;
 import org.neo4j.causalclustering.handlers.ExceptionMonitoringHandler;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -44,11 +45,14 @@ import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_I
 class CatchUpLoad extends RepeatUntilCallable
 {
     private final Predicate<Throwable> isStoreClosed = new IsStoreClosed();
+    private final FileSystemAbstraction fs;
     private Cluster cluster;
+    private boolean deleteStore;
 
     CatchUpLoad( BooleanSupplier keepGoing, Runnable onFailure, Cluster cluster )
     {
         super( keepGoing, onFailure );
+        this.fs = new DefaultFileSystemAbstraction();
         this.cluster = cluster;
     }
 
@@ -76,6 +80,11 @@ class CatchUpLoad extends RepeatUntilCallable
             try
             {
                 cluster.removeReadReplicaWithMemberId( newMemberId );
+                if ( ex == null && deleteStore )
+                {
+                    fs.deleteRecursively( readReplica.storeDir() );
+                }
+                deleteStore = !deleteStore;
             }
             catch ( Throwable e )
             {

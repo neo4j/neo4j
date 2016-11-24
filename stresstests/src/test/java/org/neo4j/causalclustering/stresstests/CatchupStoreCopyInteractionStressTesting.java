@@ -88,7 +88,7 @@ public class CatchupStoreCopyInteractionStressTesting
         BooleanSupplier keepGoing = () ->!stopTheWorld.get() && notExpired.getAsBoolean();
         Runnable onFailure = () -> stopTheWorld.set( true );
 
-        ExecutorService service = Executors.newFixedThreadPool( 3 );
+        ExecutorService service = Executors.newCachedThreadPool();
         try
         {
             cluster.start();

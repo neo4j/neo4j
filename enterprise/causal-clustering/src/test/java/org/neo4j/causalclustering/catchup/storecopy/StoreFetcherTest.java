@@ -39,6 +39,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doThrow;
@@ -96,7 +97,8 @@ public class StoreFetcherTest
         fetcher.copyStore( localhost, wantedStoreId, new File( "destination" ) );
 
         // then
-        verify( txPullClient ).pullTransactions( eq( localhost ), eq( wantedStoreId ), eq( lastFlushedTxId - 1 ), any( TxPullResponseListener.class ) );
+        long previousTxId = lastFlushedTxId - 1; // the interface is defined as asking for the one preceding
+        verify( txPullClient ).pullTransactions( eq( localhost ), eq( wantedStoreId ), eq( previousTxId ), any( TxPullResponseListener.class ) );
     }
 
     @Test
@@ -133,7 +135,7 @@ public class StoreFetcherTest
     {
         TransactionLogCatchUpFactory factory = mock( TransactionLogCatchUpFactory.class );
         when( factory.create( any( File.class ), any( FileSystemAbstraction.class ),
-                any( PageCache.class ), any( LogProvider.class ) ) ).thenReturn( writer );
+                any( PageCache.class ), any( LogProvider.class ), anyLong(), anyBoolean() ) ).thenReturn( writer );
         return factory;
     }
 }
