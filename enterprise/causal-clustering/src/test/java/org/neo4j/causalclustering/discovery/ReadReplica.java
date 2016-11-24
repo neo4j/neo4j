@@ -27,10 +27,12 @@ import java.util.function.IntFunction;
 import org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.readreplica.ReadReplicaGraphDatabase;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Level;
 import org.neo4j.server.configuration.ClientConnectorSettings;
 import org.neo4j.server.configuration.ClientConnectorSettings.HttpConnector.Encryption;
@@ -47,10 +49,19 @@ public class ReadReplica implements ClusterMember
     private final int memberId;
     private final String boltAdvertisedAddress;
     private ReadReplicaGraphDatabase database;
+    private Monitors monitors;
 
     public ReadReplica( File parentDir, int memberId, DiscoveryServiceFactory discoveryServiceFactory,
-            List<AdvertisedSocketAddress> coreMemberHazelcastAddresses, Map<String,String> extraParams,
-            Map<String,IntFunction<String>> instanceExtraParams, String recordFormat )
+                        List<AdvertisedSocketAddress> coreMemberHazelcastAddresses, Map<String, String> extraParams,
+                        Map<String, IntFunction<String>> instanceExtraParams, String recordFormat )
+    {
+        this( parentDir, memberId, discoveryServiceFactory, coreMemberHazelcastAddresses, extraParams,
+                instanceExtraParams, recordFormat, new Monitors() );
+    }
+
+    public ReadReplica( File parentDir, int memberId, DiscoveryServiceFactory discoveryServiceFactory,
+                        List<AdvertisedSocketAddress> coreMemberHazelcastAddresses, Map<String, String> extraParams,
+                        Map<String, IntFunction<String>> instanceExtraParams, String recordFormat, Monitors monitors )
     {
         this.memberId = memberId;
         int boltPort = 9000 + memberId;
@@ -88,6 +99,8 @@ public class ReadReplica implements ClusterMember
         this.discoveryServiceFactory = discoveryServiceFactory;
         storeDir = new File( new File( new File( neo4jHome, "data" ), "databases" ), "graph.db" );
         storeDir.mkdirs();
+
+        this.monitors = monitors;
     }
 
     public String boltAdvertisedAddress()
@@ -105,7 +118,7 @@ public class ReadReplica implements ClusterMember
     public void start()
     {
         database = new ReadReplicaGraphDatabase( storeDir, config,
-                GraphDatabaseDependencies.newDependencies(), discoveryServiceFactory );
+                GraphDatabaseDependencies.newDependencies().monitors( monitors ), discoveryServiceFactory );
     }
 
     @Override
@@ -149,4 +162,5 @@ public class ReadReplica implements ClusterMember
     {
         return String.format( "bolt://%s", boltAdvertisedAddress );
     }
+
 }

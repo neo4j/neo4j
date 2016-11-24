@@ -23,23 +23,32 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 
+import org.neo4j.causalclustering.catchup.tx.FileCopyMonitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.monitoring.Monitors;
 
 class StreamToDisk implements StoreFileStreams
 {
     private final File storeDir;
     private final FileSystemAbstraction fs;
+    private final FileCopyMonitor fileCopyMonitor;
 
-    StreamToDisk( File storeDir, FileSystemAbstraction fs ) throws IOException
+    StreamToDisk( File storeDir, FileSystemAbstraction fs, Monitors monitors ) throws IOException
     {
         this.storeDir = storeDir;
         this.fs = fs;
         fs.mkdirs( storeDir );
+        this.fileCopyMonitor = monitors.newMonitor( FileCopyMonitor.class );
     }
 
     @Override
     public OutputStream createStream( String destination ) throws IOException
     {
-        return fs.openAsOutputStream( new File( storeDir, destination ), true );
+        File fileName = new File( storeDir, destination );
+        fs.mkdirs( fileName.getParentFile() );
+
+        fileCopyMonitor.copyFile( fileName );
+
+        return fs.openAsOutputStream( fileName, true );
     }
 }
