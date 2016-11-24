@@ -147,6 +147,11 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
 
       case _: EmptyResult =>
         PlanDescriptionImpl(id, "EmptyResult", children, Seq.empty, variables)
+      case NodeCountFromCountStore(IdName(id), labelName, arguments) =>
+        PlanDescriptionImpl(id = idMap(plan), "NodeCountFromCountStore", NoChildren, Seq(LabelName(labelName.map(_.name).getOrElse("*"))), symbols)
+
+      case NodeUniqueIndexSeek(IdName(id), label, propKey, value, arguments) =>
+        PlanDescriptionImpl(id = idMap(plan), "NodeUniqueIndexSeek", NoChildren, Seq(Index(label.name, propKey.name)), symbols)
 
       case _: ErrorPlan =>
         PlanDescriptionImpl(id, "Error", children, Seq.empty, variables)
@@ -250,6 +255,10 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
         }
         PlanDescriptionImpl(id, s"VarLengthExpand($modeDescr)", children, Seq(expandDescription) ++ predicatesDescription, variables)
 
+      case Aggregation(source, grouping, aggregation) =>
+        PlanDescriptionImpl(id = idMap(plan), name = "EagerAggregation", children ,
+                            Seq(Arguments.KeyNames(grouping.keys.toSeq)), variables)
+
       case x => throw new InternalException(s"Unknown plan type: ${x.getClass.getSimpleName}. Missing a case?")
     }
 
@@ -289,17 +298,11 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
       case _: ForeachApply =>
         PlanDescriptionImpl(id, "Foreach", children, Seq.empty, variables)
 
-<<<<<<< HEAD
       case LetSelectOrSemiApply(_, _, _, predicate) =>
         PlanDescriptionImpl(id, "LetSelectOrSemiApply", children, Seq(Expression(predicate)), variables)
-=======
-      case Aggregation(source, grouping, aggregation) =>
-        PlanDescriptionImpl(id = idMap(plan), name = "EagerAggregation", children = SingleChild(apply(source, idMap)),
-                            Seq(Arguments.KeyNames(grouping.keys.toSeq)), symbols)
 
       case row: SingleRow =>
         new SingleRowPlanDescription(id = idMap(plan), Seq.empty, row.argumentIds.map(_.name))
->>>>>>> Compiled runtime support for count with no grouping key
 
       case LetSelectOrAntiSemiApply(_, _, _, predicate) =>
         PlanDescriptionImpl(id, "LetSelectOrSemiApply", children, Seq(Expression(predicate)), variables)

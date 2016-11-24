@@ -36,7 +36,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(n)").toSet[Int] should equal(Set(2))
 
-    })
+    }, allRuntimes = true)
   }
 
   test("capitalized COUNTS nodes using count store") {
@@ -49,7 +49,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("COUNT(n)").toSet[Int] should equal(Set(2))
 
-      })
+      }, allRuntimes = true)
   }
 
   test("counts nodes using count store with count(*)") {
@@ -62,7 +62,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(*)").toSet[Int] should equal(Set(2))
 
-    })
+    }, allRuntimes = true)
   }
 
   test("counts labeled nodes using count store") {
@@ -75,7 +75,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(n)").toSet[Int] should equal(Set(1))
 
-      })
+      }, allRuntimes = true)
   }
 
   test("counts nodes using count store and projection expression") {
@@ -309,7 +309,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(n)").toSet[Int] should equal(Set(3))
 
-      })
+      }, allRuntimes = true)
   }
 
   test("counts labeled nodes using count store considering transaction state (test1)") {
@@ -322,7 +322,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(n)").toSet[Int] should equal(Set(2))
 
-      })
+      }, allRuntimes = true)
   }
 
   test("counts labeled nodes using count store considering transaction state (test2)") {
@@ -335,7 +335,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(n)").toSet[Int] should equal(Set(1))
 
-      })
+      }, allRuntimes = true)
   }
 
   test("counts labeled nodes using count store considering transaction state containing newly created label (test1)") {
@@ -348,7 +348,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(n)").toSet[Int] should equal(Set(1))
 
-      })
+      }, allRuntimes = true)
   }
 
 
@@ -362,7 +362,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(n)").toSet[Int] should equal(Set(2))
 
-      })
+      }, allRuntimes = true)
   }
 
   test("counts nodes using count store and projection expression considering transaction state") {

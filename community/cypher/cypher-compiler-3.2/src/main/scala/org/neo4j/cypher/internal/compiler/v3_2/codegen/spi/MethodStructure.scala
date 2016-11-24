@@ -37,7 +37,6 @@ import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
   * This SPI describes the operations that can be put in that method.
   */
 trait MethodStructure[E] {
-
   // misc
   def projectVariable(variableName: String, value: E)
   def declareFlag(name: String, initialValue: Boolean)
@@ -138,6 +137,8 @@ trait MethodStructure[E] {
   def relType(relIdVar: String, typeVar: String): Unit
   def newIndexDescriptor(descriptorVar: String, labelVar: String, propKeyVar: String): Unit
   def createRelExtractor(extractorName: String): Unit
+  def nodeCountFromCountStore(): E
+  def nodeCountFromCountStore(expression: E): E
 
   // code structure
   def whileLoop(test: E)(block: MethodStructure[E] => Unit): Unit

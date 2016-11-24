@@ -1078,6 +1078,11 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     }
   }
 
+  override def nodeCountFromCountStore(): Expression = nodeCountFromCountStore(Expression.constant(-1))
+
+  override def nodeCountFromCountStore(expression: Expression): Expression =
+    invoke(readOperations, countsForNode, expression )
+
   override def coerceToBoolean(propertyExpression: Expression): Expression =
     invoke(coerceToPredicate, propertyExpression)
 
