@@ -33,9 +33,6 @@ import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFailedException;
 import org.neo4j.causalclustering.catchup.storecopy.StoreFetcher;
 import org.neo4j.causalclustering.catchup.storecopy.StreamingTransactionsFailedException;
-import org.neo4j.causalclustering.core.consensus.schedule.RenewableTimeoutService;
-import org.neo4j.causalclustering.core.consensus.schedule.RenewableTimeoutService.RenewableTimeout;
-import org.neo4j.causalclustering.core.consensus.schedule.RenewableTimeoutService.TimeoutName;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.causalclustering.messaging.routing.CoreMemberSelectionException;
@@ -43,6 +40,7 @@ import org.neo4j.causalclustering.messaging.routing.CoreMemberSelectionStrategy;
 import org.neo4j.causalclustering.readreplica.CopyStoreSafely;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -50,10 +48,11 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess.State.PANIC;
 import static org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess.State.STORE_COPYING;
 import static org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess.State.TX_PULLING;
-import static org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess.Timeouts.TX_PULLER_TIMEOUT;
+import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.POOLED;
 
 /**
  * This class is responsible for pulling transactions from a core server and queuing
@@ -65,11 +64,6 @@ import static org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess.Timeou
  */
 public class CatchupPollingProcess extends LifecycleAdapter
 {
-    enum Timeouts implements TimeoutName
-    {
-        TX_PULLER_TIMEOUT
-    }
-
     enum State
     {
         TX_PULLING,
@@ -77,6 +71,8 @@ public class CatchupPollingProcess extends LifecycleAdapter
         PANIC
     }
 
+    private final JobScheduler.Group catchUpPollingProcessGroup =
+            new JobScheduler.Group( "CatchUpPollingProcess", POOLED );
     private final FileSystemAbstraction fs;
     private final LocalDatabase localDatabase;
     private final Log log;
@@ -86,21 +82,23 @@ public class CatchupPollingProcess extends LifecycleAdapter
     private final Supplier<DatabaseHealth> databaseHealthSupplier;
     private final CatchUpClient catchUpClient;
     private final CoreMemberSelectionStrategy connectionStrategy;
-    private final RenewableTimeoutService timeoutService;
+    private final JobScheduler jobScheduler;
     private final long txPullIntervalMillis;
     private final BatchingTxApplier applier;
     private final PullRequestMonitor pullRequestMonitor;
 
-    private RenewableTimeout timeout;
     private State state = TX_PULLING;
     private DatabaseHealth dbHealth;
     private CompletableFuture<Boolean> upToDateFuture; // we are up-to-date when we are successfully pulling
 
+    private volatile boolean stopped = true;
+    private volatile JobScheduler.JobHandle handle;
+
     public CatchupPollingProcess( LogProvider logProvider, FileSystemAbstraction fs, LocalDatabase localDatabase,
-                                  Lifecycle startStopOnStoreCopy, StoreFetcher storeFetcher, CatchUpClient catchUpClient,
-                                  CoreMemberSelectionStrategy connectionStrategy, RenewableTimeoutService timeoutService,
-                                  long txPullIntervalMillis, BatchingTxApplier applier, Monitors monitors,
-                                  CopiedStoreRecovery copiedStoreRecovery, Supplier<DatabaseHealth> databaseHealthSupplier )
+            Lifecycle startStopOnStoreCopy, StoreFetcher storeFetcher, CatchUpClient catchUpClient,
+            CoreMemberSelectionStrategy connectionStrategy, JobScheduler jobScheduler, long txPullIntervalMillis,
+            BatchingTxApplier applier, Monitors monitors, CopiedStoreRecovery copiedStoreRecovery,
+            Supplier<DatabaseHealth> databaseHealthSupplier )
     {
         this.fs = fs;
         this.localDatabase = localDatabase;
@@ -109,7 +107,7 @@ public class CatchupPollingProcess extends LifecycleAdapter
         this.storeFetcher = storeFetcher;
         this.catchUpClient = catchUpClient;
         this.connectionStrategy = connectionStrategy;
-        this.timeoutService = timeoutService;
+        this.jobScheduler = jobScheduler;
         this.txPullIntervalMillis = txPullIntervalMillis;
         this.applier = applier;
         this.pullRequestMonitor = monitors.newMonitor( PullRequestMonitor.class );
@@ -120,9 +118,15 @@ public class CatchupPollingProcess extends LifecycleAdapter
     @Override
     public synchronized void start() throws Throwable
     {
-        timeout = timeoutService.create( TX_PULLER_TIMEOUT, txPullIntervalMillis, 0, timeout -> onTimeout() );
+        if ( !stopped )
+        {
+            return;
+        }
+
+        stopped = false;
         dbHealth = databaseHealthSupplier.get();
         upToDateFuture = new CompletableFuture<>();
+        reschedule();
     }
 
     public Future<Boolean> upToDateFuture() throws InterruptedException
@@ -131,9 +135,14 @@ public class CatchupPollingProcess extends LifecycleAdapter
     }
 
     @Override
-    public void stop() throws Throwable
+    public synchronized void stop() throws Throwable
     {
-        timeout.cancel();
+        stopped = true;
+        if ( handle != null )
+        {
+            handle.cancel( true );
+        }
+        upToDateFuture.cancel( true );
     }
 
     public State state()
@@ -141,11 +150,13 @@ public class CatchupPollingProcess extends LifecycleAdapter
         return state;
     }
 
-    /**
-     * Time to catchup!
-     */
-    private void onTimeout()
+    private void doWork()
     {
+        if ( stopped )
+        {
+            return;
+        }
+
         try
         {
             switch ( state )
@@ -167,13 +178,18 @@ public class CatchupPollingProcess extends LifecycleAdapter
             panic( e );
         }
 
-        if ( state != PANIC )
+        if ( !stopped && state != PANIC )
         {
-            timeout.renew();
+            reschedule();
         }
     }
 
-    private synchronized void panic( Throwable e )
+    private void reschedule()
+    {
+        handle = jobScheduler.schedule( catchUpPollingProcessGroup, this::doWork, txPullIntervalMillis, MILLISECONDS );
+    }
+
+    private void panic( Throwable e )
     {
         log.error( "Unexpected issue in catchup process. No more catchup requests will be scheduled.", e );
         dbHealth.panic( e );
@@ -205,7 +221,7 @@ public class CatchupPollingProcess extends LifecycleAdapter
         }
     }
 
-    private synchronized void handleTransaction( CommittedTransactionRepresentation tx )
+    private void handleTransaction( CommittedTransactionRepresentation tx )
     {
         if ( state == PANIC )
         {
@@ -222,7 +238,7 @@ public class CatchupPollingProcess extends LifecycleAdapter
         }
     }
 
-    private synchronized void streamComplete()
+    private void streamComplete()
     {
         if ( state == PANIC )
         {
@@ -249,22 +265,23 @@ public class CatchupPollingProcess extends LifecycleAdapter
         CatchupResult catchupResult;
         try
         {
-            catchupResult = catchUpClient.makeBlockingRequest( core, txPullRequest, new CatchUpResponseAdaptor<CatchupResult>()
-            {
-                @Override
-                public void onTxPullResponse( CompletableFuture<CatchupResult> signal, TxPullResponse response )
-                {
-                    handleTransaction( response.tx() );
-                }
+            catchupResult =
+                    catchUpClient.makeBlockingRequest( core, txPullRequest, new CatchUpResponseAdaptor<CatchupResult>()
+                    {
+                        @Override
+                        public void onTxPullResponse( CompletableFuture<CatchupResult> signal, TxPullResponse response )
+                        {
+                            handleTransaction( response.tx() );
+                        }
 
-                @Override
-                public void onTxStreamFinishedResponse( CompletableFuture<CatchupResult> signal,
-                        TxStreamFinishedResponse response )
-                {
-                    streamComplete();
-                    signal.complete( response.status() );
-                }
-            } );
+                        @Override
+                        public void onTxStreamFinishedResponse( CompletableFuture<CatchupResult> signal,
+                                TxStreamFinishedResponse response )
+                        {
+                            streamComplete();
+                            signal.complete( response.status() );
+                        }
+                    } );
         }
         catch ( CatchUpClientException e )
         {
