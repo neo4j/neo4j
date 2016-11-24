@@ -313,7 +313,7 @@ public class TestRecoveryScenarios
     private void checkPoint() throws IOException
     {
         db.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint(
-                new SimpleTriggerInfo( "test" )
+                new SimpleTriggerInfo( "test", true )
         );
     }
 

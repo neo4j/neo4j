@@ -19,7 +19,6 @@
  */
 package org.neo4j.metrics;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -35,8 +34,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.EnterpriseGraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
@@ -197,7 +194,7 @@ public class MetricsKernelExtensionFactoryIT
 
         // WHEN
         CheckPointer checkPointer = db.getDependencyResolver().resolveDependency( CheckPointer.class );
-        checkPointer.checkPointIfNeeded( new SimpleTriggerInfo( "test" ) );
+        checkPointer.checkPointIfNeeded( new SimpleTriggerInfo( "test", true ) );
 
         // wait for the file to be written before shutting down the cluster
         File metricFile = metricsCsv( outputPath, CheckPointingMetrics.CHECK_POINT_DURATION );

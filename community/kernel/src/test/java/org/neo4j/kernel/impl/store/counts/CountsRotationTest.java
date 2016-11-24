@@ -389,7 +389,7 @@ public class CountsRotationTest
 
     private void checkPoint( GraphDatabaseAPI db ) throws IOException
     {
-        TriggerInfo triggerInfo = new SimpleTriggerInfo( "test" );
+        TriggerInfo triggerInfo = new SimpleTriggerInfo( "test", true );
         db.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint( triggerInfo );
     }
 

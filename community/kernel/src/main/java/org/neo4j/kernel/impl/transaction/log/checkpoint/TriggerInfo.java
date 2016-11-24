@@ -38,4 +38,12 @@ public interface TriggerInfo extends Consumer<String>
      * @return the description of the events that triggered check pointing
      */
     String describe( long transactionId );
+
+    /**
+     * Allow for tx log pruning depending on the type of the trigger. In some cases log pruning can be skipped and it
+     * is not necessary.
+     *
+     * @return true if tx log pruning is allowed for this trigger, false otherwise
+     */
+    boolean allowPruning();
 }

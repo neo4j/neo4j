@@ -100,10 +100,8 @@ public class CountsStoreRecoveryTest
     @SuppressWarnings( "deprecated" )
     private void checkPoint() throws IOException
     {
-        ((GraphDatabaseAPI) db).getDependencyResolver()
-                               .resolveDependency( CheckPointer.class ).forceCheckPoint(
-                new SimpleTriggerInfo( "test" )
-        );
+        ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( CheckPointer.class )
+                .forceCheckPoint( new SimpleTriggerInfo( "test", true ) );
     }
 
     private void crashAndRestart()

@@ -28,12 +28,15 @@ import java.util.Objects;
 public class SimpleTriggerInfo implements TriggerInfo
 {
     private final String triggerName;
+    private final boolean allowPruning;
+
     private String description;
 
-    public SimpleTriggerInfo( String triggerName )
+    public SimpleTriggerInfo( String triggerName, boolean allowPruning )
     {
         assert triggerName != null;
         this.triggerName = triggerName;
+        this.allowPruning = allowPruning;
     }
 
     @Override
@@ -41,6 +44,12 @@ public class SimpleTriggerInfo implements TriggerInfo
     {
         String info = description == null ? triggerName : triggerName + " for " + description;
         return "Check Pointing triggered by " + info + " [" + transactionId + "]: ";
+    }
+
+    @Override
+    public boolean allowPruning()
+    {
+        return allowPruning;
     }
 
     @Override

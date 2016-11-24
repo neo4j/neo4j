@@ -47,7 +47,7 @@ public class CheckPointScheduler extends LifecycleAdapter
                 {
                     return;
                 }
-                checkPointer.checkPointIfNeeded( new SimpleTriggerInfo( "scheduler" ) );
+                checkPointer.checkPointIfNeeded( new SimpleTriggerInfo( "scheduler", true ) );
             }
             catch ( IOException e )
             {

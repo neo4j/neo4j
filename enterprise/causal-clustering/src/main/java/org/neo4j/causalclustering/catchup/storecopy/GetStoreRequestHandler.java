@@ -43,6 +43,7 @@ import static org.neo4j.io.fs.FileUtils.relativePath;
 
 public class GetStoreRequestHandler extends SimpleChannelInboundHandler<GetStoreRequest>
 {
+    private final SimpleTriggerInfo triggerInfo = new SimpleTriggerInfo( "Store copy", false );
     private final CatchupServerProtocol protocol;
     private final Supplier<NeoStoreDataSource> dataSource;
     private final Supplier<CheckPointer> checkPointerSupplier;
@@ -69,7 +70,7 @@ public class GetStoreRequestHandler extends SimpleChannelInboundHandler<GetStore
         }
         else
         {
-            long lastCheckPointedTx = checkPointerSupplier.get().tryCheckPoint( new SimpleTriggerInfo( "Store copy" ) );
+            long lastCheckPointedTx = checkPointerSupplier.get().tryCheckPoint( triggerInfo );
             try ( ResourceIterator<StoreFileMetadata> files = dataSource.get().listStoreFiles( false ) )
             {
                 while ( files.hasNext() )
