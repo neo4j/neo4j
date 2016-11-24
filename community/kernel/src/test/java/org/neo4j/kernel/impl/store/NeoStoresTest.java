@@ -24,14 +24,17 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
+
 import java.io.File;
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
@@ -63,7 +66,6 @@ import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.standard.DynamicRecordFormat;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
-import org.neo4j.kernel.impl.store.kvstore.RotationTimeoutException;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
@@ -81,6 +83,7 @@ import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.Token;
 import org.neo4j.string.UTF8;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.ThreadTestUtils;
 import org.neo4j.test.rule.NeoStoreDataSourceRule;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
@@ -92,6 +95,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.counts_store_rotation_timeout;
@@ -726,7 +730,7 @@ public class NeoStoresTest
     {
         // given
         FileSystemAbstraction fileSystem = fs.get();
-        Config defaults = Config.defaults().with( singletonMap( counts_store_rotation_timeout.name(), "10ms" ) );
+        Config defaults = Config.defaults().with( singletonMap( counts_store_rotation_timeout.name(), "60m" ) );
         StoreFactory factory =
                 new StoreFactory( storeDir, defaults, new DefaultIdGeneratorFactory( fileSystem ), pageCache,
                         fileSystem, NullLogProvider.getInstance() );
@@ -735,16 +739,28 @@ public class NeoStoresTest
         // let's hack the counts store so it fails to rotate and hence it fails to close as well...
         final CountsTracker counts = neoStore.getCounts();
         counts.start();
-        try
+        long nextTxId = neoStore.getMetaDataStore().getLastCommittedTransactionId() + 1;
+        AtomicReference<Throwable> exRef = new AtomicReference<>();
+        Thread thread = new Thread( () ->
         {
-            long nextTxId = neoStore.getMetaDataStore().getLastCommittedTransactionId() + 1;
-            counts.rotate( nextTxId );
-            fail( "should have thrown" );
-        }
-        catch ( RotationTimeoutException ex )
-        {
-            // expected
-        }
+            try
+            {
+                counts.rotate( nextTxId );
+            }
+            catch ( InterruptedIOException e )
+            {
+                // expected due to the interrupted below
+            }
+            catch ( Throwable e )
+            {
+                exRef.set( e );
+                throw new RuntimeException( e );
+            }
+        } );
+        thread.start();
+
+        // let's wait for the thread to start waiting for the next transaction id
+        ThreadTestUtils.awaitThreadState( thread, 500, Thread.State.TIMED_WAITING, Thread.State.WAITING );
 
         try
         {
@@ -756,9 +772,15 @@ public class NeoStoresTest
         {
             // then
             assertEquals( "Cannot stop in state: rotating", ex.getMessage() );
-            // and the page cache closes with no errors
-            pageCache.close();
         }
+
+        thread.interrupt();
+        thread.join();
+
+        // and the page cache closes with no errors
+        pageCache.close();
+        // and only InterruptedIOException is thrown in the other thread
+        assertNull( exRef.get() );
     }
 
     private static class MyPropertyKeyToken extends Token
