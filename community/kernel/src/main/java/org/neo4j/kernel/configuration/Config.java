@@ -34,7 +34,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
@@ -70,12 +69,16 @@ public class Config implements DiagnosticsProvider, Configuration
     private final ConfigurationMigrator migrator;
     private final Optional<File> configFile;
     private final List<ConfigurationValidator> validators = new ArrayList<>();
-
-
-    private ConfigValues settingsFunction;
-
     // Messages to this log get replayed into a real logger once logging has been instantiated.
     private Log log;
+
+    /**
+     * @return a configuration with embedded defaults
+     */
+    public static Config empty()
+    {
+        return embeddedDefaults( Optional.empty() );
+    }
 
     /**
      * @return a configuration with embedded defaults
@@ -137,15 +140,28 @@ public class Config implements DiagnosticsProvider, Configuration
         }, additionalValidators, Optional.empty() );
     }
 
-    public Config( Optional<File> configFile,
+    private Config( Optional<File> configFile,
             Map<String,String> overriddenSettings,
             Consumer<Map<String,String>> settingsPostProcessor,
             Collection<ConfigurationValidator> additionalValidators,
             Optional<Log> log )
     {
+        this( configFile, overriddenSettings, settingsPostProcessor, additionalValidators, log,
+                LoadableConfig.allConfigClasses() );
+    }
+
+    /**
+     * Only package-local to support tests of this class. Other uses should use public factory methods.
+     */
+    Config( Optional<File> configFile,
+            Map<String,String> overriddenSettings,
+            Consumer<Map<String,String>> settingsPostProcessor,
+            Collection<ConfigurationValidator> additionalValidators,
+            Optional<Log> log,
+            List<LoadableConfig> settingsClasses )
+    {
         this.log = log.orElse( new BufferingLog() );
         this.configFile = configFile;
-        List<LoadableConfig> settingsClasses = LoadableConfig.allConfigClasses();
 
         configOptions = settingsClasses.stream()
                 .map( LoadableConfig::getConfigOptions )
@@ -202,17 +218,7 @@ public class Config implements DiagnosticsProvider, Configuration
     @Override
     public <T> T get( Setting<T> setting )
     {
-        return setting.apply( settingsFunction );
-    }
-
-    /**
-     * Unlike the public {@link Setting} instances, the function passed in here has access to
-     * the raw setting data, meaning it can provide functionality that cross multiple settings
-     * and other more advanced use cases.
-     */
-    public <T> T view( Function<ConfigValues,T> projection )
-    {
-        return projection.apply( settingsFunction );
+        return setting.apply( params::get );
     }
 
     /**
@@ -252,7 +258,6 @@ public class Config implements DiagnosticsProvider, Configuration
     {
         return new HashSet<>( params.keySet() );
     }
-
 
     /**
      * @param key to lookup in the config
@@ -344,7 +349,6 @@ public class Config implements DiagnosticsProvider, Configuration
         }
         params.clear();
         params.putAll( validSettings );
-        settingsFunction = new ConfigValues( params );
     }
 
     private static Map<String,String> initSettings( @Nonnull Optional<File> configFile,

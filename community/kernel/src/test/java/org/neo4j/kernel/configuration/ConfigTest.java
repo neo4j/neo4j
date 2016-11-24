@@ -21,23 +21,24 @@ package org.neo4j.kernel.configuration;
 
 import org.junit.Test;
 
-import java.util.HashMap;
-import java.util.List;
+import java.util.Collections;
 import java.util.Map;
+import java.util.Optional;
 
-import org.neo4j.graphdb.config.Configuration;
+import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.logging.Log;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
-import static org.neo4j.kernel.configuration.Settings.INTEGER;
-import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
 import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.setting;
 
@@ -64,18 +65,30 @@ public class ConfigTest
         public static Setting<String> newer = setting( "newer", STRING, "" );
     }
 
-    public static class MySettingsWithDefaults
+    public static class MySettingsWithDefaults implements LoadableConfig
     {
-        public static Setting<String> hello = setting( "hello", STRING, "Hello, World!" );
+        public static final Setting<String> hello = setting( "hello", STRING, "Hello, World!" );
 
-        public static Setting<Boolean> boolSetting = setting( "bool_setting", BOOLEAN, Settings.TRUE );
+        public static final Setting<Boolean> boolSetting = setting( "bool_setting", BOOLEAN, Settings.TRUE );
 
+    }
+
+    private MySettingsWithDefaults mySettingsWithDefaults = new MySettingsWithDefaults();
+
+    static Config Config( LoadableConfig loadableConfig )
+    {
+        return Config( Collections.emptyMap(), loadableConfig );
+    }
+
+    static Config Config( Map<String,String> params, LoadableConfig loadableConfig ) {
+        return new Config( Optional.empty(), params, s -> {}, Collections.emptyList(), Optional.empty(),
+                Collections.singletonList( loadableConfig ) );
     }
 
     @Test
     public void shouldApplyDefaults()
     {
-        Config config = new Config( new HashMap<>(), MySettingsWithDefaults.class );
+        Config config = Config( mySettingsWithDefaults );
 
         assertThat( config.get( MySettingsWithDefaults.hello ), is( "Hello, World!" ) );
     }
@@ -84,7 +97,7 @@ public class ConfigTest
     public void shouldApplyMigrations()
     {
         // When
-        Config config = new Config( stringMap( "old", "hello!" ), MyMigratingSettings.class );
+        Config config = Config( stringMap( "old", "hello!" ), mySettingsWithDefaults );
 
         // Then
         assertThat( config.get( MyMigratingSettings.newer ), is( "hello!" ) );
@@ -93,7 +106,7 @@ public class ConfigTest
     @Test(expected = InvalidSettingException.class)
     public void shouldNotAllowSettingInvalidValues()
     {
-        new Config( stringMap( MySettingsWithDefaults.boolSetting.name(), "asd" ), MySettingsWithDefaults.class );
+        Config( stringMap( MySettingsWithDefaults.boolSetting.name(), "asd" ), mySettingsWithDefaults );
         fail( "Expected validation to fail." );
     }
 
@@ -101,119 +114,90 @@ public class ConfigTest
     public void shouldBeAbleToAugmentConfig() throws Exception
     {
         // Given
-        Config config = new Config( stringMap( "newer", "old", "non-overlapping", "huzzah" ) );
+        Config config = Config( mySettingsWithDefaults );
 
         // When
-        config.augment( stringMap( "newer", "new", "unrelated", "hello" ) );
+        config.augment( stringMap( MySettingsWithDefaults.boolSetting.name(), Settings.FALSE ) );
+        config.augment( stringMap( MySettingsWithDefaults.hello.name(), "Bye" ) );
 
         // Then
-        assertThat( config.get( setting( "newer", STRING, "" ) ), equalTo( "new" ) );
-        assertThat( config.get( setting( "non-overlapping", STRING, "" ) ), equalTo( "huzzah" ) );
-        assertThat( config.get( setting( "unrelated", STRING, "" ) ), equalTo( "hello" ) );
+        assertThat( config.get( MySettingsWithDefaults.boolSetting ), equalTo( false ) );
+        assertThat( config.get( MySettingsWithDefaults.hello ), equalTo( "Bye" ) );
     }
 
     @Test
-    public void shouldProvideViewOfGroups() throws Throwable
+    public void shouldPassOnLogInWith() throws Exception
     {
         // Given
-        Config config = new Config( stringMap(
-                "my.users.0.user.name", "Bob",
-                "my.users.0.user.age", "81",
-                "my.users.1.user.name", "Greta",
-                "my.users.1.user.age", "82" ) );
-
-        Setting<String> name = setting( "user.name", STRING, NO_DEFAULT );
-        Setting<Integer> age = setting( "user.age", INTEGER, NO_DEFAULT );
+        Log log = mock(Log.class);
+        Config first = Config.embeddedDefaults( stringMap( "first.jibberish", "bah" ) );
 
         // When
-        List<Configuration> views = config.view( ConfigGroups.groups( "my.users" ) );
+        first.setLogger( log );
+        Config second = first.with( stringMap( "second.jibberish", "baah" ) );
+        second.with( stringMap( "third.jibberish", "baah" ) );
 
         // Then
-        assertThat( views.size(), equalTo( 2 ) );
-
-        Configuration bob = views.get( 0 );
-        assertThat( bob.get( name ), equalTo( "Bob" ) );
-        assertThat( bob.get( age ), equalTo( 81 ) );
-
-        Configuration greta = views.get( 1 );
-        assertThat( greta.get( name ), equalTo( "Greta" ) );
-        assertThat( greta.get( age ), equalTo( 82 ) );
-
-        // however given the full name, the config could still be accessed outside the group
-        Setting<String> name0 = setting( "my.users.0.user.name", STRING, NO_DEFAULT );
-        assertThat( config.get( name0 ), equalTo( "Bob" ) );
-
+        verify( log ).warn( "Unknown config option: %s", "first.jibberish" );
+        verify( log ).warn( "Unknown config option: %s", "second.jibberish" );
+        verify( log ).warn( "Unknown config option: %s", "third.jibberish" );
+        verifyNoMoreInteractions( log );
     }
 
     @Test
-    public void shouldFindNoGroupViewWhenGroupNameIsMissing() throws Throwable
+    public void shouldPassOnBufferedLogInWith() throws Exception
     {
         // Given
-        Config config = new Config( stringMap(
-                "0.user.name", "Bob",
-                "0.user.age", "81",
-                "1.user.name", "Greta",
-                "1.user.age", "82" ) );
-
-        Setting<String> name = setting( "user.name", STRING, NO_DEFAULT );
-        Setting<Integer> age = setting( "user.age", INTEGER, NO_DEFAULT );
+        Log log = mock(Log.class);
+        Config first = Config.embeddedDefaults( stringMap( "first.jibberish", "bah" ) );
 
         // When
-        List<Configuration> emptyStrViews = config.view( ConfigGroups.groups( "" ) );
-        List<Configuration> numViews = config.view( ConfigGroups.groups( "0" ) );
+        Config second = first.with( stringMap( "second.jibberish", "baah" ) );
+        Config third = second.with( stringMap( "third.jibberish", "baah" ) );
+        third.setLogger( log );
 
         // Then
-        assertThat( emptyStrViews.size(), equalTo( 0 ) );
-        assertThat( numViews.size(), equalTo( 0 ) );
-        assertThat( config.get( setting( "0.user.name", STRING, NO_DEFAULT ) ), equalTo( "Bob" ) );
+        verify( log ).warn( "Unknown config option: %s", "first.jibberish" );
+        verify( log ).warn( "Unknown config option: %s", "second.jibberish" );
+        verify( log ).warn( "Unknown config option: %s", "third.jibberish" );
+        verifyNoMoreInteractions( log );
     }
 
     @Test
-    public void shouldFindNoGroupViewWhenGroupNameIsWrong() throws Throwable
+    public void shouldPassOnLogInWithDefaults() throws Exception
     {
         // Given
-        Config config = new Config( stringMap(
-                "my.users.0.name", "Bob",
-                "my.users.0.age", "81",
-                "my.users.1.name", "Greta",
-                "my.users.1.age", "82" ) );
+        Log log = mock(Log.class);
+        Config first = Config.embeddedDefaults( stringMap( "first.jibberish", "bah" ) );
 
         // When
-        List<Configuration> views = config.view( ConfigGroups.groups( "my" ) );
+        first.setLogger( log );
+        Config second = first.withDefaults( stringMap( "second.jibberish", "baah" ) );
+        second.withDefaults( stringMap( "third.jibberish", "baah" ) );
 
         // Then
-        assertThat( views.size(), equalTo( 0 ) );
+        verify( log ).warn( "Unknown config option: %s", "first.jibberish" );
+        verify( log ).warn( "Unknown config option: %s", "second.jibberish" );
+        verify( log ).warn( "Unknown config option: %s", "third.jibberish" );
+        verifyNoMoreInteractions( log );
     }
 
     @Test
-    public void shouldOnlyReadInsideGroupWhileAccessingSettingsInAGroup() throws Throwable
+    public void shouldPassOnBufferedLogInWithDefaults() throws Exception
     {
         // Given
-        Config config = new Config( stringMap(
-                "name", "lemon",
-                "my.users.0.user.name", "Bob",
-                "my.users.0.user.age", "81",
-                "my.users.1.user.name", "Greta",
-                "my.users.1.user.age", "82" ) );
-
-        Setting<String> name = setting( "name", STRING, "No name given to this poor user" );
-        Setting<Integer> age = setting( "age", INTEGER, NO_DEFAULT );
+        Log log = mock(Log.class);
+        Config first = Config.embeddedDefaults( stringMap( "first.jibberish", "bah" ) );
 
         // When
-        List<Configuration> views = config.view( ConfigGroups.groups( "my.users" ) );
+        Config second = first.withDefaults( stringMap( "second.jibberish", "baah" ) );
+        Config third = second.withDefaults( stringMap( "third.jibberish", "baah" ) );
+        third.setLogger( log );
 
         // Then
-        assertThat( views.size(), equalTo( 2 ) );
-
-        Configuration bob = views.get( 0 );
-        assertThat( bob.get( name ), equalTo( "No name given to this poor user" ) );
-        assertNull( bob.get( age ) );
-
-        Configuration greta = views.get( 1 );
-        assertThat( greta.get( name ), equalTo( "No name given to this poor user" ) );
-        assertNull( greta.get( age ) );
-
-        assertThat( config.get( name ), equalTo( "lemon" ) );
-        assertNull( config.get( age ) );
+        verify( log ).warn( "Unknown config option: %s", "first.jibberish" );
+        verify( log ).warn( "Unknown config option: %s", "second.jibberish" );
+        verify( log ).warn( "Unknown config option: %s", "third.jibberish" );
+        verifyNoMoreInteractions( log );
     }
 }
