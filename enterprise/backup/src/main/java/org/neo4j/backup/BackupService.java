@@ -133,6 +133,7 @@ class BackupService
         this.logProvider = logProvider;
         this.log = logProvider.getLog( getClass() );
         this.monitors = monitors;
+        monitors.addMonitorListener( new StoreCopyClientLoggingMonitor( log ), getClass().getName() );
     }
 
     BackupOutcome doFullBackup( final String sourceHostNameOrIp, final int sourcePort, File targetDirectory,
@@ -436,6 +437,65 @@ class BackupService
         public void done()
         {
             client.stop();
+        }
+    }
+
+    private static class StoreCopyClientLoggingMonitor implements StoreCopyClient.Monitor
+    {
+        private final Log log;
+
+        StoreCopyClientLoggingMonitor( Log log )
+        {
+            this.log = log;
+        }
+
+        @Override
+        public void startReceivingStoreFiles()
+        {
+            log.debug( "Start receiving store files" );
+        }
+
+        @Override
+        public void finishReceivingStoreFiles()
+        {
+            log.debug( "Finish receiving store files" );
+
+        }
+
+        @Override
+        public void startReceivingStoreFile( File file )
+        {
+            log.debug( "Start receiving store file %s", file );
+        }
+
+        @Override
+        public void finishReceivingStoreFile( File file )
+        {
+            log.debug( "Finish receiving store file %s", file );
+        }
+
+        @Override
+        public void startReceivingTransactions( long startTxId )
+        {
+            log.info( "Start receiving transactions from %d", startTxId );
+        }
+
+        @Override
+        public void finishReceivingTransactions( long endTxId )
+        {
+            log.info( "Finish receiving transactions at %d", endTxId );
+        }
+
+        @Override
+        public void startRecoveringStore()
+        {
+            log.info( "Start recovering store" );
+        }
+
+        @Override
+        public void finishRecoveringStore()
+        {
+            log.info( "Finish recovering store" );
         }
     }
 }
