@@ -21,6 +21,7 @@ package org.neo4j.kernel.configuration;
 
 import org.junit.Test;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
@@ -44,7 +45,7 @@ import static org.neo4j.kernel.configuration.Settings.setting;
 
 public class ConfigTest
 {
-    public static class MyMigratingSettings
+    public static class MyMigratingSettings implements LoadableConfig
     {
         @SuppressWarnings("unused") // accessed by reflection
         @Migrator
@@ -73,22 +74,23 @@ public class ConfigTest
 
     }
 
-    private MySettingsWithDefaults mySettingsWithDefaults = new MySettingsWithDefaults();
+    private static MyMigratingSettings myMigratingSettings = new MyMigratingSettings();
+    private static MySettingsWithDefaults mySettingsWithDefaults = new MySettingsWithDefaults();
 
-    static Config Config( LoadableConfig loadableConfig )
+    static Config Config()
     {
-        return Config( Collections.emptyMap(), loadableConfig );
+        return Config( Collections.emptyMap() );
     }
 
-    static Config Config( Map<String,String> params, LoadableConfig loadableConfig ) {
+    static Config Config( Map<String,String> params ) {
         return new Config( Optional.empty(), params, s -> {}, Collections.emptyList(), Optional.empty(),
-                Collections.singletonList( loadableConfig ) );
+                Arrays.asList(mySettingsWithDefaults, myMigratingSettings ) );
     }
 
     @Test
     public void shouldApplyDefaults()
     {
-        Config config = Config( mySettingsWithDefaults );
+        Config config = Config();
 
         assertThat( config.get( MySettingsWithDefaults.hello ), is( "Hello, World!" ) );
     }
@@ -97,7 +99,7 @@ public class ConfigTest
     public void shouldApplyMigrations()
     {
         // When
-        Config config = Config( stringMap( "old", "hello!" ), mySettingsWithDefaults );
+        Config config = Config( stringMap( "old", "hello!" ) );
 
         // Then
         assertThat( config.get( MyMigratingSettings.newer ), is( "hello!" ) );
@@ -106,7 +108,7 @@ public class ConfigTest
     @Test(expected = InvalidSettingException.class)
     public void shouldNotAllowSettingInvalidValues()
     {
-        Config( stringMap( MySettingsWithDefaults.boolSetting.name(), "asd" ), mySettingsWithDefaults );
+        Config( stringMap( MySettingsWithDefaults.boolSetting.name(), "asd" ) );
         fail( "Expected validation to fail." );
     }
 
@@ -114,7 +116,7 @@ public class ConfigTest
     public void shouldBeAbleToAugmentConfig() throws Exception
     {
         // Given
-        Config config = Config( mySettingsWithDefaults );
+        Config config = Config();
 
         // When
         config.augment( stringMap( MySettingsWithDefaults.boolSetting.name(), Settings.FALSE ) );

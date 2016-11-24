@@ -126,7 +126,7 @@ public class Config implements DiagnosticsProvider, Configuration
     public static Config embeddedDefaults( Map<String,String> additionalConfig,
             Collection<ConfigurationValidator> additionalValidators )
     {
-        return new Config( Optional.empty(), additionalConfig, settings -> {}, additionalValidators, Optional.empty() );
+        return Config.embeddedDefaults( Optional.empty(), additionalConfig, additionalValidators );
     }
 
     /**
@@ -135,9 +135,7 @@ public class Config implements DiagnosticsProvider, Configuration
     public static Config embeddedDefaults( Optional<File> configFile, Map<String,String> additionalConfig,
             Collection<ConfigurationValidator> additionalValidators )
     {
-        return new Config( configFile, additionalConfig, settings ->
-        {
-        }, additionalValidators, Optional.empty() );
+        return new Config( configFile, additionalConfig, settings -> {}, additionalValidators, Optional.empty() );
     }
 
     private Config( Optional<File> configFile,

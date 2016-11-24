@@ -22,10 +22,11 @@ package org.neo4j.kernel.configuration;
 
 import org.junit.Test;
 
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.logging.Log;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -37,11 +38,11 @@ public class AnnotationBasedConfigurationMigratorTest
 
     private static final AtomicBoolean wasCalled = new AtomicBoolean( false );
 
-    static class SomeSettings
+    static class SomeSettings implements LoadableConfig
     {
         @SuppressWarnings( "unused" )
         @Migrator
-        private static ConfigurationMigrator migrator = ( rawConfiguration, log ) ->
+        public static ConfigurationMigrator migrator = ( rawConfiguration, log ) ->
         {
             wasCalled.set( true );
             return rawConfiguration;
@@ -54,7 +55,7 @@ public class AnnotationBasedConfigurationMigratorTest
 
         // Given
         AnnotationBasedConfigurationMigrator migrator =
-                new AnnotationBasedConfigurationMigrator( Arrays.asList( new Class<?>[]{SomeSettings.class} ) );
+                new AnnotationBasedConfigurationMigrator( Collections.singleton( new SomeSettings() ) );
 
         // When
         migrator.apply( new HashMap<>(), mock( Log.class ) );
