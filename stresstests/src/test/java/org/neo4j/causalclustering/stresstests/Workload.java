@@ -55,19 +55,48 @@ class Workload extends RepeatUntilCallable
                 tx.success();
             } );
         }
-        catch ( InterruptedException e )
-        {
-            // whatever let's go on with the workload
-            Thread.interrupted();
-        }
-        catch ( TimeoutException | DatabaseShutdownException | TransactionFailureException e )
-        {
-            // whatever let's go on with the workload
-        }
         catch ( Throwable e )
         {
+            if ( isInterrupted( e ) || isTransient( e ) )
+            {
+                // whatever let's go on with the workload
+                return;
+            }
+
             throw new RuntimeException( e );
         }
+    }
+
+    private boolean isTransient( Throwable e )
+    {
+        if ( e == null )
+        {
+            return false;
+        }
+
+        if ( e instanceof  TimeoutException || e instanceof DatabaseShutdownException ||
+                e instanceof TransactionFailureException )
+        {
+            return true;
+        }
+
+        return isInterrupted( e.getCause() );
+    }
+
+    private boolean isInterrupted( Throwable e )
+    {
+        if ( e == null )
+        {
+            return false;
+        }
+
+        if ( e instanceof InterruptedException )
+        {
+            Thread.interrupted();
+            return true;
+        }
+
+        return isInterrupted( e.getCause() );
     }
 
     static void setupIndexes( Cluster cluster )
