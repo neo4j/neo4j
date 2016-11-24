@@ -19,8 +19,9 @@
  */
 package org.neo4j.consistency;
 
+import org.neo4j.configuration.Description;
+import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.Description;
 
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.FALSE;
@@ -31,7 +32,7 @@ import static org.neo4j.kernel.configuration.Settings.setting;
  * Settings for consistency checker
  */
 @Description( "Consistency check configuration settings" )
-public class ConsistencyCheckSettings
+public class ConsistencyCheckSettings implements LoadableConfig
 {
     @Description("Perform optional additional checking on property ownership. " +
             "This can detect a theoretical inconsistency where a property could be owned by multiple entities. " +

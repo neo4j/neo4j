@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.helpers.Exceptions;
@@ -83,7 +84,7 @@ public class GraphDatabaseFacadeFactory
         Iterable<QueryEngineProvider> executionEngines();
     }
 
-    public static class Configuration
+    public static class Configuration implements LoadableConfig
     {
         public static final Setting<Boolean> ephemeral =
                 setting( "unsupported.dbms.ephemeral", Settings.BOOLEAN, Settings.FALSE );

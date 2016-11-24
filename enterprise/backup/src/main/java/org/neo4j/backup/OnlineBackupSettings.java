@@ -19,8 +19,9 @@
  */
 package org.neo4j.backup;
 
+import org.neo4j.configuration.Description;
+import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.Description;
 import org.neo4j.helpers.HostnamePort;
 
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
@@ -32,7 +33,7 @@ import static org.neo4j.kernel.configuration.Settings.setting;
  * Settings for online backup
  */
 @Description( "Online backup configuration settings" )
-public class OnlineBackupSettings
+public class OnlineBackupSettings implements LoadableConfig
 {
     @Description("Enable support for running online backups")
     public static final Setting<Boolean> online_backup_enabled = setting( "dbms.backup.enabled", BOOLEAN, TRUE );

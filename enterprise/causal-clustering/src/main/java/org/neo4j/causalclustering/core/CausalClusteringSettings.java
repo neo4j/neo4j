@@ -21,8 +21,9 @@ package org.neo4j.causalclustering.core;
 
 import java.util.List;
 
+import org.neo4j.configuration.Description;
+import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.Description;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.kernel.configuration.Internal;
@@ -43,7 +44,7 @@ import static org.neo4j.kernel.configuration.Settings.min;
 import static org.neo4j.kernel.configuration.Settings.setting;
 
 @Description("Settings for Causal Clustering")
-public class CausalClusteringSettings
+public class CausalClusteringSettings implements LoadableConfig
 {
     @Description("Time out for a new member to catch up")
     public static final Setting<Long> join_catch_up_timeout =

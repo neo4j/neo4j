@@ -19,8 +19,9 @@
  */
 package org.neo4j.kernel.ha;
 
+import org.neo4j.configuration.Description;
+import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.Description;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.configuration.ConfigurationMigrator;
 import org.neo4j.kernel.configuration.Internal;
@@ -42,7 +43,7 @@ import static org.neo4j.kernel.ha.HaSettings.TxPushStrategy.fixed_ascending;
  * Settings for High Availability mode
  */
 @Description( "High Availability configuration settings" )
-public class HaSettings
+public class HaSettings implements LoadableConfig
 {
     @SuppressWarnings("unused") // accessed by reflection
     @Migrator

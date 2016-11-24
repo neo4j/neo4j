@@ -21,8 +21,9 @@ package org.neo4j.metrics;
 
 import java.io.File;
 
+import org.neo4j.configuration.Description;
+import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.Description;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.configuration.Settings;
 
@@ -33,7 +34,7 @@ import static org.neo4j.kernel.configuration.Settings.setting;
  * Settings for the Neo4j Enterprise metrics reporting.
  */
 @Description( "Metrics settings" )
-public class MetricsSettings
+public class MetricsSettings implements LoadableConfig
 {
     // Common settings
     @Description( "A common prefix for the reported metrics field names. By default, this is either be 'neo4j', " +

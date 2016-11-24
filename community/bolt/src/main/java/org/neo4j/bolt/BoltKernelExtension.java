@@ -51,10 +51,11 @@ import org.neo4j.bolt.v1.runtime.MonitoredWorkerFactory;
 import org.neo4j.bolt.v1.runtime.WorkerFactory;
 import org.neo4j.bolt.v1.runtime.concurrent.ThreadedWorkerFactory;
 import org.neo4j.bolt.v1.transport.BoltProtocolV1;
+import org.neo4j.configuration.Description;
+import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.Description;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings.BoltConnector;
 import org.neo4j.helpers.AdvertisedSocketAddress;
@@ -90,7 +91,7 @@ import static org.neo4j.kernel.impl.util.JobScheduler.Groups.boltNetworkIO;
 @Service.Implementation( KernelExtensionFactory.class )
 public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtension.Dependencies>
 {
-    public static class Settings
+    public static class Settings implements LoadableConfig
     {
         @Description( "Directory for storing certificates to be used by Neo4j for TLS connections" )
         public static Setting<File> certificates_directory =

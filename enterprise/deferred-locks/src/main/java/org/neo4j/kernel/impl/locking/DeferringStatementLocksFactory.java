@@ -19,8 +19,9 @@
  */
 package org.neo4j.kernel.impl.locking;
 
+import org.neo4j.configuration.Description;
+import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.Description;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Internal;
 import org.neo4j.kernel.configuration.Settings;
@@ -32,7 +33,7 @@ import static org.neo4j.kernel.configuration.Settings.setting;
  * A {@link StatementLocksFactory} that created {@link DeferringStatementLocks} based on the given
  * {@link Locks} and {@link Config}.
  */
-public class DeferringStatementLocksFactory implements StatementLocksFactory
+public class DeferringStatementLocksFactory implements StatementLocksFactory, LoadableConfig
 {
     @Internal
     @Description( "Enable deferring of locks to commit time. This feature weakens the isolation level. " +

@@ -19,8 +19,9 @@
  */
 package org.neo4j.shell;
 
+import org.neo4j.configuration.Description;
+import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.Description;
 
 import static org.neo4j.kernel.configuration.Settings.ANY;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
@@ -36,7 +37,7 @@ import static org.neo4j.kernel.configuration.Settings.setting;
  * Settings for the shell extension
  */
 @Description( "Settings for the remote shell extension" )
-public class ShellSettings
+public class ShellSettings implements LoadableConfig
 {
     @Description( "Enable a remote shell server which Neo4j Shell clients can log in to." )
     public static final Setting<Boolean> remote_shell_enabled = setting( "dbms.shell.enabled", BOOLEAN, FALSE );

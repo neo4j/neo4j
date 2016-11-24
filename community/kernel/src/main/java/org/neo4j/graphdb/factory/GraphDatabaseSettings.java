@@ -23,6 +23,8 @@ import java.io.File;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.neo4j.configuration.Description;
+import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
@@ -70,9 +72,9 @@ import static org.neo4j.kernel.configuration.Settings.pathSetting;
 import static org.neo4j.kernel.configuration.Settings.setting;
 
 /**
- * Settings for Neo4j. Use this with {@link GraphDatabaseBuilder}.
+ * Settings for Neo4j.
  */
-public abstract class GraphDatabaseSettings
+public class GraphDatabaseSettings implements LoadableConfig
 {
     /**
      * Data block sizes for dynamic array stores.

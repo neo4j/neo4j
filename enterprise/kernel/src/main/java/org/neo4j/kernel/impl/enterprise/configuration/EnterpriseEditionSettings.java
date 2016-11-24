@@ -21,8 +21,9 @@ package org.neo4j.kernel.impl.enterprise.configuration;
 
 import java.util.List;
 
+import org.neo4j.configuration.Description;
+import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.Description;
 import org.neo4j.kernel.configuration.Internal;
 import org.neo4j.kernel.impl.store.id.IdType;
 
@@ -36,7 +37,7 @@ import static org.neo4j.kernel.impl.store.id.IdType.RELATIONSHIP;
 /**
  * Enterprise edition specific settings
  */
-public class EnterpriseEditionSettings
+public class EnterpriseEditionSettings implements LoadableConfig
 {
     public static final String ENTERPRISE_SECURITY_MODULE_ID = "enterprise-security-module";
 

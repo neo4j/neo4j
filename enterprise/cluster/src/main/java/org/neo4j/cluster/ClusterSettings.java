@@ -22,8 +22,9 @@ package org.neo4j.cluster;
 import java.util.List;
 import java.util.function.Function;
 
+import org.neo4j.configuration.Description;
+import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.Description;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.configuration.Internal;
 
@@ -45,7 +46,7 @@ import static org.neo4j.kernel.configuration.Settings.setting;
  * Settings for cluster members
  */
 @Description( "Cluster configuration settings" )
-public class ClusterSettings
+public class ClusterSettings implements LoadableConfig
 {
     public static final Function<String, InstanceId> INSTANCE_ID = new Function<String, InstanceId>()
     {
