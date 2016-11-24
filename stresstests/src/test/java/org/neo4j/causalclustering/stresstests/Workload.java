@@ -26,6 +26,7 @@ import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.TransactionFailureException;
 
 class Workload extends RepeatUntilCallable
 {
@@ -59,7 +60,7 @@ class Workload extends RepeatUntilCallable
             // whatever let's go on with the workload
             Thread.interrupted();
         }
-        catch ( TimeoutException | DatabaseShutdownException e )
+        catch ( TimeoutException | DatabaseShutdownException | TransactionFailureException e )
         {
             // whatever let's go on with the workload
         }

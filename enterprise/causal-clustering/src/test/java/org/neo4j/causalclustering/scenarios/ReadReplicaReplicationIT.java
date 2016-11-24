@@ -26,13 +26,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.BinaryOperator;
 
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.causalclustering.catchup.tx.FileCopyMonitor;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.core.consensus.log.segmented.FileNames;
@@ -54,6 +57,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -63,27 +67,32 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
 import org.neo4j.kernel.lifecycle.LifecycleException;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.causalclustering.ClusterRule;
 
+import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 
 import static org.neo4j.causalclustering.core.EnterpriseCoreEditionModule.CLUSTER_STATE_DIRECTORY_NAME;
 import static org.neo4j.causalclustering.core.consensus.log.RaftLog.PHYSICAL_LOG_DIRECTORY_NAME;
+import static org.neo4j.com.storecopy.StoreUtil.TEMP_COPY_DIRECTORY_NAME;
 import static org.neo4j.function.Predicates.awaitEx;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -142,6 +151,12 @@ public class ReadReplicaReplicationIT
         Cluster cluster = clusterRule.withNumberOfReadReplicas( 0 ).startCluster();
         int nodesBeforeReadReplicaStarts = 1;
 
+        cluster.coreTx( ( db, tx ) ->
+        {
+            db.schema().constraintFor( Label.label( "Foo" ) ).assertPropertyIsUnique( "foobar" ).create();
+            tx.success();
+        } );
+
         // when
         for ( int i = 0; i < 100; i++ )
         {
@@ -152,7 +167,21 @@ public class ReadReplicaReplicationIT
             } );
         }
 
-        cluster.addReadReplicaWithId( 0 ).start();
+        AtomicBoolean labelScanStoreCorrectlyPlaced = new AtomicBoolean( false );
+        Monitors monitors = new Monitors();
+        ReadReplica rr = cluster.addReadReplicaWithIdAndMonitors( 0, monitors );
+
+        File labelScanStore = LabelScanStoreProvider.getStoreDirectory( new File( rr.storeDir(), TEMP_COPY_DIRECTORY_NAME ) );
+
+        monitors.addMonitorListener( (FileCopyMonitor) file ->
+        {
+            if ( file.getParent().contains( labelScanStore.getPath() ) )
+            {
+                labelScanStoreCorrectlyPlaced.set( true );
+            }
+        } );
+
+        rr.start();
 
         for ( int i = 0; i < 100; i++ )
         {
@@ -174,12 +203,14 @@ public class ReadReplicaReplicationIT
 
                 for ( Node node : readReplica.getAllNodes() )
                 {
-                    assertEquals( "baz_bat", node.getProperty( "foobar" ) );
+                    assertThat( node.getProperty( "foobar" ).toString(), startsWith( "baz_bat" ) );
                 }
 
                 tx.success();
             }
         }
+
+        assertTrue( labelScanStoreCorrectlyPlaced.get() );
     }
 
     @Test
@@ -511,16 +542,16 @@ public class ReadReplicaReplicationIT
     {
         for ( int i = 0; i < amount; i++ )
         {
-            Node node = db.createNode();
-            node.setProperty( "foobar", "baz_bat" );
-            node.setProperty( "foobar1", "baz_bat" );
-            node.setProperty( "foobar2", "baz_bat" );
-            node.setProperty( "foobar3", "baz_bat" );
-            node.setProperty( "foobar4", "baz_bat" );
-            node.setProperty( "foobar5", "baz_bat" );
-            node.setProperty( "foobar6", "baz_bat" );
-            node.setProperty( "foobar7", "baz_bat" );
-            node.setProperty( "foobar8", "baz_bat" );
+            Node node = db.createNode(Label.label( "Foo" ));
+            node.setProperty( "foobar", format( "baz_bat%s", UUID.randomUUID() ) );
+            node.setProperty( "foobar1", format( "baz_bat%s", UUID.randomUUID() ) );
+            node.setProperty( "foobar2", format( "baz_bat%s", UUID.randomUUID() ) );
+            node.setProperty( "foobar3", format( "baz_bat%s", UUID.randomUUID() ) );
+            node.setProperty( "foobar4", format( "baz_bat%s", UUID.randomUUID() ) );
+            node.setProperty( "foobar5", format( "baz_bat%s", UUID.randomUUID() ) );
+            node.setProperty( "foobar6", format( "baz_bat%s", UUID.randomUUID() ) );
+            node.setProperty( "foobar7", format( "baz_bat%s", UUID.randomUUID() ) );
+            node.setProperty( "foobar8", format( "baz_bat%s", UUID.randomUUID() ) );
         }
     }
 }

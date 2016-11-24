@@ -205,7 +205,8 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
                 fileSystem, platformModule.pageCache,
                 new StoreCopyClient( catchUpClient, logProvider ),
                 new TxPullClient( catchUpClient, platformModule.monitors ),
-                new TransactionLogCatchUpFactory() );
+                new TransactionLogCatchUpFactory(),
+                platformModule.monitors );
 
         CopiedStoreRecovery copiedStoreRecovery = new CopiedStoreRecovery( config,
                 platformModule.kernelExtensions.listFactories(), platformModule.pageCache );
