@@ -25,9 +25,16 @@ package org.neo4j.index.gbptree;
  *
  * @param <KEY> type of key.
  */
-class SplitResult<KEY>
+class StructurePropagation<KEY>
 {
-    KEY primKey;
+    boolean hasNewGen;
+    boolean hasSplit;
+    final KEY primKey;
     long left;
     long right;
+
+    StructurePropagation( KEY primKey )
+    {
+        this.primKey = primKey;
+    }
 }

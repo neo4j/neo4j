@@ -417,12 +417,14 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
     private class SingleIndexWriter implements IndexWriter<KEY,VALUE>
     {
         private final InternalTreeLogic<KEY,VALUE> treeLogic;
+        private final StructurePropagation<KEY> structurePropagation;
         private PageCursor cursor;
         private IndexWriter.Options options;
         private final byte[] tmp = new byte[0];
 
         SingleIndexWriter( InternalTreeLogic<KEY,VALUE> treeLogic )
         {
+            this.structurePropagation = new StructurePropagation<>( layout.newKey() );
             this.treeLogic = treeLogic;
         }
 
@@ -444,11 +446,12 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         {
             goToRoot( cursor );
 
-            SplitResult<KEY> split = treeLogic.insert( cursor, key, value, valueMerger, options,
+            treeLogic.insert( cursor, structurePropagation, key, value, valueMerger, options,
                     stableGeneration, unstableGeneration );
 
-            if ( split != null )
+            if ( structurePropagation.hasSplit )
             {
+                structurePropagation.hasSplit = false;
                 // New root
                 long newRootId = acquireNewId();
                 if ( !cursor.next( newRootId ) )
@@ -457,12 +460,17 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
                 }
 
                 bTreeNode.initializeInternal( cursor, stableGeneration, unstableGeneration );
-                bTreeNode.insertKeyAt( cursor, split.primKey, 0, 0, tmp );
+                bTreeNode.insertKeyAt( cursor, structurePropagation.primKey, 0, 0, tmp );
                 bTreeNode.setKeyCount( cursor, 1 );
-                bTreeNode.setChildAt( cursor, split.left, 0, stableGeneration, unstableGeneration );
-                bTreeNode.setChildAt( cursor, split.right, 1, stableGeneration, unstableGeneration );
+                bTreeNode.setChildAt( cursor, structurePropagation.left, 0, stableGeneration, unstableGeneration );
+                bTreeNode.setChildAt( cursor, structurePropagation.right, 1, stableGeneration, unstableGeneration );
                 rootId = newRootId;
             }
+            else if ( structurePropagation.hasNewGen )
+            {
+                rootId = structurePropagation.left;
+            }
+            structurePropagation.hasNewGen = false;
 
             checkOutOfBounds( cursor );
         }
@@ -472,7 +480,13 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         {
             goToRoot( cursor );
 
-            VALUE result = treeLogic.remove( cursor, key, layout.newValue(), stableGeneration, unstableGeneration );
+            VALUE result = treeLogic.remove( cursor, structurePropagation, key, layout.newValue(),
+                    stableGeneration, unstableGeneration );
+            if ( structurePropagation.hasNewGen )
+            {
+                structurePropagation.hasNewGen = false;
+                rootId = structurePropagation.left;
+            }
 
             checkOutOfBounds( cursor );
             return result;
