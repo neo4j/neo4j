@@ -139,12 +139,9 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
             {
                 if ( bTreeNode.isNode( rightSibling ) )
                 {
-                    if ( !cursor.next( rightSibling ) )
-                    {
-                        // TODO: Check if rightSibling is within expected range before calling next.
-                        // TODO: Possibly by getting highest expected from IdProvider
-                        throw new IllegalStateException( "Could not go to right sibling " + rightSibling );
-                    }
+                    // TODO: Check if rightSibling is within expected range before calling next.
+                    // TODO: Possibly by getting highest expected from IdProvider
+                    bTreeNode.goTo( cursor, rightSibling, stableGeneration, unstableGeneration );
                     pos = -1;
                     reread = true;
                     continue; // in the outer loop, with the position reset to the beginning of the right sibling
