@@ -321,10 +321,7 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
             {
                 PointerChecking.checkChildPointer( childId );
 
-                if ( !cursor.next( childId ) )
-                {
-                    throw new IllegalStateException( "Couldn't go to child " + childId );
-                }
+                bTreeNode.goTo( cursor, childId, stableGeneration, unstableGeneration );
             }
         }
         while ( isInternal && keyCount > 0 );
@@ -400,10 +397,7 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
 
     private void goToRoot( PageCursor cursor ) throws IOException
     {
-        if ( !cursor.next( rootId ) )
-        {
-            throw new IllegalStateException( "Could not go to root " + rootId );
-        }
+        bTreeNode.goTo( cursor, rootId, stableGeneration, unstableGeneration );
     }
 
     private void checkOutOfBounds( PageCursor cursor )

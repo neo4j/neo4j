@@ -19,6 +19,7 @@
  */
 package org.neo4j.index.gbptree;
 
+import java.io.IOException;
 import java.util.Comparator;
 import java.util.function.Consumer;
 
@@ -368,6 +369,26 @@ class TreeNode<KEY,VALUE>
     {
         return readRecordsWithInsertRecordInPosition( cursor, newRecordWriter, insertPosition, totalNumberOfRecords,
                 childSize(), childOffset( 0 ), into );
+    }
+
+    void goTo( PageCursor cursor, long childId, long stableGeneration, long unstableGeneration )
+            throws IOException
+    {
+        if ( !cursor.next( childId ) )
+        {
+            throw new IllegalStateException( "Could not go to " + childId );
+        }
+        verifyGen( cursor, stableGeneration, unstableGeneration );
+    }
+
+    private void verifyGen( PageCursor cursor, long stableGeneration, long unstableGeneration )
+    {
+        long gen = gen( cursor );
+        if ( ( gen > stableGeneration && gen < unstableGeneration ) || gen > unstableGeneration )
+        {
+            throw new IllegalStateException( "Reached a node with generation=" + gen +
+                    ", stableGeneration=" + stableGeneration + ", unstableGeneration=" + unstableGeneration );
+        }
     }
 
     /**
