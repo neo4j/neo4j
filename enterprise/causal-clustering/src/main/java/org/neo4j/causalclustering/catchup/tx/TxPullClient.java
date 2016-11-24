@@ -40,15 +40,15 @@ public class TxPullClient
         this.pullRequestMonitor = monitors.newMonitor( PullRequestMonitor.class );
     }
 
-    public TxPullRequestResult pullTransactions( MemberId from, StoreId storeId, long startTxId,
+    public TxPullRequestResult pullTransactions( MemberId from, StoreId storeId, long previousTxId,
                                                  TxPullResponseListener txPullResponseListener )
             throws CatchUpClientException
     {
-        pullRequestMonitor.txPullRequest( startTxId );
-        return catchUpClient.makeBlockingRequest( from, new TxPullRequest( startTxId, storeId ),
+        pullRequestMonitor.txPullRequest( previousTxId );
+        return catchUpClient.makeBlockingRequest( from, new TxPullRequest( previousTxId, storeId ),
                 new CatchUpResponseAdaptor<TxPullRequestResult>()
                 {
-                    private long lastTxIdReceived = startTxId;
+                    private long lastTxIdReceived = previousTxId;
 
                     @Override
                     public void onTxPullResponse( CompletableFuture<TxPullRequestResult> signal,
