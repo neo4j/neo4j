@@ -71,6 +71,7 @@ import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgFailure;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgRecord;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
 import static org.neo4j.bolt.v1.runtime.spi.StreamMatchers.eqRecord;
+import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyDisconnects;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
 import static org.neo4j.server.security.enterprise.auth.LdapRealm.LDAP_CONNECTION_TIMEOUT_CLIENT_MESSAGE;
 import static org.neo4j.server.security.enterprise.auth.LdapRealm.LDAP_READ_TIMEOUT_CLIENT_MESSAGE;
@@ -348,6 +349,8 @@ public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
                 run( "MATCH (n) RETURN n" ), pullAll() ) );
         assertThat( client, eventuallyReceives(
                 msgFailure( Status.Security.AuthorizationExpired, "LDAP authorization info expired." ) ) );
+
+        assertThat( client, eventuallyDisconnects() );
     }
 
     @Test
@@ -537,6 +540,8 @@ public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
 
         assertConnectionTimeout( authToken( "neo", "abc123", null ),
                 LDAP_CONNECTION_TIMEOUT_CLIENT_MESSAGE );
+
+        assertThat( client, eventuallyDisconnects() );
     }
 
     @Test
@@ -944,6 +949,8 @@ public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
         // Then
         assertThat( client, eventuallyReceives(
                 msgFailure( Status.Security.AuthProviderTimeout, LDAP_READ_TIMEOUT_CLIENT_MESSAGE ) ) );
+
+        assertThat( client, eventuallyDisconnects() );
     }
 
     private void assertLdapAuthorizationFailed() throws IOException
@@ -954,6 +961,8 @@ public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
         // Then
         assertThat( client, eventuallyReceives(
                 msgFailure( Status.Security.AuthProviderFailed, LDAP_AUTHORIZATION_FAILURE_CLIENT_MESSAGE ) ) );
+
+        assertThat( client, eventuallyDisconnects() );
     }
 
     private void assertConnectionTimeout( Map<String,Object> authToken, String message ) throws Exception
@@ -965,6 +974,8 @@ public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
 
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, eventuallyReceives( msgFailure( Status.Security.AuthProviderTimeout, message ) ) );
+
+        assertThat( client, eventuallyDisconnects() );
     }
 
     private void testClearAuthCache() throws Exception
