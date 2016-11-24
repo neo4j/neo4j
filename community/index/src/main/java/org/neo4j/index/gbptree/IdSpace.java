@@ -28,7 +28,19 @@ public class IdSpace
     static final long META_PAGE_ID = 0L;
 
     /**
+     * State page with IDs such as free-list, highId, rootId and more. There are two such pages alternating
+     * between checkpoints, this is the first.
+     */
+    static final long STATE_PAGE_A = 1L;
+
+    /**
+     * State page with IDs such as free-list, highId, rootId and more. There are two such pages alternating
+     * between checkpoints, this is the second.
+     */
+    static final long STATE_PAGE_B = 2L;
+
+    /**
      * Min value allowed as tree node id.
      */
-    static final long MIN_TREE_NODE_ID = 1L;
+    static final long MIN_TREE_NODE_ID = 3L;
 }

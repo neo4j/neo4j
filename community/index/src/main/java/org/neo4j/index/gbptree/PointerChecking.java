@@ -42,4 +42,17 @@ class PointerChecking
                                              IdSpace.MIN_TREE_NODE_ID );
         }
     }
+
+    static void checkSiblingPointer( long result )
+    {
+        if ( !GenSafePointerPair.isSuccess( result ) )
+        {
+            throw new IllegalStateException( GenSafePointerPair.failureDescription( result ) );
+        }
+        if ( result < IdSpace.MIN_TREE_NODE_ID && result != TreeNode.NO_NODE_FLAG )
+        {
+            throw new IllegalStateException( "Pointer to id " + result + " not allowed. Minimum node id allowed is " +
+                    IdSpace.MIN_TREE_NODE_ID );
+        }
+    }
 }

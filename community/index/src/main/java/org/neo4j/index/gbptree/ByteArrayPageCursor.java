@@ -209,7 +209,7 @@ class ByteArrayPageCursor extends PageCursor
     @Override
     public int getCurrentPageSize()
     {
-        throw new UnsupportedOperationException();
+        return buffer.capacity();
     }
 
     @Override
