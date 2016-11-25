@@ -157,6 +157,7 @@ public class KernelTransactions extends LifecycleAdapter
     public KernelTransaction newInstance( KernelTransaction.Type type, SecurityContext securityContext, long timeout )
     {
         assertCurrentThreadIsNotBlockingNewTransactions();
+        SecurityContext frozenSecurityContext = securityContext.freeze();
         newTransactionsLock.readLock().lock();
         try
         {
@@ -165,7 +166,7 @@ public class KernelTransactions extends LifecycleAdapter
             KernelTransactionImplementation tx = localTxPool.acquire();
             StatementLocks statementLocks = statementLocksFactory.newInstance();
             tx.initialize( lastCommittedTransaction.transactionId(),
-                    lastCommittedTransaction.commitTimestamp(), statementLocks, type, securityContext, timeout );
+                    lastCommittedTransaction.commitTimestamp(), statementLocks, type, frozenSecurityContext, timeout );
             return tx;
         }
         finally
@@ -297,5 +298,4 @@ public class KernelTransactions extends LifecycleAdapter
                     "Thread that is blocking new transactions from starting can't start new transaction" );
         }
     }
-
 }

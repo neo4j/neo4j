@@ -32,11 +32,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
+import org.neo4j.graphdb.security.AuthorizationExpiredException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AnonymousContext;
+import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.factory.CanWrite;
@@ -69,9 +71,8 @@ import org.neo4j.time.Clocks;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.locks.LockSupport.parkNanos;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.CoreMatchers.*;
+import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -90,6 +91,7 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.kernel.api.KernelTransaction.Type.explicit;
 import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
 import static org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory.DEFAULT;
+import static org.neo4j.test.assertion.Assert.assertException;
 
 public class KernelTransactionsTest
 {
@@ -374,7 +376,19 @@ public class KernelTransactionsTest
         assertNotNull( txOpener.get( 2, TimeUnit.SECONDS ) );
     }
 
-    private static void startAndCloseTransaction( KernelTransactions kernelTransactions )
+    @Test
+    public void shouldNotLeakTransactionOnSecurityContextFreezeFailure() throws Exception {
+        KernelTransactions kernelTransactions = newKernelTransactions();
+        SecurityContext securityContext = mock(SecurityContext.class);
+        when(securityContext.freeze()).thenThrow(new AuthorizationExpiredException("Freeze failed."));
+
+        assertException(() -> kernelTransactions.newInstance(KernelTransaction.Type.explicit, securityContext, 0L),
+                AuthorizationExpiredException.class, "Freeze failed.");
+
+        assertThat("We should not have any transaction", kernelTransactions.activeTransactions(), is(empty()));
+    }
+
+    private static void startAndCloseTransaction(KernelTransactions kernelTransactions)
     {
         try
         {
@@ -490,25 +504,21 @@ public class KernelTransactionsTest
         return new TestKernelTransactionHandle( tx );
     }
 
-    protected KernelTransaction getKernelTransaction( KernelTransactions transactions )
+    private KernelTransaction getKernelTransaction( KernelTransactions transactions )
     {
         return transactions.newInstance( KernelTransaction.Type.implicit, AnonymousContext.none(), 0L );
     }
 
     private static class TestKernelTransactions extends KernelTransactions
     {
-        public TestKernelTransactions( StatementLocksFactory statementLocksFactory,
-                                       ConstraintIndexCreator constraintIndexCreator,
-                                       StatementOperationContainer statementOperationsContianer,
-                                       SchemaWriteGuard schemaWriteGuard,
-                                       TransactionHeaderInformationFactory txHeaderFactory,
-                                       TransactionCommitProcess transactionCommitProcess,
-                                       IndexConfigStore indexConfigStore,
-                                       LegacyIndexProviderLookup legacyIndexProviderLookup, TransactionHooks hooks,
-                                       TransactionMonitor transactionMonitor, LifeSupport dataSourceLife,
-                                       Tracers tracers, StorageEngine storageEngine, Procedures procedures,
-                                       TransactionIdStore transactionIdStore, Clock clock,
-                                       AccessCapability accessCapability )
+        TestKernelTransactions( StatementLocksFactory statementLocksFactory,
+                ConstraintIndexCreator constraintIndexCreator, StatementOperationContainer statementOperationsContianer,
+                SchemaWriteGuard schemaWriteGuard, TransactionHeaderInformationFactory txHeaderFactory,
+                TransactionCommitProcess transactionCommitProcess, IndexConfigStore indexConfigStore,
+                LegacyIndexProviderLookup legacyIndexProviderLookup, TransactionHooks hooks,
+                TransactionMonitor transactionMonitor, LifeSupport dataSourceLife, Tracers tracers,
+                StorageEngine storageEngine, Procedures procedures, TransactionIdStore transactionIdStore, Clock clock,
+                AccessCapability accessCapability )
         {
             super( statementLocksFactory, constraintIndexCreator, statementOperationsContianer, schemaWriteGuard,
                     txHeaderFactory, transactionCommitProcess, indexConfigStore, legacyIndexProviderLookup, hooks,
