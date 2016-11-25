@@ -19,6 +19,7 @@
  */
 package org.neo4j.index.impl.lucene.legacy;
 
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.lucene.analysis.miscellaneous.PerFieldAnalyzerWrapper;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.QueryParser.Operator;
@@ -1993,6 +1994,61 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         catch ( IllegalArgumentException e )
         {
             // THEN Good
+        }
+    }
+
+    @Test
+    public void tooLongValuesAreNotAllowedInNodeIndex()
+    {
+        Index<Node> index = nodeIndex( EXACT_CONFIG );
+        String tooLongValue = RandomStringUtils.randomAlphabetic( 36000 );
+        try
+        {
+            index.add( graphDb.createNode(), "key", tooLongValue );
+            fail( "Validation exception expected. Such long values are not allowed in the index." );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // expected
+        }
+
+        try
+        {
+            index.add( graphDb.createNode(), "key", new String[] {"a", tooLongValue, "c"} );
+            fail( "Validation exception expected. Such long values are not allowed in the index." );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // expected
+        }
+
+    }
+
+    @Test
+    public void tooLongValuesAreNotAllowedInRelationshipIndex()
+    {
+        RelationshipIndex index = relationshipIndex( EXACT_CONFIG );
+        String tooLongValue = RandomStringUtils.randomAlphabetic( 36000 );
+        try
+        {
+            index.add( graphDb.createNode().createRelationshipTo( graphDb.createNode(), MyRelTypes.TEST ), "key",
+                    tooLongValue );
+            fail( "Validation exception expected. Such long values are not allowed in the index." );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // expected
+        }
+
+        try
+        {
+            index.add( graphDb.createNode().createRelationshipTo( graphDb.createNode(), MyRelTypes.TEST ), "key",
+                    new String[] {"a", tooLongValue, "c"} );
+            fail( "Validation exception expected. Such long values are not allowed in the index." );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // expected
         }
     }
 }

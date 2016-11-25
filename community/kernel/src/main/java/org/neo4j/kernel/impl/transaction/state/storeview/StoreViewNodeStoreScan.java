@@ -40,6 +40,7 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.kernel.impl.util.Validators;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
@@ -103,7 +104,9 @@ public class StoreViewNodeStoreScan<FAILURE extends Exception> extends NodeStore
                 if ( propertyKeyIdFilter.test( propertyKeyId ) )
                 {
                     // This node has a property of interest to us
-                    updates.add( propertyKeyId, valueOf( property ), labels );
+                    Object value = valueOf( property );
+                    Validators.INDEX_VALUE_VALIDATOR.validate( value );
+                    updates.add( propertyKeyId, value, labels );
                 }
             }
             if ( updates.containsUpdates() )

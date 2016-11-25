@@ -52,6 +52,7 @@ import org.neo4j.kernel.api.LegacyIndex;
 import org.neo4j.kernel.api.LegacyIndexHits;
 import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
+import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.kernel.spi.legacyindex.IndexCommandFactory;
 
 import static org.neo4j.collection.primitive.Primitive.longSet;
@@ -119,7 +120,7 @@ public abstract class LuceneLegacyIndex implements LegacyIndex
         Object result = value instanceof ValueContext
                 ? ((ValueContext) value).getCorrectValue()
                 : value.toString();
-        assertValidValue( value );
+        assertValidValue( result );
         return result;
     }
 
@@ -131,16 +132,9 @@ public abstract class LuceneLegacyIndex implements LegacyIndex
         }
     }
 
-    private static void assertValidValue( Object singleValue )
+    private static void assertValidValue( Object value )
     {
-        if ( singleValue == null )
-        {
-            throw new IllegalArgumentException( "Null value" );
-        }
-        if ( !(singleValue instanceof Number) && singleValue.toString() == null )
-        {
-            throw new IllegalArgumentException( "Value of type " + singleValue.getClass() + " has null toString" );
-        }
+        Validators.LEGACY_INDEX_VALUE_VALIDATOR.validate( value );
     }
 
     /**
