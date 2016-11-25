@@ -41,7 +41,12 @@ class PageAwareByteArrayCursor extends PageCursor
 
     PageAwareByteArrayCursor( int pageSize )
     {
-        this( new ArrayList<>(), pageSize, 0 );
+        this( pageSize, 0 );
+    }
+
+    PageAwareByteArrayCursor( int pageSize, long nextPageId )
+    {
+        this( new ArrayList<>(), pageSize, nextPageId );
     }
 
     private PageAwareByteArrayCursor( List<byte[]> pages, int pageSize, long nextPageId )

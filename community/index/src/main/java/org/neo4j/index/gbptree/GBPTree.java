@@ -19,6 +19,8 @@
  */
 package org.neo4j.index.gbptree;
 
+import org.apache.commons.lang3.tuple.Pair;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
@@ -125,14 +127,14 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
      * Stable generation, i.e. generation which has survived the last {@link #flush()}.
      * Unsigned int.
      */
-    private volatile long stableGeneration = 0;
+    private volatile long stableGeneration = GenSafePointer.MIN_GENERATION;
 
     /**
      * Unstable generation, i.e. the current generation under evolution. This generation will be the
      * {@link #stableGeneration} in the next {@link #flush()}.
      * Unsigned int.
      */
-    private volatile long unstableGeneration = 1;
+    private volatile long unstableGeneration = stableGeneration + 1;
 
     /**
      * Opens an index {@code indexFile} in the {@code pageCache}, creating and initializing it if it doesn't exist.
@@ -182,49 +184,9 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
 
             try
             {
-                // Read header
-                long layoutIdentifier;
-                int majorVersion;
-                int minorVersion;
-                try ( PageCursor metaCursor = openMetaPageCursor( pagedFile ) )
-                {
-                    do
-                    {
-                        pageSize = metaCursor.getInt();
-                        rootId = metaCursor.getLong();
-                        lastId = metaCursor.getLong();
-                        layoutIdentifier = metaCursor.getLong();
-                        majorVersion = metaCursor.getInt();
-                        minorVersion = metaCursor.getInt();
-                        layout.readMetaData( metaCursor );
-                    }
-                    while ( metaCursor.shouldRetry() );
-                    checkOutOfBounds( metaCursor );
-                }
-                if ( layoutIdentifier != layout.identifier() )
-                {
-                    throw new IllegalArgumentException( "Tried to open " + indexFile + " using different layout "
-                            + layout.identifier() + " than what it was created with " + layoutIdentifier );
-                }
-                if ( majorVersion != layout.majorVersion() || minorVersion != layout.minorVersion() )
-                {
-                    throw new IllegalArgumentException( "Index is of another version than the layout " +
-                            "it tries to be opened with. Index version is [" + majorVersion + "." + minorVersion + "]" +
-                            ", but tried to load the index with version [" +
-                            layout.majorVersion() + "." + layout.minorVersion() + "]" );
-                }
-                // This index was created with another page size, re-open with that actual page size
-                if ( pageSize != pageCache.pageSize() )
-                {
-                    if ( pageSize > pageCache.pageSize() )
-                    {
-                        throw new IllegalStateException( "Index was created with page size:" + pageSize
-                                + ", but page cache used to open it this time has a smaller page size:"
-                                + pageCache.pageSize() + " so cannot be opened" );
-                    }
-                    pagedFile.close();
-                    pagedFile = pageCache.map( indexFile, pageSize );
-                }
+                readMeta( indexFile, layout, pagedFile );
+                pagedFile = mapWithCorrectPageSize( pageCache, indexFile, pagedFile );
+                readState( pagedFile );
                 return pagedFile;
             }
             catch ( Throwable t )
@@ -242,6 +204,7 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         }
         catch ( NoSuchFileException e )
         {
+            // First time. Initiate meta and state page
             pageSize = pageSizeForCreation == 0 ? pageCache.pageSize() : pageSizeForCreation;
             if ( pageSize > pageCache.pageSize() )
             {
@@ -254,20 +217,43 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
             PagedFile pagedFile = pageCache.map( indexFile, pageSize, StandardOpenOption.CREATE );
 
             // Write header
-            try ( PageCursor metaCursor = openMetaPageCursor( pagedFile ) )
-            {
-                metaCursor.putInt( pageSize );
-                metaCursor.putLong( rootId );
-                metaCursor.putLong( lastId );
-                metaCursor.putLong( layout.identifier() );
-                metaCursor.putInt( layout.majorVersion() );
-                metaCursor.putInt( layout.minorVersion() );
-                layout.writeMetaData( metaCursor );
-                checkOutOfBounds( metaCursor );
-            }
+            writeMeta( layout, pagedFile );
+            writeState( pagedFile );
             pagedFile.flushAndForce();
             created = true;
             return pagedFile;
+        }
+    }
+
+    private void readState( PagedFile pagedFile ) throws IOException
+    {
+        try ( PageCursor cursor = pagedFile.io( 0L /*ignored*/, PagedFile.PF_SHARED_WRITE_LOCK ) )
+        {
+            Pair<TreeState,TreeState> states = TreeStatePair.readStatePages(
+                    cursor, IdSpace.STATE_PAGE_A, IdSpace.STATE_PAGE_B );
+
+            TreeState state = TreeStatePair.selectNewestValidState( states );
+            rootId = state.rootId();
+            lastId = state.lastId();
+            stableGeneration = state.stableGeneration();
+            unstableGeneration = state.unstableGeneration();
+        }
+    }
+
+    private void writeState( PagedFile pagedFile ) throws IOException
+    {
+        try ( PageCursor cursor = pagedFile.io( 0L /*ignored*/, PagedFile.PF_SHARED_WRITE_LOCK ) )
+        {
+            Pair<TreeState,TreeState> states = TreeStatePair.readStatePages(
+                    cursor, IdSpace.STATE_PAGE_A, IdSpace.STATE_PAGE_B );
+            TreeState oldestState = TreeStatePair.selectOldestOrInvalid( states );
+            long pageToOverwrite = oldestState.pageId();
+            if ( !cursor.next( pageToOverwrite ) )
+            {
+                throw new IllegalStateException( "Could not go to state page " + pageToOverwrite );
+            }
+            cursor.setOffset( 0 );
+            TreeState.write( cursor, stableGeneration, unstableGeneration, rootId, lastId );
         }
     }
 
@@ -279,6 +265,70 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
             throw new IllegalStateException( "Couldn't go to meta data page " + IdSpace.META_PAGE_ID );
         }
         return metaCursor;
+    }
+
+    private void readMeta( File indexFile, Layout<KEY,VALUE> layout, PagedFile pagedFile )
+            throws IOException
+    {
+        // Read meta
+        long layoutIdentifier;
+        int majorVersion;
+        int minorVersion;
+        try ( PageCursor metaCursor = openMetaPageCursor( pagedFile ) )
+        {
+            do
+            {
+                pageSize = metaCursor.getInt();
+                layoutIdentifier = metaCursor.getLong();
+                majorVersion = metaCursor.getInt();
+                minorVersion = metaCursor.getInt();
+                layout.readMetaData( metaCursor );
+            }
+            while ( metaCursor.shouldRetry() );
+            checkOutOfBounds( metaCursor );
+        }
+        if ( layoutIdentifier != layout.identifier() )
+        {
+            throw new IllegalArgumentException( "Tried to open " + indexFile + " using different layout "
+                    + layout.identifier() + " than what it was created with " + layoutIdentifier );
+        }
+        if ( majorVersion != layout.majorVersion() || minorVersion != layout.minorVersion() )
+        {
+            throw new IllegalArgumentException( "Index is of another version than the layout " +
+                    "it tries to be opened with. Index version is [" + majorVersion + "." + minorVersion + "]" +
+                    ", but tried to load the index with version [" +
+                    layout.majorVersion() + "." + layout.minorVersion() + "]" );
+        }
+    }
+
+    private void writeMeta( Layout<KEY,VALUE> layout, PagedFile pagedFile ) throws IOException
+    {
+        try ( PageCursor metaCursor = openMetaPageCursor( pagedFile ) )
+        {
+            metaCursor.putInt( pageSize );
+            metaCursor.putLong( layout.identifier() );
+            metaCursor.putInt( layout.majorVersion() );
+            metaCursor.putInt( layout.minorVersion() );
+            layout.writeMetaData( metaCursor );
+            checkOutOfBounds( metaCursor );
+        }
+    }
+
+    private PagedFile mapWithCorrectPageSize( PageCache pageCache, File indexFile, PagedFile pagedFile ) throws IOException
+    {
+        // This index was created with another page size, re-open with that actual page size
+        if ( pageSize != pageCache.pageSize() )
+        {
+            if ( pageSize > pageCache.pageSize() )
+            {
+                throw new IllegalStateException( "Index was created with page size:" + pageSize
+                        + ", but page cache used to open it this time has a smaller page size:"
+                        + pageCache.pageSize() + " so cannot be opened" );
+            }
+            pagedFile.close();
+            return pageCache.map( indexFile, pageSize );
+        }
+        return pagedFile;
     }
 
     @Override
@@ -338,37 +388,12 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         return lastId;
     }
 
-    // Utility method
-    public void printTree() throws IOException
-    {
-        try ( PageCursor cursor = pagedFile.io( rootId, PagedFile.PF_SHARED_READ_LOCK ) )
-        {
-            cursor.next();
-            TreePrinter.printTree( cursor, bTreeNode, layout, stableGeneration, unstableGeneration, System.out );
-        }
-    }
-
-    // Utility method
-    boolean consistencyCheck() throws IOException
-    {
-        try ( PageCursor cursor = pagedFile.io( rootId, PagedFile.PF_SHARED_READ_LOCK ) )
-        {
-            cursor.next();
-            return new ConsistencyChecker<>( bTreeNode, layout, stableGeneration, unstableGeneration )
-                    .check( cursor );
-        }
-    }
-
     @Override
     public void flush() throws IOException
     {
-        try ( PageCursor cursor = openMetaPageCursor( pagedFile ) )
-        {
-            cursor.putLong( 4, rootId );
-            cursor.putLong( 12, lastId );
-            // generations should be incremented as part of flush, but this functionality doesn't exist yet.
-            checkOutOfBounds( cursor );
-        }
+        stableGeneration = unstableGeneration;
+        unstableGeneration++;
+        writeState( pagedFile );
     }
 
     @Override
@@ -405,6 +430,27 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         if ( cursor.checkAndClearBoundsFlag() )
         {
             throw new IllegalStateException( "Some internal problem causing out of bounds" );
+        }
+    }
+
+    // Utility method
+    public void printTree() throws IOException
+    {
+        try ( PageCursor cursor = pagedFile.io( rootId, PagedFile.PF_SHARED_READ_LOCK ) )
+        {
+            cursor.next();
+            TreePrinter.printTree( cursor, bTreeNode, layout, stableGeneration, unstableGeneration, System.out );
+        }
+    }
+
+    // Utility method
+    boolean consistencyCheck() throws IOException
+    {
+        try ( PageCursor cursor = pagedFile.io( rootId, PagedFile.PF_SHARED_READ_LOCK ) )
+        {
+            cursor.next();
+            return new ConsistencyChecker<>( bTreeNode, layout, stableGeneration, unstableGeneration )
+                    .check( cursor );
         }
     }
 
