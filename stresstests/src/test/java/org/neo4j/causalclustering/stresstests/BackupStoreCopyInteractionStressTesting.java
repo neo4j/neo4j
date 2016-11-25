@@ -60,6 +60,7 @@ public class BackupStoreCopyInteractionStressTesting
     private static final String DEFAULT_NUMBER_OF_EDGES = "1";
     private static final String DEFAULT_DURATION_IN_MINUTES = "30";
     private static final String DEFAULT_ENABLE_INDEXES = "false";
+    private static final String DEFAULT_TX_PRUNE = "50 files";
     private static final String DEFAULT_WORKING_DIR = new File( getProperty( "java.io.tmpdir" ) ).getPath();
     private static final String DEFAULT_BASE_CORE_BACKUP_PORT = "8000";
     private static final String DEFAULT_BASE_EDGE_BACKUP_PORT = "9000";
@@ -81,6 +82,7 @@ public class BackupStoreCopyInteractionStressTesting
                 DEFAULT_BASE_EDGE_BACKUP_PORT ) );
         boolean enableIndexes = parseBoolean(
                 fromEnv( "BACKUP_STORE_COPY_INTERACTION_STRESS_ENABLE_INDEXES", DEFAULT_ENABLE_INDEXES ) );
+        String txPrune = fromEnv( "BACKUP_STORE_COPY_INTERACTION_STRESS_TX_PRUNE", DEFAULT_TX_PRUNE );
 
         File clusterDirectory = ensureExistsAndEmpty( new File( workingDirectory, "cluster" ) );
         File backupDirectory = ensureExistsAndEmpty( new File( workingDirectory, "backups" ) );
@@ -89,8 +91,8 @@ public class BackupStoreCopyInteractionStressTesting
                 new AdvertisedSocketAddress( "localhost", (isCore ? baseCoreBackupPort : baseEdgeBackupPort) + id );
 
         Map<String,String> coreParams = enableRaftMessageLogging(
-                configureRaftLogRotationAndPruning( configureTxLogRotationAndPruning( new HashMap<>() ) ) );
-        Map<String,String> readReplicaParams = configureTxLogRotationAndPruning( new HashMap<>() );
+                configureRaftLogRotationAndPruning( configureTxLogRotationAndPruning( new HashMap<>(), txPrune ) ) );
+        Map<String,String> readReplicaParams = configureTxLogRotationAndPruning( new HashMap<>(), txPrune );
 
         Map<String,IntFunction<String>> instanceCoreParams =
                 configureBackup( new HashMap<>(), id -> backupAddress.apply( true, id ) );
