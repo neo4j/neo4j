@@ -56,6 +56,7 @@ public class CatchupStoreCopyInteractionStressTesting
     private static final String DEFAULT_NUMBER_OF_EDGES = "1";
     private static final String DEFAULT_DURATION_IN_MINUTES = "30";
     private static final String DEFAULT_ENABLE_INDEXES = "false";
+    private static final String DEFAULT_TX_PRUNE = "50 files";
     private static final String DEFAULT_WORKING_DIR = new File( getProperty( "java.io.tmpdir" ) ).getPath();
 
     @Test
@@ -71,12 +72,13 @@ public class CatchupStoreCopyInteractionStressTesting
                 fromEnv( "CATCHUP_STORE_COPY_INTERACTION_STRESS_WORKING_DIRECTORY", DEFAULT_WORKING_DIR );
         boolean enableIndexes = parseBoolean(
                 fromEnv( "CATCHUP_STORE_COPY_INTERACTION_STRESS_ENABLE_INDEXES", DEFAULT_ENABLE_INDEXES ) );
+        String txPrune = fromEnv( "CATCHUP_STORE_COPY_INTERACTION_STRESS_TX_PRUNE", DEFAULT_TX_PRUNE );
 
         File clusterDirectory = ensureExistsAndEmpty( new File( workingDirectory, "cluster" ) );
 
         Map<String,String> coreParams = enableRaftMessageLogging(
-                configureRaftLogRotationAndPruning( configureTxLogRotationAndPruning( new HashMap<>() ) ) );
-        Map<String,String> edgeParams = configureTxLogRotationAndPruning( new HashMap<>() );
+                configureRaftLogRotationAndPruning( configureTxLogRotationAndPruning( new HashMap<>(), txPrune ) ) );
+        Map<String,String> edgeParams = configureTxLogRotationAndPruning( new HashMap<>(), txPrune );
 
         HazelcastDiscoveryServiceFactory discoveryServiceFactory = new HazelcastDiscoveryServiceFactory();
         Cluster cluster =
