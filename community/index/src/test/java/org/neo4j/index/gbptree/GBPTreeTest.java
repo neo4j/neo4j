@@ -37,7 +37,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
@@ -45,11 +44,14 @@ import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.Hit;
 import org.neo4j.index.Index;
 import org.neo4j.index.IndexWriter;
+import org.neo4j.index.gbptree.GBPTree.Monitor;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
+import org.neo4j.test.Barrier;
 import org.neo4j.test.rule.RandomRule;
 
 import static org.hamcrest.CoreMatchers.containsString;
@@ -64,6 +66,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 import static org.neo4j.index.IndexWriter.Options.DEFAULTS;
+import static org.neo4j.index.gbptree.GBPTree.NO_MONITOR;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 
 public class GBPTreeTest
@@ -80,12 +83,18 @@ public class GBPTreeTest
     public GBPTree<MutableLong,MutableLong> createIndex( int pageSize )
             throws IOException
     {
-        pageCache = new MuninnPageCache( swapperFactory(), 10_000, pageSize, NULL );
-        indexFile = new File( folder.getRoot(), "index" );
-        return index = new GBPTree<>( pageCache, indexFile, layout, 0/*i.e. use whatever page cache says*/ );
+        return createIndex( pageSize, NO_MONITOR );
     }
 
-    private PageSwapperFactory swapperFactory()
+    private GBPTree<MutableLong,MutableLong> createIndex( int pageSize, Monitor monitor )
+            throws IOException
+    {
+        pageCache = new MuninnPageCache( swapperFactory(), 10_000, pageSize, NULL );
+        indexFile = new File( folder.getRoot(), "index" );
+        return index = new GBPTree<>( pageCache, indexFile, layout, 0/*use whatever page cache says*/, monitor );
+    }
+
+    private static PageSwapperFactory swapperFactory()
     {
         PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory();
         swapperFactory.setFileSystemAbstraction( new DefaultFileSystemAbstraction() );
@@ -103,7 +112,7 @@ public class GBPTreeTest
         pageCache.close();
     }
 
-    /* Meta data tests */
+    /* Meta and state page tests */
 
     @Test
     public void shouldReadWrittenMetaData() throws Exception
@@ -114,7 +123,7 @@ public class GBPTreeTest
         }
 
         // WHEN
-        index = new GBPTree<>( pageCache, indexFile, layout, 0 );
+        index = new GBPTree<>( pageCache, indexFile, layout, 0, NO_MONITOR );
 
         // THEN being able to open validates that the same meta data was read
         // the test also closes the index afterwards
@@ -131,7 +140,7 @@ public class GBPTreeTest
 
         // WHEN
         try ( Index<MutableLong,MutableLong> index =
-                new GBPTree<>( pageCache, indexFile, new SimpleLongLayout( "Something else" ), 0 ) )
+                new GBPTree<>( pageCache, indexFile, new SimpleLongLayout( "Something else" ), 0, NO_MONITOR ) )
         {
             fail( "Should not load" );
         }
@@ -162,7 +171,7 @@ public class GBPTreeTest
             {
                 return 123456;
             }
-        }, 0 ) )
+        }, 0, NO_MONITOR ) )
         {
 
             fail( "Should not load" );
@@ -191,7 +200,7 @@ public class GBPTreeTest
                 {
                     return super.majorVersion() + 1;
                 }
-            }, 0 ) )
+            }, 0, NO_MONITOR ) )
         {
             fail( "Should not load" );
         }
@@ -219,7 +228,7 @@ public class GBPTreeTest
                 {
                     return super.minorVersion() + 1;
                 }
-            }, 0 ) )
+            }, 0, NO_MONITOR ) )
         {
             fail( "Should not load" );
         }
@@ -242,7 +251,7 @@ public class GBPTreeTest
         // WHEN
         pageCache.close();
         pageCache = new MuninnPageCache( swapperFactory(), 10_000, pageSize / 2, NULL );
-        try ( Index<MutableLong,MutableLong> index = new GBPTree<>( pageCache, indexFile, layout, 0 ) )
+        try ( Index<MutableLong,MutableLong> index = new GBPTree<>( pageCache, indexFile, layout, 0, NO_MONITOR ) )
         {
             fail( "Should not load" );
         }
@@ -260,7 +269,8 @@ public class GBPTreeTest
         int pageSize = 512;
         pageCache = new MuninnPageCache( swapperFactory(), 10_000, pageSize, NULL );
         indexFile = new File( folder.getRoot(), "index" );
-        try ( Index<MutableLong,MutableLong> index = new GBPTree<>( pageCache, indexFile, layout, pageSize * 2 ) )
+        try ( Index<MutableLong,MutableLong> index =
+                new GBPTree<>( pageCache, indexFile, layout, pageSize * 2, NO_MONITOR ) )
         {
             fail( "Shouldn't have been created" );
         }
@@ -304,6 +314,64 @@ public class GBPTreeTest
         }
 
         writer.close();
+    }
+
+    /* Check-pointing tests */
+
+    @Test
+    public void checkPointShouldLockOutWriter() throws Exception
+    {
+        // GIVEN
+        CheckpointControlledMonitor monitor = new CheckpointControlledMonitor();
+        index = createIndex( 1024, monitor );
+        long key = 10;
+        try ( IndexWriter<MutableLong,MutableLong> writer = index.writer( DEFAULTS ) )
+        {
+            writer.put( new MutableLong( key ), new MutableLong( key ) );
+        }
+
+        // WHEN
+        monitor.enabled = true;
+        Thread checkpointer = new Thread( runnable( () -> index.checkpoint( IOLimiter.unlimited() ) ) );
+        checkpointer.start();
+        monitor.barrier.awaitUninterruptibly();
+        // now we're in the smack middle of a checkpoint
+        Thread t2 = new Thread( runnable( () -> index.writer( DEFAULTS ) ) );
+        t2.start();
+        t2.join( 200 );
+        assertTrue( Arrays.toString( checkpointer.getStackTrace() ), t2.isAlive() );
+        monitor.barrier.release();
+
+        // THEN
+        t2.join();
+    }
+
+    @Test
+    public void checkPointShouldWaitForWriter() throws Exception
+    {
+        // GIVEN
+        index = createIndex( 1024 );
+
+        // WHEN
+        Barrier.Control barrier = new Barrier.Control();
+        Thread writerThread = new Thread( runnable( () ->
+        {
+            try ( IndexWriter<MutableLong,MutableLong> writer = index.writer( DEFAULTS ) )
+            {
+                writer.put( new MutableLong( 1 ), new MutableLong( 1 ) );
+                barrier.reached();
+            }
+        } ) );
+        writerThread.start();
+        barrier.awaitUninterruptibly();
+        Thread checkpointer = new Thread( runnable( () -> index.checkpoint( IOLimiter.unlimited() ) ) );
+        checkpointer.start();
+        checkpointer.join( 200 );
+        assertTrue( checkpointer.isAlive() );
+
+        // THEN
+        barrier.release();
+        checkpointer.join();
     }
 
     /* Insertion and read tests */
@@ -453,6 +521,7 @@ public class GBPTreeTest
     public void shouldReadCorrectlyWhenConcurrentlyInserting() throws Throwable
     {
         // GIVEN
+        int maxCheckpointInterval = random.intBetween( 50, 400 );
         index = createIndex( 256 );
         int readers = max( 1, Runtime.getRuntime().availableProcessors() - 1 );
         CountDownLatch readerReadySignal = new CountDownLatch( readers );
@@ -530,16 +599,35 @@ public class GBPTreeTest
             readerThreads[i].start();
         }
 
+        // and starting the checkpointer
+        Thread checkpointer = new Thread( () ->
+        {
+            while ( !endSignal.get() )
+            {
+                try
+                {
+                    index.checkpoint( IOLimiter.unlimited() );
+                    // Sleep a little in between update groups (transactions, sort of)
+                    MILLISECONDS.sleep( random.nextInt( maxCheckpointInterval ) );
+                }
+                catch ( Exception e )
+                {
+                    throw new RuntimeException( e );
+                }
+            }
+        });
+        checkpointer.start();
+
         // and then starting the writer
         try
         {
             assertTrue( readerReadySignal.await( 10, SECONDS ) );
             startSignal.countDown();
             Random random = ThreadLocalRandom.current();
-            try ( IndexWriter<MutableLong,MutableLong> writer = index.writer( DEFAULTS ) )
+            int inserted = 0;
+            while ( (inserted < 100_000 || numberOfReads.get() < 100) && readerError.get() == null )
             {
-                int inserted = 0;
-                while ( (inserted < 100_000 || numberOfReads.get() < 100) && readerError.get() == null )
+                try ( IndexWriter<MutableLong,MutableLong> writer = index.writer( DEFAULTS ) )
                 {
                     int groupCount = random.nextInt( 1000 ) + 1;
                     for ( int i = 0; i < groupCount; i++, inserted++ )
@@ -548,9 +636,9 @@ public class GBPTreeTest
                         writer.put( thing, thing );
                         highestId.set( inserted );
                     }
-                    // Sleep a little in between update groups (transactions, sort of)
-                    MILLISECONDS.sleep( random.nextInt( 10 ) + 3 );
                 }
+                // Sleep a little in between update groups (transactions, sort of)
+                MILLISECONDS.sleep( random.nextInt( 10 ) + 3 );
             }
         }
         finally
@@ -567,10 +655,11 @@ public class GBPTreeTest
             {
                 throw readerError.get();
             }
+            checkpointer.join();
         }
     }
 
-    private void randomlyModifyIndex( Index<MutableLong,MutableLong> index,
+    private static void randomlyModifyIndex( Index<MutableLong,MutableLong> index,
             Map<MutableLong,MutableLong> data, Random random ) throws IOException
     {
         int changeCount = random.nextInt( 10 ) + 10;
@@ -596,13 +685,13 @@ public class GBPTreeTest
         }
     }
 
-    private MutableLong randomKey( Map<MutableLong,MutableLong> data, Random random )
+    private static MutableLong randomKey( Map<MutableLong,MutableLong> data, Random random )
     {
         MutableLong[] keys = data.keySet().toArray( new MutableLong[data.size()] );
         return keys[random.nextInt( keys.length )];
     }
 
-    private Map<MutableLong,MutableLong> expectedHits( Map<MutableLong,MutableLong> data,
+    private static Map<MutableLong,MutableLong> expectedHits( Map<MutableLong,MutableLong> data,
             MutableLong from, MutableLong to, Comparator<MutableLong> comparator )
     {
         Map<MutableLong,MutableLong> hits = new TreeMap<>( comparator );
@@ -617,8 +706,47 @@ public class GBPTreeTest
         return hits;
     }
 
-    private MutableLong randomKey( Random random )
+    private static MutableLong randomKey( Random random )
     {
         return new MutableLong( random.nextInt( 1_000 ) );
+    }
+
+    private static class CheckpointControlledMonitor implements Monitor
+    {
+        private final Barrier.Control barrier = new Barrier.Control();
+        private volatile boolean enabled;
+
+        @Override
+        public void checkpointCompleted()
+        {
+            if ( enabled )
+            {
+                barrier.reached();
+            }
+        }
+    }
+
+    interface ThrowingRunnable
+    {
+        void run() throws Exception;
+    }
+
+    private static Runnable runnable( ThrowingRunnable callable )
+    {
+        return new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                try
+                {
+                    callable.run();
+                }
+                catch ( Exception e )
+                {
+                    throw new RuntimeException( e );
+                }
+            }
+        };
     }
 }

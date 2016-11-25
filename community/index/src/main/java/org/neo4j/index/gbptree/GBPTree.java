@@ -25,7 +25,9 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.StandardOpenOption;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.Hit;
@@ -33,6 +35,7 @@ import org.neo4j.index.Index;
 import org.neo4j.index.IndexWriter;
 import org.neo4j.index.ValueMerger;
 import org.neo4j.index.ValueMergers;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
@@ -43,11 +46,11 @@ import org.neo4j.io.pagecache.PagedFile;
  * this to provide correct reading when concurrently {@link #writer(IndexWriter.Options) modifying}
  * the tree.
  * <p>
- * Generation is incremented on {@link #flush() flushing a.k.a check-pointing}.
- * Generation awareness allows for recovery from last {@link #flush()}, provided the same updates will be
- * replayed onto the index since that point in time.
+ * Generation is incremented on {@link Index#checkpoint(IOLimiter) check-pointing}.
+ * Generation awareness allows for recovery from last {@link Index#checkpoint(IOLimiter)}, provided the same updates
+ * will be replayed onto the index since that point in time.
  * <p>
- * Changes to tree nodes are made so that stable nodes (i.e. nodes that have survived at least one flush)
+ * Changes to tree nodes are made so that stable nodes (i.e. nodes that have survived at least one checkpoint)
  * are immutable w/ regards to keys values and child/sibling pointers.
  * Making a change in a stable node will copy the node to an unstable generation first and then make the change
  * in that unstable version. Further change in that node in the same generation will not require a copy since
@@ -78,6 +81,27 @@ import org.neo4j.io.pagecache.PagedFile;
 public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
 {
     /**
+     * For monitoring {@link GBPTree}.
+     */
+    public interface Monitor
+    {
+        /**
+         * Called when a {@link GBPTree#checkpoint(IOLimiter)} has been completed, but right before
+         * {@link GBPTree#writer(org.neo4j.index.IndexWriter.Options) writers} are re-enabled.
+         */
+        default void checkpointCompleted()
+        {   // no-op by default
+        }
+    }
+
+    /**
+     * No-op {@link Monitor}.
+     */
+    public static final Monitor NO_MONITOR = new Monitor()
+    {   // does nothing
+    };
+
+    /**
      * Paged file in a {@link PageCache} providing the means of storage.
      */
     private final PagedFile pagedFile;
@@ -96,11 +120,23 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
     private final TreeNode<KEY,VALUE> bTreeNode;
 
     /**
-     * Currently an index only supports one concurrent writer and so this reference will act both as
-     * guard so that only one thread can have it at any given time and also as synchronization between threads
-     * wanting it.
+     * A single instance {@link IndexWriter} because tree only supports single writer.
      */
-    private final AtomicReference<SingleIndexWriter> writer;
+    private final SingleIndexWriter writer;
+
+    /**
+     * Check-pointing flushes updates to stable storage.
+     * There's a critical section in check-pointing where, in order to guarantee a consistent check-pointed state
+     * on stable storage, no writes are allowed to happen.
+     * For this reason both writer and check-pointing acquires this lock.
+     */
+    private final Lock writerCheckpointMutex = new ReentrantLock();
+
+    /**
+     * Currently an index only supports one concurrent writer and so this boolean will act as
+     * guard so that only one thread can have it at any given time.
+     */
+    private final AtomicBoolean writerTaken = new AtomicBoolean();
 
     /**
      * Page size, i.e. tree node size, of the tree nodes in this tree. The page size is determined on
@@ -124,17 +160,22 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
     private volatile long lastId = rootId;
 
     /**
-     * Stable generation, i.e. generation which has survived the last {@link #flush()}.
+     * Stable generation, i.e. generation which has survived the last {@link Index#checkpoint(IOLimiter)}.
      * Unsigned int.
      */
     private volatile long stableGeneration = GenSafePointer.MIN_GENERATION;
 
     /**
      * Unstable generation, i.e. the current generation under evolution. This generation will be the
-     * {@link #stableGeneration} in the next {@link #flush()}.
+     * {@link #stableGeneration} in the next {@link Index#checkpoint(IOLimiter)}.
      * Unsigned int.
      */
     private volatile long unstableGeneration = stableGeneration + 1;
+
+    /**
+     * Called on certain events.
+     */
+    private final Monitor monitor;
 
     /**
      * Opens an index {@code indexFile} in the {@code pageCache}, creating and initializing it if it doesn't exist.
@@ -147,20 +188,21 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
      *
      * @param pageCache {@link PageCache} to use to map index file
      * @param indexFile {@link File} containing the actual index
-     * @param tentativePageSize page size, i.e. tree node size. Must be less than or equal to that of the page cache.
-     * A pageSize of {@code 0} means to use whatever the page cache has (at creation)
      * @param layout {@link Layout} to use in the tree, this must match the existing layout
      * we're just opening the index
+     * @param tentativePageSize page size, i.e. tree node size. Must be less than or equal to that of the page cache.
+     * A pageSize of {@code 0} means to use whatever the page cache has (at creation)
+     * @param monitor {@link Monitor} for monitoring {@link GBPTree}.
      * @throws IOException on page cache error
      */
-    public GBPTree( PageCache pageCache, File indexFile, Layout<KEY,VALUE> layout, int tentativePageSize )
-            throws IOException
+    public GBPTree( PageCache pageCache, File indexFile, Layout<KEY,VALUE> layout, int tentativePageSize,
+            Monitor monitor ) throws IOException
     {
+        this.monitor = monitor;
         this.layout = layout;
         this.pagedFile = openOrCreate( pageCache, indexFile, tentativePageSize, layout );
         this.bTreeNode = new TreeNode<>( pageSize, layout );
-        this.writer = new AtomicReference<>(
-                new SingleIndexWriter( new InternalTreeLogic<>( this, bTreeNode, layout ) ) );
+        this.writer = new SingleIndexWriter( new InternalTreeLogic<>( this, bTreeNode, layout ) );
 
         if ( created )
         {
@@ -390,17 +432,28 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
     }
 
     @Override
-    public void flush() throws IOException
+    public void checkpoint( IOLimiter ioLimiter ) throws IOException
     {
-        stableGeneration = unstableGeneration;
-        unstableGeneration++;
-        writeState( pagedFile );
+        pagedFile.flushAndForce( ioLimiter );
+        writerCheckpointMutex.lock();
+        try
+        {
+            pagedFile.flushAndForce( ioLimiter );
+            stableGeneration = unstableGeneration;
+            unstableGeneration++;
+            writeState( pagedFile );
+            pagedFile.flushAndForce( ioLimiter );
+            monitor.checkpointCompleted();
+        }
+        finally
+        {
+            writerCheckpointMutex.unlock();
+        }
     }
 
     @Override
     public void close() throws IOException
     {
-        flush();
         pagedFile.close();
     }
 
@@ -413,12 +466,35 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
     @Override
     public IndexWriter<KEY,VALUE> writer( IndexWriter.Options options ) throws IOException
     {
-        SingleIndexWriter result = this.writer.getAndSet( null );
-        if ( result == null )
+        if ( !writerTaken.compareAndSet( false, true ) )
         {
             throw new IllegalStateException( "Only supports one concurrent writer" );
         }
-        return result.take( rootId, options );
+
+        writerCheckpointMutex.lock();
+        boolean success = false;
+        try
+        {
+            writer.take( rootId, options );
+            success = true;
+            return writer;
+        }
+        finally
+        {
+            if ( !success )
+            {
+                releaseWriter();
+            }
+        }
+    }
+
+    private void releaseWriter()
+    {
+        writerCheckpointMutex.unlock();
+        if ( !writerTaken.compareAndSet( true, false ) )
+        {
+            throw new IllegalStateException( "Tried to give back the writer, but somebody else already did" );
+        }
     }
 
     private void goToRoot( PageCursor cursor ) throws IOException
@@ -469,11 +545,10 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
             this.treeLogic = treeLogic;
         }
 
-        SingleIndexWriter take( long rootId, IndexWriter.Options options ) throws IOException
+        void take( long rootId, IndexWriter.Options options ) throws IOException
         {
             this.options = options;
             cursor = pagedFile.io( rootId, PagedFile.PF_SHARED_WRITE_LOCK );
-            return this;
         }
 
         @Override
@@ -535,20 +610,14 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         @Override
         public void close() throws IOException
         {
-            boolean success = false;
-            try
+            if ( cursor == null )
             {
-                cursor.close();
-                success = true;
+                return;
             }
-            finally
-            {
-                // Check success to avoid suppressing exception from cursor.close()
-                if ( success && !GBPTree.this.writer.compareAndSet( null, this ) )
-                {
-                    throw new IllegalStateException( "Tried to give back the writer, but somebody else already did" );
-                }
-            }
+
+            cursor.close();
+            cursor = null;
+            releaseWriter();
         }
     }
 }

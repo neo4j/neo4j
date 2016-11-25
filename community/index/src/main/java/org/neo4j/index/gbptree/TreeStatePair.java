@@ -27,7 +27,7 @@ import org.neo4j.io.pagecache.PageCursor;
 
 import static java.lang.String.format;
 
-public class TreeStatePair
+class TreeStatePair
 {
     static Pair<TreeState,TreeState> readStatePages( PageCursor cursor, long pageIdA, long pageIdB ) throws IOException
     {

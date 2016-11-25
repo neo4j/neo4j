@@ -35,7 +35,7 @@ import org.neo4j.io.pagecache.PageCursor;
  * Concurrent writes can happen in the visited nodes and tree structure may change. This implementation
  * guards for that by re-reading if change happens underneath, but will not provide a consistent view of
  * the data as it were when the seek starts, i.e. doesn't support MVCC-style.
- *
+ * <p>
  * Implementation note: there are assumptions that keys are unique in the tree.
  */
 class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>

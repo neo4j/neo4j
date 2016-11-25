@@ -67,7 +67,7 @@ import static org.neo4j.index.gbptree.GenSafePointer.readPointer;
  */
 class GenSafePointerPair
 {
-    public static final int SIZE = GenSafePointer.SIZE * 2;
+    static final int SIZE = GenSafePointer.SIZE * 2;
 
     // Pointer states
     static final byte STABLE = 0;     // any previous generation made safe by a checkpoint
@@ -408,7 +408,7 @@ class GenSafePointerPair
      * @param result result from {@link #read(PageCursor, long, long)} or {@link #write(PageCursor, long, long, long)}.
      * @return {@code true} if successful read/write, otherwise {@code false}.
      */
-    public static boolean isSuccess( long result )
+    static boolean isSuccess( long result )
     {
         return (result & SUCCESS_MASK) == SUCCESS;
     }
@@ -426,7 +426,7 @@ class GenSafePointerPair
      * {@link #write(PageCursor, long, long, long)}.
      * @return a human-friendly description of the failure.
      */
-    public static String failureDescription( long result )
+    static String failureDescription( long result )
     {
         StringBuilder builder =
                 new StringBuilder( "GSPP " + (isRead( result ) ? "READ" : "WRITE") + " failure" );
@@ -438,7 +438,7 @@ class GenSafePointerPair
         return builder.toString();
     }
 
-    static String generationComparisonFromResult( long result )
+    private static String generationComparisonFromResult( long result )
     {
         long bits = result & GEN_COMPARISON_MASK;
         if ( bits == GEN_EQUAL )

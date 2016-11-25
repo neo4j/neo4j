@@ -17,14 +17,31 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-/**
- * B+tree implementation of {@link org.neo4j.index.Index} with arbitrary key/value. Index implementation is
- * {@link org.neo4j.index.gbptree.GBPTree}, which works on a {@link org.neo4j.io.pagecache.PageCache}.
- * Implementation supports single writer together with concurrent lock-free and garbage-free readers.
- * <p>
- * To create an index with a custom layout (type of key/value), implement a custom
- * {@link org.neo4j.index.gbptree.Layout}.
- * <p>
- * See https://en.wikipedia.org/wiki/B%2B_tree
- */
 package org.neo4j.index.gbptree;
+
+class SimpleIdProvider implements IdProvider
+{
+    private long lastId;
+
+    SimpleIdProvider()
+    {
+        reset();
+    }
+
+    @Override
+    public long acquireNewId()
+    {
+        lastId++;
+        return lastId;
+    }
+
+    long lastId()
+    {
+        return lastId;
+    }
+
+    void reset()
+    {
+        lastId = IdSpace.MIN_TREE_NODE_ID - 1;
+    }
+}

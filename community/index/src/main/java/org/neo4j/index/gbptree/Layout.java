@@ -32,7 +32,7 @@ import org.neo4j.io.pagecache.PageCursor;
  * @param <KEY> type of key
  * @param <VALUE> type of value
  */
-public interface Layout<KEY,VALUE> extends Comparator<KEY>
+public interface Layout<KEY, VALUE> extends Comparator<KEY>
 {
     /**
      * @return new key instances.
@@ -98,6 +98,7 @@ public interface Layout<KEY,VALUE> extends Comparator<KEY>
     /**
      * Used as a checksum for when loading an index after creation, to verify that the same layout is used,
      * as the one it was initially created with.
+     *
      * @return a long acting as an identifier, written in the header of an index.
      */
     long identifier();
@@ -140,9 +141,9 @@ public interface Layout<KEY,VALUE> extends Comparator<KEY>
             throw new IllegalArgumentException( "Maximum 4 character name, was '" + name + "'" );
         }
         long upperInt = 0;
-        for ( int i = 0; i < chars.length; i++ )
+        for ( char aChar : chars )
         {
-            byte byteValue = (byte) (((byte) chars[i]) ^ ((byte) (chars[i] >> 8)));
+            byte byteValue = (byte) (((byte) aChar) ^ ((byte) (aChar >> 8)));
             upperInt <<= 8;
             upperInt |= (byteValue & 0xFF);
         }
