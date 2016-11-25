@@ -190,7 +190,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
                 dependencies.provideDependency( TransactionIdStore.class ),
                 writableCommitProcess, platformModule.monitors, logProvider );
 
-        DelayedRenewableTimeoutService txPullerTimeoutService =
+        DelayedRenewableTimeoutService catchupTimeoutService =
                 new DelayedRenewableTimeoutService( Clocks.systemClock(), logProvider );
 
         LocalDatabase localDatabase = new LocalDatabase( platformModule.storeDir,
@@ -236,17 +236,18 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
             } );
         }
 
-        CatchupPollingProcess txPuller =
+        CatchupPollingProcess catchupProcess =
                 new CatchupPollingProcess( logProvider, fileSystem, localDatabase, servicesToStopOnStoreCopy, storeFetcher,
-                        catchUpClient, new ConnectToRandomCoreMember( discoveryService ), txPullerTimeoutService,
+                        catchUpClient, new ConnectToRandomCoreMember( discoveryService ), catchupTimeoutService,
                         config.get( CausalClusteringSettings.pull_interval ), batchingTxApplier,
                         platformModule.monitors, copiedStoreRecovery, databaseHealthSupplier );
 
-        dependencies.satisfyDependencies( txPuller );
+        dependencies.satisfyDependencies( catchupProcess );
 
         txPulling.add( batchingTxApplier );
-        txPulling.add( txPuller );
-        txPulling.add( txPullerTimeoutService );
+        txPulling.add( catchupProcess );
+        txPulling.add( catchupTimeoutService );
+        txPulling.add( new WaitForUpToDateStore( catchupProcess, logProvider ) );
 
         life.add( new ReadReplicaStartupProcess( platformModule.fileSystem, storeFetcher, localDatabase, txPulling,
                 new ConnectToRandomCoreMember( discoveryService ),

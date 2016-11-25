@@ -21,6 +21,7 @@ package org.neo4j.causalclustering.catchup.tx;
 
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 import java.util.function.Supplier;
 
 import org.neo4j.causalclustering.catchup.CatchUpClient;
@@ -93,6 +94,7 @@ public class CatchupPollingProcess extends LifecycleAdapter
     private RenewableTimeout timeout;
     private State state = TX_PULLING;
     private DatabaseHealth dbHealth;
+    private CompletableFuture<Boolean> upToDateFuture; // we are up-to-date when we are successfully pulling
 
     public CatchupPollingProcess( LogProvider logProvider, FileSystemAbstraction fs, LocalDatabase localDatabase,
                                   Lifecycle startStopOnStoreCopy, StoreFetcher storeFetcher, CatchUpClient catchUpClient,
@@ -120,6 +122,12 @@ public class CatchupPollingProcess extends LifecycleAdapter
     {
         timeout = timeoutService.create( TX_PULLER_TIMEOUT, txPullIntervalMillis, 0, timeout -> onTimeout() );
         dbHealth = databaseHealthSupplier.get();
+        upToDateFuture = new CompletableFuture<>();
+    }
+
+    public Future<Boolean> upToDateFuture() throws InterruptedException
+    {
+        return upToDateFuture;
     }
 
     @Override
@@ -169,6 +177,7 @@ public class CatchupPollingProcess extends LifecycleAdapter
     {
         log.error( "Unexpected issue in catchup process. No more catchup requests will be scheduled.", e );
         dbHealth.panic( e );
+        upToDateFuture.completeExceptionally( e );
         state = PANIC;
     }
 
@@ -269,6 +278,7 @@ public class CatchupPollingProcess extends LifecycleAdapter
                 return true;
             case SUCCESS_END_OF_STREAM:
                 log.debug( "Successfully pulled transactions from %d", lastQueuedTxId  );
+                upToDateFuture.complete( true );
                 return false;
             case E_TRANSACTION_PRUNED:
                 log.info( "Tx pull unable to get transactions starting from %d since transactions " +
