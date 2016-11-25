@@ -20,8 +20,6 @@
 package org.neo4j.causalclustering.core.state;
 
 import java.io.IOException;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFailedException;
@@ -39,7 +37,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-import static org.neo4j.function.Predicates.awaitEx;
+import static java.util.concurrent.TimeUnit.MINUTES;
 
 public class CoreState implements MessageHandler<RaftMessages.ClusterIdAwareMessage>, LogPruner, Lifecycle
 {
@@ -49,7 +47,7 @@ public class CoreState implements MessageHandler<RaftMessages.ClusterIdAwareMess
     private final ClusterIdentity clusterIdentity;
     private final CoreStateDownloader downloader;
     private final CommandApplicationProcess applicationProcess;
-    private final CountDownLatch bootstrapLatch = new CountDownLatch( 1 );
+    private boolean allowMessageHandling;
 
     public CoreState(
             RaftMachine raftMachine,
@@ -67,8 +65,13 @@ public class CoreState implements MessageHandler<RaftMessages.ClusterIdAwareMess
         this.applicationProcess = commandApplicationProcess;
     }
 
-    public void handle( RaftMessages.ClusterIdAwareMessage clusterIdAwareMessage )
+    public synchronized void handle( RaftMessages.ClusterIdAwareMessage clusterIdAwareMessage )
     {
+        if ( !allowMessageHandling )
+        {
+            return;
+        }
+
         ClusterId clusterId = clusterIdAwareMessage.clusterId();
         if ( clusterId.equals( clusterIdentity.clusterId() ) )
         {
@@ -129,7 +132,7 @@ public class CoreState implements MessageHandler<RaftMessages.ClusterIdAwareMess
     public synchronized void installSnapshot( CoreSnapshot coreSnapshot ) throws Throwable
     {
         applicationProcess.installSnapshot( coreSnapshot, raftMachine );
-        bootstrapLatch.countDown();
+        notifyAll();
     }
 
     @SuppressWarnings("unused") // used in embedded robustness testing
@@ -145,14 +148,14 @@ public class CoreState implements MessageHandler<RaftMessages.ClusterIdAwareMess
     }
 
     @Override
-    public void init() throws Throwable
+    public synchronized void init() throws Throwable
     {
         localDatabase.init();
         applicationProcess.init();
     }
 
     @Override
-    public void start() throws Throwable
+    public synchronized void start() throws Throwable
     {
         // How can state be installed?
         // 1. Already installed (detected by checking on-disk state)
@@ -160,39 +163,42 @@ public class CoreState implements MessageHandler<RaftMessages.ClusterIdAwareMess
         // 3. Download from someone else (others)
 
         clusterIdentity.bindToCluster( this::installSnapshot );
+        allowMessageHandling = true;
 
         // TODO: Move haveState and CoreBootstrapper into CommandApplicationProcess, which perhaps needs a better name.
         // TODO: Include the None/Partial/Full in the move.
-        awaitEx( () -> haveState() || snapshotDownloaded(), 30, TimeUnit.MINUTES );
+
+        long endTime = System.currentTimeMillis() + MINUTES.toMillis( 30 );
+        while( !haveState() )
+        {
+            if ( System.currentTimeMillis() > endTime )
+            {
+                throw new RuntimeException( "This machine failed to get the start state in time." );
+            }
+
+            wait( 1000 );
+        }
+
         localDatabase.start();
         applicationProcess.start();
     }
 
-    private boolean snapshotDownloaded() throws InterruptedException
-    {
-        boolean acquired = bootstrapLatch.await( 30, TimeUnit.SECONDS );
-        if ( !acquired )
-        {
-            log.warn( "This machine is not ready to start yet. " +
-                    "It is waiting for the download of the cluster snapshot from another member to complete." );
-        }
-        return acquired;
-    }
-
     private boolean haveState()
     {
+        // this is updated when a snapshot is installed and
+        // the earliest snapshot is at 0
         return raftMachine.state().appendIndex() > -1;
     }
 
     @Override
-    public void stop() throws Throwable
+    public synchronized void stop() throws Throwable
     {
         applicationProcess.stop();
         localDatabase.stop();
     }
 
     @Override
-    public void shutdown() throws Throwable
+    public synchronized void shutdown() throws Throwable
     {
         applicationProcess.shutdown();
         localDatabase.shutdown();
