@@ -46,9 +46,9 @@ class ClusterConfiguration
         return settings;
     }
 
-    static Map<String,String> configureTxLogRotationAndPruning( Map<String,String> settings )
+    static Map<String,String> configureTxLogRotationAndPruning( Map<String,String> settings, String txPrune )
     {
-        settings.put( GraphDatabaseSettings.keep_logical_logs.name(), Settings.FALSE );
+        settings.put( GraphDatabaseSettings.keep_logical_logs.name(), txPrune );
         settings.put( GraphDatabaseSettings.logical_log_rotation_threshold.name(), "1M" );
         return settings;
     }
