@@ -385,7 +385,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
   }
 
   test("should not use eager plans for distinct") {
-    val a = profileWithAllPlanners("match (n) return distinct n.name")
+    val a = profileWithAllPlannersAndRuntimes("match (n) return distinct n.name")
     a.executionPlanDescription().toString should not include "Eager"
   }
 
@@ -604,7 +604,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
         |RETURN a1, a2, v""".stripMargin
 
     //when
-    val result = profileWithAllPlannersAndRuntimes(query)
+    val result = innerExecute(s"CYPHER runtime=interpreted $query")
 
     //then
     assertDbHits(2)(result)("NodeByLabelScan")
@@ -617,7 +617,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     createNode("prop"-> 42)
 
     // WHEN
-    val result = profileWithAllPlanners("MATCH (n) RETURN DISTINCT n.prop")
+    val result = innerExecute("CYPHER runtime=interpreted MATCH (n) RETURN DISTINCT n.prop")
 
     // THEN
     assertDbHits(2)(result)("Distinct")

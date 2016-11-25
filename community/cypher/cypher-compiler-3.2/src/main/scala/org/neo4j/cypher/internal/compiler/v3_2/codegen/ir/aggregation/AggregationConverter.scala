@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.ast
 */
 object AggregationConverter {
 
-  def aggregateExpressionConverter(opName: String, groupingVariables: Iterable[Variable], name: String, e: ast.Expression) (implicit context: CodeGenContext) = {
+  def aggregateExpressionConverter(opName: String, groupingVariables: Iterable[Variable], name: String, e: ast.Expression) (implicit context: CodeGenContext): AggregateExpression = {
     val variable = Variable(context.namer.newVarName(), CodeGenType.primitiveInt)
     context.addVariable(name, variable)
     e match {

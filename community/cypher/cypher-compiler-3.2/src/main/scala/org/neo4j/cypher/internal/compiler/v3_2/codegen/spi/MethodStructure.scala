@@ -63,9 +63,10 @@ trait MethodStructure[E] {
   def asList(values: Seq[E]): E
 
   def toSet(value: E): E
-  def newSet(name: String, codeGenType: CodeGenType)
-  def setContains(name: String, value: E, codeGenType: CodeGenType): E
-  def addToSet(name: String, value: E, codeGenType: CodeGenType): Unit
+  def newDistinctSet(name: String, codeGenTypes: Iterable[CodeGenType])
+  def distinctSetIfNotContains(name: String, structure: Map[String,(CodeGenType,E)])(block: MethodStructure[E] => Unit)
+  def distinctSetIterate(name: String, key: Map[String, CodeGenType])
+                                 (block: (MethodStructure[E]) => Unit)
   def newUniqueAggregationKey(varName: String, structure: Map[String, (CodeGenType,E)]): Unit
   def newAggregationMap(name: String, keyTypes: IndexedSeq[CodeGenType])
   def aggregationMapGet(name: String, varName: String, key: Map[String,(CodeGenType,E)], keyVar: String)

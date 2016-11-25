@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.codegen.{CodeGenContext, MethodSt
  * `MATCH (n) RETURN n.prop1 count(n.prop2)`
  */
 class DynamicCount(opName: String, variable: Variable, expression: CodeGenExpression,
-                   groupingKey: Iterable[Variable], distinct: Boolean) extends AggregateExpression(expression, distinct) {
+                   groupingKey: Iterable[Variable], distinct: Boolean) extends BaseAggregateExpression(expression, distinct) {
 
   private var mapName: String = null
   private var keyVar: String = null
@@ -76,6 +76,7 @@ class DynamicCount(opName: String, variable: Variable, expression: CodeGenExpres
       generator.trace(opName) { body =>
         val keyArg = groupingKey.map(k => k.name -> k.codeGenType).toMap
         body.aggregationMapIterate(mapName, keyArg, variable.name) { inner =>
+          inner.incrementRows()
           instruction.body(inner)
         }
       }

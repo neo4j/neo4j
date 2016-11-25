@@ -63,4 +63,22 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
 
     result.toList should equal(List(Map("min(i)" -> "B")))
   }
+
+  test("distinct aggregation on single node") {
+    val node1 = createNode()
+    val node2 = createNode()
+    relate(node1, node2)
+    relate(node2, node1)
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a)--() RETURN DISTINCT a")
+    result.toList should equal(List(Map("a" -> node1), Map("a" -> node2)))
+
+  }
+
+  test("distinct aggregation on array property") {
+    createNode("prop"-> Array(42))
+    createNode("prop"-> Array(42))
+    createNode("prop"-> Array(1337))
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a) RETURN DISTINCT a.prop")
+    result.toComparableResult should equal(List(Map("a.prop" -> List(1337)), Map("a.prop" -> List(42))))
+  }
 }

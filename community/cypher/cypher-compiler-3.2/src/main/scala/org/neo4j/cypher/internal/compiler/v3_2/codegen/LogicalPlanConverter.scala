@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.codegen
 
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir._
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.aggregation.AggregationConverter.aggregateExpressionConverter
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.aggregation.Distinct
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions.ExpressionConverter._
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.{ManyQueryExpression, QueryExpression, RangeQueryExpression, SingleQueryExpression}
@@ -515,7 +516,7 @@ object LogicalPlanConverter {
       val groupingVariables: Iterable[Variable] = aggregation.groupingExpressions.keys.map(context.getProjection)
 
       val aggregationExpression =
-        if (aggregation.aggregationExpression.isEmpty) throw new CantCompileQueryException("not yet")
+        if (aggregation.aggregationExpression.isEmpty) Seq(Distinct(opName, context.namer.newVarName(), groupingVariables))
         else aggregation.aggregationExpression.map {
           case (name, e) =>
             aggregateExpressionConverter(opName, groupingVariables, name, e)

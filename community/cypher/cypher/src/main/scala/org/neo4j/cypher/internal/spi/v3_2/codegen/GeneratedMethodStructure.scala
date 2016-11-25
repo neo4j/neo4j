@@ -439,8 +439,8 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   override def toSet(value: Expression) =
     createNewInstance(typeRef[util.HashSet[Object]], (typeRef[util.Collection[_]], value))
 
-  override def newSet(name: String, codeGenType: CodeGenType) = {
-    if (codeGenType.repr == IntType) {
+  override def newDistinctSet(name: String, codeGenTypes: Iterable[CodeGenType]) = {
+    if (codeGenTypes.size == 1 && codeGenTypes.head.repr == IntType) {
       generator.assign(generator.declare(typeRef[PrimitiveLongSet], name),
                        invoke(method[Primitive, PrimitiveLongSet]("offHeapLongSet")))
       _finalizers.append((block) =>
@@ -453,17 +453,64 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     }
   }
 
-  override def setContains(name: String, value: Expression, codeGenType: CodeGenType) = {
-    if (codeGenType.repr == IntType) {
-      invoke(generator.load(name), method[PrimitiveLongSet, Boolean]("contains", typeRef[Long]), value)
-    } else invoke(generator.load(name), Methods.setContains, value)
-  }
-
-  override def addToSet(name: String, value: Expression, codeGenType: CodeGenType) = {
-    if (codeGenType.repr == IntType) {
-      generator.expression(pop(invoke(generator.load(name), method[PrimitiveLongSet, Boolean]("add", typeRef[Long]), value)))
+  override def distinctSetIfNotContains(name: String, structure: Map[String,(CodeGenType,Expression)])
+                                       (block: MethodStructure[Expression] => Unit) = {
+    if (structure.size == 1 && structure.head._2._1.repr == IntType) {
+      val (_, (_, value)) = structure.head
+      using(generator.ifNotStatement(invoke(generator.load(name),
+                                            method[PrimitiveLongSet, Boolean]("contains", typeRef[Long]), value))) { body =>
+        body.expression(pop(invoke(generator.load(name), method[PrimitiveLongSet, Boolean]("add", typeRef[Long]), value)))
+        block(copy(generator = body))
+      }
+    } else {
+      val tmpName = context.namer.newVarName()
+      newUniqueAggregationKey(tmpName, structure)
+      using(generator.ifNotStatement(invoke(generator.load(name), Methods.setContains, generator.load(tmpName)))) { body =>
+        body.expression(pop(invoke(loadVariable(name), Methods.setAdd, generator.load(tmpName))))
+        block(copy(generator = body))
+      }
     }
-    else generator.expression(pop(invoke(loadVariable(name), Methods.setAdd, value)))
+  }
+  override def distinctSetIterate(name: String, key: Map[String, CodeGenType])
+                                    (block: (MethodStructure[Expression]) => Unit) = {
+    if (key.size == 1 && key.head._2.repr == IntType) {
+      val (keyName, keyType) = key.head
+      val localName = context.namer.newVarName()
+      val variable = generator.declare(typeRef[PrimitiveLongIterator], localName)
+      generator.assign(variable, invoke(generator.load(name),
+                                        method[PrimitiveLongSet, PrimitiveLongIterator]("iterator")))
+      using(generator.whileLoop(
+        invoke(generator.load(localName), method[PrimitiveLongIterator, Boolean]("hasNext")))) { body =>
+
+        body.assign(body.declare(typeRef[Long], keyName),
+                    invoke(body.load(localName), method[PrimitiveLongIterator, Long]("next")))
+        block(copy(generator = body))
+      }
+    } else {
+      val localName = context.namer.newVarName()
+      val next = context.namer.newVarName()
+      val variable = generator
+        .declare(typeRef[java.util.Iterator[java.util.HashSet[Object]]], localName)
+      val keyStruct = aux.hashKey(key)
+      generator.assign(variable,
+                       invoke(generator.load(name),method[util.HashSet[Object], util.Iterator[Object]]("iterator")))
+      using(generator.whileLoop(
+        invoke(generator.load(localName),
+               method[java.util.Iterator[Object], Boolean]("hasNext")))) { body =>
+        body.assign(body.declare(keyStruct, next),
+                    cast(keyStruct,
+                         invoke(body.load(localName),
+                                method[util.Iterator[Object], Object]("next"))))
+        key.foreach {
+          case (keyName, keyType) =>
+
+            body.assign(body.declare(lowerType(keyType), keyName),
+                        Expression.get(body.load(next),
+                                       FieldReference.field(keyStruct, lowerType(keyType), keyName)))
+        }
+        block(copy(generator = body))
+      }
+    }
   }
 
   override def newUniqueAggregationKey(varName: String, structure: Map[String, (CodeGenType, Expression)]) = {

@@ -27,13 +27,13 @@ import org.neo4j.cypher.internal.compiler.v3_2.codegen.{CodeGenContext, MethodSt
  * `MATCH (n) RETURN count(n.prop)`
  */
 case class SimpleCount(variable: Variable, expression: CodeGenExpression, distinct: Boolean)
-  extends AggregateExpression(expression, distinct) {
+  extends BaseAggregateExpression(expression, distinct) {
 
   def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
     expression.init(generator)
     generator.assign(variable.name, CodeGenType.primitiveInt, generator.constantExpression(Long.box(0L)))
     if (distinct) {
-      generator.newSet(setName(variable), internalExpressionType)
+      generator.newDistinctSet(setName(variable), Seq(internalExpressionType))
     }
   }
 
@@ -46,19 +46,9 @@ case class SimpleCount(variable: Variable, expression: CodeGenExpression, distin
   def distinctCondition[E](value: E, valueType: CodeGenType, structure: MethodStructure[E])
                           (block: MethodStructure[E] => Unit)
                           (implicit context: CodeGenContext) = {
-    if (internalExpressionType.repr == IntType) {
-      structure.ifNotStatement(structure.setContains(setName(variable), internalExpression(structure), internalExpressionType)) { inner =>
-        inner.addToSet(setName(variable), internalExpression(structure), internalExpressionType)
-        block(inner)
-      }
-    } else {
-      val tmpName = context.namer.newVarName()
-      structure.newUniqueAggregationKey(tmpName, Map(typeName(variable) -> (valueType -> value)))
-      structure.ifNotStatement(structure.setContains(setName(variable), structure.loadVariable(tmpName), internalExpressionType)) { inner =>
-        inner.addToSet(setName(variable), inner.loadVariable(tmpName), expression.codeGenType)
-        block(inner)
-      }
-    }
+
+    structure.distinctSetIfNotContains(
+      setName(variable), Map(typeName(variable) ->(internalExpressionType -> internalExpression(structure))))(block)
   }
 
   private def setName(variable: Variable) = variable.name + "Set"

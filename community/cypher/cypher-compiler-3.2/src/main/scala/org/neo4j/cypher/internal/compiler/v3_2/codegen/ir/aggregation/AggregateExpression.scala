@@ -23,18 +23,21 @@ import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.Instruction
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions._
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.{CodeGenContext, MethodStructure, Variable}
 
-/**
-  * Base class for aggregate expressions
-  * @param expression the expression to aggregate
-  * @param distinct is the aggregation distinct or not
-  */
-abstract class AggregateExpression(expression: CodeGenExpression, distinct: Boolean) {
 
+trait AggregateExpression {
   def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext): Unit
 
   def update[E](generator: MethodStructure[E])(implicit context: CodeGenContext): Unit
 
   def continuation(instruction: Instruction): Instruction = instruction
+}
+/**
+  * Base class for aggregate expressions
+  * @param expression the expression to aggregate
+  * @param distinct is the aggregation distinct or not
+  */
+abstract class BaseAggregateExpression(expression: CodeGenExpression, distinct: Boolean) extends AggregateExpression {
+
 
   def distinctCondition[E](value: E, valueType: CodeGenType, structure: MethodStructure[E])(block: MethodStructure[E] => Unit)
                           (implicit context: CodeGenContext)
