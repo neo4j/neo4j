@@ -80,6 +80,7 @@ import static java.util.Arrays.asList;
 public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
 {
     private final Clock clock;
+    private volatile boolean closed = false;
 
     interface Positionable
     {
@@ -141,6 +142,12 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
     {
         closeFiles();
         closeFileSystems();
+        closed = true;
+    }
+
+    public boolean isClosed()
+    {
+        return closed;
     }
 
     private void closeFileSystems() throws IOException
