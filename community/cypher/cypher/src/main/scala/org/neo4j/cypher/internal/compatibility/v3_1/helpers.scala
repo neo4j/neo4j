@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.helpers
+package org.neo4j.cypher.internal.compatibility.v3_1
 
 import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v3_1
@@ -27,21 +27,21 @@ import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.{Compilati
 import org.neo4j.cypher.internal.compiler.v3_2.{CompilationPhaseTracer, CypherCompilerConfiguration}
 import org.neo4j.cypher.internal.frontend.v3_1.{InputPosition => InputPosition3_1}
 import org.neo4j.cypher.internal.frontend.v3_2.InputPosition
+import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, TransactionalContext}
 
-/**
-  * Contains necessary wrappers for supporting 3_0 in 3.1
-  */
-object wrappersFor3_1 {
-
+object helpers {
+  implicit def monitorFailure(t: Throwable)(implicit monitor: QueryExecutionMonitor, tc: TransactionalContext): Unit = {
+    monitor.endFailure(tc.executingQuery(), t)
+  }
   def as3_1(config: CypherCompilerConfiguration) =
     CypherCompilerConfiguration3_1(config.queryCacheSize,
-                                   config.statsDivergenceThreshold,
-                                   config.queryPlanTTL,
-                                   config.useErrorsOverWarnings,
-                                   config.idpMaxTableSize,
-                                   config.idpIterationDuration,
-                                   config.errorIfShortestPathFallbackUsedAtRuntime,
-                                   config.nonIndexedLabelWarningThreshold)
+      config.statsDivergenceThreshold,
+      config.queryPlanTTL,
+      config.useErrorsOverWarnings,
+      config.idpMaxTableSize,
+      config.idpIterationDuration,
+      config.errorIfShortestPathFallbackUsedAtRuntime,
+      config.nonIndexedLabelWarningThreshold)
 
   /** This is awful but needed until 3_0 is updated no to send in the tracer here */
   def as3_1(tracer: CompilationPhaseTracer): v3_1.CompilationPhaseTracer = {
@@ -67,4 +67,5 @@ object wrappersFor3_1 {
   }
 
   def as3_1(pos: InputPosition): InputPosition3_1 = InputPosition3_1(pos.offset, pos.line, pos.column)
+
 }

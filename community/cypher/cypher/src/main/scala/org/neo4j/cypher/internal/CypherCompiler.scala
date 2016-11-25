@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal
 
 import java.time.Clock
 
-import org.neo4j.cypher.internal.compatibility.exceptionHandlerFor3_2
+import org.neo4j.cypher.internal.compatibility.v3_2.exceptionHandler
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.frontend.v3_2.InputPosition
 import org.neo4j.cypher.{InvalidArgumentException, SyntaxException, _}
@@ -95,7 +95,7 @@ class CypherCompiler(graph: GraphDatabaseQueryService,
   private final val ILLEGAL_PLANNER_RUNTIME_COMBINATIONS: Set[(CypherPlanner, CypherRuntime)] = Set((CypherPlanner.rule, CypherRuntime.compiled))
 
   @throws(classOf[SyntaxException])
-  def preParseQuery(queryText: String): PreParsedQuery = exceptionHandlerFor3_2.runSafely {
+  def preParseQuery(queryText: String): PreParsedQuery = exceptionHandler.runSafely {
     val preParsedStatement = CypherPreParser(queryText)
     val CypherStatementWithOptions(statement, offset, version, planner, runtime, updateStrategy, mode) =
       CypherStatementWithOptions(preParsedStatement)
@@ -127,8 +127,8 @@ class CypherCompiler(graph: GraphDatabaseQueryService,
 
   @throws(classOf[SyntaxException])
   def parseQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer): ParsedQuery = {
-    import helpers.wrappersFor2_3._
-    import helpers.wrappersFor3_1._
+    import org.neo4j.cypher.internal.compatibility.v2_3.helpers._
+    import org.neo4j.cypher.internal.compatibility.v3_1.helpers._
 
     val planner = preParsedQuery.planner
     val runtime = preParsedQuery.runtime

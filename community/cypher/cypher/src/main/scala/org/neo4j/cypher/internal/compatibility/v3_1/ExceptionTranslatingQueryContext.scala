@@ -17,21 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility
+package org.neo4j.cypher.internal.compatibility.v3_1
 
 import java.net.URL
 
-import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{Expander, KernelPredicate}
-import org.neo4j.cypher.internal.compiler.v3_2.pipes.matching.PatternNode
-import org.neo4j.cypher.internal.compiler.v3_2.spi._
-import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
-import org.neo4j.cypher.internal.spi.v3_2.ExceptionTranslationSupport
+import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.{Expander, KernelPredicate}
+import org.neo4j.cypher.internal.compiler.v3_1.pipes.matching.PatternNode
+import org.neo4j.cypher.internal.compiler.v3_1.spi._
+import org.neo4j.cypher.internal.frontend.v3_1.SemanticDirection
+import org.neo4j.cypher.internal.spi.v3_1.ExceptionTranslationSupport
 import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
 import org.neo4j.kernel.api.index.IndexDescriptor
 
 import scala.collection.Iterator
 
-class ExceptionTranslatingQueryContextFor3_2(val inner: QueryContext) extends QueryContext with ExceptionTranslationSupport {
+class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryContext with ExceptionTranslationSupport {
   override type EntityAccessor = inner.EntityAccessor
 
   override def entityAccessor = inner.entityAccessor
@@ -150,7 +150,7 @@ class ExceptionTranslatingQueryContextFor3_2(val inner: QueryContext) extends Qu
   override def withAnyOpenQueryContext[T](work: (QueryContext) => T): T =
     inner.withAnyOpenQueryContext(qc =>
       translateException(
-        work(new ExceptionTranslatingQueryContextFor3_2(qc))
+        work(new ExceptionTranslatingQueryContext(qc))
       ))
 
   override def isLabelSetOnNode(label: Int, node: Long): Boolean =

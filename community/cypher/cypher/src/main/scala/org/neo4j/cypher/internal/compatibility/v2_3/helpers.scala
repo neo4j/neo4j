@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.helpers
+package org.neo4j.cypher.internal.compatibility.v2_3
 
 import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v2_3
@@ -26,11 +26,12 @@ import org.neo4j.cypher.internal.compiler.v2_3.{CypherCompilerConfiguration => C
 import org.neo4j.cypher.internal.compiler.v3_2.{CompilationPhaseTracer, CypherCompilerConfiguration}
 import org.neo4j.cypher.internal.frontend.v2_3.{InputPosition => InputPosition2_3}
 import org.neo4j.cypher.internal.frontend.v3_2.InputPosition
+import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, TransactionalContext}
 
-/**
-  * Contains necessary wrappers for supporting 2.3 in 3.1
-  */
-object wrappersFor2_3 {
+object helpers {
+  implicit def monitorFailure(t: Throwable)(implicit monitor: QueryExecutionMonitor, tc: TransactionalContext): Unit = {
+    monitor.endFailure(tc.executingQuery(), t)
+  }
 
   def as2_3(config: CypherCompilerConfiguration) = CypherCompilerConfiguration2_3(config.queryCacheSize,
     config.statsDivergenceThreshold, config.queryPlanTTL, config.useErrorsOverWarnings,
@@ -69,4 +70,5 @@ object wrappersFor2_3 {
   }
 
   def as2_3(pos: InputPosition): InputPosition2_3 = InputPosition2_3(pos.offset, pos.line, pos.column)
+
 }
