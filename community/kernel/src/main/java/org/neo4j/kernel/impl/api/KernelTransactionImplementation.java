@@ -215,8 +215,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      * Reset this transaction to a vanilla state, turning it into a logically new transaction.
      */
     public KernelTransactionImplementation initialize(
-            long lastCommittedTx, long lastTimeStamp, StatementLocks statementLocks, Type type, SecurityContext securityContext,
-            long transactionTimeout )
+            long lastCommittedTx, long lastTimeStamp, StatementLocks statementLocks, Type type,
+            SecurityContext frozenSecurityContext, long transactionTimeout )
     {
         this.type = type;
         this.statementLocks = statementLocks;
@@ -229,7 +229,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.lastTransactionTimestampWhenStarted = lastTimeStamp;
         this.transactionEvent = tracer.beginTransaction();
         assert transactionEvent != null : "transactionEvent was null!";
-        this.securityContext = securityContext.freeze();
+        this.securityContext = frozenSecurityContext;
         this.transactionId = NOT_COMMITTED_TRANSACTION_ID;
         this.commitTime = NOT_COMMITTED_TRANSACTION_COMMIT_TIME;
         this.currentTransactionOperations = timeoutMillis > 0 ? operationContainer.guardedParts() : operationContainer.nonGuarderParts();
