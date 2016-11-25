@@ -137,8 +137,10 @@ trait MethodStructure[E] {
   def relType(relIdVar: String, typeVar: String): Unit
   def newIndexDescriptor(descriptorVar: String, labelVar: String, propKeyVar: String): Unit
   def createRelExtractor(extractorName: String): Unit
-  def nodeCountFromCountStore(): E
   def nodeCountFromCountStore(expression: E): E
+  def relCountFromCountStore(start: E, end: E, types: E*): E
+  def token(t: Int): E
+  def wildCardToken: E
 
   // code structure
   def whileLoop(test: E)(block: MethodStructure[E] => Unit): Unit

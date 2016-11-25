@@ -85,6 +85,7 @@ object Methods {
   val nodesGetFromIndexLookup = method[ReadOperations, PrimitiveLongIterator]("nodesGetFromIndexSeek", typeRef[IndexDescriptor], typeRef[Object])
   val nodeGetUniqueFromIndexLookup = method[ReadOperations, Long]("nodeGetFromUniqueIndexSeek", typeRef[IndexDescriptor], typeRef[Object])
   val countsForNode = method[ReadOperations, Long]("countsForNode", typeRef[Int])
+  val countsForRel = method[ReadOperations, Long]("countsForRelationship", typeRef[Int], typeRef[Int], typeRef[Int])
   val relationshipGetProperty = method[ReadOperations, Object]("relationshipGetProperty", typeRef[Long], typeRef[Int])
   val nodesGetForLabel = method[ReadOperations, PrimitiveLongIterator]("nodesGetForLabel", typeRef[Int])
   val nodeHasLabel = method[ReadOperations, Boolean]("nodeHasLabel", typeRef[Long], typeRef[Int])

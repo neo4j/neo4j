@@ -1078,10 +1078,16 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     }
   }
 
-  override def nodeCountFromCountStore(): Expression = nodeCountFromCountStore(Expression.constant(-1))
+  def token(t: Int) = Expression.constant(t)
+
+  def wildCardToken = Expression.constant(-1)
 
   override def nodeCountFromCountStore(expression: Expression): Expression =
     invoke(readOperations, countsForNode, expression )
+
+  override def relCountFromCountStore(start: Expression, end: Expression, types: Expression*): Expression =
+    if (types.isEmpty) invoke(readOperations, Methods.countsForRel, start, wildCardToken, end )
+    else types.map(invoke(readOperations, Methods.countsForRel, start, _, end )).reduceLeft(Expression.add)
 
   override def coerceToBoolean(propertyExpression: Expression): Expression =
     invoke(coerceToPredicate, propertyExpression)

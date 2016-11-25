@@ -52,6 +52,7 @@ object LogicalPlanConverter {
     case p: plans.Projection => projectionAsCodeGenPlan(p)
     case p: plans.Aggregation => aggregationAsCodeGenPlan(p)
     case p: plans.NodeCountFromCountStore => nodeCountFromCountStore(p)
+    case p: plans.RelationshipCountFromCountStore => relCountFromCountStore(p)
 
     case _ =>
       throw new CantCompileQueryException(s"$logicalPlan is not yet supported")
@@ -544,6 +545,21 @@ object LogicalPlanConverter {
     }
   }
 
+  private def relCountFromCountStore(relCount: RelationshipCountFromCountStore) = new CodeGenPlan with LeafCodeGenPlan {
+    override val logicalPlan: LogicalPlan = relCount
+
+    override def produce(context: CodeGenContext): (Option[JoinTableMethod], List[Instruction]) = {
+      val variable = Variable(context.namer.newVarName(), CodeGenType(symbols.CTInteger, IntType))
+      context.addVariable(relCount.idName.name, variable)
+      val (methodHandle, actions :: tl) = context.popParent().consume(context, this)
+      val opName = context.registerOperator(logicalPlan)
+
+      val startLabel = relCount.startLabel.map(l => l.id(context.semanticTable).map(_.id) -> l.name)
+      val endLabel = relCount.endLabel.map(l => l.id(context.semanticTable).map(_.id) -> l.name)
+      val types = relCount.typeNames.map(t => t.id(context.semanticTable).map(_.id) -> t.name)
+      (methodHandle, RelationshipCountFromCountStoreInstruction(opName, variable, startLabel, types, endLabel, actions) :: tl)
+    }
+  }
   trait SingleChildPlan extends CodeGenPlan {
 
     final override def produce(context: CodeGenContext): (Option[JoinTableMethod], List[Instruction]) = {

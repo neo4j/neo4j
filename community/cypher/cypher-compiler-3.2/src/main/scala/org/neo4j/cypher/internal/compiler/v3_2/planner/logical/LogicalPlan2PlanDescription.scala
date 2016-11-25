@@ -148,7 +148,13 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
       case _: EmptyResult =>
         PlanDescriptionImpl(id, "EmptyResult", children, Seq.empty, variables)
       case NodeCountFromCountStore(IdName(id), labelName, arguments) =>
-        PlanDescriptionImpl(id = idMap(plan), "NodeCountFromCountStore", NoChildren, Seq(LabelName(labelName.map(_.name).getOrElse("*"))), symbols)
+        PlanDescriptionImpl(id = idMap(plan), "NodeCountFromCountStore", NoChildren,
+                            Seq(CountNodesExpression(id, labelName.map(_.name))), symbols)
+
+      case RelationshipCountFromCountStore(IdName(id), start, types, end, arguments) =>
+        PlanDescriptionImpl(id = idMap(plan), "RelationshipCountFromCountStore", NoChildren,
+                            Seq(CountRelationshipsExpression(id, start.map(_.name), types.map(_.name), end.map(_.name))),
+                            symbols)
 
       case NodeUniqueIndexSeek(IdName(id), label, propKey, value, arguments) =>
         PlanDescriptionImpl(id = idMap(plan), "NodeUniqueIndexSeek", NoChildren, Seq(Index(label.name, propKey.name)), symbols)

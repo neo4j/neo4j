@@ -20,7 +20,7 @@
 package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
-import org.scalacheck.{Shrink, Gen}
+import org.scalacheck.{Gen, Shrink}
 
 /*
  * Creates a random pattern, matches on it and deletes all variables
@@ -48,7 +48,7 @@ class SemanticDeleteAcceptanceTest extends ExecutionEngineFunSuite with PatternG
           updateWithBothPlannersAndCompatibilityMode(s"MATCH $patternString DELETE ${variables.mkString(",")} RETURN count(*)")
 
           //now db should be empty
-          executeWithAllPlannersAndCompatibilityMode("MATCH () RETURN count(*) AS c").toList should equal(List(Map("c" -> 0)))
+          executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH () RETURN count(*) AS c").toList should equal(List(Map("c" -> 0)))
         }
       }
     }
@@ -70,7 +70,7 @@ class SemanticDeleteAcceptanceTest extends ExecutionEngineFunSuite with PatternG
           updateWithBothPlanners(s"MATCH $patternString DETACH DELETE ${variables.mkString(",")} RETURN count(*)")
 
           //now db should be empty
-          executeWithAllPlannersAndCompatibilityMode("MATCH () RETURN count(*) AS c").toList should equal(List(Map("c" -> 0)))
+          executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH () RETURN count(*) AS c").toList should equal(List(Map("c" -> 0)))
         }
       }
     }
@@ -93,7 +93,7 @@ class SemanticDeleteAcceptanceTest extends ExecutionEngineFunSuite with PatternG
           updateWithBothPlannersAndCompatibilityMode(s"MATCH $undirected DELETE ${variables.mkString(",")}")
 
           //now db should be empty
-          executeWithAllPlannersAndCompatibilityMode("MATCH () RETURN count(*) AS c").toList should equal(List(Map("c" -> 0)))
+          executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH () RETURN count(*) AS c").toList should equal(List(Map("c" -> 0)))
         }
       }
     }
@@ -116,7 +116,7 @@ class SemanticDeleteAcceptanceTest extends ExecutionEngineFunSuite with PatternG
           updateWithBothPlannersAndCompatibilityMode(s"MATCH $undirected DETACH DELETE ${variables.mkString(",")}")
 
           //now db should be empty
-          executeWithAllPlannersAndCompatibilityMode("MATCH () RETURN count(*) AS c").toList should equal(List(Map("c" -> 0)))
+          executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH () RETURN count(*) AS c").toList should equal(List(Map("c" -> 0)))
         }
       }
     }

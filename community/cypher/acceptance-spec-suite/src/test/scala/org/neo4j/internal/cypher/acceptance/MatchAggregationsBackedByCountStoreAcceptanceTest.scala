@@ -114,7 +114,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(1))
 
-      })
+      }, allRuntimes = true)
   }
 
   test("counts relationships with unspecified type using count store with count(*)") {
@@ -127,7 +127,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(*)").toSet[Int] should equal(Set(1))
 
-      })
+      }, allRuntimes = true)
   }
 
   test("counts relationships with type using count store") {
@@ -140,7 +140,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(1))
 
-      })
+      }, allRuntimes = true)
   }
 
   test("counts relationships with type using count store with count(*)") {
@@ -153,7 +153,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(*)").toSet[Int] should equal(Set(1))
 
-      })
+      }, allRuntimes = true)
   }
 
   test("counts relationships with unspecified type and labeled source node using count store") {
@@ -166,7 +166,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(1))
 
-      })
+      }, allRuntimes = true)
   }
 
   test("counts relationships with type and labeled source node using count store") {
@@ -179,7 +179,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(1))
 
-      })
+      }, allRuntimes = true)
   }
 
   test("counts relationships with unspecified type and labeled destination node using count store") {
@@ -192,7 +192,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(1))
 
-      })
+      }, allRuntimes = true)
   }
 
   test("counts relationships with type and labeled destination node using count store") {
@@ -205,7 +205,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(1))
 
-      })
+      }, allRuntimes = true)
   }
 
   test("counts relationships with type and labeled source and destination without using count store") {
@@ -244,7 +244,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(1))
 
-      })
+      }, allRuntimes = true)
   }
 
   test("counts relationships with type, reverse direction and labeled destination node using count store") {
@@ -257,7 +257,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(1))
 
-      })
+      }, allRuntimes = true)
   }
 
   test("counts relationships with type, any direction and labeled source node without using count store") {
@@ -402,7 +402,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(3))
 
-      })
+      }, allRuntimes = true)
   }
 
   test("counts relationships with type using count store considering transaction state") {
@@ -415,7 +415,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(3))
 
-      })
+      }, allRuntimes = true)
   }
 
   test("counts relationships with multiple types using count store considering transaction state") {
@@ -428,7 +428,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(2))
 
-      })
+      }, allRuntimes = true)
   }
 
   test("counts relationships using count store and projection with expression considering transaction state") {
@@ -488,7 +488,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(2))
 
-      })
+      }, allRuntimes = true)
   }
 
   test("counts relationships with type and labeled source using count store considering transaction state") {
@@ -501,7 +501,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(3))
 
-      })
+      }, allRuntimes = true)
   }
 
   test("counts relationships with type, reverse direction and labeled source using count store considering transaction state") {
@@ -514,7 +514,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(3))
 
-      })
+      }, allRuntimes = true)
   }
 
   test("counts relationships with unspecified type and labeled source using count store considering transaction state") {
@@ -527,7 +527,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(3))
 
-      })
+      }, allRuntimes = true)
   }
 
   test("counts relationships with type and labeled destination using count store considering transaction state") {
@@ -540,7 +540,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(3))
 
-      })
+      }, allRuntimes = true)
   }
 
   test("counts relationships with type, reverse direction and labeled destination using count store considering transaction state") {
@@ -553,7 +553,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(3))
 
-      })
+      }, allRuntimes = true)
   }
 
   test("counts relationships with unspecified type and labeled destination using count store considering transaction state") {
@@ -566,7 +566,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(3))
 
-      })
+      }, allRuntimes = true)
   }
 
   test("counts relationships with type and labeled source and destination without using count store considering transaction state") {

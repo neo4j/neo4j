@@ -33,7 +33,7 @@ case class NodeCountFromCountStoreInstruction(opName: String, variable: Variable
                     generator.nodeCountFromCountStore(expression))
       } else {
         body.assign(variable.name, variable.codeGenType,
-                    generator.nodeCountFromCountStore())
+                    generator.nodeCountFromCountStore(generator.wildCardToken))
       }
       inner.body(body)
     }
