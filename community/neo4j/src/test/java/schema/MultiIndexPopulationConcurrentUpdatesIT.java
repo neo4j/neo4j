@@ -387,10 +387,8 @@ public class MultiIndexPopulationConcurrentUpdatesIT
                 Visitor<NodePropertyUpdates,FAILURE> propertyUpdatesVisitor,
                 Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor )
         {
-            DynamicIndexStoreViewWrapper.USE_LABEL_INDEX_FOR_SCHEMA_INDEX_POPULATION = true;
             StoreScan<FAILURE> storeScan =
                     super.visitNodes( labelIds, propertyKeyIdFilter, propertyUpdatesVisitor, labelUpdateVisitor );
-            DynamicIndexStoreViewWrapper.USE_LABEL_INDEX_FOR_SCHEMA_INDEX_POPULATION = false;
             return new LabelScanViewNodeStoreWrapper( nodeStore, locks, propertyStore, getLabelScanStore(),
                     element -> false, propertyUpdatesVisitor, labelIds, propertyKeyIdFilter,
                     (LabelScanViewNodeStoreScan) storeScan, updates);

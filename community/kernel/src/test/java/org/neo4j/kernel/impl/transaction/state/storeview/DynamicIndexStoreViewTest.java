@@ -19,9 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -63,18 +61,6 @@ public class DynamicIndexStoreViewTest
     private Visitor<NodeLabelUpdate,Exception> labelUpdateVisitor = mock( Visitor.class );
     private IntPredicate propertyKeyIdFilter = mock( IntPredicate.class );
     private AllEntriesLabelScanReader nodeLabelRanges = mock( AllEntriesLabelScanReader.class );
-
-    @BeforeClass
-    public static void init()
-    {
-        DynamicIndexStoreView.USE_LABEL_INDEX_FOR_SCHEMA_INDEX_POPULATION = true;
-    }
-
-    @AfterClass
-    public static void cleanup()
-    {
-        DynamicIndexStoreView.USE_LABEL_INDEX_FOR_SCHEMA_INDEX_POPULATION = false;
-    }
 
     @Before
     public void setUp()
