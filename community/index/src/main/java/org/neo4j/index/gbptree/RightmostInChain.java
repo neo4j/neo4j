@@ -51,6 +51,7 @@ class RightmostInChain<KEY>
     long assertNext( PageCursor cursor )
     {
         long pageId = cursor.getCurrentPageId();
+
         long leftSibling = node.leftSibling( cursor, stableGeneration, unstableGeneration );
         long rightSibling = node.rightSibling( cursor, stableGeneration, unstableGeneration );
 
@@ -74,4 +75,5 @@ class RightmostInChain<KEY>
         assert expectedNextRightmost == NO_NODE_FLAG : "Expected rightmost right sibling to be " +
                                                        NO_NODE_FLAG + " but was " + expectedNextRightmost;
     }
+
 }

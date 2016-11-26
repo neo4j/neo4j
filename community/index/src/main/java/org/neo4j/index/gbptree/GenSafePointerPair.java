@@ -374,7 +374,7 @@ class GenSafePointerPair
         return generationA > generationB ? GEN_A_BIG : generationB > generationA ? GEN_B_BIG : GEN_EQUAL;
     }
 
-    private static byte pointerState( long stableGeneration, long unstableGeneration,
+    static byte pointerState( long stableGeneration, long unstableGeneration,
             long generation, long pointer, boolean checksumIsCorrect )
     {
         if ( GenSafePointer.isEmpty( generation, pointer ) )

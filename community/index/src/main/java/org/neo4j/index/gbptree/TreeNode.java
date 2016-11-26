@@ -65,16 +65,16 @@ import org.neo4j.io.pagecache.PageCursor;
 class TreeNode<KEY,VALUE>
 {
     private static final int SIZE_PAGE_REFERENCE = GenSafePointerPair.SIZE;
-    private static final int BYTE_POS_TYPE = 0;
+    static final int BYTE_POS_TYPE = 0;
     private static final int BYTE_POS_GEN = BYTE_POS_TYPE + Byte.BYTES;
     private static final int BYTE_POS_KEYCOUNT = BYTE_POS_GEN + Integer.BYTES;
-    private static final int BYTE_POS_RIGHTSIBLING = BYTE_POS_KEYCOUNT + Integer.BYTES;
-    private static final int BYTE_POS_LEFTSIBLING = BYTE_POS_RIGHTSIBLING + SIZE_PAGE_REFERENCE;
-    private static final int BYTE_POS_NEWGEN = BYTE_POS_LEFTSIBLING + SIZE_PAGE_REFERENCE;
+    static final int BYTE_POS_RIGHTSIBLING = BYTE_POS_KEYCOUNT + Integer.BYTES;
+    static final int BYTE_POS_LEFTSIBLING = BYTE_POS_RIGHTSIBLING + SIZE_PAGE_REFERENCE;
+    static final int BYTE_POS_NEWGEN = BYTE_POS_LEFTSIBLING + SIZE_PAGE_REFERENCE;
     static final int HEADER_LENGTH = BYTE_POS_NEWGEN + SIZE_PAGE_REFERENCE;
 
     private static final byte LEAF_FLAG = 1;
-    private static final byte INTERNAL_FLAG = 0;
+    static final byte INTERNAL_FLAG = 0;
     static final long NO_NODE_FLAG = 0;
 
     private final int internalMaxKeyCount;

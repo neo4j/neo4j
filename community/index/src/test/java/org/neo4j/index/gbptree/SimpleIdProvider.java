@@ -19,6 +19,8 @@
  */
 package org.neo4j.index.gbptree;
 
+import org.neo4j.io.pagecache.PageCursor;
+
 class SimpleIdProvider implements IdProvider
 {
     private long lastId;

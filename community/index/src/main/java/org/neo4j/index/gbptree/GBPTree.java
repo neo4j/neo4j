@@ -41,6 +41,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 
+import static org.neo4j.index.gbptree.Generation.generation;
 import static org.neo4j.index.gbptree.Generation.stableGeneration;
 import static org.neo4j.index.gbptree.Generation.unstableGeneration;
 import static org.neo4j.index.gbptree.PageCursorChecking.checkOutOfBounds;
@@ -79,6 +80,38 @@ import static org.neo4j.index.gbptree.PageCursorChecking.checkOutOfBounds;
  * The isolation level is thus read committed.
  * The tree have no knowledge about transactions and apply updates as isolated units of work one entry at the time.
  * Therefore, readers can see parts of transactions that are not fully applied yet.
+ * <p>
+ * A note on recovery:
+ * <p>
+ * {@link GBPTree} is designed to be able to handle non-clean shutdown / crash, but needs external help
+ * in order to do so.
+ * {@link #writer(org.neo4j.index.IndexWriter.Options) Writes} happen to the tree and are made durable and
+ * safe on next call to {@link #checkpoint(IOLimiter)}. Writes which happens after the last
+ * {@link #checkpoint(IOLimiter)} are not safe if there's a {@link #close()} or JVM crash in between, i.e:
+ *
+ * <pre>
+ * w: write
+ * c: checkpoint
+ * x: crash or {@link #close()}
+ *
+ * TIME |--w--w----w--c--ww--w-c-w--w-ww--w--w---x------|
+ *         ^------ safe -----^   ^- unsafe --^
+ * </pre>
+
+ * The writes that happened before the last checkpoint are durable and safe, but the writes after it are not.
+ * The tree can however get back to a consistent state by:
+ * <ol>
+ * <li>Creator of this tree detects that recovery is required (i.e. non-clean shutdown) and if so must call
+ * {@link #prepareForRecovery()} ones, before any writes during recovery are made.</li>
+ * <li>Replaying all the writes, exactly as they were made, since the last checkpoint all the way up
+ * to the crash ({@code x}). Even including writes before the last checkpoint is OK, important is that
+ * <strong>at least</strong> writes since last checkpoint are included.
+ * </ol>
+ *
+ * Failure to follow the above steps will result in unknown state of the tree after a crash.
+ * <p>
+ * The reason as to why {@link #close()} doesn't do a checkpoint is that checkpointing as a whole should
+ * be managed externally, keeping multiple resources in sync w/ regards to checkpoints.
  *
  * @param <KEY> type of keys
  * @param <VALUE> type of values
@@ -110,6 +143,7 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
      * Paged file in a {@link PageCache} providing the means of storage.
      */
     private final PagedFile pagedFile;
+    private final byte[] zeroPage;
 
     /**
      * User-provided layout of key/value as well as custom additional meta information.
@@ -217,19 +251,30 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         this.pagedFile = openOrCreate( pageCache, indexFile, tentativePageSize, layout );
         this.bTreeNode = new TreeNode<>( pageSize, layout );
         this.writer = new SingleIndexWriter( new InternalTreeLogic<>( this, bTreeNode, layout ) );
+        this.zeroPage = new byte[pageSize];
 
         if ( created )
         {
-            // Initialize index root node to a leaf node.
-            try ( PageCursor cursor = pagedFile.io( rootId, PagedFile.PF_SHARED_WRITE_LOCK ) )
-            {
-                long stableGeneration = stableGeneration( generation );
-                long unstableGeneration = unstableGeneration( generation );
-                goToRoot( cursor, stableGeneration, unstableGeneration );
-                bTreeNode.initializeLeaf( cursor, stableGeneration, unstableGeneration );
-                checkOutOfBounds( cursor );
-            }
+            initializeAfterCreation( layout );
         }
+    }
+
+    private void initializeAfterCreation( Layout<KEY,VALUE> layout ) throws IOException
+    {
+        // Write meta
+        writeMeta( layout, pagedFile );
+
+        // Initialize index root node to a leaf node.
+        try ( PageCursor cursor = pagedFile.io( rootId, PagedFile.PF_SHARED_WRITE_LOCK ) )
+        {
+            long stableGeneration = stableGeneration( generation );
+            long unstableGeneration = unstableGeneration( generation );
+            goToRoot( cursor, stableGeneration, unstableGeneration );
+            bTreeNode.initializeLeaf( cursor, stableGeneration, unstableGeneration );
+            checkOutOfBounds( cursor );
+        }
+
+        checkpoint( IOLimiter.unlimited() );
     }
 
     private PagedFile openOrCreate( PageCache pageCache, File indexFile,
@@ -262,7 +307,7 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         }
         catch ( NoSuchFileException e )
         {
-            // First time. Initiate meta and state page
+            // First time
             pageSize = pageSizeForCreation == 0 ? pageCache.pageSize() : pageSizeForCreation;
             if ( pageSize > pageCache.pageSize() )
             {
@@ -273,11 +318,6 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
 
             // We need to create this index
             PagedFile pagedFile = pageCache.map( indexFile, pageSize, StandardOpenOption.CREATE );
-
-            // Write header
-            writeMeta( layout, pagedFile );
-            writeState( pagedFile );
-            pagedFile.flushAndForce();
             created = true;
             return pagedFile;
         }
@@ -406,9 +446,15 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
     }
 
     @Override
-    public long acquireNewId()
+    public long acquireNewId() throws IOException
     {
         lastId++;
+        try ( PageCursor cursor = pagedFile.io( lastId, PagedFile.PF_SHARED_WRITE_LOCK ) )
+        {
+            cursor.next();
+            // TODO use cursor.clear() when available
+            cursor.putBytes( zeroPage );
+        }
         return lastId;
     }
 
@@ -481,6 +527,21 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
     private void goToRoot( PageCursor cursor, long stableGeneration, long unstableGeneration ) throws IOException
     {
         bTreeNode.goTo( cursor, rootId, stableGeneration, unstableGeneration );
+    }
+
+    public void prepareForRecovery() throws IOException
+    {
+        writerCheckpointMutex.lock();
+        try
+        {
+            generation = generation( stableGeneration( generation ), unstableGeneration( generation ) + 1 );
+            writeState( pagedFile );
+            pagedFile.flushAndForce();
+        }
+        finally
+        {
+            writerCheckpointMutex.unlock();
+        }
     }
 
     // Utility method

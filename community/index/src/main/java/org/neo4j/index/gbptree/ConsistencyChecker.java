@@ -69,6 +69,14 @@ class ConsistencyChecker<KEY>
 
     private boolean checkSubtree( PageCursor cursor, KeyRange<KEY> range, int level ) throws IOException
     {
+        // check header pointers
+        assertNoCrashOrBrokenPointerInGSPP(
+                cursor, stableGeneration, unstableGeneration, "LeftSibling", TreeNode.BYTE_POS_LEFTSIBLING );
+        assertNoCrashOrBrokenPointerInGSPP(
+                cursor, stableGeneration, unstableGeneration, "RightSibling", TreeNode.BYTE_POS_RIGHTSIBLING );
+        assertNoCrashOrBrokenPointerInGSPP(
+                cursor, stableGeneration, unstableGeneration, "NewGen", TreeNode.BYTE_POS_NEWGEN );
+
         long pageId = assertSiblings( cursor, level );
 
         if ( node.isInternal( cursor ) )
@@ -118,9 +126,8 @@ class ConsistencyChecker<KEY>
                 assert comparator.compare( prev, readKey ) < 0; // Assume unique keys
             }
 
-            long child = node.childAt( cursor, pos, stableGeneration, unstableGeneration );
+            long child = childAt( cursor, pos );
             cursor.next( child );
-
             if ( pos == 0 )
             {
                 childRange = range.restrictRight( readKey );
@@ -137,11 +144,18 @@ class ConsistencyChecker<KEY>
         }
 
         // Check last child
-        long child = node.childAt( cursor, pos, stableGeneration, unstableGeneration );
+        long child = childAt( cursor, pos );
         cursor.next( child );
         childRange = range.restrictLeft( prev );
         checkSubtree( cursor, childRange, level + 1 );
         cursor.next( pageId );
+    }
+
+    private long childAt( PageCursor cursor, int pos )
+    {
+        assertNoCrashOrBrokenPointerInGSPP(
+                cursor, stableGeneration, unstableGeneration, "Child", node.childOffset( pos ) );
+        return node.childAt( cursor, pos, stableGeneration, unstableGeneration );
     }
 
     private void assertKeyOrder( PageCursor cursor, KeyRange<KEY> range )
@@ -163,6 +177,46 @@ class ConsistencyChecker<KEY>
             }
             layout.copyKey( readKey, prev );
         }
+    }
+
+    static void assertNoCrashOrBrokenPointerInGSPP( PageCursor cursor, long stableGeneration, long unstableGeneration,
+            String pointerType, int offset )
+    {
+        cursor.setOffset( offset );
+        long currentNodeId = cursor.getCurrentPageId();
+        // A
+        long generationA = GenSafePointer.readGeneration( cursor );
+        long pointerA = GenSafePointer.readPointer( cursor );
+        short checksumA = GenSafePointer.readChecksum( cursor );
+        boolean correctChecksumA = GenSafePointer.checksumOf( generationA, pointerA ) == checksumA;
+        byte stateA = GenSafePointerPair.pointerState(
+                stableGeneration, unstableGeneration, generationA, pointerA, correctChecksumA );
+        boolean okA = stateA != GenSafePointerPair.BROKEN && stateA != GenSafePointerPair.CRASH;
+
+        // B
+        long generationB = GenSafePointer.readGeneration( cursor );
+        long pointerB = GenSafePointer.readPointer( cursor );
+        short checksumB = GenSafePointer.readChecksum( cursor );
+        boolean correctChecksumB = GenSafePointer.checksumOf( generationB, pointerB ) == checksumB;
+        byte stateB = GenSafePointerPair.pointerState(
+                stableGeneration, unstableGeneration, generationB, pointerB, correctChecksumB );
+        boolean okB = stateB != GenSafePointerPair.BROKEN && stateB != GenSafePointerPair.CRASH;
+
+        if ( !(okA && okB) )
+        {
+            cursor.setOffset( TreeNode.BYTE_POS_TYPE );
+            boolean isInternal = cursor.getByte() == TreeNode.INTERNAL_FLAG;
+            String type = isInternal ? "Internal" : "Leaf";
+            throw new IllegalStateException( "State found that was not ok in " + type + " " + currentNodeId +
+                    ", " + pointerType + " slotA=" + stateToString( generationA, pointerA, stateA ) +
+                    " slotB=" + stateToString( generationA, pointerA, stateA ) );
+        }
+    }
+
+    private static String stateToString( long generationA, long pointerA, byte stateA )
+    {
+        return format( "generation=%d, pointer=%d, state=%s",
+                generationA, pointerA, GenSafePointerPair.pointerStateName( stateA ) );
     }
 
     private static class KeyRange<KEY>
