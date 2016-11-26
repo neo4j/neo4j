@@ -81,8 +81,6 @@ class Equivalent(protected val eagerizedValue: Any, val originalValue: Any) exte
         length * (31 * hashCode(n.head) + hashCode(n(length / 2)) * 31 + hashCode(n.last))
       else
         EMPTY_LIST
-    case m: Map[_,_] =>
-      m.hashCode()
     case x => x.hashCode()
   }
 }

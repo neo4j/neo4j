@@ -20,10 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v3_2.codegen
 
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.JoinData
-import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions.CodeGenType
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions.{CodeGenType, ReferenceType}
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticTable
+import org.neo4j.cypher.internal.frontend.v3_2.symbols.{CTNode, CTRelationship}
 
 import scala.collection.mutable
 
@@ -32,22 +33,22 @@ case class Variable(name: String, codeGenType: CodeGenType, nullable: Boolean = 
 class CodeGenContext(val semanticTable: SemanticTable, idMap: Map[LogicalPlan, Id], val namer: Namer = Namer()) {
 
   private val variables: mutable.Map[String, Variable] = mutable.Map()
-  private val projections: mutable.Map[String, Variable] = mutable.Map()
+  private val internalVariables: mutable.Map[String, Variable] = mutable.Map()
   private val probeTables: mutable.Map[CodeGenPlan, JoinData] = mutable.Map()
   private val parents: mutable.Stack[CodeGenPlan] = mutable.Stack()
   val operatorIds: mutable.Map[Id, String] = mutable.Map()
 
   def addVariable(queryVariable: String, variable: Variable) {
+    if (variable.codeGenType != CodeGenType(CTNode, ReferenceType) &&
+      variable.codeGenType != CodeGenType(CTRelationship, ReferenceType)) {
+      internalVariables.put(queryVariable, variable)
+    }
     variables.put(queryVariable, variable)
   }
 
-  def addProjection(queryVariable: String, variable: Variable) {
-    projections.put(queryVariable, variable)
-  }
+  def getInternalVariable(queryVariable: String): Variable = internalVariables(queryVariable)
 
   def getVariable(queryVariable: String): Variable = variables(queryVariable)
-
-  def getProjection(queryVariable: String): Variable = projections.getOrElse(queryVariable, variables(queryVariable))
 
   def variableQueryVariables(): Set[String] = variables.keySet.toSet
 

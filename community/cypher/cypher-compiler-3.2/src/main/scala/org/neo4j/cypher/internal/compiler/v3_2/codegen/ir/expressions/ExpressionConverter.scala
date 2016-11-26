@@ -26,12 +26,6 @@ import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi.MethodStructure
 import org.neo4j.cypher.internal.compiler.v3_2.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.frontend.v3_2.ast
 import org.neo4j.cypher.internal.frontend.v3_2.symbols.{CTBoolean, CTNode, CTRelationship}
-import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions
-import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.functions.functionConverter
-import org.neo4j.cypher.internal.compiler.v3_2.codegen.{CodeGenContext, MethodStructure}
-import org.neo4j.cypher.internal.compiler.v3_2.planner.CantCompileQueryException
-import org.neo4j.cypher.internal.frontend.v3_2.ast
-import org.neo4j.cypher.internal.frontend.v3_2.symbols.{CTBoolean, CTNode, CTRelationship}
 
 object ExpressionConverter {
 
@@ -86,12 +80,12 @@ object ExpressionConverter {
 
     expression match {
       case node@ast.Variable(name) if context.semanticTable.isNode(node) =>
-        val variable = context.getProjection(name)
+        val variable = context.getVariable(name)
         if (variable.codeGenType.isPrimitive) NodeProjection(variable)
         else LoadVariable(variable)
 
       case rel@ast.Variable(name) if context.semanticTable.isRelationship(rel) =>
-        val variable = context.getProjection(name)
+        val variable = context.getVariable(name)
         if (variable.codeGenType.isPrimitive) RelationshipProjection(variable)
         else LoadVariable(variable)
 
@@ -102,11 +96,11 @@ object ExpressionConverter {
   def createExpressionForVariable(variableQueryVariable: String)
                                  (implicit context: CodeGenContext): CodeGenExpression = {
 
-    val variable = context.getProjection(variableQueryVariable)
+    val variable = context.getVariable(variableQueryVariable)
 
-    variable.codeGenType.ct match {
-      case CTNode => NodeProjection(variable)
-      case CTRelationship => RelationshipProjection(variable)
+    variable.codeGenType match {
+      case CodeGenType(CTNode, IntType) => NodeProjection(variable)
+      case CodeGenType(CTRelationship, IntType) => RelationshipProjection(variable)
       case other => LoadVariable(variable)
     }
   }
@@ -116,18 +110,18 @@ object ExpressionConverter {
 
     expression match {
       case node@ast.Variable(name) if context.semanticTable.isNode(node) =>
-        NodeExpression(context.getVariable(name))
+        NodeExpression(context.getInternalVariable(name))
 
       case rel@ast.Variable(name) if context.semanticTable.isRelationship(rel) =>
-        RelationshipExpression(context.getVariable(name))
+        RelationshipExpression(context.getInternalVariable(name))
 
       case ast.Property(node@ast.Variable(name), propKey) if context.semanticTable.isNode(node) =>
         val token = propKey.id(context.semanticTable).map(_.id)
-        NodeProperty(token, propKey.name, context.getVariable(name), context.namer.newVarName())
+        NodeProperty(token, propKey.name, context.getInternalVariable(name), context.namer.newVarName())
 
       case ast.Property(rel@ast.Variable(name), propKey) if context.semanticTable.isRelationship(rel) =>
         val token = propKey.id(context.semanticTable).map(_.id)
-        RelProperty(token, propKey.name, context.getVariable(name), context.namer.newVarName())
+        RelProperty(token, propKey.name, context.getInternalVariable(name), context.namer.newVarName())
 
       case ast.Parameter(name, _) => expressions.Parameter(name, context.namer.newVarName())
 
@@ -171,7 +165,7 @@ object ExpressionConverter {
 
       case f: ast.FunctionInvocation => functionConverter(f, callback)
 
-      case ast.Variable(name) => LoadVariable(context.getProjection(name))
+      case ast.Variable(name) => LoadVariable(context.getVariable(name))
 
       case other => throw new CantCompileQueryException(s"Expression of $other not yet supported")
     }

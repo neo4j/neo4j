@@ -85,7 +85,7 @@ object LogicalPlanConverter {
         case (name, expr) =>
           val variable = Variable(context.namer.newVarName(), CodeGenType(expr.codeGenType(context).ct, ReferenceType),
                                   expr.nullable(context))
-          context.addProjection(name, variable)
+          context.addVariable(name, variable)
           variable -> expr
       }
       val (methodHandle, action :: tl) = context.popParent().consume(context, this)
@@ -107,7 +107,7 @@ object LogicalPlanConverter {
       val produceResultOpName = context.registerOperator(produceResults)
       val projections = (produceResults.lhs.get match {
         // if lhs is projection than we can simply load things that it projected
-        case _: plans.Projection => produceResults.columns.map(c => c -> LoadVariable(context.getProjection(c)))
+        case _: plans.Projection => produceResults.columns.map(c => c -> LoadVariable(context.getVariable(c)))
         // else we have to evaluate all expressions ourselves
         case _ => produceResults.columns.map(c => c -> ExpressionConverter.createExpressionForVariable(c)(context))
       }).toMap
@@ -513,7 +513,7 @@ object LogicalPlanConverter {
     override def consume(context: CodeGenContext, child: CodeGenPlan): (Option[JoinTableMethod], List[Instruction]) = {
       implicit val codeGenContext = context
       val opName = context.registerOperator(aggregation)
-      val groupingVariables: Iterable[Variable] = aggregation.groupingExpressions.keys.map(context.getProjection)
+      val groupingVariables: Iterable[Variable] = aggregation.groupingExpressions.keys.map(context.getVariable)
 
       val aggregationExpression =
         if (aggregation.aggregationExpression.isEmpty) Seq(Distinct(opName, context.namer.newVarName(), groupingVariables))

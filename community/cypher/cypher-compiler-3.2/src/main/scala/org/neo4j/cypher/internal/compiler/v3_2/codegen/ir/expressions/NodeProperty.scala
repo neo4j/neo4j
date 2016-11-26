@@ -56,6 +56,7 @@ case class NodeProperty(token: Option[Int], propName: String, nodeIdVar: Variabl
     else
       body.nodeGetPropertyForVar(nodeIdVar.name, propKeyVar, localName)
 
+  //TODO will probably need to send in type so that nodes can be unboxed
   override def propertyById[E](body: MethodStructure[E], localName: String) =
     if (nodeIdVar.nullable)
       body.ifNotStatement(body.isNull(nodeIdVar.name, CodeGenType.primitiveNode)) {ifBody =>

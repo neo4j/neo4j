@@ -308,7 +308,7 @@ public abstract class Expression extends ExpressionTemplate
         };
     }
 
-    /** box expression */
+    /** unbox expression */
     public static Expression unbox( final Expression expression)
     {
         TypeReference type;
