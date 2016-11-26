@@ -100,7 +100,7 @@ class ConsistencyChecker<KEY>
         return rightmost.assertNext( cursor );
     }
 
-    private void assertKeyOrderAndSubtrees( PageCursor cursor, final long pageId, KeyRange<KEY> range, int level )
+    private void assertKeyOrderAndSubtrees( PageCursor cursor, long pageId, KeyRange<KEY> range, int level )
             throws IOException
     {
         int keyCount = node.keyCount( cursor );
@@ -111,7 +111,8 @@ class ConsistencyChecker<KEY>
         while ( pos < keyCount )
         {
             node.keyAt( cursor, readKey, pos );
-            assert range.inRange( readKey );
+            assert range.inRange( readKey ) :
+                readKey + " (pos " + pos + "/" + (keyCount-1) + ")" + " isn't in range " + range;
             if ( pos > 0 )
             {
                 assert comparator.compare( prev, readKey ) < 0; // Assume unique keys

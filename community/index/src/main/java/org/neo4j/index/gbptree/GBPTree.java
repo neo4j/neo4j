@@ -257,7 +257,7 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         }
     }
 
-    private PageCursor openMetaPageCursor( PagedFile pagedFile ) throws IOException
+    private static PageCursor openMetaPageCursor( PagedFile pagedFile ) throws IOException
     {
         PageCursor metaCursor = pagedFile.io( IdSpace.META_PAGE_ID, PagedFile.PF_SHARED_WRITE_LOCK );
         if ( !metaCursor.next() )
@@ -314,7 +314,8 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         }
     }
 
-    private PagedFile mapWithCorrectPageSize( PageCache pageCache, File indexFile, PagedFile pagedFile ) throws IOException
+    private PagedFile mapWithCorrectPageSize( PageCache pageCache, File indexFile, PagedFile pagedFile )
+            throws IOException
     {
         // This index was created with another page size, re-open with that actual page size
         if ( pageSize != pageCache.pageSize() )
@@ -425,7 +426,7 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         bTreeNode.goTo( cursor, rootId, stableGeneration, unstableGeneration );
     }
 
-    private void checkOutOfBounds( PageCursor cursor )
+    private static void checkOutOfBounds( PageCursor cursor )
     {
         if ( cursor.checkAndClearBoundsFlag() )
         {

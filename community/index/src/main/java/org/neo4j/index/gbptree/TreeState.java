@@ -19,8 +19,6 @@
  */
 package org.neo4j.index.gbptree;
 
-import java.io.IOException;
-
 import org.neo4j.io.pagecache.PageCursor;
 
 class TreeState
@@ -73,11 +71,10 @@ class TreeState
     }
 
     static void write( PageCursor cursor, long stableGeneration, long unstableGeneration, long rootId,
-            long lastId ) throws IOException
+            long lastId )
     {
         GenSafePointer.assertGeneration( stableGeneration );
         GenSafePointer.assertGeneration( unstableGeneration );
-
 
         writeStateOnce( cursor, stableGeneration, unstableGeneration, rootId, lastId ); // Write state
         writeStateOnce( cursor, stableGeneration, unstableGeneration, rootId, lastId ); // Write checksum

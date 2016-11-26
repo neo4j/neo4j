@@ -43,7 +43,7 @@ public class SeekCursorTest
     private final Layout<MutableLong,MutableLong> layout = new SimpleLongLayout();
     private final TreeNode<MutableLong,MutableLong> treeNode = new TreeNode<>( PAGE_SIZE, layout );
     private final PageAwareByteArrayCursor delegate = new PageAwareByteArrayCursor( PAGE_SIZE );
-    private final TestPageCursor pageCursor = new TestPageCursor( delegate );
+    private final TestPageCursor cursor = new TestPageCursor( delegate );
     private final int maxKeyCount = treeNode.leafMaxKeyCount();
     private final byte[] tmp = new byte[PAGE_SIZE];
 
@@ -55,8 +55,8 @@ public class SeekCursorTest
     @Before
     public void setUp() throws IOException
     {
-        pageCursor.next( 0L );
-        treeNode.initializeLeaf( pageCursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        cursor.next( 0L );
+        treeNode.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
     }
 
     /* NO CONCURRENT INSERT */
@@ -132,13 +132,13 @@ public class SeekCursorTest
             append( i );
             i++;
         }
-        long left = createRightSibling( pageCursor );
+        long left = createRightSibling( cursor );
         while ( i < maxKeyCount * 2 )
         {
             append( i );
             i++;
         }
-        pageCursor.next( left );
+        cursor.next( left );
 
         int fromInclusive = 0;
         int toExclusive = maxKeyCount * 2;
@@ -157,17 +157,17 @@ public class SeekCursorTest
     {
         // GIVEN
         int i = 0;
-        long left = pageCursor.getCurrentPageId();
+        long left = cursor.getCurrentPageId();
         while ( i < maxKeyCount * 2 )
         {
             if ( i == maxKeyCount )
             {
-                createRightSibling( pageCursor );
+                createRightSibling( cursor );
             }
             append( i );
             i++;
         }
-        pageCursor.next( left );
+        cursor.next( left );
 
         int fromInclusive = maxKeyCount;
         int toExclusive = maxKeyCount * 2;
@@ -184,7 +184,7 @@ public class SeekCursorTest
     public void mustNotContinueToSecondLeafAfterFindingEndOfRangeInFirst() throws Exception
     {
         AtomicBoolean nextCalled = new AtomicBoolean();
-        PageCursor pageCursorSpy = new DelegatingPageCursor( pageCursor )
+        PageCursor pageCursorSpy = new DelegatingPageCursor( cursor )
         {
             @Override
             public boolean next( long pageId ) throws IOException
@@ -196,7 +196,7 @@ public class SeekCursorTest
 
         // GIVEN
         int i = 0;
-        long left = pageCursor.getCurrentPageId();
+        long left = cursor.getCurrentPageId();
         while ( i < maxKeyCount * 2 )
         {
             if ( i == maxKeyCount )
@@ -252,7 +252,7 @@ public class SeekCursorTest
 
             // Seeker pauses and writer insert new key at the end of leaf
             append( middle );
-            pageCursor.changed();
+            this.cursor.changed();
 
             // Seeker continue
             while ( cursor.next() )
@@ -296,7 +296,7 @@ public class SeekCursorTest
             long midInsert = (stopPoint * 2) - 1;
             insertIn( stopPoint, midInsert );
             expected.add( readKeys, midInsert );
-            pageCursor.changed();
+            this.cursor.changed();
 
             while ( cursor.next() )
             {
@@ -339,7 +339,7 @@ public class SeekCursorTest
             // Seeker pauses and writer insert new key to the left of seekers next position
             long midInsert = ((stopPoint - 1) * 2) - 1;
             insertIn( stopPoint - 1, midInsert );
-            pageCursor.changed();
+            this.cursor.changed();
 
             while ( cursor.next() )
             {
@@ -385,16 +385,16 @@ public class SeekCursorTest
             expected.add( (long) maxKeyCount );
 
             // Add rightmost keys to right sibling
-            long left = createRightSibling( pageCursor );
+            long left = createRightSibling( this.cursor );
             for ( int i = middle; i <= maxKeyCount; i++ )
             {
                 Long key = expected.get( i );
                 append( key );
             }
             // Update keycount in left sibling
-            pageCursor.next( left );
-            treeNode.setKeyCount( pageCursor, middle );
-            pageCursor.changed();
+            this.cursor.next( left );
+            treeNode.setKeyCount( this.cursor, middle );
+            this.cursor.changed();
 
             while ( cursor.next() )
             {
@@ -438,16 +438,16 @@ public class SeekCursorTest
             expected.add( (long) maxKeyCount );
 
             // Add rightmost keys to right sibling
-            long left = createRightSibling( pageCursor );
+            long left = createRightSibling( this.cursor );
             for ( int i = middle; i <= maxKeyCount; i++ )
             {
                 Long key = expected.get( i );
                 append( key );
             }
             // Update keycount in left sibling
-            pageCursor.next( left );
-            treeNode.setKeyCount( pageCursor, middle );
-            pageCursor.changed();
+            this.cursor.next( left );
+            treeNode.setKeyCount( this.cursor, middle );
+            this.cursor.changed();
 
             while ( cursor.next() )
             {
@@ -490,7 +490,7 @@ public class SeekCursorTest
             // Seeker pauses and writer remove rightmost key
             // [0 1 ... maxKeyCount-2]
             remove( maxKeyCount - 1 );
-            pageCursor.changed();
+            this.cursor.changed();
 
             while ( cursor.next() )
             {
@@ -531,7 +531,7 @@ public class SeekCursorTest
             // Seeker pauses and writer remove rightmost key
             // [1 ... maxKeyCount-1]
             remove( 0 );
-            pageCursor.changed();
+            this.cursor.changed();
 
             while ( cursor.next() )
             {
@@ -570,7 +570,7 @@ public class SeekCursorTest
 
             // Seeker pauses and writer remove rightmost key
             remove( middle - 1 );
-            pageCursor.changed();
+            this.cursor.changed();
 
             while ( cursor.next() )
             {
@@ -607,7 +607,7 @@ public class SeekCursorTest
         to.setValue( keyCount + 1 ); // +1 because we're adding one more down below
 
         // WHEN
-        try ( SeekCursor<MutableLong,MutableLong> cursor = new SeekCursor<>( pageCursor, key, value,
+        try ( SeekCursor<MutableLong,MutableLong> cursor = new SeekCursor<>( this.cursor, key, value,
                 treeNode, from, to, layout, STABLE_GENERATION, UNSTABLE_GENERATION, 2, keyCount ) )
         {
             // reading a couple of keys
@@ -618,7 +618,7 @@ public class SeekCursorTest
 
             // and WHEN a change happens
             append( keyCount );
-            pageCursor.changed();
+            this.cursor.changed();
 
             // THEN at least keyCount should be re-read on next()
             assertTrue( cursor.next() );
@@ -638,7 +638,7 @@ public class SeekCursorTest
     private SeekCursor<MutableLong,MutableLong> seekCursor( long fromInclusive, long toExclusive, int pos,
             int keyCount )
     {
-        return seekCursor( fromInclusive, toExclusive, pos, pageCursor, keyCount );
+        return seekCursor( fromInclusive, toExclusive, pos, cursor, keyCount );
     }
 
     private SeekCursor<MutableLong,MutableLong> seekCursor( long fromInclusive, long toExclusive, int pos,
@@ -651,7 +651,7 @@ public class SeekCursorTest
     }
 
     /**
-     * Create a right sibling to node pointed to by pageCursor. Leave cursor on new right sibling when done,
+     * Create a right sibling to node pointed to by cursor. Leave cursor on new right sibling when done,
      * and return id of left sibling.
      */
     private long createRightSibling( PageCursor pageCursor ) throws IOException
@@ -709,33 +709,33 @@ public class SeekCursorTest
 
     private void append( long k )
     {
-        int keyCount = treeNode.keyCount( pageCursor );
+        int keyCount = treeNode.keyCount( cursor );
         key.setValue( k );
         value.setValue( valueForKey( k ) );
-        treeNode.insertKeyAt( pageCursor, key, keyCount, keyCount, tmp );
-        treeNode.insertValueAt( pageCursor, value, keyCount, keyCount, tmp );
-        treeNode.setKeyCount( pageCursor, keyCount + 1 );
+        treeNode.insertKeyAt( cursor, key, keyCount, keyCount, tmp );
+        treeNode.insertValueAt( cursor, value, keyCount, keyCount, tmp );
+        treeNode.setKeyCount( cursor, keyCount + 1 );
     }
 
     private void insertIn( int pos, long k )
     {
-        int keyCount = treeNode.keyCount( pageCursor );
+        int keyCount = treeNode.keyCount( cursor );
         if ( keyCount + 1 > maxKeyCount )
         {
             throw new IllegalStateException( "Can not insert another key in current node" );
         }
         key.setValue( k );
         value.setValue( valueForKey( k ) );
-        treeNode.insertKeyAt( pageCursor, key, pos, keyCount, tmp );
-        treeNode.insertValueAt( pageCursor, value, pos, keyCount, tmp );
-        treeNode.setKeyCount( pageCursor, keyCount + 1 );
+        treeNode.insertKeyAt( cursor, key, pos, keyCount, tmp );
+        treeNode.insertValueAt( cursor, value, pos, keyCount, tmp );
+        treeNode.setKeyCount( cursor, keyCount + 1 );
     }
 
     private void remove( int pos )
     {
-        int keyCount = treeNode.keyCount( pageCursor );
-        treeNode.removeKeyAt( pageCursor, pos, keyCount, tmp );
-        treeNode.removeValueAt( pageCursor, pos, keyCount, tmp );
-        treeNode.setKeyCount( pageCursor, keyCount - 1 );
+        int keyCount = treeNode.keyCount( cursor );
+        treeNode.removeKeyAt( cursor, pos, keyCount, tmp );
+        treeNode.removeValueAt( cursor, pos, keyCount, tmp );
+        treeNode.setKeyCount( cursor, keyCount - 1 );
     }
 }
