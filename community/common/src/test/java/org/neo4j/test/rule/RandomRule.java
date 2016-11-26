@@ -23,6 +23,10 @@ import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.util.Random;
 
 import org.neo4j.helpers.Exceptions;
@@ -66,6 +70,11 @@ public class RandomRule implements TestRule
             public void evaluate() throws Throwable
             {
                 seed = specificSeed == null ? currentTimeMillis() : specificSeed;
+                Seed methodSeed = description.getAnnotation( Seed.class );
+                if ( methodSeed != null )
+                {
+                    seed = methodSeed.value();
+                }
                 reset();
                 try
                 {
@@ -200,5 +209,12 @@ public class RandomRule implements TestRule
     public Randoms randoms()
     {
         return randoms;
+    }
+
+    @Retention( RetentionPolicy.RUNTIME )
+    @Target( ElementType.METHOD )
+    public @interface Seed
+    {
+        long value();
     }
 }
