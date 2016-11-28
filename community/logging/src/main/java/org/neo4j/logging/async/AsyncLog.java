@@ -90,7 +90,7 @@ public class AsyncLog extends AbstractLog
         AsyncLogger( @Nonnull AsyncEventSender<AsyncLogEvent> events, @Nonnull Logger logger )
         {
             this.logger = requireNonNull( logger, "Logger" );
-            this.events = events;
+            this.events = requireNonNull( events );
         }
 
         @Override
@@ -102,12 +102,14 @@ public class AsyncLog extends AbstractLog
         @Override
         public void log( @Nonnull String message, @Nonnull Throwable throwable )
         {
+            requireNonNull( throwable );
             events.send( logEvent( logger, message, throwable ) );
         }
 
         @Override
         public void log( @Nonnull String format, @Nonnull Object... arguments )
         {
+            requireNonNull( arguments );
             events.send( logEvent( logger, format, arguments ) );
         }
 
