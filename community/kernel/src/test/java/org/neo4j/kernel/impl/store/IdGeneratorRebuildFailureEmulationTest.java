@@ -121,7 +121,7 @@ public class IdGeneratorRebuildFailureEmulationTest
         graphdb.shutdown();
         Map<String, String> params = new HashMap<>();
         params.put( GraphDatabaseSettings.rebuild_idgenerators_fast.name(), Settings.FALSE );
-        Config config = new Config( params, GraphDatabaseSettings.class );
+        Config config = Config.embeddedDefaults( params );
         factory = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fs ),
                 pageCacheRule.getPageCache( fs ), fs, NullLogProvider.getInstance() );
     }

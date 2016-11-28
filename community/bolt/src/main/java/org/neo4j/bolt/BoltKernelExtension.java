@@ -57,7 +57,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings.BoltConnector;
+import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.helpers.Service;
@@ -79,7 +79,6 @@ import org.neo4j.udc.UsageData;
 
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toList;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnectors;
 import static org.neo4j.kernel.configuration.Settings.PATH;
 import static org.neo4j.kernel.configuration.Settings.derivedSetting;
 import static org.neo4j.kernel.configuration.Settings.pathSetting;
@@ -91,7 +90,7 @@ import static org.neo4j.kernel.impl.util.JobScheduler.Groups.boltNetworkIO;
 @Service.Implementation( KernelExtensionFactory.class )
 public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtension.Dependencies>
 {
-    public static class Settings implements LoadableConfig
+    public static class Settings
     {
         @Description( "Directory for storing certificates to be used by Neo4j for TLS connections" )
         public static Setting<File> certificates_directory =
@@ -160,7 +159,7 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
                 logService, dependencies.txBridge(), authentication, dependencies.sessionTracker() ) );
         WorkerFactory workerFactory = createWorkerFactory( boltFactory, scheduler, dependencies, logService, clock );
 
-        List<ProtocolInitializer> connectors = boltConnectors( config ).stream()
+        List<ProtocolInitializer> connectors =config.enabledBoltConnectors().stream()
                 .map( ( connConfig ) -> {
                     ListenSocketAddress listenAddress = config.get( connConfig.listen_address );
                     AdvertisedSocketAddress advertisedAddress = config.get( connConfig.advertised_address );

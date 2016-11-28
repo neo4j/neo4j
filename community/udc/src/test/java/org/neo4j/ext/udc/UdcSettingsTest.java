@@ -76,7 +76,7 @@ public class UdcSettingsTest
                                   .withSystemProperty( udc_enabled.name(), DEFAULT )
                                   .withSystemProperty( UDC_DISABLE, DEFAULT )
                                   .config( UdcSettings.class ).get( udc_enabled ) );
-        assertFalse( new Config( singletonMap( udc_enabled.name(), "false" ) ).get( udc_enabled ) );
+        assertFalse( Config.embeddedDefaults( singletonMap( udc_enabled.name(), "false" ) ).get( udc_enabled ) );
     }
 
     // enabled by default

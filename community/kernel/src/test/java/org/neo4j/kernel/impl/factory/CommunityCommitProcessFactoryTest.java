@@ -41,7 +41,7 @@ public class CommunityCommitProcessFactoryTest
     {
         CommunityCommitProcessFactory factory = new CommunityCommitProcessFactory();
 
-        Config config = new Config( stringMap( GraphDatabaseSettings.read_only.name(), "true" ) );
+        Config config = Config.embeddedDefaults( stringMap( GraphDatabaseSettings.read_only.name(), "true" ) );
 
         TransactionCommitProcess commitProcess = factory.create( mock( TransactionAppender.class ),
                 mock( StorageEngine.class ), config );

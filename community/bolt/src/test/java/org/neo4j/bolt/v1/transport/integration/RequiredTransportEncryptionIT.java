@@ -33,12 +33,12 @@ import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.bolt.v1.transport.socket.client.WebSocketConnection;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.kernel.configuration.BoltConnector;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.BoltConnector.EncryptionLevel.REQUIRED;
+import static org.neo4j.kernel.configuration.BoltConnector.EncryptionLevel.REQUIRED;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
 
 @RunWith( Parameterized.class )
@@ -47,7 +47,7 @@ public class RequiredTransportEncryptionIT
     @Rule
     public Neo4jWithSocket server = new Neo4jWithSocket( getClass(),
             settings -> {
-                Setting<GraphDatabaseSettings.BoltConnector.EncryptionLevel> encryption_level =
+                Setting<BoltConnector.EncryptionLevel> encryption_level =
                         boltConnector( "0" ).encryption_level;
                 settings.put( encryption_level.name(), REQUIRED.name() );
             } );

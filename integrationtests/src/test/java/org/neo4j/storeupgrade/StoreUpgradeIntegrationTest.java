@@ -207,7 +207,7 @@ public class StoreUpgradeIntegrationTest
         public void serverDatabaseShouldStartOnOlderStoreWhenUpgradeIsEnabled() throws Throwable
         {
             File rootDir = testDir.directory();
-            File storeDir = new Config( stringMap( DatabaseManagementSystemSettings.data_directory.name(), rootDir.toString() ) )
+            File storeDir = Config.embeddedDefaults( stringMap( DatabaseManagementSystemSettings.data_directory.name(), rootDir.toString() ) )
                     .get( DatabaseManagementSystemSettings.database_path );
 
             store.prepareDirectory( storeDir );

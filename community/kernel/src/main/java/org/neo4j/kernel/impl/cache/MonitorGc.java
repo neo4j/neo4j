@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.cache;
 
-import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -30,7 +29,7 @@ import static org.neo4j.kernel.configuration.Settings.setting;
 
 public class MonitorGc implements Lifecycle
 {
-    public static class Configuration implements LoadableConfig
+    public static class Configuration
     {
         public static final Setting<Long> gc_monitor_wait_time = setting( "unsupported.dbms.gc_monitor_wait_time", DURATION, "100ms" );
         public static final Setting<Long> gc_monitor_threshold = setting("unsupported.dbms.gc_monitor_threshold", DURATION, "200ms" );

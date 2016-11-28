@@ -52,7 +52,8 @@ import org.neo4j.harness.extensionpackage.MyUnmanagedExtension;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.server.configuration.ClientConnectorSettings;
+import org.neo4j.kernel.configuration.HttpConnector;
+import org.neo4j.kernel.configuration.HttpConnector.Encryption;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -110,14 +111,16 @@ public class InProcessBuilderTest
         trustAllSSLCerts();
 
         // When
+        HttpConnector httpConnector = new HttpConnector( "0", Encryption.NONE );
+        HttpConnector httpsConnector = new HttpConnector( "1", Encryption.TLS );
         try ( ServerControls server = getTestServerBuilder( testDir.directory() )
-                .withConfig( ClientConnectorSettings.httpConnector( "0" ).type, "HTTP" )
-                .withConfig( ClientConnectorSettings.httpConnector( "0" ).enabled, "true" )
-                .withConfig( ClientConnectorSettings.httpConnector( "0" ).encryption, "NONE" )
-                .withConfig( ClientConnectorSettings.httpConnector( "1" ).type, "HTTP" )
-                .withConfig( ClientConnectorSettings.httpConnector( "1" ).enabled, "true" )
-                .withConfig( ClientConnectorSettings.httpConnector( "1" ).encryption, "TLS" )
-                .withConfig( ClientConnectorSettings.httpConnector( "1" ).address, "localhost:7473" )
+                .withConfig( httpConnector.type, "HTTP" )
+                .withConfig( httpConnector.enabled, "true" )
+                .withConfig( httpConnector.encryption, "NONE" )
+                .withConfig( httpsConnector.type, "HTTP" )
+                .withConfig( httpsConnector.enabled, "true" )
+                .withConfig( httpsConnector.encryption, "TLS" )
+                .withConfig( httpsConnector.address, "localhost:7473" )
                 .withConfig( ServerSettings.certificates_directory.name(), testDir.directory( "certificates" ).getAbsolutePath() )
                 .withConfig( GraphDatabaseSettings.dense_node_threshold, "20" )
                 .newServer() )
@@ -177,7 +180,7 @@ public class InProcessBuilderTest
         // When
         // create graph db with one node upfront
         Path dir = Files.createTempDirectory( getClass().getSimpleName() + "_shouldRunBuilderOnExistingStorageDir" );
-        File storeDir = new Config( stringMap( DatabaseManagementSystemSettings.data_directory.name(), dir.toString() ) )
+        File storeDir = Config.embeddedDefaults( stringMap( DatabaseManagementSystemSettings.data_directory.name(), dir.toString() ) )
                 .get( DatabaseManagementSystemSettings.database_path );
         try
         {

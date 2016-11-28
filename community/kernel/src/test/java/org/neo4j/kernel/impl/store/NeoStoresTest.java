@@ -42,7 +42,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -136,7 +135,7 @@ public class NeoStoresTest
     public void setUpNeoStores() throws Exception
     {
         storeDir = dir.graphDbDir();
-        Config config = new Config( new HashMap<>(), GraphDatabaseSettings.class );
+        Config config = Config.embeddedDefaults();
         pageCache = pageCacheRule.getPageCache( fs.get() );
         StoreFactory sf = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fs.get() ), pageCache,
                 fs.get(), NullLogProvider.getInstance() );
@@ -146,7 +145,7 @@ public class NeoStoresTest
     @Test
     public void impossibleToGetStoreFromClosedNeoStoresContainer()
     {
-        Config config = new Config( new HashMap<>(), GraphDatabaseSettings.class );
+        Config config = Config.embeddedDefaults();
         StoreFactory sf = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fs.get() ), pageCache,
                 fs.get(), NullLogProvider.getInstance() );
         NeoStores neoStores = sf.openAllNeoStores( true );
@@ -163,7 +162,7 @@ public class NeoStoresTest
     @Test
     public void notAllowCreateDynamicStoreWithNegativeBlockSize()
     {
-        Config config = new Config( new HashMap<>(), GraphDatabaseSettings.class );
+        Config config = Config.embeddedDefaults();
         StoreFactory sf = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fs.get() ), pageCache,
                 fs.get(), NullLogProvider.getInstance() );
 
@@ -179,7 +178,7 @@ public class NeoStoresTest
     @Test
     public void impossibleToGetNotRequestedStore()
     {
-        Config config = new Config( new HashMap<>(), GraphDatabaseSettings.class );
+        Config config = Config.embeddedDefaults();
         StoreFactory sf = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fs.get() ), pageCache,
                 fs.get(), NullLogProvider.getInstance() );
         NeoStores neoStores = sf.openNeoStores( true, StoreType.NODE_LABEL );
@@ -502,7 +501,7 @@ public class NeoStoresTest
         assertEquals( 10, MetaDataStore.setRecord( pageCache, new File( storeDir,
                 MetaDataStore.DEFAULT_NAME ).getAbsoluteFile(), Position.LOG_VERSION, 12 ) );
 
-        Config config = new Config( new HashMap<>(), GraphDatabaseSettings.class );
+        Config config = Config.embeddedDefaults();
         StoreFactory sf = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fileSystem ), pageCache,
                 fileSystem, NullLogProvider.getInstance() );
 
@@ -559,7 +558,7 @@ public class NeoStoresTest
     public void testSetLatestConstraintTx() throws Exception
     {
         // given
-        Config config = new Config( new HashMap<>(), GraphDatabaseSettings.class );
+        Config config = Config.embeddedDefaults();
         StoreFactory sf = new StoreFactory( dir.directory(), config, new DefaultIdGeneratorFactory( fs.get() ),
                 pageCacheRule.getPageCache( fs.get() ), fs.get(), NullLogProvider.getInstance() );
 
@@ -733,7 +732,7 @@ public class NeoStoresTest
     {
         // given
         FileSystemAbstraction fileSystem = fs.get();
-        Config defaults = Config.defaults().with( singletonMap( counts_store_rotation_timeout.name(), "60m" ) );
+        Config defaults = Config.embeddedDefaults( singletonMap( counts_store_rotation_timeout.name(), "60m" ) );
         StoreFactory factory =
                 new StoreFactory( storeDir, defaults, new DefaultIdGeneratorFactory( fileSystem ), pageCache,
                         fileSystem, NullLogProvider.getInstance() );
@@ -769,7 +768,7 @@ public class NeoStoresTest
         {
             // when we close the stores...
             neoStore.close();
-            fail( "should have thrown" );
+            fail( "should have thrown2" );
         }
         catch ( IllegalStateException ex )
         {

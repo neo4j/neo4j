@@ -330,7 +330,8 @@ public class Config implements DiagnosticsProvider, Configuration
                 .flatMap( List::stream )
                 .filter( it -> it.name().equals( key ) )
                 .map( ConfigValue::value )
-                .findFirst();
+                .findFirst()
+                .orElse( Optional.empty() );
     }
 
     /**

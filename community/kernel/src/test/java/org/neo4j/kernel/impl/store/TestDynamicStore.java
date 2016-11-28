@@ -33,7 +33,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
@@ -85,7 +84,7 @@ public class TestDynamicStore
 
     private Config config()
     {
-        return new Config( MapUtil.stringMap(), GraphDatabaseSettings.class );
+        return Config.embeddedDefaults( MapUtil.stringMap() );
     }
 
     @Test

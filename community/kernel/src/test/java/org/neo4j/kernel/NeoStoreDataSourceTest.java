@@ -26,7 +26,6 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
@@ -215,7 +214,7 @@ public class NeoStoreDataSourceTest
     @Test
     public void logModuleSetUpError() throws Exception
     {
-        Config config = new Config( stringMap(), GraphDatabaseSettings.class );
+        Config config = Config.embeddedDefaults( stringMap() );
         IdGeneratorFactory idGeneratorFactory = mock( IdGeneratorFactory.class );
         Throwable openStoresError = new RuntimeException( "Can't set up modules" );
         doThrow( openStoresError ).when( idGeneratorFactory ).create( any( File.class ), anyLong(), anyBoolean() );
@@ -228,7 +227,7 @@ public class NeoStoreDataSourceTest
 
         NeoStoreDataSource dataSource = dsRule.getDataSource( dir.graphDbDir(), fs.get(), idGeneratorFactory,
                 idTypeConfigurationProvider,
-                pageCache, config.getParams(), mock( DatabaseHealth.class ), logService );
+                pageCache, config, mock( DatabaseHealth.class ), logService );
 
         try
         {

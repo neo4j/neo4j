@@ -38,7 +38,7 @@ public class ShellBootstrapTest
         String host = "test";
         int port = 1234;
         String name = "my shell";
-        Config config = new Config( stringMap(
+        Config config = Config.embeddedDefaults( stringMap(
                 ShellSettings.remote_shell_host.name(), host,
                 ShellSettings.remote_shell_port.name(), valueOf( port ),
                 ShellSettings.remote_shell_name.name(), name,

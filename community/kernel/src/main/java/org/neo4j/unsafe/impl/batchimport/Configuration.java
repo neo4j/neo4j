@@ -108,7 +108,7 @@ public interface Configuration extends org.neo4j.unsafe.impl.batchimport.staging
 
         public Overridden( Configuration defaults )
         {
-            this( defaults, Config.empty() );
+            this( defaults, Config.embeddedDefaults() );
         }
 
         public Overridden( Configuration defaults, Config config )

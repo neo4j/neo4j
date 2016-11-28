@@ -177,7 +177,7 @@ public class KernelDataTest
         Kernel( String desiredId )
         {
             super( fileSystemRule.get(), pageCacheRule.getPageCache( fileSystemRule.get() ),
-                    new File( "graph.db" ), new Config( config( desiredId ) ) );
+                    new File( "graph.db" ), Config.embeddedDefaults( config( desiredId ) ) );
             kernels.add( this );
         }
 

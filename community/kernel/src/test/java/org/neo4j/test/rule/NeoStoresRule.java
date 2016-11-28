@@ -61,7 +61,7 @@ public class NeoStoresRule extends ExternalResource
 
     public NeoStores open( String... config ) throws IOException
     {
-        Config configuration = new Config( stringMap( config ) );
+        Config configuration = Config.embeddedDefaults( stringMap( config ) );
         RecordFormats formats = RecordFormatSelector.selectForConfig( configuration, NullLogProvider.getInstance() );
         return open( formats, config );
     }
@@ -69,7 +69,7 @@ public class NeoStoresRule extends ExternalResource
     public NeoStores open( RecordFormats format, String... config ) throws IOException
     {
         efs = new EphemeralFileSystemAbstraction();
-        Config conf = new Config( stringMap( config ) );
+        Config conf = Config.embeddedDefaults( stringMap( config ) );
         pageCache = getOrCreatePageCache( conf, efs );
         return open( efs, pageCache, format, config );
     }
@@ -80,7 +80,7 @@ public class NeoStoresRule extends ExternalResource
         assert neoStores == null : "Already opened";
         TestDirectory testDirectory = TestDirectory.testDirectory( testClass, fs );
         File storeDir = testDirectory.makeGraphDbDir();
-        Config configuration = new Config( stringMap( config ) );
+        Config configuration = Config.embeddedDefaults( stringMap( config ) );
         StoreFactory storeFactory = new StoreFactory( storeDir, configuration, new DefaultIdGeneratorFactory( fs ),
                 pageCache, fs, format, NullLogProvider.getInstance() );
         return neoStores = stores.length == 0

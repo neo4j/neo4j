@@ -55,6 +55,12 @@ public class ConfigLoader
         return Config.embeddedDefaults(configFile, overriddenSettings );
     }
 
+    public static Config loadServerConfig( Optional<File> configFile, Pair<String,String>... configOverrides )
+            throws IOException
+    {
+        return loadServerConfig( Optional.empty(), configFile, configOverrides );
+    }
+
     public static Config loadServerConfig( Optional<File> homeDir, Optional<File> configFile,
             Pair<String,String>[] configOverrides )
     {

@@ -94,11 +94,7 @@ public class DbRepresentation
     public static DbRepresentation of( File storeDir, boolean includeIndexes, Config config )
     {
         GraphDatabaseBuilder builder = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir );
-        Map<String,String> params = config.getParams();
-        for ( Map.Entry<String,String> entry : params.entrySet() )
-        {
-            builder.setConfig( entry.getKey(), entry.getValue() );
-        }
+        builder.setConfig( config.getRaw() );
 
         GraphDatabaseService db = builder.newGraphDatabase();
         try

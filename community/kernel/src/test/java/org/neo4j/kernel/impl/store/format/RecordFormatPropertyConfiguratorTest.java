@@ -54,7 +54,7 @@ public class RecordFormatPropertyConfiguratorTest
     @Test
     public void keepUserDefinedFormatConfig() throws Exception
     {
-        Config config = new Config( MapUtil.stringMap( string_block_size.name(), "36" ) );
+        Config config = Config.embeddedDefaults( MapUtil.stringMap( string_block_size.name(), "36" ) );
         RecordFormats recordFormats = Standard.LATEST_RECORD_FORMATS;
         new RecordFormatPropertyConfigurator( recordFormats, config ).configure();
         assertEquals( "Should keep used specified value", 36, config.get( string_block_size ).intValue() );

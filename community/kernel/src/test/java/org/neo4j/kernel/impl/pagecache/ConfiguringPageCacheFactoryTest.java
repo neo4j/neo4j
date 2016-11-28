@@ -61,7 +61,7 @@ public class ConfiguringPageCacheFactoryTest
         // Given
         final int pageSize = 4096;
         final int maxPages = 60;
-        Config config = new Config( stringMap(
+        Config config = Config.embeddedDefaults( stringMap(
                 mapped_memory_page_size.name(), "" + pageSize,
                 pagecache_memory.name(), Integer.toString( pageSize * maxPages ) ) );
 
@@ -81,7 +81,7 @@ public class ConfiguringPageCacheFactoryTest
     public void mustUseAndLogConfiguredPageSwapper() throws Exception
     {
         // Given
-        Config config = new Config( stringMap(
+        Config config = Config.embeddedDefaults( stringMap(
                 pagecache_memory.name(), "8m",
                 pagecache_swapper.name(), TEST_PAGESWAPPER_NAME ) );
         AssertableLogProvider logProvider = new AssertableLogProvider();
@@ -100,7 +100,7 @@ public class ConfiguringPageCacheFactoryTest
     public void mustThrowIfConfiguredPageSwapperCannotBeFound() throws Exception
     {
         // Given
-        Config config = new Config( stringMap(
+        Config config = Config.embeddedDefaults( stringMap(
                 pagecache_memory.name(), "8m",
                 pagecache_swapper.name(), "non-existing" ) );
 
@@ -114,7 +114,7 @@ public class ConfiguringPageCacheFactoryTest
         // Given
         int cachePageSizeHint = 16 * 1024;
         PageSwapperFactoryForTesting.cachePageSizeHint.set( cachePageSizeHint );
-        Config config = new Config( stringMap(
+        Config config = Config.embeddedDefaults( stringMap(
                 GraphDatabaseSettings.pagecache_swapper.name(), TEST_PAGESWAPPER_NAME ) );
 
         // When
@@ -135,7 +135,7 @@ public class ConfiguringPageCacheFactoryTest
         int cachePageSizeHint = 16 * 1024;
         PageSwapperFactoryForTesting.cachePageSizeHint.set( cachePageSizeHint );
         PageSwapperFactoryForTesting.cachePageSizeHintIsStrict.set( true );
-        Config config = new Config( stringMap(
+        Config config = Config.embeddedDefaults( stringMap(
                 GraphDatabaseSettings.mapped_memory_page_size.name(), "4096",
                 GraphDatabaseSettings.pagecache_swapper.name(), TEST_PAGESWAPPER_NAME ) );
 

@@ -48,6 +48,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.guard.GuardTimeoutException;
 import org.neo4j.kernel.guard.TimeoutGuard;
@@ -405,11 +406,11 @@ public class TransactionGuardIntegrationTest
         if ( neoServer == null )
         {
             GuardingServerBuilder serverBuilder = new GuardingServerBuilder( database );
-            GraphDatabaseSettings.BoltConnector boltConnector = boltConnector( "0" );
+            BoltConnector boltConnector = boltConnector( "0" );
             serverBuilder.withProperty( boltConnector.type.name(), "BOLT" )
                     .withProperty( boltConnector.enabled.name(), "true" )
                     .withProperty( boltConnector.encryption_level.name(),
-                            GraphDatabaseSettings.BoltConnector.EncryptionLevel.DISABLED.name() )
+                            BoltConnector.EncryptionLevel.DISABLED.name() )
                     .withProperty( GraphDatabaseSettings.auth_enabled.name(), "false" );
             neoServer = serverBuilder.build();
             cleanupRule.add( neoServer );
@@ -420,13 +421,13 @@ public class TransactionGuardIntegrationTest
 
     private Map<Setting<?>,String> getSettingsWithTimeoutAndBolt( int boltPort )
     {
-        GraphDatabaseSettings.BoltConnector boltConnector = boltConnector( "0" );
+        BoltConnector boltConnector = boltConnector( "0" );
         return MapUtil.genericMap(
                 GraphDatabaseSettings.transaction_timeout, "2s",
                 boltConnector.address, "localhost:" + boltPort,
                 boltConnector.type, "BOLT",
                 boltConnector.enabled, "true",
-                boltConnector.encryption_level, GraphDatabaseSettings.BoltConnector.EncryptionLevel.DISABLED.name(),
+                boltConnector.encryption_level, BoltConnector.EncryptionLevel.DISABLED.name(),
                 GraphDatabaseSettings.auth_enabled, "false" );
     }
 

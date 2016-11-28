@@ -52,13 +52,13 @@ public class ConfigAdapter extends AbstractConfiguration
     @Override
     public Object getProperty( String key )
     {
-        return config.getSettingValue( key ).orElse( null );
+        return config.getValue( key ).orElse( null );
     }
 
     @Override
     public Iterator<String> getKeys()
     {
-        return config.getConfiguredSettingKeys().iterator();
+        return config.getConfigValues().keySet().iterator();
     }
 
     @Override

@@ -19,11 +19,9 @@
  */
 package org.neo4j.server.rest.discovery;
 
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Optional;
 import javax.ws.rs.GET;
-import javax.ws.rs.HeaderParam;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
@@ -36,8 +34,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.rest.repr.DiscoveryRepresentation;
 import org.neo4j.server.rest.repr.OutputFormat;
-
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnectors;
 
 /**
  * Used to discover the rest of the server URIs through a HTTP GET request to
@@ -63,7 +59,7 @@ public class DiscoveryService
         String managementUri = config.get( ServerSettings.management_api_path ).getPath() + "/";
         String dataUri = config.get( ServerSettings.rest_api_path ).getPath() + "/";
 
-        Optional<AdvertisedSocketAddress> boltAddress = boltConnectors( config ).stream().findFirst()
+        Optional<AdvertisedSocketAddress> boltAddress = config.enabledBoltConnectors().stream().findFirst()
                 .map( boltConnector -> config.get( boltConnector.advertised_address ) );
 
         if ( boltAddress.isPresent() )

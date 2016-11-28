@@ -43,6 +43,8 @@ import org.junit.rules.TemporaryFolder;
 
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.HttpConnector;
+import org.neo4j.kernel.configuration.HttpConnector.Encryption;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -52,7 +54,6 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.NeoServer;
-import org.neo4j.server.configuration.ClientConnectorSettings;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.WrappedDatabase;
@@ -591,9 +592,9 @@ public class ManageNodeIT extends AbstractRestFunctionalDocTestBase
             URI uri = new URI( "http://example.org:7474/" );
             when( uriInfo.getBaseUri() ).thenReturn( uri );
 
-            RootService svc = new RootService( new CommunityNeoServer( new Config( stringMap(
-                    ClientConnectorSettings.httpConnector( "http" ).type.name(), "HTTP",
-                    ClientConnectorSettings.httpConnector( "http" ).enabled.name(), "true"
+            RootService svc = new RootService( new CommunityNeoServer( Config.embeddedDefaults( stringMap(
+                    new HttpConnector("http", Encryption.NONE).type.name(), "HTTP",
+                    new HttpConnector("http", Encryption.NONE).enabled.name(), "true"
             ) ),
                     GraphDatabaseDependencies.newDependencies().userLogProvider( NullLogProvider.getInstance() )
                             .monitors( new Monitors() ),

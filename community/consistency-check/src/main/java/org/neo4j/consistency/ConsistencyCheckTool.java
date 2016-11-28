@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.Strings;
 import org.neo4j.helpers.collection.MapUtil;
@@ -177,7 +176,7 @@ public class ConsistencyCheckTool
                         configFilePath ), e );
             }
         }
-        return new Config( specifiedConfig, GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
+        return Config.embeddedDefaults( specifiedConfig );
     }
 
     private String usage()

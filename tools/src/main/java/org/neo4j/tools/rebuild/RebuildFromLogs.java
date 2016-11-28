@@ -271,7 +271,7 @@ class RebuildFromLogs
         private final GraphDatabaseAPI graphdb;
         private final LabelScanStore labelScanStore;
         private final Config tuningConfiguration =
-                new Config( stringMap(), GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
+                Config.embeddedDefaults( stringMap(), GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
         private final SchemaIndexProvider indexes;
 
         ConsistencyChecker( File dbDirectory, PageCache pageCache )

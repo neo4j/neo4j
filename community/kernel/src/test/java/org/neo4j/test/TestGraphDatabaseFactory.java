@@ -45,7 +45,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.Connector.ConnectorType.BOLT;
+import static org.neo4j.kernel.configuration.Connector.ConnectorType.BOLT;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
 
 

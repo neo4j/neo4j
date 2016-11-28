@@ -34,6 +34,8 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.HttpConnector;
+import org.neo4j.kernel.configuration.HttpConnector.Encryption;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
@@ -42,7 +44,6 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.CommunityBootstrapper;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.ServerTestUtils;
-import org.neo4j.server.configuration.ClientConnectorSettings;
 import org.neo4j.server.configuration.ConfigLoader;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.database.Database;
@@ -108,7 +109,7 @@ public class CommunityServerBuilder
         final Optional<File> configFile = buildBefore();
 
         Log log = logProvider.getLog( getClass() );
-        Config config = new ConfigLoader( CommunityBootstrapper.settingsClasses ).loadConfig( configFile );
+        Config config = ConfigLoader.loadServerConfig( configFile );
         config.setLogger( log );
         return build( configFile, config, GraphDatabaseDependencies.newDependencies().userLogProvider( logProvider )
                 .monitors( new Monitors() ) );
@@ -179,15 +180,18 @@ public class CommunityServerBuilder
             properties.put( ServerSettings.security_rules.name(), propertyKeys );
         }
 
-        properties.put( ClientConnectorSettings.httpConnector("http").type.name(), "HTTP" );
-        properties.put( ClientConnectorSettings.httpConnector("http").enabled.name(), "true" );
-        properties.put( ClientConnectorSettings.httpConnector("http").address.name(), address.toString() );
-        properties.put( ClientConnectorSettings.httpConnector("http").encryption.name(), "NONE" );
+        HttpConnector httpConnector = new HttpConnector( "http", Encryption.NONE );
+        HttpConnector httpsConnector = new HttpConnector( "https", Encryption.TLS );
 
-        properties.put( ClientConnectorSettings.httpConnector("https").type.name(), "HTTP" );
-        properties.put( ClientConnectorSettings.httpConnector("https").enabled.name(), String.valueOf( httpsEnabled ) );
-        properties.put( ClientConnectorSettings.httpConnector("https").address.name(), httpsAddress.toString() );
-        properties.put( ClientConnectorSettings.httpConnector("https").encryption.name(), "TLS" );
+        properties.put( httpConnector.type.name(), "HTTP" );
+        properties.put( httpConnector.enabled.name(), "true" );
+        properties.put( httpConnector.address.name(), address.toString() );
+        properties.put( httpConnector.encryption.name(), "NONE" );
+
+        properties.put( httpsConnector.type.name(), "HTTP" );
+        properties.put( httpsConnector.enabled.name(), String.valueOf( httpsEnabled ) );
+        properties.put( httpsConnector.address.name(), httpsAddress.toString() );
+        properties.put( httpsConnector.encryption.name(), "TLS" );
 
         properties.put( GraphDatabaseSettings.auth_enabled.name(), "false" );
         properties.put( ServerSettings.certificates_directory.name(), new File(temporaryFolder, "certificates").getAbsolutePath() );

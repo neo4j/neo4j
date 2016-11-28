@@ -43,6 +43,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseDependencies;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -208,7 +209,7 @@ public class CommunityLockAcquisitionTimeoutIT
         protected GraphDatabaseBuilder.DatabaseCreator createDatabaseCreator( File storeDir,
                 GraphDatabaseFactoryState state )
         {
-            return config -> customFacadeFactory.newFacade( storeDir, config,
+            return config -> customFacadeFactory.newFacade( storeDir, Config.embeddedDefaults( config ),
                     GraphDatabaseDependencies.newDependencies( state.databaseDependencies() ) );
         }
     }
@@ -222,10 +223,10 @@ public class CommunityLockAcquisitionTimeoutIT
         }
 
         @Override
-        protected PlatformModule createPlatform( File storeDir, Map<String,String> params, Dependencies dependencies,
+        protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies,
                 GraphDatabaseFacade graphDatabaseFacade )
         {
-            return new PlatformModule( storeDir, params, databaseInfo, dependencies, graphDatabaseFacade ) {
+            return new PlatformModule( storeDir, config, databaseInfo, dependencies, graphDatabaseFacade ) {
                 @Override
                 protected SystemNanoClock createClock()
                 {

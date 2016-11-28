@@ -22,10 +22,12 @@ package org.neo4j.kernel.impl.proc;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.neo4j.configuration.ConfigValue;
 import org.neo4j.kernel.configuration.Config;
 
 import static java.util.Arrays.stream;
@@ -50,23 +52,21 @@ public class ProcedureAllowedConfig
 
     public ProcedureAllowedConfig( Config config )
     {
-        Map<String,String> params = config.getParams();
-        this.defaultValue = params.get( PROC_ALLOWED_SETTING_DEFAULT_NAME );
-        if ( params.containsKey( PROC_ALLOWED_SETTING_ROLES ) )
-        {
-            this.matchers = Stream.of( params.get( PROC_ALLOWED_SETTING_ROLES ).split( SETTING_DELIMITER ) )
-                    .map( procToRoleSpec ->
-                    {
-                        String[] spec = procToRoleSpec.split( MAPPING_DELIMITER );
-                        String[] roles = stream( spec[1].split( ROLES_DELIMITER ) )
-                                .map( String::trim ).toArray( String[]::new );
-                        return new ProcMatcher( spec[0].trim(), roles );
-                    } ).collect( Collectors.toList() );
-        }
-        else
-        {
-            this.matchers = Collections.emptyList();
-        }
+        this.defaultValue = config.getValue( PROC_ALLOWED_SETTING_DEFAULT_NAME )
+                .map( Object::toString )
+                .orElse( null );
+        Optional<?> allowedRoles = config.getValue( PROC_ALLOWED_SETTING_ROLES );
+        this.matchers = allowedRoles
+                .map( o -> Stream.of( o.toString().split( SETTING_DELIMITER ) )
+                        .map( procToRoleSpec ->
+                        {
+                            String[] spec = procToRoleSpec.split( MAPPING_DELIMITER );
+                            String[] roles = stream( spec[1].split( ROLES_DELIMITER ) )
+                                    .map( String::trim ).toArray( String[]::new );
+                            return new ProcMatcher( spec[0].trim(), roles );
+                        } )
+                        .collect( Collectors.toList() ) )
+                .orElseGet( Collections::emptyList );
     }
 
     String[] rolesFor( String procedureName )

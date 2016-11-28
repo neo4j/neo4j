@@ -37,7 +37,7 @@ import org.neo4j.function.Factory;
 import org.neo4j.helpers.HostnamePort;
 
 import static java.util.Arrays.asList;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.BoltConnector.EncryptionLevel.DISABLED;
+import static org.neo4j.kernel.configuration.BoltConnector.EncryptionLevel.DISABLED;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
 
 @RunWith( Parameterized.class )

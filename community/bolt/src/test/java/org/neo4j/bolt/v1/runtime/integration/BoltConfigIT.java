@@ -37,7 +37,7 @@ import static java.util.Collections.emptyMap;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyDisconnects;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.BoltConnector.EncryptionLevel.REQUIRED;
+import static org.neo4j.kernel.configuration.BoltConnector.EncryptionLevel.REQUIRED;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
 
 public class BoltConfigIT

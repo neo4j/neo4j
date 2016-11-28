@@ -53,9 +53,8 @@ public final class ConfigurableStandalonePageCacheFactory
 
     public static PageCache createPageCache( FileSystemAbstraction fileSystem, PageCacheTracer tracer, Config config )
     {
-        Config baseConfig = new Config( MapUtil.stringMap(
+        Config finalConfig = config.withDefaults( MapUtil.stringMap(
                 GraphDatabaseSettings.pagecache_memory.name(), "8M" ) );
-        Config finalConfig = baseConfig.with( config.getParams() );
         FormattedLogProvider logProvider = FormattedLogProvider.toOutputStream( System.err );
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
                 fileSystem, finalConfig, tracer, logProvider.getLog( PageCache.class ) );

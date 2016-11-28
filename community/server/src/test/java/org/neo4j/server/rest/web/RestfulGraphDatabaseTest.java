@@ -108,7 +108,7 @@ public class RestfulGraphDatabaseTest
                         new JsonFormat(),
                         output,
                         new DatabaseActions( new LeaseManager( Clocks.fakeClock() ), true, database.getGraph() ),
-                        new ConfigAdapter( new Config( emptyMap(), ServerSettings.class, GraphDatabaseSettings.class ) )
+                        new ConfigAdapter( Config.embeddedDefaults() )
                 )
         );
     }
