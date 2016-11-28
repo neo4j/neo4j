@@ -25,11 +25,11 @@ import org.junit.runners.model.Statement;
 
 import java.util.Random;
 
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.test.Randoms;
 import org.neo4j.test.Randoms.Configuration;
 
 import static java.lang.System.currentTimeMillis;
-import static org.neo4j.helpers.Exceptions.withMessage;
 
 /**
  * Like a {@link Random} but guarantees to include the seed with the test failure, which helps
@@ -73,7 +73,7 @@ public class RandomRule implements TestRule
                 }
                 catch ( Throwable t )
                 {
-                    throw withMessage( t, t.getMessage() + ": random seed used:" + seed );
+                    throw Exceptions.withMessage( t, t.getMessage() + ": random seed used:" + seed );
                 }
             }
         };

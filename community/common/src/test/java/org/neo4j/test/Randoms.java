@@ -23,8 +23,6 @@ import java.lang.reflect.Array;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
-import org.neo4j.helpers.ArrayUtil;
-
 import static java.lang.Integer.bitCount;
 import static java.lang.Math.abs;
 
@@ -179,7 +177,7 @@ public class Randoms
             while ( true )
             {
                 T candidate = among( among );
-                if ( !allowDuplicates && ArrayUtil.contains( result, candidate ) )
+                if ( !allowDuplicates && contains( result, candidate ) )
                 {   // Try again
                     continue;
                 }
@@ -188,6 +186,24 @@ public class Randoms
             }
         }
         return result;
+    }
+
+    private static <T> boolean contains( T[] array, T contains )
+    {
+        for ( int i = 0; i < array.length; i++ )
+        {
+            T item = array[i];
+            if ( nullSafeEquals( item, contains ) )
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static <T> boolean nullSafeEquals( T first, T other )
+    {
+        return first == null ? first == other : first.equals( other );
     }
 
     public <T> T among( T[] among )
