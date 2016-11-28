@@ -140,12 +140,6 @@ public abstract class IndexType
         }
 
         @Override
-        protected boolean haveSortedField( IndexableField field )
-        {
-            return !field.name().endsWith( EXACT_FIELD_SUFFIX ) && super.haveSortedField( field );
-        }
-
-        @Override
         void removeFieldsFromDocument( Document document, String key, Object value )
         {
             removeFieldsFromDocument( document, key, exactKey( key ), value );
@@ -447,11 +441,6 @@ public abstract class IndexType
             }
         }
         return false;
-    }
-
-    protected boolean haveSortedField( IndexableField field )
-    {
-        return DocValuesType.NONE.equals( field.fieldType().docValuesType() ) && getFieldValue( field ) != null;
     }
 
     private Object getFieldValue( IndexableField field )

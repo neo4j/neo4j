@@ -113,5 +113,8 @@ public interface IndexImplementation extends Lifecycle
      * should be able to perform cross version migration of index implementation
      * @return index implementation store migration
      */
-    StoreMigrationParticipant getStoreMigrator();
+    default StoreMigrationParticipant getStoreMigrator()
+    {
+        return StoreMigrationParticipant.NOT_PARTICIPATING;
+    }
 }

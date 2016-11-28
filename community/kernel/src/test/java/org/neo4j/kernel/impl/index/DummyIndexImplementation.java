@@ -28,7 +28,6 @@ import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.LegacyIndex;
 import org.neo4j.kernel.api.LegacyIndexHits;
 import org.neo4j.kernel.impl.api.TransactionApplier;
-import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.spi.legacyindex.IndexCommandFactory;
 import org.neo4j.kernel.spi.legacyindex.IndexImplementation;
@@ -236,11 +235,5 @@ public class DummyIndexImplementation extends LifecycleAdapter implements IndexI
     public ResourceIterator<File> listStoreFiles()
     {
         return Iterators.emptyIterator();
-    }
-
-    @Override
-    public StoreMigrationParticipant getStoreMigrator()
-    {
-        return StoreMigrationParticipant.NOT_PARTICIPATING;
     }
 }
