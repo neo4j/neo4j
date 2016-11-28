@@ -38,6 +38,8 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseDependencies;
+import org.neo4j.kernel.configuration.BoltConnector;
+import org.neo4j.kernel.configuration.HttpConnector;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
@@ -47,17 +49,15 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.server.AbstractNeoServer;
-import org.neo4j.server.configuration.ClientConnectorSettings.HttpConnector.Encryption;
+import org.neo4j.kernel.configuration.HttpConnector.Encryption;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.configuration.ThirdPartyJaxRsPackage;
 
 import static org.neo4j.dbms.DatabaseManagementSystemSettings.data_directory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.auth_enabled;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.helpers.collection.Iterables.append;
 import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
-import static org.neo4j.server.configuration.ClientConnectorSettings.httpConnector;
 import static org.neo4j.test.Digests.md5Hex;
 
 public abstract class AbstractInProcessServerBuilder implements TestServerBuilder
@@ -83,16 +83,24 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
         setDirectory( workingDir );
         withConfig( auth_enabled, "false" );
         withConfig( pagecache_memory, "8m" );
-        withConfig( httpConnector( "1" ).type, "HTTP" );
-        withConfig( httpConnector( "1" ).encryption, Encryption.NONE.name() );
-        withConfig( httpConnector( "1" ).enabled, "true" );
-        withConfig( httpConnector( "1" ).address, "localhost:" + Integer.toString( freePort( 1001, 5000 ) ) );
-        withConfig( httpConnector( "2" ).type, "HTTP" );
-        withConfig( httpConnector( "2" ).encryption, Encryption.TLS.name() );
-        withConfig( httpConnector( "2" ).enabled, "false" );
-        withConfig( boltConnector( "0" ).type, "BOLT" );
-        withConfig( boltConnector( "0" ).enabled, "true" );
-        withConfig( boltConnector( "0" ).address, "localhost:" + Integer.toString( freePort( 5001, 9000 ) ) );
+
+        BoltConnector bolt0 = new BoltConnector( "0" );
+        HttpConnector http1 = new HttpConnector( "1", Encryption.NONE );
+        HttpConnector http2 = new HttpConnector( "2", Encryption.TLS );
+
+        withConfig( http1.type, "HTTP" );
+        withConfig( http1.encryption, Encryption.NONE.name() );
+        withConfig( http1.enabled, "true" );
+        withConfig( http1.address, "localhost:" + Integer.toString( freePort( 1001, 3000 ) ) );
+
+        withConfig( http2.type, "HTTP" );
+        withConfig( http2.encryption, Encryption.TLS.name() );
+        withConfig( http2.enabled, "false" );
+        withConfig( http2.address, "localhost:" + Integer.toString( freePort( 3001, 5000 ) ) );
+
+        withConfig( bolt0.type, "BOLT" );
+        withConfig( bolt0.enabled, "true" );
+        withConfig( bolt0.address, "localhost:" + Integer.toString( freePort( 5001, 9000 ) ) );
     }
 
     @Override

@@ -44,6 +44,6 @@ public class InProcessServerBuilder extends AbstractInProcessServerBuilder
     protected AbstractNeoServer createNeoServer( Map<String,String> config,
             GraphDatabaseFacadeFactory.Dependencies dependencies, FormattedLogProvider userLogProvider )
     {
-        return new CommunityNeoServer( new Config( config ), dependencies, userLogProvider );
+        return new CommunityNeoServer( Config.embeddedDefaults( config ), dependencies, userLogProvider );
     }
 }
