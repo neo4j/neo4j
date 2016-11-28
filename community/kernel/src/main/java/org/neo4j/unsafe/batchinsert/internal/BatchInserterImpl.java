@@ -162,7 +162,7 @@ import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 import static org.neo4j.kernel.impl.store.PropertyStore.encodeString;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
 
-public class BatchInserterImpl implements BatchInserter
+public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvider
 {
     private final LifeSupport life;
     private final NeoStores neoStores;
@@ -1069,8 +1069,8 @@ public class BatchInserterImpl implements BatchInserter
         return storeDir.getPath();
     }
 
-    // needed by lucene-index
-    public IndexConfigStore getIndexStore()
+    @Override
+    public IndexConfigStore getIndexConfigStore()
     {
         return this.indexStore;
     }

@@ -28,17 +28,21 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchRelationship;
 
-public class FileSystemClosingBatchInserter implements BatchInserter
+public class FileSystemClosingBatchInserter implements BatchInserter, IndexConfigStoreProvider
 {
     private final BatchInserter delegate;
+    private final IndexConfigStoreProvider configStoreProvider;
     private final FileSystemAbstraction fileSystem;
 
-    public FileSystemClosingBatchInserter( BatchInserter delegate, FileSystemAbstraction fileSystem )
+    public FileSystemClosingBatchInserter( BatchInserter delegate, IndexConfigStoreProvider configStoreProvider,
+            FileSystemAbstraction fileSystem )
     {
         this.delegate = delegate;
+        this.configStoreProvider = configStoreProvider;
         this.fileSystem = fileSystem;
     }
 
@@ -202,5 +206,11 @@ public class FileSystemClosingBatchInserter implements BatchInserter
         {
             throw new UncheckedIOException( e );
         }
+    }
+
+    @Override
+    public IndexConfigStore getIndexConfigStore()
+    {
+        return configStoreProvider.getIndexConfigStore();
     }
 }

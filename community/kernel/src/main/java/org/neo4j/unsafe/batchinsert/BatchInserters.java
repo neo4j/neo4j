@@ -29,6 +29,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.unsafe.batchinsert.internal.BatchInserterImpl;
 import org.neo4j.unsafe.batchinsert.internal.FileSystemClosingBatchInserter;
+import org.neo4j.unsafe.batchinsert.internal.IndexConfigStoreProvider;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
@@ -47,7 +48,8 @@ public final class BatchInserters
     public static BatchInserter inserter( File storeDir ) throws IOException
     {
         DefaultFileSystemAbstraction fileSystem = createFileSystem();
-        return new FileSystemClosingBatchInserter( inserter( storeDir, fileSystem, stringMap() ), fileSystem );
+        BatchInserter batchInserter = inserter( storeDir, fileSystem, stringMap() );
+        return new FileSystemClosingBatchInserter( batchInserter, (IndexConfigStoreProvider) batchInserter, fileSystem );
     }
 
     public static BatchInserter inserter( File storeDir, FileSystemAbstraction fs ) throws IOException
@@ -58,8 +60,8 @@ public final class BatchInserters
     public static BatchInserter inserter( File storeDir, Map<String,String> config ) throws IOException
     {
         DefaultFileSystemAbstraction fileSystem = createFileSystem();
-        return new FileSystemClosingBatchInserter( inserter( storeDir, fileSystem, config, loadKernelExtension() ),
-                fileSystem );
+        BatchInserter inserter = inserter( storeDir, fileSystem, config, loadKernelExtension() );
+        return new FileSystemClosingBatchInserter( inserter, (IndexConfigStoreProvider) inserter, fileSystem );
     }
 
     public static BatchInserter inserter( File storeDir, FileSystemAbstraction fs, Map<String,String> config ) throws IOException
@@ -71,7 +73,8 @@ public final class BatchInserters
             Map<String, String> config, Iterable<KernelExtensionFactory<?>> kernelExtensions ) throws IOException
     {
         DefaultFileSystemAbstraction fileSystem = createFileSystem();
-        return new FileSystemClosingBatchInserter( new BatchInserterImpl( storeDir, fileSystem, config, kernelExtensions ), fileSystem );
+        BatchInserterImpl inserter = new BatchInserterImpl( storeDir, fileSystem, config, kernelExtensions );
+        return new FileSystemClosingBatchInserter( inserter, inserter, fileSystem );
     }
 
     public static BatchInserter inserter( File storeDir, FileSystemAbstraction fileSystem,

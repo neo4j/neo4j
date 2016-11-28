@@ -32,10 +32,10 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
-import org.neo4j.unsafe.batchinsert.internal.BatchInserterImpl;
 import org.neo4j.unsafe.batchinsert.BatchInserterIndex;
 import org.neo4j.unsafe.batchinsert.BatchInserterIndexProvider;
 import org.neo4j.unsafe.batchinsert.BatchRelationship;
+import org.neo4j.unsafe.batchinsert.internal.IndexConfigStoreProvider;
 
 /**
  * The {@link BatchInserter} version of {@link LuceneIndexImplementation}. Indexes
@@ -52,16 +52,12 @@ public class LuceneBatchInserterIndexProviderNewImpl implements BatchInserterInd
     public LuceneBatchInserterIndexProviderNewImpl( final BatchInserter inserter )
     {
         this.inserter = inserter;
-        this.indexStore = ((BatchInserterImpl) inserter).getIndexStore();
-        this.relationshipLookup = new LuceneBatchInserterIndex.RelationshipLookup()
+        this.indexStore = ((IndexConfigStoreProvider) inserter).getIndexConfigStore();
+        this.relationshipLookup = id ->
         {
-            @Override
-            public EntityId lookup( long id )
-            {
-                // TODO too may objects allocated here
-                BatchRelationship rel = inserter.getRelationshipById( id );
-                return new EntityId.RelationshipData( id, rel.getStartNode(), rel.getEndNode() );
-            }
+            // TODO too may objects allocated here
+            BatchRelationship rel = inserter.getRelationshipById( id );
+            return new EntityId.RelationshipData( id, rel.getStartNode(), rel.getEndNode() );
         };
     }
 
@@ -100,14 +96,14 @@ public class LuceneBatchInserterIndexProviderNewImpl implements BatchInserterInd
     {
         // We don't care about threads here... c'mon... it's a
         // single-threaded batch inserter
-        LuceneBatchInserterIndex index = indexes.get( identifier );
-        if ( index == null )
-        {
-            index = new LuceneBatchInserterIndex( new File(inserter.getStoreDir()),
-                    identifier, config, relationshipLookup );
-            indexes.put( identifier, index );
-        }
-        return index;
+        return indexes.computeIfAbsent( identifier,
+                k -> getLuceneBatchInserterIndex( identifier, config ) );
+    }
+
+    private LuceneBatchInserterIndex getLuceneBatchInserterIndex( IndexIdentifier identifier,
+            Map<String,String> config )
+    {
+        return new LuceneBatchInserterIndex( new File( inserter.getStoreDir() ), identifier, config, relationshipLookup );
     }
 
     @Override
