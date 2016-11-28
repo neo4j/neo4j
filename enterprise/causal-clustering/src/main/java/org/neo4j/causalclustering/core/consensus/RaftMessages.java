@@ -33,6 +33,7 @@ import org.neo4j.causalclustering.identity.MemberId;
 
 import static java.lang.String.format;
 import static org.neo4j.causalclustering.core.consensus.RaftMessages.Type.HEARTBEAT_RESPONSE;
+import static org.neo4j.causalclustering.core.consensus.RaftMessages.Type.PRUNE_REQUEST;
 
 public interface RaftMessages
 {
@@ -56,6 +57,8 @@ public interface RaftMessages
         // TODO: method instead?
         NEW_ENTRY_REQUEST,
         NEW_BATCH_REQUEST,
+
+        PRUNE_REQUEST,
     }
 
     interface RaftMessage extends Message
@@ -720,6 +723,41 @@ public interface RaftMessages
             return format( "{clusterId: %s, message: %s}", clusterId, message );
         }
 
+    }
+
+    class PruneRequest extends BaseRaftMessage
+    {
+        private final long pruneIndex;
+
+        public PruneRequest( long pruneIndex )
+        {
+            super( null, PRUNE_REQUEST );
+            this.pruneIndex = pruneIndex;
+        }
+
+        public long pruneIndex()
+        {
+            return pruneIndex;
+        }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            { return true; }
+            if ( o == null || getClass() != o.getClass() )
+            { return false; }
+            if ( !super.equals( o ) )
+            { return false; }
+            PruneRequest that = (PruneRequest) o;
+            return pruneIndex == that.pruneIndex;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return Objects.hash( super.hashCode(), pruneIndex );
+        }
     }
 
     abstract class BaseRaftMessage implements RaftMessage

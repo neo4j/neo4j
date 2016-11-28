@@ -119,6 +119,12 @@ class Follower implements RaftMessageHandler
                 break;
             }
 
+            case PRUNE_REQUEST:
+            {
+                Pruning.handlePruneRequest( outcome, (RaftMessages.PruneRequest) message );
+                break;
+            }
+
             default:
                 break;
         }

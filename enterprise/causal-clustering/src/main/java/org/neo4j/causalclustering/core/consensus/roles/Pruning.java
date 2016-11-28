@@ -17,27 +17,16 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.core.consensus.outcome;
+package org.neo4j.causalclustering.core.consensus.roles;
 
-import java.io.IOException;
+import org.neo4j.causalclustering.core.consensus.RaftMessages;
+import org.neo4j.causalclustering.core.consensus.outcome.Outcome;
+import org.neo4j.causalclustering.core.consensus.outcome.PruneLogCommand;
 
-import org.neo4j.causalclustering.core.consensus.log.RaftLog;
-import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
-import org.neo4j.causalclustering.core.consensus.log.segmented.InFlightMap;
-import org.neo4j.logging.Log;
-
-public interface RaftLogCommand
+class Pruning
 {
-    interface Handler
+    static void handlePruneRequest( Outcome outcome, RaftMessages.PruneRequest pruneRequest )
     {
-        void append( long baseIndex, RaftLogEntry... entries ) throws IOException;
-        void truncate( long fromIndex ) throws IOException;
-        void prune( long pruneIndex );
+        outcome.addLogCommand( new PruneLogCommand( pruneRequest.pruneIndex() ) );
     }
-
-    void dispatch( Handler handler ) throws IOException;
-
-    void applyTo( RaftLog raftLog, Log log ) throws IOException;
-
-    void applyTo( InFlightMap<RaftLogEntry> inFlightMap, Log log ) throws IOException;
 }
