@@ -17,13 +17,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.stresstests;
+package org.neo4j.helper;
 
-import java.io.IOException;
+import java.net.ConnectException;
 import java.util.function.Predicate;
 
-class IsConnectionRestByPeer implements Predicate<Throwable>
+public class IsConnectionException implements Predicate<Throwable>
 {
+
     @Override
     public boolean test( Throwable e )
     {
@@ -32,8 +33,7 @@ class IsConnectionRestByPeer implements Predicate<Throwable>
             return false;
         }
 
-        if ( e instanceof IOException && e.getMessage() != null &&
-                e.getMessage().startsWith( "Connection reset by peer" ) )
+        if ( e instanceof ConnectException )
         {
             return true;
         }

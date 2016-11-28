@@ -17,27 +17,41 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.stresstests;
+package org.neo4j.helper;
 
-import java.net.ConnectException;
-import java.util.function.Predicate;
+import java.util.concurrent.Callable;
+import java.util.function.BooleanSupplier;
 
-class IsConnectionException implements Predicate<Throwable>
+public abstract class RepeatUntilCallable implements Callable<Throwable>
 {
+    private BooleanSupplier keepGoing;
+    private Runnable onFailure;
+
+    public RepeatUntilCallable( BooleanSupplier keepGoing, Runnable onFailure )
+    {
+        this.keepGoing = keepGoing;
+        this.onFailure = onFailure;
+    }
 
     @Override
-    public boolean test( Throwable e )
+    public final Throwable call()
     {
-        if ( e == null )
+        try
         {
-            return false;
+            while ( keepGoing.getAsBoolean() )
+            {
+                doWork();
+            }
+        }
+        catch ( Throwable t )
+        {
+            t.printStackTrace();
+            onFailure.run();
+            return t;
         }
 
-        if ( e instanceof ConnectException )
-        {
-            return true;
-        }
-
-        return test( e.getCause() );
+        return null;
     }
+
+    protected abstract void doWork();
 }

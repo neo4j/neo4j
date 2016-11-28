@@ -940,20 +940,6 @@ public class BackupServiceIT
         }
     }
 
-    @Test
-    public void theBackupServiceShouldBeHappyUnderStress() throws Exception
-    {
-        Callable<Integer> callable = new BackupServiceStressTestingBuilder()
-                .until( untilTimeExpired( 10, SECONDS ) )
-                .withStore( storeDir )
-                .withBackupDirectory( backupDir )
-                .withBackupAddress( BACKUP_HOST, backupPort )
-                .build();
-
-        int brokenStores = callable.call();
-        assertEquals( 0, brokenStores );
-    }
-
     private void defaultBackupPortHostParams()
     {
         dbRule.setConfig( OnlineBackupSettings.online_backup_server, BACKUP_HOST + ":" + backupPort );

@@ -17,41 +17,34 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.stresstests;
+package org.neo4j.helper;
 
-import java.util.concurrent.Callable;
-import java.util.function.BooleanSupplier;
+import java.util.function.Predicate;
 
-abstract class RepeatUntilCallable implements Callable<Throwable>
+import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
+
+public class IsStoreClosed implements Predicate<Throwable>
 {
-    private BooleanSupplier keepGoing;
-    private Runnable onFailure;
-
-    RepeatUntilCallable( BooleanSupplier keepGoing, Runnable onFailure )
-    {
-        this.keepGoing = keepGoing;
-        this.onFailure = onFailure;
-    }
-
     @Override
-    public final Throwable call()
+    public boolean test( Throwable ex )
     {
-        try
+
+        if ( ex == null )
         {
-            while ( keepGoing.getAsBoolean() )
-            {
-                doWork();
-            }
-        }
-        catch ( Throwable t )
-        {
-            t.printStackTrace();
-            onFailure.run();
-            return t;
+            return false;
         }
 
-        return null;
+        if ( ex instanceof UnsatisfiedDependencyException )
+        {
+            return true;
+        }
+
+        if ( ex instanceof IllegalStateException )
+        {
+            String message = ex.getMessage();
+            return message.startsWith( "MetaDataStore for file " ) && message.endsWith( " is closed" );
+        }
+
+        return test( ex.getCause() );
     }
-
-    protected abstract void doWork();
 }

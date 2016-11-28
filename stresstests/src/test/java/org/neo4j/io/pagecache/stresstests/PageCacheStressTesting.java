@@ -30,8 +30,8 @@ import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import static java.lang.Integer.parseInt;
 import static java.lang.System.getProperty;
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.neo4j.StressTestingHelper.ensureExistsAndEmpty;
-import static org.neo4j.StressTestingHelper.fromEnv;
+import static org.neo4j.helper.StressTestingHelper.ensureExistsAndEmpty;
+import static org.neo4j.helper.StressTestingHelper.fromEnv;
 import static org.neo4j.io.pagecache.stress.Conditions.timePeriod;
 
 /**

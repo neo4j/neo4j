@@ -24,7 +24,6 @@ import java.util.function.IntFunction;
 
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.SocketAddress;
 import org.neo4j.kernel.configuration.Settings;
 
@@ -32,6 +31,11 @@ import static org.neo4j.kernel.configuration.Settings.TRUE;
 
 class ClusterConfiguration
 {
+    private ClusterConfiguration()
+    {
+        // no instances
+    }
+
     static Map<String,String> enableRaftMessageLogging( Map<String,String> settings )
     {
         settings.put( CausalClusteringSettings.raft_messages_log_enable.name(), Settings.TRUE );
@@ -43,13 +47,6 @@ class ClusterConfiguration
         settings.put( CausalClusteringSettings.raft_log_rotation_size.name(), "1K" );
         settings.put( CausalClusteringSettings.raft_log_pruning_frequency.name(), "250ms" );
         settings.put( CausalClusteringSettings.raft_log_pruning_strategy.name(), "keep_none" );
-        return settings;
-    }
-
-    static Map<String,String> configureTxLogRotationAndPruning( Map<String,String> settings, String txPrune )
-    {
-        settings.put( GraphDatabaseSettings.keep_logical_logs.name(), txPrune );
-        settings.put( GraphDatabaseSettings.logical_log_rotation_threshold.name(), "1M" );
         return settings;
     }
 
