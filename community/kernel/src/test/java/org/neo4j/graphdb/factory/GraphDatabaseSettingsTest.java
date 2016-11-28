@@ -19,17 +19,21 @@
  */
 package org.neo4j.graphdb.factory;
 
-import org.junit.Test;
-
 import java.lang.reflect.Field;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import org.junit.Ignore;
+import org.junit.Test;
 
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings.BoltConnector;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.io.ByteUnit;
+import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
 
 import static org.hamcrest.Matchers.empty;
@@ -38,7 +42,6 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnectors;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class GraphDatabaseSettingsTest
@@ -55,8 +58,8 @@ public class GraphDatabaseSettingsTest
     {
         Setting<Long> setting = GraphDatabaseSettings.pagecache_memory;
         String name = setting.name();
-        assertThat( new Config( stringMap( name, "245760" ) ).get( setting ), is( ByteUnit.kibiBytes( 240 ) ) );
-        assertThat( new Config( stringMap( name, "2244g" ) ).get( setting ), is( ByteUnit.gibiBytes( 2244 ) ) );
+        assertThat( Config.embeddedDefaults( stringMap( name, "245760" ) ).get( setting ), is( ByteUnit.kibiBytes( 240 ) ) );
+        assertThat( Config.embeddedDefaults( stringMap( name, "2244g" ) ).get( setting ), is( ByteUnit.gibiBytes( 2244 ) ) );
     }
 
     @Test( expected = InvalidSettingException.class )
@@ -66,7 +69,7 @@ public class GraphDatabaseSettingsTest
         Setting<Long> setting = GraphDatabaseSettings.pagecache_memory;
         String name = setting.name();
         // We configure the page cache to have one byte less than two pages worth of memory. This must throw:
-        new Config( stringMap( name, "" + (pageSize * 2 - 1) ) ).get( setting );
+        Config.embeddedDefaults( stringMap( name, "" + (pageSize * 2 - 1) ) ).get( setting );
     }
 
     @Test
@@ -93,15 +96,16 @@ public class GraphDatabaseSettingsTest
         // given
         String hostname = "my_other_host";
         int port = 9999;
-        Config config = Config.defaults();
-        config.augment( stringMap( GraphDatabaseSettings.default_advertised_address.name(), hostname ) );
         String scoping = "bla";
-        config.augment( stringMap( GraphDatabaseSettings.boltConnector( scoping ).advertised_address.name(), ":" + port ) );
+        Map<String,String> config = stringMap(
+                GraphDatabaseSettings.default_advertised_address.name(), hostname,
+                GraphDatabaseSettings.boltConnector( scoping ).advertised_address.name(), ":" + port
+        );
 
         // when
         BoltConnector boltConnector = GraphDatabaseSettings.boltConnector( scoping );
         Setting<AdvertisedSocketAddress> advertised_address = boltConnector.advertised_address;
-        AdvertisedSocketAddress advertisedSocketAddress = config.get( advertised_address );
+        AdvertisedSocketAddress advertisedSocketAddress = advertised_address.apply( config::get );
 
         // then
         assertEquals( hostname, advertisedSocketAddress.getHostname() );
@@ -112,22 +116,22 @@ public class GraphDatabaseSettingsTest
     public void shouldBeAbleToDisableBoltConnectorWithJustOneParameter() throws Exception
     {
         // given
-        Config config = Config.defaults();
-        config.augment( stringMap( "dbms.connector.bolt.enabled", "false" ) );
+        Config config = Config.embeddedDefaults( stringMap( "dbms.connector.bolt.enabled", "false" ) );
 
         // then
-        assertThat( boltConnectors( config ), empty() );
+        assertThat( config.boltConnectors().size(), is( 1 ) );
+        assertThat( config.enabledBoltConnectors(), empty() );
     }
 
     @Test
     public void shouldBeAbleToOverrideBoltListenAddressesWithJustOneParameter() throws Exception
     {
         // given
-        Config config = Config.defaults();
-        config.augment( stringMap( "dbms.connector.bolt.enabled", "true" ) );
-        config.augment( stringMap( "dbms.connector.bolt.listen_address", ":8000" ) );
+        Config config = Config.embeddedDefaults( stringMap(
+                "dbms.connector.bolt.enabled", "true",
+                "dbms.connector.bolt.listen_address", ":8000" ) );
 
-        BoltConnector boltConnector = boltConnectors( config ).get( 0 );
+        BoltConnector boltConnector = config.boltConnectors().get( 0 );
 
         // then
         assertEquals( new ListenSocketAddress( "localhost", 8000 ), config.get( boltConnector.listen_address ) );
@@ -137,11 +141,11 @@ public class GraphDatabaseSettingsTest
     public void shouldDeriveBoltListenAddressFromDefaultListenAddress() throws Exception
     {
         // given
-        Config config = Config.defaults();
-        config.augment( stringMap( "dbms.connector.bolt.enabled", "true" ) );
-        config.augment( stringMap( "dbms.connectors.default_listen_address", "0.0.0.0" ) );
+        Config config = Config.embeddedDefaults( stringMap(
+                "dbms.connector.bolt.enabled", "true",
+                "dbms.connectors.default_listen_address", "0.0.0.0" ) );
 
-        BoltConnector boltConnector = boltConnectors( config ).get( 0 );
+        BoltConnector boltConnector = config.boltConnectors().get( 0 );
 
         // then
         assertEquals( new ListenSocketAddress( "0.0.0.0", 7687 ), config.get( boltConnector.listen_address ) );
@@ -151,12 +155,12 @@ public class GraphDatabaseSettingsTest
     public void shouldDeriveBoltListenAddressFromDefaultListenAddressAndSpecifiedPort() throws Exception
     {
         // given
-        Config config = Config.defaults();
-        config.augment( stringMap( "dbms.connectors.default_listen_address", "0.0.0.0" ) );
-        config.augment( stringMap( "dbms.connector.bolt.enabled", "true" ) );
-        config.augment( stringMap( "dbms.connector.bolt.listen_address", ":8000" ) );
+        Config config = Config.embeddedDefaults( stringMap(
+                "dbms.connectors.default_listen_address", "0.0.0.0",
+                "dbms.connector.bolt.enabled", "true",
+                "dbms.connector.bolt.listen_address", ":8000" ) );
 
-        BoltConnector boltConnector = boltConnectors( config ).get( 0 );
+        BoltConnector boltConnector = config.boltConnectors().get( 0 );
 
         // then
         assertEquals( new ListenSocketAddress( "0.0.0.0", 8000 ), config.get( boltConnector.listen_address ) );
@@ -165,13 +169,13 @@ public class GraphDatabaseSettingsTest
     @Test
     public void shouldStillSupportCustomNameForBoltConnector() throws Exception
     {
-        Config config = Config.defaults();
-        config.augment( stringMap( "dbms.connector.random_name_that_will_be_unsupported.type", "BOLT" ) );
-        config.augment( stringMap( "dbms.connector.random_name_that_will_be_unsupported.enabled", "true" ) );
-        config.augment( stringMap( "dbms.connector.random_name_that_will_be_unsupported.listen_address", ":8000" ) );
+        Config config = Config.embeddedDefaults( stringMap(
+                "dbms.connector.random_name_that_will_be_unsupported.type", "BOLT",
+                "dbms.connector.random_name_that_will_be_unsupported.enabled", "true",
+                "dbms.connector.random_name_that_will_be_unsupported.listen_address", ":8000" ) );
 
         // when
-        BoltConnector boltConnector = boltConnectors( config ).get( 0 );
+        BoltConnector boltConnector = config.boltConnectors().get( 0 );
 
         // then
         assertEquals( new ListenSocketAddress( "localhost", 8000 ), config.get( boltConnector.listen_address ) );
@@ -180,37 +184,46 @@ public class GraphDatabaseSettingsTest
     @Test
     public void shouldSupportMultipleBoltConnectorsWithCustomNames() throws Exception
     {
-        Config config = Config.defaults();
-        config.augment( stringMap( "dbms.connector.bolt1.type", "BOLT" ) );
-        config.augment( stringMap( "dbms.connector.bolt1.enabled", "true" ) );
-        config.augment( stringMap( "dbms.connector.bolt1.listen_address", ":8000" ) );
-        config.augment( stringMap( "dbms.connector.bolt2.type", "BOLT" ) );
-        config.augment( stringMap( "dbms.connector.bolt2.enabled", "true" ) );
-        config.augment( stringMap( "dbms.connector.bolt2.listen_address", ":9000" ) );
+        Config config = Config.embeddedDefaults( stringMap(
+                "dbms.connector.bolt1.type", "BOLT",
+                "dbms.connector.bolt1.enabled", "true",
+                "dbms.connector.bolt1.listen_address", ":8000",
+                "dbms.connector.bolt2.type", "BOLT",
+                "dbms.connector.bolt2.enabled", "true",
+                "dbms.connector.bolt2.listen_address", ":9000"
+        ) );
 
         // when
-        BoltConnector boltConnector1 = boltConnectors( config ).get( 0 );
-        BoltConnector boltConnector2 = boltConnectors( config ).get( 1 );
+        List<ListenSocketAddress> addresses = config.boltConnectors().stream()
+                .map( c -> config.get( c.listen_address ) )
+                .collect( Collectors.toList() );
 
         // then
-        assertEquals( new ListenSocketAddress( "localhost", 8000 ), config.get( boltConnector1.listen_address ) );
-        assertEquals( new ListenSocketAddress( "localhost", 9000 ), config.get( boltConnector2.listen_address ) );
+        assertEquals( 2, addresses.size() );
+
+        if (addresses.get(0).getPort() == 8000) {
+            assertEquals( new ListenSocketAddress( "localhost", 8000 ), addresses.get(0) );
+            assertEquals( new ListenSocketAddress( "localhost", 9000 ), addresses.get(1) );
+        } else {
+            assertEquals( new ListenSocketAddress( "localhost", 8000 ), addresses.get(1) );
+            assertEquals( new ListenSocketAddress( "localhost", 9000 ), addresses.get(0) );
+        }
     }
 
     @Test
     public void shouldSupportMultipleBoltConnectorsWithDefaultAndCustomName() throws Exception
     {
-        Config config = Config.defaults();
-        config.augment( stringMap( "dbms.connector.bolt.type", "BOLT" ) );
-        config.augment( stringMap( "dbms.connector.bolt.enabled", "true" ) );
-        config.augment( stringMap( "dbms.connector.bolt.listen_address", ":8000" ) );
-        config.augment( stringMap( "dbms.connector.bolt2.type", "BOLT" ) );
-        config.augment( stringMap( "dbms.connector.bolt2.enabled", "true" ) );
-        config.augment( stringMap( "dbms.connector.bolt2.listen_address", ":9000" ) );
+        Config config = Config.embeddedDefaults( stringMap(
+                "dbms.connector.bolt.type", "BOLT",
+                "dbms.connector.bolt.enabled", "true",
+                "dbms.connector.bolt.listen_address", ":8000",
+                "dbms.connector.bolt2.type", "BOLT",
+                "dbms.connector.bolt2.enabled", "true",
+                "dbms.connector.bolt2.listen_address", ":9000" ) );
 
         // when
-        BoltConnector boltConnector1 = boltConnectors( config ).get( 0 );
-        BoltConnector boltConnector2 = boltConnectors( config ).get( 1 );
+        BoltConnector boltConnector1 = config.boltConnectors().get( 0 );
+        BoltConnector boltConnector2 = config.boltConnectors().get( 1 );
 
         // then
         assertEquals( new ListenSocketAddress( "localhost", 8000 ), config.get( boltConnector1.listen_address ) );
