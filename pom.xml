@@ -35,6 +35,7 @@
     <test.runner.jvm.settings>-Xmx2G -XX:MaxPermSize=128M -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=target/test-data -Dorg.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.DIRTY_MEMORY=true -XX:-OmitStackTraceInFastThrow</test.runner.jvm.settings>
     <doclint-groups>reference</doclint-groups>
     <git.commit>unknown-commit</git.commit>
+    <checkstyle.skip>true</checkstyle.skip>
   </properties>
 
   <modules>
