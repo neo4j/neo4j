@@ -29,6 +29,7 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static java.util.concurrent.Executors.newCachedThreadPool;
@@ -127,41 +128,49 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
         RuntimeException exception = null;
         try
         {
-            if( globalPool != null)
-            {
-                globalPool.shutdownNow();
-                globalPool.awaitTermination( 5, TimeUnit.SECONDS );
-                globalPool = null;
-            }
-        } catch(RuntimeException e)
+            shutdownPool( globalPool );
+        }
+        catch ( RuntimeException e )
         {
             exception = e;
         }
-        catch ( InterruptedException e )
+        finally
         {
-            exception = new RuntimeException(e);
+            globalPool = null;
         }
 
         try
         {
-            if(scheduledExecutor != null)
-            {
-                scheduledExecutor.shutdown();
-                scheduledExecutor.awaitTermination( 5, TimeUnit.SECONDS );
-                scheduledExecutor = null;
-            }
-        } catch(RuntimeException e)
-        {
-            exception = e;
+            shutdownPool( scheduledExecutor );
         }
-        catch ( InterruptedException e )
+        catch ( RuntimeException e )
         {
-            exception = new RuntimeException(e);
+            exception = Exceptions.chain( exception, e );
+        }
+        finally
+        {
+            scheduledExecutor = null;
         }
 
-        if(exception != null)
+        if ( exception != null )
         {
-            throw new RuntimeException( "Unable to shut down job scheduler properly.", exception);
+            throw new RuntimeException( "Unable to shut down job scheduler properly.", exception );
+        }
+    }
+
+    private void shutdownPool( ExecutorService pool )
+    {
+        if ( pool != null )
+        {
+            pool.shutdown();
+            try
+            {
+                pool.awaitTermination( 30, TimeUnit.SECONDS );
+            }
+            catch ( InterruptedException e )
+            {
+                throw new RuntimeException( e );
+            }
         }
     }
 
