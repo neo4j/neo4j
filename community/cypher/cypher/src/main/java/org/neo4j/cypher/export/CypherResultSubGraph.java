@@ -41,6 +41,8 @@ import static org.neo4j.helpers.collection.Iterators.loop;
 public class CypherResultSubGraph implements SubGraph
 {
 
+
+
     private final SortedMap<Long, Node> nodes = new TreeMap<>();
     private final SortedMap<Long, Relationship> relationships = new TreeMap<>();
     private final Collection<Label> labels = new HashSet<>();
