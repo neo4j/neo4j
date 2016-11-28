@@ -34,6 +34,8 @@ import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.kernel.configuration.HttpConnector.Encryption;
 
 import static org.neo4j.kernel.configuration.Connector.ConnectorType.HTTP;
+import static org.neo4j.kernel.configuration.HttpConnector.Encryption.NONE;
+import static org.neo4j.kernel.configuration.HttpConnector.Encryption.TLS;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
 import static org.neo4j.kernel.configuration.Settings.advertisedAddress;
@@ -69,7 +71,7 @@ public class HttpConnectorValidator extends ConnectorValidator
                 result.putAll( setting( s.getKey(), BOOLEAN, "false" ).validate( rawConfig ) );
                 break;
             case "encryption":
-                result.putAll( encryptionSetting( name ).validate( rawConfig ) );
+                result.putAll( assertEncryption( name, encryptionSetting( name ), rawConfig ) );
                 break;
             case "address":
             case "listen_address":
@@ -104,11 +106,42 @@ public class HttpConnectorValidator extends ConnectorValidator
         case "http":
             return Encryption.NONE.defaultPort;
         case "https":
-            return Encryption.TLS.defaultPort;
+            return TLS.defaultPort;
         default:
             Setting<Encryption> es = encryptionSetting( name );
             return es.apply( rawConfig::get ).defaultPort;
         }
+    }
+
+    @Nonnull
+    private Map<String,String> assertEncryption( @Nonnull String name,
+            @Nonnull Setting<?> setting,
+            @Nonnull Map<String,String> rawConfig )
+    {
+        Map<String,String> result = setting.validate( rawConfig );
+
+        Optional<?> encryption = Optional.ofNullable( setting.apply( rawConfig::get ) );
+
+        if ( "https".equalsIgnoreCase( name ) )
+        {
+            if ( encryption.isPresent() && !TLS.equals( encryption.get() ) )
+            {
+                throw new InvalidSettingException(
+                        String.format( "'%s' is only allowed to be '%s'; not '%s'",
+                                setting.name(), TLS.name(), encryption.get() ) );
+            }
+        }
+        else if ( "http".equalsIgnoreCase( name ) )
+        {
+            if ( encryption.isPresent() && !NONE.equals( encryption.get() ) )
+            {
+                throw new InvalidSettingException(
+                        String.format( "'%s' is only allowed to be '%s'; not '%s'",
+                                setting.name(), NONE.name(), encryption.get() ) );
+            }
+        }
+
+        return result;
     }
 
     @Nonnull
@@ -120,7 +153,7 @@ public class HttpConnectorValidator extends ConnectorValidator
 
         if ( typeValue.isPresent() && !HTTP.equals( typeValue.get() ) )
         {
-            throw new IllegalArgumentException(
+            throw new InvalidSettingException(
                     String.format( "'%s' is only allowed to be '%s'; not '%s'",
                             setting.name(), HTTP, typeValue.get() ) );
         }

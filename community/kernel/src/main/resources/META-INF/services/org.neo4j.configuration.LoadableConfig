@@ -1,3 +1,2 @@
 org.neo4j.graphdb.factory.GraphDatabaseSettings
-org.neo4j.kernel.impl.cache.MonitorGc$Configuration
 org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory$Configuration

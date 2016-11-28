@@ -77,15 +77,7 @@ public class HttpConnectorValidatorTest
     @Test
     public void validatesEncryption() throws Exception
     {
-        String key = "dbms.connector.http.encryption";
-
-        assertEquals( stringMap( key, Encryption.TLS.name() ),
-                cv.validate( stringMap( key, Encryption.TLS.name() ) ) );
-
-        assertEquals( stringMap( key, Encryption.NONE.name() ),
-                cv.validate( stringMap( key, Encryption.NONE.name() ) ) );
-
-        key = "dbms.connector.bla.encryption";
+        String key = "dbms.connector.bla.encryption";
         String type = "dbms.connector.bla.type";
 
         assertEquals( stringMap( key, Encryption.NONE.name(),
@@ -102,6 +94,34 @@ public class HttpConnectorValidatorTest
                         "sensitive" );
 
         cv.validate( stringMap( key, "BOBO", type, HTTP.name() ) );
+    }
+
+    @Test
+    public void httpsConnectorCanOnlyHaveTLS() throws Exception
+    {
+        String key = "dbms.connector.https.encryption";
+
+        assertEquals( stringMap( key, Encryption.TLS.name() ),
+                cv.validate( stringMap( key, Encryption.TLS.name() ) ) );
+
+        expected.expect( InvalidSettingException.class );
+        expected.expectMessage(
+                "'dbms.connector.https.encryption' is only allowed to be 'TLS'; not 'NONE'" );
+        cv.validate( stringMap( key, Encryption.NONE.name() ) );
+    }
+
+    @Test
+    public void httpConnectorCanNotHaveTLS() throws Exception
+    {
+        String key = "dbms.connector.http.encryption";
+
+        assertEquals( stringMap( key, Encryption.NONE.name() ),
+                cv.validate( stringMap( key, Encryption.NONE.name() ) ) );
+
+        expected.expect( InvalidSettingException.class );
+        expected.expectMessage(
+                "'dbms.connector.http.encryption' is only allowed to be 'NONE'; not 'TLS'" );
+        cv.validate( stringMap( key, Encryption.TLS.name() ) );
     }
 
     @Test

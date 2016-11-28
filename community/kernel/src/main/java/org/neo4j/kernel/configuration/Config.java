@@ -34,6 +34,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
@@ -43,7 +45,9 @@ import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.config.SettingValidator;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.configuration.HttpConnector.Encryption;
 import org.neo4j.kernel.info.DiagnosticsPhase;
 import org.neo4j.kernel.info.DiagnosticsProvider;
 import org.neo4j.logging.BufferingLog;
@@ -53,6 +57,11 @@ import org.neo4j.logging.Logger;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
+import static org.neo4j.kernel.configuration.Connector.ConnectorType.BOLT;
+import static org.neo4j.kernel.configuration.Connector.ConnectorType.HTTP;
+import static org.neo4j.kernel.configuration.HttpConnector.Encryption.NONE;
+import static org.neo4j.kernel.configuration.HttpConnector.Encryption.TLS;
+import static org.neo4j.kernel.configuration.Settings.TRUE;
 
 /**
  * This class holds the overall configuration of a Neo4j database instance. Use the accessors to convert the internal
@@ -135,7 +144,52 @@ public class Config implements DiagnosticsProvider, Configuration
     public static Config embeddedDefaults( Optional<File> configFile, Map<String,String> additionalConfig,
             Collection<ConfigurationValidator> additionalValidators )
     {
-        return new Config( configFile, additionalConfig, settings -> {}, additionalValidators, Optional.empty() );
+        return new Config( configFile, additionalConfig, settings ->
+        {
+        }, additionalValidators, Optional.empty() );
+    }
+
+    /**
+     * @return a configuration with server defaults
+     */
+    public static Config serverDefaults()
+    {
+        return serverDefaults( Optional.empty(), emptyMap(), emptyList() );
+    }
+
+    /**
+     * @return a configuration with server defaults
+     */
+    public static Config serverDefaults( Map<String,String> additionalConfig )
+    {
+        return serverDefaults( Optional.empty(), additionalConfig, emptyList() );
+    }
+
+    /**
+     * @return a configuration with server defaults
+     */
+    public static Config serverDefaults( Optional<File> configFile, Map<String,String> additionalConfig,
+            Collection<ConfigurationValidator> additionalValidators )
+    {
+        ArrayList<ConfigurationValidator> validators = new ArrayList<>(  );
+        validators.addAll( additionalValidators );
+        validators.add( new ServerConfigurationValidator() );
+
+        HttpConnector http = new HttpConnector( "http", NONE );
+        HttpConnector https = new HttpConnector( "https", TLS );
+        BoltConnector bolt = new BoltConnector( "bolt" );
+        return new Config( configFile,
+                additionalConfig,
+                settings ->
+                {
+                    settings.putIfAbsent( GraphDatabaseSettings.auth_enabled.name(), TRUE );
+                    settings.putIfAbsent( http.enabled.name(), TRUE );
+                    settings.putIfAbsent( https.enabled.name(), TRUE );
+                    settings.putIfAbsent( bolt.enabled.name(), TRUE );
+                },
+                validators,
+                Optional.empty() );
+
     }
 
     private Config( Optional<File> configFile,
@@ -180,19 +234,11 @@ public class Config implements DiagnosticsProvider, Configuration
      */
     public Config with( Map<String,String> additionalConfig )
     {
-        Map<String,String> newParams = getParams(); // copy is returned
+        Map<String,String> newParams = new HashMap<>( params ); // copy is returned
         newParams.putAll( additionalConfig );
         return new Config( Optional.empty(), newParams, settings ->
         {
         }, validators, Optional.of( log ) );
-    }
-
-    // TODO: Get rid of this, to allow us to have something more
-    // elaborate as internal storage (eg. something that can keep meta data with
-    // properties).
-    public Map<String,String> getParams()
-    {
-        return new HashMap<>( this.params );
     }
 
     /**
@@ -227,7 +273,7 @@ public class Config implements DiagnosticsProvider, Configuration
      */
     public Config augment( Map<String,String> changes )
     {
-        Map<String,String> params = getParams();
+        Map<String,String> params = new HashMap<>( this.params );
         params.putAll( changes );
         replaceSettings( params );
         return this;
@@ -242,7 +288,7 @@ public class Config implements DiagnosticsProvider, Configuration
     {
         if ( this.log instanceof BufferingLog )
         {
-            ((BufferingLog) this.log).replayInto( log );
+            ( (BufferingLog) this.log ).replayInto( log );
         }
         this.log = log;
     }
@@ -267,9 +313,17 @@ public class Config implements DiagnosticsProvider, Configuration
     }
 
     /**
+     * @return a map of raw  configuration keys and values
+     */
+    public Map<String,String> getRaw()
+    {
+        return new HashMap<>( params );
+    }
+
+    /**
      * @return a configured setting
      */
-    public Optional<?> getSettingValue( @Nonnull String key )
+    public Optional<?> getValue( @Nonnull String key )
     {
         return configOptions.stream()
                 .map( it -> it.asConfigValues( params ) )
@@ -287,7 +341,10 @@ public class Config implements DiagnosticsProvider, Configuration
         return configOptions.stream()
                 .map( it -> it.asConfigValues( params ) )
                 .flatMap( List::stream )
-                .collect( Collectors.toMap( ConfigValue::name, it -> it ) );
+                .collect( Collectors.toMap( ConfigValue::name, it -> it, ( val1, val2 ) ->
+                {
+                    throw new RuntimeException( "Duplicate setting: " + val1.name() + ": " + val1 + " and " + val2 );
+                } ) );
     }
 
     @Override
@@ -377,5 +434,84 @@ public class Config implements DiagnosticsProvider, Configuration
             log.error( "Unable to load config file [%s]: %s", file, e.getMessage() );
             return new HashMap<>();
         }
+    }
+
+    /**
+     * @return a list of all connector names like 'http' in 'dbms.connector.http.enabled = true'
+     */
+    public List<String> allConnectorIdentifiers()
+    {
+        Pattern pattern = Pattern.compile(
+                Pattern.quote( "dbms.connector." ) + "([^\\.]+)\\.(.+)" );
+
+        return params.keySet().stream()
+                .map( pattern::matcher )
+                .filter( Matcher::matches )
+                .map( match -> match.group( 1 ) )
+                .distinct()
+                .collect( Collectors.toList() );
+    }
+
+    /**
+     * @return list of all configured bolt connectors
+     */
+    public List<BoltConnector> boltConnectors()
+    {
+        return allConnectorIdentifiers().stream()
+                .map( BoltConnector::new )
+                .filter( c ->
+                        c.group.groupKey.equalsIgnoreCase( "bolt" ) || BOLT.equals( c.type.apply( params::get ) ) )
+                .collect( Collectors.toList() );
+    }
+
+    /**
+     * @return list of all configured bolt connectors which are enabled
+     */
+    public List<BoltConnector> enabledBoltConnectors()
+    {
+        return boltConnectors().stream()
+                .filter( c -> c.enabled.apply( params::get ) )
+                .collect( Collectors.toList() );
+    }
+
+    /**
+     * @return list of all configured http connectors
+     */
+    public List<HttpConnector> httpConnectors()
+    {
+        return allConnectorIdentifiers().stream()
+                .map( name -> new Connector( name, "ignored" ) )
+                .filter( c -> c.group.groupKey.equalsIgnoreCase( "http" ) ||
+                        c.group.groupKey.equalsIgnoreCase( "https" ) ||
+                        HTTP.equals( c.type.apply( params::get ) ) )
+                .map( c ->
+                {
+                    final String name = c.group.groupKey;
+                    final Encryption defaultEncryption;
+                    switch ( name )
+                    {
+                    case "https":
+                        defaultEncryption = TLS;
+                        break;
+                    case "http":
+                    default:
+                        defaultEncryption = NONE;
+                        break;
+                    }
+
+                    return new HttpConnector( name,
+                            HttpConnectorValidator.encryptionSetting( name, defaultEncryption ).apply( params::get ) );
+                } )
+                .collect( Collectors.toList() );
+    }
+
+    /**
+     * @return list of all configured http connectors which are enabled
+     */
+    public List<HttpConnector> enabledHttpConnectors()
+    {
+        return httpConnectors().stream()
+                .filter( c -> c.enabled.apply( params::get ) )
+                .collect( Collectors.toList() );
     }
 }

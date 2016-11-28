@@ -35,6 +35,8 @@ import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.HttpConnector;
+import org.neo4j.kernel.configuration.HttpConnector.Encryption;
 
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
@@ -42,7 +44,9 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.configuration.HttpConnector.Encryption.TLS;
 
 public class GraphDatabaseSettingsTest
 {
@@ -110,6 +114,20 @@ public class GraphDatabaseSettingsTest
         // then
         assertEquals( hostname, advertisedSocketAddress.getHostname() );
         assertEquals( port, advertisedSocketAddress.getPort() );
+    }
+
+    @Test
+    public void shouldEnableBoltByDefault() throws Exception
+    {
+        // given
+        Config config = Config.serverDefaults();
+
+        // when
+        BoltConnector boltConnector = config.boltConnectors().get( 0 );
+        ListenSocketAddress listenSocketAddress = config.get( boltConnector.listen_address );
+
+        // then
+        assertEquals( new ListenSocketAddress( "localhost", 7687 ), listenSocketAddress );
     }
 
     @Test
@@ -228,5 +246,149 @@ public class GraphDatabaseSettingsTest
         // then
         assertEquals( new ListenSocketAddress( "localhost", 8000 ), config.get( boltConnector1.listen_address ) );
         assertEquals( new ListenSocketAddress( "localhost", 9000 ), config.get( boltConnector2.listen_address ) );
+    }
+
+    /// JONAS HTTP FOLLOWS
+    @Test
+    public void testServerDefaultSettings() throws Exception
+    {
+        // given
+        Config config = Config.serverDefaults();
+
+        // when
+        List<HttpConnector> connectors = config.httpConnectors();
+
+        // then
+        assertEquals( 2, connectors.size() );
+        if (connectors.get(0).encryptionLevel().equals( TLS )) {
+            assertEquals( new ListenSocketAddress( "localhost", 7474 ),
+                    config.get( connectors.get( 1).listen_address ) );
+            assertEquals( new ListenSocketAddress( "localhost", 7473 ),
+                    config.get( connectors.get( 0 ).listen_address ) );
+        } else {
+            assertEquals( new ListenSocketAddress( "localhost", 7474 ),
+                    config.get( connectors.get( 0).listen_address ) );
+            assertEquals( new ListenSocketAddress( "localhost", 7473 ),
+                    config.get( connectors.get( 1 ).listen_address ) );
+        }
+    }
+
+    @Test
+    public void shouldBeAbleToDisableHttpConnectorWithJustOneParameter() throws Exception
+    {
+        // given
+        Config disableHttpConfig = Config.embeddedDefaults(
+                stringMap( "dbms.connector.http.enabled", "false",
+                        "dbms.connector.https.enabled", "false") );
+
+        // then
+        assertTrue( disableHttpConfig.enabledHttpConnectors().isEmpty() );
+        assertEquals( 2, disableHttpConfig.httpConnectors().size() );
+    }
+
+    @Test
+    public void shouldBeAbleToOverrideHttpListenAddressWithJustOneParameter() throws Exception
+    {
+        // given
+        Config config = Config.embeddedDefaults( stringMap(
+                "dbms.connector.http.enabled", "true",
+                "dbms.connector.http.listen_address", ":8000" ) );
+
+        // then
+        assertEquals( 1, config.enabledHttpConnectors().size() );
+
+        HttpConnector httpConnector = config.enabledHttpConnectors().get( 0 );
+
+        assertEquals( new ListenSocketAddress( "localhost", 8000 ),
+                config.get( httpConnector.listen_address ) );
+    }
+
+    @Test
+    public void shouldBeAbleToOverrideHttpsListenAddressWithJustOneParameter() throws Exception
+    {
+        // given
+        Config config = Config.embeddedDefaults( stringMap(
+                "dbms.connector.https.enabled", "true",
+                "dbms.connector.https.listen_address", ":8000" ) );
+
+        // then
+        assertEquals( 1, config.enabledHttpConnectors().size() );
+        HttpConnector httpConnector = config.enabledHttpConnectors().get( 0 );
+
+        assertEquals( new ListenSocketAddress( "localhost", 8000 ),
+                config.get( httpConnector.listen_address ) );
+    }
+
+    @Test
+    public void shouldDeriveListenAddressFromDefaultListenAddress() throws Exception
+    {
+        // given
+        Config config = Config.serverDefaults( stringMap( "dbms.connector.https.enabled", "true",
+                "dbms.connector.http.enabled", "true",
+                "dbms.connectors.default_listen_address", "0.0.0.0" ) );
+
+        // then
+        assertEquals( 2, config.enabledHttpConnectors().size() );
+        config.enabledHttpConnectors().forEach( c ->
+                assertEquals( "0.0.0.0", config.get( c.listen_address ).getHostname() ) );
+    }
+
+    @Test
+    public void shouldDeriveListenAddressFromDefaultListenAddressAndSpecifiedPorts() throws Exception
+    {
+        // given
+        Config config = Config.embeddedDefaults( stringMap( "dbms.connector.https.enabled", "true",
+                "dbms.connector.http.enabled", "true",
+                "dbms.connectors.default_listen_address", "0.0.0.0",
+                "dbms.connector.http.listen_address", ":8000",
+                "dbms.connector.https.listen_address", ":9000" ) );
+
+        // then
+        assertEquals( 2, config.enabledHttpConnectors().size() );
+
+        config.enabledHttpConnectors().forEach( c ->
+                {
+                    if ( c.key().equals( "https" ) )
+                    {
+                        assertEquals( new ListenSocketAddress( "0.0.0.0", 9000 ),
+                                config.get( c.listen_address ) );
+                    }
+                    else
+                    {
+                        assertEquals( new ListenSocketAddress( "0.0.0.0", 8000 ),
+                                config.get( c.listen_address ) );
+                    }
+                }
+        );
+    }
+
+    @Test
+    public void shouldStillSupportCustomNameForHttpConnector() throws Exception
+    {
+        Config config = Config.embeddedDefaults( stringMap(
+                "dbms.connector.random_name_that_will_be_unsupported.type", "HTTP",
+                "dbms.connector.random_name_that_will_be_unsupported.encryption", "NONE",
+                "dbms.connector.random_name_that_will_be_unsupported.enabled", "true",
+                "dbms.connector.random_name_that_will_be_unsupported.listen_address", ":8000" ) );
+
+        // then
+        assertEquals( 1, config.enabledHttpConnectors().size() );
+        assertEquals( new ListenSocketAddress( "localhost", 8000 ),
+                config.get( config.enabledHttpConnectors().get( 0 ).listen_address ) );
+    }
+
+    @Test
+    public void shouldStillSupportCustomNameForHttpsConnector() throws Exception
+    {
+        Config config = Config.embeddedDefaults( stringMap(
+                "dbms.connector.random_name_that_will_be_unsupported.type", "HTTP",
+                "dbms.connector.random_name_that_will_be_unsupported.encryption", "TLS",
+                "dbms.connector.random_name_that_will_be_unsupported.enabled", "true",
+                "dbms.connector.random_name_that_will_be_unsupported.listen_address", ":9000" ) );
+
+        // then
+        assertEquals( 1, config.enabledHttpConnectors().size() );
+        assertEquals( new ListenSocketAddress( "localhost", 9000 ),
+                config.get( config.enabledHttpConnectors().get( 0 ).listen_address ) );
     }
 }

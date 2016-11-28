@@ -21,13 +21,17 @@ package org.neo4j.server.configuration;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Pair;
+import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.Connector;
 import org.neo4j.kernel.configuration.Settings;
 
 public class ConfigLoader
@@ -48,20 +52,21 @@ public class ConfigLoader
             Pair<String,String>... configOverrides )
     {
         Map<String,String> overriddenSettings = calculateSettings( homeDir, configOverrides );
-        return Config.embeddedDefaults(configFile).with( overriddenSettings );
+        return Config.embeddedDefaults(configFile, overriddenSettings );
     }
 
     public static Config loadServerConfig( Optional<File> homeDir, Optional<File> configFile,
             Pair<String,String>[] configOverrides )
     {
         Map<String,String> overriddenSettings = calculateSettings( homeDir, configOverrides );
-        return Config.serverDefaults(configFile).with( overriddenSettings );
+        return Config.serverDefaults( configFile, overriddenSettings, Collections.emptyList() );
     }
 
-    public static Config loadOfflineConfig( Optional<File> homeDir, Optional<File> configFile )
+    public static Config loadConfigWithConnectorsDisabled( Optional<File> homeDir, Optional<File> configFile,
+            Pair<String,String>... configOverrides )
     {
-        return overrideBoltSettings( loadConfig( homeDir, configFile,
-                Pair.of( GraphDatabaseSettings.auth_enabled.name(), Settings.FALSE ) ) );
+        Map<String,String> overriddenSettings = calculateSettings( homeDir, configOverrides );
+        return disableAllConnectors( Config.embeddedDefaults( configFile, overriddenSettings ) );
     }
 
     private static Map<String, String> calculateSettings( Optional<File> homeDir,
@@ -84,23 +89,11 @@ public class ConfigLoader
         return overrides;
     }
 
-    private static Config overrideBoltSettings( Config config )
+    private static Config disableAllConnectors( Config config )
     {
-        Map<String,String> overrides = new HashMap<>();
-        for ( GraphDatabaseSettings.BoltConnector bolt : GraphDatabaseSettings.boltConnectors( config ) )
-        {
-            overrides.put( bolt.enabled.name(), Settings.FALSE );
-        }
-        overrides.put( new GraphDatabaseSettings.BoltConnector().enabled.name(), Settings.FALSE );
-        return config.with( overrides );
-    }
-
-    /*
-     * TODO: This means docs will say defaults are something other than what they are in the server. Better
-     * make embedded the special case and set the defaults to be what the server will have.
-     */
-    private static void overrideEmbeddedDefaults( Map<String, String> config )
-    {
-        config.putIfAbsent( GraphDatabaseSettings.auth_enabled.name(), "true" );
+        return config.with(
+                config.allConnectorIdentifiers().stream()
+                        .collect( Collectors.toMap( id -> new Connector( id, "" ).enabled.name(),
+                                id -> Settings.FALSE ) ) );
     }
 }

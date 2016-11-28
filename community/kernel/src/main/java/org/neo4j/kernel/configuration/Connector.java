@@ -20,10 +20,6 @@
 
 package org.neo4j.kernel.configuration;
 
-import java.util.List;
-
-import javax.annotation.Nonnull;
-
 import org.neo4j.configuration.Description;
 import org.neo4j.graphdb.config.Setting;
 
@@ -60,5 +56,9 @@ public class Connector
     public enum ConnectorType
     {
         BOLT, HTTP
+    }
+
+    public String key() {
+        return group.groupKey;
     }
 }

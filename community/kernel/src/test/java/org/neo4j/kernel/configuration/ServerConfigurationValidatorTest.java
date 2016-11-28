@@ -17,20 +17,31 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+package org.neo4j.kernel.configuration;
 
-package org.neo4j.graphdb.config;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
-import java.util.Map;
+import org.neo4j.graphdb.config.InvalidSettingException;
 
-public interface SettingValidator
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+
+public class ServerConfigurationValidatorTest
 {
-    /**
-     * Validate one or several setting values, throwing on invalid values.
-     *
-     * @param settings available to be validated
-     * @return the set of settings considered valid by this validator
-     * @throws InvalidSettingException if invalid value detected
-     */
-    Map<String,String> validate( Map<String,String> settings ) throws InvalidSettingException;
-}
+    @Rule
+    public ExpectedException expected = ExpectedException.none();
 
+    @Test
+    public void httpConnectorIsRequired() throws Exception
+    {
+        // then
+        expected.expect( InvalidSettingException.class );
+        expected.expectMessage( "Missing mandatory enabled connector of type 'HTTP'" );
+
+        // when
+        Config.serverDefaults(
+                stringMap( "dbms.connector.http.enabled", "false",
+                        "dbms.connector.https.enabled", "false") );
+    }
+}

@@ -22,6 +22,7 @@ package org.neo4j.kernel.configuration;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
@@ -37,24 +38,19 @@ import org.neo4j.logging.Log;
 public class IndividualSettingsValidator implements ConfigurationValidator
 {
     @Override
+    @Nonnull
     public Map<String,String> validate( @Nonnull Collection<SettingValidator> settingValidators,
             @Nonnull Map<String,String> rawConfig,
             @Nonnull Log log ) throws InvalidSettingException
     {
-        Set<String> validKeys = settingValidators.stream()
+        Map<String,String> validConfig = settingValidators.stream()
                 .map( it -> it.validate( rawConfig ) )
-                .flatMap( Collection::stream )
-                .collect( Collectors.toSet() );
-
-        Map<String,String> validConfig = new HashMap<>();
+                .flatMap( map -> map.entrySet().stream() )
+                .collect( Collectors.toMap( Entry::getKey, Entry::getValue ) );
 
         rawConfig.forEach( ( key, value ) ->
         {
-            if ( validKeys.contains( key ) )
-            {
-                validConfig.put( key, value );
-            }
-            else
+            if ( !validConfig.containsKey( key ) )
             {
                 log.warn( "Unknown config option: %s", key );
             }

@@ -139,8 +139,8 @@ public class DumpCommand implements AdminCommand
     private Path toDatabaseDirectory( String databaseName )
     {
         //noinspection unchecked
-        return new ConfigLoader( asList( DatabaseManagementSystemSettings.class, GraphDatabaseSettings.class ) )
-                .loadOfflineConfig( Optional.of( homeDir.toFile() ),
+        return ConfigLoader
+                .loadConfigWithConnectorsDisabled( Optional.of( homeDir.toFile() ),
                         Optional.of( configDir.resolve( "neo4j.conf" ).toFile() ) )
                 .with( stringMap( DatabaseManagementSystemSettings.active_database.name(), databaseName ) )
                 .get( database_path ).toPath();

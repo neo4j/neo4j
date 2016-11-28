@@ -19,12 +19,12 @@
  */
 package org.neo4j.graphdb.config;
 
-import java.util.Collection;
 import java.util.Map;
 import java.util.function.Function;
 
-import static java.util.Collections.singleton;
+import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 /**
  * Settings that can be provided in configurations are represented by instances of this interface, and are available
@@ -49,7 +49,7 @@ public interface Setting<T> extends Function<Function<String,String>,T>, Setting
      *
      * @param scopingRule The scoping rule to be applied to this setting
      */
-    void withScope( Function<String, String> scopingRule );
+    void withScope( Function<String,String> scopingRule );
 
     /**
      * Get the default value of this setting, as a string.
@@ -67,9 +67,25 @@ public interface Setting<T> extends Function<Function<String,String>,T>, Setting
     }
 
     @Override
-    default Collection<String> validate( Map<String,String> rawConfig ) throws InvalidSettingException
+    default Map<String,String> validate( Map<String,String> rawConfig ) throws InvalidSettingException
     {
-        apply( rawConfig::get );
-        return singleton( name() );
+        // Validate setting, if present or default value otherwise
+        try
+        {
+            apply( rawConfig::get );
+            // only return if it was present though
+            if ( rawConfig.containsKey( name() ) )
+            {
+                return stringMap( name(), rawConfig.get( name() ) );
+            }
+            else
+            {
+                return emptyMap();
+            }
+        }
+        catch ( RuntimeException e )
+        {
+            throw new InvalidSettingException( e.getMessage(), e );
+        }
     }
 }
