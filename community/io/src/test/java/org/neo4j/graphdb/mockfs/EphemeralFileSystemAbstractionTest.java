@@ -250,6 +250,7 @@ public class EphemeralFileSystemAbstractionTest
             fileSystemAbstraction.close();
 
             assertTrue( closeTrackingFileSystem.isClosed() );
+            assertTrue( fileSystemAbstraction.isClosed() );
             assertFalse( fileSystemAbstraction.fileExists( testFile ) );
             assertFalse( fileSystemAbstraction.fileExists( testFile ) );
         }

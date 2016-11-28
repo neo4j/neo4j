@@ -162,6 +162,7 @@ the relevant Commercial Agreement.
           <ignoreMaintenenceVersions>false</ignoreMaintenenceVersions>
           <includes>
             <include>org/neo4j/graphdb/**</include>
+            <include>org/neo4j/unsafe/batchinsert/**</include>
           </includes>
           <excludeMessageCodes>
             <param>6006</param><!-- Field was made final. -->
