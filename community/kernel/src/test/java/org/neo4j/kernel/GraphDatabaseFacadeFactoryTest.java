@@ -30,6 +30,7 @@ import java.util.Collections;
 import java.util.function.Supplier;
 
 import org.neo4j.helpers.Exceptions;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.DataSourceModule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.EditionModule;
