@@ -37,6 +37,7 @@
     <jetty.version>9.2.9.v20150224</jetty.version>
     <findbugs.version>3.0.1</findbugs.version>
     <git.commit>unknown-commit</git.commit>
+    <checkstyle.skip>true</checkstyle.skip>
   </properties>
 
   <modules>
