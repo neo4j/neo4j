@@ -195,6 +195,7 @@ public class CoreState implements MessageHandler<RaftMessages.ClusterIdAwareMess
     {
         applicationProcess.stop();
         localDatabase.stop();
+        allowMessageHandling = false;
     }
 
     @Override

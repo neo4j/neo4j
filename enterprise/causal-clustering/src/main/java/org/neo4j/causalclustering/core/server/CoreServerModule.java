@@ -195,11 +195,14 @@ public class CoreServerModule
 
         servicesToStopOnStoreCopy.add( catchupServer );
 
-        life.add( raftServer );
-        life.add( catchupServer );
+        // batches messages from raft server -> core state
+        // core state will drop messages if not ready
         life.add( batchingMessageHandler );
         life.add( new ContinuousJob( jobScheduler, new JobScheduler.Group( "raft-batch-handler", NEW_THREAD ),
                 batchingMessageHandler, logProvider ) );
+
+        life.add( raftServer ); // must start before core state so that it can trigger snapshot downloads when necessary
         life.add( coreState );
+        life.add( catchupServer ); // must start last and stop first, since it handles external requests
     }
 }
