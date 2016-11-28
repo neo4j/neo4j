@@ -34,6 +34,7 @@
     <doclint-groups>reference</doclint-groups>
     <jetty.version>9.2.9.v20150224</jetty.version>
     <findbugs.version>3.0.1</findbugs.version>
+    <clirr.comparisonVersion>3.0.1</clirr.comparisonVersion>
     <git.commit>unknown-commit</git.commit>
   </properties>
 
@@ -106,6 +107,26 @@
           <groupId>org.neo4j.build.plugins</groupId>
           <artifactId>clirr-maven-plugin</artifactId>
           <version>1.0.1</version>
+          <executions>
+            <execution>
+              <id>default</id>
+              <phase>${clirr-check-phase}</phase>
+              <goals>
+                <goal>check</goal>
+              </goals>
+            </execution>
+          </executions>
+          <configuration>
+            <failOnError>true</failOnError>
+            <logResults>true</logResults>
+            <!-- OBS: Set this to one version ahead, i.e. if you'd like it to compare against 1.9.3 then set it to 1.9.4-->
+            <comparisonVersion>${clirr.comparisonVersion}</comparisonVersion>
+            <ignoreMaintenenceVersions>false</ignoreMaintenenceVersions>
+            <excludeMessageCodes>
+              <param>6006</param><!-- Field was made final. -->
+              <param>7012</param><!-- Method added to interface -->
+            </excludeMessageCodes>
+          </configuration>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
