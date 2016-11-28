@@ -36,6 +36,7 @@
     <doclint-groups>reference</doclint-groups>
     <git.branch>unknown-branch-${project.version}</git.branch>
     <git.commit>unknown-commit</git.commit>
+    <checkstyle.skip>true</checkstyle.skip>
   </properties>
 
   <modules>
