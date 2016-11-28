@@ -30,6 +30,8 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
+import javax.annotation.Nonnull;
+
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
@@ -45,7 +47,8 @@ public class CappedLoggerTest
 
     public interface LogMethod
     {
-        void log( CappedLogger logger, String msg, Throwable cause );
+        void log( @Nonnull CappedLogger logger, @Nonnull String msg );
+        void log( @Nonnull CappedLogger logger, @Nonnull String msg, @Nonnull Throwable cause );
     }
 
     @Parameterized.Parameters(name = "{0}")
@@ -54,7 +57,13 @@ public class CappedLoggerTest
         LogMethod debug = new LogMethod()
         {
             @Override
-            public void log( CappedLogger logger, String msg, Throwable cause )
+            public void log( @Nonnull CappedLogger logger, @Nonnull String msg )
+            {
+                logger.debug( msg );
+            }
+
+            @Override
+            public void log( @Nonnull CappedLogger logger, @Nonnull String msg, @Nonnull Throwable cause )
             {
                 logger.debug( msg, cause );
             }
@@ -62,7 +71,13 @@ public class CappedLoggerTest
         LogMethod info = new LogMethod()
         {
             @Override
-            public void log( CappedLogger logger, String msg, Throwable cause )
+            public void log( @Nonnull CappedLogger logger, @Nonnull String msg )
+            {
+                logger.debug( msg );
+            }
+
+            @Override
+            public void log( @Nonnull CappedLogger logger, @Nonnull String msg, @Nonnull Throwable cause )
             {
                 logger.info( msg, cause );
             }
@@ -70,7 +85,13 @@ public class CappedLoggerTest
         LogMethod warn = new LogMethod()
         {
             @Override
-            public void log( CappedLogger logger, String msg, Throwable cause )
+            public void log( @Nonnull CappedLogger logger, @Nonnull String msg )
+            {
+                logger.debug( msg );
+            }
+
+            @Override
+            public void log( @Nonnull CappedLogger logger, @Nonnull String msg, @Nonnull Throwable cause )
             {
                 logger.warn( msg, cause );
             }
@@ -78,7 +99,13 @@ public class CappedLoggerTest
         LogMethod error = new LogMethod()
         {
             @Override
-            public void log( CappedLogger logger, String msg, Throwable cause )
+            public void log( @Nonnull CappedLogger logger, @Nonnull String msg )
+            {
+                logger.debug( msg );
+            }
+
+            @Override
+            public void log( @Nonnull CappedLogger logger, @Nonnull String msg, @Nonnull Throwable cause )
             {
                 logger.error( msg, cause );
             }
@@ -143,7 +170,7 @@ public class CappedLoggerTest
         {
             String msg = String.format( "### %04d ###", startAt + i );
             lines[i] = msg;
-            logMethod.log( logger, msg, null );
+            logMethod.log( logger, msg );
         }
         return lines;
     }
@@ -290,10 +317,10 @@ public class CappedLoggerTest
     {
         FakeClock clock = getDefaultFakeClock();
         logger.setTimeLimit( 1, TimeUnit.MILLISECONDS, clock );
-        logMethod.log( logger, "### AAA ###", null );
-        logMethod.log( logger, "### BBB ###", null );
+        logMethod.log( logger, "### AAA ###" );
+        logMethod.log( logger, "### BBB ###" );
         clock.forward( 1, TimeUnit.MILLISECONDS );
-        logMethod.log( logger, "### CCC ###", null );
+        logMethod.log( logger, "### CCC ###" );
 
         logProvider.assertContainsMessageMatching( containsString( "### AAA ###" ) );
         logProvider.assertNone( currentLog( inLog( CappedLogger.class ), containsString( "### BBB ###" ) ) );
@@ -305,13 +332,13 @@ public class CappedLoggerTest
     {
         FakeClock clock = getDefaultFakeClock();
         logger.setTimeLimit( 1, TimeUnit.MILLISECONDS, clock );
-        logMethod.log( logger, "### AAA ###", null );
-        logMethod.log( logger, "### BBB ###", null );
+        logMethod.log( logger, "### AAA ###" );
+        logMethod.log( logger, "### BBB ###" );
         clock.forward( 1, TimeUnit.MILLISECONDS );
-        logMethod.log( logger, "### CCC ###", null );
-        logMethod.log( logger, "### DDD ###", null );
+        logMethod.log( logger, "### CCC ###" );
+        logMethod.log( logger, "### DDD ###" );
         logger.unsetTimeLimit(); // Note that we are not advancing the clock!
-        logMethod.log( logger, "### EEE ###", null );
+        logMethod.log( logger, "### EEE ###" );
 
         logProvider.assertContainsMessageMatching( containsString( "### AAA ###" ) );
         logProvider.assertNone( currentLog( inLog( CappedLogger.class ), containsString( "### BBB ###" ) ) );
@@ -325,10 +352,10 @@ public class CappedLoggerTest
     {
         FakeClock clock = getDefaultFakeClock();
         logger.setTimeLimit( 1, TimeUnit.MILLISECONDS, clock );
-        logMethod.log( logger, "### AAA ###", null );
-        logMethod.log( logger, "### BBB ###", null );
+        logMethod.log( logger, "### AAA ###" );
+        logMethod.log( logger, "### BBB ###" );
         logger.reset();
-        logMethod.log( logger, "### CCC ###", null );
+        logMethod.log( logger, "### CCC ###" );
 
         logProvider.assertContainsMessageMatching( containsString( "### AAA ###" ) );
         logProvider.assertNone( currentLog( inLog( CappedLogger.class ), containsString( "### BBB ###" ) ) );
@@ -341,12 +368,12 @@ public class CappedLoggerTest
         FakeClock clock = getDefaultFakeClock();
         logger.setCountLimit( 2 );
         logger.setTimeLimit( 1, TimeUnit.MILLISECONDS, clock );
-        logMethod.log( logger, "### AAA ###", null );
-        logMethod.log( logger, "### BBB ###", null ); // Filtered by the time limit
+        logMethod.log( logger, "### AAA ###" );
+        logMethod.log( logger, "### BBB ###" ); // Filtered by the time limit
         clock.forward( 1, TimeUnit.MILLISECONDS );
-        logMethod.log( logger, "### CCC ###", null ); // Filtered by the count limit
+        logMethod.log( logger, "### CCC ###" ); // Filtered by the count limit
         logger.reset();
-        logMethod.log( logger, "### DDD ###", null );
+        logMethod.log( logger, "### DDD ###" );
 
         logProvider.assertContainsMessageMatching( containsString( "### AAA ###" ) );
         logProvider.assertNone( currentLog( inLog( CappedLogger.class ), containsString( "### BBB ###" ) ) );
@@ -358,9 +385,9 @@ public class CappedLoggerTest
     public void mustFilterDuplicateMessageAndNullException() throws Exception
     {
         logger.setDuplicateFilterEnabled( true );
-        logMethod.log( logger, "### AAA ###", null );
-        logMethod.log( logger, "### AAA ###", null ); // duplicate
-        logMethod.log( logger, "### BBB ###", null );
+        logMethod.log( logger, "### AAA ###" );
+        logMethod.log( logger, "### AAA ###" ); // duplicate
+        logMethod.log( logger, "### BBB ###" );
         String[] lines = new String[]{"### AAA ###", "### BBB ###"};
         assertLoggedLines( lines, lines.length );
     }
@@ -393,7 +420,7 @@ public class CappedLoggerTest
     public void mustLogSameMessageAndNonNullExceptionWithDuplicateLimit() throws Exception
     {
         logger.setDuplicateFilterEnabled( true );
-        logMethod.log( logger, "### AAA ###", null );
+        logMethod.log( logger, "### AAA ###" );
         logMethod.log( logger, "### AAA ###", new ExceptionWithoutStackTrace( null ) ); // Different message
         logMethod.log( logger, "### AAA ###", new ExceptionWithoutStackTrace2( null ) ); // Different type
 
@@ -407,7 +434,7 @@ public class CappedLoggerTest
         logger.setDuplicateFilterEnabled( true );
         logMethod.log( logger, "### AAA ###", new ExceptionWithoutStackTrace( null ) );
         logMethod.log( logger, "### AAA ###", new ExceptionWithoutStackTrace( null ) );
-        logMethod.log( logger, "### BBB ###", null );
+        logMethod.log( logger, "### BBB ###" );
 
         String[] messages = new String[]{"### AAA ###", "### BBB ###"};
         assertLoggedLines( messages, messages.length );

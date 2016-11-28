@@ -204,23 +204,20 @@ public class FormattedLogTest
     }
 
     @Test
-    public void logShouldThrowExceptionWhenParametersArrayIsNull()
+    public void logShouldWriteNotFormattedMessageWhenParametersArrayIsNull()
     {
         // Given
         StringWriter writer = new StringWriter();
         Log log = newFormattedLog( writer );
 
-        try
-        {
-            // When
-            log.info( "Come with me if you %s to live!", (Object[]) null );
-            fail( "Should have thrown " + RuntimeException.class );
-        }
-        catch ( RuntimeException npe )
-        {
-            // Then
-            assertThat( writer.toString(), equalTo( "" ) );
-        }
+        // When
+        log.info( "Come with me if you %s to live!", (Object[]) null );
+
+        // Then
+        assertThat(
+                writer.toString(),
+                equalTo( format( "1984-10-26 04:23:24.343+0000 INFO  [test] Come with me if you %%s to live!%n" ) )
+        );
     }
 
     @Test
