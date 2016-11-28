@@ -73,8 +73,7 @@ public class SeekCursorTest
         int toExclusive = maxKeyCount / 2;
 
         // WHEN
-        try ( SeekCursor<MutableLong,MutableLong> cursor =
-                      seekCursor( fromInclusive, toExclusive, fromInclusive, maxKeyCount ) )
+        try ( SeekCursor<MutableLong,MutableLong> cursor = seekCursor( fromInclusive, toExclusive ) )
         {
             // THEN
             assertRangeInSingleLeaf( fromInclusive, toExclusive, cursor );
@@ -93,8 +92,7 @@ public class SeekCursorTest
         int toExclusive = this.maxKeyCount;
 
         // WHEN
-        try ( SeekCursor<MutableLong,MutableLong> cursor =
-                      seekCursor( fromInclusive, toExclusive, fromInclusive, maxKeyCount ) )
+        try ( SeekCursor<MutableLong,MutableLong> cursor = seekCursor( fromInclusive, toExclusive ) )
         {
             // THEN
             assertRangeInSingleLeaf( fromInclusive, toExclusive, cursor );
@@ -114,8 +112,7 @@ public class SeekCursorTest
         int toExclusive = (middle + maxKeyCount) / 2;
 
         // WHEN
-        try ( SeekCursor<MutableLong,MutableLong> cursor =
-                      seekCursor( fromInclusive, toExclusive, fromInclusive, maxKeyCount ) )
+        try ( SeekCursor<MutableLong,MutableLong> cursor = seekCursor( fromInclusive, toExclusive ) )
         {
             // THEN
             assertRangeInSingleLeaf( fromInclusive, toExclusive, cursor );
@@ -144,8 +141,7 @@ public class SeekCursorTest
         int toExclusive = maxKeyCount * 2;
 
         // WHEN
-        try ( SeekCursor<MutableLong,MutableLong> cursor =
-                      seekCursor( fromInclusive, toExclusive, fromInclusive, maxKeyCount ) )
+        try ( SeekCursor<MutableLong,MutableLong> cursor = seekCursor( fromInclusive, toExclusive ) )
         {
             // THEN
             assertRangeInSingleLeaf( fromInclusive, toExclusive, cursor );
@@ -173,7 +169,7 @@ public class SeekCursorTest
         int toExclusive = maxKeyCount * 2;
 
         // WHEN
-        try ( SeekCursor<MutableLong,MutableLong> cursor = seekCursor( fromInclusive, toExclusive, 0, maxKeyCount ) )
+        try ( SeekCursor<MutableLong,MutableLong> cursor = seekCursor( fromInclusive, toExclusive ) )
         {
             // THEN
             assertRangeInSingleLeaf( fromInclusive, toExclusive, cursor );
@@ -215,8 +211,7 @@ public class SeekCursorTest
         nextCalled.set( false );
 
         // WHEN
-        try ( SeekCursor<MutableLong,MutableLong> cursor =
-                      seekCursor( fromInclusive, toExclusive, 0, pageCursorSpy, maxKeyCount ) )
+        try ( SeekCursor<MutableLong,MutableLong> cursor = seekCursor( fromInclusive, toExclusive, pageCursorSpy ) )
         {
             // THEN
             assertRangeInSingleLeaf( fromInclusive, toExclusive, cursor );
@@ -239,8 +234,7 @@ public class SeekCursorTest
         int toExclusive = middle + 1; // Will insert middle later
 
         // WHEN
-        try ( SeekCursor<MutableLong,MutableLong> cursor =
-                      seekCursor( fromInclusive, toExclusive, fromInclusive, middle ) )
+        try ( SeekCursor<MutableLong,MutableLong> cursor = seekCursor( fromInclusive, toExclusive ) )
         {
             int stopPoint = middle / 2;
             int readKeys = 0;
@@ -280,8 +274,7 @@ public class SeekCursorTest
         long toExclusive = middle * 2;
 
         // WHEN
-        try ( SeekCursor<MutableLong,MutableLong> cursor =
-                      seekCursor( fromInclusive, toExclusive, fromInclusive, middle ) )
+        try ( SeekCursor<MutableLong,MutableLong> cursor = seekCursor( fromInclusive, toExclusive ) )
         {
             int stopPoint = middle / 2;
             int readKeys = 0;
@@ -324,8 +317,7 @@ public class SeekCursorTest
         long toExclusive = middle * 2;
 
         // WHEN
-        try ( SeekCursor<MutableLong,MutableLong> cursor =
-                      seekCursor( fromInclusive, toExclusive, fromInclusive, middle ) )
+        try ( SeekCursor<MutableLong,MutableLong> cursor = seekCursor( fromInclusive, toExclusive ) )
         {
             int stopPoint = middle / 2;
             int readKeys = 0;
@@ -368,8 +360,7 @@ public class SeekCursorTest
         long toExclusive = maxKeyCount + 1; // We will add maxKeyCount later
 
         // WHEN
-        try ( SeekCursor<MutableLong,MutableLong> cursor =
-                      seekCursor( fromInclusive, toExclusive, fromInclusive, maxKeyCount ) )
+        try ( SeekCursor<MutableLong,MutableLong> cursor = seekCursor( fromInclusive, toExclusive ) )
         {
             int middle = maxKeyCount / 2;
             int stopPoint = middle / 2;
@@ -421,8 +412,7 @@ public class SeekCursorTest
         long toExclusive = maxKeyCount + 1; // We will add maxKeyCount later
 
         // WHEN
-        try ( SeekCursor<MutableLong,MutableLong> cursor =
-                      seekCursor( fromInclusive, toExclusive, fromInclusive, maxKeyCount ) )
+        try ( SeekCursor<MutableLong,MutableLong> cursor = seekCursor( fromInclusive, toExclusive ) )
         {
             int middle = maxKeyCount / 2;
             int stopPoint = middle + (middle / 2);
@@ -474,8 +464,7 @@ public class SeekCursorTest
         int toExclusive = maxKeyCount;
 
         // WHEN
-        try ( SeekCursor<MutableLong,MutableLong> cursor =
-                      seekCursor( fromInclusive, toExclusive, fromInclusive, maxKeyCount ) )
+        try ( SeekCursor<MutableLong,MutableLong> cursor = seekCursor( fromInclusive, toExclusive ) )
         {
             // THEN
             int middle = maxKeyCount / 2;
@@ -515,8 +504,7 @@ public class SeekCursorTest
         int toExclusive = maxKeyCount;
 
         // WHEN
-        try ( SeekCursor<MutableLong,MutableLong> cursor =
-                      seekCursor( fromInclusive, toExclusive, fromInclusive, maxKeyCount ) )
+        try ( SeekCursor<MutableLong,MutableLong> cursor = seekCursor( fromInclusive, toExclusive ) )
         {
             // THEN
             int middle = maxKeyCount / 2;
@@ -555,8 +543,7 @@ public class SeekCursorTest
         int toExclusive = maxKeyCount;
 
         // WHEN
-        try ( SeekCursor<MutableLong,MutableLong> cursor =
-                      seekCursor( fromInclusive, toExclusive, fromInclusive, maxKeyCount ) )
+        try ( SeekCursor<MutableLong,MutableLong> cursor = seekCursor( fromInclusive, toExclusive ) )
         {
             // THEN
             int middle = maxKeyCount / 2;
@@ -582,19 +569,6 @@ public class SeekCursorTest
         }
     }
 
-    /* REBALANCE (when rebalance is implemented) */
-    // todo mustFindRangeWhenCompletelyRebalancedToTheRightAndSeekPointOutsideRange
-    // todo mustFindRangeWhenCompletelyRebalancedToTheRightAndSeekPointInRange
-    // todo mustFindEntireRangeWhenPartlyRebalancedToTheRightAndSeekPointToTheLeft
-    // todo mustFindEntireRangeWhenPartlyRebalancedToTheRightAndSeekPointToTheRight
-
-    /* MERGE (when merge is implemented) */
-    // todo mustFindRangeWhenRemoveInLeftSiblingCausesMerge
-    // todo mustFindRangeWhenRemoveInRightSiblingCausesMerge
-    // todo mustFindRangeWhenRemoveInSeekNodeCauseMergeWithLeft
-    // todo mustFindRangeWhenRemoveInSeekNodeCauseMergeWithRight
-    // todo mustFindRangeWhenRemoveTwoNodesToRightCauseMergeWithNodeOneToTheRight
-
     @Test
     public void mustRereadHeadersOnRetry() throws Exception
     {
@@ -608,7 +582,7 @@ public class SeekCursorTest
 
         // WHEN
         try ( SeekCursor<MutableLong,MutableLong> cursor = new SeekCursor<>( this.cursor, key, value,
-                treeNode, from, to, layout, STABLE_GENERATION, UNSTABLE_GENERATION, 2, keyCount ) )
+                treeNode, from, to, layout, STABLE_GENERATION, UNSTABLE_GENERATION, () -> 0L ) )
         {
             // reading a couple of keys
             assertTrue( cursor.next() );
@@ -635,19 +609,48 @@ public class SeekCursorTest
         }
     }
 
-    private SeekCursor<MutableLong,MutableLong> seekCursor( long fromInclusive, long toExclusive, int pos,
-            int keyCount )
+    /* REBALANCE (when rebalance is implemented) */
+    // todo mustFindRangeWhenCompletelyRebalancedToTheRightAndSeekPointOutsideRange
+    // todo mustFindRangeWhenCompletelyRebalancedToTheRightAndSeekPointInRange
+    // todo mustFindEntireRangeWhenPartlyRebalancedToTheRightAndSeekPointToTheLeft
+    // todo mustFindEntireRangeWhenPartlyRebalancedToTheRightAndSeekPointToTheRight
+
+    /* MERGE (when merge is implemented) */
+    // todo mustFindRangeWhenRemoveInLeftSiblingCausesMerge
+    // todo mustFindRangeWhenRemoveInRightSiblingCausesMerge
+    // todo mustFindRangeWhenRemoveInSeekNodeCauseMergeWithLeft
+    // todo mustFindRangeWhenRemoveInSeekNodeCauseMergeWithRight
+    // todo mustFindRangeWhenRemoveTwoNodesToRightCauseMergeWithNodeOneToTheRight
+
+    /* Generation READ FAIL sibling */
+    // TODO reread current node on sibling read failure caused by checkpoint
+    // TODO fail on sibling read failure if not caused by checkpoint
+
+    /* Generation READ FAIL newGen */
+    // TODO leaf reread current node on newGen read failure caused by checkpoint
+    // TODO leaf fail on newGen read failure if not caused by checkpoint
+    // TODO internal reread current node on newGen read failure caused by checkpoint
+    // TODO internal fail on newGen read failure if not caused by checkpoint
+
+    /* Traverse internal nodes */
+    // TODO should traverse internal nodes to find starting leaf
+
+    /* NewGen */
+    // TODO should go to newGen if discovered when on internal
+    // TODO should go to newGen if discovered when on leaf
+
+    private SeekCursor<MutableLong,MutableLong> seekCursor( long fromInclusive, long toExclusive ) throws IOException
     {
-        return seekCursor( fromInclusive, toExclusive, pos, cursor, keyCount );
+        return seekCursor( fromInclusive, toExclusive, cursor );
     }
 
-    private SeekCursor<MutableLong,MutableLong> seekCursor( long fromInclusive, long toExclusive, int pos,
-            PageCursor pageCursor, int keyCount )
+    private SeekCursor<MutableLong,MutableLong> seekCursor( long fromInclusive, long toExclusive,
+            PageCursor pageCursor ) throws IOException
     {
         from.setValue( fromInclusive );
         to.setValue( toExclusive );
         return new SeekCursor<>( pageCursor, key, value, treeNode, from, to, layout,
-                STABLE_GENERATION, UNSTABLE_GENERATION, pos, keyCount );
+                STABLE_GENERATION, UNSTABLE_GENERATION, () -> 0L );
     }
 
     /**
@@ -667,7 +670,7 @@ public class SeekCursorTest
         return left;
     }
 
-    private void assertRangeInSingleLeaf( int fromInclusive, int toExclusive,
+    private static void assertRangeInSingleLeaf( int fromInclusive, int toExclusive,
             SeekCursor<MutableLong,MutableLong> cursor ) throws IOException
     {
         long expectedKey = fromInclusive;
@@ -679,12 +682,13 @@ public class SeekCursorTest
         assertEquals( toExclusive, expectedKey );
     }
 
-    private void assertKeyAndValue( SeekCursor<MutableLong,MutableLong> cursor, long expectedKey )
+    private static void assertKeyAndValue( SeekCursor<MutableLong,MutableLong> cursor, long expectedKey )
     {
         assertKeyAndValue( cursor, expectedKey, valueForKey( expectedKey ) );
     }
 
-    private void assertKeyAndValue( SeekCursor<MutableLong,MutableLong> cursor, long expectedKey, long expectedValue )
+    private static void assertKeyAndValue( SeekCursor<MutableLong,MutableLong> cursor,
+            long expectedKey, long expectedValue )
     {
         MutableLong foundKey = cursor.get().key();
         MutableLong foundValue = cursor.get().value();

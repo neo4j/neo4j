@@ -28,6 +28,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.LongSupplier;
 
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.Hit;
@@ -39,6 +40,10 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+
+import static org.neo4j.index.gbptree.Generation.stableGeneration;
+import static org.neo4j.index.gbptree.Generation.unstableGeneration;
+import static org.neo4j.index.gbptree.PageCursorChecking.checkOutOfBounds;
 
 /**
  * A generation-aware B+tree (GB+Tree) implementation directly atop a {@link PageCache} with no caching in between.
@@ -160,17 +165,25 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
     private volatile long lastId = rootId;
 
     /**
-     * Stable generation, i.e. generation which has survived the last {@link Index#checkpoint(IOLimiter)}.
-     * Unsigned int.
+     * Generation of the tree. This variable contains both stable and unstable generation and is
+     * represented as one long to get atomic updates of both stable and unstable generation for readers.
+     * Both stable and unstable generation are unsigned ints, i.e. 32 bits each.
+     *
+     * <ul>
+     * <li>stable generation, generation which has survived the last {@link Index#checkpoint(IOLimiter)}</li>
+     * <li>unstable generation, current generation under evolution. This generation will be the
+     * {@link Generation#stableGeneration(long)} after the next {@link Index#checkpoint(IOLimiter)}</li>
+     * </ul>
      */
-    private volatile long stableGeneration = GenSafePointer.MIN_GENERATION;
+    private volatile long generation;
 
     /**
-     * Unstable generation, i.e. the current generation under evolution. This generation will be the
-     * {@link #stableGeneration} in the next {@link Index#checkpoint(IOLimiter)}.
-     * Unsigned int.
+     * Supplier of generation to readers. This supplier will actually very rarely be used, because normally
+     * a {@link SeekCursor} is bootstrapped from {@link #generation}. The only time this supplier will be
+     * used is so that a long-running {@link SeekCursor} can keep up with a generation change after
+     * a checkpoint, if the cursor lives that long.
      */
-    private volatile long unstableGeneration = stableGeneration + 1;
+    private final LongSupplier generationSupplier = () -> generation;
 
     /**
      * Called on certain events.
@@ -199,6 +212,7 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
             Monitor monitor ) throws IOException
     {
         this.monitor = monitor;
+        this.generation = Generation.generation( GenSafePointer.MIN_GENERATION, GenSafePointer.MIN_GENERATION + 1 );
         this.layout = layout;
         this.pagedFile = openOrCreate( pageCache, indexFile, tentativePageSize, layout );
         this.bTreeNode = new TreeNode<>( pageSize, layout );
@@ -209,7 +223,9 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
             // Initialize index root node to a leaf node.
             try ( PageCursor cursor = pagedFile.io( rootId, PagedFile.PF_SHARED_WRITE_LOCK ) )
             {
-                goToRoot( cursor );
+                long stableGeneration = stableGeneration( generation );
+                long unstableGeneration = unstableGeneration( generation );
+                goToRoot( cursor, stableGeneration, unstableGeneration );
                 bTreeNode.initializeLeaf( cursor, stableGeneration, unstableGeneration );
                 checkOutOfBounds( cursor );
             }
@@ -277,8 +293,7 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
             TreeState state = TreeStatePair.selectNewestValidState( states );
             rootId = state.rootId();
             lastId = state.lastId();
-            stableGeneration = state.stableGeneration();
-            unstableGeneration = state.unstableGeneration();
+            generation = Generation.generation( state.stableGeneration(), state.unstableGeneration() );
         }
     }
 
@@ -295,7 +310,7 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
                 throw new IllegalStateException( "Could not go to state page " + pageToOverwrite );
             }
             cursor.setOffset( 0 );
-            TreeState.write( cursor, stableGeneration, unstableGeneration, rootId, lastId );
+            TreeState.write( cursor, stableGeneration( generation ), unstableGeneration( generation ), rootId, lastId );
         }
     }
 
@@ -380,48 +395,14 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         PageCursor cursor = pagedFile.io( rootId, PagedFile.PF_SHARED_READ_LOCK );
         KEY key = layout.newKey();
         VALUE value = layout.newValue();
-        goToRoot( cursor );
-
-        boolean isInternal;
-        int keyCount;
-        long childId = 0; // initialized to satisfy compiler
-        int pos;
-        do
-        {
-            do
-            {
-                isInternal = bTreeNode.isInternal( cursor );
-                // Find the left-most key within from-range
-                keyCount = bTreeNode.keyCount( cursor );
-                int search = KeySearch.search( cursor, bTreeNode, fromInclusive, key, keyCount );
-                pos = KeySearch.positionOf( search );
-
-                // Assuming unique keys
-                if ( isInternal && KeySearch.isHit( search ) )
-                {
-                    pos++;
-                }
-
-                if ( isInternal )
-                {
-                    childId = bTreeNode.childAt( cursor, pos, stableGeneration, unstableGeneration );
-                }
-            }
-            while ( cursor.shouldRetry() );
-            checkOutOfBounds( cursor );
-
-            if ( isInternal )
-            {
-                PointerChecking.checkChildPointer( childId );
-
-                bTreeNode.goTo( cursor, childId, stableGeneration, unstableGeneration );
-            }
-        }
-        while ( isInternal && keyCount > 0 );
+        long generation = this.generation;
+        long stableGeneration = stableGeneration( generation );
+        long unstableGeneration = unstableGeneration( generation );
+        goToRoot( cursor, stableGeneration, unstableGeneration );
 
         // Returns cursor which is now initiated with left-most leaf node for the specified range
         return new SeekCursor<>( cursor, key, value, bTreeNode, fromInclusive, toExclusive, layout,
-                stableGeneration, unstableGeneration, pos, keyCount );
+                stableGeneration, unstableGeneration, generationSupplier );
     }
 
     @Override
@@ -439,8 +420,8 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         try
         {
             pagedFile.flushAndForce( ioLimiter );
-            stableGeneration = unstableGeneration;
-            unstableGeneration++;
+            long unstableGeneration = unstableGeneration( generation );
+            generation = Generation.generation( unstableGeneration, unstableGeneration + 1 );
             writeState( pagedFile );
             pagedFile.flushAndForce( ioLimiter );
             monitor.checkpointCompleted();
@@ -497,17 +478,9 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         }
     }
 
-    private void goToRoot( PageCursor cursor ) throws IOException
+    private void goToRoot( PageCursor cursor, long stableGeneration, long unstableGeneration ) throws IOException
     {
         bTreeNode.goTo( cursor, rootId, stableGeneration, unstableGeneration );
-    }
-
-    private static void checkOutOfBounds( PageCursor cursor )
-    {
-        if ( cursor.checkAndClearBoundsFlag() )
-        {
-            throw new IllegalStateException( "Some internal problem causing out of bounds" );
-        }
     }
 
     // Utility method
@@ -516,7 +489,8 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         try ( PageCursor cursor = pagedFile.io( rootId, PagedFile.PF_SHARED_READ_LOCK ) )
         {
             cursor.next();
-            TreePrinter.printTree( cursor, bTreeNode, layout, stableGeneration, unstableGeneration, System.out );
+            TreePrinter.printTree( cursor, bTreeNode, layout,
+                    stableGeneration( generation ), unstableGeneration( generation ), System.out );
         }
     }
 
@@ -526,7 +500,8 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         try ( PageCursor cursor = pagedFile.io( rootId, PagedFile.PF_SHARED_READ_LOCK ) )
         {
             cursor.next();
-            return new ConsistencyChecker<>( bTreeNode, layout, stableGeneration, unstableGeneration )
+            return new ConsistencyChecker<>( bTreeNode, layout,
+                    stableGeneration( generation ), unstableGeneration( generation ) )
                     .check( cursor );
         }
     }
@@ -539,6 +514,11 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         private IndexWriter.Options options;
         private final byte[] tmp = new byte[0];
 
+        // Writer can't live past a checkpoint because of the mutex with checkpoint,
+        // therefore safe to locally cache these generation fields from the volatile generation in the tree
+        private long stableGeneration;
+        private long unstableGeneration;
+
         SingleIndexWriter( InternalTreeLogic<KEY,VALUE> treeLogic )
         {
             this.structurePropagation = new StructurePropagation<>( layout.newKey() );
@@ -549,6 +529,8 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         {
             this.options = options;
             cursor = pagedFile.io( rootId, PagedFile.PF_SHARED_WRITE_LOCK );
+            stableGeneration = stableGeneration( generation );
+            unstableGeneration = unstableGeneration( generation );
         }
 
         @Override
@@ -560,7 +542,7 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         @Override
         public void merge( KEY key, VALUE value, ValueMerger<VALUE> valueMerger ) throws IOException
         {
-            goToRoot( cursor );
+            goToRoot( cursor, stableGeneration, unstableGeneration );
 
             treeLogic.insert( cursor, structurePropagation, key, value, valueMerger, options,
                     stableGeneration, unstableGeneration );
@@ -593,7 +575,7 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         @Override
         public VALUE remove( KEY key ) throws IOException
         {
-            goToRoot( cursor );
+            goToRoot( cursor, stableGeneration, unstableGeneration );
 
             VALUE result = treeLogic.remove( cursor, structurePropagation, key, layout.newValue(),
                     stableGeneration, unstableGeneration );

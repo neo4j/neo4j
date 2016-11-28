@@ -20,9 +20,13 @@
 package org.neo4j.index.gbptree;
 
 import java.io.IOException;
+import java.util.function.LongSupplier;
+
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.Hit;
 import org.neo4j.io.pagecache.PageCursor;
+
+import static org.neo4j.index.gbptree.PageCursorChecking.checkOutOfBounds;
 
 /**
  * {@link RawCursor} over tree leaves, making keys/values accessible to user. Given a starting leaf
@@ -49,6 +53,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
     private final MutableHit<KEY,VALUE> hit;
     private final TreeNode<KEY,VALUE> bTreeNode;
     private final KEY prevKey;
+    private final LongSupplier generationSupplier;
     private boolean first = true;
 
     // data structures for the current b-tree node
@@ -57,13 +62,12 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
     private boolean currentContainsEnd;
     private boolean reread;
     private boolean resetPosition;
-    private final long stableGeneration;
-    private final long unstableGeneration;
+    private long stableGeneration;
+    private long unstableGeneration;
 
     SeekCursor( PageCursor leafCursor, KEY mutableKey, VALUE mutableValue, TreeNode<KEY,VALUE> bTreeNode,
             KEY fromInclusive, KEY toExclusive, Layout<KEY,VALUE> layout,
-            long stableGeneration, long unstableGeneration,
-            int firstPosToRead, int keyCount )
+            long stableGeneration, long unstableGeneration, LongSupplier generationSupplier ) throws IOException
     {
         this.cursor = leafCursor;
         this.mutableKey = mutableKey;
@@ -73,11 +77,55 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
         this.layout = layout;
         this.stableGeneration = stableGeneration;
         this.unstableGeneration = unstableGeneration;
+        this.generationSupplier = generationSupplier;
         this.hit = new MutableHit<>( mutableKey, mutableValue );
         this.bTreeNode = bTreeNode;
-        this.pos = firstPosToRead - 1;
         this.prevKey = layout.newKey();
 
+        traverseDownToFirstLeaf();
+    }
+
+    private void traverseDownToFirstLeaf() throws IOException
+    {
+        boolean isInternal;
+        int keyCount;
+        long childId = 0; // initialized to satisfy compiler
+        int pos;
+        do
+        {
+            do
+            {
+                isInternal = bTreeNode.isInternal( cursor );
+                // Find the left-most key within from-range
+                keyCount = bTreeNode.keyCount( cursor );
+                int search = KeySearch.search( cursor, bTreeNode, fromInclusive, mutableKey, keyCount );
+                pos = KeySearch.positionOf( search );
+
+                // Assuming unique keys
+                if ( isInternal && KeySearch.isHit( search ) )
+                {
+                    pos++;
+                }
+
+                if ( isInternal )
+                {
+                    childId = bTreeNode.childAt( cursor, pos, stableGeneration, unstableGeneration );
+                }
+            }
+            while ( cursor.shouldRetry() );
+            checkOutOfBounds( cursor );
+
+            if ( isInternal )
+            {
+                PointerChecking.checkChildPointer( childId );
+
+                bTreeNode.goTo( cursor, childId, stableGeneration, unstableGeneration );
+            }
+        }
+        while ( isInternal && keyCount > 0 );
+
+        // We've no come to the first relevant leaf, initialize the state for the coming leaf scan
+        this.pos = pos - 1;
         this.keyCount = keyCount;
         this.currentContainsEnd = layout.compare(
                 bTreeNode.keyAt( cursor, mutableKey, keyCount - 1 ), toExclusive ) >= 0;
@@ -108,8 +156,11 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
                     // moving position back until we find previously returned key
                     if ( resetPosition )
                     {
-                        int searchResult = KeySearch.search( cursor, bTreeNode, prevKey, mutableKey, keyCount );
-                        pos = KeySearch.positionOf( searchResult );
+                        if ( !first )
+                        {
+                            int searchResult = KeySearch.search( cursor, bTreeNode, prevKey, mutableKey, keyCount );
+                            pos = KeySearch.positionOf( searchResult );
+                        }
                     }
                 }
                 // There's a condition in here, choosing between go to next sibling or value,
@@ -135,6 +186,24 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
 
             if ( pos >= keyCount )
             {
+                if ( !GenSafePointerPair.isSuccess( rightSibling ) )
+                {
+                    // An unexpected sibling read, this could have been caused by a concurrent checkpoint
+                    // where generation has been incremented. Re-read generation and, if changed since this
+                    // seek started then update generation locally
+                    long newGeneration = generationSupplier.getAsLong();
+                    long newStableGeneration = Generation.stableGeneration( newGeneration );
+                    long newUnstableGeneration = Generation.unstableGeneration( newGeneration );
+                    if ( newStableGeneration != stableGeneration || newUnstableGeneration != unstableGeneration )
+                    {
+                        stableGeneration = newStableGeneration;
+                        unstableGeneration = newUnstableGeneration;
+                        reread = resetPosition = true;
+                        continue;
+                    }
+                    PointerChecking.checkSiblingPointer( rightSibling );
+                }
+
                 if ( bTreeNode.isNode( rightSibling ) )
                 {
                     // TODO: Check if rightSibling is within expected range before calling next.
