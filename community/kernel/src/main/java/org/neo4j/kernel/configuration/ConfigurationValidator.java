@@ -43,6 +43,7 @@ public interface ConfigurationValidator
      * @return a Map of valid keys and values.
      * @throws InvalidSettingException in case of invalid values
      */
+    @Nonnull
     Map<String,String> validate( @Nonnull Collection<SettingValidator> settingValidators,
             @Nonnull Map<String,String> rawConfig,
             @Nonnull Log log ) throws InvalidSettingException;

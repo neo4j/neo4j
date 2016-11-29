@@ -20,16 +20,18 @@
 package org.neo4j.server;
 
 import java.io.File;
-import java.util.Map;
+import java.util.Collection;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.annotation.Nonnull;
 
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.ConfigurationValidator;
 import org.neo4j.kernel.configuration.HttpConnector.Encryption;
 import org.neo4j.kernel.info.JvmChecker;
 import org.neo4j.kernel.info.JvmMetadataRepository;
@@ -149,7 +151,8 @@ public abstract class ServerBootstrapper implements Bootstrapper
     protected abstract NeoServer createNeoServer( Config config, GraphDatabaseDependencies dependencies,
                                                   LogProvider userLogProvider );
 
-    protected abstract Iterable<Class<?>> settingsClasses( Map<String, String> settings );
+    @Nonnull
+    protected abstract Collection<ConfigurationValidator> configurationValidators();
 
     private static LogProvider setupLogging( Config config )
     {
@@ -165,7 +168,8 @@ public abstract class ServerBootstrapper implements Bootstrapper
 
     private Config createConfig( File homeDir, Optional<File> file, Pair<String, String>[] configOverrides )
     {
-        return ConfigLoader.loadConfig( Optional.of( homeDir ), file, configOverrides );
+        return ConfigLoader.loadServerConfig( Optional.of( homeDir ), file, configOverrides,
+                configurationValidators() );
     }
 
     private void addShutdownHook()

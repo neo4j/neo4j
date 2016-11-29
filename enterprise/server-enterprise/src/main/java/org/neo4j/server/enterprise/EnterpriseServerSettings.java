@@ -32,13 +32,6 @@ import static org.neo4j.kernel.configuration.Settings.setting;
 @Description("Settings available in the Enterprise server")
 public class EnterpriseServerSettings implements LoadableConfig
 {
-    @Description( "Configure the operating mode of the database -- 'SINGLE' for stand-alone operation, 'HA' for " +
-            "operating as a member in a cluster, 'ARBITER' for an HA-only cluster member with no database, " +
-            "CORE for a core member of a Causal Clustering cluster, or READ_REPLICA for read replica." +
-            " cluster" +
-            ". " )
-    public static final Setting<String> mode = setting( "dbms.mode", STRING, "SINGLE" );
-
     @SuppressWarnings("unused") // accessed from the browser
     @Description( "Configure the Neo4j Browser to time out logged in users after this idle period. " +
                   "Setting this to 0 indicates no limit." )

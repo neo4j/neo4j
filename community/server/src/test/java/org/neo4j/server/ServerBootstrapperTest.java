@@ -24,11 +24,14 @@ import org.junit.Test;
 
 import java.io.File;
 import java.nio.file.Files;
-import java.util.Map;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Optional;
+import javax.annotation.Nonnull;
 
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.ConfigurationValidator;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.test.rule.SuppressOutput;
 
@@ -55,11 +58,11 @@ public class ServerBootstrapperTest
                 return mock( NeoServer.class );
             }
 
+            @Nonnull
             @Override
-            protected Iterable<Class<?>> settingsClasses( Map<String,String> settings )
+            protected Collection<ConfigurationValidator> configurationValidators()
             {
-                // simulate validation failure
-                throw new IllegalArgumentException( "Missing mandatory setting" );
+                return Collections.emptyList();
             }
         };
 

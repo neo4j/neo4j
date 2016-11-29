@@ -24,7 +24,6 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.function.Function;
 
-import org.neo4j.causalclustering.core.CausalClusterConfigurationValidator;
 import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
 import org.neo4j.causalclustering.discovery.HazelcastDiscoveryServiceFactory;
 import org.neo4j.kernel.configuration.Config;

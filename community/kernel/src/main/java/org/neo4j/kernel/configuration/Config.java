@@ -171,7 +171,7 @@ public class Config implements DiagnosticsProvider, Configuration
     public static Config serverDefaults( Optional<File> configFile, Map<String,String> additionalConfig,
             Collection<ConfigurationValidator> additionalValidators )
     {
-        ArrayList<ConfigurationValidator> validators = new ArrayList<>(  );
+        ArrayList<ConfigurationValidator> validators = new ArrayList<>();
         validators.addAll( additionalValidators );
         validators.add( new ServerConfigurationValidator() );
 
@@ -288,7 +288,7 @@ public class Config implements DiagnosticsProvider, Configuration
     {
         if ( this.log instanceof BufferingLog )
         {
-            ( (BufferingLog) this.log ).replayInto( log );
+            ((BufferingLog) this.log).replayInto( log );
         }
         this.log = log;
     }
@@ -407,6 +407,7 @@ public class Config implements DiagnosticsProvider, Configuration
         params.putAll( validSettings );
     }
 
+    @Nonnull
     private static Map<String,String> initSettings( @Nonnull Optional<File> configFile,
             @Nonnull Consumer<Map<String,String>> settingsPostProcessor,
             @Nonnull Map<String,String> overriddenSettings,
@@ -419,6 +420,7 @@ public class Config implements DiagnosticsProvider, Configuration
         return settings;
     }
 
+    @Nonnull
     private static Map<String,String> loadFromFile( @Nonnull File file, @Nonnull Log log )
     {
         if ( !file.exists() )
@@ -440,7 +442,17 @@ public class Config implements DiagnosticsProvider, Configuration
     /**
      * @return a list of all connector names like 'http' in 'dbms.connector.http.enabled = true'
      */
+    @Nonnull
     public List<String> allConnectorIdentifiers()
+    {
+        return allConnectorIdentifiers( params );
+    }
+
+    /**
+     * @return a list of all connector names like 'http' in 'dbms.connector.http.enabled = true'
+     */
+    @Nonnull
+    public static List<String> allConnectorIdentifiers( @Nonnull Map<String,String> params )
     {
         Pattern pattern = Pattern.compile(
                 Pattern.quote( "dbms.connector." ) + "([^\\.]+)\\.(.+)" );
@@ -456,9 +468,19 @@ public class Config implements DiagnosticsProvider, Configuration
     /**
      * @return list of all configured bolt connectors
      */
+    @Nonnull
     public List<BoltConnector> boltConnectors()
     {
-        return allConnectorIdentifiers().stream()
+        return boltConnectors( params );
+    }
+
+    /**
+     * @return list of all configured bolt connectors
+     */
+    @Nonnull
+    public static List<BoltConnector> boltConnectors( @Nonnull Map<String,String> params )
+    {
+        return allConnectorIdentifiers( params ).stream()
                 .map( BoltConnector::new )
                 .filter( c ->
                         c.group.groupKey.equalsIgnoreCase( "bolt" ) || BOLT.equals( c.type.apply( params::get ) ) )
@@ -468,9 +490,19 @@ public class Config implements DiagnosticsProvider, Configuration
     /**
      * @return list of all configured bolt connectors which are enabled
      */
+    @Nonnull
     public List<BoltConnector> enabledBoltConnectors()
     {
-        return boltConnectors().stream()
+        return enabledBoltConnectors( params );
+    }
+
+    /**
+     * @return list of all configured bolt connectors which are enabled
+     */
+    @Nonnull
+    public static List<BoltConnector> enabledBoltConnectors( @Nonnull Map<String,String> params )
+    {
+        return boltConnectors( params ).stream()
                 .filter( c -> c.enabled.apply( params::get ) )
                 .collect( Collectors.toList() );
     }
@@ -478,9 +510,19 @@ public class Config implements DiagnosticsProvider, Configuration
     /**
      * @return list of all configured http connectors
      */
+    @Nonnull
     public List<HttpConnector> httpConnectors()
     {
-        return allConnectorIdentifiers().stream()
+        return httpConnectors( params );
+    }
+
+    /**
+     * @return list of all configured http connectors
+     */
+    @Nonnull
+    public static List<HttpConnector> httpConnectors( @Nonnull Map<String,String> params )
+    {
+        return allConnectorIdentifiers( params ).stream()
                 .map( name -> new Connector( name, "ignored" ) )
                 .filter( c -> c.group.groupKey.equalsIgnoreCase( "http" ) ||
                         c.group.groupKey.equalsIgnoreCase( "https" ) ||
@@ -509,9 +551,19 @@ public class Config implements DiagnosticsProvider, Configuration
     /**
      * @return list of all configured http connectors which are enabled
      */
+    @Nonnull
     public List<HttpConnector> enabledHttpConnectors()
     {
-        return httpConnectors().stream()
+        return enabledHttpConnectors( params );
+    }
+
+    /**
+     * @return list of all configured http connectors which are enabled
+     */
+    @Nonnull
+    public static List<HttpConnector> enabledHttpConnectors( @Nonnull Map<String,String> params )
+    {
+        return httpConnectors( params ).stream()
                 .filter( c -> c.enabled.apply( params::get ) )
                 .collect( Collectors.toList() );
     }

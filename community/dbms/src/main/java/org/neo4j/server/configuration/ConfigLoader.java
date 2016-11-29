@@ -21,6 +21,7 @@ package org.neo4j.server.configuration;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -29,8 +30,8 @@ import java.util.stream.Collectors;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.ConfigurationValidator;
 import org.neo4j.kernel.configuration.Connector;
 import org.neo4j.kernel.configuration.Settings;
 
@@ -58,14 +59,14 @@ public class ConfigLoader
     public static Config loadServerConfig( Optional<File> configFile, Pair<String,String>... configOverrides )
             throws IOException
     {
-        return loadServerConfig( Optional.empty(), configFile, configOverrides );
+        return loadServerConfig( Optional.empty(), configFile, configOverrides, Collections.emptyList() );
     }
 
     public static Config loadServerConfig( Optional<File> homeDir, Optional<File> configFile,
-            Pair<String,String>[] configOverrides )
+            Pair<String,String>[] configOverrides, Collection<ConfigurationValidator> additionalValidators )
     {
         Map<String,String> overriddenSettings = calculateSettings( homeDir, configOverrides );
-        return Config.serverDefaults( configFile, overriddenSettings, Collections.emptyList() );
+        return Config.serverDefaults( configFile, overriddenSettings, additionalValidators );
     }
 
     public static Config loadConfigWithConnectorsDisabled( Optional<File> homeDir, Optional<File> configFile,

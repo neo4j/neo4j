@@ -22,20 +22,27 @@ package org.neo4j.kernel.configuration;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 
+import javax.annotation.Nonnull;
+
 import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.graphdb.config.SettingValidator;
 import org.neo4j.logging.Log;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -201,5 +208,31 @@ public class ConfigTest
         verify( log ).warn( "Unknown config option: %s", "second.jibberish" );
         verify( log ).warn( "Unknown config option: %s", "third.jibberish" );
         verifyNoMoreInteractions( log );
+    }
+
+    @Test
+    public void shouldPassOnValidatorsOnWithMethods() throws Exception
+    {
+        // Given
+        ConfigurationValidator validator = spy( new ConfigurationValidator()
+        {
+            @Nonnull
+            @Override
+            public Map<String,String> validate( @Nonnull Collection<SettingValidator> settingValidators,
+                    @Nonnull Map<String,String> rawConfig, @Nonnull Log log ) throws InvalidSettingException
+            {
+                return rawConfig;
+            }
+        } );
+
+        Config first = Config.embeddedDefaults( stringMap( "first.jibberish", "bah" ),
+                Collections.singleton( validator ) );
+
+        // When
+        Config second = first.withDefaults( stringMap( "second.jibberish", "baah" ) );
+        second.with( stringMap( "third.jibberish", "baah" ) );
+
+        // Then
+        verify( validator, times( 3 ) ).validate( any(), any(), any() );
     }
 }

@@ -34,7 +34,7 @@ import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.BYTES;
 import static org.neo4j.kernel.configuration.Settings.DURATION;
 import static org.neo4j.kernel.configuration.Settings.INTEGER;
-import static org.neo4j.kernel.configuration.Settings.MANDATORY;
+import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
 import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
 import static org.neo4j.kernel.configuration.Settings.advertisedAddress;
@@ -102,7 +102,7 @@ public class CausalClusteringSettings implements LoadableConfig
 
     @Description("A comma-separated list of other members of the cluster to join.")
     public static final Setting<List<AdvertisedSocketAddress>> initial_discovery_members =
-            setting( "causal_clustering.initial_discovery_members", list( ",", ADVERTISED_SOCKET_ADDRESS ), MANDATORY );
+            setting( "causal_clustering.initial_discovery_members", list( ",", ADVERTISED_SOCKET_ADDRESS ), NO_DEFAULT );
 
     @Description("Prevents the network middleware from dumping its own logs. Defaults to true.")
     public static final Setting<Boolean> disable_middleware_logging =

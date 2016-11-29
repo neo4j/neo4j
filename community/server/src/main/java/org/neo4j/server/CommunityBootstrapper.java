@@ -19,22 +19,18 @@
  */
 package org.neo4j.server;
 
-import java.util.List;
-import java.util.Map;
+import java.util.Collection;
+import java.util.Collections;
+import javax.annotation.Nonnull;
 
-import org.neo4j.dbms.DatabaseManagementSystemSettings;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.ConfigurationValidator;
+import org.neo4j.kernel.configuration.ServerConfigurationValidator;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.server.configuration.ServerSettings;
-
-import static java.util.Arrays.asList;
 
 public class CommunityBootstrapper extends ServerBootstrapper
 {
-    public static final List<Class<?>> settingsClasses =
-            asList( ServerSettings.class, GraphDatabaseSettings.class, DatabaseManagementSystemSettings.class );
 
     @Override
     protected NeoServer createNeoServer( Config config, GraphDatabaseDependencies dependencies,
@@ -44,9 +40,10 @@ public class CommunityBootstrapper extends ServerBootstrapper
     }
 
     @Override
-    protected Iterable<Class<?>> settingsClasses( Map<String, String> settings )
+    @Nonnull
+    protected Collection<ConfigurationValidator> configurationValidators()
     {
-        return settingsClasses;
+        return Collections.singletonList( new ServerConfigurationValidator() );
     }
 
 }

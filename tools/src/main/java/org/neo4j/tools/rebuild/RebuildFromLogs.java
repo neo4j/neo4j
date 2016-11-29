@@ -28,14 +28,12 @@ import java.util.Map;
 
 import org.neo4j.com.storecopy.ExternallyManagedPageCache;
 import org.neo4j.consistency.ConsistencyCheckService;
-import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.FullCheck;
 import org.neo4j.consistency.statistics.Statistics;
 import org.neo4j.cursor.IOCursor;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -270,8 +268,7 @@ class RebuildFromLogs
     {
         private final GraphDatabaseAPI graphdb;
         private final LabelScanStore labelScanStore;
-        private final Config tuningConfiguration =
-                Config.embeddedDefaults( stringMap(), GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
+        private final Config tuningConfiguration = Config.embeddedDefaults();
         private final SchemaIndexProvider indexes;
 
         ConsistencyChecker( File dbDirectory, PageCache pageCache )

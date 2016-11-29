@@ -33,13 +33,14 @@ import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.DURATION;
 import static org.neo4j.kernel.configuration.Settings.HOSTNAME_PORT;
 import static org.neo4j.kernel.configuration.Settings.INTEGER;
-import static org.neo4j.kernel.configuration.Settings.MANDATORY;
+import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
 import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
 import static org.neo4j.kernel.configuration.Settings.illegalValueMessage;
 import static org.neo4j.kernel.configuration.Settings.list;
 import static org.neo4j.kernel.configuration.Settings.matches;
 import static org.neo4j.kernel.configuration.Settings.min;
+import static org.neo4j.kernel.configuration.Settings.options;
 import static org.neo4j.kernel.configuration.Settings.setting;
 
 /**
@@ -70,8 +71,22 @@ public class ClusterSettings implements LoadableConfig
         }
     };
 
+    public enum Mode
+    {
+        SINGLE,
+        HA,
+        ARBITER,
+        CORE,
+        READ_REPLICA
+    }
+
+    @Description( "Configure the operating mode of the database -- 'SINGLE' for stand-alone operation, 'HA' for " +
+            "operating as a member in a cluster, 'ARBITER' for an HA-only cluster member with no database, " +
+            "CORE for a core member of a Causal Clustering cluster, or READ_REPLICA for read replica." )
+    public static final Setting<Mode> mode = setting( "dbms.mode", options( Mode.class ), Mode.SINGLE.name() );
+
     @Description( "Id for a cluster instance. Must be unique within the cluster." )
-    public static final Setting<InstanceId> server_id = setting( "ha.server_id", INSTANCE_ID, MANDATORY );
+    public static final Setting<InstanceId> server_id = setting( "ha.server_id", INSTANCE_ID, NO_DEFAULT );
 
     @Description( "The name of a cluster." )
     @Internal
@@ -80,7 +95,7 @@ public class ClusterSettings implements LoadableConfig
 
     @Description( "A comma-separated list of other members of the cluster to join." )
     public static final Setting<List<HostnamePort>> initial_hosts = setting( "ha.initial_hosts",
-            list( ",", HOSTNAME_PORT ), MANDATORY );
+            list( ",", HOSTNAME_PORT ), NO_DEFAULT );
 
     @Description( "Host and port to bind the cluster management communication." )
     public static final Setting<HostnamePort> cluster_server = setting( "ha.host.coordination", HOSTNAME_PORT,
