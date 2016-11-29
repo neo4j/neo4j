@@ -54,15 +54,7 @@ public class WritableDatabaseSchemaIndex extends WritableAbstractDatabaseIndex<L
     @Override
     public IndexReader getIndexReader() throws IOException
     {
-        partitionsLock.lock();
-        try
-        {
-            return luceneIndex.getIndexReader();
-        }
-        finally
-        {
-            partitionsLock.unlock();
-        }
+        return luceneIndex.getIndexReader();
     }
 
     /**

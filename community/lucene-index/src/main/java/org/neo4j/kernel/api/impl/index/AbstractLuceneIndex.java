@@ -31,6 +31,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.ArrayUtil;
@@ -56,10 +58,9 @@ import static java.util.stream.Collectors.toList;
  */
 public abstract class AbstractLuceneIndex
 {
-
     protected final PartitionedIndexStorage indexStorage;
     private final IndexPartitionFactory partitionFactory;
-    private List<AbstractIndexPartition> partitions = new CopyOnWriteArrayList<>();
+    private CopyOnWriteArrayList<AbstractIndexPartition> partitions = new CopyOnWriteArrayList<>();
     private volatile boolean open;
 
     public AbstractLuceneIndex( PartitionedIndexStorage indexStorage, IndexPartitionFactory partitionFactory )
@@ -92,12 +93,31 @@ public abstract class AbstractLuceneIndex
      */
     public void open() throws IOException
     {
-        Map<File,Directory> indexDirectories = indexStorage.openIndexDirectories();
-        for ( Map.Entry<File,Directory> indexDirectory : indexDirectories.entrySet() )
+        Stream<Map.Entry<File,Directory>> indexDirectories = indexStorage.openIndexDirectories().entrySet().stream();
+        List<AbstractIndexPartition> list = null;
+        try
         {
-            partitions.add( partitionFactory.createPartition( indexDirectory.getKey(), indexDirectory.getValue() ) );
+            list = indexDirectories.map( e -> createPartition( e.getKey(), e.getValue() ) )
+                                       .collect( Collectors.toList() );
         }
+        catch ( UncheckedIOException e )
+        {
+            throw e.getCause();
+        }
+        partitions.addAll( list );
         open = true;
+    }
+
+    private AbstractIndexPartition createPartition( File key, Directory value )
+    {
+        try
+        {
+            return partitionFactory.createPartition( key, value );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
     }
 
     public boolean isOpen()
@@ -200,9 +220,10 @@ public abstract class AbstractLuceneIndex
 
     public void close() throws IOException
     {
-        IOUtils.closeAll( partitions );
-        partitions.clear();
         open = false;
+        List<AbstractIndexPartition> partitionsCopy = new ArrayList<>( partitions );
+        partitions.clear();
+        IOUtils.closeAll( partitionsCopy );
     }
 
     /**

@@ -44,14 +44,14 @@ public class WritableDatabaseLabelScanIndex extends WritableAbstractDatabaseInde
     @Override
     public LabelScanReader getLabelScanReader()
     {
-        partitionsLock.lock();
+//        partitionsLock.lock();
         try
         {
             return luceneIndex.getLabelScanReader();
         }
         finally
         {
-            partitionsLock.unlock();
+//            partitionsLock.unlock();
         }
     }
 

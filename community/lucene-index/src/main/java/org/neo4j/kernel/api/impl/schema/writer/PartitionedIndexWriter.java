@@ -41,7 +41,7 @@ import org.neo4j.kernel.api.impl.schema.WritableDatabaseSchemaIndex;
  */
 public class PartitionedIndexWriter implements LuceneIndexWriter
 {
-    private WritableDatabaseSchemaIndex index;
+    private final WritableDatabaseSchemaIndex index;
 
     private final Integer MAXIMUM_PARTITION_SIZE = Integer.getInteger( "luceneSchemaIndex.maxPartitionSize",
             Integer.MAX_VALUE - (Integer.MAX_VALUE / 10) );
@@ -98,7 +98,18 @@ public class PartitionedIndexWriter implements LuceneIndexWriter
         }
     }
 
-    private synchronized IndexWriter getIndexWriter() throws IOException
+    private IndexWriter getIndexWriter() throws IOException
+    {
+        synchronized ( index )
+        {
+            // We synchronise on the index to coordinate with all writers about how many partitions we
+            // have, and when new ones are created. The discovery that a new partition needs to be added,
+            // and the call to index.addNewPartition() must be atomic.
+            return unsafeGetIndexWriter();
+        }
+    }
+
+    private IndexWriter unsafeGetIndexWriter() throws IOException
     {
         List<AbstractIndexPartition> indexPartitions = index.getPartitions();
         Optional<AbstractIndexPartition> writablePartition = indexPartitions.stream()
