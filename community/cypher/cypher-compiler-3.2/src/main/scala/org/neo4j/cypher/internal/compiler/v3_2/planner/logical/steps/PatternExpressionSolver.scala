@@ -22,12 +22,13 @@ package org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.{FreshIdNameGenerator, UnNamedNameGenerator}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{IdName, LogicalPlan}
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.{LogicalPlanningContext, PatternExpressionPatternElementNamer, patternExpressionRewriter}
 import org.neo4j.cypher.internal.frontend.v3_2.Rewritable._
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.ast.functions.Exists
 import org.neo4j.cypher.internal.frontend.v3_2.{Rewriter, ast, topDown}
+import org.neo4j.cypher.internal.ir.v3_2.IdName
 
 import scala.collection.mutable
 import scala.reflect.ClassTag

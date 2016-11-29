@@ -137,6 +137,11 @@
       <artifactId>neo4j-cypher-frontend-3.2</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-cypher-ir-3.2</artifactId>
+      <version>${project.version}</version>
+    </dependency>
 
     <!-- neo4j testing -->
 

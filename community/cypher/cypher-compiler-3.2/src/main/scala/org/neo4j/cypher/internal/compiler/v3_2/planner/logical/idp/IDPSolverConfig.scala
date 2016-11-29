@@ -21,7 +21,8 @@ package org.neo4j.cypher.internal.compiler.v3_2.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.v3_2.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.LogicalPlanningContext
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{LogicalPlan, PatternRelationship}
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.ir.v3_2.PatternRelationship
 
 /**
  * The IDP inner loop can be optimized and tweaked in several ways, and this trait encapsulates those settings

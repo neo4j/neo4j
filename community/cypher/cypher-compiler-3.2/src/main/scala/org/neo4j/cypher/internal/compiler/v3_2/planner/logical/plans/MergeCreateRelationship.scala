@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.LazyType
 import org.neo4j.cypher.internal.compiler.v3_2.planner.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Expression
+import org.neo4j.cypher.internal.ir.v3_2.IdName
 
 case class MergeCreateRelationship(source: LogicalPlan, idName: IdName, startNode: IdName, typ: LazyType, endNode: IdName,
                                    properties: Option[Expression])

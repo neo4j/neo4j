@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.{LeafPlanFromExpr
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticTable
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.notification.IndexLookupUnfulfillableNotification
+import org.neo4j.cypher.internal.ir.v3_2.IdName
 
 object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
 

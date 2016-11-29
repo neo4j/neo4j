@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_2.{ParameterNotFoundException, SemanticDirection, SemanticTable}
+import org.neo4j.cypher.internal.ir.v3_2.IdName
 import org.neo4j.cypher.internal.spi.v3_2.TransactionalContextWrapper
 import org.neo4j.cypher.internal.spi.v3_2.codegen.GeneratedQueryStructure
 import org.neo4j.graphdb.{Direction, Node, Relationship}

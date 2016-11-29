@@ -24,10 +24,11 @@ import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.compiler.v3_2.ast.NestedPlanExpression
 import org.neo4j.cypher.internal.compiler.v3_2.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{AllNodesScan, IdName, LogicalPlan, Selection}
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{AllNodesScan, LogicalPlan, Selection}
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.ir.v3_2.IdName
 
 class patternExpressionRewriterTest extends CypherFunSuite with LogicalPlanningTestSupport {
 

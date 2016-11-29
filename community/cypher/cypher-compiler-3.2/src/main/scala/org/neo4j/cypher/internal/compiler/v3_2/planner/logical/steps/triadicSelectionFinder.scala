@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.{CandidateGenerat
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Expression
+import org.neo4j.cypher.internal.ir.v3_2.IdName
 
 object triadicSelectionFinder extends CandidateGenerator[LogicalPlan] {
 

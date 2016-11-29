@@ -20,7 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v3_2.planner.{CardinalityEstimation, PlannerQuery}
-import org.neo4j.cypher.internal.frontend.v3_2.ast.{Expression, PropertyKeyToken, LabelToken}
+import org.neo4j.cypher.internal.frontend.v3_2.ast.{Expression, LabelToken, PropertyKeyToken}
+import org.neo4j.cypher.internal.ir.v3_2.IdName
 
 /*
   * This operator does a full scan of an index, returning all entries that contain a string value

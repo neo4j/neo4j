@@ -21,11 +21,11 @@ package org.neo4j.cypher.internal.compiler.v3_2.planner.execution
 
 import org.neo4j.cypher.internal.compiler.v3_2.Monitors
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.{FakePipe, Pipe, RonjaPipe}
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.Cardinality
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_2.planner.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.compiler.v3_2.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.ir.v3_2.Cardinality
 import org.neo4j.time.Clocks
 
 class PipeExecutionPlanBuilderTest extends CypherFunSuite {
