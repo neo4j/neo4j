@@ -149,7 +149,7 @@ class InternalTreeLogic<KEY,VALUE>
 
         long currentId = cursor.getCurrentPageId();
         long childId = bTreeNode.childAt( cursor, pos, stableGeneration, unstableGeneration );
-        PointerChecking.checkChildPointer( childId );
+        PointerChecking.checkPointer( childId, false );
 
         bTreeNode.goTo( cursor, childId, stableGeneration, unstableGeneration );
 
@@ -229,7 +229,7 @@ class InternalTreeLogic<KEY,VALUE>
     {
         long current = cursor.getCurrentPageId();
         long oldRight = bTreeNode.rightSibling( cursor, stableGeneration, unstableGeneration );
-        PointerChecking.checkSiblingPointer( oldRight );
+        PointerChecking.checkPointer( oldRight, true );
         long newRight = idProvider.acquireNewId();
 
         // Find position to insert new key
@@ -388,7 +388,7 @@ class InternalTreeLogic<KEY,VALUE>
 
         long current = cursor.getCurrentPageId();
         long oldRight = bTreeNode.rightSibling( cursor, stableGeneration, unstableGeneration );
-        PointerChecking.checkSiblingPointer( oldRight );
+        PointerChecking.checkPointer( oldRight, true );
         long newRight = idProvider.acquireNewId();
 
         // BALANCE KEYS AND VALUES
@@ -535,7 +535,7 @@ class InternalTreeLogic<KEY,VALUE>
 
         long currentId = cursor.getCurrentPageId();
         long childId = bTreeNode.childAt( cursor, pos, stableGeneration, unstableGeneration );
-        PointerChecking.checkChildPointer( childId );
+        PointerChecking.checkPointer( childId, false );
         bTreeNode.goTo( cursor, childId, stableGeneration, unstableGeneration );
 
         VALUE result = remove( cursor, structurePropagation, key, into, stableGeneration, unstableGeneration );
@@ -652,9 +652,9 @@ class InternalTreeLogic<KEY,VALUE>
         //              v                                     v                                      v
         // (leftSiblingOfStableNode) -[rightSibling]-> (newUnstableNode) <-[leftSibling]- (rightSiblingOfStableNode)
         long leftSibling = bTreeNode.leftSibling( cursor, stableGeneration, unstableGeneration );
-        PointerChecking.checkSiblingPointer( leftSibling );
+        PointerChecking.checkPointer( leftSibling, true );
         long rightSibling = bTreeNode.rightSibling( cursor, stableGeneration, unstableGeneration );
-        PointerChecking.checkSiblingPointer( rightSibling );
+        PointerChecking.checkPointer( rightSibling, true );
         if ( leftSibling != TreeNode.NO_NODE_FLAG )
         {
             bTreeNode.goTo( cursor, leftSibling, stableGeneration, unstableGeneration );

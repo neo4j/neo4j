@@ -87,6 +87,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
 
     private void traverseDownToFirstLeaf() throws IOException
     {
+        long newGen;
         boolean isInternal;
         int keyCount;
         long childId = 0; // initialized to satisfy compiler
@@ -95,6 +96,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
         {
             do
             {
+                newGen = bTreeNode.newGen( cursor, stableGeneration, unstableGeneration );
                 isInternal = bTreeNode.isInternal( cursor );
                 // Find the left-most key within from-range
                 keyCount = bTreeNode.keyCount( cursor );
@@ -115,9 +117,22 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
             while ( cursor.shouldRetry() );
             checkOutOfBounds( cursor );
 
+            if ( pointerCheckingWithGenerationCatchup( newGen, true ) )
+            {
+                continue;
+            }
+            else if ( bTreeNode.isNode( newGen ) )
+            {
+                bTreeNode.goTo( cursor, newGen, stableGeneration, unstableGeneration );
+                continue;
+            }
+
             if ( isInternal )
             {
-                PointerChecking.checkChildPointer( childId );
+                if ( pointerCheckingWithGenerationCatchup( childId, false ) )
+                {
+                    continue;
+                }
 
                 bTreeNode.goTo( cursor, childId, stableGeneration, unstableGeneration );
             }
@@ -129,6 +144,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
         this.keyCount = keyCount;
         this.currentContainsEnd = layout.compare(
                 bTreeNode.keyAt( cursor, mutableKey, keyCount - 1 ), toExclusive ) >= 0;
+
     }
 
     @Override
@@ -143,9 +159,11 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
         while ( true )
         {
             pos++;
+            long newGen;
             long rightSibling = -1; // initialized to satisfy the compiler
             do
             {
+                newGen = bTreeNode.newGen( cursor, stableGeneration, unstableGeneration );
                 if ( reread )
                 {
                     keyCount = bTreeNode.keyCount( cursor );
@@ -160,6 +178,10 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
                         {
                             int searchResult = KeySearch.search( cursor, bTreeNode, prevKey, mutableKey, keyCount );
                             pos = KeySearch.positionOf( searchResult );
+                        }
+                        else
+                        {
+                            pos = 0;
                         }
                     }
                 }
@@ -184,24 +206,24 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
                 throw new IllegalStateException( "Read out of bounds" );
             }
 
+            if ( pointerCheckingWithGenerationCatchup( newGen, true ) )
+            {
+                reread = resetPosition = true;
+                continue;
+            }
+            else if ( bTreeNode.isNode( newGen ) )
+            {
+                bTreeNode.goTo( cursor, newGen, stableGeneration, unstableGeneration );
+                reread = resetPosition = true;
+                continue;
+            }
+
             if ( pos >= keyCount )
             {
-                if ( !GenSafePointerPair.isSuccess( rightSibling ) )
+                if ( pointerCheckingWithGenerationCatchup( rightSibling, true ) )
                 {
-                    // An unexpected sibling read, this could have been caused by a concurrent checkpoint
-                    // where generation has been incremented. Re-read generation and, if changed since this
-                    // seek started then update generation locally
-                    long newGeneration = generationSupplier.getAsLong();
-                    long newStableGeneration = Generation.stableGeneration( newGeneration );
-                    long newUnstableGeneration = Generation.unstableGeneration( newGeneration );
-                    if ( newStableGeneration != stableGeneration || newUnstableGeneration != unstableGeneration )
-                    {
-                        stableGeneration = newStableGeneration;
-                        unstableGeneration = newUnstableGeneration;
-                        reread = resetPosition = true;
-                        continue;
-                    }
-                    PointerChecking.checkSiblingPointer( rightSibling );
+                    reread = resetPosition = true;
+                    continue;
                 }
 
                 if ( bTreeNode.isNode( rightSibling ) )
@@ -239,6 +261,27 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
             }
             return false;
         }
+    }
+
+    private boolean pointerCheckingWithGenerationCatchup( long pointer, boolean allowNoNode )
+    {
+        if ( !GenSafePointerPair.isSuccess( pointer ) )
+        {
+            // An unexpected sibling read, this could have been caused by a concurrent checkpoint
+            // where generation has been incremented. Re-read generation and, if changed since this
+            // seek started then update generation locally
+            long newGeneration = generationSupplier.getAsLong();
+            long newStableGeneration = Generation.stableGeneration( newGeneration );
+            long newUnstableGeneration = Generation.unstableGeneration( newGeneration );
+            if ( newStableGeneration != stableGeneration || newUnstableGeneration != unstableGeneration )
+            {
+                stableGeneration = newStableGeneration;
+                unstableGeneration = newUnstableGeneration;
+                return true;
+            }
+            PointerChecking.checkPointer( pointer, allowNoNode );
+        }
+        return false;
     }
 
     @Override

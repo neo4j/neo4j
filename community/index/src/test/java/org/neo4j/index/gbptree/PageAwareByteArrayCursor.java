@@ -38,13 +38,14 @@ class PageAwareByteArrayCursor extends PageCursor
     private long currentPageId = UNBOUND_PAGE_ID;
     private long nextPageId;
     private PageCursor linkedCursor;
+    private boolean shouldRetry;
 
     PageAwareByteArrayCursor( int pageSize )
     {
         this( pageSize, 0 );
     }
 
-    PageAwareByteArrayCursor( int pageSize, long nextPageId )
+    private PageAwareByteArrayCursor( int pageSize, long nextPageId )
     {
         this( new ArrayList<>(), pageSize, nextPageId );
     }
@@ -61,6 +62,21 @@ class PageAwareByteArrayCursor extends PageCursor
     {
         currentPageId = UNBOUND_PAGE_ID;
         current = null;
+    }
+
+    PageAwareByteArrayCursor duplicate()
+    {
+        return new PageAwareByteArrayCursor( pages, pageSize, nextPageId );
+    }
+
+    PageAwareByteArrayCursor duplicate( long nextPageId )
+    {
+        return new PageAwareByteArrayCursor( pages, pageSize, nextPageId );
+    }
+
+    void forceRetry()
+    {
+        shouldRetry = true;
     }
 
     @Override
@@ -298,6 +314,17 @@ class PageAwareByteArrayCursor extends PageCursor
     @Override
     public boolean shouldRetry() throws IOException
     {
+        if ( shouldRetry )
+        {
+            shouldRetry = false;
+
+            // To reset shouldRetry for linked cursor as well
+            if ( linkedCursor != null )
+            {
+                linkedCursor.shouldRetry();
+            }
+            return true;
+        }
         return linkedCursor != null && linkedCursor.shouldRetry() || current.shouldRetry();
     }
 

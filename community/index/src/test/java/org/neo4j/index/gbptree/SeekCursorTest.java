@@ -25,38 +25,61 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.LongSupplier;
 
+import org.neo4j.index.Hit;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.impl.DelegatingPageCursor;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.neo4j.index.IndexWriter.Options.DEFAULTS;
+import static org.neo4j.index.ValueMergers.overwrite;
 
 public class SeekCursorTest
 {
-    private static final int STABLE_GENERATION = 1;
-    private static final int UNSTABLE_GENERATION = 2;
+
     private static final int PAGE_SIZE = 256;
+    private static final LongSupplier generationSupplier = new LongSupplier()
+    {
+        @Override
+        public long getAsLong()
+        {
+            return Generation.generation( stableGen, unstableGen );
+        }
+    };
+
+    private final SimpleIdProvider id = new SimpleIdProvider();
     private final Layout<MutableLong,MutableLong> layout = new SimpleLongLayout();
-    private final TreeNode<MutableLong,MutableLong> treeNode = new TreeNode<>( PAGE_SIZE, layout );
-    private final PageAwareByteArrayCursor delegate = new PageAwareByteArrayCursor( PAGE_SIZE );
-    private final TestPageCursor cursor = new TestPageCursor( delegate );
-    private final int maxKeyCount = treeNode.leafMaxKeyCount();
+    private final TreeNode<MutableLong,MutableLong> node = new TreeNode<>( PAGE_SIZE, layout );
+    private final InternalTreeLogic<MutableLong,MutableLong> treeLogic = new InternalTreeLogic<>( id, node, layout );
+    private final StructurePropagation<MutableLong> structurePropagation =
+            new StructurePropagation<>( layout.newKey() );
+    private final PageAwareByteArrayCursor cursor = new PageAwareByteArrayCursor( PAGE_SIZE );
+    private final int maxKeyCount = node.leafMaxKeyCount();
     private final byte[] tmp = new byte[PAGE_SIZE];
 
-    private final MutableLong key = layout.newKey();
-    private final MutableLong value = layout.newValue();
+    private final MutableLong insertKey = layout.newKey();
+    private final MutableLong insertValue = layout.newValue();
+    private final MutableLong readKey = layout.newKey();
+    private final MutableLong readValue = layout.newValue();
+
     private final MutableLong from = layout.newKey();
     private final MutableLong to = layout.newKey();
+
+    private static long stableGen = GenSafePointer.MIN_GENERATION;
+    private static long unstableGen = stableGen + 1;
 
     @Before
     public void setUp() throws IOException
     {
-        cursor.next( 0L );
-        treeNode.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        cursor.next( id.acquireNewId() );
+        node.initializeLeaf( cursor, stableGen, unstableGen );
     }
 
     /* NO CONCURRENT INSERT */
@@ -246,7 +269,7 @@ public class SeekCursorTest
 
             // Seeker pauses and writer insert new key at the end of leaf
             append( middle );
-            this.cursor.changed();
+            this.cursor.forceRetry();
 
             // Seeker continue
             while ( cursor.next() )
@@ -289,7 +312,7 @@ public class SeekCursorTest
             long midInsert = (stopPoint * 2) - 1;
             insertIn( stopPoint, midInsert );
             expected.add( readKeys, midInsert );
-            this.cursor.changed();
+            this.cursor.forceRetry();
 
             while ( cursor.next() )
             {
@@ -331,7 +354,7 @@ public class SeekCursorTest
             // Seeker pauses and writer insert new key to the left of seekers next position
             long midInsert = ((stopPoint - 1) * 2) - 1;
             insertIn( stopPoint - 1, midInsert );
-            this.cursor.changed();
+            this.cursor.forceRetry();
 
             while ( cursor.next() )
             {
@@ -384,8 +407,8 @@ public class SeekCursorTest
             }
             // Update keycount in left sibling
             this.cursor.next( left );
-            treeNode.setKeyCount( this.cursor, middle );
-            this.cursor.changed();
+            node.setKeyCount( this.cursor, middle );
+            this.cursor.forceRetry();
 
             while ( cursor.next() )
             {
@@ -436,8 +459,8 @@ public class SeekCursorTest
             }
             // Update keycount in left sibling
             this.cursor.next( left );
-            treeNode.setKeyCount( this.cursor, middle );
-            this.cursor.changed();
+            node.setKeyCount( this.cursor, middle );
+            this.cursor.forceRetry();
 
             while ( cursor.next() )
             {
@@ -479,7 +502,7 @@ public class SeekCursorTest
             // Seeker pauses and writer remove rightmost key
             // [0 1 ... maxKeyCount-2]
             remove( maxKeyCount - 1 );
-            this.cursor.changed();
+            this.cursor.forceRetry();
 
             while ( cursor.next() )
             {
@@ -519,7 +542,7 @@ public class SeekCursorTest
             // Seeker pauses and writer remove rightmost key
             // [1 ... maxKeyCount-1]
             remove( 0 );
-            this.cursor.changed();
+            this.cursor.forceRetry();
 
             while ( cursor.next() )
             {
@@ -557,7 +580,7 @@ public class SeekCursorTest
 
             // Seeker pauses and writer remove rightmost key
             remove( middle - 1 );
-            this.cursor.changed();
+            this.cursor.forceRetry();
 
             while ( cursor.next() )
             {
@@ -581,8 +604,8 @@ public class SeekCursorTest
         to.setValue( keyCount + 1 ); // +1 because we're adding one more down below
 
         // WHEN
-        try ( SeekCursor<MutableLong,MutableLong> cursor = new SeekCursor<>( this.cursor, key, value,
-                treeNode, from, to, layout, STABLE_GENERATION, UNSTABLE_GENERATION, () -> 0L ) )
+        try ( SeekCursor<MutableLong,MutableLong> cursor = new SeekCursor<>( this.cursor, insertKey, insertValue,
+                node, from, to, layout, stableGen, unstableGen, () -> 0L ) )
         {
             // reading a couple of keys
             assertTrue( cursor.next() );
@@ -592,7 +615,7 @@ public class SeekCursorTest
 
             // and WHEN a change happens
             append( keyCount );
-            this.cursor.changed();
+            this.cursor.forceRetry();
 
             // THEN at least keyCount should be re-read on next()
             assertTrue( cursor.next() );
@@ -622,22 +645,390 @@ public class SeekCursorTest
     // todo mustFindRangeWhenRemoveInSeekNodeCauseMergeWithRight
     // todo mustFindRangeWhenRemoveTwoNodesToRightCauseMergeWithNodeOneToTheRight
 
-    /* Generation READ FAIL sibling */
-    // TODO reread current node on sibling read failure caused by checkpoint
-    // TODO fail on sibling read failure if not caused by checkpoint
+    /* POINTER GENERATION TESTING */
 
-    /* Generation READ FAIL newGen */
-    // TODO leaf reread current node on newGen read failure caused by checkpoint
-    // TODO leaf fail on newGen read failure if not caused by checkpoint
-    // TODO internal reread current node on newGen read failure caused by checkpoint
-    // TODO internal fail on newGen read failure if not caused by checkpoint
+    @Test
+    public void shouldRereadSiblingIfReadFailureCausedByConcurrentCheckpoint() throws Exception
+    {
+        // given
+        long newRoot = 0L;
+        long i = 0L;
+        while ( true )
+        {
+            insert( i, i * 10 );
+            i++;
+            if ( structurePropagation.hasSplit )
+            {
+                newRoot = newRootFromSplit( structurePropagation );
+                break;
+            }
+        }
 
-    /* Traverse internal nodes */
-    // TODO should traverse internal nodes to find starting leaf
+        try ( SeekCursor<MutableLong,MutableLong> seek = seekCursor( 0L, i, cursor ) )
+        {
+            // when new generation of right sibling
+            checkpoint();
+            PageAwareByteArrayCursor duplicate = cursor.duplicate( newRoot );
+            duplicate.next();
+            insert( i, i * 10, duplicate );
 
-    /* NewGen */
-    // TODO should go to newGen if discovered when on internal
-    // TODO should go to newGen if discovered when on leaf
+            // then
+            // we should not fail to read right sibling
+            while ( seek.next() )
+            {
+                // ignore
+            }
+        }
+    }
+
+    @Test
+    public void shouldFailOnSiblingReadFailureIfNotCausedByConcurrentCheckpoint() throws Exception
+    {
+        // given
+        long newRoot;
+        long i = 0L;
+        while ( true )
+        {
+            insert( i, i * 10 );
+            i++;
+            if ( structurePropagation.hasSplit )
+            {
+                newRoot = newRootFromSplit( structurePropagation );
+                break;
+            }
+        }
+
+        try ( SeekCursor<MutableLong,MutableLong> seek = seekCursor( 0L, i, cursor ) )
+        {
+            // when right sibling pointer is corrupt
+            PageAwareByteArrayCursor duplicate = cursor.duplicate( newRoot );
+            duplicate.next();
+            long leftChild = node.childAt( duplicate, 0, stableGen, unstableGen );
+            duplicate.next( leftChild );
+            corruptGSPP( duplicate, TreeNode.BYTE_POS_RIGHTSIBLING );
+
+            // even if we DO have a checkpoint
+            checkpoint();
+
+            // then
+            // we should fail to read right sibling
+            try
+            {
+                while ( seek.next() )
+                {
+                    // ignore
+                }
+                fail( "Expected to throw" );
+            }
+            catch ( IllegalStateException e )
+            {
+                // Good
+            }
+        }
+    }
+
+    @Test
+    public void shouldRereadNewGenIfReadFailureCausedByCheckpointInLeaf() throws Exception
+    {
+        // given
+        List<Long> expected = new ArrayList<>();
+        List<Long> actual = new ArrayList<>();
+        long i = 0L;
+        for ( ; i < maxKeyCount / 2; i++ )
+        {
+            insert( i, i * 10 );
+            expected.add( i );
+        }
+
+        try ( SeekCursor<MutableLong,MutableLong> seek = seekCursor( 0L, maxKeyCount, cursor ) )
+        {
+            // when
+            checkpoint();
+            PageAwareByteArrayCursor duplicate = cursor.duplicate( cursor.getCurrentPageId() );
+            duplicate.next();
+            insert( i, i * 10, duplicate ); // Create new gen of leaf
+            expected.add( i );
+
+            while ( seek.next() )
+            {
+                Hit<MutableLong,MutableLong> hit = seek.get();
+                actual.add( hit.key().getValue() );
+            }
+        }
+
+        // then
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    public void shouldFailNewGenIfReadFailureNotCausedByCheckpointInLeaf() throws Exception
+    {
+        // given
+        long i = 0L;
+        for ( ; i < maxKeyCount / 2; i++ )
+        {
+            insert( i, i * 10 );
+        }
+
+        try ( SeekCursor<MutableLong,MutableLong> seek = seekCursor( 0L, maxKeyCount, cursor ) )
+        {
+            // when
+            checkpoint();
+            PageAwareByteArrayCursor duplicate = cursor.duplicate( cursor.getCurrentPageId() );
+            duplicate.next();
+            insert( i, i * 10, duplicate ); // Create new gen of leaf
+
+            // and corrupt new gen pointer
+            corruptGSPP( duplicate, TreeNode.BYTE_POS_NEWGEN );
+
+            // then
+            try
+            {
+                while ( seek.next() )
+                {
+                }
+                fail( "Expected to throw" );
+            }
+            catch ( IllegalStateException e )
+            {
+                // good
+            }
+        }
+    }
+
+    @Test
+    public void shouldRereadNewGenIfReadFailureCausedByCheckpointInInternal() throws Exception
+    {
+        // given
+        // a root with two leaves in old generation
+        long newRoot;
+        long i = 0L;
+        while ( true )
+        {
+            insert( i, i * 10 );
+            i++;
+            if ( structurePropagation.hasSplit )
+            {
+                newRoot = newRootFromSplit( structurePropagation );
+                break;
+            }
+        }
+
+        // a checkpoint
+        long oldStableGen = stableGen;
+        long oldUnstableGen = unstableGen;
+        checkpoint();
+        int keyCount = node.keyCount( cursor );
+
+        // and update root with an insert in new generation
+        while ( node.keyCount( cursor ) == keyCount )
+        {
+            insert( i, i * 10 );
+            i++;
+        }
+        long newGenOfNewRoot = cursor.getCurrentPageId();
+        long rightChild = node.childAt( cursor, 2, stableGen, unstableGen );
+
+        // when
+        // starting a seek on the old root with generation that is not up to date, simulating a concurrent checkpoint
+        PageAwareByteArrayCursor pageCursorForSeeker = cursor.duplicate( newRoot );
+        BreadcrumbPageCursor breadcrumbCursor = new BreadcrumbPageCursor( pageCursorForSeeker );
+        breadcrumbCursor.next();
+        try ( SeekCursor<MutableLong,MutableLong> seek = seekCursor(
+                i, i + 1, breadcrumbCursor, oldStableGen, oldUnstableGen ) )
+        {
+            while ( seek.next() )
+            {
+            }
+        }
+
+        // then
+        // make sure seek cursor went to new gen of root node
+        assertEquals( Arrays.asList( newRoot, newGenOfNewRoot, rightChild ), breadcrumbCursor.getBreadcrumbs() );
+    }
+
+    @Test
+    public void shouldFailNewGenIfReadFailureNotCausedByCheckpointInInternal() throws Exception
+    {
+        // given
+        // a root with two leaves in old generation
+        long newRoot;
+        long i = 0L;
+        while ( true )
+        {
+            insert( i, i * 10 );
+            i++;
+            if ( structurePropagation.hasSplit )
+            {
+                newRoot = newRootFromSplit( structurePropagation );
+                break;
+            }
+        }
+
+        // a checkpoint
+        long oldStableGen = stableGen;
+        long oldUnstableGen = unstableGen;
+        checkpoint();
+        int keyCount = node.keyCount( cursor );
+
+        // and update root with an insert in new generation
+        while ( node.keyCount( cursor ) == keyCount )
+        {
+            insert( i, i * 10 );
+            i++;
+        }
+
+        // and corrupt new gen pointer
+        cursor.next( newRoot );
+        corruptGSPP( cursor, TreeNode.BYTE_POS_NEWGEN );
+
+        // when
+        // starting a seek on the old root with generation that is not up to date, simulating a concurrent checkpoint
+        PageAwareByteArrayCursor pageCursorForSeeker = cursor.duplicate( newRoot );
+        pageCursorForSeeker.next();
+        try ( SeekCursor<MutableLong,MutableLong> seek = seekCursor(
+                i, i + 1, pageCursorForSeeker, oldStableGen, oldUnstableGen ) )
+        {
+            fail( "Expected throw" );
+        }
+        catch ( IllegalStateException e )
+        {
+            // then
+            // good
+        }
+    }
+
+    @Test
+    public void shouldRereadChildPointerIfReadFailureCausedByCheckpoint() throws Exception
+    {
+        // given
+        // a root with two leaves in old generation
+        long newRoot;
+        long i = 0L;
+        while ( true )
+        {
+            insert( i, i * 10 );
+            i++;
+            if ( structurePropagation.hasSplit )
+            {
+                newRoot = newRootFromSplit( structurePropagation );
+                break;
+            }
+        }
+
+        // a checkpoint
+        long oldStableGen = stableGen;
+        long oldUnstableGen = unstableGen;
+        checkpoint();
+
+        // and an update to root with a new gen child pointer
+        insert( i, i * 10 );
+        i++;
+        long newRightChild = node.childAt( cursor, 1, stableGen, unstableGen );
+
+        // when
+        // starting a seek on the old root with generation that is not up to date, simulating a concurrent checkpoint
+        PageAwareByteArrayCursor pageCursorForSeeker = cursor.duplicate( newRoot );
+        BreadcrumbPageCursor breadcrumbCursor = new BreadcrumbPageCursor( pageCursorForSeeker );
+        breadcrumbCursor.next();
+        try ( SeekCursor<MutableLong,MutableLong> seek = seekCursor(
+                i, i + 1, breadcrumbCursor, oldStableGen, oldUnstableGen ) )
+        {
+            while ( seek.next() )
+            {
+            }
+        }
+
+        // then
+        // make sure seek cursor went to new gen of root node
+        assertEquals( Arrays.asList( newRoot, newRightChild ), breadcrumbCursor.getBreadcrumbs() );
+    }
+
+    @Test
+    public void shouldFailChildPointerIfReadFailureNotCausedByCheckpoint() throws Exception
+    {
+        // given
+        // a root with two leaves in old generation
+        long newRoot;
+        long i = 0L;
+        while ( true )
+        {
+            insert( i, i * 10 );
+            i++;
+            if ( structurePropagation.hasSplit )
+            {
+                newRoot = newRootFromSplit( structurePropagation );
+                break;
+            }
+        }
+
+        // a checkpoint
+        long oldStableGen = stableGen;
+        long oldUnstableGen = unstableGen;
+        checkpoint();
+
+        // and update root with an insert in new generation
+        insert( i, i * 10 );
+        i++;
+
+        // and corrupt new gen pointer
+        corruptGSPP( cursor, node.childOffset( 1 ) );
+
+        // when
+        // starting a seek on the old root with generation that is not up to date, simulating a concurrent checkpoint
+        PageAwareByteArrayCursor pageCursorForSeeker = cursor.duplicate( newRoot );
+        pageCursorForSeeker.next();
+        try ( SeekCursor<MutableLong,MutableLong> seek = seekCursor(
+                i, i + 1, pageCursorForSeeker, oldStableGen, oldUnstableGen ) )
+        {
+            fail( "Expected throw" );
+        }
+        catch ( IllegalStateException e )
+        {
+            // then
+            // good
+        }
+    }
+
+    private void checkpoint()
+    {
+        stableGen = unstableGen;
+        unstableGen++;
+    }
+
+    private long newRootFromSplit( StructurePropagation<MutableLong> split ) throws IOException
+    {
+        assertTrue( split.hasSplit );
+        long rootId = id.acquireNewId();
+        cursor.next( rootId );
+        node.initializeInternal( cursor, stableGen, unstableGen );
+        node.insertKeyAt( cursor, split.primKey, 0, 0, tmp );
+        node.setKeyCount( cursor, 1 );
+        node.setChildAt( cursor, split.left, 0, stableGen, unstableGen );
+        node.setChildAt( cursor, split.right, 1, stableGen, unstableGen );
+        split.hasSplit = false;
+        return rootId;
+    }
+
+    private void corruptGSPP( PageAwareByteArrayCursor duplicate, int offset )
+    {
+        int someBytes = duplicate.getInt( offset );
+        duplicate.putInt( offset, ~someBytes );
+        someBytes = duplicate.getInt( offset + GenSafePointer.SIZE );
+        duplicate.putInt( offset + GenSafePointer.SIZE, ~someBytes );
+    }
+
+    private void insert( long key, long value ) throws IOException
+    {
+        insert( key, value, cursor );
+    }
+
+    private void insert( long key, long value, PageCursor cursor ) throws IOException
+    {
+        insertKey.setValue( key );
+        insertValue.setValue( value );
+        treeLogic.insert( cursor, structurePropagation, insertKey, insertValue, overwrite(), DEFAULTS, stableGen, unstableGen );
+    }
 
     private SeekCursor<MutableLong,MutableLong> seekCursor( long fromInclusive, long toExclusive ) throws IOException
     {
@@ -647,10 +1038,15 @@ public class SeekCursorTest
     private SeekCursor<MutableLong,MutableLong> seekCursor( long fromInclusive, long toExclusive,
             PageCursor pageCursor ) throws IOException
     {
+        return seekCursor( fromInclusive, toExclusive, pageCursor, stableGen, unstableGen );
+    }
+    private SeekCursor<MutableLong,MutableLong> seekCursor( long fromInclusive, long toExclusive,
+            PageCursor pageCursor, long stableGen, long unstableGen ) throws IOException
+    {
         from.setValue( fromInclusive );
         to.setValue( toExclusive );
-        return new SeekCursor<>( pageCursor, key, value, treeNode, from, to, layout,
-                STABLE_GENERATION, UNSTABLE_GENERATION, () -> 0L );
+        return new SeekCursor<>( pageCursor, readKey, readValue, node, from,
+                to, layout, stableGen, unstableGen, generationSupplier );
     }
 
     /**
@@ -662,11 +1058,11 @@ public class SeekCursorTest
         long left = pageCursor.getCurrentPageId();
         long right = left + 1;
 
-        treeNode.setRightSibling( pageCursor, right, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.setRightSibling( pageCursor, right, stableGen, unstableGen );
 
         pageCursor.next( right );
-        treeNode.initializeLeaf( pageCursor, STABLE_GENERATION, UNSTABLE_GENERATION );
-        treeNode.setLeftSibling( pageCursor, left, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.initializeLeaf( pageCursor, stableGen, unstableGen );
+        node.setLeftSibling( pageCursor, left, stableGen, unstableGen );
         return left;
     }
 
@@ -705,41 +1101,72 @@ public class SeekCursorTest
     {
         for ( int i = 0; i < keyCount; i++ )
         {
-            key.setValue( i );
-            value.setValue( valueForKey( i ) );
+            insertKey.setValue( i );
+            insertValue.setValue( valueForKey( i ) );
             append( i );
         }
     }
 
     private void append( long k )
     {
-        int keyCount = treeNode.keyCount( cursor );
-        key.setValue( k );
-        value.setValue( valueForKey( k ) );
-        treeNode.insertKeyAt( cursor, key, keyCount, keyCount, tmp );
-        treeNode.insertValueAt( cursor, value, keyCount, keyCount, tmp );
-        treeNode.setKeyCount( cursor, keyCount + 1 );
+        int keyCount = node.keyCount( cursor );
+        insertKey.setValue( k );
+        insertValue.setValue( valueForKey( k ) );
+        node.insertKeyAt( cursor, insertKey, keyCount, keyCount, tmp );
+        node.insertValueAt( cursor, insertValue, keyCount, keyCount, tmp );
+        node.setKeyCount( cursor, keyCount + 1 );
     }
 
     private void insertIn( int pos, long k )
     {
-        int keyCount = treeNode.keyCount( cursor );
+        int keyCount = node.keyCount( cursor );
         if ( keyCount + 1 > maxKeyCount )
         {
             throw new IllegalStateException( "Can not insert another key in current node" );
         }
-        key.setValue( k );
-        value.setValue( valueForKey( k ) );
-        treeNode.insertKeyAt( cursor, key, pos, keyCount, tmp );
-        treeNode.insertValueAt( cursor, value, pos, keyCount, tmp );
-        treeNode.setKeyCount( cursor, keyCount + 1 );
+        insertKey.setValue( k );
+        insertValue.setValue( valueForKey( k ) );
+        node.insertKeyAt( cursor, insertKey, pos, keyCount, tmp );
+        node.insertValueAt( cursor, insertValue, pos, keyCount, tmp );
+        node.setKeyCount( cursor, keyCount + 1 );
     }
 
     private void remove( int pos )
     {
-        int keyCount = treeNode.keyCount( cursor );
-        treeNode.removeKeyAt( cursor, pos, keyCount, tmp );
-        treeNode.removeValueAt( cursor, pos, keyCount, tmp );
-        treeNode.setKeyCount( cursor, keyCount - 1 );
+        int keyCount = node.keyCount( cursor );
+        node.removeKeyAt( cursor, pos, keyCount, tmp );
+        node.removeValueAt( cursor, pos, keyCount, tmp );
+        node.setKeyCount( cursor, keyCount - 1 );
+    }
+
+    private static class BreadcrumbPageCursor extends DelegatingPageCursor
+    {
+        private final List<Long> breadcrumbs = new ArrayList<>();
+
+        BreadcrumbPageCursor( PageCursor delegate )
+        {
+            super( delegate );
+        }
+
+        @Override
+        public boolean next() throws IOException
+        {
+            boolean next = super.next();
+            breadcrumbs.add( getCurrentPageId() );
+            return next;
+        }
+
+        @Override
+        public boolean next( long pageId ) throws IOException
+        {
+            boolean next = super.next( pageId );
+            breadcrumbs.add( getCurrentPageId() );
+            return next;
+        }
+
+        List<Long> getBreadcrumbs()
+        {
+            return breadcrumbs;
+        }
     }
 }

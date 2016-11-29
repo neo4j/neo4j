@@ -41,7 +41,7 @@ public class PointerCheckingTest
         // WHEN
         try
         {
-            PointerChecking.checkChildPointer( TreeNode.NO_NODE_FLAG );
+            PointerChecking.checkPointer( TreeNode.NO_NODE_FLAG, false );
             fail( "Should have failed ");
         }
         catch ( IllegalStateException e )
@@ -59,7 +59,7 @@ public class PointerCheckingTest
         // WHEN
         try
         {
-            PointerChecking.checkChildPointer( result );
+            PointerChecking.checkPointer( result, false );
             fail( "Should have failed ");
         }
         catch ( IllegalStateException e )
@@ -82,7 +82,7 @@ public class PointerCheckingTest
         long result = write( cursor, 789, 0, thirdGeneration );
         try
         {
-            PointerChecking.checkChildPointer( result );
+            PointerChecking.checkPointer( result, false );
             fail( "Should have failed ");
         }
         catch ( IllegalStateException e )
@@ -95,14 +95,14 @@ public class PointerCheckingTest
     public void checkChildShouldPassOnReadSuccess() throws Exception
     {
         // GIVEN
-        PointerChecking.checkChildPointer( write( cursor, 123, 0, firstGeneration ) );
+        PointerChecking.checkPointer( write( cursor, 123, 0, firstGeneration ), false );
         cursor.rewind();
 
         // WHEN
         long result = read( cursor, 0, firstGeneration );
 
         // THEN
-        PointerChecking.checkChildPointer( result );
+        PointerChecking.checkPointer( result, false );
     }
 
     @Test
@@ -112,7 +112,7 @@ public class PointerCheckingTest
         long result = write( cursor, 123, 0, firstGeneration );
 
         // THEN
-        PointerChecking.checkChildPointer( result );
+        PointerChecking.checkPointer( result, false );
     }
 
     @Test
@@ -126,7 +126,7 @@ public class PointerCheckingTest
         long result = read( cursor, firstGeneration, secondGeneration );
 
         // THEN
-        PointerChecking.checkSiblingPointer( result );
+        PointerChecking.checkPointer( result, true );
     }
 
     @Test
@@ -141,7 +141,7 @@ public class PointerCheckingTest
         long result = read( cursor, firstGeneration, secondGeneration );
 
         // THEN
-        PointerChecking.checkSiblingPointer( result );
+        PointerChecking.checkPointer( result, true );
     }
 
     @Test
@@ -153,7 +153,7 @@ public class PointerCheckingTest
         // WHEN
         try
         {
-            PointerChecking.checkSiblingPointer( result );
+            PointerChecking.checkPointer( result, true );
             fail( "Should have failed" );
         }
         catch ( IllegalStateException e )
@@ -175,7 +175,7 @@ public class PointerCheckingTest
         // WHEN
         try
         {
-            PointerChecking.checkSiblingPointer( result );
+            PointerChecking.checkPointer( result, true );
             fail( "Should have failed" );
         }
         catch ( IllegalStateException e )
