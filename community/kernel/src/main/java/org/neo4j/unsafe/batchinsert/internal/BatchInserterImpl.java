@@ -1070,7 +1070,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     }
 
     @Override
-    public IndexConfigStore getIndexConfigStore()
+    public IndexConfigStore getIndexStore()
     {
         return this.indexStore;
     }

@@ -209,8 +209,8 @@ public class FileSystemClosingBatchInserter implements BatchInserter, IndexConfi
     }
 
     @Override
-    public IndexConfigStore getIndexConfigStore()
+    public IndexConfigStore getIndexStore()
     {
-        return configStoreProvider.getIndexConfigStore();
+        return configStoreProvider.getIndexStore();
     }
 }

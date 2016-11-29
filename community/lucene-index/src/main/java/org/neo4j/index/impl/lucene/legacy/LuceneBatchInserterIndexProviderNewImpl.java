@@ -52,7 +52,7 @@ public class LuceneBatchInserterIndexProviderNewImpl implements BatchInserterInd
     public LuceneBatchInserterIndexProviderNewImpl( final BatchInserter inserter )
     {
         this.inserter = inserter;
-        this.indexStore = ((IndexConfigStoreProvider) inserter).getIndexConfigStore();
+        this.indexStore = ((IndexConfigStoreProvider) inserter).getIndexStore();
         this.relationshipLookup = id ->
         {
             // TODO too may objects allocated here

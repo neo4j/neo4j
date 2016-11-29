@@ -29,5 +29,5 @@ import org.neo4j.unsafe.batchinsert.BatchInserterIndexProvider;
  */
 public interface IndexConfigStoreProvider
 {
-    IndexConfigStore getIndexConfigStore();
+    IndexConfigStore getIndexStore();
 }
