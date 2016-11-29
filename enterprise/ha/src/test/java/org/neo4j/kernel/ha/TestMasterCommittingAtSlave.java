@@ -217,7 +217,7 @@ public class TestMasterCommittingAtSlave
     {
         slaves = instantiateSlaves( slaveCount, failingSlaves );
 
-        Config config = new Config( MapUtil.stringMap(
+        Config config = Config.embeddedDefaults( MapUtil.stringMap(
                 HaSettings.tx_push_factor.name(), "" + replication, ClusterSettings.server_id.name(), "" + MasterServerId ) );
         Neo4jJobScheduler scheduler = cleanup.add( new Neo4jJobScheduler() );
         TransactionPropagator result = new TransactionPropagator( TransactionPropagator.from( config, slavePriority ),

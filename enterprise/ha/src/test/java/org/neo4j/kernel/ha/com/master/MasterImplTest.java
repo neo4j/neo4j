@@ -20,7 +20,6 @@
 package org.neo4j.kernel.ha.com.master;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
@@ -75,6 +74,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.com.StoreIdTestFactory.newStoreIdForCurrentVersion;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class MasterImplTest
 {
@@ -504,10 +504,9 @@ public class MasterImplTest
 
     private Config config()
     {
-        Map<String, String> params = new HashMap<>();
-        params.put( HaSettings.lock_read_timeout.name(), 20 + "s" );
-        params.put( ClusterSettings.server_id.name(), "1" );
-        return new Config( params, HaSettings.class );
+        return Config.embeddedDefaults( stringMap(
+                HaSettings.lock_read_timeout.name(), 20 + "s",
+                ClusterSettings.server_id.name(), "1" ) );
     }
 
     public DefaultConversationSPI mockedConversationSpi()

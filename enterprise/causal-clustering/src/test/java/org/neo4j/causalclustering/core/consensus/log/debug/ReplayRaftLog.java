@@ -56,7 +56,7 @@ public class ReplayRaftLog
 
         File logDirectory = new File( from );
         System.out.println( "logDirectory = " + logDirectory );
-        Config config = new Config( stringMap() );
+        Config config = Config.embeddedDefaults( stringMap() );
 
         try ( DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
         {

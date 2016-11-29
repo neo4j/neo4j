@@ -36,7 +36,7 @@ import java.util.concurrent.Future;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.consensus.RaftMachine;
 import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.logging.NullLogProvider;
@@ -101,11 +101,11 @@ public class SharedDiscoveryServiceIT
 
     private Config config()
     {
-        return new Config( stringMap(
+        return Config.embeddedDefaults( stringMap(
                 CausalClusteringSettings.raft_advertised_address.name(), "127.0.0.1:7000",
                 CausalClusteringSettings.transaction_advertised_address.name(), "127.0.0.1:7001",
-                new GraphDatabaseSettings.BoltConnector( "bolt" ).enabled.name(), "true",
-                new GraphDatabaseSettings.BoltConnector( "bolt" ).advertised_address.name(), "127.0.0.1:7002" ) );
+                new BoltConnector( "bolt" ).enabled.name(), "true",
+                new BoltConnector( "bolt" ).advertised_address.name(), "127.0.0.1:7002" ) );
     }
 
     private Callable<Void> sharedClientStarter( CoreTopologyService topologyService, Set<MemberId> expectedTargetSet )

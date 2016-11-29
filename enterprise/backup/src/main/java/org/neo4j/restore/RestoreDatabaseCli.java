@@ -22,8 +22,6 @@ package org.neo4j.restore;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 
 import org.neo4j.commandline.admin.AdminCommand;
@@ -34,7 +32,6 @@ import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.commandline.arguments.MandatoryNamedArg;
 import org.neo4j.commandline.arguments.OptionalBooleanArg;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
@@ -59,19 +56,10 @@ public class RestoreDatabaseCli implements AdminCommand
 
     private static Config loadNeo4jConfig( Path homeDir, Path configDir, String databaseName )
     {
-        ConfigLoader configLoader = new ConfigLoader( settings() );
-        Config config = configLoader.loadOfflineConfig( Optional.of( homeDir.toFile() ),
+        Config config = ConfigLoader.loadConfigWithConnectorsDisabled( Optional.of( homeDir.toFile() ),
                 Optional.of( configDir.resolve( "neo4j.conf" ).toFile() ) );
 
         return config.with( stringMap( DatabaseManagementSystemSettings.active_database.name(), databaseName ) );
-    }
-
-    private static List<Class<?>> settings()
-    {
-        List<Class<?>> settings = new ArrayList<>();
-        settings.add( GraphDatabaseSettings.class );
-        settings.add( DatabaseManagementSystemSettings.class );
-        return settings;
     }
 
     @Override

@@ -584,10 +584,10 @@ public class TransactionGuardIntegrationTest
         }
 
         @Override
-        protected PlatformModule createPlatform( File storeDir, Map<String,String> params, Dependencies dependencies,
+        protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies,
                 GraphDatabaseFacade graphDatabaseFacade )
         {
-            return new PlatformModule( storeDir, params, databaseInfo, dependencies, graphDatabaseFacade ) {
+            return new PlatformModule( storeDir, config, databaseInfo, dependencies, graphDatabaseFacade ) {
                 @Override
                 protected SystemNanoClock createClock()
                 {

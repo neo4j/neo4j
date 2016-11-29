@@ -36,11 +36,12 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseDependencies;
+import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.HttpConnector;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.logging.Level;
-import org.neo4j.server.configuration.ClientConnectorSettings;
-import org.neo4j.server.configuration.ClientConnectorSettings.HttpConnector.Encryption;
+import org.neo4j.kernel.configuration.HttpConnector.Encryption;
 
 import static java.lang.String.format;
 import static java.util.stream.Collectors.joining;
@@ -86,15 +87,15 @@ public class CoreClusterMember implements ClusterMember
         config.put( CausalClusteringSettings.raft_messages_log_enable.name(), Settings.TRUE );
         config.put( GraphDatabaseSettings.store_internal_log_level.name(), Level.DEBUG.name() );
         config.put( GraphDatabaseSettings.record_format.name(), recordFormat );
-        config.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).type.name(), "BOLT" );
-        config.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).enabled.name(), "true" );
-        config.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).listen_address.name(), "127.0.0.1:" + boltPort );
+        config.put( new BoltConnector( "bolt" ).type.name(), "BOLT" );
+        config.put( new BoltConnector( "bolt" ).enabled.name(), "true" );
+        config.put( new BoltConnector( "bolt" ).listen_address.name(), "127.0.0.1:" + boltPort );
         boltAdvertisedAddress = "127.0.0.1:" + boltPort;
-        config.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).advertised_address.name(), boltAdvertisedAddress );
-        config.put( new ClientConnectorSettings.HttpConnector( "http", Encryption.NONE ).type.name(), "HTTP" );
-        config.put( new ClientConnectorSettings.HttpConnector( "http", Encryption.NONE ).enabled.name(), "true" );
-        config.put( new ClientConnectorSettings.HttpConnector( "http", Encryption.NONE ).listen_address.name(), "127.0.0.1:" + httpPort );
-        config.put( new ClientConnectorSettings.HttpConnector( "http", Encryption.NONE ).advertised_address.name(), "127.0.0.1:" + httpPort );
+        config.put( new BoltConnector( "bolt" ).advertised_address.name(), boltAdvertisedAddress );
+        config.put( new HttpConnector( "http", Encryption.NONE ).type.name(), "HTTP" );
+        config.put( new HttpConnector( "http", Encryption.NONE ).enabled.name(), "true" );
+        config.put( new HttpConnector( "http", Encryption.NONE ).listen_address.name(), "127.0.0.1:" + httpPort );
+        config.put( new HttpConnector( "http", Encryption.NONE ).advertised_address.name(), "127.0.0.1:" + httpPort );
         config.put( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
         config.put( GraphDatabaseSettings.auth_store.name(), new File( parentDir, "auth" ).getAbsolutePath() );
         config.putAll( extraParams );
@@ -199,6 +200,6 @@ public class CoreClusterMember implements ClusterMember
     @Override
     public ClientConnectorAddresses clientConnectorAddresses()
     {
-        return ClientConnectorAddresses.extractFromConfig( new Config( this.config ) );
+        return ClientConnectorAddresses.extractFromConfig( Config.embeddedDefaults( this.config ) );
     }
 }

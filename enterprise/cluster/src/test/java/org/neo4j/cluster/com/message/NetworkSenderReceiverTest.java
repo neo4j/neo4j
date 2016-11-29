@@ -19,17 +19,17 @@
  */
 package org.neo4j.cluster.com.message;
 
+import org.junit.Test;
+import org.mockito.Matchers;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+
 import java.net.URI;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import org.junit.Test;
-import org.mockito.Matchers;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.com.NetworkReceiver;
@@ -310,7 +310,7 @@ public class NetworkSenderReceiverTest
 
         private Server( final CountDownLatch latch, final Map<String, String> config )
         {
-            final Config conf = new Config( config, ClusterSettings.class );
+            final Config conf = Config.embeddedDefaults( config );
             networkReceiver = life.add( new NetworkReceiver( mock( NetworkReceiver.Monitor.class ),
                     new NetworkReceiver.Configuration()
             {

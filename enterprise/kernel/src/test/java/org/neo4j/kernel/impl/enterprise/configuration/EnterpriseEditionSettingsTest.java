@@ -65,10 +65,10 @@ public class EnterpriseEditionSettingsTest
     @Test
     public void idTypesToReuseCaseInsensitive()
     {
-        Config config1 = new Config( stringMap( idTypesToReuse.name(), "node, relationship" ) );
+        Config config1 = Config.embeddedDefaults( stringMap( idTypesToReuse.name(), "node, relationship" ) );
         assertEquals( asList( IdType.NODE, IdType.RELATIONSHIP ), config1.get( idTypesToReuse ) );
 
-        Config config2 = new Config( stringMap( idTypesToReuse.name(), "rElAtIoNshiP, NoDe" ) );
+        Config config2 = Config.embeddedDefaults( stringMap( idTypesToReuse.name(), "rElAtIoNshiP, NoDe" ) );
         assertEquals( asList( IdType.RELATIONSHIP, IdType.NODE ), config2.get( idTypesToReuse ) );
     }
 
@@ -81,9 +81,9 @@ public class EnterpriseEditionSettingsTest
 
     private static void assertIdTypesToReuseDisallows( IdType type, IdType... otherTypes )
     {
-        Config config = configWithIdTypes( type, otherTypes );
         try
         {
+            Config config = configWithIdTypes( type, otherTypes );
             config.get( idTypesToReuse );
             fail( "Exception expected" );
         }
@@ -96,7 +96,7 @@ public class EnterpriseEditionSettingsTest
     private static Config configWithIdTypes( IdType type, IdType... otherTypes )
     {
         String value = stringList( type, otherTypes );
-        return new Config( stringMap( idTypesToReuse.name(), value ) );
+        return Config.embeddedDefaults( stringMap( idTypesToReuse.name(), value ) );
     }
 
     @SafeVarargs

@@ -130,7 +130,7 @@ public class ArbiterBootstrapper implements Bootstrapper, AutoCloseable
         }
 
         verifyConfig( config );
-        return new Config( config );
+        return Config.embeddedDefaults( config );
     }
 
     private static void verifyConfig( Map<String, String> config )

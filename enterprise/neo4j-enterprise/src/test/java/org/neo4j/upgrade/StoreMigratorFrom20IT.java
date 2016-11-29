@@ -35,6 +35,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -182,7 +183,7 @@ public class StoreMigratorFrom20IT
         SchemaIndexMigrator indexMigrator = new SchemaIndexMigrator( fs, schemaIndexProvider, labelScanStoreProvider );
         upgrader( indexMigrator, storeMigrator ).migrateIfNeeded( legacyStoreDir );
         ClusterManager.ManagedCluster cluster =
-                buildClusterWithMasterDirIn( fs, legacyStoreDir, life, getConfig().getParams() );
+                buildClusterWithMasterDirIn( fs, legacyStoreDir, life, getParams() );
         cluster.await( allSeesAllAsAvailable() );
         cluster.sync();
 
@@ -255,11 +256,15 @@ public class StoreMigratorFrom20IT
         return upgrader;
     }
 
+    private Map<String,String> getParams()
+    {
+        return stringMap(
+                GraphDatabaseSettings.record_format.name(), recordFormatName,
+                HaSettings.read_timeout.name(), "2m" );
+    }
+
     private Config getConfig()
     {
-        return new Config( stringMap(
-                GraphDatabaseSettings.record_format.name(), recordFormatName,
-                HaSettings.read_timeout.name(), "2m" ),
-                GraphDatabaseSettings.class );
+        return Config.embeddedDefaults( getParams() );
     }
 }

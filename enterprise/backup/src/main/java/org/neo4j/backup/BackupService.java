@@ -27,6 +27,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.function.Supplier;
 
 import org.neo4j.com.RequestContext;
@@ -217,11 +219,20 @@ class BackupService
 
         Map<String,String> temporaryDbConfig = getTemporaryDbConfig();
         config = config.with( temporaryDbConfig );
+
+        Map<String,String> configParams = new HashMap<>();
+        Set<String> keys = config.getConfiguredSettingKeys();
+        for ( String key : keys )
+        {
+            Optional<String> value = config.getRaw( key );
+            value.ifPresent( s -> configParams.put( key, s ) );
+        }
+
         try ( PageCache pageCache = createPageCache( fileSystem, config ) )
         {
-            GraphDatabaseAPI targetDb = startTemporaryDb( targetDirectory, pageCache, config.getParams() );
+            GraphDatabaseAPI targetDb = startTemporaryDb( targetDirectory, pageCache, configParams );
             long backupStartTime = System.currentTimeMillis();
-            BackupOutcome outcome = null;
+            BackupOutcome outcome;
             try
             {
                 outcome = doIncrementalBackup( sourceHostNameOrIp, sourcePort, targetDb, timeout );

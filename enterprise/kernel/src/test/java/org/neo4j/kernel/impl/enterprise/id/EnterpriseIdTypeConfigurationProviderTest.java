@@ -81,7 +81,7 @@ public class EnterpriseIdTypeConfigurationProviderTest
     {
         Map<String,String> params = MapUtil.stringMap( EnterpriseEditionSettings.idTypesToReuse.name(),
                 IdType.NODE + "," + IdType.RELATIONSHIP );
-        Config config = new Config( params );
+        Config config = Config.embeddedDefaults( params );
         return new EnterpriseIdTypeConfigurationProvider( config );
     }
 }

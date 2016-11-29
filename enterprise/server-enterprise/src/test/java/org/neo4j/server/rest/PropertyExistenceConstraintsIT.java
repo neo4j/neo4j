@@ -19,17 +19,18 @@
  */
 package org.neo4j.server.rest;
 
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-
+import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -39,7 +40,6 @@ import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.NeoServer;
-import org.neo4j.server.enterprise.EnterpriseServerSettings;
 import org.neo4j.server.enterprise.helpers.EnterpriseServerBuilder;
 import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.server.helpers.ServerHelper;
@@ -49,11 +49,9 @@ import org.neo4j.test.GraphHolder;
 import org.neo4j.test.TestData;
 
 import static java.util.Collections.singletonList;
-
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasItems;
 import static org.junit.Assert.assertThat;
-
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonToList;
 import static org.neo4j.server.rest.web.Surface.PATH_SCHEMA_CONSTRAINT;
@@ -88,7 +86,7 @@ public class PropertyExistenceConstraintsIT implements GraphHolder
             public Void call() throws IOException
             {
                 CommunityServerBuilder serverBuilder = EnterpriseServerBuilder.server( NullLogProvider.getInstance() )
-                        .withProperty( EnterpriseServerSettings.mode.name(), "enterprise" );
+                        .withProperty( ClusterSettings.mode.name(), "enterprise" );
 
                 PropertyExistenceConstraintsIT.server = ServerHelper.createNonPersistentServer( serverBuilder );
                 return null;

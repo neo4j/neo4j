@@ -65,7 +65,7 @@ public class StoreMigratorTest
                 .setConfig( GraphDatabaseSettings.record_format, HighLimitV3_0_0.NAME )
                 .newGraphDatabase()
                 .shutdown();
-        Config config = new Config( stringMap( pagecache_memory.name(), "8m" ) );
+        Config config = Config.embeddedDefaults( stringMap( pagecache_memory.name(), "8m" ) );
 
         try ( FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
               PageCache pageCache = new ConfiguringPageCacheFactory( fs, config, NULL, NullLog.getInstance() )
