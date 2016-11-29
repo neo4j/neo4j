@@ -26,7 +26,6 @@ import org.apache.lucene.search.Query;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Optional;
 
 import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
 import org.neo4j.kernel.api.impl.schema.WritableDatabaseSchemaIndex;
@@ -112,18 +111,19 @@ public class PartitionedIndexWriter implements LuceneIndexWriter
     private IndexWriter unsafeGetIndexWriter() throws IOException
     {
         List<AbstractIndexPartition> indexPartitions = index.getPartitions();
-        Optional<AbstractIndexPartition> writablePartition = indexPartitions.stream()
-                .filter( this::writablePartition )
-                .findFirst();
-        if ( writablePartition.isPresent() )
+        int size = indexPartitions.size();
+        //noinspection ForLoopReplaceableByForEach
+        for ( int i = 0; i < size; i++ )
         {
-            return writablePartition.get().getIndexWriter();
+            // We should find the *first* writable partition, so we can fill holes left by index deletes.
+            AbstractIndexPartition partition = indexPartitions.get( i );
+            if ( writablePartition( partition ) )
+            {
+                return partition.getIndexWriter();
+            }
         }
-        else
-        {
-            AbstractIndexPartition indexPartition = index.addNewPartition();
-            return indexPartition.getIndexWriter();
-        }
+        AbstractIndexPartition indexPartition = index.addNewPartition();
+        return indexPartition.getIndexWriter();
     }
 
     private boolean writablePartition( AbstractIndexPartition partition )
