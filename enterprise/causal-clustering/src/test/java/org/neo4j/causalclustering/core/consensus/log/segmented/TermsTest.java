@@ -360,7 +360,6 @@ public class TermsTest
     public void shouldPruneSeveralCompleteRanges() throws Exception
     {
         // given
-        // given
         long term = 5;
         long prevIndex = 10;
         terms = new Terms( prevIndex, term );
@@ -386,6 +385,33 @@ public class TermsTest
 
         assertEquals( 3, getIndexesSize() );
         assertEquals( 3, getTermsSize() );
+    }
+
+    @Test
+    public void shouldAppendNewItemsIfThereAreNoEntries() throws Exception
+    {
+        // given
+        long term = 5;
+        long prevIndex = 10;
+        terms = new Terms( prevIndex, term );
+
+        // when
+        terms.truncate( prevIndex );
+
+        // then
+        assertEquals( -1, terms.get( prevIndex ) );
+        assertEquals( -1, terms.latest() );
+        assertEquals( 0, getIndexesSize() );
+        assertEquals( 0, getTermsSize() );
+
+        // and when
+        terms.append( prevIndex, 5 );
+
+        // then
+        assertEquals( term, terms.get( prevIndex ) );
+        assertEquals( term, terms.latest() );
+        assertEquals( 1, getIndexesSize() );
+        assertEquals( 1, getTermsSize() );
     }
 
     private int getTermsSize() throws NoSuchFieldException, IllegalAccessException
