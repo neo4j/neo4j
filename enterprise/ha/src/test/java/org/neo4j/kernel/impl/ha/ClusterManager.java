@@ -140,8 +140,8 @@ public class ClusterManager
     public static final Map<String,String> CONFIG_FOR_SINGLE_JVM_CLUSTER = unmodifiableMap( stringMap(
             GraphDatabaseSettings.pagecache_memory.name(), "8m",
             GraphDatabaseSettings.shutdown_transaction_end_timeout.name(), "1s",
-            new BoltConnector( "0" ).type.name(), "BOLT",
-            new BoltConnector( "0" ).enabled.name(), "false"
+            new BoltConnector( "bolt" ).type.name(), "BOLT",
+            new BoltConnector( "bolt" ).enabled.name(), "false"
     ) );
 
     public interface StoreDirInitializer

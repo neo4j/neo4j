@@ -405,7 +405,7 @@ public class TransactionGuardIntegrationTest
         if ( neoServer == null )
         {
             GuardingServerBuilder serverBuilder = new GuardingServerBuilder( database );
-            BoltConnector boltConnector = new BoltConnector( "0" );
+            BoltConnector boltConnector = new BoltConnector( "bolt" );
             serverBuilder.withProperty( boltConnector.type.name(), "BOLT" )
                     .withProperty( boltConnector.enabled.name(), "true" )
                     .withProperty( boltConnector.encryption_level.name(),
@@ -420,7 +420,7 @@ public class TransactionGuardIntegrationTest
 
     private Map<Setting<?>,String> getSettingsWithTimeoutAndBolt( int boltPort )
     {
-        BoltConnector boltConnector = new BoltConnector( "0" );
+        BoltConnector boltConnector = new BoltConnector( "bolt" );
         return MapUtil.genericMap(
                 GraphDatabaseSettings.transaction_timeout, "2s",
                 boltConnector.address, "localhost:" + boltPort,

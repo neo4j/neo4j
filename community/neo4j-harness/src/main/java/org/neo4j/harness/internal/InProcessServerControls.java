@@ -50,7 +50,7 @@ public class InProcessServerControls implements ServerControls
     @Override
     public URI boltURI()
     {
-        AdvertisedSocketAddress address = server.getConfig().get( new BoltConnector( "0" ).advertised_address );
+        AdvertisedSocketAddress address = server.getConfig().get( new BoltConnector( "bolt" ).advertised_address );
         return URI.create( "bolt://" + address.getHostname() + ":" + address.getPort() );
     }
 

@@ -61,9 +61,9 @@ public class BoltIT extends ExclusiveServerTestBase
     public void shouldLaunchBolt() throws Throwable
     {
         // When I run Neo4j with Bolt enabled
-        server = server().withProperty( new BoltConnector( "0" ).type.name(), "BOLT" )
-                .withProperty( new BoltConnector( "0" ).enabled.name(), "true" )
-                .withProperty( new BoltConnector( "0" ).encryption_level.name(), "REQUIRED" )
+        server = server().withProperty( new BoltConnector( "bolt" ).type.name(), "BOLT" )
+                .withProperty( new BoltConnector( "bolt" ).enabled.name(), "true" )
+                .withProperty( new BoltConnector( "bolt" ).encryption_level.name(), "REQUIRED" )
                 .usingDataDir( tmpDir.getRoot().getAbsolutePath() ).build();
         server.start();
 
@@ -141,11 +141,13 @@ public class BoltIT extends ExclusiveServerTestBase
     private void startServerWithBoltEnabled( String advertisedHost, int advertisedPort, String listenHost,
             int listenPort ) throws IOException
     {
-        server = server().withProperty( new BoltConnector( "0" ).type.name(), "BOLT" )
-                .withProperty( new BoltConnector( "0" ).enabled.name(), "true" )
-                .withProperty( new BoltConnector( "0" ).encryption_level.name(), "REQUIRED" )
-                .withProperty( new BoltConnector( "0" ).advertised_address.name(), advertisedHost + ":" + advertisedPort )
-                .withProperty( new BoltConnector( "0" ).listen_address.name(), listenHost + ":" + listenPort )
+        server = server()
+                .withProperty( new BoltConnector( "bolt" ).type.name(), "BOLT" )
+                .withProperty( new BoltConnector( "bolt" ).enabled.name(), "true" )
+                .withProperty( new BoltConnector( "bolt" ).encryption_level.name(), "REQUIRED" )
+                .withProperty( new BoltConnector( "bolt" ).advertised_address.name(), advertisedHost + ":" +
+                        advertisedPort )
+                .withProperty( new BoltConnector( "bolt" ).listen_address.name(), listenHost + ":" + listenPort )
                 .usingDataDir( tmpDir.getRoot().getAbsolutePath() ).build();
         server.start();
     }

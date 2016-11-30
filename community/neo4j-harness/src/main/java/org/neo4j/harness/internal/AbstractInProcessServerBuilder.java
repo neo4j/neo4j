@@ -84,9 +84,9 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
         withConfig( auth_enabled, "false" );
         withConfig( pagecache_memory, "8m" );
 
-        BoltConnector bolt0 = new BoltConnector( "0" );
-        HttpConnector http1 = new HttpConnector( "1", Encryption.NONE );
-        HttpConnector http2 = new HttpConnector( "2", Encryption.TLS );
+        BoltConnector bolt0 = new BoltConnector( "bolt" );
+        HttpConnector http1 = new HttpConnector( "http", Encryption.NONE );
+        HttpConnector http2 = new HttpConnector( "https", Encryption.TLS );
 
         withConfig( http1.type, "HTTP" );
         withConfig( http1.encryption, Encryption.NONE.name() );

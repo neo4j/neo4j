@@ -47,7 +47,7 @@ public class RequiredTransportEncryptionIT
     public Neo4jWithSocket server = new Neo4jWithSocket( getClass(),
             settings -> {
                 Setting<BoltConnector.EncryptionLevel> encryption_level =
-                        new BoltConnector( "0" ).encryption_level;
+                        new BoltConnector( "bolt" ).encryption_level;
                 settings.put( encryption_level.name(), REQUIRED.name() );
             } );
 

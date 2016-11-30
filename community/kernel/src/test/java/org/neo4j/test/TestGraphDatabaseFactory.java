@@ -246,7 +246,7 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
 
                         };
                     }
-                }.newFacade( storeDir, Config.embeddedDefaults().with( config ),
+                }.newFacade( storeDir, Config.embeddedDefaults( config ),
                         GraphDatabaseDependencies.newDependencies( state.databaseDependencies() ) );
 
             }

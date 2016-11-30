@@ -71,9 +71,9 @@ public class EmbeddedInteraction implements NeoInteractionLevel<EnterpriseSecuri
 
     private void init( GraphDatabaseBuilder builder, Map<String, String> config ) throws Throwable
     {
-        builder.setConfig( new BoltConnector( "0" ).type, "BOLT" );
-        builder.setConfig( new BoltConnector( "0" ).enabled, "true" );
-        builder.setConfig( new BoltConnector( "0" ).encryption_level, OPTIONAL.name() );
+        builder.setConfig( new BoltConnector( "bolt" ).type, "BOLT" );
+        builder.setConfig( new BoltConnector( "bolt" ).enabled, "true" );
+        builder.setConfig( new BoltConnector( "bolt" ).encryption_level, OPTIONAL.name() );
         builder.setConfig( BoltKernelExtension.Settings.tls_key_file, NeoInteractionLevel.tempPath( "key", ".key" ) );
         builder.setConfig( BoltKernelExtension.Settings.tls_certificate_file,
                 NeoInteractionLevel.tempPath( "cert", ".cert" ) );

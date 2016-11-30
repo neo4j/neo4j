@@ -46,8 +46,8 @@ public class RejectTransportEncryptionIT
     @Rule
     public Neo4jWithSocket server = new Neo4jWithSocket( getClass(),
             settings -> {
-                settings.put( new BoltConnector( "0" ).type.name(), "BOLT" );
-                settings.put( new BoltConnector( "0" ).encryption_level.name(), DISABLED.name() );
+                settings.put( new BoltConnector( "bolt" ).type.name(), "BOLT" );
+                settings.put( new BoltConnector( "bolt" ).encryption_level.name(), DISABLED.name() );
             } );
     @Rule
     public ExpectedException exception = ExpectedException.none();

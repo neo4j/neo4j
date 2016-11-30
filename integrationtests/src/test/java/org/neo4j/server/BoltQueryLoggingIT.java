@@ -55,10 +55,10 @@ public class BoltQueryLoggingIT
             .withConfig( GraphDatabaseSettings.auth_enabled, "false" )
             .withConfig( GraphDatabaseSettings.logs_directory, tmpDir )
             .withConfig( GraphDatabaseSettings.log_queries, "true")
-            .withConfig( new BoltConnector( "0" ).type, "BOLT" )
-            .withConfig( new BoltConnector( "0" ).enabled, "true" )
-            .withConfig( new BoltConnector( "0" ).address, "localhost:8776" )
-            .withConfig( new BoltConnector( "0" ).encryption_level, "DISABLED" );
+            .withConfig( new BoltConnector( "bolt" ).type, "BOLT" )
+            .withConfig( new BoltConnector( "bolt" ).enabled, "true" )
+            .withConfig( new BoltConnector( "bolt" ).address, "localhost:8776" )
+            .withConfig( new BoltConnector( "bolt" ).encryption_level, "DISABLED" );
     }
 
     @Test

@@ -46,9 +46,9 @@ public class BoltConfigIT
     @Rule
     public Neo4jWithSocket server = new Neo4jWithSocket( getClass(),
             settings -> {
-                settings.put( new BoltConnector("0").type.name(), "BOLT" );
-                settings.put( new BoltConnector("0").enabled.name(), "true" );
-                settings.put( new BoltConnector("0").address.name(), "localhost:7888" );
+                settings.put( new BoltConnector("bolt").type.name(), "BOLT" );
+                settings.put( new BoltConnector("bolt").enabled.name(), "true" );
+                settings.put( new BoltConnector("bolt").address.name(), "localhost:7888" );
                 settings.put( new BoltConnector("1").type.name(), "BOLT" );
                 settings.put( new BoltConnector("1").enabled.name(), "true" );
                 settings.put( new BoltConnector("1").address.name(), "localhost:7687" );

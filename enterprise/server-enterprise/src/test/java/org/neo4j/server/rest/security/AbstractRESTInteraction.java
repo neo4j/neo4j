@@ -80,9 +80,9 @@ abstract class AbstractRESTInteraction extends CommunityServerTestBase implement
     {
         CommunityServerBuilder builder = EnterpriseServerBuilder.server();
         builder = builder
-                .withProperty( new BoltConnector( "0" ).type.name(), "BOLT" )
-                .withProperty( new BoltConnector( "0" ).enabled.name(), "true" )
-                .withProperty( new BoltConnector( "0" ).encryption_level.name(), OPTIONAL.name() )
+                .withProperty( new BoltConnector( "bolt" ).type.name(), "BOLT" )
+                .withProperty( new BoltConnector( "bolt" ).enabled.name(), "true" )
+                .withProperty( new BoltConnector( "bolt" ).encryption_level.name(), OPTIONAL.name() )
                 .withProperty( BoltKernelExtension.Settings.tls_key_file.name(),
                         NeoInteractionLevel.tempPath( "key", ".key" ) )
                 .withProperty( BoltKernelExtension.Settings.tls_certificate_file.name(),
