@@ -19,10 +19,6 @@
  */
 package org.neo4j.causalclustering.scenarios;
 
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -30,14 +26,18 @@ import java.util.UUID;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
+import org.junit.After;
+import org.junit.Rule;
+import org.junit.Test;
+
 import org.neo4j.causalclustering.catchup.CatchupServer;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.state.CoreState;
 import org.neo4j.causalclustering.discovery.CoreTopologyService;
 import org.neo4j.causalclustering.discovery.HazelcastDiscoveryServiceFactory;
 import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.HttpConnector;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
@@ -120,7 +120,7 @@ public class ConnectionInfoIT
         Config config = embeddedDefaults( stringMap(
                 discovery_listen_address.name(), ":" + testSocket.getLocalPort(),
                 CausalClusteringSettings.initial_discovery_members.name(), "localhost:" + testSocket.getLocalPort(),
-                GraphDatabaseSettings.boltConnector( "bolt" ).enabled.name(), "true",
+                new BoltConnector( "bolt" ).enabled.name(), "true",
                 new HttpConnector( "http" ).enabled.name(), "true" ) );
 
         Neo4jJobScheduler jobScheduler = new Neo4jJobScheduler();

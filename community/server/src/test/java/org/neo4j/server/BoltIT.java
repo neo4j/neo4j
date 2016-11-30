@@ -19,16 +19,17 @@
  */
 package org.neo4j.server;
 
+import java.io.IOException;
+import java.util.Map;
+
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import java.io.IOException;
-import java.util.Map;
-
 import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
 import org.neo4j.server.rest.domain.JsonHelper;
@@ -38,7 +39,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertFalse;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
 import static org.neo4j.server.helpers.CommunityServerBuilder.server;
 
 public class BoltIT extends ExclusiveServerTestBase
@@ -61,9 +61,9 @@ public class BoltIT extends ExclusiveServerTestBase
     public void shouldLaunchBolt() throws Throwable
     {
         // When I run Neo4j with Bolt enabled
-        server = server().withProperty( boltConnector( "0" ).type.name(), "BOLT" )
-                .withProperty( boltConnector( "0" ).enabled.name(), "true" )
-                .withProperty( boltConnector( "0" ).encryption_level.name(), "REQUIRED" )
+        server = server().withProperty( new BoltConnector( "0" ).type.name(), "BOLT" )
+                .withProperty( new BoltConnector( "0" ).enabled.name(), "true" )
+                .withProperty( new BoltConnector( "0" ).encryption_level.name(), "REQUIRED" )
                 .usingDataDir( tmpDir.getRoot().getAbsolutePath() ).build();
         server.start();
 
@@ -141,11 +141,11 @@ public class BoltIT extends ExclusiveServerTestBase
     private void startServerWithBoltEnabled( String advertisedHost, int advertisedPort, String listenHost,
             int listenPort ) throws IOException
     {
-        server = server().withProperty( boltConnector( "0" ).type.name(), "BOLT" )
-                .withProperty( boltConnector( "0" ).enabled.name(), "true" )
-                .withProperty( boltConnector( "0" ).encryption_level.name(), "REQUIRED" )
-                .withProperty( boltConnector( "0" ).advertised_address.name(), advertisedHost + ":" + advertisedPort )
-                .withProperty( boltConnector( "0" ).listen_address.name(), listenHost + ":" + listenPort )
+        server = server().withProperty( new BoltConnector( "0" ).type.name(), "BOLT" )
+                .withProperty( new BoltConnector( "0" ).enabled.name(), "true" )
+                .withProperty( new BoltConnector( "0" ).encryption_level.name(), "REQUIRED" )
+                .withProperty( new BoltConnector( "0" ).advertised_address.name(), advertisedHost + ":" + advertisedPort )
+                .withProperty( new BoltConnector( "0" ).listen_address.name(), listenHost + ":" + listenPort )
                 .usingDataDir( tmpDir.getRoot().getAbsolutePath() ).build();
         server.start();
     }

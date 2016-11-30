@@ -19,10 +19,6 @@
  */
 package org.neo4j.server.configuration;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -30,12 +26,15 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
-import org.neo4j.server.CommunityBootstrapper;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.test.rule.SuppressOutput;
 
@@ -43,9 +42,6 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
-import static org.neo4j.kernel.configuration.Settings.STRING;
-import static org.neo4j.kernel.configuration.Settings.setting;
 import static org.neo4j.test.rule.SuppressOutput.suppressAll;
 
 public class ConfigLoaderTest
@@ -136,7 +132,7 @@ public class ConfigLoaderTest
     public void loadOfflineConfigShouldDisableBolt() throws IOException
     {
         // given
-        BoltConnector defaultBoltConf = GraphDatabaseSettings.boltConnector( "bolt" );
+        BoltConnector defaultBoltConf = new BoltConnector( "bolt" );
         Optional<File> configFile = ConfigFileBuilder.builder( folder.getRoot() )
                 .withNameValue( defaultBoltConf.enabled.name(), Settings.TRUE )
                 .build();

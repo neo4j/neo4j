@@ -32,6 +32,7 @@ import java.util.List;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.harness.junit.Neo4jRule;
+import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.server.configuration.ServerSettings;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -54,10 +55,10 @@ public class BoltQueryLoggingIT
             .withConfig( GraphDatabaseSettings.auth_enabled, "false" )
             .withConfig( GraphDatabaseSettings.logs_directory, tmpDir )
             .withConfig( GraphDatabaseSettings.log_queries, "true")
-            .withConfig( GraphDatabaseSettings.boltConnector( "0" ).type, "BOLT" )
-            .withConfig( GraphDatabaseSettings.boltConnector( "0" ).enabled, "true" )
-            .withConfig( GraphDatabaseSettings.boltConnector( "0" ).address, "localhost:8776" )
-            .withConfig( GraphDatabaseSettings.boltConnector( "0" ).encryption_level, "DISABLED" );
+            .withConfig( new BoltConnector( "0" ).type, "BOLT" )
+            .withConfig( new BoltConnector( "0" ).enabled, "true" )
+            .withConfig( new BoltConnector( "0" ).address, "localhost:8776" )
+            .withConfig( new BoltConnector( "0" ).encryption_level, "DISABLED" );
     }
 
     @Test

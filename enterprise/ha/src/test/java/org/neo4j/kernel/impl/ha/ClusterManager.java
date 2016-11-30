@@ -72,6 +72,7 @@ import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.ha.HaSettings;
@@ -97,7 +98,6 @@ import org.neo4j.storageengine.api.StorageEngine;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableMap;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
 import static org.neo4j.helpers.ArrayUtil.contains;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -140,8 +140,8 @@ public class ClusterManager
     public static final Map<String,String> CONFIG_FOR_SINGLE_JVM_CLUSTER = unmodifiableMap( stringMap(
             GraphDatabaseSettings.pagecache_memory.name(), "8m",
             GraphDatabaseSettings.shutdown_transaction_end_timeout.name(), "1s",
-            boltConnector( "0" ).type.name(), "BOLT",
-            boltConnector( "0" ).enabled.name(), "false"
+            new BoltConnector( "0" ).type.name(), "BOLT",
+            new BoltConnector( "0" ).enabled.name(), "false"
     ) );
 
     public interface StoreDirInitializer

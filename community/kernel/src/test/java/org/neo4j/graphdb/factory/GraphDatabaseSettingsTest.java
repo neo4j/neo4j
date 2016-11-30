@@ -103,11 +103,11 @@ public class GraphDatabaseSettingsTest
         String scoping = "bla";
         Map<String,String> config = stringMap(
                 GraphDatabaseSettings.default_advertised_address.name(), hostname,
-                GraphDatabaseSettings.boltConnector( scoping ).advertised_address.name(), ":" + port
+                new BoltConnector( scoping ).advertised_address.name(), ":" + port
         );
 
         // when
-        BoltConnector boltConnector = GraphDatabaseSettings.boltConnector( scoping );
+        BoltConnector boltConnector = new BoltConnector( scoping );
         Setting<AdvertisedSocketAddress> advertised_address = boltConnector.advertised_address;
         AdvertisedSocketAddress advertisedSocketAddress = advertised_address.apply( config::get );
 

@@ -20,20 +20,20 @@
 
 package org.neo4j.causalclustering.core;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.config.InvalidSettingException;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.AdvertisedSocketAddress;
+import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
 
 import static java.util.Arrays.asList;
@@ -77,7 +77,7 @@ public class CausalClusterConfigurationValidatorTest
         Config config = Config.embeddedDefaults(
                 stringMap( ClusterSettings.mode.name(), mode.name(),
                         initial_discovery_members.name(), "localhost:99,remotehost:2",
-                        GraphDatabaseSettings.boltConnector( "bolt" ).enabled.name(), "true" ),
+                        new BoltConnector( "bolt" ).enabled.name(), "true" ),
                 Collections.singleton( new CausalClusterConfigurationValidator() ) );
 
         // then

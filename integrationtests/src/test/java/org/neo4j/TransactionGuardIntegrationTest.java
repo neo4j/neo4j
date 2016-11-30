@@ -19,9 +19,6 @@
  */
 package org.neo4j;
 
-import org.junit.ClassRule;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -35,6 +32,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
+
+import org.junit.ClassRule;
+import org.junit.Test;
 
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
@@ -91,7 +91,6 @@ import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionNotFound;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
@@ -406,7 +405,7 @@ public class TransactionGuardIntegrationTest
         if ( neoServer == null )
         {
             GuardingServerBuilder serverBuilder = new GuardingServerBuilder( database );
-            BoltConnector boltConnector = boltConnector( "0" );
+            BoltConnector boltConnector = new BoltConnector( "0" );
             serverBuilder.withProperty( boltConnector.type.name(), "BOLT" )
                     .withProperty( boltConnector.enabled.name(), "true" )
                     .withProperty( boltConnector.encryption_level.name(),
@@ -421,7 +420,7 @@ public class TransactionGuardIntegrationTest
 
     private Map<Setting<?>,String> getSettingsWithTimeoutAndBolt( int boltPort )
     {
-        BoltConnector boltConnector = boltConnector( "0" );
+        BoltConnector boltConnector = new BoltConnector( "0" );
         return MapUtil.genericMap(
                 GraphDatabaseSettings.transaction_timeout, "2s",
                 boltConnector.address, "localhost:" + boltPort,

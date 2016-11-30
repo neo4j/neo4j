@@ -32,13 +32,13 @@ import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.bolt.v1.transport.socket.client.WebSocketConnection;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.test.rule.SuppressOutput;
+import org.neo4j.kernel.configuration.BoltConnector;
 
 import static java.util.Collections.emptyMap;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyDisconnects;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
 import static org.neo4j.kernel.configuration.BoltConnector.EncryptionLevel.REQUIRED;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
 
 public class BoltConfigIT
 {
@@ -46,13 +46,13 @@ public class BoltConfigIT
     @Rule
     public Neo4jWithSocket server = new Neo4jWithSocket( getClass(),
             settings -> {
-                settings.put( boltConnector("0").type.name(), "BOLT" );
-                settings.put( boltConnector("0").enabled.name(), "true" );
-                settings.put( boltConnector("0").address.name(), "localhost:7888" );
-                settings.put( boltConnector("1").type.name(), "BOLT" );
-                settings.put( boltConnector("1").enabled.name(), "true" );
-                settings.put( boltConnector("1").address.name(), "localhost:7687" );
-                settings.put( boltConnector("1").encryption_level.name(), REQUIRED.name() );
+                settings.put( new BoltConnector("0").type.name(), "BOLT" );
+                settings.put( new BoltConnector("0").enabled.name(), "true" );
+                settings.put( new BoltConnector("0").address.name(), "localhost:7888" );
+                settings.put( new BoltConnector("1").type.name(), "BOLT" );
+                settings.put( new BoltConnector("1").enabled.name(), "true" );
+                settings.put( new BoltConnector("1").address.name(), "localhost:7687" );
+                settings.put( new BoltConnector("1").encryption_level.name(), REQUIRED.name() );
             } );
     @Rule
     public SuppressOutput suppressOutput = SuppressOutput.suppressAll();

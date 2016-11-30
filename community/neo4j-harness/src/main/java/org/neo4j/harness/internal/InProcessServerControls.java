@@ -31,9 +31,8 @@ import org.neo4j.harness.ServerControls;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.server.AbstractNeoServer;
-
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
 
 public class InProcessServerControls implements ServerControls
 {
@@ -51,7 +50,7 @@ public class InProcessServerControls implements ServerControls
     @Override
     public URI boltURI()
     {
-        AdvertisedSocketAddress address = server.getConfig().get( boltConnector( "0" ).advertised_address );
+        AdvertisedSocketAddress address = server.getConfig().get( new BoltConnector( "0" ).advertised_address );
         return URI.create( "bolt://" + address.getHostname() + ":" + address.getPort() );
     }
 

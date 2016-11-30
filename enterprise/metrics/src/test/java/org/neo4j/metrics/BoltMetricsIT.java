@@ -19,18 +19,19 @@
  */
 package org.neo4j.metrics;
 
+import java.io.File;
+
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-
-import java.io.File;
 
 import org.neo4j.bolt.v1.messaging.message.InitMessage;
 import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -39,7 +40,6 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.acceptedVersions;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.chunk;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.metrics.MetricsTestHelper.metricsCsv;
 import static org.neo4j.metrics.MetricsTestHelper.readLongValue;
@@ -66,8 +66,8 @@ public class BoltMetricsIT
         File metricsFolder = tmpDir.newFolder( "metrics" );
         db = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
                 .newImpermanentDatabaseBuilder()
-                .setConfig( boltConnector( "0" ).type, "BOLT" )
-                .setConfig( boltConnector( "0" ).enabled, "true" )
+                .setConfig( new BoltConnector( "0" ).type, "BOLT" )
+                .setConfig( new BoltConnector( "0" ).enabled, "true" )
                 .setConfig( GraphDatabaseSettings.auth_enabled, "false" )
                 .setConfig( MetricsSettings.boltMessagesEnabled, "true" )
                 .setConfig( MetricsSettings.csvEnabled, "true" )

@@ -26,12 +26,16 @@ import java.util.List;
 import org.neo4j.configuration.Description;
 import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.helpers.AdvertisedSocketAddress;
+import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.BoltConnectorValidator;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigurationMigrator;
 import org.neo4j.kernel.configuration.GraphDatabaseConfigurationMigrator;
+import org.neo4j.kernel.configuration.Group;
+import org.neo4j.kernel.configuration.GroupSettingSupport;
 import org.neo4j.kernel.configuration.HttpConnectorValidator;
 import org.neo4j.kernel.configuration.Internal;
 import org.neo4j.kernel.configuration.Migrator;
@@ -54,9 +58,12 @@ import static org.neo4j.kernel.configuration.Settings.PATH;
 import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.STRING_LIST;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
+import static org.neo4j.kernel.configuration.Settings.advertisedAddress;
 import static org.neo4j.kernel.configuration.Settings.derivedSetting;
 import static org.neo4j.kernel.configuration.Settings.illegalValueMessage;
+import static org.neo4j.kernel.configuration.Settings.legacyFallback;
 import static org.neo4j.kernel.configuration.Settings.list;
+import static org.neo4j.kernel.configuration.Settings.listenAddress;
 import static org.neo4j.kernel.configuration.Settings.matches;
 import static org.neo4j.kernel.configuration.Settings.max;
 import static org.neo4j.kernel.configuration.Settings.min;
@@ -493,17 +500,6 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<String> default_advertised_address =
             setting( "dbms.connectors.default_advertised_address", STRING, "localhost" );
 
-    /**
-     * Short-hand for creating a new Bolt connector settings group.
-     * Use this to configure a new or modify an existing Bolt connector.
-     * @param key a unique identifier for this connector
-     * @return an object that can be used to set configuration for the Bolt connector with the given key
-     */
-    public static BoltConnector boltConnector( String key )
-    {
-        return new BoltConnector( key );
-    }
-
     @Description( "Create an archive of an index before re-creating it if failing to load on startup." )
     @Internal
     public static final Setting<Boolean> archive_failed_index = setting(
@@ -516,4 +512,101 @@ public class GraphDatabaseSettings implements LoadableConfig
     // Needed to validate config, accessed via reflection
     @SuppressWarnings( "unused" )
     public static final HttpConnectorValidator httpValidator = new HttpConnectorValidator();
+
+    /**
+     * DEPRECATED: Use {@link org.neo4j.kernel.configuration.BoltConnector} instead. This will be removed in 4.0.
+     */
+    @Deprecated
+    public static BoltConnector boltConnector( String key )
+    {
+        return new BoltConnector( key );
+    }
+
+    /**
+     * DEPRECATED: Use {@link org.neo4j.kernel.configuration.Connector} instead. This will be removed in 4.0.
+     */
+    @Group("dbms.connector")
+    public static class Connector
+    {
+        @Description( "Enable this connector" )
+        public final Setting<Boolean> enabled;
+
+        @Description( "Connector type. You should always set this to the connector type you want" )
+        public final Setting<ConnectorType> type;
+
+        // Note: Be careful about adding things here that does not apply to all connectors,
+        //       consider future options like non-tcp transports, making `address` a bad choice
+        //       as a setting that applies to every connector, for instance.
+
+        public final GroupSettingSupport group;
+
+        // Note: We no longer use the typeDefault parameter because it made for confusing behaviour;
+        // connectors with unspecified would override settings of other, unrelated connectors.
+        // However, we cannot remove the parameter at this
+        public Connector( String key, @SuppressWarnings("UnusedParameters") String typeDefault )
+        {
+            group = new GroupSettingSupport( Connector.class, key );
+            enabled = group.scope( setting( "enabled", BOOLEAN, "false" ) );
+            type = group.scope( setting( "type", options( ConnectorType.class ), NO_DEFAULT ) );
+        }
+
+        public enum ConnectorType
+        {
+            BOLT, HTTP
+        }
+
+        public String key() {
+            return group.groupKey;
+        }
+    }
+
+    /**
+     * DEPRECATED: Use {@link org.neo4j.kernel.configuration.BoltConnector} instead. This will be removed in 4.0.
+     */
+    @Deprecated
+    @Description( "Configuration options for Bolt connectors. "+
+            "\"(bolt-connector-key)\" is a placeholder for a unique name for the connector, for instance " +
+            "\"bolt-public\" or some other name that describes what the connector is for." )
+    public static class BoltConnector extends Connector
+    {
+        @Description( "Encryption level to require this connector to use" )
+        public final Setting<EncryptionLevel> encryption_level;
+
+        @Description( "Address the connector should bind to. " +
+                "This setting is deprecated and will be replaced by `+listen_address+`" )
+        public final Setting<ListenSocketAddress> address;
+
+        @Description( "Address the connector should bind to" )
+        public final Setting<ListenSocketAddress> listen_address;
+
+        @Description( "Advertised address for this connector" )
+        public final Setting<AdvertisedSocketAddress> advertised_address;
+
+        // Used by config doc generator
+        public BoltConnector()
+        {
+            this("(bolt-connector-key)");
+        }
+
+        public BoltConnector(String key)
+        {
+            super(key, null );
+            encryption_level = group.scope(
+                    setting( "tls_level", options( EncryptionLevel.class ), EncryptionLevel.OPTIONAL.name() ));
+            Setting<ListenSocketAddress> legacyAddressSetting = listenAddress( "address", 7687 );
+            Setting<ListenSocketAddress> listenAddressSetting = legacyFallback( legacyAddressSetting,
+                    listenAddress( "listen_address", 7687 ) );
+
+            this.address = group.scope( legacyAddressSetting );
+            this.listen_address = group.scope( listenAddressSetting );
+            this.advertised_address = group.scope( advertisedAddress( "advertised_address", listenAddressSetting ) );
+        }
+
+        public enum EncryptionLevel
+        {
+            REQUIRED,
+            OPTIONAL,
+            DISABLED
+        }
+    }
 }

@@ -32,6 +32,7 @@ import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseDependencies;
+import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
@@ -95,8 +96,8 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
         // Reduce the default page cache memory size to 8 mega-bytes for test databases.
         builder.setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
         builder.setConfig( GraphDatabaseSettings.shutdown_transaction_end_timeout, "1s" );
-        builder.setConfig( boltConnector("bolt").type, BOLT.name() );
-        builder.setConfig( boltConnector("bolt").enabled, "false" );
+        builder.setConfig( new BoltConnector("bolt").type, BOLT.name() );
+        builder.setConfig( new BoltConnector("bolt").enabled, "false" );
     }
 
     private void configure( GraphDatabaseBuilder builder, File storeDir )
