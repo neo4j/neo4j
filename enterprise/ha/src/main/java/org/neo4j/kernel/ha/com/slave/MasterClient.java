@@ -78,7 +78,7 @@ public interface MasterClient extends Master
                 throw Exceptions.withMessage( e, format( "%s | read invalid ordinal %d. First %db of this channel buffer is:%n%s",
                         e.getMessage(), statusOrdinal, maxBytesToPrint, beginningOfBufferAsHexString( buffer, maxBytesToPrint ) ) );
             }
-            return status.hasMessage() ? new LockResult( LockStatus.DEAD_LOCKED, readString( buffer ) ) : new LockResult( status );
+            return status.hasMessage() ? new LockResult( status, readString( buffer ) ) : new LockResult( status );
         }
 
         private String beginningOfBufferAsHexString( ChannelBuffer buffer, int maxBytesToPrint )
