@@ -27,9 +27,9 @@ import org.neo4j.desktop.Parameters;
 import org.neo4j.desktop.config.Installation;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.HttpConnector;
 import org.neo4j.logging.FormattedLog;
 import org.neo4j.server.CommunityBootstrapper;
-import org.neo4j.server.configuration.ClientConnectorSettings;
 import org.neo4j.server.configuration.ConfigLoader;
 
 import static org.neo4j.helpers.collection.Pair.pair;
@@ -52,7 +52,7 @@ public class DesktopConfigurator
 
     public void refresh()
     {
-        config = new ConfigLoader( CommunityBootstrapper.settingsClasses).loadConfig(
+        config = ConfigLoader.loadServerConfig(
                 Optional.of( dbDir.getAbsoluteFile() ),
                 Optional.of( getConfigurationsFile() ),
                 pair( DatabaseManagementSystemSettings.database_path.name(), dbDir.getAbsolutePath() ) );
@@ -83,6 +83,7 @@ public class DesktopConfigurator
 
     public ListenSocketAddress getServerAddress()
     {
-        return ClientConnectorSettings.httpConnector( config, ClientConnectorSettings.HttpConnector.Encryption.NONE ).get().address.from( config );
+        return new HttpConnector( config, ClientConnectorSettings.HttpConnector.Encryption.NONE ).get().address.from(
+                config );
     }
 }
