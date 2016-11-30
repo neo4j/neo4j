@@ -438,6 +438,22 @@ class GenSafePointerPair
         return builder.toString();
     }
 
+    /**
+     * Asserts that a result is {@link #isSuccess(long) successful}, otherwise throws {@link IllegalStateException}.
+     *
+     * @param result result returned from {@link #read(PageCursor, long, long)} or
+     * {@link #write(PageCursor, long, long, long)}
+     * @return {@code true} if {@link #isSuccess(long) successful}, for interoperability with {@code assert}.
+     */
+    static boolean assertSuccess( long result )
+    {
+        if ( !isSuccess( result ) )
+        {
+            throw new IllegalStateException( failureDescription( result ) );
+        }
+        return true;
+    }
+
     private static String generationComparisonFromResult( long result )
     {
         long bits = result & GEN_COMPARISON_MASK;

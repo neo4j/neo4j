@@ -179,19 +179,22 @@ class TreeNode<KEY,VALUE>
     void setRightSibling( PageCursor cursor, long rightSiblingId, long stableGeneration, long unstableGeneration )
     {
         cursor.setOffset( BYTE_POS_RIGHTSIBLING );
-        GenSafePointerPair.write( cursor, rightSiblingId, stableGeneration, unstableGeneration );
+        long result = GenSafePointerPair.write( cursor, rightSiblingId, stableGeneration, unstableGeneration );
+        GenSafePointerPair.assertSuccess( result );
     }
 
     void setLeftSibling( PageCursor cursor, long leftSiblingId, long stableGeneration, long unstableGeneration )
     {
         cursor.setOffset( BYTE_POS_LEFTSIBLING );
-        GenSafePointerPair.write( cursor, leftSiblingId, stableGeneration, unstableGeneration );
+        long result = GenSafePointerPair.write( cursor, leftSiblingId, stableGeneration, unstableGeneration );
+        GenSafePointerPair.assertSuccess( result );
     }
 
     void setNewGen( PageCursor cursor, long newGenId, long stableGeneration, long unstableGeneration )
     {
         cursor.setOffset( BYTE_POS_NEWGEN );
-        GenSafePointerPair.write( cursor, newGenId, stableGeneration, unstableGeneration );
+        long result = GenSafePointerPair.write( cursor, newGenId, stableGeneration, unstableGeneration );
+        GenSafePointerPair.assertSuccess( result );
     }
 
     // BODY METHODS

@@ -47,6 +47,8 @@ class GenSafePointer
     // unsigned int
     static final long MAX_GENERATION = 0xFFFFFFFFL;
     static final long GENERATION_MASK = 0xFFFFFFFFL;
+    static final long MIN_POINTER = IdSpace.MIN_TREE_NODE_ID;
+    static final long MAX_POINTER = 0xFFFF_FFFFFFFFL;
     static final int UNSIGNED_SHORT_MASK = 0xFFFF;
 
     static final int CHECKSUM_SIZE = 2;
@@ -65,6 +67,7 @@ class GenSafePointer
     public static void write( PageCursor cursor, long generation, long pointer )
     {
         assertGeneration( generation );
+        assertPointer( pointer );
         cursor.putInt( (int) generation );
         put6BLong( cursor, pointer );
         cursor.putShort( checksumOf( generation, pointer ) );
@@ -76,6 +79,15 @@ class GenSafePointer
         {
             throw new IllegalArgumentException( "Can not write pointer with generation " + generation +
                     " because outside boundary for valid generation." );
+        }
+    }
+
+    private static void assertPointer( long pointer )
+    {
+        if ( (pointer > MAX_POINTER || pointer < MIN_POINTER) && pointer != TreeNode.NO_NODE_FLAG )
+        {
+            throw new IllegalArgumentException( "Can not write pointer " + pointer +
+                    " because outside boundary for valid pointer" );
         }
     }
 
@@ -108,7 +120,8 @@ class GenSafePointer
         return lsb | (msb << Integer.SIZE);
     }
 
-    private static void put6BLong( PageCursor cursor, long value )
+    // package visible for test purposes
+    static void put6BLong( PageCursor cursor, long value )
     {
         int lsb = (int) value;
         short msb = (short) (value >>> Integer.SIZE);
