@@ -68,7 +68,7 @@ public final class ConfigurationBean extends Neo4jMBean
     public Object getAttribute( String attribute ) throws AttributeNotFoundException, MBeanException,
             ReflectionException
     {
-        return config.get( attribute );
+        return config.get( attribute ).value().orElse( null );
     }
 
     @Override
