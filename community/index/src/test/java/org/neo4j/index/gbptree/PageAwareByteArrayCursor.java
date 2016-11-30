@@ -323,4 +323,10 @@ class PageAwareByteArrayCursor extends PageCursor
     {
         return current.openLinkedCursor( pageId );
     }
+
+    @Override
+    public void clear()
+    {
+        current.clear();
+    }
 }

@@ -88,6 +88,7 @@ final class MuninnReadPageCursor extends MuninnPageCursor
         lockStamp = page.unlockExclusive();
     }
 
+    @Override
     protected void releaseCursor()
     {
         nextCursor = cursorSets.readCursors;
@@ -161,6 +162,12 @@ final class MuninnReadPageCursor extends MuninnPageCursor
 
     @Override
     public void putShort( short value )
+    {
+        throw new IllegalStateException( "Cannot write to read-locked page" );
+    }
+
+    @Override
+    public void clear()
     {
         throw new IllegalStateException( "Cannot write to read-locked page" );
     }

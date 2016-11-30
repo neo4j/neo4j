@@ -482,6 +482,13 @@ public class CompositePageCursor extends PageCursor
         throw new UnsupportedOperationException( "Linked cursors are not supported for composite cursors" );
     }
 
+    @Override
+    public void clear()
+    {
+        first.clear();
+        second.clear();
+    }
+
     /**
      * Build a CompositePageCursor that is a view of the first page cursor from its current offset through the given
      * length, concatenated with the second cursor from its current offset through the given length. The offsets are

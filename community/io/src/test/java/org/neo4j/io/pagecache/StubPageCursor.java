@@ -33,8 +33,8 @@ import org.neo4j.io.pagecache.impl.ByteBufferPage;
  */
 public class StubPageCursor extends PageCursor
 {
-    private long pageId;
-    private int pageSize;
+    private final long pageId;
+    private final int pageSize;
     protected ByteBufferPage page;
     private int currentOffset;
     private boolean observedOverflow;
@@ -396,6 +396,13 @@ public class StubPageCursor extends PageCursor
             throw new IndexOutOfBoundsException();
         }
         currentOffset = offset;
+    }
+
+    @Override
+    public void clear()
+    {
+        page.clear();
+        currentOffset = 0;
     }
 
     public Page getPage()

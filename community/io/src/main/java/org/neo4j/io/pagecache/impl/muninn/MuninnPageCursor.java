@@ -776,4 +776,20 @@ abstract class MuninnPageCursor extends PageCursor
             this.cursorException = message;
         }
     }
+
+    @Override
+    public void clear()
+    {
+        if ( pageSize == 0 )
+        {
+            // if this page has been closed then pageSize == 0 and we must adhere to making writes
+            // trigger outOfBounds when closed
+            outOfBounds = true;
+        }
+        else
+        {
+            UnsafeUtil.setMemory( pointer, pageSize, (byte) 0 );
+            offset = 0;
+        }
+    }
 }

@@ -261,6 +261,7 @@ public abstract class PageCursor implements AutoCloseable
      *
      * @see AutoCloseable#close()
      */
+    @Override
     public abstract void close();
 
     /**
@@ -340,4 +341,10 @@ public abstract class PageCursor implements AutoCloseable
      * @return A cursor that is linked with this cursor.
      */
     public abstract PageCursor openLinkedCursor( long pageId );
+
+    /**
+     * Sets all bytes in this page to zero, as if this page was newly allocated at the end of the file.
+     * Offset is also set to 0.
+     */
+    public abstract void clear();
 }

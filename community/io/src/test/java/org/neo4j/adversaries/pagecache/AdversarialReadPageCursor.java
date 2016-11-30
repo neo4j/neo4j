@@ -124,11 +124,13 @@ class AdversarialReadPageCursor extends PageCursor
             this.currentReadIsPreparingInconsistent = currentReadIsPreparingInconsistent;
         }
 
+        @Override
         public void injectFailure( Class<? extends Throwable>... failureTypes )
         {
             adversary.injectFailure( failureTypes );
         }
 
+        @Override
         public boolean injectFailureOrMischief( Class<? extends Throwable>... failureTypes )
         {
             return adversary.injectFailureOrMischief( failureTypes );
@@ -169,7 +171,7 @@ class AdversarialReadPageCursor extends PageCursor
 
     private final PageCursor delegate;
     private AdversarialReadPageCursor linkedCursor;
-    private State state;
+    private final State state;
 
     AdversarialReadPageCursor( PageCursor delegate, Adversary adversary )
     {
@@ -452,6 +454,12 @@ class AdversarialReadPageCursor extends PageCursor
     public PageCursor openLinkedCursor( long pageId )
     {
         return linkedCursor = new AdversarialReadPageCursor( delegate.openLinkedCursor( pageId ), state );
+    }
+
+    @Override
+    public void clear()
+    {
+        throw new IllegalStateException( "Cannot write using read cursor" );
     }
 
     @Override
