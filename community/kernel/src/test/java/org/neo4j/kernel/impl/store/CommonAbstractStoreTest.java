@@ -21,15 +21,19 @@ package org.neo4j.kernel.impl.store;
 
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 import org.mockito.InOrder;
+import org.mockito.Mockito;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.OpenOption;
 import java.util.Arrays;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
@@ -38,7 +42,9 @@ import org.neo4j.io.pagecache.RecordingPageCacheTracer;
 import org.neo4j.io.pagecache.RecordingPageCacheTracer.Pin;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
@@ -107,6 +113,9 @@ public class CommonAbstractStoreTest
     @ClassRule
     public static final RuleChain ruleChain = RuleChain.outerRule( fileSystemRule ).around( dir ).around( pageCacheRule );
 
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
+
     @Before
     public void setUpMocks() throws IOException
     {
@@ -151,6 +160,32 @@ public class CommonAbstractStoreTest
         InOrder order = inOrder( pageCursor );
         order.verify( pageCursor ).next( pageIdForRecord );
         order.verify( pageCursor ).shouldRetry();
+    }
+
+    @Test
+    public void failStoreInitializationWhenHeaderRecordCantBeRead() throws IOException
+    {
+        File storeFile = dir.file( "a" );
+        PageCache pageCache = Mockito.mock( PageCache.class );
+        PagedFile pagedFile = mock( PagedFile.class );
+        PageCursor pageCursor = mock( PageCursor.class );
+
+        when( pageCache.map( eq( storeFile ), anyInt(), any( OpenOption.class ) ) ).thenReturn( pagedFile );
+        when( pagedFile.io( 0L, PagedFile.PF_SHARED_READ_LOCK ) ).thenReturn( pageCursor );
+        when( pageCursor.next() ).thenReturn( false );
+
+        RecordFormats recordFormats = StandardV3_0.RECORD_FORMATS;
+
+        expectedException.expect( StoreNotFoundException.class );
+        expectedException.expectMessage( "Store file not found: " + storeFile.getAbsolutePath()  );
+
+        try ( DynamicArrayStore dynamicArrayStore = new DynamicArrayStore( storeFile, config, IdType.NODE_LABELS,
+                idGeneratorFactory, pageCache, NullLogProvider.getInstance(),
+                Settings.INTEGER.apply( GraphDatabaseSettings.label_block_size.getDefaultValue() ),
+                recordFormats.dynamic(),recordFormats.storeVersion() ) )
+        {
+            dynamicArrayStore.initialise( false );
+        }
     }
 
     @Test
