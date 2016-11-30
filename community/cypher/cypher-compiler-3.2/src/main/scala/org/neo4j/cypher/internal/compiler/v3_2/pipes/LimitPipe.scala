@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{Expression, NumericHelper}
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.LegacyExpression
 import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 
@@ -54,8 +53,6 @@ case class LimitPipe(source: Pipe, exp: Expression)
     val (head :: Nil) = sources
     copy(source = head)(estimatedCardinality)
   }
-
-  override def localEffects = Effects()
 
   def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 }

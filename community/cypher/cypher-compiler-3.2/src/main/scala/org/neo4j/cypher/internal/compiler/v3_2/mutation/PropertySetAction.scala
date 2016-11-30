@@ -21,9 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.mutation
 
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions._
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_2.InvalidArgumentException
 import org.neo4j.graphdb.{Node, Relationship}
 
@@ -36,8 +34,6 @@ case class PropertySetAction(prop: Property, valueExpression: Expression)
     case Variable(entityName) => Expression.hasPropertyReadDependency(entityName, valueExpression, propertyKey.name)
     case _ => true // we don't know so better safe than sorry!
   }
-
-  def localEffects(symbols: SymbolTable) = Effects.propertyWrite(mapExpr, symbols)(propertyKey.name)
 
   def exec(context: ExecutionContext, state: QueryState) = {
     implicit val s = state

@@ -43,7 +43,4 @@ case class SetPipe(src: Pipe, setOperation: SetOperation)
     val (onlySource :: Nil) = sources
     SetPipe(onlySource, setOperation)(estimatedCardinality)
   }
-
-  //rule planner stay away from this pipe!
-  override def localEffects = throw new UnsupportedOperationException
 }

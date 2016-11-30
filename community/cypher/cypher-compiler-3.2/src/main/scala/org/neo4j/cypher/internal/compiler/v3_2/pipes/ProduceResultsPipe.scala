@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.KeyNames
 
 case class ProduceResultsPipe(source: Pipe, columns: Seq[String])(val estimatedCardinality: Option[Double] = None)
@@ -44,8 +43,6 @@ case class ProduceResultsPipe(source: Pipe, columns: Seq[String])(val estimatedC
     .andThen(this.id, "ProduceResults", variables, KeyNames(columns))
 
   def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
-
-  def localEffects = Effects()
 
   def symbols = source.symbols.filter(columns.contains)
 

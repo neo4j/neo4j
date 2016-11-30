@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.KeyNames
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{PlanDescriptionImpl, TwoChildren}
 import org.neo4j.cypher.internal.frontend.v3_2.symbols.ListType
@@ -54,8 +53,6 @@ case class RollUpApplyPipe(lhs: Pipe, rhs: Pipe, collectionName: String, identif
   )
 
   def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
-
-  override def localEffects = Effects()
 
   override def symbols =
     lhs.symbols.add(collectionName, ListType(rhs.symbols.variables(identifierToCollect)))

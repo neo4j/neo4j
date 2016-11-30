@@ -127,20 +127,6 @@ case class MergePatternAction(patterns: Seq[Pattern],
     Effects(collect.toSet)
   }
 
-  def localEffects(externalSymbols: SymbolTable) = {
-    import Effects._
-
-    val effectsFromReading = readEffects(externalSymbols)
-
-    val allSymbols = updateSymbols(externalSymbols)
-    val actionEffects = actions.effects(allSymbols)
-    val onCreateEffects = onCreate.effects(allSymbols)
-    val onMatchEffects = onMatch.effects(allSymbols)
-    val updateActionsEffects = updateActions().effects(allSymbols)
-
-    actionEffects ++ onCreateEffects ++ onMatchEffects ++ updateActionsEffects ++ effectsFromReading
-  }
-
   override def updateSymbols(symbol: SymbolTable): SymbolTable = symbol.add(variables.toMap)
 
   override def arguments: Seq[Argument] = {

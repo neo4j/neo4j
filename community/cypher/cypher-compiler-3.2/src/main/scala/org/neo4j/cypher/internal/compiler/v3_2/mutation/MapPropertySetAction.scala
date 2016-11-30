@@ -21,13 +21,10 @@ package org.neo4j.cypher.internal.compiler.v3_2.mutation
 
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{Expression, Variable}
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{Effects, _}
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.{IsMap, MapSupport}
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_2.spi.{Operations, QueryContext}
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_2.CypherTypeException
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 
 import scala.collection.Map
@@ -123,15 +120,5 @@ case class MapPropertySetAction(element: Expression, mapExpression: Expression, 
     case _ =>
       throw new CypherTypeException(s"Expected $x to be a node or a relationship")
   }
-
-  def localEffects(symbols: SymbolTable) = element match {
-    case v: Variable => symbols.variables(v.entityName) match {
-      case _: NodeType => Effects(WriteAnyNodeProperty)
-      case _: RelationshipType => Effects(WriteAnyRelationshipProperty)
-      case _ => Effects()
-    }
-    case _ => Effects(WriteAnyNodeProperty, WriteAnyRelationshipProperty)
-  }
-
 }
 

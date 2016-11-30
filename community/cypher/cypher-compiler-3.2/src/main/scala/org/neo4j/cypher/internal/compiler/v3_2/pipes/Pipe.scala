@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2._
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{Id, InternalPlanDescription, SingleRowPlanDescription}
 import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 
@@ -31,11 +30,6 @@ trait PipeMonitor {
   def stopSetup(queryId: AnyRef, pipe: Pipe)
   def startStep(queryId: AnyRef, pipe: Pipe)
   def stopStep(queryId: AnyRef, pipe: Pipe)
-}
-
-trait Effectful {
-  def effects: Effects
-  def localEffects: Effects
 }
 
 /**
@@ -49,7 +43,7 @@ trait Effectful {
   * Not heeding this warning will lead to bugs that do not manifest except for under concurrent use.
   * If you need to keep state per-query, have a look at QueryState instead.
   */
-trait Pipe extends Effectful {
+trait Pipe {
   self: Pipe =>
 
   def monitor: PipeMonitor
@@ -81,10 +75,6 @@ trait Pipe extends Effectful {
 
   def sources: Seq[Pipe]
 
-  def localEffects: Effects
-
-  def effects: Effects = localEffects
-
   /*
   Runs the predicate on all the inner Pipe until no pipes are left, or one returns true.
    */
@@ -108,8 +98,6 @@ case class SingleRowPipe()(implicit val monitor: PipeMonitor) extends Pipe with 
   def exists(pred: Pipe => Boolean) = pred(this)
 
   def planDescriptionWithoutCardinality: InternalPlanDescription = new SingleRowPlanDescription(this.id, Seq.empty, variables)
-
-  override def localEffects = Effects()
 
   def dup(sources: List[Pipe]): Pipe = this
 
@@ -138,8 +126,6 @@ abstract class PipeWithSource(source: Pipe, val monitor: PipeMonitor) extends Pi
   protected def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext]
 
   override val sources: Seq[Pipe] = Seq(source)
-
-  override def effects = sources.foldLeft(localEffects)(_ ++ _.effects)
 
   def exists(pred: Pipe => Boolean) = pred(this) || source.exists(pred)
 

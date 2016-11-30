@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.{Comparer, ExecutionContext}
 
 case class SortPipe(source: Pipe, orderBy: Seq[SortDescription])
                    (val estimatedCardinality: Option[Double] = None)(implicit monitor: PipeMonitor)
-  extends PipeWithSource(source, monitor) with RonjaPipe with NoEffectsPipe {
+  extends PipeWithSource(source, monitor) with RonjaPipe {
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     val array = input.toArray
     java.util.Arrays.sort(array, new InnerOrdering(orderBy)(state))

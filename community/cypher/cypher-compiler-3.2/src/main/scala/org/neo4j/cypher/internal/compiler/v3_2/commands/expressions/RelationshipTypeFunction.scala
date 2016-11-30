@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v3_2.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_2._
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{Effects, ReadsAllRelationships}
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_2.ParameterWrongTypeException
@@ -45,6 +44,4 @@ case class RelationshipTypeFunction(relationship: Expression) extends NullInNull
   }
 
   override def symbolTableDependencies = relationship.symbolTableDependencies
-
-  override def localEffects(symbols: SymbolTable) = Effects(ReadsAllRelationships)
 }

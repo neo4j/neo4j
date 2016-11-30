@@ -20,11 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v3_2.commands
 
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions._
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{Effects, _}
 import org.neo4j.cypher.internal.compiler.v3_2.mutation._
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Argument
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.{SymbolTable, TypeSafe}
+import org.neo4j.cypher.internal.compiler.v3_2.symbols.TypeSafe
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 
 trait NodeStartItemVariables extends StartItem {
@@ -36,11 +35,9 @@ trait RelationshipStartItemVariables extends StartItem {
 }
 
 abstract class StartItem(val variableName: String, val arguments: Seq[Argument])
-  extends TypeSafe with EffectfulAstNode[StartItem] {
+  extends TypeSafe with AstNode[StartItem] {
   def producerType: String = getClass.getSimpleName
   def variables: Seq[(String, CypherType)]
-  def mutating: Boolean = effects.containsWrites
-  def effects: Effects = effects(SymbolTable(variables.toMap))
 }
 
 trait ReadOnlyStartItem {
@@ -51,43 +48,33 @@ trait ReadOnlyStartItem {
 }
 
 case class RelationshipById(varName: String, expression: Expression)
-  extends StartItem(varName, Seq(Arguments.LegacyExpression(expression))) with ReadOnlyStartItem with RelationshipStartItemVariables {
-  override def localEffects(symbols: SymbolTable) = Effects(ReadsAllRelationships)
-}
+  extends StartItem(varName, Seq(Arguments.LegacyExpression(expression))) with ReadOnlyStartItem with RelationshipStartItemVariables
 
 case class RelationshipByIndex(varName: String, idxName: String, key: Expression, expression: Expression)
   extends StartItem(varName, Seq(
     Arguments.LegacyExpression(expression),
     Arguments.LegacyIndex(idxName),
     Arguments.LegacyExpression(key)))
-  with ReadOnlyStartItem with RelationshipStartItemVariables {
-  override def localEffects(symbols: SymbolTable) = Effects(ReadsAllRelationships)
-}
+  with ReadOnlyStartItem with RelationshipStartItemVariables
 
 case class RelationshipByIndexQuery(varName: String, idxName: String, query: Expression)
   extends StartItem(varName, Seq(
     Arguments.LegacyIndex(idxName),
     Arguments.LegacyExpression(query)))
-  with ReadOnlyStartItem with RelationshipStartItemVariables {
-  override def localEffects(symbols: SymbolTable) = Effects(ReadsAllRelationships)
-}
+  with ReadOnlyStartItem with RelationshipStartItemVariables
 
 case class NodeByIndex(varName: String, idxName: String, key: Expression, expression: Expression)
   extends StartItem(varName, Seq(
     Arguments.LegacyExpression(expression),
     Arguments.LegacyIndex(idxName),
     Arguments.LegacyExpression(key)))
-  with ReadOnlyStartItem with NodeStartItemVariables with Hint {
-  override def localEffects(symbols: SymbolTable) = Effects(ReadsAllNodes)
-}
+  with ReadOnlyStartItem with NodeStartItemVariables with Hint
 
 case class NodeByIndexQuery(varName: String, idxName: String, query: Expression)
   extends StartItem(varName, Seq(
     Arguments.LegacyExpression(query),
     Arguments.LegacyIndex(idxName)))
-  with ReadOnlyStartItem with NodeStartItemVariables with Hint {
-  override def localEffects(symbols: SymbolTable) = Effects(ReadsAllNodes)
-}
+  with ReadOnlyStartItem with NodeStartItemVariables with Hint
 
 trait Hint
 
@@ -121,48 +108,34 @@ case class RangeQueryExpression[T](expression: T) extends QueryExpression[T] {
 
 case class SchemaIndex(variable: String, label: String, property: String, kind: SchemaIndexKind, query: Option[QueryExpression[Expression]])
   extends StartItem(variable, query.map(q => Arguments.LegacyExpression(q.expression)).toIndexedSeq :+ Arguments.Index(label, property))
-  with ReadOnlyStartItem with Hint with NodeStartItemVariables {
-  override def localEffects(symbols: SymbolTable) = Effects(ReadsNodesWithLabels(label), ReadsGivenNodeProperty(property))
-}
+  with ReadOnlyStartItem with Hint with NodeStartItemVariables
 
 case class NodeById(varName: String, expression: Expression)
   extends StartItem(varName, Seq(Arguments.LegacyExpression(expression)))
-  with ReadOnlyStartItem with NodeStartItemVariables {
-  override def localEffects(symbols: SymbolTable) = Effects(ReadsAllNodes)
-}
+  with ReadOnlyStartItem with NodeStartItemVariables
 
 case class NodeByIdOrEmpty(varName: String, expression: Expression)
   extends StartItem(varName, Seq(Arguments.LegacyExpression(expression)))
-  with ReadOnlyStartItem with NodeStartItemVariables {
-  override def localEffects(symbols: SymbolTable) = Effects(ReadsAllNodes)
-}
+  with ReadOnlyStartItem with NodeStartItemVariables
 
 case class NodeByLabel(varName: String, label: String)
   extends StartItem(varName, Seq(Arguments.LabelName(label)))
-  with ReadOnlyStartItem with Hint with NodeStartItemVariables {
-  override def localEffects(symbols: SymbolTable) = Effects(ReadsNodesWithLabels(label))
-}
+  with ReadOnlyStartItem with Hint with NodeStartItemVariables
 
 case class AllNodes(columnName: String) extends StartItem(columnName, Seq.empty)
-  with ReadOnlyStartItem with NodeStartItemVariables {
-  override def localEffects(symbols: SymbolTable) = Effects(ReadsAllNodes)
-}
+  with ReadOnlyStartItem with NodeStartItemVariables
 
 case class AllRelationships(columnName: String) extends StartItem(columnName, Seq.empty)
-  with ReadOnlyStartItem with RelationshipStartItemVariables {
-  override def localEffects(symbols: SymbolTable) = Effects(ReadsAllRelationships)
-}
+  with ReadOnlyStartItem with RelationshipStartItemVariables
 
 case class LoadCSV(withHeaders: Boolean, url: Expression, variable: String, fieldTerminator: Option[String]) extends StartItem(variable, Seq.empty)
   with ReadOnlyStartItem {
   def variables: Seq[(String, CypherType)] = Seq(variableName -> (if (withHeaders) CTMap else CTList(CTAny)))
-  override def localEffects(symbols: SymbolTable) = Effects()
 }
 
 case class Unwind(expression: Expression, variable: String) extends StartItem(variable, Seq())
   with ReadOnlyStartItem {
   def variables: Seq[(String, CypherType)] = Seq(variableName -> CTAny)
-  override def localEffects(symbols: SymbolTable) = Effects()
 }
 
 //We need to wrap the inner classes to be able to have two different rewrite methods
@@ -170,7 +143,6 @@ abstract class UpdatingStartItem(val updateAction: UpdateAction, name: String) e
   override def children = Seq(updateAction)
   override def symbolTableDependencies = updateAction.symbolTableDependencies
 
-  def localEffects(symbols: SymbolTable) = updateAction.localEffects(symbols)
   def variables: Seq[(String, CypherType)] = updateAction.variables
 }
 

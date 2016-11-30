@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Expression
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{Effects, ReadsAllNodes}
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.{IsList, ListSupport}
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
@@ -81,8 +80,6 @@ case class NodeByIdSeekPipe(ident: String, nodeIdsExpr: SeekArgs)
   }
 
   def sources: Seq[Pipe] = Seq.empty
-
-  override def localEffects = Effects(ReadsAllNodes)
 
   def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 }

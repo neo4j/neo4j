@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Expression
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.Effects._
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.LegacyExpressions
 
 /*
@@ -61,8 +60,6 @@ case class ProjectionPipe(source: Pipe, expressions: Map[String, Expression])(va
     val (source :: Nil) = sources
     copy(source = source)(estimatedCardinality)
   }
-
-  override def localEffects = expressions.effects(symbols)
 
   def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 }

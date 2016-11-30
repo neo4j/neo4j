@@ -50,8 +50,6 @@ case class NodeStartPipe(source: Pipe, name: String, createSource: EntityProduce
   extends StartPipe[Node](source, name, createSource, pipeMonitor) {
   def variableType = CTNode
 
-  override def localEffects = if (isLeaf) itemEffects.asLeafEffects else itemEffects
-
   def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 
   def dup(sources: List[Pipe]): Pipe = {
@@ -65,8 +63,6 @@ case class NodeStartPipe(source: Pipe, name: String, createSource: EntityProduce
 case class RelationshipStartPipe(source: Pipe, name: String, createSource: EntityProducer[Relationship])(val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
   extends StartPipe[Relationship](source, name, createSource, pipeMonitor) {
   def variableType = CTRelationship
-  override def localEffects = Effects(ReadsAllRelationships)
-
   def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 
   def dup(sources: List[Pipe]): Pipe = {

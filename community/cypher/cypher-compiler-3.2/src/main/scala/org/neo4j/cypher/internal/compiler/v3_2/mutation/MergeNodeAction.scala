@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v3_2.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compiler.v3_2.commands.values.KeyToken
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.PropertySupport
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.{EntityProducer, QueryState}
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Argument
@@ -171,10 +170,6 @@ case class MergeNodeAction(variable: String,
     (expectations.flatMap(_.symbolTableDependencies)
       ++ onCreate.flatMap(_.symbolTableDependencies)
       ++ onMatch.flatMap(_.symbolTableDependencies)).toSet - variable
-
-  def localEffects(symbols: SymbolTable) =
-    if (labels.isEmpty) Effects(CreatesAnyNode, ReadsAllNodes)
-    else Effects(ReadsNodesWithLabels(labels.map(_.name).toSet), CreatesNodesWithLabels(labels.map(_.name).toSet))
 
   override def updateSymbols(symbol: SymbolTable): SymbolTable = symbol.add(variables.toMap)
 }

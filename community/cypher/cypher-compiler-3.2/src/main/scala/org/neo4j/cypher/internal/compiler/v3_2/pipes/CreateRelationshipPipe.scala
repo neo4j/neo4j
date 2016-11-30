@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Expression
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{CreatesRelationship, Effects}
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.{IsMap, ListSupport}
 import org.neo4j.cypher.internal.compiler.v3_2.mutation.{GraphElementPropertyFunctions, makeValueNeoSafe}
 import org.neo4j.cypher.internal.compiler.v3_2.spi.QueryContext
@@ -82,8 +81,6 @@ abstract class BaseRelationshipPipe(src: Pipe, key: String, startNode: String, t
   protected def handleNull(key: String): Unit
 
   override def symbols = src.symbols.add(key, CTRelationship)
-
-  override def localEffects = Effects(CreatesRelationship(typ.name))
 }
 
 case class CreateRelationshipPipe(src: Pipe, key: String, startNode: String, typ: LazyType, endNode: String,

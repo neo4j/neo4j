@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v3_2.mutation
 
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Expression
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.ListSupport
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
@@ -48,8 +47,6 @@ case class ForeachAction(collection: Expression, id: String, actions: Seq[Update
   }
 
   override def updateSymbols(symbol: SymbolTable) = addInnerVariable(symbol)
-
-  def localEffects(symbols: SymbolTable) = Effects()
 
   def children = collection +: actions
 

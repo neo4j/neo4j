@@ -19,10 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.commands
 
-import org.neo4j.cypher.internal.compiler.v3_2.commands.predicates.{True, Predicate}
-import org.neo4j.cypher.internal.compiler.v3_2.mutation._
-import expressions.{Expression, AggregationExpression}
 import org.neo4j.cypher.internal.compiler.v3_2.commands
+import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{AggregationExpression, Expression}
+import org.neo4j.cypher.internal.compiler.v3_2.commands.predicates.{Predicate, True}
+import org.neo4j.cypher.internal.compiler.v3_2.mutation._
+
 import scala.annotation.tailrec
 
 object Query {
@@ -95,7 +96,7 @@ case class Query(returns: Return,
           !remaining.updatedCommands.exists(isMergeAction) &&
           // If we have updating actions, we can't merge with a tail part that has updating start items
           // That would mess with the order of actions
-          !(head.updatedCommands.nonEmpty && remaining.start.exists(_.mutating))) {
+          head.updatedCommands.isEmpty) {
           head.compactWith(remaining)
         } else
           head.copy(tail = Some(remaining))
@@ -114,8 +115,7 @@ case class Query(returns: Return,
     matching.isEmpty &&
     sort.isEmpty &&
     slice.isEmpty &&
-    where == True() &&
-    start.forall(_.mutating)
+    where == True()
 
   private def compactWith(other: Query) =
     commands.Query(

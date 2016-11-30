@@ -20,9 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v3_2.executionplan
 
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{Expression, Variable}
-import org.neo4j.cypher.internal.compiler.v3_2.commands.{ReturnItem, SortItem}
-import org.neo4j.cypher.internal.compiler.v3_2.mutation.UpdateAction
-import org.neo4j.cypher.internal.compiler.v3_2.pipes.Effectful
 import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 
@@ -102,31 +99,6 @@ object Effects {
       }
       case _ => None
     }).getOrElse(Effects())
-
-  implicit class TraversableEffects(iter: Traversable[Effectful]) {
-    def effects: Effects = Effects(iter.flatMap(_.effects.effectsSet).toSet)
-  }
-
-  implicit class TraversableExpressions(iter: Traversable[Expression]) {
-    def effects(symbols: SymbolTable): Effects = Effects(iter.flatMap(_.effects(symbols).effectsSet).toSet)
-  }
-
-  implicit class EffectfulReturnItems(iter: Traversable[ReturnItem]) {
-    def effects(symbols: SymbolTable): Effects = Effects(iter.flatMap(_.expression.effects(symbols).effectsSet).toSet)
-  }
-
-  implicit class EffectfulUpdateAction(commands: Traversable[UpdateAction]) {
-    def effects(symbols: SymbolTable): Effects = Effects(commands.flatMap(_.effects(symbols).effectsSet).toSet)
-  }
-
-  implicit class MapEffects(m: Map[_, Expression]) {
-    def effects(symbols: SymbolTable): Effects = Effects(m.values.flatMap(_.effects(symbols).effectsSet).toSet)
-  }
-
-  implicit class SortItemEffects(m: Traversable[SortItem]) {
-    def effects(symbols: SymbolTable): Effects = Effects(m.flatMap(_.expression.effects(symbols).effectsSet).toSet)
-  }
-
 }
 
 //-----------------------------------------------------------------------------

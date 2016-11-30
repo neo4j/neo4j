@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v3_2.commands.predicates.Equivalent
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.LegacyExpressions
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{InternalPlanDescription, PlanDescriptionImpl, TwoChildren}
 
@@ -76,8 +75,6 @@ case class ValueHashJoinPipe(lhsExpression: Expression, rhsExpression: Expressio
     val (left :: right :: Nil) = sources
     copy(left = left, right = right)(estimatedCardinality)
   }
-
-  override def localEffects = Effects()
 
   override def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 

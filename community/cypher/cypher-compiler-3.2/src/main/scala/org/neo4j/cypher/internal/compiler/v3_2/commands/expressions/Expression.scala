@@ -22,14 +22,13 @@ package org.neo4j.cypher.internal.compiler.v3_2.commands.expressions
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.commands._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.predicates.{CoercedPredicate, Predicate}
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.TypeSafeMathSupport
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_2.symbols.{SymbolTable, TypeSafe, Typed}
 import org.neo4j.cypher.internal.frontend.v3_2.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_2.symbols.{CypherType, _}
 
-abstract class Expression extends Typed with TypeSafe with EffectfulAstNode[Expression] {
+abstract class Expression extends Typed with TypeSafe with AstNode[Expression] {
   def rewrite(f: Expression => Expression): Expression
 
   def rewriteAsPredicate(f: Expression => Expression): Predicate = rewrite(f) match {
@@ -76,8 +75,6 @@ abstract class Expression extends Typed with TypeSafe with EffectfulAstNode[Expr
     case p: Product => scala.runtime.ScalaRunTime._toString(p)
     case _          => getClass.getSimpleName
   }
-
-  def localEffects(symbols: SymbolTable) = Effects()
 
   val isDeterministic = ! exists {
     case RandFunction() => true

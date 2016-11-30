@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Expression
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.ListSupport
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{PlanDescriptionImpl, TwoChildren}
 import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
@@ -51,8 +50,6 @@ case class ForeachPipe(source: Pipe, inner: Pipe, variable: String, expression: 
   }
 
   override val sources: Seq[Pipe] = Seq(source, inner)
-
-  override def localEffects = Effects()
 
   override def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 }

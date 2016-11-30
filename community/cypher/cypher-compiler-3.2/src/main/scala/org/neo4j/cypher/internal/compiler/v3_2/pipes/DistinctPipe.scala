@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v3_2.commands.predicates.Equivalent
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.Effects._
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.KeyNames
 import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.Eagerly
@@ -78,6 +77,4 @@ case class DistinctPipe(source: Pipe, expressions: Map[String, Expression])(val 
     val (source :: Nil) = sources
     copy(source = source)(estimatedCardinality)
   }
-
-  override def localEffects = expressions.effects(symbols)
 }

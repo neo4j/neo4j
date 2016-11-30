@@ -61,7 +61,5 @@ case class SelectOrSemiApplyPipe(source: Pipe, inner: Pipe, predicate: Predicate
     copy(source = source, inner = inner)(estimatedCardinality)
   }
 
-  override def localEffects = predicate.effects(symbols)
-
   def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 }

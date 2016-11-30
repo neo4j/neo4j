@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v3_2.commands.expressions
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.predicates._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.{Pattern, ShortestPath, SingleNode, _}
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{Effects, ReadsAllNodes, ReadsAllRelationships}
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.RelationshipSupport
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
@@ -184,6 +183,4 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath, predicates:
   private def doesNotDependOnFullPath(predicate: Predicate): Boolean = {
     (predicate.symbolTableDependencies intersect pathVariables).isEmpty
   }
-
-  override def localEffects(symbols: SymbolTable) = Effects(ReadsAllNodes, ReadsAllRelationships)
 }

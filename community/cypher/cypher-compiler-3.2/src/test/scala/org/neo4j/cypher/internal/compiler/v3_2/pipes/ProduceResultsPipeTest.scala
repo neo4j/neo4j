@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.Effects
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 
 class ProduceResultsPipeTest extends CypherFunSuite {
@@ -62,11 +61,6 @@ class ProduceResultsPipeTest extends CypherFunSuite {
     val result = pipe.createResults(queryState).toList
 
     result shouldBe empty
-  }
-
-  test("should have no effects because it does not touch the store") {
-    val pipe = ProduceResultsPipe(mock[Pipe], Seq("a", "b", "c"))(Some(1.0))
-    assert(pipe.localEffects == Effects())
   }
 
   private def ctx(data: (String, Any)*): ExecutionContext = {

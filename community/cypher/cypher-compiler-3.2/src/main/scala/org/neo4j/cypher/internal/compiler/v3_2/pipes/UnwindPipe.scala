@@ -41,8 +41,6 @@ case class UnwindPipe(source: Pipe, collection: Expression, variable: String)
 
   def symbols = source.symbols.add(variable, collection.getType(source.symbols).legacyIteratedType)
 
-  override def localEffects = collection.effects(symbols)
-
   def dup(sources: List[Pipe]): Pipe = {
     val (head :: Nil) = sources
     copy(source = head)(estimatedCardinality)

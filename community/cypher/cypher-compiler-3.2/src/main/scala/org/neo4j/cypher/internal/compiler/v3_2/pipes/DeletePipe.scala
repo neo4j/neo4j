@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Expression
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.ListSupport
 import org.neo4j.cypher.internal.compiler.v3_2.mutation.GraphElementPropertyFunctions
 import org.neo4j.cypher.internal.frontend.v3_2.CypherTypeException
@@ -72,8 +71,6 @@ case class DeletePipe(src: Pipe, expression: Expression, forced: Boolean)(val es
     src.planDescription.andThen(this.id, if (forced) "DetachDelete" else "Delete", variables)
 
   override def symbols = src.symbols
-
-  override def localEffects = Effects()
 
   override def withEstimatedCardinality(estimated: Double): Pipe with RonjaPipe = copy()(Some(estimated))
 

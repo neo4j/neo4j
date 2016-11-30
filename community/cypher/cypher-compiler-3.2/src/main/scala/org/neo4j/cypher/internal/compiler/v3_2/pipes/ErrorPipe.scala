@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 
@@ -33,8 +32,6 @@ case class ErrorPipe(source: Pipe, exception: Exception)(val estimatedCardinalit
     source.planDescription.andThen(this.id, "Error", variables)
 
   override def withEstimatedCardinality(estimated: Double): Pipe with RonjaPipe = copy()(Some(estimated))
-
-  override def localEffects: Effects = Effects()
 
   override def symbols: SymbolTable = source.symbols
 

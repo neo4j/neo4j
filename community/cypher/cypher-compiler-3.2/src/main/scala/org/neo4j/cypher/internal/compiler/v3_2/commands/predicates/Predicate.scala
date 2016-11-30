@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v3_2.commands.predicates
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{Expression, Literal}
 import org.neo4j.cypher.internal.compiler.v3_2.commands.values.KeyToken
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{Effects, ReadsNodesWithLabels}
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.{CastSupport, IsList, IsMap, ListSupport}
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
@@ -305,8 +304,6 @@ case class HasLabel(entity: Expression, label: KeyToken) extends Predicate {
   def symbolTableDependencies = entity.symbolTableDependencies ++ label.symbolTableDependencies
 
   def containsIsNull = false
-
-  override def localEffects(symbols: SymbolTable) = Effects(ReadsNodesWithLabels(label.name))
 }
 
 case class CoercedPredicate(inner:Expression) extends Predicate with ListSupport {

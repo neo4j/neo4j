@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{Effects, ReadsAllNodes}
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
@@ -40,8 +39,6 @@ case class AllNodesScanPipe(ident: String)(val estimatedCardinality: Option[Doub
   def symbols = new SymbolTable(Map(ident -> CTNode))
 
   override def monitor = pipeMonitor
-
-  override def localEffects: Effects = Effects(ReadsAllNodes).asLeafEffects
 
   def dup(sources: List[Pipe]): Pipe = {
     require(sources.isEmpty)

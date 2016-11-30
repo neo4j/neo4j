@@ -22,10 +22,8 @@ package org.neo4j.cypher.internal.compiler.v3_2.mutation
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{Expression, Literal}
 import org.neo4j.cypher.internal.compiler.v3_2.commands.values.KeyToken
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{Effects, _}
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.ListSupport
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_2.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 
@@ -35,11 +33,6 @@ case class CreateNode(key: String, properties: Map[String, Expression], labels: 
   extends UpdateAction
   with GraphElementPropertyFunctions
   with ListSupport {
-
-  def localEffects(symbols: SymbolTable) = if (labels.isEmpty)
-    Effects(CreatesAnyNode)
-  else
-    Effects(CreatesNodesWithLabels(labels.map(_.name).toSet))
 
   def exec(context: ExecutionContext, state: QueryState): Iterator[ExecutionContext] = {
     def fromAnyToLiteral(x: Map[String, Any]): Map[String, Expression] = x.map {

@@ -19,11 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.mutation
 
-import org.neo4j.cypher.internal.compiler.v3_2._
+import org.neo4j.cypher.internal.compiler.v3_2.commands.AstNode
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Expression
-import org.neo4j.cypher.internal.compiler.v3_2.commands.{AstNode, EffectfulAstNode}
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.Effects
-import org.neo4j.cypher.internal.compiler.v3_2.pipes
+import org.neo4j.cypher.internal.compiler.v3_2.{pipes, _}
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Argument
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.compiler.v3_2.symbols.{SymbolTable, TypeSafe}
@@ -43,28 +42,8 @@ trait UpdateAction extends TypeSafe with AstNode[UpdateAction] {
 
   def arguments: Seq[Argument] = Seq(UpdateActionName(shortName))
 
-  def effects(symbols: SymbolTable): Effects = {
-    val collector = new EffectsCollector(localEffects(symbols), self, symbols)
-    visitFirst {
-      case (effectful: pipes.Effectful) => collector.register(effectful)
-        .withEffects(effectful.localEffects.writeEffects)
-      case (effectfulAst: EffectfulAstNode[_]) => collector.register(effectfulAst)
-        .withEffects(effectfulAst.localEffects(updateSymbols(symbols)).writeEffects)
-      case (update: UpdateAction) =>
-        val oldSymbols = collector.symbols(update)
-        collector
-          .registerWithSymbolTable(update, update.updateSymbols(oldSymbols))
-          .withEffects(update.localEffects(oldSymbols))
-      case other => collector.register(other)
-    }
-
-    collector.effects
-  }
-
   // This is here to give FOREACH action a chance to introduce symbols
   def updateSymbols(symbol: SymbolTable): SymbolTable = symbol.add(variables.toMap)
-
-  def localEffects(symbols: SymbolTable): Effects
 }
 
 class EffectsCollector(private var _effects: Effects, expr: AstNode[_], symbolTable: SymbolTable) {

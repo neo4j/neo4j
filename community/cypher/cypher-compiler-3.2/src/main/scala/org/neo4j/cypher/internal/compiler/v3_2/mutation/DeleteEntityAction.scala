@@ -20,10 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v3_2.mutation
 
 import org.neo4j.cypher.internal.compiler.v3_2._
-import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{ContainerIndex, Expression, Variable}
+import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{Effects, _}
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_2.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 import org.neo4j.graphdb
@@ -66,17 +65,6 @@ case class DeleteEntityAction(elementToDelete: Expression, forced: Boolean)
   def children = Seq(elementToDelete)
 
   def symbolTableDependencies = elementToDelete.symbolTableDependencies
-
-  def localEffects(symbols: SymbolTable) = elementToDelete match {
-    case i: Variable => effectsFromCypherType(symbols.variables(i.entityName))
-    case ContainerIndex(i: Variable, _) => symbols.variables(i.entityName) match {
-      case ListType(innerType) => effectsFromCypherType(innerType)
-    }
-    // There could be a nested map/collection expression here, so we'll
-    // just say that we don't know what type the entity has
-    case _ =>
-      Effects(DeletesNode, DeletesRelationship)
-  }
 
   private def effectsFromCypherType(cypherType: CypherType) = cypherType match {
     case _: NodeType         => Effects(DeletesNode)

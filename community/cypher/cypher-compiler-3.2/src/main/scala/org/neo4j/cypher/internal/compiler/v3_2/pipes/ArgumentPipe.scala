@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{InternalPlanDescription, NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v3_2.symbols.{SymbolTable, SymbolTypeAssertionCompiler}
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
@@ -46,6 +45,4 @@ case class ArgumentPipe(symbols: SymbolTable)
   def dup(sources: List[Pipe]): Pipe = this
 
   def exists(pred: (Pipe) => Boolean) = pred(this)
-
-  override def localEffects = Effects()
 }

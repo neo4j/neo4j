@@ -23,7 +23,6 @@ import java.net.URL
 
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Expression
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.ArrayBackedMap
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_2.spi.QueryContext
@@ -120,8 +119,6 @@ case class LoadCSVPipe(source: Pipe,
     case HasHeaders => source.symbols.add(variable, MapType.instance)
     case NoHeaders => source.symbols.add(variable, ListType(AnyType.instance))
   }
-
-  override def localEffects = Effects()
 
   override def dup(sources: List[Pipe]): Pipe = {
     val (head :: Nil) = sources

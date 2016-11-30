@@ -32,7 +32,7 @@ import scala.collection.{AbstractIterator, Iterator}
 
 case class TriadicSelectionPipe(positivePredicate: Boolean, left: Pipe, source: String, seen: String, target: String, right: Pipe)
                                (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
-extends PipeWithSource(left, pipeMonitor) with RonjaPipe with NoEffectsPipe {
+extends PipeWithSource(left, pipeMonitor) with RonjaPipe {
 
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
     var triadicState: PrimitiveLongSet = null

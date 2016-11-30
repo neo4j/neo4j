@@ -20,10 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2._
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.Effects
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{SingleRowPlanDescription, InternalPlanDescription}
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{InternalPlanDescription, SingleRowPlanDescription}
 import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 
 case class EmptyResultPipe(source: Pipe)(implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
 
@@ -38,10 +36,6 @@ case class EmptyResultPipe(source: Pipe)(implicit pipeMonitor: PipeMonitor) exte
   override def planDescription = source.planDescription.andThen(this.id, "EmptyResult", variables)
 
   def symbols = SymbolTable()
-
-  // this pipe has no effects
-  override val localEffects = Effects()
-  override val effects = Effects()
 
   def dup(sources: List[Pipe]): Pipe = {
     val (source :: Nil) = sources

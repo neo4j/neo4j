@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Expression
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{AllEffects, ProcedureCallMode}
+import org.neo4j.cypher.internal.compiler.v3_2.executionplan.ProcedureCallMode
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.{ListSupport, RuntimeJavaValueConverter, RuntimeScalaValueConverter}
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.Signature
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{InternalPlanDescription, PlanDescriptionImpl, SingleChild}
@@ -113,8 +113,6 @@ case class ProcedureCallPipe(source: Pipe,
     }
     outputSymbols
   }
-
-  override def localEffects = AllEffects
 
   override def dup(sources: List[Pipe]): Pipe = {
     val (head :: Nil) = sources

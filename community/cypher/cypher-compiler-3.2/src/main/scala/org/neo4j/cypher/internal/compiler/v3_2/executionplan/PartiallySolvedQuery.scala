@@ -96,7 +96,7 @@ case class PartiallySolvedQuery(returns: Seq[QueryToken[ReturnColumn]],
                                 aggregateToDo: Boolean,
                                 extracted: Boolean,
                                 optional: Boolean,
-                                tail: Option[PartiallySolvedQuery]) extends EffectfulAstNode[PartiallySolvedQuery] with PatternGraphBuilder  {
+                                tail: Option[PartiallySolvedQuery]) extends AstNode[PartiallySolvedQuery] with PatternGraphBuilder  {
 
   val matchPattern : MatchPattern = MatchPattern(patterns.map(_.token))
 
@@ -193,8 +193,6 @@ case class PartiallySolvedQuery(returns: Seq[QueryToken[ReturnColumn]],
   /* This methods is used to rewrite the queries from the end of the query line to the beginning of it */
   def rewriteFromTheTail(f: PartiallySolvedQuery => PartiallySolvedQuery): PartiallySolvedQuery =
     f(copy(tail = tail.map(_.rewriteFromTheTail(f))))
-
-  def localEffects(symbols: SymbolTable) = Effects()
 }
 
 case class ExecutionPlanInProgress(query: PartiallySolvedQuery, pipe: Pipe, isUpdating: Boolean = false)
