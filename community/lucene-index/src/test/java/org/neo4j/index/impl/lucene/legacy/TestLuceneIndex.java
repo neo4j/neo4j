@@ -233,29 +233,30 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         String[] names = new String[]{"Fry", "Leela", "Bender", "Amy", "Hubert", "Calculon"};
         String[] jobs = new String[]{"delivery boy", "pilot", "gambler", "intern", "professor", "actor"};
         Label characters = Label.label( "characters" );
-        try ( Transaction transaction = graphDb.beginTx() )
-        {
-            for ( int i = 0; i < names.length; i++ )
-            {
-                Node node = graphDb.createNode(characters);
-                node.setProperty( nameProperty, names[i] );
-                node.setProperty( jobNameProperty, jobs[i] );
-                index.add( node, nameProperty, names[i] );
-                index.add( node, jobNameProperty, jobs[i] );
-            }
-            transaction.success();
-        }
+        setPropertiesAndUpdateToJunior( index, nameProperty, jobNameProperty, names, jobs, characters );
 
-        try ( Transaction transaction = graphDb.beginTx() )
-        {
-            ResourceIterator<Node> nodes = graphDb.findNodes( characters );
-            nodes.stream().forEach( node ->
-            {
-                node.setProperty( jobNameProperty, "junior " + node.getProperty( jobNameProperty ) );
-                index.add( node, jobNameProperty, node.getProperty( jobNameProperty ) );
-            } );
-            transaction.success();
-        }
+        String[] sortedNames = new String[]{"Leela", "Hubert", "Fry", "Calculon", "Bender", "Amy"};
+        String[] sortedJobs = {"junior professor", "junior pilot", "junior intern", "junior gambler",
+                "junior delivery boy", "junior actor"};
+        queryAndSortNodesByStringProperty( index, nameProperty, sortedNames );
+        queryAndSortNodesByStringProperty( index, jobNameProperty, sortedJobs );
+    }
+
+    @Test
+    public void queryCustomIndexWithSortByStringAfterOtherPropertyUpdate()
+    {
+
+        Index<Node> index = nodeIndex( MapUtil.stringMap( LuceneIndexImplementation.KEY_TYPE, "exact",
+                LuceneIndexImplementation.KEY_TO_LOWER_CASE, "true" ) );
+        commitTx();
+
+        String nameProperty = "NODE_NAME_CUSTOM";
+        String jobNameProperty = "NODE_JOB_NAME_CUSTOM";
+
+        String[] names = new String[]{"Fry", "Leela", "Bender", "Amy", "Hubert", "Calculon"};
+        String[] jobs = new String[]{"delivery boy", "pilot", "gambler", "intern", "professor", "actor"};
+        Label characters = Label.label( "characters_custom" );
+        setPropertiesAndUpdateToJunior( index, nameProperty, jobNameProperty, names, jobs, characters );
 
         String[] sortedNames = new String[]{"Leela", "Hubert", "Fry", "Calculon", "Bender", "Amy"};
         String[] sortedJobs = {"junior professor", "junior pilot", "junior intern", "junior gambler",
@@ -2197,6 +2198,34 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
                 node.setProperty( numericProperty, (Integer) node.getProperty( numericProperty ) * 2 );
                 index.remove( node, numericProperty );
                 index.add( node, numericProperty,  new ValueContext( node.getProperty( numericProperty )).indexNumeric() );
+            } );
+            transaction.success();
+        }
+    }
+
+    private void setPropertiesAndUpdateToJunior( Index<Node> index, String nameProperty, String jobNameProperty,
+            String[] names, String[] jobs, Label characters )
+    {
+        try ( Transaction transaction = graphDb.beginTx() )
+        {
+            for ( int i = 0; i < names.length; i++ )
+            {
+                Node node = graphDb.createNode(characters);
+                node.setProperty( nameProperty, names[i] );
+                node.setProperty( jobNameProperty, jobs[i] );
+                index.add( node, nameProperty, names[i] );
+                index.add( node, jobNameProperty, jobs[i] );
+            }
+            transaction.success();
+        }
+
+        try ( Transaction transaction = graphDb.beginTx() )
+        {
+            ResourceIterator<Node> nodes = graphDb.findNodes( characters );
+            nodes.stream().forEach( node ->
+            {
+                node.setProperty( jobNameProperty, "junior " + node.getProperty( jobNameProperty ) );
+                index.add( node, jobNameProperty, node.getProperty( jobNameProperty ) );
             } );
             transaction.success();
         }
