@@ -75,8 +75,8 @@ import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.AccessCapability;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.index.LegacyIndexStore;
 import org.neo4j.kernel.impl.locking.LockService;
@@ -84,7 +84,6 @@ import org.neo4j.kernel.impl.locking.ReentrantLockService;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.Procedures;
-import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.StoreId;
@@ -100,7 +99,6 @@ import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.log.BatchingTransactionAppender;
-import org.neo4j.kernel.impl.transaction.log.LogFile;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -119,7 +117,6 @@ import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointScheduler;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointThreshold;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointThresholds;
-import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerImpl;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CountCommittedTransactionThreshold;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
@@ -136,7 +133,6 @@ import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotationImpl;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreFileListing;
 import org.neo4j.kernel.impl.util.Dependencies;
-import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.SynchronizedArrayIdOrderingQueue;
 import org.neo4j.kernel.info.DiagnosticsExtractor;
@@ -159,41 +155,13 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.Logger;
 import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.storageengine.api.StoreReadLayer;
 
 import static org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory.fromConfigValue;
 
 public class NeoStoreDataSource implements Lifecycle, IndexProviders
 {
-    private interface TransactionLogModule
-    {
-        LogicalTransactionStore logicalTransactionStore();
-
-        PhysicalLogFiles logFiles();
-
-        LogFileInformation logFileInformation();
-
-        LogFile logFile();
-
-        LogRotation logRotation();
-
-        CheckPointer checkPointing();
-
-        TransactionAppender transactionAppender();
-
-        IdOrderingQueue legacyIndexTransactionOrderingQueue();
-    }
-
-    private interface KernelModule
-    {
-        TransactionCommitProcess transactionCommitProcess();
-
-        KernelTransactions kernelTransactions();
-
-        KernelAPI kernelAPI();
-
-        NeoStoreFileListing fileListing();
-    }
 
     enum Diagnostics implements DiagnosticsExtractor<NeoStoreDataSource>
     {
@@ -290,6 +258,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     private final ConstraintSemantics constraintSemantics;
     private final Procedures procedures;
     private final IOLimiter ioLimiter;
+    private final AvailabilityGuard availabilityGuard;
     private final Clock clock;
 
     private Dependencies dependencies;
@@ -341,6 +310,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             Tracers tracers,
             Procedures procedures,
             IOLimiter ioLimiter,
+            AvailabilityGuard availabilityGuard,
             Clock clock,
             AccessCapability accessCapability )
     {
@@ -374,6 +344,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         this.tracers = tracers;
         this.procedures = procedures;
         this.ioLimiter = ioLimiter;
+        this.availabilityGuard = availabilityGuard;
         this.clock = clock;
         this.accessCapability = accessCapability;
 
@@ -475,7 +446,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                     dependencies.resolveDependency( IndexingService.class ),
                     storageEngine.storeReadLayer(),
                     updateableSchemaState, dependencies.resolveDependency( LabelScanStore.class ),
-                    storageEngine, indexConfigStore, transactionIdStore, clock );
+                    storageEngine, indexConfigStore, transactionIdStore, availabilityGuard, clock );
 
             // Do these assignments last so that we can ensure no cyclical dependencies exist
             this.storageEngine = storageEngine;
@@ -676,56 +647,8 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         life.add( checkPointer );
         life.add( checkPointScheduler );
 
-        return new TransactionLogModule()
-        {
-            @Override
-            public LogicalTransactionStore logicalTransactionStore()
-            {
-                return logicalTransactionStore;
-            }
-
-            @Override
-            public LogFileInformation logFileInformation()
-            {
-                return logFileInformation;
-            }
-
-            @Override
-            public PhysicalLogFiles logFiles()
-            {
-                return logFiles;
-            }
-
-            @Override
-            public LogFile logFile()
-            {
-                return logFile;
-            }
-
-            @Override
-            public LogRotation logRotation()
-            {
-                return logRotation;
-            }
-
-            @Override
-            public CheckPointer checkPointing()
-            {
-                return checkPointer;
-            }
-
-            @Override
-            public TransactionAppender transactionAppender()
-            {
-                return appender;
-            }
-
-            @Override
-            public IdOrderingQueue legacyIndexTransactionOrderingQueue()
-            {
-                return legacyIndexTransactionOrdering;
-            }
-        };
+        return new NeoStoreTransactionLogModule( logicalTransactionStore, logFileInformation, logFiles, logFile,
+                logRotation, checkPointer, appender, legacyIndexTransactionOrdering );
     }
 
     private void buildRecovery(
@@ -763,6 +686,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                                       StorageEngine storageEngine,
                                       IndexConfigStore indexConfigStore,
                                       TransactionIdStore transactionIdStore,
+                                      AvailabilityGuard availabilityGuard,
                                       Clock clock ) throws KernelException, IOException
     {
         TransactionCommitProcess transactionCommitProcess = commitProcessFactory.create( appender, storageEngine,
@@ -787,8 +711,8 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         TransactionHooks hooks = new TransactionHooks();
         KernelTransactions kernelTransactions = life.add( new KernelTransactions( statementLocksFactory,
                 constraintIndexCreator, statementOperationContainer, schemaWriteGuard, transactionHeaderInformationFactory,
-                transactionCommitProcess, indexConfigStore, legacyIndexProviderLookup, hooks, transactionMonitor, life,
-                tracers, storageEngine, procedures, transactionIdStore, clock, accessCapability ) );
+                transactionCommitProcess, indexConfigStore, legacyIndexProviderLookup, hooks, transactionMonitor,
+                availabilityGuard, tracers, storageEngine, procedures, transactionIdStore, clock, accessCapability ) );
 
         final Kernel kernel = new Kernel( kernelTransactions, hooks, databaseHealth, transactionMonitor, procedures,
                 config );
@@ -798,32 +722,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         final NeoStoreFileListing fileListing = new NeoStoreFileListing( storeDir, labelScanStore, indexingService,
                 legacyIndexProviderLookup, storageEngine );
 
-        return new KernelModule()
-        {
-            @Override
-            public TransactionCommitProcess transactionCommitProcess()
-            {
-                return transactionCommitProcess;
-            }
-
-            @Override
-            public KernelAPI kernelAPI()
-            {
-                return kernel;
-            }
-
-            @Override
-            public KernelTransactions kernelTransactions()
-            {
-                return kernelTransactions;
-            }
-
-            @Override
-            public NeoStoreFileListing fileListing()
-            {
-                return fileListing;
-            }
-        };
+        return new NeoStoreKernelModule( transactionCommitProcess, kernel, kernelTransactions, fileListing );
     }
 
     // We do this last to ensure no one is cheating with dependency access
@@ -864,24 +763,20 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         // be some in flight that will get to commit at some point
         // in the future. Such transactions will fail if they come to commit after our synchronized block below.
         // Here we're zooming in and focusing on getting committed transactions to close.
-        awaitAllTransactionsClosed();
-        LogFile logFile = transactionLogModule.logFile();
+
         // In order to prevent various issues with life components that can perform operations with logFile on their
         // stop phase before performing further shutdown/cleanup work and taking a lock on a logfile
         // we stop all other life components to make sure that we are the last and only one (from current life)
         life.stop();
-        synchronized ( logFile )
-        {
-            // Under the guard of the logFile monitor do a second pass of waiting committing transactions
-            // to close. This is because there might have been transactions that were in flight and just now
-            // want to commit. We will allow committed transactions be properly closed, but no new transactions
-            // will be able to start committing at this point.
-            awaitAllTransactionsClosed();
+        // Under the guard of the logFile monitor do a second pass of waiting committing transactions
+        // to close. This is because there might have been transactions that were in flight and just now
+        // want to commit. We will allow committed transactions be properly closed, but no new transactions
+        // will be able to start committing at this point.
+        awaitAllTransactionsClosed();
 
-            // Checkpointing is now triggered as part of life.shutdown see lifecycleToTriggerCheckPointOnShutdown()
-            // Shut down all services in here, effectively making the database unusable for anyone who tries.
-            life.shutdown();
-        }
+        // Checkpointing is now triggered as part of life.shutdown see lifecycleToTriggerCheckPointOnShutdown()
+        // Shut down all services in here, effectively making the database unusable for anyone who tries.
+        life.shutdown();
         // After we've released the logFile monitor there might be transactions that wants to commit, but had
         // to wait for the logFile monitor until now. When they finally get it and try to commit they will
         // fail since the logFile no longer works.
@@ -896,7 +791,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         while ( databaseHealth.isHealthy() &&
                 !txIdStore.closedTransactionIdIsOnParWithOpenedTransactionId() )
         {
-            LockSupport.parkNanos( 10_000_000 ); // 10 ms
+            LockSupport.parkNanos( TimeUnit.MILLISECONDS.toNanos( 10 ) );
         }
     }
 
@@ -1063,4 +958,5 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         public static final Setting<String> keep_logical_logs = GraphDatabaseSettings.keep_logical_logs;
         public static final Setting<Boolean> read_only = GraphDatabaseSettings.read_only;
     }
+
 }

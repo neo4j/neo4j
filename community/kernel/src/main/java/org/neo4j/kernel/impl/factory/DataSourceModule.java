@@ -215,6 +215,7 @@ public class DataSourceModule
                 platformModule.tracers,
                 procedures,
                 editionModule.ioLimiter,
+                platformModule.availabilityGuard,
                 platformModule.clock, editionModule.accessCapability ) );
 
         dataSourceManager.register( neoStoreDataSource );

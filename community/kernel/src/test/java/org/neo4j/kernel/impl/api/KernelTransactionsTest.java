@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import org.neo4j.graphdb.security.AuthorizationExpiredException;
+import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -71,7 +72,10 @@ import org.neo4j.time.Clocks;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.locks.LockSupport.parkNanos;
-import static org.hamcrest.CoreMatchers.*;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -460,17 +464,21 @@ public class KernelTransactionsTest
         StatementLocksFactory statementLocksFactory = new SimpleStatementLocksFactory( locks );
 
         StatementOperationContainer statementOperationsContianer = new StatementOperationContainer( null, null );
+        Clock clock = Clocks.systemClock();
+        AvailabilityGuard availabilityGuard = new AvailabilityGuard( clock, NullLog.getInstance() );
         if ( testKernelTransactions )
         {
             return new TestKernelTransactions( statementLocksFactory, null, statementOperationsContianer,
                     null, DEFAULT,
-                    commitProcess, null, null, new TransactionHooks(), mock( TransactionMonitor.class ), life,
-                    tracers, storageEngine, new Procedures(), transactionIdStore, Clocks.systemClock(), new CanWrite() );
+                    commitProcess, null, null, new TransactionHooks(), mock( TransactionMonitor.class ),
+                    availabilityGuard, tracers, storageEngine, new Procedures(), transactionIdStore, clock,
+                    new CanWrite() );
         }
         return new KernelTransactions( statementLocksFactory,
                 null, statementOperationsContianer, null, DEFAULT,
-                commitProcess, null, null, new TransactionHooks(), mock( TransactionMonitor.class ), life,
-                tracers, storageEngine, new Procedures(), transactionIdStore, Clocks.systemClock(), new CanWrite() );
+                commitProcess, null, null, new TransactionHooks(), mock( TransactionMonitor.class ),
+                availabilityGuard,
+                tracers, storageEngine, new Procedures(), transactionIdStore, clock, new CanWrite() );
     }
 
     private static TransactionCommitProcess newRememberingCommitProcess( final TransactionRepresentation[] slot )
@@ -516,13 +524,14 @@ public class KernelTransactionsTest
                 SchemaWriteGuard schemaWriteGuard, TransactionHeaderInformationFactory txHeaderFactory,
                 TransactionCommitProcess transactionCommitProcess, IndexConfigStore indexConfigStore,
                 LegacyIndexProviderLookup legacyIndexProviderLookup, TransactionHooks hooks,
-                TransactionMonitor transactionMonitor, LifeSupport dataSourceLife, Tracers tracers,
+                TransactionMonitor transactionMonitor, AvailabilityGuard availabilityGuard, Tracers tracers,
                 StorageEngine storageEngine, Procedures procedures, TransactionIdStore transactionIdStore, Clock clock,
                 AccessCapability accessCapability )
         {
             super( statementLocksFactory, constraintIndexCreator, statementOperationsContianer, schemaWriteGuard,
                     txHeaderFactory, transactionCommitProcess, indexConfigStore, legacyIndexProviderLookup, hooks,
-                    transactionMonitor, dataSourceLife, tracers, storageEngine, procedures, transactionIdStore, clock,
+                    transactionMonitor, availabilityGuard, tracers, storageEngine, procedures, transactionIdStore,
+                    clock,
                     accessCapability );
         }
 

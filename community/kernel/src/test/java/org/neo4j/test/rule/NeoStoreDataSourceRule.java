@@ -28,6 +28,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -121,7 +122,8 @@ public class NeoStoreDataSourceRule extends ExternalResource
                 new StandardConstraintSemantics(), monitors,
                 new Tracers( "null", NullLog.getInstance(), monitors, jobScheduler ),
                 mock( Procedures.class ),
-                IOLimiter.unlimited(), Clock.systemUTC(), new CanWrite() );
+                IOLimiter.unlimited(),
+                mock( AvailabilityGuard.class ), Clock.systemUTC(), new CanWrite() );
 
         return dataSource;
     }

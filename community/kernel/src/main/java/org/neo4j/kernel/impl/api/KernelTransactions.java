@@ -29,6 +29,7 @@ import org.neo4j.collection.pool.LinkedQueuePool;
 import org.neo4j.collection.pool.MarshlandPool;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.DatabaseShutdownException;
+import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -45,7 +46,6 @@ import org.neo4j.kernel.impl.store.TransactionId;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -74,7 +74,7 @@ public class KernelTransactions extends LifecycleAdapter
     private final TransactionCommitProcess transactionCommitProcess;
     private final TransactionHooks hooks;
     private final TransactionMonitor transactionMonitor;
-    private final LifeSupport dataSourceLife;
+    private final AvailabilityGuard availabilityGuard;
     private final Tracers tracers;
     private final StorageEngine storageEngine;
     private final Procedures procedures;
@@ -109,7 +109,7 @@ public class KernelTransactions extends LifecycleAdapter
                                LegacyIndexProviderLookup legacyIndexProviderLookup,
                                TransactionHooks hooks,
                                TransactionMonitor transactionMonitor,
-                               LifeSupport dataSourceLife,
+                               AvailabilityGuard availabilityGuard,
                                Tracers tracers,
                                StorageEngine storageEngine,
                                Procedures procedures,
@@ -124,7 +124,7 @@ public class KernelTransactions extends LifecycleAdapter
         this.transactionCommitProcess = transactionCommitProcess;
         this.hooks = hooks;
         this.transactionMonitor = transactionMonitor;
-        this.dataSourceLife = dataSourceLife;
+        this.availabilityGuard = availabilityGuard;
         this.tracers = tracers;
         this.storageEngine = storageEngine;
         this.procedures = procedures;
@@ -248,11 +248,7 @@ public class KernelTransactions extends LifecycleAdapter
 
     private void assertDatabaseIsRunning()
     {
-        // TODO: Copied over from original source in NeoXADS - this should probably use DBAvailability,
-        // rather than this.
-        // Note, if you change this, you need a separate mechanism to stop transactions from being started during
-        // Kernel#stop().
-        if ( !dataSourceLife.isRunning() )
+        if ( availabilityGuard.isShutdown() )
         {
             throw new DatabaseShutdownException();
         }
