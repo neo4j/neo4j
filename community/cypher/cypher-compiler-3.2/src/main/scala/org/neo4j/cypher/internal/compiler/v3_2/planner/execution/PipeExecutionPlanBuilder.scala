@@ -391,9 +391,6 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
     case ErrorPlan(_, ex) =>
       ErrorPipe(source, ex)()
 
-    case RepeatableRead(_) =>
-      RepeatableReadPipe(source)()
-
     case x =>
       throw new CantHandleQueryException(x.toString)
   }

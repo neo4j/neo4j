@@ -643,12 +643,6 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
     ForeachApply(left, innerUpdates, pattern.variable.name, pattern.expression)(solved)
   }
 
-  def planRepeatableRead(inner: LogicalPlan)
-                        (implicit context: LogicalPlanningContext): LogicalPlan = {
-
-    RepeatableRead(inner)(inner.solved)
-  }
-
   def planEager(inner: LogicalPlan) =
     Eager(inner)(inner.solved)
 
