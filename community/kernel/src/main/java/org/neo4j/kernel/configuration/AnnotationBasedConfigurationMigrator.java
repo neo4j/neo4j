@@ -83,13 +83,15 @@ public class AnnotationBasedConfigurationMigrator implements ConfigurationMigrat
                     found.add( Pair.<Field,T>of( field, (T) fieldValue ) );
                 }
             }
-            catch ( IllegalAccessException e )
+            catch ( IllegalAccessException ignored )
             {
-                assert false : "Field " + clazz.getName() + "#" + field.getName() + " is not public";
+                // Field  is not public
+                continue;
             }
             catch ( NullPointerException npe )
             {
-                assert false : "Field " + clazz.getName() + "#" + field.getName() + " is not static";
+                // Field is not static
+                continue;
             }
         }
 
