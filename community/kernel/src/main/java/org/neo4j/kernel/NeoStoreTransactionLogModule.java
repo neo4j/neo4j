@@ -27,10 +27,10 @@ import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerImpl;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
-import org.neo4j.kernel.impl.util.IdOrderingQueue;
+import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.SynchronizedArrayIdOrderingQueue;
 
-class NeoStoreTransactionLogModule implements TransactionLogModule
+class NeoStoreTransactionLogModule
 {
     private final LogicalTransactionStore logicalTransactionStore;
     private final LogFileInformation logFileInformation;
@@ -56,51 +56,40 @@ class NeoStoreTransactionLogModule implements TransactionLogModule
         this.legacyIndexTransactionOrdering = legacyIndexTransactionOrdering;
     }
 
-    @Override
     public LogicalTransactionStore logicalTransactionStore()
     {
         return logicalTransactionStore;
     }
 
-    @Override
-    public LogFileInformation logFileInformation()
-    {
-        return logFileInformation;
-    }
-
-    @Override
     public PhysicalLogFiles logFiles()
     {
         return logFiles;
     }
 
-    @Override
     public LogFile logFile()
     {
         return logFile;
     }
 
-    @Override
-    public LogRotation logRotation()
-    {
-        return logRotation;
-    }
-
-    @Override
     public CheckPointer checkPointing()
     {
         return checkPointer;
     }
 
-    @Override
     public TransactionAppender transactionAppender()
     {
         return appender;
     }
 
-    @Override
-    public IdOrderingQueue legacyIndexTransactionOrderingQueue()
+    public void satisfyDependencies( Dependencies dependencies )
     {
-        return legacyIndexTransactionOrdering;
+        dependencies.satisfyDependencies( checkPointer,
+                                          logFile,
+                                          logFiles,
+                                          logFileInformation,
+                                          legacyIndexTransactionOrdering,
+                                          logicalTransactionStore,
+                                          logRotation,
+                                          appender );
     }
 }

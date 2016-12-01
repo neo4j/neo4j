@@ -24,8 +24,9 @@ import org.neo4j.kernel.impl.api.Kernel;
 import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreFileListing;
+import org.neo4j.kernel.impl.util.Dependencies;
 
-class NeoStoreKernelModule implements KernelModule
+class NeoStoreKernelModule
 {
     private final TransactionCommitProcess transactionCommitProcess;
     private final Kernel kernel;
@@ -41,27 +42,23 @@ class NeoStoreKernelModule implements KernelModule
         this.fileListing = fileListing;
     }
 
-    @Override
-    public TransactionCommitProcess transactionCommitProcess()
-    {
-        return transactionCommitProcess;
-    }
-
-    @Override
     public KernelAPI kernelAPI()
     {
         return kernel;
     }
 
-    @Override
-    public KernelTransactions kernelTransactions()
+    KernelTransactions kernelTransactions()
     {
         return kernelTransactions;
     }
 
-    @Override
-    public NeoStoreFileListing fileListing()
+    NeoStoreFileListing fileListing()
     {
         return fileListing;
+    }
+
+    public void satisfyDependencies( Dependencies dependencies )
+    {
+        dependencies.satisfyDependencies( transactionCommitProcess, kernel, kernelTransactions, fileListing );
     }
 }

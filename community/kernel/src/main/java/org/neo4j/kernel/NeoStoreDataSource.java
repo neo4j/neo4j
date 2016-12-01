@@ -21,8 +21,6 @@ package org.neo4j.kernel;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.time.Clock;
 import java.util.HashMap;
 import java.util.Map;
@@ -269,8 +267,8 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     private final AccessCapability accessCapability;
 
     private StorageEngine storageEngine;
-    private TransactionLogModule transactionLogModule;
-    private KernelModule kernelModule;
+    private NeoStoreTransactionLogModule transactionLogModule;
+    private NeoStoreKernelModule kernelModule;
 
     /**
      * Note that the tremendous number of dependencies for this class, clearly, is an architecture smell. It is part
@@ -416,7 +414,6 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         {
             UpdateableSchemaState updateableSchemaState = new KernelSchemaStateStore( logProvider );
 
-            // TODO Introduce a StorageEngine abstraction at the StoreLayerModule boundary
             SynchronizedArrayIdOrderingQueue legacyIndexTransactionOrdering = new SynchronizedArrayIdOrderingQueue( 20 );
 
             storageEngine = buildStorageEngine(
@@ -428,11 +425,11 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
 
             TransactionIdStore transactionIdStore = dependencies.resolveDependency( TransactionIdStore.class );
             LogVersionRepository logVersionRepository = dependencies.resolveDependency( LogVersionRepository.class );
-            TransactionLogModule transactionLogModule =
+            NeoStoreTransactionLogModule transactionLogModule =
                     buildTransactionLogs( storeDir, config, logProvider, scheduler, fs,
                             storageEngine, logEntryReader, legacyIndexTransactionOrdering,
                             transactionIdStore, logVersionRepository );
-            satisfyDependencies( transactionLogModule);
+            transactionLogModule.satisfyDependencies(dependencies);
 
             buildRecovery( fs,
                     transactionIdStore,
@@ -441,12 +438,13 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                     transactionLogModule.logFiles(), startupStatistics,
                     storageEngine, logEntryReader, transactionLogModule.logicalTransactionStore() );
 
-            final KernelModule kernelModule = buildKernel(
+            final NeoStoreKernelModule kernelModule = buildKernel(
                     transactionLogModule.transactionAppender(),
                     dependencies.resolveDependency( IndexingService.class ),
                     storageEngine.storeReadLayer(),
                     updateableSchemaState, dependencies.resolveDependency( LabelScanStore.class ),
                     storageEngine, indexConfigStore, transactionIdStore, availabilityGuard, clock );
+            kernelModule.satisfyDependencies( dependencies );
 
             // Do these assignments last so that we can ensure no cyclical dependencies exist
             this.storageEngine = storageEngine;
@@ -458,7 +456,6 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             dependencies.satisfyDependency( storageEngine.storeReadLayer() );
             dependencies.satisfyDependency( logEntryReader );
             dependencies.satisfyDependency( storageEngine );
-            satisfyDependencies( kernelModule );
         }
         catch ( Throwable e )
         {
@@ -570,7 +567,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         return life.add( storageEngine );
     }
 
-    private TransactionLogModule buildTransactionLogs(
+    private NeoStoreTransactionLogModule buildTransactionLogs(
             File storeDir,
             Config config,
             LogProvider logProvider,
@@ -679,7 +676,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         life.add( recovery );
     }
 
-    private KernelModule buildKernel( TransactionAppender appender,
+    private NeoStoreKernelModule buildKernel( TransactionAppender appender,
                                       IndexingService indexingService,
                                       StoreReadLayer storeLayer,
                                       UpdateableSchemaState updateableSchemaState, LabelScanStore labelScanStore,
@@ -725,28 +722,6 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         return new NeoStoreKernelModule( transactionCommitProcess, kernel, kernelTransactions, fileListing );
     }
 
-    // We do this last to ensure no one is cheating with dependency access
-    private void satisfyDependencies( Object... modules )
-    {
-        for ( Object module : modules )
-        {
-            for ( Method method : module.getClass().getMethods() )
-            {
-                if ( !method.getDeclaringClass().equals( Object.class ) && method.getReturnType() != void.class )
-                {
-                    try
-                    {
-                        dependencies.satisfyDependency( method.invoke( module ) );
-                    }
-                    catch ( IllegalAccessException | InvocationTargetException e )
-                    {
-                        throw new RuntimeException( e );
-                    }
-                }
-            }
-        }
-    }
-
     @Override
     public synchronized void stop()
     {
@@ -754,6 +729,8 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         {
             return;
         }
+
+        //:TODO comments are obsolete need to be cleaned up
 
         // First kindly await all committing transactions to close. Do this without interfering with the
         // log file monitor. Keep in mind that at this point the availability guard is raised and some time spent
