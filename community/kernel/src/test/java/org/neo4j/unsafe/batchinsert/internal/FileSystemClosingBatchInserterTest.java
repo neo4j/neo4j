@@ -35,9 +35,10 @@ public class FileSystemClosingBatchInserterTest
     public void closeFileSystemOnShutdown() throws Exception
     {
         BatchInserter batchInserter = mock( BatchInserter.class );
+        IndexConfigStoreProvider configStoreProvider = mock( IndexConfigStoreProvider.class );
         FileSystemAbstraction fileSystem = mock( FileSystemAbstraction.class );
         FileSystemClosingBatchInserter inserter =
-                new FileSystemClosingBatchInserter( batchInserter, fileSystem );
+                new FileSystemClosingBatchInserter( batchInserter, configStoreProvider, fileSystem );
 
         inserter.shutdown();
 
