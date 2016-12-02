@@ -142,32 +142,14 @@ the relevant Commercial Agreement.
       <plugin>
         <groupId>org.neo4j.build.plugins</groupId>
         <artifactId>clirr-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>default</id>
-            <phase>${clirr-check-phase}</phase>
-            <goals>
-              <goal>check</goal>
-            </goals>
-          </execution>
-        </executions>
         <configuration>
-          <failOnError>true</failOnError>
-          <logResults>true</logResults>
-          <!-- This is temporarily hard-coded, because the versionsBack attribute seems to not work on OS X, we'll
-           need to fix that.
-           OBS: Set this to one version ahead, i.e. if you'd like it to compare against 1.9.3 then set it to 1.9.4
-            -->
-          <comparisonVersion>3.0.1</comparisonVersion>
-          <ignoreMaintenenceVersions>false</ignoreMaintenenceVersions>
           <includes>
             <include>org/neo4j/graphdb/**</include>
-            <include>org/neo4j/unsafe/batchinsert/**</include>
+            <include>org/neo4j/unsafe/batchinsert/*</include>
+            <include>org/neo4j/procedure/*</include>
+            <!--<include>org/neo4j/helpers/*</include> broken atm -->
+            <include>org/neo4j/helpers/collection/*</include>
           </includes>
-          <excludeMessageCodes>
-            <param>6006</param><!-- Field was made final. -->
-            <param>7012</param><!-- Method added to interface -->
-          </excludeMessageCodes>
         </configuration>
       </plugin>
     </plugins>

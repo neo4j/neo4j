@@ -47,6 +47,30 @@
     </license>
   </licenses>
 
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.neo4j.build.plugins</groupId>
+        <artifactId>clirr-maven-plugin</artifactId>
+        <configuration>
+          <includes>
+            <include>org/neo4j/backup/OnlineBackupExtensionFactory.Dependencies</include>
+            <include>org/neo4j/backup/OnlineBackupKernelExtension.BackupProvider</include>
+            <include>org/neo4j/backup/TheBackupInterface</include>
+            <include>org/neo4j/backup/BackupExtensionService</include>
+            <include>org/neo4j/backup/BackupTool</include>
+            <include>org/neo4j/backup/OnlineBackup</include>
+            <include>org/neo4j/backup/OnlineBackupExtensionFactory</include>
+            <!--<include>org/neo4j/backup/OnlineBackupKernelExtension</include> broken atm -->
+            <include>org/neo4j/backup/OnlineBackupSettings</include>
+            <include>org/neo4j/backup/StoreCopyResponsePacker</include>
+            <include>org/neo4j/backup/IncrementalBackupNotPossibleException</include>
+          </includes>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
   <dependencies>
     <dependency>
       <groupId>org.neo4j</groupId>

@@ -53,6 +53,20 @@ the relevant Commercial Agreement.
     </license>
   </licenses>
 
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.neo4j.build.plugins</groupId>
+        <artifactId>clirr-maven-plugin</artifactId>
+        <configuration>
+          <includes>
+            <include>org/neo4j/jmx/*</include>
+          </includes>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
   <dependencies>
     <dependency>
       <groupId>org.neo4j</groupId>
