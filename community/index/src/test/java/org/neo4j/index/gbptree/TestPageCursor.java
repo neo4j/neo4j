@@ -19,274 +19,30 @@
  */
 package org.neo4j.index.gbptree;
 
-import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.impl.DelegatingPageCursor;
 
-public class TestPageCursor extends PageCursor
+class TestPageCursor extends DelegatingPageCursor
 {
-    private final PageCursor actual;
     private boolean shouldRetry;
 
-    public TestPageCursor( PageCursor actual )
+    TestPageCursor( PageCursor delegate )
     {
-        this.actual = actual;
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return actual.hashCode();
-    }
-
-    @Override
-    public byte getByte()
-    {
-        return actual.getByte();
-    }
-
-    @Override
-    public byte getByte( int offset )
-    {
-        return actual.getByte( offset );
-    }
-
-    @Override
-    public void putByte( byte value )
-    {
-        actual.putByte( value );
-    }
-
-    @Override
-    public void putByte( int offset, byte value )
-    {
-        actual.putByte( offset, value );
-    }
-
-    @Override
-    public long getLong()
-    {
-        return actual.getLong();
-    }
-
-    @Override
-    public boolean equals( Object obj )
-    {
-        return actual.equals( obj );
-    }
-
-    @Override
-    public long getLong( int offset )
-    {
-        return actual.getLong( offset );
-    }
-
-    @Override
-    public void putLong( long value )
-    {
-        actual.putLong( value );
-    }
-
-    @Override
-    public void putLong( int offset, long value )
-    {
-        actual.putLong( offset, value );
-    }
-
-    @Override
-    public int getInt()
-    {
-        return actual.getInt();
-    }
-
-    @Override
-    public int getInt( int offset )
-    {
-        return actual.getInt( offset );
-    }
-
-    @Override
-    public void putInt( int value )
-    {
-        actual.putInt( value );
-    }
-
-    @Override
-    public void putInt( int offset, int value )
-    {
-        actual.putInt( offset, value );
-    }
-
-    @Override
-    public void getBytes( byte[] data )
-    {
-        actual.getBytes( data );
-    }
-
-    @Override
-    public void getBytes( byte[] data, int arrayOffset, int length )
-    {
-        actual.getBytes( data, arrayOffset, length );
-    }
-
-    @Override
-    public void putBytes( byte[] data )
-    {
-        actual.putBytes( data );
-    }
-
-    @Override
-    public void putBytes( byte[] data, int arrayOffset, int length )
-    {
-        actual.putBytes( data, arrayOffset, length );
-    }
-
-    @Override
-    public short getShort()
-    {
-        return actual.getShort();
-    }
-
-    @Override
-    public short getShort( int offset )
-    {
-        return actual.getShort( offset );
-    }
-
-    @Override
-    public void putShort( short value )
-    {
-        actual.putShort( value );
-    }
-
-    @Override
-    public void putShort( int offset, short value )
-    {
-        actual.putShort( offset, value );
-    }
-
-    @Override
-    public void setOffset( int offset )
-    {
-        actual.setOffset( offset );
-    }
-
-    @Override
-    public int getOffset()
-    {
-        return actual.getOffset();
-    }
-
-    @Override
-    public long getCurrentPageId()
-    {
-        return actual.getCurrentPageId();
-    }
-
-    @Override
-    public int getCurrentPageSize()
-    {
-        return actual.getCurrentPageSize();
-    }
-
-    @Override
-    public File getCurrentFile()
-    {
-        return actual.getCurrentFile();
-    }
-
-    @Override
-    public void rewind()
-    {
-        actual.rewind();
-    }
-
-    @Override
-    public boolean next() throws IOException
-    {
-        return actual.next();
-    }
-
-    @Override
-    public String toString()
-    {
-        return actual.toString();
-    }
-
-    @Override
-    public boolean next( long pageId ) throws IOException
-    {
-        return actual.next( pageId );
-    }
-
-    @Override
-    public void close()
-    {
-        actual.close();
+        super( delegate );
     }
 
     @Override
     public boolean shouldRetry() throws IOException
     {
-        if ( shouldRetry )
-        {
-            shouldRetry = false;
-            return true;
-        }
-        return actual.shouldRetry();
+        // Always call delegate to reset state
+        boolean toReturn = super.shouldRetry() || shouldRetry;
+        shouldRetry = false;
+        return toReturn;
     }
 
-    @Override
-    public int copyTo( int sourceOffset, PageCursor targetCursor, int targetOffset, int lengthInBytes )
-    {
-        return actual.copyTo( sourceOffset, targetCursor, targetOffset, lengthInBytes );
-    }
-
-    @Override
-    public boolean checkAndClearBoundsFlag()
-    {
-        return actual.checkAndClearBoundsFlag();
-    }
-
-    @Override
-    public void checkAndClearCursorException() throws CursorException
-    {
-        actual.checkAndClearCursorException();
-    }
-
-    @Override
-    public void raiseOutOfBounds()
-    {
-        actual.raiseOutOfBounds();
-    }
-
-    @Override
-    public void setCursorException( String message )
-    {
-        actual.setCursorException( message );
-    }
-
-    @Override
-    public void clearCursorException()
-    {
-        actual.clearCursorException();
-    }
-
-    @Override
-    public PageCursor openLinkedCursor( long pageId )
-    {
-        return actual.openLinkedCursor( pageId );
-    }
-
-    @Override
-    public void zapPage()
-    {
-        actual.zapPage();
-    }
-
-    public void changed()
+    void changed()
     {
         shouldRetry = true;
     }
