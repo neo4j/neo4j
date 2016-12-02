@@ -24,13 +24,11 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
-import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -80,17 +78,12 @@ public class PropertyExistenceConstraintsIT implements GraphHolder
     @BeforeClass
     public static void initServer() throws Exception
     {
-        suppressAll().call( new Callable<Void>()
+        suppressAll().call( (Callable<Void>) () ->
         {
-            @Override
-            public Void call() throws IOException
-            {
-                CommunityServerBuilder serverBuilder = EnterpriseServerBuilder.server( NullLogProvider.getInstance() )
-                        .withProperty( ClusterSettings.mode.name(), "enterprise" );
+            CommunityServerBuilder serverBuilder = EnterpriseServerBuilder.server( NullLogProvider.getInstance() );
 
-                PropertyExistenceConstraintsIT.server = ServerHelper.createNonPersistentServer( serverBuilder );
-                return null;
-            }
+            PropertyExistenceConstraintsIT.server = ServerHelper.createNonPersistentServer( serverBuilder );
+            return null;
         } );
     }
 
@@ -99,14 +92,10 @@ public class PropertyExistenceConstraintsIT implements GraphHolder
     {
         if ( server != null )
         {
-            suppressAll().call( new Callable<Void>()
+            suppressAll().call( (Callable<Void>) () ->
             {
-                @Override
-                public Void call()
-                {
-                    server.stop();
-                    return null;
-                }
+                server.stop();
+                return null;
             } );
         }
     }
