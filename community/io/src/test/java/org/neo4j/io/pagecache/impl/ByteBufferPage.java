@@ -25,14 +25,13 @@ import java.lang.reflect.Field;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 
-import org.neo4j.io.ByteUnit;
 import org.neo4j.io.pagecache.Page;
+import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 /** A page backed by a simple byte buffer. */
 public class ByteBufferPage implements Page
 {
     private static final MethodHandle addressOfMH = addressOfMH();
-    private static final byte[] ZEROS = new byte[(int) ByteUnit.kibiBytes( 1 )];
 
     private static MethodHandle addressOfMH()
     {
@@ -138,16 +137,8 @@ public class ByteBufferPage implements Page
         return addressOf( buffer );
     }
 
-    public void clear()
+    public void zapPage()
     {
-        int remaining = buffer.capacity();
-        buffer.position( 0 );
-        while ( remaining >= ZEROS.length )
-        {
-            buffer.put( ZEROS );
-            remaining -= ZEROS.length;
-        }
-        buffer.put( ZEROS, 0, remaining );
-        buffer.position( 0 );
+        UnsafeUtil.setMemory( address(), size(), (byte) 0 );
     }
 }

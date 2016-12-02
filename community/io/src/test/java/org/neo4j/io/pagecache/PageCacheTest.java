@@ -1184,7 +1184,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         testTemplate.accept( ( cursor ) -> cursor.putInt( 0, 1 ) );
         testTemplate.accept( ( cursor ) -> cursor.putLong( 0, 1 ) );
         testTemplate.accept( ( cursor ) -> cursor.putShort( 0, (short) 1 ) );
-        testTemplate.accept( ( cursor ) -> cursor.clear() );
+        testTemplate.accept( ( cursor ) -> cursor.zapPage() );
     }
 
     private void checkUnboundReadCursorAccess( PageCursorAction action ) throws IOException
@@ -2491,10 +2491,10 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
 
     private void verifyWriteOffsets( PageCursor cursor )
     {
-        assertThat( cursor.getOffset(), is( 0 ) );
         cursor.setOffset( filePageSize / 2 );
-        cursor.clear();
-        assertThat( cursor.getOffset(), is( 0 ) );
+        cursor.zapPage();
+        assertThat( cursor.getOffset(), is( filePageSize / 2 ) );
+        cursor.setOffset( 0 );
         cursor.putLong( 1 );
         assertThat( cursor.getOffset(), is( 8 ) );
         cursor.putInt( 1 );
@@ -5398,7 +5398,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             try ( PageCursor cursor = pagedFile.io( pageId, PF_SHARED_WRITE_LOCK ) )
             {
                 assertTrue( cursor.next() );
-                cursor.clear();
+                cursor.zapPage();
 
                 byte[] read = new byte[filePageSize];
                 cursor.getBytes( read );
@@ -5411,7 +5411,10 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 assertTrue( cursor.next() );
 
                 byte[] read = new byte[filePageSize];
-                cursor.getBytes( read );
+                do
+                {
+                    cursor.getBytes( read );
+                } while ( cursor.shouldRetry() );
                 assertFalse( cursor.checkAndClearBoundsFlag() );
                 assertArrayEquals( allZeros, read );
             }

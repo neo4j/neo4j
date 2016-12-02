@@ -289,9 +289,8 @@ class ByteArrayPageCursor extends PageCursor
     }
 
     @Override
-    public void clear()
+    public void zapPage()
     {
         Arrays.fill( buffer.array(), (byte) 0 );
-        buffer.position( 0 );
     }
 }

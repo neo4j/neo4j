@@ -483,10 +483,10 @@ public class CompositePageCursor extends PageCursor
     }
 
     @Override
-    public void clear()
+    public void zapPage()
     {
-        first.clear();
-        second.clear();
+        first.zapPage();
+        second.zapPage();
     }
 
     /**

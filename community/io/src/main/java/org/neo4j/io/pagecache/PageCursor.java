@@ -344,7 +344,6 @@ public abstract class PageCursor implements AutoCloseable
 
     /**
      * Sets all bytes in this page to zero, as if this page was newly allocated at the end of the file.
-     * Offset is also set to 0.
      */
-    public abstract void clear();
+    public abstract void zapPage();
 }

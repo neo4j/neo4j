@@ -325,8 +325,8 @@ class PageAwareByteArrayCursor extends PageCursor
     }
 
     @Override
-    public void clear()
+    public void zapPage()
     {
-        current.clear();
+        current.zapPage();
     }
 }

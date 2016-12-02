@@ -778,7 +778,7 @@ abstract class MuninnPageCursor extends PageCursor
     }
 
     @Override
-    public void clear()
+    public void zapPage()
     {
         if ( pageSize == 0 )
         {
@@ -789,7 +789,6 @@ abstract class MuninnPageCursor extends PageCursor
         else
         {
             UnsafeUtil.setMemory( pointer, pageSize, (byte) 0 );
-            offset = 0;
         }
     }
 }

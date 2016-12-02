@@ -457,7 +457,7 @@ class AdversarialReadPageCursor extends PageCursor
     }
 
     @Override
-    public void clear()
+    public void zapPage()
     {
         throw new IllegalStateException( "Cannot write using read cursor" );
     }

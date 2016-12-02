@@ -399,10 +399,9 @@ public class StubPageCursor extends PageCursor
     }
 
     @Override
-    public void clear()
+    public void zapPage()
     {
-        page.clear();
-        currentOffset = 0;
+        page.zapPage();
     }
 
     public Page getPage()

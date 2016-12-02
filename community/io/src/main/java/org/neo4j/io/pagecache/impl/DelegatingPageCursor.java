@@ -255,9 +255,9 @@ public class DelegatingPageCursor extends PageCursor
     }
 
     @Override
-    public void clear()
+    public void zapPage()
     {
-        delegate.clear();
+        delegate.zapPage();
     }
 
     public DelegatingPageCursor( PageCursor delegate )

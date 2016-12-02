@@ -304,8 +304,8 @@ class AdversarialWritePageCursor extends PageCursor
     }
 
     @Override
-    public void clear()
+    public void zapPage()
     {
-        delegate.clear();
+        delegate.zapPage();
     }
 }
