@@ -284,7 +284,8 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
                     }
                     else
                     {
-                        throw new StoreNotFoundException( "Store file not found: " + storageFileName );
+                        throw new StoreNotFoundException( "Fail to read header record of store file: " +
+                                storageFileName);
                     }
                 }
             }

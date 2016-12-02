@@ -177,7 +177,7 @@ public class CommonAbstractStoreTest
         RecordFormats recordFormats = StandardV3_0.RECORD_FORMATS;
 
         expectedException.expect( StoreNotFoundException.class );
-        expectedException.expectMessage( "Store file not found: " + storeFile.getAbsolutePath()  );
+        expectedException.expectMessage( "Fail to read header record of store file: " + storeFile.getAbsolutePath() );
 
         try ( DynamicArrayStore dynamicArrayStore = new DynamicArrayStore( storeFile, config, IdType.NODE_LABELS,
                 idGeneratorFactory, pageCache, NullLogProvider.getInstance(),
