@@ -280,6 +280,12 @@ public class TestPageCursor extends PageCursor
         return actual.openLinkedCursor( pageId );
     }
 
+    @Override
+    public void zapPage()
+    {
+        actual.zapPage();
+    }
+
     public void changed()
     {
         shouldRetry = true;
