@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.{Index, LegacyExpression}
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{NoChildren, PlanDescriptionImpl}
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{Id, NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_2.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{LabelToken, PropertyKeyToken}
@@ -77,10 +77,11 @@ case class NodeIndexContainsScanPipe(ident: String,
                                      label: LabelToken,
                                      propertyKey: PropertyKeyToken,
                                      valueExpr: Expression)
-                                    (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
+                                    (val estimatedCardinality: Option[Double] = None, val id: Id = new Id)
+                                    (implicit pipeMonitor: PipeMonitor)
   extends AbstractNodeIndexStringScanPipe(ident, label, propertyKey, valueExpr) {
 
-  override def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
+  override def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated), id)
 
   override def planDescriptionWithoutCardinality = {
     val arguments = Seq(Index(label.name, propertyKey.name), LegacyExpression(valueExpr))
@@ -95,10 +96,11 @@ case class NodeIndexEndsWithScanPipe(ident: String,
                                      label: LabelToken,
                                      propertyKey: PropertyKeyToken,
                                      valueExpr: Expression)
-                                    (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
+                                    (val estimatedCardinality: Option[Double] = None, val id: Id = new Id)
+                                    (implicit pipeMonitor: PipeMonitor)
   extends AbstractNodeIndexStringScanPipe(ident, label, propertyKey, valueExpr) {
 
-  override def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
+  override def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated), id)
 
   override def planDescriptionWithoutCardinality = {
     val arguments = Seq(Index(label.name, propertyKey.name), LegacyExpression(valueExpr))

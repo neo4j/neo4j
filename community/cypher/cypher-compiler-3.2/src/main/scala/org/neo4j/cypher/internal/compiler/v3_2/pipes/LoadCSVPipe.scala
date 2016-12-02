@@ -24,7 +24,7 @@ import java.net.URL
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.ArrayBackedMap
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{Id, InternalPlanDescription}
 import org.neo4j.cypher.internal.compiler.v3_2.spi.QueryContext
 import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_2.LoadExternalResourceException
@@ -39,7 +39,8 @@ case class LoadCSVPipe(source: Pipe,
                        urlExpression: Expression,
                        variable: String,
                        fieldTerminator: Option[String])
-                      (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
+                      (val estimatedCardinality: Option[Double] = None, val id: Id = new Id)
+                      (implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
 
   protected def getImportURL(urlString: String, context: QueryContext): URL = {
@@ -122,11 +123,11 @@ case class LoadCSVPipe(source: Pipe,
 
   override def dup(sources: List[Pipe]): Pipe = {
     val (head :: Nil) = sources
-    copy(source = head)(estimatedCardinality)
+    copy(source = head)(estimatedCardinality, id)
   }
 
   override def planDescriptionWithoutCardinality: InternalPlanDescription =
     source.planDescription.andThen(this.id, "LoadCSV", variables)
 
-  override def withEstimatedCardinality(estimated: Double): Pipe with RonjaPipe = copy()(Some(estimated))
+  override def withEstimatedCardinality(estimated: Double): Pipe with RonjaPipe = copy()(Some(estimated), id)
 }

@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2._
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{InternalPlanDescription, SingleRowPlanDescription}
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{Id, InternalPlanDescription, SingleRowPlanDescription}
 import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 
-case class EmptyResultPipe(source: Pipe)(implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
+case class EmptyResultPipe(source: Pipe)(val id: Id = new Id)(implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
 
   protected def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState) = {
     while(input.hasNext) {
@@ -39,7 +39,7 @@ case class EmptyResultPipe(source: Pipe)(implicit pipeMonitor: PipeMonitor) exte
 
   def dup(sources: List[Pipe]): Pipe = {
     val (source :: Nil) = sources
-    copy(source = source)
+    copy(source = source)(id)
   }
 
   def estimatedCardinality: Option[Double] = Some(0.0)

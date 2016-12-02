@@ -20,11 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{InternalPlanDescription, PlanDescriptionImpl, SingleChild}
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{Id, InternalPlanDescription, PlanDescriptionImpl, SingleChild}
 import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 
 case class OptionalPipe(nullableVariables: Set[String], source: Pipe)
-                       (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
+                       (val estimatedCardinality: Option[Double] = None, val id: Id = new Id)
+                       (implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
 
   private def notFoundExecutionContext(initialContext: Option[ExecutionContext]): ExecutionContext = {
@@ -50,8 +51,8 @@ case class OptionalPipe(nullableVariables: Set[String], source: Pipe)
 
   def dup(sources: List[Pipe]) = {
     val (head :: Nil) = sources
-    copy(source = head)(estimatedCardinality)
+    copy(source = head)(estimatedCardinality, id)
   }
 
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
+  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated), id)
 }

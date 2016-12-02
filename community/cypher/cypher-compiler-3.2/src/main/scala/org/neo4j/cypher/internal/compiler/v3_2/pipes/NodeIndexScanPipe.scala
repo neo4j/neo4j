@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.Index
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{NoChildren, PlanDescriptionImpl}
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{Id, NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{LabelToken, PropertyKeyToken}
 import org.neo4j.cypher.internal.frontend.v3_2.symbols.CTNode
@@ -30,7 +30,8 @@ import org.neo4j.kernel.api.index.IndexDescriptor
 case class NodeIndexScanPipe(ident: String,
                              label: LabelToken,
                              propertyKey: PropertyKeyToken)
-                            (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
+                            (val estimatedCardinality: Option[Double] = None, val id: Id = new Id)
+                            (implicit pipeMonitor: PipeMonitor)
   extends Pipe with RonjaPipe {
 
   private val descriptor = new IndexDescriptor(label.nameId.id, propertyKey.nameId.id)
@@ -60,5 +61,5 @@ case class NodeIndexScanPipe(ident: String,
 
   def sources: Seq[Pipe] = Seq.empty
 
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
+  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated), id)
 }

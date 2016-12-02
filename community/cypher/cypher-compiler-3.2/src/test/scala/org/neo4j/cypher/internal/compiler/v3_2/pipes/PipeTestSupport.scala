@@ -24,6 +24,7 @@ import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_2.spi.QueryContext
 import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
@@ -45,6 +46,9 @@ trait PipeTestSupport extends CypherTestSupport with MockitoSugar {
     def monitor: PipeMonitor = newMonitor
     def dup(sources: List[Pipe]): Pipe = ???
     def sources: Seq[Pipe] = ???
+
+    // Used by profiling to identify where to report dbhits and rows
+    override def id: Id = new Id
   }
 
   def row(values: (String, Any)*) = ExecutionContext.from(values: _*)

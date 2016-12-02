@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{Expression, InequalitySeekRangeExpression, PrefixSeekRangeExpression}
 import org.neo4j.cypher.internal.compiler.v3_2.commands.{QueryExpression, RangeQueryExpression, indexQuery}
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.{Index, InequalityIndex, PrefixIndex}
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{NoChildren, PlanDescriptionImpl}
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{Id, NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_2.InternalException
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{LabelToken, PropertyKeyToken}
@@ -35,7 +35,8 @@ case class NodeIndexSeekPipe(ident: String,
                              propertyKey: PropertyKeyToken,
                              valueExpr: QueryExpression[Expression],
                              indexMode: IndexSeekMode = IndexSeek)
-                            (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
+                            (val estimatedCardinality: Option[Double] = None, val id: Id = new Id)
+                            (implicit pipeMonitor: PipeMonitor)
   extends Pipe with RonjaPipe {
 
   private val descriptor = new IndexDescriptor(label.nameId.id, propertyKey.nameId.id)
@@ -93,5 +94,5 @@ case class NodeIndexSeekPipe(ident: String,
 
   def sources: Seq[Pipe] = Seq.empty
 
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
+  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated), id)
 }

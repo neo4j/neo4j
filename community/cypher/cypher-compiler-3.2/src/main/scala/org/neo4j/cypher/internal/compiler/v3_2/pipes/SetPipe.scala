@@ -20,9 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 
 case class SetPipe(src: Pipe, setOperation: SetOperation)
-                  (val estimatedCardinality: Option[Double] = None)
+                  (val estimatedCardinality: Option[Double] = None, val id: Id = new Id)
                   (implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(src, pipeMonitor) with RonjaPipe{
   override protected def internalCreateResults(input: Iterator[ExecutionContext],
@@ -37,10 +38,10 @@ case class SetPipe(src: Pipe, setOperation: SetOperation)
 
   override def symbols = src.symbols
 
-  override def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
+  override def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated), id)
 
   override def dup(sources: List[Pipe]): Pipe = {
     val (onlySource :: Nil) = sources
-    SetPipe(onlySource, setOperation)(estimatedCardinality)
+    SetPipe(onlySource, setOperation)(estimatedCardinality, id)
   }
 }

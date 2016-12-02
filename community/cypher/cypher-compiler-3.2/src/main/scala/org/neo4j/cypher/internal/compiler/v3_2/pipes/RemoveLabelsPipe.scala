@@ -22,11 +22,12 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.{CastSupport, ListSupport}
 import org.neo4j.cypher.internal.compiler.v3_2.mutation.GraphElementPropertyFunctions
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 import org.neo4j.graphdb.Node
 
 case class RemoveLabelsPipe(src: Pipe, variable: String, labels: Seq[LazyLabel])
-                        (val estimatedCardinality: Option[Double] = None)
-                        (implicit pipeMonitor: PipeMonitor)
+                           (val estimatedCardinality: Option[Double] = None, val id: Id = new Id)
+                           (implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(src, pipeMonitor) with RonjaPipe with GraphElementPropertyFunctions with ListSupport {
 
   override protected def internalCreateResults(input: Iterator[ExecutionContext],
@@ -47,10 +48,10 @@ case class RemoveLabelsPipe(src: Pipe, variable: String, labels: Seq[LazyLabel])
 
   override def symbols = src.symbols
 
-  override def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
+  override def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated), id)
 
   override def dup(sources: List[Pipe]): Pipe = {
     val (onlySource :: Nil) = sources
-    RemoveLabelsPipe(onlySource, variable, labels)(estimatedCardinality)
+    RemoveLabelsPipe(onlySource, variable, labels)(estimatedCardinality, id)
   }
 }

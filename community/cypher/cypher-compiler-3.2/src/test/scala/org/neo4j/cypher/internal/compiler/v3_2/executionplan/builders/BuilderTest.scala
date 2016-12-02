@@ -40,9 +40,9 @@ trait BuilderTest extends CypherFunSuite {
   }
 
   // for avoiding missing an override while refactoring
-  final def plan(q: PartiallySolvedQuery): ExecutionPlanInProgress = plan(SingleRowPipe(), q)
+  final def plan(q: PartiallySolvedQuery): ExecutionPlanInProgress = plan(SingleRowPipe()(), q)
 
-  final def plan(q: Query): ExecutionPlanInProgress = plan(SingleRowPipe(), PartiallySolvedQuery(q))
+  final def plan(q: Query): ExecutionPlanInProgress = plan(SingleRowPipe()(), PartiallySolvedQuery(q))
 
   final def plan(p: Pipe, q: PartiallySolvedQuery): ExecutionPlanInProgress = ExecutionPlanInProgress(q, p)
 

@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.ExpandExpression
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 import org.neo4j.cypher.internal.frontend.v3_2.{InternalException, SemanticDirection}
@@ -52,7 +53,7 @@ case class VarLengthExpandPipe(source: Pipe,
                                max: Option[Int],
                                nodeInScope: Boolean,
                                filteringStep: VarlenghtPredicate = VarlenghtPredicate.NONE)
-                              (val estimatedCardinality: Option[Double] = None)
+                              (val estimatedCardinality: Option[Double] = None, val id: Id = new Id)
                               (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
 
   private def varLengthExpand(node: Node, state: QueryState, maxDepth: Option[Int],
@@ -124,9 +125,9 @@ case class VarLengthExpandPipe(source: Pipe,
 
   def dup(sources: List[Pipe]): Pipe = {
     val (head :: Nil) = sources
-    copy(head)(estimatedCardinality)
+    copy(head)(estimatedCardinality, id)
   }
 
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
+  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated), id)
 
 }

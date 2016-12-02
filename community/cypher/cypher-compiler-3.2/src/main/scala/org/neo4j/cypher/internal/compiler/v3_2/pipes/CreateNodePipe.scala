@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.{IsMap, ListSupport}
 import org.neo4j.cypher.internal.compiler.v3_2.mutation.{GraphElementPropertyFunctions, makeValueNeoSafe}
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_2.spi.QueryContext
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 import org.neo4j.cypher.internal.frontend.v3_2.{CypherTypeException, InvalidSemanticsException}
@@ -79,16 +80,17 @@ abstract class BaseCreateNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel]
   def symbols = src.symbols.add(key, CTNode)
 }
 
-case class CreateNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel], properties: Option[Expression])(val estimatedCardinality: Option[Double] = None)
+case class CreateNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel], properties: Option[Expression])
+                         (val estimatedCardinality: Option[Double] = None, val id: Id = new Id)
                          (implicit pipeMonitor: PipeMonitor) extends BaseCreateNodePipe(src, key, labels, properties, pipeMonitor) {
 
-  override def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
+  override def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated), id)
 
   override def planDescriptionWithoutCardinality = src.planDescription.andThen(this.id, "CreateNode", variables)
 
   override def dup(sources: List[Pipe]): Pipe = {
     val (onlySource :: Nil) = sources
-    CreateNodePipe(onlySource, key, labels, properties)(estimatedCardinality)
+    copy(onlySource, key, labels, properties)(estimatedCardinality, id)
   }
 
   override protected def handleNull(key: String) {
@@ -96,16 +98,17 @@ case class CreateNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel], proper
   }
 }
 
-case class MergeCreateNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel], properties: Option[Expression])(val estimatedCardinality: Option[Double] = None)
+case class MergeCreateNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel], properties: Option[Expression])
+                              (val estimatedCardinality: Option[Double] = None, val id: Id = new Id)
                          (implicit pipeMonitor: PipeMonitor) extends BaseCreateNodePipe(src, key, labels, properties, pipeMonitor) {
 
-  override def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
+  override def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated), id)
 
   override def planDescriptionWithoutCardinality = src.planDescription.andThen(this.id, "MergeCreateNode", variables)
 
   override def dup(sources: List[Pipe]): Pipe = {
     val (onlySource :: Nil) = sources
-    MergeCreateNodePipe(onlySource, key, labels, properties)(estimatedCardinality)
+    copy(onlySource, key, labels, properties)(estimatedCardinality, id)
   }
 
   override protected def handleNull(key: String) {

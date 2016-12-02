@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.commands._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.ShortestPathExpression
 import org.neo4j.cypher.internal.compiler.v3_2.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.{CastSupport, ListSupport}
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.LegacyExpressions
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 import org.neo4j.graphdb.Path
@@ -34,7 +35,8 @@ import scala.collection.JavaConverters._
  */
 case class ShortestPathPipe(source: Pipe, shortestPathCommand: ShortestPath, predicates: Seq[Predicate] = Seq.empty,
                             withFallBack: Boolean = false)
-                           (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
+                           (val estimatedCardinality: Option[Double] = None, val id: Id = new Id)
+                           (implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(source, pipeMonitor) with ListSupport with RonjaPipe {
   private def pathName = shortestPathCommand.pathName
   private val shortestPathExpression = ShortestPathExpression(shortestPathCommand, predicates, withFallBack)
@@ -71,8 +73,8 @@ case class ShortestPathPipe(source: Pipe, shortestPathCommand: ShortestPath, pre
 
   def dup(sources: List[Pipe]): Pipe = {
     val (head :: Nil) = sources
-    copy(source = head)(estimatedCardinality)
+    copy(source = head)(estimatedCardinality, id)
   }
 
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
+  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated), id)
 }

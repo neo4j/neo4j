@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2._
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{InternalPlanDescription, SingleRowPlanDescription}
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{Id, InternalPlanDescription, SingleRowPlanDescription}
 import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_2.symbols.CypherType
 import org.scalatest.mock.MockitoSugar
@@ -44,4 +44,6 @@ class FakePipe(val data: Iterator[Map[String, Any]], newVariables: (String, Cyph
   def dup(sources: List[Pipe]): Pipe = ???
 
   override def sources: Seq[Pipe] = Seq.empty
+
+  var id = new Id
 }

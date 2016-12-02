@@ -66,9 +66,9 @@ class ExplainAcceptanceTest extends ExecutionEngineFunSuite {
                   |RETURN count(*), count(distinct bknEnd), avg(size(bookings)),avg(size(perDays));""".stripMargin
 
     val result = execute(query)
-    val plan = result.executionPlanDescription()
+    val plan = result.executionPlanDescription().toString
     result.close()
 
-    plan.toString should include("NestedExpression(VarLengthExpand(Into)-Argument)")
+    plan.toString should include("NestedPlanExpression(VarExpand-Argument)")
   }
 }

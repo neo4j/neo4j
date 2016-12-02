@@ -21,12 +21,13 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.CastSupport
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{PlanDescriptionImpl, TwoChildren}
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{Id, PlanDescriptionImpl, TwoChildren}
 import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_2.MergeConstraintConflictException
 import org.neo4j.graphdb.Node
 
-case class AssertSameNodePipe(source: Pipe, inner: Pipe, node: String)(val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
+case class AssertSameNodePipe(source: Pipe, inner: Pipe, node: String)
+                             (val estimatedCardinality: Option[Double] = None, val id: Id = new Id)(implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
 
   protected def internalCreateResults(lhsResult: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
@@ -57,10 +58,10 @@ case class AssertSameNodePipe(source: Pipe, inner: Pipe, node: String)(val estim
 
   def dup(sources: List[Pipe]): Pipe = {
     val (l :: r :: Nil) = sources
-    copy(source = l, inner= r)(estimatedCardinality)
+    copy(source = l, inner= r)(estimatedCardinality, id)
   }
 
   override val sources: Seq[Pipe] = Seq(source, inner)
 
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
+  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated), id)
 }

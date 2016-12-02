@@ -22,11 +22,12 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.matching.{MatchingContext, PatternGraph}
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 
 case class MatchPipe(source: Pipe,
                      predicates: Seq[Predicate],
                      patternGraph: PatternGraph,
-                     variablesInClause: Set[String])
+                     variablesInClause: Set[String])(val id: Id = new Id)
                     (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
   val matchingContext = new MatchingContext(source.symbols, predicates, patternGraph, variablesInClause)
   val symbols = matchingContext.symbols
@@ -52,6 +53,6 @@ case class MatchPipe(source: Pipe,
 
   def dup(sources: List[Pipe]): Pipe = {
     val (head :: Nil) = sources
-    copy(source = head)
+    copy(source = head)(id)
   }
 }

@@ -22,12 +22,13 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.ListSupport
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{InternalPlanDescription, PlanDescriptionImpl, SingleChild}
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{Id, InternalPlanDescription, PlanDescriptionImpl, SingleChild}
 
 import scala.annotation.tailrec
 
 case class UnwindPipe(source: Pipe, collection: Expression, variable: String)
-                     (val estimatedCardinality: Option[Double] = None)(implicit monitor: PipeMonitor)
+                     (val estimatedCardinality: Option[Double] = None, val id: Id = new Id)
+                     (implicit monitor: PipeMonitor)
   extends PipeWithSource(source, monitor) with ListSupport with RonjaPipe {
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     //register as parent so that stats are associated with this pipe
@@ -43,10 +44,10 @@ case class UnwindPipe(source: Pipe, collection: Expression, variable: String)
 
   def dup(sources: List[Pipe]): Pipe = {
     val (head :: Nil) = sources
-    copy(source = head)(estimatedCardinality)
+    copy(source = head)(estimatedCardinality, id)
   }
 
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
+  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated), id)
 
   private class UnwindIterator(input: Iterator[ExecutionContext], state: QueryState) extends Iterator[ExecutionContext] {
     private var context: ExecutionContext = null

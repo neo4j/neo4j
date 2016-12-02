@@ -23,6 +23,7 @@ import java.util.Comparator
 
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.{KeyNames, LegacyExpression}
 
 import scala.math._
@@ -66,7 +67,8 @@ abstract class TopPipe(source: Pipe, sortDescription: List[SortDescription], est
 }
 
 case class TopNPipe(source: Pipe, sortDescription: List[SortDescription], countExpression: Expression)
-(val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor) extends TopPipe(source, sortDescription, estimatedCardinality)(pipeMonitor) {
+                   (val estimatedCardinality: Option[Double] = None, val id: Id = new Id)
+                   (implicit pipeMonitor: PipeMonitor) extends TopPipe(source, sortDescription, estimatedCardinality)(pipeMonitor) {
 
   protected override def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     //register as parent so that stats are associated with this pipe
@@ -122,10 +124,10 @@ case class TopNPipe(source: Pipe, sortDescription: List[SortDescription], countE
 
   override def dup(sources: List[Pipe]): Pipe = {
     val (head :: Nil) = sources
-    copy(source = head)(estimatedCardinality)
+    copy(source = head)(estimatedCardinality, id)
   }
 
-  override def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
+  override def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated), id)
 
   override def planDescriptionWithoutCardinality =
     source.planDescription
@@ -137,7 +139,8 @@ case class TopNPipe(source: Pipe, sortDescription: List[SortDescription], countE
  * an array, instead just store a single value.
  */
 case class Top1Pipe(source: Pipe, sortDescription: List[SortDescription])
-                   (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
+                   (val estimatedCardinality: Option[Double] = None, val id: Id = new Id)
+                   (implicit pipeMonitor: PipeMonitor)
   extends TopPipe(source, sortDescription, estimatedCardinality)(pipeMonitor) {
 
   protected override def internalCreateResults(input: Iterator[ExecutionContext],
@@ -175,17 +178,18 @@ case class Top1Pipe(source: Pipe, sortDescription: List[SortDescription])
 
   override def dup(sources: List[Pipe]): Pipe = {
     val (head :: Nil) = sources
-    copy(source = head)(estimatedCardinality)
+    copy(source = head)(estimatedCardinality, id)
   }
 
-  override def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
+  override def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated), id)
 }
 
 /*
  * Special case for when we only want one element, and all others that have the same value (tied for first place)
  */
 case class Top1WithTiesPipe(source: Pipe, sortDescription: List[SortDescription])
-                           (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
+                           (val estimatedCardinality: Option[Double] = None, val id: Id = new Id)
+                           (implicit pipeMonitor: PipeMonitor)
   extends TopPipe(source, sortDescription, estimatedCardinality)(pipeMonitor) {
 
   protected override def internalCreateResults(input: Iterator[ExecutionContext],
@@ -234,8 +238,8 @@ case class Top1WithTiesPipe(source: Pipe, sortDescription: List[SortDescription]
 
   override def dup(sources: List[Pipe]): Pipe = {
     val (head :: Nil) = sources
-    copy(source = head)(estimatedCardinality)
+    copy(source = head)(estimatedCardinality, id)
   }
 
-  override def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
+  override def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated), id)
 }

@@ -23,12 +23,13 @@ import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v3_2.commands.predicates.Equivalent
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.LegacyExpressions
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{InternalPlanDescription, PlanDescriptionImpl, TwoChildren}
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{Id, InternalPlanDescription, PlanDescriptionImpl, TwoChildren}
 
 import scala.collection.mutable
 
 case class ValueHashJoinPipe(lhsExpression: Expression, rhsExpression: Expression, left: Pipe, right: Pipe)
-                            (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
+                            (val estimatedCardinality: Option[Double] = None, val id: Id = new Id)
+                            (implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(left, pipeMonitor) with RonjaPipe {
 
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
@@ -73,10 +74,10 @@ case class ValueHashJoinPipe(lhsExpression: Expression, rhsExpression: Expressio
 
   override def dup(sources: List[Pipe]): Pipe = {
     val (left :: right :: Nil) = sources
-    copy(left = left, right = right)(estimatedCardinality)
+    copy(left = left, right = right)(estimatedCardinality, id)
   }
 
-  override def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
+  override def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated), id)
 
   private def buildProbeTable(input: Iterator[ExecutionContext])(implicit state: QueryState) = {
     val table = new mutable.HashMap[Equivalent, mutable.MutableList[ExecutionContext]]

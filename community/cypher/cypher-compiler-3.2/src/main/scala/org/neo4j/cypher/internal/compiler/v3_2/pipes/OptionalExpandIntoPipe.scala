@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.commands.predicates.Predicate
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.ExpandExpression
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
@@ -30,7 +31,8 @@ import scala.collection.mutable.ListBuffer
 
 case class OptionalExpandIntoPipe(source: Pipe, fromName: String, relName: String, toName: String,
                                   dir: SemanticDirection, types: LazyTypes, predicate: Predicate)
-                                (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
+                                 (val estimatedCardinality: Option[Double] = None, val id: Id = new Id)
+                                 (implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(source, pipeMonitor) with RonjaPipe with CachingExpandInto {
   private final val CACHE_SIZE = 100000
 
@@ -79,8 +81,8 @@ case class OptionalExpandIntoPipe(source: Pipe, fromName: String, relName: Strin
 
   def dup(sources: List[Pipe]): Pipe = {
     val (head :: Nil) = sources
-    copy(source = head)(estimatedCardinality)
+    copy(source = head)(estimatedCardinality, id)
   }
 
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
+  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated), id)
 }

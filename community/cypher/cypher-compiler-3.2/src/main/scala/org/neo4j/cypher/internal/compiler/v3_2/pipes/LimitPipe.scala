@@ -21,11 +21,13 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{Expression, NumericHelper}
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.LegacyExpression
 import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 
 case class LimitPipe(source: Pipe, exp: Expression)
-                    (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
+                    (val estimatedCardinality: Option[Double] = None, val id: Id = new Id)
+                    (implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(source, pipeMonitor) with NumericHelper with RonjaPipe {
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     if(input.isEmpty)
@@ -51,8 +53,8 @@ case class LimitPipe(source: Pipe, exp: Expression)
 
   def dup(sources: List[Pipe]): Pipe = {
     val (head :: Nil) = sources
-    copy(source = head)(estimatedCardinality)
+    copy(source = head)(estimatedCardinality, id)
   }
 
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
+  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated), id)
 }

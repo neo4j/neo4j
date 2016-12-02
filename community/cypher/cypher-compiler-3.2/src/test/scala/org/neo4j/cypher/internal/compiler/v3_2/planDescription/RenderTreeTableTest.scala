@@ -196,7 +196,7 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
   }
 
 
-  val pipe = SingleRowPipe()(mock[PipeMonitor])
+  val pipe = SingleRowPipe()()(mock[PipeMonitor])
 
   test("single node is represented nicely") {
     val arguments = Seq(

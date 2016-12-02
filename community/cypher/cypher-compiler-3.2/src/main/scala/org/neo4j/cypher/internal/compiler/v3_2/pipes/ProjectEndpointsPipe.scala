@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.ListSupport
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.KeyNames
 import org.neo4j.cypher.internal.compiler.v3_2.spi.QueryContext
 import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
@@ -31,7 +32,8 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
                                 start: String, startInScope: Boolean,
                                 end: String, endInScope: Boolean,
                                 relTypes: Option[LazyTypes], directed: Boolean, simpleLength: Boolean)
-                               (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
+                               (val estimatedCardinality: Option[Double] = None, val id: Id = new Id)
+                               (implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(source, pipeMonitor)
   with ListSupport
   with RonjaPipe {
@@ -49,10 +51,10 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
 
   def dup(sources: List[Pipe]): Pipe = {
     val (source :: Nil) = sources
-    copy(source = source)(estimatedCardinality)
+    copy(source = source)(estimatedCardinality, id)
   }
 
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
+  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated), id)
 
   private def projector(qtx: QueryContext): Projector =
     if (simpleLength) project(qtx) else projectVarLength(qtx)

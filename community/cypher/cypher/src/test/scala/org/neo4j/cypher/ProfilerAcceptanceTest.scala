@@ -678,7 +678,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
       names.flatMap {
         name =>
           val descriptions: Seq[InternalPlanDescription] = description.find(name)
-          withClue(name + " is missing; ") {
+          withClue(s"$description\n$name is missing; ") {
             assert(descriptions.nonEmpty)
           }
           descriptions

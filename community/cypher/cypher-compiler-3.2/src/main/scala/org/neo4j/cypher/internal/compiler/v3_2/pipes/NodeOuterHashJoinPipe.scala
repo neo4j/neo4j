@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{InternalPlanDescription, PlanDescriptionImpl, TwoChildren}
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{Id, InternalPlanDescription, PlanDescriptionImpl, TwoChildren}
 import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 import org.neo4j.graphdb.Node
 
@@ -28,7 +28,7 @@ import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
 case class NodeOuterHashJoinPipe(nodeVariables: Set[String], source: Pipe, inner: Pipe, nullableVariables: Set[String])
-                                (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
+                                (val estimatedCardinality: Option[Double] = None, val id: Id = new Id)(implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
   val nullColumns: Map[String, Any] = nullableVariables.map(_ -> null).toMap
 
@@ -74,10 +74,10 @@ case class NodeOuterHashJoinPipe(nodeVariables: Set[String], source: Pipe, inner
 
   def dup(sources: List[Pipe]): Pipe = {
     val (source :: inner :: Nil) = sources
-    copy(source = source, inner = inner)(estimatedCardinality)
+    copy(source = source, inner = inner)(estimatedCardinality, id)
   }
 
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
+  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated), id)
 
   private def buildProbeTableAndFindNullRows(input: Iterator[ExecutionContext]): ProbeTable = {
     val probeTable = new ProbeTable()

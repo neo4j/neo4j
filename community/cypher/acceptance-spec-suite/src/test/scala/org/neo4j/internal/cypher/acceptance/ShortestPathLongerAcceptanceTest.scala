@@ -618,8 +618,8 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
       if (operators.isEmpty) {
         MatchResult(
           matches = false,
-          rawFailureMessage = "Plan should use VarLengthExpand",
-          rawNegatedFailureMessage = "Plan should use VarLengthExpand")
+          rawFailureMessage = s"Plan should use VarLengthExpand\n$plan",
+          rawNegatedFailureMessage = s"Plan should use VarLengthExpand\n$plan")
       } else {
         val rowCount = operators.head.arguments.collectFirst {
           case Rows(r) => r

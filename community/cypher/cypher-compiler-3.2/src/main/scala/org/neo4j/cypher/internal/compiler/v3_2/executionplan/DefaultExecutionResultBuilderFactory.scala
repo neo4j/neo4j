@@ -21,15 +21,20 @@ package org.neo4j.cypher.internal.compiler.v3_2.executionplan
 
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.RuntimeTypeConverter
 import org.neo4j.cypher.internal.compiler.v3_2.pipes._
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{Id, InternalPlanDescription}
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.LogicalPlan2PlanDescription
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_2.spi.{CSVResources, QueryContext}
 import org.neo4j.cypher.internal.compiler.v3_2.{ExecutionMode, ExplainMode, _}
 import org.neo4j.cypher.internal.frontend.v3_2.CypherException
 
 import scala.collection.mutable
 
-case class DefaultExecutionResultBuilderFactory(pipeInfo: PipeInfo, columns: List[String],
-                                                typeConverter: RuntimeTypeConverter) extends ExecutionResultBuilderFactory {
+case class DefaultExecutionResultBuilderFactory(pipeInfo: PipeInfo,
+                                                columns: List[String],
+                                                typeConverter: RuntimeTypeConverter,
+                                                logicalPlan: LogicalPlan,
+                                                idMap: Map[LogicalPlan, Id]) extends ExecutionResultBuilderFactory {
   def create(): ExecutionResultBuilder =
     ExecutionWorkflowBuilder()
 
@@ -80,24 +85,16 @@ case class DefaultExecutionResultBuilderFactory(pipeInfo: PipeInfo, columns: Lis
     }
 
     private def createResults(state: QueryState, planType: ExecutionMode, notificationLogger: InternalNotificationLogger): InternalExecutionResult = {
-      val queryType =
-        if (pipeInfo.pipe.isInstanceOf[IndexOperationPipe] || pipeInfo.pipe.isInstanceOf[ConstraintOperationPipe])
-          SCHEMA_WRITE
-        else if (pipeInfo.updating) {
-          if (columns.isEmpty)
-            WRITE
-          else
-            READ_WRITE
-        } else
-          READ_ONLY
+      val queryType: InternalQueryType = getQueryType
+      val planDescription: InternalPlanDescription = LogicalPlan2PlanDescription(logicalPlan, idMap)
       if (planType == ExplainMode) {
         //close all statements
         taskCloser.close(success = true)
-        new ExplainExecutionResult(columns, pipeInfo.pipe.planDescription, queryType, notificationLogger.notifications)
+        ExplainExecutionResult(columns, planDescription, queryType, notificationLogger.notifications)
       } else {
         val results = pipeInfo.pipe.createResults(state)
         val resultIterator = buildResultIterator(results, pipeInfo.updating)
-        val descriptor = buildDescriptor(pipeInfo.pipe, resultIterator.wasMaterialized)
+        val descriptor = buildDescriptor(planDescription, resultIterator.wasMaterialized)
         new PipeExecutionResult(resultIterator, columns, state, descriptor, planType, queryType)
       }
     }
@@ -110,7 +107,21 @@ case class DefaultExecutionResultBuilderFactory(pipeInfo: PipeInfo, columns: Lis
       resultIterator
     }
 
-    private def buildDescriptor(pipe: Pipe, isProfileReady: => Boolean): () => InternalPlanDescription =
-      () => pipeDecorator.decorate(pipe.planDescription, isProfileReady)
+    private def buildDescriptor(planDescription: InternalPlanDescription, isProfileReady: => Boolean): () => InternalPlanDescription =
+      () => pipeDecorator.decorate(planDescription, isProfileReady)
+  }
+
+  private def getQueryType = {
+    val queryType =
+      if (pipeInfo.pipe.isInstanceOf[IndexOperationPipe] || pipeInfo.pipe.isInstanceOf[ConstraintOperationPipe])
+        SCHEMA_WRITE
+      else if (pipeInfo.updating) {
+        if (columns.isEmpty)
+          WRITE
+        else
+          READ_WRITE
+      } else
+        READ_ONLY
+    queryType
   }
 }

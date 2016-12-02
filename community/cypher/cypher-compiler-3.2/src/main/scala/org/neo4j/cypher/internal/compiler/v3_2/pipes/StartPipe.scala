@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{Effects, _}
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 
@@ -46,28 +47,35 @@ sealed abstract class StartPipe[T <: PropertyContainer](source: Pipe,
       .andThen(this.id, s"${createSource.producerType}", variables, createSource.arguments: _*)
 }
 
-case class NodeStartPipe(source: Pipe, name: String, createSource: EntityProducer[Node], itemEffects: Effects = Effects(ReadsAllNodes))(val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
+case class NodeStartPipe(source: Pipe,
+                         name: String,
+                         createSource: EntityProducer[Node],
+                         itemEffects: Effects = Effects(ReadsAllNodes))
+                        (val estimatedCardinality: Option[Double] = None, val id: Id = new Id)
+                        (implicit pipeMonitor: PipeMonitor)
   extends StartPipe[Node](source, name, createSource, pipeMonitor) {
   def variableType = CTNode
 
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
+  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated), id)
 
   def dup(sources: List[Pipe]): Pipe = {
     val (head :: Nil) = sources
-    copy(source = head)(estimatedCardinality)
+    copy(source = head)(estimatedCardinality, id)
   }
 
 
 }
 
-case class RelationshipStartPipe(source: Pipe, name: String, createSource: EntityProducer[Relationship])(val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
+case class RelationshipStartPipe(source: Pipe, name: String, createSource: EntityProducer[Relationship])
+                                (val estimatedCardinality: Option[Double] = None, val id: Id = new Id)
+                                (implicit pipeMonitor: PipeMonitor)
   extends StartPipe[Relationship](source, name, createSource, pipeMonitor) {
   def variableType = CTRelationship
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
+  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated), id)
 
   def dup(sources: List[Pipe]): Pipe = {
     val (head :: Nil) = sources
-    copy(source = head)(estimatedCardinality)
+    copy(source = head)(estimatedCardinality, id)
   }
 }
 

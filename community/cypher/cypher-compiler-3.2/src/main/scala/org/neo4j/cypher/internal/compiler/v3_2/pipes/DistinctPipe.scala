@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v3_2.commands.predicates.Equivalent
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.KeyNames
 import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.Eagerly
@@ -29,10 +30,11 @@ import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 
 import scala.collection.mutable
 
-case class DistinctPipe(source: Pipe, expressions: Map[String, Expression])(val estimatedCardinality: Option[Double] = None)
+case class DistinctPipe(source: Pipe, expressions: Map[String, Expression])
+                       (val estimatedCardinality: Option[Double] = None, val id: Id = new Id)
                        (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
 
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
+  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated), id)
 
   val keyNames: Seq[String] = expressions.keys.toIndexedSeq
 
@@ -75,6 +77,6 @@ case class DistinctPipe(source: Pipe, expressions: Map[String, Expression])(val 
 
   def dup(sources: List[Pipe]): Pipe = {
     val (source :: Nil) = sources
-    copy(source = source)(estimatedCardinality)
+    copy(source = source)(estimatedCardinality, id)
   }
 }

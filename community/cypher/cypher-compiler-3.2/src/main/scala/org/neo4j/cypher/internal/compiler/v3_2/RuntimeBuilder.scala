@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.helpers._
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.compiler.v3_2.planner.execution.{PipeExecutionBuilderContext, PipeExecutionPlanBuilder}
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.LogicalPlanIdentificationBuilder
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_2.planner.{CantCompileQueryException, PeriodicCommit}
 import org.neo4j.cypher.internal.compiler.v3_2.spi.{GraphStatistics, PlanContext, QueryContext}
@@ -118,9 +119,11 @@ case class InterpretedPlanBuilder(clock: Clock, monitors: Monitors,typeConverter
             createFingerprintReference: Option[PlanFingerprint] => PlanFingerprintReference,
             config: CypherCompilerConfiguration) =
     closing(tracer.beginPhase(PIPE_BUILDING)) {
-      interpretedToExecutionPlan(new PipeExecutionPlanBuilder(clock, monitors)
-                                   .build(periodicCommit, logicalPlan)(pipeBuildContext, planContext),
-                                 planContext, preparedQuery, createFingerprintReference, config, typeConverter)
+      val idMap = LogicalPlanIdentificationBuilder(logicalPlan)
+      val executionPlanBuilder = new PipeExecutionPlanBuilder(clock, monitors)
+      val build = executionPlanBuilder.build(periodicCommit, logicalPlan, idMap)(pipeBuildContext, planContext)
+      interpretedToExecutionPlan(build, planContext, preparedQuery, createFingerprintReference, config, typeConverter,
+        logicalPlan, idMap)
     }
 }
 

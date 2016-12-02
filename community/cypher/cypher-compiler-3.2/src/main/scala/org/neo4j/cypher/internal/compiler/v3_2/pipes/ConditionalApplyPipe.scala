@@ -20,10 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{PlanDescriptionImpl, TwoChildren}
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{Id, PlanDescriptionImpl, TwoChildren}
 import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 
-case class ConditionalApplyPipe(source: Pipe, inner: Pipe, items: Seq[String], negated: Boolean)(val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
+case class ConditionalApplyPipe(source: Pipe, inner: Pipe, items: Seq[String], negated: Boolean)
+                               (val estimatedCardinality: Option[Double] = None, val id: Id = new Id)(implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
@@ -51,10 +52,10 @@ case class ConditionalApplyPipe(source: Pipe, inner: Pipe, items: Seq[String], n
 
   def dup(sources: List[Pipe]): Pipe = {
     val (l :: r :: Nil) = sources
-    copy(source = l, inner= r)(estimatedCardinality)
+    copy(source = l, inner= r)(estimatedCardinality, id)
   }
 
   override val sources: Seq[Pipe] = Seq(source, inner)
 
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
+  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated), id)
 }

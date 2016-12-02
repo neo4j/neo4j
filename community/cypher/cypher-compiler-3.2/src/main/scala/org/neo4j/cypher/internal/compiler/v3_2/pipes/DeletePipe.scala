@@ -23,13 +23,15 @@ import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.ListSupport
 import org.neo4j.cypher.internal.compiler.v3_2.mutation.GraphElementPropertyFunctions
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_2.CypherTypeException
 import org.neo4j.graphdb.{Node, Path, Relationship}
 
 import scala.collection.JavaConverters._
 
-case class DeletePipe(src: Pipe, expression: Expression, forced: Boolean)(val estimatedCardinality: Option[Double] = None)
-                                 (implicit pipeMonitor: PipeMonitor)
+case class DeletePipe(src: Pipe, expression: Expression, forced: Boolean)
+                     (val estimatedCardinality: Option[Double] = None, val id: Id = new Id)
+                     (implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(src, pipeMonitor) with RonjaPipe with GraphElementPropertyFunctions with ListSupport {
 
   override protected def internalCreateResults(input: Iterator[ExecutionContext],
@@ -72,10 +74,10 @@ case class DeletePipe(src: Pipe, expression: Expression, forced: Boolean)(val es
 
   override def symbols = src.symbols
 
-  override def withEstimatedCardinality(estimated: Double): Pipe with RonjaPipe = copy()(Some(estimated))
+  override def withEstimatedCardinality(estimated: Double): Pipe with RonjaPipe = copy()(Some(estimated), id)
 
   override def dup(sources: List[Pipe]): Pipe = {
     val (onlySource :: Nil) = sources
-    DeletePipe(onlySource, expression, forced)(estimatedCardinality)
+    DeletePipe(onlySource, expression, forced)(estimatedCardinality, id)
   }
 }

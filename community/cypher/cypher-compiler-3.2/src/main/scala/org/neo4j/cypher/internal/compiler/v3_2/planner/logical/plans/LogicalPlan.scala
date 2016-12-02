@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.commands.QueryExpression
 import org.neo4j.cypher.internal.compiler.v3_2.planner.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.frontend.v3_2.Foldable._
 import org.neo4j.cypher.internal.frontend.v3_2.Rewritable._
-import org.neo4j.cypher.internal.frontend.v3_2.ast.{Expression, Variable}
+import org.neo4j.cypher.internal.frontend.v3_2.ast.Expression
 import org.neo4j.cypher.internal.frontend.v3_2.{InternalException, Rewritable}
 import org.neo4j.cypher.internal.ir.v3_2.IdName
 
@@ -111,6 +111,15 @@ abstract class LogicalPlan
   }
 
   def debugId: String = f"0x${hashCode()}%08x"
+
+  def flatten: Seq[LogicalPlan] = {
+    def flattenAcc(acc: Seq[LogicalPlan], plan: LogicalPlan): Seq[LogicalPlan] = {
+      (plan.lhs.toSeq ++ plan.rhs.toSeq).foldLeft(acc :+ plan) {
+        case (acc1, plan1) => flattenAcc(acc1, plan1)
+      }
+    }
+    flattenAcc(Seq.empty, this)
+  }
 }
 
 abstract class LogicalLeafPlan extends LogicalPlan with LazyLogicalPlan {

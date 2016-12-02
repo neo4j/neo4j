@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.ProcedureCallMode
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.{ListSupport, RuntimeJavaValueConverter, RuntimeScalaValueConverter}
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.Signature
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{InternalPlanDescription, PlanDescriptionImpl, SingleChild}
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{Id, InternalPlanDescription, PlanDescriptionImpl, SingleChild}
 import org.neo4j.cypher.internal.compiler.v3_2.spi.{ProcedureSignature, QualifiedName}
 import org.neo4j.cypher.internal.frontend.v3_2.symbols.CypherType
 
@@ -45,7 +45,7 @@ case class ProcedureCallPipe(source: Pipe,
                              rowProcessing: ProcedureCallRowProcessing,
                              resultSymbols: Seq[(String, CypherType)],
                              resultIndices: Seq[(Int, String)])
-                            (val estimatedCardinality: Option[Double] = None)
+                            (val estimatedCardinality: Option[Double] = None, val id: Id = new Id)
                             (implicit monitor: PipeMonitor)
   extends PipeWithSource(source, monitor) with ListSupport with RonjaPipe {
 
@@ -101,7 +101,7 @@ case class ProcedureCallPipe(source: Pipe,
 
   override def planDescriptionWithoutCardinality: InternalPlanDescription = {
     PlanDescriptionImpl(this.id, "ProcedureCall", SingleChild(source.planDescription), Seq(
-      Signature(QualifiedName(name.namespace, name.name), argExprs, resultSymbols)
+      Signature(QualifiedName(name.namespace, name.name), Seq.empty, resultSymbols)
     ), variables)
   }
 
@@ -116,8 +116,8 @@ case class ProcedureCallPipe(source: Pipe,
 
   override def dup(sources: List[Pipe]): Pipe = {
     val (head :: Nil) = sources
-    copy(source = head)(estimatedCardinality)
+    copy(source = head)(estimatedCardinality, id)
   }
 
-  override def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
+  override def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated), id)
 }

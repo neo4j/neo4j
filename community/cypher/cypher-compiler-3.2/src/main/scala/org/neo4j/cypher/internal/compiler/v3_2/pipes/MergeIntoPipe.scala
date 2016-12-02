@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v3_2.commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v3_2.mutation.{GraphElementPropertyFunctions, SetAction, makeValueNeoSafe}
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.ExpandExpression
 import org.neo4j.cypher.internal.compiler.v3_2.spi.QueryContext
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
@@ -48,7 +49,7 @@ case class MergeIntoPipe(source: Pipe,
                          typ: String,
                          props: Map[KeyToken, Expression],
                          onCreateActions: Seq[SetAction],
-                         onMatchActions: Seq[SetAction])(val estimatedCardinality: Option[Double] = None)
+                         onMatchActions: Seq[SetAction])(val estimatedCardinality: Option[Double] = None, val id: Id = new Id)
                         (implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(source, pipeMonitor) with RonjaPipe with GraphElementPropertyFunctions {
   self =>
@@ -175,10 +176,10 @@ case class MergeIntoPipe(source: Pipe,
 
   def dup(sources: List[Pipe]): Pipe = {
     val (source :: Nil) = sources
-    copy(source = source)(estimatedCardinality)
+    copy(source = source)(estimatedCardinality, id)
   }
 
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
+  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated), id)
 
   private def setPropertiesOnRelationship(row: ExecutionContext, relationship: Relationship, state: QueryState,
                                           properties: Map[KeyToken, Expression]): Unit = {

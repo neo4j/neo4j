@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.commands.values.TokenType
 import org.neo4j.cypher.internal.compiler.v3_2.commands.{expressions => legacy}
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.PipeInfo
 import org.neo4j.cypher.internal.compiler.v3_2.pipes._
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_2.planner._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_2.spi.PlanContext
@@ -50,7 +51,7 @@ class PipeExecutionPlanBuilderAcceptanceTest extends CypherFunSuite with Logical
 
   def build(f: PlannerQuery with CardinalityEstimation => LogicalPlan): PipeInfo = {
     val logicalPlan = f(solved)
-    planBuilder.build(None, logicalPlan)
+    planBuilder.build(None, logicalPlan, new FakeIdMap)
   }
 
   test("projection only query") {
@@ -60,7 +61,7 @@ class PipeExecutionPlanBuilderAcceptanceTest extends CypherFunSuite with Logical
 
     pipeInfo should not be 'updating
     pipeInfo.periodicCommit should equal(None)
-    pipeInfo.pipe should equal(ProjectionPipe(SingleRowPipe(), Map("42" -> legacy.Literal(42)))())
+    pipeInfo.pipe should equal(ProjectionPipe(SingleRowPipe()(), Map("42" -> legacy.Literal(42)))())
   }
 
   test("simple pattern query") {
@@ -214,4 +215,14 @@ class PipeExecutionPlanBuilderAcceptanceTest extends CypherFunSuite with Logical
         Map("n.prop" -> legacy.Property(legacy.Variable("n"),
           Resolved("prop", token, TokenType.PropertyKey))))())
   }
+}
+
+class FakeIdMap extends Map[LogicalPlan, Id] {
+  override def +[B1 >: Id](kv: (LogicalPlan, B1)): Map[LogicalPlan, B1] = ???
+
+  override def get(key: LogicalPlan): Option[Id] = Some(new Id)
+
+  override def iterator: Iterator[(LogicalPlan, Id)] = ???
+
+  override def -(key: LogicalPlan): Map[LogicalPlan, Id] = ???
 }

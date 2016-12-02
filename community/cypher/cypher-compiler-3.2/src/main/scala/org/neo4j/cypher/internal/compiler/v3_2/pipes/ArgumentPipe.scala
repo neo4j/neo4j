@@ -20,16 +20,16 @@
 package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{InternalPlanDescription, NoChildren, PlanDescriptionImpl}
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{Id, InternalPlanDescription, NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v3_2.symbols.{SymbolTable, SymbolTypeAssertionCompiler}
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 
 case class ArgumentPipe(symbols: SymbolTable)
-                       (val estimatedCardinality: Option[Double] = None)
+                       (val estimatedCardinality: Option[Double] = None, val id: Id = new Id)
                        (implicit val monitor: PipeMonitor) extends Pipe with RonjaPipe {
   def sources = Seq.empty
 
-  def withEstimatedCardinality(estimated: Double): Pipe with RonjaPipe = copy()(Some(estimated))
+  def withEstimatedCardinality(estimated: Double): Pipe with RonjaPipe = copy()(Some(estimated), id)
 
   def planDescriptionWithoutCardinality: InternalPlanDescription =
     new PlanDescriptionImpl(this.id, "Argument", NoChildren, Seq.empty, variables)

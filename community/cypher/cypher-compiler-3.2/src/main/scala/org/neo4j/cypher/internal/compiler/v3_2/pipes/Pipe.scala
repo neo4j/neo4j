@@ -85,10 +85,10 @@ trait Pipe {
   def variables: immutable.Set[String] = symbols.variables.keySet.toSet
 
   // Used by profiling to identify where to report dbhits and rows
-  val id = new Id
+  def id: Id
 }
 
-case class SingleRowPipe()(implicit val monitor: PipeMonitor) extends Pipe with RonjaPipe {
+case class SingleRowPipe()(val id: Id = new Id)(implicit val monitor: PipeMonitor) extends Pipe with RonjaPipe {
 
   def symbols: SymbolTable = new SymbolTable()
 
@@ -97,7 +97,7 @@ case class SingleRowPipe()(implicit val monitor: PipeMonitor) extends Pipe with 
 
   def exists(pred: Pipe => Boolean) = pred(this)
 
-  def planDescriptionWithoutCardinality: InternalPlanDescription = new SingleRowPlanDescription(this.id, Seq.empty, variables)
+  def planDescriptionWithoutCardinality: InternalPlanDescription = new SingleRowPlanDescription(id, Seq.empty, variables)
 
   def dup(sources: List[Pipe]): Pipe = this
 

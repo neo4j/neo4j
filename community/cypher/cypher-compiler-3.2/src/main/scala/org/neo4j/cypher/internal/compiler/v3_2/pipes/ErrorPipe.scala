@@ -20,10 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{Id, InternalPlanDescription}
 import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 
-case class ErrorPipe(source: Pipe, exception: Exception)(val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
+case class ErrorPipe(source: Pipe, exception: Exception)
+                    (val estimatedCardinality: Option[Double] = None, val id: Id = new Id)(implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
     throw exception
@@ -31,12 +32,12 @@ case class ErrorPipe(source: Pipe, exception: Exception)(val estimatedCardinalit
   override def planDescriptionWithoutCardinality: InternalPlanDescription =
     source.planDescription.andThen(this.id, "Error", variables)
 
-  override def withEstimatedCardinality(estimated: Double): Pipe with RonjaPipe = copy()(Some(estimated))
+  override def withEstimatedCardinality(estimated: Double): Pipe with RonjaPipe = copy()(Some(estimated), id)
 
   override def symbols: SymbolTable = source.symbols
 
   override def dup(sources: List[Pipe]): Pipe = {
     val (head :: Nil) = sources
-    copy(source = head)(estimatedCardinality)
+    copy(source = head)(estimatedCardinality, id)
   }
 }
