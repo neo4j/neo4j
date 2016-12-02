@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.ha;
 
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
 import org.junit.Rule;
@@ -155,8 +156,7 @@ public class ClusterPartitionIT
 
         ClusterManager manager = new ClusterManager.Builder().withRootDirectory( dir.cleanDirectory( "testcluster" ) )
                 .withCluster( ClusterManager.clusterOfSize( clusterSize ) )
-                .withSharedConfig( stringMap(
-                        HaSettings.tx_push_factor.name(), "4" ) ) // so we know the initial data made it everywhere
+                .withSharedConfig( config() )
                 .build();
 
         try
@@ -234,8 +234,7 @@ public class ClusterPartitionIT
 
         ClusterManager manager = new ClusterManager.Builder().withRootDirectory( dir.cleanDirectory( "testcluster" ) )
                 .withCluster( ClusterManager.clusterOfSize( clusterSize ) )
-                .withSharedConfig( stringMap(
-                        HaSettings.tx_push_factor.name(), "4" ) ) // so we know the initial data made it everywhere
+                .withSharedConfig( config() )
                 .build();
 
         try
@@ -302,6 +301,16 @@ public class ClusterPartitionIT
         {
             manager.shutdown();
         }
+    }
+
+    private Map<String,String> config()
+    {
+        return stringMap(
+                // so we know the initial data made it everywhere
+                HaSettings.tx_push_factor.name(), "4" ,
+                // increase heartbeat frequency to find the quorum in the cluster sooner to avoid timeouts
+                ClusterSettings.heartbeat_interval.name(), "250ms"
+        );
     }
 
     private ClusterManager.RepairKit killAbruptly( ClusterManager.ManagedCluster cluster,
