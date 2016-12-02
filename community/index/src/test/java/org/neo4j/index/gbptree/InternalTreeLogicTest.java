@@ -105,7 +105,7 @@ public class InternalTreeLogicTest
     public void setUp() throws IOException
     {
         id.reset();
-        long newId = id.acquireNewId();
+        long newId = id.acquireNewId( stableGen, unstableGen );
         goTo( cursor, newId );
     }
 
@@ -1091,7 +1091,7 @@ public class InternalTreeLogicTest
     private long newRootFromSplit( StructurePropagation<MutableLong> split ) throws IOException
     {
         assertTrue( split.hasSplit );
-        long rootId = id.acquireNewId();
+        long rootId = id.acquireNewId( stableGen, unstableGen );
         goTo( cursor, rootId );
         node.initializeInternal( cursor, stableGen, unstableGen );
         node.insertKeyAt( cursor, split.primKey, 0, 0, tmp );

@@ -19,10 +19,14 @@
  */
 package org.neo4j.index.gbptree;
 
-import org.neo4j.io.pagecache.PageCursor;
+import org.apache.commons.lang3.tuple.Pair;
+
+import java.util.LinkedList;
+import java.util.Queue;
 
 class SimpleIdProvider implements IdProvider
 {
+    private final Queue<Pair<Long,Long>> releasedIds = new LinkedList<>();
     private long lastId;
 
     SimpleIdProvider()
@@ -31,10 +35,25 @@ class SimpleIdProvider implements IdProvider
     }
 
     @Override
-    public long acquireNewId()
+    public long acquireNewId( long stableGeneration, long unstableGeneration )
     {
+        if ( !releasedIds.isEmpty() )
+        {
+            Pair<Long,Long> free = releasedIds.peek();
+            if ( free.getLeft() <= stableGeneration )
+            {
+                releasedIds.poll();
+                return free.getRight();
+            }
+        }
         lastId++;
         return lastId;
+    }
+
+    @Override
+    public void releaseId( long stableGeneration, long unstableGeneration, long id )
+    {
+        releasedIds.add( Pair.of( unstableGeneration, id ) );
     }
 
     long lastId()
@@ -44,6 +63,7 @@ class SimpleIdProvider implements IdProvider
 
     void reset()
     {
+        releasedIds.clear();
         lastId = IdSpace.MIN_TREE_NODE_ID - 1;
     }
 }

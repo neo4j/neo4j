@@ -27,8 +27,10 @@ import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.TreeMap;
@@ -37,6 +39,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
@@ -54,17 +57,15 @@ import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.rule.RandomRule;
 
+import static java.lang.Integer.max;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
-import static java.lang.Integer.max;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.neo4j.index.IndexWriter.Options.DEFAULTS;
 import static org.neo4j.index.gbptree.GBPTree.NO_MONITOR;
 import static org.neo4j.index.gbptree.ThrowingRunnable.throwing;
@@ -81,7 +82,7 @@ public class GBPTreeTest
     private final Layout<MutableLong,MutableLong> layout = new SimpleLongLayout();
     private GBPTree<MutableLong,MutableLong> index;
 
-    public GBPTree<MutableLong,MutableLong> createIndex( int pageSize )
+    private GBPTree<MutableLong,MutableLong> createIndex( int pageSize )
             throws IOException
     {
         return createIndex( pageSize, NO_MONITOR );
@@ -264,7 +265,7 @@ public class GBPTreeTest
     }
 
     @Test
-    public void shouldFailOnPageSizeLargerThanThatOfPageCache() throws Exception
+    public void shouldFailOnStartingWithPageSizeLargerThanThatOfPageCache() throws Exception
     {
         // WHEN
         int pageSize = 512;
@@ -279,6 +280,96 @@ public class GBPTreeTest
         {
             // THEN good
             assertThat( e.getMessage(), containsString( "page size" ) );
+        }
+    }
+
+    @Test
+    public void shouldMapIndexFileWithProvidedPageSizeIfLessThanOrEqualToCachePageSize() throws Exception
+    {
+        // WHEN
+        int pageSize = 1024;
+        pageCache = new MuninnPageCache( swapperFactory(), 10_000, pageSize, NULL );
+        indexFile = new File( folder.getRoot(), "index" );
+        try ( Index<MutableLong,MutableLong> index =
+                new GBPTree<>( pageCache, indexFile, layout, pageSize / 2, NO_MONITOR ) )
+        {
+            // Good
+        }
+    }
+
+    @Test
+    public void shouldFailWhenTryingToRemapWithPageSizeLargerThanCachePageSize() throws Exception
+    {
+        // WHEN
+        int pageSize = 1024;
+        pageCache = new MuninnPageCache( swapperFactory(), 10_000, pageSize, NULL );
+        indexFile = new File( folder.getRoot(), "index" );
+        try ( Index<MutableLong,MutableLong> index =
+                new GBPTree<>( pageCache, indexFile, layout, pageSize, NO_MONITOR ) )
+        {
+            // Good
+        }
+
+        pageCache = new MuninnPageCache( swapperFactory(), 10_000, pageSize / 2, NULL );
+        try ( GBPTree<MutableLong, MutableLong> index =
+                new GBPTree<>( pageCache, indexFile, layout, pageSize, NO_MONITOR ) )
+        {
+            fail( "Expected to fail" );
+        }
+        catch ( MetadataMismatchException e )
+        {
+            // THEN Good
+            assertThat( e.getMessage(), containsString( "page size" ) );
+        }
+    }
+
+    @Test
+    public void shouldRemapFileIfMappedWithPageSizeLargerThanCreationSize() throws Exception
+    {
+        // WHEN
+        int pageSize = 1024;
+        pageCache = new MuninnPageCache( swapperFactory(), 10_000, pageSize, NULL );
+        indexFile = new File( folder.getRoot(), "index" );
+        List<Long> expectedData = new ArrayList<>();
+        for ( long i = 0; i < 100; i++ )
+        {
+            expectedData.add( i );
+        }
+        try ( Index<MutableLong,MutableLong> index =
+                new GBPTree<>( pageCache, indexFile, layout, pageSize / 2, NO_MONITOR ) )
+        {
+            // Insert some data
+            try ( IndexWriter<MutableLong, MutableLong> writer = index.writer( IndexWriter.Options.DEFAULTS ) )
+            {
+                MutableLong key = new MutableLong();
+                MutableLong value = new MutableLong();
+
+                for ( Long insert : expectedData )
+                {
+                    key.setValue( insert );
+                    value.setValue( insert );
+                    writer.put( key, value );
+                }
+            }
+            index.checkpoint( IOLimiter.unlimited() );
+        }
+
+        // THEN
+        try ( Index<MutableLong,MutableLong> index = new GBPTree<>( pageCache, indexFile, layout, 0, NO_MONITOR ) )
+        {
+            MutableLong fromInclusive = new MutableLong( 0L );
+            MutableLong toExclusive = new MutableLong( 200L );
+            try ( RawCursor<Hit<MutableLong,MutableLong>, IOException> seek = index.seek( fromInclusive, toExclusive ) )
+            {
+                int i = 0;
+                while ( seek.next() )
+                {
+                    Hit<MutableLong,MutableLong> hit = seek.get();
+                    assertEquals( hit.key().getValue(), expectedData.get( i ) );
+                    assertEquals( hit.value().getValue(), expectedData.get( i ) );
+                    i++;
+                }
+            }
         }
     }
 
@@ -315,6 +406,21 @@ public class GBPTreeTest
         }
 
         writer.close();
+    }
+
+    @Test
+    public void shouldAllowClosingIndexWriterMultipleTimes() throws Exception
+    {
+        // GIVEN
+        index = createIndex( 256 );
+        IndexWriter<MutableLong,MutableLong> writer = index.writer( DEFAULTS );
+        writer.put( new MutableLong( 0 ), new MutableLong( 1 ) );
+        writer.close();
+
+        // WHEN
+        writer.close();
+
+        // THEN that should be OK
     }
 
     /* Check-pointing tests */

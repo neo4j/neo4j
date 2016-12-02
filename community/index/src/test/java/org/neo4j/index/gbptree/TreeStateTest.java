@@ -26,6 +26,7 @@ import java.io.IOException;
 
 import org.neo4j.io.pagecache.PageCursor;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -57,21 +58,25 @@ public class TreeStateTest
     public void shouldReadValidPage() throws Exception
     {
         // GIVEN valid state
-        TreeState.write( cursor, 1, 2, 3, 4 );
+        long pageId = cursor.getCurrentPageId();
+        TreeState expected = new TreeState( pageId, 1, 2, 3, 4, 5, 6, 7, 8, true );
+        write( cursor, expected );
         cursor.rewind();
 
         // WHEN
-        boolean valid = TreeState.read( cursor ).isValid();
+        TreeState read = TreeState.read( cursor );
 
         // THEN
-        assertTrue( valid );
+        assertEquals( expected, read );
     }
 
     @Test
     public void readBrokenStateShouldFail() throws Exception
     {
         // GIVEN broken state
-        TreeState.write( cursor, 1, 2, 3, 4 );
+        long pageId = cursor.getCurrentPageId();
+        TreeState expected = new TreeState( pageId, 1, 2, 3, 4, 5, 6, 7, 8, true );
+        write( cursor, expected );
         cursor.rewind();
         assertTrue( TreeState.read( cursor ).isValid() );
         cursor.rewind();
@@ -93,7 +98,8 @@ public class TreeStateTest
         // WHEN
         try
         {
-            TreeState.write( cursor, generation, 2, 3, 4 );
+            long pageId = cursor.getCurrentPageId();
+            write( cursor, new TreeState( pageId, generation, 2, 3, 4, 5, 6, 7, 8, true ) );
             fail( "Should have failed" );
         }
         catch ( IllegalArgumentException e )
@@ -111,7 +117,8 @@ public class TreeStateTest
         // WHEN
         try
         {
-            TreeState.write( cursor, 1, generation, 3, 4 );
+            long pageId = cursor.getCurrentPageId();
+            write( cursor, new TreeState( pageId, 1, generation, 3, 4, 5, 6, 7, 8, true ) );
             fail( "Should have failed" );
         }
         catch ( IllegalArgumentException e )
@@ -126,5 +133,18 @@ public class TreeStateTest
         // no additional knowledge about where checksum is stored
         long existing = cursor.getLong( cursor.getOffset() );
         cursor.putLong( cursor.getOffset(), ~existing );
+    }
+
+    private void write( PageCursor cursor, TreeState origin )
+    {
+        TreeState.write( cursor,
+                origin.stableGeneration(),
+                origin.unstableGeneration(),
+                origin.rootId(),
+                origin.lastId(),
+                origin.freeListWritePageId(),
+                origin.freeListReadPageId(),
+                origin.freeListWritePos(),
+                origin.freeListReadPos() );
     }
 }

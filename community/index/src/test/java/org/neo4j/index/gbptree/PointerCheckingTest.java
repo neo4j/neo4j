@@ -28,6 +28,7 @@ import static org.junit.Assert.fail;
 import static org.neo4j.index.gbptree.GenSafePointerPair.NO_LOGICAL_POS;
 import static org.neo4j.index.gbptree.GenSafePointerPair.read;
 import static org.neo4j.index.gbptree.GenSafePointerPair.write;
+import static org.neo4j.index.gbptree.PageCursorUtil.put6BLong;
 
 public class PointerCheckingTest
 {
@@ -172,7 +173,7 @@ public class PointerCheckingTest
 
         // Can not use GenSafePointer.write because it will fail on pointer assertion.
         cursor.putInt( (int) pointer );
-        GenSafePointer.put6BLong( cursor, generation );
+        put6BLong( cursor, generation );
         cursor.putShort( GenSafePointer.checksumOf( generation, pointer ) );
         cursor.rewind();
 

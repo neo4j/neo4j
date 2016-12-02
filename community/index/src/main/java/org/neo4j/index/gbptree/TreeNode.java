@@ -38,9 +38,9 @@ import static org.neo4j.index.gbptree.GenSafePointerPair.read;
  * <pre>
  * # = empty space
  *
- * [                      HEADER   81B                    ]|[      KEYS     ]|[     CHILDREN             ]
- * [TYPE][GEN][KEYCOUNT][RIGHTSIBLING][LEFTSIBLING][NEWGEN]|[[KEY][KEY]...##]|[[CHILD][CHILD][CHILD]...##]
- *  0     1    5         9             33           57
+ * [                            HEADER   82B                        ]|[      KEYS     ]|[     CHILDREN             ]
+ * [NODETYPE][TYPE][GEN][KEYCOUNT][RIGHTSIBLING][LEFTSIBLING][NEWGEN]|[[KEY][KEY]...##]|[[CHILD][CHILD][CHILD]...##]
+ *  0         1     6    10        34            58
  * </pre>
  * Calc offset for key i (starting from 0)
  * HEADER_LENGTH + i * SIZE_KEY
@@ -51,9 +51,9 @@ import static org.neo4j.index.gbptree.GenSafePointerPair.read;
  * Using Separate design the leaf nodes should look like
  *
  * <pre>
- * [                      HEADER   81B                    ]|[      KEYS     ]|[     VALUES        ]
- * [TYPE][GEN][KEYCOUNT][RIGHTSIBLING][LEFTSIBLING][NEWGEN]|[[KEY][KEY]...##]|[[VALUE][VALUE]...##]
- *  0     1    5         9             33           57
+ * [                            HEADER   82B                        ]|[      KEYS     ]|[     VALUES        ]
+ * [NODETYPE][TYPE][GEN][KEYCOUNT][RIGHTSIBLING][LEFTSIBLING][NEWGEN]|[[KEY][KEY]...##]|[[VALUE][VALUE]...##]
+ *  0         1     6    10        34            58
  * </pre>
  *
  * Calc offset for key i (starting from 0)
@@ -67,8 +67,13 @@ import static org.neo4j.index.gbptree.GenSafePointerPair.read;
  */
 class TreeNode<KEY,VALUE>
 {
+    // Shared between all node types: TreeNode and FreelistNode
+    static final int BYTE_POS_NODE_TYPE = 0;
+    static final byte NODE_TYPE_TREE_NODE = 1;
+    static final byte NODE_TYPE_FREE_LIST_NODE = 2;
+
     static final int SIZE_PAGE_REFERENCE = GenSafePointerPair.SIZE;
-    static final int BYTE_POS_TYPE = 0;
+    static final int BYTE_POS_TYPE = BYTE_POS_NODE_TYPE + Byte.BYTES;
     static final int BYTE_POS_GEN = BYTE_POS_TYPE + Byte.BYTES;
     static final int BYTE_POS_KEYCOUNT = BYTE_POS_GEN + Integer.BYTES;
     static final int BYTE_POS_RIGHTSIBLING = BYTE_POS_KEYCOUNT + Integer.BYTES;
@@ -108,8 +113,14 @@ class TreeNode<KEY,VALUE>
         }
     }
 
+    static byte nodeType( PageCursor cursor )
+    {
+        return cursor.getByte( BYTE_POS_NODE_TYPE );
+    }
+
     private void initialize( PageCursor cursor, byte type, long stableGeneration, long unstableGeneration )
     {
+        cursor.putByte( BYTE_POS_NODE_TYPE, NODE_TYPE_TREE_NODE );
         cursor.putByte( BYTE_POS_TYPE, type );
         setGen( cursor, unstableGeneration );
         setKeyCount( cursor, 0 );

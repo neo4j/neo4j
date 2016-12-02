@@ -118,7 +118,7 @@ import static org.neo4j.index.gbptree.PageCursorUtil.checkOutOfBounds;
  * @param <KEY> type of keys
  * @param <VALUE> type of values
  */
-public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
+public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>
 {
     /**
      * For monitoring {@link GBPTree}.
@@ -150,7 +150,6 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
      * {@link File} to map in {@link PageCache} for storing this tree.
      */
     private final File indexFile;
-    private final byte[] zeroPage;
 
     /**
      * User-provided layout of key/value as well as custom additional meta information.
@@ -164,6 +163,12 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
      * Instance of {@link TreeNode} which handles reading/writing physical bytes from pages representing tree nodes.
      */
     private final TreeNode<KEY,VALUE> bTreeNode;
+
+    /**
+     * A free-list of released ids. Acquiring new ids involves first trying out the free-list and then,
+     * as a fall-back allocate a new id at the end of the store.
+     */
+    private final FreeListIdProvider freeList;
 
     /**
      * A single instance {@link IndexWriter} because tree only supports single writer.
@@ -196,16 +201,6 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
     private boolean created;
 
     /**
-     * Current page id which contains the root of the tree.
-     */
-    private volatile long rootId = IdSpace.MIN_TREE_NODE_ID;
-
-    /**
-     * Last allocated page id, used for allocating new ids as more data gets inserted into the tree.
-     */
-    private volatile long lastId = rootId;
-
-    /**
      * Generation of the tree. This variable contains both stable and unstable generation and is
      * represented as one long to get atomic updates of both stable and unstable generation for readers.
      * Both stable and unstable generation are unsigned ints, i.e. 32 bits each.
@@ -217,6 +212,11 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
      * </ul>
      */
     private volatile long generation;
+
+    /**
+     * Current page id which contains the root of the tree.
+     */
+    private volatile long rootId = IdSpace.MIN_TREE_NODE_ID;
 
     /**
      * Supplier of generation to readers. This supplier will actually very rarely be used, because normally
@@ -258,12 +258,16 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         this.layout = layout;
         this.pagedFile = openOrCreate( pageCache, indexFile, tentativePageSize, layout );
         this.bTreeNode = new TreeNode<>( pageSize, layout );
-        this.writer = new SingleIndexWriter( new InternalTreeLogic<>( this, bTreeNode, layout ) );
-        this.zeroPage = new byte[pageSize];
+        this.freeList = new FreeListIdProvider( pagedFile, pageSize, rootId );
+        this.writer = new SingleIndexWriter( new InternalTreeLogic<>( freeList, bTreeNode, layout ) );
 
         if ( created )
         {
             initializeAfterCreation( layout );
+        }
+        else
+        {
+            loadState( pagedFile );
         }
     }
 
@@ -277,11 +281,14 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         {
             long stableGeneration = stableGeneration( generation );
             long unstableGeneration = unstableGeneration( generation );
-            goToRoot( cursor, stableGeneration, unstableGeneration );
+            PageCursorUtil.goTo( cursor, "first root", rootId );
             bTreeNode.initializeLeaf( cursor, stableGeneration, unstableGeneration );
             checkOutOfBounds( cursor );
         }
 
+        // Initialize free-list
+        long freelistPageId = freeList.lastId() + 1;
+        freeList.initialize( freelistPageId, freelistPageId, freelistPageId, 0, 0 );
         checkpoint( IOLimiter.unlimited() );
     }
 
@@ -297,7 +304,6 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
             {
                 readMeta( indexFile, layout, pagedFile );
                 pagedFile = mapWithCorrectPageSize( pageCache, indexFile, pagedFile );
-                loadState( pagedFile );
                 return pagedFile;
             }
             catch ( Throwable t )
@@ -336,9 +342,15 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
     {
         Pair<TreeState,TreeState> states = readStatePages( pagedFile );
         TreeState state = TreeStatePair.selectNewestValidState( states );
-        rootId = state.rootId();
-        lastId = state.lastId();
         generation = Generation.generation( state.stableGeneration(), state.unstableGeneration() );
+        rootId = state.rootId();
+
+        long lastId = state.lastId();
+        long freeListWritePageId = state.freeListWritePageId();
+        long freeListReadPageId = state.freeListReadPageId();
+        int freeListWritePos = state.freeListWritePos();
+        int freeListReadPos = state.freeListReadPos();
+        freeList.initialize( lastId, freeListWritePageId, freeListReadPageId, freeListWritePos, freeListReadPos );
     }
 
     private void writeState( PagedFile pagedFile ) throws IOException
@@ -349,7 +361,9 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         try ( PageCursor cursor = pagedFile.io( pageToOverwrite, PagedFile.PF_SHARED_WRITE_LOCK ) )
         {
             PageCursorUtil.goTo( cursor, "state page", pageToOverwrite );
-            TreeState.write( cursor, stableGeneration( generation ), unstableGeneration( generation ), rootId, lastId );
+            TreeState.write( cursor, stableGeneration( generation ), unstableGeneration( generation ), rootId,
+                    freeList.lastId(), freeList.writePageId(), freeList.readPageId(),
+                    freeList.writePos(), freeList.readPos() );
             checkOutOfBounds( cursor );
         }
     }
@@ -456,19 +470,6 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         // Returns cursor which is now initiated with left-most leaf node for the specified range
         return new SeekCursor<>( cursor, key, value, bTreeNode, fromInclusive, toExclusive, layout,
                 stableGeneration, unstableGeneration, generationSupplier );
-    }
-
-    @Override
-    public long acquireNewId() throws IOException
-    {
-        lastId++;
-        try ( PageCursor cursor = pagedFile.io( lastId, PagedFile.PF_SHARED_WRITE_LOCK ) )
-        {
-            cursor.next();
-            // TODO use cursor.clear() when available
-            cursor.putBytes( zeroPage );
-        }
-        return lastId;
     }
 
     @Override
@@ -654,7 +655,7 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
             if ( structurePropagation.hasSplit )
             {
                 // New root
-                long newRootId = acquireNewId();
+                long newRootId = freeList.acquireNewId( stableGeneration, unstableGeneration );
                 PageCursorUtil.goTo( cursor, "new root", newRootId );
 
                 bTreeNode.initializeInternal( cursor, stableGeneration, unstableGeneration );

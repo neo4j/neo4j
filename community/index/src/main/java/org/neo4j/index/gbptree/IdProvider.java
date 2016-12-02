@@ -27,5 +27,7 @@ import java.io.IOException;
  */
 interface IdProvider
 {
-    long acquireNewId() throws IOException;
+    long acquireNewId( long stableGeneration, long unstableGeneration ) throws IOException;
+
+    void releaseId( long stableGeneration, long unstableGeneration, long id ) throws IOException;
 }

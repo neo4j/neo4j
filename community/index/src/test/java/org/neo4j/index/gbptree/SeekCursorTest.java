@@ -78,7 +78,7 @@ public class SeekCursorTest
     @Before
     public void setUp() throws IOException
     {
-        cursor.next( id.acquireNewId() );
+        cursor.next( id.acquireNewId( stableGen, unstableGen ) );
         node.initializeLeaf( cursor, stableGen, unstableGen );
     }
 
@@ -999,7 +999,7 @@ public class SeekCursorTest
     private long newRootFromSplit( StructurePropagation<MutableLong> split ) throws IOException
     {
         assertTrue( split.hasSplit );
-        long rootId = id.acquireNewId();
+        long rootId = id.acquireNewId( stableGen, unstableGen );
         cursor.next( rootId );
         node.initializeInternal( cursor, stableGen, unstableGen );
         node.insertKeyAt( cursor, split.primKey, 0, 0, tmp );

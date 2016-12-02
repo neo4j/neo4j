@@ -231,7 +231,7 @@ class InternalTreeLogic<KEY,VALUE>
         long current = cursor.getCurrentPageId();
         long oldRight = bTreeNode.rightSibling( cursor, stableGeneration, unstableGeneration );
         PointerChecking.checkPointer( oldRight, true );
-        long newRight = idProvider.acquireNewId();
+        long newRight = idProvider.acquireNewId( stableGeneration, unstableGeneration );
 
         // Find position to insert new key
         int pos = positionOf( search( cursor, bTreeNode, primKey, readKey, keyCount ) );
@@ -387,7 +387,7 @@ class InternalTreeLogic<KEY,VALUE>
         long current = cursor.getCurrentPageId();
         long oldRight = bTreeNode.rightSibling( cursor, stableGeneration, unstableGeneration );
         PointerChecking.checkPointer( oldRight, true );
-        long newRight = idProvider.acquireNewId();
+        long newRight = idProvider.acquireNewId( stableGeneration, unstableGeneration );
 
         // BALANCE KEYS AND VALUES
         // Two different scenarios
@@ -594,7 +594,7 @@ class InternalTreeLogic<KEY,VALUE>
      * Create a new node and copy content from current node (where {@code cursor} sits) if current node is not already
      * of {@code unstableGeneration}.
      * <p>
-     * Neighbouring nodes' sibling pointers will be updated to point to new node.
+     * Neighboring nodes' sibling pointers will be updated to point to new node.
      * <p>
      * Current node will be updated with new gen pointer to new node.
      * <p>
@@ -610,6 +610,7 @@ class InternalTreeLogic<KEY,VALUE>
     private void createUnstableVersionIfNeeded( PageCursor cursor, StructurePropagation<KEY> structurePropagation,
             long stableGeneration, long unstableGeneration ) throws IOException
     {
+        long oldGenId = cursor.getCurrentPageId();
         long nodeGen = bTreeNode.gen( cursor );
         if ( nodeGen == unstableGeneration )
         {
@@ -618,7 +619,7 @@ class InternalTreeLogic<KEY,VALUE>
         }
 
         // Do copy
-        long newGenId = idProvider.acquireNewId();
+        long newGenId = idProvider.acquireNewId( stableGeneration, unstableGeneration );
         try ( PageCursor newGenCursor = cursor.openLinkedCursor( newGenId ) )
         {
             goTo( newGenCursor, "new gen", newGenId );
@@ -664,5 +665,7 @@ class InternalTreeLogic<KEY,VALUE>
         // Propagate structure change
         structurePropagation.hasNewGen = true;
         structurePropagation.left = newGenId;
+
+        idProvider.releaseId( stableGeneration, unstableGeneration, oldGenId );
     }
 }
