@@ -282,6 +282,11 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
                                     pageCache.pageSize() + " bytes.");
                         }
                     }
+                    else
+                    {
+                        throw new StoreNotFoundException( "Fail to read header record of store file: " +
+                                storageFileName);
+                    }
                 }
             }
         }
@@ -869,7 +874,10 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
              * It is the case since we wand to mark the id generator as closed cleanly ONLY IF
              * also the store file is cleanly shutdown.
              */
-            storeFile.close();
+            if ( storeFile != null )
+            {
+                storeFile.close();
+            }
             if ( idGenerator != null )
             {
                 if ( contains( openOptions, DELETE_ON_CLOSE ) )
