@@ -281,5 +281,6 @@ public class Leader implements RaftMessageHandler
         receivedHeartbeats = false;
         outcome.steppingDown();
         outcome.setNextRole( FOLLOWER );
+        outcome.setLeader( null );
     }
 }

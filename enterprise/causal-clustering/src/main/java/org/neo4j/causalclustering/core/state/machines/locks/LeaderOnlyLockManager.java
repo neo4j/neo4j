@@ -112,6 +112,10 @@ public class LeaderOnlyLockManager implements Locks
         {
             throw new AcquireLockTimeoutException( e, "Interrupted acquiring token.", Interrupted );
         }
+        catch ( NoLeaderFoundException e )
+        {
+            throw new AcquireLockTimeoutException( e, "Could not acquire lock token because no leader was found.", NoLeaderAvailable );
+        }
 
         try
         {
