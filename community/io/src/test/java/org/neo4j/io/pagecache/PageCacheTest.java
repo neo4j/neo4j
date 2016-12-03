@@ -88,6 +88,7 @@ import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -1183,6 +1184,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         testTemplate.accept( ( cursor ) -> cursor.putInt( 0, 1 ) );
         testTemplate.accept( ( cursor ) -> cursor.putLong( 0, 1 ) );
         testTemplate.accept( ( cursor ) -> cursor.putShort( 0, (short) 1 ) );
+        testTemplate.accept( ( cursor ) -> cursor.zapPage() );
     }
 
     private void checkUnboundReadCursorAccess( PageCursorAction action ) throws IOException
@@ -2489,7 +2491,10 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
 
     private void verifyWriteOffsets( PageCursor cursor )
     {
-        assertThat( cursor.getOffset(), is( 0 ) );
+        cursor.setOffset( filePageSize / 2 );
+        cursor.zapPage();
+        assertThat( cursor.getOffset(), is( filePageSize / 2 ) );
+        cursor.setOffset( 0 );
         cursor.putLong( 1 );
         assertThat( cursor.getOffset(), is( 8 ) );
         cursor.putInt( 1 );
@@ -5369,5 +5374,50 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
 
         // Then verify that the old random data we put in 'b' has been replaced with the contents of 'a'
         verifyRecordsInFile( b, recordCount );
+    }
+
+    @Test
+    public void shouldZeroAllBytesOnClear() throws Exception
+    {
+        // GIVEN
+        configureStandardPageCache();
+        try ( PagedFile pagedFile = pageCache.map( file( "a" ), filePageSize ) )
+        {
+            long pageId = 0;
+            try ( PageCursor cursor = pagedFile.io( pageId, PF_SHARED_WRITE_LOCK ) )
+            {
+                ThreadLocalRandom rng = ThreadLocalRandom.current();
+                byte[] bytes = new byte[filePageSize];
+                rng.nextBytes( bytes );
+
+                assertTrue( cursor.next() );
+                cursor.putBytes( bytes );
+            }
+            // WHEN
+            byte[] allZeros = new byte[filePageSize];
+            try ( PageCursor cursor = pagedFile.io( pageId, PF_SHARED_WRITE_LOCK ) )
+            {
+                assertTrue( cursor.next() );
+                cursor.zapPage();
+
+                byte[] read = new byte[filePageSize];
+                cursor.getBytes( read );
+                assertFalse( cursor.checkAndClearBoundsFlag() );
+                assertArrayEquals( allZeros, read );
+            }
+            // THEN
+            try ( PageCursor cursor = pagedFile.io( pageId, PF_SHARED_READ_LOCK ) )
+            {
+                assertTrue( cursor.next() );
+
+                byte[] read = new byte[filePageSize];
+                do
+                {
+                    cursor.getBytes( read );
+                } while ( cursor.shouldRetry() );
+                assertFalse( cursor.checkAndClearBoundsFlag() );
+                assertArrayEquals( allZeros, read );
+            }
+        }
     }
 }

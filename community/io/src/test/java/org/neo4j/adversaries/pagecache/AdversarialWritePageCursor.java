@@ -302,4 +302,10 @@ class AdversarialWritePageCursor extends PageCursor
     {
         return linkedCursor = new AdversarialWritePageCursor( delegate.openLinkedCursor( pageId ), adversary );
     }
+
+    @Override
+    public void zapPage()
+    {
+        delegate.zapPage();
+    }
 }

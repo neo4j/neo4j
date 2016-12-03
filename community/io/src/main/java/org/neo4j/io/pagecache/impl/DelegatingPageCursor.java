@@ -32,106 +32,127 @@ public class DelegatingPageCursor extends PageCursor
 {
     private final PageCursor delegate;
 
+    @Override
     public byte getByte()
     {
         return delegate.getByte();
     }
 
+    @Override
     public int copyTo( int sourceOffset, PageCursor targetCursor, int targetOffset, int lengthInBytes )
     {
         return delegate.copyTo( sourceOffset, targetCursor, targetOffset, lengthInBytes );
     }
 
+    @Override
     public void putInt( int value )
     {
         delegate.putInt( value );
     }
 
+    @Override
     public void getBytes( byte[] data )
     {
         delegate.getBytes( data );
     }
 
+    @Override
     public boolean next() throws IOException
     {
         return delegate.next();
     }
 
+    @Override
     public void putBytes( byte[] data )
     {
         delegate.putBytes( data );
     }
 
+    @Override
     public short getShort()
     {
         return delegate.getShort();
     }
 
+    @Override
     public File getCurrentFile()
     {
         return delegate.getCurrentFile();
     }
 
+    @Override
     public void putShort( short value )
     {
         delegate.putShort( value );
     }
 
+    @Override
     public short getShort( int offset )
     {
         return delegate.getShort( offset );
     }
 
+    @Override
     public int getCurrentPageSize()
     {
         return delegate.getCurrentPageSize();
     }
 
+    @Override
     public long getLong()
     {
         return delegate.getLong();
     }
 
+    @Override
     public void putLong( long value )
     {
         delegate.putLong( value );
     }
 
+    @Override
     public int getOffset()
     {
         return delegate.getOffset();
     }
 
+    @Override
     public void close()
     {
         delegate.close();
     }
 
+    @Override
     public void putByte( int offset, byte value )
     {
         delegate.putByte( offset, value );
     }
 
+    @Override
     public void putInt( int offset, int value )
     {
         delegate.putInt( offset, value );
     }
 
+    @Override
     public void putBytes( byte[] data, int arrayOffset, int length )
     {
         delegate.putBytes( data, arrayOffset, length );
     }
 
+    @Override
     public void rewind()
     {
         delegate.rewind();
     }
 
+    @Override
     public void putByte( byte value )
     {
         delegate.putByte( value );
     }
 
+    @Override
     public boolean checkAndClearBoundsFlag()
     {
         return delegate.checkAndClearBoundsFlag();
@@ -167,59 +188,76 @@ public class DelegatingPageCursor extends PageCursor
         return delegate.openLinkedCursor( pageId );
     }
 
+    @Override
     public long getCurrentPageId()
     {
         return delegate.getCurrentPageId();
     }
 
+    @Override
     public void putShort( int offset, short value )
     {
         delegate.putShort( offset, value );
     }
 
+    @Override
     public boolean next( long pageId ) throws IOException
     {
         return delegate.next( pageId );
     }
 
+    @Override
     public void putLong( int offset, long value )
     {
         delegate.putLong( offset, value );
     }
 
+    @Override
     public long getLong( int offset )
     {
         return delegate.getLong( offset );
     }
 
+    @Override
     public void getBytes( byte[] data, int arrayOffset, int length )
     {
         delegate.getBytes( data, arrayOffset, length );
     }
 
+    @Override
     public int getInt( int offset )
     {
         return delegate.getInt( offset );
     }
 
+    @Override
     public void setOffset( int offset )
     {
         delegate.setOffset( offset );
     }
 
+    @Override
     public byte getByte( int offset )
     {
         return delegate.getByte( offset );
     }
 
+    @Override
     public int getInt()
     {
         return delegate.getInt();
     }
 
+    @Override
     public boolean shouldRetry() throws IOException
     {
         return delegate.shouldRetry();
+    }
+
+    @Override
+    public void zapPage()
+    {
+        delegate.zapPage();
     }
 
     public DelegatingPageCursor( PageCursor delegate )

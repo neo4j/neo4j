@@ -26,6 +26,7 @@ import java.nio.Buffer;
 import java.nio.ByteBuffer;
 
 import org.neo4j.io.pagecache.Page;
+import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 /** A page backed by a simple byte buffer. */
 public class ByteBufferPage implements Page
@@ -134,5 +135,10 @@ public class ByteBufferPage implements Page
     public long address()
     {
         return addressOf( buffer );
+    }
+
+    public void zapPage()
+    {
+        UnsafeUtil.setMemory( address(), size(), (byte) 0 );
     }
 }

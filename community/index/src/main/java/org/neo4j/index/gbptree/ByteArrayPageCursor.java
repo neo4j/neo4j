@@ -22,6 +22,7 @@ package org.neo4j.index.gbptree;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
@@ -285,5 +286,11 @@ class ByteArrayPageCursor extends PageCursor
     public PageCursor openLinkedCursor( long pageId )
     {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void zapPage()
+    {
+        Arrays.fill( buffer.array(), (byte) 0 );
     }
 }
