@@ -33,7 +33,7 @@ import scala.collection.Map
 
 abstract class BaseRelationshipPipe(src: Pipe, key: String, startNode: String, typ: LazyType, endNode: String,
                                     properties: Option[Expression], pipeMonitor: PipeMonitor)
-  extends PipeWithSource(src, pipeMonitor) with RonjaPipe with GraphElementPropertyFunctions with ListSupport {
+  extends PipeWithSource(src, pipeMonitor) with GraphElementPropertyFunctions with ListSupport {
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
     input.map(createRelationship(_, state))
@@ -87,17 +87,13 @@ abstract class BaseRelationshipPipe(src: Pipe, key: String, startNode: String, t
 case class CreateRelationshipPipe(src: Pipe,
                                   key: String, startNode: String, typ: LazyType, endNode: String,
                                   properties: Option[Expression])
-                                 (val estimatedCardinality: Option[Double] = None, val id: Id = new Id)
+                                 (val id: Id = new Id)
                                  (implicit pipeMonitor: PipeMonitor)
   extends BaseRelationshipPipe(src, key, startNode, typ, endNode, properties, pipeMonitor) {
 
-  def planDescriptionWithoutCardinality = src.planDescription.andThen(this.id, "CreateRelationship", variables)
-
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated), id)
-
   override def dup(sources: List[Pipe]): Pipe = {
     val (onlySource :: Nil) = sources
-    CreateRelationshipPipe(onlySource, key, startNode, typ, endNode, properties)(estimatedCardinality, id)
+    CreateRelationshipPipe(onlySource, key, startNode, typ, endNode, properties)(id)
   }
 
   override protected def handleNull(key: String) {
@@ -107,17 +103,13 @@ case class CreateRelationshipPipe(src: Pipe,
 
 case class MergeCreateRelationshipPipe(src: Pipe, key: String, startNode: String, typ: LazyType, endNode: String,
                                        properties: Option[Expression])
-                                      (val estimatedCardinality: Option[Double] = None, val id: Id = new Id)
+                                      (val id: Id = new Id)
                                       (implicit pipeMonitor: PipeMonitor)
   extends BaseRelationshipPipe(src, key, startNode, typ, endNode, properties, pipeMonitor) {
 
-  def planDescriptionWithoutCardinality = src.planDescription.andThen(this.id, "MergeCreateRelationship", variables)
-
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated), id)
-
   override def dup(sources: List[Pipe]): Pipe = {
     val (onlySource :: Nil) = sources
-    MergeCreateRelationshipPipe(onlySource, key, startNode, typ, endNode, properties)(estimatedCardinality, id)
+    MergeCreateRelationshipPipe(onlySource, key, startNode, typ, endNode, properties)(id)
   }
 
   override protected def handleNull(key: String) {

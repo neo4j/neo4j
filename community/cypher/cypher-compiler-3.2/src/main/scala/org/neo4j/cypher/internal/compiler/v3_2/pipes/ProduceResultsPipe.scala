@@ -21,11 +21,10 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.KeyNames
 
 case class ProduceResultsPipe(source: Pipe, columns: Seq[String])
-                             (val estimatedCardinality: Option[Double] = None, val id: Id = new Id)
-                             (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
+                             (val id: Id = new Id)
+                             (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
     // do not register this pipe as parent as it does not do anything except filtering of already fetched
     // key-value pairs and thus should not have any stats
@@ -41,15 +40,10 @@ case class ProduceResultsPipe(source: Pipe, columns: Seq[String])
     }
   }
 
-  def planDescriptionWithoutCardinality = source.planDescription
-    .andThen(this.id, "ProduceResults", variables, KeyNames(columns))
-
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated), id)
-
   def symbols = source.symbols.filter(columns.contains)
 
   def dup(sources: List[Pipe]): Pipe = {
     val (source :: Nil) = sources
-    copy(source = source)(estimatedCardinality, id)
+    copy(source = source)(id)
   }
 }

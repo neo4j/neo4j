@@ -46,9 +46,6 @@ case class MatchPipe(source: Pipe,
     }
   }
 
-  override def planDescription =
-    source.planDescription.andThen(this.id, matchingContext.builder.name, variables)
-
   def mergeStartPoint = matchingContext.builder.startPoint
 
   def dup(sources: List[Pipe]): Pipe = {

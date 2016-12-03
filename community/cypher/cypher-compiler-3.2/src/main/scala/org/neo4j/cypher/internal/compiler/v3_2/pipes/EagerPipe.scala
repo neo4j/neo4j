@@ -20,24 +20,18 @@
 package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2._
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{Id, InternalPlanDescription}
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 
-case class EagerPipe(src: Pipe)(val estimatedCardinality: Option[Double] = None, val id: Id = new Id)(implicit pipeMonitor: PipeMonitor)
-  extends PipeWithSource(src, pipeMonitor) with RonjaPipe {
+case class EagerPipe(src: Pipe)(val id: Id = new Id)(implicit pipeMonitor: PipeMonitor)
+  extends PipeWithSource(src, pipeMonitor) {
   def symbols: SymbolTable = src.symbols
-
-  override def planDescription = src.planDescription.andThen(this.id, "Eager", variables)
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
     input.toIndexedSeq.toIterator
 
-  override def planDescriptionWithoutCardinality: InternalPlanDescription = src.planDescription.andThen(this.id, "Eager", variables)
-
-  override def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated), id)
-
   override def dup(sources: List[Pipe]): Pipe = {
     val (src :: Nil) = sources
-    copy(src = src)(estimatedCardinality, id)
+    copy(src = src)(id)
   }
 }

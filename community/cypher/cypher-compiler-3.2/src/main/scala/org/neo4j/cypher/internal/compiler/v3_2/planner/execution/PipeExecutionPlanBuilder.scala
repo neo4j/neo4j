@@ -84,7 +84,7 @@ class PipeExecutionPlanBuilder(clock: Clock,
    Next we pop out 'a', and this time we are coming from the LHS, and we can now pop two pipes from the pipe stack to
    build the pipe for 'a'. Thanks for reading this far - I didn't think we would make it!
    */
-  private def buildPipe(plan: LogicalPlan, idMap: Map[LogicalPlan, Id])(implicit context: PipeExecutionBuilderContext, planContext: PlanContext): RonjaPipe = {
+  private def buildPipe(plan: LogicalPlan, idMap: Map[LogicalPlan, Id])(implicit context: PipeExecutionBuilderContext, planContext: PlanContext): Pipe = {
     val pipeBuilder = pipeBuilderFactory(
       monitors = monitors,
       recurse = p => buildPipe(p, idMap),
@@ -92,7 +92,7 @@ class PipeExecutionPlanBuilder(clock: Clock,
       idMap)
 
     val planStack = new mutable.Stack[LogicalPlan]()
-    val pipeStack = new mutable.Stack[RonjaPipe]()
+    val pipeStack = new mutable.Stack[Pipe]()
     var comingFrom = plan
     def populate(plan: LogicalPlan) = {
       var current = plan
@@ -120,7 +120,6 @@ class PipeExecutionPlanBuilder(clock: Clock,
         case (None, None) =>
           val newPipe = pipeBuilder
             .build(current)
-            .withEstimatedCardinality(current.solved.estimatedCardinality.amount)
 
           pipeStack.push(newPipe)
 
@@ -128,7 +127,6 @@ class PipeExecutionPlanBuilder(clock: Clock,
           val source = pipeStack.pop()
           val newPipe = pipeBuilder
             .build(current, source)
-            .withEstimatedCardinality(current.solved.estimatedCardinality.amount)
 
           pipeStack.push(newPipe)
 
@@ -137,7 +135,6 @@ class PipeExecutionPlanBuilder(clock: Clock,
           val arg2 = pipeStack.pop()
           val newPipe = pipeBuilder
             .build(current, arg1, arg2)
-            .withEstimatedCardinality(current.solved.estimatedCardinality.amount)
 
           pipeStack.push(newPipe)
 
@@ -153,7 +150,7 @@ class PipeExecutionPlanBuilder(clock: Clock,
     val result = pipeStack.pop()
     assert(pipeStack.isEmpty, "Should have emptied the stack of pipes by now!")
 
-    result.withEstimatedCardinality(plan.solved.estimatedCardinality.amount)
+    result
   }
 }
 
@@ -164,9 +161,9 @@ case class PipeBuilderFactory() {
 }
 
 trait PipeBuilder {
-  def build(plan: LogicalPlan): RonjaPipe
-  def build(plan: LogicalPlan, source: RonjaPipe): RonjaPipe
-  def build(plan: LogicalPlan, lhs: RonjaPipe, rhs: RonjaPipe): RonjaPipe
+  def build(plan: LogicalPlan): Pipe
+  def build(plan: LogicalPlan, source: Pipe): Pipe
+  def build(plan: LogicalPlan, lhs: Pipe, rhs: Pipe): Pipe
 }
 
 /**
@@ -176,13 +173,13 @@ trait PipeBuilder {
 case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, readOnly: Boolean, idMap: Map[LogicalPlan, Id])
                             (implicit context: PipeExecutionBuilderContext, planContext: PlanContext) extends PipeBuilder {
 
-  def build(plan: LogicalPlan): RonjaPipe = {
+  def build(plan: LogicalPlan): Pipe = {
     val id = idMap.getOrElse(plan, new Id)
     plan match {
-      case sr@SingleRow() =>
+      case SingleRow() =>
         SingleRowPipe()(id)
 
-      case arg@Argument(ids) =>
+      case arg@Argument(_) =>
         ArgumentPipe(SymbolTable(arg.typeInfo))(id = id)
 
       case AllNodesScan(IdName(ident), _) =>
@@ -231,7 +228,7 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
     }
   }
 
-  def build(plan: LogicalPlan, source: RonjaPipe): RonjaPipe = {
+  def build(plan: LogicalPlan, source: Pipe): Pipe = {
     val id = idMap.getOrElse(plan, new Id)
     plan match {
       case Projection(_, expressions) =>
@@ -326,7 +323,7 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
       case UnwindCollection(_, variable, collection) =>
         UnwindPipe(source, toCommandExpression(collection), variable.name)(id = id)
 
-      case ProcedureCall(_, call@ResolvedCall(signature, callArguments, callResults, _, _)) =>
+      case ProcedureCall(_, call@ResolvedCall(signature, callArguments, _, _, _)) =>
         val callMode = ProcedureCallMode.fromAccessMode(signature.accessMode)
         val callArgumentCommands = callArguments.map(Some(_)).zipAll(signature.inputSignature.map(_.default.map(_.value)), None, None).map {
           case (given, default) => given.map(toCommandExpression).getOrElse(Literal(default.get))
@@ -437,7 +434,7 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
     }
   }
 
-  def build(plan: LogicalPlan, lhs: RonjaPipe, rhs: RonjaPipe): RonjaPipe = {
+  def build(plan: LogicalPlan, lhs: Pipe, rhs: Pipe): Pipe = {
     val id = idMap.getOrElse(plan, new Id)
     plan match {
       case CartesianProduct(_, _) =>
@@ -466,22 +463,22 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
       case LetAntiSemiApply(_, _, idName) =>
         LetSemiApplyPipe(lhs, rhs, idName.name, negated = true)(id = id)
 
-      case apply@SelectOrSemiApply(_, _, predicate) =>
+      case SelectOrSemiApply(_, _, predicate) =>
         SelectOrSemiApplyPipe(lhs, rhs, buildPredicate(predicate), negated = false)(id = id)
 
-      case apply@SelectOrAntiSemiApply(_, _, predicate) =>
+      case SelectOrAntiSemiApply(_, _, predicate) =>
         SelectOrSemiApplyPipe(lhs, rhs, buildPredicate(predicate), negated = true)(id = id)
 
-      case apply@LetSelectOrSemiApply(_, _, idName, predicate) =>
+      case LetSelectOrSemiApply(_, _, idName, predicate) =>
         LetSelectOrSemiApplyPipe(lhs, rhs, idName.name, buildPredicate(predicate), negated = false)(id = id)
 
-      case apply@LetSelectOrAntiSemiApply(_, _, idName, predicate) =>
+      case LetSelectOrAntiSemiApply(_, _, idName, predicate) =>
         LetSelectOrSemiApplyPipe(lhs, rhs, idName.name, buildPredicate(predicate), negated = true)(id = id)
 
-      case apply@ConditionalApply(_, _, ids) =>
+      case ConditionalApply(_, _, ids) =>
         ConditionalApplyPipe(lhs, rhs, ids.map(_.name), negated = false)(id = id)
 
-      case apply@AntiConditionalApply(_, _, ids) =>
+      case AntiConditionalApply(_, _, ids) =>
         ConditionalApplyPipe(lhs, rhs, ids.map(_.name), negated = true)(id = id)
 
       case Union(_, _) =>

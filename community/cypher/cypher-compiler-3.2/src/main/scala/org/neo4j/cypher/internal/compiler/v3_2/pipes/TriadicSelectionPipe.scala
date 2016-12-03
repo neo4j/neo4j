@@ -21,8 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.collection.primitive.{Primitive, PrimitiveLongSet}
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.KeyNames
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{Id, PlanDescriptionImpl, TwoChildren}
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_2.CypherTypeException
 import org.neo4j.graphdb.Node
@@ -31,9 +30,9 @@ import scala.collection.mutable.ListBuffer
 import scala.collection.{AbstractIterator, Iterator}
 
 case class TriadicSelectionPipe(positivePredicate: Boolean, left: Pipe, source: String, seen: String, target: String, right: Pipe)
-                               (val estimatedCardinality: Option[Double] = None, val id: Id = new Id)
+                               (val id: Id = new Id)
                                (implicit pipeMonitor: PipeMonitor)
-extends PipeWithSource(left, pipeMonitor) with RonjaPipe {
+extends PipeWithSource(left, pipeMonitor) {
 
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
     var triadicState: PrimitiveLongSet = null
@@ -65,20 +64,11 @@ extends PipeWithSource(left, pipeMonitor) with RonjaPipe {
     }
   }
 
-  override def planDescriptionWithoutCardinality = new PlanDescriptionImpl(
-    id = id,
-    name = "TriadicSelection",
-    children = TwoChildren(left.planDescription, right.planDescription),
-    arguments = Seq(KeyNames(Seq(source, seen, target))),
-    variables = variables)
-
-  override def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated), id)
-
   override def symbols: SymbolTable = left.symbols.add(right.symbols.variables)
 
   override def dup(sources: List[Pipe]) = {
     val (left :: right :: Nil) = sources
-    copy(left = left, right = right)(estimatedCardinality, id)
+    copy(left = left, right = right)(id)
   }
 }
 

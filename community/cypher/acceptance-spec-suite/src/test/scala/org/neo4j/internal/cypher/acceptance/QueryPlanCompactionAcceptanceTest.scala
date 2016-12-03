@@ -702,8 +702,6 @@ class QueryPlanCompactionAcceptanceTest extends ExecutionEngineFunSuite with Que
         || +CreateRelationship(7)  |              1 | anon[517], anon[570], anon[629], anon[685], anon[745], anon[781], anon[817] -- AndyW, Carrie, ...    |
         || |                       +----------------+------------------------------------------------------------------------------------------------------+
         || +CreateNode(8)          |              1 | AndyW, Carrie, Hugo, JoelS, Keanu, LanaW, Laurence, TheMatrix                                        |
-        || |                       +----------------+------------------------------------------------------------------------------------------------------+
-        || +EmptyRow               |              1 |                                                                                                      |
         |+-------------------------+----------------+------------------------------------------------------------------------------------------------------+
         |""".stripMargin)
   }
@@ -740,8 +738,6 @@ class QueryPlanCompactionAcceptanceTest extends ExecutionEngineFunSuite with Que
         || +CreateRelationship(7) |              1 | anon[517], anon[570], anon[629], anon[685], anon[745], anon[781], anon[817] -- AndyW, Carrie, ... |
         || |                      +----------------+---------------------------------------------------------------------------------------------------+
         || +CreateNode(8)         |              1 | AndyW, Carrie, Hugo, JoelS, Keanu, LanaW, Laurence, TheMatrix                                     |
-        || |                      +----------------+---------------------------------------------------------------------------------------------------+
-        || +EmptyRow              |              1 |                                                                                                   |
         |+------------------------+----------------+---------------------------------------------------------------------------------------------------+
         |""".stripMargin)
   }
@@ -750,6 +746,7 @@ class QueryPlanCompactionAcceptanceTest extends ExecutionEngineFunSuite with Que
     val query = "EXPLAIN LOAD CSV WITH HEADERS FROM {csv_filename} AS line MERGE (u1:User {login: line.user1}) MERGE " +
       "(u2:User {login: line.user2}) CREATE (u1)-[:FRIEND]->(u2)"
     val result = executeWithCostPlannerOnly(query)
+    println(result.executionPlanDescription())
     result should havePlanLike(
       """
         |+-------------------------+----------------+---------------------------+------------------------+
@@ -792,8 +789,6 @@ class QueryPlanCompactionAcceptanceTest extends ExecutionEngineFunSuite with Que
         || | +NodeByLabelScan      |              1 | u1 -- line                | :User                  |
         || |                       +----------------+---------------------------+------------------------+
         || +LoadCSV                |              1 | line                      |                        |
-        || |                       +----------------+---------------------------+------------------------+
-        || +EmptyRow               |              1 |                           |                        |
         |+-------------------------+----------------+---------------------------+------------------------+
         |""".stripMargin)
   }

@@ -38,7 +38,7 @@ class ProduceResultsPipeTest extends CypherFunSuite {
         ctx("a" -> "bar", "b" -> 20, "c" -> false, "d" -> "d")
       ))
 
-    val pipe = ProduceResultsPipe(sourcePipe, Seq("a", "b", "c"))(Some(1.0))
+    val pipe = ProduceResultsPipe(sourcePipe, Seq("a", "b", "c"))()
 
     val result = pipe.createResults(queryState).toList
 
@@ -56,7 +56,7 @@ class ProduceResultsPipeTest extends CypherFunSuite {
     when(queryState.decorator).thenReturn(NullPipeDecorator)
     when(sourcePipe.createResults(queryState)).thenReturn(Iterator.empty)
 
-    val pipe = ProduceResultsPipe(sourcePipe, Seq("a", "b", "c"))(Some(1.0))
+    val pipe = ProduceResultsPipe(sourcePipe, Seq("a", "b", "c"))()
 
     val result = pipe.createResults(queryState).toList
 

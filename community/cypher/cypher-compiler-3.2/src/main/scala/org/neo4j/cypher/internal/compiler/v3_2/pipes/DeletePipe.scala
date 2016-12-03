@@ -30,9 +30,9 @@ import org.neo4j.graphdb.{Node, Path, Relationship}
 import scala.collection.JavaConverters._
 
 case class DeletePipe(src: Pipe, expression: Expression, forced: Boolean)
-                     (val estimatedCardinality: Option[Double] = None, val id: Id = new Id)
+                     (val id: Id = new Id)
                      (implicit pipeMonitor: PipeMonitor)
-  extends PipeWithSource(src, pipeMonitor) with RonjaPipe with GraphElementPropertyFunctions with ListSupport {
+  extends PipeWithSource(src, pipeMonitor) with GraphElementPropertyFunctions with ListSupport {
 
   override protected def internalCreateResults(input: Iterator[ExecutionContext],
                                                state: QueryState): Iterator[ExecutionContext] = {
@@ -69,15 +69,10 @@ case class DeletePipe(src: Pipe, expression: Expression, forced: Boolean)
       throw new CypherTypeException(s"Expected a Node or Relationship, but got a ${other.getClass.getSimpleName}")
   }
 
-  override def planDescriptionWithoutCardinality =
-    src.planDescription.andThen(this.id, if (forced) "DetachDelete" else "Delete", variables)
-
   override def symbols = src.symbols
-
-  override def withEstimatedCardinality(estimated: Double): Pipe with RonjaPipe = copy()(Some(estimated), id)
 
   override def dup(sources: List[Pipe]): Pipe = {
     val (onlySource :: Nil) = sources
-    DeletePipe(onlySource, expression, forced)(estimatedCardinality, id)
+    DeletePipe(onlySource, expression, forced)(id)
   }
 }

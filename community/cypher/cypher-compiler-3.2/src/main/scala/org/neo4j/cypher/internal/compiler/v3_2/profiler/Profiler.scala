@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compiler.v3_2.profiler
 
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.{Pipe, PipeDecorator, QueryState}
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{Id, InternalPlanDescription}
 import org.neo4j.cypher.internal.compiler.v3_2.spi.{DelegatingOperations, DelegatingQueryContext, Operations, QueryContext}
 import org.neo4j.cypher.internal.frontend.v3_2.ProfilerStatisticsNotReadyException
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
@@ -32,8 +32,8 @@ import scala.collection.mutable
 class Profiler extends PipeDecorator {
   outerProfiler =>
 
-  val dbHitsStats: mutable.Map[Object, ProfilingQueryContext] = mutable.Map.empty
-  val rowStats: mutable.Map[Object, ProfilingIterator] = mutable.Map.empty
+  val dbHitsStats: mutable.Map[Id, ProfilingQueryContext] = mutable.Map.empty
+  val rowStats: mutable.Map[Id, ProfilingIterator] = mutable.Map.empty
   private var parentPipe: Option[Pipe] = None
 
 
@@ -87,14 +87,14 @@ class Profiler extends PipeDecorator {
     def registerParentPipe(pipe: Pipe) {}
   }
 
-  def registerParentPipe(pipe: Pipe) =
+  def registerParentPipe(pipe: Pipe): Unit =
     parentPipe = Some(pipe)
 
 }
 
 trait Counter {
   protected var _count = 0L
-  def count = _count
+  def count: Long = _count
 
   def increment() {
     _count += 1L

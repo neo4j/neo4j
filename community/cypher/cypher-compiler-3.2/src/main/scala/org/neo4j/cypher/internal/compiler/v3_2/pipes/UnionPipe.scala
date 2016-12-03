@@ -20,16 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2._
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{Id, InternalPlanDescription, PlanDescriptionImpl, TwoChildren}
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 
 case class UnionPipe(l: Pipe, r: Pipe)
-                    (val estimatedCardinality: Option[Double] = None, val id: Id = new Id)
+                    (val id: Id = new Id)
                     (implicit val monitor: PipeMonitor)
-  extends Pipe with RonjaPipe {
-  def planDescriptionWithoutCardinality: InternalPlanDescription =
-    new PlanDescriptionImpl(this.id, "Union", TwoChildren(l.planDescription, r.planDescription), Seq.empty, variables)
-
+  extends Pipe {
   def symbols: SymbolTable = l.symbols intersect r.symbols
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] =
@@ -39,10 +36,8 @@ case class UnionPipe(l: Pipe, r: Pipe)
 
   def dup(sources: List[Pipe]): Pipe = {
     val (l :: r :: Nil) = sources
-    copy(l, r)(estimatedCardinality, id)
+    copy(l, r)(id)
   }
 
   def sources: Seq[Pipe] = Seq(l, r)
-
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated), id)
 }

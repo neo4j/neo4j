@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.{IsList, ListSupport}
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{Id, NoChildren, PlanDescriptionImpl}
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_2.symbols.CTNode
 
@@ -52,11 +52,11 @@ case class ManySeekArgs(coll: Expression) extends SeekArgs {
 }
 
 case class NodeByIdSeekPipe(ident: String, nodeIdsExpr: SeekArgs)
-                           (val estimatedCardinality: Option[Double] = None, val id: Id = new Id)
+                           (val id: Id = new Id)
                            (implicit pipeMonitor: PipeMonitor)
   extends Pipe
   with ListSupport
-  with RonjaPipe {
+  {
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     //register as parent so that stats are associated with this pipe
@@ -69,8 +69,6 @@ case class NodeByIdSeekPipe(ident: String, nodeIdsExpr: SeekArgs)
 
   def exists(predicate: Pipe => Boolean): Boolean = predicate(this)
 
-  def planDescriptionWithoutCardinality = new PlanDescriptionImpl(this.id, "NodeByIdSeek", NoChildren, Seq(), variables)
-
   def symbols: SymbolTable = new SymbolTable(Map(ident -> CTNode))
 
   override def monitor = pipeMonitor
@@ -81,6 +79,4 @@ case class NodeByIdSeekPipe(ident: String, nodeIdsExpr: SeekArgs)
   }
 
   def sources: Seq[Pipe] = Seq.empty
-
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated), id)
 }

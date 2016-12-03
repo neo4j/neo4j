@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.ExpandExpression
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 import org.neo4j.graphdb.Node
@@ -31,9 +30,9 @@ import scala.collection.mutable.ListBuffer
 
 case class OptionalExpandIntoPipe(source: Pipe, fromName: String, relName: String, toName: String,
                                   dir: SemanticDirection, types: LazyTypes, predicate: Predicate)
-                                 (val estimatedCardinality: Option[Double] = None, val id: Id = new Id)
+                                 (val id: Id = new Id)
                                  (implicit pipeMonitor: PipeMonitor)
-  extends PipeWithSource(source, pipeMonitor) with RonjaPipe with CachingExpandInto {
+  extends PipeWithSource(source, pipeMonitor) with CachingExpandInto {
   private final val CACHE_SIZE = 100000
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
@@ -71,18 +70,10 @@ case class OptionalExpandIntoPipe(source: Pipe, fromName: String, relName: Strin
     }
   }
 
-  def planDescriptionWithoutCardinality = {
-    val expandExpr = ExpandExpression(fromName, relName, types.names, toName, dir, minLength = 1, maxLength = Some(1))
-    source.planDescription.
-      andThen(this.id, "OptionalExpand(Into)", variables, expandExpr)
-  }
-
   def symbols = source.symbols.add(toName, CTNode).add(relName, CTRelationship)
 
   def dup(sources: List[Pipe]): Pipe = {
     val (head :: Nil) = sources
-    copy(source = head)(estimatedCardinality, id)
+    copy(source = head)(id)
   }
-
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated), id)
 }

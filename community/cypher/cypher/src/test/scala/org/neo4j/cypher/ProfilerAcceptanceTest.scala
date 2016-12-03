@@ -459,7 +459,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     val result = profileWithAllPlannersAndRuntimes("return 5 + 3")
 
     // then
-    assertDbHits(0)(result)("EmptyRow", "Projection", "ProduceResults")
+    assertDbHits(0)(result)("Projection", "ProduceResults")
     assertRows(1)(result)("ProduceResults")
   }
 

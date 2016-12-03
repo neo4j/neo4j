@@ -20,29 +20,24 @@
 package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.KeyNames
 import org.neo4j.cypher.internal.compiler.v3_2.{Comparer, ExecutionContext}
 
 case class SortPipe(source: Pipe, orderBy: Seq[SortDescription])
-                   (val estimatedCardinality: Option[Double] = None, val id: Id = new Id)
+                   (val id: Id = new Id)
                    (implicit monitor: PipeMonitor)
-  extends PipeWithSource(source, monitor) with RonjaPipe {
+  extends PipeWithSource(source, monitor) {
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     val array = input.toArray
     java.util.Arrays.sort(array, new InnerOrdering(orderBy)(state))
     array.toIterator
   }
 
-  def planDescriptionWithoutCardinality = source.planDescription.andThen(this.id, "Sort", variables, KeyNames(orderBy.map(_.id)))
-
   def symbols = source.symbols
 
   def dup(sources: List[Pipe]): Pipe = {
     val (head :: Nil) = sources
-    copy(source = head)(estimatedCardinality, id)
+    copy(source = head)(id)
   }
-
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated), id)
 }
 
 private class InnerOrdering(order: Seq[SortDescription])(implicit qtx: QueryState) extends scala.Ordering[ExecutionContext] {

@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.commands._
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{Id, NoChildren, PlanDescriptionImpl}
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_2.SyntaxException
 
@@ -54,8 +54,6 @@ case class IndexOperationPipe(indexOp: IndexOperation)(val id: Id = new Id)(impl
   }
 
   def symbols = new SymbolTable()
-
-  def planDescription = PlanDescriptionImpl(this.id, indexOp.toString, NoChildren, Seq.empty, variables)
 
   def exists(pred: Pipe => Boolean) = pred(this)
 

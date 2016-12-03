@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v3_2.commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v3_2.mutation.{GraphElementPropertyFunctions, SetAction, makeValueNeoSafe}
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.ExpandExpression
 import org.neo4j.cypher.internal.compiler.v3_2.spi.QueryContext
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 import org.neo4j.cypher.internal.frontend.v3_2.{InternalException, InvalidSemanticsException, SemanticDirection}
@@ -49,9 +48,9 @@ case class MergeIntoPipe(source: Pipe,
                          typ: String,
                          props: Map[KeyToken, Expression],
                          onCreateActions: Seq[SetAction],
-                         onMatchActions: Seq[SetAction])(val estimatedCardinality: Option[Double] = None, val id: Id = new Id)
+                         onMatchActions: Seq[SetAction])(val id: Id = new Id)
                         (implicit pipeMonitor: PipeMonitor)
-  extends PipeWithSource(source, pipeMonitor) with RonjaPipe with GraphElementPropertyFunctions {
+  extends PipeWithSource(source, pipeMonitor) with GraphElementPropertyFunctions {
   self =>
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
@@ -167,19 +166,12 @@ case class MergeIntoPipe(source: Pipe,
     }
   }
 
-  def planDescriptionWithoutCardinality = {
-    val expandDescr = ExpandExpression(fromName, relName, Seq(typ), toName, dir, minLength = 1, maxLength = Some(1))
-    source.planDescription.andThen(this.id, "Merge(Into)", variables, expandDescr)
-  }
-
   val symbols = source.symbols.add(toName, CTNode).add(relName, CTRelationship)
 
   def dup(sources: List[Pipe]): Pipe = {
     val (source :: Nil) = sources
-    copy(source = source)(estimatedCardinality, id)
+    copy(source = source)(id)
   }
-
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated), id)
 
   private def setPropertiesOnRelationship(row: ExecutionContext, relationship: Relationship, state: QueryState,
                                           properties: Map[KeyToken, Expression]): Unit = {

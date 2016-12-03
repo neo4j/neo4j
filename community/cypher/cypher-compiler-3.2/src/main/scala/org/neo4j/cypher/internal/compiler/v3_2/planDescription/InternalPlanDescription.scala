@@ -52,9 +52,6 @@ sealed trait InternalPlanDescription {
     flattenAcc(Seq.empty, this)
   }
 
-  def andThen(id: Id, name: String, variables: Set[String], arguments: Argument*) =
-    PlanDescriptionImpl(id, name, SingleChild(this), arguments, variables)
-
   def orderedVariables: Seq[String] = variables.toIndexedSeq.sorted
 
   def totalDbHits: Option[Long] = {
@@ -233,9 +230,6 @@ final case class CompactedPlanDescription(similar: Seq[InternalPlanDescription])
 }
 
 final case class SingleRowPlanDescription(id: Id, arguments: Seq[Argument] = Seq.empty, variables: Set[String]) extends InternalPlanDescription {
-  override def andThen(id: Id, name: String, variables: Set[String], newArguments: Argument*) =
-    new PlanDescriptionImpl(id, name, NoChildren, newArguments, variables)
-
   def children = NoChildren
 
   def find(searchedName: String) = if (searchedName == name) Seq(this) else Seq.empty

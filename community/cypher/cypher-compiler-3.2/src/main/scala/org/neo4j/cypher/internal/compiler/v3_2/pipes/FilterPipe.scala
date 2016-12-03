@@ -22,11 +22,10 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.LegacyExpression
 
 case class FilterPipe(source: Pipe, predicate: Predicate)
-                     (val estimatedCardinality: Option[Double] = None, val id: Id = new Id)
-                     (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
+                     (val id: Id = new Id)
+                     (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
   val symbols = source.symbols
 
   protected def internalCreateResults(input: Iterator[ExecutionContext],state: QueryState) = {
@@ -36,12 +35,8 @@ case class FilterPipe(source: Pipe, predicate: Predicate)
     input.filter(ctx => predicate.isTrue(ctx)(state))
   }
 
-  def planDescriptionWithoutCardinality = source.planDescription.andThen(this.id, "Filter", variables, LegacyExpression(predicate))
-
   def dup(sources: List[Pipe]): Pipe = {
     val (source :: Nil) = sources
-    copy(source = source)(estimatedCardinality, id)
+    copy(source = source)(id)
   }
-
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated), id)
 }

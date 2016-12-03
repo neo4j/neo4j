@@ -20,16 +20,15 @@
 package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2._
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.LabelName
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{Id, NoChildren, PlanDescriptionImpl}
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 
 case class NodeByLabelScanPipe(ident: String, label: LazyLabel)
-                              (val estimatedCardinality: Option[Double] = None, val id: Id = new Id)
+                              (val id: Id = new Id)
                               (implicit pipeMonitor: PipeMonitor)
   extends Pipe
-  with RonjaPipe {
+  {
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
 
@@ -45,8 +44,6 @@ case class NodeByLabelScanPipe(ident: String, label: LazyLabel)
 
   def exists(predicate: Pipe => Boolean): Boolean = predicate(this)
 
-  def planDescriptionWithoutCardinality = new PlanDescriptionImpl(this.id, "NodeByLabelScan", NoChildren, Seq(LabelName(label.name)), variables)
-
   def symbols = new SymbolTable(Map(ident -> CTNode))
 
   override def monitor = pipeMonitor
@@ -57,6 +54,4 @@ case class NodeByLabelScanPipe(ident: String, label: LazyLabel)
   }
 
   def sources: Seq[Pipe] = Seq.empty
-
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated), id)
 }

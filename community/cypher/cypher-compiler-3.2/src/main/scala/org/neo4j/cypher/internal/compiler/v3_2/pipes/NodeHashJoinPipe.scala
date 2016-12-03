@@ -20,17 +20,16 @@
 package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.KeyNames
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{Id, InternalPlanDescription, PlanDescriptionImpl, TwoChildren}
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_2.CypherTypeException
 import org.neo4j.graphdb.Node
 
 import scala.collection.mutable
 
 case class NodeHashJoinPipe(nodeVariables: Set[String], left: Pipe, right: Pipe)
-                           (val estimatedCardinality: Option[Double] = None, val id: Id = new Id)
+                           (val id: Id = new Id)
                            (implicit pipeMonitor: PipeMonitor)
-  extends PipeWithSource(left, pipeMonitor) with RonjaPipe {
+  extends PipeWithSource(left, pipeMonitor) {
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     if (input.isEmpty)
@@ -56,25 +55,14 @@ case class NodeHashJoinPipe(nodeVariables: Set[String], left: Pipe, right: Pipe)
     result.flatten
   }
 
-  def planDescriptionWithoutCardinality: InternalPlanDescription =
-    new PlanDescriptionImpl(
-      id = id,
-      name = "NodeHashJoin",
-      children = TwoChildren(left.planDescription, right.planDescription),
-      arguments = Seq(KeyNames(nodeVariables.toIndexedSeq)),
-      variables
-    )
-
   def symbols = left.symbols.add(right.symbols.variables)
 
   override val sources = Seq(left, right)
 
   def dup(sources: List[Pipe]): Pipe = {
     val (left :: right :: Nil) = sources
-    copy(left = left, right = right)(estimatedCardinality, id)
+    copy(left = left, right = right)(id)
   }
-
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated), id)
 
   private def buildProbeTable(input: Iterator[ExecutionContext]): mutable.HashMap[IndexedSeq[Long], mutable.MutableList[ExecutionContext]] = {
     val table = new mutable.HashMap[IndexedSeq[Long], mutable.MutableList[ExecutionContext]]

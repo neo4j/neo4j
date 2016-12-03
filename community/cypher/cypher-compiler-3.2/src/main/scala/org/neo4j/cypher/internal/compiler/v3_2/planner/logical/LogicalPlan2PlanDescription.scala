@@ -82,12 +82,6 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
       case _: LoadCSV =>
         PlanDescriptionImpl(id, "LoadCSV", NoChildren, Seq.empty, variables)
 
-      case NodeByIdSeek(_, _, _) =>
-        PlanDescriptionImpl(id, "NodeByIdSeek", NoChildren, Seq(), variables)
-
-      case NodeByLabelScan(_, label, _) =>
-        PlanDescriptionImpl(id, "NodeByLabelScan", NoChildren, Seq(LabelName(label.name)), variables)
-
       case NodeCountFromCountStore(IdName(variable), labelName, _) =>
         val arguments = Seq(CountNodesExpression(variable, labelName.map(_.name)))
         PlanDescriptionImpl(id, "NodeCountFromCountStore", NoChildren, arguments, variables)
@@ -126,7 +120,7 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
 
     val id = idMap(plan)
     val variables = plan.availableSymbols.map(_.name)
-    val children = SingleChild(source)
+    val children = if (source.isInstanceOf[SingleRowPlanDescription]) NoChildren else SingleChild(source)
 
     val result: InternalPlanDescription = plan match {
       case Aggregation(_, groupingExpressions, aggregationExpressions) if aggregationExpressions.isEmpty =>

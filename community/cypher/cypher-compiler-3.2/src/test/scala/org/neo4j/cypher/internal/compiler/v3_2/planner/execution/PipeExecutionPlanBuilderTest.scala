@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_2.planner.execution
 
 import org.neo4j.cypher.internal.compiler.v3_2.Monitors
-import org.neo4j.cypher.internal.compiler.v3_2.pipes.{FakePipe, Pipe, RonjaPipe}
+import org.neo4j.cypher.internal.compiler.v3_2.pipes.{FakePipe, Pipe}
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_2.planner.{CardinalityEstimation, PlannerQuery}
@@ -46,14 +46,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite {
     override def strictness = ???
   }
 
-  abstract class FakeRonjaPipe extends FakePipe(Iterator.empty) with RonjaPipe {
-    override def planDescriptionWithoutCardinality = ???
-
-    override def withEstimatedCardinality(estimated: Double) = this
-
-    override def estimatedCardinality = ???
-  }
-
+  abstract class FakeRonjaPipe extends FakePipe(Iterator.empty)
 
   case class LeafPlan(name: String) extends FakePlan
 
@@ -81,11 +74,11 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite {
         case LeafPlan(n) => LeafPipe(n)
       }
 
-      def build(plan: LogicalPlan, source: RonjaPipe) = plan match {
+      def build(plan: LogicalPlan, source: Pipe) = plan match {
         case OneChildPlan(name, _) => OneChildPipe(name, source)
       }
 
-      def build(plan: LogicalPlan, lhs: RonjaPipe, rhs: RonjaPipe) = plan match {
+      def build(plan: LogicalPlan, lhs: Pipe, rhs: Pipe) = plan match {
         case TwoChildPlan(name, _, _) => TwoChildPipe(name, lhs, rhs)
       }
     }

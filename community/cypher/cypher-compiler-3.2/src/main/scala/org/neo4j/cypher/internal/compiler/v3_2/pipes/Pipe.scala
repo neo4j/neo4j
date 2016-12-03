@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2._
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{Id, InternalPlanDescription, SingleRowPlanDescription}
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 
 import scala.collection.immutable
@@ -71,8 +71,6 @@ trait Pipe {
 
   def symbols: SymbolTable
 
-  def planDescription: InternalPlanDescription
-
   def sources: Seq[Pipe]
 
   /*
@@ -88,7 +86,7 @@ trait Pipe {
   def id: Id
 }
 
-case class SingleRowPipe()(val id: Id = new Id)(implicit val monitor: PipeMonitor) extends Pipe with RonjaPipe {
+case class SingleRowPipe()(val id: Id = new Id)(implicit val monitor: PipeMonitor) extends Pipe {
 
   def symbols: SymbolTable = new SymbolTable()
 
@@ -97,18 +95,9 @@ case class SingleRowPipe()(val id: Id = new Id)(implicit val monitor: PipeMonito
 
   def exists(pred: Pipe => Boolean) = pred(this)
 
-  def planDescriptionWithoutCardinality: InternalPlanDescription = new SingleRowPlanDescription(id, Seq.empty, variables)
-
   def dup(sources: List[Pipe]): Pipe = this
 
   def sources: Seq[Pipe] = Seq.empty
-
-  def estimatedCardinality: Option[Double] = Some(1.0)
-
-  def withEstimatedCardinality(estimated: Double): Pipe with RonjaPipe = {
-    assert(estimated == 1.0)
-    this
-  }
 }
 
 abstract class PipeWithSource(source: Pipe, val monitor: PipeMonitor) extends Pipe {

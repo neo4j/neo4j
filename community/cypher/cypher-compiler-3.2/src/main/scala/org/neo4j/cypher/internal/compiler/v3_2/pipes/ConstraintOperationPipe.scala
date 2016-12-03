@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.commands._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.values.KeyToken
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{Id, NoChildren, PlanDescriptionImpl}
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 
 class ConstraintOperationPipe(op: PropertyConstraintOperation, keyToken: KeyToken, propertyKey: KeyToken)
@@ -44,8 +44,6 @@ class ConstraintOperationPipe(op: PropertyConstraintOperation, keyToken: KeyToke
   }
 
   def symbols = new SymbolTable()
-
-  def planDescription = new PlanDescriptionImpl(this.id, "ConstraintOperation", NoChildren, Seq.empty, variables)
 
   def exists(pred: Pipe => Boolean) = pred(this)
 

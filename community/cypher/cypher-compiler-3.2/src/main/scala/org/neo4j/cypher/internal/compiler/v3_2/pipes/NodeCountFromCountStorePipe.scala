@@ -20,15 +20,14 @@
 package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.CountNodesExpression
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{Id, NoChildren, PlanDescriptionImpl}
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_2.NameId
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 
 case class NodeCountFromCountStorePipe(ident: String, label: Option[LazyLabel])
-                                      (val estimatedCardinality: Option[Double] = None, val id: Id = new Id)
-                                      (implicit pipeMonitor: PipeMonitor) extends Pipe with RonjaPipe {
+                                      (val id: Id = new Id)
+                                      (implicit pipeMonitor: PipeMonitor) extends Pipe {
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val baseContext = state.initialContext.getOrElse(ExecutionContext.empty)
@@ -44,9 +43,6 @@ case class NodeCountFromCountStorePipe(ident: String, label: Option[LazyLabel])
 
   def exists(predicate: Pipe => Boolean): Boolean = predicate(this)
 
-  def planDescriptionWithoutCardinality = PlanDescriptionImpl(
-    this.id, "NodeCountFromCountStore", NoChildren, Seq(CountNodesExpression(ident, label.map(_.name))), variables)
-
   def symbols = new SymbolTable(Map(ident -> CTInteger))
 
   override def monitor = pipeMonitor
@@ -57,6 +53,4 @@ case class NodeCountFromCountStorePipe(ident: String, label: Option[LazyLabel])
   }
 
   def sources: Seq[Pipe] = Seq.empty
-
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated), id)
 }

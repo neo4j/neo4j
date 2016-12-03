@@ -22,15 +22,14 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.LegacyExpressions
 
 /*
 Projection evaluates expressions and stores their values into new slots in the execution context.
 It's an additive operation - nothing is lost in the execution context, the pipe simply adds new key-value pairs.
  */
 case class ProjectionPipe(source: Pipe, expressions: Map[String, Expression])
-                         (val estimatedCardinality: Option[Double] = None, val id: Id = new Id)
-                         (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
+                         (val id: Id = new Id)
+                         (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
   val symbols = {
     val newVariables = expressions.map {
       case (name, expression) => name -> expression.getType(source.symbols)
@@ -54,14 +53,8 @@ case class ProjectionPipe(source: Pipe, expressions: Map[String, Expression])
     }
   }
 
-  def planDescriptionWithoutCardinality =
-    source.planDescription
-      .andThen(this.id, "Projection", variables, LegacyExpressions(expressions))
-
   def dup(sources: List[Pipe]): Pipe = {
     val (source :: Nil) = sources
-    copy(source = source)(estimatedCardinality, id)
+    copy(source = source)(id)
   }
-
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated), id)
 }

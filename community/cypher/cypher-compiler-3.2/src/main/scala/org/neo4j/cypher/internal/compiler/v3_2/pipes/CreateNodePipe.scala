@@ -32,7 +32,7 @@ import org.neo4j.graphdb.{Node, Relationship}
 import scala.collection.Map
 
 abstract class BaseCreateNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel], properties: Option[Expression], pipeMonitor: PipeMonitor)
-  extends PipeWithSource(src, pipeMonitor) with RonjaPipe with GraphElementPropertyFunctions with ListSupport {
+  extends PipeWithSource(src, pipeMonitor) with GraphElementPropertyFunctions with ListSupport {
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
     input.map(createNode(_, state))
@@ -81,16 +81,12 @@ abstract class BaseCreateNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel]
 }
 
 case class CreateNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel], properties: Option[Expression])
-                         (val estimatedCardinality: Option[Double] = None, val id: Id = new Id)
+                         (val id: Id = new Id)
                          (implicit pipeMonitor: PipeMonitor) extends BaseCreateNodePipe(src, key, labels, properties, pipeMonitor) {
-
-  override def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated), id)
-
-  override def planDescriptionWithoutCardinality = src.planDescription.andThen(this.id, "CreateNode", variables)
 
   override def dup(sources: List[Pipe]): Pipe = {
     val (onlySource :: Nil) = sources
-    copy(onlySource, key, labels, properties)(estimatedCardinality, id)
+    copy(onlySource, key, labels, properties)(id)
   }
 
   override protected def handleNull(key: String) {
@@ -99,16 +95,12 @@ case class CreateNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel], proper
 }
 
 case class MergeCreateNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel], properties: Option[Expression])
-                              (val estimatedCardinality: Option[Double] = None, val id: Id = new Id)
+                              (val id: Id = new Id)
                          (implicit pipeMonitor: PipeMonitor) extends BaseCreateNodePipe(src, key, labels, properties, pipeMonitor) {
-
-  override def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated), id)
-
-  override def planDescriptionWithoutCardinality = src.planDescription.andThen(this.id, "MergeCreateNode", variables)
 
   override def dup(sources: List[Pipe]): Pipe = {
     val (onlySource :: Nil) = sources
-    copy(onlySource, key, labels, properties)(estimatedCardinality, id)
+    copy(onlySource, key, labels, properties)(id)
   }
 
   override protected def handleNull(key: String) {

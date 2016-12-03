@@ -20,8 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2._
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.Index
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{Id, NoChildren, PlanDescriptionImpl}
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{LabelToken, PropertyKeyToken}
 import org.neo4j.cypher.internal.frontend.v3_2.symbols.CTNode
@@ -30,9 +29,9 @@ import org.neo4j.kernel.api.index.IndexDescriptor
 case class NodeIndexScanPipe(ident: String,
                              label: LabelToken,
                              propertyKey: PropertyKeyToken)
-                            (val estimatedCardinality: Option[Double] = None, val id: Id = new Id)
+                            (val id: Id = new Id)
                             (implicit pipeMonitor: PipeMonitor)
-  extends Pipe with RonjaPipe {
+  extends Pipe {
 
   private val descriptor = new IndexDescriptor(label.nameId.id, propertyKey.nameId.id)
 
@@ -47,9 +46,6 @@ case class NodeIndexScanPipe(ident: String,
 
   def exists(predicate: Pipe => Boolean): Boolean = predicate(this)
 
-  def planDescriptionWithoutCardinality =
-    new PlanDescriptionImpl(this.id, "NodeIndexScan", NoChildren, Seq(Index(label.name, propertyKey.name)), variables)
-
   def symbols = new SymbolTable(Map(ident -> CTNode))
 
   override def monitor = pipeMonitor
@@ -60,6 +56,4 @@ case class NodeIndexScanPipe(ident: String,
   }
 
   def sources: Seq[Pipe] = Seq.empty
-
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated), id)
 }

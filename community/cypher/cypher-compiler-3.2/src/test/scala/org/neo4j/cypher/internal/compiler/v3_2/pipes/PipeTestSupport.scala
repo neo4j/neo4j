@@ -41,7 +41,6 @@ trait PipeTestSupport extends CypherTestSupport with MockitoSugar {
   def pipeWithResults(f: QueryState => Iterator[ExecutionContext]): Pipe = new Pipe {
     protected def internalCreateResults(state: QueryState) = f(state)
     def exists(pred: (Pipe) => Boolean) = ???
-    def planDescription = ???
     def symbols: SymbolTable = ???
     def monitor: PipeMonitor = newMonitor
     def dup(sources: List[Pipe]): Pipe = ???
