@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.predicates.Equivalent
 import org.neo4j.cypher.internal.compiler.v3_2.commands.values.TokenType.PropertyKey
-import org.neo4j.cypher.internal.frontend.v3_2.SyntaxException
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 
@@ -31,14 +30,6 @@ class EagerAggregationPipeTest extends CypherFunSuite {
   private implicit val monitor = mock[PipeMonitor]
 
   private def createReturnItemsFor(names: String*): Set[String] = names.toSet
-
-  test("shouldThrowSemanticException") {
-    val source = new FakePipe(List(), createSymbolTableFor("extractReturnItems"))
-
-    val groupings = createReturnItemsFor("name")
-    val aggregations = Map("count(*)" -> Count(Variable("none-existing-variable")))
-    intercept[SyntaxException](new EagerAggregationPipe(source, groupings, aggregations)())
-  }
 
   test("should aggregate count(*) on single grouping column") {
     val source = new FakePipe(List(
@@ -49,7 +40,7 @@ class EagerAggregationPipeTest extends CypherFunSuite {
 
     val grouping = createReturnItemsFor("name")
     val aggregation = Map("count(*)" -> CountStar())
-    val aggregationPipe = new EagerAggregationPipe(source, grouping, aggregation)()
+    val aggregationPipe = EagerAggregationPipe(source, grouping, aggregation)()
 
     getResults(aggregationPipe) should contain allOf(
       Map[String, Any]("name" -> "Andres", "count(*)" -> 1),
@@ -67,7 +58,7 @@ class EagerAggregationPipeTest extends CypherFunSuite {
 
     val grouping = createReturnItemsFor("a", "b")
     val aggregation = Map("count(*)" -> CountStar())
-    def aggregationPipe = new EagerAggregationPipe(source, grouping, aggregation)()
+    def aggregationPipe = EagerAggregationPipe(source, grouping, aggregation)()
 
     getResults(aggregationPipe) should contain allOf(
       Map[String, Any]("a" -> 1, "b" -> 1, "count(*)" -> 2),
@@ -88,7 +79,7 @@ class EagerAggregationPipeTest extends CypherFunSuite {
 
     val grouping = createReturnItemsFor("a", "b", "c")
     val aggregation = Map("count(*)" -> CountStar())
-    def aggregationPipe = new EagerAggregationPipe(source, grouping, aggregation)()
+    def aggregationPipe = EagerAggregationPipe(source, grouping, aggregation)()
 
     getResults(aggregationPipe) should contain allOf(
       Map[String, Any]("a" -> 1, "b" -> 1, "c" -> 1, "count(*)" -> 1),
@@ -109,7 +100,7 @@ class EagerAggregationPipeTest extends CypherFunSuite {
 
     val returnItems = createReturnItemsFor("name")
     val grouping = Map("count(*)" -> CountStar())
-    val aggregationPipe = new EagerAggregationPipe(source, returnItems, grouping)()
+    val aggregationPipe = EagerAggregationPipe(source, returnItems, grouping)()
 
     getResults(aggregationPipe) should contain allOf(
       Map[String, Any]("name" -> "Apa", "count(*)" -> 2),
@@ -131,7 +122,7 @@ class EagerAggregationPipeTest extends CypherFunSuite {
       "sum(name.age)" -> Sum(Property(Variable("name"), PropertyKey("age")))
     )
 
-    val aggregationPipe = new EagerAggregationPipe(source, returnItems, grouping)()
+    val aggregationPipe = EagerAggregationPipe(source, returnItems, grouping)()
 
     getResults(aggregationPipe) should contain(
       Map[String, Any]("avg(name.age)" -> null, "sum(name.age)" -> 0, "count(name.age)" -> 0, "min(name.age)" -> null, "collect(name.age)" -> List(), "max(name.age)" -> null, "count(*)" -> 0)
@@ -147,7 +138,7 @@ class EagerAggregationPipeTest extends CypherFunSuite {
 
     val returnItems = createReturnItemsFor()
     val grouping = Map("count(name)" -> Count(Variable("name")))
-    val aggregationPipe = new EagerAggregationPipe(source, returnItems, grouping)()
+    val aggregationPipe = EagerAggregationPipe(source, returnItems, grouping)()
 
     getResults(aggregationPipe) should equal(List(Map("count(name)" -> 3)))
   }
