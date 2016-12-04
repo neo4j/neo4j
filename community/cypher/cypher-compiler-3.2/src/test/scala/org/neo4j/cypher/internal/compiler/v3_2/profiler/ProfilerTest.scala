@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.compiler.v3_2.pipes._
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.{DbHits, Rows}
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription._
 import org.neo4j.cypher.internal.compiler.v3_2.spi.QueryContext
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 
 import scala.collection.immutable.::
@@ -231,8 +230,6 @@ case class ProfilerTestPipe(source: Pipe, name: String, rows: Int, dbAccess: Int
     (0 until dbAccess).foreach(x => state.query.createNode())
     (0 until rows).map(x => ExecutionContext.empty).toIterator
   }
-
-  def symbols: SymbolTable = SymbolTable()
 
   def dup(sources: List[Pipe]): Pipe = {
     val (source :: Nil) = sources

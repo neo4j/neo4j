@@ -34,8 +34,6 @@ case class SetPipe(src: Pipe, setOperation: SetOperation)
     }
   }
 
-  override def symbols = src.symbols
-
   override def dup(sources: List[Pipe]): Pipe = {
     val (onlySource :: Nil) = sources
     SetPipe(onlySource, setOperation)(id)

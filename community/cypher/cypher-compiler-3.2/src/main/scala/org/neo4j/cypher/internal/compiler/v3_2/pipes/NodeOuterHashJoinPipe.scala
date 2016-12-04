@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 import org.neo4j.graphdb.Node
 
 import scala.collection.mutable
@@ -59,8 +58,6 @@ case class NodeOuterHashJoinPipe(nodeVariables: Set[String], source: Pipe, inner
   }
 
   private def addNulls(in:ExecutionContext): ExecutionContext = in.newWith(nullColumns)
-
-  def symbols: SymbolTable = source.symbols.add(inner.symbols.variables)
 
   def dup(sources: List[Pipe]): Pipe = {
     val (source :: inner :: Nil) = sources

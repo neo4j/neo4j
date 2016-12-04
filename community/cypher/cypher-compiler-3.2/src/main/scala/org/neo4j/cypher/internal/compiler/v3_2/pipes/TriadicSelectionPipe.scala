@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 import org.neo4j.collection.primitive.{Primitive, PrimitiveLongSet}
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_2.CypherTypeException
 import org.neo4j.graphdb.Node
 
@@ -63,8 +62,6 @@ extends PipeWithSource(left, pipeMonitor) {
       }
     }
   }
-
-  override def symbols: SymbolTable = left.symbols.add(right.symbols.variables)
 
   override def dup(sources: List[Pipe]) = {
     val (left :: right :: Nil) = sources

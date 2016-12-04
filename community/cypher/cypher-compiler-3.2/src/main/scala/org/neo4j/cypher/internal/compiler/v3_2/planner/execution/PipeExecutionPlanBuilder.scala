@@ -35,7 +35,6 @@ import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.{CantHandleQueryException, PeriodicCommit, logical}
 import org.neo4j.cypher.internal.compiler.v3_2.spi.{InstrumentedGraphStatistics, PlanContext}
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v3_2.{ExecutionContext, Monitors, pipes, ast => compilerAst}
 import org.neo4j.cypher.internal.frontend.v3_2._
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
@@ -180,7 +179,7 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
         SingleRowPipe()(id)
 
       case arg@Argument(_) =>
-        ArgumentPipe(SymbolTable(arg.typeInfo))(id = id)
+        ArgumentPipe()(id = id)
 
       case AllNodesScan(IdName(ident), _) =>
         AllNodesScanPipe(ident)(id = id)

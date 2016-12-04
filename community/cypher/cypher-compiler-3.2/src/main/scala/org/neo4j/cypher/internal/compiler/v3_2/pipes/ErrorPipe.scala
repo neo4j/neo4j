@@ -21,15 +21,12 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 
 case class ErrorPipe(source: Pipe, exception: Exception)
                     (val id: Id = new Id)(implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(source, pipeMonitor) {
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
     throw exception
-
-  override def symbols: SymbolTable = source.symbols
 
   override def dup(sources: List[Pipe]): Pipe = {
     val (head :: Nil) = sources

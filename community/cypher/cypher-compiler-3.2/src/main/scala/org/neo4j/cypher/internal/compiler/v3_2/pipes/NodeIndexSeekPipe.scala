@@ -23,9 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v3_2.commands.{QueryExpression, indexQuery}
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{LabelToken, PropertyKeyToken}
-import org.neo4j.cypher.internal.frontend.v3_2.symbols.CTNode
 import org.neo4j.kernel.api.index.IndexDescriptor
 
 case class NodeIndexSeekPipe(ident: String,
@@ -50,8 +48,6 @@ case class NodeIndexSeekPipe(ident: String,
     val resultNodes = indexQuery(valueExpr, baseContext, state, index, label.name, propertyKey.name)
     resultNodes.map(node => baseContext.newWith1(ident, node))
   }
-
-  def symbols = new SymbolTable(Map(ident -> CTNode))
 
   override def monitor = pipeMonitor
 

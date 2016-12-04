@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.ShortestPath
 import org.neo4j.cypher.internal.compiler.v3_2.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.{CastSupport, ListSupport}
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 import org.neo4j.graphdb.Path
 
 import scala.collection.JavaConverters._
@@ -56,14 +55,6 @@ case class ShortestPathPipe(source: Pipe, shortestPathCommand: ShortestPath, pre
           result.map { (path: Path) => ctx.newWith1(pathName, path) }
       }
     })
-
-  val symbols = {
-    val withPath = source.symbols.add(pathName, CTPath)
-    shortestPathCommand.relIterator match {
-      case None    => withPath
-      case Some(x) => withPath.add(x, CTList(CTRelationship))
-    }
-  }
 
   def dup(sources: List[Pipe]): Pipe = {
     val (head :: Nil) = sources

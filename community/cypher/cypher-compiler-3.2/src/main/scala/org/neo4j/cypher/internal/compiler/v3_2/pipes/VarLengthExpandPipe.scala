@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 import org.neo4j.cypher.internal.frontend.v3_2.{InternalException, SemanticDirection}
 import org.neo4j.graphdb.{Node, Relationship}
 
@@ -113,8 +112,6 @@ case class VarLengthExpandPipe(source: Pipe,
 
   def fetchFromContext(row: ExecutionContext, name: String): Any =
     row.getOrElse(name, throw new InternalException(s"Expected to find a node at $name but found nothing"))
-
-  def symbols = source.symbols.add(toName, CTNode).add(relName, CTList(CTRelationship))
 
   def dup(sources: List[Pipe]): Pipe = {
     val (head :: Nil) = sources

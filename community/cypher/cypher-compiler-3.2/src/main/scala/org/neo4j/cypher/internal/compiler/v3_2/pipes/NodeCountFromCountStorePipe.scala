@@ -21,9 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_2.NameId
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 
 case class NodeCountFromCountStorePipe(ident: String, label: Option[LazyLabel])
                                       (val id: Id = new Id)
@@ -40,8 +38,6 @@ case class NodeCountFromCountStorePipe(ident: String, label: Option[LazyLabel])
     }
     Seq(baseContext.newWith1(ident, count)).iterator
   }
-
-  def symbols = new SymbolTable(Map(ident -> CTInteger))
 
   override def monitor = pipeMonitor
 

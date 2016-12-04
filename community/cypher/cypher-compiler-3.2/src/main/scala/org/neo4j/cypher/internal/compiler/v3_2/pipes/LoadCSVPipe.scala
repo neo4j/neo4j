@@ -26,9 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.ArrayBackedMap
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_2.spi.QueryContext
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_2.LoadExternalResourceException
-import org.neo4j.cypher.internal.frontend.v3_2.symbols.{AnyType, ListType, MapType}
 
 sealed trait CSVFormat
 case object HasHeaders extends CSVFormat
@@ -114,11 +112,6 @@ case class LoadCSVPipe(source: Pipe,
           new IteratorWithoutHeaders(context, iterator)
       }
     })
-  }
-
-  override def symbols: SymbolTable = format match {
-    case HasHeaders => source.symbols.add(variable, MapType.instance)
-    case NoHeaders => source.symbols.add(variable, ListType(AnyType.instance))
   }
 
   override def dup(sources: List[Pipe]): Pipe = {

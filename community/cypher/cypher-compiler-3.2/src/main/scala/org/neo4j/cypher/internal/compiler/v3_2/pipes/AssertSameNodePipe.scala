@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.CastSupport
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_2.MergeConstraintConflictException
 import org.neo4j.graphdb.Node
 
@@ -50,8 +49,6 @@ case class AssertSameNodePipe(source: Pipe, inner: Pipe, node: String)
       leftRow
     }
   }
-
-  def symbols: SymbolTable = source.symbols.add(inner.symbols.variables)
 
   def dup(sources: List[Pipe]): Pipe = {
     val (l :: r :: Nil) = sources

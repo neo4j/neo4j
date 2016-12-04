@@ -40,8 +40,6 @@ case class ProduceResultsPipe(source: Pipe, columns: Seq[String])
     }
   }
 
-  def symbols = source.symbols.filter(columns.contains)
-
   def dup(sources: List[Pipe]): Pipe = {
     val (source :: Nil) = sources
     copy(source = source)(id)

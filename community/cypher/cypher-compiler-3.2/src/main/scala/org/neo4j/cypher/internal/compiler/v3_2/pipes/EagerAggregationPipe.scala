@@ -24,8 +24,6 @@ import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.AggregationE
 import org.neo4j.cypher.internal.compiler.v3_2.commands.predicates.Equivalent
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.aggregation.AggregationFunction
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 
 import scala.collection.mutable.{Map => MutableMap}
 
@@ -35,17 +33,6 @@ import scala.collection.mutable.{Map => MutableMap}
 case class EagerAggregationPipe(source: Pipe, keyExpressions: Set[String], aggregations: Map[String, AggregationExpression])
                                (val id: Id = new Id)
                                (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
-
-  val symbols: SymbolTable = createSymbols()
-
-  private def createSymbols() = {
-    val keyVariables = keyExpressions.map(id => id -> source.symbols.evaluateType(id, CTAny)).toMap
-    val aggrVariables = aggregations.map {
-      case (innerId, exp) => innerId -> exp.getType(source.symbols)
-    }
-
-    SymbolTable(keyVariables ++ aggrVariables)
-  }
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
     //register as parent so that stats are associated with this pipe

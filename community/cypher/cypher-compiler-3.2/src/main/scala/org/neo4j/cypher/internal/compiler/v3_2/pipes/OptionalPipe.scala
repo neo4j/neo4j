@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 
 case class OptionalPipe(nullableVariables: Set[String], source: Pipe)
                        (val id: Id = new Id)
@@ -37,8 +36,6 @@ case class OptionalPipe(nullableVariables: Set[String], source: Pipe)
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
     if (input.isEmpty) Iterator(notFoundExecutionContext(state.initialContext))
     else input
-
-  def symbols: SymbolTable = source.symbols
 
   def dup(sources: List[Pipe]) = {
     val (head :: Nil) = sources

@@ -21,14 +21,11 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 
 case class UnionPipe(l: Pipe, r: Pipe)
                     (val id: Id = new Id)
                     (implicit val monitor: PipeMonitor)
   extends Pipe {
-  def symbols: SymbolTable = l.symbols intersect r.symbols
-
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] =
     l.createResults(state) ++ r.createResults(state)
 

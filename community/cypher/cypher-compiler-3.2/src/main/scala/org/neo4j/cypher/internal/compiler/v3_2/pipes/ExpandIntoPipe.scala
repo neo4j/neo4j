@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 import org.neo4j.graphdb.Node
 
 /**
@@ -71,8 +70,6 @@ case class ExpandIntoPipe(source: Pipe,
         }
     }
   }
-
-  val symbols = source.symbols.add(fromName, CTNode).add(toName, CTNode).add(relName, CTRelationship)
 
   def dup(sources: List[Pipe]): Pipe = {
     val (source :: Nil) = sources

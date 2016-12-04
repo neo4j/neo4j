@@ -37,8 +37,6 @@ case class UnwindPipe(source: Pipe, collection: Expression, variable: String)
     if (input.hasNext) new UnwindIterator(input, state) else Iterator.empty
   }
 
-  def symbols = source.symbols.add(variable, collection.getType(source.symbols).legacyIteratedType)
-
   def dup(sources: List[Pipe]): Pipe = {
     val (head :: Nil) = sources
     copy(source = head)(id)

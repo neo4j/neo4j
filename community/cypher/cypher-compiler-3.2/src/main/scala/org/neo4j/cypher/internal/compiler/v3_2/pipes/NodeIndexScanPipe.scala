@@ -21,9 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{LabelToken, PropertyKeyToken}
-import org.neo4j.cypher.internal.frontend.v3_2.symbols.CTNode
 import org.neo4j.kernel.api.index.IndexDescriptor
 
 case class NodeIndexScanPipe(ident: String,
@@ -43,8 +41,6 @@ case class NodeIndexScanPipe(ident: String,
     val resultNodes = state.query.indexScan(descriptor)
     resultNodes.map(node => baseContext.newWith1(ident, node))
   }
-
-  def symbols = new SymbolTable(Map(ident -> CTNode))
 
   override def monitor = pipeMonitor
 

@@ -44,8 +44,6 @@ case class RemoveLabelsPipe(src: Pipe, variable: String, labels: Seq[LazyLabel])
     state.query.removeLabelsFromNode(nodeId, labelIds.iterator)
   }
 
-  override def symbols = src.symbols
-
   override def dup(sources: List[Pipe]): Pipe = {
     val (onlySource :: Nil) = sources
     RemoveLabelsPipe(onlySource, variable, labels)(id)

@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 import org.neo4j.graphdb.Node
 
 import scala.collection.mutable.ListBuffer
@@ -69,8 +68,6 @@ case class OptionalExpandIntoPipe(source: Pipe, fromName: String, relName: Strin
         }
     }
   }
-
-  def symbols = source.symbols.add(toName, CTNode).add(relName, CTRelationship)
 
   def dup(sources: List[Pipe]): Pipe = {
     val (head :: Nil) = sources

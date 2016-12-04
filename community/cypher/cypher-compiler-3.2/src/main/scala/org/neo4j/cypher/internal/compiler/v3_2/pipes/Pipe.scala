@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 
 trait PipeMonitor {
   def startSetup(queryId: AnyRef, pipe: Pipe)
@@ -67,15 +66,11 @@ trait Pipe {
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext]
 
-  def symbols: SymbolTable
-
   // Used by profiling to identify where to report dbhits and rows
   def id: Id
 }
 
 case class SingleRowPipe()(val id: Id = new Id)(implicit val monitor: PipeMonitor) extends Pipe {
-
-  def symbols: SymbolTable = new SymbolTable()
 
   def internalCreateResults(state: QueryState) =
     Iterator(state.initialContext.getOrElse(ExecutionContext.empty))

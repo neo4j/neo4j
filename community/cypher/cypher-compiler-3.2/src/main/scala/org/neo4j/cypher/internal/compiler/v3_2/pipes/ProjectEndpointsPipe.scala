@@ -23,8 +23,6 @@ import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.ListSupport
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_2.spi.QueryContext
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 import org.neo4j.graphdb.{Node, Relationship}
 
 case class ProjectEndpointsPipe(source: Pipe, relName: String,
@@ -34,11 +32,7 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
                                (val id: Id = new Id)
                                (implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(source, pipeMonitor)
-  with ListSupport
-  {
-  val symbols: SymbolTable =
-    source.symbols.add(start, CTNode).add(end, CTNode)
-
+  with ListSupport  {
   type Projector = (ExecutionContext) => Iterator[ExecutionContext]
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) =

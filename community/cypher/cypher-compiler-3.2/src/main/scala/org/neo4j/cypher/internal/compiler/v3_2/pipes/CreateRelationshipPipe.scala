@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.compiler.v3_2.helpers.{IsMap, ListSupport}
 import org.neo4j.cypher.internal.compiler.v3_2.mutation.{GraphElementPropertyFunctions, makeValueNeoSafe}
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_2.spi.QueryContext
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 import org.neo4j.cypher.internal.frontend.v3_2.{CypherTypeException, InternalException, InvalidSemanticsException}
 import org.neo4j.graphdb.{Node, Relationship}
 
@@ -80,8 +79,6 @@ abstract class BaseRelationshipPipe(src: Pipe, key: String, startNode: String, t
   }
 
   protected def handleNull(key: String): Unit
-
-  override def symbols = src.symbols.add(key, CTRelationship)
 }
 
 case class CreateRelationshipPipe(src: Pipe,

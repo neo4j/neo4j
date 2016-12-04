@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
-import org.neo4j.cypher.internal.frontend.v3_2.symbols.ListType
 
 case class RollUpApplyPipe(lhs: Pipe, rhs: Pipe, collectionName: String, identifierToCollect: String, nullableIdentifiers: Set[String])
                           (val id: Id = new Id)
@@ -42,9 +41,6 @@ case class RollUpApplyPipe(lhs: Pipe, rhs: Pipe, collectionName: String, identif
         }
     }
   }
-
-  override def symbols =
-    lhs.symbols.add(collectionName, ListType(rhs.symbols.variables(identifierToCollect)))
 
   override def dup(sources: List[Pipe]) = {
     val (l :: r :: Nil) = sources

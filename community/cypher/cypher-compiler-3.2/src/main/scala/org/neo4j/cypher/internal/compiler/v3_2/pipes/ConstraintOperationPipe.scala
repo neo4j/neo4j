@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.commands._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 
 class ConstraintOperationPipe(op: PropertyConstraintOperation, keyToken: KeyToken, propertyKey: KeyToken)
                              (val id: Id = new Id)(implicit val monitor: PipeMonitor) extends Pipe {
@@ -42,8 +41,6 @@ class ConstraintOperationPipe(op: PropertyConstraintOperation, keyToken: KeyToke
 
     Iterator.empty
   }
-
-  def symbols = new SymbolTable()
 
   def dup(sources: List[Pipe]): Pipe = {
     require(sources.isEmpty)

@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 import org.neo4j.cypher.internal.frontend.v3_2.{InternalException, SemanticDirection}
 import org.neo4j.graphdb.{Node, Relationship}
 
@@ -57,8 +56,6 @@ case class ExpandAllPipe(source: Pipe,
 
   def getFromNode(row: ExecutionContext): Any =
     row.getOrElse(fromName, throw new InternalException(s"Expected to find a node at $fromName but found nothing"))
-
-  val symbols = source.symbols.add(toName, CTNode).add(relName, CTRelationship)
 
   def dup(sources: List[Pipe]): Pipe = {
     val (source :: Nil) = sources

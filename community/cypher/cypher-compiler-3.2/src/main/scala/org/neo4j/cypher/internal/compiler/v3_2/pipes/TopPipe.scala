@@ -61,8 +61,6 @@ abstract class TopPipe(source: Pipe, sortDescription: List[SortDescription])(imp
 
   def arrayEntry(ctx : ExecutionContext)(implicit qtx : QueryState) : SortDataWithContext =
     (sortItems.map(column => ctx(column.id)), ctx)
-
-  def symbols = source.symbols
 }
 
 case class TopNPipe(source: Pipe, sortDescription: List[SortDescription], countExpression: Expression)

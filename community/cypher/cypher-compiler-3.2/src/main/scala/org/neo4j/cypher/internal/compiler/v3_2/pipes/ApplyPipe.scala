@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 
 case class ApplyPipe(source: Pipe, inner: Pipe)(val id: Id = new Id)
                     (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
@@ -34,8 +33,6 @@ case class ApplyPipe(source: Pipe, inner: Pipe)(val id: Id = new Id)
         val innerResults = inner.createResults(innerState)
         innerResults.map { context => context ++ original }
     }
-
-  def symbols: SymbolTable = source.symbols.add(inner.symbols.variables)
 
   def dup(sources: List[Pipe]): Pipe = {
     val (l :: r :: Nil) = sources

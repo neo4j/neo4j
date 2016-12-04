@@ -98,15 +98,6 @@ case class ProcedureCallPipe(source: Pipe,
     }
   }
 
-  override def symbols = {
-    val sourceSymbols = source.symbols
-    val outputSymbols = resultSymbols.foldLeft(sourceSymbols) {
-      case (symbols, (symbolName, symbolType)) =>
-        symbols.add(symbolName, symbolType)
-    }
-    outputSymbols
-  }
-
   override def dup(sources: List[Pipe]): Pipe = {
     val (head :: Nil) = sources
     copy(source = head)(id)

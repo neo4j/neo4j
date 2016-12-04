@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.ListSupport
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 
 case class ForeachPipe(source: Pipe, inner: Pipe, variable: String, expression: Expression)
                       (val id: Id = new Id)
@@ -40,8 +39,6 @@ case class ForeachPipe(source: Pipe, inner: Pipe, variable: String, expression: 
         }
         outerContext
     }
-
-  override def symbols: SymbolTable = source.symbols.add(inner.symbols.variables)
 
   override def dup(sources: List[Pipe]): Pipe = {
     val (l :: r :: Nil) = sources

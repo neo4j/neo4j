@@ -21,19 +21,12 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.{SymbolTable, SymbolTypeAssertionCompiler}
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 
-case class ArgumentPipe(symbols: SymbolTable)
+case class ArgumentPipe()
                        (val id: Id = new Id)
                        (implicit val monitor: PipeMonitor) extends Pipe {
-  private val typeAssertions =
-    SymbolTypeAssertionCompiler.compile(
-      symbols.variables.toIndexedSeq.collect { case entry@(_, typ) if typ == CTNode || typ == CTRelationship => entry}
-    )
-
   def internalCreateResults(state: QueryState): Iterator[ExecutionContext] =
-    Iterator(typeAssertions(state.initialContext.get))
+    Iterator(state.initialContext.get)
 
   def dup(sources: List[Pipe]): Pipe = this
 }

@@ -56,8 +56,6 @@ case class ValueHashJoinPipe(lhsExpression: Expression, rhsExpression: Expressio
     result.flatten
   }
 
-  override def symbols = left.symbols.add(right.symbols.variables)
-
   override def dup(sources: List[Pipe]): Pipe = {
     val (left :: right :: Nil) = sources
     copy(left = left, right = right)(id)

@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{Expression, NumericHelper}
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 
 case class SkipPipe(source: Pipe, exp: Expression)
                    (val id: Id = new Id)
@@ -43,8 +42,6 @@ case class SkipPipe(source: Pipe, exp: Expression)
 
     new HeadAndTail(first, input).drop(count)
   }
-
-  def symbols: SymbolTable = source.symbols
 
   def dup(sources: List[Pipe]): Pipe = {
     val (head :: Nil) = sources

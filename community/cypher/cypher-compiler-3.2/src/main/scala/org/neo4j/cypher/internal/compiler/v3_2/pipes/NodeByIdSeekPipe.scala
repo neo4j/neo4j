@@ -23,8 +23,6 @@ import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.{IsList, ListSupport}
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
-import org.neo4j.cypher.internal.frontend.v3_2.symbols.CTNode
 
 sealed trait SeekArgs {
   def expressions(ctx: ExecutionContext, state: QueryState): Iterable[Any]
@@ -66,8 +64,6 @@ case class NodeByIdSeekPipe(ident: String, nodeIdsExpr: SeekArgs)
     val nodeIds = nodeIdsExpr.expressions(ctx, state)
     new NodeIdSeekIterator(ident, ctx, state.query.nodeOps, nodeIds.iterator)
   }
-
-  def symbols: SymbolTable = new SymbolTable(Map(ident -> CTNode))
 
   override def monitor = pipeMonitor
 

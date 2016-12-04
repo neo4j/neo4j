@@ -30,16 +30,6 @@ class EagerAggregationPipeTest extends CypherFunSuite {
 
   private implicit val monitor = mock[PipeMonitor]
 
-  test("shouldReturnColumnsFromReturnItems") {
-    val source = new FakePipe(List(), createSymbolTableFor("name"))
-
-    val returnItems = createReturnItemsFor("name")
-    val grouping = Map("count(*)" -> CountStar())
-    val aggregationPipe = new EagerAggregationPipe(source, returnItems, grouping)()
-
-    aggregationPipe.symbols.variables should equal(Map("name" -> CTNode, "count(*)" -> CTInteger))
-  }
-
   private def createReturnItemsFor(names: String*): Set[String] = names.toSet
 
   test("shouldThrowSemanticException") {

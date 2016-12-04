@@ -220,7 +220,6 @@ class NodeHashJoinPipeTest extends CypherFunSuite {
 
   private def newMockedPipe(symbolTable: SymbolTable): Pipe = {
     val pipe = mock[Pipe]
-    when(pipe.symbols).thenReturn(symbolTable)
     pipe
   }
 }

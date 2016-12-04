@@ -30,14 +30,6 @@ It's an additive operation - nothing is lost in the execution context, the pipe 
 case class ProjectionPipe(source: Pipe, expressions: Map[String, Expression])
                          (val id: Id = new Id)
                          (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
-  val symbols = {
-    val newVariables = expressions.map {
-      case (name, expression) => name -> expression.getType(source.symbols)
-    }
-
-    source.symbols.add(newVariables)
-  }
-
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
     //register as parent so that stats are associated with this pipe
     state.decorator.registerParentPipe(this)

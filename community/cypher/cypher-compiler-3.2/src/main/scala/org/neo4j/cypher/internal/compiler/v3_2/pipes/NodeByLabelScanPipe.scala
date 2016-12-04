@@ -21,8 +21,6 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 
 case class NodeByLabelScanPipe(ident: String, label: LazyLabel)
                               (val id: Id = new Id)
@@ -41,8 +39,6 @@ case class NodeByLabelScanPipe(ident: String, label: LazyLabel)
         Iterator.empty
     }
   }
-
-  def symbols = new SymbolTable(Map(ident -> CTNode))
 
   override def monitor = pipeMonitor
 

@@ -25,8 +25,6 @@ import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.spi.QueryContext
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.{Node, Relationship}
 
@@ -518,7 +516,6 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
 
   private def newMockedPipe(rel: String, rows: ExecutionContext*): Pipe = {
     val pipe = mock[Pipe]
-    when(pipe.symbols).thenReturn(SymbolTable(Map(rel -> CTRelationship)))
     when(pipe.createResults(any())).thenAnswer(new Answer[Iterator[ExecutionContext]] {
       def answer(invocation: InvocationOnMock): Iterator[ExecutionContext] = rows.iterator
     })

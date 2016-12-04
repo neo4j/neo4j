@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 
 case class SemiApplyPipe(source: Pipe, inner: Pipe, negated: Boolean)
                         (val id: Id = new Id)
@@ -37,8 +36,6 @@ case class SemiApplyPipe(source: Pipe, inner: Pipe, negated: Boolean)
   }
 
   private def name = if (negated) "AntiSemiApply" else "SemiApply"
-
-  def symbols: SymbolTable = source.symbols
 
   def dup(sources: List[Pipe]): Pipe = {
     val (source :: inner :: Nil) = sources

@@ -26,7 +26,6 @@ import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_2.spi.QueryContext
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_2.symbols.{CypherType, _}
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherTestSupport
@@ -40,7 +39,6 @@ trait PipeTestSupport extends CypherTestSupport with MockitoSugar {
 
   def pipeWithResults(f: QueryState => Iterator[ExecutionContext]): Pipe = new Pipe {
     protected def internalCreateResults(state: QueryState) = f(state)
-    def symbols: SymbolTable = ???
     def monitor: PipeMonitor = newMonitor
     def dup(sources: List[Pipe]): Pipe = ???
 
@@ -96,7 +94,6 @@ trait PipeTestSupport extends CypherTestSupport with MockitoSugar {
 
   def newMockedPipe(symbols: Map[String, CypherType], rows: ExecutionContext*): Pipe = {
     val pipe = mock[Pipe]
-    when(pipe.symbols).thenReturn(SymbolTable(symbols))
     when(pipe.createResults(any())).thenAnswer(new Answer[Iterator[ExecutionContext]] {
       def answer(invocation: InvocationOnMock) = rows.iterator
     })

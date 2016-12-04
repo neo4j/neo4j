@@ -21,8 +21,6 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 
 case class AllNodesScanPipe(ident: String)(val id: Id = new Id)
                            (implicit pipeMonitor: PipeMonitor) extends Pipe {
@@ -31,8 +29,6 @@ case class AllNodesScanPipe(ident: String)(val id: Id = new Id)
     val baseContext = state.initialContext.getOrElse(ExecutionContext.empty)
     state.query.nodeOps.all.map(n => baseContext.newWith1(ident, n))
   }
-
-  def symbols = new SymbolTable(Map(ident -> CTNode))
 
   override def monitor = pipeMonitor
 

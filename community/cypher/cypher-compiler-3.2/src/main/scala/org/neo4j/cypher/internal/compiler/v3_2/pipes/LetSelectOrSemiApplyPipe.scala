@@ -22,8 +22,6 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 
 case class LetSelectOrSemiApplyPipe(source: Pipe, inner: Pipe, letVarName: String, predicate: Predicate, negated: Boolean)
                                    (val id: Id = new Id)
@@ -45,8 +43,6 @@ case class LetSelectOrSemiApplyPipe(source: Pipe, inner: Pipe, letVarName: Strin
   }
 
   private def name = if (negated) "LetSelectOrAntiSemiApply" else "LetSelectOrSemiApply"
-
-  def symbols: SymbolTable = source.symbols.add(letVarName, CTBoolean)
 
   def dup(sources: List[Pipe]): Pipe = {
     val (source :: inner :: Nil) = sources

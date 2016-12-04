@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 
 case class ConditionalApplyPipe(source: Pipe, inner: Pipe, items: Seq[String], negated: Boolean)
                                (val id: Id = new Id)(implicit pipeMonitor: PipeMonitor)
@@ -44,8 +43,6 @@ case class ConditionalApplyPipe(source: Pipe, inner: Pipe, items: Seq[String], n
   }
 
   private def name = if (negated) "AntiConditionalApply" else "ConditionalApply"
-
-  def symbols: SymbolTable = source.symbols.add(inner.symbols.variables)
 
   def dup(sources: List[Pipe]): Pipe = {
     val (l :: r :: Nil) = sources

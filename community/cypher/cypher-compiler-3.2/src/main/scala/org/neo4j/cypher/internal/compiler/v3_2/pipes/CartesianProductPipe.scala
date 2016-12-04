@@ -21,13 +21,10 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 
 case class CartesianProductPipe(lhs: Pipe, rhs: Pipe)
                                (val id: Id = new Id)
                                (implicit pipeMonitor: PipeMonitor) extends Pipe {
-  def symbols: SymbolTable = lhs.symbols.add(rhs.symbols.variables)
-
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     for (outer <- lhs.createResults(state);
          inner <- rhs.createResults(state))

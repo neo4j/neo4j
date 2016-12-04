@@ -23,9 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v3_2.commands.predicates.Equivalent
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.Eagerly
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 
 import scala.collection.mutable
 
@@ -62,11 +60,6 @@ case class DistinctPipe(source: Pipe, expressions: Map[String, Expression])
            true
          }
     }
-  }
-
-  def symbols: SymbolTable = {
-    val variables = Eagerly.immutableMapValues(expressions, (e: Expression) => e.evaluateType(CTAny, source.symbols))
-    SymbolTable(variables)
   }
 
   def dup(sources: List[Pipe]): Pipe = {

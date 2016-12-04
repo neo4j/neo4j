@@ -32,8 +32,6 @@ case class SortPipe(source: Pipe, orderBy: Seq[SortDescription])
     array.toIterator
   }
 
-  def symbols = source.symbols
-
   def dup(sources: List[Pipe]): Pipe = {
     val (head :: Nil) = sources
     copy(source = head)(id)
