@@ -40,9 +40,4 @@ case class NodeCountFromCountStorePipe(ident: String, label: Option[LazyLabel])
   }
 
   override def monitor = pipeMonitor
-
-  def dup(sources: List[Pipe]): Pipe = {
-    require(sources.isEmpty)
-    this
-  }
 }

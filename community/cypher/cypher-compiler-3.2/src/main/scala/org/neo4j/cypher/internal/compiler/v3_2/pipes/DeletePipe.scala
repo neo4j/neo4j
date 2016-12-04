@@ -68,9 +68,4 @@ case class DeletePipe(src: Pipe, expression: Expression, forced: Boolean)
     case other =>
       throw new CypherTypeException(s"Expected a Node or Relationship, but got a ${other.getClass.getSimpleName}")
   }
-
-  override def dup(sources: List[Pipe]): Pipe = {
-    val (onlySource :: Nil) = sources
-    DeletePipe(onlySource, expression, forced)(id)
-  }
 }

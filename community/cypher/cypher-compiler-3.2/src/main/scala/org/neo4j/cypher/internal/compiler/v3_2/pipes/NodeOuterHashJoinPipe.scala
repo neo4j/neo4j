@@ -59,11 +59,6 @@ case class NodeOuterHashJoinPipe(nodeVariables: Set[String], source: Pipe, inner
 
   private def addNulls(in:ExecutionContext): ExecutionContext = in.newWith(nullColumns)
 
-  def dup(sources: List[Pipe]): Pipe = {
-    val (source :: inner :: Nil) = sources
-    copy(source = source, inner = inner)(id)
-  }
-
   private def buildProbeTableAndFindNullRows(input: Iterator[ExecutionContext]): ProbeTable = {
     val probeTable = new ProbeTable()
 

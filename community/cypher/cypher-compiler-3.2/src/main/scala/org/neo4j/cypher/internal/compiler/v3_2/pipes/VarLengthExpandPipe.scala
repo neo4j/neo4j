@@ -112,9 +112,4 @@ case class VarLengthExpandPipe(source: Pipe,
 
   def fetchFromContext(row: ExecutionContext, name: String): Any =
     row.getOrElse(name, throw new InternalException(s"Expected to find a node at $name but found nothing"))
-
-  def dup(sources: List[Pipe]): Pipe = {
-    val (head :: Nil) = sources
-    copy(head)(id)
-  }
 }

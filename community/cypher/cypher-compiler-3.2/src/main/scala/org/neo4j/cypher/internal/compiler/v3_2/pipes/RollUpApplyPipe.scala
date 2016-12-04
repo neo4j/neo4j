@@ -41,9 +41,4 @@ case class RollUpApplyPipe(lhs: Pipe, rhs: Pipe, collectionName: String, identif
         }
     }
   }
-
-  override def dup(sources: List[Pipe]) = {
-    val (l :: r :: Nil) = sources
-    RollUpApplyPipe(l, r, collectionName, identifierToCollect, nullableIdentifiers)(id)
-  }
 }

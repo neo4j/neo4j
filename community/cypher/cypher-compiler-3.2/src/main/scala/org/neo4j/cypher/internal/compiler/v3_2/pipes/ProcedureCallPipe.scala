@@ -97,9 +97,4 @@ case class ProcedureCallPipe(source: Pipe,
       input
     }
   }
-
-  override def dup(sources: List[Pipe]): Pipe = {
-    val (head :: Nil) = sources
-    copy(source = head)(id)
-  }
 }

@@ -42,9 +42,4 @@ case class LimitPipe(source: Pipe, exp: Expression)
 
     new HeadAndTail(first, input).take(count)
   }
-
-  def dup(sources: List[Pipe]): Pipe = {
-    val (head :: Nil) = sources
-    copy(source = head)(id)
-  }
 }

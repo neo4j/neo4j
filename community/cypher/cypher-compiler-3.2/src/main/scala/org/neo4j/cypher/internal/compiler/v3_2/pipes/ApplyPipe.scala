@@ -33,9 +33,4 @@ case class ApplyPipe(source: Pipe, inner: Pipe)(val id: Id = new Id)
         val innerResults = inner.createResults(innerState)
         innerResults.map { context => context ++ original }
     }
-
-  def dup(sources: List[Pipe]): Pipe = {
-    val (l :: r :: Nil) = sources
-    copy(source = l, inner= r)(id)
-  }
 }

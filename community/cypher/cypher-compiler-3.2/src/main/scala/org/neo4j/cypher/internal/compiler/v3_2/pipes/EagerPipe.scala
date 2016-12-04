@@ -27,9 +27,4 @@ case class EagerPipe(src: Pipe)(val id: Id = new Id)(implicit pipeMonitor: PipeM
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
     input.toIndexedSeq.toIterator
-
-  override def dup(sources: List[Pipe]): Pipe = {
-    val (src :: Nil) = sources
-    copy(src = src)(id)
-  }
 }

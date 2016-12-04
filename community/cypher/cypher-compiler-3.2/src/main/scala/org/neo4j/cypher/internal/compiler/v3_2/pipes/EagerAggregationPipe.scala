@@ -107,9 +107,4 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Set[String], aggre
       }.toIterator
     }
   }
-
-  def dup(sources: List[Pipe]): Pipe = {
-    val (source :: Nil) = sources
-    copy(source = source)(id)
-  }
 }

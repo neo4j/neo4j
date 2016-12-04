@@ -37,11 +37,6 @@ case class UnwindPipe(source: Pipe, collection: Expression, variable: String)
     if (input.hasNext) new UnwindIterator(input, state) else Iterator.empty
   }
 
-  def dup(sources: List[Pipe]): Pipe = {
-    val (head :: Nil) = sources
-    copy(source = head)(id)
-  }
-
   private class UnwindIterator(input: Iterator[ExecutionContext], state: QueryState) extends Iterator[ExecutionContext] {
     private var context: ExecutionContext = null
     private var unwindIterator: Iterator[Any] = null

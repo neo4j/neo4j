@@ -38,11 +38,6 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) =
     input.flatMap(projector(state.query))
 
-  def dup(sources: List[Pipe]): Pipe = {
-    val (source :: Nil) = sources
-    copy(source = source)(id)
-  }
-
   private def projector(qtx: QueryContext): Projector =
     if (simpleLength) project(qtx) else projectVarLength(qtx)
 

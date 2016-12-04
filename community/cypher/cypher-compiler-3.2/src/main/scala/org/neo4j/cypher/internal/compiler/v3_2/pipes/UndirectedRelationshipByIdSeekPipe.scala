@@ -39,9 +39,4 @@ case class UndirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: SeekArgs
   }
 
   def monitor = pipeMonitor
-
-  def dup(sources: List[Pipe]): Pipe = {
-    assert(sources.isEmpty)
-    this
-  }
 }

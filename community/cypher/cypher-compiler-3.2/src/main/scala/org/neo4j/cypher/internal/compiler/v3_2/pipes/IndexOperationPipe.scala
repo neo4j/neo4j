@@ -51,9 +51,4 @@ case class IndexOperationPipe(indexOp: IndexOperation)(val id: Id = new Id)(impl
       throw new SyntaxException("Cypher support only one property key per index right now")
     s(0)
   }
-
-  def dup(sources: List[Pipe]): Pipe = {
-    require(sources.isEmpty)
-    this
-  }
 }

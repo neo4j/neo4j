@@ -55,11 +55,6 @@ case class NodeHashJoinPipe(nodeVariables: Set[String], left: Pipe, right: Pipe)
     result.flatten
   }
 
-  def dup(sources: List[Pipe]): Pipe = {
-    val (left :: right :: Nil) = sources
-    copy(left = left, right = right)(id)
-  }
-
   private def buildProbeTable(input: Iterator[ExecutionContext]): mutable.HashMap[IndexedSeq[Long], mutable.MutableList[ExecutionContext]] = {
     val table = new mutable.HashMap[IndexedSeq[Long], mutable.MutableList[ExecutionContext]]
 

@@ -34,7 +34,5 @@ class FakePipe(val data: Iterator[Map[String, Any]], newVariables: (String, Cyph
 
   val monitor: PipeMonitor = mock[PipeMonitor]
 
-  def dup(sources: List[Pipe]): Pipe = ???
-
   var id = new Id
 }

@@ -87,12 +87,6 @@ case class CreateRelationshipPipe(src: Pipe,
                                  (val id: Id = new Id)
                                  (implicit pipeMonitor: PipeMonitor)
   extends BaseRelationshipPipe(src, key, startNode, typ, endNode, properties, pipeMonitor) {
-
-  override def dup(sources: List[Pipe]): Pipe = {
-    val (onlySource :: Nil) = sources
-    CreateRelationshipPipe(onlySource, key, startNode, typ, endNode, properties)(id)
-  }
-
   override protected def handleNull(key: String) {
     //do nothing
   }
@@ -103,11 +97,6 @@ case class MergeCreateRelationshipPipe(src: Pipe, key: String, startNode: String
                                       (val id: Id = new Id)
                                       (implicit pipeMonitor: PipeMonitor)
   extends BaseRelationshipPipe(src, key, startNode, typ, endNode, properties, pipeMonitor) {
-
-  override def dup(sources: List[Pipe]): Pipe = {
-    val (onlySource :: Nil) = sources
-    MergeCreateRelationshipPipe(onlySource, key, startNode, typ, endNode, properties)(id)
-  }
 
   override protected def handleNull(key: String) {
     //merge cannot use null properties, since in that case the match part will not find the result of the create

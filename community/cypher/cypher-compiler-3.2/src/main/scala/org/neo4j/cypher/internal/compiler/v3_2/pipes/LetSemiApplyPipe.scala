@@ -36,9 +36,4 @@ case class LetSemiApplyPipe(source: Pipe, inner: Pipe, letVarName: String, negat
   }
 
   private def name = if (negated) "LetAntiSemiApply" else "LetSemiApply"
-
-  def dup(sources: List[Pipe]): Pipe = {
-    val (source :: inner :: Nil) = sources
-    copy(source = source, inner = inner)(id)
-  }
 }

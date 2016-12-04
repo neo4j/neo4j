@@ -33,9 +33,4 @@ case class SetPipe(src: Pipe, setOperation: SetOperation)
       row
     }
   }
-
-  override def dup(sources: List[Pipe]): Pipe = {
-    val (onlySource :: Nil) = sources
-    SetPipe(onlySource, setOperation)(id)
-  }
 }

@@ -70,11 +70,6 @@ case class ExpandIntoPipe(source: Pipe,
         }
     }
   }
-
-  def dup(sources: List[Pipe]): Pipe = {
-    val (source :: Nil) = sources
-    copy(source = source)(id)
-  }
 }
 
 

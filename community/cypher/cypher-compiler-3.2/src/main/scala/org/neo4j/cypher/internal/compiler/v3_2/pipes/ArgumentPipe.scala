@@ -27,6 +27,4 @@ case class ArgumentPipe()
                        (implicit val monitor: PipeMonitor) extends Pipe {
   def internalCreateResults(state: QueryState): Iterator[ExecutionContext] =
     Iterator(state.initialContext.get)
-
-  def dup(sources: List[Pipe]): Pipe = this
 }

@@ -39,9 +39,4 @@ case class ForeachPipe(source: Pipe, inner: Pipe, variable: String, expression: 
         }
         outerContext
     }
-
-  override def dup(sources: List[Pipe]): Pipe = {
-    val (l :: r :: Nil) = sources
-    copy(source = l, inner= r)(id)
-  }
 }

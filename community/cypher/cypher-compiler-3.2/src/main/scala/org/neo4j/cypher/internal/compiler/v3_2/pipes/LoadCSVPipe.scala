@@ -113,9 +113,4 @@ case class LoadCSVPipe(source: Pipe,
       }
     })
   }
-
-  override def dup(sources: List[Pipe]): Pipe = {
-    val (head :: Nil) = sources
-    copy(source = head)(id)
-  }
 }

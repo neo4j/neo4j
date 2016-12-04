@@ -31,11 +31,6 @@ case class SortPipe(source: Pipe, orderBy: Seq[SortDescription])
     java.util.Arrays.sort(array, new InnerOrdering(orderBy)(state))
     array.toIterator
   }
-
-  def dup(sources: List[Pipe]): Pipe = {
-    val (head :: Nil) = sources
-    copy(source = head)(id)
-  }
 }
 
 private class InnerOrdering(order: Seq[SortDescription])(implicit qtx: QueryState) extends scala.Ordering[ExecutionContext] {

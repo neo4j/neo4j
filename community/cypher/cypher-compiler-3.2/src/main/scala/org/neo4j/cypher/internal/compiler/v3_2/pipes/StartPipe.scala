@@ -49,13 +49,6 @@ case class NodeStartPipe(source: Pipe,
                         (implicit pipeMonitor: PipeMonitor)
   extends StartPipe[Node](source, name, createSource, pipeMonitor) {
   def variableType = CTNode
-
-  def dup(sources: List[Pipe]): Pipe = {
-    val (head :: Nil) = sources
-    copy(source = head)(id)
-  }
-
-
 }
 
 case class RelationshipStartPipe(source: Pipe, name: String, createSource: EntityProducer[Relationship])
@@ -63,10 +56,5 @@ case class RelationshipStartPipe(source: Pipe, name: String, createSource: Entit
                                 (implicit pipeMonitor: PipeMonitor)
   extends StartPipe[Relationship](source, name, createSource, pipeMonitor) {
   def variableType = CTRelationship
-
-  def dup(sources: List[Pipe]): Pipe = {
-    val (head :: Nil) = sources
-    copy(source = head)(id)
-  }
 }
 

@@ -59,9 +59,4 @@ case class RelationshipCountFromCountStorePipe(ident: String, startLabel: Option
     }
 
   override def monitor = pipeMonitor
-
-  def dup(sources: List[Pipe]): Pipe = {
-    require(sources.isEmpty)
-    this
-  }
 }

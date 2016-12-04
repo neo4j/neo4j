@@ -32,9 +32,4 @@ case class FilterPipe(source: Pipe, predicate: Predicate)
 
     input.filter(ctx => predicate.isTrue(ctx)(state))
   }
-
-  def dup(sources: List[Pipe]): Pipe = {
-    val (source :: Nil) = sources
-    copy(source = source)(id)
-  }
 }

@@ -50,9 +50,4 @@ case class NodeIndexSeekPipe(ident: String,
   }
 
   override def monitor = pipeMonitor
-
-  def dup(sources: List[Pipe]): Pipe = {
-    require(sources.isEmpty)
-    this
-  }
 }

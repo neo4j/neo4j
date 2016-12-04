@@ -28,9 +28,4 @@ case class UnionPipe(l: Pipe, r: Pipe)
   extends Pipe {
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] =
     l.createResults(state) ++ r.createResults(state)
-
-  def dup(sources: List[Pipe]): Pipe = {
-    val (l :: r :: Nil) = sources
-    copy(l, r)(id)
-  }
 }

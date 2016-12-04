@@ -62,11 +62,6 @@ extends PipeWithSource(left, pipeMonitor) {
       }
     }
   }
-
-  override def dup(sources: List[Pipe]) = {
-    val (left :: right :: Nil) = sources
-    copy(left = left, right = right)(id)
-  }
 }
 
 abstract class LazyGroupingIterator[ROW >: Null <: AnyRef](val input: Iterator[ROW]) extends AbstractIterator[ROW] {

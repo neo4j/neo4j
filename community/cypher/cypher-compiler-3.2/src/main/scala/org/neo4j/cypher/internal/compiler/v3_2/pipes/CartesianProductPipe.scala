@@ -32,9 +32,4 @@ case class CartesianProductPipe(lhs: Pipe, rhs: Pipe)
   }
 
   def monitor: PipeMonitor = pipeMonitor
-
-  def dup(sources: List[Pipe]): Pipe = {
-    val (l :: r :: Nil) = sources
-    copy(lhs = l, rhs = r)(id)
-  }
 }

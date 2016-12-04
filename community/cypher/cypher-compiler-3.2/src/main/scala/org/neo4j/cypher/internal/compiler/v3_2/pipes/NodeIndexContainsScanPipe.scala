@@ -57,11 +57,6 @@ abstract class AbstractNodeIndexStringScanPipe(ident: String,
   protected def queryContextCall(state: QueryState, indexDescriptor: IndexDescriptor, value: String): Iterator[Node]
 
   override def monitor = pipeMonitor
-
-  override def dup(sources: List[Pipe]): Pipe = {
-    require(sources.isEmpty)
-    this
-  }
 }
 
 case class NodeIndexContainsScanPipe(ident: String,

@@ -81,11 +81,6 @@ case class CreateNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel], proper
                          (val id: Id = new Id)
                          (implicit pipeMonitor: PipeMonitor) extends BaseCreateNodePipe(src, key, labels, properties, pipeMonitor) {
 
-  override def dup(sources: List[Pipe]): Pipe = {
-    val (onlySource :: Nil) = sources
-    copy(onlySource, key, labels, properties)(id)
-  }
-
   override protected def handleNull(key: String) {
     // do nothing
   }
@@ -94,12 +89,6 @@ case class CreateNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel], proper
 case class MergeCreateNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel], properties: Option[Expression])
                               (val id: Id = new Id)
                          (implicit pipeMonitor: PipeMonitor) extends BaseCreateNodePipe(src, key, labels, properties, pipeMonitor) {
-
-  override def dup(sources: List[Pipe]): Pipe = {
-    val (onlySource :: Nil) = sources
-    copy(onlySource, key, labels, properties)(id)
-  }
-
   override protected def handleNull(key: String) {
     //merge cannot use null properties, since in that case the match part will not find the result of the create
     throw new InvalidSemanticsException(s"Cannot merge node using null property value for $key")

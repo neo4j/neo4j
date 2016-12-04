@@ -31,9 +31,4 @@ case class EmptyResultPipe(source: Pipe)(val id: Id = new Id)(implicit pipeMonit
 
     Iterator.empty
   }
-
-  def dup(sources: List[Pipe]): Pipe = {
-    val (source :: Nil) = sources
-    copy(source = source)(id)
-  }
 }

@@ -45,8 +45,6 @@ trait Pipe {
 
   def monitor: PipeMonitor
 
-  def dup(sources: List[Pipe]): Pipe
-
   def createResults(state: QueryState) : Iterator[ExecutionContext] = {
     val decoratedState = state.decorator.decorate(self, state)
     monitor.startSetup(state.queryId, self)
@@ -74,8 +72,6 @@ case class SingleRowPipe()(val id: Id = new Id)(implicit val monitor: PipeMonito
 
   def internalCreateResults(state: QueryState) =
     Iterator(state.initialContext.getOrElse(ExecutionContext.empty))
-
-  def dup(sources: List[Pipe]): Pipe = this
 }
 
 abstract class PipeWithSource(source: Pipe, val monitor: PipeMonitor) extends Pipe {

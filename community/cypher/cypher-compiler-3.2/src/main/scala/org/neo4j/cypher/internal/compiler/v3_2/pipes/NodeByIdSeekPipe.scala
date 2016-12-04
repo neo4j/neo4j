@@ -66,9 +66,4 @@ case class NodeByIdSeekPipe(ident: String, nodeIdsExpr: SeekArgs)
   }
 
   override def monitor = pipeMonitor
-
-  def dup(sources: List[Pipe]): Pipe = {
-    require(sources.isEmpty)
-    this
-  }
 }

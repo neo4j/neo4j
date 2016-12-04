@@ -43,9 +43,4 @@ case class ConditionalApplyPipe(source: Pipe, inner: Pipe, items: Seq[String], n
   }
 
   private def name = if (negated) "AntiConditionalApply" else "ConditionalApply"
-
-  def dup(sources: List[Pipe]): Pipe = {
-    val (l :: r :: Nil) = sources
-    copy(source = l, inner= r)(id)
-  }
 }

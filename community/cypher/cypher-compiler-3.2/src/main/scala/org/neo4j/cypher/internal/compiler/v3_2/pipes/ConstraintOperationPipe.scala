@@ -41,9 +41,4 @@ class ConstraintOperationPipe(op: PropertyConstraintOperation, keyToken: KeyToke
 
     Iterator.empty
   }
-
-  def dup(sources: List[Pipe]): Pipe = {
-    require(sources.isEmpty)
-    this
-  }
 }

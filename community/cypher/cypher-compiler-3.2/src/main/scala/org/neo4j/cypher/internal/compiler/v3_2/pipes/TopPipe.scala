@@ -118,11 +118,6 @@ case class TopNPipe(source: Pipe, sortDescription: List[SortDescription], countE
       }
     }
   }
-
-  override def dup(sources: List[Pipe]): Pipe = {
-    val (head :: Nil) = sources
-    copy(source = head)(id)
-  }
 }
 
 /*
@@ -160,12 +155,6 @@ case class Top1Pipe(source: Pipe, sortDescription: List[SortDescription])
       }
       Iterator.single(result._2)
     }
-  }
-
-
-  override def dup(sources: List[Pipe]): Pipe = {
-    val (head :: Nil) = sources
-    copy(source = head)(id)
   }
 }
 
@@ -214,10 +203,5 @@ case class Top1WithTiesPipe(source: Pipe, sortDescription: List[SortDescription]
     val builder = Vector.newBuilder[ExecutionContext]
     builder += first._2
     builder
-  }
-
-  override def dup(sources: List[Pipe]): Pipe = {
-    val (head :: Nil) = sources
-    copy(source = head)(id)
   }
 }

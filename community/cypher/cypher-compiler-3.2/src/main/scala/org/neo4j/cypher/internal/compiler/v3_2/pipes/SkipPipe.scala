@@ -42,11 +42,6 @@ case class SkipPipe(source: Pipe, exp: Expression)
 
     new HeadAndTail(first, input).drop(count)
   }
-
-  def dup(sources: List[Pipe]): Pipe = {
-    val (head :: Nil) = sources
-    copy(source = head)(id)
-  }
 }
 
 class HeadAndTail[T](head: T, tail: Iterator[T]) extends Iterator[T] {

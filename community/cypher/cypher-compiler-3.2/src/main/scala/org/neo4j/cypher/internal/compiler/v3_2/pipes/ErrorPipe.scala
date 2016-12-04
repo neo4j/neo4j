@@ -27,9 +27,4 @@ case class ErrorPipe(source: Pipe, exception: Exception)
   extends PipeWithSource(source, pipeMonitor) {
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
     throw exception
-
-  override def dup(sources: List[Pipe]): Pipe = {
-    val (head :: Nil) = sources
-    copy(source = head)(id)
-  }
 }

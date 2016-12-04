@@ -61,9 +61,4 @@ case class DistinctPipe(source: Pipe, expressions: Map[String, Expression])
          }
     }
   }
-
-  def dup(sources: List[Pipe]): Pipe = {
-    val (source :: Nil) = sources
-    copy(source = source)(id)
-  }
 }

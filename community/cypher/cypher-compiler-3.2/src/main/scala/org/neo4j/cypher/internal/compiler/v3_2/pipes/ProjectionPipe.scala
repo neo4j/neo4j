@@ -44,9 +44,4 @@ case class ProjectionPipe(source: Pipe, expressions: Map[String, Expression])
         ctx
     }
   }
-
-  def dup(sources: List[Pipe]): Pipe = {
-    val (source :: Nil) = sources
-    copy(source = source)(id)
-  }
 }

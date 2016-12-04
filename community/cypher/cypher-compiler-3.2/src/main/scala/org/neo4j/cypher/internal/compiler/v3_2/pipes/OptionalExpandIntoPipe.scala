@@ -68,9 +68,4 @@ case class OptionalExpandIntoPipe(source: Pipe, fromName: String, relName: Strin
         }
     }
   }
-
-  def dup(sources: List[Pipe]): Pipe = {
-    val (head :: Nil) = sources
-    copy(source = head)(id)
-  }
 }

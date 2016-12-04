@@ -27,8 +27,6 @@ import org.neo4j.cypher.internal.compiler.v3_2.planDescription._
 import org.neo4j.cypher.internal.compiler.v3_2.spi.QueryContext
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 
-import scala.collection.immutable.::
-
 class ProfilerTest extends CypherFunSuite {
 
   private implicit val monitor = mock[PipeMonitor]
@@ -229,12 +227,5 @@ case class ProfilerTestPipe(source: Pipe, name: String, rows: Int, dbAccess: Int
     input.size
     (0 until dbAccess).foreach(x => state.query.createNode())
     (0 until rows).map(x => ExecutionContext.empty).toIterator
-  }
-
-  def dup(sources: List[Pipe]): Pipe = {
-    val (source :: Nil) = sources
-    val other = copy(source = source)
-    other.id = id
-    other
   }
 }

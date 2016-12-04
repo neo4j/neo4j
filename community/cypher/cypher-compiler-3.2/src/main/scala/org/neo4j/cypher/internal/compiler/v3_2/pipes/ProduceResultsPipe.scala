@@ -39,9 +39,4 @@ case class ProduceResultsPipe(source: Pipe, columns: Seq[String])
         ExecutionContext(m)
     }
   }
-
-  def dup(sources: List[Pipe]): Pipe = {
-    val (source :: Nil) = sources
-    copy(source = source)(id)
-  }
 }

@@ -55,9 +55,4 @@ case class ShortestPathPipe(source: Pipe, shortestPathCommand: ShortestPath, pre
           result.map { (path: Path) => ctx.newWith1(pathName, path) }
       }
     })
-
-  def dup(sources: List[Pipe]): Pipe = {
-    val (head :: Nil) = sources
-    copy(source = head)(id)
-  }
 }

@@ -41,9 +41,4 @@ case class NodeByLabelScanPipe(ident: String, label: LazyLabel)
   }
 
   override def monitor = pipeMonitor
-
-  def dup(sources: List[Pipe]): Pipe = {
-    require(sources.isEmpty)
-    this
-  }
 }

@@ -43,9 +43,4 @@ case class LetSelectOrSemiApplyPipe(source: Pipe, inner: Pipe, letVarName: Strin
   }
 
   private def name = if (negated) "LetSelectOrAntiSemiApply" else "LetSelectOrSemiApply"
-
-  def dup(sources: List[Pipe]): Pipe = {
-    val (source :: inner :: Nil) = sources
-    copy(source = source, inner = inner)(id)
-  }
 }
