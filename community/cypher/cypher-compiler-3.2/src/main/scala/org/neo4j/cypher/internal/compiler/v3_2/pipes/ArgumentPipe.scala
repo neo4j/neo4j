@@ -27,8 +27,6 @@ import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 case class ArgumentPipe(symbols: SymbolTable)
                        (val id: Id = new Id)
                        (implicit val monitor: PipeMonitor) extends Pipe {
-  def sources = Seq.empty
-
   private val typeAssertions =
     SymbolTypeAssertionCompiler.compile(
       symbols.variables.toIndexedSeq.collect { case entry@(_, typ) if typ == CTNode || typ == CTRelationship => entry}
@@ -38,6 +36,4 @@ case class ArgumentPipe(symbols: SymbolTable)
     Iterator(typeAssertions(state.initialContext.get))
 
   def dup(sources: List[Pipe]): Pipe = this
-
-  def exists(pred: (Pipe) => Boolean) = pred(this)
 }

@@ -85,7 +85,6 @@ class NodeOuterHashJoinPipeTest extends CypherFunSuite {
     val left = newMockedPipe("b")
 
     val right = mock[Pipe]
-    when(right.sources).thenReturn(Seq.empty)
     when(right.symbols).thenReturn(SymbolTable(Map("b" -> CTNode)))
     val rhsIterator = new TestableIterator(Iterator(row("b" -> newMockedNode(0))))
     when(right.createResults(any())).thenReturn(rhsIterator)
@@ -231,7 +230,6 @@ class NodeOuterHashJoinPipeTest extends CypherFunSuite {
 
   private def newMockedPipe(node: String, rows: ExecutionContext*): Pipe = {
     val pipe = mock[Pipe]
-    when(pipe.sources).thenReturn(Seq.empty)
     when(pipe.symbols).thenReturn(SymbolTable(Map(node -> CTNode)))
     when(pipe.createResults(any())).thenReturn(rows.iterator)
 

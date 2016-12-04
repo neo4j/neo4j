@@ -51,6 +51,4 @@ case class ConditionalApplyPipe(source: Pipe, inner: Pipe, items: Seq[String], n
     val (l :: r :: Nil) = sources
     copy(source = l, inner= r)(id)
   }
-
-  override val sources: Seq[Pipe] = Seq(source, inner)
 }

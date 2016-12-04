@@ -23,8 +23,6 @@ import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 
-import scala.collection.immutable
-
 trait PipeMonitor {
   def startSetup(queryId: AnyRef, pipe: Pipe)
   def stopSetup(queryId: AnyRef, pipe: Pipe)
@@ -71,17 +69,6 @@ trait Pipe {
 
   def symbols: SymbolTable
 
-  def sources: Seq[Pipe]
-
-  /*
-  Runs the predicate on all the inner Pipe until no pipes are left, or one returns true.
-   */
-  def exists(pred: Pipe => Boolean): Boolean
-
-  def isLeaf = false
-
-  def variables: immutable.Set[String] = symbols.variables.keySet.toSet
-
   // Used by profiling to identify where to report dbhits and rows
   def id: Id
 }
@@ -93,11 +80,7 @@ case class SingleRowPipe()(val id: Id = new Id)(implicit val monitor: PipeMonito
   def internalCreateResults(state: QueryState) =
     Iterator(state.initialContext.getOrElse(ExecutionContext.empty))
 
-  def exists(pred: Pipe => Boolean) = pred(this)
-
   def dup(sources: List[Pipe]): Pipe = this
-
-  def sources: Seq[Pipe] = Seq.empty
 }
 
 abstract class PipeWithSource(source: Pipe, val monitor: PipeMonitor) extends Pipe {
@@ -113,10 +96,4 @@ abstract class PipeWithSource(source: Pipe, val monitor: PipeMonitor) extends Pi
     throw new UnsupportedOperationException("This method should never be called on PipeWithSource")
 
   protected def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext]
-
-  override val sources: Seq[Pipe] = Seq(source)
-
-  def exists(pred: Pipe => Boolean) = pred(this) || source.exists(pred)
-
-  override def isLeaf = source.sources.isEmpty
 }

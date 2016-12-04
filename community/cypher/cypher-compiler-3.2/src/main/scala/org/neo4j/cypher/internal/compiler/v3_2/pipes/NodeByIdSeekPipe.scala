@@ -67,8 +67,6 @@ case class NodeByIdSeekPipe(ident: String, nodeIdsExpr: SeekArgs)
     new NodeIdSeekIterator(ident, ctx, state.query.nodeOps, nodeIds.iterator)
   }
 
-  def exists(predicate: Pipe => Boolean): Boolean = predicate(this)
-
   def symbols: SymbolTable = new SymbolTable(Map(ident -> CTNode))
 
   override def monitor = pipeMonitor
@@ -77,6 +75,4 @@ case class NodeByIdSeekPipe(ident: String, nodeIdsExpr: SeekArgs)
     require(sources.isEmpty)
     this
   }
-
-  def sources: Seq[Pipe] = Seq.empty
 }

@@ -155,7 +155,6 @@ class OptionalExpandAllPipeTest extends CypherFunSuite {
 
   private def newMockedPipe(node: String, rows: ExecutionContext*): Pipe = {
     val pipe = mock[Pipe]
-    when(pipe.sources).thenReturn(Seq.empty)
     when(pipe.symbols).thenReturn(SymbolTable(Map(node -> CTNode)))
     when(pipe.createResults(any())).thenAnswer(new Answer[Iterator[ExecutionContext]] {
       def answer(invocation: InvocationOnMock): Iterator[ExecutionContext] = rows.iterator

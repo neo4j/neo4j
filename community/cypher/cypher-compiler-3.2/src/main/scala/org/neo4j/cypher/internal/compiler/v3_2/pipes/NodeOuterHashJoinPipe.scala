@@ -62,8 +62,6 @@ case class NodeOuterHashJoinPipe(nodeVariables: Set[String], source: Pipe, inner
 
   def symbols: SymbolTable = source.symbols.add(inner.symbols.variables)
 
-  override val sources = Seq(source, inner)
-
   def dup(sources: List[Pipe]): Pipe = {
     val (source :: inner :: Nil) = sources
     copy(source = source, inner = inner)(id)

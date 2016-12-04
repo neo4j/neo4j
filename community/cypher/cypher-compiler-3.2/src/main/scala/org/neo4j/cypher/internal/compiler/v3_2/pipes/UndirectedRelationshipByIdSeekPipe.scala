@@ -40,8 +40,6 @@ case class UndirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: SeekArgs
     new UndirectedRelationshipIdSeekIterator(ident, fromNode, toNode, ctx, state.query.relationshipOps, relIds.iterator)
   }
 
-  def exists(predicate: Pipe => Boolean): Boolean = predicate(this)
-
   def symbols = new SymbolTable(Map(ident -> CTRelationship, toNode -> CTNode, fromNode -> CTNode))
 
   def monitor = pipeMonitor
@@ -50,6 +48,4 @@ case class UndirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: SeekArgs
     assert(sources.isEmpty)
     this
   }
-
-  def sources: Seq[Pipe] = Seq.empty
 }

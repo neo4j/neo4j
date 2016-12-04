@@ -57,6 +57,4 @@ case class AssertSameNodePipe(source: Pipe, inner: Pipe, node: String)
     val (l :: r :: Nil) = sources
     copy(source = l, inner= r)(id)
   }
-
-  override val sources: Seq[Pipe] = Seq(source, inner)
 }

@@ -47,6 +47,4 @@ case class ForeachPipe(source: Pipe, inner: Pipe, variable: String, expression: 
     val (l :: r :: Nil) = sources
     copy(source = l, inner= r)(id)
   }
-
-  override val sources: Seq[Pipe] = Seq(source, inner)
 }

@@ -32,8 +32,6 @@ case class AllNodesScanPipe(ident: String)(val id: Id = new Id)
     state.query.nodeOps.all.map(n => baseContext.newWith1(ident, n))
   }
 
-  def exists(predicate: Pipe => Boolean): Boolean = predicate(this)
-
   def symbols = new SymbolTable(Map(ident -> CTNode))
 
   override def monitor = pipeMonitor
@@ -42,6 +40,4 @@ case class AllNodesScanPipe(ident: String)(val id: Id = new Id)
     require(sources.isEmpty)
     this
   }
-
-  def sources: Seq[Pipe] = Seq.empty
 }

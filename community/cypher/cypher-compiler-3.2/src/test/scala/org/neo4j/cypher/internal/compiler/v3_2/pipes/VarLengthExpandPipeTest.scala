@@ -1035,7 +1035,6 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
 
   private def newMockedPipe(symbolTable: SymbolTable): Pipe = {
     val pipe = mock[Pipe]
-    when(pipe.sources).thenReturn(Seq.empty)
     when(pipe.symbols).thenReturn(symbolTable)
     pipe
   }

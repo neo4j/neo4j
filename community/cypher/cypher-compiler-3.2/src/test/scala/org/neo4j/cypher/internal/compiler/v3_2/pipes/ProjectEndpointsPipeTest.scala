@@ -518,7 +518,6 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
 
   private def newMockedPipe(rel: String, rows: ExecutionContext*): Pipe = {
     val pipe = mock[Pipe]
-    when(pipe.sources).thenReturn(Seq.empty)
     when(pipe.symbols).thenReturn(SymbolTable(Map(rel -> CTRelationship)))
     when(pipe.createResults(any())).thenAnswer(new Answer[Iterator[ExecutionContext]] {
       def answer(invocation: InvocationOnMock): Iterator[ExecutionContext] = rows.iterator

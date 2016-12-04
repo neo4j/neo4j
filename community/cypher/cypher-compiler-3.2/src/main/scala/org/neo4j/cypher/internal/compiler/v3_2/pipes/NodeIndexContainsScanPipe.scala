@@ -58,8 +58,6 @@ abstract class AbstractNodeIndexStringScanPipe(ident: String,
 
   protected def queryContextCall(state: QueryState, indexDescriptor: IndexDescriptor, value: String): Iterator[Node]
 
-  override def exists(predicate: Pipe => Boolean): Boolean = predicate(this)
-
   override def symbols = new SymbolTable(Map(ident -> CTNode))
 
   override def monitor = pipeMonitor
@@ -68,8 +66,6 @@ abstract class AbstractNodeIndexStringScanPipe(ident: String,
     require(sources.isEmpty)
     this
   }
-
-  override def sources: Seq[Pipe] = Seq.empty
 }
 
 case class NodeIndexContainsScanPipe(ident: String,

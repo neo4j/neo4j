@@ -460,8 +460,6 @@ class MergeIntoPipeTest extends CypherFunSuite {
 
   private def newMockedPipe(symbols: Map[String, CypherType], rows: ExecutionContext*): Pipe = {
     val pipe = mock[Pipe]
-
-    when(pipe.sources).thenReturn(Seq.empty)
     when(pipe.symbols).thenReturn(SymbolTable(symbols))
     when(pipe.createResults(mockAny())).thenAnswer(new Answer[Iterator[ExecutionContext]] {
       def answer(invocation: InvocationOnMock) = rows.iterator

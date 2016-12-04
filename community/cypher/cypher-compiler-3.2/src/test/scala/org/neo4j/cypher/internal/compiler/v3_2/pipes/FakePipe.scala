@@ -35,13 +35,9 @@ class FakePipe(val data: Iterator[Map[String, Any]], newVariables: (String, Cyph
 
   def internalCreateResults(state: QueryState) = data.map(m => ExecutionContext(collection.mutable.Map(m.toSeq: _*)))
 
-  def exists(pred: Pipe => Boolean) = ???
-
   val monitor: PipeMonitor = mock[PipeMonitor]
 
   def dup(sources: List[Pipe]): Pipe = ???
-
-  override def sources: Seq[Pipe] = Seq.empty
 
   var id = new Id
 }

@@ -57,8 +57,6 @@ case class NodeHashJoinPipe(nodeVariables: Set[String], left: Pipe, right: Pipe)
 
   def symbols = left.symbols.add(right.symbols.variables)
 
-  override val sources = Seq(left, right)
-
   def dup(sources: List[Pipe]): Pipe = {
     val (left :: right :: Nil) = sources
     copy(left = left, right = right)(id)

@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v3_2.test_helpers.TestableIterator
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.Node
 
 class ValueHashJoinPipeTest extends CypherFunSuite {
 
@@ -188,7 +187,6 @@ class ValueHashJoinPipeTest extends CypherFunSuite {
 
   private def newMockedPipe(symbolTable: SymbolTable): Pipe = {
     val pipe = mock[Pipe]
-    when(pipe.sources).thenReturn(Seq.empty)
     when(pipe.symbols).thenReturn(symbolTable)
     pipe
   }

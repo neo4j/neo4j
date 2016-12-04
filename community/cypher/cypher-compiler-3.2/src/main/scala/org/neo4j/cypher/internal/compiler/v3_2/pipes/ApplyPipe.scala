@@ -41,6 +41,4 @@ case class ApplyPipe(source: Pipe, inner: Pipe)(val id: Id = new Id)
     val (l :: r :: Nil) = sources
     copy(source = l, inner= r)(id)
   }
-
-  override val sources: Seq[Pipe] = Seq(source, inner)
 }

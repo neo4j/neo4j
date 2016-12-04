@@ -41,8 +41,6 @@ case class NodeCountFromCountStorePipe(ident: String, label: Option[LazyLabel])
     Seq(baseContext.newWith1(ident, count)).iterator
   }
 
-  def exists(predicate: Pipe => Boolean): Boolean = predicate(this)
-
   def symbols = new SymbolTable(Map(ident -> CTInteger))
 
   override def monitor = pipeMonitor
@@ -51,6 +49,4 @@ case class NodeCountFromCountStorePipe(ident: String, label: Option[LazyLabel])
     require(sources.isEmpty)
     this
   }
-
-  def sources: Seq[Pipe] = Seq.empty
 }

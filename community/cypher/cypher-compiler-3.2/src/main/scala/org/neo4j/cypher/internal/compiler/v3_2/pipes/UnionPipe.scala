@@ -32,12 +32,8 @@ case class UnionPipe(l: Pipe, r: Pipe)
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] =
     l.createResults(state) ++ r.createResults(state)
 
-  def exists(pred: Pipe => Boolean): Boolean = l.exists(pred) || r.exists(pred)
-
   def dup(sources: List[Pipe]): Pipe = {
     val (l :: r :: Nil) = sources
     copy(l, r)(id)
   }
-
-  def sources: Seq[Pipe] = Seq(l, r)
 }

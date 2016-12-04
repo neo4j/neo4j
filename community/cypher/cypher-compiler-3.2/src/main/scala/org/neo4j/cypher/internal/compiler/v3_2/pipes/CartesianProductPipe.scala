@@ -26,8 +26,6 @@ import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 case class CartesianProductPipe(lhs: Pipe, rhs: Pipe)
                                (val id: Id = new Id)
                                (implicit pipeMonitor: PipeMonitor) extends Pipe {
-  def exists(pred: (Pipe) => Boolean): Boolean = lhs.exists(pred) || rhs.exists(pred)
-
   def symbols: SymbolTable = lhs.symbols.add(rhs.symbols.variables)
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
@@ -42,6 +40,4 @@ case class CartesianProductPipe(lhs: Pipe, rhs: Pipe)
     val (l :: r :: Nil) = sources
     copy(lhs = l, rhs = r)(id)
   }
-
-  def sources: Seq[Pipe] = Seq(lhs, rhs)
 }

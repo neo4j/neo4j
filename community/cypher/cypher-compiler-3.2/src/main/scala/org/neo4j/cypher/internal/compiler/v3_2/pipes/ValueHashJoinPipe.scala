@@ -58,8 +58,6 @@ case class ValueHashJoinPipe(lhsExpression: Expression, rhsExpression: Expressio
 
   override def symbols = left.symbols.add(right.symbols.variables)
 
-  override val sources = Seq(left, right)
-
   override def dup(sources: List[Pipe]): Pipe = {
     val (left :: right :: Nil) = sources
     copy(left = left, right = right)(id)
