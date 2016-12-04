@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v3_2.commands
 
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions._
-import org.neo4j.cypher.internal.compiler.v3_2.mutation._
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Argument
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.compiler.v3_2.symbols.TypeSafe
@@ -136,30 +135,6 @@ case class LoadCSV(withHeaders: Boolean, url: Expression, variable: String, fiel
 case class Unwind(expression: Expression, variable: String) extends StartItem(variable, Seq())
   with ReadOnlyStartItem {
   def variables: Seq[(String, CypherType)] = Seq(variableName -> CTAny)
-}
-
-//We need to wrap the inner classes to be able to have two different rewrite methods
-abstract class UpdatingStartItem(val updateAction: UpdateAction, name: String) extends StartItem(name, Seq(Arguments.UpdateActionName(name))) {
-  override def children = Seq(updateAction)
-  override def symbolTableDependencies = updateAction.symbolTableDependencies
-
-  def variables: Seq[(String, CypherType)] = updateAction.variables
-}
-
-case class CreateNodeStartItem(inner: CreateNode) extends UpdatingStartItem(inner, inner.key) {
-  override def rewrite(f: (Expression) => Expression) = CreateNodeStartItem(inner.rewrite(f))
-}
-
-case class CreateRelationshipStartItem(inner: CreateRelationship) extends UpdatingStartItem(inner, inner.key) {
-  override def rewrite(f: (Expression) => Expression) = CreateRelationshipStartItem(inner.rewrite(f))
-}
-
-case class CreateUniqueStartItem(inner: CreateUniqueAction) extends UpdatingStartItem(inner, "oh noes") {
-  override def rewrite(f: (Expression) => Expression) = CreateUniqueStartItem(inner.rewrite(f))
-}
-
-case class MergeNodeStartItem(inner: MergeNodeAction) extends UpdatingStartItem(inner, inner.variable) {
-  override def rewrite(f: (Expression) => Expression) = MergeNodeStartItem(inner.rewrite(f))
 }
 
 /** NodeById that throws exception if no node is found */

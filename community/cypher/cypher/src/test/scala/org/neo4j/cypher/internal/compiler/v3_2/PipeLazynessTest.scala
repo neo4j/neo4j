@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.compiler.v3_2.commands._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Variable
 import org.neo4j.cypher.internal.compiler.v3_2.commands.predicates.True
 import org.neo4j.cypher.internal.compiler.v3_2.pipes._
-import org.neo4j.cypher.internal.compiler.v3_2.pipes.matching._
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Argument
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
@@ -44,7 +43,6 @@ class PipeLazynessTest extends GraphDatabaseFunSuite with QueryStateTestSupport 
   test("test") {
     distinctPipe.!!()
     filterPipe.!!()
-    matchPipe.!!()
     shortestPathPipe.!!()
     startPipe.!!()
   }
@@ -75,26 +73,6 @@ class PipeLazynessTest extends GraphDatabaseFunSuite with QueryStateTestSupport 
   private def filterPipe = {
     val (iter, src) = emptyFakes
     val pipe = new FilterPipe(src, True())()(mock[PipeMonitor])
-    (pipe, iter)
-  }
-
-  private def matchPipe = {
-    // Produces a MatchPipe for the pattern (x)-[r]->(y)
-    val node1 = mock[Node]
-    val node2 = mock[Node]
-    val rel1 = mock[Relationship]
-    when(node1.getRelationships(Direction.OUTGOING)).thenReturn(Iterable[Relationship](rel1).asJava)
-
-    val iter = new LazyIterator[Map[String, Any]](10, (_, db) => Map("x" -> node1))
-    val src = new FakePipe(iter, "x" -> CTNode)
-    val x = new PatternNode("x")
-    val y = new PatternNode("y")
-    val rel = x.relateTo("r", y, Seq.empty, SemanticDirection.OUTGOING)
-
-    val patternNodes = Map("x" -> x, "y" -> y)
-    val patternRels = Map("r" -> Seq(rel))
-    val graph = new PatternGraph(patternNodes, patternRels, Seq("x"), Seq.empty)
-    val pipe = new MatchPipe(src, Seq(), graph, Set("x", "r", "y"))()
     (pipe, iter)
   }
 
