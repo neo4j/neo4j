@@ -24,10 +24,8 @@ import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{Expression,
 import org.neo4j.cypher.internal.compiler.v3_2.commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.{CastSupport, IsList, IsMap, ListSupport}
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_2.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.NonEmptyList
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 import org.neo4j.graphdb._
 
 import scala.util.{Failure, Success, Try}
@@ -42,7 +40,6 @@ abstract class Predicate extends Expression {
   // together
   def atoms: Seq[Predicate] = Seq(this)
   def containsIsNull: Boolean
-  protected def calculateType(symbols: SymbolTable) = CTBoolean
 
   def andWith(preds: Predicate*): Predicate =
     if (preds.isEmpty) this else preds.fold(this)(_ andWith _)

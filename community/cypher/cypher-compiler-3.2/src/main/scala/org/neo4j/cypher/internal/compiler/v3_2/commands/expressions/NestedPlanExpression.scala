@@ -21,8 +21,6 @@ package org.neo4j.cypher.internal.compiler.v3_2.commands.expressions
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
-import org.neo4j.cypher.internal.frontend.v3_2.symbols.CypherType
 
 case class NestedPlanExpression(logicalPlan: LogicalPlan) extends Expression {
   override def rewrite(f: (Expression) => Expression): Expression = ???
@@ -30,8 +28,6 @@ case class NestedPlanExpression(logicalPlan: LogicalPlan) extends Expression {
   override def arguments: Seq[Expression] = Seq.empty
 
   override def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = ???
-
-  override protected def calculateType(symbols: SymbolTable): CypherType = ???
 
   override def symbolTableDependencies: Set[String] = ???
 

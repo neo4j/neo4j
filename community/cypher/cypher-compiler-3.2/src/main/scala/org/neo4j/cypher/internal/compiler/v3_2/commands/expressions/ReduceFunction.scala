@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v3_2.commands.expressions
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.ListSupport
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 
 case class ReduceFunction(collection: Expression, id: String, expression: Expression, acc: String, init: Expression)
@@ -45,14 +44,6 @@ case class ReduceFunction(collection: Expression, id: String, expression: Expres
   override def children = Seq(collection, expression, init)
 
   def variableDependencies(expectedType: CypherType) = AnyType
-
-  def calculateType(symbols: SymbolTable) = {
-    val iteratorType = collection.evaluateType(CTList(CTAny), symbols).legacyIteratedType
-    var innerSymbols = symbols.add(acc, init.evaluateType(CTAny, symbols))
-    innerSymbols = innerSymbols.add(id, iteratorType)
-    // return expressions's type as the end result for reduce
-    expression.evaluateType(CTAny, innerSymbols)
-  }
 
   def symbolTableDependencies = (collection.symbolTableDependencies ++ expression.symbolTableDependencies ++ init.symbolTableDependencies) - id - acc
 }

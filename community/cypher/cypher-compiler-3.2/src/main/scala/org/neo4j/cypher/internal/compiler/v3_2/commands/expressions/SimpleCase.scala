@@ -21,8 +21,6 @@ package org.neo4j.cypher.internal.compiler.v3_2.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 
 case class SimpleCase(expression: Expression, alternatives: Seq[(Expression, Expression)], default: Option[Expression])
   extends Expression {
@@ -45,9 +43,6 @@ case class SimpleCase(expression: Expression, alternatives: Seq[(Expression, Exp
   private def alternativeExpressions = alternatives.map(_._2)
 
   def arguments = (expression +: (alternativeComparison ++ alternativeExpressions)).distinct
-
-  protected def calculateType(symbols: SymbolTable): CypherType =
-    calculateUpperTypeBound(CTAny, symbols, alternativeExpressions ++ default.toIndexedSeq)
 
   def rewrite(f: (Expression) => Expression): Expression = {
     val newAlternatives = alternatives map {

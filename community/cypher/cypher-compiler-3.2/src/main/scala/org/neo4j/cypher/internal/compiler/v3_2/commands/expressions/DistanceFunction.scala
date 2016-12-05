@@ -22,10 +22,8 @@ package org.neo4j.cypher.internal.compiler.v3_2.commands.expressions
 import java.lang.Math._
 
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v3_2.{CRS, ExecutionContext, Geometry, Point}
 import org.neo4j.cypher.internal.frontend.v3_2.CypherTypeException
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 
 case class DistanceFunction(p1: Expression, p2: Expression) extends Expression {
 
@@ -67,8 +65,6 @@ case class DistanceFunction(p1: Expression, p2: Expression) extends Expression {
   }
 
   override def rewrite(f: (Expression) => Expression) = f(DistanceFunction(p1.rewrite(f), p2.rewrite(f)))
-
-  override def calculateType(symbols: SymbolTable) = CTFloat
 
   override def arguments: Seq[Expression] = p1.arguments ++ p2.arguments
 

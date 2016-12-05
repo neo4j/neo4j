@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.compiler.v3_2.commands._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.predicates.{CoercedPredicate, Not, True}
 import org.neo4j.cypher.internal.compiler.v3_2.commands.values.TokenType._
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 
@@ -137,8 +136,6 @@ class TestExpression extends Expression {
   def arguments = Nil
 
   def rewrite(f: (Expression) => Expression): Expression = null
-
-  def calculateType(symbols: SymbolTable): CypherType = null
 
   def symbolTableDependencies = Set()
 

@@ -19,10 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.commands.expressions
 
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
+import org.neo4j.cypher.internal.compiler.v3_2.pipes.aggregation.{PercentileContFunction, PercentileDiscFunction}
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
-import org.neo4j.cypher.internal.compiler.v3_2.pipes.aggregation.PercentileContFunction
-import org.neo4j.cypher.internal.compiler.v3_2.pipes.aggregation.PercentileDiscFunction
 
 case class PercentileCont(anInner: Expression, percentile: Expression) extends AggregationWithInnerExpression(anInner) {
   def createAggregationFunction = new PercentileContFunction(anInner, percentile)
@@ -30,11 +28,6 @@ case class PercentileCont(anInner: Expression, percentile: Expression) extends A
   def expectedInnerType = CTNumber
 
   def rewrite(f: (Expression) => Expression) = f(PercentileCont(anInner.rewrite(f), percentile.rewrite(f)))
-
-  def calculateType(symbols: SymbolTable): CypherType = {
-    percentile.evaluateType(CTNumber, symbols)
-    anInner.evaluateType(CTNumber, symbols)
-  }
 }
 
 case class PercentileDisc(anInner: Expression, percentile: Expression) extends AggregationWithInnerExpression(anInner) {
@@ -43,9 +36,4 @@ case class PercentileDisc(anInner: Expression, percentile: Expression) extends A
   def expectedInnerType = CTNumber
 
   def rewrite(f: (Expression) => Expression) = f(PercentileDisc(anInner.rewrite(f), percentile.rewrite(f)))
-
-  def calculateType(symbols: SymbolTable): CypherType = {
-    percentile.evaluateType(CTNumber, symbols)
-    anInner.evaluateType(CTNumber, symbols)
-  }
 }

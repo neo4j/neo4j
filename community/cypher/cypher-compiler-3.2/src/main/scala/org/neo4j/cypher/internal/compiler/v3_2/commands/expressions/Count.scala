@@ -19,9 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.commands.expressions
 
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.aggregation.CountFunction
+import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 
 case class Count(anInner: Expression) extends AggregationWithInnerExpression(anInner) {
   def createAggregationFunction = new CountFunction(anInner)
@@ -29,6 +28,4 @@ case class Count(anInner: Expression) extends AggregationWithInnerExpression(anI
   def expectedInnerType = CTAny
 
   def rewrite(f: (Expression) => Expression) = f(Count(anInner.rewrite(f)))
-
-  def calculateType(symbols: SymbolTable): CypherType = CTInteger
 }

@@ -21,11 +21,9 @@ package org.neo4j.cypher.internal.compiler.v3_2.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.{SymbolTable, Typed}
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 import org.neo4j.graphdb.NotFoundException
 
-case class Variable(entityName: String) extends Expression with Typed {
+case class Variable(entityName: String) extends Expression {
 
   def apply(ctx: ExecutionContext)(implicit state: QueryState): Any =
     ctx.getOrElse(entityName, throw new NotFoundException("Unknown variable `%s`.".format(entityName)))
@@ -35,11 +33,6 @@ case class Variable(entityName: String) extends Expression with Typed {
   def rewrite(f: (Expression) => Expression) = f(this)
 
   def arguments = Seq()
-
-  def calculateType(symbols: SymbolTable) =
-    throw new UnsupportedOperationException("This class should override evaluateType, and this method should never be run")
-
-  override def evaluateType(expectedType: CypherType, symbols: SymbolTable) = symbols.evaluateType(entityName, expectedType)
 
   def symbolTableDependencies = Set(entityName)
 }

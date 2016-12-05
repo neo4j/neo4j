@@ -22,8 +22,6 @@ package org.neo4j.cypher.internal.compiler.v3_2.commands
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions._
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryStateHelper
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 
 class ReduceTest extends CypherFunSuite {
@@ -49,35 +47,5 @@ class ReduceTest extends CypherFunSuite {
     val reduce = ReduceFunction(collection, "n", expression, "acc", Literal(0))
 
     reduce(m)(s) should equal(null.asInstanceOf[Any])
-  }
-
-  test("reduce_has_the_expected_type_string") {
-    val expression = Add(Variable("acc"), Variable("n"))
-    val collection = Literal(Seq("a", "b", "c"))
-
-    val reduce = ReduceFunction(collection, "n", expression, "acc", Literal(""))
-    val typ = reduce.calculateType(SymbolTable())
-
-    typ should equal(CTString)
-  }
-
-  test("reduce_has_the_expected_type_number") {
-    val expression = Add(Variable("acc"), Variable("n"))
-    val collection = Literal(Seq(1,2,3))
-
-    val reduce = ReduceFunction(collection, "n", expression, "acc", Literal(0))
-    val typ = reduce.calculateType(SymbolTable())
-
-    typ should equal(CTInteger)
-  }
-
-  test("reduce_has_the_expected_type_array") {
-    val expression = Add(Variable("acc"), Variable("n"))
-    val collection = Literal(Seq(1,2,3))
-
-    val reduce = ReduceFunction(collection, "n", expression, "acc", Literal(Seq(1,2)))
-    val typ = reduce.calculateType(new SymbolTable())
-
-    typ should equal(CTList(CTInteger))
   }
 }

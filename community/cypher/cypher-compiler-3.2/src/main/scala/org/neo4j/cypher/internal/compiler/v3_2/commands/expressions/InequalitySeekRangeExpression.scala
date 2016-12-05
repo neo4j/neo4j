@@ -20,10 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v3_2.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v3_2.{ExecutionContext, InequalitySeekRange}
 import org.neo4j.cypher.internal.frontend.v3_2.InternalException
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 
 case class InequalitySeekRangeExpression(range: InequalitySeekRange[Expression])
   extends Expression {
@@ -34,8 +32,6 @@ case class InequalitySeekRangeExpression(range: InequalitySeekRange[Expression])
   override def rewrite(f: (Expression) => Expression): Expression = f(this)
 
   override def arguments: Seq[Expression] = Seq.empty
-
-  override protected def calculateType(symbols: SymbolTable): CypherType = CTAny
 
   override def symbolTableDependencies: Set[String] = Set.empty
 }

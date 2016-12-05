@@ -25,10 +25,8 @@ import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.compiler.v3_2.spi.{Operations, QueryContext}
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.{FakeExpression, SymbolTable}
-import org.neo4j.cypher.internal.frontend.v3_2.{CypherTypeException, InvalidArgumentException}
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_2.{CypherTypeException, InvalidArgumentException}
 import org.neo4j.graphdb.{Node, Relationship}
 
 import scala.collection.JavaConverters._
@@ -113,14 +111,6 @@ class ContainerIndexTest extends CypherFunSuite {
 
     idx("v") should equal(1)
     idx("c") should equal(null.asInstanceOf[AnyRef])
-  }
-
-  test("when collection is a CTAny then type is a collection of CTAny") {
-    val collection = new FakeExpression(CTAny)
-    val symbols = new SymbolTable()
-    val result = ContainerIndex(collection, Literal(2)).evaluateType(CTList(CTAny), symbols)
-
-    result should equal(CTAny)
   }
 
   test("should fail when not integer values are passed") {

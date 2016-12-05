@@ -22,8 +22,6 @@ package org.neo4j.cypher.internal.compiler.v3_2.commands.expressions
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.ListSupport
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 
 case class ExtractFunction(collection: Expression, id: String, expression: Expression)
   extends NullInNullOutExpression(collection)
@@ -42,12 +40,6 @@ case class ExtractFunction(collection: Expression, id: String, expression: Expre
 
 
   def arguments: Seq[Expression] = Seq(collection)
-
-  def calculateType(symbols: SymbolTable): CypherType = {
-    val iteratorType = collection.evaluateType(CTList(CTAny), symbols).legacyIteratedType
-    val innerSymbols = symbols.add(id, iteratorType)
-    CTList(expression.evaluateType(CTAny, innerSymbols))
-  }
 
   def symbolTableDependencies = symbolTableDependencies(collection, expression, id)
 }

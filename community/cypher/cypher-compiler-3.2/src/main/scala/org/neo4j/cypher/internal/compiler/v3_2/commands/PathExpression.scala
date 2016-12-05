@@ -74,8 +74,6 @@ case class PathExpression(pathPattern: Seq[Pattern], predicate: Predicate,
   override def rewrite(f: (Expression) => Expression) =
     f(PathExpression(pathPattern.map(_.rewrite(f)), predicate.rewriteAsPredicate(f), projection, allowIntroducingNewIdentifiers))
 
-  override def calculateType(symbols: SymbolTable) = CTList(CTPath)
-
   override def symbolTableDependencies = {
     val patternDependencies = pathPattern.flatMap(_.symbolTableDependencies).toSet
     val startPointDependencies = pathPattern.flatMap(_.possibleStartPoints).map(_._1).filter(isNamed).toSet

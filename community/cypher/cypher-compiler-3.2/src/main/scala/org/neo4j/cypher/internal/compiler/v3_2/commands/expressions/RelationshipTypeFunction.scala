@@ -21,9 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_2.ParameterWrongTypeException
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 import org.neo4j.graphdb.Relationship
 
 case class RelationshipTypeFunction(relationship: Expression) extends NullInNullOutExpression(relationship) {
@@ -37,11 +35,6 @@ case class RelationshipTypeFunction(relationship: Expression) extends NullInNull
   override def rewrite(f: (Expression) => Expression) = f(RelationshipTypeFunction(relationship.rewrite(f)))
 
   override def arguments = Seq(relationship)
-
-  override def calculateType(symbols: SymbolTable) = {
-    relationship.evaluateType(CTRelationship, symbols)
-    CTString
-  }
 
   override def symbolTableDependencies = relationship.symbolTableDependencies
 }

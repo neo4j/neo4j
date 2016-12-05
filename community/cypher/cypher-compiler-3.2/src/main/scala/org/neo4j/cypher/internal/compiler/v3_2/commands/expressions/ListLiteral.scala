@@ -20,9 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_2.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_2._
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
-import pipes.QueryState
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
+import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
 
 object ListLiteral {
   val empty = Literal(Seq())
@@ -32,12 +30,6 @@ case class ListLiteral(arguments: Expression*) extends Expression {
   def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = arguments.map(e => e(ctx))
 
   def rewrite(f: (Expression) => Expression): Expression = f(ListLiteral(arguments.map(f): _*))
-
-  def calculateType(symbols: SymbolTable): CypherType =
-    arguments.map(_.getType(symbols)) match {
-      case Seq() => CTList(CTAny)
-      case types => CTList(types.reduce(_ leastUpperBound _))
-    }
 
   def symbolTableDependencies = arguments.flatMap(_.symbolTableDependencies).toSet
 }

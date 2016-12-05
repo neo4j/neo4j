@@ -21,8 +21,6 @@ package org.neo4j.cypher.internal.compiler.v3_2.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.{Pipe, QueryState}
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 
 /*
 Contains an expression that is really a pipe. An inner expression is run for every row returned by the inner pipe, and
@@ -37,8 +35,6 @@ case class NestedPipeExpression(pipe: Pipe, inner: Expression) extends Expressio
   override def rewrite(f: (Expression) => Expression) = f(this)
 
   override def arguments = Nil
-
-  override def calculateType(symbols: SymbolTable): CypherType = CTList(CTPath)
 
   override def symbolTableDependencies = Set()
 

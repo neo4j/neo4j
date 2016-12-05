@@ -20,8 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_2.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_2._
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
-import pipes.QueryState
+import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 
 case class CoalesceFunction(arguments: Expression*) extends Expression {
@@ -41,13 +40,6 @@ case class CoalesceFunction(arguments: Expression*) extends Expression {
   override def toString = "coalesce(" + argumentsString + ")"
 
   def rewrite(f: (Expression) => Expression) = f(CoalesceFunction(arguments.map(e => e.rewrite(f)): _*))
-
-  def calculateType(symbols: SymbolTable) = {
-    arguments.map(_.getType(symbols)) match {
-      case Seq() => CTAny
-      case types => types.reduceLeft(_ leastUpperBound _)
-    }
-  }
 
   def symbolTableDependencies = arguments.flatMap(_.symbolTableDependencies).toSet
 }

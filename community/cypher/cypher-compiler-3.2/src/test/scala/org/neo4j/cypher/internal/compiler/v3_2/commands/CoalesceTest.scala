@@ -22,8 +22,6 @@ package org.neo4j.cypher.internal.compiler.v3_2.commands
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{CoalesceFunction, Expression, Literal, Null}
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.{QueryState, QueryStateHelper}
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 
 class CoalesceTest extends CypherFunSuite {
@@ -60,8 +58,6 @@ case class BreakingExpression() extends Expression {
   def rewrite(f: (Expression) => Expression) = null
 
   def arguments = Nil
-
-  def calculateType(symbols: SymbolTable): CypherType = CTAny
 
   def symbolTableDependencies = Set()
 }

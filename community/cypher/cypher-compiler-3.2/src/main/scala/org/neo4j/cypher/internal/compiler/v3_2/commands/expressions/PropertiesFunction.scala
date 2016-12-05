@@ -22,9 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.commands.expressions
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.IsMap
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_2.CypherTypeException
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 
 case class PropertiesFunction(a: Expression) extends NullInNullOutExpression(a) {
   override def compute(value: Any, m: ExecutionContext)(implicit state: QueryState) =
@@ -35,8 +33,6 @@ case class PropertiesFunction(a: Expression) extends NullInNullOutExpression(a) 
     }
 
   override def symbolTableDependencies = a.symbolTableDependencies
-
-  override protected def calculateType(symbols: SymbolTable) = CTMap
 
   override def arguments = Seq(a)
 

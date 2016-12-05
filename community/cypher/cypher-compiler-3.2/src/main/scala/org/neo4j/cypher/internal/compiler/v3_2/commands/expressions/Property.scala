@@ -23,8 +23,6 @@ import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.IsMap
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 import org.neo4j.cypher.internal.frontend.v3_2.{CypherTypeException, EntityNotFoundException}
 import org.neo4j.graphdb.{Node, NotFoundException, Relationship}
 
@@ -57,14 +55,6 @@ case class Property(mapExpr: Expression, propertyKey: KeyToken)
   override def children = Seq(mapExpr, propertyKey)
 
   def arguments = Seq(mapExpr)
-
-  def calculateType(symbols: SymbolTable) =
-    throw new UnsupportedOperationException("This class should override evaluateType, and this method should never be run")
-
-  override def evaluateType(expectedType: CypherType, symbols: SymbolTable) = {
-    mapExpr.evaluateType(CTMap, symbols)
-    expectedType
-  }
 
   def symbolTableDependencies = mapExpr.symbolTableDependencies
 

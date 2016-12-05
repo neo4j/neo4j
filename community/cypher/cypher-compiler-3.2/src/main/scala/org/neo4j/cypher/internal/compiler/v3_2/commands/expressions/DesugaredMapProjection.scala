@@ -23,8 +23,6 @@ import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.IsMap
 import org.neo4j.cypher.internal.compiler.v3_2.mutation.GraphElementPropertyFunctions
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 
 import scala.collection.Map
 
@@ -49,11 +47,6 @@ case class DesugaredMapProjection(id: String, includeAllProps: Boolean, literalE
     f(DesugaredMapProjection(id, includeAllProps, literalExpressions.rewrite(f)))
 
   override def arguments = literalExpressions.values.toIndexedSeq
-
-  override def calculateType(symbols: SymbolTable) = {
-    literalExpressions.values.foreach(_.evaluateType(CTAny, symbols))
-    CTMap
-  }
 
   override def symbolTableDependencies = literalExpressions.symboltableDependencies + id
 

@@ -20,9 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_2.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_2._
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
-import pipes.QueryState
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
+import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
 
 case class ParameterExpression(parameterName: String) extends Expression {
   def apply(ctx: ExecutionContext)(implicit state: QueryState) = state.getParam(parameterName)
@@ -32,8 +30,6 @@ case class ParameterExpression(parameterName: String) extends Expression {
   def rewrite(f: (Expression) => Expression) = f(this)
 
   def arguments = Seq()
-
-  def calculateType(symbols: SymbolTable) = CTAny
 
   def symbolTableDependencies = Set()
 }

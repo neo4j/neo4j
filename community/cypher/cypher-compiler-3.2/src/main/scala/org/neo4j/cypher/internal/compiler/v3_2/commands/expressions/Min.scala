@@ -20,8 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_2.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_2._
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
-import pipes.aggregation.MinFunction
+import org.neo4j.cypher.internal.compiler.v3_2.pipes.aggregation.MinFunction
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 
 case class Min(anInner: Expression) extends AggregationWithInnerExpression(anInner) {
@@ -30,6 +29,4 @@ case class Min(anInner: Expression) extends AggregationWithInnerExpression(anInn
   val expectedInnerType = CTNumber
 
   def rewrite(f: (Expression) => Expression) = f(Min(anInner.rewrite(f)))
-
-  def calculateType(symbols: SymbolTable): CypherType = anInner.getType(symbols)
 }

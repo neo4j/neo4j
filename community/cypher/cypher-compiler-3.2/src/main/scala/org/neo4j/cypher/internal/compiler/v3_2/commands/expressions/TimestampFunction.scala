@@ -20,8 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_2.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_2._
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
-import pipes.QueryState
+import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 
 case class TimestampFunction() extends Expression {
@@ -32,8 +31,6 @@ case class TimestampFunction() extends Expression {
   def arguments = Seq()
 
   def rewrite(f: (Expression) => Expression) = f(this)
-
-  def calculateType(symbols: SymbolTable) = CTInteger
 
   def symbolTableDependencies = Set.empty
 }
