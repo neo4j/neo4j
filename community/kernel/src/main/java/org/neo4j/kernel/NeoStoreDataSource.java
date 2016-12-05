@@ -598,7 +598,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
         catch ( Throwable e )
         {
             // Something unexpected happened during startup
-            msgLog.warn( "Exception occurred while setting up store modules. Attempting to close things down.", e );
+            msgLog.error( "Exception occurred while setting up store modules. Attempting to close things down.", e );
             try
             { // Close the neostore, so that locks are released properly
                 neoStoreModule.neoStores().close();
@@ -617,7 +617,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
         catch ( Throwable e )
         {
             // Something unexpected happened during startup
-            msgLog.warn( "Exception occurred while starting the datasource. Attempting to close things down.", e );
+            msgLog.error( "Exception occurred while starting the datasource. Attempting to close things down.", e );
             try
             { // Close the neostore, so that locks are released properly
                 neoStoreModule.neoStores().close();
