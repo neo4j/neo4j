@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
 import java.time.Clock;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class TimeCheckPointThreshold extends AbstractCheckPointThreshold
 {
@@ -33,7 +34,9 @@ public class TimeCheckPointThreshold extends AbstractCheckPointThreshold
     {
         this.timeMillisThreshold = timeMillisThreshold;
         this.clock = clock;
-        this.nextCheckPointTime = clock.millis() + timeMillisThreshold;
+        // The random start offset means database in a cluster will not all check-point at the same time.
+        long randomStartOffset = ThreadLocalRandom.current().nextLong( timeMillisThreshold );
+        this.nextCheckPointTime = clock.millis() + timeMillisThreshold + randomStartOffset;
 
     }
 
