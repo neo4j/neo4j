@@ -19,12 +19,12 @@
  */
 package org.neo4j.logging;
 
+import java.io.PrintWriter;
+
 import org.neo4j.function.Consumer;
 import org.neo4j.function.Supplier;
 
-import java.io.PrintWriter;
-
-import static java.util.Objects.*;
+import static java.util.Objects.requireNonNull;
 
 /**
  * An abstract {@link Logger} implementation, which takes care of locking and flushing.
@@ -85,6 +85,11 @@ public abstract class AbstractPrintWriterLogger implements Logger
         if ( arguments == null || arguments.length == 0 )
         {
             log( format );
+            return;
+        }
+        if ( arguments.length == 1 && arguments[0] instanceof Throwable )
+        {
+            log( format, (Throwable) arguments[0] );
             return;
         }
         String message = String.format( format, arguments );
