@@ -43,11 +43,10 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransientTransactionFailureException;
-import org.neo4j.graphdb.schema.ConstraintDefinition;
-import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.impl.ha.ClusterManager;
+import org.neo4j.test.GraphDatabaseServiceCleaner;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.RepeatRule;
 import org.neo4j.test.ha.ClusterRule;
@@ -120,30 +119,7 @@ public class PropertyConstraintsStressIT
     private void clearData() throws InterruptedException
     {
         HighlyAvailableGraphDatabase db = cluster.getMaster();
-        try ( Transaction tx = db.beginTx() )
-        {
-            for ( ConstraintDefinition constraint : db.schema().getConstraints() )
-            {
-                constraint.drop();
-            }
-            for ( IndexDefinition index : db.schema().getIndexes() )
-            {
-                index.drop();
-            }
-            tx.success();
-        }
-        try ( Transaction tx = db.beginTx() )
-        {
-            for ( Relationship relationship : db.getAllRelationships() )
-            {
-                relationship.delete();
-            }
-            for ( Node node : db.getAllNodes() )
-            {
-                node.delete();
-            }
-            tx.success();
-        }
+        GraphDatabaseServiceCleaner.cleanDatabaseContent( db );
         cluster.sync();
     }
 

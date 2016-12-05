@@ -25,17 +25,15 @@ import org.junit.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.schema.ConstraintDefinition;
-import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.test.GraphDatabaseServiceCleaner.cleanDatabaseContent;
 
 public class TestImpermanentGraphDatabase
 {
@@ -93,37 +91,6 @@ public class TestImpermanentGraphDatabase
         cleanDatabaseContent( db );
 
         assertThat( nodeCount(), is( 0L ) );
-    }
-
-    private static void cleanDatabaseContent( GraphDatabaseService db )
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            for ( ConstraintDefinition constraint : db.schema().getConstraints() )
-            {
-                constraint.drop();
-            }
-
-            for ( IndexDefinition index : db.schema().getIndexes() )
-            {
-                index.drop();
-            }
-            tx.success();
-        }
-
-        try ( Transaction tx = db.beginTx() )
-        {
-            for ( Relationship relationship : db.getAllRelationships() )
-            {
-                relationship.delete();
-            }
-
-            for ( Node node : db.getAllNodes() )
-            {
-                node.delete();
-            }
-            tx.success();
-        }
     }
 
     private long nodeCount()
