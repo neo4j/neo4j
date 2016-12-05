@@ -27,7 +27,6 @@ import org.neo4j.io.pagecache.PageCursor;
 
 import static java.lang.Integer.max;
 import static java.lang.Integer.min;
-
 import static org.neo4j.index.gbptree.KeySearch.isHit;
 import static org.neo4j.index.gbptree.KeySearch.positionOf;
 import static org.neo4j.index.gbptree.KeySearch.search;
@@ -58,7 +57,7 @@ import static org.neo4j.index.gbptree.KeySearch.search;
  *   During this split, reader could see this state:
  *   L[E1,E2,E4,E5] -> R[E3,E4,E5]
  *           ^  ^           x  x
- *   Reader will need to ignore lower keys already seen (TODO how to do in non-unique index?)
+ *   Reader will need to ignore lower keys already seen, assuming unique keys
  * </pre>
  * SCENARIO2 (new key ends up in left leaf)
  * <pre>
@@ -82,8 +81,6 @@ class InternalTreeLogic<KEY,VALUE>
     private final byte[] tmpForKeys;
     private final byte[] tmpForValues;
     private final byte[] tmpForChildren;
-    private final SplitResult<KEY> internalSplitResult = new SplitResult<>();
-    private final SplitResult<KEY> leafSplitResult = new SplitResult<>();
     private final Layout<KEY,VALUE> layout;
     private final KEY readKey;
     private final VALUE readValue;
@@ -97,30 +94,49 @@ class InternalTreeLogic<KEY,VALUE>
         this.tmpForKeys = new byte[(maxKeyCount + 1) * layout.keySize()];
         this.tmpForValues = new byte[(maxKeyCount + 1) * layout.valueSize()];
         this.tmpForChildren = new byte[(maxKeyCount + 2) * bTreeNode.childSize()];
-        this.internalSplitResult.primKey = layout.newKey();
-        this.leafSplitResult.primKey = layout.newKey();
         this.readKey = layout.newKey();
         this.readValue = layout.newValue();
     }
 
     /**
+     * Insert {@code key} and associate it with {@code value} if {@code key} does not already exist in
+     * tree.
+     * <p>
+     * If {@code key} already exists in tree, {@code valueMerger} will be used to decide how to merge existing value
+     * with {@code value}.
+     * <p>
+     * Insert may cause structural changes in the tree in form of splits and or new generation of nodes being created.
+     * Note that a split in a leaf can propagate all the way up to root node.
+     * <p>
+     * Structural changes in tree that need to propagate to the level above will be reported through the provided
+     * {@link StructurePropagation} by overwriting state. This is safe because structure changes happens one level
+     * at the time.
+     * {@link StructurePropagation} is provided from outside to minimize garbage.
+     * <p>
+     * When this method returns, {@code structurePropagation} will be populated with information about split or new
+     * gen version of root. This needs to be handled by caller.
+     * <p>
      * Leaves cursor at same page as when called. No guarantees on offset.
-     * @param cursor        {@link org.neo4j.io.pagecache.PageCursor} pinned to page where insertion is to be done.
-     * @param key           key to be inserted
-     * @param value         value to be associated with key
-     * @param valueMerger   {@link ValueMerger} for deciding what to do with existing keys
-     * @param options       options for this insert
+     *
+     * @param cursor {@link PageCursor} pinned to page where insertion is to be done.
+     * @param structurePropagation {@link StructurePropagation} used to report structure changes between tree levels.
+     * @param key key to be inserted
+     * @param value value to be associated with key
+     * @param valueMerger {@link ValueMerger} for deciding what to do with existing keys
+     * @param options options for this insert
      * @param stableGeneration stable generation, i.e. generations <= this generation are considered stable.
      * @param unstableGeneration unstable generation, i.e. generation which is under development right now.
-     * @return              {@link SplitResult} from insert to be used caller.
-     * @throws IOException  on cursor failure
+     * @throws IOException on cursor failure
      */
-    public SplitResult<KEY> insert( PageCursor cursor, KEY key, VALUE value, ValueMerger<VALUE> valueMerger,
-            IndexWriter.Options options, int stableGeneration, int unstableGeneration ) throws IOException
+    void insert( PageCursor cursor, StructurePropagation<KEY> structurePropagation, KEY key, VALUE value,
+            ValueMerger<VALUE> valueMerger, IndexWriter.Options options,
+            long stableGeneration, long unstableGeneration ) throws IOException
     {
         if ( bTreeNode.isLeaf( cursor ) )
         {
-            return insertInLeaf( cursor, key, value, valueMerger, options, stableGeneration, unstableGeneration );
+            insertInLeaf( cursor, structurePropagation, key, value, valueMerger, options,
+                    stableGeneration, unstableGeneration );
+            return;
         }
 
         int keyCount = bTreeNode.keyCount( cursor );
@@ -135,40 +151,45 @@ class InternalTreeLogic<KEY,VALUE>
         long childId = bTreeNode.childAt( cursor, pos, stableGeneration, unstableGeneration );
         PointerChecking.checkChildPointer( childId );
 
-        goTo( cursor, childId );
+        bTreeNode.goTo( cursor, childId, stableGeneration, unstableGeneration );
 
-        SplitResult<KEY> split = insert( cursor, key, value, valueMerger, options, stableGeneration,
-                unstableGeneration );
+        insert( cursor, structurePropagation, key, value, valueMerger, options, stableGeneration, unstableGeneration );
 
-        goTo( cursor, currentId );
+        bTreeNode.goTo( cursor, currentId, stableGeneration, unstableGeneration );
 
-        if ( split != null )
+        if ( structurePropagation.hasNewGen )
         {
-            return insertInInternal( cursor, currentId, keyCount, split.primKey, split.right, options,
-                    stableGeneration, unstableGeneration );
+            structurePropagation.hasNewGen = false;
+            bTreeNode.setChildAt( cursor, structurePropagation.left, pos, stableGeneration, unstableGeneration );
         }
-        return null;
+        if ( structurePropagation.hasSplit )
+        {
+            structurePropagation.hasSplit = false;
+            insertInInternal( cursor, structurePropagation, currentId, keyCount, structurePropagation.primKey,
+                    structurePropagation.right, options, stableGeneration, unstableGeneration );
+        }
     }
 
     /**
      * Leaves cursor at same page as when called. No guarantees on offset.
-     *
+     * <p>
      * Insertion in internal is always triggered by a split in child.
      * The result of a split is a primary key that is sent upwards in the b+tree and the newly created right child.
      *
-     * @param cursor        {@link org.neo4j.io.pagecache.PageCursor} pinned to page containing internal node,
-     *                      current node
-     * @param nodeId        id of current node
-     * @param keyCount      the key count of current node
-     * @param primKey       the primary key to be inserted
-     * @param rightChild    the right child of primKey
-     * @return              {@link SplitResult} from insert to be used caller.
-     * @throws IOException  on cursor failure
+     * @param cursor {@link PageCursor} pinned to page containing internal node,
+     * current node
+     * @param structurePropagation {@link StructurePropagation} used to report structure changes between tree levels.
+     * @param nodeId id of current node
+     * @param keyCount the key count of current node
+     * @param primKey the primary key to be inserted
+     * @param rightChild the right child of primKey
+     * @throws IOException on cursor failure
      */
-    private SplitResult<KEY> insertInInternal( PageCursor cursor, long nodeId, int keyCount,
-            KEY primKey, long rightChild, IndexWriter.Options options, int stableGeneration, int unstableGeneration )
-                    throws IOException
+    private void insertInInternal( PageCursor cursor, StructurePropagation<KEY> structurePropagation,
+            long nodeId, int keyCount, KEY primKey, long rightChild, IndexWriter.Options options,
+            long stableGeneration, long unstableGeneration ) throws IOException
     {
+        createUnstableVersionIfNeeded( cursor, structurePropagation, stableGeneration, unstableGeneration );
         if ( keyCount < bTreeNode.internalMaxKeyCount() )
         {
             // No overflow
@@ -183,34 +204,34 @@ class InternalTreeLogic<KEY,VALUE>
             // Increase key count
             bTreeNode.setKeyCount( cursor, keyCount + 1 );
 
-            return null;
+            return;
         }
 
         // Overflow
-        return splitInternal( cursor, nodeId, primKey, rightChild, keyCount, options,
+        splitInternal( cursor, structurePropagation, nodeId, primKey, rightChild, keyCount, options,
                 stableGeneration, unstableGeneration );
     }
 
     /**
-     *
      * Leaves cursor at same page as when called. No guarantees on offset.
-     *
+     * <p>
      * Split in internal node caused by an insertion of primKey and newRightChild
      *
-     * @param cursor        {@link org.neo4j.io.pagecache.PageCursor} pinned to page containing internal node, fullNode.
-     * @param fullNode      id of node to be split.
-     * @param primKey       primary key to be inserted, causing the split
+     * @param cursor {@link PageCursor} pinned to page containing internal node, fullNode.
+     * @param structurePropagation {@link StructurePropagation} used to report structure changes between tree levels.
+     * @param fullNode id of node to be split.
+     * @param primKey primary key to be inserted, causing the split
      * @param newRightChild right child of primKey
-     * @param keyCount      key count for fullNode
-     * @return              {@link SplitResult} from insert to be used caller.
-     * @throws IOException  on cursor failure
+     * @param keyCount key count for fullNode
+     * @throws IOException on cursor failure
      */
-    private SplitResult<KEY> splitInternal( PageCursor cursor, long fullNode, KEY primKey, long newRightChild,
-            int keyCount, IndexWriter.Options options, int stableGeneration, int unstableGeneration ) throws IOException
+    private void splitInternal( PageCursor cursor, StructurePropagation<KEY> structurePropagation,
+            long fullNode, KEY primKey, long newRightChild, int keyCount, IndexWriter.Options options,
+            long stableGeneration, long unstableGeneration ) throws IOException
     {
         long current = cursor.getCurrentPageId();
-        long newLeft = current;
         long oldRight = bTreeNode.rightSibling( cursor, stableGeneration, unstableGeneration );
+        PointerChecking.checkSiblingPointer( oldRight );
         long newRight = idProvider.acquireNewId();
 
         // Find position to insert new key
@@ -226,16 +247,16 @@ class InternalTreeLogic<KEY,VALUE>
         int keyCountAfterInsert = keyCount + 1;
         int middlePos = middle( keyCountAfterInsert, options.splitRetentionFactor() );
 
-        SplitResult<KEY> split = internalSplitResult;
-        split.left = newLeft;
-        split.right = newRight;
+        structurePropagation.hasSplit = true;
+        structurePropagation.left = current;
+        structurePropagation.right = newRight;
 
         {   // Update new right
             // NOTE: don't include middle
-            goTo( cursor, newRight );
+            bTreeNode.goTo( cursor, newRight, stableGeneration, unstableGeneration );
             bTreeNode.initializeInternal( cursor, stableGeneration, unstableGeneration );
             bTreeNode.setRightSibling( cursor, oldRight, stableGeneration, unstableGeneration );
-            bTreeNode.setLeftSibling( cursor, newLeft, stableGeneration, unstableGeneration );
+            bTreeNode.setLeftSibling( cursor, current, stableGeneration, unstableGeneration );
             bTreeNode.writeKeys( cursor, tmpForKeys, middlePos + 1, 0, keyCountAfterInsert - (middlePos + 1) );
             bTreeNode.writeChildren( cursor, tmpForChildren, middlePos + 1, 0,
                     keyCountAfterInsert - middlePos /*there's one more child than key to copy*/ );
@@ -246,19 +267,19 @@ class InternalTreeLogic<KEY,VALUE>
             PageCursor buffer = ByteArrayPageCursor.wrap( tmpForKeys, middleOffset, bTreeNode.keySize() );
 
             // Populate split result
-            layout.readKey( buffer, split.primKey );
+            layout.readKey( buffer, structurePropagation.primKey );
         }
 
         // Update old right with new left sibling (newRight)
         if ( oldRight != TreeNode.NO_NODE_FLAG )
         {
-            goTo( cursor, oldRight );
+            bTreeNode.goTo( cursor, oldRight, stableGeneration, unstableGeneration );
             bTreeNode.setLeftSibling( cursor, newRight, stableGeneration, unstableGeneration );
         }
 
         // Update left node
         // Move cursor back to left
-        goTo( cursor, fullNode );
+        bTreeNode.goTo( cursor, fullNode, stableGeneration, unstableGeneration );
         bTreeNode.setKeyCount( cursor, middlePos );
         if ( pos < middlePos )
         {
@@ -273,8 +294,6 @@ class InternalTreeLogic<KEY,VALUE>
         }
 
         bTreeNode.setRightSibling( cursor, newRight, stableGeneration, unstableGeneration );
-
-        return split;
     }
 
     private static int middle( int keyCountAfterInsert, float splitLeftChildSize )
@@ -287,20 +306,21 @@ class InternalTreeLogic<KEY,VALUE>
 
     /**
      * Leaves cursor at same page as when called. No guarantees on offset.
-     *
+     * <p>
      * Split in leaf node caused by an insertion of key and value
      *
-     * @param cursor        {@link org.neo4j.io.pagecache.PageCursor} pinned to page containing leaf node targeted for
-     *                      insertion.
-     * @param key           key to be inserted
-     * @param value         value to be associated with key
-     * @param valueMerger   {@link ValueMerger} for deciding what to do with existing keys
-     * @param options       options for this insert
-     * @return              {@link SplitResult} from insert to be used caller.
-     * @throws IOException  on cursor failure
+     * @param cursor {@link PageCursor} pinned to page containing leaf node targeted for
+     * insertion.
+     * @param structurePropagation {@link StructurePropagation} used to report structure changes between tree levels.
+     * @param key key to be inserted
+     * @param value value to be associated with key
+     * @param valueMerger {@link ValueMerger} for deciding what to do with existing keys
+     * @param options options for this insert
+     * @throws IOException on cursor failure
      */
-    private SplitResult<KEY> insertInLeaf( PageCursor cursor, KEY key, VALUE value, ValueMerger<VALUE> valueMerger,
-            IndexWriter.Options options, int stableGeneration, int unstableGeneration ) throws IOException
+    private void insertInLeaf( PageCursor cursor, StructurePropagation<KEY> structurePropagation,
+            KEY key, VALUE value, ValueMerger<VALUE> valueMerger,
+            IndexWriter.Options options, long stableGeneration, long unstableGeneration ) throws IOException
     {
         int keyCount = bTreeNode.keyCount( cursor );
         int search = search( cursor, bTreeNode, key, readKey, keyCount );
@@ -312,11 +332,14 @@ class InternalTreeLogic<KEY,VALUE>
             VALUE mergedValue = valueMerger.merge( readValue, value );
             if ( mergedValue != null )
             {
+                createUnstableVersionIfNeeded( cursor, structurePropagation, stableGeneration, unstableGeneration );
                 // simple, just write the merged value right in there
                 bTreeNode.setValueAt( cursor, mergedValue, pos );
             }
-            return null; // No split has occurred
+            return; // No split has occurred
         }
+
+        createUnstableVersionIfNeeded( cursor, structurePropagation, stableGeneration, unstableGeneration );
 
         if ( keyCount < bTreeNode.leafMaxKeyCount() )
         {
@@ -325,26 +348,27 @@ class InternalTreeLogic<KEY,VALUE>
             bTreeNode.insertValueAt( cursor, value, pos, keyCount, tmpForValues );
             bTreeNode.setKeyCount( cursor, keyCount + 1 );
 
-            return null; // No split has occurred
+            return; // No split has occurred
         }
-
         // Overflow, split leaf
-        return splitLeaf( cursor, key, value, keyCount, options, stableGeneration, unstableGeneration );
+        splitLeaf( cursor, structurePropagation, key, value, keyCount, options, stableGeneration, unstableGeneration );
     }
 
     /**
      * Leaves cursor at same page as when called. No guarantees on offset.
      * Cursor is expected to be pointing to full leaf.
-     * @param cursor        cursor pointing into full (left) leaf that should be split in two.
-     * @param newKey        key to be inserted
-     * @param newValue      value to be inserted (in association with key)
-     * @param keyCount      number of keys in this leaf (it was already read anyway)
-     * @param options       options for this insert
-     * @return              {@link SplitResult} with necessary information to inform parent
-     * @throws IOException  if cursor.next( newRight ) fails
+     *
+     * @param cursor cursor pointing into full (left) leaf that should be split in two.
+     * @param structurePropagation {@link StructurePropagation} used to report structure changes between tree levels.
+     * @param newKey key to be inserted
+     * @param newValue value to be inserted (in association with key)
+     * @param keyCount number of keys in this leaf (it was already read anyway)
+     * @param options options for this insert
+     * @throws IOException on cursor failure
      */
-    private SplitResult<KEY> splitLeaf( PageCursor cursor, KEY newKey, VALUE newValue, int keyCount,
-            IndexWriter.Options options, int stableGeneration, int unstableGeneration ) throws IOException
+    private void splitLeaf( PageCursor cursor, StructurePropagation<KEY> structurePropagation,
+            KEY newKey, VALUE newValue, int keyCount, IndexWriter.Options options,
+            long stableGeneration, long unstableGeneration ) throws IOException
     {
         // To avoid moving cursor between pages we do all operations on left node first.
         // Save data that needs transferring and then add it to right node.
@@ -362,8 +386,8 @@ class InternalTreeLogic<KEY,VALUE>
         //
 
         long current = cursor.getCurrentPageId();
-        long newLeft = current;
         long oldRight = bTreeNode.rightSibling( cursor, stableGeneration, unstableGeneration );
+        PointerChecking.checkSiblingPointer( oldRight );
         long newRight = idProvider.acquireNewId();
 
         // BALANCE KEYS AND VALUES
@@ -424,24 +448,24 @@ class InternalTreeLogic<KEY,VALUE>
         // We now have everything we need to start working on newRight
         // and everything that needs to be updated in left has been so.
 
-        SplitResult<KEY> split = leafSplitResult;
-        split.left = newLeft;
-        split.right = newRight;
+        structurePropagation.hasSplit = true;
+        structurePropagation.left = current;
+        structurePropagation.right = newRight;
 
         if ( middlePos == pos )
         {
-            layout.copyKey( newKey, split.primKey );
+            layout.copyKey( newKey, structurePropagation.primKey );
         }
         else
         {
-            bTreeNode.keyAt( cursor, split.primKey, pos < middlePos ? middlePos - 1 : middlePos );
+            bTreeNode.keyAt( cursor, structurePropagation.primKey, pos < middlePos ? middlePos - 1 : middlePos );
         }
 
         {   // Update new right
-            goTo( cursor, newRight );
+            bTreeNode.goTo( cursor, newRight, stableGeneration, unstableGeneration );
             bTreeNode.initializeLeaf( cursor, stableGeneration, unstableGeneration );
             bTreeNode.setRightSibling( cursor, oldRight, stableGeneration, unstableGeneration );
-            bTreeNode.setLeftSibling( cursor, newLeft, stableGeneration, unstableGeneration );
+            bTreeNode.setLeftSibling( cursor, current, stableGeneration, unstableGeneration );
             bTreeNode.writeKeys( cursor, tmpForKeys, middlePos, 0, keyCountAfterInsert - middlePos );
             bTreeNode.writeValues( cursor, tmpForValues, middlePos, 0, keyCountAfterInsert - middlePos );
             bTreeNode.setKeyCount( cursor, keyCountAfterInsert - middlePos );
@@ -450,12 +474,12 @@ class InternalTreeLogic<KEY,VALUE>
         // Update old right with new left sibling (newRight)
         if ( oldRight != TreeNode.NO_NODE_FLAG )
         {
-            goTo( cursor, oldRight );
+            bTreeNode.goTo( cursor, oldRight, stableGeneration, unstableGeneration );
             bTreeNode.setLeftSibling( cursor, newRight, stableGeneration, unstableGeneration );
         }
 
         // Update left child
-        goTo( cursor, current );
+        bTreeNode.goTo( cursor, current, stableGeneration, unstableGeneration );
         bTreeNode.setKeyCount( cursor, middlePos );
         // If pos < middle. Write shifted values to left node. Else, don't write anything.
         if ( pos < middlePos )
@@ -464,16 +488,37 @@ class InternalTreeLogic<KEY,VALUE>
             bTreeNode.writeValues( cursor, tmpForValues, pos, pos, middlePos - pos );
         }
         bTreeNode.setRightSibling( cursor, newRight, stableGeneration, unstableGeneration );
-
-        return split;
     }
 
-    public VALUE remove( PageCursor cursor, KEY key, VALUE into, int stableGeneration, int unstableGeneration )
-            throws IOException
+    /**
+     * Remove given {@code key} and associated value from tree if it exists. The removed value will be stored in
+     * provided {@code into} which will be returned for convenience.
+     * <p>
+     * If the given {@code key} does not exist in tree, return {@code null}.
+     * <p>
+     * Structural changes in tree that need to propagate to the level above will be reported through the provided
+     * {@link StructurePropagation} by overwriting state. This is safe because structure changes happens one level
+     * at the time.
+     * {@link StructurePropagation} is provided from outside to minimize garbage.
+     * <p>
+     * Leaves cursor at same page as when called. No guarantees on offset.
+     *
+     * @param cursor {@link PageCursor} pinned to page where remove should traversing tree from.
+     * @param structurePropagation {@link StructurePropagation} used to report structure changes between tree levels.
+     * @param key key to be removed
+     * @param into {@code VALUE} instance to write removed value to
+     * @param stableGeneration stable generation, i.e. generations <= this generation are considered stable.
+     * @param unstableGeneration unstable generation, i.e. generation which is under development right now.
+     * @return Provided {@code into}, populated with removed value for convenience if {@code key} was removed.
+     * Otherwise {@code null}.
+     * @throws IOException on cursor failure
+     */
+    VALUE remove( PageCursor cursor, StructurePropagation<KEY> structurePropagation, KEY key, VALUE into,
+            long stableGeneration, long unstableGeneration ) throws IOException
     {
         if ( bTreeNode.isLeaf( cursor ) )
         {
-            return removeFromLeaf( cursor, key, into );
+            return  removeFromLeaf( cursor, structurePropagation, key, into, stableGeneration, unstableGeneration );
         }
 
         int keyCount = bTreeNode.keyCount( cursor );
@@ -485,16 +530,42 @@ class InternalTreeLogic<KEY,VALUE>
         }
 
         long currentId = cursor.getCurrentPageId();
-        goTo( cursor, bTreeNode.childAt( cursor, pos, stableGeneration, unstableGeneration ) );
+        long childId = bTreeNode.childAt( cursor, pos, stableGeneration, unstableGeneration );
+        PointerChecking.checkChildPointer( childId );
+        bTreeNode.goTo( cursor, childId, stableGeneration, unstableGeneration );
 
-        VALUE result = remove( cursor, key, into, stableGeneration, unstableGeneration );
+        VALUE result = remove( cursor, structurePropagation, key, into, stableGeneration, unstableGeneration );
 
-        goTo( cursor, currentId );
+        bTreeNode.goTo( cursor, currentId, stableGeneration, unstableGeneration );
+        if ( structurePropagation.hasNewGen )
+        {
+            structurePropagation.hasNewGen = false;
+            bTreeNode.setChildAt( cursor, structurePropagation.left, pos, stableGeneration, unstableGeneration );
+        }
 
         return result;
     }
 
-    private VALUE removeFromLeaf( PageCursor cursor, KEY key, VALUE into )
+    /**
+     * Remove given {@code key} and associated value from tree if it exists. The removed value will be stored in
+     * provided {@code into} which will be returned for convenience.
+     * <p>
+     * If the given {@code key} does not exist in tree, return {@code null}.
+     * <p>
+     * Leaves cursor at same page as when called. No guarantees on offset.
+     *
+     * @param cursor {@link PageCursor} pinned to page where remove is to be done.
+     * @param structurePropagation {@link StructurePropagation} used to report structure changes between tree levels.
+     * @param key key to be removed
+     * @param into {@code VALUE} instance to write removed value to
+     * @param stableGeneration stable generation, i.e. generations <= this generation are considered stable.
+     * @param unstableGeneration unstable generation, i.e. generation which is under development right now.
+     * @return Provided {@code into}, populated with removed value for convenience if {@code key} was removed.
+     * Otherwise {@code null}.
+     * @throws IOException on cursor failure
+     */
+    private VALUE removeFromLeaf( PageCursor cursor, StructurePropagation<KEY> structurePropagation,
+            KEY key, VALUE into, long stableGeneration, long unstableGeneration ) throws IOException
     {
         int keyCount = bTreeNode.keyCount( cursor );
 
@@ -508,6 +579,8 @@ class InternalTreeLogic<KEY,VALUE>
         }
 
         // Remove key/value
+        createUnstableVersionIfNeeded( cursor, structurePropagation, stableGeneration, unstableGeneration );
+
         bTreeNode.removeKeyAt( cursor, pos, keyCount, tmpForKeys );
         bTreeNode.valueAt( cursor, into, pos );
         bTreeNode.removeValueAt( cursor, pos, keyCount, tmpForValues );
@@ -518,11 +591,81 @@ class InternalTreeLogic<KEY,VALUE>
         return into;
     }
 
-    private void goTo( PageCursor cursor, long childId ) throws IOException
+    /**
+     * Create a new node and copy content from current node (where {@code cursor} sits) if current node is not already
+     * of {@code unstableGeneration}.
+     * <p>
+     * Neighbouring nodes' sibling pointers will be updated to point to new node.
+     * <p>
+     * Current node will be updated with new gen pointer to new node.
+     * <p>
+     * {@code structurePropagation} will be updated with information about this new node so that it can report to
+     * level above.
+     *
+     * @param cursor {@link PageCursor} pinned to page containing node to potentially create a new version of
+     * @param structurePropagation {@link StructurePropagation} used to report structure changes between tree levels.
+     * @param stableGeneration stable generation, i.e. generations <= this generation are considered stable.
+     * @param unstableGeneration unstable generation, i.e. generation which is under development right now.
+     * @throws IOException on cursor failure
+     */
+    private void createUnstableVersionIfNeeded( PageCursor cursor, StructurePropagation<KEY> structurePropagation,
+            long stableGeneration, long unstableGeneration ) throws IOException
     {
-        if ( !cursor.next( childId ) )
+        long nodeGen = bTreeNode.gen( cursor );
+        if ( nodeGen == unstableGeneration )
         {
-            throw new IllegalStateException( "Could not go to " + childId );
+            // Don't copy
+            return;
         }
+
+        // Do copy
+        long newGenId = idProvider.acquireNewId();
+        try ( PageCursor newGenCursor = cursor.openLinkedCursor( newGenId ) )
+        {
+            if ( !newGenCursor.next() )
+            {
+                throw new IllegalStateException( "Could not go to new node " + newGenId );
+            }
+            cursor.copyTo( 0, newGenCursor, 0, cursor.getCurrentPageSize() );
+            bTreeNode.setGen( newGenCursor, unstableGeneration );
+        }
+
+        // Insert new gen pointer in old stable version
+        //   (stableNode)
+        //        |
+        //    [newgen]
+        //        |
+        //        v
+        // (newUnstableNode)
+        bTreeNode.setNewGen( cursor, newGenId, stableGeneration, unstableGeneration );
+
+        // Redirect sibling pointers
+        //               ---------[leftSibling]---------(stableNode)----------[rightSibling]---------
+        //              |                                     |                                      |
+        //              |                                  [newgen]                                  |
+        //              |                                     |                                      |
+        //              v                                     v                                      v
+        // (leftSiblingOfStableNode) -[rightSibling]-> (newUnstableNode) <-[leftSibling]- (rightSiblingOfStableNode)
+        long leftSibling = bTreeNode.leftSibling( cursor, stableGeneration, unstableGeneration );
+        PointerChecking.checkSiblingPointer( leftSibling );
+        long rightSibling = bTreeNode.rightSibling( cursor, stableGeneration, unstableGeneration );
+        PointerChecking.checkSiblingPointer( rightSibling );
+        if ( leftSibling != TreeNode.NO_NODE_FLAG )
+        {
+            bTreeNode.goTo( cursor, leftSibling, stableGeneration, unstableGeneration );
+            bTreeNode.setRightSibling( cursor, newGenId, stableGeneration, unstableGeneration );
+        }
+        if ( rightSibling != TreeNode.NO_NODE_FLAG )
+        {
+            bTreeNode.goTo( cursor, rightSibling, stableGeneration, unstableGeneration );
+            bTreeNode.setLeftSibling( cursor, newGenId, stableGeneration, unstableGeneration );
+        }
+
+        // Leave cursor at new tree node
+        bTreeNode.goTo( cursor, newGenId, stableGeneration, unstableGeneration );
+
+        // Propagate structure change
+        structurePropagation.hasNewGen = true;
+        structurePropagation.left = newGenId;
     }
 }

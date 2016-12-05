@@ -44,10 +44,10 @@ class ConsistencyChecker<KEY>
     private final Comparator<KEY> comparator;
     private final Layout<KEY,?> layout;
     private final List<RightmostInChain<KEY>> rightmostPerLevel = new ArrayList<>();
-    private final int stableGeneration;
-    private final int unstableGeneration;
+    private final long stableGeneration;
+    private final long unstableGeneration;
 
-    ConsistencyChecker( TreeNode<KEY,?> node, Layout<KEY,?> layout, int stableGeneration, int unstableGeneration )
+    ConsistencyChecker( TreeNode<KEY,?> node, Layout<KEY,?> layout, long stableGeneration, long unstableGeneration )
     {
         this.node = node;
         this.readKey = layout.newKey();

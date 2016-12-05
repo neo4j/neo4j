@@ -161,24 +161,6 @@ public class GenSafePointerTest
     }
 
     @Test
-    public void shouldWriteAndReadMinusOnePointer() throws Exception
-    {
-        // GIVEN
-        long pointer = -1;
-        GSP expected = gsp( 12345, pointer );
-        write( cursor, 0, expected );
-
-        // WHEN
-        GSP read = new GSP();
-        boolean matches = read( cursor, 0, read );
-
-        // THEN
-        assertTrue( matches );
-        assertEquals( expected, read );
-        assertEquals( pointer, read.pointer );
-    }
-
-    @Test
     public void shouldHaveLowAccidentalChecksumCollision() throws Exception
     {
         // GIVEN
@@ -190,7 +172,7 @@ public class GenSafePointerTest
         short reference = 0;
         for ( int i = 0; i < count; i++ )
         {
-            gsp.generation = random.nextLong( 0xFFFFFFFFL );
+            gsp.generation = random.nextLong( GenSafePointer.MAX_GENERATION );
             gsp.pointer = random.nextLong( 0xFFFF_FFFFFFFFL );
             short checksum = checksumOf( gsp );
             if ( i == 0 )

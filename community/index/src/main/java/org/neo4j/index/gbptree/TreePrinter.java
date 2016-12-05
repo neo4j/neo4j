@@ -43,7 +43,7 @@ class TreePrinter
      * @throws IOException on page cache access error.
      */
     public static <KEY,VALUE> void printTree( PageCursor cursor, TreeNode<KEY,VALUE> treeNode,
-            Layout<KEY,VALUE> layout, int stableGeneration, int unstableGeneration, PrintStream out )
+            Layout<KEY,VALUE> layout, long stableGeneration, long unstableGeneration, PrintStream out )
                     throws IOException
     {
         int level = 0;
@@ -67,7 +67,7 @@ class TreePrinter
     }
 
     private static <KEY,VALUE> void printKeysOfSiblings( PageCursor cursor,
-            TreeNode<KEY,VALUE> bTreeNode, Layout<KEY,VALUE> layout, int stableGeneration, int unstableGeneration,
+            TreeNode<KEY,VALUE> bTreeNode, Layout<KEY,VALUE> layout, long stableGeneration, long unstableGeneration,
             PrintStream out ) throws IOException
     {
         while ( true )
@@ -83,7 +83,7 @@ class TreePrinter
     }
 
     private static <KEY,VALUE> void printKeys( PageCursor cursor, TreeNode<KEY,VALUE> bTreeNode,
-            Layout<KEY,VALUE> layout, int stableGeneration, int unstableGeneration, PrintStream out )
+            Layout<KEY,VALUE> layout, long stableGeneration, long unstableGeneration, PrintStream out )
     {
         boolean isLeaf = bTreeNode.isLeaf( cursor );
         int keyCount = bTreeNode.keyCount( cursor );

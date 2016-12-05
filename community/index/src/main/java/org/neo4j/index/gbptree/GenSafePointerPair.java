@@ -111,7 +111,7 @@ class GenSafePointerPair
      * @param unstableGeneration unstable index generation.
      * @return most recent readable pointer, or failure. Check result using {@link #isSuccess(long)}.
      */
-    public static long read( PageCursor cursor, int stableGeneration, int unstableGeneration )
+    public static long read( PageCursor cursor, long stableGeneration, long unstableGeneration )
     {
         // Try A
         long generationA = readGeneration( cursor );
@@ -218,7 +218,7 @@ class GenSafePointerPair
      * @param unstableGeneration unstable index generation, which will be the generation to write in the slot.
      * @return {@code true} on success, otherwise {@code false} on failure.
      */
-    public static long write( PageCursor cursor, long pointer, int stableGeneration, int unstableGeneration )
+    public static long write( PageCursor cursor, long pointer, long stableGeneration, long unstableGeneration )
     {
         // Later there will be a selection which "slot" of GSP out of the two to write into.
         int offset = cursor.getOffset();
@@ -374,7 +374,7 @@ class GenSafePointerPair
         return generationA > generationB ? GEN_A_BIG : generationB > generationA ? GEN_B_BIG : GEN_EQUAL;
     }
 
-    private static byte pointerState( int stableGeneration, int unstableGeneration,
+    private static byte pointerState( long stableGeneration, long unstableGeneration,
             long generation, long pointer, boolean checksumIsCorrect )
     {
         if ( GenSafePointer.isEmpty( generation, pointer ) )
@@ -387,9 +387,8 @@ class GenSafePointerPair
         }
         if ( generation < MIN_GENERATION )
         {
-            // todo Better error message?
             throw new UnsupportedOperationException( "Generation was less than MIN_GENERATION " + MIN_GENERATION +
-                                                     " but checksum was correct. This should not happen." );
+                    " and but checksum was correct. Pointer was " + generation + "," + pointer );
         }
         if ( generation <= stableGeneration )
         {
@@ -406,7 +405,7 @@ class GenSafePointerPair
      * Checks to see if a result from read/write was successful. If not more failure information can be extracted
      * using {@link #failureDescription(long)}.
      *
-     * @param result result from {@link #read(PageCursor, int, int)} or {@link #write(PageCursor, long, int, int)}.
+     * @param result result from {@link #read(PageCursor, long, long)} or {@link #write(PageCursor, long, long, long)}.
      * @return {@code true} if successful read/write, otherwise {@code false}.
      */
     public static boolean isSuccess( long result )
@@ -415,7 +414,7 @@ class GenSafePointerPair
     }
 
     /**
-     * Calling {@link #read(PageCursor, int, int)} (potentially also {@link #write(PageCursor, long, int, int)})
+     * Calling {@link #read(PageCursor, long, long)} (potentially also {@link #write(PageCursor, long, long, long)})
      * can fail due to seeing an unexpected state of the two GSPs. Failing right there and then isn't an option
      * due to how the page cache works and that something read from a {@link PageCursor} must not be interpreted
      * until after passing a {@link PageCursor#shouldRetry()} returning {@code false}. This creates a need for
@@ -423,8 +422,8 @@ class GenSafePointerPair
      * the caller which interprets the result fail in a proper place. That place can make use of this method
      * by getting a human-friendly description about the failure.
      *
-     * @param result result from {@link #read(PageCursor, int, int)} or
-     * {@link #write(PageCursor, long, int, int)}.
+     * @param result result from {@link #read(PageCursor, long, long)} or
+     * {@link #write(PageCursor, long, long, long)}.
      * @return a human-friendly description of the failure.
      */
     public static String failureDescription( long result )

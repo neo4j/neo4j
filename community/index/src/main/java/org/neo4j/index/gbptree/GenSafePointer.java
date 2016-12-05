@@ -43,11 +43,11 @@ import org.neo4j.io.pagecache.PageCursor;
  */
 class GenSafePointer
 {
-    public static final long MIN_GENERATION = 1L;
+    static final long MIN_GENERATION = 1L;
     // unsigned int
-    public static final long MAX_GENERATION = 0xFFFFFFFFL;
-    public static final long GENERATION_MASK = 0xFFFFFFFFL;
-    public static final int UNSIGNED_SHORT_MASK = 0xFFFF;
+    static final long MAX_GENERATION = 0xFFFFFFFFL;
+    static final long GENERATION_MASK = 0xFFFFFFFFL;
+    static final int UNSIGNED_SHORT_MASK = 0xFFFF;
 
     static final int CHECKSUM_SIZE = 2;
     static final int SIZE =
@@ -64,10 +64,19 @@ class GenSafePointer
      */
     public static void write( PageCursor cursor, long generation, long pointer )
     {
-        assert generation >= MIN_GENERATION && generation <= MAX_GENERATION : generation;
+        assertGeneration( generation );
         cursor.putInt( (int) generation );
         put6BLong( cursor, pointer );
         cursor.putShort( checksumOf( generation, pointer ) );
+    }
+
+    static void assertGeneration( long generation )
+    {
+        if ( generation < MIN_GENERATION || generation > MAX_GENERATION )
+        {
+            throw new IllegalArgumentException( "Can not write pointer with generation " + generation +
+                    " because outside boundary for valid generation." );
+        }
     }
 
     public static long readGeneration( PageCursor cursor )
@@ -78,8 +87,7 @@ class GenSafePointer
     public static long readPointer( PageCursor cursor )
     {
         long result = get6BLong( cursor );
-        // TODO Could we change NULL to 0 instead?
-        return result == 0xFFFF_FFFFFFFFL ? -1 : result;
+        return result;
     }
 
     public static short readChecksum( PageCursor cursor )
