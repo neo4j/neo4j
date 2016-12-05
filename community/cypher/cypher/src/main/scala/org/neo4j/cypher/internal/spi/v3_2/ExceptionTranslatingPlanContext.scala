@@ -20,10 +20,7 @@
 package org.neo4j.cypher.internal.spi.v3_2
 
 import org.neo4j.cypher.internal.compiler.v3_2.InternalNotificationLogger
-import org.neo4j.cypher.internal.compiler.v3_2.pipes.EntityProducer
-import org.neo4j.cypher.internal.compiler.v3_2.pipes.matching.{ExpanderStep, TraversalMatcher}
 import org.neo4j.cypher.internal.compiler.v3_2.spi._
-import org.neo4j.graphdb.Node
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.index.IndexDescriptor
 
@@ -41,9 +38,6 @@ class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext wi
   override def checkNodeIndex(idxName: String): Unit =
     translateException(inner.checkNodeIndex(idxName))
 
-  override def bidirectionalTraversalMatcher(steps: ExpanderStep, start: EntityProducer[Node], end: EntityProducer[Node]): TraversalMatcher =
-    translateException(inner.bidirectionalTraversalMatcher(steps, start, end))
-
   override def txIdProvider: () => Long = {
     val innerTxProvider = translateException(inner.txIdProvider)
     () => translateException(innerTxProvider())
@@ -57,10 +51,6 @@ class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext wi
 
   override def hasIndexRule(labelName: String): Boolean =
     translateException(inner.hasIndexRule(labelName))
-
-  // Legacy traversal matchers (pre-Ronja) (These were moved out to remove the dependency on the kernel)
-  override def monoDirectionalTraversalMatcher(steps: ExpanderStep, start: EntityProducer[Node]): TraversalMatcher =
-    translateException(inner.monoDirectionalTraversalMatcher(steps, start))
 
   override def getUniquenessConstraint(labelName: String, propertyKey: String): Option[UniquenessConstraint] =
     translateException(inner.getUniquenessConstraint(labelName, propertyKey))

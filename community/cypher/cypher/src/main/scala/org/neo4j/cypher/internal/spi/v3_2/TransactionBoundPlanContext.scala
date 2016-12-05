@@ -24,12 +24,9 @@ import java.util.Optional
 import org.neo4j.cypher.MissingIndexException
 import org.neo4j.cypher.internal.LastCommittedTxIdProvider
 import org.neo4j.cypher.internal.compiler.v3_2.InternalNotificationLogger
-import org.neo4j.cypher.internal.compiler.v3_2.pipes.EntityProducer
-import org.neo4j.cypher.internal.compiler.v3_2.pipes.matching.ExpanderStep
 import org.neo4j.cypher.internal.compiler.v3_2.spi._
 import org.neo4j.cypher.internal.frontend.v3_2.symbols.CypherType
 import org.neo4j.cypher.internal.frontend.v3_2.{CypherExecutionException, symbols}
-import org.neo4j.graphdb.Node
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.exceptions.KernelException
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException
@@ -115,16 +112,6 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     }
     tc.statement.readOperations().schemaStateGetOrCreate(key, javaCreator)
   }
-
-
-  // Legacy traversal matchers (pre-Ronja) (These were moved out to remove the dependency on the kernel)
-  override def monoDirectionalTraversalMatcher(steps: ExpanderStep, start: EntityProducer[Node]) =
-    new MonoDirectionalTraversalMatcher(steps, start)
-
-  override def bidirectionalTraversalMatcher(steps: ExpanderStep,
-                                             start: EntityProducer[Node],
-                                             end: EntityProducer[Node]) =
-    new BidirectionalTraversalMatcher(steps, start, end)
 
   val statistics: GraphStatistics =
     InstrumentedGraphStatistics(TransactionBoundGraphStatistics(tc.readOperations), new MutableGraphStatisticsSnapshot())
