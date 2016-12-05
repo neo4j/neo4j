@@ -112,14 +112,7 @@ abstract class LogicalPlan
 
   def debugId: String = f"0x${hashCode()}%08x"
 
-  def flatten: Seq[LogicalPlan] = {
-    def flattenAcc(acc: Seq[LogicalPlan], plan: LogicalPlan): Seq[LogicalPlan] = {
-      (plan.lhs.toSeq ++ plan.rhs.toSeq).foldLeft(acc :+ plan) {
-        case (acc1, plan1) => flattenAcc(acc1, plan1)
-      }
-    }
-    flattenAcc(Seq.empty, this)
-  }
+  def flatten: Seq[LogicalPlan] = Flattener.create(this)
 }
 
 abstract class LogicalLeafPlan extends LogicalPlan with LazyLogicalPlan {
@@ -134,4 +127,12 @@ abstract class NodeLogicalLeafPlan extends LogicalLeafPlan {
 
 abstract class IndexLeafPlan extends NodeLogicalLeafPlan {
   def valueExpr: QueryExpression[Expression]
+}
+
+case object Flattener extends TreeBuilder[Seq[LogicalPlan]] {
+  override protected def build(plan: LogicalPlan): Seq[LogicalPlan] = Seq(plan)
+
+  override protected def build(plan: LogicalPlan, source: Seq[LogicalPlan]): Seq[LogicalPlan] = plan +: source
+
+  override protected def build(plan: LogicalPlan, lhs: Seq[LogicalPlan], rhs: Seq[LogicalPlan]): Seq[LogicalPlan] = (plan +: lhs) ++ rhs
 }
