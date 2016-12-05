@@ -110,9 +110,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
                     {
                         int searchResult = KeySearch.search( cursor, bTreeNode, prevKey, mutableKey, keyCount );
                         pos = KeySearch.positionOf( searchResult );
-                        resetPosition = false;
                     }
-                    reread = false;
                 }
                 // There's a condition in here, choosing between go to next sibling or value,
                 // this condition is mirrored outside the shouldRetry loop to act upon the data

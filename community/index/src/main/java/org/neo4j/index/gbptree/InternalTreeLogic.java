@@ -518,7 +518,7 @@ class InternalTreeLogic<KEY,VALUE>
     {
         if ( bTreeNode.isLeaf( cursor ) )
         {
-            return  removeFromLeaf( cursor, structurePropagation, key, into, stableGeneration, unstableGeneration );
+            return removeFromLeaf( cursor, structurePropagation, key, into, stableGeneration, unstableGeneration );
         }
 
         int keyCount = bTreeNode.keyCount( cursor );
