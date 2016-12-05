@@ -559,6 +559,9 @@ public interface ReadOperations
     /** Fetch a function given its signature, or <code>empty</code> if no such function exists*/
     Optional<UserFunctionSignature> functionGet( QualifiedName name );
 
+    /** Fetch an aggregation function given its signature, or <code>empty</code> if no such function exists*/
+    Optional<UserFunctionSignature> aggregationFunctionGet( QualifiedName name );
+
     /** Fetch all registered procedures */
     Set<UserFunctionSignature> functionsGetAll();
 

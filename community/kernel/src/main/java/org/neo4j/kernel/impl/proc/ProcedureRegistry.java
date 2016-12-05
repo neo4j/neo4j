@@ -31,6 +31,7 @@ import org.neo4j.collection.RawIterator;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.proc.CallableProcedure;
+import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
 import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.api.proc.FieldSignature;
@@ -42,6 +43,7 @@ public class ProcedureRegistry
 {
     private final Map<QualifiedName,CallableProcedure> procedures = new HashMap<>();
     private final Map<QualifiedName,CallableUserFunction> functions = new HashMap<>();
+    private final Map<QualifiedName,CallableUserAggregationFunction> aggregationFunctions = new HashMap<>();
 
     /**
      * Register a new procedure.
@@ -113,6 +115,36 @@ public class ProcedureRegistry
         }
     }
 
+    /**
+     * Register a new function.
+     *
+     * @param function the function.
+     */
+    public void register( CallableUserAggregationFunction function, boolean overrideCurrentImplementation ) throws ProcedureException
+    {
+        UserFunctionSignature signature = function.signature();
+        QualifiedName name = signature.name();
+
+        CallableUserFunction oldImplementation = functions.get( name );
+        if ( oldImplementation == null )
+        {
+            aggregationFunctions.put( name, function );
+        }
+        else
+        {
+            if ( overrideCurrentImplementation )
+            {
+                aggregationFunctions.put( name, function );
+            }
+            else
+            {
+                throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
+                        "Unable to register aggregation function, because the name `%s` is already in use.", name );
+            }
+        }
+    }
+
+
     private void validateSignature( String descriptiveName, List<FieldSignature> fields, String fieldType )
             throws ProcedureException
     {
@@ -148,6 +180,16 @@ public class ProcedureRegistry
         return Optional.of( func.signature() );
     }
 
+    public Optional<UserFunctionSignature> aggregationFunction( QualifiedName name )
+    {
+        CallableUserAggregationFunction func = aggregationFunctions.get( name );
+        if ( func == null )
+        {
+            return Optional.empty();
+        }
+        return Optional.of( func.signature() );
+    }
+
     public RawIterator<Object[],ProcedureException> callProcedure( Context ctx, QualifiedName name, Object[] input )
             throws ProcedureException
     {
@@ -168,6 +210,17 @@ public class ProcedureRegistry
             throw noSuchFunction( name );
         }
         return func.apply( ctx, input );
+    }
+
+    public CallableUserAggregationFunction.Aggregator createAggregationFunction(Context ctx, QualifiedName name)
+            throws ProcedureException
+    {
+        CallableUserAggregationFunction func = aggregationFunctions.get( name );
+        if ( func == null )
+        {
+            throw noSuchFunction( name );
+        }
+        return func.create(ctx);
     }
 
     private ProcedureException noSuchProcedure( QualifiedName name )

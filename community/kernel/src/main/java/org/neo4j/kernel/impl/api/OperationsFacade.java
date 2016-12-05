@@ -33,11 +33,11 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Direction;
-import org.neo4j.kernel.api.ProcedureCallOperations;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ExecutingQuery;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.LegacyIndexHits;
+import org.neo4j.kernel.api.ProcedureCallOperations;
 import org.neo4j.kernel.api.QueryRegistryOperations;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
@@ -73,6 +73,7 @@ import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.proc.BasicContext;
+import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.QualifiedName;
@@ -563,6 +564,13 @@ public class OperationsFacade
     {
         statement.assertOpen();
         return procedures.function( name );
+    }
+
+    @Override
+    public Optional<UserFunctionSignature> aggregationFunctionGet( QualifiedName name )
+    {
+        statement.assertOpen();
+        return procedures.aggregationFunction( name );
     }
 
     @Override
@@ -1614,6 +1622,24 @@ public class OperationsFacade
                 new OverriddenAccessMode( tx.securityContext().mode(), AccessMode.Static.READ ) );
     }
 
+    @Override
+    public CallableUserAggregationFunction.Aggregator aggregationFunction( QualifiedName name ) throws ProcedureException
+    {
+        if ( !tx.securityContext().mode().allowsReads() )
+        {
+            throw tx.securityContext().mode().onViolation(
+                    format( "Read operations are not allowed for %s.", tx.securityContext().description() ) );
+        }
+        return aggregationFunction( name, new RestrictedAccessMode( tx.securityContext().mode(), AccessMode.Static.READ ) );
+    }
+
+    @Override
+    public CallableUserAggregationFunction.Aggregator aggregationFunctionOverride( QualifiedName name ) throws ProcedureException
+    {
+        return aggregationFunction( name,
+                new OverriddenAccessMode( tx.securityContext().mode(), AccessMode.Static.READ ) );
+    }
+
     private Object callFunction( QualifiedName name, Object[] input, final AccessMode mode ) throws ProcedureException
     {
         statement.assertOpen();
@@ -1624,6 +1650,19 @@ public class OperationsFacade
             ctx.put( Context.KERNEL_TRANSACTION, tx );
             ctx.put( Context.THREAD, Thread.currentThread() );
             return procedures.callFunction( ctx, name, input );
+        }
+    }
+
+    private CallableUserAggregationFunction.Aggregator aggregationFunction( QualifiedName name, final AccessMode mode ) throws ProcedureException
+    {
+        statement.assertOpen();
+
+        try ( KernelTransaction.Revertable ignore = tx.overrideWith( tx.securityContext().withMode( mode ) ) )
+        {
+            BasicContext ctx = new BasicContext();
+            ctx.put( Context.KERNEL_TRANSACTION, tx );
+            ctx.put( Context.THREAD, Thread.currentThread() );
+            return procedures.createAggregationFunction( ctx, name  );
         }
     }
     // </Procedures>
