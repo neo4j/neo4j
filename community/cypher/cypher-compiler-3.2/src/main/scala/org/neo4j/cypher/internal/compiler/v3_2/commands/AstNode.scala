@@ -20,25 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v3_2.commands
 
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Expression
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.Effects
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_2.CypherTypeException
 
 import scala.reflect.ClassTag
 
-
-trait EffectfulAstNode[T] extends AstNode[T] {
-  def localEffects(symbols: SymbolTable): Effects
-
-  final def effects(symbols: SymbolTable): Effects = {
-    var completeEffects = localEffects(symbols)
-    visitChildren {
-      case (expr: EffectfulAstNode[_]) =>
-        completeEffects = completeEffects ++ expr.localEffects(symbols)
-    }
-    completeEffects
-  }
-}
 
 trait AstNode[T] {
   def children: Seq[AstNode[_]]

@@ -67,22 +67,6 @@ class EntityProducerFactoryTest extends CypherFunSuite {
     func(context, state) should equal(indexResult)
   }
 
-  test("retries_every_time_if_the_label_did_not_exist_at_plan_building") {
-    // given
-    val label: String = "label"
-    val queryContext: QueryContext = mock[QueryContext]
-    when(planContext.getOptLabelId(label)).thenReturn(None)
-    when(queryContext.getOptLabelId(label)).thenReturn(None)
-    val state = QueryStateHelper.emptyWith(query = queryContext)
-
-    // when
-    val func = factory.nodeByLabel(planContext -> NodeByLabel("id", label))
-    func(context, state) should equal(Iterator.empty)
-
-    // then
-    verify(queryContext, times(1)).getOptLabelId(label)
-  }
-
   test("should_translate_values_to_neo4j") {
     //GIVEN
     val labelName = "Label"

@@ -21,11 +21,11 @@ package org.neo4j.cypher.internal.compiler.v3_2.commands
 
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.builders.GetGraphElements
-import org.neo4j.cypher.internal.compiler.v3_2.mutation.{makeValueNeoSafe, GraphElementPropertyFunctions}
-import org.neo4j.cypher.internal.compiler.v3_2.pipes.{NodeByLabelEntityProducer, EntityProducer, IndexSeekModeFactory, QueryState}
+import org.neo4j.cypher.internal.compiler.v3_2.mutation.{GraphElementPropertyFunctions, makeValueNeoSafe}
+import org.neo4j.cypher.internal.compiler.v3_2.pipes.{EntityProducer, IndexSeekModeFactory, QueryState}
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Argument
 import org.neo4j.cypher.internal.compiler.v3_2.spi.PlanContext
-import org.neo4j.cypher.internal.frontend.v3_2.{EntityNotFoundException, IndexHintException, InternalException}
+import org.neo4j.cypher.internal.frontend.v3_2.{IndexHintException, InternalException}
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 
 class EntityProducerFactory extends GraphElementPropertyFunctions {
@@ -41,20 +41,9 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
     }
 
   def readNodeStartItems: PartialFunction[(PlanContext, StartItem), EntityProducer[Node]] =
-    nodeById orElse
       nodeByIndex orElse
       nodeByIndexQuery orElse
-      nodeByIndexHint(readOnly = true) orElse
-      nodeByLabel orElse
-      nodesAll
-
-  def updateNodeStartItems: PartialFunction[(PlanContext, StartItem), EntityProducer[Node]] =
-    nodeById orElse
-      nodeByIndex orElse
-      nodeByIndexQuery orElse
-      nodeByIndexHint(readOnly = false) orElse
-      nodeByLabel orElse
-      nodesAll
+      nodeByIndexHint(readOnly = true)
 
   val nodeByIndex: PartialFunction[(PlanContext, StartItem), EntityProducer[Node]] = {
     case (planContext, startItem @ NodeByIndex(varName, idxName, key, value)) =>
@@ -75,53 +64,6 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
         val queryText = query(m)(state)
         state.query.nodeOps.indexQuery(idxName, queryText)
       }
-  }
-
-  val nodeById: PartialFunction[(PlanContext, StartItem), EntityProducer[Node]] = {
-    case (planContext, startItem @ NodeById(varName, ids)) =>
-      asProducer[Node](startItem) { (m: ExecutionContext, state: QueryState) =>
-        GetGraphElements.getElements[Node](ids(m)(state), varName, (id) =>
-          state.query.nodeOps.getById(id))
-      }
-    case (planContext, startItem@NodeByIdOrEmpty(varName, ids)) =>
-      asProducer[Node](startItem) {
-        (m: ExecutionContext, state: QueryState) =>
-          val idsVal: Any = ids(m)(state)
-          GetGraphElements.getOptionalElements[Node](idsVal, varName, (id) =>
-            try {
-              Some(state.query.nodeOps.getById(id))
-            } catch {
-              case _: EntityNotFoundException => None
-            })
-      }
-  }
-
-  val nodeByLabel: PartialFunction[(PlanContext, StartItem), EntityProducer[Node]] = {
-    // The label exists at compile time - no need to look up the label id for every run
-    case (planContext, startItem@NodeByLabel(variable, label)) if planContext.getOptLabelId(label).nonEmpty =>
-      val labelId: Int = planContext.getOptLabelId(label).get
-
-      NodeByLabelEntityProducer(startItem, labelId)
-
-    // The label is missing at compile time - we look it up every time this plan is run
-    case (planContext, startItem@NodeByLabel(variable, label)) => asProducer(startItem) {
-      (m: ExecutionContext, state: QueryState) =>
-        state.query.getOptLabelId(label) match {
-          case Some(labelId) => state.query.getNodesByLabel(labelId)
-          case None          => Iterator.empty
-        }
-    }
-  }
-
-  val nodesAll: PartialFunction[(PlanContext, StartItem), EntityProducer[Node]] = {
-    case (planContext, startItem @ AllNodes(variable)) =>
-      asProducer[Node](startItem) { (m: ExecutionContext, state: QueryState) => state.query.nodeOps.all }
-  }
-
-  val relationshipsAll: PartialFunction[(PlanContext, StartItem), EntityProducer[Relationship]] = {
-    case (planContext, startItem @ AllRelationships(variable)) =>
-      asProducer[Relationship](startItem) { (m: ExecutionContext, state: QueryState) =>
-        state.query.relationshipOps.all }
   }
 
   def nodeByIndexHint(readOnly: Boolean): PartialFunction[(PlanContext, StartItem), EntityProducer[Node]] = {
