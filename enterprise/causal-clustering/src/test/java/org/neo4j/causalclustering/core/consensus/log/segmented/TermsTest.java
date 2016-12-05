@@ -147,6 +147,43 @@ public class TermsTest
     }
 
     @Test
+    public void shouldNotTruncateNegativeIndexes() throws Exception
+    {
+        // given
+        terms = new Terms( -1, -1 );
+        terms.append( 0, 0 );
+
+        // when
+        try
+        {
+            terms.truncate( -1 );
+            fail();
+        }
+        catch ( IllegalStateException e )
+        {
+            // then: expected
+        }
+    }
+
+    @Test
+    public void shouldNotTruncateLessThanLowestIndex() throws Exception
+    {
+        // given
+        terms = new Terms( 5, 1 );
+
+        // when
+        try
+        {
+            terms.truncate( 4 );
+            fail();
+        }
+        catch ( IllegalStateException e )
+        {
+            // then: expected
+        }
+    }
+
+    @Test
     public void shouldTruncateInCurrentRange() throws Exception
     {
         // given
