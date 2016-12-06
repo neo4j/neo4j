@@ -34,8 +34,8 @@ class Generation
 
     public static long generation( long stableGeneration, long unstableGeneration )
     {
-        GenSafePointer.assertGeneration( stableGeneration );
-        GenSafePointer.assertGeneration( unstableGeneration );
+        GenSafePointer.assertGenerationOnWrite( stableGeneration );
+        GenSafePointer.assertGenerationOnWrite( unstableGeneration );
 
         return (stableGeneration << STABLE_GENERATION_SHIFT) | unstableGeneration;
     }

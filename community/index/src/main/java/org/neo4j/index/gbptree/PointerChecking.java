@@ -35,7 +35,7 @@ class PointerChecking
     {
         if ( !GenSafePointerPair.isSuccess( result ) )
         {
-            throw new IllegalStateException( GenSafePointerPair.failureDescription( result ) );
+            throw new TreeInconsistencyException( GenSafePointerPair.failureDescription( result ) );
         }
         if ( allowNoNode && result == TreeNode.NO_NODE_FLAG )
         {
@@ -43,7 +43,7 @@ class PointerChecking
         }
         if ( result < IdSpace.MIN_TREE_NODE_ID )
         {
-            throw new IllegalStateException( "Pointer to id " + result + " not allowed. Minimum node id allowed is " +
+            throw new TreeInconsistencyException( "Pointer to id " + result + " not allowed. Minimum node id allowed is " +
                     IdSpace.MIN_TREE_NODE_ID );
         }
     }

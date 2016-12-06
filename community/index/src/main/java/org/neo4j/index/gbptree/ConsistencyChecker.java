@@ -59,6 +59,7 @@ class ConsistencyChecker<KEY>
 
     public boolean check( PageCursor cursor ) throws IOException
     {
+        assertOnTreeNode( cursor );
         KeyRange<KEY> openRange = new KeyRange<>( comparator, null, null, layout, null );
         boolean result = checkSubtree( cursor, openRange, 0 );
 
@@ -67,15 +68,24 @@ class ConsistencyChecker<KEY>
         return result;
     }
 
+    private void assertOnTreeNode( PageCursor cursor )
+    {
+        // TODO also check node type when available
+        if ( !node.isInternal( cursor ) && !node.isLeaf( cursor ) )
+        {
+            throw new IllegalArgumentException( "Cursor is not pinned to a page containing a tree node." );
+        }
+    }
+
     private boolean checkSubtree( PageCursor cursor, KeyRange<KEY> range, int level ) throws IOException
     {
         // check header pointers
         assertNoCrashOrBrokenPointerInGSPP(
-                cursor, stableGeneration, unstableGeneration, "LeftSibling", TreeNode.BYTE_POS_LEFTSIBLING );
+                cursor, stableGeneration, unstableGeneration, "LeftSibling", TreeNode.BYTE_POS_LEFTSIBLING, node );
         assertNoCrashOrBrokenPointerInGSPP(
-                cursor, stableGeneration, unstableGeneration, "RightSibling", TreeNode.BYTE_POS_RIGHTSIBLING );
+                cursor, stableGeneration, unstableGeneration, "RightSibling", TreeNode.BYTE_POS_RIGHTSIBLING, node );
         assertNoCrashOrBrokenPointerInGSPP(
-                cursor, stableGeneration, unstableGeneration, "NewGen", TreeNode.BYTE_POS_NEWGEN );
+                cursor, stableGeneration, unstableGeneration, "NewGen", TreeNode.BYTE_POS_NEWGEN, node );
 
         long pageId = assertSiblings( cursor, level );
 
@@ -89,7 +99,8 @@ class ConsistencyChecker<KEY>
         }
         else
         {
-            throw new IllegalArgumentException( "Cursor is not pinned to a page containing a tree node." );
+            throw new TreeInconsistencyException( "Page:" + cursor.getCurrentPageId() + " at level:" + level +
+                    " isn't a tree node, parent expected range " + range );
         }
         return true;
     }
@@ -154,7 +165,7 @@ class ConsistencyChecker<KEY>
     private long childAt( PageCursor cursor, int pos )
     {
         assertNoCrashOrBrokenPointerInGSPP(
-                cursor, stableGeneration, unstableGeneration, "Child", node.childOffset( pos ) );
+                cursor, stableGeneration, unstableGeneration, "Child", node.childOffset( pos ), node );
         return node.childAt( cursor, pos, stableGeneration, unstableGeneration );
     }
 
@@ -180,7 +191,7 @@ class ConsistencyChecker<KEY>
     }
 
     static void assertNoCrashOrBrokenPointerInGSPP( PageCursor cursor, long stableGeneration, long unstableGeneration,
-            String pointerType, int offset )
+            String pointerFieldName, int offset, TreeNode<?,?> treeNode )
     {
         cursor.setOffset( offset );
         long currentNodeId = cursor.getCurrentPageId();
@@ -204,12 +215,13 @@ class ConsistencyChecker<KEY>
 
         if ( !(okA && okB) )
         {
-            cursor.setOffset( TreeNode.BYTE_POS_TYPE );
-            boolean isInternal = cursor.getByte() == TreeNode.INTERNAL_FLAG;
-            String type = isInternal ? "Internal" : "Leaf";
-            throw new IllegalStateException( "State found that was not ok in " + type + " " + currentNodeId +
-                    ", " + pointerType + " slotA=" + stateToString( generationA, pointerA, stateA ) +
-                    " slotB=" + stateToString( generationA, pointerA, stateA ) );
+            boolean isInternal = treeNode.isInternal( cursor );
+            String type = isInternal ? "internal" : "leaf";
+            throw new TreeInconsistencyException(
+                    "GSPP state found that was not ok in %s field in %s node with id %d%n  slotA[%s]%n  slotB[%s]",
+                    pointerFieldName, type, currentNodeId,
+                    stateToString( generationA, pointerA, stateA ),
+                    stateToString( generationB, pointerB, stateB ) );
         }
     }
 

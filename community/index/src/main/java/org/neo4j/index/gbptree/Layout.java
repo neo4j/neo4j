@@ -23,11 +23,15 @@ import java.util.Comparator;
 
 import org.neo4j.io.pagecache.PageCursor;
 
+import static java.lang.String.format;
+
 /**
  * Main point of interaction for customizing a {@link GBPTree}, how its keys and values are represented
  * as bytes and what keys and values contains.
  * <p>
  * Additionally custom meta data can be supplied, which will be persisted in {@link GBPTree}.
+ * <p>
+ * {@link #toString()} should be implemented to present layout name, version and identifier.
  *
  * @param <KEY> type of key
  * @param <VALUE> type of value
@@ -126,7 +130,7 @@ public interface Layout<KEY, VALUE> extends Comparator<KEY>
      * Constructor-provided meta data can be {@code null} to skip this verification.
      *
      * @param cursor {@link PageCursor} to read from, at its current offset.
-     * @throws IllegalArgumentException if read meta data doesn't match with the meta data provided in constructor.
+     * @throws MetadataMismatchException if read meta data doesn't match with the meta data provided in constructor.
      */
     void readMetaData( PageCursor cursor );
 
@@ -149,5 +153,16 @@ public interface Layout<KEY, VALUE> extends Comparator<KEY>
         }
 
         return upperInt << Integer.SIZE | (checksum & 0xFFFFFFFF);
+    }
+
+    abstract class Adapter<KEY,VALUE> implements Layout<KEY,VALUE>
+    {
+        @Override
+        public String toString()
+        {
+            return format( "%s[version:%d.%d, identifier:%d, keySize:%d, valueSize:%d]",
+                    getClass().getSimpleName(), majorVersion(), minorVersion(), identifier(),
+                    keySize(), valueSize() );
+        }
     }
 }

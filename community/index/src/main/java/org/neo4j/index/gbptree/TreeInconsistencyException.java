@@ -19,15 +19,18 @@
  */
 package org.neo4j.index.gbptree;
 
-import org.neo4j.io.pagecache.PageCursor;
-
-class PageCursorChecking
+/**
+ * Thrown to signal inconsistencies in the tree, either between tree nodes or inside a tree node.
+ */
+public class TreeInconsistencyException extends RuntimeException
 {
-    static void checkOutOfBounds( PageCursor cursor )
+    TreeInconsistencyException( String format, Object... args )
     {
-        if ( cursor.checkAndClearBoundsFlag() )
-        {
-            throw new IllegalStateException( "Some internal problem causing out of bounds" );
-        }
+        super( String.format( format, args ) );
+    }
+
+    TreeInconsistencyException( String message )
+    {
+        super( message );
     }
 }

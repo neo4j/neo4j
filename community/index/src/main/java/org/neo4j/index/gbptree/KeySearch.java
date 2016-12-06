@@ -100,9 +100,8 @@ class KeySearch
             }
             if ( lower != higher )
             {
-                throw new IllegalStateException( "The binary search terminated in an unexpected way. " +
-                                                 "Expected lower and higher to be equal but was " +
-                                                 "lower=" + lower + ", higher=" + higher );
+                throw new TreeInconsistencyException( "The binary search terminated in an unexpected way. " +
+                        "Expected lower and higher to be equal but was " + "lower=" + lower + ", higher=" + higher );
             }
             pos = lower;
 

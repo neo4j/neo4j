@@ -25,7 +25,7 @@ import org.neo4j.io.pagecache.PageCursor;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-class SimpleLongLayout implements Layout<MutableLong,MutableLong>
+class SimpleLongLayout extends Layout.Adapter<MutableLong,MutableLong>
 {
     private String customNameAsMetaData;
 
@@ -139,7 +139,7 @@ class SimpleLongLayout implements Layout<MutableLong,MutableLong>
         {
             if ( !name.equals( customNameAsMetaData ) )
             {
-                throw new IllegalArgumentException( "Name '" + name +
+                throw new MetadataMismatchException( "Name '" + name +
                         "' doesn't match expected '" + customNameAsMetaData + "'" );
             }
         }

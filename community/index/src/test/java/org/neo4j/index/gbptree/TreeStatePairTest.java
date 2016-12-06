@@ -165,7 +165,7 @@ public class TreeStatePairTest
                     selection.select( states );
                     fail( "Should have thrown" );
                 }
-                catch ( IllegalStateException e )
+                catch ( TreeInconsistencyException e )
                 {
                     // good
                 }

@@ -44,7 +44,7 @@ public class PointerCheckingTest
             PointerChecking.checkPointer( TreeNode.NO_NODE_FLAG, false );
             fail( "Should have failed ");
         }
-        catch ( IllegalStateException e )
+        catch ( TreeInconsistencyException e )
         {
             // THEN good
         }
@@ -62,7 +62,7 @@ public class PointerCheckingTest
             PointerChecking.checkPointer( result, false );
             fail( "Should have failed ");
         }
-        catch ( IllegalStateException e )
+        catch ( TreeInconsistencyException e )
         {
             // THEN good
         }
@@ -85,7 +85,7 @@ public class PointerCheckingTest
             PointerChecking.checkPointer( result, false );
             fail( "Should have failed ");
         }
-        catch ( IllegalStateException e )
+        catch ( TreeInconsistencyException e )
         {
             // THEN good
         }
@@ -156,7 +156,7 @@ public class PointerCheckingTest
             PointerChecking.checkPointer( result, true );
             fail( "Should have failed" );
         }
-        catch ( IllegalStateException e )
+        catch ( TreeInconsistencyException e )
         {
             // THEN good
         }
@@ -184,7 +184,7 @@ public class PointerCheckingTest
             PointerChecking.checkPointer( result, true );
             fail( "Should have failed" );
         }
-        catch ( IllegalStateException e )
+        catch ( TreeInconsistencyException e )
         {
             // THEN good
         }

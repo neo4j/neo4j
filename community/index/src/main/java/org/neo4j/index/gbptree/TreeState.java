@@ -73,8 +73,8 @@ class TreeState
     static void write( PageCursor cursor, long stableGeneration, long unstableGeneration, long rootId,
             long lastId )
     {
-        GenSafePointer.assertGeneration( stableGeneration );
-        GenSafePointer.assertGeneration( unstableGeneration );
+        GenSafePointer.assertGenerationOnWrite( stableGeneration );
+        GenSafePointer.assertGenerationOnWrite( unstableGeneration );
 
         writeStateOnce( cursor, stableGeneration, unstableGeneration, rootId, lastId ); // Write state
         writeStateOnce( cursor, stableGeneration, unstableGeneration, rootId, lastId ); // Write checksum

@@ -25,8 +25,6 @@ import java.io.IOException;
 
 import org.neo4j.io.pagecache.PageCursor;
 
-import static java.lang.String.format;
-
 class TreeStatePair
 {
     static Pair<TreeState,TreeState> readStatePages( PageCursor cursor, long pageIdA, long pageIdB ) throws IOException
@@ -36,16 +34,10 @@ class TreeStatePair
 
         // Use write lock to avoid should retry. Fine because there can be no concurrency at this point anyway
 
-        if ( !cursor.next( pageIdA ) )
-        {
-            throw new IllegalStateException( "Could not open STATE_PAGE_A " + IdSpace.STATE_PAGE_A );
-        }
+        PageCursorUtil.goTo( cursor, "state page A", pageIdA );
         stateA = TreeState.read( cursor );
 
-        if ( !cursor.next( pageIdB ) )
-        {
-            throw new IllegalStateException( "Could not open STATE_PAGE_B " + IdSpace.STATE_PAGE_B );
-        }
+        PageCursorUtil.goTo( cursor, "state page B", pageIdB );
         stateB = TreeState.read( cursor );
         return Pair.of( stateA, stateB );
     }
@@ -59,8 +51,8 @@ class TreeStatePair
         }
 
         // Fail
-        throw new IllegalStateException( format( "Unexpected combination of state.%n  STATE_A=%s%n  STATE_B=%s",
-                states.getLeft(), states.getRight() ) );
+        throw new TreeInconsistencyException( "Unexpected combination of state.%n  STATE_A[%s]%n  STATE_B[%s]",
+                states.getLeft(), states.getRight() );
     }
 
     static TreeState selectOldestOrInvalid( Pair<TreeState,TreeState> states )

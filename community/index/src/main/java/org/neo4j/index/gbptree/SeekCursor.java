@@ -26,7 +26,7 @@ import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.Hit;
 import org.neo4j.io.pagecache.PageCursor;
 
-import static org.neo4j.index.gbptree.PageCursorChecking.checkOutOfBounds;
+import static org.neo4j.index.gbptree.PageCursorUtil.checkOutOfBounds;
 
 /**
  * {@link RawCursor} over tree leaves, making keys/values accessible to user. Given a starting leaf
@@ -123,7 +123,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
             }
             else if ( bTreeNode.isNode( newGen ) )
             {
-                bTreeNode.goTo( cursor, newGen, stableGeneration, unstableGeneration );
+                bTreeNode.goTo( cursor, "new gen", newGen, stableGeneration, unstableGeneration );
                 continue;
             }
 
@@ -134,7 +134,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
                     continue;
                 }
 
-                bTreeNode.goTo( cursor, childId, stableGeneration, unstableGeneration );
+                bTreeNode.goTo( cursor, "child", childId, stableGeneration, unstableGeneration );
             }
         }
         while ( isInternal && keyCount > 0 );
@@ -201,10 +201,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
                 }
             }
             while ( resetPosition = reread = cursor.shouldRetry() );
-            if ( cursor.checkAndClearBoundsFlag() )
-            {
-                throw new IllegalStateException( "Read out of bounds" );
-            }
+            checkOutOfBounds( cursor );
 
             if ( pointerCheckingWithGenerationCatchup( newGen, true ) )
             {
@@ -213,7 +210,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
             }
             else if ( bTreeNode.isNode( newGen ) )
             {
-                bTreeNode.goTo( cursor, newGen, stableGeneration, unstableGeneration );
+                bTreeNode.goTo( cursor, "new gen", newGen, stableGeneration, unstableGeneration );
                 reread = resetPosition = true;
                 continue;
             }
@@ -230,7 +227,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
                 {
                     // TODO: Check if rightSibling is within expected range before calling next.
                     // TODO: Possibly by getting highest expected from IdProvider
-                    bTreeNode.goTo( cursor, rightSibling, stableGeneration, unstableGeneration );
+                    bTreeNode.goTo( cursor, "right sibling", rightSibling, stableGeneration, unstableGeneration );
                     pos = -1;
                     reread = true;
                     continue; // in the outer loop, with the position reset to the beginning of the right sibling

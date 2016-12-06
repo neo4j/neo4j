@@ -41,10 +41,12 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 
+import static java.lang.String.format;
+
 import static org.neo4j.index.gbptree.Generation.generation;
 import static org.neo4j.index.gbptree.Generation.stableGeneration;
 import static org.neo4j.index.gbptree.Generation.unstableGeneration;
-import static org.neo4j.index.gbptree.PageCursorChecking.checkOutOfBounds;
+import static org.neo4j.index.gbptree.PageCursorUtil.checkOutOfBounds;
 
 /**
  * A generation-aware B+tree (GB+Tree) implementation directly atop a {@link PageCache} with no caching in between.
@@ -143,6 +145,11 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
      * Paged file in a {@link PageCache} providing the means of storage.
      */
     private final PagedFile pagedFile;
+
+    /**
+     * {@link File} to map in {@link PageCache} for storing this tree.
+     */
+    private final File indexFile;
     private final byte[] zeroPage;
 
     /**
@@ -245,6 +252,7 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
     public GBPTree( PageCache pageCache, File indexFile, Layout<KEY,VALUE> layout, int tentativePageSize,
             Monitor monitor ) throws IOException
     {
+        this.indexFile = indexFile;
         this.monitor = monitor;
         this.generation = Generation.generation( GenSafePointer.MIN_GENERATION, GenSafePointer.MIN_GENERATION + 1 );
         this.layout = layout;
@@ -311,7 +319,8 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
             pageSize = pageSizeForCreation == 0 ? pageCache.pageSize() : pageSizeForCreation;
             if ( pageSize > pageCache.pageSize() )
             {
-                throw new IllegalStateException( "Index was about to be created with page size:" + pageSize +
+                throw new MetadataMismatchException( "Tree in " + indexFile.getAbsolutePath() +
+                        " was about to be created with page size:" + pageSize +
                         ", but page cache used to create it has a smaller page size:" +
                         pageCache.pageSize() + " so cannot be created" );
             }
@@ -345,10 +354,7 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
                     cursor, IdSpace.STATE_PAGE_A, IdSpace.STATE_PAGE_B );
             TreeState oldestState = TreeStatePair.selectOldestOrInvalid( states );
             long pageToOverwrite = oldestState.pageId();
-            if ( !cursor.next( pageToOverwrite ) )
-            {
-                throw new IllegalStateException( "Could not go to state page " + pageToOverwrite );
-            }
+            PageCursorUtil.goTo( cursor, "state page", pageToOverwrite );
             cursor.setOffset( 0 );
             TreeState.write( cursor, stableGeneration( generation ), unstableGeneration( generation ), rootId, lastId );
         }
@@ -357,10 +363,7 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
     private static PageCursor openMetaPageCursor( PagedFile pagedFile ) throws IOException
     {
         PageCursor metaCursor = pagedFile.io( IdSpace.META_PAGE_ID, PagedFile.PF_SHARED_WRITE_LOCK );
-        if ( !metaCursor.next() )
-        {
-            throw new IllegalStateException( "Couldn't go to meta data page " + IdSpace.META_PAGE_ID );
-        }
+        PageCursorUtil.goTo( metaCursor, "meta page", IdSpace.META_PAGE_ID );
         return metaCursor;
     }
 
@@ -386,15 +389,15 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         }
         if ( layoutIdentifier != layout.identifier() )
         {
-            throw new IllegalArgumentException( "Tried to open " + indexFile + " using different layout "
-                    + layout.identifier() + " than what it was created with " + layoutIdentifier );
+            throw new MetadataMismatchException( "Tried to open " + indexFile + " using different layout identifier " +
+                    "than what it was created with. Created with:" + layoutIdentifier + ", opened with " +
+                    layout.identifier() );
         }
         if ( majorVersion != layout.majorVersion() || minorVersion != layout.minorVersion() )
         {
-            throw new IllegalArgumentException( "Index is of another version than the layout " +
-                    "it tries to be opened with. Index version is [" + majorVersion + "." + minorVersion + "]" +
-                    ", but tried to load the index with version [" +
-                    layout.majorVersion() + "." + layout.minorVersion() + "]" );
+            throw new MetadataMismatchException( "Tried to open " + indexFile + " using different layout version " +
+                    "than what it was created with. Created with:" + majorVersion + "." + minorVersion +
+                    ", opened with " + layout.majorVersion() + "." + layout.minorVersion() );
         }
     }
 
@@ -419,9 +422,10 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         {
             if ( pageSize > pageCache.pageSize() )
             {
-                throw new IllegalStateException( "Index was created with page size:" + pageSize
-                        + ", but page cache used to open it this time has a smaller page size:"
-                        + pageCache.pageSize() + " so cannot be opened" );
+                throw new MetadataMismatchException( "Tree in " + indexFile.getAbsolutePath() +
+                        " was created with page size:" + pageSize +
+                        ", but page cache used to open it this time has a smaller page size:" +
+                        pageCache.pageSize() + " so cannot be opened" );
             }
             pagedFile.close();
             return pageCache.map( indexFile, pageSize );
@@ -495,7 +499,9 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
     {
         if ( !writerTaken.compareAndSet( false, true ) )
         {
-            throw new IllegalStateException( "Only supports one concurrent writer" );
+            throw new IllegalStateException( "Writer in " + this + " is already acquired by someone else. " +
+                    "Only a single writer is allowed. The writer will become available as soon as " +
+                    "acquired writer is closed" );
         }
 
         writerCheckpointMutex.lock();
@@ -520,13 +526,14 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         writerCheckpointMutex.unlock();
         if ( !writerTaken.compareAndSet( true, false ) )
         {
-            throw new IllegalStateException( "Tried to give back the writer, but somebody else already did" );
+            throw new IllegalStateException( "Tried to give back the writer of " + this +
+                    ", but somebody else already did" );
         }
     }
 
     private void goToRoot( PageCursor cursor, long stableGeneration, long unstableGeneration ) throws IOException
     {
-        bTreeNode.goTo( cursor, rootId, stableGeneration, unstableGeneration );
+        bTreeNode.goTo( cursor, "root", rootId, stableGeneration, unstableGeneration );
     }
 
     public void prepareForRecovery() throws IOException
@@ -565,6 +572,15 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
                     stableGeneration( generation ), unstableGeneration( generation ) )
                     .check( cursor );
         }
+    }
+
+    @Override
+    public String toString()
+    {
+        long generation = this.generation;
+        return format( "GB+Tree[file:%s, layout:%s, gen:%d/%d]",
+                indexFile.getAbsolutePath(), layout,
+                stableGeneration( generation ), unstableGeneration( generation ) );
     }
 
     private class SingleIndexWriter implements IndexWriter<KEY,VALUE>
@@ -612,10 +628,7 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
             {
                 // New root
                 long newRootId = acquireNewId();
-                if ( !cursor.next( newRootId ) )
-                {
-                    throw new IllegalStateException( "Could not go to new root " + newRootId );
-                }
+                PageCursorUtil.goTo( cursor, "new root", newRootId );
 
                 bTreeNode.initializeInternal( cursor, stableGeneration, unstableGeneration );
                 bTreeNode.insertKeyAt( cursor, structurePropagation.primKey, 0, 0, tmp );

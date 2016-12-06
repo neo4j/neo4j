@@ -433,10 +433,10 @@ public class TreeNodeTest
         try
         {
             // WHEN
-            node.goTo( cursor, cursor.getCurrentPageId(), STABLE_GENERATION, UNSTABLE_GENERATION );
+            node.goTo( cursor, "page id", cursor.getCurrentPageId(), STABLE_GENERATION, UNSTABLE_GENERATION );
             fail( "Expected throw" );
         }
-        catch ( IllegalStateException e )
+        catch ( TreeInconsistencyException e )
         {
             // THEN
             // Good
@@ -452,10 +452,10 @@ public class TreeNodeTest
         try
         {
             // WHEN
-            node.goTo( cursor, cursor.getCurrentPageId(), STABLE_GENERATION, UNSTABLE_GENERATION );
+            node.goTo( cursor, "page id", cursor.getCurrentPageId(), STABLE_GENERATION, UNSTABLE_GENERATION );
             fail( "Expected throw" );
         }
-        catch ( IllegalStateException e )
+        catch ( TreeInconsistencyException e )
         {
             // THEN
             // Good
@@ -471,10 +471,10 @@ public class TreeNodeTest
         try
         {
             // WHEN
-            node.goTo( cursor, cursor.getCurrentPageId(), STABLE_GENERATION, UNSTABLE_GENERATION );
+            node.goTo( cursor, "page id", cursor.getCurrentPageId(), STABLE_GENERATION, UNSTABLE_GENERATION );
             fail( "Expected throw" );
         }
-        catch ( IllegalStateException e )
+        catch ( TreeInconsistencyException e )
         {
             // THEN
             // Good
@@ -490,10 +490,10 @@ public class TreeNodeTest
         try
         {
             // WHEN
-            node.goTo( cursor, cursor.getCurrentPageId(), STABLE_GENERATION, UNSTABLE_GENERATION );
+            node.goTo( cursor, "page id", cursor.getCurrentPageId(), STABLE_GENERATION, UNSTABLE_GENERATION );
             fail( "Expected throw" );
         }
-        catch ( IllegalStateException e )
+        catch ( TreeInconsistencyException e )
         {
             // THEN
             // Good
@@ -583,7 +583,7 @@ public class TreeNodeTest
             new TreeNode<>( TreeNode.HEADER_LENGTH + layout.keySize() + layout.valueSize(), layout );
             fail( "Should have failed" );
         }
-        catch ( IllegalArgumentException e )
+        catch ( MetadataMismatchException e )
         {
             // THEN good
         }

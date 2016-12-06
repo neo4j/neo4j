@@ -144,7 +144,7 @@ public class GBPTreeTest
         {
             fail( "Should not load" );
         }
-        catch ( IllegalArgumentException e )
+        catch ( MetadataMismatchException e )
         {
             // THEN good
         }
@@ -176,7 +176,7 @@ public class GBPTreeTest
 
             fail( "Should not load" );
         }
-        catch ( IllegalArgumentException e )
+        catch ( MetadataMismatchException e )
         {
             // THEN good
         }
@@ -204,7 +204,7 @@ public class GBPTreeTest
         {
             fail( "Should not load" );
         }
-        catch ( IllegalArgumentException e )
+        catch ( MetadataMismatchException e )
         {
             // THEN good
         }
@@ -232,7 +232,7 @@ public class GBPTreeTest
         {
             fail( "Should not load" );
         }
-        catch ( IllegalArgumentException e )
+        catch ( MetadataMismatchException e )
         {
             // THEN good
         }
@@ -255,7 +255,7 @@ public class GBPTreeTest
         {
             fail( "Should not load" );
         }
-        catch ( IllegalStateException e )
+        catch ( MetadataMismatchException e )
         {
             // THEN good
             assertThat( e.getMessage(), containsString( "page size" ) );
@@ -274,7 +274,7 @@ public class GBPTreeTest
         {
             fail( "Shouldn't have been created" );
         }
-        catch ( IllegalStateException e )
+        catch ( MetadataMismatchException e )
         {
             // THEN good
             assertThat( e.getMessage(), containsString( "page size" ) );

@@ -749,7 +749,7 @@ public class InternalTreeLogicTest
         assertNotEquals( oldGenId, newGenId );
         assertEquals( 1, node.keyCount( cursor ) );
 
-        node.goTo( cursor, oldGenId, stableGen, unstableGen );
+        node.goTo( cursor, "old gen", oldGenId, stableGen, unstableGen );
         assertEquals( newGenId, node.newGen( cursor, stableGen, unstableGen ) );
         assertEquals( 0, node.keyCount( cursor ) );
     }
@@ -777,7 +777,7 @@ public class InternalTreeLogicTest
         assertNotEquals( oldGenId, newGenId );
         assertEquals( 0, node.keyCount( cursor ) );
 
-        node.goTo( cursor, oldGenId, stableGen, unstableGen );
+        node.goTo( cursor, "old gen", oldGenId, stableGen, unstableGen );
         assertEquals( newGenId, node.newGen( cursor, stableGen, unstableGen ) );
         assertEquals( 1, node.keyCount( cursor ) );
     }
@@ -1036,7 +1036,7 @@ public class InternalTreeLogicTest
 
     private void assertNewGenPointerNotCrashOrBroken()
     {
-        assertNoCrashOrBrokenPointerInGSPP( cursor, stableGen, unstableGen, "NewGen", TreeNode.BYTE_POS_NEWGEN );
+        assertNoCrashOrBrokenPointerInGSPP( cursor, stableGen, unstableGen, "NewGen", TreeNode.BYTE_POS_NEWGEN, node );
     }
 
     private void assertKeyAssociatedWithValue( long key, long expectedValue )

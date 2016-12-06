@@ -66,14 +66,14 @@ class GenSafePointer
      */
     public static void write( PageCursor cursor, long generation, long pointer )
     {
-        assertGeneration( generation );
-        assertPointer( pointer );
+        assertGenerationOnWrite( generation );
+        assertPointerOnWrite( pointer );
         cursor.putInt( (int) generation );
         put6BLong( cursor, pointer );
         cursor.putShort( checksumOf( generation, pointer ) );
     }
 
-    static void assertGeneration( long generation )
+    static void assertGenerationOnWrite( long generation )
     {
         if ( generation < MIN_GENERATION || generation > MAX_GENERATION )
         {
@@ -82,7 +82,7 @@ class GenSafePointer
         }
     }
 
-    private static void assertPointer( long pointer )
+    private static void assertPointerOnWrite( long pointer )
     {
         if ( (pointer > MAX_POINTER || pointer < MIN_POINTER) && pointer != TreeNode.NO_NODE_FLAG )
         {

@@ -95,12 +95,12 @@ class TreeNode<KEY,VALUE>
 
         if ( internalMaxKeyCount < 2 )
         {
-            throw new IllegalArgumentException( "A page size of " + pageSize + " would only fit " +
-                    internalMaxKeyCount + " internal keys, minimum is 2" );
+            throw new MetadataMismatchException( "For layout " + layout + " a page size of " + pageSize +
+                    " would only fit " + internalMaxKeyCount + " internal keys, minimum is 2" );
         }
         if ( leafMaxKeyCount < 2 )
         {
-            throw new IllegalArgumentException( "A page size of " + pageSize + " would only fit " +
+            throw new MetadataMismatchException( "A page size of " + pageSize + " would only fit " +
                     leafMaxKeyCount + " leaf keys, minimum is 2" );
         }
     }
@@ -167,7 +167,7 @@ class TreeNode<KEY,VALUE>
 
     void setGen( PageCursor cursor, long generation )
     {
-        GenSafePointer.assertGeneration( generation );
+        GenSafePointer.assertGenerationOnWrite( generation );
         cursor.putInt( BYTE_POS_GEN, (int) generation );
     }
 
@@ -374,13 +374,10 @@ class TreeNode<KEY,VALUE>
                 childSize(), childOffset( 0 ), into );
     }
 
-    void goTo( PageCursor cursor, long childId, long stableGeneration, long unstableGeneration )
+    void goTo( PageCursor cursor, String messageOnError, long nodeId, long stableGeneration, long unstableGeneration )
             throws IOException
     {
-        if ( !cursor.next( childId ) )
-        {
-            throw new IllegalStateException( "Could not go to " + childId );
-        }
+        PageCursorUtil.goTo( cursor, messageOnError, nodeId );
         verifyGen( cursor, stableGeneration, unstableGeneration );
     }
 
@@ -389,7 +386,7 @@ class TreeNode<KEY,VALUE>
         long gen = gen( cursor );
         if ( ( gen > stableGeneration && gen < unstableGeneration ) || gen > unstableGeneration )
         {
-            throw new IllegalStateException( "Reached a node with generation=" + gen +
+            throw new TreeInconsistencyException( "Reached a node with generation=" + gen +
                     ", stableGeneration=" + stableGeneration + ", unstableGeneration=" + unstableGeneration );
         }
     }

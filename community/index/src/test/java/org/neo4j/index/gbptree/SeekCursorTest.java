@@ -720,7 +720,7 @@ public class SeekCursorTest
                 }
                 fail( "Expected to throw" );
             }
-            catch ( IllegalStateException e )
+            catch ( TreeInconsistencyException e )
             {
                 // Good
             }
@@ -789,7 +789,7 @@ public class SeekCursorTest
                 }
                 fail( "Expected to throw" );
             }
-            catch ( IllegalStateException e )
+            catch ( TreeInconsistencyException e )
             {
                 // good
             }
@@ -891,7 +891,7 @@ public class SeekCursorTest
         {
             fail( "Expected throw" );
         }
-        catch ( IllegalStateException e )
+        catch ( TreeInconsistencyException e )
         {
             // then
             // good
@@ -983,7 +983,7 @@ public class SeekCursorTest
         {
             fail( "Expected throw" );
         }
-        catch ( IllegalStateException e )
+        catch ( TreeInconsistencyException e )
         {
             // then
             // good

@@ -387,7 +387,7 @@ class GenSafePointerPair
         }
         if ( generation < MIN_GENERATION )
         {
-            throw new UnsupportedOperationException( "Generation was less than MIN_GENERATION " + MIN_GENERATION +
+            throw new TreeInconsistencyException( "Generation was less than MIN_GENERATION " + MIN_GENERATION +
                     " but checksum was correct. Pointer was " + generation + "," + pointer );
         }
         if ( generation <= stableGeneration )
@@ -449,7 +449,7 @@ class GenSafePointerPair
     {
         if ( !isSuccess( result ) )
         {
-            throw new IllegalStateException( failureDescription( result ) );
+            throw new TreeInconsistencyException( failureDescription( result ) );
         }
         return true;
     }
