@@ -44,15 +44,7 @@ public class WritableDatabaseLabelScanIndex extends WritableAbstractDatabaseInde
     @Override
     public LabelScanReader getLabelScanReader()
     {
-//        partitionsLock.lock();
-        try
-        {
-            return luceneIndex.getLabelScanReader();
-        }
-        finally
-        {
-//            partitionsLock.unlock();
-        }
+        return luceneIndex.getLabelScanReader();
     }
 
     @Override
