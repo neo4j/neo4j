@@ -101,7 +101,6 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
     // Pool of unused transactions.
     private final MarshlandPool<KernelTransactionImplementation> localTxPool = new MarshlandPool<>( globalTxPool );
 
-
     public KernelTransactions( StatementLocksFactory statementLocksFactory,
                                ConstraintIndexCreator constraintIndexCreator,
                                StatementOperationContainer statementOperationContainer,

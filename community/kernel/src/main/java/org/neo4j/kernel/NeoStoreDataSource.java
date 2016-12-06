@@ -761,7 +761,6 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
 
     private void awaitAllTransactionsClosed()
     {
-
         // Only wait for committed transactions to be applied if the kernel is healthy (i.e. no panic)
         // otherwise if there has been a panic transactions will not be applied properly anyway.
         TransactionIdStore txIdStore = getDependencyResolver().resolveDependency( TransactionIdStore.class );
