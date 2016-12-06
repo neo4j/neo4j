@@ -24,11 +24,17 @@ import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.IdentityTypeConverter
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.Pipe
+import org.neo4j.cypher.internal.compiler.v3_2.planner.execution.FakeIdMap
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.SingleRow
+import org.neo4j.cypher.internal.compiler.v3_2.planner.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.compiler.v3_2.spi.{QueryContext, QueryTransactionalContext}
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.ir.v3_2.Cardinality
 
 class ExecutionWorkflowBuilderTest extends CypherFunSuite {
   val PlannerName = IDPPlannerName
+  val solved = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(1))
+  val logicalPlan = SingleRow()(solved)
 
   test("produces eager results for updating queries") {
     // GIVEN
@@ -36,7 +42,9 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
     when(pipe.createResults(any())).thenReturn(Iterator.empty)
     val context = mock[QueryContext]
     when(context.transactionalContext).thenReturn(mock[QueryTransactionalContext])
-    val builderFactory = DefaultExecutionResultBuilderFactory(PipeInfo(pipe, updating = true, None, None, PlannerName), List.empty, IdentityTypeConverter)
+
+    val pipeInfo = PipeInfo(pipe, updating = true, None, None, PlannerName)
+    val builderFactory = DefaultExecutionResultBuilderFactory(pipeInfo, List.empty, IdentityTypeConverter, logicalPlan, new FakeIdMap)
 
     // WHEN
     val builder = builderFactory.create()
@@ -53,7 +61,8 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
     val pipe = mock[Pipe]
     when(pipe.createResults(any())).thenReturn(Iterator.empty)
     val context = mock[QueryContext]
-    val builderFactory = DefaultExecutionResultBuilderFactory(PipeInfo(pipe, updating = false, None, None, PlannerName), List.empty, IdentityTypeConverter)
+    val pipeInfo = PipeInfo(pipe, updating = false, None, None, PlannerName)
+    val builderFactory = DefaultExecutionResultBuilderFactory(pipeInfo, List.empty, IdentityTypeConverter, logicalPlan, new FakeIdMap)
 
     // WHEN
     val builder = builderFactory.create()
@@ -71,7 +80,8 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
     when(pipe.createResults(any())).thenReturn(Iterator.empty)
     val context = mock[QueryContext]
     when(context.transactionalContext).thenReturn(mock[QueryTransactionalContext])
-    val builderFactory = DefaultExecutionResultBuilderFactory(PipeInfo(pipe, updating = false, None, None, PlannerName), List.empty, IdentityTypeConverter)
+    val pipeInfo = PipeInfo(pipe, updating = false, None, None, PlannerName)
+    val builderFactory = DefaultExecutionResultBuilderFactory(pipeInfo, List.empty, IdentityTypeConverter, logicalPlan, new FakeIdMap)
 
     // WHEN
     val builder = builderFactory.create()

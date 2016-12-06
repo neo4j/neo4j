@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.commands.QueryExpression
 import org.neo4j.cypher.internal.compiler.v3_2.planner.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.frontend.v3_2.Foldable._
 import org.neo4j.cypher.internal.frontend.v3_2.Rewritable._
-import org.neo4j.cypher.internal.frontend.v3_2.ast.{Expression, Variable}
+import org.neo4j.cypher.internal.frontend.v3_2.ast.Expression
 import org.neo4j.cypher.internal.frontend.v3_2.{InternalException, Rewritable}
 import org.neo4j.cypher.internal.ir.v3_2.IdName
 
@@ -111,6 +111,8 @@ abstract class LogicalPlan
   }
 
   def debugId: String = f"0x${hashCode()}%08x"
+
+  def flatten: Seq[LogicalPlan] = Flattener.create(this)
 }
 
 abstract class LogicalLeafPlan extends LogicalPlan with LazyLogicalPlan {
@@ -125,4 +127,12 @@ abstract class NodeLogicalLeafPlan extends LogicalLeafPlan {
 
 abstract class IndexLeafPlan extends NodeLogicalLeafPlan {
   def valueExpr: QueryExpression[Expression]
+}
+
+case object Flattener extends TreeBuilder[Seq[LogicalPlan]] {
+  override protected def build(plan: LogicalPlan): Seq[LogicalPlan] = Seq(plan)
+
+  override protected def build(plan: LogicalPlan, source: Seq[LogicalPlan]): Seq[LogicalPlan] = plan +: source
+
+  override protected def build(plan: LogicalPlan, lhs: Seq[LogicalPlan], rhs: Seq[LogicalPlan]): Seq[LogicalPlan] = (plan +: lhs) ++ rhs
 }

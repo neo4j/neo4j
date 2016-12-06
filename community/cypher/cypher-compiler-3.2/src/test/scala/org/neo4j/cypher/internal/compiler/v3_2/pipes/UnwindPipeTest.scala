@@ -33,15 +33,6 @@ class UnwindPipeTest extends CypherFunSuite {
     unwindPipe.createResults(QueryStateHelper.empty).toList
   }
 
-  test("symbols are correct") {
-    val source = new FakePipe(List.empty, "x" -> CTList(CTInteger), "something else" -> CTList(CTAny))
-    val unwindPipe = new UnwindPipe(source, Variable("x"), "y")()
-    unwindPipe.symbols.variables should equal(Map(
-      "y" -> CTInteger,
-      "something else" -> CTList(CTAny),
-      "x" -> CTList(CTInteger)))
-  }
-
   test("should unwind collection of numbers") {
     unwindWithInput(List(Map("x" -> List(1, 2)))) should equal(List(
       Map("y" -> 1, "x" -> List(1, 2)),

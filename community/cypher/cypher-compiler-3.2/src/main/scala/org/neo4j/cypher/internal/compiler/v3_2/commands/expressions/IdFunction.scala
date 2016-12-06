@@ -21,9 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_2.CypherTypeException
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 import org.neo4j.graphdb.{Node, Relationship}
 
 case class IdFunction(inner: Expression) extends NullInNullOutExpression(inner) {
@@ -36,8 +34,6 @@ case class IdFunction(inner: Expression) extends NullInNullOutExpression(inner) 
   def rewrite(f: (Expression) => Expression) = f(IdFunction(inner.rewrite(f)))
 
   def arguments = Seq(inner)
-
-  def calculateType(symbols: SymbolTable): CypherType = CTInteger
 
   def symbolTableDependencies = inner.symbolTableDependencies
 }

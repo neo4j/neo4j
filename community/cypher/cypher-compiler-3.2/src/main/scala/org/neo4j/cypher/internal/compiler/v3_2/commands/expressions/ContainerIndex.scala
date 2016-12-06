@@ -22,8 +22,6 @@ package org.neo4j.cypher.internal.compiler.v3_2.commands.expressions
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.{CastSupport, IsList, IsMap, ListSupport}
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 import org.neo4j.cypher.internal.frontend.v3_2.{CypherTypeException, InvalidArgumentException}
 
 case class ContainerIndex(expression: Expression, index: Expression) extends NullInNullOutExpression(expression)
@@ -61,39 +59,6 @@ with ListSupport {
       case _ =>
         throw new CypherTypeException(
           s"`$value` is not a collection or a map. Element access is only possible by performing a collection lookup using an integer index, or by performing a map lookup using a string key (found: $value[${index(ctx)}])")
-    }
-  }
-
-  def calculateType(symbols: SymbolTable): CypherType = {
-    val exprT = expression.evaluateType(CTAny, symbols)
-    val indexT = index.evaluateType(CTAny, symbols)
-
-    val isColl = CTList(CTAny).isAssignableFrom(exprT)
-    val isMap = CTMap.isAssignableFrom(exprT)
-    val isInteger = CTInteger.isAssignableFrom(indexT)
-    val isString = CTString.isAssignableFrom(indexT)
-
-    val collectionLookup = isColl || isInteger
-    val mapLookup = isMap || isString
-
-    if (collectionLookup && !mapLookup) {
-      index.evaluateType(CTInteger, symbols)
-      expression.evaluateType(CTList(CTAny), symbols) match {
-        case collectionType: ListType => collectionType.innerType
-        case x if x.isInstanceOf[AnyType]   => CTAny
-        case x                              => throw new CypherTypeException("Expected a collection, but was " + x)
-      }
-    } else if (!collectionLookup && mapLookup) {
-      index.evaluateType(CTString, symbols)
-      expression.evaluateType(CTMap, symbols) match {
-        case t: MapType                   => CTAny
-        case t: NodeType                  => CTAny
-        case t: RelationshipType          => CTAny
-        case x if x.isInstanceOf[AnyType] => CTAny
-        case x                            => throw new CypherTypeException("Expected a map, but was " + x)
-      }
-    } else {
-      CTAny
     }
   }
 

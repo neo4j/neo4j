@@ -126,22 +126,6 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     plan.getArguments.get("planner-impl") should equal("RULE")
   }
 
-  test("should be able to set RULE as default when using cypher 3.2") {
-    //given
-    val db = new TestGraphDatabaseFactory()
-      .newImpermanentDatabaseBuilder()
-      .setConfig(GraphDatabaseSettings.cypher_planner, "RULE")
-      .setConfig(GraphDatabaseSettings.cypher_parser_version, "3.2").newGraphDatabase()
-    val service = new GraphDatabaseCypherService(db)
-
-    //when
-    val plan = service.planDescriptionForQuery("PROFILE MATCH (a) RETURN a")
-
-    //then
-    plan.getArguments.get("planner") should equal("RULE")
-    plan.getArguments.get("planner-impl") should equal("RULE")
-  }
-
   test("should be able to force COST as default when using cypher 2.3") {
     //given
     val db = new TestGraphDatabaseFactory()

@@ -19,8 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.codegen.ir
 
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.CodeGenContext
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions.CodeGenExpression
-import org.neo4j.cypher.internal.compiler.v3_2.codegen.{CodeGenContext, Equal, MethodStructure}
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi.{Equal, MethodStructure}
 
 case class DecreaseAndReturnWhenZero(opName: String, variableName: String, action: Instruction, startValue: CodeGenExpression)
   extends Instruction {

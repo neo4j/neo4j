@@ -378,13 +378,6 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     result.getExecutionPlanDescription.toString should include("Planner COST" + System.lineSeparator())
   }
 
-  test("reports RULE planner when showing plan description") {
-    val executionPlanDescription = graph.execute("CYPHER planner=rule create ()").getExecutionPlanDescription
-
-    executionPlanDescription.toString should not include "Planner COST"
-    executionPlanDescription.toString should include("Planner RULE" + System.lineSeparator())
-  }
-
   test("does not use Apply for aggregation and order by") {
     val a = profileWithAllPlanners("match (n) return n, count(*) as c order by c")
 
@@ -466,7 +459,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     val result = profileWithAllPlannersAndRuntimes("return 5 + 3")
 
     // then
-    assertDbHits(0)(result)("EmptyRow", "Projection", "ProduceResults")
+    assertDbHits(0)(result)("Projection", "ProduceResults")
     assertRows(1)(result)("ProduceResults")
   }
 
@@ -685,7 +678,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
       names.flatMap {
         name =>
           val descriptions: Seq[InternalPlanDescription] = description.find(name)
-          withClue(name + " is missing; ") {
+          withClue(s"$description\n$name is missing; ") {
             assert(descriptions.nonEmpty)
           }
           descriptions

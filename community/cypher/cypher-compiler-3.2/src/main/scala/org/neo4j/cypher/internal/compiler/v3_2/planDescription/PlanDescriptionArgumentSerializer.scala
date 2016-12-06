@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v3_2.planDescription
 
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.UnNamedNameGenerator._
-import org.neo4j.cypher.internal.compiler.v3_2.pipes.LazyTypes
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
 
@@ -36,6 +35,7 @@ object PlanDescriptionArgumentSerializer {
       case LegacyExpression(expr) => removeGeneratedNames(expr.toString)
       case LegacyExpressions(expressions) => expressions.map({ case (k, v) => s"$k : $v" }).mkString("{", ", ", "}")
       case Expression(expr) => removeGeneratedNames(expr.toString)
+      case Expressions(expressions) => expressions.map({ case (k, v) => s"$k : $v" }).mkString("{", ", ", "}")
       case UpdateActionName(action) => action
       case MergePattern(startPoint) => s"MergePattern($startPoint)"
       case LegacyIndex(index) => index
@@ -69,11 +69,11 @@ object PlanDescriptionArgumentSerializer {
         val relInfo = if (lengthDescr == "" && typeNames.isEmpty && rel.unnamed) "" else s"[$rel$types$lengthDescr]"
         s"($from)$left$relInfo$right($to)"
       case CountNodesExpression(ident, label) =>
-        val node = label.map(l => ":" + l.name).mkString
+        val node = label.map(":" + _).mkString
         s"count( ($node) )" + (if (ident.startsWith(" ")) "" else s" AS $ident")
-      case CountRelationshipsExpression(ident, startLabel, LazyTypes(typeNames), endLabel) =>
-        val start = startLabel.map(l => ":" + l.name).mkString
-        val end = endLabel.map(l => ":" + l.name).mkString
+      case CountRelationshipsExpression(ident, startLabel, typeNames, endLabel) =>
+        val start = startLabel.map(":" + _).mkString
+        val end = endLabel.map(":" + _).mkString
         val types = typeNames.mkString(":", "|:", "")
         s"count( ($start)-[$types]->($end) )" + (if (ident.unnamed) "" else s" AS $ident")
       case Signature(procedureName, args, results) =>

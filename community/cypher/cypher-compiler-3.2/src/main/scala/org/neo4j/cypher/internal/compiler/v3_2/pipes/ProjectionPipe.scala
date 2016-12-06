@@ -21,23 +21,15 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Expression
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.Effects._
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.LegacyExpressions
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 
 /*
 Projection evaluates expressions and stores their values into new slots in the execution context.
 It's an additive operation - nothing is lost in the execution context, the pipe simply adds new key-value pairs.
  */
-case class ProjectionPipe(source: Pipe, expressions: Map[String, Expression])(val estimatedCardinality: Option[Double] = None)
-                         (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
-  val symbols = {
-    val newVariables = expressions.map {
-      case (name, expression) => name -> expression.getType(source.symbols)
-    }
-
-    source.symbols.add(newVariables)
-  }
-
+case class ProjectionPipe(source: Pipe, expressions: Map[String, Expression])
+                         (val id: Id = new Id)
+                         (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
     //register as parent so that stats are associated with this pipe
     state.decorator.registerParentPipe(this)
@@ -52,17 +44,4 @@ case class ProjectionPipe(source: Pipe, expressions: Map[String, Expression])(va
         ctx
     }
   }
-
-  def planDescriptionWithoutCardinality =
-    source.planDescription
-      .andThen(this.id, "Projection", variables, LegacyExpressions(expressions))
-
-  def dup(sources: List[Pipe]): Pipe = {
-    val (source :: Nil) = sources
-    copy(source = source)(estimatedCardinality)
-  }
-
-  override def localEffects = expressions.effects(symbols)
-
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 }

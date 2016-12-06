@@ -22,15 +22,14 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v3_2.commands.predicates.Equivalent
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.Effects
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.LegacyExpressions
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{InternalPlanDescription, PlanDescriptionImpl, TwoChildren}
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 
 import scala.collection.mutable
 
 case class ValueHashJoinPipe(lhsExpression: Expression, rhsExpression: Expression, left: Pipe, right: Pipe)
-                            (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
-  extends PipeWithSource(left, pipeMonitor) with RonjaPipe {
+                            (val id: Id = new Id)
+                            (implicit pipeMonitor: PipeMonitor)
+  extends PipeWithSource(left, pipeMonitor) {
 
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     implicit val x = state
@@ -56,30 +55,6 @@ case class ValueHashJoinPipe(lhsExpression: Expression, rhsExpression: Expressio
       }
     result.flatten
   }
-
-
-  override def planDescriptionWithoutCardinality: InternalPlanDescription = {
-    PlanDescriptionImpl(
-      id = id,
-      name = "ValueHashJoin",
-      children = TwoChildren(left.planDescription, right.planDescription),
-      arguments = Seq(LegacyExpressions(Map("lhs" -> lhsExpression, "rhs" -> rhsExpression))),
-      variables
-    )
-  }
-
-  override def symbols = left.symbols.add(right.symbols.variables)
-
-  override val sources = Seq(left, right)
-
-  override def dup(sources: List[Pipe]): Pipe = {
-    val (left :: right :: Nil) = sources
-    copy(left = left, right = right)(estimatedCardinality)
-  }
-
-  override def localEffects = Effects()
-
-  override def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 
   private def buildProbeTable(input: Iterator[ExecutionContext])(implicit state: QueryState) = {
     val table = new mutable.HashMap[Equivalent, mutable.MutableList[ExecutionContext]]

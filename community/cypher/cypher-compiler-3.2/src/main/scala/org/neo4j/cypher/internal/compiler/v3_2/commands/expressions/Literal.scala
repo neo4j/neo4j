@@ -20,10 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_2.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_2._
-import org.neo4j.cypher.internal.compiler.v3_2.helpers.LiteralTypeSupport
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 
 case class Literal(v: Any) extends Expression {
   def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = v
@@ -31,8 +28,6 @@ case class Literal(v: Any) extends Expression {
   def rewrite(f: (Expression) => Expression) = f(this)
 
   def arguments = Nil
-
-  def calculateType(symbols: SymbolTable): CypherType = LiteralTypeSupport.deriveCypherType(v)
 
   def symbolTableDependencies = Set()
 

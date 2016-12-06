@@ -20,9 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_2.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_2._
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
-import pipes.QueryState
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
+import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
 
 case class Null() extends Expression {
   def apply(v1: ExecutionContext)(implicit state: QueryState) = null
@@ -30,8 +28,6 @@ case class Null() extends Expression {
   def rewrite(f: (Expression) => Expression): Expression = f(this)
 
   def arguments = Seq()
-
-  def calculateType(symbols: SymbolTable): CypherType = CTAny
 
   def symbolTableDependencies = Set()
 }

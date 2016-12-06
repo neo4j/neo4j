@@ -123,11 +123,6 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     result.notifications should not contain PlannerUnsupportedNotification
   }
 
-  test("do not warn when requesting RULE on an update query") {
-    val result = innerExecute("EXPLAIN CYPHER planner=RULE MATCH (n:Movie) SET n.title = 'The Movie'")
-    result.notifications.toList should equal(List(DeprecatedPlannerNotification))
-  }
-
   test("warn when requesting runtime=compiled on an unsupported query") {
     val result = innerExecute("EXPLAIN CYPHER runtime=compiled MATCH (a)-->(b), (c)-->(d) RETURN count(*)")
     result.notifications should contain(RuntimeUnsupportedNotification)
@@ -152,12 +147,6 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     result.notifications should contain(IndexHintUnfulfillableNotification("Animal", "species"))
   }
 
-  test("should warn when join hint is used with RULE planner with EXPLAIN") {
-    val result = innerExecute( """CYPHER planner=rule EXPLAIN MATCH (a)-->(b) USING JOIN ON b RETURN a, b""")
-
-    result.notifications should equal(Set(JoinHintUnsupportedNotification(Seq("b")), DeprecatedPlannerNotification))
-  }
-
   test("should warn when join hint is unfulfilled") {
     val result = innerExecute( """CYPHER planner=cost EXPLAIN MATCH (a)-->(b) USING JOIN ON b RETURN a, b""")
 
@@ -168,12 +157,6 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     val result = innerExecute( """CYPHER planner=cost EXPLAIN MATCH (a)-->(x)<--(b) USING JOIN ON x RETURN a, b""")
 
     result.notifications should not contain JoinHintUnsupportedNotification(Seq("x"))
-  }
-
-  test("should not warn when join hint is used with RULE planner without EXPLAIN") {
-    val result = innerExecute( """CYPHER planner=rule MATCH (a)-->(b) USING JOIN ON b RETURN a, b""")
-
-    result.notifications shouldBe empty
   }
 
   test("Warnings should work on potentially cached queries") {

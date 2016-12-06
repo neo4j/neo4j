@@ -21,30 +21,15 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.predicates.Predicate
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.LegacyExpression
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 
-case class FilterPipe(source: Pipe, predicate: Predicate)(val estimatedCardinality: Option[Double] = None)
-                     (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
-  val symbols = source.symbols
-
+case class FilterPipe(source: Pipe, predicate: Predicate)
+                     (val id: Id = new Id)
+                     (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
   protected def internalCreateResults(input: Iterator[ExecutionContext],state: QueryState) = {
     //register as parent so that stats are associated with this pipe
     state.decorator.registerParentPipe(this)
 
     input.filter(ctx => predicate.isTrue(ctx)(state))
   }
-
-  def planDescriptionWithoutCardinality = source.planDescription.andThen(this.id, "Filter", variables, LegacyExpression(predicate))
-
-  def dup(sources: List[Pipe]): Pipe = {
-    val (source :: Nil) = sources
-    copy(source = source)(estimatedCardinality)
-  }
-
-  override def localEffects = {
-    val predicateEffects = predicate.effects(symbols)
-    if (source.isLeaf) predicateEffects.asLeafEffects else predicateEffects
-  }
-
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 }

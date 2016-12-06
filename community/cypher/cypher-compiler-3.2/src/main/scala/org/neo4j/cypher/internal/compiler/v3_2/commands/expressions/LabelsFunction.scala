@@ -21,9 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_2.ParameterWrongTypeException
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 import org.neo4j.graphdb.Node
 
 case class LabelsFunction(nodeExpr: Expression) extends NullInNullOutExpression(nodeExpr) {
@@ -41,9 +39,4 @@ case class LabelsFunction(nodeExpr: Expression) extends NullInNullOutExpression(
   override def arguments = Seq(nodeExpr)
 
   override def symbolTableDependencies = nodeExpr.symbolTableDependencies
-
-  override def calculateType(symbols: SymbolTable) = {
-    nodeExpr.evaluateType(CTNode, symbols)
-    CTList(CTString)
-  }
 }

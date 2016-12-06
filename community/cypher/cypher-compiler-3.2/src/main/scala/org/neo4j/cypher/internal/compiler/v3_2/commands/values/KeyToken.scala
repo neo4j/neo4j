@@ -20,11 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v3_2.commands.values
 
 import org.neo4j.cypher.internal.compiler.v3_2._
-import commands.expressions.Expression
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
-import pipes.QueryState
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
-import org.neo4j.cypher.internal.compiler.v3_2.spi.{TokenContext, QueryContext}
+import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
+import org.neo4j.cypher.internal.compiler.v3_2.spi.{QueryContext, TokenContext}
 
 /*
 KeyTokens are things with name and id. KeyTokens makes it possible to look up the id
@@ -47,8 +45,6 @@ sealed abstract class KeyToken(typ: TokenType) extends Expression {
   def symbolTableDependencies = Set.empty
 
   def apply(ctx: ExecutionContext)(implicit state: QueryState) = ???
-
-  protected def calculateType(symbols: SymbolTable) = CTString
 }
 
 object KeyToken {

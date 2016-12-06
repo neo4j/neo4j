@@ -20,9 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{Effects, ReadsAllNodes, ReadsAllRelationships}
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.ExpandExpression
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_2.{InternalException, SemanticDirection}
 import org.neo4j.graphdb.{Node, Relationship}
 
@@ -31,9 +29,10 @@ case class ExpandAllPipe(source: Pipe,
                          relName: String,
                          toName: String,
                          dir: SemanticDirection,
-                         types: LazyTypes)(val estimatedCardinality: Option[Double] = None)
+                         types: LazyTypes)
+                        (val id: Id = new Id)
                         (implicit pipeMonitor: PipeMonitor)
-  extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
+  extends PipeWithSource(source, pipeMonitor) {
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     input.flatMap {
@@ -57,20 +56,4 @@ case class ExpandAllPipe(source: Pipe,
 
   def getFromNode(row: ExecutionContext): Any =
     row.getOrElse(fromName, throw new InternalException(s"Expected to find a node at $fromName but found nothing"))
-
-  def planDescriptionWithoutCardinality = {
-    val expandDesc = ExpandExpression(fromName, relName, typeNames, toName, dir, 1, Some(1))
-    source.planDescription.andThen(this.id, "Expand(All)", variables, expandDesc)
-  }
-
-  val symbols = source.symbols.add(toName, CTNode).add(relName, CTRelationship)
-
-  override def localEffects = Effects(ReadsAllNodes, ReadsAllRelationships)
-
-  def dup(sources: List[Pipe]): Pipe = {
-    val (source :: Nil) = sources
-    copy(source = source)(estimatedCardinality)
-  }
-
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 }

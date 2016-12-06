@@ -19,9 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.commands.expressions
 
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.aggregation.SumFunction
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
+import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 
 case class Sum(anInner: Expression) extends AggregationWithInnerExpression(anInner) {
   def createAggregationFunction = new SumFunction(anInner)
@@ -29,6 +28,4 @@ case class Sum(anInner: Expression) extends AggregationWithInnerExpression(anInn
   def expectedInnerType = CTNumber
 
   def rewrite(f: (Expression) => Expression) = f(Sum(anInner.rewrite(f)))
-
-  def calculateType(symbols: SymbolTable): CypherType = anInner.evaluateType(CTNumber, symbols)
 }

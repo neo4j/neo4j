@@ -20,19 +20,16 @@
 package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2._
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{Effects, ReadsGivenNodeProperty, ReadsNodesWithLabels}
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.Index
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{NoChildren, PlanDescriptionImpl}
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{LabelToken, PropertyKeyToken}
-import org.neo4j.cypher.internal.frontend.v3_2.symbols.CTNode
 import org.neo4j.kernel.api.index.IndexDescriptor
 
 case class NodeIndexScanPipe(ident: String,
                              label: LabelToken,
                              propertyKey: PropertyKeyToken)
-                            (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
-  extends Pipe with RonjaPipe {
+                            (val id: Id = new Id)
+                            (implicit pipeMonitor: PipeMonitor)
+  extends Pipe {
 
   private val descriptor = new IndexDescriptor(label.nameId.id, propertyKey.nameId.id)
 
@@ -45,23 +42,5 @@ case class NodeIndexScanPipe(ident: String,
     resultNodes.map(node => baseContext.newWith1(ident, node))
   }
 
-  def exists(predicate: Pipe => Boolean): Boolean = predicate(this)
-
-  def planDescriptionWithoutCardinality =
-    new PlanDescriptionImpl(this.id, "NodeIndexScan", NoChildren, Seq(Index(label.name, propertyKey.name)), variables)
-
-  def symbols = new SymbolTable(Map(ident -> CTNode))
-
   override def monitor = pipeMonitor
-
-  def dup(sources: List[Pipe]): Pipe = {
-    require(sources.isEmpty)
-    this
-  }
-
-  def sources: Seq[Pipe] = Seq.empty
-
-  override def localEffects = Effects(ReadsNodesWithLabels(label.name), ReadsGivenNodeProperty(propertyKey.name))
-
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 }

@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.codegen.ir
 
-import org.neo4j.cypher.internal.compiler.v3_2.codegen.{CodeGenContext, MethodStructure, Variable}
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi.MethodStructure
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.{CodeGenContext, Variable}
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
 
 case class ExpandIntoLoopDataGenerator(opName: String, fromVar: Variable, dir: SemanticDirection,

@@ -20,11 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v3_2.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_2._
-import commands._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.predicates.Predicate
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
-import pipes.QueryState
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
+import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
 
 case class GenericCase(alternatives: IndexedSeq[(Predicate, Expression)], default: Option[Expression]) extends Expression {
 
@@ -45,9 +42,6 @@ case class GenericCase(alternatives: IndexedSeq[(Predicate, Expression)], defaul
   private def alternativeExpressions: IndexedSeq[Expression] = alternatives.map(_._2)
 
   def arguments = alternatives.map(_._1) ++ alternatives.map(_._2) ++ default.toIndexedSeq
-
-  protected def calculateType(symbols: SymbolTable): CypherType =
-    calculateUpperTypeBound(CTAny, symbols, alternativeExpressions ++ default.toIndexedSeq)
 
   def rewrite(f: (Expression) => Expression): Expression = {
     val newAlternatives: IndexedSeq[(Predicate, Expression)] = alternatives map {

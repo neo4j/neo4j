@@ -20,12 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.Effects
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{PlanDescriptionImpl, TwoChildren}
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 
-case class ApplyPipe(source: Pipe, inner: Pipe)(val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
-  extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
+case class ApplyPipe(source: Pipe, inner: Pipe)(val id: Id = new Id)
+                    (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
     input.flatMap {
@@ -35,20 +33,4 @@ case class ApplyPipe(source: Pipe, inner: Pipe)(val estimatedCardinality: Option
         val innerResults = inner.createResults(innerState)
         innerResults.map { context => context ++ original }
     }
-
-  def planDescriptionWithoutCardinality =
-    PlanDescriptionImpl(this.id, "Apply", TwoChildren(source.planDescription, inner.planDescription), Seq.empty, variables)
-
-  def symbols: SymbolTable = source.symbols.add(inner.symbols.variables)
-
-  def dup(sources: List[Pipe]): Pipe = {
-    val (l :: r :: Nil) = sources
-    copy(source = l, inner= r)(estimatedCardinality)
-  }
-
-  override val sources: Seq[Pipe] = Seq(source, inner)
-
-  override def localEffects = Effects()
-
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 }

@@ -20,14 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.Effects
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.KeyNames
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{PlanDescriptionImpl, TwoChildren}
-import org.neo4j.cypher.internal.frontend.v3_2.symbols.ListType
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 
 case class RollUpApplyPipe(lhs: Pipe, rhs: Pipe, collectionName: String, identifierToCollect: String, nullableIdentifiers: Set[String])
-                          (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
-  extends PipeWithSource(lhs, pipeMonitor) with RonjaPipe {
+                          (val id: Id = new Id)
+                          (implicit pipeMonitor: PipeMonitor)
+  extends PipeWithSource(lhs, pipeMonitor) {
 
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
     input.map {
@@ -42,26 +40,5 @@ case class RollUpApplyPipe(lhs: Pipe, rhs: Pipe, collectionName: String, identif
           original += collectionName -> collection
         }
     }
-  }
-
-  override def planDescriptionWithoutCardinality =
-  new PlanDescriptionImpl(
-    id = id,
-    name = "RollUpApply",
-    children = TwoChildren(lhs.planDescription, rhs.planDescription),
-    arguments = Seq(KeyNames(Seq(collectionName))),
-    variables
-  )
-
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
-
-  override def localEffects = Effects()
-
-  override def symbols =
-    lhs.symbols.add(collectionName, ListType(rhs.symbols.variables(identifierToCollect)))
-
-  override def dup(sources: List[Pipe]) = {
-    val (l :: r :: Nil) = sources
-    RollUpApplyPipe(l, r, collectionName, identifierToCollect, nullableIdentifiers)(estimatedCardinality)
   }
 }

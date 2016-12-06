@@ -20,11 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 
 case class SetPipe(src: Pipe, setOperation: SetOperation)
-                  (val estimatedCardinality: Option[Double] = None)
+                  (val id: Id = new Id)
                   (implicit pipeMonitor: PipeMonitor)
-  extends PipeWithSource(src, pipeMonitor) with RonjaPipe{
+  extends PipeWithSource(src, pipeMonitor) {
   override protected def internalCreateResults(input: Iterator[ExecutionContext],
                                                state: QueryState): Iterator[ExecutionContext] = {
     input.map { row =>
@@ -32,18 +33,4 @@ case class SetPipe(src: Pipe, setOperation: SetOperation)
       row
     }
   }
-
-  override def planDescriptionWithoutCardinality = src.planDescription.andThen(this.id, setOperation.name, variables)
-
-  override def symbols = src.symbols
-
-  override def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
-
-  override def dup(sources: List[Pipe]): Pipe = {
-    val (onlySource :: Nil) = sources
-    SetPipe(onlySource, setOperation)(estimatedCardinality)
-  }
-
-  //rule planner stay away from this pipe!
-  override def localEffects = throw new UnsupportedOperationException
 }

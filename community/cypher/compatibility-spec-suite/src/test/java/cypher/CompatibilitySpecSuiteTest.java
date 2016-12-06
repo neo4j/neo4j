@@ -42,23 +42,6 @@ public class CompatibilitySpecSuiteTest
     @RunWith( Cucumber.class )
     @CucumberOptions(
             plugin = {
-                    DB_CONFIG + "rule.json",
-                    HTML_REPORT + SUITE_NAME + "/rule",
-                    JSON_REPORT + SUITE_NAME + "/rule",
-                    BLACKLIST_PLUGIN + "rule.txt"
-            },
-            glue = { GLUE_PATH },
-            features = { FEATURE_PATH + FEATURE_TO_RUN },
-            tags = { "~@pending" },
-            strict = true
-    )
-    public static class Rule
-    {
-    }
-
-    @RunWith( Cucumber.class )
-    @CucumberOptions(
-            plugin = {
                     DB_CONFIG + "cost.json",
                     HTML_REPORT + SUITE_NAME + "/cost",
                     JSON_REPORT + SUITE_NAME + "/cost",

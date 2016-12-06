@@ -22,12 +22,10 @@ package org.neo4j.cypher.internal.compiler.v3_2.commands
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{Expression, PathImpl}
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
-import org.neo4j.cypher.internal.frontend.v3_2.symbols.CTPath
 import org.neo4j.graphdb.{Path, PropertyContainer}
 
+import scala.collection.JavaConverters._
 import scala.collection.Map
-import collection.JavaConverters._
 
 case class PathExtractorExpression(pathPattern: Seq[Pattern]) extends Expression {
 
@@ -77,8 +75,6 @@ case class PathExtractorExpression(pathPattern: Seq[Pattern]) extends Expression
   override def rewrite(f: (Expression) => Expression) = f(this)
 
   override def arguments = Seq.empty
-
-  override protected def calculateType(symbols: SymbolTable) = CTPath
 
   override def symbolTableDependencies =
     pathPattern.flatMap(_.possibleStartPoints).map(_._1).toSet

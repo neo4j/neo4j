@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.codegen.ir
 
-import org.neo4j.cypher.internal.compiler.v3_2.codegen.{Variable, CodeGenContext, MethodStructure}
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi.MethodStructure
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.{CodeGenContext, Variable}
 
 // Generates the code that moves data into local variables from the iterator being consumed
 trait LoopDataGenerator {

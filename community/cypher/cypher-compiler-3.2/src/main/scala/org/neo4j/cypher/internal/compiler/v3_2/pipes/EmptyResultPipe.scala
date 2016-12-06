@@ -20,12 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2._
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.Effects
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{SingleRowPlanDescription, InternalPlanDescription}
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 
-case class EmptyResultPipe(source: Pipe)(implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
+case class EmptyResultPipe(source: Pipe)(val id: Id = new Id)(implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
 
   protected def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState) = {
     while(input.hasNext) {
@@ -33,27 +30,5 @@ case class EmptyResultPipe(source: Pipe)(implicit pipeMonitor: PipeMonitor) exte
     }
 
     Iterator.empty
-  }
-
-  override def planDescription = source.planDescription.andThen(this.id, "EmptyResult", variables)
-
-  def symbols = SymbolTable()
-
-  // this pipe has no effects
-  override val localEffects = Effects()
-  override val effects = Effects()
-
-  def dup(sources: List[Pipe]): Pipe = {
-    val (source :: Nil) = sources
-    copy(source = source)
-  }
-
-  def estimatedCardinality: Option[Double] = Some(0.0)
-
-  override def planDescriptionWithoutCardinality: InternalPlanDescription = new SingleRowPlanDescription(this.id, Seq.empty, variables)
-
-  override def withEstimatedCardinality(estimated: Double): Pipe with RonjaPipe = {
-    //TODO should enforce estimated == 0.0
-    this
   }
 }

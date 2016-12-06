@@ -20,32 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.Effects
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{InternalPlanDescription, NoChildren, PlanDescriptionImpl}
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.{SymbolTable, SymbolTypeAssertionCompiler}
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 
-case class ArgumentPipe(symbols: SymbolTable)
-                       (val estimatedCardinality: Option[Double] = None)
-                       (implicit val monitor: PipeMonitor) extends Pipe with RonjaPipe {
-  def sources = Seq.empty
-
-  def withEstimatedCardinality(estimated: Double): Pipe with RonjaPipe = copy()(Some(estimated))
-
-  def planDescriptionWithoutCardinality: InternalPlanDescription =
-    new PlanDescriptionImpl(this.id, "Argument", NoChildren, Seq.empty, variables)
-
-  private val typeAssertions =
-    SymbolTypeAssertionCompiler.compile(
-      symbols.variables.toIndexedSeq.collect { case entry@(_, typ) if typ == CTNode || typ == CTRelationship => entry}
-    )
-
+case class ArgumentPipe()
+                       (val id: Id = new Id)
+                       (implicit val monitor: PipeMonitor) extends Pipe {
   def internalCreateResults(state: QueryState): Iterator[ExecutionContext] =
-    Iterator(typeAssertions(state.initialContext.get))
-
-  def dup(sources: List[Pipe]): Pipe = this
-
-  def exists(pred: (Pipe) => Boolean) = pred(this)
-
-  override def localEffects = Effects()
+    Iterator(state.initialContext.get)
 }

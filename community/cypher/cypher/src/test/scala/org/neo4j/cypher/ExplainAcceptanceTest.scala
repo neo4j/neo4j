@@ -19,9 +19,6 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.MergePattern
-import org.neo4j.kernel.impl.query.TransactionalContext
-
 class ExplainAcceptanceTest extends ExecutionEngineFunSuite {
   test("normal query is marked as such") {
     createNode()
@@ -47,16 +44,6 @@ class ExplainAcceptanceTest extends ExecutionEngineFunSuite {
     result.executionPlanDescription().asJava.toString should include("Estimated Rows")
   }
 
-  test("should report which node the merge starts from") {
-    val query = "CYPHER planner=rule EXPLAIN MERGE (first)-[:PIZZA]->(second)"
-
-    val result = execute(query)
-    val plan = result.executionPlanDescription()
-    result.close()
-
-    plan.toString should include(MergePattern("second").toString)
-  }
-
   test("should handle query with nested expression") {
     val query = """EXPLAIN
                   |WITH
@@ -79,9 +66,9 @@ class ExplainAcceptanceTest extends ExecutionEngineFunSuite {
                   |RETURN count(*), count(distinct bknEnd), avg(size(bookings)),avg(size(perDays));""".stripMargin
 
     val result = execute(query)
-    val plan = result.executionPlanDescription()
+    val plan = result.executionPlanDescription().toString
     result.close()
 
-    plan.toString should include("NestedExpression(VarLengthExpand(Into)-Argument)")
+    plan.toString should include("NestedPlanExpression(VarExpand-Argument)")
   }
 }

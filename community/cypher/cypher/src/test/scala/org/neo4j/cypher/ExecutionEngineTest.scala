@@ -437,15 +437,6 @@ order by a.COL1""")
     result.toList should equal(List(Map("foo.bar" -> "Andres")))
   }
 
-  test("shouldHandleRelationshipIndexQuery") {
-    val a = createNode()
-    val b = createNode()
-    val r = relate(a, b)
-    indexRel(r, "relIdx", "key", "value")
-
-    executeWithRulePlanner("start r=relationship:relIdx(key='value') return r").toList should equal(List(Map("r" -> r)))
-  }
-
   test("shouldHandleComparisonsWithDifferentTypes") {
     createNode("belt" -> 13)
 

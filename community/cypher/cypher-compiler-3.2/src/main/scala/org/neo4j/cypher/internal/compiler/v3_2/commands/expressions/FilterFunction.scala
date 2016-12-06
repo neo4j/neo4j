@@ -23,8 +23,6 @@ import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.ListSupport
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 
 case class FilterFunction(collection: Expression, id: String, predicate: Predicate)
   extends NullInNullOutExpression(collection)
@@ -39,8 +37,6 @@ case class FilterFunction(collection: Expression, id: String, predicate: Predica
   override def children = Seq(collection, predicate)
 
   def arguments: Seq[Expression] = Seq(collection)
-
-  def calculateType(symbols: SymbolTable): CypherType =  collection.evaluateType(CTList(CTAny), symbols)
 
   def symbolTableDependencies = symbolTableDependencies(collection, predicate, id)
 }

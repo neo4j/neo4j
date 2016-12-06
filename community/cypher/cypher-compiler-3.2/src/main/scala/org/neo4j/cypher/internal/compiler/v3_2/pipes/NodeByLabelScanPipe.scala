@@ -20,16 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2._
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{Effects, ReadsNodesWithLabels}
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.LabelName
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{NoChildren, PlanDescriptionImpl}
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 
 case class NodeByLabelScanPipe(ident: String, label: LazyLabel)
-                              (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
+                              (val id: Id = new Id)
+                              (implicit pipeMonitor: PipeMonitor)
   extends Pipe
-  with RonjaPipe {
+  {
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
 
@@ -43,22 +40,5 @@ case class NodeByLabelScanPipe(ident: String, label: LazyLabel)
     }
   }
 
-  def exists(predicate: Pipe => Boolean): Boolean = predicate(this)
-
-  def planDescriptionWithoutCardinality = new PlanDescriptionImpl(this.id, "NodeByLabelScan", NoChildren, Seq(LabelName(label.name)), variables)
-
-  def symbols = new SymbolTable(Map(ident -> CTNode))
-
   override def monitor = pipeMonitor
-
-  def dup(sources: List[Pipe]): Pipe = {
-    require(sources.isEmpty)
-    this
-  }
-
-  def sources: Seq[Pipe] = Seq.empty
-
-  override def localEffects = Effects(ReadsNodesWithLabels(label.name))
-
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 }

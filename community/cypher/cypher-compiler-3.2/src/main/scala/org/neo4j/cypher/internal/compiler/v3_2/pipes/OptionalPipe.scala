@@ -20,13 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.Effects
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{InternalPlanDescription, PlanDescriptionImpl, SingleChild}
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 
 case class OptionalPipe(nullableVariables: Set[String], source: Pipe)
-                       (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
-  extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
+                       (val id: Id = new Id)
+                       (implicit pipeMonitor: PipeMonitor)
+  extends PipeWithSource(source, pipeMonitor) {
 
   private def notFoundExecutionContext(initialContext: Option[ExecutionContext]): ExecutionContext = {
     val context = initialContext.getOrElse(ExecutionContext.empty)
@@ -37,24 +36,4 @@ case class OptionalPipe(nullableVariables: Set[String], source: Pipe)
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
     if (input.isEmpty) Iterator(notFoundExecutionContext(state.initialContext))
     else input
-
-  def planDescriptionWithoutCardinality: InternalPlanDescription =
-    new PlanDescriptionImpl(
-      this.id,
-      "Optional",
-      SingleChild(source.planDescription),
-      Seq.empty,
-      variables
-    )
-
-  def symbols: SymbolTable = source.symbols
-
-  def dup(sources: List[Pipe]) = {
-    val (head :: Nil) = sources
-    copy(source = head)(estimatedCardinality)
-  }
-
-  override def localEffects = Effects()
-
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 }

@@ -109,7 +109,7 @@ class MatchLongPatternAcceptanceTest extends ExecutionEngineFunSuite with QueryS
 
     graph.createIndex("Person", "name")
 
-    val planners = Seq("RULE", "IDP")
+    val planners = Seq("IDP")
     val minPathLength = 8
     val maxPathLength = 15
     makeLargeMatrixDataset(maxPathLength + 100)

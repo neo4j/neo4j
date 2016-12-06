@@ -21,15 +21,12 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.commands.predicates.Predicate
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.LegacyExpression
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{PlanDescriptionImpl, TwoChildren}
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 
 case class LetSelectOrSemiApplyPipe(source: Pipe, inner: Pipe, letVarName: String, predicate: Predicate, negated: Boolean)
-                                   (val estimatedCardinality: Option[Double] = None)
+                                   (val id: Id = new Id)
                                    (implicit pipeMonitor: PipeMonitor)
-  extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
+  extends PipeWithSource(source, pipeMonitor) {
   def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     //register as parent so that stats are associated with this pipe
     state.decorator.registerParentPipe(this)
@@ -46,24 +43,4 @@ case class LetSelectOrSemiApplyPipe(source: Pipe, inner: Pipe, letVarName: Strin
   }
 
   private def name = if (negated) "LetSelectOrAntiSemiApply" else "LetSelectOrSemiApply"
-
-  def planDescriptionWithoutCardinality = PlanDescriptionImpl(
-    id = id,
-    name = name,
-    children = TwoChildren(source.planDescription, inner.planDescription),
-    arguments = Seq(LegacyExpression(predicate)),
-    variables)
-
-  def symbols: SymbolTable = source.symbols.add(letVarName, CTBoolean)
-
-  override val sources = Seq(source, inner)
-
-  def dup(sources: List[Pipe]): Pipe = {
-    val (source :: inner :: Nil) = sources
-    copy(source = source, inner = inner)(estimatedCardinality)
-  }
-
-  override def localEffects = predicate.effects(symbols)
-
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 }

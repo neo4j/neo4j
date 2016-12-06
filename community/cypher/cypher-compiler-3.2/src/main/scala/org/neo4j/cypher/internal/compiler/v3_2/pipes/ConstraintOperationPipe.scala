@@ -22,13 +22,10 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.commands._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.values.KeyToken
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.Effects
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{NoChildren, PlanDescriptionImpl}
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 
 class ConstraintOperationPipe(op: PropertyConstraintOperation, keyToken: KeyToken, propertyKey: KeyToken)
-                             (implicit val monitor: PipeMonitor) extends Pipe {
+                             (val id: Id = new Id)(implicit val monitor: PipeMonitor) extends Pipe {
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val keyTokenId = keyToken.getOrCreateId(state.query)
     val propertyKeyId = propertyKey.getOrCreateId(state.query)
@@ -44,19 +41,4 @@ class ConstraintOperationPipe(op: PropertyConstraintOperation, keyToken: KeyToke
 
     Iterator.empty
   }
-
-  def symbols = new SymbolTable()
-
-  def planDescription = new PlanDescriptionImpl(this.id, "ConstraintOperation", NoChildren, Seq.empty, variables)
-
-  def exists(pred: Pipe => Boolean) = pred(this)
-
-  def dup(sources: List[Pipe]): Pipe = {
-    require(sources.isEmpty)
-    this
-  }
-
-  def sources: Seq[Pipe] = Seq.empty
-
-  override val localEffects = Effects()
 }

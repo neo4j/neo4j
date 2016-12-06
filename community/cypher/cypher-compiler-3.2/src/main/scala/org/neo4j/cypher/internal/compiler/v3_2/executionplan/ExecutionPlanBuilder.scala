@@ -27,8 +27,8 @@ import org.neo4j.cypher.internal.compiler.v3_2.executionplan.ExecutionPlanBuilde
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.builders._
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.RuntimeTypeConverter
 import org.neo4j.cypher.internal.compiler.v3_2.pipes._
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{Id, InternalPlanDescription}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_2.planner.{CantCompileQueryException, CantHandleQueryException}
 import org.neo4j.cypher.internal.compiler.v3_2.profiler.Profiler
@@ -37,8 +37,6 @@ import org.neo4j.cypher.internal.compiler.v3_2.{ExecutionMode, ProfileMode, _}
 import org.neo4j.cypher.internal.frontend.v3_2.PeriodicCommitInOpenTransactionException
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_2.notification.InternalNotification
-import org.neo4j.kernel.GraphDatabaseQueryService
-
 
 trait RunnablePlan {
   def apply(queryContext: QueryContext,
@@ -76,17 +74,6 @@ trait NewRuntimeSuccessRateMonitor {
   def unableToHandlePlan(plan: LogicalPlan, origin: CantCompileQueryException)
 }
 
-object ExecutablePlanBuilder {
-
-  def create(plannerName: Option[PlannerName], rulePlanProducer: ExecutablePlanBuilder,
-             costPlanProducer: ExecutablePlanBuilder, planBuilderMonitor: NewLogicalPlanSuccessRateMonitor,
-             useErrorsOverWarnings: Boolean) = plannerName match {
-    case None => new SilentFallbackPlanBuilder(rulePlanProducer, costPlanProducer, planBuilderMonitor)
-    case Some(_) if useErrorsOverWarnings => new ErrorReportingExecutablePlanBuilder(costPlanProducer)
-    case Some(_) => new WarningFallbackPlanBuilder(rulePlanProducer, costPlanProducer, planBuilderMonitor)
-  }
-}
-
 trait ExecutablePlanBuilder {
 
   def producePlan(inputQuery: PreparedQuerySemantics, planContext: PlanContext,
@@ -94,8 +81,7 @@ trait ExecutablePlanBuilder {
                   createFingerprintReference: (Option[PlanFingerprint]) => PlanFingerprintReference): ExecutionPlan
 }
 
-class ExecutionPlanBuilder(graph: GraphDatabaseQueryService,
-                           clock: Clock,
+class ExecutionPlanBuilder(clock: Clock,
                            executionPlanBuilder: ExecutablePlanBuilder,
                            createFingerprintReference: Option[PlanFingerprint] => PlanFingerprintReference)
   extends PatternGraphBuilder {
@@ -108,13 +94,17 @@ class ExecutionPlanBuilder(graph: GraphDatabaseQueryService,
 }
 
 object InterpretedExecutionPlanBuilder {
-  def interpretedToExecutionPlan(pipeInfo: PipeInfo, planContext: PlanContext, inputQuery: PreparedQuerySemantics,
+  def interpretedToExecutionPlan(pipeInfo: PipeInfo,
+                                 planContext: PlanContext,
+                                 inputQuery: PreparedQuerySemantics,
                                  createFingerprintReference: Option[PlanFingerprint] => PlanFingerprintReference,
                                  config: CypherCompilerConfiguration,
-                                 typeConverter: RuntimeTypeConverter) = {
+                                 typeConverter: RuntimeTypeConverter,
+                                 logicalPlan: LogicalPlan,
+                                 idMap: Map[LogicalPlan, Id]) = {
     val PipeInfo(pipe, updating, periodicCommitInfo, fp, planner) = pipeInfo
     val columns = inputQuery.statement.returnColumns
-    val resultBuilderFactory = DefaultExecutionResultBuilderFactory(pipeInfo, columns, typeConverter)
+    val resultBuilderFactory = DefaultExecutionResultBuilderFactory(pipeInfo, columns, typeConverter, logicalPlan, idMap)
     val func = getExecutionPlanFunction(periodicCommitInfo, inputQuery.queryText, updating, resultBuilderFactory, planContext.notificationLogger())
     new ExecutionPlan {
       private val fingerprint = createFingerprintReference(fp)

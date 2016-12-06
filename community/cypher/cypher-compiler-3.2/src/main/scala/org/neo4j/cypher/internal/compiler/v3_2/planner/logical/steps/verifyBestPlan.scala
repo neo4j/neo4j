@@ -35,7 +35,9 @@ object verifyBestPlan extends PlanTransformer[PlannerQuery] {
       val unfulfillableJoinHints = findUnfulfillableJoinHints(expected, context.planContext)
       val expectedWithoutHints = expected.withoutHints(unfulfillableIndexHints ++ unfulfillableJoinHints)
       if (expectedWithoutHints != constructed) {
-        if (expected.withoutHints(expected.allHints) != constructed.withoutHints(constructed.allHints)) {
+        val a: PlannerQuery = expected.withoutHints(expected.allHints)
+        val b: PlannerQuery = constructed.withoutHints(constructed.allHints)
+        if (a != b) {
           // unknown planner issue failed to find plan (without regard for differences in hints)
           throw new CantHandleQueryException(s"Expected \n$expected \n\n\nInstead, got: \n$constructed")
         } else {

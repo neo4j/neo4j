@@ -20,7 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v3_2.planner.execution
 
 import org.neo4j.cypher.internal.compiler.v3_2.Monitors
-import org.neo4j.cypher.internal.compiler.v3_2.pipes.{FakePipe, Pipe, RonjaPipe}
+import org.neo4j.cypher.internal.compiler.v3_2.pipes.{FakePipe, Pipe}
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_2.planner.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.compiler.v3_2.spi.PlanContext
@@ -45,14 +46,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite {
     override def strictness = ???
   }
 
-  abstract class FakeRonjaPipe extends FakePipe(Iterator.empty) with RonjaPipe {
-    override def planDescriptionWithoutCardinality = ???
-
-    override def withEstimatedCardinality(estimated: Double) = this
-
-    override def estimatedCardinality = ???
-  }
-
+  abstract class FakeRonjaPipe extends FakePipe(Iterator.empty)
 
   case class LeafPlan(name: String) extends FakePlan
 
@@ -74,8 +68,8 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite {
 
 
   val factory = new PipeBuilderFactory {
-    override def apply(monitors: Monitors, recurse: LogicalPlan => Pipe, readOnly: Boolean)
-                      (implicit context: PipeExecutionBuilderContext, planContext: PlanContext): PipeBuilder = new PipeBuilder {
+    override def apply(monitors: Monitors, recurse: LogicalPlan => Pipe, readOnly: Boolean, idMap: Map[LogicalPlan, Id])
+                      (implicit context: PipeExecutionBuilderContext, planContext: PlanContext) = new PipeBuilder {
       def build(plan: LogicalPlan) = plan match {
         case LeafPlan(n) => LeafPipe(n)
       }
@@ -99,7 +93,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite {
     val plan = LeafPlan("a")
     val expectedPipe = LeafPipe("a")
 
-    val result = builder.build(None, plan).pipe
+    val result = builder.build(None, plan, new FakeIdMap).pipe
     result should equal(expectedPipe)
   }
 
@@ -125,7 +119,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite {
         )
       )
 
-    val result = builder.build(None, plan).pipe
+    val result = builder.build(None, plan, new FakeIdMap).pipe
     result should equal(expectedPipe)
   }
 
@@ -154,7 +148,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite {
         )
       )
 
-    val result = builder.build(None, plan).pipe
+    val result = builder.build(None, plan, new FakeIdMap).pipe
     result should equal(expectedPipe)
   }
 
@@ -175,7 +169,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite {
                         OneChildPipe("b", LeafPipe("d")),
                         TwoChildPipe("c", LeafPipe("e"), LeafPipe("f")))
 
-    val result = builder.build(None, plan).pipe
+    val result = builder.build(None, plan, new FakeIdMap).pipe
     result should equal(expectedPipe)
   }
 }

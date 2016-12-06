@@ -20,14 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.Effects
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{PlanDescriptionImpl, TwoChildren}
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 
 case class LetSemiApplyPipe(source: Pipe, inner: Pipe, letVarName: String, negated: Boolean)
-                           (val estimatedCardinality: Option[Double] = None)
-                           (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
+                           (val id: Id = new Id)
+                           (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
   def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     input.map {
       (outerContext) =>
@@ -39,19 +36,4 @@ case class LetSemiApplyPipe(source: Pipe, inner: Pipe, letVarName: String, negat
   }
 
   private def name = if (negated) "LetAntiSemiApply" else "LetSemiApply"
-
-  def planDescriptionWithoutCardinality = PlanDescriptionImpl(this.id, name, TwoChildren(source.planDescription, inner.planDescription), Seq.empty, variables)
-
-  def symbols: SymbolTable = source.symbols.add(letVarName, CTBoolean)
-
-  override val sources = Seq(source, inner)
-
-  def dup(sources: List[Pipe]): Pipe = {
-    val (source :: inner :: Nil) = sources
-    copy(source = source, inner = inner)(estimatedCardinality)
-  }
-
-  override def localEffects = Effects()
-
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 }

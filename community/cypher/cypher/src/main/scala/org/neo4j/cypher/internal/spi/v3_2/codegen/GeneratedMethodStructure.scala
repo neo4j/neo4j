@@ -30,7 +30,8 @@ import org.neo4j.cypher.internal.codegen.CompiledConversionUtils.CompositeKey
 import org.neo4j.cypher.internal.codegen._
 import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.commands.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.compiler.v3_2.codegen._
-import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions.{BoolType, CodeGenType, FloatType, IntType, ReferenceType}
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions.{Parameter => _, _}
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi._
 import org.neo4j.cypher.internal.compiler.v3_2.helpers._
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_2.symbols.{CTNode, CTRelationship}

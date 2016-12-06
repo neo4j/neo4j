@@ -21,18 +21,17 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Expression
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{CreatesAnyNode, CreatesNodesWithLabels, Effects}
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.{IsMap, ListSupport}
 import org.neo4j.cypher.internal.compiler.v3_2.mutation.{GraphElementPropertyFunctions, makeValueNeoSafe}
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_2.spi.QueryContext
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 import org.neo4j.cypher.internal.frontend.v3_2.{CypherTypeException, InvalidSemanticsException}
 import org.neo4j.graphdb.{Node, Relationship}
 
 import scala.collection.Map
 
 abstract class BaseCreateNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel], properties: Option[Expression], pipeMonitor: PipeMonitor)
-  extends PipeWithSource(src, pipeMonitor) with RonjaPipe with GraphElementPropertyFunctions with ListSupport {
+  extends PipeWithSource(src, pipeMonitor) with GraphElementPropertyFunctions with ListSupport {
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
     input.map(createNode(_, state))
@@ -76,44 +75,20 @@ abstract class BaseCreateNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel]
     val labelIds = labels.map(_.getOrCreateId(state.query).id)
     state.query.setLabelsOnNode(nodeId, labelIds.iterator)
   }
-
-  def symbols = src.symbols.add(key, CTNode)
-
-  override def localEffects = if (labels.isEmpty)
-    Effects(CreatesAnyNode)
-  else
-    Effects(CreatesNodesWithLabels(labels.map(_.name).toSet))
 }
 
-case class CreateNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel], properties: Option[Expression])(val estimatedCardinality: Option[Double] = None)
+case class CreateNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel], properties: Option[Expression])
+                         (val id: Id = new Id)
                          (implicit pipeMonitor: PipeMonitor) extends BaseCreateNodePipe(src, key, labels, properties, pipeMonitor) {
-
-  override def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
-
-  override def planDescriptionWithoutCardinality = src.planDescription.andThen(this.id, "CreateNode", variables)
-
-  override def dup(sources: List[Pipe]): Pipe = {
-    val (onlySource :: Nil) = sources
-    CreateNodePipe(onlySource, key, labels, properties)(estimatedCardinality)
-  }
 
   override protected def handleNull(key: String) {
     // do nothing
   }
 }
 
-case class MergeCreateNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel], properties: Option[Expression])(val estimatedCardinality: Option[Double] = None)
+case class MergeCreateNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel], properties: Option[Expression])
+                              (val id: Id = new Id)
                          (implicit pipeMonitor: PipeMonitor) extends BaseCreateNodePipe(src, key, labels, properties, pipeMonitor) {
-
-  override def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
-
-  override def planDescriptionWithoutCardinality = src.planDescription.andThen(this.id, "MergeCreateNode", variables)
-
-  override def dup(sources: List[Pipe]): Pipe = {
-    val (onlySource :: Nil) = sources
-    MergeCreateNodePipe(onlySource, key, labels, properties)(estimatedCardinality)
-  }
-
   override protected def handleNull(key: String) {
     //merge cannot use null properties, since in that case the match part will not find the result of the create
     throw new InvalidSemanticsException(s"Cannot merge node using null property value for $key")

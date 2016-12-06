@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.executionplan
 
-import org.neo4j.cypher.internal.compiler.v3_2.mutation.{MergeNodeAction, PlainMergeNodeProducer, UpdateAction}
 import org.neo4j.cypher.internal.compiler.v3_2.pipes._
 import org.neo4j.cypher.internal.compiler.v3_2.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_2.LabelId
@@ -48,20 +47,12 @@ case class CheckForLoadCsvAndMatchOnLargeLabel(planContext: PlanContext, nonInde
         acc => (LargeLabelFound, Some(identity))
       case NodeStartPipe(_, _, NodeByLabelEntityProducer(_, id), _) if cardinality(id) > threshold =>
         acc => (LargeLabelFound, Some(identity))
-      case ExecuteUpdateCommandsPipe(_, commands) if hasMergeOnLargeLabel(commands) =>
-        acc => (LargeLabelFound, Some(identity))
     }
 
     resultState match {
       case LargeLabelWithLoadCsvFound => Some(LargeLabelWithLoadCsvNotification)
       case _ => None
     }
-  }
-
-  private def hasMergeOnLargeLabel(commands: Seq[UpdateAction]) = commands.exists {
-    case MergeNodeAction(_, _, _, _, _, _, Some(PlainMergeNodeProducer(NodeByLabelEntityProducer(_, id))))
-      if cardinality(id) > threshold => true
-    case _ => false
   }
 
   private def cardinality(id: Int) = planContext.statistics.nodesWithLabelCardinality(Some(LabelId(id)))

@@ -21,10 +21,9 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Expression
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{AllEffects, ProcedureCallMode}
+import org.neo4j.cypher.internal.compiler.v3_2.executionplan.ProcedureCallMode
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.{ListSupport, RuntimeJavaValueConverter, RuntimeScalaValueConverter}
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.Signature
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{InternalPlanDescription, PlanDescriptionImpl, SingleChild}
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_2.spi.{ProcedureSignature, QualifiedName}
 import org.neo4j.cypher.internal.frontend.v3_2.symbols.CypherType
 
@@ -45,9 +44,9 @@ case class ProcedureCallPipe(source: Pipe,
                              rowProcessing: ProcedureCallRowProcessing,
                              resultSymbols: Seq[(String, CypherType)],
                              resultIndices: Seq[(Int, String)])
-                            (val estimatedCardinality: Option[Double] = None)
+                            (val id: Id = new Id)
                             (implicit monitor: PipeMonitor)
-  extends PipeWithSource(source, monitor) with ListSupport with RonjaPipe {
+  extends PipeWithSource(source, monitor) with ListSupport {
 
   private val rowProcessor = rowProcessing match {
     case FlatMapAndAppendToRow => internalCreateResultsByAppending _
@@ -98,28 +97,4 @@ case class ProcedureCallPipe(source: Pipe,
       input
     }
   }
-
-  override def planDescriptionWithoutCardinality: InternalPlanDescription = {
-    PlanDescriptionImpl(this.id, "ProcedureCall", SingleChild(source.planDescription), Seq(
-      Signature(QualifiedName(name.namespace, name.name), argExprs, resultSymbols)
-    ), variables)
-  }
-
-  override def symbols = {
-    val sourceSymbols = source.symbols
-    val outputSymbols = resultSymbols.foldLeft(sourceSymbols) {
-      case (symbols, (symbolName, symbolType)) =>
-        symbols.add(symbolName, symbolType)
-    }
-    outputSymbols
-  }
-
-  override def localEffects = AllEffects
-
-  override def dup(sources: List[Pipe]): Pipe = {
-    val (head :: Nil) = sources
-    copy(source = head)(estimatedCardinality)
-  }
-
-  override def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 }

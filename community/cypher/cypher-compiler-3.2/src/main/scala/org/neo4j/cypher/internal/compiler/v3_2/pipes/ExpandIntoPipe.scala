@@ -20,10 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{Effects, ReadsAllNodes, ReadsAllRelationships}
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.ExpandExpression
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 import org.neo4j.graphdb.Node
 
 /**
@@ -40,9 +38,10 @@ case class ExpandIntoPipe(source: Pipe,
                           relName: String,
                           toName: String,
                           dir: SemanticDirection,
-                          lazyTypes: LazyTypes)(val estimatedCardinality: Option[Double] = None)
-                         (implicit pipeMonitor: PipeMonitor)
-  extends PipeWithSource(source, pipeMonitor) with RonjaPipe with CachingExpandInto {
+                          lazyTypes: LazyTypes)
+                          (val id: Id = new Id)
+                          (implicit pipeMonitor: PipeMonitor)
+  extends PipeWithSource(source, pipeMonitor) with CachingExpandInto {
   self =>
   private final val CACHE_SIZE = 100000
 
@@ -71,23 +70,6 @@ case class ExpandIntoPipe(source: Pipe,
         }
     }
   }
-
-  def planDescriptionWithoutCardinality = {
-    val expandDescr = ExpandExpression(fromName, relName, lazyTypes.names, toName, dir, minLength = 1, Some(1))
-    source.planDescription.andThen(this.id, "Expand(Into)", variables, expandDescr)
-  }
-
-  val symbols = source.symbols.add(fromName, CTNode).add(toName, CTNode).add(relName, CTRelationship)
-
-  override def localEffects = Effects(ReadsAllNodes, ReadsAllRelationships)
-
-  def dup(sources: List[Pipe]): Pipe = {
-    val (source :: Nil) = sources
-    copy(source = source)(estimatedCardinality)
-  }
-
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
-
 }
 
 

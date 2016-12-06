@@ -21,11 +21,10 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Expression
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{CreatesRelationship, Effects}
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.{IsMap, ListSupport}
 import org.neo4j.cypher.internal.compiler.v3_2.mutation.{GraphElementPropertyFunctions, makeValueNeoSafe}
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_2.spi.QueryContext
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 import org.neo4j.cypher.internal.frontend.v3_2.{CypherTypeException, InternalException, InvalidSemanticsException}
 import org.neo4j.graphdb.{Node, Relationship}
 
@@ -33,7 +32,7 @@ import scala.collection.Map
 
 abstract class BaseRelationshipPipe(src: Pipe, key: String, startNode: String, typ: LazyType, endNode: String,
                                     properties: Option[Expression], pipeMonitor: PipeMonitor)
-  extends PipeWithSource(src, pipeMonitor) with RonjaPipe with GraphElementPropertyFunctions with ListSupport {
+  extends PipeWithSource(src, pipeMonitor) with GraphElementPropertyFunctions with ListSupport {
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
     input.map(createRelationship(_, state))
@@ -80,27 +79,14 @@ abstract class BaseRelationshipPipe(src: Pipe, key: String, startNode: String, t
   }
 
   protected def handleNull(key: String): Unit
-
-  override def symbols = src.symbols.add(key, CTRelationship)
-
-  override def localEffects = Effects(CreatesRelationship(typ.name))
 }
 
-case class CreateRelationshipPipe(src: Pipe, key: String, startNode: String, typ: LazyType, endNode: String,
+case class CreateRelationshipPipe(src: Pipe,
+                                  key: String, startNode: String, typ: LazyType, endNode: String,
                                   properties: Option[Expression])
-                                 (val estimatedCardinality: Option[Double] = None)
+                                 (val id: Id = new Id)
                                  (implicit pipeMonitor: PipeMonitor)
   extends BaseRelationshipPipe(src, key, startNode, typ, endNode, properties, pipeMonitor) {
-
-  def planDescriptionWithoutCardinality = src.planDescription.andThen(this.id, "CreateRelationship", variables)
-
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
-
-  override def dup(sources: List[Pipe]): Pipe = {
-    val (onlySource :: Nil) = sources
-    CreateRelationshipPipe(onlySource, key, startNode, typ, endNode, properties)(estimatedCardinality)
-  }
-
   override protected def handleNull(key: String) {
     //do nothing
   }
@@ -108,18 +94,9 @@ case class CreateRelationshipPipe(src: Pipe, key: String, startNode: String, typ
 
 case class MergeCreateRelationshipPipe(src: Pipe, key: String, startNode: String, typ: LazyType, endNode: String,
                                        properties: Option[Expression])
-                                      (val estimatedCardinality: Option[Double] = None)
+                                      (val id: Id = new Id)
                                       (implicit pipeMonitor: PipeMonitor)
   extends BaseRelationshipPipe(src, key, startNode, typ, endNode, properties, pipeMonitor) {
-
-  def planDescriptionWithoutCardinality = src.planDescription.andThen(this.id, "MergeCreateRelationship", variables)
-
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
-
-  override def dup(sources: List[Pipe]): Pipe = {
-    val (onlySource :: Nil) = sources
-    MergeCreateRelationshipPipe(onlySource, key, startNode, typ, endNode, properties)(estimatedCardinality)
-  }
 
   override protected def handleNull(key: String) {
     //merge cannot use null properties, since in that case the match part will not find the result of the create

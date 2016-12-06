@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v3_2.pipes.matching
 
 import org.neo4j.cypher.internal.compiler.v3_2._
-import commands._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.predicates.Predicate
+import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
-import pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
-import collection.immutable
+
+import scala.collection.immutable
 
 /**
  * This class is responsible for deciding how to get the parts of the pattern that are not already bound
@@ -58,11 +58,7 @@ class MatchingContext(boundVariables: SymbolTable,
   }
 
   private def decideWhichMatcherToUse(): MatcherBuilder = {
-    if(SimplePatternMatcherBuilder.canHandle(patternGraph)) {
-      new SimplePatternMatcherBuilder(patternGraph, predicates, symbols, variablesInClause)
-    } else {
       new PatternMatchingBuilder(patternGraph, predicates, variablesInClause)
-    }
   }
 }
 

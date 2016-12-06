@@ -20,22 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2._
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.Effects
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{Id, InternalPlanDescription, SingleRowPlanDescription}
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
-
-import scala.collection.immutable
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 
 trait PipeMonitor {
   def startSetup(queryId: AnyRef, pipe: Pipe)
   def stopSetup(queryId: AnyRef, pipe: Pipe)
   def startStep(queryId: AnyRef, pipe: Pipe)
   def stopStep(queryId: AnyRef, pipe: Pipe)
-}
-
-trait Effectful {
-  def effects: Effects
-  def localEffects: Effects
 }
 
 /**
@@ -49,12 +40,10 @@ trait Effectful {
   * Not heeding this warning will lead to bugs that do not manifest except for under concurrent use.
   * If you need to keep state per-query, have a look at QueryState instead.
   */
-trait Pipe extends Effectful {
+trait Pipe {
   self: Pipe =>
 
   def monitor: PipeMonitor
-
-  def dup(sources: List[Pipe]): Pipe
 
   def createResults(state: QueryState) : Iterator[ExecutionContext] = {
     val decoratedState = state.decorator.decorate(self, state)
@@ -75,52 +64,14 @@ trait Pipe extends Effectful {
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext]
 
-  def symbols: SymbolTable
-
-  def planDescription: InternalPlanDescription
-
-  def sources: Seq[Pipe]
-
-  def localEffects: Effects
-
-  def effects: Effects = localEffects
-
-  /*
-  Runs the predicate on all the inner Pipe until no pipes are left, or one returns true.
-   */
-  def exists(pred: Pipe => Boolean): Boolean
-
-  def isLeaf = false
-
-  def variables: immutable.Set[String] = symbols.variables.keySet.toSet
-
   // Used by profiling to identify where to report dbhits and rows
-  val id = new Id
+  def id: Id
 }
 
-case class SingleRowPipe()(implicit val monitor: PipeMonitor) extends Pipe with RonjaPipe {
-
-  def symbols: SymbolTable = new SymbolTable()
+case class SingleRowPipe()(val id: Id = new Id)(implicit val monitor: PipeMonitor) extends Pipe {
 
   def internalCreateResults(state: QueryState) =
     Iterator(state.initialContext.getOrElse(ExecutionContext.empty))
-
-  def exists(pred: Pipe => Boolean) = pred(this)
-
-  def planDescriptionWithoutCardinality: InternalPlanDescription = new SingleRowPlanDescription(this.id, Seq.empty, variables)
-
-  override def localEffects = Effects()
-
-  def dup(sources: List[Pipe]): Pipe = this
-
-  def sources: Seq[Pipe] = Seq.empty
-
-  def estimatedCardinality: Option[Double] = Some(1.0)
-
-  def withEstimatedCardinality(estimated: Double): Pipe with RonjaPipe = {
-    assert(estimated == 1.0)
-    this
-  }
 }
 
 abstract class PipeWithSource(source: Pipe, val monitor: PipeMonitor) extends Pipe {
@@ -136,12 +87,4 @@ abstract class PipeWithSource(source: Pipe, val monitor: PipeMonitor) extends Pi
     throw new UnsupportedOperationException("This method should never be called on PipeWithSource")
 
   protected def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext]
-
-  override val sources: Seq[Pipe] = Seq(source)
-
-  override def effects = sources.foldLeft(localEffects)(_ ++ _.effects)
-
-  def exists(pred: Pipe => Boolean) = pred(this) || source.exists(pred)
-
-  override def isLeaf = source.sources.isEmpty
 }

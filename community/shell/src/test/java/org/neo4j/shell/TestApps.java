@@ -21,6 +21,16 @@ package org.neo4j.shell;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.neo4j.cypher.NodeStillHasRelationshipsException;
+import org.neo4j.graphdb.*;
+import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.graphdb.schema.Schema.IndexState;
+import org.neo4j.kernel.impl.transaction.TransactionStats;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.shell.impl.CollectingOutput;
+import org.neo4j.shell.impl.SameJvmClient;
+import org.neo4j.shell.kernel.GraphDatabaseShellServer;
+import org.neo4j.test.rule.SuppressOutput;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,41 +42,15 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
 import java.util.regex.Pattern;
 
-import org.neo4j.cypher.NodeStillHasRelationshipsException;
-import org.neo4j.graphdb.ConstraintViolationException;
-import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.graphdb.schema.Schema.IndexState;
-import org.neo4j.kernel.impl.transaction.TransactionStats;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.shell.impl.CollectingOutput;
-import org.neo4j.shell.impl.SameJvmClient;
-import org.neo4j.shell.kernel.GraphDatabaseShellServer;
-import org.neo4j.test.rule.SuppressOutput;
-
 import static org.hamcrest.core.IsNot.not;
 import static org.hamcrest.core.StringContains.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.helpers.collection.MapUtil.genericMap;
-import static org.neo4j.test.mockito.matcher.Neo4jMatchers.findNodesByLabelAndProperty;
-import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasLabels;
-import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
-import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasSize;
-import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
-import static org.neo4j.test.mockito.matcher.Neo4jMatchers.waitForIndex;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.*;
 
 public class TestApps extends AbstractShellTest
 {
@@ -510,7 +494,7 @@ public class TestApps extends AbstractShellTest
         // When
         try
         {
-            executeCommand( "start n=node(*) delete n;" );
+            executeCommand( "match (n) delete n;" );
             fail( "Should have failed with " + NodeStillHasRelationshipsException.class.getName() + " exception" );
         }
         catch ( ShellException e )
@@ -1158,25 +1142,6 @@ public class TestApps extends AbstractShellTest
     }
 
     @Test
-    public void shouldBeAbleToSwitchBetweenPlanners() throws Exception
-    {
-        executeCommand( "PROFILE CYPHER planner=rule MATCH (n)-[:T]-(n) RETURN n;", "Planner RULE");
-        executeCommand( "PROFILE CYPHER planner=cost MATCH (n)-[:T]-(n) RETURN n;", "Planner COST");
-    }
-
-    @Test
-    public void shouldAllowCombiningPlannerAndProfile() throws Exception
-    {
-        executeCommand( "CYPHER planner=rule PROFILE MATCH (n) RETURN n;", "Planner RULE");
-    }
-
-    @Test
-    public void shouldAllowCombiningProfileAndPlanner() throws Exception
-    {
-        executeCommand( "PROFILE CYPHER planner=rule MATCH (n) RETURN n;", "Planner RULE");
-    }
-
-    @Test
     public void shouldBeAbleToSwitchBetweenRuntimes() throws Exception
     {
         executeCommand( "CYPHER runtime=compiled MATCH (n)-[:T]-(n) RETURN n;" );
@@ -1236,7 +1201,7 @@ public class TestApps extends AbstractShellTest
             writer.close();
 
             // WHEN
-            executeCommand( "cypher planner=rule USING PERIODIC COMMIT 100 " +
+            executeCommand( "USING PERIODIC COMMIT 100 " +
                             "LOAD CSV FROM '" + url + "' AS line " +
                             "CREATE () " +
                             "RETURN line;", "apa" );

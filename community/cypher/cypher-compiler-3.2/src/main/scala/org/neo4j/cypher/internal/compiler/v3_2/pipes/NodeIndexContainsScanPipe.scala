@@ -21,13 +21,9 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Expression
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{Effects, ReadsGivenNodeProperty, ReadsNodesWithLabels}
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.{Index, LegacyExpression}
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{NoChildren, PlanDescriptionImpl}
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_2.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{LabelToken, PropertyKeyToken}
-import org.neo4j.cypher.internal.frontend.v3_2.symbols.CTNode
 import org.neo4j.graphdb.Node
 import org.neo4j.kernel.api.index.IndexDescriptor
 
@@ -35,7 +31,7 @@ abstract class AbstractNodeIndexStringScanPipe(ident: String,
                                                label: LabelToken,
                                                propertyKey: PropertyKeyToken,
                                                valueExpr: Expression)(implicit pipeMonitor: PipeMonitor)
-  extends Pipe with RonjaPipe {
+  extends Pipe {
 
   private val descriptor = new IndexDescriptor(label.nameId.id, propertyKey.nameId.id)
 
@@ -60,35 +56,16 @@ abstract class AbstractNodeIndexStringScanPipe(ident: String,
 
   protected def queryContextCall(state: QueryState, indexDescriptor: IndexDescriptor, value: String): Iterator[Node]
 
-  override def exists(predicate: Pipe => Boolean): Boolean = predicate(this)
-
-  override def symbols = new SymbolTable(Map(ident -> CTNode))
-
   override def monitor = pipeMonitor
-
-  override def dup(sources: List[Pipe]): Pipe = {
-    require(sources.isEmpty)
-    this
-  }
-
-  override def sources: Seq[Pipe] = Seq.empty
-
-  override def localEffects = Effects(ReadsNodesWithLabels(label.name), ReadsGivenNodeProperty(propertyKey.name))
 }
 
 case class NodeIndexContainsScanPipe(ident: String,
                                      label: LabelToken,
                                      propertyKey: PropertyKeyToken,
                                      valueExpr: Expression)
-                                    (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
+                                    (val id: Id = new Id)
+                                    (implicit pipeMonitor: PipeMonitor)
   extends AbstractNodeIndexStringScanPipe(ident, label, propertyKey, valueExpr) {
-
-  override def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
-
-  override def planDescriptionWithoutCardinality = {
-    val arguments = Seq(Index(label.name, propertyKey.name), LegacyExpression(valueExpr))
-    new PlanDescriptionImpl(this.id, "NodeIndexContainsScan", NoChildren, arguments, variables)
-  }
 
   override protected def queryContextCall(state: QueryState, indexDescriptor: IndexDescriptor, value: String) =
     state.query.indexScanByContains(indexDescriptor, value)
@@ -98,15 +75,9 @@ case class NodeIndexEndsWithScanPipe(ident: String,
                                      label: LabelToken,
                                      propertyKey: PropertyKeyToken,
                                      valueExpr: Expression)
-                                    (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
+                                    (val id: Id = new Id)
+                                    (implicit pipeMonitor: PipeMonitor)
   extends AbstractNodeIndexStringScanPipe(ident, label, propertyKey, valueExpr) {
-
-  override def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
-
-  override def planDescriptionWithoutCardinality = {
-    val arguments = Seq(Index(label.name, propertyKey.name), LegacyExpression(valueExpr))
-    new PlanDescriptionImpl(this.id, "NodeIndexEndsWithScan", NoChildren, arguments, variables)
-  }
 
   override protected def queryContextCall(state: QueryState, indexDescriptor: IndexDescriptor, value: String) =
     state.query.indexScanByEndsWith(indexDescriptor, value)

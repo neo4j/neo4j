@@ -20,13 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v3_2.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_2._
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{Effects, _}
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.IsMap
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_2.CypherTypeException
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
-import org.neo4j.graphdb.{Node, Relationship}
 
 case class KeysFunction(expr: Expression) extends NullInNullOutExpression(expr) {
 
@@ -42,10 +38,4 @@ case class KeysFunction(expr: Expression) extends NullInNullOutExpression(expr) 
   def arguments = Seq(expr)
 
   def symbolTableDependencies = expr.symbolTableDependencies
-
-  protected def calculateType(symbols: SymbolTable) = expr match {
-    case node: Node => expr.evaluateType(CTNode, symbols)
-    case rel: Relationship => expr.evaluateType(CTRelationship, symbols)
-    case _ => CTList(CTString)
-  }
 }

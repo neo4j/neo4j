@@ -20,19 +20,15 @@
 package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{Effects, ReadsAllNodes, ReadsAllRelationships}
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.ListSupport
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{NoChildren, PlanDescriptionImpl}
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 
 case class DirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: SeekArgs, toNode: String, fromNode: String)
-                                           (val estimatedCardinality: Option[Double] = None)
+                                           (val id: Id = new Id)
                                            (implicit pipeMonitor: PipeMonitor)
   extends Pipe
   with ListSupport
-  with RonjaPipe {
+  {
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     //register as parent so that stats are associated with this pipe
     state.decorator.registerParentPipe(this)
@@ -42,28 +38,5 @@ case class DirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: SeekArgs, 
     new DirectedRelationshipIdSeekIterator(ident, fromNode, toNode, ctx, state.query.relationshipOps, relIds.iterator)
   }
 
-  def exists(predicate: Pipe => Boolean): Boolean = predicate(this)
-
-  def planDescriptionWithoutCardinality = new PlanDescriptionImpl(
-    id = id,
-    name = "DirectedRelationshipByIdSeekPipe",
-    children = NoChildren,
-    arguments = Seq(Arguments.EntityByIdRhs(relIdExpr)),
-    variables
-  )
-
-  def symbols = new SymbolTable(Map(ident -> CTRelationship, toNode -> CTNode, fromNode -> CTNode))
-
   def monitor = pipeMonitor
-
-  def dup(sources: List[Pipe]): Pipe = {
-    require(sources.isEmpty)
-    this
   }
-
-  def sources: Seq[Pipe] = Seq.empty
-
-  override def localEffects = Effects(ReadsAllNodes, ReadsAllRelationships)
-
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
-}

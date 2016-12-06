@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v3_2.commands.expressions
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.{IsList, TypeSafeMathSupport}
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_2.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 
@@ -49,21 +48,6 @@ case class Add(a: Expression, b: Expression) extends Expression with TypeSafeMat
 
 
   def arguments = Seq(a, b)
-
-  def calculateType(symbols: SymbolTable): CypherType = {
-    val aT = a.getType(symbols)
-    val bT = b.getType(symbols)
-
-    (CTList(CTAny).isAssignableFrom(aT), CTList(CTAny).isAssignableFrom(bT)) match {
-      case (true, false) => mergeWithCollection(collection = aT, singleElement = bT)
-      case (false, true) => mergeWithCollection(collection = bT, singleElement = aT)
-      case _ => (aT, bT) match {
-        case (x:StringType, y:NumberType) => CTString
-        case (x:NumberType, y:StringType) => CTString
-        case _ => aT.leastUpperBound(bT)
-      }
-    }
-  }
 
   private def mergeWithCollection(collection: CypherType, singleElement: CypherType):CypherType= {
     val collectionType = collection.asInstanceOf[ListType]

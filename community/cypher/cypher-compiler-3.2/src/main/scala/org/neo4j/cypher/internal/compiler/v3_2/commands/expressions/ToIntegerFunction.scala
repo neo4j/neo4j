@@ -21,14 +21,10 @@ package org.neo4j.cypher.internal.compiler.v3_2.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
-import org.neo4j.cypher.internal.frontend.v3_2.{ParameterWrongTypeException, CypherTypeException}
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
+import org.neo4j.cypher.internal.frontend.v3_2.{CypherTypeException, ParameterWrongTypeException}
 
 case class ToIntegerFunction(a: Expression) extends NullInNullOutExpression(a) {
   def symbolTableDependencies: Set[String] = a.symbolTableDependencies
-
-  protected def calculateType(symbols: SymbolTable): CypherType = CTInteger
 
   def arguments: Seq[Expression] = Seq(a)
 

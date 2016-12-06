@@ -21,9 +21,8 @@ package org.neo4j.cypher.internal.compiler.v3_2.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
-import org.neo4j.cypher.internal.frontend.v3_2.{ParameterWrongTypeException, CypherTypeException}
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
+import org.neo4j.cypher.internal.frontend.v3_2.{CypherTypeException, ParameterWrongTypeException}
 
 import scala.annotation.tailrec
 
@@ -31,8 +30,6 @@ abstract class StringFunction(arg: Expression) extends NullInNullOutExpression(a
   def innerExpectedType = CTString
 
   override def arguments = Seq(arg)
-
-  override def calculateType(symbols: SymbolTable) = CTString
 
   override def symbolTableDependencies = arg.symbolTableDependencies
 }
@@ -129,8 +126,6 @@ case class SubstringFunction(orig: Expression, start: Expression, length: Option
 
   override def rewrite(f: (Expression) => Expression) = f(SubstringFunction(orig.rewrite(f), start.rewrite(f), length.map(_.rewrite(f))))
 
-  override def calculateType(symbols: SymbolTable) = CTString
-
   override def symbolTableDependencies = {
     val a = orig.symbolTableDependencies ++
             start.symbolTableDependencies
@@ -158,8 +153,6 @@ case class ReplaceFunction(orig: Expression, search: Expression, replaceWith: Ex
   override def arguments = Seq(orig, search, replaceWith)
 
   override def rewrite(f: (Expression) => Expression) = f(ReplaceFunction(orig.rewrite(f), search.rewrite(f), replaceWith.rewrite(f)))
-
-  override def calculateType(symbols: SymbolTable) = CTString
 
   override def symbolTableDependencies = orig.symbolTableDependencies ++
                                 search.symbolTableDependencies ++
@@ -197,8 +190,6 @@ case class SplitFunction(orig: Expression, separator: Expression)
 
   override def rewrite(f: (Expression) => Expression) = f(SplitFunction(orig.rewrite(f), separator.rewrite(f)))
 
-  override def calculateType(symbols: SymbolTable) = CTList(CTString)
-
   override def symbolTableDependencies = orig.symbolTableDependencies ++ separator.symbolTableDependencies
 }
 
@@ -216,8 +207,6 @@ case class LeftFunction(orig: Expression, length: Expression)
   override def arguments = Seq(orig, length)
 
   override def rewrite(f: (Expression) => Expression) = f(LeftFunction(orig.rewrite(f), length.rewrite(f)))
-
-  override def calculateType(symbols: SymbolTable) = CTString
 
   override def symbolTableDependencies = orig.symbolTableDependencies ++
                                 length.symbolTableDependencies
@@ -237,8 +226,6 @@ case class RightFunction(orig: Expression, length: Expression)
   override def arguments = Seq(orig, length)
 
   override def rewrite(f: (Expression) => Expression) = f(RightFunction(orig.rewrite(f), length.rewrite(f)))
-
-  override def calculateType(symbols: SymbolTable) = CTString
 
   override def symbolTableDependencies = orig.symbolTableDependencies ++
                                 length.symbolTableDependencies

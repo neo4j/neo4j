@@ -219,12 +219,19 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
 
   test("should fail when trying to uniquely create shortest paths") {
     executeAndEnsureError(
-      "match (a), (b) create unique shortestPath((a)-[:T]->(b))",
-      "shortestPath(...) cannot be used to CREATE (line 1, column 30 (offset: 29))"
+      "match (a), (b) MERGE shortestPath((a)-[:T]->(b))",
+      "shortestPath(...) cannot be used to MERGE (line 1, column 22 (offset: 21))"
     )
     executeAndEnsureError(
-      "match (a), (b) create unique allShortestPaths((a)-[:T]->(b))",
-      "allShortestPaths(...) cannot be used to CREATE (line 1, column 30 (offset: 29))"
+      "match (a), (b) create allShortestPaths((a)-[:T]->(b))",
+      "allShortestPaths(...) cannot be used to CREATE (line 1, column 23 (offset: 22))"
+    )
+  }
+
+  test("should fail when using CREATE UNIQUE") {
+    executeAndEnsureError(
+      "match (a), (b) create unique (a)-[:T]->(b)",
+      "CREATE UNIQUE is no longer supported. You can achieve the same result using MERGE (line 1, column 16 (offset: 15))"
     )
   }
 

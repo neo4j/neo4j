@@ -20,11 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v3_2.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_2._
-import mutation.GraphElementPropertyFunctions
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
-import pipes.QueryState
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
-import collection.Map
+import org.neo4j.cypher.internal.compiler.v3_2.mutation.GraphElementPropertyFunctions
+import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
+
+import scala.collection.Map
 
 case class LiteralMap(data: Map[String, Expression]) extends Expression with GraphElementPropertyFunctions {
   def apply(ctx: ExecutionContext)(implicit state: QueryState): Any =
@@ -35,11 +34,6 @@ case class LiteralMap(data: Map[String, Expression]) extends Expression with Gra
   def rewrite(f: (Expression) => Expression) = f(LiteralMap(data.rewrite(f)))
 
   def arguments = data.values.toIndexedSeq
-
-  def calculateType(symbols: SymbolTable): CypherType = {
-    data.values.foreach(_.evaluateType(CTAny, symbols))
-    CTMap
-  }
 
   def symbolTableDependencies = data.symboltableDependencies
 

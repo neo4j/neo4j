@@ -110,7 +110,7 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
     )
 
   private def createSignatureArgument =
-    Signature(signature.name, argExprCommands, resultSymbols)
+    Signature(signature.name, Seq.empty, resultSymbols)
 
   override def notifications(planContext: PlanContext) = Seq.empty
   override def isPeriodicCommit: Boolean = false

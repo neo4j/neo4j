@@ -22,9 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v3_2.test_helpers.TestableIterator
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Node
 
@@ -85,8 +83,6 @@ class NodeOuterHashJoinPipeTest extends CypherFunSuite {
     val left = newMockedPipe("b")
 
     val right = mock[Pipe]
-    when(right.sources).thenReturn(Seq.empty)
-    when(right.symbols).thenReturn(SymbolTable(Map("b" -> CTNode)))
     val rhsIterator = new TestableIterator(Iterator(row("b" -> newMockedNode(0))))
     when(right.createResults(any())).thenReturn(rhsIterator)
 
@@ -231,8 +227,6 @@ class NodeOuterHashJoinPipeTest extends CypherFunSuite {
 
   private def newMockedPipe(node: String, rows: ExecutionContext*): Pipe = {
     val pipe = mock[Pipe]
-    when(pipe.sources).thenReturn(Seq.empty)
-    when(pipe.symbols).thenReturn(SymbolTable(Map(node -> CTNode)))
     when(pipe.createResults(any())).thenReturn(rows.iterator)
 
     pipe

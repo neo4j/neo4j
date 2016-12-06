@@ -21,12 +21,10 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.commands._
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.Effects
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{NoChildren, PlanDescriptionImpl}
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_2.SyntaxException
 
-case class IndexOperationPipe(indexOp: IndexOperation)(implicit val monitor: PipeMonitor) extends Pipe {
+case class IndexOperationPipe(indexOp: IndexOperation)(val id: Id = new Id)(implicit val monitor: PipeMonitor) extends Pipe {
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val queryContext = state.query
 
@@ -53,19 +51,4 @@ case class IndexOperationPipe(indexOp: IndexOperation)(implicit val monitor: Pip
       throw new SyntaxException("Cypher support only one property key per index right now")
     s(0)
   }
-
-  def symbols = new SymbolTable()
-
-  def planDescription = PlanDescriptionImpl(this.id, indexOp.toString, NoChildren, Seq.empty, variables)
-
-  def exists(pred: Pipe => Boolean) = pred(this)
-
-  def dup(sources: List[Pipe]): Pipe = {
-    require(sources.isEmpty)
-    this
-  }
-
-  def sources: Seq[Pipe] = Seq.empty
-
-  override def localEffects = Effects()
 }

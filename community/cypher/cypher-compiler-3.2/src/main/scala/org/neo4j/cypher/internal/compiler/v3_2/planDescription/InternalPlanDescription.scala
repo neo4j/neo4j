@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_2.planDescription
 
 import org.neo4j.cypher.internal.compiler.v3_2.commands
-import org.neo4j.cypher.internal.compiler.v3_2.pipes.{LazyLabel, LazyTypes, SeekArgs => PipeEntityByIdRhs}
+import org.neo4j.cypher.internal.compiler.v3_2.pipes.{SeekArgs => PipeEntityByIdRhs}
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.compiler.v3_2.spi.QualifiedName
 import org.neo4j.cypher.internal.frontend.v3_2.symbols.CypherType
@@ -52,9 +52,6 @@ sealed trait InternalPlanDescription {
     flattenAcc(Seq.empty, this)
   }
 
-  def andThen(id: Id, name: String, variables: Set[String], arguments: Argument*) =
-    PlanDescriptionImpl(id, name, SingleChild(this), arguments, variables)
-
   def orderedVariables: Seq[String] = variables.toIndexedSeq.sorted
 
   def totalDbHits: Option[Long] = {
@@ -81,6 +78,7 @@ object InternalPlanDescription {
     case class DbHits(value: Long) extends Argument
     case class ColumnsLeft(value: Seq[String]) extends Argument
     case class Expression(value: ast.Expression) extends Argument
+    case class Expressions(expressions: Map[String, ast.Expression]) extends Argument
     case class LegacyExpression(value: commands.expressions.Expression) extends Argument
     case class LegacyExpressions(expressions: Map[String, commands.expressions.Expression]) extends Argument {
       override def name = "LegacyExpression"
@@ -97,7 +95,7 @@ object InternalPlanDescription {
     case class EntityByIdRhs(value: PipeEntityByIdRhs) extends Argument
     case class EstimatedRows(value: Double) extends Argument
     case class Signature(procedureName: QualifiedName,
-                         args: Seq[commands.expressions.Expression],
+                         args: Seq[ast.Expression],
                          results: Seq[(String, CypherType)]) extends Argument
     case class Version(value: String) extends Argument {
       override def name = "version"
@@ -116,9 +114,9 @@ object InternalPlanDescription {
     }
     case class ExpandExpression(from: String, relName: String, relTypes:Seq[String], to: String,
                                 direction: SemanticDirection, minLength: Int, maxLength: Option[Int]) extends Argument
-    case class CountNodesExpression(ident: String, label: Option[LazyLabel]) extends Argument
-    case class CountRelationshipsExpression(ident: String, startLabel: Option[LazyLabel],
-                                            typeNames: LazyTypes, endLabel: Option[LazyLabel]) extends Argument
+    case class CountNodesExpression(ident: String, label: Option[String]) extends Argument
+    case class CountRelationshipsExpression(ident: String, startLabel: Option[String],
+                                            typeNames: Seq[String], endLabel: Option[String]) extends Argument
     case class SourceCode(className: String, sourceCode: String) extends Argument {
       override def name = className
     }
@@ -232,9 +230,6 @@ final case class CompactedPlanDescription(similar: Seq[InternalPlanDescription])
 }
 
 final case class SingleRowPlanDescription(id: Id, arguments: Seq[Argument] = Seq.empty, variables: Set[String]) extends InternalPlanDescription {
-  override def andThen(id: Id, name: String, variables: Set[String], newArguments: Argument*) =
-    new PlanDescriptionImpl(id, name, NoChildren, newArguments, variables)
-
   def children = NoChildren
 
   def find(searchedName: String) = if (searchedName == name) Seq(this) else Seq.empty

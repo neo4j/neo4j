@@ -103,7 +103,6 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
 
   private def createCompiler() = {
     CypherCompilerFactory.costBasedCompiler(
-      graph,
       CypherCompilerConfiguration(
         queryCacheSize = 128,
         statsDivergenceThreshold = 0.5,

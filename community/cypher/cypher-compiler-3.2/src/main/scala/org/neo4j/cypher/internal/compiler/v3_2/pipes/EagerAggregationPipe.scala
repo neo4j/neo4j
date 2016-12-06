@@ -23,30 +23,16 @@ import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.AggregationExpression
 import org.neo4j.cypher.internal.compiler.v3_2.commands.predicates.Equivalent
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.aggregation.AggregationFunction
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 
-import scala.collection.GenTraversableOnce
-import scala.collection.mutable.{ArrayBuffer, Map => MutableMap}
+import scala.collection.mutable.{Map => MutableMap}
 
 // Eager aggregation means that this pipe will eagerly load the whole resulting sub graphs before starting
 // to emit aggregated results.
 // Cypher is lazy until it can't - this pipe will eagerly load the full match
 case class EagerAggregationPipe(source: Pipe, keyExpressions: Set[String], aggregations: Map[String, AggregationExpression])
-                               (val estimatedCardinality: Option[Double] = None)
-                               (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with RonjaPipe with NoEffectsPipe {
-
-  val symbols: SymbolTable = createSymbols()
-
-  private def createSymbols() = {
-    val keyVariables = keyExpressions.map(id => id -> source.symbols.evaluateType(id, CTAny)).toMap
-    val aggrVariables = aggregations.map {
-      case (innerId, exp) => innerId -> exp.getType(source.symbols)
-    }
-
-    SymbolTable(keyVariables ++ aggrVariables)
-  }
+                               (val id: Id = new Id)
+                               (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
     //register as parent so that stats are associated with this pipe
@@ -121,14 +107,4 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Set[String], aggre
       }.toIterator
     }
   }
-
-  def planDescriptionWithoutCardinality = source.planDescription.
-                        andThen(this.id, "EagerAggregation", variables, Arguments.KeyNames(keyExpressions.toIndexedSeq))
-
-  def dup(sources: List[Pipe]): Pipe = {
-    val (source :: Nil) = sources
-    copy(source = source)(estimatedCardinality)
-  }
-
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 }

@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.executionplan
 
-import org.mockito.Mockito._
 import org.mockito.Matchers._
+import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.compiler.v3_2.commands.NodeByLabel
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Literal
-import org.neo4j.cypher.internal.compiler.v3_2.pipes.{AllNodesScanPipe, EagerPipe, HasHeaders, LazyLabel, LoadCSVPipe, NodeByLabelEntityProducer, NodeByLabelScanPipe, NodeStartPipe, PipeMonitor, SingleRowPipe}
+import org.neo4j.cypher.internal.compiler.v3_2.pipes._
 import org.neo4j.cypher.internal.compiler.v3_2.spi.{GraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.frontend.v3_2.LabelId
 import org.neo4j.cypher.internal.frontend.v3_2.notification.LargeLabelWithLoadCsvNotification
@@ -51,7 +51,7 @@ class CheckForLoadCsvAndMatchOnLargeLabelTest extends CypherFunSuite {
   private val checker = CheckForLoadCsvAndMatchOnLargeLabel(planContext, THRESHOLD)
 
   test("should notify when doing LoadCsv on top of large label scan") {
-    val loadCsvPipe = LoadCSVPipe(SingleRowPipe(), HasHeaders, Literal("foo"), "bar", None)()
+    val loadCsvPipe = LoadCSVPipe(SingleRowPipe()(), HasHeaders, Literal("foo"), "bar", None)()
     val pipe = NodeStartPipe(loadCsvPipe, "foo",
       NodeByLabelEntityProducer(NodeByLabel("bar", labelOverThreshold), indexFor(labelOverThreshold)))()
 
@@ -59,7 +59,7 @@ class CheckForLoadCsvAndMatchOnLargeLabelTest extends CypherFunSuite {
   }
 
   test("should not notify when doing LoadCsv on top of a large label scan") {
-    val loadCsvPipe = LoadCSVPipe(SingleRowPipe(), HasHeaders, Literal("foo"), "bar", None)()
+    val loadCsvPipe = LoadCSVPipe(SingleRowPipe()(), HasHeaders, Literal("foo"), "bar", None)()
     val pipe = NodeStartPipe(loadCsvPipe, "foo",
       NodeByLabelEntityProducer(NodeByLabel("bar", labelUnderThrehsold), indexFor(labelUnderThrehsold)))()
 
@@ -67,7 +67,7 @@ class CheckForLoadCsvAndMatchOnLargeLabelTest extends CypherFunSuite {
   }
 
   test("should not notify when doing LoadCsv on top of large label scan") {
-    val startPipe = NodeStartPipe(SingleRowPipe(), "foo", NodeByLabelEntityProducer(NodeByLabel("bar", labelOverThreshold), indexFor(labelOverThreshold)))()
+    val startPipe = NodeStartPipe(SingleRowPipe()(), "foo", NodeByLabelEntityProducer(NodeByLabel("bar", labelOverThreshold), indexFor(labelOverThreshold)))()
     val pipe = LoadCSVPipe(startPipe, HasHeaders, Literal("foo"), "bar", None)()
 
     checker(pipe) should equal(None)

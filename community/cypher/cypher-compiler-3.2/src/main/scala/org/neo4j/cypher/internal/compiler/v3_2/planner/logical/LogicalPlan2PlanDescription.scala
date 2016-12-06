@@ -19,81 +19,356 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.planner.logical
 
+import org.neo4j.cypher.internal.compiler.v3_2._
+import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.commands.ExpressionConverters.toCommandExpression
+import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{InequalitySeekRangeExpression, PrefixSeekRangeExpression}
+import org.neo4j.cypher.internal.compiler.v3_2.commands.{QueryExpression, RangeQueryExpression}
+import org.neo4j.cypher.internal.compiler.v3_2.pipes._
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription._
-import org.neo4j.cypher.internal.compiler.v3_2.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans._
+import org.neo4j.cypher.internal.frontend.v3_2.ast.{LabelToken, PropertyKeyToken}
+import org.neo4j.cypher.internal.frontend.v3_2.{InternalException, ast}
 import org.neo4j.cypher.internal.ir.v3_2.IdName
 
 object LogicalPlan2PlanDescription extends ((LogicalPlan, Map[LogicalPlan, Id]) => InternalPlanDescription) {
+  override def apply(input: LogicalPlan, idMap: Map[LogicalPlan, Id]): InternalPlanDescription = {
+    val readOnly = input.solved.readOnly
+    new LogicalPlan2PlanDescription(idMap, readOnly).create(input)
+  }
+}
 
-  override def apply(plan: LogicalPlan, idMap: Map[LogicalPlan, Id]): InternalPlanDescription = {
-    val symbols = plan.availableSymbols.map(_.name)
-    val planDescription = plan match {
+case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Boolean) extends TreeBuilder[InternalPlanDescription] {
+  override protected def build(plan: LogicalPlan): InternalPlanDescription = {
+    assert(plan.isLeaf)
 
-      case AllNodesScan(IdName(id), arguments) =>
-        PlanDescriptionImpl(id = idMap(plan), "AllNodesScan", NoChildren, Seq.empty, symbols)
+    val id = idMap(plan)
+    val variables = plan.availableSymbols.map(_.name)
 
-      case NodeByLabelScan(IdName(id), label, arguments) =>
-        PlanDescriptionImpl(id = idMap(plan), "NodeByLabelScan", NoChildren, Seq(LabelName(label.name)), symbols)
+    val result: InternalPlanDescription = plan match {
+      case _: AllNodesScan =>
+        PlanDescriptionImpl(id, "AllNodesScan", NoChildren, Seq.empty, variables)
 
-      case NodeByIdSeek(IdName(id), nodeIds, arguments) =>
-        PlanDescriptionImpl(id = idMap(plan), "NodeByIdSeek", NoChildren, Seq(), symbols)
+      case _: plans.Argument =>
+        PlanDescriptionImpl(id, "Argument", NoChildren, Seq.empty, variables)
 
-      case NodeIndexSeek(IdName(id), label, propKey, value, arguments) =>
-        PlanDescriptionImpl(id = idMap(plan), "NodeIndexSeek", NoChildren, Seq(Index(label.name, propKey.name)), symbols)
+      case NodeByLabelScan(_, label, _) =>
+        PlanDescriptionImpl(id, "NodeByLabelScan", NoChildren, Seq(LabelName(label.name)), variables)
 
-      case NodeUniqueIndexSeek(IdName(id), label, propKey, value, arguments) =>
-        PlanDescriptionImpl(id = idMap(plan), "NodeUniqueIndexSeek", NoChildren, Seq(Index(label.name, propKey.name)), symbols)
+      case NodeByIdSeek(_, _, _) =>
+        PlanDescriptionImpl(id, "NodeByIdSeek", NoChildren, Seq(), variables)
 
-      case ProduceResult(_, inner) =>
-        PlanDescriptionImpl(id = idMap(plan), "ProduceResults", SingleChild(apply(inner, idMap)), Seq(), symbols)
+      case NodeIndexSeek(_, label, propertyKey, valueExpr, _) =>
+        val (indexMode, indexDesc) = getDescriptions(label, propertyKey, valueExpr, unique = false, readOnly)
+        PlanDescriptionImpl(id, indexMode.name, NoChildren, Seq(indexDesc), variables)
 
-      case Expand(inner, IdName(fromName), dir, typeNames, IdName(toName), IdName(relName), mode) =>
+      case NodeUniqueIndexSeek(_, label, propertyKey, valueExpr, _) =>
+        val (indexMode, indexDesc) = getDescriptions(label, propertyKey, valueExpr, unique = true, readOnly)
+        PlanDescriptionImpl(id, indexMode.name, NoChildren, Seq(indexDesc), variables)
+
+      case ProduceResult(_, _) =>
+        PlanDescriptionImpl(id, "ProduceResults", NoChildren, Seq(), variables)
+
+      case _: SingleRow =>
+        SingleRowPlanDescription(id, Seq.empty, variables)
+
+      case DirectedRelationshipByIdSeek(_, relIds, _, _, _) =>
+        val entityByIdRhs = EntityByIdRhs(relIds.asCommandSeekArgs)
+        PlanDescriptionImpl(id, "DirectedRelationshipByIdSeekPipe", NoChildren, Seq(entityByIdRhs), variables)
+
+      case _: LegacyIndexSeek =>
+        PlanDescriptionImpl(id, "LegacyIndexSeek", NoChildren, Seq.empty, variables)
+
+      case _: LoadCSV =>
+        PlanDescriptionImpl(id, "LoadCSV", NoChildren, Seq.empty, variables)
+
+      case NodeCountFromCountStore(IdName(variable), labelName, _) =>
+        val arguments = Seq(CountNodesExpression(variable, labelName.map(_.name)))
+        PlanDescriptionImpl(id, "NodeCountFromCountStore", NoChildren, arguments, variables)
+
+      case NodeIndexContainsScan(_, label, propertyKey, valueExpr, _) =>
+        val arguments = Seq(Index(label.name, propertyKey.name), Expression(valueExpr))
+        PlanDescriptionImpl(id, "NodeIndexContainsScan", NoChildren, arguments, variables)
+
+      case NodeIndexEndsWithScan(_, label, propertyKey, valueExpr, _) =>
+        val arguments = Seq(Index(label.name, propertyKey.name), Expression(valueExpr))
+        PlanDescriptionImpl(id, "NodeIndexEndsWithScan", NoChildren, arguments, variables)
+
+      case NodeIndexScan(_, label, propertyKey, _) =>
+        PlanDescriptionImpl(id, "NodeIndexScan", NoChildren, Seq(Index(label.name, propertyKey.name)), variables)
+
+      case ProcedureCall(_, call) =>
+        val signature = Signature(call.qualifiedName, call.callArguments, call.callResultTypes)
+        PlanDescriptionImpl(id, "ProcedureCall", NoChildren, Seq(signature), variables)
+
+      case RelationshipCountFromCountStore(IdName(ident), startLabel, typeNames, endLabel, _) =>
+        val exp = CountRelationshipsExpression(ident, startLabel.map(_.name), typeNames.names, endLabel.map(_.name))
+        PlanDescriptionImpl(id, "RelationshipCountFromCountStore", NoChildren, Seq(exp), variables)
+
+      case _: UndirectedRelationshipByIdSeek =>
+        PlanDescriptionImpl(id, "UndirectedRelationshipByIdSeek", NoChildren, Seq.empty, variables)
+
+      case x => throw new InternalException(s"Unknown plan type: ${x.getClass.getSimpleName}. Missing a case?")
+    }
+
+    result.addArgument(EstimatedRows(plan.solved.estimatedCardinality.amount))
+  }
+
+  override protected def build(plan: LogicalPlan, source: InternalPlanDescription): InternalPlanDescription = {
+    assert(plan.lhs.nonEmpty)
+    assert(plan.rhs.isEmpty)
+
+    val id = idMap(plan)
+    val variables = plan.availableSymbols.map(_.name)
+    val children = if (source.isInstanceOf[SingleRowPlanDescription]) NoChildren else SingleChild(source)
+
+    val result: InternalPlanDescription = plan match {
+      case Aggregation(_, groupingExpressions, aggregationExpressions) if aggregationExpressions.isEmpty =>
+        PlanDescriptionImpl(id, "Distinct", children, Seq(KeyNames(groupingExpressions.keySet.toIndexedSeq)), variables)
+
+      case Aggregation(_, groupingExpressions, _) =>
+        PlanDescriptionImpl(id, "EagerAggregation", children, Seq(KeyNames(groupingExpressions.keySet.toIndexedSeq)), variables)
+
+      case _: CreateNode =>
+        PlanDescriptionImpl(id, "CreateNode", children, Seq.empty, variables)
+
+      case _: CreateRelationship =>
+        PlanDescriptionImpl(id, "CreateRelationship", children, Seq.empty, variables)
+
+      case _: DeleteExpression | _: DeleteNode | _: DeletePath | _: DeleteRelationship =>
+        PlanDescriptionImpl(id, "Delete", children, Seq.empty, variables)
+
+      case _: DetachDeleteExpression | _: DetachDeleteNode | _: DetachDeletePath =>
+        PlanDescriptionImpl(id, "DetachDelete", children, Seq.empty, variables)
+
+      case _: Eager =>
+        PlanDescriptionImpl(id, "Eager", children, Seq.empty, variables)
+
+      case _: EmptyResult =>
+        PlanDescriptionImpl(id, "EmptyResult", children, Seq.empty, variables)
+
+      case _: ErrorPlan =>
+        PlanDescriptionImpl(id, "Error", children, Seq.empty, variables)
+
+      case Expand(_, IdName(fromName), dir, typeNames, IdName(toName), IdName(relName), mode) =>
         val expression = ExpandExpression(fromName, relName, typeNames.map(_.name), toName, dir, 1, Some(1))
         val modeText = mode match {
           case ExpandAll => "Expand(All)"
           case ExpandInto => "Expand(Into)"
         }
-        PlanDescriptionImpl(id = idMap(plan), modeText, SingleChild(apply(inner, idMap)), Seq(expression), symbols)
+        PlanDescriptionImpl(id, modeText, children, Seq(expression), variables)
 
-      case OptionalExpand(inner, IdName(fromName), dir, typeNames, IdName(toName), IdName(relName), mode, predicates) =>
+      case Limit(_, count, DoNotIncludeTies) =>
+        PlanDescriptionImpl(id, name = "Limit", children, Seq(Expression(count)), variables)
+
+      case OptionalExpand(_, IdName(fromName), dir, typeNames, IdName(toName), IdName(relName), mode, predicates) =>
         val expressions = predicates.map(Expression.apply) :+
           ExpandExpression(fromName, relName, typeNames.map(_.name), toName, dir, 1, Some(1))
         val modeText = mode match {
           case ExpandAll => "OptionalExpand(All)"
           case ExpandInto => "OptionalExpand(Into)"
         }
-        PlanDescriptionImpl(id = idMap(plan), modeText, SingleChild(apply(inner, idMap)), expressions, symbols)
+        PlanDescriptionImpl(id, modeText, children, expressions, variables)
 
+      case ProduceResult(_, _) =>
+        PlanDescriptionImpl(id, "ProduceResults", children, Seq(), variables)
 
-      case NodeHashJoin(nodes, lhs, rhs) =>
-        val children = TwoChildren(apply(lhs, idMap), apply(rhs, idMap))
-        PlanDescriptionImpl(id = idMap(plan), "NodeHashJoin", children, Seq(KeyNames(nodes.toIndexedSeq.map(_.name))), symbols)
+      case Projection(_, expr) =>
+        val expressions = LegacyExpressions(expr.mapValues(toCommandExpression))
+        PlanDescriptionImpl(id, "Projection", children, Seq(expressions), variables)
 
-      case Projection(lhs, expr) =>
-        PlanDescriptionImpl(id = idMap(plan), "Projection", SingleChild(apply(lhs, idMap)), expr.values.toIndexedSeq.map(Expression.apply), symbols )
+      case Selection(predicates, _) =>
+        val legacyExpressions = predicates.map(e => LegacyExpression(toCommandExpression(e)))
+        PlanDescriptionImpl(id, "Filter", children, legacyExpressions, variables)
 
-      case Selection(predicates, lhs) =>
-        PlanDescriptionImpl(id = idMap(plan), "Filter", SingleChild(apply(lhs, idMap)), predicates.map(Expression.apply), symbols)
+      case Skip(_, count) =>
+        PlanDescriptionImpl(id, name = "Skip", children, Seq(Expression(count)), variables)
 
-      case CartesianProduct(lhs, rhs) =>
-        val children = TwoChildren(apply(lhs, idMap), apply(rhs, idMap))
-        PlanDescriptionImpl(id = idMap(plan), "CartesianProduct", children,Seq.empty, symbols)
+      case FindShortestPaths(_, _, predicates, _) =>
+        val args = predicates.zipWithIndex.map { case (p, idx) => s"p$idx" -> p }
+        PlanDescriptionImpl(id, "ShortestPath", children, Seq(Expressions(args.toMap)), variables)
 
-      case Limit(lhs, count, DoNotIncludeTies) =>
-        PlanDescriptionImpl(id = idMap(plan), name = "Limit", children = SingleChild(apply(lhs, idMap)),
-          Seq(Expression(count)), symbols)
+      case _: LegacyIndexSeek =>
+        PlanDescriptionImpl(id, "LegacyIndexSeek", children, Seq.empty, variables)
 
-      case Skip(lhs, count) =>
-        PlanDescriptionImpl(id = idMap(plan), name = "Skip", children = SingleChild(apply(lhs, idMap)),
-                            Seq(Expression(count)), symbols)
+      case Limit(_, count, _) =>
+        PlanDescriptionImpl(id, "LetAntiSemiApply", children, Seq(Expression(count)), variables)
 
-      case row: SingleRow =>
-        new SingleRowPlanDescription(id = idMap(plan), Seq.empty, row.argumentIds.map(_.name))
+      case _: LoadCSV =>
+        PlanDescriptionImpl(id, "LoadCSV", children, Seq.empty, variables)
 
-      case x => throw new CantCompileQueryException(x.getClass.getSimpleName)
+      case _: MergeCreateNode =>
+        PlanDescriptionImpl(id, "MergeCreateNode", children, Seq.empty, variables)
+
+      case _: MergeCreateRelationship =>
+        PlanDescriptionImpl(id, "MergeCreateRelationship", children, Seq.empty, variables)
+
+      case _: Optional =>
+        PlanDescriptionImpl(id, "Optional", children, Seq.empty, variables)
+
+      case ProcedureCall(_, call) =>
+        val signature = Signature(call.qualifiedName, call.callArguments, call.callResultTypes)
+        PlanDescriptionImpl(id, "ProcedureCall", children, Seq(signature), variables)
+
+      case ProjectEndpoints(_, IdName(relName), IdName(start), _, IdName(end), _, _, _, _) =>
+        PlanDescriptionImpl(id, "ProjectEndpoints", children, Seq(KeyNames(Seq(relName, start, end))), variables)
+
+      case _: RemoveLabels =>
+        PlanDescriptionImpl(id, "RemoveLabels", children, Seq.empty, variables)
+
+      case _: SetLabels =>
+        PlanDescriptionImpl(id, "SetLabels", children, Seq.empty, variables)
+
+      case _: SetNodePropertiesFromMap =>
+        PlanDescriptionImpl(id, "SetNodePropertyFromMap", children, Seq.empty, variables)
+
+      case _: SetProperty |
+           _: SetNodeProperty |
+           _: SetRelationshipPropery =>
+        PlanDescriptionImpl(id, "SetProperty", children, Seq.empty, variables)
+
+      case _: SetRelationshipPropertiesFromMap =>
+        PlanDescriptionImpl(id, "SetRelationshipPropertyFromMap", children, Seq.empty, variables)
+
+      case Sort(_, orderBy) =>
+        PlanDescriptionImpl(id, "Sort", children, Seq(KeyNames(orderBy.map(_.id.name))), variables)
+
+      case _: UnwindCollection =>
+        PlanDescriptionImpl(id, "Unwind", children, Seq(), variables)
+
+      case VarExpand(_, IdName(fromName), dir, _, types, IdName(toName), IdName(relName), length, mode, predicates) =>
+        val expandDescription = ExpandExpression(fromName, relName, types.map(_.name), toName, dir, minLength = length.min, maxLength = length.max)
+        val predicatesMap = predicates.map(_._2).zipWithIndex.map({ case (p, idx) => s"p$idx" -> p }).toMap
+        val predicatesDescription = if (predicatesMap.isEmpty)
+          None
+        else
+          Some(Expressions(predicatesMap))
+        val modeDescr = mode match {
+          case ExpandAll => "All"
+          case ExpandInto => "Into"
+        }
+        PlanDescriptionImpl(id, s"VarLengthExpand($modeDescr)", children, Seq(expandDescription) ++ predicatesDescription, variables)
+
+      case x => throw new InternalException(s"Unknown plan type: ${x.getClass.getSimpleName}. Missing a case?")
     }
-    planDescription.addArgument(EstimatedRows(plan.solved.estimatedCardinality.amount))
+
+    result.addArgument(EstimatedRows(plan.solved.estimatedCardinality.amount))
+  }
+
+  override protected def build(plan: LogicalPlan, lhs: InternalPlanDescription, rhs: InternalPlanDescription): InternalPlanDescription = {
+    assert(plan.lhs.nonEmpty)
+    assert(plan.rhs.nonEmpty)
+
+    val id = idMap(plan)
+    val variables = plan.availableSymbols.map(_.name)
+    val children = TwoChildren(lhs, rhs)
+
+    val result: InternalPlanDescription = plan match {
+      case _: AntiConditionalApply =>
+        PlanDescriptionImpl(id, "AntiConditionalApply", children, Seq.empty, variables)
+
+      case _: AntiSemiApply =>
+        PlanDescriptionImpl(id, "AntiSemiApply", children, Seq.empty, variables)
+
+      case _: ConditionalApply =>
+        PlanDescriptionImpl(id, "ConditionalApply", children, Seq.empty, variables)
+
+      case _: Apply =>
+        PlanDescriptionImpl(id, "Apply", children, Seq.empty, variables)
+
+      case _: AssertSameNode =>
+        PlanDescriptionImpl(id, "AssertSameNode", children, Seq.empty, variables)
+
+      case CartesianProduct(_, _) =>
+        PlanDescriptionImpl(id, "CartesianProduct", children, Seq.empty, variables)
+
+      case NodeHashJoin(nodes, _, _) =>
+        PlanDescriptionImpl(id, "NodeHashJoin", children, Seq(KeyNames(nodes.toIndexedSeq.map(_.name))), variables)
+
+      case _: ForeachApply =>
+        PlanDescriptionImpl(id, "Foreach", children, Seq.empty, variables)
+
+      case LetSelectOrSemiApply(_, _, _, predicate) =>
+        PlanDescriptionImpl(id, "LetSelectOrSemiApply", children, Seq(Expression(predicate)), variables)
+
+      case LetSelectOrAntiSemiApply(_, _, _, predicate) =>
+        PlanDescriptionImpl(id, "LetSelectOrSemiApply", children, Seq(Expression(predicate)), variables)
+
+      case _: LetSemiApply =>
+        PlanDescriptionImpl(id, "LetSemiApply", children, Seq.empty, variables)
+
+      case _: LetAntiSemiApply =>
+        PlanDescriptionImpl(id, "LetAntiSemiApply", children, Seq.empty, variables)
+
+      case OuterHashJoin(nodes, _, _) =>
+        PlanDescriptionImpl(id, "NodeOuterHashJoin", children, Seq(KeyNames(nodes.map(_.name).toSeq)), variables)
+
+      case RollUpApply(_, _, collectionName, _, _) =>
+        PlanDescriptionImpl(id, "RollUpApply", children, Seq(KeyNames(Seq(collectionName.name))), variables)
+
+      case SelectOrAntiSemiApply(_, _, predicate) =>
+        PlanDescriptionImpl(id, "SelectOrAntiSemiApply", children, Seq(Expression(predicate)), variables)
+
+      case SelectOrSemiApply(_, _, predicate) =>
+        PlanDescriptionImpl(id, "SelectOrAntiSemiApply", children, Seq(Expression(predicate)), variables)
+
+      case _: SemiApply =>
+        PlanDescriptionImpl(id, "SemiApply", children, Seq.empty, variables)
+
+      case TriadicSelection(_, _, IdName(source), IdName(seen), IdName(target), _) =>
+        PlanDescriptionImpl(id, "TriadicSelection", children, Seq(KeyNames(Seq(source, seen, target))), variables)
+
+      case _: Union =>
+        PlanDescriptionImpl(id, "Union", children, Seq.empty, variables)
+
+      case ValueHashJoin(_, _, predicate) =>
+        PlanDescriptionImpl(
+          id = id,
+          name = "ValueHashJoin",
+          children = children,
+          arguments = Seq(Expression(predicate)),
+          variables
+        )
+
+      case x => throw new InternalException(s"Unknown plan type: ${x.getClass.getSimpleName}. Missing a case?")
+    }
+
+    result.addArgument(EstimatedRows(plan.solved.estimatedCardinality.amount))
+  }
+
+  private def getDescriptions(label: LabelToken,
+                              propertyKey: PropertyKeyToken,
+                              valueExpr: QueryExpression[ast.Expression],
+                              unique: Boolean,
+                              readOnly: Boolean): (IndexSeekMode, planDescription.Argument) = {
+    val commandExpression = valueExpr.map(toCommandExpression) // TODO: This should not be necessary
+    val indexMode = IndexSeekModeFactory(unique, readOnly).fromQueryExpression(commandExpression)
+    val indexDesc = indexMode match {
+      case IndexSeekByRange | UniqueIndexSeekByRange =>
+        commandExpression match {
+          case e: RangeQueryExpression[_] =>
+            e.expression match {
+              case PrefixSeekRangeExpression(PrefixRange(prefix)) =>
+                PrefixIndex(label.name, propertyKey.name, prefix)
+
+              case InequalitySeekRangeExpression(RangeLessThan(bounds)) =>
+                InequalityIndex(label.name, propertyKey.name, bounds.map(bound => s"<${bound.inequalitySignSuffix} ${bound.endPoint}").toIndexedSeq)
+
+              case InequalitySeekRangeExpression(RangeGreaterThan(bounds)) =>
+                InequalityIndex(label.name, propertyKey.name, bounds.map(bound => s">${bound.inequalitySignSuffix} ${bound.endPoint}").toIndexedSeq)
+
+              case InequalitySeekRangeExpression(RangeBetween(greaterThanBounds, lessThanBounds)) =>
+                val greaterThanBoundsText = greaterThanBounds.bounds.map(bound => s">${bound.inequalitySignSuffix} ${bound.endPoint}").toIndexedSeq
+                val lessThanBoundsText = lessThanBounds.bounds.map(bound => s"<${bound.inequalitySignSuffix} ${bound.endPoint}").toIndexedSeq
+                InequalityIndex(label.name, propertyKey.name, greaterThanBoundsText ++ lessThanBoundsText)
+            }
+
+          case _ =>
+            throw new InternalException("This should never happen. Missing a case?")
+        }
+      case IndexSeek | LockingUniqueIndexSeek | UniqueIndexSeek => Index(label.name, propertyKey.name)
+      case _ => throw new InternalException("This should never happen. Missing a case?")
+    }
+    (indexMode, indexDesc)
   }
 }

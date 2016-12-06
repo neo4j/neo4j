@@ -20,9 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{Effects, ReadsAllNodes, ReadsAllRelationships}
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.ExpandExpression
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_2.{InternalException, SemanticDirection}
 import org.neo4j.graphdb.{Node, Relationship}
 
@@ -53,8 +51,8 @@ case class VarLengthExpandPipe(source: Pipe,
                                max: Option[Int],
                                nodeInScope: Boolean,
                                filteringStep: VarlenghtPredicate = VarlenghtPredicate.NONE)
-                              (val estimatedCardinality: Option[Double] = None)
-                              (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
+                              (val id: Id = new Id)
+                              (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
 
   private def varLengthExpand(node: Node, state: QueryState, maxDepth: Option[Int],
                               row: ExecutionContext): Iterator[(Node, Seq[Relationship])] = {
@@ -114,22 +112,4 @@ case class VarLengthExpandPipe(source: Pipe,
 
   def fetchFromContext(row: ExecutionContext, name: String): Any =
     row.getOrElse(name, throw new InternalException(s"Expected to find a node at $name but found nothing"))
-
-  def planDescriptionWithoutCardinality = {
-    val expandExpr = ExpandExpression(fromName, relName, types.names, toName, dir, minLength = min, maxLength = max)
-    source.planDescription.
-      andThen(this.id, s"VarLengthExpand(${if (nodeInScope) "Into" else "All"})", variables, expandExpr)
-  }
-
-  def symbols = source.symbols.add(toName, CTNode).add(relName, CTList(CTRelationship))
-
-  override def localEffects = Effects(ReadsAllNodes, ReadsAllRelationships)
-
-  def dup(sources: List[Pipe]): Pipe = {
-    val (head :: Nil) = sources
-    copy(head)(estimatedCardinality)
-  }
-
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
-
 }

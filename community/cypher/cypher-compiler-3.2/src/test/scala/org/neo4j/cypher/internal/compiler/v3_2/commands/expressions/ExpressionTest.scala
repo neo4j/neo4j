@@ -23,9 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.commands._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.predicates.{CoercedPredicate, Not, True}
 import org.neo4j.cypher.internal.compiler.v3_2.commands.values.TokenType._
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 
@@ -100,15 +98,6 @@ class ExpressionTest extends CypherFunSuite {
     result should equal(Not(CoercedPredicate(Literal(true))))
   }
 
-  test("should not be considered effectful") {
-    // given
-    val expression = Not(True())
-
-    // then
-    expression.localEffects(SymbolTable()) should equal(Effects())
-    expression.effects(SymbolTable()) should equal(Effects())
-  }
-
   private def testMerge(a: Map[String, CypherType], b: Map[String, CypherType], expected: Map[String, CypherType]) {
     merge(a, b, expected)
     merge(b, a, expected)
@@ -147,8 +136,6 @@ class TestExpression extends Expression {
   def arguments = Nil
 
   def rewrite(f: (Expression) => Expression): Expression = null
-
-  def calculateType(symbols: SymbolTable): CypherType = null
 
   def symbolTableDependencies = Set()
 

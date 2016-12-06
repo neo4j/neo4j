@@ -19,15 +19,12 @@
  */
 package cypher;
 
-import static cypher.SpecSuiteConstants.BLACKLIST_PLUGIN;
-import static cypher.SpecSuiteConstants.DB_CONFIG;
-import static cypher.SpecSuiteConstants.GLUE_PATH;
-import static cypher.SpecSuiteConstants.HTML_REPORT;
-import static cypher.SpecSuiteConstants.JSON_REPORT;
 import cucumber.api.CucumberOptions;
 import cucumber.api.junit.Cucumber;
 import org.junit.experimental.runners.Enclosed;
 import org.junit.runner.RunWith;
+
+import static cypher.SpecSuiteConstants.*;
 
 @RunWith( Enclosed.class )
 public class AcceptanceSpecSuiteTest
@@ -39,23 +36,6 @@ public class AcceptanceSpecSuiteTest
     // Do not forget to clear these strings to empty strings before you commit!!
     public static final String FEATURE_TO_RUN = "";
     public static final String SCENARIO_NAME_REQUIRED = "";
-
-    @RunWith( Cucumber.class )
-    @CucumberOptions(
-            plugin = {
-                    DB_CONFIG + "rule.json",
-                    HTML_REPORT + SUITE_NAME + "/rule",
-                    JSON_REPORT + SUITE_NAME + "/rule",
-                    BLACKLIST_PLUGIN + "rule.txt"
-            },
-            glue = { GLUE_PATH },
-            features = { FEATURE_PATH + FEATURE_TO_RUN },
-            tags = { "~@pending" },
-            strict = true
-    )
-    public static class Rule
-    {
-    }
 
     @RunWith( Cucumber.class )
     @CucumberOptions(

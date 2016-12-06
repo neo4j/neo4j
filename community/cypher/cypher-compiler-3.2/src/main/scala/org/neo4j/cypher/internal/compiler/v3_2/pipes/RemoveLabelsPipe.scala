@@ -20,15 +20,15 @@
 package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{Effects, SetLabel}
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.{CastSupport, ListSupport}
 import org.neo4j.cypher.internal.compiler.v3_2.mutation.GraphElementPropertyFunctions
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 import org.neo4j.graphdb.Node
 
 case class RemoveLabelsPipe(src: Pipe, variable: String, labels: Seq[LazyLabel])
-                        (val estimatedCardinality: Option[Double] = None)
-                        (implicit pipeMonitor: PipeMonitor)
-  extends PipeWithSource(src, pipeMonitor) with RonjaPipe with GraphElementPropertyFunctions with ListSupport {
+                           (val id: Id = new Id)
+                           (implicit pipeMonitor: PipeMonitor)
+  extends PipeWithSource(src, pipeMonitor) with GraphElementPropertyFunctions with ListSupport {
 
   override protected def internalCreateResults(input: Iterator[ExecutionContext],
                                                state: QueryState): Iterator[ExecutionContext] = {
@@ -43,17 +43,4 @@ case class RemoveLabelsPipe(src: Pipe, variable: String, labels: Seq[LazyLabel])
     val labelIds = labels.flatMap(_.getOptId(state.query)).map(_.id)
     state.query.removeLabelsFromNode(nodeId, labelIds.iterator)
   }
-
-  override def planDescriptionWithoutCardinality = src.planDescription.andThen(this.id, "RemoveLabels", variables)
-
-  override def symbols = src.symbols
-
-  override def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
-
-  override def dup(sources: List[Pipe]): Pipe = {
-    val (onlySource :: Nil) = sources
-    RemoveLabelsPipe(onlySource, variable, labels)(estimatedCardinality)
-  }
-
-  override def localEffects = Effects(labels.map(label => SetLabel(label.name)): _*)
 }

@@ -25,11 +25,14 @@ import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescr
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{NodeHashJoin, NodeIndexSeek}
 import org.neo4j.cypher.{ExecutionEngineFunSuite, IndexHintException, NewPlannerTestSupport, SyntaxException, _}
 import org.neo4j.graphdb.QueryExecutionException
+import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.api.exceptions.Status
 import org.scalatest.matchers.{MatchResult, Matcher}
 
+
 class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport with RunWithConfigTestSupport {
+  override def databaseConfig(): Map[Setting[_], String] = Map(GraphDatabaseSettings.cypher_hints_error -> "true")
 
   test("fail if using index with start clause") {
     // GIVEN
@@ -99,7 +102,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
         |RETURN n""".stripMargin
 
     // WHEN
-    val error = intercept[IndexHintException](executeWithAllPlannersAndCompatibilityMode(query))
+    val error = intercept[IndexHintException](executeWithAllPlannersAndRuntimesAndCompatibilityMode(query, "foo" -> 42))
 
     // THEN
     error.status should equal(Status.Schema.IndexNotFound)
@@ -310,7 +313,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
       engine =>
         engine.execute("CREATE INDEX ON :Person(name)")
         shouldHaveNoWarnings(
-          engine.execute(s"EXPLAIN MATCH (n:Person)-[:WORKS_FOR]->(c:Company) USING INDEX n:Person(name) USING SCAN c:Company WHERE n.name = 'John' RETURN n")
+          engine.execute(s"EXPLAIN MATCH (n:Person), (c:Company) USING INDEX n:Person(name) USING SCAN c:Company WHERE n.name = 'John' RETURN n")
         )
     }
   }
@@ -638,23 +641,6 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
       result.executionPlanDescription() should includeOnlyOneHashJoinOn("x")
       result.executionPlanDescription() should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "x")
     }
-  }
-
-  test("rule planner should ignore join hint") {
-    val a = createNode()
-    val m = createNode()
-    val z = createNode()
-    relate(a, m)
-    relate(z, m)
-
-    val result = innerExecute(
-      """
-        |CYPHER planner=rule
-        |MATCH (a)-->(m)<--(z)
-        |USING JOIN ON m
-        |RETURN DISTINCT m""".stripMargin).toList
-
-    result should equal(List(Map("m" -> m)))
   }
 
   test("USING INDEX hint should not clash with used variables") {

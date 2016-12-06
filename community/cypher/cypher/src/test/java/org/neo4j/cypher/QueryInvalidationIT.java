@@ -21,12 +21,6 @@ package org.neo4j.cypher;
 
 import org.junit.Rule;
 import org.junit.Test;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.neo4j.cypher.internal.compiler.v3_2.CypherCacheHitMonitor;
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Query;
 import org.neo4j.graphdb.Label;
@@ -38,6 +32,11 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.util.Collections.singletonMap;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -166,7 +165,7 @@ public class QueryInvalidationIT
             params.put( "user1", user1 );
             params.put( "user2", user2 );
             db.execute( "MATCH (user1:User { userId: {user1} }), (user2:User { userId: {user2} }) " +
-                        "CREATE UNIQUE (user1) -[:FRIEND]- (user2)", params );
+                        "MERGE (user1) -[:FRIEND]- (user2)", params );
         }
     }
 

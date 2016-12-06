@@ -20,9 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2._
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.Effects
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{InternalPlanDescription, SingleRowPlanDescription}
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_2.symbols.CypherType
 import org.scalatest.mock.MockitoSugar
 
@@ -32,19 +30,9 @@ class FakePipe(val data: Iterator[Map[String, Any]], newVariables: (String, Cyph
 
   def this(data: Traversable[Map[String, Any]], variables: (String, CypherType)*) = this(data.toIterator, variables:_*)
 
-  val symbols = SymbolTable(newVariables.toMap)
-
   def internalCreateResults(state: QueryState) = data.map(m => ExecutionContext(collection.mutable.Map(m.toSeq: _*)))
-
-  def planDescription: InternalPlanDescription = SingleRowPlanDescription(this.id, variables = variables)
-
-  def exists(pred: Pipe => Boolean) = ???
 
   val monitor: PipeMonitor = mock[PipeMonitor]
 
-  def dup(sources: List[Pipe]): Pipe = ???
-
-  override def localEffects = Effects()
-
-  override def sources: Seq[Pipe] = Seq.empty
+  var id = new Id
 }

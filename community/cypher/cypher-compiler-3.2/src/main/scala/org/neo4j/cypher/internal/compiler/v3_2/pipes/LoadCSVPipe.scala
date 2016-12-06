@@ -23,13 +23,10 @@ import java.net.URL
 
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Expression
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.ArrayBackedMap
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_2.spi.QueryContext
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_2.LoadExternalResourceException
-import org.neo4j.cypher.internal.frontend.v3_2.symbols.{AnyType, ListType, MapType}
 
 sealed trait CSVFormat
 case object HasHeaders extends CSVFormat
@@ -40,8 +37,9 @@ case class LoadCSVPipe(source: Pipe,
                        urlExpression: Expression,
                        variable: String,
                        fieldTerminator: Option[String])
-                      (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
-  extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
+                      (val id: Id = new Id)
+                      (implicit pipeMonitor: PipeMonitor)
+  extends PipeWithSource(source, pipeMonitor) {
 
   protected def getImportURL(urlString: String, context: QueryContext): URL = {
     val url: URL = try {
@@ -115,21 +113,4 @@ case class LoadCSVPipe(source: Pipe,
       }
     })
   }
-
-  override def symbols: SymbolTable = format match {
-    case HasHeaders => source.symbols.add(variable, MapType.instance)
-    case NoHeaders => source.symbols.add(variable, ListType(AnyType.instance))
-  }
-
-  override def localEffects = Effects()
-
-  override def dup(sources: List[Pipe]): Pipe = {
-    val (head :: Nil) = sources
-    copy(source = head)(estimatedCardinality)
-  }
-
-  override def planDescriptionWithoutCardinality: InternalPlanDescription =
-    source.planDescription.andThen(this.id, "LoadCSV", variables)
-
-  override def withEstimatedCardinality(estimated: Double): Pipe with RonjaPipe = copy()(Some(estimated))
 }

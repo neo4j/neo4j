@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2
 
-import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.commands.StatementConverters._
-import org.neo4j.cypher.internal.compiler.v3_2.commands.AbstractQuery
 import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterCondition
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{Query, Statement}
 import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, Rewriter, Scope, SemanticTable}
@@ -43,9 +41,6 @@ sealed trait PreparedQuery {
   def extractedParams: Map[String, Any]
 
   def plannerName: String
-
-  def abstractQuery(notificationLogger: InternalNotificationLogger): AbstractQuery =
-    statement.asQuery(notificationLogger, plannerName).setQueryText(queryText)
 
   def rewrite(rewriter: Rewriter): SELF
 

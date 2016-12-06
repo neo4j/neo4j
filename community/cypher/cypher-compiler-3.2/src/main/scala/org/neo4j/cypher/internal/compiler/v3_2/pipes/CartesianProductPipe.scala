@@ -20,20 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.Effects
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{InternalPlanDescription, PlanDescriptionImpl, TwoChildren}
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 
-case class CartesianProductPipe(lhs: Pipe, rhs: Pipe)(val estimatedCardinality: Option[Double] = None)
-                               (implicit pipeMonitor: PipeMonitor) extends Pipe with RonjaPipe {
-  def exists(pred: (Pipe) => Boolean): Boolean = lhs.exists(pred) || rhs.exists(pred)
-
-  def planDescriptionWithoutCardinality =
-    new PlanDescriptionImpl(this.id, "CartesianProduct", TwoChildren(lhs.planDescription, rhs.planDescription), Seq.empty,
-      variables)
-
-  def symbols: SymbolTable = lhs.symbols.add(rhs.symbols.variables)
-
+case class CartesianProductPipe(lhs: Pipe, rhs: Pipe)
+                               (val id: Id = new Id)
+                               (implicit pipeMonitor: PipeMonitor) extends Pipe {
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     for (outer <- lhs.createResults(state);
          inner <- rhs.createResults(state))
@@ -41,15 +32,4 @@ case class CartesianProductPipe(lhs: Pipe, rhs: Pipe)(val estimatedCardinality: 
   }
 
   def monitor: PipeMonitor = pipeMonitor
-
-  def dup(sources: List[Pipe]): Pipe = {
-    val (l :: r :: Nil) = sources
-    copy(lhs = l, rhs = r)(estimatedCardinality)
-  }
-
-  def sources: Seq[Pipe] = Seq(lhs, rhs)
-
-  override def localEffects = Effects()
-
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 }

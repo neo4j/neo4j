@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v3_2.commands.expressions
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.commands.coerce
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 
 
@@ -35,5 +34,4 @@ case class CoerceTo(expr: Expression, typ: CypherType) extends Expression {
   override def rewrite(f: (Expression) => Expression): Expression = copy(f(expr), typ)
 
   override def arguments: Seq[Expression] = Seq(expr)
-  override protected def calculateType(symbols: SymbolTable) = typ
 }

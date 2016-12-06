@@ -21,11 +21,8 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Expression
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{Effects, ReadsAllNodes}
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.{IsList, ListSupport}
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{NoChildren, PlanDescriptionImpl}
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
-import org.neo4j.cypher.internal.frontend.v3_2.symbols.CTNode
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 
 sealed trait SeekArgs {
   def expressions(ctx: ExecutionContext, state: QueryState): Iterable[Any]
@@ -53,10 +50,11 @@ case class ManySeekArgs(coll: Expression) extends SeekArgs {
 }
 
 case class NodeByIdSeekPipe(ident: String, nodeIdsExpr: SeekArgs)
-                           (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
+                           (val id: Id = new Id)
+                           (implicit pipeMonitor: PipeMonitor)
   extends Pipe
   with ListSupport
-  with RonjaPipe {
+  {
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     //register as parent so that stats are associated with this pipe
@@ -67,22 +65,5 @@ case class NodeByIdSeekPipe(ident: String, nodeIdsExpr: SeekArgs)
     new NodeIdSeekIterator(ident, ctx, state.query.nodeOps, nodeIds.iterator)
   }
 
-  def exists(predicate: Pipe => Boolean): Boolean = predicate(this)
-
-  def planDescriptionWithoutCardinality = new PlanDescriptionImpl(this.id, "NodeByIdSeek", NoChildren, Seq(), variables)
-
-  def symbols: SymbolTable = new SymbolTable(Map(ident -> CTNode))
-
   override def monitor = pipeMonitor
-
-  def dup(sources: List[Pipe]): Pipe = {
-    require(sources.isEmpty)
-    this
-  }
-
-  def sources: Seq[Pipe] = Seq.empty
-
-  override def localEffects = Effects(ReadsAllNodes)
-
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 }

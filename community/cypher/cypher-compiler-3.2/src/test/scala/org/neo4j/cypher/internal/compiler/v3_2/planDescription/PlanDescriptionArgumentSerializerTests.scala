@@ -19,16 +19,17 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.planDescription
 
-import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.ProjectedPath.{nilProjector, singleNodeProjector}
-import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{Literal, NestedPipeExpression, ProjectedPath}
-import org.neo4j.cypher.internal.compiler.v3_2.pipes.{ArgumentPipe, PipeMonitor}
+import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{Literal, NestedPlanExpression}
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.PlanDescriptionArgumentSerializer.serialize
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{Argument, LogicalPlan}
+import org.neo4j.cypher.internal.compiler.v3_2.planner.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.ir.v3_2.Cardinality
 
 class PlanDescriptionArgumentSerializerTests extends CypherFunSuite {
+  val solved = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(1))
 
   test("serialization should leave numeric arguments as numbers") {
     serialize(DbHits(12)) shouldBe a [java.lang.Number]
@@ -49,13 +50,11 @@ class PlanDescriptionArgumentSerializerTests extends CypherFunSuite {
       equal("(a)-[r:LIKES|:LOVES*3..]->(b)")
   }
 
-  test("serialize nested pipe expression") {
-    val nested = NestedPipeExpression(ArgumentPipe(SymbolTable())(None)(mock[PipeMonitor]), ProjectedPath(
-      Set("a"),
-      singleNodeProjector("a", nilProjector)
-    ))
+  test("serialize nested plan expression") {
+    val argument: LogicalPlan = Argument(Set.empty)(solved)(Map.empty)
+    val nested = NestedPlanExpression(argument)
 
-    serialize(LegacyExpression(nested)) should equal("NestedExpression(Argument)")
+    serialize(LegacyExpression(nested)) should equal("NestedPlanExpression(Argument)")
   }
 
   test("projection should show multiple expressions") {

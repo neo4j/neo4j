@@ -19,12 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.commands.expressions
 
-import org.neo4j.cypher.internal.compiler.v3_2.{ExecutionContext, _}
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.IsMap
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
+import org.neo4j.cypher.internal.compiler.v3_2.{ExecutionContext, _}
 import org.neo4j.cypher.internal.frontend.v3_2.CypherTypeException
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 
 case class PointFunction(data: Expression) extends NullInNullOutExpression(data) {
 
@@ -37,8 +35,6 @@ case class PointFunction(data: Expression) extends NullInNullOutExpression(data)
   override def rewrite(f: (Expression) => Expression) = f(PointFunction(data.rewrite(f)))
 
   override def arguments = data.arguments
-
-  override def calculateType(symbols: SymbolTable) = CTPoint
 
   override def symbolTableDependencies = data.symbolTableDependencies
 

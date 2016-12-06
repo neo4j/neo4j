@@ -20,10 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v3_2.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v3_2.{ExecutionContext, PrefixRange}
 import org.neo4j.cypher.internal.frontend.v3_2.InternalException
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 
 case class PrefixSeekRangeExpression(range: PrefixRange[Expression]) extends Expression {
 
@@ -33,8 +31,6 @@ case class PrefixSeekRangeExpression(range: PrefixRange[Expression]) extends Exp
   override def rewrite(f: (Expression) => Expression): Expression = f(this)
 
   override def arguments: Seq[Expression] = Seq.empty
-
-  override protected def calculateType(symbols: SymbolTable): CypherType = CTList(CTNode)
 
   override def symbolTableDependencies: Set[String] = Set.empty
 }

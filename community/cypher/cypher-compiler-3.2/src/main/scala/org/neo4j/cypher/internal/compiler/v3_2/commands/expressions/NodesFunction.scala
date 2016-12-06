@@ -21,9 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_2.SyntaxException
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 import org.neo4j.graphdb.Path
 
 import scala.collection.JavaConverters._
@@ -38,12 +36,6 @@ case class NodesFunction(path: Expression) extends NullInNullOutExpression(path)
   def rewrite(f: (Expression) => Expression) = f(NodesFunction(path.rewrite(f)))
 
   def arguments = Seq(path)
-
-  def calculateType(symbols: SymbolTable) = {
-    path.evaluateType(CTPath, symbols)
-
-    CTList(CTNode)
-  }
 
   def symbolTableDependencies = path.symbolTableDependencies
 }

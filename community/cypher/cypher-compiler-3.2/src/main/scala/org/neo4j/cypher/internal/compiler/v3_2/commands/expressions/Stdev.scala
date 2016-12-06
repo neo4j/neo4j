@@ -19,9 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.commands.expressions
 
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.aggregation.StdevFunction
+import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 
 case class Stdev(anInner: Expression) extends AggregationWithInnerExpression(anInner) {
   def createAggregationFunction = new StdevFunction(anInner, false)
@@ -29,8 +28,6 @@ case class Stdev(anInner: Expression) extends AggregationWithInnerExpression(anI
   def expectedInnerType = CTNumber
 
   def rewrite(f: (Expression) => Expression) = f(Stdev(anInner.rewrite(f)))
-
-  def calculateType(symbols: SymbolTable): CypherType = CTFloat
 }
 
 case class StdevP(anInner: Expression) extends AggregationWithInnerExpression(anInner) {
@@ -39,7 +36,5 @@ case class StdevP(anInner: Expression) extends AggregationWithInnerExpression(an
   def expectedInnerType = CTNumber
 
   def rewrite(f: (Expression) => Expression) = f(StdevP(anInner.rewrite(f)))
-
-  def calculateType(symbols: SymbolTable): CypherType = CTFloat
 }
 

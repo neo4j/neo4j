@@ -23,7 +23,7 @@ import java.util.Comparator
 
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Expression
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.{KeyNames, LegacyExpression}
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 
 import scala.math._
 
@@ -31,8 +31,8 @@ import scala.math._
  * TopPipe is used when a query does a ORDER BY ... LIMIT query. Instead of ordering the whole result set and then
  * returning the matching top results, we only keep the top results in heap, which allows us to release memory earlier
  */
-abstract class TopPipe(source: Pipe, sortDescription: List[SortDescription], estimatedCardinality: Option[Double])(implicit pipeMonitor: PipeMonitor)
-  extends PipeWithSource(source, pipeMonitor) with Comparer with RonjaPipe with NoEffectsPipe {
+abstract class TopPipe(source: Pipe, sortDescription: List[SortDescription])(implicit pipeMonitor: PipeMonitor)
+  extends PipeWithSource(source, pipeMonitor) with Comparer {
 
   val sortItems: Array[SortDescription] = sortDescription.toArray
   private val sortItemsCount: Int = sortItems.length
@@ -61,12 +61,11 @@ abstract class TopPipe(source: Pipe, sortDescription: List[SortDescription], est
 
   def arrayEntry(ctx : ExecutionContext)(implicit qtx : QueryState) : SortDataWithContext =
     (sortItems.map(column => ctx(column.id)), ctx)
-
-  def symbols = source.symbols
 }
 
 case class TopNPipe(source: Pipe, sortDescription: List[SortDescription], countExpression: Expression)
-(val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor) extends TopPipe(source, sortDescription, estimatedCardinality)(pipeMonitor) {
+                   (val id: Id = new Id)
+                   (implicit pipeMonitor: PipeMonitor) extends TopPipe(source, sortDescription)(pipeMonitor) {
 
   protected override def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     //register as parent so that stats are associated with this pipe
@@ -119,17 +118,6 @@ case class TopNPipe(source: Pipe, sortDescription: List[SortDescription], countE
       }
     }
   }
-
-  override def dup(sources: List[Pipe]): Pipe = {
-    val (head :: Nil) = sources
-    copy(source = head)(estimatedCardinality)
-  }
-
-  override def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
-
-  override def planDescriptionWithoutCardinality =
-    source.planDescription
-      .andThen(this.id, "Top", variables, LegacyExpression(countExpression), KeyNames(sortItems.map(_.id)))
 }
 
 /*
@@ -137,8 +125,9 @@ case class TopNPipe(source: Pipe, sortDescription: List[SortDescription], countE
  * an array, instead just store a single value.
  */
 case class Top1Pipe(source: Pipe, sortDescription: List[SortDescription])
-                   (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
-  extends TopPipe(source, sortDescription, estimatedCardinality)(pipeMonitor) {
+                   (val id: Id = new Id)
+                   (implicit pipeMonitor: PipeMonitor)
+  extends TopPipe(source, sortDescription)(pipeMonitor) {
 
   protected override def internalCreateResults(input: Iterator[ExecutionContext],
                                       state: QueryState): Iterator[ExecutionContext] = {
@@ -167,26 +156,15 @@ case class Top1Pipe(source: Pipe, sortDescription: List[SortDescription])
       Iterator.single(result._2)
     }
   }
-
-  override def planDescriptionWithoutCardinality =
-    source.planDescription
-      .andThen(this.id, "Top1", variables, KeyNames(sortItems.map(_.id)))
-
-
-  override def dup(sources: List[Pipe]): Pipe = {
-    val (head :: Nil) = sources
-    copy(source = head)(estimatedCardinality)
-  }
-
-  override def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 }
 
 /*
  * Special case for when we only want one element, and all others that have the same value (tied for first place)
  */
 case class Top1WithTiesPipe(source: Pipe, sortDescription: List[SortDescription])
-                           (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
-  extends TopPipe(source, sortDescription, estimatedCardinality)(pipeMonitor) {
+                           (val id: Id = new Id)
+                           (implicit pipeMonitor: PipeMonitor)
+  extends TopPipe(source, sortDescription)(pipeMonitor) {
 
   protected override def internalCreateResults(input: Iterator[ExecutionContext],
                                                state: QueryState): Iterator[ExecutionContext] = {
@@ -226,16 +204,4 @@ case class Top1WithTiesPipe(source: Pipe, sortDescription: List[SortDescription]
     builder += first._2
     builder
   }
-
-  override def planDescriptionWithoutCardinality =
-    source.planDescription
-      .andThen(this.id, "Top1(Ties)", variables, KeyNames(sortItems.map(_.id)))
-
-
-  override def dup(sources: List[Pipe]): Pipe = {
-    val (head :: Nil) = sources
-    copy(source = head)(estimatedCardinality)
-  }
-
-  override def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 }

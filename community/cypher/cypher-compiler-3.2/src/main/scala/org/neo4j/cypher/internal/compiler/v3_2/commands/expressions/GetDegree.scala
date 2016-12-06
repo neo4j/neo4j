@@ -23,9 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_2.spi.QueryContext
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
-import org.neo4j.cypher.internal.frontend.v3_2.{SemanticDirection, CypherTypeException}
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
+import org.neo4j.cypher.internal.frontend.v3_2.{CypherTypeException, SemanticDirection}
 import org.neo4j.graphdb.Node
 
 case class GetDegree(node: Expression, typ: Option[KeyToken], direction: SemanticDirection) extends NullInNullOutExpression(node) {
@@ -46,8 +44,6 @@ case class GetDegree(node: Expression, typ: Option[KeyToken], direction: Semanti
   def arguments: Seq[Expression] = Seq(node)
 
   def rewrite(f: (Expression) => Expression): Expression = f(GetDegree(node.rewrite(f), typ, direction))
-
-  protected def calculateType(symbols: SymbolTable): CypherType = CTInteger
 
   def symbolTableDependencies: Set[String] = node.symbolTableDependencies
 }

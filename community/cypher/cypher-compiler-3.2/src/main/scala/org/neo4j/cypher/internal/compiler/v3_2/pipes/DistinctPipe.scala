@@ -22,18 +22,14 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v3_2.commands.predicates.Equivalent
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.Effects._
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.KeyNames
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.Eagerly
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 
 import scala.collection.mutable
 
-case class DistinctPipe(source: Pipe, expressions: Map[String, Expression])(val estimatedCardinality: Option[Double] = None)
-                       (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
-
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
+case class DistinctPipe(source: Pipe, expressions: Map[String, Expression])
+                       (val id: Id = new Id)
+                       (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
 
   val keyNames: Seq[String] = expressions.keys.toIndexedSeq
 
@@ -65,19 +61,4 @@ case class DistinctPipe(source: Pipe, expressions: Map[String, Expression])(val 
          }
     }
   }
-
-  def planDescriptionWithoutCardinality = source.planDescription.
-                        andThen(this.id, "Distinct", variables, KeyNames(expressions.keys.toIndexedSeq))
-
-  def symbols: SymbolTable = {
-    val variables = Eagerly.immutableMapValues(expressions, (e: Expression) => e.evaluateType(CTAny, source.symbols))
-    SymbolTable(variables)
-  }
-
-  def dup(sources: List[Pipe]): Pipe = {
-    val (source :: Nil) = sources
-    copy(source = source)(estimatedCardinality)
-  }
-
-  override def localEffects = expressions.effects(symbols)
 }

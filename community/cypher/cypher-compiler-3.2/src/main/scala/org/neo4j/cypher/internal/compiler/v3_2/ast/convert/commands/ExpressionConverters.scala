@@ -24,11 +24,11 @@ import org.neo4j.cypher.internal.compiler.v3_2.ast._
 import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.commands.PatternConverters._
 import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters.DesugaredMapProjection
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.ProjectedPath._
-import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{Expression => CommandExpression, InequalitySeekRangeExpression, ProjectedPath}
+import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{InequalitySeekRangeExpression, ProjectedPath, Expression => CommandExpression}
 import org.neo4j.cypher.internal.compiler.v3_2.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compiler.v3_2.commands.values.TokenType._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.values.UnresolvedRelType
-import org.neo4j.cypher.internal.compiler.v3_2.commands.{PathExtractorExpression, expressions => commandexpressions, predicates, values => commandvalues}
+import org.neo4j.cypher.internal.compiler.v3_2.commands.{PathExtractorExpression, predicates, expressions => commandexpressions, values => commandvalues}
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.ast.functions._
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.NonEmptyList
@@ -84,6 +84,8 @@ object ExpressionConverters {
             toCommandPredicate(expression)
           case e: ast.ContainerIndex=>
             commandexpressions.ContainerIndex(toCommandExpression(e.expr), toCommandExpression(e.idx))
+          case e: NestedPlanExpression =>
+            commands.expressions.NestedPlanExpression(e.plan)
         }
       case Exp => commandexpressions.ExpFunction(toCommandExpression(invocation.arguments.head))
       case Floor => commandexpressions.FloorFunction(toCommandExpression(invocation.arguments.head))
@@ -295,6 +297,7 @@ object ExpressionConverters {
       }
       commandexpressions.FunctionInvocation(e.fcnSignature.get, callArgumentCommands)
     case e: ast.MapProjection => throw new InternalException("should have been rewritten away")
+    case e: NestedPlanExpression => commandexpressions.NestedPlanExpression(e.plan)
     case _ =>
       throw new InternalException(s"Unknown expression type during transformation (${expression.getClass})")
   }

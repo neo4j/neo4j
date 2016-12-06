@@ -22,93 +22,14 @@ package org.neo4j.cypher.internal.compiler.v3_2.ast.convert.commands
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.commands.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{Expression => CommandExpression}
-import org.neo4j.cypher.internal.compiler.v3_2.commands.{expressions => commandexpressions, values => commandvalues}
+import org.neo4j.cypher.internal.compiler.v3_2.commands.{values => commandvalues}
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.UnNamedNameGenerator
-import org.neo4j.cypher.internal.frontend.v3_2.{InternalException, SemanticDirection, SyntaxException, ast}
+import org.neo4j.cypher.internal.frontend.v3_2.{SyntaxException, ast}
 
 object PatternConverters {
-  implicit class PatternConverter(val pattern: ast.Pattern) extends AnyVal {
-    def asLegacyPatterns: Seq[commands.Pattern] = pattern.patternParts.flatMap(_.asLegacyPatterns)
-    def asLegacyNamedPaths: Seq[commands.NamedPath] = pattern.patternParts.flatMap(_.asLegacyNamedPath)
-    def asLegacyCreates: Seq[mutation.UpdateAction] = pattern.patternParts.flatMap(_.asLegacyCreates)
-    def asAbstractPatterns: Seq[AbstractPattern] = pattern.patternParts.flatMap(_.asAbstractPatterns)
-  }
 
   implicit class RelationshipsPatternConverter(val pattern: ast.RelationshipsPattern) extends AnyVal {
     def asLegacyPatterns = pattern.element.asLegacyPatterns
-    def asLegacyNamedPath = None
-    def asLegacyCreates = pattern.element.asLegacyCreates
-    def asAbstractPatterns = pattern.element.asAbstractPatterns
-  }
-
-  implicit class PatternPartConverter(val part: ast.PatternPart) extends AnyVal {
-    def asLegacyPatterns: Seq[commands.Pattern] = part match {
-      case ast.NamedPatternPart(variable, anonPart) =>
-        anonPart.asLegacyPatterns(Some(variable.name))
-      case anonPart: ast.AnonymousPatternPart =>
-        anonPart.asLegacyPatterns(None)
-    }
-    def asLegacyNamedPath: Option[commands.NamedPath] = part match {
-      case ast.NamedPatternPart(variable, anonPart) =>
-        anonPart.asLegacyNamedPath(variable.name)
-      case anonPart: ast.AnonymousPatternPart =>
-        None
-    }
-    def asLegacyCreates: Seq[mutation.UpdateAction] = part match {
-      case ast.NamedPatternPart(variable, anonPart) =>
-        anonPart.asLegacyCreates
-      case anonPart: ast.AnonymousPatternPart =>
-        anonPart.asLegacyCreates
-    }
-    def asAbstractPatterns: Seq[AbstractPattern] = part match {
-      case ast.NamedPatternPart(variable, anonPart) =>
-        anonPart.asAbstractPatterns(Some(variable.name))
-      case anonPart: ast.AnonymousPatternPart =>
-        anonPart.asAbstractPatterns(None)
-    }
-  }
-
-  implicit class AnonymousPatternPartConverter(val part: ast.AnonymousPatternPart) extends AnyVal {
-    def asLegacyPatterns(maybePathName: Option[String]): Seq[commands.Pattern] = part match {
-      case part: ast.EveryPath =>
-        EveryPathConverter(part).asLegacyPatterns(maybePathName)
-      case part: ast.ShortestPaths =>
-        ShortestPathsConverter(part).asLegacyPatterns(maybePathName)
-    }
-
-    def asLegacyNamedPath(pathName: String): Option[commands.NamedPath] = part match {
-      case part: ast.EveryPath =>
-        EveryPathConverter(part).asLegacyNamedPath(pathName)
-      case part: ast.ShortestPaths =>
-        ShortestPathsConverter(part).asLegacyNamedPath(pathName)
-    }
-    def asLegacyCreates: Seq[mutation.UpdateAction] = part match {
-      case part: ast.EveryPath =>
-        EveryPathConverter(part).asLegacyCreates
-      case part: ast.ShortestPaths =>
-        throw new AssertionError("Unexpected conversion of ShortestPaths to UpdateAction")
-    }
-    def asAbstractPatterns(maybePathName: Option[String]): Seq[AbstractPattern] = part match {
-      case part: ast.EveryPath =>
-        EveryPathConverter(part).asAbstractPatterns(maybePathName)
-      case part: ast.ShortestPaths =>
-        throw new AssertionError("Unexpected conversion of ShortestPaths to AbstractPattern")
-    }
-  }
-
-  implicit class EveryPathConverter(val part: ast.EveryPath) extends AnyVal {
-    def asLegacyPatterns(maybePathName: Option[String]): Seq[commands.Pattern] =
-      part.element.asLegacyPatterns
-
-    def asLegacyNamedPath(pathName: String) =
-      Some(commands.NamedPath(pathName, part.element.asAbstractPatterns:_*))
-
-    def asLegacyCreates = part.element.asLegacyCreates
-
-    def asAbstractPatterns(maybePathName: Option[String]) = {
-      val patterns = part.element.asAbstractPatterns
-      maybePathName.fold(patterns)(n => Seq(ParsedNamedPath(n, patterns)))
-    }
   }
 
   implicit class ShortestPathsConverter(val part: ast.ShortestPaths) extends AnyVal {
@@ -129,31 +50,6 @@ object PatternConverters {
       }
       Seq(commands.ShortestPath(pathName, leftName, rightName, reltypes, rel.direction, allowZeroLength, maxDepth, part.single, relIteratorName))
     }
-
-    def asLegacyNamedPath(pathName: String) = None
-  }
-
-  implicit class PatternElementConverter(val element: ast.PatternElement) extends AnyVal {
-    def asLegacyPatterns: Seq[commands.Pattern] = element match {
-      case element: ast.RelationshipChain =>
-        RelationshipChainConverter(element).asLegacyPatterns
-      case element: ast.NodePattern =>
-        NodePatternConverter(element).asLegacyPatterns
-    }
-
-    def asLegacyCreates: Seq[mutation.UpdateAction] = element match {
-      case element: ast.RelationshipChain =>
-        RelationshipChainConverter(element).asLegacyCreates
-      case element: ast.NodePattern =>
-        NodePatternConverter(element).asLegacyCreates
-    }
-
-    def asAbstractPatterns: Seq[AbstractPattern] = element match {
-      case element: ast.RelationshipChain =>
-        RelationshipChainConverter(element).asAbstractPatterns
-      case element: ast.NodePattern =>
-        NodePatternConverter(element).asAbstractPatterns
-    }
   }
 
   implicit class RelationshipChainConverter(val chain: ast.RelationshipChain) extends AnyVal {
@@ -167,72 +63,10 @@ object PatternConverters {
 
       patterns :+ chain.relationship.asLegacyPattern(leftNode, chain.rightNode)
     }
-
-    def asLegacyCreates: Seq[mutation.CreateRelationship] = {
-      val (creates, leftEndpoint) = chain.element match {
-        case leftNode: ast.NodePattern        =>
-          (Vector(), leftNode.asRelationshipEndpoint)
-        case leftChain: ast.RelationshipChain =>
-          val creates = leftChain.asLegacyCreates
-          (creates, leftChain.rightNode.asRelationshipEndpoint)
-      }
-
-      creates :+ chain.relationship.asLegacyCreates(leftEndpoint, chain.rightNode.asRelationshipEndpoint)
-    }
-
-    def asAbstractPatterns: Seq[AbstractPattern] = {
-      def createParsedRelationship(node: ast.NodePattern): AbstractPattern = {
-        val props = chain.relationship.legacyProperties
-        val startNode = node.asAbstractPatterns.head.asInstanceOf[ParsedEntity]
-        val endNode = chain.rightNode.asAbstractPatterns.head.asInstanceOf[ParsedEntity]
-
-        val maxDepth = chain.relationship.length match {
-          case Some(Some(ast.Range(_, Some(i)))) => Some(i.value.toInt)
-          case _                                 => None
-        }
-
-        val minDepth = chain.relationship.length match {
-          case Some(Some(ast.Range(Some(i), _))) => Some(i.value.toInt)
-          case _                                 => None
-        }
-
-        chain.relationship.length match {
-          case None =>
-            ParsedRelation(
-              chain.relationship.legacyName, props, startNode, endNode,
-              chain.relationship.types.map(_.name), chain.relationship.direction, chain.relationship.optional)
-
-          case _    =>
-            val (relName, relIterator) = chain.relationship.variable match {
-              case Some(_) =>
-                (UnNamedNameGenerator.name(chain.relationship.position), Some(chain.relationship.legacyName))
-              case None =>
-                (chain.relationship.legacyName, None)
-            }
-
-            ParsedVarLengthRelation(relName, props, startNode, endNode, chain.relationship.types.map(_.name),
-              chain.relationship.direction, chain.relationship.optional, minDepth, maxDepth, relIterator)
-        }
-      }
-
-      chain.element match {
-        case node: ast.NodePattern      => Seq(createParsedRelationship(node))
-        case rel: ast.RelationshipChain => rel.asAbstractPatterns :+ createParsedRelationship(rel.rightNode)
-      }
-    }
   }
 
   implicit class NodePatternConverter(val node: ast.NodePattern) extends AnyVal {
-    def asLegacyPatterns = Seq(asLegacyNode)
 
-    def asLegacyCreates =
-      Seq(mutation.CreateNode(node.legacyName, node.legacyProperties, labels))
-
-    def asAbstractPatterns: Seq[AbstractPattern] =
-      Seq(ParsedEntity(node.legacyName, commandexpressions.Variable(node.legacyName), node.legacyProperties, labels))
-
-    def asRelationshipEndpoint: mutation.RelationshipEndpoint =
-      mutation.RelationshipEndpoint(commandexpressions.Variable(node.legacyName), node.legacyProperties, labels)
 
     def asLegacyNode = commands.SingleNode(node.legacyName, labels.map(x => commandvalues.UnresolvedLabel(x.name)), properties = node.legacyProperties)
 
@@ -264,19 +98,6 @@ object PatternConverters {
           commands.RelatedTo(leftNode.asLegacyNode, rightNode.asLegacyNode, relationship.legacyName,
             relationship.types.map(_.name).distinct, relationship.direction, legacyProperties)
       }
-    }
-
-    def asLegacyCreates(fromEnd: mutation.RelationshipEndpoint, toEnd: mutation.RelationshipEndpoint): mutation.CreateRelationship = {
-      val (from, to) = relationship.direction match {
-        case SemanticDirection.INCOMING => (toEnd, fromEnd)
-        // Direction.{OUTGOING|BOTH}
-        case _                  => (fromEnd, toEnd)
-      }
-      //Semantic checking enforces types.size == 1
-      val typeName = relationship.types.headOption.map(_.name).getOrElse(
-        throw new InternalException("Expected single relationship type"))
-
-      mutation.CreateRelationship(relationship.legacyName, from, to, typeName, legacyProperties)
     }
 
     def legacyName = relationship.variable.fold(UnNamedNameGenerator.name(relationship.position))(_.name)

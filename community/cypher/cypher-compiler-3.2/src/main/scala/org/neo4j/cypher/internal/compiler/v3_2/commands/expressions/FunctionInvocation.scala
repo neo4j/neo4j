@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.compiler.v3_2.helpers.{RuntimeJavaValueConverte
 import org.neo4j.cypher.internal.compiler.v3_2.mutation.GraphElementPropertyFunctions
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_2.spi.UserFunctionSignature
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 
 case class FunctionInvocation(signature: UserFunctionSignature, arguments: IndexedSeq[Expression])
   extends Expression with GraphElementPropertyFunctions {
@@ -44,8 +43,6 @@ case class FunctionInvocation(signature: UserFunctionSignature, arguments: Index
 
   override def rewrite(f: (Expression) => Expression) =
     f(FunctionInvocation(signature, arguments.map(a => a.rewrite(f))))
-
-  override def calculateType(symbols: SymbolTable) = signature.outputType
 
   override def symbolTableDependencies = arguments.flatMap(_.symbolTableDependencies).toSet
 

@@ -22,8 +22,6 @@ package org.neo4j.cypher.internal.compiler.v3_2.planner
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.plannerQuery.StatementConverters._
 import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters.{normalizeReturnClauses, normalizeWithClauses}
-import org.neo4j.cypher.internal.compiler.v3_2.pipes.EntityProducer
-import org.neo4j.cypher.internal.compiler.v3_2.pipes.matching.{ExpanderStep, TraversalMatcher}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.cardinality.QueryGraphCardinalityModel
@@ -39,7 +37,6 @@ import org.neo4j.cypher.internal.frontend.v3_2.parser.CypherParser
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.frontend.v3_2.{Foldable, PropertyKeyId, SemanticTable, _}
 import org.neo4j.cypher.internal.ir.v3_2.{Cardinality, IdName}
-import org.neo4j.graphdb.Node
 import org.neo4j.helpers.collection.Visitable
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.index.IndexDescriptor
@@ -148,10 +145,6 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       def getLabelId(labelName: String): Int = ???
 
       def txIdProvider: () => Long = ???
-
-      override def monoDirectionalTraversalMatcher(steps: ExpanderStep, start: EntityProducer[Node]): TraversalMatcher = ???
-
-      override def bidirectionalTraversalMatcher(steps: ExpanderStep, start: EntityProducer[Node], end: EntityProducer[Node]): TraversalMatcher = ???
 
       override def hasPropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean = ???
 
