@@ -43,7 +43,6 @@ import org.neo4j.causalclustering.core.state.machines.token.TokenRegistry;
 import org.neo4j.causalclustering.core.state.machines.tx.RecoverConsensusLogIndex;
 import org.neo4j.causalclustering.core.state.machines.tx.ReplicatedTransactionCommitProcess;
 import org.neo4j.causalclustering.core.state.machines.tx.ReplicatedTransactionStateMachine;
-import org.neo4j.causalclustering.core.state.storage.DurableStateStorage;
 import org.neo4j.causalclustering.core.state.storage.StateStorage;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.io.fs.FileSystemAbstraction;

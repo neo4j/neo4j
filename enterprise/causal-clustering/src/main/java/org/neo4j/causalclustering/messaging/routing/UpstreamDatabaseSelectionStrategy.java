@@ -19,10 +19,9 @@
  */
 package org.neo4j.causalclustering.messaging.routing;
 
-public class CoreMemberSelectionException extends Exception
+import org.neo4j.causalclustering.identity.MemberId;
+
+public interface UpstreamDatabaseSelectionStrategy
 {
-    public CoreMemberSelectionException( String message )
-    {
-        super( message );
-    }
+    MemberId upstreamDatabase() throws UpstreamDatabaseSelectionException;
 }

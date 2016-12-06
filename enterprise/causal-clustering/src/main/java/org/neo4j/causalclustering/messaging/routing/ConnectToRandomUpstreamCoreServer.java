@@ -26,24 +26,24 @@ import org.neo4j.causalclustering.discovery.CoreTopology;
 import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.MemberId;
 
-public class ConnectToRandomCoreMember implements CoreMemberSelectionStrategy
+public class ConnectToRandomUpstreamCoreServer implements UpstreamDatabaseSelectionStrategy
 {
     private final TopologyService discoveryService;
     private final Random random = new Random();
 
-    public ConnectToRandomCoreMember( TopologyService discoveryService )
+    public ConnectToRandomUpstreamCoreServer( TopologyService discoveryService )
     {
         this.discoveryService = discoveryService;
     }
 
     @Override
-    public MemberId coreMember() throws CoreMemberSelectionException
+    public MemberId upstreamDatabase() throws UpstreamDatabaseSelectionException
     {
         final CoreTopology coreTopology = discoveryService.coreServers();
 
         if ( coreTopology.members().size() == 0 )
         {
-            throw new CoreMemberSelectionException( "No core servers available" );
+            throw new UpstreamDatabaseSelectionException( "No core servers available" );
         }
 
         int skippedServers = random.nextInt( coreTopology.members().size() );

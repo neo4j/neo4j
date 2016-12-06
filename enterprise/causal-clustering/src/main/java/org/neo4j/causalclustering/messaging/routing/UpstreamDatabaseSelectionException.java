@@ -19,21 +19,10 @@
  */
 package org.neo4j.causalclustering.messaging.routing;
 
-import org.neo4j.causalclustering.core.consensus.outcome.Outcome;
-import org.neo4j.causalclustering.identity.MemberId;
-
-public class LeaderOnlySelectionStrategy implements CoreMemberSelectionStrategy
+public class UpstreamDatabaseSelectionException extends Exception
 {
-    private final Outcome outcome;
-
-    public LeaderOnlySelectionStrategy( Outcome outcome )
+    UpstreamDatabaseSelectionException( String message )
     {
-        this.outcome = outcome;
-    }
-
-    @Override
-    public MemberId coreMember() throws CoreMemberSelectionException
-    {
-        return (MemberId) outcome.getLeader();
+        super( message );
     }
 }

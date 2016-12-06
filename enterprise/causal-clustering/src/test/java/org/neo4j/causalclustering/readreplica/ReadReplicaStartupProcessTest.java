@@ -34,7 +34,9 @@ import org.neo4j.causalclustering.discovery.CoreTopology;
 import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
-import org.neo4j.causalclustering.messaging.routing.AlwaysChooseFirstMember;
+import org.neo4j.causalclustering.messaging.routing.UpstreamDatabaseSelectionException;
+import org.neo4j.causalclustering.messaging.routing.UpstreamDatabaseSelectionStrategy;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.NullLogProvider;
 
@@ -164,5 +166,22 @@ public class ReadReplicaStartupProcessTest
         // then
         verify( txPulling ).stop();
         verify( localDatabase ).stop();
+    }
+
+    private static class AlwaysChooseFirstMember implements UpstreamDatabaseSelectionStrategy
+    {
+        private final TopologyService discoveryService;
+
+        public AlwaysChooseFirstMember( TopologyService discoveryService)
+        {
+            this.discoveryService = discoveryService;
+        }
+
+        @Override
+        public MemberId upstreamDatabase() throws UpstreamDatabaseSelectionException
+        {
+            CoreTopology coreTopology = discoveryService.coreServers();
+            return coreTopology.members().iterator().next();
+        }
     }
 }

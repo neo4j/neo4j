@@ -23,18 +23,17 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.concurrent.CompletableFuture;
-
 import java.util.concurrent.Future;
 
 import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.CatchUpResponseCallback;
 import org.neo4j.causalclustering.catchup.CatchupResult;
-import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
+import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
 import org.neo4j.causalclustering.core.consensus.schedule.ControlledRenewableTimeoutService;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
-import org.neo4j.causalclustering.messaging.routing.CoreMemberSelectionStrategy;
+import org.neo4j.causalclustering.messaging.routing.UpstreamDatabaseSelectionStrategy;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -61,7 +60,7 @@ import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_I
 public class CatchupPollingProcessTest
 {
     private final CatchUpClient catchUpClient = mock( CatchUpClient.class );
-    private final CoreMemberSelectionStrategy serverSelection = mock( CoreMemberSelectionStrategy.class );
+    private final UpstreamDatabaseSelectionStrategy serverSelection = mock( UpstreamDatabaseSelectionStrategy.class );
     private final MemberId coreMemberId = mock( MemberId.class );
     private final TransactionIdStore idStore = mock( TransactionIdStore.class );
 
@@ -86,7 +85,7 @@ public class CatchupPollingProcessTest
     public void before() throws Throwable
     {
         when( idStore.getLastCommittedTransactionId() ).thenReturn( BASE_TX_ID );
-        when( serverSelection.coreMember() ).thenReturn( coreMemberId );
+        when( serverSelection.upstreamDatabase() ).thenReturn( coreMemberId );
     }
 
     @Test

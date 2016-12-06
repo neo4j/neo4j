@@ -28,9 +28,9 @@ import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.storecopy.CopiedStoreRecovery;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
+import org.neo4j.causalclustering.catchup.storecopy.RemoteStore;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyClient;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
-import org.neo4j.causalclustering.catchup.storecopy.RemoteStore;
 import org.neo4j.causalclustering.catchup.storecopy.StoreFiles;
 import org.neo4j.causalclustering.catchup.tx.BatchingTxApplier;
 import org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess;
@@ -38,11 +38,11 @@ import org.neo4j.causalclustering.catchup.tx.TransactionLogCatchUpFactory;
 import org.neo4j.causalclustering.catchup.tx.TxPullClient;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.consensus.schedule.DelayedRenewableTimeoutService;
-import org.neo4j.causalclustering.helper.ExponentialBackoffStrategy;
 import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
 import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.discovery.procedures.ReadReplicaRoleProcedure;
-import org.neo4j.causalclustering.messaging.routing.ConnectToRandomCoreMember;
+import org.neo4j.causalclustering.helper.ExponentialBackoffStrategy;
+import org.neo4j.causalclustering.messaging.routing.ConnectToRandomUpstreamCoreServer;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -108,7 +108,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
     }
 
     EnterpriseReadReplicaEditionModule( final PlatformModule platformModule,
-                                 final DiscoveryServiceFactory discoveryServiceFactory )
+            final DiscoveryServiceFactory discoveryServiceFactory )
     {
         LogService logging = platformModule.logging;
 
@@ -133,30 +133,32 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         statementLocksFactory = new StatementLocksFactorySelector( lockManager, config, logging ).select();
 
         idTypeConfigurationProvider = new EnterpriseIdTypeConfigurationProvider( config );
-        idGeneratorFactory = dependencies.satisfyDependency( new DefaultIdGeneratorFactory( fileSystem,
-                idTypeConfigurationProvider ) );
+        idGeneratorFactory = dependencies
+                .satisfyDependency( new DefaultIdGeneratorFactory( fileSystem, idTypeConfigurationProvider ) );
         dependencies.satisfyDependency( new IdBasedStoreEntityCounters( this.idGeneratorFactory ) );
 
-        propertyKeyTokenHolder = life.add( dependencies.satisfyDependency(
-                new DelegatingPropertyKeyTokenHolder( new ReadOnlyTokenCreator() ) ) );
-        labelTokenHolder = life.add( dependencies.satisfyDependency(
-                new DelegatingLabelTokenHolder( new ReadOnlyTokenCreator() ) ) );
-        relationshipTypeTokenHolder = life.add( dependencies.satisfyDependency(
-                new DelegatingRelationshipTypeTokenHolder( new ReadOnlyTokenCreator() ) ) );
+        propertyKeyTokenHolder = life.add(
+                dependencies.satisfyDependency( new DelegatingPropertyKeyTokenHolder( new ReadOnlyTokenCreator() ) ) );
+        labelTokenHolder = life.add(
+                dependencies.satisfyDependency( new DelegatingLabelTokenHolder( new ReadOnlyTokenCreator() ) ) );
+        relationshipTypeTokenHolder = life.add( dependencies
+                .satisfyDependency( new DelegatingRelationshipTypeTokenHolder( new ReadOnlyTokenCreator() ) ) );
 
         life.add( dependencies.satisfyDependency(
                 new DefaultKernelData( fileSystem, pageCache, storeDir, config, graphDatabaseFacade ) ) );
 
         headerInformationFactory = TransactionHeaderInformationFactory.DEFAULT;
 
-        schemaWriteGuard = () -> {};
+        schemaWriteGuard = () ->
+        {
+        };
 
         transactionStartTimeout = config.get( GraphDatabaseSettings.transaction_start_timeout );
 
         constraintSemantics = new EnterpriseConstraintSemantics();
 
-        coreAPIAvailabilityGuard = new CoreAPIAvailabilityGuard( platformModule.availabilityGuard,
-                transactionStartTimeout );
+        coreAPIAvailabilityGuard =
+                new CoreAPIAvailabilityGuard( platformModule.availabilityGuard, transactionStartTimeout );
 
         registerRecovery( platformModule.databaseInfo, life, dependencies );
 
@@ -165,19 +167,21 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
 
         LogProvider logProvider = platformModule.logging.getInternalLogProvider();
 
-        DelayedRenewableTimeoutService refreshReadReplicaTimeoutService = life.add( new DelayedRenewableTimeoutService(
-                Clocks.systemClock(), logProvider ) );
+        DelayedRenewableTimeoutService refreshReadReplicaTimeoutService =
+                life.add( new DelayedRenewableTimeoutService( Clocks.systemClock(), logProvider ) );
 
         long readReplicaTimeToLiveTimeout = config.get( CausalClusteringSettings.read_replica_time_to_live );
         long readReplicaRefreshRate = config.get( CausalClusteringSettings.read_replica_refresh_rate );
 
-        TopologyService discoveryService = discoveryServiceFactory.readReplicaDiscoveryService( config,
-                logProvider, refreshReadReplicaTimeoutService, readReplicaTimeToLiveTimeout, readReplicaRefreshRate );
+        TopologyService discoveryService = discoveryServiceFactory
+                .readReplicaDiscoveryService( config, logProvider, refreshReadReplicaTimeoutService,
+                        readReplicaTimeToLiveTimeout, readReplicaRefreshRate );
         life.add( dependencies.satisfyDependency( discoveryService ) );
 
         long inactivityTimeoutMillis = config.get( CausalClusteringSettings.catch_up_client_inactivity_timeout );
-        CatchUpClient catchUpClient = life.add( new CatchUpClient( discoveryService, logProvider, Clocks.systemClock(),
-                inactivityTimeoutMillis, monitors ) );
+        CatchUpClient catchUpClient = life.add(
+                new CatchUpClient( discoveryService, logProvider, Clocks.systemClock(), inactivityTimeoutMillis,
+                        monitors ) );
 
         final Supplier<DatabaseHealth> databaseHealthSupplier = dependencies.provideDependency( DatabaseHealth.class );
 
@@ -187,30 +191,27 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
 
         LifeSupport txPulling = new LifeSupport();
         int maxBatchSize = config.get( CausalClusteringSettings.read_replica_transaction_applier_batch_size );
-        BatchingTxApplier batchingTxApplier = new BatchingTxApplier( maxBatchSize,
-                dependencies.provideDependency( TransactionIdStore.class ),
-                writableCommitProcess, platformModule.monitors, logProvider );
+        BatchingTxApplier batchingTxApplier =
+                new BatchingTxApplier( maxBatchSize, dependencies.provideDependency( TransactionIdStore.class ),
+                        writableCommitProcess, platformModule.monitors, logProvider );
 
         DelayedRenewableTimeoutService catchupTimeoutService =
                 new DelayedRenewableTimeoutService( Clocks.systemClock(), logProvider );
 
-        LocalDatabase localDatabase = new LocalDatabase( platformModule.storeDir,
-                new StoreFiles( fileSystem ),
-                platformModule.dataSourceManager,
-                pageCache,
-                fileSystem,
-                databaseHealthSupplier,
-                logProvider );
+        LocalDatabase localDatabase =
+            new LocalDatabase( platformModule.storeDir, new StoreFiles( fileSystem ), platformModule.dataSourceManager,
+                    pageCache, fileSystem, databaseHealthSupplier, logProvider );
 
-        RemoteStore remoteStore = new RemoteStore( platformModule.logging.getInternalLogProvider(),
-                fileSystem, platformModule.pageCache,
-                new StoreCopyClient( catchUpClient, logProvider ),
-                new TxPullClient( catchUpClient, platformModule.monitors ),
-                new TransactionLogCatchUpFactory(),
-                platformModule.monitors );
+        RemoteStore remoteStore =
+                new RemoteStore( platformModule.logging.getInternalLogProvider(), fileSystem, platformModule.pageCache,
+                        new StoreCopyClient( catchUpClient, logProvider ),
+                        new TxPullClient( catchUpClient, platformModule.monitors ), new TransactionLogCatchUpFactory(),
+                        platformModule.monitors );
 
-        CopiedStoreRecovery copiedStoreRecovery = new CopiedStoreRecovery( config,
-                platformModule.kernelExtensions.listFactories(), platformModule.pageCache );
+        CopiedStoreRecovery copiedStoreRecovery =
+                new CopiedStoreRecovery( config, platformModule.kernelExtensions.listFactories(),
+                        platformModule.pageCache );
+
         txPulling.add( copiedStoreRecovery );
 
         LifeSupport servicesToStopOnStoreCopy = new LifeSupport();
@@ -237,15 +238,14 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
             } );
         }
 
-        StoreCopyProcess storeCopyProcess = new StoreCopyProcess( fileSystem, localDatabase,
-                copiedStoreRecovery, remoteStore, logProvider );
+        StoreCopyProcess storeCopyProcess =
+                new StoreCopyProcess( fileSystem, localDatabase, copiedStoreRecovery, remoteStore, logProvider );
 
         CatchupPollingProcess catchupProcess =
-                new CatchupPollingProcess( logProvider, localDatabase, servicesToStopOnStoreCopy,
-                        catchUpClient, new ConnectToRandomCoreMember( discoveryService ), catchupTimeoutService,
+                new CatchupPollingProcess( logProvider, localDatabase, servicesToStopOnStoreCopy, catchUpClient,
+                        new ConnectToRandomUpstreamCoreServer( discoveryService ), catchupTimeoutService,
                         config.get( CausalClusteringSettings.pull_interval ), batchingTxApplier,
                         platformModule.monitors, storeCopyProcess, databaseHealthSupplier );
-
         dependencies.satisfyDependencies( catchupProcess );
 
         txPulling.add( batchingTxApplier );
@@ -255,17 +255,16 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
 
         ExponentialBackoffStrategy retryStrategy = new ExponentialBackoffStrategy( 1, 30, TimeUnit.SECONDS );
         life.add( new ReadReplicaStartupProcess( remoteStore, localDatabase, txPulling,
-                new ConnectToRandomCoreMember( discoveryService ),
-                retryStrategy, logProvider,
+                new ConnectToRandomUpstreamCoreServer( discoveryService ), retryStrategy, logProvider,
                 platformModule.logging.getUserLogProvider(), storeCopyProcess ) );
-
         dependencies.satisfyDependency( createSessionTracker() );
     }
 
     private void registerRecovery( final DatabaseInfo databaseInfo, LifeSupport life,
-                                   final DependencyResolver dependencyResolver )
+            final DependencyResolver dependencyResolver )
     {
-        life.addLifecycleListener( ( instance, from, to ) -> {
+        life.addLifecycleListener( ( instance, from, to ) ->
+        {
             if ( instance instanceof DatabaseAvailability && to.equals( LifecycleStatus.STARTED ) )
             {
                 doAfterRecoveryAndStartup( databaseInfo, dependencyResolver );
