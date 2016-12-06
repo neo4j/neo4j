@@ -37,4 +37,13 @@ class StructurePropagation<KEY>
     {
         this.primKey = primKey;
     }
+
+    /**
+     * Clear booleans indicating change has occurred.
+     */
+    void clear()
+    {
+        hasNewGen = false;
+        hasSplit = false;
+    }
 }

@@ -445,7 +445,6 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
 
             if ( structurePropagation.hasSplit )
             {
-                structurePropagation.hasSplit = false;
                 // New root
                 long newRootId = acquireNewId();
                 if ( !cursor.next( newRootId ) )
@@ -464,7 +463,7 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
             {
                 rootId = structurePropagation.left;
             }
-            structurePropagation.hasNewGen = false;
+            structurePropagation.clear();
 
             checkOutOfBounds( cursor );
         }
@@ -478,9 +477,9 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
                     stableGeneration, unstableGeneration );
             if ( structurePropagation.hasNewGen )
             {
-                structurePropagation.hasNewGen = false;
                 rootId = structurePropagation.left;
             }
+            structurePropagation.clear();
 
             checkOutOfBounds( cursor );
             return result;
