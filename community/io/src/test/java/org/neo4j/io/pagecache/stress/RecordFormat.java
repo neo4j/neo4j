@@ -67,9 +67,9 @@ public class RecordFormat
         int fieldOffset = recordOffset + (fieldSize * threadId);
         int checksumOffset = recordOffset + checksumFieldOffset;
 
-        long newValue = 1 + cursor.getLong( fieldOffset );
-        cursor.putLong( fieldOffset, newValue );
-        cursor.putLong( checksumOffset, 1 + cursor.getLong( checksumOffset ) );
+        long newValue = 1 + cursor.getLongBE( fieldOffset );
+        cursor.putLongBE( fieldOffset, newValue );
+        cursor.putLongBE( checksumOffset, 1 + cursor.getLongBE( checksumOffset ) );
         return newValue;
     }
 
@@ -86,7 +86,7 @@ public class RecordFormat
             sum = 0;
             for ( int i = 0; i < recordsPerPage; i++ )
             {
-                sum += cursor.getLong( (i * recordSize) + fieldOffset );
+                sum += cursor.getLongBE( (i * recordSize) + fieldOffset );
             }
         }
         while ( cursor.shouldRetry() );
@@ -109,9 +109,9 @@ public class RecordFormat
                 actualChecksum = 0;
                 for ( int j = 0; j < numberOfThreads; j++ )
                 {
-                    actualChecksum += cursor.getLong( recordOffset + (j * fieldSize) );
+                    actualChecksum += cursor.getLongBE( recordOffset + (j * fieldSize) );
                 }
-                expectedChecksum = cursor.getLong( recordOffset + checksumFieldOffset );
+                expectedChecksum = cursor.getLongBE( recordOffset + checksumFieldOffset );
             }
             while ( cursor.shouldRetry() );
             String msg = "Checksum for record " + i + " on page " + cursor.getCurrentPageId();

@@ -143,13 +143,13 @@ final class MuninnReadPageCursor extends MuninnPageCursor
     }
 
     @Override
-    public void putLong( long value )
+    public void putLongBE( long value )
     {
         throw new IllegalStateException( "Cannot write to read-locked page" );
     }
 
     @Override
-    public void putInt( int value )
+    public void putIntBE( int value )
     {
         throw new IllegalStateException( "Cannot write to read-locked page" );
     }
@@ -161,7 +161,7 @@ final class MuninnReadPageCursor extends MuninnPageCursor
     }
 
     @Override
-    public void putShort( short value )
+    public void putShortBE( short value )
     {
         throw new IllegalStateException( "Cannot write to read-locked page" );
     }

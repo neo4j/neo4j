@@ -493,7 +493,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
                     {
                         cursor.setOffset( offset );
                         cursor.putByte( Record.NOT_IN_USE.byteValue() );
-                        cursor.putInt( 0 );
+                        cursor.putIntBE( 0 );
                         freedBatch[defragged++] = recordId;
                     }
                 }

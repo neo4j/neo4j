@@ -57,7 +57,7 @@ public class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRe
          * [    ,    ][xxxx,xxxx][xxxx,xxxx][xxxx,xxxx] nr of bytes in the data field in this record
          *
          */
-        long firstInteger = cursor.getInt() & 0xFFFFFFFFL;
+        long firstInteger = cursor.getIntBE() & 0xFFFFFFFFL;
         boolean isStartRecord = (firstInteger & 0x80000000) == 0;
         boolean inUse = (firstInteger & 0x10000000) != 0;
         if ( mode.shouldLoad( inUse ) )
@@ -75,7 +75,7 @@ public class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRe
             /*
              * Pointer to next block 4b (low bits of the pointer)
              */
-            long nextBlock = cursor.getInt() & 0xFFFFFFFFL;
+            long nextBlock = cursor.getIntBE() & 0xFFFFFFFFL;
             long nextModifier = (firstInteger & 0xF000000L) << 8;
 
             long longNextBlock = BaseRecordFormat.longFromIntAndMod( nextBlock, nextModifier );
@@ -150,8 +150,8 @@ public class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRe
 
             firstInteger |= highByteInFirstInteger;
 
-            cursor.putInt( firstInteger );
-            cursor.putInt( (int) nextBlock );
+            cursor.putIntBE( firstInteger );
+            cursor.putIntBE( (int) nextBlock );
             cursor.putBytes( record.getData() );
         }
         else

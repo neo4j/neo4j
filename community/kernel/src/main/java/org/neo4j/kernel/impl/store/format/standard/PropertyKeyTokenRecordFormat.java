@@ -38,15 +38,15 @@ public class PropertyKeyTokenRecordFormat extends TokenRecordFormat<PropertyKeyT
     @Override
     protected void readRecordData( PageCursor cursor, PropertyKeyTokenRecord record, boolean inUse )
     {
-        int propertyCount = cursor.getInt();
-        int nameId = cursor.getInt();
+        int propertyCount = cursor.getIntBE();
+        int nameId = cursor.getIntBE();
         record.initialize( inUse, nameId, propertyCount );
     }
 
     @Override
     protected void writeRecordData( PropertyKeyTokenRecord record, PageCursor cursor )
     {
-        cursor.putInt( record.getPropertyCount() );
-        cursor.putInt( record.getNameId() );
+        cursor.putIntBE( record.getPropertyCount() );
+        cursor.putIntBE( record.getNameId() );
     }
 }

@@ -54,9 +54,9 @@ public class StandardRecordFormat extends RecordFormat
             cursor.setOffset( offset );
             t = cursor.getByte();
             f = cursor.getByte();
-            f1 = cursor.getShort();
-            r = cursor.getInt();
-            f2 = cursor.getLong();
+            f1 = cursor.getShortBE();
+            r = cursor.getIntBE();
+            f2 = cursor.getLongBE();
         }
         while ( cursor.shouldRetry() );
         return new StandardRecord( t, f, f1, r, f2 );
@@ -80,9 +80,9 @@ public class StandardRecordFormat extends RecordFormat
         byte fileByte = pathBytes[pathBytes.length - 1];
         cursor.putByte( r.type );
         cursor.putByte( fileByte );
-        cursor.putShort( r.fill1 );
-        cursor.putInt( r.recordId );
-        cursor.putLong( r.fill2 );
+        cursor.putShortBE( r.fill1 );
+        cursor.putIntBE( r.recordId );
+        cursor.putLongBE( r.fill2 );
     }
 
     static final class StandardRecord implements Record

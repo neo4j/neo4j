@@ -60,14 +60,14 @@ public class PropertyRecordFormat extends BaseRecordFormat<PropertyRecord>
         byte modifiers = cursor.getByte();
         long prevMod = (modifiers & 0xF0L) << 28;
         long nextMod = (modifiers & 0x0FL) << 32;
-        long prevProp = cursor.getInt() & 0xFFFFFFFFL;
-        long nextProp = cursor.getInt() & 0xFFFFFFFFL;
+        long prevProp = cursor.getIntBE() & 0xFFFFFFFFL;
+        long nextProp = cursor.getIntBE() & 0xFFFFFFFFL;
         record.initialize( false,
                 BaseRecordFormat.longFromIntAndMod( prevProp, prevMod ),
                 BaseRecordFormat.longFromIntAndMod( nextProp, nextMod ) );
         while ( cursor.getOffset() - offsetAtBeginning < RECORD_SIZE )
         {
-            long block = cursor.getLong();
+            long block = cursor.getLongBE();
             PropertyType type = PropertyType.getPropertyTypeOrNull( block );
             if ( type == null )
             {
@@ -91,7 +91,7 @@ public class PropertyRecordFormat extends BaseRecordFormat<PropertyRecord>
             }
             while ( additionalBlocks --> 0 )
             {
-                record.addLoadedBlock( cursor.getLong() );
+                record.addLoadedBlock( cursor.getLongBE() );
             }
         }
     }
@@ -111,8 +111,8 @@ public class PropertyRecordFormat extends BaseRecordFormat<PropertyRecord>
              * [pppp,nnnn] previous, next high bits
              */
             cursor.putByte( modifiers );
-            cursor.putInt( (int) record.getPrevProp() );
-            cursor.putInt( (int) record.getNextProp() );
+            cursor.putIntBE( (int) record.getPrevProp() );
+            cursor.putIntBE( (int) record.getNextProp() );
 
             // Then go through the blocks
             int longsAppended = 0; // For marking the end of blocks
@@ -121,21 +121,21 @@ public class PropertyRecordFormat extends BaseRecordFormat<PropertyRecord>
                 long[] propBlockValues = block.getValueBlocks();
                 for ( long propBlockValue : propBlockValues )
                 {
-                    cursor.putLong( propBlockValue );
+                    cursor.putLongBE( propBlockValue );
                 }
 
                 longsAppended += propBlockValues.length;
             }
             if ( longsAppended < PropertyType.getPayloadSizeLongs() )
             {
-                cursor.putLong( 0 );
+                cursor.putLongBE( 0 );
             }
         }
         else
         {
             // skip over the record header, nothing useful there
             cursor.setOffset( cursor.getOffset() + 9 );
-            cursor.putLong( 0 );
+            cursor.putLongBE( 0 );
         }
     }
 
@@ -156,7 +156,7 @@ public class PropertyRecordFormat extends BaseRecordFormat<PropertyRecord>
         int blocks = PropertyType.getPayloadSizeLongs();
         for ( int i = 0; i < blocks; i++ )
         {
-            long block = cursor.getLong();
+            long block = cursor.getLongBE();
             if ( PropertyType.getPropertyTypeOrNull( block ) != null )
             {
                 return true;

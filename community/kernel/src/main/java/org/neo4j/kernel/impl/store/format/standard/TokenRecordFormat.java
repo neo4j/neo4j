@@ -48,7 +48,7 @@ public abstract class TokenRecordFormat<RECORD extends TokenRecord> extends Base
 
     protected void readRecordData( PageCursor cursor, RECORD record, boolean inUse )
     {
-        record.initialize( inUse, cursor.getInt() );
+        record.initialize( inUse, cursor.getIntBE() );
     }
 
     @Override
@@ -67,6 +67,6 @@ public abstract class TokenRecordFormat<RECORD extends TokenRecord> extends Base
 
     protected void writeRecordData( RECORD record, PageCursor cursor )
     {
-        cursor.putInt( record.getNameId() );
+        cursor.putIntBE( record.getNameId() );
     }
 }

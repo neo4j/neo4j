@@ -220,49 +220,49 @@ class AdversarialReadPageCursor extends PageCursor
     }
 
     @Override
-    public long getLong()
+    public long getLongBE()
     {
-        return inconsistently( delegate.getLong() ).longValue();
+        return inconsistently( delegate.getLongBE() ).longValue();
     }
 
     @Override
-    public long getLong( int offset )
+    public long getLongBE( int offset )
     {
-        return inconsistently( delegate.getLong( offset ) ).longValue();
+        return inconsistently( delegate.getLongBE( offset ) ).longValue();
     }
 
     @Override
-    public void putLong( long value )
-    {
-        throw new IllegalStateException( "Cannot write using read cursor" );
-    }
-
-    @Override
-    public void putLong( int offset, long value )
+    public void putLongBE( long value )
     {
         throw new IllegalStateException( "Cannot write using read cursor" );
     }
 
     @Override
-    public int getInt()
-    {
-        return inconsistently( delegate.getInt() ).intValue();
-    }
-
-    @Override
-    public int getInt( int offset )
-    {
-        return inconsistently( delegate.getInt( offset ) ).intValue();
-    }
-
-    @Override
-    public void putInt( int value )
+    public void putLongBE( int offset, long value )
     {
         throw new IllegalStateException( "Cannot write using read cursor" );
     }
 
     @Override
-    public void putInt( int offset, int value )
+    public int getIntBE()
+    {
+        return inconsistently( delegate.getIntBE() ).intValue();
+    }
+
+    @Override
+    public int getIntBE( int offset )
+    {
+        return inconsistently( delegate.getIntBE( offset ) ).intValue();
+    }
+
+    @Override
+    public void putIntBE( int value )
+    {
+        throw new IllegalStateException( "Cannot write using read cursor" );
+    }
+
+    @Override
+    public void putIntBE( int offset, int value )
     {
         throw new IllegalStateException( "Cannot write using read cursor" );
     }
@@ -294,25 +294,25 @@ class AdversarialReadPageCursor extends PageCursor
     }
 
     @Override
-    public short getShort()
+    public short getShortBE()
     {
-        return inconsistently( delegate.getShort() ).shortValue();
+        return inconsistently( delegate.getShortBE() ).shortValue();
     }
 
     @Override
-    public short getShort( int offset )
+    public short getShortBE( int offset )
     {
-        return inconsistently( delegate.getShort( offset ) ).shortValue();
+        return inconsistently( delegate.getShortBE( offset ) ).shortValue();
     }
 
     @Override
-    public void putShort( short value )
+    public void putShortBE( short value )
     {
         throw new IllegalStateException( "Cannot write using read cursor" );
     }
 
     @Override
-    public void putShort( int offset, short value )
+    public void putShortBE( int offset, short value )
     {
         throw new IllegalStateException( "Cannot write using read cursor" );
     }

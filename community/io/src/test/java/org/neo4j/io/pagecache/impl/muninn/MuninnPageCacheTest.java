@@ -127,7 +127,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
         {
             assertTrue( cursor.next() );
-            cursor.putLong( 0L );
+            cursor.putLongBE( 0L );
         }
         assertNotNull( tracer.observe( Fault.class ) );
 
@@ -155,7 +155,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         try ( PageCursor cursor = pagedFile.io( 1, PF_SHARED_WRITE_LOCK ) )
         {
             assertTrue( cursor.next() );
-            cursor.putLong( 0L );
+            cursor.putLongBE( 0L );
         }
         assertNotNull( tracer.observe( Fault.class ) );
 
@@ -183,9 +183,9 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK | PF_NO_GROW ) )
         {
             assertTrue( cursor.next() );
-            cursor.putLong( 0L );
+            cursor.putLongBE( 0L );
             assertTrue( cursor.next() );
-            cursor.putLong( 0L );
+            cursor.putLongBE( 0L );
             assertFalse( cursor.next() );
         }
         assertNotNull( tracer.observe( Fault.class ) );
@@ -216,7 +216,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
             try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
             {
                 assertTrue( cursor.next() );
-                cursor.putLong( 41 );
+                cursor.putLongBE( 41 );
             }
             catch ( IOException e )
             {
@@ -228,9 +228,9 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
         {
             assertTrue( cursor.next() );
-            long value = cursor.getLong();
+            long value = cursor.getLongBE();
             cursor.setOffset( 0 );
-            cursor.putLong( value + 1 );
+            cursor.putLongBE( value + 1 );
         }
 
         int clockArm = pageCache.evictPages( 1, 0, EvictionRunEvent.NULL );

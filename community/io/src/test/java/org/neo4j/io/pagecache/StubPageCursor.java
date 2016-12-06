@@ -220,15 +220,15 @@ public class StubPageCursor extends PageCursor
     }
 
     @Override
-    public long getLong()
+    public long getLongBE()
     {
-        long value = getLong( currentOffset );
+        long value = getLongBE( currentOffset );
         currentOffset += 8;
         return value;
     }
 
     @Override
-    public long getLong( int offset )
+    public long getLongBE( int offset )
     {
         try
         {
@@ -241,14 +241,14 @@ public class StubPageCursor extends PageCursor
     }
 
     @Override
-    public void putLong( long value )
+    public void putLongBE( long value )
     {
-        putLong( currentOffset, value );
+        putLongBE( currentOffset, value );
         currentOffset += 8;
     }
 
     @Override
-    public void putLong( int offset, long value )
+    public void putLongBE( int offset, long value )
     {
         try
         {
@@ -261,15 +261,15 @@ public class StubPageCursor extends PageCursor
     }
 
     @Override
-    public int getInt()
+    public int getIntBE()
     {
-        int value = getInt( currentOffset );
+        int value = getIntBE( currentOffset );
         currentOffset += 4;
         return value;
     }
 
     @Override
-    public int getInt( int offset )
+    public int getIntBE( int offset )
     {
         try
         {
@@ -282,14 +282,14 @@ public class StubPageCursor extends PageCursor
     }
 
     @Override
-    public void putInt( int value )
+    public void putIntBE( int value )
     {
-        putInt( currentOffset, value );
+        putIntBE( currentOffset, value );
         currentOffset += 4;
     }
 
     @Override
-    public void putInt( int offset, int value )
+    public void putIntBE( int offset, int value )
     {
         try
         {
@@ -342,15 +342,15 @@ public class StubPageCursor extends PageCursor
     }
 
     @Override
-    public short getShort()
+    public short getShortBE()
     {
-        short value = getShort( currentOffset );
+        short value = getShortBE( currentOffset );
         currentOffset += 2;
         return value;
     }
 
     @Override
-    public short getShort( int offset )
+    public short getShortBE( int offset )
     {
         try
         {
@@ -363,14 +363,14 @@ public class StubPageCursor extends PageCursor
     }
 
     @Override
-    public void putShort( short value )
+    public void putShortBE( short value )
     {
-        putShort( currentOffset, value );
+        putShortBE( currentOffset, value );
         currentOffset += 2;
     }
 
     @Override
-    public void putShort( int offset, short value )
+    public void putShortBE( int offset, short value )
     {
         try
         {

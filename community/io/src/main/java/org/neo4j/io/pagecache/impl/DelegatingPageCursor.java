@@ -45,9 +45,9 @@ public class DelegatingPageCursor extends PageCursor
     }
 
     @Override
-    public void putInt( int value )
+    public void putIntBE( int value )
     {
-        delegate.putInt( value );
+        delegate.putIntBE( value );
     }
 
     @Override
@@ -69,9 +69,9 @@ public class DelegatingPageCursor extends PageCursor
     }
 
     @Override
-    public short getShort()
+    public short getShortBE()
     {
-        return delegate.getShort();
+        return delegate.getShortBE();
     }
 
     @Override
@@ -81,15 +81,15 @@ public class DelegatingPageCursor extends PageCursor
     }
 
     @Override
-    public void putShort( short value )
+    public void putShortBE( short value )
     {
-        delegate.putShort( value );
+        delegate.putShortBE( value );
     }
 
     @Override
-    public short getShort( int offset )
+    public short getShortBE( int offset )
     {
-        return delegate.getShort( offset );
+        return delegate.getShortBE( offset );
     }
 
     @Override
@@ -99,15 +99,15 @@ public class DelegatingPageCursor extends PageCursor
     }
 
     @Override
-    public long getLong()
+    public long getLongBE()
     {
-        return delegate.getLong();
+        return delegate.getLongBE();
     }
 
     @Override
-    public void putLong( long value )
+    public void putLongBE( long value )
     {
-        delegate.putLong( value );
+        delegate.putLongBE( value );
     }
 
     @Override
@@ -129,9 +129,9 @@ public class DelegatingPageCursor extends PageCursor
     }
 
     @Override
-    public void putInt( int offset, int value )
+    public void putIntBE( int offset, int value )
     {
-        delegate.putInt( offset, value );
+        delegate.putIntBE( offset, value );
     }
 
     @Override
@@ -195,9 +195,9 @@ public class DelegatingPageCursor extends PageCursor
     }
 
     @Override
-    public void putShort( int offset, short value )
+    public void putShortBE( int offset, short value )
     {
-        delegate.putShort( offset, value );
+        delegate.putShortBE( offset, value );
     }
 
     @Override
@@ -207,15 +207,15 @@ public class DelegatingPageCursor extends PageCursor
     }
 
     @Override
-    public void putLong( int offset, long value )
+    public void putLongBE( int offset, long value )
     {
-        delegate.putLong( offset, value );
+        delegate.putLongBE( offset, value );
     }
 
     @Override
-    public long getLong( int offset )
+    public long getLongBE( int offset )
     {
-        return delegate.getLong( offset );
+        return delegate.getLongBE( offset );
     }
 
     @Override
@@ -225,9 +225,9 @@ public class DelegatingPageCursor extends PageCursor
     }
 
     @Override
-    public int getInt( int offset )
+    public int getIntBE( int offset )
     {
-        return delegate.getInt( offset );
+        return delegate.getIntBE( offset );
     }
 
     @Override
@@ -243,9 +243,9 @@ public class DelegatingPageCursor extends PageCursor
     }
 
     @Override
-    public int getInt()
+    public int getIntBE()
     {
-        return delegate.getInt();
+        return delegate.getIntBE();
     }
 
     @Override

@@ -190,12 +190,12 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
                 {
                     do
                     {
-                        pageSize = metaCursor.getInt();
-                        rootId = metaCursor.getLong();
-                        lastId = metaCursor.getLong();
-                        layoutIdentifier = metaCursor.getLong();
-                        majorVersion = metaCursor.getInt();
-                        minorVersion = metaCursor.getInt();
+                        pageSize = metaCursor.getIntBE();
+                        rootId = metaCursor.getLongBE();
+                        lastId = metaCursor.getLongBE();
+                        layoutIdentifier = metaCursor.getLongBE();
+                        majorVersion = metaCursor.getIntBE();
+                        minorVersion = metaCursor.getIntBE();
                         layout.readMetaData( metaCursor );
                     }
                     while ( metaCursor.shouldRetry() );
@@ -256,12 +256,12 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
             // Write header
             try ( PageCursor metaCursor = openMetaPageCursor( pagedFile ) )
             {
-                metaCursor.putInt( pageSize );
-                metaCursor.putLong( rootId );
-                metaCursor.putLong( lastId );
-                metaCursor.putLong( layout.identifier() );
-                metaCursor.putInt( layout.majorVersion() );
-                metaCursor.putInt( layout.minorVersion() );
+                metaCursor.putIntBE( pageSize );
+                metaCursor.putLongBE( rootId );
+                metaCursor.putLongBE( lastId );
+                metaCursor.putLongBE( layout.identifier() );
+                metaCursor.putIntBE( layout.majorVersion() );
+                metaCursor.putIntBE( layout.minorVersion() );
                 layout.writeMetaData( metaCursor );
                 checkOutOfBounds( metaCursor );
             }
@@ -364,8 +364,8 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
     {
         try ( PageCursor cursor = openMetaPageCursor( pagedFile ) )
         {
-            cursor.putLong( 4, rootId );
-            cursor.putLong( 12, lastId );
+            cursor.putLongBE( 4, rootId );
+            cursor.putLongBE( 12, lastId );
             // generations should be incremented as part of flush, but this functionality doesn't exist yet.
             checkOutOfBounds( cursor );
         }

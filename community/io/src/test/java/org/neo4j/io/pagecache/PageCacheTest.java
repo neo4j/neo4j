@@ -406,7 +406,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                     {
                         for ( int j = 0; j < shortsPerPage; j++ )
                         {
-                            cursor.putShort( (short) i );
+                            cursor.putShortBE( (short) i );
                         }
                     }
                 }
@@ -500,9 +500,9 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
             {
                 assertTrue( cursor.next() );
-                cursor.putInt( 1 );
+                cursor.putIntBE( 1 );
                 assertTrue( cursor.next() );
-                cursor.putInt( 1 );
+                cursor.putIntBE( 1 );
             }
 
             pagedFile.flushAndForce();
@@ -527,14 +527,14 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             try ( PageCursor cursor = pagedFileA.io( 0, PF_SHARED_WRITE_LOCK ) )
             {
                 assertTrue( cursor.next() );
-                cursor.putInt( 1 );
+                cursor.putIntBE( 1 );
                 assertTrue( cursor.next() );
-                cursor.putInt( 1 );
+                cursor.putIntBE( 1 );
             }
             try ( PageCursor cursor = pagedFileB.io( 0, PF_SHARED_WRITE_LOCK ) )
             {
                 assertTrue( cursor.next() );
-                cursor.putInt( 1 );
+                cursor.putIntBE( 1 );
             }
 
             pageCache.flushAndForce();
@@ -1164,26 +1164,26 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             ThrowingConsumer<PageCursorAction,IOException> testTemplate ) throws IOException
     {
         testTemplate.accept( PageCursor::getByte );
-        testTemplate.accept( PageCursor::getInt );
-        testTemplate.accept( PageCursor::getLong );
-        testTemplate.accept( PageCursor::getShort );
+        testTemplate.accept( PageCursor::getIntBE );
+        testTemplate.accept( PageCursor::getLongBE );
+        testTemplate.accept( PageCursor::getShortBE );
         testTemplate.accept( ( cursor ) -> cursor.getByte( 0 ) );
-        testTemplate.accept( ( cursor ) -> cursor.getInt( 0 ) );
-        testTemplate.accept( ( cursor ) -> cursor.getLong( 0 ) );
-        testTemplate.accept( ( cursor ) -> cursor.getShort( 0 ) );
+        testTemplate.accept( ( cursor ) -> cursor.getIntBE( 0 ) );
+        testTemplate.accept( ( cursor ) -> cursor.getLongBE( 0 ) );
+        testTemplate.accept( ( cursor ) -> cursor.getShortBE( 0 ) );
     }
 
     private void verifyOnWriteCursor(
             ThrowingConsumer<PageCursorAction,IOException> testTemplate ) throws IOException
     {
         testTemplate.accept( ( cursor ) -> cursor.putByte( (byte) 1 ) );
-        testTemplate.accept( ( cursor ) -> cursor.putInt( 1 ) );
-        testTemplate.accept( ( cursor ) -> cursor.putLong( 1 ) );
-        testTemplate.accept( ( cursor ) -> cursor.putShort( (short) 1 ) );
+        testTemplate.accept( ( cursor ) -> cursor.putIntBE( 1 ) );
+        testTemplate.accept( ( cursor ) -> cursor.putLongBE( 1 ) );
+        testTemplate.accept( ( cursor ) -> cursor.putShortBE( (short) 1 ) );
         testTemplate.accept( ( cursor ) -> cursor.putByte( 0, (byte) 1 ) );
-        testTemplate.accept( ( cursor ) -> cursor.putInt( 0, 1 ) );
-        testTemplate.accept( ( cursor ) -> cursor.putLong( 0, 1 ) );
-        testTemplate.accept( ( cursor ) -> cursor.putShort( 0, (short) 1 ) );
+        testTemplate.accept( ( cursor ) -> cursor.putIntBE( 0, 1 ) );
+        testTemplate.accept( ( cursor ) -> cursor.putLongBE( 0, 1 ) );
+        testTemplate.accept( ( cursor ) -> cursor.putShortBE( 0, (short) 1 ) );
         testTemplate.accept( ( cursor ) -> cursor.zapPage() );
     }
 
@@ -1750,9 +1750,9 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             assertTrue( cursor.next() );
             byte[] data = { 42, 43, 44, 45, 46 };
 
-            cursor.putLong( 41 );          //  0+8 = 8
-            cursor.putInt( 41 );           //  8+4 = 12
-            cursor.putShort( (short) 41 ); // 12+2 = 14
+            cursor.putLongBE( 41 );          //  0+8 = 8
+            cursor.putIntBE( 41 );           //  8+4 = 12
+            cursor.putShortBE( (short) 41 ); // 12+2 = 14
             cursor.putByte( (byte) 41 );   // 14+1 = 15
             cursor.putBytes( data );       // 15+5 = 20
         }
@@ -1761,9 +1761,9 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         {
             assertTrue( cursor.next() );
 
-            long a = cursor.getLong();  //  8
-            int b = cursor.getInt();    // 12
-            short c = cursor.getShort();// 14
+            long a = cursor.getLongBE();  //  8
+            int b = cursor.getIntBE();    // 12
+            short c = cursor.getShortBE();// 14
             byte[] data = new byte[] {
                     cursor.getByte(),   // 15
                     cursor.getByte(),   // 16
@@ -1773,9 +1773,9 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                     cursor.getByte()    // 20
             };
             cursor.setOffset( 0 );
-            cursor.putLong( 1 + a );
-            cursor.putInt( 1 + b );
-            cursor.putShort( (short) (1 + c) );
+            cursor.putLongBE( 1 + a );
+            cursor.putIntBE( 1 + b );
+            cursor.putShortBE( (short) (1 + c) );
             for ( byte d : data )
             {
                 d++;
@@ -2495,11 +2495,11 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         cursor.zapPage();
         assertThat( cursor.getOffset(), is( filePageSize / 2 ) );
         cursor.setOffset( 0 );
-        cursor.putLong( 1 );
+        cursor.putLongBE( 1 );
         assertThat( cursor.getOffset(), is( 8 ) );
-        cursor.putInt( 1 );
+        cursor.putIntBE( 1 );
         assertThat( cursor.getOffset(), is( 12 ) );
-        cursor.putShort( (short) 1 );
+        cursor.putShortBE( (short) 1 );
         assertThat( cursor.getOffset(), is( 14 ) );
         cursor.putByte( (byte) 1 );
         assertThat( cursor.getOffset(), is( 15 ) );
@@ -2512,11 +2512,11 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     private void verifyReadOffsets( PageCursor cursor )
     {
         assertThat( cursor.getOffset(), is( 0 ) );
-        cursor.getLong();
+        cursor.getLongBE();
         assertThat( cursor.getOffset(), is( 8 ) );
-        cursor.getInt();
+        cursor.getIntBE();
         assertThat( cursor.getOffset(), is( 12 ) );
-        cursor.getShort();
+        cursor.getShortBE();
         assertThat( cursor.getOffset(), is( 14 ) );
         cursor.getByte();
         assertThat( cursor.getOffset(), is( 15 ) );
@@ -2808,37 +2808,37 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test( timeout = SHORT_TIMEOUT_MILLIS )
     public void getShortBeyondPageEndMustThrow() throws IOException
     {
-        verifyPageBounds( PageCursor::getShort );
+        verifyPageBounds( PageCursor::getShortBE );
     }
 
     @Test( timeout = SHORT_TIMEOUT_MILLIS )
     public void putShortBeyondPageEndMustThrow() throws IOException
     {
-        verifyPageBounds( cursor -> cursor.putShort( (short) 42 ) );
+        verifyPageBounds( cursor -> cursor.putShortBE( (short) 42 ) );
     }
 
     @Test( timeout = SHORT_TIMEOUT_MILLIS )
     public void getIntBeyondPageEndMustThrow() throws IOException
     {
-        verifyPageBounds( PageCursor::getInt );
+        verifyPageBounds( PageCursor::getIntBE );
     }
 
     @Test( timeout = SHORT_TIMEOUT_MILLIS )
     public void putIntBeyondPageEndMustThrow() throws IOException
     {
-        verifyPageBounds( cursor -> cursor.putInt( 42 ) );
+        verifyPageBounds( cursor -> cursor.putIntBE( 42 ) );
     }
 
     @Test( timeout = SHORT_TIMEOUT_MILLIS )
     public void putLongBeyondPageEndMustThrow() throws IOException
     {
-        verifyPageBounds( cursor -> cursor.putLong( 42 ) );
+        verifyPageBounds( cursor -> cursor.putLongBE( 42 ) );
     }
 
     @Test( timeout = SHORT_TIMEOUT_MILLIS )
     public void getLongBeyondPageEndMustThrow() throws IOException
     {
-        verifyPageBounds( PageCursor::getLong );
+        verifyPageBounds( PageCursor::getLongBE );
     }
 
     @Test( timeout = SHORT_TIMEOUT_MILLIS )
@@ -3504,13 +3504,13 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             {
                 cursor.setOffset( i );
                 long x = rng.nextLong();
-                cursor.putLong( x );
+                cursor.putLongBE( x );
                 cursor.setOffset( i );
                 String reason =
                         "Failed to read back the value that was written at " +
                         "offset " + toHexString( i );
                 assertThat( reason,
-                        toHexString( cursor.getLong() ),
+                        toHexString( cursor.getLongBE() ),
                         is( toHexString( x ) ) );
             }
         }
@@ -3767,7 +3767,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         {
             assertThat( pf.getLastPageId(), lessThan( 0L ) );
             assertTrue( cursor.next() );
-            cursor.putInt( 0xcafebabe );
+            cursor.putIntBE( 0xcafebabe );
         }
         try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize, StandardOpenOption.TRUNCATE_EXISTING );
               PageCursor cursor = pf.io( 0, PF_SHARED_READ_LOCK ) )

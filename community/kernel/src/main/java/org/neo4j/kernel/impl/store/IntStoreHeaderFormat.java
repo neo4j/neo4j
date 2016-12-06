@@ -39,12 +39,12 @@ public class IntStoreHeaderFormat implements StoreHeaderFormat<IntStoreHeader>
     @Override
     public void writeHeader( PageCursor cursor )
     {
-        cursor.putInt( header );
+        cursor.putIntBE( header );
     }
 
     @Override
     public IntStoreHeader readHeader( PageCursor cursor )
     {
-        return new IntStoreHeader( cursor.getInt() );
+        return new IntStoreHeader( cursor.getIntBE() );
     }
 }

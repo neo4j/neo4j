@@ -77,7 +77,7 @@ public final class UnsafeUtil
     private static final int pageSize;
 
     public static final boolean allowUnalignedMemoryAccess;
-    public static final boolean storeByteOrderIsNative;
+    public static final boolean nativeByteOrderIsBigEndian;
 
     static
     {
@@ -159,7 +159,7 @@ public final class UnsafeUtil
             }
             allowUnalignedMemoryAccess = unaligned;
         }
-        storeByteOrderIsNative = ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN;
+        nativeByteOrderIsBigEndian = ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN;
     }
 
     private static Unsafe getUnsafe()
@@ -932,46 +932,60 @@ public final class UnsafeUtil
      * Gets a {@code short} at memory address {@code p} by reading byte for byte, instead of the whole value
      * in one go. This can be useful, even necessary in some scenarios where {@link #allowUnalignedMemoryAccess}
      * is {@code false} and {@code p} isn't aligned properly. Values read with this method should have been
-     * previously put using {@link #putShortByteWiseLittleEndian(long, short)}.
+     * previously put using {@link #putShortByteWise(long, short)}.
      *
      * @param p address pointer to start reading at.
      * @return the read value, which was read byte for byte.
      */
-    public static short getShortByteWiseLittleEndian( long p )
+    public static short getShortByteWise( long p )
     {
         short a = (short) (UnsafeUtil.getByte( p     ) & 0xFF);
         short b = (short) (UnsafeUtil.getByte( p + 1 ) & 0xFF);
-        return (short) ((b << 8) | a);
+        if ( nativeByteOrderIsBigEndian )
+        {
+            return (short) ((a << 8) | b);
+        }
+        else
+        {
+            return (short) ((b << 8) | a);
+        }
     }
 
     /**
      * Gets a {@code int} at memory address {@code p} by reading byte for byte, instead of the whole value
      * in one go. This can be useful, even necessary in some scenarios where {@link #allowUnalignedMemoryAccess}
      * is {@code false} and {@code p} isn't aligned properly. Values read with this method should have been
-     * previously put using {@link #putIntByteWiseLittleEndian(long, int)}.
+     * previously put using {@link #putIntByteWise(long, int)}.
      *
      * @param p address pointer to start reading at.
      * @return the read value, which was read byte for byte.
      */
-    public static int getIntByteWiseLittleEndian( long p )
+    public static int getIntByteWise( long p )
     {
         int a = UnsafeUtil.getByte( p     ) & 0xFF;
         int b = UnsafeUtil.getByte( p + 1 ) & 0xFF;
         int c = UnsafeUtil.getByte( p + 2 ) & 0xFF;
         int d = UnsafeUtil.getByte( p + 3 ) & 0xFF;
-        return (d << 24) | (c << 16) | (b << 8) | a;
+        if ( nativeByteOrderIsBigEndian )
+        {
+            return (a << 24) | (b << 16) | (c << 8) | d;
+        }
+        else
+        {
+            return (d << 24) | (c << 16) | (b << 8) | a;
+        }
     }
 
     /**
      * Gets a {@code long} at memory address {@code p} by reading byte for byte, instead of the whole value
      * in one go. This can be useful, even necessary in some scenarios where {@link #allowUnalignedMemoryAccess}
      * is {@code false} and {@code p} isn't aligned properly. Values read with this method should have been
-     * previously put using {@link #putLongByteWiseLittleEndian(long, long)}.
+     * previously put using {@link #putLongByteWise(long, long)}.
      *
      * @param p address pointer to start reading at.
      * @return the read value, which was read byte for byte.
      */
-    public static long getLongByteWiseLittleEndian( long p )
+    public static long getLongByteWise( long p )
     {
         long a = UnsafeUtil.getByte( p     ) & 0xFF;
         long b = UnsafeUtil.getByte( p + 1 ) & 0xFF;
@@ -981,59 +995,99 @@ public final class UnsafeUtil
         long f = UnsafeUtil.getByte( p + 5 ) & 0xFF;
         long g = UnsafeUtil.getByte( p + 6 ) & 0xFF;
         long h = UnsafeUtil.getByte( p + 7 ) & 0xFF;
-        return (h << 56) | (g << 48) | (f << 40) | (e << 32) | (d << 24) | (c << 16) | (b << 8) | a;
+        if ( nativeByteOrderIsBigEndian )
+        {
+            return (a << 56) | (b << 48) | (c << 40) | (d << 32) | (e << 24) | (f << 16) | (g << 8) | h;
+        }
+        else
+        {
+            return (h << 56) | (g << 48) | (f << 40) | (e << 32) | (d << 24) | (c << 16) | (b << 8) | a;
+        }
     }
 
     /**
      * Puts a {@code short} at memory address {@code p} by writing byte for byte, instead of the whole value
      * in one go. This can be useful, even necessary in some scenarios where {@link #allowUnalignedMemoryAccess}
      * is {@code false} and {@code p} isn't aligned properly. Values written with this method should be
-     * read using {@link #getShortByteWiseLittleEndian(long)}.
+     * read using {@link #getShortByteWise(long)}.
      *
      * @param p address pointer to start writing at.
      * @param value value to write byte for byte.
      */
-    public static void putShortByteWiseLittleEndian( long p, short value )
+    public static void putShortByteWise( long p, short value )
     {
-        UnsafeUtil.putByte( p    , (byte)( value      ) );
-        UnsafeUtil.putByte( p + 1, (byte)( value >> 8 ) );
+        if ( nativeByteOrderIsBigEndian )
+        {
+            UnsafeUtil.putByte( p    , (byte)( value >> 8 ) );
+            UnsafeUtil.putByte( p + 1, (byte)( value      ) );
+        }
+        else
+        {
+            UnsafeUtil.putByte( p    , (byte)( value      ) );
+            UnsafeUtil.putByte( p + 1, (byte)( value >> 8 ) );
+        }
     }
 
     /**
      * Puts a {@code int} at memory address {@code p} by writing byte for byte, instead of the whole value
      * in one go. This can be useful, even necessary in some scenarios where {@link #allowUnalignedMemoryAccess}
      * is {@code false} and {@code p} isn't aligned properly. Values written with this method should be
-     * read using {@link #getIntByteWiseLittleEndian(long)}.
+     * read using {@link #getIntByteWise(long)}.
      *
      * @param p address pointer to start writing at.
      * @param value value to write byte for byte.
      */
-    public static void putIntByteWiseLittleEndian( long p, int value )
+    public static void putIntByteWise( long p, int value )
     {
-        UnsafeUtil.putByte( p    , (byte)( value       ) );
-        UnsafeUtil.putByte( p + 1, (byte)( value >> 8  ) );
-        UnsafeUtil.putByte( p + 2, (byte)( value >> 16 ) );
-        UnsafeUtil.putByte( p + 3, (byte)( value >> 24 ) );
+        if ( nativeByteOrderIsBigEndian )
+        {
+            UnsafeUtil.putByte( p    , (byte)( value >> 24 ) );
+            UnsafeUtil.putByte( p + 1, (byte)( value >> 16 ) );
+            UnsafeUtil.putByte( p + 2, (byte)( value >> 8  ) );
+            UnsafeUtil.putByte( p + 3, (byte)( value       ) );
+        }
+        else
+        {
+            UnsafeUtil.putByte( p    , (byte)( value       ) );
+            UnsafeUtil.putByte( p + 1, (byte)( value >> 8  ) );
+            UnsafeUtil.putByte( p + 2, (byte)( value >> 16 ) );
+            UnsafeUtil.putByte( p + 3, (byte)( value >> 24 ) );
+
+        }
     }
 
     /**
      * Puts a {@code long} at memory address {@code p} by writing byte for byte, instead of the whole value
      * in one go. This can be useful, even necessary in some scenarios where {@link #allowUnalignedMemoryAccess}
      * is {@code false} and {@code p} isn't aligned properly. Values written with this method should be
-     * read using {@link #getShortByteWiseLittleEndian(long)}.
+     * read using {@link #getShortByteWise(long)}.
      *
      * @param p address pointer to start writing at.
      * @param value value to write byte for byte.
      */
-    public static void putLongByteWiseLittleEndian( long p, long value )
+    public static void putLongByteWise( long p, long value )
     {
-        UnsafeUtil.putByte( p    , (byte)( value       ) );
-        UnsafeUtil.putByte( p + 1, (byte)( value >> 8  ) );
-        UnsafeUtil.putByte( p + 2, (byte)( value >> 16 ) );
-        UnsafeUtil.putByte( p + 3, (byte)( value >> 24 ) );
-        UnsafeUtil.putByte( p + 4, (byte)( value >> 32 ) );
-        UnsafeUtil.putByte( p + 5, (byte)( value >> 40 ) );
-        UnsafeUtil.putByte( p + 6, (byte)( value >> 48 ) );
-        UnsafeUtil.putByte( p + 7, (byte)( value >> 56 ) );
+        if ( nativeByteOrderIsBigEndian )
+        {
+            UnsafeUtil.putByte( p    , (byte)( value >> 56 ) );
+            UnsafeUtil.putByte( p + 1, (byte)( value >> 48 ) );
+            UnsafeUtil.putByte( p + 2, (byte)( value >> 40 ) );
+            UnsafeUtil.putByte( p + 3, (byte)( value >> 32 ) );
+            UnsafeUtil.putByte( p + 4, (byte)( value >> 24 ) );
+            UnsafeUtil.putByte( p + 5, (byte)( value >> 16 ) );
+            UnsafeUtil.putByte( p + 6, (byte)( value >> 8  ) );
+            UnsafeUtil.putByte( p + 7, (byte)( value       ) );
+        }
+        else
+        {
+            UnsafeUtil.putByte( p    , (byte)( value       ) );
+            UnsafeUtil.putByte( p + 1, (byte)( value >> 8  ) );
+            UnsafeUtil.putByte( p + 2, (byte)( value >> 16 ) );
+            UnsafeUtil.putByte( p + 3, (byte)( value >> 24 ) );
+            UnsafeUtil.putByte( p + 4, (byte)( value >> 32 ) );
+            UnsafeUtil.putByte( p + 5, (byte)( value >> 40 ) );
+            UnsafeUtil.putByte( p + 6, (byte)( value >> 48 ) );
+            UnsafeUtil.putByte( p + 7, (byte)( value >> 56 ) );
+        }
     }
 }

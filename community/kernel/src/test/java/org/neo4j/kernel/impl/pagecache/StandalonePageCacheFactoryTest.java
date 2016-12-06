@@ -58,7 +58,7 @@ public class StandalonePageCacheFactoryTest
                 for ( int i = 0; i < 10_000; i++ )
                 {
                     assertTrue( cursor.next() );
-                    cursor.putInt( 42 );
+                    cursor.putIntBE( 42 );
                 }
             }
         }

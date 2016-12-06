@@ -104,7 +104,7 @@ class RelationshipGroupRecordFormatV3_0_6 extends BaseHighLimitRecordFormatV3_0_
         else
         {
             record.initialize( inUse,
-                    cursor.getShort() & 0xFFFF,
+                    cursor.getShortBE() & 0xFFFF,
                     decodeCompressedReference( cursor, headerByte, HAS_OUTGOING_BIT, NULL ),
                     decodeCompressedReference( cursor, headerByte, HAS_INCOMING_BIT, NULL ),
                     decodeCompressedReference( cursor, headerByte, HAS_LOOP_BIT, NULL ),
@@ -146,7 +146,7 @@ class RelationshipGroupRecordFormatV3_0_6 extends BaseHighLimitRecordFormatV3_0_
         }
         else
         {
-            cursor.putShort( (short) record.getType() );
+            cursor.putShortBE( (short) record.getType() );
             encode( cursor, record.getFirstOut(), NULL );
             encode( cursor, record.getFirstIn(), NULL );
             encode( cursor, record.getFirstLoop(), NULL );
@@ -180,13 +180,13 @@ class RelationshipGroupRecordFormatV3_0_6 extends BaseHighLimitRecordFormatV3_0_
         // [   x,    ] high owner bits
         long modifiers = cursor.getByte();
 
-        int type = cursor.getShort() & 0xFFFF;
+        int type = cursor.getShortBE() & 0xFFFF;
 
-        long nextLowBits = cursor.getInt() & 0xFFFFFFFFL;
-        long firstOutLowBits = cursor.getInt() & 0xFFFFFFFFL;
-        long firstInLowBits = cursor.getInt() & 0xFFFFFFFFL;
-        long firstLoopLowBits = cursor.getInt() & 0xFFFFFFFFL;
-        long owningNodeLowBits = cursor.getInt() & 0xFFFFFFFFL;
+        long nextLowBits = cursor.getIntBE() & 0xFFFFFFFFL;
+        long firstOutLowBits = cursor.getIntBE() & 0xFFFFFFFFL;
+        long firstInLowBits = cursor.getIntBE() & 0xFFFFFFFFL;
+        long firstLoopLowBits = cursor.getIntBE() & 0xFFFFFFFFL;
+        long owningNodeLowBits = cursor.getIntBE() & 0xFFFFFFFFL;
 
         long nextMod = (modifiers & NEXT_RECORD_BIT) << 32;
         long firstOutMod = (modifiers & FIRST_OUT_BIT) << 31;
@@ -217,11 +217,11 @@ class RelationshipGroupRecordFormatV3_0_6 extends BaseHighLimitRecordFormatV3_0_
         // [   x,    ] high owner bits
         cursor.putByte( (byte) (nextMod | firstOutMod | firstInMod | firstLoopMod | owningNodeMod) );
 
-        cursor.putShort( (short) record.getType() );
-        cursor.putInt( (int) record.getNext() );
-        cursor.putInt( (int) record.getFirstOut() );
-        cursor.putInt( (int) record.getFirstIn() );
-        cursor.putInt( (int) record.getFirstLoop() );
-        cursor.putInt( (int) record.getOwningNode() );
+        cursor.putShortBE( (short) record.getType() );
+        cursor.putIntBE( (int) record.getNext() );
+        cursor.putIntBE( (int) record.getFirstOut() );
+        cursor.putIntBE( (int) record.getFirstIn() );
+        cursor.putIntBE( (int) record.getFirstLoop() );
+        cursor.putIntBE( (int) record.getOwningNode() );
     }
 }

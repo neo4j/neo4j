@@ -167,51 +167,51 @@ class PageAwareByteArrayCursor extends PageCursor
     }
 
     @Override
-    public long getLong()
+    public long getLongBE()
     {
-        return current.getLong();
+        return current.getLongBE();
     }
 
     @Override
-    public long getLong( int offset )
+    public long getLongBE( int offset )
     {
-        return current.getLong( offset );
+        return current.getLongBE( offset );
     }
 
     @Override
-    public void putLong( long value )
+    public void putLongBE( long value )
     {
-        current.putLong( value );
+        current.putLongBE( value );
     }
 
     @Override
-    public void putLong( int offset, long value )
+    public void putLongBE( int offset, long value )
     {
-        current.putLong( offset, value );
+        current.putLongBE( offset, value );
     }
 
     @Override
-    public int getInt()
+    public int getIntBE()
     {
-        return current.getInt();
+        return current.getIntBE();
     }
 
     @Override
-    public int getInt( int offset )
+    public int getIntBE( int offset )
     {
-        return current.getInt( offset );
+        return current.getIntBE( offset );
     }
 
     @Override
-    public void putInt( int value )
+    public void putIntBE( int value )
     {
-        current.putInt( value );
+        current.putIntBE( value );
     }
 
     @Override
-    public void putInt( int offset, int value )
+    public void putIntBE( int offset, int value )
     {
-        current.putInt( offset, value );
+        current.putIntBE( offset, value );
     }
 
     @Override
@@ -239,27 +239,27 @@ class PageAwareByteArrayCursor extends PageCursor
     }
 
     @Override
-    public short getShort()
+    public short getShortBE()
     {
-        return current.getShort();
+        return current.getShortBE();
     }
 
     @Override
-    public short getShort( int offset )
+    public short getShortBE( int offset )
     {
-        return current.getShort( offset );
+        return current.getShortBE( offset );
     }
 
     @Override
-    public void putShort( short value )
+    public void putShortBE( short value )
     {
-        current.putShort( value );
+        current.putShortBE( value );
     }
 
     @Override
-    public void putShort( int offset, short value )
+    public void putShortBE( int offset, short value )
     {
-        current.putShort( offset, value );
+        current.putShortBE( offset, value );
     }
 
     @Override

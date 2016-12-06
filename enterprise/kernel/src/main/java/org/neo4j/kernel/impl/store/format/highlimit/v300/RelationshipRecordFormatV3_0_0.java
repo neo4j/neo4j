@@ -74,7 +74,7 @@ public class RelationshipRecordFormatV3_0_0 extends BaseHighLimitRecordFormatV3_
     protected void doReadInternal(
             RelationshipRecord record, PageCursor cursor, int recordSize, long headerByte, boolean inUse )
     {
-        int type = cursor.getShort() & 0xFFFF;
+        int type = cursor.getShortBE() & 0xFFFF;
         long recordId = record.getId();
         record.initialize( inUse,
                 decodeCompressedReference( cursor, headerByte, HAS_PROPERTY_BIT, NULL ),
@@ -126,7 +126,7 @@ public class RelationshipRecordFormatV3_0_0 extends BaseHighLimitRecordFormatV3_
     protected void doWriteInternal( RelationshipRecord record, PageCursor cursor )
             throws IOException
     {
-        cursor.putShort( (short) record.getType() );
+        cursor.putShortBE( (short) record.getType() );
         long recordId = record.getId();
         encode( cursor, record.getNextProp(), NULL );
         encode( cursor, record.getFirstNode() );

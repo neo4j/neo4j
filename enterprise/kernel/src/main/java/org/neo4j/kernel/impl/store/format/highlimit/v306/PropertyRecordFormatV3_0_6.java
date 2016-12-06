@@ -121,7 +121,7 @@ class PropertyRecordFormatV3_0_6 extends BaseOneByteHeaderRecordFormat<PropertyR
             }
             while ( blockCount-- > 0 )
             {
-                record.addLoadedBlock( cursor.getLong() );
+                record.addLoadedBlock( cursor.getLongBE() );
             }
         }
     }
@@ -154,7 +154,7 @@ class PropertyRecordFormatV3_0_6 extends BaseOneByteHeaderRecordFormat<PropertyR
             {
                 for ( long propertyBlock : block.getValueBlocks() )
                 {
-                    cursor.putLong( propertyBlock );
+                    cursor.putLongBE( propertyBlock );
                 }
             }
         }
@@ -195,10 +195,10 @@ class PropertyRecordFormatV3_0_6 extends BaseOneByteHeaderRecordFormat<PropertyR
     private void readFixedReferencesRecord( PropertyRecord record, PageCursor cursor )
     {
         // since fixed reference limits property reference to 34 bits, 6 bytes is ample.
-        long prevMod = cursor.getShort() & 0xFFFFL;
-        long prevProp = cursor.getInt() & 0xFFFFFFFFL;
-        long nextMod = cursor.getShort() & 0xFFFFL;
-        long nextProp = cursor.getInt() & 0xFFFFFFFFL;
+        long prevMod = cursor.getShortBE() & 0xFFFFL;
+        long prevProp = cursor.getIntBE() & 0xFFFFFFFFL;
+        long nextMod = cursor.getShortBE() & 0xFFFFL;
+        long nextProp = cursor.getIntBE() & 0xFFFFFFFFL;
         record.initialize( true,
                 BaseHighLimitRecordFormatV3_0_6.longFromIntAndMod( prevProp, prevMod << 32 ),
                 BaseHighLimitRecordFormatV3_0_6.longFromIntAndMod( nextProp, nextMod << 32 ) );
@@ -211,10 +211,10 @@ class PropertyRecordFormatV3_0_6 extends BaseOneByteHeaderRecordFormat<PropertyR
         // Set up the record header
         short prevModifier = record.getPrevProp() == NULL ? 0 : (short) ((record.getPrevProp() & HIGH_DWORD_LOWER_WORD_MASK) >> 32);
         short nextModifier = record.getNextProp() == NULL ? 0 : (short) ((record.getNextProp() & HIGH_DWORD_LOWER_WORD_MASK) >> 32);
-        cursor.putShort( prevModifier );
-        cursor.putInt( (int) record.getPrevProp() );
-        cursor.putShort( nextModifier );
-        cursor.putInt( (int) record.getNextProp() );
+        cursor.putShortBE( prevModifier );
+        cursor.putIntBE( (int) record.getPrevProp() );
+        cursor.putShortBE( nextModifier );
+        cursor.putIntBE( (int) record.getNextProp() );
         // skip bytes before start reading property blocks to have
         // aligned access and fixed position of property blocks
         cursor.setOffset( cursor.getOffset() + PROPERTY_BLOCKS_PADDING );

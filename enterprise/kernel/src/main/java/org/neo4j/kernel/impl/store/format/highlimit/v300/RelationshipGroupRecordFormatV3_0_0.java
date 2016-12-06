@@ -69,7 +69,7 @@ public class RelationshipGroupRecordFormatV3_0_0 extends BaseHighLimitRecordForm
             boolean inUse )
     {
         record.initialize( inUse,
-                cursor.getShort() & 0xFFFF,
+                cursor.getShortBE() & 0xFFFF,
                 decodeCompressedReference( cursor, headerByte, HAS_OUTGOING_BIT, NULL ),
                 decodeCompressedReference( cursor, headerByte, HAS_INCOMING_BIT, NULL ),
                 decodeCompressedReference( cursor, headerByte, HAS_LOOP_BIT, NULL ),
@@ -103,7 +103,7 @@ public class RelationshipGroupRecordFormatV3_0_0 extends BaseHighLimitRecordForm
     protected void doWriteInternal( RelationshipGroupRecord record, PageCursor cursor )
             throws IOException
     {
-        cursor.putShort( (short) record.getType() );
+        cursor.putShortBE( (short) record.getType() );
         encode( cursor, record.getFirstOut(), NULL );
         encode( cursor, record.getFirstIn(), NULL );
         encode( cursor, record.getFirstLoop(), NULL );

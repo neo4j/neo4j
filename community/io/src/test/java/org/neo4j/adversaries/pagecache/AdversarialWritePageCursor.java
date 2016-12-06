@@ -80,59 +80,59 @@ class AdversarialWritePageCursor extends PageCursor
     }
 
     @Override
-    public long getLong()
+    public long getLongBE()
     {
         adversary.injectFailure( IndexOutOfBoundsException.class );
-        return delegate.getLong();
+        return delegate.getLongBE();
     }
 
     @Override
-    public long getLong( int offset )
+    public long getLongBE( int offset )
     {
         adversary.injectFailure( IndexOutOfBoundsException.class );
-        return delegate.getLong( offset );
+        return delegate.getLongBE( offset );
     }
 
     @Override
-    public void putLong( long value )
+    public void putLongBE( long value )
     {
         adversary.injectFailure( IndexOutOfBoundsException.class );
-        delegate.putLong( value );
+        delegate.putLongBE( value );
     }
 
     @Override
-    public void putLong( int offset, long value )
+    public void putLongBE( int offset, long value )
     {
         adversary.injectFailure( IndexOutOfBoundsException.class );
-        delegate.putLong( offset, value );
+        delegate.putLongBE( offset, value );
     }
 
     @Override
-    public int getInt()
+    public int getIntBE()
     {
         adversary.injectFailure( IndexOutOfBoundsException.class );
-        return delegate.getInt();
+        return delegate.getIntBE();
     }
 
     @Override
-    public int getInt( int offset )
+    public int getIntBE( int offset )
     {
         adversary.injectFailure( IndexOutOfBoundsException.class );
-        return delegate.getInt( offset );
+        return delegate.getIntBE( offset );
     }
 
     @Override
-    public void putInt( int value )
+    public void putIntBE( int value )
     {
         adversary.injectFailure( IndexOutOfBoundsException.class );
-        delegate.putInt( value );
+        delegate.putIntBE( value );
     }
 
     @Override
-    public void putInt( int offset, int value )
+    public void putIntBE( int offset, int value )
     {
         adversary.injectFailure( IndexOutOfBoundsException.class );
-        delegate.putInt( offset, value );
+        delegate.putIntBE( offset, value );
     }
 
     @Override
@@ -164,31 +164,31 @@ class AdversarialWritePageCursor extends PageCursor
     }
 
     @Override
-    public short getShort()
+    public short getShortBE()
     {
         adversary.injectFailure( IndexOutOfBoundsException.class );
-        return delegate.getShort();
+        return delegate.getShortBE();
     }
 
     @Override
-    public short getShort( int offset )
+    public short getShortBE( int offset )
     {
         adversary.injectFailure( IndexOutOfBoundsException.class );
-        return delegate.getShort( offset );
+        return delegate.getShortBE( offset );
     }
 
     @Override
-    public void putShort( short value )
+    public void putShortBE( short value )
     {
         adversary.injectFailure( IndexOutOfBoundsException.class );
-        delegate.putShort( value );
+        delegate.putShortBE( value );
     }
 
     @Override
-    public void putShort( int offset, short value )
+    public void putShortBE( int offset, short value )
     {
         adversary.injectFailure( IndexOutOfBoundsException.class );
-        delegate.putShort( offset, value );
+        delegate.putShortBE( offset, value );
     }
 
     @Override
