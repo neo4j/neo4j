@@ -28,23 +28,31 @@ class PointerChecking
      * if failure. Must be called after a consistent read from page cache (after {@link PageCursor#shouldRetry()}.
      *
      * @param result result from {@link GenSafePointerPair#READ} or
-     * {@link GenSafePointerPair#write(PageCursor, long, int, int)}.
+     * {@link GenSafePointerPair#write(PageCursor, long, long, long)}.
      */
-    public static void checkChildPointer( long result )
+    static void checkChildPointer( long result )
     {
-        // TODO: The NO_NODE_FLAG being -1 generally conflicts with how GSPP results are built up,
-        // most notably -1 sets all bits to 1 and so any additional flags are overwritten.
-        // As a work-around we can for the time being check -1 explicitly before checking flags.
-
-        // TODO: include information on current page and perhaps path here
-        if ( result == TreeNode.NO_NODE_FLAG )
-        {
-            throw new IllegalStateException( "Generally uninitialized GSPP" );
-        }
-
         if ( !GenSafePointerPair.isSuccess( result ) )
         {
             throw new IllegalStateException( GenSafePointerPair.failureDescription( result ) );
+        }
+        if ( result < IdSpace.MIN_TREE_NODE_ID )
+        {
+            throw new IllegalStateException( "Pointer to id " + result + " not allowed. Minimum node id allowed is " +
+                                             IdSpace.MIN_TREE_NODE_ID );
+        }
+    }
+
+    static void checkSiblingPointer( long result )
+    {
+        if ( !GenSafePointerPair.isSuccess( result ) )
+        {
+            throw new IllegalStateException( GenSafePointerPair.failureDescription( result ) );
+        }
+        if ( result < IdSpace.MIN_TREE_NODE_ID && result != TreeNode.NO_NODE_FLAG )
+        {
+            throw new IllegalStateException( "Pointer to id " + result + " not allowed. Minimum node id allowed is " +
+                    IdSpace.MIN_TREE_NODE_ID );
         }
     }
 }

@@ -30,8 +30,13 @@ import static org.neo4j.index.gbptree.GenSafePointerPair.write;
 
 public class PointerCheckingTest
 {
+    private final PageCursor cursor = ByteArrayPageCursor.wrap( GenSafePointerPair.SIZE );
+    private final int firstGeneration = 1;
+    private final int secondGeneration = 2;
+    private final int thirdGeneration = 3;
+
     @Test
-    public void shouldThrowOnNoNode() throws Exception
+    public void checkChildShouldThrowOnNoNode() throws Exception
     {
         // WHEN
         try
@@ -46,10 +51,9 @@ public class PointerCheckingTest
     }
 
     @Test
-    public void shouldThrowOnReadFailure() throws Exception
+    public void checkChildShouldThrowOnReadFailure() throws Exception
     {
         // GIVEN
-        PageCursor cursor = ByteArrayPageCursor.wrap( GenSafePointerPair.SIZE );
         long result = GenSafePointerPair.read( cursor, 0, 1 );
 
         // WHEN
@@ -65,17 +69,13 @@ public class PointerCheckingTest
     }
 
     @Test
-    public void shouldThrowOnWriteFailure() throws Exception
+    public void checkChildShouldThrowOnWriteFailure() throws Exception
     {
         // GIVEN
-        PageCursor cursor = ByteArrayPageCursor.wrap( GenSafePointerPair.SIZE );
-        int firstGeneration = 1;
-        int secondGeneration = 2;
-        int thirdGeneration = 3;
         write( cursor, 123, 0, firstGeneration );
-        cursor.setOffset( 0 );
+        cursor.rewind();
         write( cursor, 456, firstGeneration, secondGeneration );
-        cursor.setOffset( 0 );
+        cursor.rewind();
 
         // WHEN
         // This write will see first and second written pointers and think they belong to CRASHed generation
@@ -92,32 +92,95 @@ public class PointerCheckingTest
     }
 
     @Test
-    public void shouldPassOnReadSuccess() throws Exception
+    public void checkChildShouldPassOnReadSuccess() throws Exception
     {
         // GIVEN
-        PageCursor cursor = ByteArrayPageCursor.wrap( GenSafePointerPair.SIZE );
-        int generation = 1;
-        PointerChecking.checkChildPointer( write( cursor, 123, 0, generation ) );
-        cursor.setOffset( 0 );
+        PointerChecking.checkChildPointer( write( cursor, 123, 0, firstGeneration ) );
+        cursor.rewind();
 
         // WHEN
-        long result = read( cursor, 0, generation );
+        long result = read( cursor, 0, firstGeneration );
 
         // THEN
         PointerChecking.checkChildPointer( result );
     }
 
     @Test
-    public void shouldPassOnWriteSuccess() throws Exception
+    public void checkChildShouldPassOnWriteSuccess() throws Exception
     {
-        // GIVEN
-        PageCursor cursor = ByteArrayPageCursor.wrap( GenSafePointerPair.SIZE );
-        int generation = 1;
-
         // WHEN
-        long result = write( cursor, 123, 0, generation );
+        long result = write( cursor, 123, 0, firstGeneration );
 
         // THEN
         PointerChecking.checkChildPointer( result );
+    }
+
+    @Test
+    public void checkSiblingShouldPassOnReadSuccessForNoNodePointer() throws Exception
+    {
+        // GIVEN
+        write( cursor, TreeNode.NO_NODE_FLAG, firstGeneration, secondGeneration );
+        cursor.rewind();
+
+        // WHEN
+        long result = read( cursor, firstGeneration, secondGeneration );
+
+        // THEN
+        PointerChecking.checkSiblingPointer( result );
+    }
+
+    @Test
+    public void checkSiblingShouldPassOnReadSuccessForNodePointer() throws Exception
+    {
+        // GIVEN
+        long pointer = 101;
+        write( cursor, pointer, firstGeneration, secondGeneration );
+        cursor.rewind();
+
+        // WHEN
+        long result = read( cursor, firstGeneration, secondGeneration );
+
+        // THEN
+        PointerChecking.checkSiblingPointer( result );
+    }
+
+    @Test
+    public void checkSiblingShouldThrowOnReadFailure() throws Exception
+    {
+        // WHEN
+        long result = read( cursor, firstGeneration, secondGeneration );
+
+        // WHEN
+        try
+        {
+            PointerChecking.checkSiblingPointer( result );
+            fail( "Should have failed" );
+        }
+        catch ( IllegalStateException e )
+        {
+            // THEN good
+        }
+    }
+
+    @Test
+    public void checkSiblingShouldThrowOnReadIllegalPointer() throws Exception
+    {
+        // GIVEN
+        GenSafePointer.write( cursor, secondGeneration, IdSpace.STATE_PAGE_A );
+        cursor.rewind();
+
+        // WHEN
+        long result = read( cursor, firstGeneration, secondGeneration );
+
+        // WHEN
+        try
+        {
+            PointerChecking.checkSiblingPointer( result );
+            fail( "Should have failed" );
+        }
+        catch ( IllegalStateException e )
+        {
+            // THEN good
+        }
     }
 }

@@ -57,11 +57,12 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
     private boolean currentContainsEnd;
     private boolean reread;
     private boolean resetPosition;
-    private final int stableGeneration;
-    private final int unstableGeneration;
+    private final long stableGeneration;
+    private final long unstableGeneration;
 
     SeekCursor( PageCursor leafCursor, KEY mutableKey, VALUE mutableValue, TreeNode<KEY,VALUE> bTreeNode,
-            KEY fromInclusive, KEY toExclusive, Layout<KEY,VALUE> layout, int stableGeneration, int unstableGeneration,
+            KEY fromInclusive, KEY toExclusive, Layout<KEY,VALUE> layout,
+            long stableGeneration, long unstableGeneration,
             int firstPosToRead, int keyCount )
     {
         this.cursor = leafCursor;
@@ -109,9 +110,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
                     {
                         int searchResult = KeySearch.search( cursor, bTreeNode, prevKey, mutableKey, keyCount );
                         pos = KeySearch.positionOf( searchResult );
-                        resetPosition = false;
                     }
-                    reread = false;
                 }
                 // There's a condition in here, choosing between go to next sibling or value,
                 // this condition is mirrored outside the shouldRetry loop to act upon the data
@@ -124,7 +123,6 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
                 else
                 {
                     // Read the next value in this leaf
-                    // TODO this is a hack for caching item order for unsorted tree node thingie
                     bTreeNode.keyAt( cursor, mutableKey, pos );
                     bTreeNode.valueAt( cursor, mutableValue, pos );
                 }
@@ -139,10 +137,9 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
             {
                 if ( bTreeNode.isNode( rightSibling ) )
                 {
-                    if ( !cursor.next( rightSibling ) )
-                    {
-                        throw new IllegalStateException( "Could not go to right sibling " + rightSibling );
-                    }
+                    // TODO: Check if rightSibling is within expected range before calling next.
+                    // TODO: Possibly by getting highest expected from IdProvider
+                    bTreeNode.goTo( cursor, rightSibling, stableGeneration, unstableGeneration );
                     pos = -1;
                     reread = true;
                     continue; // in the outer loop, with the position reset to the beginning of the right sibling
@@ -156,8 +153,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
                          ( !first && layout.compare( prevKey, mutableKey ) >= 0 ) )
                     {
                         // We've come across a bad read in the middle of a split
-                        // This is outlined in IndexModifier, skip this value (it's fine)
-                        // TODO: perhaps describe the circumstances here quickly as well
+                        // This is outlined in InternalTreeLogic, skip this value (it's fine)
                         reread = true;
                         continue;
                     }

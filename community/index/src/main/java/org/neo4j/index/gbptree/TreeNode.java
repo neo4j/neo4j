@@ -19,6 +19,7 @@
  */
 package org.neo4j.index.gbptree;
 
+import java.io.IOException;
 import java.util.Comparator;
 import java.util.function.Consumer;
 
@@ -34,9 +35,9 @@ import org.neo4j.io.pagecache.PageCursor;
  * <pre>
  * # = empty space
  *
- * [                    HEADER   77B                 ]|[      KEYS     ]|[     CHILDREN             ]
- * [TYPE][KEYCOUNT][RIGHTSIBLING][LEFTSIBLING][NEWGEN]|[[KEY][KEY]...##]|[[CHILD][CHILD][CHILD]...##]
- *  0     1         5             29           53
+ * [                      HEADER   81B                    ]|[      KEYS     ]|[     CHILDREN             ]
+ * [TYPE][GEN][KEYCOUNT][RIGHTSIBLING][LEFTSIBLING][NEWGEN]|[[KEY][KEY]...##]|[[CHILD][CHILD][CHILD]...##]
+ *  0     1    5         9             33           57
  * </pre>
  * Calc offset for key i (starting from 0)
  * HEADER_LENGTH + i * SIZE_KEY
@@ -47,9 +48,9 @@ import org.neo4j.io.pagecache.PageCursor;
  * Using Separate design the leaf nodes should look like
  *
  * <pre>
- * [                    HEADER   77B                 ]|[      KEYS     ]|[     VALUES        ]
- * [TYPE][KEYCOUNT][RIGHTSIBLING][LEFTSIBLING][NEWGEN]|[[KEY][KEY]...##]|[[VALUE][VALUE]...##]
- *  0     1         5             29           53
+ * [                      HEADER   81B                    ]|[      KEYS     ]|[     VALUES        ]
+ * [TYPE][GEN][KEYCOUNT][RIGHTSIBLING][LEFTSIBLING][NEWGEN]|[[KEY][KEY]...##]|[[VALUE][VALUE]...##]
+ *  0     1    5         9             33           57
  * </pre>
  *
  * Calc offset for key i (starting from 0)
@@ -65,7 +66,8 @@ class TreeNode<KEY,VALUE>
 {
     private static final int SIZE_PAGE_REFERENCE = GenSafePointerPair.SIZE;
     private static final int BYTE_POS_TYPE = 0;
-    private static final int BYTE_POS_KEYCOUNT = BYTE_POS_TYPE + 1;
+    private static final int BYTE_POS_GEN = BYTE_POS_TYPE + Byte.BYTES;
+    private static final int BYTE_POS_KEYCOUNT = BYTE_POS_GEN + Integer.BYTES;
     private static final int BYTE_POS_RIGHTSIBLING = BYTE_POS_KEYCOUNT + Integer.BYTES;
     private static final int BYTE_POS_LEFTSIBLING = BYTE_POS_RIGHTSIBLING + SIZE_PAGE_REFERENCE;
     private static final int BYTE_POS_NEWGEN = BYTE_POS_LEFTSIBLING + SIZE_PAGE_REFERENCE;
@@ -73,7 +75,7 @@ class TreeNode<KEY,VALUE>
 
     private static final byte LEAF_FLAG = 1;
     private static final byte INTERNAL_FLAG = 0;
-    static final long NO_NODE_FLAG = -1;
+    static final long NO_NODE_FLAG = 0;
 
     private final int internalMaxKeyCount;
     private final int leafMaxKeyCount;
@@ -103,21 +105,22 @@ class TreeNode<KEY,VALUE>
         }
     }
 
-    private void initialize( PageCursor cursor, byte type, int stableGeneration, int unstableGeneration )
+    private void initialize( PageCursor cursor, byte type, long stableGeneration, long unstableGeneration )
     {
         cursor.putByte( BYTE_POS_TYPE, type );
+        setGen( cursor, unstableGeneration );
         setKeyCount( cursor, 0 );
         setRightSibling( cursor, NO_NODE_FLAG, stableGeneration, unstableGeneration );
         setLeftSibling( cursor, NO_NODE_FLAG, stableGeneration, unstableGeneration );
         setNewGen( cursor, NO_NODE_FLAG, stableGeneration, unstableGeneration );
     }
 
-    void initializeLeaf( PageCursor cursor, int stableGeneration, int unstableGeneration )
+    void initializeLeaf( PageCursor cursor, long stableGeneration, long unstableGeneration )
     {
         initialize( cursor, LEAF_FLAG, stableGeneration, unstableGeneration );
     }
 
-    void initializeInternal( PageCursor cursor, int stableGeneration, int unstableGeneration )
+    void initializeInternal( PageCursor cursor, long stableGeneration, long unstableGeneration )
     {
         initialize( cursor, INTERNAL_FLAG, stableGeneration, unstableGeneration );
     }
@@ -134,27 +137,38 @@ class TreeNode<KEY,VALUE>
         return cursor.getByte( BYTE_POS_TYPE ) == INTERNAL_FLAG;
     }
 
+    long gen( PageCursor cursor )
+    {
+        return cursor.getInt( BYTE_POS_GEN ) & GenSafePointer.GENERATION_MASK;
+    }
+
     int keyCount( PageCursor cursor )
     {
         return cursor.getInt( BYTE_POS_KEYCOUNT );
     }
 
-    long rightSibling( PageCursor cursor, int stableGeneration, int unstableGeneration )
+    long rightSibling( PageCursor cursor, long stableGeneration, long unstableGeneration )
     {
         cursor.setOffset( BYTE_POS_RIGHTSIBLING );
         return GenSafePointerPair.read( cursor, stableGeneration, unstableGeneration );
     }
 
-    long leftSibling( PageCursor cursor, int stableGeneration, int unstableGeneration )
+    long leftSibling( PageCursor cursor, long stableGeneration, long unstableGeneration )
     {
         cursor.setOffset( BYTE_POS_LEFTSIBLING );
         return GenSafePointerPair.read( cursor, stableGeneration, unstableGeneration );
     }
 
-    long newGen( PageCursor cursor, int stableGeneration, int unstableGeneration )
+    long newGen( PageCursor cursor, long stableGeneration, long unstableGeneration )
     {
         cursor.setOffset( BYTE_POS_NEWGEN );
         return GenSafePointerPair.read( cursor, stableGeneration, unstableGeneration );
+    }
+
+    void setGen( PageCursor cursor, long generation )
+    {
+        GenSafePointer.assertGeneration( generation );
+        cursor.putInt( BYTE_POS_GEN, (int) generation );
     }
 
     void setKeyCount( PageCursor cursor, int count )
@@ -162,22 +176,22 @@ class TreeNode<KEY,VALUE>
         cursor.putInt( BYTE_POS_KEYCOUNT, count );
     }
 
-    void setRightSibling( PageCursor cursor, long rightSiblingId, int stableGeneration, int unstableGeneration )
+    void setRightSibling( PageCursor cursor, long rightSiblingId, long stableGeneration, long unstableGeneration )
     {
         cursor.setOffset( BYTE_POS_RIGHTSIBLING );
         GenSafePointerPair.write( cursor, rightSiblingId, stableGeneration, unstableGeneration );
     }
 
-    void setLeftSibling( PageCursor cursor, long leftSiblingId, int stableGeneration, int unstableGeneration )
+    void setLeftSibling( PageCursor cursor, long leftSiblingId, long stableGeneration, long unstableGeneration )
     {
         cursor.setOffset( BYTE_POS_LEFTSIBLING );
         GenSafePointerPair.write( cursor, leftSiblingId, stableGeneration, unstableGeneration );
     }
 
-    void setNewGen( PageCursor cursor, long pageId, int stableGeneration, int unstableGeneration )
+    void setNewGen( PageCursor cursor, long newGenId, long stableGeneration, long unstableGeneration )
     {
         cursor.setOffset( BYTE_POS_NEWGEN );
-        GenSafePointerPair.write( cursor, pageId, stableGeneration, unstableGeneration );
+        GenSafePointerPair.write( cursor, newGenId, stableGeneration, unstableGeneration );
     }
 
     // BODY METHODS
@@ -260,26 +274,26 @@ class TreeNode<KEY,VALUE>
         layout.writeValue( cursor, value );
     }
 
-    long childAt( PageCursor cursor, int pos, int stableGeneration, int unstableGeneration )
+    long childAt( PageCursor cursor, int pos, long stableGeneration, long unstableGeneration )
     {
         cursor.setOffset( childOffset( pos ) );
         return GenSafePointerPair.read( cursor, stableGeneration, unstableGeneration );
     }
 
     void insertChildAt( PageCursor cursor, long child, int pos, int keyCount, byte[] tmp,
-            int stableGeneration, int unstableGeneration )
+            long stableGeneration, long unstableGeneration )
     {
         insertSlotAt( cursor, pos, keyCount + 1, childOffset( 0 ), SIZE_PAGE_REFERENCE, tmp );
         setChildAt( cursor, child, pos, stableGeneration, unstableGeneration );
     }
 
-    void setChildAt( PageCursor cursor, long child, int pos, int stableGeneration, int unstableGeneration )
+    void setChildAt( PageCursor cursor, long child, int pos, long stableGeneration, long unstableGeneration )
     {
         cursor.setOffset( childOffset( pos ) );
         writeChild( cursor, child, stableGeneration, unstableGeneration );
     }
 
-    void writeChild( PageCursor cursor, long child, int stableGeneration, int unstableGeneration)
+    void writeChild( PageCursor cursor, long child, long stableGeneration, long unstableGeneration)
     {
         GenSafePointerPair.write( cursor, child, stableGeneration, unstableGeneration );
     }
@@ -357,6 +371,26 @@ class TreeNode<KEY,VALUE>
                 childSize(), childOffset( 0 ), into );
     }
 
+    void goTo( PageCursor cursor, long childId, long stableGeneration, long unstableGeneration )
+            throws IOException
+    {
+        if ( !cursor.next( childId ) )
+        {
+            throw new IllegalStateException( "Could not go to " + childId );
+        }
+        verifyGen( cursor, stableGeneration, unstableGeneration );
+    }
+
+    private void verifyGen( PageCursor cursor, long stableGeneration, long unstableGeneration )
+    {
+        long gen = gen( cursor );
+        if ( ( gen > stableGeneration && gen < unstableGeneration ) || gen > unstableGeneration )
+        {
+            throw new IllegalStateException( "Reached a node with generation=" + gen +
+                    ", stableGeneration=" + stableGeneration + ", unstableGeneration=" + unstableGeneration );
+        }
+    }
+
     /**
      * Leaves cursor on same page as when called. No guarantees on offset.
      * <p>
@@ -392,7 +426,6 @@ class TreeNode<KEY,VALUE>
         cursor.getBytes( into, 0, insertPosition * recordSize );
 
         // Read newRecord
-        // TODO: A bit expensive to wrap in a PageCursor tin foil just to write this middle key
         PageCursor buffer = ByteArrayPageCursor.wrap( into, insertPosition * recordSize, recordSize );
         newRecordWriter.accept( buffer );
 

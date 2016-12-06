@@ -55,7 +55,6 @@ public class SeekCursorTest
     @Before
     public void setUp() throws IOException
     {
-        delegate.initialize();
         pageCursor.next( 0L );
         treeNode.initializeLeaf( pageCursor, STABLE_GENERATION, UNSTABLE_GENERATION );
     }

@@ -20,8 +20,11 @@
 package org.neo4j.index.gbptree;
 
 import org.apache.commons.lang3.mutable.MutableLong;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.IOException;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.test.rule.RandomRule;
@@ -30,23 +33,29 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
-import static org.neo4j.index.gbptree.ByteArrayPageCursor.wrap;
 import static org.neo4j.index.gbptree.TreeNode.NO_NODE_FLAG;
 
 public class TreeNodeTest
 {
     private static final int STABLE_GENERATION = 1;
-    private static final int UNSTABLE_GENERATION = 2;
+    private static final int CRASH_GENERATION = 2;
+    private static final int UNSTABLE_GENERATION = 3;
+    private static final int HIGH_GENERATION = 4;
 
     private static final int PAGE_SIZE = 512;
-    private final PageCursor cursor = wrap( new byte[PAGE_SIZE], 0, PAGE_SIZE );
+    private final PageCursor cursor = new PageAwareByteArrayCursor( PAGE_SIZE );
     private final Layout<MutableLong,MutableLong> layout = new SimpleLongLayout();
     private final TreeNode<MutableLong,MutableLong> node = new TreeNode<>( PAGE_SIZE, layout );
     private final byte[] tmp = new byte[PAGE_SIZE];
 
     @Rule
     public final RandomRule random = new RandomRule();
+
+    @Before
+    public void prepareCursor() throws IOException
+    {
+        cursor.next();
+    }
 
     @Test
     public void shouldInitializeLeaf() throws Exception
@@ -57,6 +66,7 @@ public class TreeNodeTest
         // THEN
         assertTrue( node.isLeaf( cursor ) );
         assertFalse( node.isInternal( cursor ) );
+        assertEquals( UNSTABLE_GENERATION, node.gen( cursor ) );
         assertEquals( 0, node.keyCount( cursor ) );
         assertEquals( NO_NODE_FLAG, node.leftSibling( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
         assertEquals( NO_NODE_FLAG, node.rightSibling( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
@@ -72,10 +82,61 @@ public class TreeNodeTest
         // THEN
         assertFalse( node.isLeaf( cursor ) );
         assertTrue( node.isInternal( cursor ) );
+        assertEquals( UNSTABLE_GENERATION, node.gen( cursor ) );
         assertEquals( 0, node.keyCount( cursor ) );
         assertEquals( NO_NODE_FLAG, node.leftSibling( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
         assertEquals( NO_NODE_FLAG, node.rightSibling( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
         assertEquals( NO_NODE_FLAG, node.newGen( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
+    }
+
+    @Test
+    public void shouldWriteAndReadMaxGen() throws Exception
+    {
+        // GIVEN
+        node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+
+        // WHEN
+        node.setGen( cursor, GenSafePointer.MAX_GENERATION );
+
+        // THEN
+        long gen = node.gen( cursor );
+        assertEquals( GenSafePointer.MAX_GENERATION, gen );
+    }
+
+    @Test
+    public void shouldThrowIfWriteTooLargeGen() throws Exception
+    {
+        // GIVEN
+        node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+
+        // THEN
+        try
+        {
+            node.setGen( cursor, GenSafePointer.MAX_GENERATION + 1 );
+            fail( "Expected throw" );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // Good
+        }
+    }
+
+    @Test
+    public void shouldThrowIfWriteTooSmallGen() throws Exception
+    {
+        // GIVEN
+        node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+
+        // THEN
+        try
+        {
+            node.setGen( cursor, GenSafePointer.MIN_GENERATION - 1 );
+            fail( "Expected throw" );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // Good
+        }
     }
 
     private void shouldSetAndGetKey() throws Exception
@@ -356,6 +417,82 @@ public class TreeNodeTest
         assertEquals( 1, node.childAt( cursor, 0, STABLE_GENERATION, UNSTABLE_GENERATION ) );
         assertEquals( 2, node.childAt( cursor, 1, STABLE_GENERATION, UNSTABLE_GENERATION ) );
         assertEquals( 3, node.childAt( cursor, 2, STABLE_GENERATION, UNSTABLE_GENERATION ) );
+    }
+
+    @Test
+    public void shouldThrowWhenGoToCrashGenLeaf() throws Exception
+    {
+        // GIVEN
+        node.initializeLeaf( cursor, STABLE_GENERATION, CRASH_GENERATION );
+
+        try
+        {
+            // WHEN
+            node.goTo( cursor, cursor.getCurrentPageId(), STABLE_GENERATION, UNSTABLE_GENERATION );
+            fail( "Expected throw" );
+        }
+        catch ( IllegalStateException e )
+        {
+            // THEN
+            // Good
+        }
+    }
+
+    @Test
+    public void shouldThrowWhenGoToCrashGenInternal() throws Exception
+    {
+        // GIVEN
+        node.initializeInternal( cursor, STABLE_GENERATION, CRASH_GENERATION );
+
+        try
+        {
+            // WHEN
+            node.goTo( cursor, cursor.getCurrentPageId(), STABLE_GENERATION, UNSTABLE_GENERATION );
+            fail( "Expected throw" );
+        }
+        catch ( IllegalStateException e )
+        {
+            // THEN
+            // Good
+        }
+    }
+
+    @Test
+    public void shouldThrowWhenGoToHighGenLeaf() throws Exception
+    {
+        // GIVEN
+        node.initializeLeaf( cursor, STABLE_GENERATION, HIGH_GENERATION );
+
+        try
+        {
+            // WHEN
+            node.goTo( cursor, cursor.getCurrentPageId(), STABLE_GENERATION, UNSTABLE_GENERATION );
+            fail( "Expected throw" );
+        }
+        catch ( IllegalStateException e )
+        {
+            // THEN
+            // Good
+        }
+    }
+
+    @Test
+    public void shouldThrowWhenGoToHighGenInternal() throws Exception
+    {
+        // GIVEN
+        node.initializeInternal( cursor, STABLE_GENERATION, HIGH_GENERATION );
+
+        try
+        {
+            // WHEN
+            node.goTo( cursor, cursor.getCurrentPageId(), STABLE_GENERATION, UNSTABLE_GENERATION );
+            fail( "Expected throw" );
+        }
+        catch ( IllegalStateException e )
+        {
+            // THEN
+            // Good
+        }
     }
 
     @Test

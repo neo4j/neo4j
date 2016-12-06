@@ -20,14 +20,30 @@
 package org.neo4j.index.gbptree;
 
 /**
- * Means of communicating information about splits, caused by insertion, from lower levels of the tree up to parent
- * and potentially all the way up to the root.
- *
- * @param <KEY> type of key.
+ * Defines special page ids for {@link GBPTree}.
  */
-class SplitResult<KEY>
+class IdSpace
 {
-    KEY primKey;
-    long left;
-    long right;
+    /**
+     * Page id of the meta page holding information about root id and custom user meta information.
+     * This page id is statically allocated throughout the life of a tree.
+     */
+    static final long META_PAGE_ID = 0L;
+
+    /**
+     * State page with IDs such as free-list, highId, rootId and more. There are two such pages alternating
+     * between checkpoints, this is the first.
+     */
+    static final long STATE_PAGE_A = 1L;
+
+    /**
+     * State page with IDs such as free-list, highId, rootId and more. There are two such pages alternating
+     * between checkpoints, this is the second.
+     */
+    static final long STATE_PAGE_B = 2L;
+
+    /**
+     * Min value allowed as tree node id.
+     */
+    static final long MIN_TREE_NODE_ID = 3L;
 }

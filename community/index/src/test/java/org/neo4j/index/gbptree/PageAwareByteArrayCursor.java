@@ -32,17 +32,27 @@ import static org.neo4j.index.gbptree.ByteArrayPageCursor.*;
 class PageAwareByteArrayCursor extends PageCursor
 {
     private final int pageSize;
+    private final List<byte[]> pages;
+
     private PageCursor current;
     private long currentPageId = UNBOUND_PAGE_ID;
-    private List<byte[]> pages = new ArrayList<>();
+    private long nextPageId;
+    private PageCursor linkedCursor;
 
     PageAwareByteArrayCursor( int pageSize )
     {
+        this( new ArrayList<>(), pageSize, 0 );
+    }
+
+    private PageAwareByteArrayCursor( List<byte[]> pages, int pageSize, long nextPageId )
+    {
+        this.pages = pages;
         this.pageSize = pageSize;
+        this.nextPageId = nextPageId;
         initialize();
     }
 
-    public void initialize()
+    private void initialize()
     {
         currentPageId = UNBOUND_PAGE_ID;
         current = null;
@@ -70,14 +80,8 @@ class PageAwareByteArrayCursor extends PageCursor
     @Override
     public boolean next() throws IOException
     {
-        if ( currentPageId == UNBOUND_PAGE_ID )
-        {
-            currentPageId = 0;
-        }
-        else
-        {
-            currentPageId++;
-        }
+        currentPageId = nextPageId;
+        nextPageId++;
         assertPages();
 
         byte[] page = page( currentPageId );
@@ -279,19 +283,29 @@ class PageAwareByteArrayCursor extends PageCursor
     @Override
     public void close()
     {
+        if ( linkedCursor != null )
+        {
+            linkedCursor.close();
+        }
         current.close();
     }
 
     @Override
     public boolean shouldRetry() throws IOException
     {
-        return current.shouldRetry();
+        return linkedCursor != null && linkedCursor.shouldRetry() || current.shouldRetry();
     }
 
     @Override
     public boolean checkAndClearBoundsFlag()
     {
-        return current.checkAndClearBoundsFlag();
+        boolean result = false;
+        if ( linkedCursor != null )
+        {
+            result = linkedCursor.checkAndClearBoundsFlag();
+        }
+        result |= current.checkAndClearBoundsFlag();
+        return result;
     }
 
     @Override
@@ -321,7 +335,13 @@ class PageAwareByteArrayCursor extends PageCursor
     @Override
     public PageCursor openLinkedCursor( long pageId )
     {
-        return current.openLinkedCursor( pageId );
+        PageCursor toReturn = new PageAwareByteArrayCursor( pages, pageSize, pageId );
+        if ( linkedCursor != null )
+        {
+            linkedCursor.close();
+        }
+        linkedCursor = toReturn;
+        return toReturn;
     }
 
     @Override
