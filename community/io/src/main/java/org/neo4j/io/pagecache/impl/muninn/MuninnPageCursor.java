@@ -447,6 +447,14 @@ abstract class MuninnPageCursor extends PageCursor
     }
 
     @Override
+    public long getLongLE()
+    {
+        long value = getLongLE( offset );
+        offset += SIZE_OF_LONG;
+        return value;
+    }
+
+    @Override
     public long getLongBE( int offset )
     {
         long p = getBoundedPointer( offset, SIZE_OF_LONG );
@@ -459,17 +467,36 @@ abstract class MuninnPageCursor extends PageCursor
         {
             value = UnsafeUtil.getLongByteWise( p );
         }
-        if ( !UnsafeUtil.nativeByteOrderIsBigEndian )
+        return UnsafeUtil.nativeByteOrderIsBigEndian ? value : Long.reverseBytes( value );
+    }
+
+    @Override
+    public long getLongLE( int offset )
+    {
+        long p = getBoundedPointer( offset, SIZE_OF_LONG );
+        long value;
+        if ( UnsafeUtil.allowUnalignedMemoryAccess )
         {
-            value = Long.reverseBytes( value );
+            value = UnsafeUtil.getLong( p );
         }
-        return value;
+        else
+        {
+            value = UnsafeUtil.getLongByteWise( p );
+        }
+        return UnsafeUtil.nativeByteOrderIsBigEndian ? Long.reverseBytes( value ) : value;
     }
 
     @Override
     public void putLongBE( long value )
     {
         putLongBE( offset, value );
+        offset += SIZE_OF_LONG;
+    }
+
+    @Override
+    public void putLongLE( long value )
+    {
+        putLongLE( offset, value );
         offset += SIZE_OF_LONG;
     }
 
@@ -489,9 +516,32 @@ abstract class MuninnPageCursor extends PageCursor
     }
 
     @Override
+    public void putLongLE( int offset, long value )
+    {
+        long p = getBoundedPointer( offset, SIZE_OF_LONG );
+        value = UnsafeUtil.nativeByteOrderIsBigEndian ? Long.reverseBytes( value ) : value;
+        if ( UnsafeUtil.allowUnalignedMemoryAccess )
+        {
+            UnsafeUtil.putLong( p, value );
+        }
+        else
+        {
+            UnsafeUtil.putLongByteWise( p, value );
+        }
+    }
+
+    @Override
     public int getIntBE()
     {
         int i = getIntBE( offset );
+        offset += SIZE_OF_INT;
+        return i;
+    }
+
+    @Override
+    public int getIntLE()
+    {
+        int i = getIntLE( offset );
         offset += SIZE_OF_INT;
         return i;
     }
@@ -513,9 +563,32 @@ abstract class MuninnPageCursor extends PageCursor
     }
 
     @Override
+    public int getIntLE( int offset )
+    {
+        long p = getBoundedPointer( offset, SIZE_OF_INT );
+        int value;
+        if ( UnsafeUtil.allowUnalignedMemoryAccess )
+        {
+            value = UnsafeUtil.getInt( p );
+        }
+        else
+        {
+            value = UnsafeUtil.getIntByteWise( p );
+        }
+        return UnsafeUtil.nativeByteOrderIsBigEndian ? Integer.reverseBytes( value ) : value;
+    }
+
+    @Override
     public void putIntBE( int value )
     {
         putIntBE( offset, value );
+        offset += SIZE_OF_INT;
+    }
+
+    @Override
+    public void putIntLE( int value )
+    {
+        putIntLE( offset, value );
         offset += SIZE_OF_INT;
     }
 
@@ -535,9 +608,32 @@ abstract class MuninnPageCursor extends PageCursor
     }
 
     @Override
-    public final short getShortBE()
+    public void putIntLE( int offset, int value )
+    {
+        long p = getBoundedPointer( offset, SIZE_OF_INT );
+        value = UnsafeUtil.nativeByteOrderIsBigEndian ? Integer.reverseBytes( value ) : value;
+        if ( UnsafeUtil.allowUnalignedMemoryAccess )
+        {
+            UnsafeUtil.putInt( p, value );
+        }
+        else
+        {
+            UnsafeUtil.putIntByteWise( p, value );
+        }
+    }
+
+    @Override
+    public short getShortBE()
     {
         short s = getShortBE( offset );
+        offset += SIZE_OF_SHORT;
+        return s;
+    }
+
+    @Override
+    public short getShortLE()
+    {
+        short s = getShortLE( offset );
         offset += SIZE_OF_SHORT;
         return s;
     }
@@ -559,9 +655,32 @@ abstract class MuninnPageCursor extends PageCursor
     }
 
     @Override
+    public short getShortLE( int offset )
+    {
+        long p = getBoundedPointer( offset, SIZE_OF_SHORT );
+        short value;
+        if ( UnsafeUtil.allowUnalignedMemoryAccess )
+        {
+            value = UnsafeUtil.getShort( p );
+        }
+        else
+        {
+            value = UnsafeUtil.getShortByteWise( p );
+        }
+        return UnsafeUtil.nativeByteOrderIsBigEndian ? Short.reverseBytes( value ) : value;
+    }
+
+    @Override
     public void putShortBE( short value )
     {
         putShortBE( offset, value );
+        offset += SIZE_OF_SHORT;
+    }
+
+    @Override
+    public void putShortLE( short value )
+    {
+        putShortLE( offset, value );
         offset += SIZE_OF_SHORT;
     }
 
@@ -570,6 +689,21 @@ abstract class MuninnPageCursor extends PageCursor
     {
         long p = getBoundedPointer( offset, SIZE_OF_SHORT );
         value = UnsafeUtil.nativeByteOrderIsBigEndian ? value : Short.reverseBytes( value );
+        if ( UnsafeUtil.allowUnalignedMemoryAccess )
+        {
+            UnsafeUtil.putShort( p, value );
+        }
+        else
+        {
+            UnsafeUtil.putShortByteWise( p, value );
+        }
+    }
+
+    @Override
+    public void putShortLE( int offset, short value )
+    {
+        long p = getBoundedPointer( offset, SIZE_OF_SHORT );
+        value = UnsafeUtil.nativeByteOrderIsBigEndian ? Short.reverseBytes( value ) : value;
         if ( UnsafeUtil.allowUnalignedMemoryAccess )
         {
             UnsafeUtil.putShort( p, value );

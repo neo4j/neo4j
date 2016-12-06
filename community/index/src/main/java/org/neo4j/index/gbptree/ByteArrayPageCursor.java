@@ -100,7 +100,19 @@ class ByteArrayPageCursor extends PageCursor
     }
 
     @Override
+    public long getLongLE()
+    {
+        return buffer.getLong();
+    }
+
+    @Override
     public long getLongBE( int offset )
+    {
+        return buffer.getLong( offset );
+    }
+
+    @Override
+    public long getLongLE( int offset )
     {
         return buffer.getLong( offset );
     }
@@ -112,7 +124,19 @@ class ByteArrayPageCursor extends PageCursor
     }
 
     @Override
+    public void putLongLE( long value )
+    {
+        buffer.putLong( value );
+    }
+
+    @Override
     public void putLongBE( int offset, long value )
+    {
+        buffer.putLong( offset, value );
+    }
+
+    @Override
+    public void putLongLE( int offset, long value )
     {
         buffer.putLong( offset, value );
     }
@@ -124,7 +148,19 @@ class ByteArrayPageCursor extends PageCursor
     }
 
     @Override
+    public int getIntLE()
+    {
+        return buffer.getInt();
+    }
+
+    @Override
     public int getIntBE( int offset )
+    {
+        return buffer.getInt( offset );
+    }
+
+    @Override
+    public int getIntLE( int offset )
     {
         return buffer.getInt( offset );
     }
@@ -136,9 +172,69 @@ class ByteArrayPageCursor extends PageCursor
     }
 
     @Override
+    public void putIntLE( int value )
+    {
+        buffer.putInt( value );
+    }
+
+    @Override
     public void putIntBE( int offset, int value )
     {
         buffer.putInt( offset, value );
+    }
+
+    @Override
+    public void putIntLE( int offset, int value )
+    {
+        buffer.putInt( offset, value );
+    }
+
+    @Override
+    public short getShortBE()
+    {
+        return buffer.getShort();
+    }
+
+    @Override
+    public short getShortLE()
+    {
+        return buffer.getShort();
+    }
+
+    @Override
+    public short getShortBE( int offset )
+    {
+        return buffer.getShort( offset );
+    }
+
+    @Override
+    public short getShortLE( int offset )
+    {
+        return buffer.getShort( offset );
+    }
+
+    @Override
+    public void putShortBE( short value )
+    {
+        buffer.putShort( value );
+    }
+
+    @Override
+    public void putShortLE( short value )
+    {
+        buffer.putShort( value );
+    }
+
+    @Override
+    public void putShortBE( int offset, short value )
+    {
+        buffer.putShort( offset, value );
+    }
+
+    @Override
+    public void putShortLE( int offset, short value )
+    {
+        buffer.putShort( offset, value );
     }
 
     @Override
@@ -163,30 +259,6 @@ class ByteArrayPageCursor extends PageCursor
     public void putBytes( byte[] data, int arrayOffset, int length )
     {
         buffer.put( data, arrayOffset, length );
-    }
-
-    @Override
-    public short getShortBE()
-    {
-        return buffer.getShort();
-    }
-
-    @Override
-    public short getShortBE( int offset )
-    {
-        return buffer.getShort( offset );
-    }
-
-    @Override
-    public void putShortBE( short value )
-    {
-        buffer.putShort( value );
-    }
-
-    @Override
-    public void putShortBE( int offset, short value )
-    {
-        buffer.putShort( offset, value );
     }
 
     @Override

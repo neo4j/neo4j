@@ -173,9 +173,21 @@ class PageAwareByteArrayCursor extends PageCursor
     }
 
     @Override
+    public long getLongLE()
+    {
+        return current.getLongLE();
+    }
+
+    @Override
     public long getLongBE( int offset )
     {
         return current.getLongBE( offset );
+    }
+
+    @Override
+    public long getLongLE( int offset )
+    {
+        return current.getLongLE( offset );
     }
 
     @Override
@@ -185,9 +197,21 @@ class PageAwareByteArrayCursor extends PageCursor
     }
 
     @Override
+    public void putLongLE( long value )
+    {
+        current.putLongLE( value );
+    }
+
+    @Override
     public void putLongBE( int offset, long value )
     {
         current.putLongBE( offset, value );
+    }
+
+    @Override
+    public void putLongLE( int offset, long value )
+    {
+        current.putLongLE( offset, value );
     }
 
     @Override
@@ -197,9 +221,21 @@ class PageAwareByteArrayCursor extends PageCursor
     }
 
     @Override
+    public int getIntLE()
+    {
+        return current.getIntLE();
+    }
+
+    @Override
     public int getIntBE( int offset )
     {
         return current.getIntBE( offset );
+    }
+
+    @Override
+    public int getIntLE( int offset )
+    {
+        return current.getIntLE( offset );
     }
 
     @Override
@@ -209,9 +245,69 @@ class PageAwareByteArrayCursor extends PageCursor
     }
 
     @Override
+    public void putIntLE( int value )
+    {
+        current.putIntLE( value );
+    }
+
+    @Override
     public void putIntBE( int offset, int value )
     {
         current.putIntBE( offset, value );
+    }
+
+    @Override
+    public void putIntLE( int offset, int value )
+    {
+        current.putIntLE( offset, value );
+    }
+
+    @Override
+    public short getShortBE()
+    {
+        return current.getShortBE();
+    }
+
+    @Override
+    public short getShortLE()
+    {
+        return current.getShortLE();
+    }
+
+    @Override
+    public short getShortBE( int offset )
+    {
+        return current.getShortBE( offset );
+    }
+
+    @Override
+    public short getShortLE( int offset )
+    {
+        return current.getShortLE( offset );
+    }
+
+    @Override
+    public void putShortBE( short value )
+    {
+        current.putShortBE( value );
+    }
+
+    @Override
+    public void putShortLE( short value )
+    {
+        current.putShortLE( value );
+    }
+
+    @Override
+    public void putShortBE( int offset, short value )
+    {
+        current.putShortBE( offset, value );
+    }
+
+    @Override
+    public void putShortLE( int offset, short value )
+    {
+        current.putShortLE( offset, value );
     }
 
     @Override
@@ -236,30 +332,6 @@ class PageAwareByteArrayCursor extends PageCursor
     public void putBytes( byte[] data, int arrayOffset, int length )
     {
         current.putBytes( data, arrayOffset, length );
-    }
-
-    @Override
-    public short getShortBE()
-    {
-        return current.getShortBE();
-    }
-
-    @Override
-    public short getShortBE( int offset )
-    {
-        return current.getShortBE( offset );
-    }
-
-    @Override
-    public void putShortBE( short value )
-    {
-        current.putShortBE( value );
-    }
-
-    @Override
-    public void putShortBE( int offset, short value )
-    {
-        current.putShortBE( offset, value );
     }
 
     @Override

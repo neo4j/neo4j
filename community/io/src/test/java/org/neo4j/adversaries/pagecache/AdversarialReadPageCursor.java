@@ -226,13 +226,31 @@ class AdversarialReadPageCursor extends PageCursor
     }
 
     @Override
+    public long getLongLE()
+    {
+        return inconsistently( delegate.getLongLE() ).longValue();
+    }
+
+    @Override
     public long getLongBE( int offset )
     {
         return inconsistently( delegate.getLongBE( offset ) ).longValue();
     }
 
     @Override
+    public long getLongLE( int offset )
+    {
+        return inconsistently( delegate.getLongLE( offset ) ).longValue();
+    }
+
+    @Override
     public void putLongBE( long value )
+    {
+        throw new IllegalStateException( "Cannot write using read cursor" );
+    }
+
+    @Override
+    public void putLongLE( long value )
     {
         throw new IllegalStateException( "Cannot write using read cursor" );
     }
@@ -244,9 +262,21 @@ class AdversarialReadPageCursor extends PageCursor
     }
 
     @Override
+    public void putLongLE( int offset, long value )
+    {
+        throw new IllegalStateException( "Cannot write using read cursor" );
+    }
+
+    @Override
     public int getIntBE()
     {
         return inconsistently( delegate.getIntBE() ).intValue();
+    }
+
+    @Override
+    public int getIntLE()
+    {
+        return inconsistently( delegate.getIntLE() ).intValue();
     }
 
     @Override
@@ -256,13 +286,79 @@ class AdversarialReadPageCursor extends PageCursor
     }
 
     @Override
+    public int getIntLE( int offset )
+    {
+        return inconsistently( delegate.getIntLE( offset ) ).intValue();
+    }
+
+    @Override
     public void putIntBE( int value )
     {
         throw new IllegalStateException( "Cannot write using read cursor" );
     }
 
     @Override
+    public void putIntLE( int value )
+    {
+        throw new IllegalStateException( "Cannot write using read cursor" );
+    }
+
+    @Override
     public void putIntBE( int offset, int value )
+    {
+        throw new IllegalStateException( "Cannot write using read cursor" );
+    }
+
+    @Override
+    public void putIntLE( int offset, int value )
+    {
+        throw new IllegalStateException( "Cannot write using read cursor" );
+    }
+
+    @Override
+    public short getShortBE()
+    {
+        return inconsistently( delegate.getShortBE() ).shortValue();
+    }
+
+    @Override
+    public short getShortLE()
+    {
+        return inconsistently( delegate.getShortLE() ).shortValue();
+    }
+
+    @Override
+    public short getShortBE( int offset )
+    {
+        return inconsistently( delegate.getShortBE( offset ) ).shortValue();
+    }
+
+    @Override
+    public short getShortLE( int offset )
+    {
+        return inconsistently( delegate.getShortLE( offset ) ).shortValue();
+    }
+
+    @Override
+    public void putShortBE( short value )
+    {
+        throw new IllegalStateException( "Cannot write using read cursor" );
+    }
+
+    @Override
+    public void putShortLE( short value )
+    {
+        throw new IllegalStateException( "Cannot write using read cursor" );
+    }
+
+    @Override
+    public void putShortBE( int offset, short value )
+    {
+        throw new IllegalStateException( "Cannot write using read cursor" );
+    }
+
+    @Override
+    public void putShortLE( int offset, short value )
     {
         throw new IllegalStateException( "Cannot write using read cursor" );
     }
@@ -289,30 +385,6 @@ class AdversarialReadPageCursor extends PageCursor
 
     @Override
     public void putBytes( byte[] data, int arrayOffset, int length )
-    {
-        throw new IllegalStateException( "Cannot write using read cursor" );
-    }
-
-    @Override
-    public short getShortBE()
-    {
-        return inconsistently( delegate.getShortBE() ).shortValue();
-    }
-
-    @Override
-    public short getShortBE( int offset )
-    {
-        return inconsistently( delegate.getShortBE( offset ) ).shortValue();
-    }
-
-    @Override
-    public void putShortBE( short value )
-    {
-        throw new IllegalStateException( "Cannot write using read cursor" );
-    }
-
-    @Override
-    public void putShortBE( int offset, short value )
     {
         throw new IllegalStateException( "Cannot write using read cursor" );
     }

@@ -30,6 +30,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
@@ -1740,7 +1741,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test( timeout = SHORT_TIMEOUT_MILLIS )
-    public void writesOfDifferentUnitsMustHaveCorrectEndianess() throws Exception
+    public void writesOfBigEndianUnitsMustHaveCorrectEndianess() throws Exception
     {
         configureStandardPageCache();
         PagedFile pagedFile = pageCache.map( file( "a" ), 20 );
@@ -1786,7 +1787,69 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         pagedFile.close();
 
         StoreChannel channel = fs.open( file( "a" ), "r" );
-        ByteBuffer buf = ByteBuffer.allocate( 20 );
+        ByteBuffer buf = ByteBuffer.allocate( 20 ).order( ByteOrder.BIG_ENDIAN );
+        channel.read( buf );
+        buf.flip();
+
+        assertThat( buf.getLong(), is( 42L ) );
+        assertThat( buf.getInt(), is( 42 ) );
+        assertThat( buf.getShort(), is( (short) 42 ) );
+        assertThat( buf.get(), is( (byte) 42 ) );
+        assertThat( buf.get(), is( (byte) 43 ) );
+        assertThat( buf.get(), is( (byte) 44 ) );
+        assertThat( buf.get(), is( (byte) 45 ) );
+        assertThat( buf.get(), is( (byte) 46 ) );
+        assertThat( buf.get(), is( (byte) 47 ) );
+    }
+
+    @Test( timeout = SHORT_TIMEOUT_MILLIS )
+    public void writesOfLittleEndianUnitsMustHaveCorrectEndianess() throws Exception
+    {
+        configureStandardPageCache();
+        PagedFile pagedFile = pageCache.map( file( "a" ), 20 );
+
+        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
+        {
+            assertTrue( cursor.next() );
+            byte[] data = { 42, 43, 44, 45, 46 };
+
+            cursor.putLongLE( 41 );          //  0+8 = 8
+            cursor.putIntLE( 41 );           //  8+4 = 12
+            cursor.putShortLE( (short) 41 ); // 12+2 = 14
+            cursor.putByte( (byte) 41 );   // 14+1 = 15
+            cursor.putBytes( data );       // 15+5 = 20
+        }
+
+        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
+        {
+            assertTrue( cursor.next() );
+
+            long a = cursor.getLongLE();  //  8
+            int b = cursor.getIntLE();    // 12
+            short c = cursor.getShortLE();// 14
+            byte[] data = new byte[] {
+                    cursor.getByte(),   // 15
+                    cursor.getByte(),   // 16
+                    cursor.getByte(),   // 17
+                    cursor.getByte(),   // 18
+                    cursor.getByte(),   // 19
+                    cursor.getByte()    // 20
+            };
+            cursor.setOffset( 0 );
+            cursor.putLongLE( 1 + a );
+            cursor.putIntLE( 1 + b );
+            cursor.putShortLE( (short) (1 + c) );
+            for ( byte d : data )
+            {
+                d++;
+                cursor.putByte( d );
+            }
+        }
+
+        pagedFile.close();
+
+        StoreChannel channel = fs.open( file( "a" ), "r" );
+        ByteBuffer buf = ByteBuffer.allocate( 20 ).order( ByteOrder.LITTLE_ENDIAN );
         channel.read( buf );
         buf.flip();
 
