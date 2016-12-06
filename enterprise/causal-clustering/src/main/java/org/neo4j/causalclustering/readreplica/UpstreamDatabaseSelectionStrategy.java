@@ -17,11 +17,25 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.messaging.routing;
+package org.neo4j.causalclustering.readreplica;
 
+import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.helpers.Service;
 
-public interface UpstreamDatabaseSelectionStrategy
+public abstract class UpstreamDatabaseSelectionStrategy extends Service
 {
-    MemberId upstreamDatabase() throws UpstreamDatabaseSelectionException;
+    protected TopologyService topologyService;
+
+    public UpstreamDatabaseSelectionStrategy( String key, String... altKeys )
+    {
+        super( key, altKeys );
+    }
+
+    void setDiscoveryService( TopologyService topologyService ) {
+
+        this.topologyService = topologyService;
+    }
+
+    public abstract MemberId upstreamDatabase() throws UpstreamDatabaseSelectionException;
 }

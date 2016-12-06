@@ -22,6 +22,7 @@ package org.neo4j.causalclustering.core.state.machines.locks;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.causalclustering.core.state.storage.DurableStateStorage;
 import org.neo4j.causalclustering.core.state.storage.InMemoryStateStorage;
 import org.neo4j.causalclustering.core.state.storage.StateMarshal;
 import org.neo4j.causalclustering.core.state.storage.StateStorage;

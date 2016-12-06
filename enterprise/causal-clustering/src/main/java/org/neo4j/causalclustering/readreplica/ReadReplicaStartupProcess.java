@@ -30,8 +30,6 @@ import org.neo4j.causalclustering.catchup.storecopy.StreamingTransactionsFailedE
 import org.neo4j.causalclustering.helper.RetryStrategy;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
-import org.neo4j.causalclustering.messaging.routing.UpstreamDatabaseSelectionException;
-import org.neo4j.causalclustering.messaging.routing.UpstreamDatabaseSelectionStrategy;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -47,18 +45,19 @@ class ReadReplicaStartupProcess implements Lifecycle
     private final Log userLog;
 
     private final RetryStrategy retryStrategy;
-    private final UpstreamDatabaseSelectionStrategy connectionStrategy;
+    private final UpstreamDatabaseStrategySelector selectionStrategyPipeline;
+
     private String lastIssue;
     private final StoreCopyProcess storeCopyProcess;
 
     ReadReplicaStartupProcess( RemoteStore remoteStore, LocalDatabase localDatabase,
-            Lifecycle txPulling, UpstreamDatabaseSelectionStrategy connectionStrategy, RetryStrategy retryStrategy,
+            Lifecycle txPulling, UpstreamDatabaseStrategySelector selectionStrategyPipeline, RetryStrategy retryStrategy,
             LogProvider debugLogProvider, LogProvider userLogProvider, StoreCopyProcess storeCopyProcess )
     {
         this.remoteStore = remoteStore;
         this.localDatabase = localDatabase;
         this.txPulling = txPulling;
-        this.connectionStrategy = connectionStrategy;
+        this.selectionStrategyPipeline = selectionStrategyPipeline;
         this.retryStrategy = retryStrategy;
         this.debugLog = debugLogProvider.getLog( getClass() );
         this.userLog = userLogProvider.getLog( getClass() );
@@ -89,7 +88,7 @@ class ReadReplicaStartupProcess implements Lifecycle
             MemberId source = null;
             try
             {
-                source = connectionStrategy.upstreamDatabase();
+                source = selectionStrategyPipeline.bestUpstreamDatabase();
                 syncStoreWithCore( source );
                 syncedWithCore = true;
             }
@@ -145,8 +144,9 @@ class ReadReplicaStartupProcess implements Lifecycle
         }
     }
 
-    private void syncStoreWithCore( MemberId source ) throws IOException, StoreIdDownloadFailedException,
-            StoreCopyFailedException, StreamingTransactionsFailedException
+    private void syncStoreWithCore( MemberId source )
+            throws IOException, StoreIdDownloadFailedException, StoreCopyFailedException,
+            StreamingTransactionsFailedException
     {
         if ( localDatabase.isEmpty() )
         {

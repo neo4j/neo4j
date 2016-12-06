@@ -51,6 +51,7 @@ import org.neo4j.causalclustering.core.state.CoreStateApplier;
 import org.neo4j.causalclustering.core.state.LongIndexMarshal;
 import org.neo4j.causalclustering.core.state.machines.CoreStateMachinesModule;
 import org.neo4j.causalclustering.core.state.snapshot.CoreStateDownloader;
+import org.neo4j.causalclustering.core.state.storage.DurableStateStorage;
 import org.neo4j.causalclustering.core.state.storage.StateStorage;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.logging.MessageLogger;

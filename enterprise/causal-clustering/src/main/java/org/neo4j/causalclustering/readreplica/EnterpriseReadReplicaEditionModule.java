@@ -42,7 +42,6 @@ import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
 import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.discovery.procedures.ReadReplicaRoleProcedure;
 import org.neo4j.causalclustering.helper.ExponentialBackoffStrategy;
-import org.neo4j.causalclustering.messaging.routing.ConnectToRandomUpstreamCoreServer;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -181,6 +180,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         long inactivityTimeoutMillis = config.get( CausalClusteringSettings.catch_up_client_inactivity_timeout );
         CatchUpClient catchUpClient = life.add(
                 new CatchUpClient( discoveryService, logProvider, Clocks.systemClock(), inactivityTimeoutMillis,
+
                         monitors ) );
 
         final Supplier<DatabaseHealth> databaseHealthSupplier = dependencies.provideDependency( DatabaseHealth.class );
@@ -238,12 +238,18 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
             } );
         }
 
+
         StoreCopyProcess storeCopyProcess =
                 new StoreCopyProcess( fileSystem, localDatabase, copiedStoreRecovery, remoteStore, logProvider );
 
+        UpstreamDatabaseStrategySelector selectionStrategyPipeline =
+                new UpstreamDatabaseStrategySelector( new ConnectToRandomUpstreamCoreServer(),
+                        new UpstreamDatabaseStrategiesLoader( discoveryService, config ) );
+
+
         CatchupPollingProcess catchupProcess =
                 new CatchupPollingProcess( logProvider, localDatabase, servicesToStopOnStoreCopy, catchUpClient,
-                        new ConnectToRandomUpstreamCoreServer( discoveryService ), catchupTimeoutService,
+                        selectionStrategyPipeline, catchupTimeoutService,
                         config.get( CausalClusteringSettings.pull_interval ), batchingTxApplier,
                         platformModule.monitors, storeCopyProcess, databaseHealthSupplier );
         dependencies.satisfyDependencies( catchupProcess );
@@ -255,8 +261,9 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
 
         ExponentialBackoffStrategy retryStrategy = new ExponentialBackoffStrategy( 1, 30, TimeUnit.SECONDS );
         life.add( new ReadReplicaStartupProcess( remoteStore, localDatabase, txPulling,
-                new ConnectToRandomUpstreamCoreServer( discoveryService ), retryStrategy, logProvider,
+                selectionStrategyPipeline, retryStrategy, logProvider,
                 platformModule.logging.getUserLogProvider(), storeCopyProcess ) );
+
         dependencies.satisfyDependency( createSessionTracker() );
     }
 

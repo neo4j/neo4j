@@ -37,8 +37,8 @@ import org.neo4j.causalclustering.core.consensus.schedule.RenewableTimeoutServic
 import org.neo4j.causalclustering.core.consensus.schedule.RenewableTimeoutService.TimeoutName;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
-import org.neo4j.causalclustering.messaging.routing.UpstreamDatabaseSelectionException;
-import org.neo4j.causalclustering.messaging.routing.UpstreamDatabaseSelectionStrategy;
+import org.neo4j.causalclustering.readreplica.UpstreamDatabaseSelectionStrategy;
+import org.neo4j.causalclustering.readreplica.UpstreamDatabaseStrategySelector;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -80,7 +80,7 @@ public class CatchupPollingProcess extends LifecycleAdapter
     private final StoreCopyProcess storeCopyProcess;
     private final Supplier<DatabaseHealth> databaseHealthSupplier;
     private final CatchUpClient catchUpClient;
-    private final UpstreamDatabaseSelectionStrategy connectionStrategy;
+    private final UpstreamDatabaseStrategySelector selectionStrategyPipeline;
     private final RenewableTimeoutService timeoutService;
     private final long txPullIntervalMillis;
     private final BatchingTxApplier applier;
@@ -93,7 +93,7 @@ public class CatchupPollingProcess extends LifecycleAdapter
 
     public CatchupPollingProcess( LogProvider logProvider, LocalDatabase localDatabase,
             Lifecycle startStopOnStoreCopy, CatchUpClient catchUpClient,
-            UpstreamDatabaseSelectionStrategy connectionStrategy, RenewableTimeoutService timeoutService,
+            UpstreamDatabaseStrategySelector selectionStrategy, RenewableTimeoutService timeoutService,
             long txPullIntervalMillis, BatchingTxApplier applier, Monitors monitors,
             StoreCopyProcess storeCopyProcess, Supplier<DatabaseHealth> databaseHealthSupplier )
 
@@ -102,7 +102,7 @@ public class CatchupPollingProcess extends LifecycleAdapter
         this.log = logProvider.getLog( getClass() );
         this.startStopOnStoreCopy = startStopOnStoreCopy;
         this.catchUpClient = catchUpClient;
-        this.connectionStrategy = connectionStrategy;
+        this.selectionStrategyPipeline = selectionStrategy;
         this.timeoutService = timeoutService;
         this.txPullIntervalMillis = txPullIntervalMillis;
         this.applier = applier;
@@ -180,9 +180,9 @@ public class CatchupPollingProcess extends LifecycleAdapter
         MemberId core;
         try
         {
-            core = connectionStrategy.upstreamDatabase();
+            core = selectionStrategyPipeline.bestUpstreamDatabase();
         }
-        catch ( UpstreamDatabaseSelectionException e )
+        catch ( Exception e )
         {
             log.warn( "Could not find core member to pull from", e );
             return;
@@ -290,9 +290,9 @@ public class CatchupPollingProcess extends LifecycleAdapter
         MemberId core;
         try
         {
-            core = connectionStrategy.upstreamDatabase();
+            core = selectionStrategyPipeline.bestUpstreamDatabase();
         }
-        catch ( UpstreamDatabaseSelectionException e )
+        catch ( Exception e )
         {
             log.warn( "Could not find core member from which to copy store", e );
             return;

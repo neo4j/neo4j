@@ -17,29 +17,29 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.messaging.routing;
+package org.neo4j.causalclustering.readreplica;
 
 import java.util.Iterator;
 import java.util.Random;
 
 import org.neo4j.causalclustering.discovery.CoreTopology;
-import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.helpers.Service;
 
-public class ConnectToRandomUpstreamCoreServer implements UpstreamDatabaseSelectionStrategy
+@Service.Implementation( UpstreamDatabaseSelectionStrategy.class )
+public class ConnectToRandomUpstreamCoreServer extends UpstreamDatabaseSelectionStrategy
 {
-    private final TopologyService discoveryService;
     private final Random random = new Random();
 
-    public ConnectToRandomUpstreamCoreServer( TopologyService discoveryService )
+    public ConnectToRandomUpstreamCoreServer()
     {
-        this.discoveryService = discoveryService;
+        super( "random" );
     }
 
     @Override
     public MemberId upstreamDatabase() throws UpstreamDatabaseSelectionException
     {
-        final CoreTopology coreTopology = discoveryService.coreServers();
+        final CoreTopology coreTopology = topologyService.coreServers();
 
         if ( coreTopology.members().size() == 0 )
         {
