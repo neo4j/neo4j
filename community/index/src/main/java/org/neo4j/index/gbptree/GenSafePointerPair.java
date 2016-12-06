@@ -262,71 +262,8 @@ class GenSafePointerPair
             GenSafePointer.write( cursor, unstableGeneration, pointer );
         }
         return writeResult;
-
-//        TODO ANOTHER APPROACH, keep here for reference and pursuit later
-//        // Select correct slot
-//        boolean writeToSlotA;
-//
-//        boolean aIsValid = correctChecksumA && (generationA <= stableGeneration || generationA == unstableGeneration);
-//        boolean bIsValid = correctChecksumB && (generationB <= stableGeneration || generationB == unstableGeneration);
-//
-//        // Failure cases
-//        // - both invalid
-//        if ( !aIsValid && !bIsValid )
-//        {
-//            return false;
-//        }
-//        // - both valid and same generation, but not empty
-//        if ( aIsValid && bIsValid && generationA == generationB && generationA >= MIN_GENERATION )
-//        {
-//            return false;
-//        }
-//
-//        // Prioritized selection
-//        // - one with unstable generation
-//        if ( (aIsValid && generationA == unstableGeneration) || (bIsValid && generationB == unstableGeneration) )
-//        {
-//            writeToSlotA = aIsValid && generationA == unstableGeneration;
-//        }
-//        // - exactly one invalid
-//        else if ( !aIsValid || !bIsValid )
-//        {
-//            writeToSlotA = !aIsValid;
-//        }
-//        // - empty
-//        else if ( isEmpty( generationA, pointerA ) || isEmpty( generationB, pointerB ) )
-//        {
-//            writeToSlotA = isEmpty( generationA, pointerA );
-//        }
-//        // - lowest generation
-//        else
-//        {
-//            writeToSlotA = generationA < generationB;
-//        }
-//
-//        // And write
-//        int writeOffset = writeToSlotA ? offset : offset + SIZE;
-//        cursor.setOffset( writeOffset );
-//        GenSafePointer.write( cursor, unstableGeneration, pointer );
-//        return true;
     }
 
-    // All different ordered combinations of pointer states and if they are considered to be an ok state to see
-    // STABLE,STABLE      - OK if different generation
-    // STABLE,UNSTABLE    - OK
-    // STABLE,CRASH       - OK
-    // STABLE,BROKEN      - OK
-    // STABLE,EMPTY       - OK
-    // UNSTABLE,UNSTABLE  - NOT OK
-    // UNSTABLE,CRASH     - NOT OK
-    // UNSTABLE,BROKEN    - NOT OK
-    // UNSTABLE,EMPTY     - OK
-    // CRASH,CRASH        - NOT OK
-    // CRASH,BROKEN       - NOT OK
-    // CRASH,EMPTY        - NOT OK
-    // BROKEN,BROKEN      - NOT OK
-    // BROKEN,EMPTY       - NOT OK
-    // EMPTY,EMPTY        - OK if writing, not if reading
     private static long writeResult( byte pointerStateA, byte pointerStateB, long generationA, long generationB )
     {
         if ( pointerStateA == STABLE )
@@ -387,6 +324,23 @@ class GenSafePointerPair
         return generationA > generationB ? FLAG_GEN_A_BIG : generationB > generationA ? FLAG_GEN_B_BIG : FLAG_GEN_EQUAL;
     }
 
+    /**
+     * Pointer state of a GSP (generation, pointer, checksum). Can be any of:
+     * <ul>
+     * <li>{@link #STABLE}</li>
+     * <li>{@link #UNSTABLE}</li>
+     * <li>{@link #CRASH}</li>
+     * <li>{@link #BROKEN}</li>
+     * <li>{@link #EMPTY}</li>
+     * </ul>
+     *
+     * @param stableGeneration stable generation.
+     * @param unstableGeneration unstable generation.
+     * @param generation GSP generation.
+     * @param pointer GSP pointer.
+     * @param checksumIsCorrect whether or not GSP checksum matches checksum of {@code generation} and {@code pointer}.
+     * @return one of the available pointer states.
+     */
     static byte pointerState( long stableGeneration, long unstableGeneration,
             long generation, long pointer, boolean checksumIsCorrect )
     {
@@ -498,6 +452,12 @@ class GenSafePointerPair
         }
     }
 
+    /**
+     * Name of the provided {@code pointerState} gotten from {@link #pointerState(long, long, long, long, boolean)}.
+     *
+     * @param pointerState pointer state to get name for.
+     * @return name of {@code pointerState}.
+     */
     static String pointerStateName( byte pointerState )
     {
         switch ( pointerState )

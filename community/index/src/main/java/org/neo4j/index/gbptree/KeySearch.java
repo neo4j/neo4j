@@ -23,6 +23,9 @@ import java.util.Comparator;
 
 import org.neo4j.io.pagecache.PageCursor;
 
+/**
+ * Methods for (binary-)searching keys in a tree node.
+ */
 class KeySearch
 {
     private static final int POSITION_MASK = 0x7FFFFFFF;
@@ -45,8 +48,11 @@ class KeySearch
      * @param key KEY to search for
      * @param readKey KEY to use as temporary storage during calculation.
      * @param keyCount number of keys in node when starting search
-     * @return first position i for which bTreeNode.keyComparator().compare( key, bTreeNode.keyAt( i ) <= 0,
-     * or keyCount if no such key exists.
+     * @return search result where least significant 31 bits are first position i for which
+     * bTreeNode.keyComparator().compare( key, bTreeNode.keyAt( i ) <= 0, or keyCount if no such key exists.
+     * highest bit (sign bit) says whether or not the exact key was found in the node, if so set to 1, otherwise 0.
+     * To extract position from the returned search result, then use {@link #positionOf(int)}.
+     * To extract whether or not the exact key was found, then use {@link #isHit(int)}.
      */
     static <KEY,VALUE> int search( PageCursor cursor, TreeNode<KEY,VALUE> bTreeNode, KEY key,
             KEY readKey, int keyCount )
@@ -115,11 +121,24 @@ class KeySearch
         return (pos & POSITION_MASK) | ((hit ? 1 : 0) << 31);
     }
 
+    /**
+     * Extracts the position from a search result from {@link #search(PageCursor, TreeNode, Object, Object, int)}.
+     *
+     * @param searchResult search result from {@link #search(PageCursor, TreeNode, Object, Object, int)}.
+     * @return position of the search result.
+     */
     static int positionOf( int searchResult )
     {
         return searchResult & POSITION_MASK;
     }
 
+    /**
+     * Extracts whether or not the searched key was found from search result from
+     * {@link #search(PageCursor, TreeNode, Object, Object, int)}.
+     *
+     * @param searchResult search result form {@link #search(PageCursor, TreeNode, Object, Object, int)}.
+     * @return whether or not the searched key was found.
+     */
     static boolean isHit( int searchResult )
     {
         return (searchResult & HIT_MASK) != 0;

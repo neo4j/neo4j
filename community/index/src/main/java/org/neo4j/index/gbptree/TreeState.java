@@ -24,11 +24,38 @@ import java.util.Objects;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 
+/**
+ * Tree state is defined as top level tree meta data which changes as the tree and its constructs changes, such as:
+ * <ul>
+ * <li>stable/unstable generation numbers</li>
+ * <li>root id, the page id containing the root of the tree</li>
+ * <li>last id, the page id which is the highest allocated in the store</li>
+ * <li>pointers into free-list (page id + offset)</li>
+ * </ul>
+ * This class also knows how to {@link #write(PageCursor, long, long, long, long, long, long, long, int, int)}
+ * and {@link #read(PageCursor)} tree state to and from a {@link PageCursor}, although doesn't care where
+ * in the store that is.
+ */
 class TreeState
 {
+    /**
+     * Page id this tree state has been read from.
+     */
     private final long pageId;
+
+    /**
+     * Stable generation of the tree.
+     */
     private final long stableGeneration;
+
+    /**
+     * Unstable generation of the tree.
+     */
     private final long unstableGeneration;
+
+    /**
+     * Page id which is the root of the tree.
+     */
     private final long rootId;
 
     /**
@@ -41,10 +68,32 @@ class TreeState
      * since {@link PageCache} doesn't allow shrinking files.
      */
     private final long lastId;
+
+    /**
+     * Page id to write new released tree node ids into.
+     */
     private final long freeListWritePageId;
+
+    /**
+     * Page id to read released tree node ids from, when acquiring ids.
+     */
     private final long freeListReadPageId;
+
+    /**
+     * Offset in page {@link #freeListWritePageId} to write new released tree node ids at.
+     */
     private final int freeListWritePos;
+
+    /**
+     * Offset in page {@link #freeListReadPageId} to read released tree node ids from, when acquiring ids.
+     */
     private final int freeListReadPos;
+
+    /**
+     * Due to writing with potential concurrent page flushing tree state is written twice, the second
+     * state acting as checksum. If both states match this variable should be set to {@code true},
+     * otherwise to {@code false}.
+     */
     private boolean valid;
 
     TreeState( long pageId, long stableGeneration, long unstableGeneration, long rootId, long rootGen, long lastId,
@@ -147,6 +196,13 @@ class TreeState
                 freeListWritePageId, freeListReadPageId, freeListWritePos, freeListReadPos ); // Write checksum
     }
 
+    /**
+     * Reads tree state from {@code cursor} at its current offset. If checksum matches then {@link #valid}
+     * is set to {@code true}, otherwise {@code false}.
+     *
+     * @param cursor {@link PageCursor} to read tree state from, at its current offset.
+     * @return {@link TreeState} instance containing read tree state.
+     */
     static TreeState read( PageCursor cursor )
     {
         TreeState state = readStateOnce( cursor );

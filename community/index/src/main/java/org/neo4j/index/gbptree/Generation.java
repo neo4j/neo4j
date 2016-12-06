@@ -32,6 +32,13 @@ class Generation
     private static final long UNSTABLE_GENERATION_MASK = 0xFFFFFFFFL;
     private static final int STABLE_GENERATION_SHIFT = Integer.SIZE;
 
+    /**
+     * Takes one stable and one unstable generation (both unsigned ints) and crams them into one {@code long}.
+     *
+     * @param stableGeneration stable generation.
+     * @param unstableGeneration unstable generation.
+     * @return the two generation numbers as one {@code long}.
+     */
     public static long generation( long stableGeneration, long unstableGeneration )
     {
         GenSafePointer.assertGenerationOnWrite( stableGeneration );
@@ -40,13 +47,25 @@ class Generation
         return (stableGeneration << STABLE_GENERATION_SHIFT) | unstableGeneration;
     }
 
-    public static long unstableGeneration( long rawGeneration )
+    /**
+     * Extracts and returns unstable generation from generation {@code long}.
+     *
+     * @param generation generation variable containing both stable and unstable generations.
+     * @return unstable generation from generation.
+     */
+    public static long unstableGeneration( long generation )
     {
-        return rawGeneration & UNSTABLE_GENERATION_MASK;
+        return generation & UNSTABLE_GENERATION_MASK;
     }
 
-    public static long stableGeneration( long rawGeneration )
+    /**
+     * Extracts and returns stable generation from generation {@code long}.
+     *
+     * @param generation generation variable containing both stable and unstable generations.
+     * @return stable generation from generation.
+     */
+    public static long stableGeneration( long generation )
     {
-        return rawGeneration >>> STABLE_GENERATION_SHIFT;
+        return generation >>> STABLE_GENERATION_SHIFT;
     }
 }
