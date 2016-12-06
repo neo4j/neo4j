@@ -66,17 +66,12 @@ class NeoStoreTransactionLogModule
         return logFiles;
     }
 
-    public LogFile logFile()
-    {
-        return logFile;
-    }
-
-    public CheckPointer checkPointing()
+    CheckPointer checkPointing()
     {
         return checkPointer;
     }
 
-    public TransactionAppender transactionAppender()
+    TransactionAppender transactionAppender()
     {
         return appender;
     }
@@ -85,7 +80,6 @@ class NeoStoreTransactionLogModule
     {
         dependencies.satisfyDependencies( checkPointer,
                                           logFile,
-                                          logFiles,
                                           logFileInformation,
                                           legacyIndexTransactionOrdering,
                                           logicalTransactionStore,

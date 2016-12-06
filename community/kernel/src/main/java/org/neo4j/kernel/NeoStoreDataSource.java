@@ -730,42 +730,19 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             return;
         }
 
-        //:TODO comments are obsolete need to be cleaned up
-
-        // First kindly await all committing transactions to close. Do this without interfering with the
-        // log file monitor. Keep in mind that at this point the availability guard is raised and some time spent
-        // awaiting active transaction to close, on a more coarse-grained level, so no new transactions
-        // should get started. With that said there's actually a race between checking the availability guard
-        // in beginTx, incrementing number of open transactions and raising the guard in shutdown, there might
-        // be some in flight that will get to commit at some point
-        // in the future. Such transactions will fail if they come to commit after our synchronized block below.
-        // Here we're zooming in and focusing on getting committed transactions to close.
-
-        // In order to prevent various issues with life components that can perform operations with logFile on their
-        // stop phase before performing further shutdown/cleanup work and taking a lock on a logfile
-        // we stop all other life components to make sure that we are the last and only one (from current life)
         life.stop();
-        // Under the guard of the logFile monitor do a second pass of waiting committing transactions
-        // to close. This is because there might have been transactions that were in flight and just now
-        // want to commit. We will allow committed transactions be properly closed, but no new transactions
-        // will be able to start committing at this point.
-        awaitAllTransactionsClosed();
-
+        awaitAllClosingTransactions();
         // Checkpointing is now triggered as part of life.shutdown see lifecycleToTriggerCheckPointOnShutdown()
         // Shut down all services in here, effectively making the database unusable for anyone who tries.
         life.shutdown();
-        // After we've released the logFile monitor there might be transactions that wants to commit, but had
-        // to wait for the logFile monitor until now. When they finally get it and try to commit they will
-        // fail since the logFile no longer works.
     }
 
-    private void awaitAllTransactionsClosed()
+    private void awaitAllClosingTransactions()
     {
-        // Only wait for committed transactions to be applied if the kernel is healthy (i.e. no panic)
-        // otherwise if there has been a panic transactions will not be applied properly anyway.
-        TransactionIdStore txIdStore = getDependencyResolver().resolveDependency( TransactionIdStore.class );
-        while ( databaseHealth.isHealthy() &&
-                !txIdStore.closedTransactionIdIsOnParWithOpenedTransactionId() )
+        KernelTransactions kernelTransactions = kernelModule.kernelTransactions();
+        kernelTransactions.terminateAllTransactions();
+
+        while ( kernelTransactions.haveClosingTransaction() )
         {
             LockSupport.parkNanos( TimeUnit.MILLISECONDS.toNanos( 10 ) );
         }
@@ -905,6 +882,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
      */
     public void beforeModeSwitch()
     {
+        kernelModule.kernelTransactions().blockNewTransactions();
         clearTransactions();
     }
 
@@ -925,7 +903,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     public void afterModeSwitch()
     {
         storageEngine.loadSchemaCache();
-        clearTransactions();
+        kernelModule.kernelTransactions().unblockNewTransactions();
     }
 
     @SuppressWarnings( "deprecation" )

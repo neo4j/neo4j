@@ -180,6 +180,13 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
      */
     public void disposeAll()
     {
+        terminateAllTransactions();
+        localTxPool.disposeAll();
+        globalTxPool.disposeAll();
+    }
+
+    public void terminateAllTransactions()
+    {
         for ( KernelTransactionImplementation tx : allTransactions )
         {
             // we mark all transactions for termination since we want to make sure these transactions
@@ -187,8 +194,11 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
             // certainly want to keep that from being reused from this point.
             tx.markForTermination( Status.General.DatabaseUnavailable );
         }
-        localTxPool.disposeAll();
-        globalTxPool.disposeAll();
+    }
+
+    public boolean haveClosingTransaction()
+    {
+        return allTransactions.stream().anyMatch( KernelTransactionImplementation::isClosing );
     }
 
     @Override

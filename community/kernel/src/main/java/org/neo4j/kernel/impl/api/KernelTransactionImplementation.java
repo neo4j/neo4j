@@ -155,8 +155,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private SecurityContext securityContext;
     private volatile StatementLocks statementLocks;
     private boolean beforeHookInvoked;
-    private volatile boolean closing, closed;
-    private boolean failure, success;
+    private volatile boolean closing;
+    private volatile boolean closed;
+    private boolean failure;
+    private boolean success;
     private volatile Status terminationReason;
     private long startTimeMillis;
     private long timeoutMillis;
@@ -462,6 +464,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private boolean hasDataChanges()
     {
         return hasTxStateWithChanges() && txState.hasDataChanges();
+    }
+
+    public boolean isClosing()
+    {
+        return closing;
     }
 
     @Override
