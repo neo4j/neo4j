@@ -30,13 +30,13 @@ public class TimeCheckPointThreshold extends AbstractCheckPointThreshold
     private final long timeMillisThreshold;
     private final Clock clock;
 
-    public TimeCheckPointThreshold( long timeMillisThreshold, Clock clock )
+    public TimeCheckPointThreshold( long thresholdMillis, Clock clock )
     {
-        this.timeMillisThreshold = timeMillisThreshold;
+        this.timeMillisThreshold = thresholdMillis;
         this.clock = clock;
         // The random start offset means database in a cluster will not all check-point at the same time.
-        long randomStartOffset = ThreadLocalRandom.current().nextLong( timeMillisThreshold );
-        this.nextCheckPointTime = clock.millis() + timeMillisThreshold + randomStartOffset;
+        long randomStartOffset = thresholdMillis > 0? ThreadLocalRandom.current().nextLong( thresholdMillis ) : 0;
+        this.nextCheckPointTime = clock.millis() + thresholdMillis + randomStartOffset;
 
     }
 

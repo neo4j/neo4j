@@ -61,7 +61,7 @@ public class TimeCheckPointThresholdTest
         TimeCheckPointThreshold threshold = new TimeCheckPointThreshold( 100, clock );
         threshold.initialize( 2 );
 
-        clock.forward( 100, MILLISECONDS );
+        clock.forward( 199, MILLISECONDS );
 
         // when
         boolean checkPointingNeeded = threshold.isCheckPointingNeeded( 42, triggerInfo );
@@ -78,7 +78,7 @@ public class TimeCheckPointThresholdTest
         TimeCheckPointThreshold threshold = new TimeCheckPointThreshold( 100, clock );
         threshold.initialize( 42 );
 
-        clock.forward( 100, MILLISECONDS );
+        clock.forward( 199, MILLISECONDS );
 
         // when
         boolean checkPointingNeeded = threshold.isCheckPointingNeeded( 42, triggerInfo );
@@ -96,7 +96,7 @@ public class TimeCheckPointThresholdTest
         TimeCheckPointThreshold threshold = new TimeCheckPointThreshold( 100, clock );
         threshold.initialize( 2 );
 
-        clock.forward( 100, MILLISECONDS );
+        clock.forward( 199, MILLISECONDS );
 
         threshold.checkPointHappened( 42 );
 
@@ -118,7 +118,7 @@ public class TimeCheckPointThresholdTest
         TimeCheckPointThreshold threshold = new TimeCheckPointThreshold( 100, clock );
         threshold.initialize( 2 );
 
-        clock.forward( 100, MILLISECONDS );
+        clock.forward( 199, MILLISECONDS );
 
         threshold.checkPointHappened( 42 );
 
