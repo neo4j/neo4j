@@ -36,7 +36,7 @@ trait RewriteTest {
     val original = parseForRewriting(originalQuery)
     val expected = parseForRewriting(expectedQuery)
     val mkException = new SyntaxExceptionCreator(originalQuery, Some(DummyPosition(0)))
-    semanticChecker.check(originalQuery, original, mkException)
+    semanticChecker.check(original, mkException)
 
     val result = rewrite(original)
     assert(result === expected, "\n" + originalQuery)

@@ -123,7 +123,7 @@ object CostBasedExecutablePlanBuilder {
       CNFNormalizer()(monitor)
     )
 
-    val state = semanticChecker.check(namespacedStatement.toString, namespacedStatement, mkException = (msg, pos) => throw new InternalException(s"Unexpected error during late semantic checking: $msg at $pos"))
+    val state = semanticChecker.check(namespacedStatement, mkException = (msg, pos) => throw new InternalException(s"Unexpected error during late semantic checking: $msg at $pos"))
     val table = semanticTable.copy(types = state.typeTable, recordedScopes = state.recordedScopes)
 
     val newStatement = statementRewriter.rewriteStatement(namespacedStatement)(

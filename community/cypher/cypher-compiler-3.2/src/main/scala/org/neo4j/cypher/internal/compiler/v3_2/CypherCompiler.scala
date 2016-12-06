@@ -19,121 +19,25 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2
 
-import java.time.Clock
-
-import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase.{AST_REWRITE, PARSING, SEMANTIC_CHECK}
+import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase.SEMANTIC_CHECK
 import org.neo4j.cypher.internal.compiler.v3_2.ast.ResolvedCall
-import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters.replaceAliasedFunctionInvocations.aliases
-import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters.{expandCallWhere, normalizeReturnClauses, normalizeWithClauses, replaceAliasedFunctionInvocations}
-import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi.CodeStructure
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan._
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.procs.DelegatingProcedureExecutablePlanBuilder
-import org.neo4j.cypher.internal.compiler.v3_2.helpers.{RuntimeTypeConverter, closing}
-import org.neo4j.cypher.internal.compiler.v3_2.planner._
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.rewriter.LogicalPlanRewriter
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.{CachedMetricsFactory, DefaultQueryPlanner, SimpleMetricsFactory}
+import org.neo4j.cypher.internal.compiler.v3_2.helpers.closing
+import org.neo4j.cypher.internal.compiler.v3_2.phases.PipeLineRunner
 import org.neo4j.cypher.internal.compiler.v3_2.spi.{PlanContext, ProcedureSignature}
 import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSequencer
-import org.neo4j.cypher.internal.frontend.v3_2.ast.{FunctionInvocation, FunctionName, Statement}
-import org.neo4j.cypher.internal.frontend.v3_2.notification.{DeprecatedFunctionNotification, DeprecatedProcedureNotification, InternalNotification}
-import org.neo4j.cypher.internal.frontend.v3_2.parser.CypherParser
-import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, SemanticTable, inSequence}
+import org.neo4j.cypher.internal.frontend.v3_2.ast.Statement
+import org.neo4j.cypher.internal.frontend.v3_2.notification.{DeprecatedProcedureNotification, InternalNotification}
+import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, SemanticTable}
 
-trait AstRewritingMonitor {
-  def abortedRewriting(obj: AnyRef)
-  def abortedRewritingDueToLargeDNF(obj: AnyRef)
-}
-
-trait CypherCacheFlushingMonitor[T] {
-  def cacheFlushDetected(justBeforeKey: T) {}
-}
-
-trait CypherCacheHitMonitor[T] {
-  def cacheHit(key: T) {}
-  def cacheMiss(key: T) {}
-  def cacheDiscard(key: T, userKey: String) {}
-}
-
-trait InfoLogger {
-  def info(message: String)
-}
-
-trait CypherCacheMonitor[T, E] extends CypherCacheHitMonitor[T] with CypherCacheFlushingMonitor[E]
-
-trait AstCacheMonitor extends CypherCacheMonitor[Statement, CacheAccessor[Statement, ExecutionPlan]]
-case class CypherCompilerConfiguration(queryCacheSize: Int,
-                                       statsDivergenceThreshold: Double,
-                                       queryPlanTTL: Long,
-                                       useErrorsOverWarnings: Boolean,
-                                       idpMaxTableSize: Int,
-                                       idpIterationDuration: Long,
-                                       errorIfShortestPathFallbackUsedAtRuntime: Boolean,
-                                       nonIndexedLabelWarningThreshold: Long)
-
-object CypherCompilerFactory {
-  val monitorTag = "cypher3.1"
-
-  def costBasedCompiler(config: CypherCompilerConfiguration, clock: Clock,
-                        structure: CodeStructure[GeneratedQuery],
-                        monitors: Monitors, logger: InfoLogger,
-                        rewriterSequencer: (String) => RewriterStepSequencer,
-                        plannerName: Option[CostBasedPlannerName],
-                        runtimeName: Option[RuntimeName],
-                        updateStrategy: Option[UpdateStrategy],
-                        typeConverter: RuntimeTypeConverter): CypherCompiler = {
-    val parser = new CypherParser
-    val checker = new SemanticChecker
-    val rewriter = new ASTRewriter(rewriterSequencer)
-    val metricsFactory = CachedMetricsFactory(SimpleMetricsFactory)
-    val queryPlanner = DefaultQueryPlanner(LogicalPlanRewriter(rewriterSequencer))
-
-    val compiledPlanBuilder = CompiledPlanBuilder(clock, structure)
-    val interpretedPlanBuilder = InterpretedPlanBuilder(clock, monitors, typeConverter)
-
-    // Pick runtime based on input
-    val runtimeBuilder = RuntimeBuilder.create(runtimeName, interpretedPlanBuilder, compiledPlanBuilder, config.useErrorsOverWarnings)
-
-    val costPlanProducer = CostBasedPipeBuilderFactory.create(
-      monitors = monitors,
-      metricsFactory = metricsFactory,
-      queryPlanner = queryPlanner,
-      rewriterSequencer = rewriterSequencer,
-      semanticChecker = checker,
-      plannerName = plannerName,
-      runtimeBuilder = runtimeBuilder,
-      config = config,
-      updateStrategy = updateStrategy,
-      publicTypeConverter = typeConverter.asPublicType
-    )
-    val procedurePlanProducer = DelegatingProcedureExecutablePlanBuilder(costPlanProducer, typeConverter.asPublicType)
-
-    // Pick planner based on input
-    val planBuilder: ExecutablePlanBuilder = procedurePlanProducer
-
-    val execPlanBuilder = new ExecutionPlanBuilder(clock, planBuilder, new PlanFingerprintReference(clock, config.queryPlanTTL, config.statsDivergenceThreshold, _) )
-    val planCacheFactory = () => new LFUCache[Statement, ExecutionPlan](config.queryCacheSize)
-    monitors.addMonitorListener(logStalePlanRemovalMonitor(logger), monitorTag)
-    val cacheMonitor = monitors.newMonitor[AstCacheMonitor](monitorTag)
-    val cache = new MonitoringCacheAccessor[Statement, ExecutionPlan](cacheMonitor)
-
-    CypherCompiler(parser, checker, execPlanBuilder, rewriter, cache, planCacheFactory, cacheMonitor, monitors)
-  }
-
-  private def logStalePlanRemovalMonitor(log: InfoLogger) = new AstCacheMonitor {
-    override def cacheDiscard(key: Statement, userKey: String) {
-      log.info(s"Discarded stale query from the query cache: $userKey")
-    }
-  }
-}
-
-case class CypherCompiler(parser: CypherParser,
-                          semanticChecker: SemanticChecker,
+case class CypherCompiler(semanticChecker: SemanticChecker,
                           executionPlanBuilder: ExecutionPlanBuilder,
                           astRewriter: ASTRewriter,
                           cacheAccessor: CacheAccessor[Statement, ExecutionPlan],
                           planCacheFactory: () => LFUCache[Statement, ExecutionPlan],
                           cacheMonitor: CypherCacheFlushingMonitor[CacheAccessor[Statement, ExecutionPlan]],
-                          monitors: Monitors) {
+                          monitors: Monitors,
+                          sequencer: String => RewriterStepSequencer) {
 
   def planQuery(queryText: String, context: PlanContext, notificationLogger: InternalNotificationLogger,
                 plannerName: String = "",
@@ -158,29 +62,9 @@ case class CypherCompiler(parser: CypherParser,
                             plannerName: String = "",
                             offset: Option[InputPosition] = None,
                             tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING): PreparedQuerySyntax = {
-
-    val parsedStatement = closing(tracer.beginPhase(PARSING)) {
-      parser.parse(queryText, offset)
-    }
-
-    val syntaxDeprecations = syntaxDeprecationNotifications(parsedStatement)
-    syntaxDeprecations.foreach(notificationLogger.log)
-
     val mkException = new SyntaxExceptionCreator(rawQueryText, offset)
-    val cleanedStatement: Statement = parsedStatement.endoRewrite(inSequence(normalizeReturnClauses(mkException),
-                                                                             normalizeWithClauses(mkException),
-                                                                             expandCallWhere,
-                                                                             replaceAliasedFunctionInvocations))
-    val originalSemanticState = closing(tracer.beginPhase(SEMANTIC_CHECK)) {
-      semanticChecker.check(queryText, cleanedStatement, mkException)
-    }
-    originalSemanticState.notifications.foreach(notificationLogger.log)
-
-    val (rewrittenStatement, extractedParams, postConditions) = closing(tracer.beginPhase(AST_REWRITE)) {
-      astRewriter.rewrite(queryText, cleanedStatement, originalSemanticState)
-    }
-
-    PreparedQuerySyntax(rewrittenStatement, queryText, offset, extractedParams)(plannerName, postConditions)
+    val pipeLine = PipeLineRunner(mkException,sequencer, tracer, notificationLogger)
+    pipeLine.runIt(queryText, offset)(plannerName)
   }
 
   def prepareSemanticQuery(syntacticQuery: PreparedQuerySyntax, notificationLogger: InternalNotificationLogger,
@@ -197,19 +81,13 @@ case class CypherCompiler(parser: CypherParser,
 
     val mkException = new SyntaxExceptionCreator(queryText, offset)
     val postRewriteSemanticState = closing(tracer.beginPhase(SEMANTIC_CHECK)) {
-      semanticChecker.check(syntacticQuery.queryText, rewrittenSyntacticQuery.statement, mkException)
+      semanticChecker.check(rewrittenSyntacticQuery.statement, mkException)
     }
 
     val table = SemanticTable(types = postRewriteSemanticState.typeTable, recordedScopes = postRewriteSemanticState.recordedScopes)
     val result = rewrittenSyntacticQuery.withSemantics(table, postRewriteSemanticState.scopeTree)
     result
   }
-
-  private def syntaxDeprecationNotifications(statement: Statement): Set[InternalNotification] =
-    statement.treeFold(Set.empty[InternalNotification]) {
-      case f@FunctionInvocation(_, FunctionName(name), _, _) if aliases.get(name).nonEmpty =>
-        (seq) => (seq + DeprecatedFunctionNotification(f.position, name, aliases(name)), None)
-    }
 
   private def procedureDeprecationNotifications(statement: Statement): Set[InternalNotification] =
     statement.treeFold(Set.empty[InternalNotification]) {
@@ -228,4 +106,34 @@ case class CypherCompiler(parser: CypherParser,
 }
 
 
+case class CypherCompilerConfiguration(queryCacheSize: Int,
+                                       statsDivergenceThreshold: Double,
+                                       queryPlanTTL: Long,
+                                       useErrorsOverWarnings: Boolean,
+                                       idpMaxTableSize: Int,
+                                       idpIterationDuration: Long,
+                                       errorIfShortestPathFallbackUsedAtRuntime: Boolean,
+                                       nonIndexedLabelWarningThreshold: Long)
 
+trait AstRewritingMonitor {
+  def abortedRewriting(obj: AnyRef)
+  def abortedRewritingDueToLargeDNF(obj: AnyRef)
+}
+
+trait CypherCacheFlushingMonitor[T] {
+  def cacheFlushDetected(justBeforeKey: T) {}
+}
+
+trait CypherCacheHitMonitor[T] {
+  def cacheHit(key: T) {}
+  def cacheMiss(key: T) {}
+  def cacheDiscard(key: T, userKey: String) {}
+}
+
+trait InfoLogger {
+  def info(message: String)
+}
+
+trait CypherCacheMonitor[T, E] extends CypherCacheHitMonitor[T] with CypherCacheFlushingMonitor[E]
+
+trait AstCacheMonitor extends CypherCacheMonitor[Statement, CacheAccessor[Statement, ExecutionPlan]]

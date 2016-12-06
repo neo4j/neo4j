@@ -205,7 +205,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     val parsedStatement = parser.parse(query.replace("\r\n", "\n"))
     val mkException = new SyntaxExceptionCreator(query, Some(pos))
     val cleanedStatement: Statement = parsedStatement.endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException)))
-    val semanticState = semanticChecker.check(query, cleanedStatement, mkException)
+    val semanticState = semanticChecker.check(cleanedStatement, mkException)
     val astRewriterResultStatement = astRewriter.rewrite(query, cleanedStatement, semanticState)._1
     val resolvedStatement = (procLookup, fcnLookup) match {
       case (None, None) => astRewriterResultStatement

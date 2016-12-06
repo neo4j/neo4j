@@ -319,7 +319,7 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
       monitors.newMonitor[CypherCacheFlushingMonitor[CacheAccessor[Statement, ExecutionPlan]]](monitorTag)
     val cache = new MonitoringCacheAccessor[Statement, ExecutionPlan](cacheHitMonitor)
 
-    CypherCompiler(parser, checker, execPlanBuilder, rewriter, cache, planCacheFactory, cacheFlushMonitor, monitors)
+    CypherCompiler(checker, execPlanBuilder, rewriter, cache, planCacheFactory, cacheFlushMonitor, monitors, rewriterSequencer)
   }
 
   case class QueryExecutionResult(compiler: String, dbHits: Option[Long], plan: InternalPlanDescription) {

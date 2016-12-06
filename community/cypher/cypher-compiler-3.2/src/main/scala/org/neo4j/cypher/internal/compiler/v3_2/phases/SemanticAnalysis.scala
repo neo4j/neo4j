@@ -17,37 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_2;
+package org.neo4j.cypher.internal.compiler.v3_2.phases
 
-public interface CompilationPhaseTracer
-{
-    enum CompilationPhase
-    {
-        PARSING,
-        DEPRECATION_WARNINGS,
-        SEMANTIC_CHECK,
-        AST_REWRITE,
-        LOGICAL_PLANNING,
-        CODE_GENERATION,
-        PIPE_BUILDING,
-    }
+import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase.SEMANTIC_CHECK
+import org.neo4j.cypher.internal.compiler.v3_2.SemanticChecker
+import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilationState.{State2, State3}
 
-    CompilationPhaseEvent beginPhase( CompilationPhase phase );
+case object SemanticAnalysis extends Phase[State2, State3] {
+  private val checker = new SemanticChecker
 
-    interface CompilationPhaseEvent extends AutoCloseable
-    {
-        @Override
-        void close();
-    }
+  override def transform(from: State2, context: Context): State3 = {
+    val semanticState = checker.check(from.statement, context.exceptionCreator)
+    semanticState.notifications.foreach(context.notificationLogger.log)
+    from.add(semanticState)
+  }
 
-    CompilationPhaseTracer NO_TRACING = new CompilationPhaseTracer()
-    {
-        @Override
-        public CompilationPhaseEvent beginPhase( CompilationPhase phase )
-        {
-            return NONE_PHASE;
-        }
-    };
-    CompilationPhaseEvent NONE_PHASE = () -> {
-    };
+  override def phase = SEMANTIC_CHECK
+
+  override def why = "Does variable binding, typing, type checking and other semantic checks"
 }
