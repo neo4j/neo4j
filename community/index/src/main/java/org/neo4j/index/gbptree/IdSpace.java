@@ -19,7 +19,10 @@
  */
 package org.neo4j.index.gbptree;
 
-public class IdSpace
+/**
+ * Defines special page ids for {@link GBPTree}.
+ */
+class IdSpace
 {
     /**
      * Page id of the meta page holding information about root id and custom user meta information.

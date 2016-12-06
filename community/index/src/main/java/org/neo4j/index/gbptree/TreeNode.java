@@ -66,8 +66,8 @@ class TreeNode<KEY,VALUE>
 {
     private static final int SIZE_PAGE_REFERENCE = GenSafePointerPair.SIZE;
     private static final int BYTE_POS_TYPE = 0;
-    private static final int BYTE_POS_GEN = BYTE_POS_TYPE + 1;
-    private static final int BYTE_POS_KEYCOUNT = BYTE_POS_GEN + 4;
+    private static final int BYTE_POS_GEN = BYTE_POS_TYPE + Byte.BYTES;
+    private static final int BYTE_POS_KEYCOUNT = BYTE_POS_GEN + Integer.BYTES;
     private static final int BYTE_POS_RIGHTSIBLING = BYTE_POS_KEYCOUNT + Integer.BYTES;
     private static final int BYTE_POS_LEFTSIBLING = BYTE_POS_RIGHTSIBLING + SIZE_PAGE_REFERENCE;
     private static final int BYTE_POS_NEWGEN = BYTE_POS_LEFTSIBLING + SIZE_PAGE_REFERENCE;
