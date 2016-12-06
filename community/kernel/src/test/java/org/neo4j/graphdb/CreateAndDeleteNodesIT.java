@@ -22,6 +22,7 @@ package org.neo4j.graphdb;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.test.GraphDatabaseServiceCleaner;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 public class CreateAndDeleteNodesIT
@@ -52,19 +53,6 @@ public class CreateAndDeleteNodesIT
         }
 
         // When
-        try ( Transaction tx2 = dataBase.beginTx() )
-        {
-            for ( Relationship r : dataBase.getAllRelationships() )
-            {
-                r.delete();
-            }
-
-            for ( Node n : dataBase.getAllNodes() )
-            {
-                n.delete();
-            }
-
-            tx2.success();
-        }
+        GraphDatabaseServiceCleaner.cleanupAllRelationshipsAndNodes( dataBase );
     }
 }

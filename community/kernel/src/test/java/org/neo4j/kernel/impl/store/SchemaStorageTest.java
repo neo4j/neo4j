@@ -37,8 +37,6 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.schema.ConstraintDefinition;
-import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
@@ -55,6 +53,7 @@ import org.neo4j.kernel.impl.store.record.NodePropertyConstraintRule;
 import org.neo4j.kernel.impl.store.record.RelationshipPropertyExistenceConstraintRule;
 import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
 import org.neo4j.storageengine.api.schema.SchemaRule;
+import org.neo4j.test.GraphDatabaseServiceCleaner;
 import org.neo4j.test.mockito.matcher.KernelExceptionUserMessageMatcher;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
@@ -91,18 +90,7 @@ public class SchemaStorageTest
     @Before
     public void clearSchema()
     {
-        try ( Transaction tx = db.beginTx() )
-        {
-            for ( ConstraintDefinition constraint : db.schema().getConstraints() )
-            {
-                constraint.drop();
-            }
-            for ( IndexDefinition index : db.schema().getIndexes() )
-            {
-                index.drop();
-            }
-            tx.success();
-        }
+        GraphDatabaseServiceCleaner.cleanupSchema( db );
     }
 
     @Test
