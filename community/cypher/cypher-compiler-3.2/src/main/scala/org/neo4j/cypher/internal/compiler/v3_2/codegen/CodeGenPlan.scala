@@ -27,14 +27,14 @@ trait CodeGenPlan {
 
   val logicalPlan: LogicalPlan
 
-  def produce(context: CodeGenContext): (Option[JoinTableMethod], Seq[Instruction])
+  def produce(context: CodeGenContext): (Option[JoinTableMethod], List[Instruction])
 
-  def consume(context: CodeGenContext, child: CodeGenPlan): (Option[JoinTableMethod], Instruction)
+  def consume(context: CodeGenContext, child: CodeGenPlan): (Option[JoinTableMethod], List[Instruction])
 }
 
 trait LeafCodeGenPlan extends CodeGenPlan {
 
-  override final def consume(context: CodeGenContext, child: CodeGenPlan): (Option[JoinTableMethod], Instruction) =
+  override final def consume(context: CodeGenContext, child: CodeGenPlan): (Option[JoinTableMethod], List[Instruction]) =
     throw new UnsupportedOperationException("Leaf plan does not consume")
 }
 

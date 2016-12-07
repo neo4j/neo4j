@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.commands.ExpressionCo
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{InequalitySeekRangeExpression, PrefixSeekRangeExpression}
 import org.neo4j.cypher.internal.compiler.v3_2.commands.{QueryExpression, RangeQueryExpression}
 import org.neo4j.cypher.internal.compiler.v3_2.pipes._
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans._
@@ -102,7 +103,7 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
         PlanDescriptionImpl(id, "ProcedureCall", NoChildren, Seq(signature), variables)
 
       case RelationshipCountFromCountStore(IdName(ident), startLabel, typeNames, endLabel, _) =>
-        val exp = CountRelationshipsExpression(ident, startLabel.map(_.name), typeNames.names, endLabel.map(_.name))
+        val exp = CountRelationshipsExpression(ident, startLabel.map(_.name), typeNames.map(_.name), endLabel.map(_.name))
         PlanDescriptionImpl(id, "RelationshipCountFromCountStore", NoChildren, Seq(exp), variables)
 
       case _: UndirectedRelationshipByIdSeek =>
@@ -146,6 +147,17 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
 
       case _: EmptyResult =>
         PlanDescriptionImpl(id, "EmptyResult", children, Seq.empty, variables)
+      case NodeCountFromCountStore(IdName(id), labelName, arguments) =>
+        PlanDescriptionImpl(id = idMap(plan), "NodeCountFromCountStore", NoChildren,
+                            Seq(CountNodesExpression(id, labelName.map(_.name))), variables)
+
+      case RelationshipCountFromCountStore(IdName(id), start, types, end, arguments) =>
+        PlanDescriptionImpl(id = idMap(plan), "RelationshipCountFromCountStore", NoChildren,
+                            Seq(CountRelationshipsExpression(id, start.map(_.name), types.map(_.name), end.map(_.name))),
+                            variables)
+
+      case NodeUniqueIndexSeek(IdName(id), label, propKey, value, arguments) =>
+        PlanDescriptionImpl(id = idMap(plan), "NodeUniqueIndexSeek", NoChildren, Seq(Index(label.name, propKey.name)), variables)
 
       case _: ErrorPlan =>
         PlanDescriptionImpl(id, "Error", children, Seq.empty, variables)
@@ -249,6 +261,10 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
         }
         PlanDescriptionImpl(id, s"VarLengthExpand($modeDescr)", children, Seq(expandDescription) ++ predicatesDescription, variables)
 
+      case Aggregation(source, grouping, aggregation) =>
+        PlanDescriptionImpl(id = idMap(plan), name = "EagerAggregation", children ,
+                            Seq(Arguments.KeyNames(grouping.keys.toSeq)), variables)
+
       case x => throw new InternalException(s"Unknown plan type: ${x.getClass.getSimpleName}. Missing a case?")
     }
 
@@ -290,6 +306,9 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
 
       case LetSelectOrSemiApply(_, _, _, predicate) =>
         PlanDescriptionImpl(id, "LetSelectOrSemiApply", children, Seq(Expression(predicate)), variables)
+
+      case row: SingleRow =>
+        new SingleRowPlanDescription(id = idMap(plan), Seq.empty, row.argumentIds.map(_.name))
 
       case LetSelectOrAntiSemiApply(_, _, _, predicate) =>
         PlanDescriptionImpl(id, "LetSelectOrSemiApply", children, Seq(Expression(predicate)), variables)

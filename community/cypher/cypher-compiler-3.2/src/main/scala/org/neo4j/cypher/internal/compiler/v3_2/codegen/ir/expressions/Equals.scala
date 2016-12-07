@@ -48,8 +48,8 @@ case class Equals(lhs: CodeGenExpression, rhs: CodeGenExpression) extends CodeGe
    *   semantics
    */
   override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) = {
-    if (nullable) structure.threeValuedEqualsExpression(structure.box(lhs.generateExpression(structure), lhs.codeGenType),
-                                                        structure.box(rhs.generateExpression(structure), rhs.codeGenType))
+    if (nullable) structure.threeValuedEqualsExpression(structure.box(lhs.generateExpression(structure)),
+                                                        structure.box(rhs.generateExpression(structure)))
     else (lhs, rhs) match {
       case (NodeExpression(v1), NodeExpression(v2)) =>
         structure.equalityExpression(structure.loadVariable(v1.name), structure.loadVariable(v2.name), CodeGenType.primitiveNode)
@@ -79,8 +79,7 @@ case class Equals(lhs: CodeGenExpression, rhs: CodeGenExpression) extends CodeGe
         structure.equalityExpression(lhs.generateExpression(structure), rhs.generateExpression(structure), t1.codeGenType)
       case _ =>
         structure.unbox(
-          structure.threeValuedEqualsExpression(structure.box(lhs.generateExpression(structure), lhs.codeGenType),
-                                                              structure.box(rhs.generateExpression(structure), rhs.codeGenType)),
+          structure.threeValuedEqualsExpression(structure.box(lhs.generateExpression(structure)), structure.box(rhs.generateExpression(structure))),
           CodeGenType(CTBoolean, ReferenceType))
       }
   }

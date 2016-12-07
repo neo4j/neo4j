@@ -33,7 +33,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.{CostBasedPlannerName, NormalMode
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_2.{ParameterNotFoundException, SemanticDirection, SemanticTable}
+import org.neo4j.cypher.internal.frontend.v3_2.{ParameterNotFoundException, SemanticDirection, SemanticTable, _}
 import org.neo4j.cypher.internal.ir.v3_2.IdName
 import org.neo4j.cypher.internal.spi.v3_2.TransactionalContextWrapper
 import org.neo4j.cypher.internal.spi.v3_2.codegen.GeneratedQueryStructure
@@ -43,7 +43,7 @@ import org.neo4j.kernel.impl.api.RelationshipVisitor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.core.{NodeManager, NodeProxy, RelationshipProxy}
 
-import scala.collection.JavaConverters
+import scala.collection.{JavaConverters, mutable}
 
 class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -889,6 +889,220 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     result.toSet should equal(Set(Map(name -> 1)))
   }
 
+  test("count no grouping key") {
+    when(semanticTable.resolvedPropertyKeyNames).thenReturn(mutable.Map.empty[String, PropertyKeyId])
+    val scan = AllNodesScan(IdName("a"), Set.empty)(solved)
+    val ns: Namespace = Namespace(List())(pos)
+    val count: FunctionName = FunctionName("count")(pos)
+    val property = Property(ast.Variable("a")(pos), PropertyKeyName("prop")(pos))(pos)
+    val invocation: FunctionInvocation = FunctionInvocation(ns, count, distinct = false, Vector(property))(pos)
+    val aggregation = Aggregation(scan, Map.empty, Map("count(a.prop)" -> invocation))(solved)
+    val plan = ProduceResult(List("count(a.prop)"), aggregation)
+
+    //when
+    val compiled = compileAndExecute(plan)
+
+    val result = getResult(compiled, "count(a.prop)")
+
+    //then
+    result.toList should equal(List(Map("count(a.prop)" -> 3L)))
+  }
+
+  test("count distinct no grouping key") {
+    when(semanticTable.resolvedPropertyKeyNames).thenReturn(mutable.Map.empty[String, PropertyKeyId])
+    val scan = AllNodesScan(IdName("a"), Set.empty)(solved)
+    val ns: Namespace = Namespace(List())(pos)
+    val count: FunctionName = FunctionName("count")(pos)
+    val property = Property(ast.Variable("a")(pos), PropertyKeyName("prop")(pos))(pos)
+    val invocation: FunctionInvocation = FunctionInvocation(ns, count, distinct = true, Vector(property))(pos)
+    val aggregation = Aggregation(scan, Map.empty, Map("count(a.prop)" -> invocation))(solved)
+    val plan = ProduceResult(List("count(a.prop)"), aggregation)
+
+    //when
+    val compiled = compileAndExecute(plan)
+
+    val result = getResult(compiled, "count(a.prop)")
+
+    //then
+    result.toList should equal(List(Map("count(a.prop)" -> 1)))
+  }
+
+  test("count distinct no grouping key aggregate on node") {
+    when(semanticTable.resolvedPropertyKeyNames).thenReturn(mutable.Map.empty[String, PropertyKeyId])
+    val scan = AllNodesScan(IdName("a"), Set.empty)(solved)
+    val ns: Namespace = Namespace(List())(pos)
+    val count: FunctionName = FunctionName("count")(pos)
+    val node = ast.Variable("a")(pos)
+    val invocation: FunctionInvocation = FunctionInvocation(ns, count, distinct = true, Vector(node))(pos)
+    val aggregation = Aggregation(scan, Map.empty, Map("count(a)" -> invocation))(solved)
+    val plan = ProduceResult(List("count(a)"), aggregation)
+
+    //when
+    val compiled = compileAndExecute(plan)
+
+    val result = getResult(compiled, "count(a)")
+
+    //then
+    result.toList should equal(List(Map("count(a)" -> 9)))
+  }
+
+  test("count node grouping key") {
+    when(semanticTable.resolvedPropertyKeyNames).thenReturn(mutable.Map.empty[String, PropertyKeyId])
+    val scan = AllNodesScan(IdName("a"), Set.empty)(solved)
+    val ns: Namespace = Namespace(List())(pos)
+    val count: FunctionName = FunctionName("count")(pos)
+    val property = Property(ast.Variable("a")(pos), PropertyKeyName("prop")(pos))(pos)
+    val invocation: FunctionInvocation = FunctionInvocation(ns, count, distinct = false, Vector(property))(pos)
+    val aggregation = Aggregation(scan, Map("a" -> ast.Variable("a")(pos)), Map("count(a.prop)" -> invocation))(solved)
+    val plan = ProduceResult(List("count(a.prop)"), aggregation)
+
+    //when
+    val compiled = compileAndExecute(plan)
+
+    val result = getResult(compiled, "count(a.prop)")
+
+    //then
+    result.toList should equal(List(
+      Map("count(a.prop)" -> 1),
+      Map("count(a.prop)" -> 1),
+      Map("count(a.prop)" -> 1),
+      Map("count(a.prop)" -> 0),
+      Map("count(a.prop)" -> 0),
+      Map("count(a.prop)" -> 0),
+      Map("count(a.prop)" -> 0),
+      Map("count(a.prop)" -> 0),
+      Map("count(a.prop)" -> 0))
+    )
+  }
+
+  test("count distinct node grouping key") {
+    when(semanticTable.resolvedPropertyKeyNames).thenReturn(mutable.Map.empty[String, PropertyKeyId])
+    val scan = AllNodesScan(IdName("a"), Set.empty)(solved)
+    val ns: Namespace = Namespace(List())(pos)
+    val count: FunctionName = FunctionName("count")(pos)
+    val property = Property(ast.Variable("a")(pos), PropertyKeyName("prop")(pos))(pos)
+    val invocation: FunctionInvocation = FunctionInvocation(ns, count, distinct = true, Vector(property))(pos)
+    val aggregation = Aggregation(scan, Map("a" -> ast.Variable("a")(pos)), Map("count(a.prop)" -> invocation))(solved)
+    val plan = ProduceResult(List("count(a.prop)"), aggregation)
+
+    //when
+    val compiled = compileAndExecute(plan)
+
+    val result = getResult(compiled, "count(a.prop)")
+
+    //then
+    result.toList should equal(List(
+      Map("count(a.prop)" -> 1),
+      Map("count(a.prop)" -> 1),
+      Map("count(a.prop)" -> 1),
+      Map("count(a.prop)" -> 0),
+      Map("count(a.prop)" -> 0),
+      Map("count(a.prop)" -> 0),
+      Map("count(a.prop)" -> 0),
+      Map("count(a.prop)" -> 0),
+      Map("count(a.prop)" -> 0))
+    )
+  }
+
+  test("count nodes distinct node grouping key") {
+    when(semanticTable.resolvedPropertyKeyNames).thenReturn(mutable.Map.empty[String, PropertyKeyId])
+    val scan = AllNodesScan(IdName("a"), Set.empty)(solved)
+    val ns: Namespace = Namespace(List())(pos)
+    val count: FunctionName = FunctionName("count")(pos)
+    val node = ast.Variable("a")(pos)
+    val invocation: FunctionInvocation = FunctionInvocation(ns, count, distinct = true, Vector(node))(pos)
+    val aggregation = Aggregation(scan, Map("a" -> ast.Variable("a")(pos)), Map("count(a)" -> invocation))(solved)
+    val plan = ProduceResult(List("count(a)"), aggregation)
+
+    //when
+    val compiled = compileAndExecute(plan)
+
+    val result = getResult(compiled, "count(a)")
+
+    //then
+
+
+    result.toList should equal(List(Map("count(a)" -> 1),
+                                    Map("count(a)" -> 1),
+                                    Map("count(a)" -> 1),
+                                    Map("count(a)" -> 1),
+                                    Map("count(a)" -> 1),
+                                    Map("count(a)" -> 1),
+                                    Map("count(a)" -> 1),
+                                    Map("count(a)" -> 1),
+                                    Map("count(a)" -> 1))
+    )
+  }
+
+  test("count property grouping key") {
+    when(semanticTable.resolvedPropertyKeyNames).thenReturn(mutable.Map.empty[String, PropertyKeyId])
+    val scan = AllNodesScan(IdName("a"), Set.empty)(solved)
+    val ns: Namespace = Namespace(List())(pos)
+    val count: FunctionName = FunctionName("count")(pos)
+    val property: Expression = Property(ast.Variable("a")(pos), PropertyKeyName("prop")(pos))(pos)
+    val invocation: FunctionInvocation = FunctionInvocation(ns, count, distinct = false, Vector(property))(pos)
+    val projection = Projection(scan, Map("a.prop" -> property))(solved)
+
+    val aggregation = Aggregation(projection, Map("a.prop" -> property), Map("count(a.prop)" -> invocation))(solved)
+
+    val plan = ProduceResult(List("a.prop", "count(a.prop)"), aggregation)
+
+    //when
+    val compiled = compileAndExecute(plan)
+
+    val result = getResult(compiled, "a.prop", "count(a.prop)")
+
+    //then
+    result.toList should equal(List(Map("a.prop" -> null, "count(a.prop)" -> 0),
+                                    Map("a.prop" -> "value", "count(a.prop)" -> 3)))
+  }
+
+  test("count distinct property grouping key") {
+    when(semanticTable.resolvedPropertyKeyNames).thenReturn(mutable.Map.empty[String, PropertyKeyId])
+    val scan = AllNodesScan(IdName("a"), Set.empty)(solved)
+    val ns: Namespace = Namespace(List())(pos)
+    val count: FunctionName = FunctionName("count")(pos)
+    val property: Expression = Property(ast.Variable("a")(pos), PropertyKeyName("prop")(pos))(pos)
+    val invocation: FunctionInvocation = FunctionInvocation(ns, count, distinct = true, Vector(property))(pos)
+    val projection = Projection(scan, Map("a.prop" -> property))(solved)
+
+    val aggregation = Aggregation(projection, Map("a.prop" -> property), Map("count(a.prop)" -> invocation))(solved)
+
+    val plan = ProduceResult(List("a.prop", "count(a.prop)"), aggregation)
+
+    //when
+    val compiled = compileAndExecute(plan)
+
+    val result = getResult(compiled, "a.prop", "count(a.prop)")
+
+    //then
+    result.toList should equal(List(Map("a.prop" -> null, "count(a.prop)" -> 0),
+                                    Map("a.prop" -> "value", "count(a.prop)" -> 1)))
+  }
+
+  test("count nodes distinct property grouping key") {
+    when(semanticTable.resolvedPropertyKeyNames).thenReturn(mutable.Map.empty[String, PropertyKeyId])
+    val scan = AllNodesScan(IdName("a"), Set.empty)(solved)
+    val ns: Namespace = Namespace(List())(pos)
+    val count: FunctionName = FunctionName("count")(pos)
+    val property: Expression = Property(ast.Variable("a")(pos), PropertyKeyName("prop")(pos))(pos)
+    val node = ast.Variable("a")(pos)
+    val invocation: FunctionInvocation = FunctionInvocation(ns, count, distinct = true, Vector(node))(pos)
+    val projection = Projection(scan, Map("a.prop" -> property, "a" -> node))(solved)
+
+    val aggregation = Aggregation(projection, Map("a.prop" -> property), Map("count(a)" -> invocation))(solved)
+
+    val plan = ProduceResult(List("a.prop", "count(a)"), aggregation)
+
+    //when
+    val compiled = compileAndExecute(plan)
+
+    val result = getResult(compiled, "a.prop", "count(a)")
+
+    //then
+    result.toList should equal(List(Map("a.prop" -> null, "count(a)" -> 6), Map("a.prop" -> "value", "count(a)" -> 3)))
+  }
+
   private def compile(plan: LogicalPlan) = {
     generator.generate(plan, newMockedPlanContext, semanticTable, CostBasedPlannerName.default)
   }
@@ -967,6 +1181,13 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
   when(queryContext.transactionalContext).thenReturn(transactionalContext)
   when(transactionalContext.readOperations).thenReturn(ro)
   when(queryContext.entityAccessor).thenReturn(nodeManager.asInstanceOf[queryContext.EntityAccessor])
+  when(ro.nodeGetProperty(anyLong(), anyInt())).thenAnswer(new Answer[Object] {
+    override def answer(invocationOnMock: InvocationOnMock): Object = {
+      val id = invocationOnMock.getArguments()(0).asInstanceOf[Long]
+      if (id < 3) "value"
+      else null
+    }
+  })
   when(ro.nodesGetAll()).thenAnswer(new Answer[PrimitiveLongIterator] {
     override def answer(invocationOnMock: InvocationOnMock): PrimitiveLongIterator = primitiveIterator(allNodes.map(_.getId))
   })
@@ -1128,5 +1349,4 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
       }
     )
   }
-
 }

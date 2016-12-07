@@ -384,8 +384,10 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     a.executionPlanDescription().toString should not include "Apply"
   }
 
+  //this test asserts a specific optimization in pipe building and is not
+  //valid for the compiled runtime
   test("should not use eager plans for distinct") {
-    val a = profileWithAllPlanners("match (n) return distinct n.name")
+    val a = innerExecute("PROFILE CYPHER runtime=interpreted MATCH (n) RETURN DISTINCT n.name")
     a.executionPlanDescription().toString should not include "Eager"
   }
 
@@ -611,13 +613,15 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     assertRows(1)(result)("NodeByLabelScan")
   }
 
+  //this test asserts a specific optimization in pipe building and is not
+  //valid for the compiled runtime
   test("distinct should not look up properties every time") {
     // GIVEN
     createNode("prop"-> 42)
     createNode("prop"-> 42)
 
     // WHEN
-    val result = profileWithAllPlanners("MATCH (n) RETURN DISTINCT n.prop")
+    val result = innerExecute("PROFILE CYPHER runtime=interpreted MATCH (n) RETURN DISTINCT n.prop")
 
     // THEN
     assertDbHits(2)(result)("Distinct")

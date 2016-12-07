@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.v3_2.ast.ResolvedCall
 import org.neo4j.cypher.internal.compiler.v3_2.commands.QueryExpression
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.ListSupport
-import org.neo4j.cypher.internal.compiler.v3_2.pipes.{LazyType, LazyTypes, _}
+import org.neo4j.cypher.internal.compiler.v3_2.pipes.{LazyType, _}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{DeleteExpression => DeleteExpressionPlan, Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.{LogicalPlanningContext, SortDescription}
@@ -398,7 +398,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
   }
 
   def planCountStoreRelationshipAggregation(query: PlannerQuery, idName: IdName, startLabel: Option[LabelName],
-                                            typeNames: LazyTypes, endLabel: Option[LabelName], argumentIds: Set[IdName])
+                                            typeNames: Seq[RelTypeName], endLabel: Option[LabelName], argumentIds: Set[IdName])
                                            (implicit context: LogicalPlanningContext) = {
     val solved: PlannerQuery = RegularPlannerQuery(query.queryGraph, query.horizon)
     RelationshipCountFromCountStore(idName, startLabel, typeNames, endLabel, argumentIds)(solved)

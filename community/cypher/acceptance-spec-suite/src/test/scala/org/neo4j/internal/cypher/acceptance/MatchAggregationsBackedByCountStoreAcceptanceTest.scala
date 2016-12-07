@@ -21,7 +21,7 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription
-import org.neo4j.cypher.{NewPlannerTestSupport, QueryStatisticsTestSupport, ExecutionEngineFunSuite}
+import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport}
 import org.scalatest.matchers.{MatchResult, Matcher}
 
 class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
@@ -36,7 +36,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(n)").toSet[Int] should equal(Set(2))
 
-    })
+    }, allRuntimes = true)
   }
 
   test("capitalized COUNTS nodes using count store") {
@@ -49,7 +49,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("COUNT(n)").toSet[Int] should equal(Set(2))
 
-      })
+      }, allRuntimes = true)
   }
 
   test("counts nodes using count store with count(*)") {
@@ -62,7 +62,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(*)").toSet[Int] should equal(Set(2))
 
-    })
+    }, allRuntimes = true)
   }
 
   test("counts labeled nodes using count store") {
@@ -75,7 +75,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(n)").toSet[Int] should equal(Set(1))
 
-      })
+      }, allRuntimes = true)
   }
 
   test("counts nodes using count store and projection expression") {
@@ -114,7 +114,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(1))
 
-      })
+      }, allRuntimes = true)
   }
 
   test("counts relationships with unspecified type using count store with count(*)") {
@@ -127,7 +127,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(*)").toSet[Int] should equal(Set(1))
 
-      })
+      }, allRuntimes = true)
   }
 
   test("counts relationships with type using count store") {
@@ -140,7 +140,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(1))
 
-      })
+      }, allRuntimes = true)
   }
 
   test("counts relationships with type using count store with count(*)") {
@@ -153,7 +153,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(*)").toSet[Int] should equal(Set(1))
 
-      })
+      }, allRuntimes = true)
   }
 
   test("counts relationships with unspecified type and labeled source node using count store") {
@@ -166,7 +166,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(1))
 
-      })
+      }, allRuntimes = true)
   }
 
   test("counts relationships with type and labeled source node using count store") {
@@ -179,7 +179,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(1))
 
-      })
+      }, allRuntimes = true)
   }
 
   test("counts relationships with unspecified type and labeled destination node using count store") {
@@ -192,7 +192,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(1))
 
-      })
+      }, allRuntimes = true)
   }
 
   test("counts relationships with type and labeled destination node using count store") {
@@ -205,7 +205,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(1))
 
-      })
+      }, allRuntimes = true)
   }
 
   test("counts relationships with type and labeled source and destination without using count store") {
@@ -218,7 +218,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(1))
 
-      })
+      }, allRuntimes = true)
   }
 
   test("counts relationships with unspecified type and labeled source and destination without using count store") {
@@ -231,7 +231,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(1))
 
-      })
+      }, allRuntimes = true)
   }
 
   test("counts relationships with type, reverse direction and labeled source node using count store") {
@@ -244,7 +244,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(1))
 
-      })
+      }, allRuntimes = true)
   }
 
   test("counts relationships with type, reverse direction and labeled destination node using count store") {
@@ -257,7 +257,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(1))
 
-      })
+      }, allRuntimes = true)
   }
 
   test("counts relationships with type, any direction and labeled source node without using count store") {
@@ -270,7 +270,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(2))
 
-      })
+      }, allRuntimes = true)
   }
 
   test("counts relationships with type, any direction and labeled destination node without using count store") {
@@ -283,7 +283,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(2))
 
-      })
+      }, allRuntimes = true)
   }
 
   test("counts relationships with type, any direction and no labeled nodes without using count store") {
@@ -296,7 +296,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(2))
 
-      })
+      }, allRuntimes = true)
   }
 
   test("counts nodes using count store considering transaction state") {
@@ -309,7 +309,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(n)").toSet[Int] should equal(Set(3))
 
-      })
+      }, allRuntimes = true)
   }
 
   test("counts labeled nodes using count store considering transaction state (test1)") {
@@ -322,7 +322,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(n)").toSet[Int] should equal(Set(2))
 
-      })
+      }, allRuntimes = true)
   }
 
   test("counts labeled nodes using count store considering transaction state (test2)") {
@@ -335,7 +335,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(n)").toSet[Int] should equal(Set(1))
 
-      })
+      }, allRuntimes = true)
   }
 
   test("counts labeled nodes using count store considering transaction state containing newly created label (test1)") {
@@ -348,7 +348,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(n)").toSet[Int] should equal(Set(1))
 
-      })
+      }, allRuntimes = true)
   }
 
 
@@ -362,7 +362,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(n)").toSet[Int] should equal(Set(2))
 
-      })
+      }, allRuntimes = true)
   }
 
   test("counts nodes using count store and projection expression considering transaction state") {
@@ -402,7 +402,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(3))
 
-      })
+      }, allRuntimes = true)
   }
 
   test("counts relationships with type using count store considering transaction state") {
@@ -415,7 +415,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(3))
 
-      })
+      }, allRuntimes = true)
   }
 
   test("counts relationships with multiple types using count store considering transaction state") {
@@ -428,7 +428,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(2))
 
-      })
+      }, allRuntimes = true)
   }
 
   test("counts relationships using count store and projection with expression considering transaction state") {
@@ -488,7 +488,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(2))
 
-      })
+      }, allRuntimes = true)
   }
 
   test("counts relationships with type and labeled source using count store considering transaction state") {
@@ -501,7 +501,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(3))
 
-      })
+      }, allRuntimes = true)
   }
 
   test("counts relationships with type, reverse direction and labeled source using count store considering transaction state") {
@@ -514,7 +514,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(3))
 
-      })
+      }, allRuntimes = true)
   }
 
   test("counts relationships with unspecified type and labeled source using count store considering transaction state") {
@@ -527,7 +527,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(3))
 
-      })
+      }, allRuntimes = true)
   }
 
   test("counts relationships with type and labeled destination using count store considering transaction state") {
@@ -540,7 +540,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(3))
 
-      })
+      }, allRuntimes = true)
   }
 
   test("counts relationships with type, reverse direction and labeled destination using count store considering transaction state") {
@@ -553,7 +553,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(3))
 
-      })
+      }, allRuntimes = true)
   }
 
   test("counts relationships with unspecified type and labeled destination using count store considering transaction state") {
@@ -566,7 +566,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(3))
 
-      })
+      }, allRuntimes = true)
   }
 
   test("counts relationships with type and labeled source and destination without using count store considering transaction state") {
@@ -579,7 +579,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(3))
 
-      })
+      }, allRuntimes = true)
   }
 
   test("counts relationships with unspecified type and labeled source and destination without using count store considering transaction state") {
@@ -592,7 +592,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(3))
 
-      })
+      }, allRuntimes = true)
   }
 
   def withModel(label1: String = "User",
@@ -600,8 +600,9 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
                 type1: String = "KNOWS",
                 expectedLogicalPlan: String = "NodeCountFromCountStore",
                 query: String, f: InternalExecutionResult => Unit,
-                expectedResultOnEmptyDatabase: Set[Any] = Set(0)): Unit = {
-    verifyOnEmptyDatabase(expectedLogicalPlan, query, expectedResultOnEmptyDatabase)
+                expectedResultOnEmptyDatabase: Set[Any] = Set(0),
+                allRuntimes: Boolean = false): Unit = {
+    verifyOnEmptyDatabase(expectedLogicalPlan, query, expectedResultOnEmptyDatabase, allRuntimes)
 
     innerExecute(
       s"""
@@ -610,18 +611,22 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
          |CREATE (p)-[:$type1]->(s)
       """.stripMargin)
 
-    val result: InternalExecutionResult = executeWithAllPlannersAndCompatibilityMode(query)
+    val result: InternalExecutionResult =
+      if (allRuntimes) executeWithAllPlannersAndRuntimesAndCompatibilityMode(query)
+      else executeWithAllPlannersAndCompatibilityMode(query)
     result.executionPlanDescription() should includeOperation(expectedLogicalPlan)
     f(result)
 
     deleteAllEntities()
 
-    verifyOnEmptyDatabase(expectedLogicalPlan, query, expectedResultOnEmptyDatabase)
+    verifyOnEmptyDatabase(expectedLogicalPlan, query, expectedResultOnEmptyDatabase, allRuntimes)
   }
 
   private def verifyOnEmptyDatabase(expectedLogicalPlan: String, query: String,
-                                   expectedResult: Set[Any]): Unit = {
-    val resultOnEmptyDb: InternalExecutionResult = executeWithAllPlannersAndCompatibilityMode(query)
+                                   expectedResult: Set[Any], allRuntimes: Boolean): Unit = {
+    val resultOnEmptyDb: InternalExecutionResult =
+      if (allRuntimes) executeWithAllPlannersAndRuntimesAndCompatibilityMode(query)
+      else  executeWithAllPlannersAndCompatibilityMode(query)
     resultOnEmptyDb.executionPlanDescription() should includeOperation(expectedLogicalPlan)
     withClue("should return a count of 0 on an empty database") {
       resultOnEmptyDb.columnAs(resultOnEmptyDb.columns.head).toSet[Int] should equal(expectedResult)
@@ -632,8 +637,9 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
                              label2: String = "User",
                              type1: String = "KNOWS",
                              expectedLogicalPlan: String = "RelationshipCountFromCountStore",
-                             query: String, f: InternalExecutionResult => Unit): Unit = {
-    withModel(label1, label2, type1, expectedLogicalPlan, query, f)
+                             query: String, f: InternalExecutionResult => Unit,
+                             allRuntimes: Boolean = false): Unit = {
+    withModel(label1, label2, type1, expectedLogicalPlan, query, f, allRuntimes = allRuntimes)
   }
 
   def withModelAndTransaction(label1: String = "User",
@@ -644,8 +650,9 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
                 type3: String = "KNOWS",
                 expectedLogicalPlan: String = "NodeCountFromCountStore",
                 query: String, f: InternalExecutionResult => Unit,
-                expectedResultOnEmptyDatabase: Set[Any] = Set(0)): Unit = {
-    verifyOnEmptyDatabase(expectedLogicalPlan, query, expectedResultOnEmptyDatabase)
+                expectedResultOnEmptyDatabase: Set[Any] = Set(0),
+                allRuntimes: Boolean = false): Unit = {
+    verifyOnEmptyDatabase(expectedLogicalPlan, query, expectedResultOnEmptyDatabase, allRuntimes)
 
     innerExecute(
       s"""
@@ -666,13 +673,15 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
            |CREATE (p)-[:$type2]->(c)
            |CREATE (c)-[:$type3]->(s)
         """.stripMargin)
-      val result: InternalExecutionResult = executeWithCostPlannerOnly(query)
+      val result: InternalExecutionResult =
+        if (allRuntimes) executeWithAllPlannersAndRuntimesAndCompatibilityMode(query)
+        else executeWithCostPlannerOnly(query)
       result.executionPlanDescription() should includeOperation(expectedLogicalPlan)
       f(result)
     }
 
     deleteAllEntities()
-    verifyOnEmptyDatabase(expectedLogicalPlan, query, expectedResultOnEmptyDatabase)
+    verifyOnEmptyDatabase(expectedLogicalPlan, query, expectedResultOnEmptyDatabase, allRuntimes = allRuntimes)
   }
 
   def withRelationshipsModelAndTransaction(label1: String = "User",
@@ -683,9 +692,10 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
                         type3: String = "KNOWS",
                         expectedLogicalPlan: String = "RelationshipCountFromCountStore",
                         query: String, f: InternalExecutionResult => Unit,
-                        expectedResultOnEmptyDatabase: Set[Any] = Set(0)): Unit = {
+                        expectedResultOnEmptyDatabase: Set[Any] = Set(0),
+                        allRuntimes: Boolean = false): Unit = {
     withModelAndTransaction(label1, label2, label3, type1, type2, type3,
-                            expectedLogicalPlan, query, f, expectedResultOnEmptyDatabase)
+                            expectedLogicalPlan, query, f, expectedResultOnEmptyDatabase, allRuntimes)
   }
 
   case class includeOperation(operationName: String) extends Matcher[InternalPlanDescription] {

@@ -89,12 +89,15 @@ import static org.objectweb.asm.Opcodes.L2D;
 import static org.objectweb.asm.Opcodes.LADD;
 import static org.objectweb.asm.Opcodes.LASTORE;
 import static org.objectweb.asm.Opcodes.LCMP;
+import static org.objectweb.asm.Opcodes.LCONST_0;
+import static org.objectweb.asm.Opcodes.LCONST_1;
 import static org.objectweb.asm.Opcodes.LLOAD;
 import static org.objectweb.asm.Opcodes.LMUL;
 import static org.objectweb.asm.Opcodes.LSUB;
 import static org.objectweb.asm.Opcodes.NEW;
 import static org.objectweb.asm.Opcodes.NEWARRAY;
 import static org.objectweb.asm.Opcodes.POP;
+import static org.objectweb.asm.Opcodes.POP2;
 import static org.objectweb.asm.Opcodes.SASTORE;
 import static org.objectweb.asm.Opcodes.SIPUSH;
 import static org.objectweb.asm.Opcodes.T_BOOLEAN;
@@ -211,7 +214,7 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
         }
         else if ( value instanceof Long )
         {
-            methodVisitor.visitLdcInsn( value );
+            pushLong( (Long) value );
         }
         else if ( value instanceof Double )
         {
@@ -496,7 +499,86 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
     public void pop( Expression expression )
     {
         expression.accept( this );
-        methodVisitor.visitInsn( POP );
+        switch ( expression.type().simpleName() )
+        {
+        case "long":
+        case "double":
+            methodVisitor.visitInsn( POP2 );
+            break;
+        default:
+            methodVisitor.visitInsn( POP );
+            break;
+        }
+    }
+
+    @Override
+    public void box( Expression expression )
+    {
+        expression.accept( this );
+        switch ( expression.type().simpleName() )
+        {
+            case "byte":
+                methodVisitor.visitMethodInsn( INVOKESTATIC, "java/lang/Byte", "valueOf", "(B)Ljava/lang/Byte;", false );
+                break;
+            case "short":
+                methodVisitor.visitMethodInsn( INVOKESTATIC, "java/lang/Short", "valueOf", "(S)Ljava/lang/Short;", false );
+                break;
+            case "int":
+                methodVisitor.visitMethodInsn( INVOKESTATIC, "java/lang/Integer", "valueOf", "(I)Ljava/lang/Integer;", false );
+                break;
+            case "long":
+                methodVisitor.visitMethodInsn( INVOKESTATIC, "java/lang/Long", "valueOf", "(J)Ljava/lang/Long;", false );
+                break;
+            case "char":
+                methodVisitor.visitMethodInsn( INVOKESTATIC, "java/lang/Character", "valueOf", "(C)Ljava/lang/Character;", false );
+                break;
+            case "boolean":
+                methodVisitor.visitMethodInsn( INVOKESTATIC, "java/lang/Boolean", "valueOf", "(Z)Ljava/lang/Boolean;", false );
+                break;
+            case "float":
+                methodVisitor.visitMethodInsn( INVOKESTATIC, "java/lang/Float", "valueOf", "(F)Ljava/lang/Float;", false );
+                break;
+            case "double":
+                methodVisitor.visitMethodInsn( INVOKESTATIC, "java/lang/Double", "valueOf", "(D)Ljava/lang/Double;", false );
+                break;
+            default:
+                //do nothing, expression is already boxed
+        }
+    }
+
+    @Override
+    public void unbox( Expression expression )
+    {
+        expression.accept( this );
+        switch ( expression.type().name() )
+        {
+        case "java.lang.Byte":
+            methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Byte", "byteValue", "()B", false);
+            break;
+        case "java.lang.Short":
+            methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Short", "shortValue", "()S", false);
+            break;
+        case "java.lang.Integer":
+            methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Integer", "intValue", "()I", false);
+            break;
+        case "java.lang.Long":
+            methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Long", "longValue", "()J", false);
+            break;
+        case "java.lang.Character":
+            methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Character", "charValue", "()C", false);
+            break;
+        case "java.lang.Boolean":
+            methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Boolean", "booleanValue", "()Z", false);
+            break;
+        case "java.lang.Float":
+            methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Float", "floatValue", "()F", false);
+            break;
+        case "java.lang.Double":
+            methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Double", "doubleValue", "()D", false);
+            break;
+        default:
+            throw new IllegalStateException( "Cannot unbox " + expression.type().name() );
+        }
     }
 
     private void compareIntOrReferenceType( Expression lhs, Expression rhs, int opcode )
@@ -551,6 +633,22 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
         else if ( integer < Short.MAX_VALUE && integer > Short.MIN_VALUE )
         {
             methodVisitor.visitIntInsn( SIPUSH, integer );
+        }
+        else
+        {
+            methodVisitor.visitLdcInsn( integer );
+        }
+    }
+
+    private void pushLong( long integer )
+    {
+        if ( integer == 0L )
+        {
+            methodVisitor.visitInsn( LCONST_0 );
+        }
+        else if ( integer == 1L )
+        {
+            methodVisitor.visitInsn( LCONST_1 );
         }
         else
         {
@@ -641,7 +739,6 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
     private void numberOperation( TypeReference type, Runnable onInt, Runnable onLong, Runnable onFloat,
             Runnable onDouble )
     {
-
         switch ( type.simpleName() )
         {
         case "int":

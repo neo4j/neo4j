@@ -43,15 +43,15 @@ trait BinaryOperator {
       case (_, CodeGenType(CTBoolean, _)) => throw new CypherTypeException(s"Cannot $name a ${rhs.codeGenType.ct} and a boolean")
 
       case (t1, t2) if t1.isPrimitive && t2.isPrimitive =>
-        generator(structure)(context)(structure.box(lhs.generateExpression(structure), t1),
-                                      structure.box(rhs.generateExpression(structure), t2))
+        generator(structure)(context)(structure.box(lhs.generateExpression(structure)),
+                                      structure.box(rhs.generateExpression(structure)))
 
       case (t, _) if t.isPrimitive =>
-        generator(structure)(context)(structure.box(lhs.generateExpression(structure), t),
+        generator(structure)(context)(structure.box(lhs.generateExpression(structure)),
                                       rhs.generateExpression(structure))
       case (_, t) if t.isPrimitive =>
         generator(structure)(context)(lhs.generateExpression(structure),
-                                                           structure.box(rhs.generateExpression(structure), t))
+                                                           structure.box(rhs.generateExpression(structure)))
 
       case _ => generator(structure)(context)(lhs.generateExpression(structure),
                                               rhs.generateExpression(structure))

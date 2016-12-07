@@ -20,28 +20,23 @@
 package org.neo4j.cypher.internal.compiler.v3_2.codegen.ir
 
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.CodeGenContext
-import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions.CodeGenExpression
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.aggregation.AggregateExpression
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi.MethodStructure
 
-case class AcceptVisitor(produceResultOpName: String, columns: Map[String, CodeGenExpression])
+case class AggregationInstruction(opName: String, aggregationFunctions: Iterable[AggregateExpression])
   extends Instruction {
 
+  override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) {
+    aggregationFunctions.foreach(_.init(generator))
+  }
+
   override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
-    generator.trace(produceResultOpName) { body =>
-      body.incrementRows()
-      columns.foreach { case (k, v) =>
-        body.setInRow(k, generator.box(v.generateExpression(body)))
-      }
-      body.visitorAccept()
+    generator.trace(opName) { l1 =>
+      aggregationFunctions.foreach(_.update(l1))
     }
   }
 
-  override protected def operatorId = Set(produceResultOpName)
+  override protected def children: Seq[Instruction] = Seq.empty
 
-  override protected def children = Seq.empty
-
-  override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) {
-    columns.values.foreach(_.init(generator))
-    super.init(generator)
-  }
+  override protected def operatorId = Set(opName)
 }

@@ -170,7 +170,7 @@ class GeneratedMethodStructureTest extends CypherFunSuite {
       m.declare("from", CodeGenType.primitiveNode)
       m.declare("to", CodeGenType.primitiveNode)
       val local = m.generator.declare(typeRef[RelationshipIterator], "iter")
-      Templates.handleKernelExceptions(m.generator, m.fields.ro, m.fields.close) { body =>
+      Templates.handleKernelExceptions(m.generator, m.fields.ro, m.finalizers) { body =>
         body.assign(local, Expression.invoke(Methods.allConnectingRelationships,
                                              Expression.get(m.generator.self(), m.fields.ro), body.load("from"),
                                              Templates.outgoing,
@@ -181,7 +181,7 @@ class GeneratedMethodStructureTest extends CypherFunSuite {
       m.declare("from", CodeGenType.primitiveNode)
       m.declare("to", CodeGenType.primitiveNode)
       val local = m.generator.declare(typeRef[RelationshipIterator], "iter")
-      Templates.handleKernelExceptions(m.generator, m.fields.ro, m.fields.close) { body =>
+      Templates.handleKernelExceptions(m.generator, m.fields.ro, m.finalizers) { body =>
         body.assign(local, Expression.invoke(Methods.connectingRelationships,
                                              Expression.get(m.generator.self(), m.fields.ro), body.load("from"),
                                              Templates.outgoing,
@@ -233,7 +233,7 @@ class GeneratedMethodStructureTest extends CypherFunSuite {
       // the "COLUMNS" static field
       body.staticField(typeRef[util.List[String]], "COLUMNS", Templates.asList[String](Seq.empty))
       using(body.generate(MethodDeclaration.method(typeRef[Unit], "foo"))) { methodBody =>
-        block(GeneratedMethodStructure(fields, methodBody, new AuxGenerator(packageName, codeGen)))
+        block(new GeneratedMethodStructure(fields, methodBody, new AuxGenerator(packageName, codeGen)))
       }
       body.handle()
     }

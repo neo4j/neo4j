@@ -39,7 +39,5 @@ case class RelationshipExpression(relId: Variable) extends CodeGenExpression {
 
   override def nullable(implicit context: CodeGenContext) = relId.nullable
 
-  override def codeGenType(implicit context: CodeGenContext) =
-    if (nullable) CodeGenType(CTRelationship, ReferenceType)
-    else CodeGenType.primitiveRel
+  override def codeGenType(implicit context: CodeGenContext) = CodeGenType(CTRelationship, ReferenceType)
 }

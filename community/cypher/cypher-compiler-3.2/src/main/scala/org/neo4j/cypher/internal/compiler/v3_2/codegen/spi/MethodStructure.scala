@@ -37,12 +37,12 @@ import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
   * This SPI describes the operations that can be put in that method.
   */
 trait MethodStructure[E] {
-
   // misc
   def projectVariable(variableName: String, value: E)
   def declareFlag(name: String, initialValue: Boolean)
   def updateFlag(name: String, newValue: Boolean)
   def declarePredicate(name: String): Unit
+  def assign(varName: String, codeGenType: CodeGenType, value: E): Unit
   def declare(varName: String, codeGenType: CodeGenType): Unit
   def declareProperty(name: String): Unit
   def declareCounter(name: String, initialValue: E): Unit
@@ -54,14 +54,26 @@ trait MethodStructure[E] {
   def invokeMethod(resultType: JoinTableType, resultVar: String, methodName: String)(block: MethodStructure[E]=>Unit): Unit
   def coerceToBoolean(propertyExpression: E): E
 
-  def decrementCounter(name: String): Unit
-  def checkCounter(variableName: String, comparator: Comparator, value: Int): E
+  def incrementInteger(name: String): Unit
+  def decrementInteger(name: String): Unit
+  def checkInteger(variableName: String, comparator: Comparator, value: Long): E
   def newTableValue(targetVar: String, structure: Map[String, CodeGenType]): E
   def constantExpression(value: Object): E
   def asMap(map: Map[String, E]): E
   def asList(values: Seq[E]): E
 
   def toSet(value: E): E
+  def newDistinctSet(name: String, codeGenTypes: Iterable[CodeGenType])
+  def distinctSetIfNotContains(name: String, structure: Map[String,(CodeGenType,E)])(block: MethodStructure[E] => Unit)
+  def distinctSetIterate(name: String, key: Map[String, CodeGenType])
+                                 (block: (MethodStructure[E]) => Unit)
+  def newUniqueAggregationKey(varName: String, structure: Map[String, (CodeGenType,E)]): Unit
+  def newAggregationMap(name: String, keyTypes: IndexedSeq[CodeGenType])
+  def aggregationMapGet(name: String, varName: String, key: Map[String,(CodeGenType,E)], keyVar: String)
+  def aggregationMapPut(name: String, key: Map[String,(CodeGenType,E)], keyVar: String, value: E): Unit
+  def aggregationMapIterate(name: String, key: Map[String,CodeGenType], valueVar: String)(block: MethodStructure[E] => Unit): Unit
+  def newMapOfSets(name: String, keyTypes: IndexedSeq[CodeGenType], elementType: CodeGenType)
+  def checkDistinct(name: String, key: Map[String,(CodeGenType, E)], keyVar: String, value: E, valueType: CodeGenType)(block: MethodStructure[E] => Unit)
 
   def castToCollection(value: E): E
 
@@ -88,7 +100,7 @@ trait MethodStructure[E] {
   def nullableReference(varName: String, codeGenType: CodeGenType, onSuccess: E): E
   def isNull(name: String, codeGenType: CodeGenType): E
   def notNull(name: String, codeGenType: CodeGenType): E
-  def box(expression:E, codeGenType: CodeGenType): E
+  def box(expression:E): E
   def unbox(expression:E, codeGenType: CodeGenType): E
   def toFloat(expression:E): E
 
@@ -126,12 +138,17 @@ trait MethodStructure[E] {
   def relType(relIdVar: String, typeVar: String): Unit
   def newIndexDescriptor(descriptorVar: String, labelVar: String, propKeyVar: String): Unit
   def createRelExtractor(extractorName: String): Unit
+  def nodeCountFromCountStore(expression: E): E
+  def relCountFromCountStore(start: E, end: E, types: E*): E
+  def token(t: Int): E
+  def wildCardToken: E
 
   // code structure
   def whileLoop(test: E)(block: MethodStructure[E] => Unit): Unit
   def forEach(varName: String, codeGenType: CodeGenType, iterable: E)(block: MethodStructure[E] => Unit): Unit
   def ifStatement(test: E)(block: MethodStructure[E] => Unit): Unit
   def ifNotStatement(test: E)(block: MethodStructure[E] => Unit): Unit
+  def ifNonNullStatement(test: E)(block: MethodStructure[E] => Unit): Unit
   def ternaryOperator(test:E, onSuccess:E, onError: E): E
   def returnSuccessfully(): Unit
 

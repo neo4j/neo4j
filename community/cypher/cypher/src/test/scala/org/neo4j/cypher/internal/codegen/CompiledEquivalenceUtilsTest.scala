@@ -17,19 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_2.commands.predicates
+package org.neo4j.cypher.internal.codegen
 
 import java.util
-import java.util.Arrays.asList
-import java.util.Collections.singletonMap
+import java.util.Arrays._
+import java.util.Collections._
 
-import org.neo4j.cypher.internal.compiler.v3_2.{CRS, GeographicPoint}
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.spatial.{CRS => JavaCRS, Coordinate, Point}
+import org.neo4j.graphdb.spatial.{CRS, Coordinate, Point}
 
-class EquivalentTest extends CypherFunSuite {
-  shouldNotMatch(23.toByte, 23.5)
+import scala.collection.JavaConverters._
 
+/**
+  * Created by pontusmelke on 2016-11-19.
+  */
+class CompiledEquivalenceUtilsTest extends CypherFunSuite {
   shouldMatch(1.0, 1L)
   shouldMatch(1.0, 1)
   shouldMatch(1.0, 1.0)
@@ -37,7 +39,6 @@ class EquivalentTest extends CypherFunSuite {
   shouldMatch(Math.PI, Math.PI)
   shouldMatch(1.1, 1.1)
   shouldMatch(0, 0)
-//  shouldMatch(Double.NaN, Double.NaN)
   shouldMatch(Integer.MAX_VALUE.toDouble, Integer.MAX_VALUE)
   shouldMatch(Long.MaxValue.toDouble, Long.MaxValue)
   shouldMatch(Int.MaxValue.toDouble + 1, Int.MaxValue.toLong + 1)
@@ -56,15 +57,16 @@ class EquivalentTest extends CypherFunSuite {
   shouldMatch(42.toByte, 42.toByte)
   shouldMatch(42.toByte, 42.toShort)
   shouldNotMatch(42.toByte, 42 + 256)
-  shouldMatch(43.toByte, 43.toInt)
+  shouldMatch(43.toByte, 43)
   shouldMatch(43.toByte, 43.toLong)
   shouldMatch(23.toByte, 23.0d)
   shouldMatch(23.toByte, 23.0f)
+  shouldNotMatch(23.toByte, 23.5)
   shouldNotMatch(23.toByte, 23.5f)
   shouldMatch(11.toShort, 11.toByte)
   shouldMatch(42.toShort, 42.toShort)
   shouldNotMatch(42.toShort, 42 + 65536)
-  shouldMatch(43.toShort, 43.toInt)
+  shouldMatch(43.toShort, 43)
   shouldMatch(43.toShort, 43.toLong)
   shouldMatch(23.toShort, 23.0f)
   shouldMatch(23.toShort, 23.0d)
@@ -93,7 +95,7 @@ class EquivalentTest extends CypherFunSuite {
   shouldNotMatch(4611686018427387905L, 4611686018427387900L)
   shouldMatch(11f, 11.toByte)
   shouldMatch(42f, 42.toShort)
-  shouldMatch(43f, 43.toInt)
+  shouldMatch(43f, 43)
   shouldMatch(43f, 43.toLong)
   shouldMatch(23f, 23.0)
   shouldNotMatch(23f, 23.5)
@@ -102,7 +104,7 @@ class EquivalentTest extends CypherFunSuite {
   shouldMatch(3.14f, 3.14d)
   shouldMatch(11d, 11.toByte)
   shouldMatch(42d, 42.toShort)
-  shouldMatch(43d, 43.toInt)
+  shouldMatch(43d, 43)
   shouldMatch(43d, 43.toLong)
   shouldMatch(23d, 23.0)
   shouldNotMatch(23d, 23.5)
@@ -138,40 +140,31 @@ class EquivalentTest extends CypherFunSuite {
   shouldMatch(Array[String]("A", "B", "C"), asList("A", "B", "C"))
   shouldMatch(Array[String]("A", "B", "C"), asList('A', 'B', 'C'))
   shouldMatch(Array[Char]('A', 'B', 'C'), asList("A", "B", "C"))
-  shouldMatch(new util.ArrayList[AnyRef](), List.empty[AnyRef])
-  shouldMatch(Array[Int](), List.empty[AnyRef])
+  shouldMatch(new util.ArrayList[AnyRef](), Array.empty)
 
   // Maps
-  shouldMatch(Map("a" -> 42), Map("a" -> 42))
-  shouldMatch(Map("a" -> 42), Map("a" -> 42.0))
-  shouldMatch(Map("a" -> 42), singletonMap("a", 42.0))
-  shouldMatch(singletonMap("a", asList(41.0, 42.0)), Map("a" -> List(41,42)))
-  shouldMatch(Map("a" -> singletonMap("x", asList(41.0, 'c'.asInstanceOf[Character]))), singletonMap("a", Map("x" -> List(41, "c"))))
+  shouldMatch(Map("a" -> 42).asJava, Map("a" -> 42).asJava)
+  shouldMatch(Map("a" -> 42).asJava, Map("a" -> 42.0).asJava)
+  shouldMatch(Map("a" -> 42).asJava, singletonMap("a", 42.0))
+  shouldMatch(singletonMap("a", asList(41.0, 42.0)), Map("a" -> List(41,42).asJava).asJava)
+  shouldMatch(Map("a" -> singletonMap("x", asList(41.0, 'c'.asInstanceOf[Character]))).asJava, singletonMap("a", Map("x" -> List(41, "c").asJava).asJava))
 
   // Geographic Values
-  shouldMatch(GeographicPoint(32, 43, CRS.Cartesian), GeographicPoint(32, 43, CRS.Cartesian))
-  // There are no ready made implementations of geographic points in the core API, so we need to
-  // be able to accept any implementation of the interface here
   val crs = ImplementsJavaCRS("cartesian", "http://spatialreference.org/ref/sr-org/7203/", 7203)
-  shouldMatch(ImplementsJavaPoint(32, 43, crs), GeographicPoint(32, 43, CRS.Cartesian))
   shouldMatch(ImplementsJavaPoint(32, 43, crs), ImplementsJavaPoint(32.0, 43.0, crs))
 
   private def shouldMatch(v1: Any, v2: Any) {
     test(testName(v1, v2, "=")) {
-      val eq1 = Equivalent(v1)
-      val eq2 = Equivalent(v2)
-      eq1.equals(v2) should equal(true)
-      eq2.equals(v1) should equal(true)
-      eq1.hashCode() should equal(eq2.hashCode())
+      CompiledEquivalenceUtils.equals(v1, v2) shouldBe true
+      CompiledEquivalenceUtils.equals(v2, v1) shouldBe true
+      CompiledEquivalenceUtils.hashCode(v1) should equal(CompiledEquivalenceUtils.hashCode(v2))
     }
   }
 
   private def shouldNotMatch(v1: Any, v2: Any) {
     test(testName(v1, v2, "<>")) {
-      val eq1 = Equivalent(v1)
-      val eq2 = Equivalent(v2)
-      eq1.equals(v2) should equal(false)
-      eq2.equals(v1) should equal(false)
+      CompiledEquivalenceUtils.equals(v1, v2) shouldBe false
+      CompiledEquivalenceUtils.equals(v2, v1) shouldBe false
     }
   }
 
@@ -180,15 +173,15 @@ class EquivalentTest extends CypherFunSuite {
   }
 }
 
-case class ImplementsJavaPoint(longitude: Double, latitude: Double, crs: JavaCRS) extends Point {
-  override def getCRS: JavaCRS = crs
+case class ImplementsJavaPoint(longitude: Double, latitude: Double, crs: CRS) extends Point {
+  override def getCRS = crs
 
   override def getCoordinates: util.List[Coordinate] = asList(new Coordinate(longitude, latitude))
 
   override def getGeometryType: String = crs.getType
 }
 
-case class ImplementsJavaCRS(typ: String, href: String, code: Int) extends JavaCRS {
+case class ImplementsJavaCRS(typ: String, href: String, code: Int) extends CRS {
   override def getType: String = typ
 
   override def getHref: String = href

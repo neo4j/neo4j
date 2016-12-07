@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.symbols
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 
 case class NodeExpression(nodeIdVar: Variable) extends CodeGenExpression {
+
   assert(nodeIdVar.codeGenType.ct == symbols.CTNode)
 
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {}
@@ -38,5 +39,5 @@ case class NodeExpression(nodeIdVar: Variable) extends CodeGenExpression {
 
   override def nullable(implicit context: CodeGenContext) = nodeIdVar.nullable
 
-  override def codeGenType(implicit context: CodeGenContext) = if (nullable) CodeGenType(CTNode, ReferenceType) else CodeGenType.primitiveNode
+  override def codeGenType(implicit context: CodeGenContext) = CodeGenType(CTNode, ReferenceType)
 }

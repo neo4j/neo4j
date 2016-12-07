@@ -58,7 +58,7 @@ object Templates {
     methodReference(typeRef[util.Arrays], typeRef[util.List[T]], "asList", typeRef[Array[Object]]),
     Expression.newArray(typeRef[T], values: _*))
 
-  def handleKernelExceptions[V](generate: CodeBlock, ro: FieldReference, close: MethodReference)
+  def handleKernelExceptions[V](generate: CodeBlock, ro: FieldReference, finalizers: Seq[CodeBlock => Unit])
                          (block: CodeBlock => V): V = {
     var result = null.asInstanceOf[V]
 
@@ -68,7 +68,7 @@ object Templates {
       }
     }, new Consumer[CodeBlock]() {
       override def accept(handle: CodeBlock) = {
-        handle.expression(Expression.invoke(handle.self(), close))
+        finalizers.foreach(_(handle))
         handle.throwException(Expression.invoke(
           Expression.newInstance(typeRef[CypherExecutionException]),
           MethodReference.constructorReference(typeRef[CypherExecutionException], typeRef[String], typeRef[Throwable]),
