@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{HasLabels, LabelName}
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_2.Cost
+import org.neo4j.cypher.internal.ir.v3_2.{Cost, LazyMode}
 
 class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSupport {
 

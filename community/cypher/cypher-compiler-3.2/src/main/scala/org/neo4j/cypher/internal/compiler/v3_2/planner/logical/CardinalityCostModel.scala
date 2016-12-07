@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.planner.logical
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{HasLabels, Property}
-import org.neo4j.cypher.internal.ir.v3_2.{Cardinality, Cost, CostPerRow, Multiplier}
+import org.neo4j.cypher.internal.ir.v3_2._
 
 object CardinalityCostModel extends CostModel {
 
