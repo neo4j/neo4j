@@ -206,7 +206,7 @@ public class CommunityEditionModule extends EditionModule
         for ( Locks.Factory candidate : Service.load( Locks.Factory.class ) )
         {
             String candidateId = candidate.getKeys().iterator().next();
-            if ( candidateId.equals( key ) )
+            if ( key.equals( candidateId ) )
             {
                 return candidate.newInstance( config, clock, ResourceTypes.values() );
             }
