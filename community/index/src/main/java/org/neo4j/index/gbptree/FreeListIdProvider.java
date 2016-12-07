@@ -104,8 +104,7 @@ class FreeListIdProvider implements IdProvider
             {
                 throw new IllegalStateException( "Could not go to newly allocated page " + acquiredId );
             }
-            // TODO use cursor.clear() when available
-            cursor.putBytes( zeroPage );
+            cursor.zapPage();
         }
         return acquiredId;
     }
