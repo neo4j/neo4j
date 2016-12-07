@@ -59,7 +59,6 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
     // data structures for the current b-tree node
     private int pos;
     private int keyCount;
-    private boolean currentContainsEnd;
     private boolean reread;
     private boolean resetPosition;
     private long stableGeneration;
@@ -142,9 +141,6 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
         // We've no come to the first relevant leaf, initialize the state for the coming leaf scan
         this.pos = pos - 1;
         this.keyCount = keyCount;
-        this.currentContainsEnd = layout.compare(
-                bTreeNode.keyAt( cursor, mutableKey, keyCount - 1 ), toExclusive ) >= 0;
-
     }
 
     @Override
@@ -167,8 +163,6 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
                 if ( reread )
                 {
                     keyCount = bTreeNode.keyCount( cursor );
-                    currentContainsEnd = layout.compare(
-                            bTreeNode.keyAt( cursor, mutableKey, keyCount - 1 ), toExclusive ) >= 0;
 
                     // Keys could have been moved to the left so we need to make sure we are not missing any keys by
                     // moving position back until we find previously returned key
@@ -234,7 +228,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
             }
             else
             {
-                if ( !currentContainsEnd || layout.compare( mutableKey, toExclusive ) < 0 )
+                if ( layout.compare( mutableKey, toExclusive ) < 0 )
                 {
                     if ( layout.compare( mutableKey, fromInclusive ) < 0 ||
                          ( !first && layout.compare( prevKey, mutableKey ) >= 0 ) )
