@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.ir.v3_2._
 
 sealed trait QueryHorizon {
 
-  def exposedSymbols(qg: QueryGraph): Set[IdName]
+  def exposedSymbols(coveredIds: Set[IdName]): Set[IdName]
 
   def dependingExpressions: Seq[Expression]
 
@@ -71,7 +71,7 @@ object QueryProjection {
 }
 
 final case class PassthroughAllHorizon() extends QueryHorizon {
-  override def exposedSymbols(qg: QueryGraph) = qg.allCoveredIds
+  override def exposedSymbols(coveredIds: Set[IdName]): Set[IdName] = coveredIds
 
   override def dependingExpressions = Seq.empty
 
@@ -94,7 +94,7 @@ final case class RegularQueryProjection(projections: Map[String, Expression] = M
   def withShuffle(shuffle: QueryShuffle) =
     copy(shuffle = shuffle)
 
-  override def exposedSymbols(qg: QueryGraph) = projections.keys.map(IdName.apply).toSet
+  override def exposedSymbols(coveredIds: Set[IdName]): Set[IdName] = projections.keys.map(IdName.apply).toSet
 
   override def dependingExpressions = super.dependingExpressions ++ projections.values
 }
@@ -123,11 +123,11 @@ final case class AggregatingQueryProjection(groupingKeys: Map[String, Expression
   def withShuffle(shuffle: QueryShuffle) =
     copy(shuffle = shuffle)
 
-  override def exposedSymbols(qg: QueryGraph) = (groupingKeys.keys ++  aggregationExpressions.keys).map(IdName.apply).toSet
+  override def exposedSymbols(coveredIds: Set[IdName]): Set[IdName] = (groupingKeys.keys ++  aggregationExpressions.keys).map(IdName.apply).toSet
 }
 
 case class UnwindProjection(variable: IdName, exp: Expression) extends QueryHorizon {
-  override def exposedSymbols(qg: QueryGraph) = qg.allCoveredIds + variable
+  override def exposedSymbols(coveredIds: Set[IdName]): Set[IdName] = coveredIds + variable
 
   override def dependingExpressions = Seq(exp)
 
@@ -135,7 +135,7 @@ case class UnwindProjection(variable: IdName, exp: Expression) extends QueryHori
 }
 
 case class ProcedureCallProjection(call: ResolvedCall) extends QueryHorizon {
-  override def exposedSymbols(qg: QueryGraph) = qg.allCoveredIds ++ call.callResults.map { result => IdName.fromVariable(result.variable) }
+  override def exposedSymbols(coveredIds: Set[IdName]): Set[IdName] = coveredIds ++ call.callResults.map { result => IdName.fromVariable(result.variable) }
 
   override def dependingExpressions = call.callArguments
 
@@ -146,7 +146,7 @@ case class ProcedureCallProjection(call: ResolvedCall) extends QueryHorizon {
 }
 
 case class LoadCSVProjection(variable: IdName, url: Expression, format: CSVFormat, fieldTerminator: Option[StringLiteral]) extends QueryHorizon {
-  override def exposedSymbols(qg: QueryGraph) = qg.allCoveredIds + variable
+  override def exposedSymbols(coveredIds: Set[IdName]): Set[IdName] = coveredIds + variable
 
   override def dependingExpressions = Seq(url)
 
