@@ -19,13 +19,8 @@
  */
 package org.neo4j.index;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -34,7 +29,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
@@ -42,8 +36,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleListener;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
-import org.neo4j.test.rule.CleanupRule;
-import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertTrue;
 
@@ -53,30 +46,10 @@ public class ShutdownOnIndexUpdateIT
     private static final AtomicLong indexProvider = new AtomicLong();
     private static Label constraintIndexLabel = Label.label( "ConstraintIndexLabel" );
 
-    @Rule
-    public TestDirectory testDirectory = TestDirectory.testDirectory();
-    @Rule
-    public CleanupRule cleanupRule = new CleanupRule();
-
-    private ExecutorService executors;
-
-    @Before
-    public void setUp()
-    {
-        executors = Executors.newCachedThreadPool();
-    }
-
-    @After
-    public void tearDown()
-    {
-        executors.shutdown();
-    }
-
     @Test
     public void shutdownWhileFinishingTransactionWithIndexUpdates() throws Exception
     {
-        GraphDatabaseService database = new GraphDatabaseFactory().newEmbeddedDatabase( testDirectory.graphDbDir() );
-        cleanupRule.add( database );
+        GraphDatabaseService database = new TestGraphDatabaseFactory().newImpermanentDatabase();
 
         createConstraint( database );
         waitIndexesOnline( database );
