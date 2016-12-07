@@ -625,7 +625,7 @@ public class GBPTreeTest
     }
 
     @Test
-    public void shouldReadCorrectlyWhenConcurrentlyInserting() throws Throwable
+    public void shouldReadCorrectlyWhenConcurrentlyInsertingInOrder() throws Throwable
     {
         // GIVEN
         int maxCheckpointInterval = random.intBetween( 50, 400 );
@@ -655,10 +655,15 @@ public class GBPTreeTest
                     // Read one go, we should see up to highId
                     long start = Long.max( 0, upToId - 1000 );
                     long lastSeen = start - 1;
+                    long startTime;
+                    long startTimeLeaf;
+                    long endTime;
+                    startTime = System.currentTimeMillis();
                     try ( RawCursor<Hit<MutableLong,MutableLong>,IOException> cursor =
                             // "to" is exclusive so do +1 on that
                             index.seek( new MutableLong( start ), new MutableLong( upToId + 1 ) ) )
                     {
+                        startTimeLeaf = System.currentTimeMillis();
                         while ( cursor.next() )
                         {
                             MutableLong hit = cursor.get().key();
@@ -671,12 +676,16 @@ public class GBPTreeTest
                             assertEquals( lastSeen + 1, hit.longValue() );
                             lastSeen = hit.longValue();
                         }
+                        endTime = System.currentTimeMillis();
                     }
                     // It's possible that the writer has gone further since we started,
                     // but we should at least have seen upToId
                     if ( lastSeen < upToId )
                     {
-                        fail( "Seeked " + start + " - " + upToId + " (inclusive), but only saw " + lastSeen );
+                        fail( "Seeked " + start + " - " + upToId + " (inclusive), but only saw " + lastSeen +
+                                ". Read took " + (endTime - startTime) + "ms," +
+                                " of which " + (endTime - startTimeLeaf) + "ms among leaves. " +
+                                "MaxCheckpointInterval=" + maxCheckpointInterval );
                     }
 
                     // Keep a local counter and update the global one now and then, we don't want
@@ -765,6 +774,11 @@ public class GBPTreeTest
             checkpointer.join();
         }
     }
+
+    // todo shouldReadCorrectlyWhenConcurrentlyInsertingOutOfOrder
+    // todo shouldReadCorrectlyWhenReadSpansSingleCheckpoint
+    // todo shouldReadCorrectlyWhenReadSpansMultipleCheckpoints
+    // todo readKillerTestNextCheckpointNextCheckpointNext...
 
     private static void randomlyModifyIndex( Index<MutableLong,MutableLong> index,
             Map<MutableLong,MutableLong> data, Random random ) throws IOException
