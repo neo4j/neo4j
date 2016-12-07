@@ -24,13 +24,13 @@ import org.neo4j.kernel.api.exceptions.ProcedureException;
 public interface CallableUserAggregationFunction
 {
     UserFunctionSignature signature();
-    Aggregator create( Context ctx );
+    Aggregator create( Context ctx ) throws ProcedureException;
 
     interface Aggregator
     {
         void update( Object[] input ) throws ProcedureException;
 
-        Object result();
+        Object result() throws ProcedureException;
     }
 
 

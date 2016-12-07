@@ -32,7 +32,6 @@ import org.neo4j.kernel.api.proc.FieldSignature;
 import org.neo4j.kernel.api.proc.Neo4jTypes;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
-import org.neo4j.procedure.UserFunction;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -46,7 +45,7 @@ public class MethodSignatureCompilerTest
     {
         public String name;
 
-        public MyOutputRecord( String name )
+        MyOutputRecord( String name )
         {
             this.name = name;
         }
@@ -75,21 +74,6 @@ public class MethodSignatureCompilerTest
         public Stream<MyOutputRecord> echoWithInvalidType( @Name("name") UnmappableRecord in)
         {
             return Stream.of( new MyOutputRecord( "echo" ));
-        }
-    }
-
-    public static class ClassWithFunctionWithSimpleArgs
-    {
-        @UserFunction
-        public String echo( @Name("in") String in)
-        {
-            return in;
-        }
-
-        @UserFunction
-        public String echoWithInvalidType( @Name("in") UnmappableRecord in)
-        {
-            return "echo";
         }
     }
 
