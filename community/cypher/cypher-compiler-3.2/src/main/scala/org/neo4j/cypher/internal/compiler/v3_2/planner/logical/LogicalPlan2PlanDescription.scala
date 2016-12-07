@@ -103,7 +103,7 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
         PlanDescriptionImpl(id, "ProcedureCall", NoChildren, Seq(signature), variables)
 
       case RelationshipCountFromCountStore(IdName(ident), startLabel, typeNames, endLabel, _) =>
-        val exp = CountRelationshipsExpression(ident, startLabel.map(_.name), typeNames.names, endLabel.map(_.name))
+        val exp = CountRelationshipsExpression(ident, startLabel.map(_.name), typeNames.map(_.name), endLabel.map(_.name))
         PlanDescriptionImpl(id, "RelationshipCountFromCountStore", NoChildren, Seq(exp), variables)
 
       case _: UndirectedRelationshipByIdSeek =>
@@ -149,15 +149,15 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
         PlanDescriptionImpl(id, "EmptyResult", children, Seq.empty, variables)
       case NodeCountFromCountStore(IdName(id), labelName, arguments) =>
         PlanDescriptionImpl(id = idMap(plan), "NodeCountFromCountStore", NoChildren,
-                            Seq(CountNodesExpression(id, labelName.map(_.name))), symbols)
+                            Seq(CountNodesExpression(id, labelName.map(_.name))), variables)
 
       case RelationshipCountFromCountStore(IdName(id), start, types, end, arguments) =>
         PlanDescriptionImpl(id = idMap(plan), "RelationshipCountFromCountStore", NoChildren,
                             Seq(CountRelationshipsExpression(id, start.map(_.name), types.map(_.name), end.map(_.name))),
-                            symbols)
+                            variables)
 
       case NodeUniqueIndexSeek(IdName(id), label, propKey, value, arguments) =>
-        PlanDescriptionImpl(id = idMap(plan), "NodeUniqueIndexSeek", NoChildren, Seq(Index(label.name, propKey.name)), symbols)
+        PlanDescriptionImpl(id = idMap(plan), "NodeUniqueIndexSeek", NoChildren, Seq(Index(label.name, propKey.name)), variables)
 
       case _: ErrorPlan =>
         PlanDescriptionImpl(id, "Error", children, Seq.empty, variables)

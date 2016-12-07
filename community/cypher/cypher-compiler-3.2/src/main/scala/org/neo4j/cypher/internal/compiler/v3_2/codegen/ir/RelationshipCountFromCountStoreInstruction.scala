@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.codegen.ir
 
-import org.neo4j.cypher.internal.compiler.v3_2.codegen.{CodeGenContext, MethodStructure, Variable}
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi.MethodStructure
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.{CodeGenContext, Variable}
 
 case class RelationshipCountFromCountStoreInstruction(opName: String, variable: Variable, startLabel: Option[(Option[Int],String)],
                                                       relTypes: Seq[(Option[Int], String)], endLabel: Option[(Option[Int],String)],

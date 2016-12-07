@@ -20,7 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.aggregation
 
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions._
-import org.neo4j.cypher.internal.compiler.v3_2.codegen.{CodeGenContext, MethodStructure, Variable}
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi.MethodStructure
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.{CodeGenContext, Variable}
 
 /*
  * Simple count is used when no grouping key is defined such as

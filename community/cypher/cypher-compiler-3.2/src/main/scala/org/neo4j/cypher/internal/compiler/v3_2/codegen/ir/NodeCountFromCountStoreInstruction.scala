@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.codegen.ir
 
-import org.neo4j.cypher.internal.compiler.v3_2.codegen.{CodeGenContext, MethodStructure, Variable}
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi.MethodStructure
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.{CodeGenContext, Variable}
 
 case class NodeCountFromCountStoreInstruction(opName: String, variable: Variable, label: Option[(Option[Int], String)],
                                               inner: Instruction) extends Instruction {
