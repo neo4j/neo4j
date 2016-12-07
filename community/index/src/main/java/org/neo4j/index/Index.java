@@ -60,8 +60,8 @@ public interface Index<KEY,VALUE> extends Closeable
     /**
      * Checkpoints and flushes any pending changes to storage.
      *
-     * @throws IOException on error flushing to storage.
      * @param ioLimiter for controlling I/O usage.
+     * @throws IOException on error flushing to storage.
      */
     void checkpoint( IOLimiter ioLimiter ) throws IOException;
 }

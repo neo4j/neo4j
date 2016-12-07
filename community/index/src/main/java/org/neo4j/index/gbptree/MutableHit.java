@@ -35,6 +35,13 @@ public class MutableHit<KEY,VALUE> implements Hit<KEY,VALUE>
     private final KEY key;
     private final VALUE value;
 
+    /**
+     * Constructs a new {@link MutableHit} where the provided {@code key} and {@code value} are single
+     * instances to be re-used and overwritten for every hit in a result set.
+     *
+     * @param key KEY instance to reuse for every hit.
+     * @param value VALUE instance to reuse for every hit.
+     */
     public MutableHit( KEY key, VALUE value )
     {
         this.key = key;

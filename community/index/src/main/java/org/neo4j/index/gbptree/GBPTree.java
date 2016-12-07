@@ -536,6 +536,13 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         bTreeNode.goTo( cursor, "root", rootId, stableGeneration, unstableGeneration );
     }
 
+    /**
+     * {@link GBPTree} class-level javadoc mentions how this method interacts with recovery,
+     * it's an essential piece to be able to recover properly and must be called when external party
+     * detects that recovery is required, before re-applying the recovered updates.
+     *
+     * @throws IOException on {@link PageCache} error.
+     */
     public void prepareForRecovery() throws IOException
     {
         writerCheckpointMutex.lock();
@@ -552,7 +559,7 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
     }
 
     // Utility method
-    public void printTree() throws IOException
+    void printTree() throws IOException
     {
         try ( PageCursor cursor = pagedFile.io( rootId, PagedFile.PF_SHARED_READ_LOCK ) )
         {

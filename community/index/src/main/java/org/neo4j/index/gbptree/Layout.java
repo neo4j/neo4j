@@ -31,7 +31,7 @@ import static java.lang.String.format;
  * <p>
  * Additionally custom meta data can be supplied, which will be persisted in {@link GBPTree}.
  * <p>
- * {@link #toString()} should be implemented to present layout name, version and identifier.
+ * Rather extend {@link Adapter} as to get standard implementation of e.g. {@link Adapter#toString()}.
  *
  * @param <KEY> type of key
  * @param <VALUE> type of value
@@ -39,7 +39,7 @@ import static java.lang.String.format;
 public interface Layout<KEY, VALUE> extends Comparator<KEY>
 {
     /**
-     * @return new key instances.
+     * @return new key instance.
      */
     KEY newKey();
 
@@ -136,6 +136,10 @@ public interface Layout<KEY, VALUE> extends Comparator<KEY>
 
     /**
      * Utility method for generating an {@link #identifier()}.
+     *
+     * @param name name to be part of this identifier, must at most be 4 characters.
+     * @param checksum checksum to include into the identifier.
+     * @return a long which is a combination of {@code name} and {@code checksum}.
      */
     static long namedIdentifier( String name, int checksum )
     {
@@ -155,6 +159,12 @@ public interface Layout<KEY, VALUE> extends Comparator<KEY>
         return upperInt << Integer.SIZE | (checksum & 0xFFFFFFFF);
     }
 
+    /**
+     * Adapter for {@link Layout}, which contains convenient standard implementations of some methods.
+     *
+     * @param <KEY> type of key
+     * @param <VALUE> type of value
+     */
     abstract class Adapter<KEY,VALUE> implements Layout<KEY,VALUE>
     {
         @Override
