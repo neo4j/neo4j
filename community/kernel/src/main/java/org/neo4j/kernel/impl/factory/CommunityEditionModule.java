@@ -150,8 +150,8 @@ public class CommunityEditionModule extends EditionModule
         return () -> {};
     }
 
-    protected TokenCreator createRelationshipTypeCreator( Config config, DataSourceManager dataSourceManager,
-                                                          IdGeneratorFactory idGeneratorFactory )
+    private TokenCreator createRelationshipTypeCreator( Config config, DataSourceManager dataSourceManager,
+            IdGeneratorFactory idGeneratorFactory )
     {
         if ( config.get( GraphDatabaseSettings.read_only ) )
         {
@@ -163,8 +163,8 @@ public class CommunityEditionModule extends EditionModule
         }
     }
 
-    protected TokenCreator createPropertyKeyCreator( Config config, DataSourceManager dataSourceManager,
-                                                     IdGeneratorFactory idGeneratorFactory )
+    private TokenCreator createPropertyKeyCreator( Config config, DataSourceManager dataSourceManager,
+            IdGeneratorFactory idGeneratorFactory )
     {
         if ( config.get( GraphDatabaseSettings.read_only ) )
         {
@@ -176,8 +176,8 @@ public class CommunityEditionModule extends EditionModule
         }
     }
 
-    protected TokenCreator createLabelIdCreator( Config config, DataSourceManager dataSourceManager,
-                                                 IdGeneratorFactory idGeneratorFactory )
+    private TokenCreator createLabelIdCreator( Config config, DataSourceManager dataSourceManager,
+            IdGeneratorFactory idGeneratorFactory )
     {
         if ( config.get( GraphDatabaseSettings.read_only ) )
         {
@@ -189,7 +189,7 @@ public class CommunityEditionModule extends EditionModule
         }
     }
 
-    protected KernelData createKernelData( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir,
+    private KernelData createKernelData( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir,
             Config config, GraphDatabaseAPI graphAPI, LifeSupport life )
     {
         return life.add( new DefaultKernelData( fileSystem, pageCache, storeDir, config, graphAPI ) );
@@ -237,8 +237,8 @@ public class CommunityEditionModule extends EditionModule
         return TransactionHeaderInformationFactory.DEFAULT;
     }
 
-    protected void registerRecovery( final DatabaseInfo databaseInfo, LifeSupport life,
-                                     final DependencyResolver dependencyResolver )
+    private void registerRecovery( final DatabaseInfo databaseInfo, LifeSupport life,
+            final DependencyResolver dependencyResolver )
     {
         life.addLifecycleListener( ( instance, from, to ) -> {
             if ( instance instanceof DatabaseAvailability && to.equals( LifecycleStatus.STARTED ) )
