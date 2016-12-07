@@ -174,7 +174,7 @@ case class CypherCompiler(parser: CypherParser,
     val originalSemanticState = closing(tracer.beginPhase(SEMANTIC_CHECK)) {
       semanticChecker.check(queryText, cleanedStatement, mkException)
     }
-    originalSemanticState.notifications.foreach(notificationLogger += _)
+    originalSemanticState.notifications.foreach(notificationLogger.log)
 
     val (rewrittenStatement, extractedParams, postConditions) = closing(tracer.beginPhase(AST_REWRITE)) {
       astRewriter.rewrite(queryText, cleanedStatement, originalSemanticState)
