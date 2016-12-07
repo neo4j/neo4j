@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.pipes.CSVFormat
 import org.neo4j.cypher.internal.compiler.v3_2.spi.ProcedureReadOnlyAccess
 import org.neo4j.cypher.internal.frontend.v3_2.InternalException
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
-import org.neo4j.cypher.internal.ir.v3_2.{EagerMode, IdName, LazyMode, StrictnessMode}
+import org.neo4j.cypher.internal.ir.v3_2._
 
 sealed trait QueryHorizon {
 
@@ -68,35 +68,6 @@ object QueryProjection {
     case _ =>
       throw new InternalException("Aggregations cannot be combined")
   }
-}
-
-final case class QueryShuffle(sortItems: Seq[SortItem] = Seq.empty,
-                              skip: Option[Expression] = None,
-                              limit: Option[Expression] = None)
-  extends {
-
-  def withSortItems(sortItems: Seq[SortItem]) = copy(sortItems = sortItems)
-  def withSkip(skip: Option[Skip]) = copy(skip = skip.map(_.expression))
-  def withSkipExpression(skip: Expression) = copy(skip = Some(skip))
-  def withLimit(limit: Option[Limit]) = copy(limit = limit.map(_.expression))
-  def withLimitExpression(limit: Expression) = copy(limit = Some(limit))
-
-  def ++(other: QueryShuffle): QueryShuffle =
-    copy(
-      sortItems = other.sortItems,
-      limit = either("LIMIT", limit, other.limit),
-      skip = either("SKIP", skip, other.skip)
-    )
-
-  private def either[T](what: String, a: Option[T], b: Option[T]): Option[T] = (a, b) match {
-    case (Some(_), Some(_)) => throw new InternalException(s"Can't join two query shuffles with different $what")
-    case (s@Some(_), None)  => s
-    case (None, s)          => s
-  }
-}
-
-object QueryShuffle {
-  val empty = QueryShuffle()
 }
 
 final case class PassthroughAllHorizon() extends QueryHorizon {
