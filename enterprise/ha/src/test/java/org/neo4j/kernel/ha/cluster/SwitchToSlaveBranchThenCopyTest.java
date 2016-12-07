@@ -20,8 +20,6 @@
 package org.neo4j.kernel.ha.cluster;
 
 import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import java.io.File;
 import java.io.IOException;
@@ -50,7 +48,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.BranchedDataException;
 import org.neo4j.kernel.ha.BranchedDataPolicy;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
-import org.neo4j.kernel.ha.MasterClient310;
+import org.neo4j.kernel.ha.MasterClient320;
 import org.neo4j.kernel.ha.PullerFactory;
 import org.neo4j.kernel.ha.SlaveUpdatePuller;
 import org.neo4j.kernel.ha.UpdatePuller;
@@ -80,7 +78,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 
-import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
@@ -251,14 +249,10 @@ public class SwitchToSlaveBranchThenCopyTest
 
         when( pullerFactory.createUpdatePullerScheduler( updatePuller ) ).thenReturn( pullerScheduler );
         // emulate lifecycle start call on scheduler
-        doAnswer( new Answer()
+        doAnswer( invocationOnMock ->
         {
-            @Override
-            public Object answer( InvocationOnMock invocationOnMock ) throws Throwable
-            {
-                pullerScheduler.init();
-                return null;
-            }
+            pullerScheduler.init();
+            return null;
         } ).when( communicationLife ).start();
 
         switchToSlave.switchToSlave( communicationLife, localhost, localhost, mock( CancellationRequest.class ) );
@@ -297,7 +291,7 @@ public class SwitchToSlaveBranchThenCopyTest
         when( master.getHARole() ).thenReturn( HighAvailabilityModeSwitcher.MASTER );
         when( master.hasRole( eq( HighAvailabilityModeSwitcher.MASTER ) ) ).thenReturn( true );
         when( master.getInstanceId() ).thenReturn( new InstanceId( 1 ) );
-        when( clusterMembers.getMembers() ).thenReturn( asList( master ) );
+        when( clusterMembers.getMembers() ).thenReturn( singletonList( master ) );
 
         Dependencies resolver = new Dependencies();
         resolver.satisfyDependencies( requestContextFactory, clusterMembers,
@@ -318,7 +312,7 @@ public class SwitchToSlaveBranchThenCopyTest
         Response<HandshakeResult> response = mock( Response.class );
         when( response.response() ).thenReturn( new HandshakeResult( 42, 2 ) );
         when( masterClient.handshake( anyLong(), any( StoreId.class ) ) ).thenReturn( response );
-        when( masterClient.getProtocolVersion() ).thenReturn( MasterClient310.PROTOCOL_VERSION );
+        when( masterClient.getProtocolVersion() ).thenReturn( MasterClient320.PROTOCOL_VERSION );
 
         TransactionIdStore transactionIdStoreMock = mock( TransactionIdStore.class );
         // note that the checksum (the second member of the array) is the same as the one in the handshake mock above

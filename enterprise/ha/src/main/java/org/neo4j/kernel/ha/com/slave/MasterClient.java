@@ -35,7 +35,7 @@ import org.neo4j.com.Response;
 import org.neo4j.com.storecopy.ResponseUnpacker.TxHandler;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.kernel.ha.MasterClient310;
+import org.neo4j.kernel.ha.MasterClient320;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.lock.LockResult;
 import org.neo4j.kernel.ha.lock.LockStatus;
@@ -105,7 +105,7 @@ public interface MasterClient extends Master
         }
     };
 
-    public static final ProtocolVersion CURRENT = MasterClient310.PROTOCOL_VERSION;
+    public static final ProtocolVersion CURRENT = MasterClient320.PROTOCOL_VERSION;
 
     @Override
     public Response<Integer> createRelationshipType( RequestContext context, final String name );

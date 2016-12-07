@@ -19,13 +19,11 @@
  */
 package org.neo4j.kernel.ha;
 
-import org.neo4j.com.Deserializer;
 import org.neo4j.com.Protocol;
-import org.neo4j.com.Protocol310;
+import org.neo4j.com.Protocol320;
 import org.neo4j.com.ProtocolVersion;
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.com.storecopy.ResponseUnpacker;
-import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
@@ -34,7 +32,7 @@ import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.com.ProtocolVersion.INTERNAL_PROTOCOL_VERSION;
 
-public class MasterClient310 extends MasterClient214
+public class MasterClient320 extends MasterClient310
 {
     /* Version 1 first version
      * Version 2 since 2012-01-24
@@ -45,10 +43,11 @@ public class MasterClient310 extends MasterClient214
      * Version 7 since 2014-03-18
      * Version 8 since 2014-08-27
      * Version 9 since 3.1.0, 2016-09-20
+     * Version 10 since 3.2.0, 2016-12-07
      */
-    public static final ProtocolVersion PROTOCOL_VERSION = new ProtocolVersion( (byte) 9, INTERNAL_PROTOCOL_VERSION );
+    public static final ProtocolVersion PROTOCOL_VERSION = new ProtocolVersion( (byte) 10, INTERNAL_PROTOCOL_VERSION );
 
-    public MasterClient310( String destinationHostNameOrIp, int destinationPort, String originHostNameOrIp,
+    public MasterClient320( String destinationHostNameOrIp, int destinationPort, String originHostNameOrIp,
                             LogProvider logProvider, StoreId storeId,
                             long readTimeoutMillis, long lockReadTimeout, int maxConcurrentChannels, int chunkSize,
                             ResponseUnpacker unpacker,
@@ -64,18 +63,12 @@ public class MasterClient310 extends MasterClient214
     @Override
     protected Protocol createProtocol( int chunkSize, byte applicationProtocolVersion )
     {
-        return new Protocol310( chunkSize, applicationProtocolVersion, getInternalProtocolVersion() );
+        return new Protocol320( chunkSize, applicationProtocolVersion, getInternalProtocolVersion() );
     }
 
     @Override
     public ProtocolVersion getProtocolVersion()
     {
         return PROTOCOL_VERSION;
-    }
-
-    @Override
-    protected Deserializer<Void> createFileStreamDeserializer( StoreWriter writer )
-    {
-        return new Protocol.FileStreamsDeserializer310( writer );
     }
 }
