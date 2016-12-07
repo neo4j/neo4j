@@ -81,6 +81,7 @@ class NeoStoreTransactionLogModule
         dependencies.satisfyDependencies( checkPointer,
                                           logFile,
                                           logFileInformation,
+                                          logFiles,
                                           legacyIndexTransactionOrdering,
                                           logicalTransactionStore,
                                           logRotation,
