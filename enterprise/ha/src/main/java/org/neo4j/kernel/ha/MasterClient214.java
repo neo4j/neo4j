@@ -21,10 +21,14 @@ package org.neo4j.kernel.ha;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
+import java.nio.ByteBuffer;
 
 import org.neo4j.com.Client;
 import org.neo4j.com.Deserializer;
+import org.neo4j.com.ObjectSerializer;
 import org.neo4j.com.Protocol;
 import org.neo4j.com.Protocol214;
 import org.neo4j.com.ProtocolVersion;
@@ -35,24 +39,29 @@ import org.neo4j.com.Serializer;
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.com.storecopy.ResponseUnpacker;
 import org.neo4j.com.storecopy.StoreWriter;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.ha.com.master.HandshakeResult;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.com.master.MasterServer;
 import org.neo4j.kernel.ha.com.slave.MasterClient;
 import org.neo4j.kernel.ha.id.IdAllocation;
 import org.neo4j.kernel.ha.lock.LockResult;
+import org.neo4j.kernel.ha.lock.LockStatus;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.id.IdRange;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
+import org.neo4j.kernel.impl.util.HexPrinter;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.lock.ResourceType;
 
+import static java.lang.String.format;
 import static org.neo4j.com.Protocol.EMPTY_SERIALIZER;
 import static org.neo4j.com.Protocol.VOID_DESERIALIZER;
+import static org.neo4j.com.Protocol.readString;
 import static org.neo4j.com.Protocol.writeString;
 import static org.neo4j.com.ProtocolVersion.INTERNAL_PROTOCOL_VERSION;
 
@@ -67,8 +76,65 @@ public class MasterClient214 extends Client<Master> implements MasterClient
 {
     public static final ProtocolVersion PROTOCOL_VERSION = new ProtocolVersion( (byte) 8, INTERNAL_PROTOCOL_VERSION );
 
+    private static final ObjectSerializer<LockResult> LOCK_RESULT_OBJECT_SERIALIZER = ( responseObject, result ) ->
+    {
+        result.writeByte( responseObject.getStatus().ordinal() );
+        if ( responseObject.getStatus() == LockStatus.DEAD_LOCKED )
+        {
+            writeString( result, responseObject.getMessage() );
+        }
+    };
+
+    private static final Deserializer<LockResult> LOCK_RESULT_DESERIALIZER = new Deserializer<LockResult>()
+    {
+        @Override
+        public LockResult read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws IOException
+        {
+            byte statusOrdinal = buffer.readByte();
+            LockStatus status;
+            try
+            {
+                status = LockStatus.values()[statusOrdinal];
+            }
+            catch ( ArrayIndexOutOfBoundsException e )
+            {
+                int maxBytesToPrint = 1024 * 40;
+                throw Exceptions.withMessage( e,
+                        format( "%s | read invalid ordinal %d. First %db of this channel buffer is:%n%s",
+                                e.getMessage(), statusOrdinal, maxBytesToPrint,
+                                beginningOfBufferAsHexString( buffer, maxBytesToPrint ) ) );
+            }
+            return status == LockStatus.DEAD_LOCKED ? new LockResult( LockStatus.DEAD_LOCKED, readString( buffer ) )
+                                       : new LockResult( status );
+        }
+
+        private String beginningOfBufferAsHexString( ChannelBuffer buffer, int maxBytesToPrint )
+        {
+            // read buffer from pos 0 - writeIndex
+            int prevIndex = buffer.readerIndex();
+            buffer.readerIndex( 0 );
+            try
+            {
+                ByteArrayOutputStream byteArrayStream = new ByteArrayOutputStream( buffer.readableBytes() );
+                PrintStream stream = new PrintStream( byteArrayStream );
+                HexPrinter printer = new HexPrinter( stream ).withLineNumberDigits( 4 );
+                for ( int i = 0; buffer.readable() && i < maxBytesToPrint; i++ )
+                {
+                    printer.append( buffer.readByte() );
+                }
+                stream.flush();
+                return byteArrayStream.toString();
+            }
+            finally
+            {
+                buffer.readerIndex( prevIndex );
+            }
+        }
+    };
+
     private final long lockReadTimeoutMillis;
     private final HaRequestTypes requestTypes;
+    private final Deserializer<LockResult> lockResultDeserializer;
 
     public MasterClient214( String destinationHostNameOrIp, int destinationPort, String originHostNameOrIp,
                             LogProvider logProvider, StoreId storeId, long readTimeoutMillis,
@@ -81,7 +147,8 @@ public class MasterClient214 extends Client<Master> implements MasterClient
                 MasterServer.FRAME_LENGTH, readTimeoutMillis, maxConcurrentChannels, chunkSize,
                 responseUnpacker, byteCounterMonitor, requestMonitor, entryReader );
         this.lockReadTimeoutMillis = lockReadTimeoutMillis;
-        this.requestTypes = new HaRequestType210( entryReader );
+        this.requestTypes = new HaRequestType210( entryReader, createLockResultSerializer() );
+        this.lockResultDeserializer = createLockResultDeserializer();
     }
 
     @Override
@@ -94,6 +161,18 @@ public class MasterClient214 extends Client<Master> implements MasterClient
     public ProtocolVersion getProtocolVersion()
     {
         return PROTOCOL_VERSION;
+    }
+
+    @Override
+    public ObjectSerializer<LockResult> createLockResultSerializer()
+    {
+        return LOCK_RESULT_OBJECT_SERIALIZER;
+    }
+
+    @Override
+    public Deserializer<LockResult> createLockResultDeserializer()
+    {
+        return LOCK_RESULT_DESERIALIZER;
     }
 
     @Override
@@ -163,7 +242,7 @@ public class MasterClient214 extends Client<Master> implements MasterClient
             RequestContext context, ResourceType type, long... resourceIds )
     {
         return sendRequest( requestTypes.type( HaRequestTypes.Type.ACQUIRE_SHARED_LOCK ), context,
-                new AcquireLockSerializer( type, resourceIds ), LOCK_RESULT_DESERIALIZER );
+                new AcquireLockSerializer( type, resourceIds ), lockResultDeserializer );
     }
 
     @Override
@@ -171,7 +250,7 @@ public class MasterClient214 extends Client<Master> implements MasterClient
             RequestContext context, ResourceType type, long... resourceIds )
     {
         return sendRequest( requestTypes.type( HaRequestTypes.Type.ACQUIRE_EXCLUSIVE_LOCK ), context,
-                new AcquireLockSerializer( type, resourceIds ), LOCK_RESULT_DESERIALIZER );
+                new AcquireLockSerializer( type, resourceIds ), lockResultDeserializer );
     }
 
     @Override
