@@ -19,22 +19,55 @@
  */
 package org.neo4j.graphdb.factory;
 
-import org.neo4j.graphdb.config.Setting;
-import org.neo4j.helpers.AdvertisedSocketAddress;
-import org.neo4j.helpers.ListenSocketAddress;
-import org.neo4j.io.ByteUnit;
-import org.neo4j.kernel.configuration.*;
-import org.neo4j.kernel.impl.cache.MonitorGc;
-import org.neo4j.logging.Level;
-
 import java.io.File;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.neo4j.graphdb.config.Setting;
+import org.neo4j.helpers.AdvertisedSocketAddress;
+import org.neo4j.helpers.ListenSocketAddress;
+import org.neo4j.io.ByteUnit;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.ConfigurationMigrator;
+import org.neo4j.kernel.configuration.GraphDatabaseConfigurationMigrator;
+import org.neo4j.kernel.configuration.Group;
+import org.neo4j.kernel.configuration.GroupSettingSupport;
+import org.neo4j.kernel.configuration.Internal;
+import org.neo4j.kernel.configuration.Migrator;
+import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.kernel.configuration.Title;
+import org.neo4j.kernel.impl.cache.MonitorGc;
+import org.neo4j.logging.Level;
+
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.BoltConnector.EncryptionLevel.OPTIONAL;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.Connector.ConnectorType.BOLT;
 import static org.neo4j.kernel.configuration.GroupSettingSupport.enumerate;
-import static org.neo4j.kernel.configuration.Settings.*;
+import static org.neo4j.kernel.configuration.Settings.ANY;
+import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
+import static org.neo4j.kernel.configuration.Settings.BYTES;
+import static org.neo4j.kernel.configuration.Settings.DEFAULT;
+import static org.neo4j.kernel.configuration.Settings.DOUBLE;
+import static org.neo4j.kernel.configuration.Settings.DURATION;
+import static org.neo4j.kernel.configuration.Settings.FALSE;
+import static org.neo4j.kernel.configuration.Settings.INTEGER;
+import static org.neo4j.kernel.configuration.Settings.LONG;
+import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
+import static org.neo4j.kernel.configuration.Settings.PATH;
+import static org.neo4j.kernel.configuration.Settings.STRING;
+import static org.neo4j.kernel.configuration.Settings.STRING_LIST;
+import static org.neo4j.kernel.configuration.Settings.TRUE;
+import static org.neo4j.kernel.configuration.Settings.advertisedAddress;
+import static org.neo4j.kernel.configuration.Settings.derivedSetting;
+import static org.neo4j.kernel.configuration.Settings.illegalValueMessage;
+import static org.neo4j.kernel.configuration.Settings.legacyFallback;
+import static org.neo4j.kernel.configuration.Settings.list;
+import static org.neo4j.kernel.configuration.Settings.listenAddress;
+import static org.neo4j.kernel.configuration.Settings.matches;
+import static org.neo4j.kernel.configuration.Settings.max;
+import static org.neo4j.kernel.configuration.Settings.min;
+import static org.neo4j.kernel.configuration.Settings.options;
+import static org.neo4j.kernel.configuration.Settings.pathSetting;
+import static org.neo4j.kernel.configuration.Settings.setting;
 
 /**
  * Settings for Neo4j. Use this with {@link GraphDatabaseBuilder}.
@@ -191,9 +224,8 @@ public abstract class GraphDatabaseSettings
 
     @Description( "The maximum amount of time to wait for running transactions to complete before allowing "
                   + "initiated database shutdown to continue" )
-    @Internal
     public static final Setting<Long> shutdown_transaction_end_timeout =
-            setting( "unsupported.dbms.shutdown_transaction_end_timeout", DURATION, "10s" );
+            setting( "dbms.shutdown_transaction_end_timeout", DURATION, "10s" );
 
     @Description("Location of the database plugin directory. Compiled Java JAR files that contain database " +
                  "procedures will be loaded if they are placed in this directory.")
