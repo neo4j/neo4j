@@ -187,15 +187,20 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
     generator.assign(variable, invoke(mathCastToInt, initialValue))
   }
 
-  override def decreaseCounterAndCheckForZero(name: String): Expression = {
+  override def decrementCounter(name: String) = {
     val local = locals(name)
     generator.assign(local, subtract(local, constant(1)))
-    equal(constant(0), local)
   }
 
-  override def counterEqualsZero(name: String): Expression = {
+  override def checkCounter(name: String, comparator: Comparator, value: Int): Expression = {
     val local = locals(name)
-    equal(constant(0), local)
+    comparator match {
+      case Equal =>  equal(local, constant(value))
+      case LessThan => lt(local, constant(value))
+      case LessThanEqual => lte(local, constant(value))
+      case GreaterThan  => gt(local, constant(value))
+      case GreaterThanEqual  => gte(local, constant(value))
+    }
   }
 
   override def setInRow(column: String, value: Expression) =
