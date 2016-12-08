@@ -128,7 +128,7 @@ public class HaRequestType210 extends AbstractHaRequestTypes
         {
             readString( input ); // Always neostorexadatasource
 
-            TransactionRepresentation tx = null;
+            TransactionRepresentation tx;
             try
             {
                 Deserializer<TransactionRepresentation> deserializer =

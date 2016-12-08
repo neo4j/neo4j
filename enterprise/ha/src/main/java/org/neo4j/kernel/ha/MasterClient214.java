@@ -76,7 +76,7 @@ public class MasterClient214 extends Client<Master> implements MasterClient
 {
     public static final ProtocolVersion PROTOCOL_VERSION = new ProtocolVersion( (byte) 8, INTERNAL_PROTOCOL_VERSION );
 
-    private static final ObjectSerializer<LockResult> LOCK_RESULT_OBJECT_SERIALIZER = ( responseObject, result ) ->
+    public static final ObjectSerializer<LockResult> LOCK_RESULT_OBJECT_SERIALIZER = ( responseObject, result ) ->
     {
         result.writeByte( responseObject.getStatus().ordinal() );
         if ( responseObject.getStatus() == LockStatus.DEAD_LOCKED )
@@ -85,7 +85,7 @@ public class MasterClient214 extends Client<Master> implements MasterClient
         }
     };
 
-    private static final Deserializer<LockResult> LOCK_RESULT_DESERIALIZER = new Deserializer<LockResult>()
+    public static final Deserializer<LockResult> LOCK_RESULT_DESERIALIZER = new Deserializer<LockResult>()
     {
         @Override
         public LockResult read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws IOException
