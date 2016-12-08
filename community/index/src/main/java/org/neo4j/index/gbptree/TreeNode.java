@@ -25,6 +25,9 @@ import java.util.function.Consumer;
 
 import org.neo4j.io.pagecache.PageCursor;
 
+import static org.neo4j.index.gbptree.GenSafePointerPair.NO_LOGICAL_POS;
+import static org.neo4j.index.gbptree.GenSafePointerPair.read;
+
 /**
  * Methods to manipulate single node such as set and get header fields,
  * insert and fetch keys, values and children.
@@ -150,19 +153,19 @@ class TreeNode<KEY,VALUE>
     long rightSibling( PageCursor cursor, long stableGeneration, long unstableGeneration )
     {
         cursor.setOffset( BYTE_POS_RIGHTSIBLING );
-        return GenSafePointerPair.read( cursor, stableGeneration, unstableGeneration );
+        return read( cursor, stableGeneration, unstableGeneration, NO_LOGICAL_POS );
     }
 
     long leftSibling( PageCursor cursor, long stableGeneration, long unstableGeneration )
     {
         cursor.setOffset( BYTE_POS_LEFTSIBLING );
-        return GenSafePointerPair.read( cursor, stableGeneration, unstableGeneration );
+        return read( cursor, stableGeneration, unstableGeneration, NO_LOGICAL_POS );
     }
 
     long newGen( PageCursor cursor, long stableGeneration, long unstableGeneration )
     {
         cursor.setOffset( BYTE_POS_NEWGEN );
-        return GenSafePointerPair.read( cursor, stableGeneration, unstableGeneration );
+        return read( cursor, stableGeneration, unstableGeneration, NO_LOGICAL_POS );
     }
 
     void setGen( PageCursor cursor, long generation )
@@ -280,7 +283,7 @@ class TreeNode<KEY,VALUE>
     long childAt( PageCursor cursor, int pos, long stableGeneration, long unstableGeneration )
     {
         cursor.setOffset( childOffset( pos ) );
-        return GenSafePointerPair.read( cursor, stableGeneration, unstableGeneration );
+        return read( cursor, stableGeneration, unstableGeneration, NO_LOGICAL_POS );
     }
 
     void insertChildAt( PageCursor cursor, long child, int pos, int keyCount, byte[] tmp,
@@ -328,9 +331,9 @@ class TreeNode<KEY,VALUE>
         return HEADER_LENGTH + internalMaxKeyCount * keySize + pos * SIZE_PAGE_REFERENCE;
     }
 
-    boolean isNode( long node )
+    static boolean isNode( long node )
     {
-        return node != NO_NODE_FLAG;
+        return GenSafePointerPair.pointer( node ) != NO_NODE_FLAG;
     }
 
     int keySize()
@@ -377,7 +380,7 @@ class TreeNode<KEY,VALUE>
     void goTo( PageCursor cursor, String messageOnError, long nodeId, long stableGeneration, long unstableGeneration )
             throws IOException
     {
-        PageCursorUtil.goTo( cursor, messageOnError, nodeId );
+        PageCursorUtil.goTo( cursor, messageOnError, GenSafePointerPair.pointer( nodeId ) );
         verifyGen( cursor, stableGeneration, unstableGeneration );
     }
 

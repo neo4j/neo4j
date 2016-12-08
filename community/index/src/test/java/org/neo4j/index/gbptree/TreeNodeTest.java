@@ -33,6 +33,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.index.gbptree.GenSafePointerPair.pointer;
 import static org.neo4j.index.gbptree.TreeNode.NO_NODE_FLAG;
 
 public class TreeNodeTest
@@ -68,9 +69,9 @@ public class TreeNodeTest
         assertFalse( node.isInternal( cursor ) );
         assertEquals( UNSTABLE_GENERATION, node.gen( cursor ) );
         assertEquals( 0, node.keyCount( cursor ) );
-        assertEquals( NO_NODE_FLAG, node.leftSibling( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
-        assertEquals( NO_NODE_FLAG, node.rightSibling( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
-        assertEquals( NO_NODE_FLAG, node.newGen( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
+        assertEquals( NO_NODE_FLAG, leftSibling( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
+        assertEquals( NO_NODE_FLAG, rightSibling( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
+        assertEquals( NO_NODE_FLAG, newGen( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
     }
 
     @Test
@@ -84,9 +85,9 @@ public class TreeNodeTest
         assertTrue( node.isInternal( cursor ) );
         assertEquals( UNSTABLE_GENERATION, node.gen( cursor ) );
         assertEquals( 0, node.keyCount( cursor ) );
-        assertEquals( NO_NODE_FLAG, node.leftSibling( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
-        assertEquals( NO_NODE_FLAG, node.rightSibling( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
-        assertEquals( NO_NODE_FLAG, node.newGen( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
+        assertEquals( NO_NODE_FLAG, leftSibling( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
+        assertEquals( NO_NODE_FLAG, rightSibling( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
+        assertEquals( NO_NODE_FLAG, newGen( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
     }
 
     @Test
@@ -297,8 +298,8 @@ public class TreeNodeTest
         node.insertChildAt( cursor, otherChild, 1, 1, tmp, STABLE_GENERATION, UNSTABLE_GENERATION );
 
         // THEN
-        assertEquals( firstChild, node.childAt( cursor, 0, STABLE_GENERATION, UNSTABLE_GENERATION ) );
-        assertEquals( otherChild, node.childAt( cursor, 1, STABLE_GENERATION, UNSTABLE_GENERATION ) );
+        assertEquals( firstChild, childAt( cursor, 0, STABLE_GENERATION, UNSTABLE_GENERATION ) );
+        assertEquals( otherChild, childAt( cursor, 1, STABLE_GENERATION, UNSTABLE_GENERATION ) );
     }
 
     @Test
@@ -314,7 +315,7 @@ public class TreeNodeTest
         node.setChildAt( cursor, overwrittenChild, 0, STABLE_GENERATION, UNSTABLE_GENERATION );
 
         // THEN
-        assertEquals( overwrittenChild, node.childAt( cursor, 0, STABLE_GENERATION, UNSTABLE_GENERATION ) );
+        assertEquals( overwrittenChild, childAt( cursor, 0, STABLE_GENERATION, UNSTABLE_GENERATION ) );
     }
 
     @Test
@@ -343,8 +344,8 @@ public class TreeNodeTest
         node.setRightSibling( cursor, 456, STABLE_GENERATION, UNSTABLE_GENERATION );
 
         // THEN
-        assertEquals( 123, node.leftSibling( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
-        assertEquals( 456, node.rightSibling( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
+        assertEquals( 123, leftSibling( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
+        assertEquals( 456, rightSibling( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
     }
 
     @Test
@@ -357,7 +358,7 @@ public class TreeNodeTest
         node.setNewGen( cursor, 123, STABLE_GENERATION, UNSTABLE_GENERATION );
 
         // THEN
-        assertEquals( 123, node.newGen( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
+        assertEquals( 123, newGen( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
     }
 
     @Test
@@ -419,9 +420,9 @@ public class TreeNodeTest
         node.writeChildren( cursor, tmp, 0, 0, 3 );
 
         // THEN
-        assertEquals( firstChild, node.childAt( cursor, 0, STABLE_GENERATION, UNSTABLE_GENERATION ) );
-        assertEquals( secondChild, node.childAt( cursor, 1, STABLE_GENERATION, UNSTABLE_GENERATION ) );
-        assertEquals( thirdChild, node.childAt( cursor, 2, STABLE_GENERATION, UNSTABLE_GENERATION ) );
+        assertEquals( firstChild, childAt( cursor, 0, STABLE_GENERATION, UNSTABLE_GENERATION ) );
+        assertEquals( secondChild, childAt( cursor, 1, STABLE_GENERATION, UNSTABLE_GENERATION ) );
+        assertEquals( thirdChild, childAt( cursor, 2, STABLE_GENERATION, UNSTABLE_GENERATION ) );
     }
 
     @Test
@@ -618,5 +619,25 @@ public class TreeNodeTest
             }
         }
         return false;
+    }
+
+    private long childAt( PageCursor cursor, int pos, long stableGen, long unstableGen )
+    {
+        return pointer( node.childAt( cursor, pos, stableGen, unstableGen ) );
+    }
+
+    private long rightSibling( PageCursor cursor, long stableGen, long unstableGen )
+    {
+        return pointer( node.rightSibling( cursor, stableGen, unstableGen ) );
+    }
+
+    private long leftSibling( PageCursor cursor, long stableGen, long unstableGen )
+    {
+        return pointer( node.leftSibling( cursor, stableGen, unstableGen ) );
+    }
+
+    private long newGen( PageCursor cursor, long stableGen, long unstableGen )
+    {
+        return pointer( node.newGen( cursor, stableGen, unstableGen ) );
     }
 }

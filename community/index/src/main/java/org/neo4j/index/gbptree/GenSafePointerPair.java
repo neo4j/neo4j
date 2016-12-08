@@ -54,20 +54,45 @@ import static org.neo4j.index.gbptree.GenSafePointer.readPointer;
  * although the most common case (successful read) has its flag zeros so a successful read doesn't need
  * any masking to extract pointer.
  * <pre>
- * [    ,    ][    ,    ][ ... 6B pointer data ... ]
- *  ▲▲▲▲ ▲▲▲▲  ▲▲▲
- *  ││││ ││││  ││└────────────────────────────────────── 0:{@link #WRITE_TO_A}/1:{@link #WRITE_TO_B}
- *  ││││ │││└──└└─────────────────────────────────────── POINTER STATE B
- *  ││││ └└└──────────────────────────────────────────── POINTER STATE A
- *  ││└└──────────────────────────────────────────────── GENERATION COMPARISON:
- *  ││                                                   {@link #GEN_B_BIG}, {@link #GEN_EQUAL}, {@link #GEN_A_BIG}
- *  │└────────────────────────────────────────────────── 0:{@link #READ}/1:{@link #WRITE}
- *  └─────────────────────────────────────────────────── 0:{@link #SUCCESS}/1:{@link #FAIL}
+ *     WRITE
+ * [_1__,____][___ ,    ][ ... 6B pointer data ... ]
+ *  ▲ ▲▲ ▲▲▲▲  ▲▲▲
+ *  │ ││ ││││  │││
+ *  │ ││ ││││  └└└────────────────────────────────────── POINTER STATE B (on failure)
+ *  │ ││ │└└└─────────────────────────────────────────── POINTER STATE A (on failure)
+ *  │ │└─└────────────────────────────────────────────── GENERATION COMPARISON (on failure):
+ *  │ │                                                  {@link #FLAG_GEN_B_BIG}, {@link #FLAG_GEN_EQUAL}, {@link #FLAG_GEN_A_BIG}
+ *  │ └───────────────────────────────────────────────── 0:{@link #FLAG_SLOT_A}/1:{@link #FLAG_SLOT_B} (on success)
+ *  └─────────────────────────────────────────────────── 0:{@link #FLAG_SUCCESS}/1:{@link #FLAG_FAIL}
+ * </pre>
+ * <pre>
+ *     READ failure
+ * [10__,____][__  ,    ][ ... 6B pointer data ... ]
+ *    ▲▲ ▲▲▲▲  ▲▲
+ *    ││ ││││  ││
+ *    ││ │││└──└└─────────────────────────────────────── POINTER STATE B
+ *    ││ └└└──────────────────────────────────────────── POINTER STATE A
+ *    └└──────────────────────────────────────────────── GENERATION COMPARISON:
+ *                                                       {@link #FLAG_GEN_B_BIG}, {@link #FLAG_GEN_EQUAL}, {@link #FLAG_GEN_A_BIG}
+ * </pre>
+ * <pre>
+ *     READ success
+ * [00__,____][____,____][ ... 6B pointer data ... ]
+ *  ▲ ▲▲ ▲             ▲
+ *  │ ││ └──────┬──────┘
+ *  │ ││        └─────────────────────────────────────── GENERATION OFFSET or CHILD POS
+ *  │ │└──────────────────────────────────────────────── 0:{@link #FLAG_ABS_OFFSET}/1:{@link #FLAG_LOGICAL_POS}
+ *  │ └───────────────────────────────────────────────── 0:{@link #FLAG_SLOT_A}/1:{@link #FLAG_SLOT_B}
+ *  └─────────────────────────────────────────────────── 0:{@link #FLAG_SUCCESS}/1:{@link #FLAG_FAIL}
  * </pre>
  */
 class GenSafePointerPair
 {
     static final int SIZE = GenSafePointer.SIZE * 2;
+    static final int NO_LOGICAL_POS = -1;
+    static final String GEN_COMPARISON_NAME_B_BIG = "A < B";
+    static final String GEN_COMPARISON_NAME_A_BIG = "A > B";
+    static final String GEN_COMPARISON_NAME_EQUAL = "A == B";
 
     // Pointer states
     static final byte STABLE = 0;     // any previous generation made safe by a checkpoint
@@ -77,30 +102,34 @@ class GenSafePointerPair
     static final byte EMPTY = 4;      // generation and pointer all zeros
 
     // Flags and failure information
-    static final long SUCCESS      = 0x00000000_00000000L;
-    static final long FAIL         = 0x80000000_00000000L;
-    static final long READ         = 0x00000000_00000000L;
-    static final long WRITE        = 0x40000000_00000000L;
-    static final long GEN_EQUAL    = 0x00000000_00000000L;
-    static final long GEN_A_BIG    = 0x10000000_00000000L;
-    static final long GEN_B_BIG    = 0x20000000_00000000L;
-    static final long WRITE_TO_A   = 0x00000000_00000000L;
-    static final long WRITE_TO_B   = 0x00200000_00000000L;
-    static final int STATE_SHIFT_A = 57;
-    static final int STATE_SHIFT_B = 54;
+    static final long FLAG_SUCCESS     = 0x00000000_00000000L;
+    static final long FLAG_FAIL        = 0x80000000_00000000L;
+    static final long FLAG_READ        = 0x00000000_00000000L;
+    static final long FLAG_WRITE       = 0x40000000_00000000L;
+    static final long FLAG_GEN_EQUAL   = 0x00000000_00000000L;
+    static final long FLAG_GEN_A_BIG   = 0x08000000_00000000L;
+    static final long FLAG_GEN_B_BIG   = 0x10000000_00000000L;
+    static final long FLAG_SLOT_A      = 0x00000000_00000000L;
+    static final long FLAG_SLOT_B      = 0x20000000_00000000L;
+    static final long FLAG_ABS_OFFSET  = 0x00000000_00000000L;
+    static final long FLAG_LOGICAL_POS = 0x10000000_00000000L;
+    static final int  SHIFT_STATE_A    = 56;
+    static final int  SHIFT_STATE_B    = 53;
+    static final int  SHIFT_GEN_OFFSET = 48;
 
-    // Aggregations and masks
-    static final long SUCCESS_WRITE_TO_B = SUCCESS | WRITE | WRITE_TO_B;
-    static final long SUCCESS_WRITE_TO_A = SUCCESS | WRITE | WRITE_TO_A;
-    static final long SUCCESS_MASK  = SUCCESS | FAIL;
-    static final long READ_OR_WRITE_MASK = READ | WRITE;
-    static final long WRITE_TO_MASK = WRITE_TO_A | WRITE_TO_B;
-    static final long STATE_MASK = 0x7; // After shift
-    static final long GEN_COMPARISON_MASK = GEN_EQUAL | GEN_A_BIG | GEN_B_BIG;
+    // Aggregations
+    static final long SUCCESS_WRITE_TO_B = FLAG_SUCCESS | FLAG_WRITE | FLAG_SLOT_B;
+    static final long SUCCESS_WRITE_TO_A = FLAG_SUCCESS | FLAG_WRITE | FLAG_SLOT_A;
 
-    static final String GEN_COMPARISON_NAME_B_BIG = "A < B";
-    static final String GEN_COMPARISON_NAME_A_BIG = "A > B";
-    static final String GEN_COMPARISON_NAME_EQUAL = "A == B";
+    // Masks
+    static final long SUCCESS_MASK         = FLAG_SUCCESS | FLAG_FAIL;
+    static final long READ_OR_WRITE_MASK   = FLAG_READ | FLAG_WRITE;
+    static final long SLOT_MASK            = FLAG_SLOT_A | FLAG_SLOT_B;
+    static final long STATE_MASK           = 0x7; // After shift
+    static final long GEN_COMPARISON_MASK  = FLAG_GEN_EQUAL | FLAG_GEN_A_BIG | FLAG_GEN_B_BIG;
+    static final long POINTER_MASK         = 0x0000FFFF_FFFFFFFFL;
+    static final long GEN_OFFSET_MASK      = 0x0FFF0000_00000000L;
+    static final long GEN_OFFSET_TYPE_MASK = FLAG_ABS_OFFSET | FLAG_LOGICAL_POS;
 
     /**
      * Reads a GSPP, returning the read pointer or a failure. Check success/failure using {@link #isSuccess(long)}
@@ -109,10 +138,15 @@ class GenSafePointerPair
      * @param cursor {@link PageCursor} to read from, placed at the beginning of the GSPP.
      * @param stableGeneration stable index generation.
      * @param unstableGeneration unstable index generation.
+     * @param logicalPos logical position to use in header-part of the read result. If {@link #NO_LOGICAL_POS}
+     * then the {@link PageCursor#getOffset() cursor offset} is used. Header will also note whether or not
+     * this is a logical pos or the offset was used. This fact will be used in {@link #isLogicalPos(long)}.
      * @return most recent readable pointer, or failure. Check result using {@link #isSuccess(long)}.
      */
-    public static long read( PageCursor cursor, long stableGeneration, long unstableGeneration )
+    public static long read( PageCursor cursor, long stableGeneration, long unstableGeneration, int logicalPos )
     {
+        int gsppOffset = cursor.getOffset();
+
         // Try A
         long generationA = readGeneration( cursor );
         long pointerA = readPointer( cursor );
@@ -134,14 +168,14 @@ class GenSafePointerPair
         {
             if ( pointerStateB == STABLE || pointerStateB == EMPTY )
             {
-                return SUCCESS | READ | pointerA;
+                return buildSuccessfulReadResult( FLAG_SLOT_A, logicalPos, gsppOffset, pointerA );
             }
         }
         else if ( pointerStateB == UNSTABLE )
         {
             if ( pointerStateA == STABLE || pointerStateA == EMPTY )
             {
-                return SUCCESS | READ | pointerB;
+                return buildSuccessfulReadResult( FLAG_SLOT_B, logicalPos, gsppOffset, pointerB );
             }
         }
         else if ( pointerStateA == STABLE && pointerStateB == STABLE )
@@ -149,62 +183,32 @@ class GenSafePointerPair
             // compare gen
             if ( generationA > generationB )
             {
-                return SUCCESS | READ | pointerA;
+                return buildSuccessfulReadResult( FLAG_SLOT_A, logicalPos, gsppOffset, pointerA );
             }
             else if ( generationB > generationA )
             {
-                return SUCCESS | READ | pointerB;
+                return buildSuccessfulReadResult( FLAG_SLOT_B, logicalPos, gsppOffset, pointerB );
             }
         }
         else if ( pointerStateA == STABLE )
         {
-            return SUCCESS | READ | pointerA;
+            return buildSuccessfulReadResult( FLAG_SLOT_A, logicalPos, gsppOffset, pointerA );
         }
         else if ( pointerStateB == STABLE )
         {
-            return SUCCESS | READ | pointerB;
+            return buildSuccessfulReadResult( FLAG_SLOT_B, logicalPos, gsppOffset, pointerB );
         }
 
-        return FAIL | READ | generationState( generationA, generationB ) |
-               ((long) pointerStateA) << STATE_SHIFT_A | ((long) pointerStateB) << STATE_SHIFT_B;
+        return FLAG_FAIL | FLAG_READ | generationState( generationA, generationB ) |
+               ((long) pointerStateA) << SHIFT_STATE_A | ((long) pointerStateB) << SHIFT_STATE_B;
+    }
 
-//        TODO ANOTHER APPROACH, keep here for reference and pursuit later
-//        boolean aIsReadable = correctChecksumA && generationA >= MIN_GENERATION &&
-//                (generationA <= stableGeneration || generationA == unstableGeneration);
-//        boolean bIsReadable = correctChecksumB && generationB >= MIN_GENERATION &&
-//                (generationB <= stableGeneration || generationB == unstableGeneration);
-//        // Success cases
-//        // - both valid and different generation
-//        if ( aIsReadable && bIsReadable && generationA != generationB )
-//        {
-//            return generationA > generationB ? pointerA : pointerB;
-//        }
-//        // - one valid
-//        else if ( aIsReadable ^ bIsReadable )
-//        {
-//            return aIsReadable ? pointerA : pointerB;
-//        }
-//        else
-//        {
-//            if ( isEmpty( generationA, pointerA ) && isEmpty( generationB, pointerB ) )
-//            {
-//                return POINTER_UNDECIDED_BOTH_EMPTY;
-//            }
-//            else if ( !aIsReadable && !bIsReadable && generationA != generationB )
-//            {
-//                return POINTER_UNDECIDED_NONE_CORRECT;
-//            }
-//            else if ( generationA == generationB )
-//            {
-//                return POINTER_UNDECIDED_SAME_GENERATION;
-//            }
-//            else
-//            {
-//                throw new UnsupportedOperationException( "Uncovered case" +
-//                                                         " A: " + generationA + "," + pointerA + "," + checksumA +
-//                                                         " B: " + generationB + "," + pointerB + "," + checksumB );
-//            }
-//        }
+    private static long buildSuccessfulReadResult( long slot, int logicalPos, int gsppOffset, long pointer )
+    {
+        boolean isLogicalPos = logicalPos != NO_LOGICAL_POS;
+        long offsetType = isLogicalPos ? FLAG_LOGICAL_POS : FLAG_ABS_OFFSET;
+        long genOffset = isLogicalPos ? logicalPos : gsppOffset;
+        return FLAG_SUCCESS | FLAG_READ | slot | offsetType | genOffset << SHIFT_GEN_OFFSET | pointer;
     }
 
     /**
@@ -222,6 +226,8 @@ class GenSafePointerPair
     {
         // Later there will be a selection which "slot" of GSP out of the two to write into.
         int offset = cursor.getOffset();
+        pointer = pointer( pointer );
+
         // Try A
         long generationA = readGeneration( cursor );
         long pointerA = readPointer( cursor );
@@ -243,7 +249,7 @@ class GenSafePointerPair
 
         if ( isSuccess( writeResult ) )
         {
-            boolean writeToA = ( writeResult & WRITE_TO_MASK ) == WRITE_TO_A;
+            boolean writeToA = ( writeResult & SLOT_MASK) == FLAG_SLOT_A;
             int writeOffset = writeToA ? offset : offset + GenSafePointer.SIZE;
             cursor.setOffset( writeOffset );
             GenSafePointer.write( cursor, unstableGeneration, pointer );
@@ -365,13 +371,13 @@ class GenSafePointerPair
         }
 
         // Encode error
-        return FAIL | WRITE | generationState( generationA, generationB ) |
-               ((long) pointerStateA) << STATE_SHIFT_A | ((long) pointerStateB) << STATE_SHIFT_B;
+        return FLAG_FAIL | FLAG_WRITE | generationState( generationA, generationB ) |
+               ((long) pointerStateA) << SHIFT_STATE_A | ((long) pointerStateB) << SHIFT_STATE_B;
     }
 
     private static long generationState( long generationA, long generationB )
     {
-        return generationA > generationB ? GEN_A_BIG : generationB > generationA ? GEN_B_BIG : GEN_EQUAL;
+        return generationA > generationB ? FLAG_GEN_A_BIG : generationB > generationA ? FLAG_GEN_B_BIG : FLAG_GEN_EQUAL;
     }
 
     static byte pointerState( long stableGeneration, long unstableGeneration,
@@ -405,16 +411,26 @@ class GenSafePointerPair
      * Checks to see if a result from read/write was successful. If not more failure information can be extracted
      * using {@link #failureDescription(long)}.
      *
-     * @param result result from {@link #read(PageCursor, long, long)} or {@link #write(PageCursor, long, long, long)}.
+     * @param result result from {@link #read(PageCursor, long, long, int)} or {@link #write(PageCursor, long, long, long)}.
      * @return {@code true} if successful read/write, otherwise {@code false}.
      */
     static boolean isSuccess( long result )
     {
-        return (result & SUCCESS_MASK) == SUCCESS;
+        return (result & SUCCESS_MASK) == FLAG_SUCCESS;
     }
 
     /**
-     * Calling {@link #read(PageCursor, long, long)} (potentially also {@link #write(PageCursor, long, long, long)})
+     * @param readResult whole read result from {@link #read(PageCursor, long, long, int)}, containing both
+     * pointer as well as header information about the pointer.
+     * @return the pointer-part of {@code readResult}.
+     */
+    static long pointer( long readResult )
+    {
+        return readResult & POINTER_MASK;
+    }
+
+    /**
+     * Calling {@link #read(PageCursor, long, long, int)} (potentially also {@link #write(PageCursor, long, long, long)})
      * can fail due to seeing an unexpected state of the two GSPs. Failing right there and then isn't an option
      * due to how the page cache works and that something read from a {@link PageCursor} must not be interpreted
      * until after passing a {@link PageCursor#shouldRetry()} returning {@code false}. This creates a need for
@@ -422,7 +438,7 @@ class GenSafePointerPair
      * the caller which interprets the result fail in a proper place. That place can make use of this method
      * by getting a human-friendly description about the failure.
      *
-     * @param result result from {@link #read(PageCursor, long, long)} or
+     * @param result result from {@link #read(PageCursor, long, long, int)} or
      * {@link #write(PageCursor, long, long, long)}.
      * @return a human-friendly description of the failure.
      */
@@ -431,9 +447,9 @@ class GenSafePointerPair
         StringBuilder builder =
                 new StringBuilder( "GSPP " + (isRead( result ) ? "READ" : "WRITE") + " failure" );
         builder.append( format( "%n  Pointer state A: %s",
-                pointerStateName( pointerStateFromResult( result, STATE_SHIFT_A ) ) ) );
+                pointerStateName( pointerStateFromResult( result, SHIFT_STATE_A ) ) ) );
         builder.append( format( "%n  Pointer state B: %s",
-                pointerStateName( pointerStateFromResult( result, STATE_SHIFT_B ) ) ) );
+                pointerStateName( pointerStateFromResult( result, SHIFT_STATE_B ) ) ) );
         builder.append( format( "%n  Generations: " + generationComparisonFromResult( result ) ) );
         return builder.toString();
     }
@@ -441,7 +457,7 @@ class GenSafePointerPair
     /**
      * Asserts that a result is {@link #isSuccess(long) successful}, otherwise throws {@link IllegalStateException}.
      *
-     * @param result result returned from {@link #read(PageCursor, long, long)} or
+     * @param result result returned from {@link #read(PageCursor, long, long, int)} or
      * {@link #write(PageCursor, long, long, long)}
      * @return {@code true} if {@link #isSuccess(long) successful}, for interoperability with {@code assert}.
      */
@@ -457,15 +473,15 @@ class GenSafePointerPair
     private static String generationComparisonFromResult( long result )
     {
         long bits = result & GEN_COMPARISON_MASK;
-        if ( bits == GEN_EQUAL )
+        if ( bits == FLAG_GEN_EQUAL )
         {
             return GEN_COMPARISON_NAME_EQUAL;
         }
-        else if ( bits == GEN_A_BIG )
+        else if ( bits == FLAG_GEN_A_BIG )
         {
             return GEN_COMPARISON_NAME_A_BIG;
         }
-        else if ( bits == GEN_B_BIG )
+        else if ( bits == FLAG_GEN_B_BIG )
         {
             return GEN_COMPARISON_NAME_B_BIG;
         }
@@ -495,6 +511,21 @@ class GenSafePointerPair
 
     static boolean isRead( long result )
     {
-        return (result & READ_OR_WRITE_MASK) == READ;
+        return (result & READ_OR_WRITE_MASK) == FLAG_READ;
+    }
+
+    static boolean resultIsFromSlotA( long result )
+    {
+        return (result & SLOT_MASK) == FLAG_SLOT_A;
+    }
+
+    static boolean isLogicalPos( long readResult )
+    {
+        return (readResult & GEN_OFFSET_TYPE_MASK) == FLAG_LOGICAL_POS;
+    }
+
+    static int genOffset( long readResult )
+    {
+        return Math.toIntExact( (readResult & GEN_OFFSET_MASK) >>> SHIFT_GEN_OFFSET );
     }
 }

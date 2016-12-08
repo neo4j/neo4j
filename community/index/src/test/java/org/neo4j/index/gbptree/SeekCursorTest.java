@@ -40,10 +40,10 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.index.IndexWriter.Options.DEFAULTS;
 import static org.neo4j.index.ValueMergers.overwrite;
+import static org.neo4j.index.gbptree.GenSafePointerPair.pointer;
 
 public class SeekCursorTest
 {
-
     private static final int PAGE_SIZE = 256;
     private static final LongSupplier generationSupplier = new LongSupplier()
     {
@@ -703,7 +703,7 @@ public class SeekCursorTest
             // when right sibling pointer is corrupt
             PageAwareByteArrayCursor duplicate = cursor.duplicate( newRoot );
             duplicate.next();
-            long leftChild = node.childAt( duplicate, 0, stableGen, unstableGen );
+            long leftChild = childAt( duplicate, 0, stableGen, unstableGen );
             duplicate.next( leftChild );
             corruptGSPP( duplicate, TreeNode.BYTE_POS_RIGHTSIBLING );
 
@@ -827,7 +827,7 @@ public class SeekCursorTest
             i++;
         }
         long newGenOfNewRoot = cursor.getCurrentPageId();
-        long rightChild = node.childAt( cursor, 2, stableGen, unstableGen );
+        long rightChild = childAt( cursor, 2, stableGen, unstableGen );
 
         // when
         // starting a seek on the old root with generation that is not up to date, simulating a concurrent checkpoint
@@ -924,7 +924,7 @@ public class SeekCursorTest
         // and an update to root with a new gen child pointer
         insert( i, i * 10 );
         i++;
-        long newRightChild = node.childAt( cursor, 1, stableGen, unstableGen );
+        long newRightChild = childAt( cursor, 1, stableGen, unstableGen );
 
         // when
         // starting a seek on the old root with generation that is not up to date, simulating a concurrent checkpoint
@@ -1168,5 +1168,10 @@ public class SeekCursorTest
         {
             return breadcrumbs;
         }
+    }
+
+    private long childAt( PageCursor cursor, int pos, long stableGen, long unstableGen )
+    {
+        return pointer( node.childAt( cursor, pos, stableGen, unstableGen ) );
     }
 }

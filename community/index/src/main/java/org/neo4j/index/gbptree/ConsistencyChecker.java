@@ -138,7 +138,7 @@ class ConsistencyChecker<KEY>
             }
 
             long child = childAt( cursor, pos );
-            cursor.next( child );
+            node.goTo( cursor, "child at pos " + pos, child, stableGeneration, unstableGeneration );
             if ( pos == 0 )
             {
                 childRange = range.restrictRight( readKey );
@@ -148,7 +148,7 @@ class ConsistencyChecker<KEY>
                 childRange = range.restrictLeft( prev ).restrictRight( readKey );
             }
             checkSubtree( cursor, childRange, level + 1 );
-            cursor.next( pageId );
+            node.goTo( cursor, "parent", pageId, stableGeneration, unstableGeneration );
 
             layout.copyKey( readKey, prev );
             pos++;
@@ -156,10 +156,10 @@ class ConsistencyChecker<KEY>
 
         // Check last child
         long child = childAt( cursor, pos );
-        cursor.next( child );
+        node.goTo( cursor, "child at pos " + pos, child, stableGeneration, unstableGeneration );
         childRange = range.restrictLeft( prev );
         checkSubtree( cursor, childRange, level + 1 );
-        cursor.next( pageId );
+        node.goTo( cursor, "parent", pageId, stableGeneration, unstableGeneration );
     }
 
     private long childAt( PageCursor cursor, int pos )

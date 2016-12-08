@@ -37,11 +37,12 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.index.gbptree.GenSafePointerPair.GEN_COMPARISON_MASK;
-import static org.neo4j.index.gbptree.GenSafePointerPair.READ;
+import static org.neo4j.index.gbptree.GenSafePointerPair.NO_LOGICAL_POS;
+import static org.neo4j.index.gbptree.GenSafePointerPair.FLAG_READ;
 import static org.neo4j.index.gbptree.GenSafePointerPair.READ_OR_WRITE_MASK;
-import static org.neo4j.index.gbptree.GenSafePointerPair.STATE_SHIFT_A;
-import static org.neo4j.index.gbptree.GenSafePointerPair.STATE_SHIFT_B;
-import static org.neo4j.index.gbptree.GenSafePointerPair.WRITE;
+import static org.neo4j.index.gbptree.GenSafePointerPair.SHIFT_STATE_A;
+import static org.neo4j.index.gbptree.GenSafePointerPair.SHIFT_STATE_B;
+import static org.neo4j.index.gbptree.GenSafePointerPair.FLAG_WRITE;
 import static org.neo4j.index.gbptree.GenSafePointerPair.failureDescription;
 import static org.neo4j.index.gbptree.GenSafePointerPair.isRead;
 import static org.neo4j.index.gbptree.GenSafePointerPair.pointerStateFromResult;
@@ -69,17 +70,18 @@ public class GenSafePointerPairTest
 
     private static final boolean SLOT_A = true;
     private static final boolean SLOT_B = false;
-    private static final int SLOT_A_OFFSET = 0;
-    private static final int SLOT_B_OFFSET = GenSafePointer.SIZE;
+    private static final int GSPP_OFFSET = 5;
+    private static final int SLOT_A_OFFSET = GSPP_OFFSET;
+    private static final int SLOT_B_OFFSET = SLOT_A_OFFSET + GenSafePointer.SIZE;
 
     @Parameters( name = "{0},{1},read {2},write {3}" )
     public static Collection<Object[]> data()
     {
         Collection<Object[]> data = new ArrayList<>();
 
-        //             ┌──────────────────┬─────────────────┬───────────────────┬───────────────────────┐
-        //             │ State A          │ State B         │ Read outcome      │ Write outcome         │
-        //             └──────────────────┴─────────────────┴───────────────────┴───────────────────────┘
+        //             ┌─────────────────┬─────────────────┬───────────────────┬───────────────────────┐
+        //             │ State A         │ State B         │ Read outcome      │ Write outcome         │
+        //             └─────────────────┴─────────────────┴───────────────────┴───────────────────────┘
         data.add( array( State.EMPTY,      State.EMPTY,      Fail.GEN_DISREGARD, Success.A ) );
         data.add( array( State.EMPTY,      State.UNSTABLE,   Success.B,          Success.B ) );
         data.add( array( State.EMPTY,      State.STABLE,     Success.B,          Success.A ) );
@@ -125,7 +127,25 @@ public class GenSafePointerPairTest
     private final PageCursor cursor = ByteArrayPageCursor.wrap( new byte[PAGE_SIZE] );
 
     @Test
-    public void shouldRead() throws Exception
+    public void shouldReadWithLogicalPosition() throws Exception
+    {
+        // GIVEN
+        cursor.setOffset( SLOT_A_OFFSET );
+        long preStatePointerA = stateA.materialize( cursor, POINTER_A );
+        cursor.setOffset( SLOT_B_OFFSET );
+        long preStatePointerB = stateB.materialize( cursor, POINTER_B );
+        int pos = 1234;
+
+        // WHEN
+        cursor.setOffset( GSPP_OFFSET );
+        long result = GenSafePointerPair.read( cursor, STABLE_GENERATION, UNSTABLE_GENERATION, pos );
+
+        // THEN
+        expectedReadOutcome.verifyRead( cursor, result, stateA, stateB, preStatePointerA, preStatePointerB, pos );
+    }
+
+    @Test
+    public void shouldReadWithNoLogicalPosition() throws Exception
     {
         // GIVEN
         cursor.setOffset( SLOT_A_OFFSET );
@@ -134,11 +154,12 @@ public class GenSafePointerPairTest
         long preStatePointerB = stateB.materialize( cursor, POINTER_B );
 
         // WHEN
-        cursor.setOffset( 0 );
-        long result = GenSafePointerPair.read( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        cursor.setOffset( GSPP_OFFSET );
+        long result = GenSafePointerPair.read( cursor, STABLE_GENERATION, UNSTABLE_GENERATION, NO_LOGICAL_POS );
 
         // THEN
-        expectedReadOutcome.verifyRead( cursor, result, stateA, stateB, preStatePointerA, preStatePointerB );
+        expectedReadOutcome.verifyRead( cursor, result, stateA, stateB, preStatePointerA, preStatePointerB,
+                NO_LOGICAL_POS );
     }
 
     @Test
@@ -151,7 +172,7 @@ public class GenSafePointerPairTest
         long preStatePointerB = stateB.materialize( cursor, POINTER_B );
 
         // WHEN
-        cursor.setOffset( 0 );
+        cursor.setOffset( GSPP_OFFSET );
         long written = GenSafePointerPair.write( cursor, WRITTEN_POINTER, STABLE_GENERATION, UNSTABLE_GENERATION );
 
         // THEN
@@ -169,8 +190,8 @@ public class GenSafePointerPairTest
         {
             assertEquals( genComparisonBits( genComparison ), result & GEN_COMPARISON_MASK );
         }
-        assertEquals( pointerStateA, pointerStateFromResult( result, STATE_SHIFT_A ) );
-        assertEquals( pointerStateB, pointerStateFromResult( result, STATE_SHIFT_B ) );
+        assertEquals( pointerStateA, pointerStateFromResult( result, SHIFT_STATE_A ) );
+        assertEquals( pointerStateB, pointerStateFromResult( result, SHIFT_STATE_B ) );
 
         // Failure description
         String failureDescription = failureDescription( result );
@@ -203,11 +224,11 @@ public class GenSafePointerPairTest
         switch ( genComparison )
         {
         case EXPECTED_GEN_B_BIG:
-            return GenSafePointerPair.GEN_B_BIG;
+            return GenSafePointerPair.FLAG_GEN_B_BIG;
         case EXPECTED_GEN_EQUAL:
-            return GenSafePointerPair.GEN_EQUAL;
+            return GenSafePointerPair.FLAG_GEN_EQUAL;
         case EXPECTED_GEN_A_BIG:
-            return GenSafePointerPair.GEN_A_BIG;
+            return GenSafePointerPair.FLAG_GEN_A_BIG;
         default:
             throw new UnsupportedOperationException( String.valueOf( genComparison ) );
         }
@@ -215,13 +236,13 @@ public class GenSafePointerPairTest
 
     private static long readSlotA( PageCursor cursor )
     {
-        cursor.setOffset( 0 );
+        cursor.setOffset( SLOT_A_OFFSET );
         return readSlot( cursor );
     }
 
     private static long readSlotB( PageCursor cursor )
     {
-        cursor.setOffset( GenSafePointer.SIZE );
+        cursor.setOffset( SLOT_B_OFFSET );
         return readSlot( cursor );
     }
 
@@ -267,7 +288,7 @@ public class GenSafePointerPairTest
             }
 
             @Override
-            void verify( PageCursor cursor, long expectedPointer, boolean slotA )
+            void verify( PageCursor cursor, long expectedPointer, boolean slotA, int logicalPos )
             {
                 cursor.setOffset( slotA ? SLOT_A_OFFSET : SLOT_B_OFFSET );
 
@@ -349,7 +370,7 @@ public class GenSafePointerPairTest
          * @param expectedPointer expected pointer, as received from {@link #materialize(PageCursor, long)}.
          * @param slotA whether or not this is for slot A, otherwise B.
          */
-        void verify( PageCursor cursor, long expectedPointer, boolean slotA )
+        void verify( PageCursor cursor, long expectedPointer, boolean slotA, int logicalPos )
         {
             assertEquals( expectedPointer, slotA ? readSlotA( cursor ) : readSlotB( cursor ) );
         }
@@ -359,14 +380,15 @@ public class GenSafePointerPairTest
     {
         /**
          * @param cursor {@link PageCursor} to read actual result from.
-         * @param result read-result from {@link GenSafePointerPair#read(PageCursor, long, long)}.
+         * @param result read-result from {@link GenSafePointerPair#read(PageCursor, long, long, int)}.
          * @param stateA state of pointer A when read.
          * @param stateB state of pointer B when read.
          * @param preStatePointerA pointer A as it looked like in pre-state.
          * @param preStatePointerB pointer B as it looked like in pre-state.
+         * @param logicalPos expected logical pos.
          */
         void verifyRead( PageCursor cursor, long result, State stateA, State stateB,
-                long preStatePointerA, long preStatePointerB );
+                long preStatePointerA, long preStatePointerB, int logicalPos );
 
         /**
          * @param cursor {@link PageCursor} to read actual result from.
@@ -396,13 +418,25 @@ public class GenSafePointerPairTest
 
         @Override
         public void verifyRead( PageCursor cursor, long result, State stateA, State stateB,
-                long preStatePointerA, long preStatePointerB )
+                long preStatePointerA, long preStatePointerB, int logicalPos )
         {
             assertSuccess( result );
-            assertEquals( expectedPointer, result );
+            long pointer = GenSafePointerPair.pointer( result );
+            assertEquals( expectedPointer, pointer );
+            assertEquals( expectedSlot == SLOT_A, GenSafePointerPair.resultIsFromSlotA( result ) );
+            if ( logicalPos == NO_LOGICAL_POS )
+            {
+                assertFalse( GenSafePointerPair.isLogicalPos( result ) );
+                assertEquals( GSPP_OFFSET, GenSafePointerPair.genOffset( result ) );
+            }
+            else
+            {
+                assertTrue( GenSafePointerPair.isLogicalPos( result ) );
+                assertEquals( logicalPos, GenSafePointerPair.genOffset( result ) );
+            }
 
-            stateA.verify( cursor, preStatePointerA, SLOT_A );
-            stateB.verify( cursor, preStatePointerB, SLOT_B );
+            stateA.verify( cursor, preStatePointerA, SLOT_A, logicalPos );
+            stateB.verify( cursor, preStatePointerB, SLOT_B, logicalPos );
         }
 
         @Override
@@ -411,7 +445,7 @@ public class GenSafePointerPairTest
         {
             assertSuccess( result );
             boolean actuallyWrittenSlot =
-                    (result & GenSafePointerPair.WRITE_TO_MASK) == GenSafePointerPair.WRITE_TO_A ? SLOT_A : SLOT_B;
+                    (result & GenSafePointerPair.SLOT_MASK) == GenSafePointerPair.FLAG_SLOT_A ? SLOT_A : SLOT_B;
             assertEquals( expectedSlot, actuallyWrittenSlot );
 
             if ( expectedSlot == SLOT_A )
@@ -450,20 +484,20 @@ public class GenSafePointerPairTest
 
         @Override
         public void verifyRead( PageCursor cursor, long result, State stateA, State stateB,
-                long preStatePointerA, long preStatePointerB )
+                long preStatePointerA, long preStatePointerB, int logicalPos )
         {
-            assertFailure( result, READ, genComparison, stateA.byteValue, stateB.byteValue );
-            stateA.verify( cursor, preStatePointerA, SLOT_A );
-            stateB.verify( cursor, preStatePointerB, SLOT_B );
+            assertFailure( result, FLAG_READ, genComparison, stateA.byteValue, stateB.byteValue );
+            stateA.verify( cursor, preStatePointerA, SLOT_A, logicalPos );
+            stateB.verify( cursor, preStatePointerB, SLOT_B, logicalPos );
         }
 
         @Override
         public void verifyWrite( PageCursor cursor, long result, State stateA, State stateB,
                 long preStatePointerA, long preStatePointerB )
         {
-            assertFailure( result, WRITE, genComparison, stateA.byteValue, stateB.byteValue );
-            stateA.verify( cursor, preStatePointerA, SLOT_A );
-            stateB.verify( cursor, preStatePointerB, SLOT_B );
+            assertFailure( result, FLAG_WRITE, genComparison, stateA.byteValue, stateB.byteValue );
+            stateA.verify( cursor, preStatePointerA, SLOT_A, NO_LOGICAL_POS /*Don't care*/ );
+            stateB.verify( cursor, preStatePointerB, SLOT_B, NO_LOGICAL_POS /*Don't care*/ );
         }
     }
 }

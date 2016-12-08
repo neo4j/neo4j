@@ -21,6 +21,7 @@ package org.neo4j.index.gbptree;
 
 import org.neo4j.io.pagecache.PageCursor;
 
+import static org.neo4j.index.gbptree.GenSafePointerPair.pointer;
 import static org.neo4j.index.gbptree.TreeNode.NO_NODE_FLAG;
 
 /**
@@ -52,8 +53,8 @@ class RightmostInChain<KEY>
     {
         long pageId = cursor.getCurrentPageId();
 
-        long leftSibling = node.leftSibling( cursor, stableGeneration, unstableGeneration );
-        long rightSibling = node.rightSibling( cursor, stableGeneration, unstableGeneration );
+        long leftSibling = pointer( node.leftSibling( cursor, stableGeneration, unstableGeneration ) );
+        long rightSibling = pointer( node.rightSibling( cursor, stableGeneration, unstableGeneration ) );
 
         // Assert we have reached expected node and that we agree about being siblings
         assert leftSibling == currentRightmost :

@@ -270,7 +270,7 @@ class InternalTreeLogic<KEY,VALUE>
         }
 
         // Update old right with new left sibling (newRight)
-        if ( oldRight != TreeNode.NO_NODE_FLAG )
+        if ( TreeNode.isNode( oldRight ) )
         {
             bTreeNode.goTo( cursor, "old right sibling", oldRight, stableGeneration, unstableGeneration );
             bTreeNode.setLeftSibling( cursor, newRight, stableGeneration, unstableGeneration );
@@ -471,7 +471,7 @@ class InternalTreeLogic<KEY,VALUE>
         }
 
         // Update old right with new left sibling (newRight)
-        if ( oldRight != TreeNode.NO_NODE_FLAG )
+        if ( TreeNode.isNode( oldRight ) )
         {
             bTreeNode.goTo( cursor, "old right sibling", oldRight, stableGeneration, unstableGeneration );
             bTreeNode.setLeftSibling( cursor, newRight, stableGeneration, unstableGeneration );
@@ -647,12 +647,12 @@ class InternalTreeLogic<KEY,VALUE>
         PointerChecking.checkPointer( leftSibling, true );
         long rightSibling = bTreeNode.rightSibling( cursor, stableGeneration, unstableGeneration );
         PointerChecking.checkPointer( rightSibling, true );
-        if ( leftSibling != TreeNode.NO_NODE_FLAG )
+        if ( TreeNode.isNode( leftSibling ) )
         {
             bTreeNode.goTo( cursor, "left sibling in split", leftSibling, stableGeneration, unstableGeneration );
             bTreeNode.setRightSibling( cursor, newGenId, stableGeneration, unstableGeneration );
         }
-        if ( rightSibling != TreeNode.NO_NODE_FLAG )
+        if ( TreeNode.isNode( rightSibling ) )
         {
             bTreeNode.goTo( cursor, "right sibling in split", rightSibling, stableGeneration, unstableGeneration );
             bTreeNode.setLeftSibling( cursor, newGenId, stableGeneration, unstableGeneration );

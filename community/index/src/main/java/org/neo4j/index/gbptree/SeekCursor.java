@@ -121,7 +121,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
             {
                 continue;
             }
-            else if ( bTreeNode.isNode( newGen ) )
+            else if ( TreeNode.isNode( newGen ) )
             {
                 bTreeNode.goTo( cursor, "new gen", newGen, stableGeneration, unstableGeneration );
                 continue;
@@ -208,7 +208,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
                 reread = resetPosition = true;
                 continue;
             }
-            else if ( bTreeNode.isNode( newGen ) )
+            else if ( TreeNode.isNode( newGen ) )
             {
                 bTreeNode.goTo( cursor, "new gen", newGen, stableGeneration, unstableGeneration );
                 reread = resetPosition = true;
@@ -222,8 +222,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>
                     reread = resetPosition = true;
                     continue;
                 }
-
-                if ( bTreeNode.isNode( rightSibling ) )
+                else if ( TreeNode.isNode( rightSibling ) )
                 {
                     // TODO: Check if rightSibling is within expected range before calling next.
                     // TODO: Possibly by getting highest expected from IdProvider

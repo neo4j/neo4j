@@ -27,17 +27,14 @@ class PointerChecking
      * Checks a read pointer for success/failure and throws appropriate exception with failure information
      * if failure. Must be called after a consistent read from page cache (after {@link PageCursor#shouldRetry()}.
      *
-     * @param result result from {@link GenSafePointerPair#READ} or
+     * @param result result from {@link GenSafePointerPair#FLAG_READ} or
      * {@link GenSafePointerPair#write(PageCursor, long, long, long)}.
      * @param allowNoNode If {@link TreeNode#NO_NODE_FLAG} is allowed as pointer value.
      */
     static void checkPointer( long result, boolean allowNoNode )
     {
-        if ( !GenSafePointerPair.isSuccess( result ) )
-        {
-            throw new TreeInconsistencyException( GenSafePointerPair.failureDescription( result ) );
-        }
-        if ( allowNoNode && result == TreeNode.NO_NODE_FLAG )
+        GenSafePointerPair.assertSuccess( result );
+        if ( allowNoNode && !TreeNode.isNode( result ) )
         {
             return;
         }

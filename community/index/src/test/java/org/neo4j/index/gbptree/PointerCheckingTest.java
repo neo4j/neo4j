@@ -25,6 +25,7 @@ import org.neo4j.io.pagecache.PageCursor;
 
 import static org.junit.Assert.fail;
 
+import static org.neo4j.index.gbptree.GenSafePointerPair.NO_LOGICAL_POS;
 import static org.neo4j.index.gbptree.GenSafePointerPair.read;
 import static org.neo4j.index.gbptree.GenSafePointerPair.write;
 
@@ -54,7 +55,7 @@ public class PointerCheckingTest
     public void checkChildShouldThrowOnReadFailure() throws Exception
     {
         // GIVEN
-        long result = GenSafePointerPair.read( cursor, 0, 1 );
+        long result = GenSafePointerPair.read( cursor, 0, 1, 123 );
 
         // WHEN
         try
@@ -99,7 +100,7 @@ public class PointerCheckingTest
         cursor.rewind();
 
         // WHEN
-        long result = read( cursor, 0, firstGeneration );
+        long result = read( cursor, 0, firstGeneration, 456 );
 
         // THEN
         PointerChecking.checkPointer( result, false );
@@ -123,7 +124,7 @@ public class PointerCheckingTest
         cursor.rewind();
 
         // WHEN
-        long result = read( cursor, firstGeneration, secondGeneration );
+        long result = read( cursor, firstGeneration, secondGeneration, NO_LOGICAL_POS );
 
         // THEN
         PointerChecking.checkPointer( result, true );
@@ -138,7 +139,7 @@ public class PointerCheckingTest
         cursor.rewind();
 
         // WHEN
-        long result = read( cursor, firstGeneration, secondGeneration );
+        long result = read( cursor, firstGeneration, secondGeneration, NO_LOGICAL_POS );
 
         // THEN
         PointerChecking.checkPointer( result, true );
@@ -148,7 +149,7 @@ public class PointerCheckingTest
     public void checkSiblingShouldThrowOnReadFailure() throws Exception
     {
         // WHEN
-        long result = read( cursor, firstGeneration, secondGeneration );
+        long result = read( cursor, firstGeneration, secondGeneration, NO_LOGICAL_POS );
 
         // WHEN
         try
@@ -176,7 +177,7 @@ public class PointerCheckingTest
         cursor.rewind();
 
         // WHEN
-        long result = read( cursor, firstGeneration, pointer );
+        long result = read( cursor, firstGeneration, pointer, NO_LOGICAL_POS );
 
         // WHEN
         try

@@ -74,7 +74,7 @@ class TreePrinter
         {
             printKeys( cursor, bTreeNode, layout, stableGeneration, unstableGeneration, out );
             long rightSibling = bTreeNode.rightSibling( cursor, stableGeneration, unstableGeneration );
-            if ( !bTreeNode.isNode( rightSibling ) )
+            if ( !TreeNode.isNode( rightSibling ) )
             {
                 break;
             }

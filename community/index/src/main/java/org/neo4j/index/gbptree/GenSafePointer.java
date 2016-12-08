@@ -84,7 +84,7 @@ class GenSafePointer
 
     private static void assertPointerOnWrite( long pointer )
     {
-        if ( (pointer > MAX_POINTER || pointer < MIN_POINTER) && pointer != TreeNode.NO_NODE_FLAG )
+        if ( (pointer > MAX_POINTER || pointer < MIN_POINTER) && TreeNode.isNode( pointer ) )
         {
             throw new IllegalArgumentException( "Can not write pointer " + pointer +
                     " because outside boundary for valid pointer" );
