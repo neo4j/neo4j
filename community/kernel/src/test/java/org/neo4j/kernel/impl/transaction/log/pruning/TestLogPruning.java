@@ -203,7 +203,7 @@ public class TestLogPruning
 
     private void checkPoint() throws IOException
     {
-        TriggerInfo triggerInfo = new SimpleTriggerInfo( "test" );
+        TriggerInfo triggerInfo = new SimpleTriggerInfo( "test", true );
         db.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint( triggerInfo );
     }
 

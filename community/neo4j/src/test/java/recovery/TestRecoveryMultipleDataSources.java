@@ -92,7 +92,7 @@ public class TestRecoveryMultipleDataSources
         }
 
         ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint(
-                new SimpleTriggerInfo( "test" )
+                new SimpleTriggerInfo( "test", true )
         );
 
         try ( Transaction tx = db.beginTx() )

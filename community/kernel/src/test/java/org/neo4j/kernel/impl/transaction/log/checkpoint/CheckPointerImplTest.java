@@ -65,7 +65,7 @@ import static org.neo4j.test.ThreadTestUtils.forkFuture;
 
 public class CheckPointerImplTest
 {
-    private static final SimpleTriggerInfo INFO = new SimpleTriggerInfo( "test" );
+    private static final SimpleTriggerInfo INFO = new SimpleTriggerInfo( "test", true );
 
     private final TransactionIdStore txIdStore = mock( TransactionIdStore.class );
     private final CheckPointThreshold threshold = mock( CheckPointThreshold.class );
@@ -285,7 +285,7 @@ public class CheckPointerImplTest
         };
         mockTxIdStore();
         CheckPointerImpl checkPointer = checkPointer();
-        checkPointer.forceCheckPoint( new SimpleTriggerInfo( "test" ) );
+        checkPointer.forceCheckPoint( INFO );
         assertTrue( doneDisablingLimits.get() );
     }
 
@@ -373,14 +373,14 @@ public class CheckPointerImplTest
     public void mustRequestFastestPossibleFlushWhenForceCheckPointIsCalledDuringBackgroundCheckPoint() throws Exception
     {
         verifyAsyncActionCausesConcurrentFlushingRush(
-                checkPointer -> checkPointer.forceCheckPoint( new SimpleTriggerInfo( "async" ) ) );
+                checkPointer -> checkPointer.forceCheckPoint( new SimpleTriggerInfo( "async", true ) ) );
     }
 
     @Test(timeout = 5000)
     public void mustRequestFastestPossibleFlushWhenTryCheckPointIsCalledDuringBackgroundCheckPoint() throws Exception
     {
         verifyAsyncActionCausesConcurrentFlushingRush(
-                checkPointer -> checkPointer.tryCheckPoint( new SimpleTriggerInfo( "async" ) ) );
+                checkPointer -> checkPointer.tryCheckPoint( new SimpleTriggerInfo( "async", true ) ) );
     }
 
     private CheckPointerImpl checkPointer( Lock lock )

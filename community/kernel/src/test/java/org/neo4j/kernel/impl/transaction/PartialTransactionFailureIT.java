@@ -187,7 +187,7 @@ public class PartialTransactionFailureIT
                     latch.await();
                     db.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile();
                     db.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint(
-                            new SimpleTriggerInfo( "test" )
+                            new SimpleTriggerInfo( "test", true )
                     );
                 }
                 catch ( Exception ignore )

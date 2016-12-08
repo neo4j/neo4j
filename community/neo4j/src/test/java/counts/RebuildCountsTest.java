@@ -172,8 +172,8 @@ public class RebuildCountsTest
     @SuppressWarnings( "deprecated" )
     private void rotateLog() throws IOException
     {
-        ((GraphDatabaseAPI) db).getDependencyResolver()
-                               .resolveDependency( CheckPointer.class ).forceCheckPoint( new SimpleTriggerInfo( "test" ) );
+        ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( CheckPointer.class )
+                .forceCheckPoint( new SimpleTriggerInfo( "test", true ) );
     }
 
     private FileSystemAbstraction crash()

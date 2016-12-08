@@ -230,7 +230,7 @@ public class CheckPointerIntegrationTest
         // Simulates triggering the checkpointer background job which runs now and then, checking whether
         // or not there's a need to perform a checkpoint.
         ((GraphDatabaseAPI)db).getDependencyResolver().resolveDependency( CheckPointer.class ).checkPointIfNeeded(
-                new SimpleTriggerInfo( "Test" ) );
+                new SimpleTriggerInfo( "Test", true ) );
     }
 
     private static class CheckPointCollector

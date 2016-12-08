@@ -149,7 +149,7 @@ public class StoreCopyServer
         try
         {
             monitor.startTryCheckPoint();
-            long lastAppliedTransaction = checkPointer.tryCheckPoint( new SimpleTriggerInfo( triggerName ) );
+            long lastAppliedTransaction = checkPointer.tryCheckPoint( new SimpleTriggerInfo( triggerName, false ) );
             monitor.finishTryCheckPoint();
             ByteBuffer temporaryBuffer = ByteBuffer.allocateDirect( (int) ByteUnit.mebiBytes( 1 ) );
 

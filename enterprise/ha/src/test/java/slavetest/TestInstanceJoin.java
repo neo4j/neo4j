@@ -134,7 +134,7 @@ public class TestInstanceJoin
     private void checkPoint( HighlyAvailableGraphDatabase db ) throws IOException
     {
         db.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint(
-                new SimpleTriggerInfo( "test" )
+                new SimpleTriggerInfo( "test", true )
         );
     }
 

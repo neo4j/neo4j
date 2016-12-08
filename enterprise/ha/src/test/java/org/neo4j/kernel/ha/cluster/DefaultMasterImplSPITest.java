@@ -66,7 +66,8 @@ public class DefaultMasterImplSPITest
 
         master.flushStoresAndStreamStoreFiles( mock( StoreWriter.class ) );
 
-        TriggerInfo expectedTriggerInfo = new SimpleTriggerInfo( DefaultMasterImplSPI.STORE_COPY_CHECKPOINT_TRIGGER );
+        TriggerInfo expectedTriggerInfo = new SimpleTriggerInfo( DefaultMasterImplSPI.STORE_COPY_CHECKPOINT_TRIGGER,
+                false );
         verify( checkPointer ).tryCheckPoint( expectedTriggerInfo );
     }
 }
