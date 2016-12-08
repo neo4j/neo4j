@@ -36,7 +36,8 @@ case class LogicalPlanRewriter(rewriterSequencer: String => RewriterStepSequence
     simplifyEquality,
     unnestOptional,
     predicateRemovalThroughJoins,
-    removeIdenticalPlans
+    removeIdenticalPlans,
+    pruningVarExpander
   ).rewriter)
 
   def apply(that: AnyRef) = instance(that)

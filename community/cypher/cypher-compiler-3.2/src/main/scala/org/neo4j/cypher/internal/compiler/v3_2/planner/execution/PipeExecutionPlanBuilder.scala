@@ -273,6 +273,10 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
       case Optional(inner, protectedSymbols) =>
         OptionalPipe((inner.availableSymbols -- protectedSymbols).map(_.name), source)(id = id)
 
+      case PruningVarExpand(_, IdName(from), dir, types, IdName(toName), minLength, maxLength, predicates) =>
+        val predicate = varLengthPredicate(predicates)
+        PruningVarLengthExpandPipe(source, from, toName, LazyTypes(types), dir, minLength, maxLength, predicate)()
+
       case Sort(_, sortItems) =>
         SortPipe(source, sortItems.map(translateSortDescription))(id = id)
 
@@ -426,7 +430,7 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
     val nodeCommand = asCommand(nodePreds)
     val relCommand = asCommand(relPreds)
 
-    new VarlenghtPredicate {
+    new VarLengthPredicate {
       override def filterNode(row: ExecutionContext, state: QueryState)(node: Node): Boolean = nodeCommand(row, state, node)
 
       override def filterRelationship(row: ExecutionContext, state: QueryState)(rel: Relationship): Boolean = relCommand(row, state, rel)

@@ -225,6 +225,10 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
       case ProjectEndpoints(_, IdName(relName), IdName(start), _, IdName(end), _, _, _, _) =>
         PlanDescriptionImpl(id, "ProjectEndpoints", children, Seq(KeyNames(Seq(relName, start, end))), variables)
 
+      case PruningVarExpand(_, IdName(fromName), dir, types, IdName(toName), min, max, predicates) =>
+        val expandSpec = ExpandExpression(fromName, "", types.map(_.name), toName, dir, minLength = min, maxLength = Some(max))
+        PlanDescriptionImpl(id, s"VarLengthExpand(Pruning)", children, Seq(expandSpec), variables)
+
       case _: RemoveLabels =>
         PlanDescriptionImpl(id, "RemoveLabels", children, Seq.empty, variables)
 
