@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.compiler.v3_1.executionplan.InternalExecutionResult
-import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.{Node, PropertyContainer, Result}
 import org.neo4j.kernel.api.exceptions.Status
@@ -31,7 +29,7 @@ import scala.collection.JavaConverters._
 abstract class GraphDatabaseFunSuite extends CypherFunSuite with GraphDatabaseTestSupport
 
 abstract class ExecutionEngineFunSuite
-  extends CypherFunSuite with GraphDatabaseTestSupport with ExecutionEngineTestSupport {
+  extends CypherFunSuite with GraphDatabaseTestSupport with ExecutionEngineTestSupport with QueryPlanTestSupport {
 
   case class haveProperty(propName: String) extends Matcher[PropertyContainer] {
     def apply(left: PropertyContainer): MatchResult = {
@@ -74,35 +72,6 @@ abstract class ExecutionEngineFunSuite
         s"Expected node to have labels $expectedLabels, but it was ${labels.mkString}",
         s"Expected node to not have labels $expectedLabels, but it did."
       )
-    }
-  }
-
-  def use(operators: String*): Matcher[InternalExecutionResult] = new Matcher[InternalExecutionResult] {
-    override def apply(result: InternalExecutionResult): MatchResult = {
-      val plan: InternalPlanDescription = result.executionPlanDescription()
-      MatchResult(
-        matches = operators.forall(plan.find(_).nonEmpty),
-        rawFailureMessage = s"Plan should use ${operators.mkString(",")}:\n$plan",
-        rawNegatedFailureMessage = s"Plan should not use ${operators.mkString(",")}:\n$plan")
-    }
-  }
-
-  def useProjectionWith(otherText: String*): Matcher[InternalExecutionResult] = new Matcher[InternalExecutionResult] {
-    override def apply(result: InternalExecutionResult): MatchResult = {
-      val plan: InternalPlanDescription = result.executionPlanDescription()
-      MatchResult(
-        matches = otherText.forall(o => plan.find("Projection").exists(_.toString.contains(o))),
-        rawFailureMessage = s"Plan should use Projection with ${otherText.mkString(",")}:\n$plan",
-        rawNegatedFailureMessage = s"Plan should not use Projection with ${otherText.mkString(",")}:\n$plan")
-    }
-  }
-
-  def haveCount(count: Int): Matcher[InternalExecutionResult] = new Matcher[InternalExecutionResult] {
-    override def apply(result: InternalExecutionResult): MatchResult = {
-      MatchResult(
-        matches = count == result.toList.length,
-        rawFailureMessage = s"Result should have $count rows",
-        rawNegatedFailureMessage = s"Plan should not have $count rows")
     }
   }
 
