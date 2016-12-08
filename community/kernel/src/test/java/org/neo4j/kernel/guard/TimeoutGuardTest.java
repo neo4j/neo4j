@@ -37,7 +37,7 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Log;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
@@ -68,7 +68,7 @@ public class TimeoutGuardTest extends KernelTransactionTestBase
         check( timeoutGuard, kernelStatement, overtime, message );
 
         KernelTransactionImplementation transaction = kernelStatement.getTransaction();
-        assertSame( Status.Transaction.TransactionTimedOut, transaction.getReasonIfTerminated() );
+        assertSame( Status.Transaction.TransactionTimedOut, transaction.getReasonIfTerminated().get() );
 
         logProvider.assertContainsMessageContaining( message );
     }
@@ -87,7 +87,7 @@ public class TimeoutGuardTest extends KernelTransactionTestBase
         timeoutGuard.check( kernelStatement );
 
         KernelTransactionImplementation transaction = kernelStatement.getTransaction();
-        assertNull( transaction.getReasonIfTerminated() );
+        assertFalse( transaction.getReasonIfTerminated().isPresent() );
 
         logProvider.assertNoLoggingOccurred();
     }

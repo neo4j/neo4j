@@ -46,17 +46,15 @@ import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.test.Race;
 import org.neo4j.time.Clocks;
 
+import static java.lang.System.currentTimeMillis;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
-
-import static java.lang.System.currentTimeMillis;
 import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
 
 public class KernelTransactionTerminationTest
@@ -71,7 +69,7 @@ public class KernelTransactionTerminationTest
                 tx ->
                 {
                     close( tx );
-                    assertNull( tx.getReasonIfTerminated() );
+                    assertFalse( tx.getReasonIfTerminated().isPresent() );
                     tx.initialize();
                 }
         );
@@ -363,13 +361,13 @@ public class KernelTransactionTerminationTest
 
         void assertTerminated()
         {
-            assertEquals( Status.Transaction.TransactionMarkedAsFailed, getReasonIfTerminated() );
+            assertEquals( Status.Transaction.TransactionMarkedAsFailed, getReasonIfTerminated().get() );
             assertTrue( monitor.terminated );
         }
 
         void assertNotTerminated()
         {
-            assertNull( getReasonIfTerminated() );
+            assertFalse( getReasonIfTerminated().isPresent() );
             assertFalse( monitor.terminated );
         }
     }

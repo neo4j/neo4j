@@ -42,7 +42,7 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
     private final long startTime;
     private final KernelTransactionImplementation tx;
     private final SecurityContext securityContext;
-    private final Status terminationReason;
+    private final Optional<Status> terminationReason;
     private final ExecutingQueryList executingQueries;
 
     KernelTransactionImplementationHandle( KernelTransactionImplementation tx )
@@ -96,7 +96,7 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
     @Override
     public Optional<Status> terminationReason()
     {
-        return Optional.ofNullable( terminationReason );
+        return terminationReason;
     }
 
     @Override

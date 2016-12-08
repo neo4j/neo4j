@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.api;
 
 import org.junit.Test;
 
+import java.util.Optional;
+
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.factory.CanWrite;
@@ -38,7 +40,7 @@ public class KernelStatementTest
     public void shouldThrowTerminateExceptionWhenTransactionTerminated() throws Exception
     {
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
-        when( transaction.getReasonIfTerminated() ).thenReturn( Status.Transaction.Terminated );
+        when( transaction.getReasonIfTerminated() ).thenReturn( Optional.of( Status.Transaction.Terminated ) );
         when( transaction.securityContext() ).thenReturn( AUTH_DISABLED );
 
         KernelStatement statement = new KernelStatement( transaction, null, mock( StorageStatement.class ), null, new CanWrite() );

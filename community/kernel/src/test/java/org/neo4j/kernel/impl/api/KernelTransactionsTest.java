@@ -292,9 +292,9 @@ public class KernelTransactionsTest
 
         kernelTransactions.disposeAll();
 
-        assertEquals( Status.General.DatabaseUnavailable, tx1.getReasonIfTerminated() );
-        assertEquals( Status.General.DatabaseUnavailable, tx2.getReasonIfTerminated() );
-        assertEquals( Status.General.DatabaseUnavailable, tx3.getReasonIfTerminated() );
+        assertEquals( Status.General.DatabaseUnavailable, tx1.getReasonIfTerminated().get() );
+        assertEquals( Status.General.DatabaseUnavailable, tx2.getReasonIfTerminated().get() );
+        assertEquals( Status.General.DatabaseUnavailable, tx3.getReasonIfTerminated().get() );
     }
 
     @Test

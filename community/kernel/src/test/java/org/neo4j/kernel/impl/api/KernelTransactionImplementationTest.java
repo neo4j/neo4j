@@ -234,7 +234,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
             // WHEN
             transactionInitializer.accept( transaction );
             transaction.markForTermination( Status.General.UnknownError );
-            assertEquals( Status.General.UnknownError, transaction.getReasonIfTerminated() );
+            assertEquals( Status.General.UnknownError, transaction.getReasonIfTerminated().get() );
         }
 
         // THEN
@@ -252,7 +252,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         transactionInitializer.accept( transaction );
         transaction.markForTermination( Status.General.UnknownError );
         transaction.success();
-        assertEquals( Status.General.UnknownError, transaction.getReasonIfTerminated() );
+        assertEquals( Status.General.UnknownError, transaction.getReasonIfTerminated().get() );
 
         try
         {
@@ -280,7 +280,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
             transactionInitializer.accept( transaction );
             transaction.markForTermination( Status.General.UnknownError );
             transaction.failure();
-            assertEquals( Status.General.UnknownError, transaction.getReasonIfTerminated() );
+            assertEquals( Status.General.UnknownError, transaction.getReasonIfTerminated().get() );
         }
 
         // THEN
@@ -476,7 +476,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
 
         tx.markForTermination( Status.General.UnknownError );
 
-        assertEquals( Status.General.UnknownError, tx.getReasonIfTerminated() );
+        assertEquals( Status.General.UnknownError, tx.getReasonIfTerminated().get() );
     }
 
     @Test
@@ -487,7 +487,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
 
         tx.markForTermination( Status.General.UnknownError );
 
-        assertEquals( Status.General.UnknownError, tx.getReasonIfTerminated() );
+        assertEquals( Status.General.UnknownError, tx.getReasonIfTerminated().get() );
         verify( locksClient ).stop();
     }
 
@@ -502,7 +502,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         tx.markForTermination( Status.Transaction.Outdated );
         tx.markForTermination( Status.Transaction.LockClientStopped );
 
-        assertEquals( Status.Transaction.Terminated, tx.getReasonIfTerminated() );
+        assertEquals( Status.Transaction.Terminated, tx.getReasonIfTerminated().get() );
         verify( locksClient ).stop();
         verify( transactionMonitor ).transactionTerminated( isWriteTx );
     }
@@ -598,7 +598,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     public void initializedTransactionShouldHaveNoTerminationReason() throws Exception
     {
         KernelTransactionImplementation tx = newTransaction( securityContext() );
-        assertNull( tx.getReasonIfTerminated() );
+        assertFalse( tx.getReasonIfTerminated().isPresent() );
     }
 
     @Test
@@ -607,7 +607,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         Status status = Status.Transaction.Terminated;
         KernelTransactionImplementation tx = newTransaction( securityContext() );
         tx.markForTermination( status );
-        assertSame( status, tx.getReasonIfTerminated() );
+        assertSame( status, tx.getReasonIfTerminated().get() );
     }
 
     @Test
@@ -616,7 +616,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         KernelTransactionImplementation tx = newTransaction( securityContext() );
         tx.markForTermination( Status.Transaction.Terminated );
         tx.close();
-        assertNull( tx.getReasonIfTerminated() );
+        assertFalse( tx.getReasonIfTerminated().isPresent() );
     }
 
     @Test
@@ -687,7 +687,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
 
         assertTrue( tx.markForTermination( reuseCount, terminationReason ) );
 
-        assertEquals( terminationReason, tx.getReasonIfTerminated() );
+        assertEquals( terminationReason, tx.getReasonIfTerminated().get() );
         verify( locksClient ).stop();
     }
 
@@ -707,7 +707,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
 
         assertFalse( tx.markForTermination( nextReuseCount, terminationReason ) );
 
-        assertNull( tx.getReasonIfTerminated() );
+        assertFalse( tx.getReasonIfTerminated().isPresent() );
         verify( locksClient, never() ).stop();
     }
 

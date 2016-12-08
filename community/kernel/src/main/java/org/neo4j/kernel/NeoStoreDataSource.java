@@ -742,7 +742,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         KernelTransactions kernelTransactions = kernelModule.kernelTransactions();
         kernelTransactions.terminateAllTransactions();
 
-        while ( kernelTransactions.haveClosingTransaction() )
+        while ( kernelTransactions.haveCommittingTransaction() )
         {
             LockSupport.parkNanos( TimeUnit.MILLISECONDS.toNanos( 10 ) );
         }

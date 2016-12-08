@@ -196,9 +196,9 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
         }
     }
 
-    public boolean haveClosingTransaction()
+    public boolean haveCommittingTransaction()
     {
-        return allTransactions.stream().anyMatch( KernelTransactionImplementation::isClosing );
+        return allTransactions.stream().anyMatch( KernelTransactionImplementation::isCommitting );
     }
 
     @Override
