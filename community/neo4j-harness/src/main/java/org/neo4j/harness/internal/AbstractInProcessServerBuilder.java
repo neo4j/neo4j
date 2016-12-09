@@ -217,6 +217,13 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
         return this;
     }
 
+    @Override
+    public TestServerBuilder withAggregationFunction( Class<?> functionClass )
+    {
+        procedures.addAggregationFunction( functionClass );
+        return this;
+    }
+
     private TestServerBuilder setDirectory( File dir )
     {
         this.serverFolder = dir;

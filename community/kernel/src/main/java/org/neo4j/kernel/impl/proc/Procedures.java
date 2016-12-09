@@ -170,7 +170,7 @@ public class Procedures extends LifecycleAdapter
      */
     public void registerAggregationFunction( Class<?> func ) throws KernelException
     {
-        registerFunction( func, false );
+        registerAggregationFunction( func, false );
     }
 
     /**

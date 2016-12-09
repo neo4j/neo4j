@@ -546,7 +546,6 @@ public class UserAggregationFunctionIT
             }
         }
 
-
         public static class NodeFromIdAggregator
         {
             private final List<Long> ids = new ArrayList<>();

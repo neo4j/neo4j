@@ -29,6 +29,7 @@ public class HarnessRegisteredProcs
 {
     private final List<Class<?>> procs = new LinkedList<>();
     private final List<Class<?>> functions = new LinkedList<>();
+    private final List<Class<?>> aggregationFunctions = new LinkedList<>();
 
     public void addProcedure( Class<?> procedureClass )
     {
@@ -38,6 +39,11 @@ public class HarnessRegisteredProcs
     public void addFunction( Class<?> functionClass )
     {
         this.functions.add( functionClass );
+    }
+
+    public void addAggregationFunction( Class<?> functionClass )
+    {
+        this.aggregationFunctions.add( functionClass );
     }
 
     @SuppressWarnings( "deprecation" )
@@ -51,6 +57,11 @@ public class HarnessRegisteredProcs
         for ( Class<?> cls : functions )
         {
             procedures.registerFunction( cls );
+        }
+
+        for ( Class<?> cls : aggregationFunctions )
+        {
+            procedures.registerAggregationFunction( cls );
         }
     }
 }
