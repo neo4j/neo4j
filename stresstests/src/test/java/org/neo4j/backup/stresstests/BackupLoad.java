@@ -17,64 +17,59 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.stresstests;
+package org.neo4j.backup.stresstests;
 
 import java.io.File;
 import java.util.concurrent.locks.LockSupport;
-import java.util.function.BiFunction;
 import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 
+import org.neo4j.backup.OnlineBackup;
 import org.neo4j.helper.IsChannelClosedException;
 import org.neo4j.helper.IsConnectionException;
 import org.neo4j.helper.IsConnectionRestByPeer;
 import org.neo4j.helper.IsStoreClosed;
-import org.neo4j.backup.OnlineBackup;
-import org.neo4j.causalclustering.discovery.Cluster;
-import org.neo4j.helpers.SocketAddress;
+import org.neo4j.helper.RepeatUntilCallable;
 
-class BackupLoad extends RepeatUntilOnSelectedMemberCallable
+class BackupLoad extends RepeatUntilCallable
 {
     private final Predicate<Throwable> isTransientError =
             new IsConnectionException().or( new IsConnectionRestByPeer() ).or( new IsChannelClosedException() )
                     .or( new IsStoreClosed() );
+    private final String backupHostname;
+    private final int backupPort;
+    private final File backupDir;
 
-    private final File baseDirectory;
-    private final BiFunction<Boolean,Integer,SocketAddress> backupAddress;
-
-    BackupLoad( BooleanSupplier keepGoing, Runnable onFailure, Cluster cluster, int numberOfCores, int numberOfEdges,
-            File baseDirectory, BiFunction<Boolean,Integer,SocketAddress> backupAddress )
+    BackupLoad( BooleanSupplier keepGoing, Runnable onFailure, String backupHostname, int backupPort, File backupDir )
     {
-        super( keepGoing, onFailure, cluster, numberOfCores, numberOfEdges );
-        this.baseDirectory = baseDirectory;
-        this.backupAddress = backupAddress;
+        super( keepGoing, onFailure );
+        this.backupHostname = backupHostname;
+        this.backupPort = backupPort;
+        this.backupDir = backupDir;
     }
 
     @Override
-    protected void doWorkOnMember( boolean isCore, int id )
+    protected void doWork()
     {
-        SocketAddress address = backupAddress.apply( isCore, id );
-        File backupDirectory = new File( baseDirectory, Integer.toString( address.getPort() ) );
-
         OnlineBackup backup;
         try
         {
-            backup = OnlineBackup.from( address.getHostname(), address.getPort() ).backup( backupDirectory );
+            backup = OnlineBackup.from( backupHostname, backupPort ).backup( backupDir );
         }
-        catch ( RuntimeException e )
+        catch ( Throwable t )
         {
-            if ( isTransientError.test( e ) )
+            if ( isTransientError.test( t ) )
             {
                 // if we could not connect, wait a bit and try again...
                 LockSupport.parkNanos( 10_000_000 );
                 return;
             }
-            throw e;
+            throw t;
         }
 
         if ( !backup.isConsistent() )
         {
-            throw new RuntimeException( "Not consistent backup from " + address );
+            throw new RuntimeException( "Inconsistent backup" );
         }
     }
 }

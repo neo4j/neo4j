@@ -45,14 +45,14 @@ import static java.lang.Long.parseLong;
 import static java.lang.System.getProperty;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertNull;
-import static org.neo4j.StressTestingHelper.ensureExistsAndEmpty;
-import static org.neo4j.StressTestingHelper.fromEnv;
-import static org.neo4j.StressTestingHelper.prettyPrintStackTrace;
 import static org.neo4j.causalclustering.stresstests.ClusterConfiguration.configureBackup;
 import static org.neo4j.causalclustering.stresstests.ClusterConfiguration.configureRaftLogRotationAndPruning;
-import static org.neo4j.causalclustering.stresstests.ClusterConfiguration.configureTxLogRotationAndPruning;
 import static org.neo4j.causalclustering.stresstests.ClusterConfiguration.enableRaftMessageLogging;
 import static org.neo4j.function.Suppliers.untilTimeExpired;
+import static org.neo4j.helper.DatabaseConfiguration.configureTxLogRotationAndPruning;
+import static org.neo4j.helper.StressTestingHelper.ensureExistsAndEmpty;
+import static org.neo4j.helper.StressTestingHelper.fromEnv;
+import static org.neo4j.helper.StressTestingHelper.prettyPrintStackTrace;
 
 public class BackupStoreCopyInteractionStressTesting
 {
@@ -133,6 +133,7 @@ public class BackupStoreCopyInteractionStressTesting
         finally
         {
             cluster.shutdown();
+            service.shutdown();
         }
 
         // let's cleanup disk space when everything went well

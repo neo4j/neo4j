@@ -52,7 +52,7 @@ import org.neo4j.io.fs.FileUtils;
 import static org.apache.commons.lang3.SystemUtils.JAVA_IO_TMPDIR;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.neo4j.StressTestingHelper.fromEnv;
+import static org.neo4j.helper.StressTestingHelper.fromEnv;
 
 public class LucenePartitionedIndexStressTesting
 {

@@ -40,8 +40,8 @@ import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
 import static java.lang.Integer.parseInt;
 import static java.lang.Long.parseLong;
 import static java.lang.System.getProperty;
-import static org.neo4j.StressTestingHelper.ensureExistsAndEmpty;
-import static org.neo4j.StressTestingHelper.fromEnv;
+import static org.neo4j.helper.StressTestingHelper.ensureExistsAndEmpty;
+import static org.neo4j.helper.StressTestingHelper.fromEnv;
 import static org.neo4j.kernel.stresstests.transaction.checkpoint.mutation.RandomMutationFactory.defaultRandomMutation;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
 

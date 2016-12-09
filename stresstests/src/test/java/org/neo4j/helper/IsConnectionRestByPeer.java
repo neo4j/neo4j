@@ -17,16 +17,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.stresstests;
+package org.neo4j.helper;
 
-import java.nio.channels.ClosedChannelException;
+import java.io.IOException;
 import java.util.function.Predicate;
 
-import org.neo4j.com.ComException;
-
-class IsChannelClosedException implements Predicate<Throwable>
+public class IsConnectionRestByPeer implements Predicate<Throwable>
 {
-
     @Override
     public boolean test( Throwable e )
     {
@@ -35,13 +32,8 @@ class IsChannelClosedException implements Predicate<Throwable>
             return false;
         }
 
-        if ( e instanceof ClosedChannelException )
-        {
-            return true;
-        }
-
-        if ( e instanceof ComException && e.getMessage() != null &&
-                e.getMessage().startsWith( "Channel has been closed" ) )
+        if ( e instanceof IOException && e.getMessage() != null &&
+                e.getMessage().startsWith( "Connection reset by peer" ) )
         {
             return true;
         }
