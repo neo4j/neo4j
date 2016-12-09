@@ -180,25 +180,33 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
      */
     public void disposeAll()
     {
-        terminateAllTransactions();
+        terminateTransactions();
         localTxPool.disposeAll();
         globalTxPool.disposeAll();
     }
 
-    public void terminateAllTransactions()
+    public void terminateTransactions()
     {
-        for ( KernelTransactionImplementation tx : allTransactions )
-        {
-            // we mark all transactions for termination since we want to make sure these transactions
-            // won't be reused, ever. Each transaction has, among other things, a Locks.Client and we
-            // certainly want to keep that from being reused from this point.
-            tx.markForTermination( Status.General.DatabaseUnavailable );
-        }
+        markAllTransactionsAsTerminated();
+        markAllTransactionsAsClosed();
     }
 
-    public boolean haveCommittingTransaction()
+    private void markAllTransactionsAsTerminated()
     {
-        return allTransactions.stream().anyMatch( KernelTransactionImplementation::isCommitting );
+        // we mark all transactions for termination since we want to make sure these transactions
+        // won't be reused, ever. Each transaction has, among other things, a Locks.Client and we
+        // certainly want to keep that from being reused from this point.
+        allTransactions.forEach( tx -> tx.markForTermination( Status.General.DatabaseUnavailable ) );
+    }
+
+    private void markAllTransactionsAsClosed()
+    {
+        allTransactions.forEach( KernelTransactionImplementation::markAsShutdown );
+    }
+
+    public boolean haveClosingTransaction()
+    {
+        return allTransactions.stream().anyMatch( KernelTransactionImplementation::isClosing );
     }
 
     @Override
@@ -262,6 +270,17 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
     KernelTransactionHandle createHandle( KernelTransactionImplementation tx )
     {
         return new KernelTransactionImplementationHandle( tx );
+    }
+
+    /**
+     * Get all transactions
+     * * <p>
+     * <b>Note:</b> this method is package-private for testing <b>only</b>.
+     * @return set of all kernel transaction
+     */
+    Set<KernelTransactionImplementation> getAllTransactions()
+    {
+        return allTransactions;
     }
 
     private void assertDatabaseIsRunning()

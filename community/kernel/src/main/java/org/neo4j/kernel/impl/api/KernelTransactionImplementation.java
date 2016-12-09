@@ -75,8 +75,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 {
     /*
      * IMPORTANT:
-     * This class is pooled and re-used. If you add *any* transactionStatus to it, you *must* make sure that:
-     *   - the #initialize() method resets that transactionStatus for re-use
+     * This class is pooled and re-used. If you add *any* state to it, you *must* make sure that:
+     *   - the #initialize() method resets that state for re-use
      *   - the #release() method releases resources acquired in #initialize() or during the transaction's life time
      */
 
@@ -101,7 +101,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final StoreReadLayer storeLayer;
     private final Clock clock;
 
-    // TransactionStatus that needs to be reset between uses. Most of these should be cleared or released in #release(),
+    // State that needs to be reset between uses. Most of these should be cleared or released in #release(),
     // whereas others, such as timestamp or txId when transaction starts, even locks, needs to be set in #initialize().
     private TransactionState txState;
     private LegacyIndexTransactionState legacyIndexTransactionState;
@@ -116,7 +116,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private boolean beforeHookInvoked;
 
     private TransactionStatus transactionStatus = new TransactionStatus();
-    //:TODO do we need it to be volatile?
     private volatile boolean failure;
     private boolean success;
     private long startTimeMillis;
@@ -232,18 +231,18 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return transactionStatus.getTerminationReason();
     }
 
-    boolean markForTermination( long expectedReuseCount, org.neo4j.kernel.api.exceptions.Status reason )
+    boolean markForTermination( long expectedReuseCount, Status reason )
     {
         return expectedReuseCount == reuseCount && markForTerminationIfPossible( reason );
     }
 
     @Override
-    public void markForTermination( org.neo4j.kernel.api.exceptions.Status reason )
+    public void markForTermination( Status reason )
     {
         markForTerminationIfPossible( reason );
     }
 
-    private boolean markForTerminationIfPossible( org.neo4j.kernel.api.exceptions.Status reason )
+    private boolean markForTerminationIfPossible( Status reason )
     {
         if ( transactionStatus.terminate( reason ) )
         {
@@ -391,16 +390,20 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return transactionStatus.isClosed();
     }
 
-    public boolean isCommitting()
+    public boolean isShutdown()
     {
-        return transactionStatus.isCommitting();
+        return transactionStatus.isShutdown();
+    }
+
+    public boolean isClosing()
+    {
+        return transactionStatus.isClosing();
     }
 
     @Override
     public long closeTransaction() throws TransactionFailureException
     {
-        assertTransactionOpen();
-        markTransactionAsPreparingCommit();
+        markTransactionAsClosing();
         try
         {
             closeCurrentStatementIfAny();
@@ -419,7 +422,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         {
             try
             {
-                transactionStatus.close();
                 transactionEvent.setSuccess( success );
                 transactionEvent.setFailure( failure );
                 transactionEvent.setTransactionType( writeState.name() );
@@ -433,11 +435,21 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
     }
 
-    private void markTransactionAsPreparingCommit()
+    private void markTransactionAsClosing() throws TransactionFailureException
     {
-        if ( !transactionStatus.prepare() )
+        if ( !transactionStatus.closing() )
         {
-            throw new IllegalStateException( "This transaction is already closing." );
+            assertTransactionOpen();
+            if ( transactionStatus.isShutdown() )
+            {
+                throw new TransactionFailureException( Status.Transaction.TransactionTerminated,
+                        "Transaction terminated since database is shutting down." );
+            }
+            else
+            {
+                throw new TransactionFailureException( Status.Transaction.TransactionTerminated,
+                        "Transaction is already closing. Repeated execution of transactions are not allowed." );
+            }
         }
     }
 
@@ -460,7 +472,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         if ( success )
         {
             throw getReasonIfTerminated().map( TransactionTerminatedException::new )
-                    //TODO: provide test that proove that we do not create them each time
                     // Success was called, but also failure which means that the client code using this
                     // transaction passed through a happy path, but the transaction was still marked as
                     // failed for one or more reasons. Tell the user that although it looked happy it
@@ -516,7 +527,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                     legacyIndexTransactionState.extractCommands( extractedCommands );
                 }
 
-                /* Here's the deal: we track a quick-to-access hasChanges in transaction transactionStatus which is true
+                /* Here's the deal: we track a quick-to-access hasChanges in transaction state which is true
                  * if there are any changes imposed by this transaction. Some changes made inside a transaction undo
                  * previously made changes in that same transaction, and so at some point a transaction may have
                  * changes and at another point, after more changes seemingly,
@@ -538,18 +549,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                             startTimeMillis, lastTransactionIdWhenStarted, timeCommitted,
                             commitLocks.getLockSessionId() );
 
-                    // Commit the transaction if not terminated
-                    if ( transactionStatus.commit() )
-                    {
-                        success = true;
-                        TransactionToApply batch = new TransactionToApply( transactionRepresentation );
-                        txId = transactionId = commitProcess.commit( batch, commitEvent, INTERNAL );
-                        commitTime = timeCommitted;
-                    }
-                    else
-                    {
-                        throw new TransactionTerminatedException( Status.Transaction.TransactionTerminated );
-                    }
+                    success = true;
+                    TransactionToApply batch = new TransactionToApply( transactionRepresentation );
+                    txId = transactionId = commitProcess.commit( batch, commitEvent, INTERNAL );
+                    commitTime = timeCommitted;
                 }
             }
             success = true;
@@ -659,7 +662,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         statementLocks.close();
         statementLocks = null;
-        transactionStatus.reset();
+        transactionStatus.close();
         type = null;
         securityContext = null;
         transactionEvent = null;
@@ -739,7 +742,22 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     public void dispose()
     {
+        markAsShutdown();
         storageStatement.close();
+    }
+
+    void markAsShutdown()
+    {
+        if ( transactionStatus.shutdown() )
+        {
+            // since transaction is marked as closed now and any new calls to close transaction
+            // are no longer possible we can release the locks now immediately
+            StatementLocks localLocks = this.statementLocks;
+            if ( localLocks != null )
+            {
+                localLocks.close();
+            }
+        }
     }
 
     /**
@@ -783,24 +801,23 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
     }
 
-    private static class TransactionStatus
+    static class TransactionStatus
     {
         private static final int OPEN = 0;
-        private static final int PREPARE = 1;
-        private static final int COMMIT = 2;
-        private static final int CLOSED = 4;
+        private static final int CLOSING = 1;
+        private static final int CLOSED = 2;
+        private static final int SHUTDOWN = 3;
+        private static final int STATE_BITS_MASK = 0x3;
+        private static final int NON_STATE_BITS_MASK = 0xFFFF_FFFC;
+        private static final int TERMINATED = 1 << 3;
 
-        private static final int STATE_BITS_MASK = 0xF;
-        private static final int NON_STATE_BITS_MASK = 0xFFFF_FFF0;
-        private static final int TERMINATED = 1 << 5;
-
-        private AtomicInteger status = new AtomicInteger( OPEN );
+        private AtomicInteger status = new AtomicInteger( CLOSED );
         private volatile Status terminationReason;
 
         public void init()
         {
-            reset();
             status.set( OPEN );
+            reset();
         }
 
         public void reset()
@@ -818,9 +835,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             return is( CLOSED );
         }
 
-        public boolean isCommitting()
+        public boolean isClosing()
         {
-            return is( COMMIT );
+            return is( CLOSING );
         }
 
         public boolean isTerminated()
@@ -830,15 +847,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
         public boolean terminate( Status reason )
         {
-            if ( isTerminated() )
-            {
-                return false;
-            }
             int currentStatus;
             do
             {
                 currentStatus = status.get();
-                if ( (currentStatus != OPEN) && (currentStatus != PREPARE) )
+                if ( (currentStatus != OPEN) && (currentStatus != CLOSING) )
                 {
                     return false;
                 }
@@ -848,7 +861,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             return true;
         }
 
-        public boolean prepare()
+        public boolean closing()
         {
             int currentStatus;
             do
@@ -859,18 +872,29 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                     return false;
                 }
             }
-            while ( !status.compareAndSet( currentStatus, (currentStatus & NON_STATE_BITS_MASK) | PREPARE ) );
+            while ( !status.compareAndSet( currentStatus, (currentStatus & NON_STATE_BITS_MASK) | CLOSING ) );
+            return true;
+        }
+
+        boolean shutdown()
+        {
+            int currentStatus;
+            do
+            {
+                currentStatus = status.get();
+                if ( (currentStatus & STATE_BITS_MASK) != OPEN )
+                {
+                    return false;
+                }
+            }
+            while ( !status.compareAndSet( currentStatus, (currentStatus & NON_STATE_BITS_MASK) | SHUTDOWN ) );
             return true;
         }
 
         public void close()
         {
             status.set( CLOSED );
-        }
-
-        public boolean commit()
-        {
-            return status.compareAndSet( PREPARE, COMMIT );
+            reset();
         }
 
         Optional<Status> getTerminationReason()
@@ -880,7 +904,17 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
         private boolean is( int statusCode )
         {
-            return (status.get() & STATE_BITS_MASK) == statusCode;
+            return is( status.get(), statusCode );
+        }
+
+        private boolean is( int currentStatus, int statusCode )
+        {
+            return (currentStatus & STATE_BITS_MASK) == statusCode;
+        }
+
+        public boolean isShutdown()
+        {
+            return is( SHUTDOWN );
         }
     }
 }

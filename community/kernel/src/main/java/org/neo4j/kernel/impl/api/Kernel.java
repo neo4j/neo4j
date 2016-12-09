@@ -55,7 +55,6 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  * {@link StateHandlingStatementOperations}, which includes any changes that exist in the current transaction, and then
  * finally {@link org.neo4j.storageengine.api.StoreReadLayer} will read the current committed state from
  * the stores or caches.
- *
  */
 public class Kernel extends LifecycleAdapter implements KernelAPI
 {

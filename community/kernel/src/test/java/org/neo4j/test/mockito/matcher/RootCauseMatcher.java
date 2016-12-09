@@ -39,7 +39,7 @@ public class RootCauseMatcher<T extends Throwable> extends TypeSafeMatcher<T>
     protected boolean matchesSafely( T item )
     {
         cause = ExceptionUtils.getRootCause( item );
-        return rootCause.isInstance( cause ) && cause.getMessage().equals( message );
+        return rootCause.isInstance( cause ) && cause.getMessage().startsWith( message );
     }
 
     @Override
@@ -56,6 +56,5 @@ public class RootCauseMatcher<T extends Throwable> extends TypeSafeMatcher<T>
         {
             description.appendText( "actual exception was never thrown." );
         }
-
     }
 }

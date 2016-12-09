@@ -23,23 +23,18 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.stream.Stream;
 
-import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.core.consensus.roles.Role;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.security.WriteOperationsNotAllowedException;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.test.causalclustering.ClusterRule;
 
 import static org.hamcrest.CoreMatchers.containsString;
@@ -49,7 +44,6 @@ import static org.junit.Assert.fail;
 import static org.neo4j.causalclustering.discovery.Cluster.dataMatchesEventually;
 import static org.neo4j.function.Predicates.await;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.helpers.collection.Iterables.asList;
 import static org.neo4j.helpers.collection.Iterables.count;
 
 public class CoreReplicationIT

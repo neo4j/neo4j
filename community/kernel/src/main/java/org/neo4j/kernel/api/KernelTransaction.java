@@ -148,7 +148,7 @@ public interface KernelTransaction extends AutoCloseable
     SecurityContext securityContext();
 
     /**
-     * @return {@code true} if {@link #markForTermination(Status)} has been invoked, otherwise {@code false}.
+     * @return {@link Status} if {@link #markForTermination(Status)} has been invoked, otherwise empty optional.
      */
     Optional<Status> getReasonIfTerminated();
 
