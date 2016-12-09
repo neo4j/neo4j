@@ -28,11 +28,14 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import org.neo4j.helper.IsConnectionRestByPeer;
+import org.neo4j.helper.IsStoreClosed;
 import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.ClusterMember;
 import org.neo4j.causalclustering.discovery.ReadReplica;
 import org.neo4j.causalclustering.handlers.ExceptionMonitoringHandler;
+import org.neo4j.helper.RepeatUntilCallable;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;

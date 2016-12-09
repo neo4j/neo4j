@@ -17,34 +17,34 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.stresstests;
+package org.neo4j.helper;
 
+import java.nio.channels.ClosedChannelException;
 import java.util.function.Predicate;
 
-import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
+import org.neo4j.com.ComException;
 
-class IsStoreClosed implements Predicate<Throwable>
+public class IsChannelClosedException implements Predicate<Throwable>
 {
     @Override
-    public boolean test( Throwable ex )
+    public boolean test( Throwable e )
     {
-
-        if ( ex == null )
+        if ( e == null )
         {
             return false;
         }
 
-        if ( ex instanceof UnsatisfiedDependencyException )
+        if ( e instanceof ClosedChannelException )
         {
             return true;
         }
 
-        if ( ex instanceof IllegalStateException )
+        if ( e instanceof ComException && e.getMessage() != null &&
+                e.getMessage().startsWith( "Channel has been closed" ) )
         {
-            String message = ex.getMessage();
-            return message.startsWith( "MetaDataStore for file " ) && message.endsWith( " is closed" );
+            return true;
         }
 
-        return test( ex.getCause() );
+        return test( e.getCause() );
     }
 }

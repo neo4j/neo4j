@@ -25,6 +25,7 @@ import java.util.function.BooleanSupplier;
 
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.ClusterMember;
+import org.neo4j.helper.RepeatUntilCallable;
 
 abstract class RepeatUntilOnSelectedMemberCallable extends RepeatUntilCallable
 {

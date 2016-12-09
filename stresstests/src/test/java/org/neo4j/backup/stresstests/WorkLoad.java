@@ -17,76 +17,58 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.stresstests;
+package org.neo4j.backup.stresstests;
 
-import java.util.concurrent.TimeoutException;
 import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
 
-import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.graphdb.DatabaseShutdownException;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helper.RepeatUntilCallable;
 
-class Workload extends RepeatUntilCallable
+class WorkLoad extends RepeatUntilCallable
 {
-    private Cluster cluster;
     private static final Label label = Label.label( "Label" );
+    private final Supplier<GraphDatabaseService> dbRef;
 
-    Workload( BooleanSupplier keepGoing, Runnable onFailure, Cluster cluster )
+    WorkLoad( BooleanSupplier keepGoing, Runnable onFailure, Supplier<GraphDatabaseService> dbRef )
     {
         super( keepGoing, onFailure );
-        this.cluster = cluster;
+        this.dbRef = dbRef;
     }
 
     @Override
     protected void doWork()
     {
-        try
+        GraphDatabaseService db = dbRef.get();
+        try ( Transaction tx = db.beginTx() )
         {
-            cluster.coreTx( ( db, tx ) ->
+            Node node = db.createNode( label );
+            for ( int i = 1; i <= 8; i++ )
             {
-                Node node = db.createNode( label );
-                for ( int i = 1; i <= 8; i++ )
-                {
-                    node.setProperty( prop( i ),
-                            "let's add some data here so the transaction logs rotate more often..." );
-                }
-                tx.success();
-            } );
+                node.setProperty( prop( i ), "let's add some data here so the transaction logs rotate more often..." );
+            }
+            tx.success();
         }
-        catch ( InterruptedException e )
+        catch ( DatabaseShutdownException | TransactionFailureException e )
         {
             // whatever let's go on with the workload
-            Thread.interrupted();
-        }
-        catch ( TimeoutException | DatabaseShutdownException | TransactionFailureException e )
-        {
-            // whatever let's go on with the workload
-        }
-        catch ( Throwable e )
-        {
-            throw new RuntimeException( e );
         }
     }
 
-    static void setupIndexes( Cluster cluster )
+    static void setupIndexes( GraphDatabaseService db )
     {
-        try
+        try ( Transaction tx = db.beginTx() )
         {
-            cluster.coreTx( ( db, tx ) ->
+            for ( int i = 1; i <= 8; i++ )
             {
-                for ( int i = 1; i <= 8; i++ )
-                {
-                    db.schema().indexFor( label ).on( prop( i ) ).create();
-                }
-                tx.success();
-            } );
-        }
-        catch ( Throwable t )
-        {
-            throw new RuntimeException( t );
+                db.schema().indexFor( label ).on( prop( i ) ).create();
+            }
+            tx.success();
         }
     }
 
