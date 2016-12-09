@@ -35,7 +35,6 @@ import org.neo4j.index.ValueMerger;
 import org.neo4j.index.ValueMergers;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.test.rule.RandomRule;
-
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -551,6 +550,7 @@ public class InternalTreeLogicTest
         // given
         node.initializeLeaf( cursor, stableGen, unstableGen );
         int numberOfEntries = 100_000;
+        long rootGen = unstableGen;
         for ( int i = 0; i < numberOfEntries; i++ )
         {
             // when
@@ -558,6 +558,11 @@ public class InternalTreeLogicTest
             if ( structurePropagation.hasSplit )
             {
                 newRootFromSplit( structurePropagation );
+                rootGen = unstableGen;
+            }
+            else if ( structurePropagation.hasNewGen )
+            {
+                rootGen = unstableGen;
             }
 
             if ( i == numberOfEntries / 2 )
@@ -569,7 +574,7 @@ public class InternalTreeLogicTest
         // then
         ConsistencyChecker<MutableLong> consistencyChecker =
                 new ConsistencyChecker<>( node, layout, stableGen, unstableGen );
-        consistencyChecker.check( cursor );
+        consistencyChecker.check( cursor, rootGen );
     }
 
     /* TEST VALUE MERGER */
@@ -751,7 +756,7 @@ public class InternalTreeLogicTest
         assertNotEquals( oldGenId, newGenId );
         assertEquals( 1, node.keyCount( cursor ) );
 
-        node.goTo( cursor, "old gen", oldGenId, stableGen, unstableGen );
+        node.goTo( cursor, "old gen", oldGenId );
         assertEquals( newGenId, newGen( cursor, stableGen, unstableGen ) );
         assertEquals( 0, node.keyCount( cursor ) );
     }
@@ -779,7 +784,7 @@ public class InternalTreeLogicTest
         assertNotEquals( oldGenId, newGenId );
         assertEquals( 0, node.keyCount( cursor ) );
 
-        node.goTo( cursor, "old gen", oldGenId, stableGen, unstableGen );
+        node.goTo( cursor, "old gen", oldGenId );
         assertEquals( newGenId, newGen( cursor, stableGen, unstableGen ) );
         assertEquals( 1, node.keyCount( cursor ) );
     }
@@ -1080,7 +1085,7 @@ public class InternalTreeLogicTest
     // KEEP even if unused
     private void printTree() throws IOException
     {
-        TreePrinter.printTree( cursor, node, layout, stableGen, unstableGen, System.out );
+        TreePrinter.printTree( cursor, node, layout, stableGen, unstableGen, System.out, true );
     }
 
     private MutableLong key( long key )

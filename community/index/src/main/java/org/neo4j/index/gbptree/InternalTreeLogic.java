@@ -152,11 +152,11 @@ class InternalTreeLogic<KEY,VALUE>
         long childId = bTreeNode.childAt( cursor, pos, stableGeneration, unstableGeneration );
         PointerChecking.checkPointer( childId, false );
 
-        bTreeNode.goTo( cursor, "child", childId, stableGeneration, unstableGeneration );
+        bTreeNode.goTo( cursor, "child", childId );
 
         insert( cursor, structurePropagation, key, value, valueMerger, options, stableGeneration, unstableGeneration );
 
-        bTreeNode.goTo( cursor, "parent", currentId, stableGeneration, unstableGeneration );
+        bTreeNode.goTo( cursor, "parent", currentId );
 
         if ( structurePropagation.hasNewGen )
         {
@@ -272,13 +272,13 @@ class InternalTreeLogic<KEY,VALUE>
         // Update old right with new left sibling (newRight)
         if ( TreeNode.isNode( oldRight ) )
         {
-            bTreeNode.goTo( cursor, "old right sibling", oldRight, stableGeneration, unstableGeneration );
+            bTreeNode.goTo( cursor, "old right sibling", oldRight );
             bTreeNode.setLeftSibling( cursor, newRight, stableGeneration, unstableGeneration );
         }
 
         // Update left node
         // Move cursor back to left
-        bTreeNode.goTo( cursor, "left", current, stableGeneration, unstableGeneration );
+        bTreeNode.goTo( cursor, "left", current );
         bTreeNode.setKeyCount( cursor, middlePos );
         if ( pos < middlePos )
         {
@@ -473,12 +473,12 @@ class InternalTreeLogic<KEY,VALUE>
         // Update old right with new left sibling (newRight)
         if ( TreeNode.isNode( oldRight ) )
         {
-            bTreeNode.goTo( cursor, "old right sibling", oldRight, stableGeneration, unstableGeneration );
+            bTreeNode.goTo( cursor, "old right sibling", oldRight );
             bTreeNode.setLeftSibling( cursor, newRight, stableGeneration, unstableGeneration );
         }
 
         // Update left child
-        bTreeNode.goTo( cursor, "left", current, stableGeneration, unstableGeneration );
+        bTreeNode.goTo( cursor, "left", current );
         bTreeNode.setKeyCount( cursor, middlePos );
         // If pos < middle. Write shifted values to left node. Else, don't write anything.
         if ( pos < middlePos )
@@ -531,11 +531,11 @@ class InternalTreeLogic<KEY,VALUE>
         long currentId = cursor.getCurrentPageId();
         long childId = bTreeNode.childAt( cursor, pos, stableGeneration, unstableGeneration );
         PointerChecking.checkPointer( childId, false );
-        bTreeNode.goTo( cursor, "child", childId, stableGeneration, unstableGeneration );
+        bTreeNode.goTo( cursor, "child", childId );
 
         VALUE result = remove( cursor, structurePropagation, key, into, stableGeneration, unstableGeneration );
 
-        bTreeNode.goTo( cursor, "parent", currentId, stableGeneration, unstableGeneration );
+        bTreeNode.goTo( cursor, "parent", currentId );
         if ( structurePropagation.hasNewGen )
         {
             structurePropagation.hasNewGen = false;
@@ -650,17 +650,17 @@ class InternalTreeLogic<KEY,VALUE>
         PointerChecking.checkPointer( rightSibling, true );
         if ( TreeNode.isNode( leftSibling ) )
         {
-            bTreeNode.goTo( cursor, "left sibling in split", leftSibling, stableGeneration, unstableGeneration );
+            bTreeNode.goTo( cursor, "left sibling in split", leftSibling );
             bTreeNode.setRightSibling( cursor, newGenId, stableGeneration, unstableGeneration );
         }
         if ( TreeNode.isNode( rightSibling ) )
         {
-            bTreeNode.goTo( cursor, "right sibling in split", rightSibling, stableGeneration, unstableGeneration );
+            bTreeNode.goTo( cursor, "right sibling in split", rightSibling );
             bTreeNode.setLeftSibling( cursor, newGenId, stableGeneration, unstableGeneration );
         }
 
         // Leave cursor at new tree node
-        bTreeNode.goTo( cursor, "new gen", newGenId, stableGeneration, unstableGeneration );
+        bTreeNode.goTo( cursor, "new gen", newGenId );
 
         // Propagate structure change
         structurePropagation.hasNewGen = true;

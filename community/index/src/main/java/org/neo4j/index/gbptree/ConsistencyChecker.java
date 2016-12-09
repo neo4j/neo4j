@@ -28,6 +28,8 @@ import org.neo4j.io.pagecache.PageCursor;
 
 import static java.lang.String.format;
 
+import static org.neo4j.index.gbptree.GenSafePointerPair.pointer;
+
 /**
  * <ul>
  * Checks:
@@ -57,11 +59,11 @@ class ConsistencyChecker<KEY>
         this.unstableGeneration = unstableGeneration;
     }
 
-    public boolean check( PageCursor cursor ) throws IOException
+    public boolean check( PageCursor cursor, long expectedGen ) throws IOException
     {
         assertOnTreeNode( cursor );
         KeyRange<KEY> openRange = new KeyRange<>( comparator, null, null, layout, null );
-        boolean result = checkSubtree( cursor, openRange, 0 );
+        boolean result = checkSubtree( cursor, openRange, expectedGen, 0 );
 
         // Assert that rightmost node on each level has empty right sibling.
         rightmostPerLevel.forEach( RightmostInChain::assertLast );
@@ -77,7 +79,8 @@ class ConsistencyChecker<KEY>
         }
     }
 
-    private boolean checkSubtree( PageCursor cursor, KeyRange<KEY> range, int level ) throws IOException
+    private boolean checkSubtree( PageCursor cursor, KeyRange<KEY> range, long expectedGen, int level )
+            throws IOException
     {
         // check header pointers
         assertNoCrashOrBrokenPointerInGSPP(
@@ -89,9 +92,13 @@ class ConsistencyChecker<KEY>
 
         long pageId = assertSiblings( cursor, level );
 
+        checkNewGenPointerGen( cursor );
+
+        assertPointerGenMatchesGen( cursor, expectedGen );
+
         if ( node.isInternal( cursor ) )
         {
-            assertKeyOrderAndSubtrees( cursor, pageId, range, level );
+            assertKeyOrderAndSubtrees( cursor, pageId, range, expectedGen, level );
         }
         else if ( node.isLeaf( cursor ) )
         {
@@ -103,6 +110,34 @@ class ConsistencyChecker<KEY>
                     " isn't a tree node, parent expected range " + range );
         }
         return true;
+    }
+
+    private void assertPointerGenMatchesGen( PageCursor cursor, long expectedGen )
+    {
+        long nodeGen = node.gen( cursor );
+        assert nodeGen <= expectedGen : "Expected node:" + cursor.getCurrentPageId() + " gen:" + nodeGen +
+                " to be ≤ pointer gen:" + expectedGen;
+    }
+
+    private void checkNewGenPointerGen( PageCursor cursor ) throws IOException
+    {
+        long newGen = node.newGen( cursor, stableGeneration, unstableGeneration );
+        if ( TreeNode.isNode( newGen ) )
+        {
+            System.err.println( "WARNING: we ended up on an old generation " + cursor.getCurrentPageId() +
+                    " which had newGen:" + pointer( newGen ) );
+            long newGenGen = node.pointerGen( cursor, newGen );
+            long origin = cursor.getCurrentPageId();
+            node.goTo( cursor, "newGen", newGen );
+            try
+            {
+                assertPointerGenMatchesGen( cursor, newGenGen );
+            }
+            finally
+            {
+                node.goTo( cursor, "back", origin );
+            }
+        }
     }
 
     // Assumption: We traverse the tree from left to right on every level
@@ -119,7 +154,8 @@ class ConsistencyChecker<KEY>
         return rightmost.assertNext( cursor );
     }
 
-    private void assertKeyOrderAndSubtrees( PageCursor cursor, long pageId, KeyRange<KEY> range, int level )
+    private void assertKeyOrderAndSubtrees( PageCursor cursor, long pageId, KeyRange<KEY> range, long expectedGen,
+            int level )
             throws IOException
     {
         int keyCount = node.keyCount( cursor );
@@ -138,7 +174,8 @@ class ConsistencyChecker<KEY>
             }
 
             long child = childAt( cursor, pos );
-            node.goTo( cursor, "child at pos " + pos, child, stableGeneration, unstableGeneration );
+            long childGen = node.pointerGen( cursor, child );
+            node.goTo( cursor, "child at pos " + pos, child );
             if ( pos == 0 )
             {
                 childRange = range.restrictRight( readKey );
@@ -147,8 +184,8 @@ class ConsistencyChecker<KEY>
             {
                 childRange = range.restrictLeft( prev ).restrictRight( readKey );
             }
-            checkSubtree( cursor, childRange, level + 1 );
-            node.goTo( cursor, "parent", pageId, stableGeneration, unstableGeneration );
+            checkSubtree( cursor, childRange, childGen, level + 1 );
+            node.goTo( cursor, "parent", pageId );
 
             layout.copyKey( readKey, prev );
             pos++;
@@ -156,10 +193,11 @@ class ConsistencyChecker<KEY>
 
         // Check last child
         long child = childAt( cursor, pos );
-        node.goTo( cursor, "child at pos " + pos, child, stableGeneration, unstableGeneration );
+        long childGen = node.pointerGen( cursor, child );
+        node.goTo( cursor, "child at pos " + pos, child );
         childRange = range.restrictLeft( prev );
-        checkSubtree( cursor, childRange, level + 1 );
-        node.goTo( cursor, "parent", pageId, stableGeneration, unstableGeneration );
+        checkSubtree( cursor, childRange, childGen, level + 1 );
+        node.goTo( cursor, "parent", pageId );
     }
 
     private long childAt( PageCursor cursor, int pos )

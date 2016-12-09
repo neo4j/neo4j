@@ -24,6 +24,8 @@ import java.io.PrintStream;
 
 import org.neo4j.io.pagecache.PageCursor;
 
+import static org.neo4j.index.gbptree.GenSafePointerPair.pointer;
+
 /**
  * Utility class for printing a {@link GBPTree}, either whole or sub-tree.
  */
@@ -43,8 +45,8 @@ class TreePrinter
      * @throws IOException on page cache access error.
      */
     static <KEY,VALUE> void printTree( PageCursor cursor, TreeNode<KEY,VALUE> treeNode,
-            Layout<KEY,VALUE> layout, long stableGeneration, long unstableGeneration, PrintStream out )
-                    throws IOException
+            Layout<KEY,VALUE> layout, long stableGeneration, long unstableGeneration, PrintStream out,
+            boolean printValues ) throws IOException
     {
         int level = 0;
         long firstId = cursor.getCurrentPageId();
@@ -53,37 +55,38 @@ class TreePrinter
         {
             out.println( "Level " + level++ );
             leftmostOnLevel = cursor.getCurrentPageId();
-            printKeysOfSiblings( cursor, treeNode, layout, stableGeneration, unstableGeneration, out );
+            printKeysOfSiblings( cursor, treeNode, layout, stableGeneration, unstableGeneration, out, printValues );
             out.println();
             cursor.next( leftmostOnLevel );
 
-            cursor.next( treeNode.childAt( cursor, 0, stableGeneration, unstableGeneration ) );
+            cursor.next( pointer( treeNode.childAt( cursor, 0, stableGeneration, unstableGeneration ) ) );
         }
 
         out.println( "Level " + level );
-        printKeysOfSiblings( cursor, treeNode, layout, stableGeneration, unstableGeneration, out );
+        printKeysOfSiblings( cursor, treeNode, layout, stableGeneration, unstableGeneration, out, printValues );
         out.println();
         cursor.next( firstId );
     }
 
     private static <KEY,VALUE> void printKeysOfSiblings( PageCursor cursor,
             TreeNode<KEY,VALUE> bTreeNode, Layout<KEY,VALUE> layout, long stableGeneration, long unstableGeneration,
-            PrintStream out ) throws IOException
+            PrintStream out, boolean printValues ) throws IOException
     {
         while ( true )
         {
-            printKeys( cursor, bTreeNode, layout, stableGeneration, unstableGeneration, out );
+            printKeys( cursor, bTreeNode, layout, stableGeneration, unstableGeneration, out, printValues );
             long rightSibling = bTreeNode.rightSibling( cursor, stableGeneration, unstableGeneration );
             if ( !TreeNode.isNode( rightSibling ) )
             {
                 break;
             }
-            cursor.next( rightSibling );
+            cursor.next( pointer( rightSibling ) );
         }
     }
 
     private static <KEY,VALUE> void printKeys( PageCursor cursor, TreeNode<KEY,VALUE> bTreeNode,
-            Layout<KEY,VALUE> layout, long stableGeneration, long unstableGeneration, PrintStream out )
+            Layout<KEY,VALUE> layout, long stableGeneration, long unstableGeneration, PrintStream out,
+            boolean printValues )
     {
         boolean isLeaf = bTreeNode.isLeaf( cursor );
         int keyCount = bTreeNode.keyCount( cursor );
@@ -100,13 +103,16 @@ class TreePrinter
             if ( isLeaf )
             {
                 out.print( "#" + i + ":" +
-                        bTreeNode.keyAt( cursor, key, i ) + "=" +
-                        bTreeNode.valueAt( cursor, value, i ) );
+                        bTreeNode.keyAt( cursor, key, i ) );
+                if ( printValues )
+                {
+                    out.print( "=" + bTreeNode.valueAt( cursor, value, i ) );
+                }
             }
             else
             {
                 out.print( "#" + i + ":" +
-                        "|" + bTreeNode.childAt( cursor, i, stableGeneration, unstableGeneration ) + "|" +
+                        "|" + pointer( bTreeNode.childAt( cursor, i, stableGeneration, unstableGeneration ) ) + "|" +
                         bTreeNode.keyAt( cursor, key, i ) + "|" );
 
             }
@@ -114,7 +120,7 @@ class TreePrinter
         if ( !isLeaf )
         {
             out.print( "#" + keyCount + ":|" +
-                    bTreeNode.childAt( cursor, keyCount, stableGeneration, unstableGeneration ) + "|" );
+                    pointer( bTreeNode.childAt( cursor, keyCount, stableGeneration, unstableGeneration ) ) + "|" );
         }
         out.println( (isLeaf ? "]" : "|") );
     }

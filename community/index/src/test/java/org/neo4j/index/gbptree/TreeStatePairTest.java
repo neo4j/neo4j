@@ -126,7 +126,7 @@ public class TreeStatePairTest
             @Override
             void write( PageCursor cursor ) throws IOException
             {
-                TreeState.write( cursor, 1, 2, 3, 4, 5, 6, 7, 8 );
+                TreeState.write( cursor, 1, 2, 3, 4, 5, 6, 7, 8, 9 );
                 cursor.rewind();
                 // flip some of the bits as to break the checksum
                 long someOfTheBits = cursor.getLong( cursor.getOffset() );
@@ -138,7 +138,7 @@ public class TreeStatePairTest
             @Override
             void write( PageCursor cursor ) throws IOException
             {
-                TreeState.write( cursor, 5, 6, 7, 8, 9, 10, 11, 12 );
+                TreeState.write( cursor, 5, 6, 7, 8, 9, 10, 11, 12, 13 );
             }
         },
         OLD_VALID
@@ -146,7 +146,7 @@ public class TreeStatePairTest
             @Override
             void write( PageCursor cursor ) throws IOException
             {
-                TreeState.write( cursor, 2, 3, 4, 5, 6, 7, 8, 9 );
+                TreeState.write( cursor, 2, 3, 4, 5, 6, 7, 8, 9, 10 );
             }
         };
 

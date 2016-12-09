@@ -402,21 +402,10 @@ class TreeNode<KEY,VALUE>
                 childSize(), childOffset( 0 ), into );
     }
 
-    void goTo( PageCursor cursor, String messageOnError, long nodeId, long stableGeneration, long unstableGeneration )
+    void goTo( PageCursor cursor, String messageOnError, long nodeId )
             throws IOException
     {
         PageCursorUtil.goTo( cursor, messageOnError, GenSafePointerPair.pointer( nodeId ) );
-        verifyGen( cursor, stableGeneration, unstableGeneration );
-    }
-
-    private void verifyGen( PageCursor cursor, long stableGeneration, long unstableGeneration )
-    {
-        long gen = gen( cursor );
-        if ( ( gen > stableGeneration && gen < unstableGeneration ) || gen > unstableGeneration )
-        {
-            throw new TreeInconsistencyException( "Reached a node with generation=" + gen +
-                    ", stableGeneration=" + stableGeneration + ", unstableGeneration=" + unstableGeneration );
-        }
     }
 
     /**
