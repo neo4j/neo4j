@@ -49,6 +49,20 @@ public class ReflectionUtil
         throw new IllegalArgumentException( "Method '" + methodName + "' does not exist in class " + owner );
     }
 
+    public static <T> void replaceValueInPrivateField( Object target, String fieldName, Class<T> fieldType, T value )
+            throws Exception
+    {
+        Class<?> type = target.getClass();
+        Field field = getField( fieldName, type );
+        if ( !fieldType.isAssignableFrom( field.getType() ) )
+        {
+            throw new IllegalArgumentException( "Field type does not match " + field.getType() + " is no subclass of " +
+                    "" + fieldType );
+        }
+        field.setAccessible( true );
+        field.set( target, value );
+    }
+
     private static Field getField( String fieldName, Class<? extends Object> type ) throws NoSuchFieldException
     {
         if ( type == null )
