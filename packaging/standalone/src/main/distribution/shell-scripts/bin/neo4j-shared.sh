@@ -88,6 +88,10 @@ _find_java_cmd() {
 
   if [[ "${JAVA_HOME:-}" ]] ; then
     JAVA_CMD="${JAVA_HOME}/bin/java"
+    if [[ ! -f "${JAVA_CMD}" ]]; then
+      echo "ERROR: JAVA_HOME is incorrectly defined as ${JAVA_HOME} (the executable ${JAVA_CMD} does not exist)"
+      exit 1
+    fi
   else
     if [ "${DIST_OS}" != "macosx" ] ; then
       # Don't use default java on Darwin because it displays a misleading dialog box
