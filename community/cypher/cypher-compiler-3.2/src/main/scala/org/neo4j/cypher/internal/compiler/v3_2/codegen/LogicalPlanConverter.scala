@@ -28,9 +28,10 @@ import org.neo4j.cypher.internal.compiler.v3_2.commands.{ManyQueryExpression, Qu
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.{One, ZeroOneOrMany}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{UnwindCollection, _}
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Expression
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.Eagerly.immutableMapValues
+import org.neo4j.cypher.internal.frontend.v3_2.symbols.ListType
 import org.neo4j.cypher.internal.frontend.v3_2.{InternalException, ast, symbols}
 
 object LogicalPlanConverter {
@@ -54,6 +55,7 @@ object LogicalPlanConverter {
     case p: plans.Aggregation => aggregationAsCodeGenPlan(p)
     case p: plans.NodeCountFromCountStore => nodeCountFromCountStore(p)
     case p: plans.RelationshipCountFromCountStore => relCountFromCountStore(p)
+    case p: UnwindCollection => unwindAsCodeGenPlan(p)
 
     case _ =>
       throw new CantCompileQueryException(s"$logicalPlan is not yet supported")
@@ -561,6 +563,28 @@ object LogicalPlanConverter {
       (methodHandle, RelationshipCountFromCountStoreInstruction(opName, variable, startLabel, types, endLabel, actions) :: tl)
     }
   }
+
+  private def unwindAsCodeGenPlan(unwind: plans.UnwindCollection) = new CodeGenPlan with SingleChildPlan {
+
+    override val logicalPlan = unwind
+
+    override def consume(context: CodeGenContext, child: CodeGenPlan) = {
+      val collection = ExpressionConverter.createExpression(unwind.expression)(context)
+
+      // TODO: Handle null and range
+      val elementType = collection.codeGenType(context).ct match {
+        case ListType(innerType) => innerType
+        case t => throw new CantCompileQueryException(s"Unwind collection type $t not supported")
+      }
+      val variable = Variable(unwind.variable.name, CodeGenType(elementType, ReferenceType), nullable = true)
+      context.addVariable(unwind.variable.name, variable)
+
+      val (methodHandle, actions :: tl) = context.popParent().consume(context, this)
+
+      (methodHandle, ForEachExpression(variable, collection, actions) :: tl)
+    }
+  }
+
   trait SingleChildPlan extends CodeGenPlan {
 
     final override def produce(context: CodeGenContext): (Option[JoinTableMethod], List[Instruction]) = {

@@ -32,7 +32,7 @@ case class MyMap(instructions: Map[String, CodeGenExpression]) extends CodeGenEx
     }
 
   override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) =
-    structure.asMap(instructions.mapValues(_.generateExpression(structure)))
+    structure.asMap(instructions.mapValues(e => structure.box(e.generateExpression(structure))))
 
   override def nullable(implicit context: CodeGenContext) = false
 
