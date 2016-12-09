@@ -230,7 +230,7 @@ trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
     case Failure(e) =>
       tx.failure()
       tx.close()
-      fail(s"Expected successful result, but got error: $e")
+      fail(s"Expected successful result, but got error: $e", e)
   }
 
   private def initEmpty() =
