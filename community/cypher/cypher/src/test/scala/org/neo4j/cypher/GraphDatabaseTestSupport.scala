@@ -25,13 +25,13 @@ import org.neo4j.cypher.internal.compiler.v3_2.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v3_2.{CypherCompilerConfiguration, devNullLogger}
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.helpers.GraphIcing
-import org.neo4j.cypher.internal.spi.v3_2.{TransactionBoundPlanContext, TransactionalContextWrapper}
 import org.neo4j.cypher.internal.spi.v3_2.TransactionBoundQueryContext.IndexSearchMonitor
+import org.neo4j.cypher.internal.spi.v3_2.{TransactionBoundPlanContext, TransactionalContextWrapper}
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.kernel.api.KernelAPI
-import org.neo4j.kernel.api.proc.{CallableProcedure, CallableUserFunction, ProcedureSignature, UserFunctionSignature}
+import org.neo4j.kernel.api.proc._
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.monitoring
 import org.neo4j.test.TestGraphDatabaseFactory
@@ -235,10 +235,24 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
     registerUserFunction(namespace: _*)(name)(f)
   }
 
+  def registerUserDefinedAggregationFunction[T <: CallableUserAggregationFunction](qualifiedName: String)(f: UserFunctionSignature.Builder => T): T = {
+    val parts = qualifiedName.split('.')
+    val namespace = parts.reverse.tail.reverse
+    val name = parts.last
+    registerUserAggregationFunction(namespace: _*)(name)(f)
+  }
+
   def registerUserFunction[T <: CallableUserFunction](namespace: String*)(name: String)(f: UserFunctionSignature.Builder => T): T = {
     val builder = UserFunctionSignature.functionSignature(namespace.toArray, name)
     val func = f(builder)
     kernelAPI.registerUserFunction(func)
+    func
+  }
+
+  def registerUserAggregationFunction[T <: CallableUserAggregationFunction](namespace: String*)(name: String)(f: UserFunctionSignature.Builder => T): T = {
+    val builder = UserFunctionSignature.functionSignature(namespace.toArray, name)
+    val func = f(builder)
+    kernelAPI.registerUserAggregationFunction(func)
     func
   }
 

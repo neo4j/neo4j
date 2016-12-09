@@ -20,11 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v3_2.pipes.aggregation
 
 import org.neo4j.cypher.internal.compiler.v3_2._
-import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{Expression, Variable, Literal, NumericHelper}
+import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{Expression, Literal, NumericHelper, Variable}
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 
 trait PercentileTest {
+  implicit val state = QueryStateHelper.empty
+
   def createAggregator(inner: Expression, percentile: Expression): AggregationFunction
 
   def getPercentile(percentile: Double, values: List[Any]): Any = {

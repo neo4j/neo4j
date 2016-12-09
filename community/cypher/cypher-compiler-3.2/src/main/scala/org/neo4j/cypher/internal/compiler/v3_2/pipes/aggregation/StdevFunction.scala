@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v3_2.pipes.aggregation
 
 import org.neo4j.cypher.internal.compiler.v3_2._
-import commands.expressions.{Expression, NumericHelper}
-import pipes.QueryState
+import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{Expression, NumericHelper}
+import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
 
 class StdevFunction(val value: Expression, val population:Boolean)
   extends AggregationFunction
@@ -37,7 +37,7 @@ class StdevFunction(val value: Expression, val population:Boolean)
   private var count:Int = 0
   private var total:Double = 0
 
-  def result: Any = {
+  def result(implicit state: QueryState): Any = {
     if(count < 2) {
       0.0
     } else {

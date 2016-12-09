@@ -295,7 +295,9 @@ object ExpressionConverters {
       val callArgumentCommands = e.callArguments.map(Some(_)).zipAll(e.fcnSignature.get.inputSignature.map(_.default.map(_.value)), None, None).map {
         case (given, default) => given.map(toCommandExpression).getOrElse(commandexpressions.Literal(default.get))
       }
-      commandexpressions.FunctionInvocation(e.fcnSignature.get, callArgumentCommands)
+      val signature = e.fcnSignature.get
+      if (signature.isAggregate) commandexpressions.AggregationFunctionInvocation(signature, callArgumentCommands)
+      else commandexpressions.FunctionInvocation(signature, callArgumentCommands)
     case e: ast.MapProjection => throw new InternalException("should have been rewritten away")
     case e: NestedPlanExpression => commandexpressions.NestedPlanExpression(e.plan)
     case _ =>

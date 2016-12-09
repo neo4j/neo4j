@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_2.pipes.aggregation
 
 import org.neo4j.cypher.internal.compiler.v3_2._
-import pipes.QueryState
+import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
 
 /**
  * Base class for aggregation functions. The function is stateful
@@ -36,6 +36,6 @@ abstract class AggregationFunction {
   /**
    * The aggregated result.
    */
-  def result: Any
+  def result(implicit state:QueryState): Any
 }
 

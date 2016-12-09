@@ -29,14 +29,14 @@ import org.neo4j.cypher.internal.compiler.v3_2.MinMaxOrdering.{BY_NUMBER, BY_STR
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.commands.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions
-import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{KernelPredicate, OnlyDirectionExpander, TypeAndDirectionExpander}
+import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{KernelPredicate, OnlyDirectionExpander, TypeAndDirectionExpander, UserDefinedAggregator}
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.JavaConversionSupport
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.JavaConversionSupport._
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.compiler.v3_2.spi._
 import org.neo4j.cypher.internal.frontend.v3_2.{Bound, EntityNotFoundException, FailedIndexException, SemanticDirection}
-import org.neo4j.cypher.internal.spi.v3_2.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.spi.BeansAPIRelationshipIterator
+import org.neo4j.cypher.internal.spi.v3_2.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.cypher.{InternalException, internal}
 import org.neo4j.graphalgo.impl.path.ShortestPath
@@ -51,6 +51,7 @@ import org.neo4j.kernel.api.constraints.{NodePropertyExistenceConstraint, Relati
 import org.neo4j.kernel.api.exceptions.ProcedureException
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
 import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
+import org.neo4j.kernel.api.proc.CallableUserAggregationFunction.Aggregator
 import org.neo4j.kernel.api.proc.{QualifiedName => KernelQualifiedName}
 import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.kernel.impl.locking.ResourceTypes
@@ -586,6 +587,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
   type KernelProcedureCall = (KernelQualifiedName, Array[AnyRef]) => RawIterator[Array[AnyRef], ProcedureException]
   type KernelFunctionCall = (KernelQualifiedName, Array[AnyRef]) => AnyRef
+  type KernelAggregationFunctionCall = (KernelQualifiedName) => Aggregator
 
   private def shouldElevate(allowed: Array[String]): Boolean = {
     // We have to be careful with elevation, since we cannot elevate permissions in a nested procedure call
@@ -644,11 +646,34 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     callFunction(name, args, call)
   }
 
+  override def aggregateFunction(name: QualifiedName, allowed: Array[String]) = {
+    val call: KernelAggregationFunctionCall =
+      if (shouldElevate(allowed))
+        transactionalContext.statement.procedureCallOperations.aggregationFunctionOverride(_)
+      else
+        transactionalContext.statement.procedureCallOperations.aggregationFunction(_)
+    callAggregationFunction(name, call)
+  }
+
   private def callFunction(name: QualifiedName, args: Seq[Any],
                            call: KernelFunctionCall) = {
     val kn = new KernelQualifiedName(name.namespace.asJava, name.name)
     val toArray = args.map(_.asInstanceOf[AnyRef]).toArray
     call(kn, toArray)
+  }
+
+  private def callAggregationFunction(name: QualifiedName,
+                           call: KernelAggregationFunctionCall) = {
+    val kn = new KernelQualifiedName(name.namespace.asJava, name.name)
+    val aggregator = call(kn)
+    new UserDefinedAggregator {
+      override def result = aggregator.result()
+
+      override def update(args: IndexedSeq[Any]) = {
+        val toArray = args.map(_.asInstanceOf[AnyRef]).toArray
+        aggregator.update(toArray)
+      }
+    }
   }
 
   override def isGraphKernelResultValue(v: Any): Boolean = internal.isGraphKernelResultValue(v)

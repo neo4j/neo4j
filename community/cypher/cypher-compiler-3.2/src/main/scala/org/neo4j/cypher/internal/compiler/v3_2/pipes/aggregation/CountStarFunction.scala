@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_2.pipes.aggregation
 
 import org.neo4j.cypher.internal.compiler.v3_2._
-import pipes.QueryState
+import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
 
 class CountStarFunction extends AggregationFunction {
   var count:Long = 0
@@ -29,6 +29,6 @@ class CountStarFunction extends AggregationFunction {
     count += 1
   }
 
-  def result: Long = count
+  def result(implicit state: QueryState): Long = count
 }
 

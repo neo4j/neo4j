@@ -17,21 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_2.pipes.aggregation
+package org.neo4j.cypher.internal.compiler.v3_2.commands.expressions
 
-import org.neo4j.cypher.internal.compiler.v3_2._
-import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Expression
-import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
-
-class CountFunction(value: Expression) extends AggregationFunction {
-  var count: Long = 0
-
-  def apply(data: ExecutionContext)(implicit state: QueryState) {
-    value(data) match {
-      case null =>
-      case _    => count += 1
-    }
-  }
-
-  def result(implicit state: QueryState): Long = count
+trait UserDefinedAggregator {
+  def update(args: IndexedSeq[Any]): Unit
+  def result: Any
 }

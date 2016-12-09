@@ -22,6 +22,7 @@ package org.neo4j.kernel.api;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
+import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
 import org.neo4j.kernel.api.security.SecurityContext;
 
@@ -85,4 +86,12 @@ public interface KernelAPI
      * @param function function to register
      */
     void registerUserFunction( CallableUserFunction function ) throws ProcedureException;
+
+    /**
+     * Register an aggregation function that should be available from this kernel. This is not a transactional method, the function is not
+     * durably stored, and is not propagated in a cluster.
+     *
+     * @param function function to register
+     */
+    void registerUserAggregationFunction( CallableUserAggregationFunction function ) throws ProcedureException;
 }

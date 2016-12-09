@@ -33,7 +33,6 @@ public interface CallableUserAggregationFunction
         Object result() throws ProcedureException;
     }
 
-
     abstract class BasicUserAggregationFunction implements CallableUserAggregationFunction
     {
         private final UserFunctionSignature signature;

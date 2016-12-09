@@ -117,11 +117,10 @@ public interface ProcedureCallOperations
      */
     CallableUserAggregationFunction.Aggregator aggregationFunction( QualifiedName name ) throws ProcedureException;
 
-
     /** Invoke a read-only aggregation function by name, and set the transaction's access mode to
      * {@link AccessMode.Static#READ READ} for the duration of the function execution.
      * @param name the name of the function.
      * @throws ProcedureException if there was an exception thrown during function execution.
      */
-    Object aggregationFunctionOverride( QualifiedName name ) throws ProcedureException;
+    CallableUserAggregationFunction.Aggregator aggregationFunctionOverride( QualifiedName name ) throws ProcedureException;
 }

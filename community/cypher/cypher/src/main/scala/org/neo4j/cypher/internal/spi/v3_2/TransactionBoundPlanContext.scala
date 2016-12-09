@@ -67,12 +67,16 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
   }
 
   private def evalOrNone[T](f: => Option[T]): Option[T] =
-    try { f } catch { case _: SchemaKernelException => None }
+    try {
+      f
+    } catch {
+      case _: SchemaKernelException => None
+    }
 
   private def getOnlineIndex(descriptor: IndexDescriptor): Option[IndexDescriptor] =
     tc.statement.readOperations().indexGetState(descriptor) match {
       case InternalIndexState.ONLINE => Some(descriptor)
-      case _                         => None
+      case _ => None
     }
 
   def getUniquenessConstraint(labelName: String, propertyKey: String): Option[UniquenessConstraint] = try {
@@ -100,7 +104,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     }
   }
 
-  def checkRelIndex(idxName: String)  {
+  def checkRelIndex(idxName: String) {
     if (!tc.statement.readOperations().relationshipLegacyIndexesGetAll().contains(idxName)) {
       throw new MissingIndexException(idxName)
     }
@@ -114,15 +118,19 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
   }
 
   val statistics: GraphStatistics =
-    InstrumentedGraphStatistics(TransactionBoundGraphStatistics(tc.readOperations), new MutableGraphStatisticsSnapshot())
+    InstrumentedGraphStatistics(TransactionBoundGraphStatistics(tc.readOperations),
+                                new MutableGraphStatisticsSnapshot())
 
   val txIdProvider = LastCommittedTxIdProvider(tc.graph)
 
   override def procedureSignature(name: QualifiedName) = {
     val kn = new KernelQualifiedName(name.namespace.asJava, name.name)
     val ks = tc.statement.readOperations().procedureGet(kn)
-    val input = ks.inputSignature().asScala.map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()), asOption(s.defaultValue()).map(asCypherValue))).toIndexedSeq
-    val output = if (ks.isVoid) None else Some(ks.outputSignature().asScala.map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()))).toIndexedSeq)
+    val input = ks.inputSignature().asScala
+      .map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()), asOption(s.defaultValue()).map(asCypherValue)))
+      .toIndexedSeq
+    val output = if (ks.isVoid) None else Some(
+      ks.outputSignature().asScala.map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()))).toIndexedSeq)
     val deprecationInfo = asOption(ks.deprecated())
     val mode = asCypherProcMode(ks.mode(), ks.allowed())
     val description = asOption(ks.description())
@@ -133,16 +141,18 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
   override def functionSignature(name: QualifiedName): Option[UserFunctionSignature] = {
     val kn = new KernelQualifiedName(name.namespace.asJava, name.name)
     val maybeFunction = tc.statement.readOperations().functionGet(kn)
-    if (maybeFunction.isPresent) {
-      val ks = maybeFunction.get
-      val input = ks.inputSignature().asScala.map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()), asOption(s.defaultValue()).map(asCypherValue))).toIndexedSeq
-      val output = asCypherType(ks.outputType())
-      val deprecationInfo = asOption(ks.deprecated())
-      val description = asOption(ks.description())
+    val (fcn, aggregation) = if (maybeFunction.isPresent) (Some(maybeFunction.get), false)
+    else (asOption(tc.statement.readOperations().aggregationFunctionGet(kn)), true)
+    fcn.map(f => {
+      val input = f.inputSignature().asScala
+        .map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()), asOption(s.defaultValue()).map(asCypherValue)))
+        .toIndexedSeq
+      val output = asCypherType(f.outputType())
+      val deprecationInfo = asOption(f.deprecated())
+      val description = asOption(f.description())
 
-      Some(UserFunctionSignature(name, input, output, deprecationInfo, ks.allowed(), description))
-    }
-    else None
+      UserFunctionSignature(name, input, output, deprecationInfo, f.allowed(), description, isAggregate = aggregation)
+    })
   }
 
   private def asOption[T](optional: Optional[T]): Option[T] = if (optional.isPresent) Some(optional.get()) else None
@@ -154,10 +164,11 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     case proc.Mode.DBMS => ProcedureDbmsAccess(allowed)
 
     case _ => throw new CypherExecutionException(
-      "Unable to execute procedure, because it requires an unrecognized execution mode: " + mode.name(), null )
+      "Unable to execute procedure, because it requires an unrecognized execution mode: " + mode.name(), null)
   }
 
-  private def asCypherValue(neo4jValue: Neo4jValue) = CypherValue(neo4jValue.value, asCypherType(neo4jValue.neo4jType()))
+  private def asCypherValue(neo4jValue: Neo4jValue) = CypherValue(neo4jValue.value,
+                                                                  asCypherType(neo4jValue.neo4jType()))
 
   private def asCypherType(neoType: AnyType): CypherType = neoType match {
     case Neo4jTypes.NTString => symbols.CTString

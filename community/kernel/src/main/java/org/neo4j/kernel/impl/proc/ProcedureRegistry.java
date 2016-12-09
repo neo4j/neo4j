@@ -144,7 +144,6 @@ public class ProcedureRegistry
         }
     }
 
-
     private void validateSignature( String descriptiveName, List<FieldSignature> fields, String fieldType )
             throws ProcedureException
     {

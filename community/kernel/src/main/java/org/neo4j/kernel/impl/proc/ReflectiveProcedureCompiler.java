@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.proc;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -312,6 +313,29 @@ class ReflectiveProcedureCompiler
                     "Update method '%s' in %s has type '%s' but must have return type 'void'.", update.getName(),
                     aggregator.getSimpleName(), update.getReturnType().getSimpleName() );
 
+        }
+        if ( !Modifier.isPublic(method.getModifiers()))
+        {
+            throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
+                    "Aggregation method '%s' in %s must be public.", method.getName(),
+                    definition.getSimpleName() );
+        }
+        if ( !Modifier.isPublic(aggregator.getModifiers()))
+        {
+            throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
+                    "Aggregation class '%s' must be public.", aggregator.getSimpleName() );
+        }
+        if ( !Modifier.isPublic(update.getModifiers()))
+        {
+            throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
+                    "Aggregation update method '%s' in %s must be public.", method.getName(),
+                    aggregator.getSimpleName() );
+        }
+        if ( !Modifier.isPublic(result.getModifiers()))
+        {
+            throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
+                    "Aggregation result method '%s' in %s must be public.", method.getName(),
+                    aggregator.getSimpleName() );
         }
 
         List<FieldSignature> inputSignature = inputSignatureDeterminer.signatureFor( update );

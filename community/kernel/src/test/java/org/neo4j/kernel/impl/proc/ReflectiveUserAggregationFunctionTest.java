@@ -153,7 +153,6 @@ public class ReflectiveUserAggregationFunctionTest
         f2Aggregator.update( new Object[]{"Bonnie", 1337L} );
         f2Aggregator.update( new Object[]{"Bonnie", 42L} );
 
-
         // Then
         assertThat( f1Aggregator.result(), equalTo( Arrays.asList( "Bonnie", "Clyde" ) ) );
         assertThat( ((Map) f2Aggregator.result()).get( "Bonnie" ), equalTo( 1337L ) );
@@ -238,6 +237,39 @@ public class ReflectiveUserAggregationFunctionTest
 
         // When
         compile( FunctionWithDuplicateResultAnnotations.class );
+    }
+
+    @Test
+    public void shouldNotAllowNonPublicMethod() throws Throwable
+    {
+        // Expect
+        exception.expect( ProcedureException.class );
+        exception.expectMessage( "Aggregation method 'test' in NonPublicTestMethod must be public." );
+
+        // When
+        compile( NonPublicTestMethod.class );
+    }
+
+    @Test
+    public void shouldNotAllowNonPublicUpdateMethod() throws Throwable
+    {
+        // Expect
+        exception.expect( ProcedureException.class );
+        exception.expectMessage( "Aggregation update method 'test' in InnerAggregator must be public." );
+
+        // When
+        compile( NonPublicUpdateMethod.class );
+    }
+
+    @Test
+    public void shouldNotAllowNonPublicResultMethod() throws Throwable
+    {
+        // Expect
+        exception.expect( ProcedureException.class );
+        exception.expectMessage( "Aggregation result method 'test' in InnerAggregator must be public." );
+
+        // When
+        compile( NonPublicResultMethod.class );
     }
 
     @Test
@@ -340,7 +372,6 @@ public class ReflectiveUserAggregationFunctionTest
         }
     }
 
-
     public static class SingleAggregationFunction
     {
         @UserAggregationFunction
@@ -350,12 +381,12 @@ public class ReflectiveUserAggregationFunctionTest
         }
     }
 
-    static class CoolPeopleAggregator
+    public static class CoolPeopleAggregator
     {
         private List<String> coolPeople = new ArrayList<>();
 
         @UserAggregationUpdate
-        void update( @Name( "name" ) String name )
+        public void update( @Name( "name" ) String name )
         {
             if ( name.equals( "Bonnie" ) || name.equals( "Clyde" ) )
             {
@@ -364,7 +395,7 @@ public class ReflectiveUserAggregationFunctionTest
         }
 
         @UserAggregationResult
-        List<String> result()
+        public List<String> result()
         {
             return coolPeople;
         }
@@ -505,7 +536,7 @@ public class ReflectiveUserAggregationFunctionTest
             return new LoggingAggregator( );
         }
 
-        private class LoggingAggregator
+        public  class LoggingAggregator
         {
             @UserAggregationUpdate
             public void logAround()
@@ -524,12 +555,12 @@ public class ReflectiveUserAggregationFunctionTest
         }
     }
 
-    static class MapAggregator
+    public static class MapAggregator
     {
         private Map<String,Object> map = new HashMap<>();
 
         @UserAggregationUpdate
-        void update( @Name( "name" ) String name, @Name( "value" ) long value )
+        public void update( @Name( "name" ) String name, @Name( "value" ) long value )
         {
             Long prev = (Long) map.getOrDefault( name, 0L );
             if ( value > prev )
@@ -539,7 +570,7 @@ public class ReflectiveUserAggregationFunctionTest
         }
 
         @UserAggregationResult
-        Map<String,Object> result()
+        public Map<String,Object> result()
         {
             return map;
         }
@@ -559,7 +590,6 @@ public class ReflectiveUserAggregationFunctionTest
             return new MapAggregator();
         }
     }
-
 
     public static class WierdConstructorFunction
     {
@@ -638,7 +668,6 @@ public class ReflectiveUserAggregationFunctionTest
 
         public static class ThrowingAggregator
         {
-
             @UserAggregationUpdate
             public void update()
             {
@@ -680,7 +709,6 @@ public class ReflectiveUserAggregationFunctionTest
         }
     }
 
-
     public static class FunctionWithOverriddenName
     {
         @UserAggregationFunction("org.mystuff.thisisActuallyTheName")
@@ -688,7 +716,6 @@ public class ReflectiveUserAggregationFunctionTest
         {
             return new CoolPeopleAggregator();
         }
-
     }
 
     public static class FunctionWithSingleName
@@ -719,6 +746,75 @@ public class ReflectiveUserAggregationFunctionTest
         public CoolPeopleAggregator badFunc()
         {
             return new CoolPeopleAggregator();
+        }
+    }
+
+    public static class NonPublicTestMethod
+    {
+        @UserAggregationFunction
+        InnerAggregator test()
+        {
+            return new InnerAggregator();
+        }
+
+        public static class InnerAggregator
+        {
+            @UserAggregationUpdate
+            public void update()
+            {
+            }
+
+            @UserAggregationResult
+            public String result()
+            {
+                return "Testing";
+            }
+        }
+    }
+
+    public static class NonPublicUpdateMethod
+    {
+        @UserAggregationFunction
+        public InnerAggregator test()
+        {
+            return new InnerAggregator();
+        }
+
+        public static class InnerAggregator
+        {
+            @UserAggregationUpdate
+            void update()
+            {
+            }
+
+            @UserAggregationResult
+            public String result()
+            {
+                return "Testing";
+            }
+        }
+    }
+
+    public static class NonPublicResultMethod
+    {
+        @UserAggregationFunction
+        public InnerAggregator test()
+        {
+            return new InnerAggregator();
+        }
+
+        public static class InnerAggregator
+        {
+            @UserAggregationUpdate
+            public void update()
+            {
+            }
+
+            @UserAggregationResult
+            String result()
+            {
+                return "Testing";
+            }
         }
     }
 

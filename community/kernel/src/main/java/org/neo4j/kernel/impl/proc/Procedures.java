@@ -153,6 +153,27 @@ public class Procedures extends LifecycleAdapter
     }
 
     /**
+     * Register a new aggregation function defined with annotations on a java class.
+     * @param func the function class
+     */
+    public void registerAggregationFunction( Class<?> func, boolean overrideCurrentImplementation ) throws KernelException
+    {
+        for ( CallableUserAggregationFunction function : compiler.compileAggregationFunction( func ) )
+        {
+            register( function, overrideCurrentImplementation );
+        }
+    }
+
+    /**
+     * Register a new aggregation function defined with annotations on a java class.
+     * @param func the function class
+     */
+    public void registerAggregationFunction( Class<?> func ) throws KernelException
+    {
+        registerFunction( func, false );
+    }
+
+    /**
      * Register a new function defined with annotations on a java class.
      * @param func the function class
      */
@@ -239,6 +260,11 @@ public class Procedures extends LifecycleAdapter
         }
 
         for ( CallableUserFunction function : callables.functions() )
+        {
+            register( function );
+        }
+
+        for ( CallableUserAggregationFunction function : callables.aggregationFunctions() )
         {
             register( function );
         }
