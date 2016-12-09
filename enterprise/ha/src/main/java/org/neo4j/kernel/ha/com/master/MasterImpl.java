@@ -316,7 +316,9 @@ public class MasterImpl extends LifecycleAdapter implements Master
         }
         catch ( NoSuchEntryException | ConcurrentAccessException e)
         {
-            return spi.packTransactionObligationResponse( context, new LockResult( LockStatus.NOT_LOCKED, "Unable to acquire exclusive lock: " + e.getMessage() ) );
+            return spi.packTransactionObligationResponse( context, new LockResult(
+                    LockStatus.NOT_LOCKED,
+                    "Unable to acquire exclusive lock: " + e.getMessage() ) );
         }
         try
         {
@@ -328,11 +330,15 @@ public class MasterImpl extends LifecycleAdapter implements Master
         }
         catch ( DeadlockDetectedException e )
         {
-            return spi.packTransactionObligationResponse( context, new LockResult( LockStatus.DEAD_LOCKED,"Can't acquire exclusive lock, because it would have caused a deadlock: " + e.getMessage() ) );
+            return spi.packTransactionObligationResponse( context, new LockResult(
+                    LockStatus.DEAD_LOCKED,
+                    "Can't acquire exclusive lock, because it would have caused a deadlock: " + e.getMessage() ) );
         }
         catch ( IllegalResourceException e )
         {
-            return spi.packTransactionObligationResponse( context, new LockResult( LockStatus.NOT_LOCKED ) );
+            return spi.packTransactionObligationResponse( context, new LockResult(
+                    LockStatus.NOT_LOCKED,
+                    "Attempted to lock illegal resource: " + e.getMessage() ) );
         }
         finally
         {
@@ -352,7 +358,9 @@ public class MasterImpl extends LifecycleAdapter implements Master
         }
         catch ( NoSuchEntryException | ConcurrentAccessException e)
         {
-            return spi.packTransactionObligationResponse( context, new LockResult( LockStatus.NOT_LOCKED, "Unable to acquire shared lock: " + e.getMessage() ) );
+            return spi.packTransactionObligationResponse( context, new LockResult(
+                    LockStatus.NOT_LOCKED,
+                    "Unable to acquire shared lock: " + e.getMessage() ) );
         }
         try
         {
@@ -369,7 +377,9 @@ public class MasterImpl extends LifecycleAdapter implements Master
         }
         catch ( IllegalResourceException e )
         {
-            return spi.packTransactionObligationResponse( context, new LockResult( LockStatus.NOT_LOCKED ) );
+            return spi.packTransactionObligationResponse( context, new LockResult(
+                    LockStatus.NOT_LOCKED,
+                    "Attempted to lock illegal resource: " + e.getMessage() ) );
         }
         finally
         {
@@ -388,12 +398,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
         Set<RequestContext> contexts = conversationManager.getActiveContexts();
         for ( RequestContext context : contexts.toArray( new RequestContext[contexts.size()] ) )
         {
-            Collection<RequestContext> txs = result.get( context.machineId() );
-            if ( txs == null )
-            {
-                txs = new ArrayList<>();
-                result.put( context.machineId(), txs );
-            }
+            Collection<RequestContext> txs = result.computeIfAbsent( context.machineId(), k -> new ArrayList<>() );
             txs.add( context );
         }
         return result;

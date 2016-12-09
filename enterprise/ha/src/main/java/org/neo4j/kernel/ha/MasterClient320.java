@@ -19,17 +19,23 @@
  */
 package org.neo4j.kernel.ha;
 
+import org.neo4j.com.Deserializer;
+import org.neo4j.com.ObjectSerializer;
 import org.neo4j.com.Protocol;
 import org.neo4j.com.Protocol320;
 import org.neo4j.com.ProtocolVersion;
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.com.storecopy.ResponseUnpacker;
+import org.neo4j.kernel.ha.lock.LockResult;
+import org.neo4j.kernel.ha.lock.LockStatus;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.logging.LogProvider;
 
+import static org.neo4j.com.Protocol.readString;
+import static org.neo4j.com.Protocol.writeString;
 import static org.neo4j.com.ProtocolVersion.INTERNAL_PROTOCOL_VERSION;
 
 public class MasterClient320 extends MasterClient310
@@ -46,6 +52,44 @@ public class MasterClient320 extends MasterClient310
      * Version 10 since 3.2.0, 2016-12-07
      */
     public static final ProtocolVersion PROTOCOL_VERSION = new ProtocolVersion( (byte) 10, INTERNAL_PROTOCOL_VERSION );
+
+    // From 3.2.0 and onwards, LockResult messages can have messages, or not, independently of their LockStatus.
+    public static final ObjectSerializer<LockResult> LOCK_RESULT_OBJECT_SERIALIZER = ( responseObject, result ) ->
+    {
+        result.writeByte( responseObject.getStatus().ordinal() );
+        String message = responseObject.getMessage();
+        if ( message != null )
+        {
+            writeString( result, message );
+        }
+        else
+        {
+            result.writeInt( 0 );
+        }
+    };
+
+    public static final Deserializer<LockResult> LOCK_RESULT_DESERIALIZER = ( buffer, temporaryBuffer ) ->
+    {
+        byte statusOrdinal = buffer.readByte();
+        int messageLength = buffer.readInt();
+        LockStatus status;
+        try
+        {
+            status = LockStatus.values()[statusOrdinal];
+        }
+        catch ( ArrayIndexOutOfBoundsException e )
+        {
+            throw withInvalidOrdinalMessage( buffer, statusOrdinal, e );
+        }
+        if ( messageLength > 0 )
+        {
+            return new LockResult( status, readString( buffer, messageLength ) );
+        }
+        else
+        {
+            return new LockResult( status );
+        }
+    };
 
     public MasterClient320( String destinationHostNameOrIp, int destinationPort, String originHostNameOrIp,
                             LogProvider logProvider, StoreId storeId,
@@ -64,6 +108,18 @@ public class MasterClient320 extends MasterClient310
     protected Protocol createProtocol( int chunkSize, byte applicationProtocolVersion )
     {
         return new Protocol320( chunkSize, applicationProtocolVersion, getInternalProtocolVersion() );
+    }
+
+    @Override
+    public ObjectSerializer<LockResult> createLockResultSerializer()
+    {
+        return LOCK_RESULT_OBJECT_SERIALIZER;
+    }
+
+    @Override
+    public Deserializer<LockResult> createLockResultDeserializer()
+    {
+        return LOCK_RESULT_DESERIALIZER;
     }
 
     @Override

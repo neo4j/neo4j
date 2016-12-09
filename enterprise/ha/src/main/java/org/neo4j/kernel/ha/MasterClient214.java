@@ -21,10 +21,7 @@ package org.neo4j.kernel.ha;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.PrintStream;
-import java.nio.ByteBuffer;
 
 import org.neo4j.com.Client;
 import org.neo4j.com.Deserializer;
@@ -53,7 +50,6 @@ import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
-import org.neo4j.kernel.impl.util.HexPrinter;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.lock.ResourceType;
@@ -85,52 +81,31 @@ public class MasterClient214 extends Client<Master> implements MasterClient
         }
     };
 
-    public static final Deserializer<LockResult> LOCK_RESULT_DESERIALIZER = new Deserializer<LockResult>()
+    public static final Deserializer<LockResult> LOCK_RESULT_DESERIALIZER = ( buffer, temporaryBuffer ) ->
     {
-        @Override
-        public LockResult read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws IOException
+        byte statusOrdinal = buffer.readByte();
+        LockStatus status;
+        try
         {
-            byte statusOrdinal = buffer.readByte();
-            LockStatus status;
-            try
-            {
-                status = LockStatus.values()[statusOrdinal];
-            }
-            catch ( ArrayIndexOutOfBoundsException e )
-            {
-                int maxBytesToPrint = 1024 * 40;
-                throw Exceptions.withMessage( e,
-                        format( "%s | read invalid ordinal %d. First %db of this channel buffer is:%n%s",
-                                e.getMessage(), statusOrdinal, maxBytesToPrint,
-                                beginningOfBufferAsHexString( buffer, maxBytesToPrint ) ) );
-            }
-            return status == LockStatus.DEAD_LOCKED ? new LockResult( LockStatus.DEAD_LOCKED, readString( buffer ) )
-                                       : new LockResult( status );
+            status = LockStatus.values()[statusOrdinal];
         }
-
-        private String beginningOfBufferAsHexString( ChannelBuffer buffer, int maxBytesToPrint )
+        catch ( ArrayIndexOutOfBoundsException e )
         {
-            // read buffer from pos 0 - writeIndex
-            int prevIndex = buffer.readerIndex();
-            buffer.readerIndex( 0 );
-            try
-            {
-                ByteArrayOutputStream byteArrayStream = new ByteArrayOutputStream( buffer.readableBytes() );
-                PrintStream stream = new PrintStream( byteArrayStream );
-                HexPrinter printer = new HexPrinter( stream ).withLineNumberDigits( 4 );
-                for ( int i = 0; buffer.readable() && i < maxBytesToPrint; i++ )
-                {
-                    printer.append( buffer.readByte() );
-                }
-                stream.flush();
-                return byteArrayStream.toString();
-            }
-            finally
-            {
-                buffer.readerIndex( prevIndex );
-            }
+            throw withInvalidOrdinalMessage( buffer, statusOrdinal, e );
         }
+        return status == LockStatus.DEAD_LOCKED ? new LockResult( LockStatus.DEAD_LOCKED, readString( buffer ) )
+                                   : new LockResult( status );
     };
+
+    protected static ArrayIndexOutOfBoundsException withInvalidOrdinalMessage(
+            ChannelBuffer buffer, byte statusOrdinal, ArrayIndexOutOfBoundsException e )
+    {
+        int maxBytesToPrint = 1024 * 40;
+        return Exceptions.withMessage( e,
+                format( "%s | read invalid ordinal %d. First %db of this channel buffer is:%n%s",
+                        e.getMessage(), statusOrdinal, maxBytesToPrint,
+                        beginningOfBufferAsHexString( buffer, maxBytesToPrint ) ) );
+    }
 
     private final long lockReadTimeoutMillis;
     private final HaRequestTypes requestTypes;

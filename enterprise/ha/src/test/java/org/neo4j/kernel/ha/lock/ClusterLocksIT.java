@@ -22,7 +22,10 @@ package org.neo4j.kernel.ha.lock;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
 
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -32,9 +35,11 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.test.ha.ClusterRule;
@@ -50,15 +55,21 @@ public class ClusterLocksIT
 {
     private static final long TIMEOUT_MILLIS = 120_000;
 
-    @Rule
+    public final ExpectedException expectedException = ExpectedException.none();
     public final ClusterRule clusterRule = new ClusterRule( getClass() );
+
+    @Rule
+    public final RuleChain rules = RuleChain.outerRule( expectedException ).around( clusterRule );
 
     private ClusterManager.ManagedCluster cluster;
 
     @Before
     public void setUp() throws Exception
     {
-        cluster = clusterRule.withSharedSetting( HaSettings.tx_push_factor, "2" ).startCluster();
+        cluster = clusterRule
+                .withSharedSetting( HaSettings.tx_push_factor, "2" )
+                .withInstanceSetting( GraphDatabaseFacadeFactory.Configuration.lock_manager, (i) -> "community" )
+                .startCluster();
     }
 
     private Label testLabel = Label.label( "testLabel" );
@@ -79,6 +90,42 @@ public class ClusterLocksIT
         HighlyAvailableGraphDatabase clusterMaster = cluster.getMaster();
         // now it should be possible to take exclusive lock on the same node
         takeExclusiveLockOnSameNodeAfterSwitch( testLabel, master, clusterMaster );
+    }
+
+    @Test
+    public void locksFailingOnSlavesMustHaveDescriptiveMessage() throws Throwable
+    {
+        HighlyAvailableGraphDatabase master = cluster.getMaster();
+        Node masterA = createNodeOnMaster( testLabel, master );
+        Node masterB = createNodeOnMaster( testLabel, master );
+
+        HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
+
+        try ( Transaction transaction = slave.beginTx() )
+        {
+            Node slaveA = slave.getNodeById( masterA.getId() );
+            Node slaveB = slave.getNodeById( masterB.getId() );
+            CountDownLatch latch = new CountDownLatch( 1 );
+
+            transaction.acquireWriteLock( slaveB );
+
+            Thread masterTx = new Thread( () ->
+            {
+                try ( Transaction tx = master.beginTx() )
+                {
+                    tx.acquireWriteLock( masterA );
+                    latch.countDown();
+                    tx.acquireWriteLock( masterB );
+                }
+            });
+            masterTx.setDaemon( true );
+            masterTx.start();
+            latch.await();
+
+            // This should deadlock
+            expectedException.expect( DeadlockDetectedException.class );
+            transaction.acquireWriteLock( slaveA );
+        }
     }
 
     @Test
@@ -121,19 +168,27 @@ public class ClusterLocksIT
     private ClusterManager.RepairKit takeExclusiveLockAndKillSlave( Label testLabel, HighlyAvailableGraphDatabase db )
             throws EntityNotFoundException
     {
-        Transaction transaction = db.beginTx();
-        Node node = getNode( db, testLabel );
-        transaction.acquireWriteLock( node );
+        takeExclusiveLock( testLabel, db );
         return cluster.shutdown( db );
     }
 
-    private void createNodeOnMaster( Label testLabel, HighlyAvailableGraphDatabase master )
+    private Transaction takeExclusiveLock( Label testLabel, HighlyAvailableGraphDatabase db ) throws EntityNotFoundException
     {
+        Transaction transaction = db.beginTx();
+        Node node = getNode( db, testLabel );
+        transaction.acquireWriteLock( node );
+        return transaction;
+    }
+
+    private Node createNodeOnMaster( Label testLabel, HighlyAvailableGraphDatabase master )
+    {
+        Node node;
         try ( Transaction transaction = master.beginTx() )
         {
-            master.createNode( testLabel );
+            node = master.createNode( testLabel );
             transaction.success();
         }
+        return node;
     }
 
     private Node getNode( HighlyAvailableGraphDatabase db, Label testLabel ) throws EntityNotFoundException
