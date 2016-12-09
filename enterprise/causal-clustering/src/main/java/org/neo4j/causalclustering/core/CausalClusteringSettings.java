@@ -79,7 +79,7 @@ public class CausalClusteringSettings
     public static final Setting<ListenSocketAddress> transaction_listen_address =
             listenAddress( "causal_clustering.transaction_listen_address", 6000 );
 
-    @Description("Hostname/IP address and port for the transaction shipping server to listen on.")
+    @Description("Advertised hostname/IP address and port for the transaction shipping server.")
     public static final Setting<AdvertisedSocketAddress> transaction_advertised_address =
             advertisedAddress( "causal_clustering.transaction_advertised_address", transaction_listen_address );
 
@@ -87,7 +87,7 @@ public class CausalClusteringSettings
     public static final Setting<ListenSocketAddress> raft_listen_address =
             listenAddress( "causal_clustering.raft_listen_address", 7000 );
 
-    @Description("Hostname/IP address and port for the RAFT server to listen on.")
+    @Description("Advertised hostname/IP address and port for the RAFT server.")
     public static final Setting<AdvertisedSocketAddress> raft_advertised_address =
             advertisedAddress( "causal_clustering.raft_advertised_address", raft_listen_address );
 

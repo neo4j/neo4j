@@ -309,7 +309,8 @@ public class TestNetwork<T>
         {
             if ( !disconnected )
             {
-                Q.add( message );
+                // do not throw is the queue is full, emulate the drop of messages instead
+                Q.offer( message );
             }
         }
 
