@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.neo4j.graphdb.ResourceIterator;
@@ -56,10 +57,11 @@ import static java.util.stream.Collectors.toList;
  */
 public abstract class AbstractLuceneIndex
 {
-
     protected final PartitionedIndexStorage indexStorage;
     private final IndexPartitionFactory partitionFactory;
-    private List<AbstractIndexPartition> partitions = new CopyOnWriteArrayList<>();
+    // Note that we rely on the thread-safe internal snapshot feature of the CopyOnWriteArrayList
+    // for the thread-safety of this and derived classes.
+    private CopyOnWriteArrayList<AbstractIndexPartition> partitions = new CopyOnWriteArrayList<>();
     private volatile boolean open;
 
     public AbstractLuceneIndex( PartitionedIndexStorage indexStorage, IndexPartitionFactory partitionFactory )
@@ -92,11 +94,13 @@ public abstract class AbstractLuceneIndex
      */
     public void open() throws IOException
     {
-        Map<File,Directory> indexDirectories = indexStorage.openIndexDirectories();
-        for ( Map.Entry<File,Directory> indexDirectory : indexDirectories.entrySet() )
+        Set<Map.Entry<File,Directory>> indexDirectories = indexStorage.openIndexDirectories().entrySet();
+        List<AbstractIndexPartition> list = new ArrayList<>( indexDirectories.size() );
+        for ( Map.Entry<File,Directory> entry : indexDirectories )
         {
-            partitions.add( partitionFactory.createPartition( indexDirectory.getKey(), indexDirectory.getValue() ) );
+            list.add( partitionFactory.createPartition( entry.getKey(), entry.getValue() ) );
         }
+        partitions.addAll( list );
         open = true;
     }
 
@@ -200,9 +204,9 @@ public abstract class AbstractLuceneIndex
 
     public void close() throws IOException
     {
+        open = false;
         IOUtils.closeAll( partitions );
         partitions.clear();
-        open = false;
     }
 
     /**
