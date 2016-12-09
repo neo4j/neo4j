@@ -36,8 +36,6 @@ public class WritableAbstractDatabaseIndex<T extends AbstractLuceneIndex> implem
 {
     // lock used to guard commits and close of lucene indexes from separate threads
     protected final ReentrantLock commitCloseLock = new ReentrantLock();
-    // lock guard concurrent creation of new partitions
-    protected final ReentrantLock partitionsLock = new ReentrantLock();
 
     protected T luceneIndex;
 
@@ -157,15 +155,7 @@ public class WritableAbstractDatabaseIndex<T extends AbstractLuceneIndex> implem
     @Override
     public LuceneAllDocumentsReader allDocumentsReader()
     {
-        partitionsLock.lock();
-        try
-        {
-            return luceneIndex.allDocumentsReader();
-        }
-        finally
-        {
-            partitionsLock.unlock();
-        }
+        return luceneIndex.allDocumentsReader();
     }
 
     /**
@@ -191,34 +181,18 @@ public class WritableAbstractDatabaseIndex<T extends AbstractLuceneIndex> implem
     @Override
     public void maybeRefreshBlocking() throws IOException
     {
-        partitionsLock.lock();
-        try
-        {
-            luceneIndex.maybeRefreshBlocking();
-        }
-        finally
-        {
-            partitionsLock.unlock();
-        }
+        luceneIndex.maybeRefreshBlocking();
     }
 
     /**
-     * Add new partition to the index.
+     * Add new partition to the index. Must only be called by a single thread at a time.
      *
      * @return newly created partition
      * @throws IOException
      */
     public AbstractIndexPartition addNewPartition() throws IOException
     {
-        partitionsLock.lock();
-        try
-        {
-            return luceneIndex.addNewPartition();
-        }
-        finally
-        {
-            partitionsLock.unlock();
-        }
+        return luceneIndex.addNewPartition();
     }
 
     /**
