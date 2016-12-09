@@ -130,6 +130,8 @@ class GenSafePointerPair
     static final long POINTER_MASK         = 0x0000FFFF_FFFFFFFFL;
     static final long GEN_OFFSET_MASK      = 0x0FFF0000_00000000L;
     static final long GEN_OFFSET_TYPE_MASK = FLAG_ABS_OFFSET | FLAG_LOGICAL_POS;
+    static final long HEADER_MASK          = ~POINTER_MASK;
+    static final long MAX_GEN_OFFSET_MASK  = 0xFFF;
 
     /**
      * Reads a GSPP, returning the read pointer or a failure. Check success/failure using {@link #isSuccess(long)}
@@ -208,6 +210,11 @@ class GenSafePointerPair
         boolean isLogicalPos = logicalPos != NO_LOGICAL_POS;
         long offsetType = isLogicalPos ? FLAG_LOGICAL_POS : FLAG_ABS_OFFSET;
         long genOffset = isLogicalPos ? logicalPos : gsppOffset;
+        if ( (genOffset & ~MAX_GEN_OFFSET_MASK) != 0 )
+        {
+            throw new IllegalArgumentException( "Illegal genOffset:" + genOffset + ", it would be too large, max is " +
+                    MAX_GEN_OFFSET_MASK );
+        }
         return FLAG_SUCCESS | FLAG_READ | slot | offsetType | genOffset << SHIFT_GEN_OFFSET | pointer;
     }
 
@@ -526,6 +533,11 @@ class GenSafePointerPair
 
     static int genOffset( long readResult )
     {
+        if ( (readResult & HEADER_MASK) == 0 )
+        {
+            throw new IllegalArgumentException( "Expected a header in read result, but read result was " + readResult );
+        }
+
         return Math.toIntExact( (readResult & GEN_OFFSET_MASK) >>> SHIFT_GEN_OFFSET );
     }
 }

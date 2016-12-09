@@ -200,6 +200,20 @@ class TreeNode<KEY,VALUE>
         GenSafePointerPair.assertSuccess( result );
     }
 
+    long pointerGen( PageCursor cursor, long readResult )
+    {
+        if ( !GenSafePointerPair.isRead( readResult ) )
+        {
+            throw new IllegalArgumentException( "Expected read result, but got " + readResult );
+        }
+        int offset = GenSafePointerPair.genOffset( readResult );
+        int gsppOffset = GenSafePointerPair.isLogicalPos( readResult ) ? childOffset( offset ) : offset;
+        int gspOffset = GenSafePointerPair.resultIsFromSlotA( readResult ) ?
+                gsppOffset : gsppOffset + GenSafePointer.SIZE;
+        cursor.setOffset( gspOffset );
+        return GenSafePointer.readGeneration( cursor );
+    }
+
     // BODY METHODS
 
     KEY keyAt( PageCursor cursor, KEY into, int pos )
@@ -283,7 +297,7 @@ class TreeNode<KEY,VALUE>
     long childAt( PageCursor cursor, int pos, long stableGeneration, long unstableGeneration )
     {
         cursor.setOffset( childOffset( pos ) );
-        return read( cursor, stableGeneration, unstableGeneration, NO_LOGICAL_POS );
+        return read( cursor, stableGeneration, unstableGeneration, pos );
     }
 
     void insertChildAt( PageCursor cursor, long child, int pos, int keyCount, byte[] tmp,
@@ -460,5 +474,12 @@ class TreeNode<KEY,VALUE>
     void writeChildren( PageCursor cursor, byte[] source, int sourcePos, int targetPos, int count )
     {
         writeAll( cursor, source, sourcePos, targetPos, count, childOffset( 0 ), childSize() );
+    }
+
+    @Override
+    public String toString()
+    {
+        return "TreeNode[internalMax:" + internalMaxKeyCount +
+                ", leafMax:" + leafMaxKeyCount + ", keySize:" + keySize + ", valueSize:" + valueSize + "]";
     }
 }
