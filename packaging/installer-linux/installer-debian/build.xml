@@ -1,8 +1,6 @@
 <project default="debian">
-    <macrodef name="package">
-
+    <macrodef name="common-files">
         <attribute name="name"/>
-
         <sequential>
             <!-- Unzip the standalone distributions -->
             <local name="source.distribution" />
@@ -35,8 +33,6 @@
             <copy file="${project.build.sourceDirectory}/../resources/common/neo4j-script"
                   toFile="${project.build.outputDirectory}/@{name}/server/scripts/neo4j-admin"/>
             <copy file="${project.build.sourceDirectory}/../resources/common/neo4j-script"
-                  toFile="${project.build.outputDirectory}/@{name}/server/scripts/neo4j-backup"/>
-            <copy file="${project.build.sourceDirectory}/../resources/common/neo4j-script"
                   toFile="${project.build.outputDirectory}/@{name}/server/scripts/neo4j-import"/>
             <copy file="${project.build.sourceDirectory}/../resources/common/neo4j-script"
                   toFile="${project.build.outputDirectory}/@{name}/server/scripts/neo4j-shell"/>
@@ -62,6 +58,24 @@
                 <fileset file="${project.build.sourceDirectory}/../resources/common/directories.conf" />
             </concat>
 
+            <!-- Copy common manpages into build folder -->
+            <copy toDir="${project.build.outputDirectory}/@{name}/manpages">
+                <fileset dir="${project.build.outputDirectory}/common/manpages" includes="**"/>
+            </copy>
+        </sequential>
+    </macrodef>
+
+    <macrodef name="enterprise-files">
+        <attribute name="name"/>
+        <sequential>
+            <copy file="${project.build.sourceDirectory}/../resources/common/neo4j-script"
+                  toFile="${project.build.outputDirectory}/@{name}/server/scripts/neo4j-backup"/>
+        </sequential>
+    </macrodef>
+
+    <macrodef name="package">
+        <attribute name="name"/>
+        <sequential>
             <chmod perm="700">
                 <fileset dir="${project.build.outputDirectory}/@{name}">
                     <include name="**/server/bin/neo4j"/>
@@ -80,11 +94,6 @@
                 </fileset>
             </chmod>
 
-            <!-- Copy manpages into build folder -->
-            <copy toDir="${project.build.outputDirectory}/@{name}/manpages">
-                <fileset dir="${project.build.outputDirectory}/common/manpages" includes="**"/>
-            </copy>
-
             <!-- Run installer projects -->
             <exec executable="debuild"
                   dir="${project.build.outputDirectory}/@{name}"
@@ -93,14 +102,21 @@
                 <arg line="-uc"/>
                 <arg line="-B"/>
             </exec>
-
         </sequential>
     </macrodef>
 
-    <target name="generate">
+    <target name="generate-community">
+        <common-files name="community"/>
         <package name="community"/>
+    </target>
+
+    <target name="generate-enterprise">
+        <common-files name="enterprise"/>
+        <enterprise-files name="enterprise"/>
         <package name="enterprise"/>
     </target>
+
+    <target name="generate" depends="generate-community,generate-enterprise" />
 
     <target name="publish_to_target" depends="generate">
         <!-- Copy installers from classes/ to target/ -->
