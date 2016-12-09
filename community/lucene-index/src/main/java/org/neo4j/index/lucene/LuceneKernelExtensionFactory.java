@@ -23,6 +23,7 @@ import org.neo4j.index.impl.lucene.legacy.LuceneIndexImplementation;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
+import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.spi.legacyindex.IndexProviders;
@@ -36,6 +37,8 @@ public class LuceneKernelExtensionFactory extends KernelExtensionFactory<LuceneK
         IndexProviders getIndexProviders();
 
         IndexConfigStore getIndexStore();
+
+        LogService getLogService();
     }
 
     public LuceneKernelExtensionFactory()
@@ -51,6 +54,7 @@ public class LuceneKernelExtensionFactory extends KernelExtensionFactory<LuceneK
                 dependencies.getConfig(),
                 dependencies::getIndexStore,
                 context.fileSystem(),
-                dependencies.getIndexProviders() );
+                dependencies.getIndexProviders(),
+                dependencies.getLogService().getInternalLogProvider());
     }
 }

@@ -56,7 +56,7 @@ import static org.neo4j.kernel.impl.store.format.highlimit.Reference.toRelative;
  * 4B   end node chain next relationship
  * => 28B
  */
-class RelationshipRecordFormat extends BaseHighLimitRecordFormat<RelationshipRecord>
+public class RelationshipRecordFormat extends BaseHighLimitRecordFormat<RelationshipRecord>
 {
     static final int RECORD_SIZE = 32;
     static final int FIXED_FORMAT_RECORD_SIZE = HEADER_BYTE +

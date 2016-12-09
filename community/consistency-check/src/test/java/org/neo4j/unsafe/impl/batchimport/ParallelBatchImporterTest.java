@@ -57,7 +57,7 @@ import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.NullLogService;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0_7;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.RandomRule;
 import org.neo4j.test.Randoms;
@@ -77,7 +77,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -237,7 +236,7 @@ public class ParallelBatchImporterTest
 
     protected String getFormatName()
     {
-        return StandardV3_0.NAME;
+        return StandardV3_0_7.NAME;
     }
 
     public static abstract class InputIdGenerator

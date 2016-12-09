@@ -57,7 +57,7 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0_7;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
@@ -103,7 +103,7 @@ public class StoreMigratorFrom20IT
     public static List<Object[]> recordFormats()
     {
         return Arrays.asList(
-                new Object[]{StandardV3_0.NAME, StandardV3_0.RECORD_FORMATS},
+                new Object[]{StandardV3_0_7.NAME, StandardV3_0_7.RECORD_FORMATS},
                 new Object[]{HighLimit.NAME, HighLimit.RECORD_FORMATS} );
     }
 

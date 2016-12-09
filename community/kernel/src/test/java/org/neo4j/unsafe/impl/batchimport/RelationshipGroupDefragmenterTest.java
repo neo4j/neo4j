@@ -39,7 +39,7 @@ import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.format.ForcedSecondaryUnitRecordFormats;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0_7;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
@@ -48,11 +48,9 @@ import org.neo4j.test.TargetDirectory;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores;
 
+import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-
-import static java.util.Arrays.asList;
-
 import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 
@@ -65,8 +63,8 @@ public class RelationshipGroupDefragmenterTest
     public static Collection<Object[]> formats()
     {
         return asList(
-                new Object[] {StandardV3_0.RECORD_FORMATS, 1},
-                new Object[] {new ForcedSecondaryUnitRecordFormats( StandardV3_0.RECORD_FORMATS ), 2} );
+                new Object[] {StandardV3_0_7.RECORD_FORMATS, 1},
+                new Object[] {new ForcedSecondaryUnitRecordFormats( StandardV3_0_7.RECORD_FORMATS ), 2} );
     }
 
     @Rule

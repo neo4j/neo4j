@@ -41,7 +41,7 @@ import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0_7;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UnexpectedUpgradingStoreFormatException;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TargetDirectory;
@@ -114,7 +114,7 @@ public class RecordFormatsMigrationIT
 
     private GraphDatabaseService startStandardFormatDb()
     {
-        return startDb( StandardV3_0.NAME );
+        return startDb( StandardV3_0_7.NAME );
     }
 
     private GraphDatabaseService startHighLimitFormatDb()
@@ -132,7 +132,7 @@ public class RecordFormatsMigrationIT
 
     private void assertStandardStore() throws IOException
     {
-        assertStoreFormat( StandardV3_0.RECORD_FORMATS );
+        assertStoreFormat( StandardV3_0_7.RECORD_FORMATS );
     }
 
     private void assertHighLimitStore() throws IOException

@@ -62,7 +62,7 @@ public class HighLimitV3_0_0 extends BaseRecordFormats
 
     public HighLimitV3_0_0()
     {
-        super( STORE_VERSION, 7, Capability.DENSE_NODES, Capability.SCHEMA, Capability.LUCENE_5 );
+        super( STORE_VERSION, 8, Capability.DENSE_NODES, Capability.SCHEMA, Capability.LUCENE_5 );
     }
 
     @Override

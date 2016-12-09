@@ -50,7 +50,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
  * 4B   owning node
  * => 24B
  */
-class RelationshipGroupRecordFormat extends BaseHighLimitRecordFormat<RelationshipGroupRecord>
+public class RelationshipGroupRecordFormat extends BaseHighLimitRecordFormat<RelationshipGroupRecord>
 {
     static final int RECORD_SIZE = 32;
     static final int FIXED_FORMAT_RECORD_SIZE = HEADER_BYTE +

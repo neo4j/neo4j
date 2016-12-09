@@ -1,2 +1,3 @@
 org.neo4j.kernel.impl.store.format.highlimit.HighLimitFactory
 org.neo4j.kernel.impl.store.format.highlimit.v300.HighLimitFactoryV3_0_0
+org.neo4j.kernel.impl.store.format.highlimit.v306.HighLimitFactoryV3_0_6

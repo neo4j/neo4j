@@ -33,10 +33,12 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
+import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.spi.legacyindex.IndexCommandFactory;
 import org.neo4j.kernel.spi.legacyindex.IndexImplementation;
 import org.neo4j.kernel.spi.legacyindex.LegacyIndexProviderTransaction;
+import org.neo4j.logging.LogProvider;
 
 public class LuceneIndexImplementation extends LifecycleAdapter implements IndexImplementation
 {
@@ -60,14 +62,16 @@ public class LuceneIndexImplementation extends LifecycleAdapter implements Index
     private final Config config;
     private final Supplier<IndexConfigStore> indexStore;
     private final FileSystemAbstraction fileSystemAbstraction;
+    private final LogProvider logProvider;
 
     public LuceneIndexImplementation( File storeDir, Config config, Supplier<IndexConfigStore> indexStore,
-            FileSystemAbstraction fileSystemAbstraction )
+            FileSystemAbstraction fileSystemAbstraction, LogProvider logProvider )
     {
         this.storeDir = storeDir;
         this.config = config;
         this.indexStore = indexStore;
         this.fileSystemAbstraction = fileSystemAbstraction;
+        this.logProvider = logProvider;
     }
 
     @Override
@@ -94,6 +98,12 @@ public class LuceneIndexImplementation extends LifecycleAdapter implements Index
     {
         this.dataSource.shutdown();
         this.dataSource = null;
+    }
+
+    @Override
+    public StoreMigrationParticipant getStoreMigrator()
+    {
+        return new LuceneLegacyIndexMigrator( config, fileSystemAbstraction, logProvider );
     }
 
     @Override

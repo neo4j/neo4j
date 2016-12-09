@@ -42,7 +42,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0_7;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
@@ -66,7 +66,7 @@ public class BatchInsertEnterpriseTest
     @Parameters( name = "{0}" )
     public static List<String> recordFormats()
     {
-        return Arrays.asList( StandardV3_0.NAME, HighLimit.NAME );
+        return Arrays.asList( StandardV3_0_7.NAME, HighLimit.NAME );
     }
 
     @Test

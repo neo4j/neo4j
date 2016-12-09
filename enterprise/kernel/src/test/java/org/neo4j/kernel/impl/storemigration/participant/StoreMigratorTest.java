@@ -86,7 +86,7 @@ public class StoreMigratorTest
             File migrationDir = new File( storeDir, "migration" );
             fs.mkdirs( migrationDir );
             migrator.migrate( storeDir, migrationDir, monitor, fromStoreVersion,
-                    StoreVersion.HIGH_LIMIT_V3_0_6.versionString() );
+                    StoreVersion.HIGH_LIMIT_V3_0_7.versionString() );
 
             // THEN
             verifyNoMoreInteractions( monitor );

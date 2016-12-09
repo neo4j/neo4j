@@ -62,7 +62,7 @@ import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0_7;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -146,6 +146,20 @@ public class StoreUpgradeIntegrationTest
                     selectivities( 1.0, 1.0, 1.0 ),
                     indexCounts( counts( 0, 38, 38, 38 ), counts( 0, 1, 1, 1 ), counts( 0, 133, 133, 133 ) )
             )} );
+    private static final List<Store[]> STORES30 = Arrays.asList(
+            new Store[]{new Store( "0.A.7-empty.zip",
+                    0 /* node count */,
+                    1 /* last txId */,
+                    selectivities(),
+                    indexCounts()
+            )},
+            new Store[]{new Store( "0.A.7-data.zip",
+                    174 /* node count */,
+                    30 /* last txId */,
+                    selectivities( 1.0, 1.0, 1.0 ),
+                    indexCounts( counts( 0, 38, 38, 38 ), counts( 0, 1, 1, 1 ), counts( 0, 133, 133, 133 ) )
+            )} );
+
     private static final List<Store[]> STORES300 = Arrays.asList(
             new Store[]{new Store( "E.H.0-empty.zip",
                     0 /* node count */,
@@ -171,7 +185,7 @@ public class StoreUpgradeIntegrationTest
         @Parameterized.Parameters( name = "{0}" )
         public static Collection<Store[]> stores()
         {
-            return Iterables.asCollection( Iterables.concat( STORES20, STORES21, STORES22, STORES23, STORES300 ) );
+            return Iterables.asCollection( Iterables.concat( STORES20, STORES21, STORES22, STORES23, STORES30, STORES300 ) );
         }
 
         @Rule
@@ -346,7 +360,7 @@ public class StoreUpgradeIntegrationTest
         @Parameterized.Parameters( name = "{0}" )
         public static Collection<Store[]> stores()
         {
-            return Iterables.asCollection( Iterables.concat( STORES21, STORES22, STORES23, STORES300 ) );
+            return Iterables.asCollection( Iterables.concat( STORES21, STORES22, STORES23, STORES30, STORES300 ) );
         }
 
         @Rule
@@ -396,7 +410,7 @@ public class StoreUpgradeIntegrationTest
         private Store( String resourceName, long expectedNodeCount, long lastTxId,
                 double[] indexSelectivity, long[][] indexCounts )
         {
-            this( resourceName, expectedNodeCount, lastTxId, indexSelectivity, indexCounts, StandardV3_0.NAME );
+            this( resourceName, expectedNodeCount, lastTxId, indexSelectivity, indexCounts, StandardV3_0_7.NAME );
         }
 
         private Store( String resourceName, long expectedNodeCount, long lastTxId,

@@ -24,8 +24,8 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.kernel.impl.api.CommandVisitor;
 import org.neo4j.kernel.impl.api.TransactionApplier;
+import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 /**
@@ -107,4 +107,14 @@ public interface IndexImplementation extends Lifecycle
      */
     @Override
     void shutdown() throws Throwable;
+
+    /**
+     * Provide store migrator for particular index implementation that participate in store migration and
+     * should be able to perform cross version migration of index implementation
+     * @return index implementation store migration
+     */
+    default StoreMigrationParticipant getStoreMigrator()
+    {
+        return StoreMigrationParticipant.NOT_PARTICIPATING;
+    }
 }

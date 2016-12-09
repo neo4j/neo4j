@@ -17,13 +17,19 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.format.highlimit;
+package org.neo4j.kernel.impl.store.format.highlimit.v306;
 
 import org.neo4j.kernel.impl.store.format.BaseRecordFormats;
 import org.neo4j.kernel.impl.store.format.Capability;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.StoreVersion;
+import org.neo4j.kernel.impl.store.format.highlimit.BaseHighLimitRecordFormat;
+import org.neo4j.kernel.impl.store.format.highlimit.DynamicRecordFormat;
+import org.neo4j.kernel.impl.store.format.highlimit.NodeRecordFormat;
+import org.neo4j.kernel.impl.store.format.highlimit.PropertyRecordFormat;
+import org.neo4j.kernel.impl.store.format.highlimit.RelationshipGroupRecordFormat;
+import org.neo4j.kernel.impl.store.format.highlimit.RelationshipRecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.LabelTokenRecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.PropertyKeyTokenRecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.RelationshipTypeTokenRecordFormat;
@@ -41,20 +47,20 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
  *
  * @see BaseHighLimitRecordFormat
  */
-public class HighLimit extends BaseRecordFormats
+public class HighLimitV3_0_6 extends BaseRecordFormats
 {
     /**
      * Default maximum number of bits that can be used to represent id
      */
     static final int DEFAULT_MAXIMUM_BITS_PER_ID = 50;
 
-    public static final String STORE_VERSION = StoreVersion.HIGH_LIMIT_V3_0_7.versionString();
-    public static final RecordFormats RECORD_FORMATS = new HighLimit();
-    public static final String NAME = "high_limit";
+    public static final String STORE_VERSION = StoreVersion.HIGH_LIMIT_V3_0_6.versionString();
+    public static final RecordFormats RECORD_FORMATS = new HighLimitV3_0_6();
+    public static final String NAME = "high_limitV3_0_6";
 
-    public HighLimit()
+    public HighLimitV3_0_6()
     {
-        super( STORE_VERSION, 10, Capability.DENSE_NODES, Capability.SCHEMA, Capability.LUCENE_5 );
+        super( STORE_VERSION, 9, Capability.DENSE_NODES, Capability.SCHEMA, Capability.LUCENE_5 );
     }
 
     @Override

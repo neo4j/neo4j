@@ -33,7 +33,7 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0_7;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -44,7 +44,6 @@ import org.neo4j.test.PageCacheRule;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
@@ -58,7 +57,7 @@ public class AbstractDynamicStoreTest
     public final PageCacheRule pageCacheRule = new PageCacheRule();
 
     private final File fileName = new File( "store" );
-    private final RecordFormats formats = StandardV3_0.RECORD_FORMATS;
+    private final RecordFormats formats = StandardV3_0_7.RECORD_FORMATS;
     private PageCache pageCache;
     private FileSystemAbstraction fs;
 

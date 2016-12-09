@@ -29,11 +29,13 @@ import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.StoreVersion;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.store.format.highlimit.v300.HighLimitV3_0_0;
+import org.neo4j.kernel.impl.store.format.highlimit.v306.HighLimitV3_0_6;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_0;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_1;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_2;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0_7;
 
 import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.assertEquals;
@@ -49,7 +51,9 @@ public class RecordFormatsGenerationTest
                 StandardV2_2.RECORD_FORMATS.generation(),
                 StandardV2_3.RECORD_FORMATS.generation(),
                 StandardV3_0.RECORD_FORMATS.generation(),
+                StandardV3_0_7.RECORD_FORMATS.generation(),
                 HighLimitV3_0_0.RECORD_FORMATS.generation(),
+                HighLimitV3_0_6.RECORD_FORMATS.generation(),
                 HighLimit.RECORD_FORMATS.generation()
         );
 
