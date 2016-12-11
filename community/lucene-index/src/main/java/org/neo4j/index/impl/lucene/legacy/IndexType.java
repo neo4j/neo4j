@@ -147,7 +147,7 @@ public abstract class IndexType
         {
             // TODO We should honor ValueContext instead of doing value.toString() here.
             // if changing it, also change #get to honor ValueContext.
-            document.add( new StringField( exactKey( key ), value.toString(), Store.YES ) );
+            document.add( new TextField( exactKey( key ), value.toString(), Store.YES ) ); // modified by ZHANG Hua, 2016-9-30
             document.add( instantiateField( key, value, TextField.TYPE_STORED ) );
             document.add( instantiateSortField( key, value ) );
         }
@@ -365,6 +365,9 @@ public abstract class IndexType
             {
                 field = new SortedNumericDocValuesField( key, number.longValue() );
             }
+        }
+        else if (value.toString().length() > 10240) { // 10240 < 10922=32766/3, modified by ZHANG Hua at 2016-9-30         
+            field = new BinaryDocValuesField( key, new BytesRef( value.toString() ) );        
         }
         else
         {
