@@ -20,7 +20,7 @@
 package org.neo4j.index.gbptree;
 
 /**
- * Logic for composing and decomposing stable/unstable to/from a single {@code long}.
+ * Logic for composing and decomposing stable/unstable generation number (unsigned int) to/from a single {@code long}.
  *
  * <pre>
  * long: [S,S,S,S,U,U,U,U]
