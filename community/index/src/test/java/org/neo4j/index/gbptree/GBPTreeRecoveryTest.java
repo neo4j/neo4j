@@ -20,7 +20,6 @@
 package org.neo4j.index.gbptree;
 
 import org.apache.commons.lang3.mutable.MutableLong;
-import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -33,23 +32,25 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import org.neo4j.cursor.RawCursor;
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.index.Hit;
 import org.neo4j.index.Index;
 import org.neo4j.index.IndexWriter;
 import org.neo4j.index.ValueMerger;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import static org.neo4j.index.gbptree.GBPTree.NO_MONITOR;
+import static org.neo4j.index.gbptree.ThrowingRunnable.throwing;
 import static org.neo4j.io.pagecache.IOLimiter.unlimited;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 
@@ -59,39 +60,38 @@ public class GBPTreeRecoveryTest
 
     @Rule
     public final RandomRule random = new RandomRule();
-    private final File directory = new File( "/somewhere" );
-    private final File file = new File( directory, "index" );
-    private EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
+    @Rule
+    public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    @Rule
+    public final TestDirectory directory = TestDirectory.testDirectory( getClass(), fs.get() );
     private final MutableLong key = new MutableLong();
     private final MutableLong value = new MutableLong();
-
-    @After
-    public void tearDown() throws IOException
-    {
-        fs.close();
-    }
 
     @Test
     public void shouldRecoverFromCrashBeforeFirstCheckpoint() throws Exception
     {
         // GIVEN
         // a tree with only small amount of data that has not yet seen checkpoint from outside
-        EphemeralFileSystemAbstraction crashedFs;
-        try ( PageCache pageCache = createPageCache( fs );
-              GBPTree<MutableLong,MutableLong> index = createIndex( pageCache, file );
-              IndexWriter<MutableLong,MutableLong> writer = index.writer( IndexWriter.Options.DEFAULTS ) )
+        File file = directory.file( "index" );
         {
+            PageCache pageCache = createPageCache();
+            GBPTree<MutableLong,MutableLong> index = createIndex( pageCache, file );
+            IndexWriter<MutableLong,MutableLong> writer = index.writer( IndexWriter.Options.DEFAULTS );
+
             key.setValue( 1L );
             value.setValue( 10L );
             writer.put( key, value );
             pageCache.flushAndForce();
-            crashedFs = fs.snapshot();
+            fs.snapshot( throwing( () ->
+            {
+                writer.close();
+                index.close();
+                pageCache.close();
+            } ) );
         }
-        fs.close();
-        fs = crashedFs;
 
         // WHEN
-        try ( PageCache pageCache = createPageCache( fs );
+        try ( PageCache pageCache = createPageCache();
               GBPTree<MutableLong,MutableLong> index = createIndex( pageCache, file ) )
         {
             // this is the mimic:ed recovery
@@ -123,21 +123,23 @@ public class GBPTreeRecoveryTest
     {
         // GIVEN
         // a tree which has had random updates and checkpoints in it, load generated with specific seed
+        File file = directory.file( "index" );
         List<Action> load = generateLoad();
-        EphemeralFileSystemAbstraction crashedFs;
-        try ( PageCache pageCache = createPageCache( fs );
-                GBPTree<MutableLong,MutableLong> index = createIndex( pageCache, file ) )
         {
+            PageCache pageCache = createPageCache();
+            GBPTree<MutableLong,MutableLong> index = createIndex( pageCache, file );
             execute( load, index );
             pageCache.flushAndForce();
-            crashedFs = fs.snapshot();
+            fs.snapshot( throwing( () ->
+            {
+                index.close();
+                pageCache.close();
+            } ) );
         }
-        fs.close();
-        fs = crashedFs;
 
         // WHEN doing recovery
         // using the same seed, generate the same load and replay all transactions from the last checkpoint
-        try ( PageCache pageCache = createPageCache( fs );
+        try ( PageCache pageCache = createPageCache();
                 GBPTree<MutableLong,MutableLong> index = createIndex( pageCache, file ) )
         {
             // this is the mimic:ed recovery
@@ -284,11 +286,10 @@ public class GBPTreeRecoveryTest
         return new GBPTree<>( pageCache, file, new SimpleLongLayout(), 0, NO_MONITOR );
     }
 
-    private PageCache createPageCache( FileSystemAbstraction fs ) throws IOException
+    private PageCache createPageCache()
     {
-        fs.mkdirs( directory );
         PageSwapperFactory swapper = new SingleFilePageSwapperFactory();
-        swapper.setFileSystemAbstraction( fs );
+        swapper.setFileSystemAbstraction( fs.get() );
         return new MuninnPageCache( swapper, 4_000, PAGE_SIZE, NULL );
     }
 

@@ -67,6 +67,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 import static org.neo4j.index.IndexWriter.Options.DEFAULTS;
 import static org.neo4j.index.gbptree.GBPTree.NO_MONITOR;
+import static org.neo4j.index.gbptree.ThrowingRunnable.throwing;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 
 public class GBPTreeTest
@@ -332,11 +333,11 @@ public class GBPTreeTest
 
         // WHEN
         monitor.enabled = true;
-        Thread checkpointer = new Thread( runnable( () -> index.checkpoint( IOLimiter.unlimited() ) ) );
+        Thread checkpointer = new Thread( throwing( () -> index.checkpoint( IOLimiter.unlimited() ) ) );
         checkpointer.start();
         monitor.barrier.awaitUninterruptibly();
         // now we're in the smack middle of a checkpoint
-        Thread t2 = new Thread( runnable( () -> index.writer( DEFAULTS ) ) );
+        Thread t2 = new Thread( throwing( () -> index.writer( DEFAULTS ) ) );
         t2.start();
         t2.join( 200 );
         assertTrue( Arrays.toString( checkpointer.getStackTrace() ), t2.isAlive() );
@@ -354,7 +355,7 @@ public class GBPTreeTest
 
         // WHEN
         Barrier.Control barrier = new Barrier.Control();
-        Thread writerThread = new Thread( runnable( () ->
+        Thread writerThread = new Thread( throwing( () ->
         {
             try ( IndexWriter<MutableLong,MutableLong> writer = index.writer( DEFAULTS ) )
             {
@@ -364,7 +365,7 @@ public class GBPTreeTest
         } ) );
         writerThread.start();
         barrier.awaitUninterruptibly();
-        Thread checkpointer = new Thread( runnable( () -> index.checkpoint( IOLimiter.unlimited() ) ) );
+        Thread checkpointer = new Thread( throwing( () -> index.checkpoint( IOLimiter.unlimited() ) ) );
         checkpointer.start();
         checkpointer.join( 200 );
         assertTrue( checkpointer.isAlive() );
@@ -726,27 +727,4 @@ public class GBPTreeTest
         }
     }
 
-    interface ThrowingRunnable
-    {
-        void run() throws Exception;
-    }
-
-    private static Runnable runnable( ThrowingRunnable callable )
-    {
-        return new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                try
-                {
-                    callable.run();
-                }
-                catch ( Exception e )
-                {
-                    throw new RuntimeException( e );
-                }
-            }
-        };
-    }
 }
