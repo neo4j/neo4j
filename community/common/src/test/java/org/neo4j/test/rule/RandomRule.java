@@ -43,17 +43,10 @@ import static java.lang.System.currentTimeMillis;
  */
 public class RandomRule implements TestRule
 {
-    private Long specificSeed;
     private long seed;
     private Random random;
     private Randoms randoms;
     private Configuration config = Randoms.DEFAULT;
-
-    public RandomRule withSeed( long seed )
-    {
-        this.specificSeed = seed;
-        return this;
-    }
 
     public RandomRule withConfiguration( Randoms.Configuration config )
     {
@@ -69,11 +62,14 @@ public class RandomRule implements TestRule
             @Override
             public void evaluate() throws Throwable
             {
-                seed = specificSeed == null ? currentTimeMillis() : specificSeed;
                 Seed methodSeed = description.getAnnotation( Seed.class );
                 if ( methodSeed != null )
                 {
                     seed = methodSeed.value();
+                }
+                else
+                {
+                    seed = currentTimeMillis();
                 }
                 reset();
                 try

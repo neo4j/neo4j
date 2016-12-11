@@ -779,7 +779,7 @@ public class EncodingIdMapperTest
     }
 
     @Rule
-    public final RandomRule random = new RandomRule().withSeed( 1436724681847L );
+    public final RandomRule random = new RandomRule();
     @Rule
     public final RepeatRule repeater = new RepeatRule();
 }
