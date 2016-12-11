@@ -338,6 +338,7 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         {
             Pair<TreeState,TreeState> states = TreeStatePair.readStatePages(
                     cursor, IdSpace.STATE_PAGE_A, IdSpace.STATE_PAGE_B );
+            checkOutOfBounds( cursor );
 
             TreeState state = TreeStatePair.selectNewestValidState( states );
             rootId = state.rootId();
@@ -352,6 +353,7 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         {
             Pair<TreeState,TreeState> states = TreeStatePair.readStatePages(
                     cursor, IdSpace.STATE_PAGE_A, IdSpace.STATE_PAGE_B );
+            checkOutOfBounds( cursor );
             TreeState oldestState = TreeStatePair.selectOldestOrInvalid( states );
             long pageToOverwrite = oldestState.pageId();
             PageCursorUtil.goTo( cursor, "state page", pageToOverwrite );
