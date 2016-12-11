@@ -25,7 +25,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.function.Supplier;
 
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 
@@ -71,11 +70,6 @@ public class EphemeralFileSystemRule extends ExternalResource implements Supplie
     {
         fs.close();
         fs = new EphemeralFileSystemAbstraction();
-    }
-
-    public static Runnable shutdownDbAction( final GraphDatabaseService db )
-    {
-        return () -> db.shutdown();
     }
 
     @Override

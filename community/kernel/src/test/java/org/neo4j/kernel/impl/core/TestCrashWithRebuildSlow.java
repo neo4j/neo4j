@@ -59,7 +59,6 @@ import static org.junit.Assert.assertThat;
 import static org.neo4j.kernel.configuration.Settings.FALSE;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
-import static org.neo4j.test.rule.fs.EphemeralFileSystemRule.shutdownDbAction;
 
 /**
  * Test for making sure that slow id generator rebuild is exercised
@@ -86,7 +85,7 @@ public class TestCrashWithRebuildSlow
 
         assertThat( checksumBefore, Matchers.equalTo( checksumBefore2 ) );
 
-        EphemeralFileSystemAbstraction snapshot = fs.snapshot( shutdownDbAction( db ) );
+        EphemeralFileSystemAbstraction snapshot = fs.snapshot( () -> db.shutdown() );
 
         long snapshotChecksum = snapshot.checksum();
         if ( snapshotChecksum != checksumBefore )
