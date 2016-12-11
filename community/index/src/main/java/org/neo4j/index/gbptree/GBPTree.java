@@ -465,19 +465,36 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
     @Override
     public void checkpoint( IOLimiter ioLimiter ) throws IOException
     {
+        // Flush dirty pages of the tree, do this before acquiring the lock so that writers won't be
+        // blocked while we do this
         pagedFile.flushAndForce( ioLimiter );
+
+        // Block writers, or if there's a current writer then wait for it to complete and then block
+        // From this point and till the lock is released we know that the tree won't change.
         writerCheckpointMutex.lock();
         try
         {
+            // Flush dirty pages since that last flush above. This should be a very small set of pages
+            // and should be rather fast. In here writers are blocked and we want to minimize this
+            // windows of time as much as possible, that's why there's an initial flush outside this lock.
             pagedFile.flushAndForce( ioLimiter );
+
+            // Increment generation, i.e. stable becomes current unstable and unstable increments by one
+            // and write the tree state (rootId, lastId, generation a.s.o.) to state page.
             long unstableGeneration = unstableGeneration( generation );
             generation = Generation.generation( unstableGeneration, unstableGeneration + 1 );
             writeState( pagedFile );
+
+            // Flush the state page.
             pagedFile.flushAndForce( ioLimiter );
+
+            // Expose this fact.
             monitor.checkpointCompleted();
         }
         finally
         {
+            // Unblock writers, any writes after this point and up until the next checkpoint will have
+            // the new unstable generation.
             writerCheckpointMutex.unlock();
         }
     }
@@ -545,17 +562,11 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
      */
     public void prepareForRecovery() throws IOException
     {
-        writerCheckpointMutex.lock();
-        try
-        {
-            generation = generation( stableGeneration( generation ), unstableGeneration( generation ) + 1 );
-            writeState( pagedFile );
-            pagedFile.flushAndForce();
-        }
-        finally
-        {
-            writerCheckpointMutex.unlock();
-        }
+        // Increment unstable generation, widening the gap between stable and unstable generation
+        // so that generations in between are considered crash generation(s).
+        generation = generation( stableGeneration( generation ), unstableGeneration( generation ) + 1 );
+        writeState( pagedFile );
+        pagedFile.flushAndForce();
     }
 
     // Utility method
