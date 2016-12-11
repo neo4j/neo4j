@@ -22,6 +22,7 @@ package org.neo4j.index.gbptree;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.IOException;
+import java.util.Optional;
 
 import org.neo4j.io.pagecache.PageCursor;
 
@@ -44,28 +45,18 @@ class TreeStatePair
 
     static TreeState selectNewestValidState( Pair<TreeState,TreeState> states )
     {
-        TreeState selected = selectNewestValidStateOrNull( states );
-        if ( selected != null )
-        {
-            return selected;
-        }
-
-        // Fail
-        throw new TreeInconsistencyException( "Unexpected combination of state.%n  STATE_A[%s]%n  STATE_B[%s]",
-                states.getLeft(), states.getRight() );
+        return selectNewestValidStateOptionally( states ).orElseThrow( () ->
+                new TreeInconsistencyException( "Unexpected combination of state.%n  STATE_A[%s]%n  STATE_B[%s]",
+                        states.getLeft(), states.getRight() ) );
     }
 
     static TreeState selectOldestOrInvalid( Pair<TreeState,TreeState> states )
     {
-        TreeState newestValidState = selectNewestValidStateOrNull( states );
-        if ( newestValidState == null )
-        {
-            return states.getLeft();
-        }
+        TreeState newestValidState = selectNewestValidStateOptionally( states ).orElse( states.getRight() );
         return newestValidState == states.getLeft() ? states.getRight() : states.getLeft();
     }
 
-    private static TreeState selectNewestValidStateOrNull( Pair<TreeState,TreeState> states )
+    private static Optional<TreeState> selectNewestValidStateOptionally( Pair<TreeState,TreeState> states )
     {
         TreeState stateA = states.getLeft();
         TreeState stateB = states.getRight();
@@ -73,7 +64,7 @@ class TreeStatePair
         if ( stateA.isValid() != stateB.isValid() )
         {
             // return only valid
-            return stateA.isValid() ? stateA : stateB;
+            return stateA.isValid() ? Optional.of( stateA ) : Optional.of( stateB );
         }
         else if ( stateA.isValid() && stateB.isValid() )
         {
@@ -81,16 +72,16 @@ class TreeStatePair
             if ( stateA.stableGeneration() > stateB.stableGeneration() &&
                     stateA.unstableGeneration() > stateB.unstableGeneration() )
             {
-                return stateA;
+                return Optional.of( stateA );
             }
             else if ( stateA.stableGeneration() < stateB.stableGeneration() &&
                     stateA.unstableGeneration() < stateB.unstableGeneration() )
             {
-                return stateB;
+                return Optional.of( stateB );
             }
         }
 
         // return null communicating that this combination didn't result in any valid "newest" state
-        return null;
+        return Optional.empty();
     }
 }
