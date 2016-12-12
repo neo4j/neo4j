@@ -25,6 +25,8 @@ import org.neo4j.helpers.Exceptions;
 
 import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
+
+import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.unsafe.impl.batchimport.Utils.safeCastLongToInt;
 
@@ -211,60 +213,60 @@ public interface NumberArrayFactory
         @Override
         public LongArray newLongArray( long length, long defaultValue, long base )
         {
-            OutOfMemoryError error = null;
+            Throwable error = null;
             for ( NumberArrayFactory candidate : candidates )
             {
                 try
                 {
                     return candidate.newLongArray( length, defaultValue, base );
                 }
-                catch ( OutOfMemoryError e )
+                catch ( Throwable e )
                 {   // Allright let's try the next one
                     error = e;
                 }
             }
-            throw error( length, 8, error );
+            throw launderedException( error( length, 8, error ) );
         }
 
         @Override
         public IntArray newIntArray( long length, int defaultValue, long base )
         {
-            OutOfMemoryError error = null;
+            Throwable error = null;
             for ( NumberArrayFactory candidate : candidates )
             {
                 try
                 {
                     return candidate.newIntArray( length, defaultValue, base );
                 }
-                catch ( OutOfMemoryError e )
+                catch ( Throwable e )
                 {   // Allright let's try the next one
                     error = e;
                 }
             }
-            throw error( length, 4, error );
+            throw launderedException( error( length, 4, error ) );
         }
 
         @Override
         public ByteArray newByteArray( long length, byte[] defaultValue, long base )
         {
-            OutOfMemoryError error = null;
+            Throwable error = null;
             for ( NumberArrayFactory candidate : candidates )
             {
                 try
                 {
                     return candidate.newByteArray( length, defaultValue, base );
                 }
-                catch ( OutOfMemoryError e )
+                catch ( Throwable e )
                 {   // Allright let's try the next one
                     error = e;
                 }
             }
-            throw error( length, defaultValue.length, error );
+            throw launderedException( error( length, defaultValue.length, error ) );
         }
 
-        private OutOfMemoryError error( long length, int itemSize, OutOfMemoryError error )
+        private Throwable error( long length, int itemSize, Throwable error )
         {
-            throw Exceptions.withMessage( error, format( "%s: Not enough memory available for allocating %s, tried %s",
+            return Exceptions.withMessage( error, format( "%s: Not enough memory available for allocating %s, tried %s",
                     error.getMessage(), bytes( length*itemSize ), Arrays.toString( candidates ) ) );
         }
     }
