@@ -22,6 +22,7 @@ package org.neo4j.index.gbptree;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
@@ -58,12 +59,13 @@ public class GBPTreeRecoveryTest
 {
     private static final int PAGE_SIZE = 256;
 
+    private final RandomRule random = new RandomRule();
+    private final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    private final TestDirectory directory = TestDirectory.testDirectory( getClass(), fs.get() );
+
     @Rule
-    public final RandomRule random = new RandomRule();
-    @Rule
-    public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    @Rule
-    public final TestDirectory directory = TestDirectory.testDirectory( getClass(), fs.get() );
+    public RuleChain ruleChain = RuleChain.outerRule( random ).around( fs ).around( directory );
+
     private final MutableLong key = new MutableLong();
     private final MutableLong value = new MutableLong();
 
