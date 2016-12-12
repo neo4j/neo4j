@@ -56,14 +56,14 @@ public class Terms
         {
             throw new IllegalStateException( "Must append in order" );
         }
-        else if ( term < terms[size - 1] )
+        else if ( size > 0 && term < terms[size - 1] )
         {
             throw new IllegalStateException( "Non-monotonic term" );
         }
 
         max = index;
 
-        if ( term != terms[size - 1] )
+        if ( size == 0 || term != terms[size - 1] )
         {
             setSize( size + 1 );
             indexes[size - 1] = index;
@@ -134,7 +134,7 @@ public class Terms
             }
         }
 
-        return -1;
+        return index > indexes[indexes.length - 1] ? indexes.length - 1 : -1;
     }
 
     synchronized void skip( long prevIndex, long prevTerm )
@@ -167,6 +167,6 @@ public class Terms
 
     synchronized long latest()
     {
-        return terms[size - 1];
+        return size == 0 ? -1 : terms[size - 1];
     }
 }

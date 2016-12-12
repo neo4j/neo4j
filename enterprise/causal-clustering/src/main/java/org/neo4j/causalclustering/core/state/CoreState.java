@@ -144,7 +144,7 @@ public class CoreState implements MessageHandler<RaftMessages.ClusterIdAwareMess
     @Override
     public void prune() throws IOException
     {
-        applicationProcess.prune();
+        raftMachine.handle( new RaftMessages.PruneRequest( applicationProcess.lastFlushed() ) );
     }
 
     @Override
@@ -195,6 +195,7 @@ public class CoreState implements MessageHandler<RaftMessages.ClusterIdAwareMess
     {
         applicationProcess.stop();
         localDatabase.stop();
+        allowMessageHandling = false;
     }
 
     @Override

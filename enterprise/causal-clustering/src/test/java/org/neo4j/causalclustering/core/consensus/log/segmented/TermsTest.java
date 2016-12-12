@@ -357,9 +357,34 @@ public class TermsTest
     }
 
     @Test
-    public void shouldPruneSeveralCompleteRanges() throws Exception
+    public void shouldPruneJustBeyondBoundaryOfRange() throws Exception
     {
         // given
+        long term = 5;
+        long prevIndex = 10;
+        terms = new Terms( prevIndex, term );
+
+        appendRange( prevIndex + 1, prevIndex + 10, term ); // completely pruned
+        appendRange( prevIndex + 10, prevIndex + 20, term + 1 );
+
+        assertEquals( 2, getIndexesSize() );
+        assertEquals( 2, getTermsSize() );
+
+        // when
+        long pruneIndex = prevIndex + 11;
+        terms.prune( pruneIndex );
+
+        // then
+        assertTermInRange( prevIndex - 10, pruneIndex , -1 );
+        assertTermInRange( prevIndex + 11, prevIndex + 20, term + 1 );
+
+        assertEquals( 1, getIndexesSize() );
+        assertEquals( 1, getTermsSize() );
+    }
+
+    @Test
+    public void shouldPruneSeveralCompleteRanges() throws Exception
+    {
         // given
         long term = 5;
         long prevIndex = 10;
@@ -386,6 +411,33 @@ public class TermsTest
 
         assertEquals( 3, getIndexesSize() );
         assertEquals( 3, getTermsSize() );
+    }
+
+    @Test
+    public void shouldAppendNewItemsIfThereAreNoEntries() throws Exception
+    {
+        // given
+        long term = 5;
+        long prevIndex = 10;
+        terms = new Terms( prevIndex, term );
+
+        // when
+        terms.truncate( prevIndex );
+
+        // then
+        assertEquals( -1, terms.get( prevIndex ) );
+        assertEquals( -1, terms.latest() );
+        assertEquals( 0, getIndexesSize() );
+        assertEquals( 0, getTermsSize() );
+
+        // and when
+        terms.append( prevIndex, 5 );
+
+        // then
+        assertEquals( term, terms.get( prevIndex ) );
+        assertEquals( term, terms.latest() );
+        assertEquals( 1, getIndexesSize() );
+        assertEquals( 1, getTermsSize() );
     }
 
     private int getTermsSize() throws NoSuchFieldException, IllegalAccessException

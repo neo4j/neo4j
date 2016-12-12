@@ -228,9 +228,9 @@ public class CommandApplicationProcess extends LifecycleAdapter
         }
     }
 
-    public void prune() throws IOException
+    synchronized long lastFlushed() throws IOException
     {
-        raftLog.prune( lastFlushed );
+        return lastFlushed;
     }
 
     private long handleOperations( long commandIndex, List<DistributedOperation> operations )
@@ -265,7 +265,7 @@ public class CommandApplicationProcess extends LifecycleAdapter
         }
     }
 
-    private void flush() throws IOException
+    private synchronized void flush() throws IOException
     {
         coreStateMachines.flush();
         sessionTracker.flush();

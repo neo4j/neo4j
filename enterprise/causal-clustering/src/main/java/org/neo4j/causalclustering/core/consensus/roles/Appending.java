@@ -33,6 +33,8 @@ import org.neo4j.causalclustering.core.replication.ReplicatedContent;
 import org.neo4j.causalclustering.core.consensus.state.ReadableRaftState;
 import org.neo4j.logging.Log;
 
+import static java.lang.String.format;
+
 class Appending
 {
     static void handleAppendEntriesRequest( ReadableRaftState state, Outcome outcome,
@@ -68,14 +70,15 @@ class Appending
         /* Find possible truncation point. */
         for ( offset = 0; offset < request.entries().length; offset++ )
         {
-            long logTerm = state.entryLog().readEntryTerm( baseIndex + offset );
+            long logIndex = baseIndex + offset;
+            long logTerm = state.entryLog().readEntryTerm( logIndex );
 
-            if( baseIndex + offset > state.entryLog().appendIndex() )
+            if( logIndex > state.entryLog().appendIndex() )
             {
                 // entry doesn't exist because it's beyond the current log end, so we can go ahead and append
                 break;
             }
-            else if ( baseIndex + offset < state.entryLog().prevIndex() )
+            else if ( logIndex < state.entryLog().prevIndex() )
             {
                 // entry doesn't exist because it's before the earliest known entry, so continue with the next one
                 continue;
@@ -86,11 +89,11 @@ class Appending
                  * the entry's index falls within our current range and the term doesn't match what we know. We must
                  * truncate.
                  */
-                if ( baseIndex + offset <= state.commitIndex() ) // first, assert that we haven't committed what we are about to truncate
+                if ( logIndex <= state.commitIndex() ) // first, assert that we haven't committed what we are about to truncate
                 {
-                    throw new IllegalStateException( "Cannot truncate at index " + (baseIndex + offset) + " when commit index is at " + state.commitIndex() );
+                    throw new IllegalStateException( format( "Cannot truncate entry at index %d with term %d when commit index is at %d", logIndex, logTerm, state.commitIndex() ) );
                 }
-                outcome.addLogCommand( new TruncateLogCommand( baseIndex + offset ) );
+                outcome.addLogCommand( new TruncateLogCommand( logIndex ) );
                 break;
             }
         }
