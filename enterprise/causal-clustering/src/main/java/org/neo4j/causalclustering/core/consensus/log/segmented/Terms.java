@@ -134,7 +134,7 @@ public class Terms
             }
         }
 
-        return -1;
+        return index > indexes[indexes.length - 1] ? indexes.length - 1 : -1;
     }
 
     synchronized void skip( long prevIndex, long prevTerm )
