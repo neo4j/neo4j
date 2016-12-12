@@ -43,10 +43,19 @@ public class Connector
 
     public final GroupSettingSupport group;
 
-    // Note: We no longer use the typeDefault parameter because it made for confusing behaviour;
-    // connectors with unspecified would override settings of other, unrelated connectors.
-    // However, we cannot remove the parameter at this
-    public Connector( String key, @SuppressWarnings("UnusedParameters") String typeDefault )
+    /**
+     * Deprecated, please use other constructor. This constructor will be removed in 4.0.
+     *
+     * @param key of connector
+     * @param typeDefault unused parameter
+     */
+    @Deprecated
+    public Connector( String key, @SuppressWarnings( "UnusedParameters" ) String typeDefault )
+    {
+        this( key );
+    }
+
+    public Connector( String key )
     {
         group = new GroupSettingSupport( Connector.class, key );
         enabled = group.scope( setting( "enabled", BOOLEAN, "false" ) );

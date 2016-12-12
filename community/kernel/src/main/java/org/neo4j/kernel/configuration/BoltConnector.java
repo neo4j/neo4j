@@ -55,11 +55,11 @@ public class BoltConnector extends Connector
         this("(bolt-connector-key)");
     }
 
-    public BoltConnector(String key)
+    public BoltConnector( String key )
     {
-        super(key, null );
+        super( key );
         encryption_level = group.scope(
-                Settings.setting( "tls_level", options( EncryptionLevel.class ), OPTIONAL.name() ));
+                Settings.setting( "tls_level", options( EncryptionLevel.class ), OPTIONAL.name() ) );
         Setting<ListenSocketAddress> legacyAddressSetting = listenAddress( "address", 7687 );
         Setting<ListenSocketAddress> listenAddressSetting = legacyFallback( legacyAddressSetting,
                 listenAddress( "listen_address", 7687 ) );

@@ -63,7 +63,7 @@ public class HttpConnector extends Connector
 
     public HttpConnector( String key, Encryption encryptionLevel )
     {
-        super( key, null );
+        super( key );
         this.encryptionLevel = encryptionLevel;
         encryption = group.scope( setting( "encryption", options( HttpConnector.Encryption.class ), NO_DEFAULT ) );
         Setting<ListenSocketAddress> legacyAddressSetting = listenAddress( "address", encryptionLevel.defaultPort );

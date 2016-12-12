@@ -523,7 +523,7 @@ public class Config implements DiagnosticsProvider, Configuration
     public static List<HttpConnector> httpConnectors( @Nonnull Map<String,String> params )
     {
         return allConnectorIdentifiers( params ).stream()
-                .map( name -> new Connector( name, "ignored" ) )
+                .map( Connector::new )
                 .filter( c -> c.group.groupKey.equalsIgnoreCase( "http" ) ||
                         c.group.groupKey.equalsIgnoreCase( "https" ) ||
                         HTTP.equals( c.type.apply( params::get ) ) )

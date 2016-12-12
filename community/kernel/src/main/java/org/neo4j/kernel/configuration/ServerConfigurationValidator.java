@@ -56,7 +56,7 @@ public class ServerConfigurationValidator implements ConfigurationValidator
                 .filter( Matcher::matches )
                 .map( match -> match.group( 1 ) )
                 .distinct()
-                .map( id -> new Connector( id, "" ) )
+                .map( Connector::new )
                 .collect( Collectors.toList() );
 
         Map<String,String> validSettings = new HashMap<>( rawConfig );

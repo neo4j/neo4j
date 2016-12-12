@@ -96,7 +96,7 @@ public class ConfigLoader
     {
         return config.with(
                 config.allConnectorIdentifiers().stream()
-                        .collect( Collectors.toMap( id -> new Connector( id, "" ).enabled.name(),
+                        .collect( Collectors.toMap( id -> new Connector( id ).enabled.name(),
                                 id -> Settings.FALSE ) ) );
     }
 }
