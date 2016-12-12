@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_2.planner._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.Metrics.QueryGraphSolverInput
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{LegacyIndexSeek, LogicalPlan}
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{LegacyNodeIndexSeek, LogicalPlan}
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_2.{Cost, IdName}
@@ -42,7 +42,7 @@ class LegacyHintLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTest
 
     val factory = newMockedMetricsFactory
     when(factory.newCostModel()).thenReturn((plan: LogicalPlan, input: QueryGraphSolverInput) => plan match {
-      case _: LegacyIndexSeek => Cost(1)
+      case _: LegacyNodeIndexSeek => Cost(1)
       case _                  => Cost(Double.MaxValue)
     })
     implicit val context = newMockedLogicalPlanningContext(
@@ -55,7 +55,7 @@ class LegacyHintLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTest
     val resultPlans = legacyHintLeafPlanner(qg)
 
     // then
-    resultPlans should equal(Seq(LegacyIndexSeek(IdName("n"), hint, Set.empty)(null)))
+    resultPlans should equal(Seq(LegacyNodeIndexSeek(IdName("n"), hint, Set.empty)(null)))
   }
 
   test("Does not produce legacy hint leaf plan if hinted variable has already been solved") {
@@ -68,7 +68,7 @@ class LegacyHintLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTest
 
     val factory = newMockedMetricsFactory
     when(factory.newCostModel()).thenReturn((plan: LogicalPlan, input: QueryGraphSolverInput) => plan match {
-      case _: LegacyIndexSeek => Cost(1)
+      case _: LegacyNodeIndexSeek => Cost(1)
       case _                  => Cost(Double.MaxValue)
     })
     implicit val context = newMockedLogicalPlanningContext(

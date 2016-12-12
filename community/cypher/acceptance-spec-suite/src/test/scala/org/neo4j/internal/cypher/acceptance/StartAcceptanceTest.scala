@@ -58,4 +58,57 @@ class StartAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
     result should equal(List(Map("n"-> node)))
   }
+
+  test("Relationship legacy index") {
+    val node = createNode(Map("prop" -> 42))
+    val otherNode = createNode(Map("prop" -> 21))
+    val relationship = relate(node, otherNode)
+
+    graph.inTx {
+      val relationshipIndex = graph.index.forRelationships("relIndex")
+      relationshipIndex.add(relationship, "key", "value")
+    }
+
+    val query = "START r=relationship:relIndex('key:*') RETURN r"
+    val result = executeWithAllPlannersAndCompatibilityMode(query)
+
+    result.toList should equal(List(Map("r"-> relationship)))
+  }
+
+  test("Relationship legacy index mk II") {
+    val node = createNode(Map("prop" -> 42))
+    val otherNode = createNode(Map("prop" -> 21))
+    val relationship = relate(node, otherNode)
+
+    graph.inTx {
+      val relationshipIndex = graph.index.forRelationships("relIndex")
+      relationshipIndex.add(relationship, "key", "value")
+    }
+
+    val query = "START r=relationship:relIndex('key:*') MATCH (a)-[r]-(b) RETURN r"
+    val result = executeWithAllPlannersAndCompatibilityMode(query)
+
+    result.toList should equal(List(
+      Map("r"-> relationship),
+      Map("r"-> relationship)
+    ))
+  }
+
+  test("Relationship legacy index mk III") {
+    val node = createNode(Map("prop" -> 42))
+    val otherNode = createNode(Map("prop" -> 21))
+    val relationship = relate(node, otherNode)
+
+    graph.inTx {
+      val relationshipIndex = graph.index.forRelationships("relIndex")
+      relationshipIndex.add(relationship, "key", "value")
+    }
+
+    val query = "START r=relationship:relIndex('key:*') MATCH (a)-[r]->(b) RETURN r"
+    val result = executeWithAllPlannersAndCompatibilityMode(query)
+
+    result.toList should equal(List(
+      Map("r"-> relationship)
+    ))
+  }
 }

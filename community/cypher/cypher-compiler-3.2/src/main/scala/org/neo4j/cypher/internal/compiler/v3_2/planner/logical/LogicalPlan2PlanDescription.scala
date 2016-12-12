@@ -77,7 +77,7 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
         val entityByIdRhs = EntityByIdRhs(relIds.asCommandSeekArgs)
         PlanDescriptionImpl(id, "DirectedRelationshipByIdSeekPipe", NoChildren, Seq(entityByIdRhs), variables)
 
-      case _: LegacyIndexSeek =>
+      case _: LegacyNodeIndexSeek | _: LegacyRelationshipIndexSeek =>
         PlanDescriptionImpl(id, "LegacyIndexSeek", NoChildren, Seq.empty, variables)
 
       case _: LoadCSV =>
@@ -200,9 +200,6 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
         val args = predicates.zipWithIndex.map { case (p, idx) => s"p$idx" -> p }
         PlanDescriptionImpl(id, "ShortestPath", children, Seq(Expressions(args.toMap)), variables)
 
-      case _: LegacyIndexSeek =>
-        PlanDescriptionImpl(id, "LegacyIndexSeek", children, Seq.empty, variables)
-
       case Limit(_, count, _) =>
         PlanDescriptionImpl(id, "LetAntiSemiApply", children, Seq(Expression(count)), variables)
 
@@ -222,8 +219,9 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
         val signature = Signature(call.qualifiedName, call.callArguments, call.callResultTypes)
         PlanDescriptionImpl(id, "ProcedureCall", children, Seq(signature), variables)
 
-      case ProjectEndpoints(_, IdName(relName), IdName(start), _, IdName(end), _, _, _, _) =>
-        PlanDescriptionImpl(id, "ProjectEndpoints", children, Seq(KeyNames(Seq(relName, start, end))), variables)
+      case ProjectEndpoints(_, IdName(relName), IdName(start), _, IdName(end), _, _, directed, _) =>
+        val name = if (directed) "ProjectEndpoints" else "ProjectEndpoints(BOTH)"
+        PlanDescriptionImpl(id, name, children, Seq(KeyNames(Seq(relName, start, end))), variables)
 
       case PruningVarExpand(_, IdName(fromName), dir, types, IdName(toName), min, max, predicates) =>
         val expandSpec = ExpandExpression(fromName, "", types.map(_.name), toName, dir, minLength = min, maxLength = Some(max))
@@ -312,7 +310,7 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
         PlanDescriptionImpl(id, "LetSelectOrSemiApply", children, Seq(Expression(predicate)), variables)
 
       case row: SingleRow =>
-        new SingleRowPlanDescription(id = idMap(plan), Seq.empty, row.argumentIds.map(_.name))
+        SingleRowPlanDescription(id = idMap(plan), Seq.empty, row.argumentIds.map(_.name))
 
       case LetSelectOrAntiSemiApply(_, _, _, predicate) =>
         PlanDescriptionImpl(id, "LetSelectOrSemiApply", children, Seq(Expression(predicate)), variables)

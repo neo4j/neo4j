@@ -230,8 +230,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
     NodeIndexEndsWithScan(idName, label, propertyKey, valueExpr, argumentIds)(solved)
   }
 
-  def planLegacyHintSeek(idName: IdName, hint: LegacyIndexHint, argumentIds: Set[IdName])
-                        (implicit context: LogicalPlanningContext): LogicalPlan = {
+  def planLegacyNodeIndexSeek(idName: IdName, hint: LegacyIndexHint, argumentIds: Set[IdName])
+                             (implicit context: LogicalPlanningContext): LogicalPlan = {
     val patternNode = hint match {
       case n: NodeHint => Seq(IdName(n.variable.name))
       case _ => Seq.empty
@@ -241,7 +241,16 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
       .addHints(Some(hint))
       .addArgumentIds(argumentIds.toIndexedSeq)
     )
-    LegacyIndexSeek(idName, hint, argumentIds)(solved)
+    LegacyNodeIndexSeek(idName, hint, argumentIds)(solved)
+  }
+
+  def planLegacyRelationshipIndexSeek(idName: IdName, hint: LegacyIndexHint, argumentIds: Set[IdName])
+                                     (implicit context: LogicalPlanningContext): LogicalPlan = {
+    val solved = RegularPlannerQuery(queryGraph = QueryGraph.empty
+      .addHints(Some(hint))
+      .addArgumentIds(argumentIds.toIndexedSeq)
+    )
+    LegacyRelationshipIndexSeek(idName, hint, argumentIds)(solved)
   }
 
   def planNodeHashJoin(nodes: Set[IdName], left: LogicalPlan, right: LogicalPlan, hints: Set[UsingJoinHint])
