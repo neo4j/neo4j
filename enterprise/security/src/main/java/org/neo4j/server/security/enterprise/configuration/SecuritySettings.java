@@ -254,7 +254,9 @@ public class SecuritySettings
     //=========================================================================
 
     @Description( "The time to live (TTL) for cached authentication and authorization info when using " +
-                  "external auth providers (LDAP or plugin). Setting the TTL to 0 will disable auth caching." )
+                  "external auth providers (LDAP or plugin). Setting the TTL to 0 will disable auth caching. " +
+                  "Disabling caching while using the LDAP auth provider requires the use of an LDAP system account " +
+                  "for resolving authorization information." )
     public static final Setting<Long> auth_cache_ttl =
             setting( "dbms.security.auth_cache_ttl", DURATION, "10m" );
 
