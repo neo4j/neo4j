@@ -74,9 +74,9 @@ public class EmbeddedGraphDatabase extends GraphDatabaseFacade
     }
 
     /**
-     * Internal constructor
+     * Internal constructor used by ImpermanentGraphDatabase
      */
-    public EmbeddedGraphDatabase( File storeDir,
+    protected EmbeddedGraphDatabase( File storeDir,
             Config config,
             GraphDatabaseFacadeFactory.Dependencies dependencies )
     {
