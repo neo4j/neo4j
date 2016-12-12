@@ -19,19 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2
 
-import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase.SEMANTIC_CHECK
-import org.neo4j.cypher.internal.compiler.v3_2.ast.ResolvedCall
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan._
-import org.neo4j.cypher.internal.compiler.v3_2.helpers.closing
-import org.neo4j.cypher.internal.compiler.v3_2.phases.PipeLineRunner
-import org.neo4j.cypher.internal.compiler.v3_2.spi.{PlanContext, ProcedureSignature}
+import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilationState.{State1, State4}
+import org.neo4j.cypher.internal.compiler.v3_2.phases._
+import org.neo4j.cypher.internal.compiler.v3_2.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Statement
-import org.neo4j.cypher.internal.frontend.v3_2.notification.{DeprecatedProcedureNotification, InternalNotification}
 import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, SemanticTable}
 
-case class CypherCompiler(semanticChecker: SemanticChecker,
-                          executionPlanBuilder: ExecutionPlanBuilder,
+case class CypherCompiler(executionPlanBuilder: ExecutionPlanBuilder,
                           astRewriter: ASTRewriter,
                           cacheAccessor: CacheAccessor[Statement, ExecutionPlan],
                           planCacheFactory: () => LFUCache[Statement, ExecutionPlan],
@@ -62,38 +58,52 @@ case class CypherCompiler(semanticChecker: SemanticChecker,
                             plannerName: String = "",
                             offset: Option[InputPosition] = None,
                             tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING): PreparedQuerySyntax = {
-    val mkException = new SyntaxExceptionCreator(rawQueryText, offset)
-    val pipeLine = PipeLineRunner(mkException,sequencer, tracer, notificationLogger)
-    pipeLine.runIt(queryText, offset)(plannerName)
+    val exceptionCreator = new SyntaxExceptionCreator(rawQueryText, offset)
+    val startState = State1(queryText, offset)
+    val context = Context(exceptionCreator, tracer, notificationLogger)
+    val finalState: State4 = firstPipePline.transform(startState, context)
+
+    val postConditions = finalState.postConditions
+    val extractedParams = finalState.extractedParams
+    PreparedQuerySyntax(finalState.statement, rawQueryText, offset, extractedParams)(plannerName, postConditions)
   }
+
+  private val astRewriting = AstRewriting(sequencer)
+
+  private val firstPipePline =
+      Parsing andThen
+      DeprecationWarnings andThen
+      PreparatoryRewriting andThen
+      SemanticAnalysis.Early andThen
+      astRewriting
 
   def prepareSemanticQuery(syntacticQuery: PreparedQuerySyntax, notificationLogger: InternalNotificationLogger,
                            context: PlanContext,
                            offset: Option[InputPosition] = None,
                            tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING): PreparedQuerySemantics = {
+    val rewriteProcedureCalls = new RewriteProcedureCalls(context.procedureSignature, context.functionSignature)
 
-    val queryText = syntacticQuery.queryText
+    val secondPipeLine =
+      rewriteProcedureCalls andThen
+      SemanticAnalysis.Late
 
-    val rewrittenSyntacticQuery = syntacticQuery.rewrite(rewriteProcedureCalls(context.procedureSignature, context.functionSignature))
+    val exceptionCreator = new SyntaxExceptionCreator(syntacticQuery.queryText, offset)
 
-    val procedureDeprecations = procedureDeprecationNotifications(rewrittenSyntacticQuery.statement)
-    procedureDeprecations.foreach(notificationLogger.log)
+    val input = State4(
+      queryText = syntacticQuery.queryText,
+      startPosition = syntacticQuery.offset,
+      statement = syntacticQuery.statement,
+      semantics = null,
+      extractedParams = syntacticQuery.extractedParams,
+      postConditions = syntacticQuery.conditions)
 
-    val mkException = new SyntaxExceptionCreator(queryText, offset)
-    val postRewriteSemanticState = closing(tracer.beginPhase(SEMANTIC_CHECK)) {
-      semanticChecker.check(rewrittenSyntacticQuery.statement, mkException)
-    }
+    val output = secondPipeLine.transform(input, Context(exceptionCreator, null, notificationLogger))
 
-    val table = SemanticTable(types = postRewriteSemanticState.typeTable, recordedScopes = postRewriteSemanticState.recordedScopes)
-    val result = rewrittenSyntacticQuery.withSemantics(table, postRewriteSemanticState.scopeTree)
+    val table = SemanticTable(types = output.semantics.typeTable, recordedScopes = output.semantics.recordedScopes)
+    val copy1 = syntacticQuery.copy(statement = output.statement)(syntacticQuery.plannerName, syntacticQuery.conditions)
+    val result = copy1.withSemantics(table, output.semantics.scopeTree)
     result
   }
-
-  private def procedureDeprecationNotifications(statement: Statement): Set[InternalNotification] =
-    statement.treeFold(Set.empty[InternalNotification]) {
-      case f@ResolvedCall(ProcedureSignature(name, _, _, Some(deprecatedBy), _, _), _, _, _, _) =>
-        (seq) => (seq + DeprecatedProcedureNotification(f.position, name.toString, deprecatedBy), None)
-    }
 
   private def provideCache(cacheAccessor: CacheAccessor[Statement, ExecutionPlan],
                            monitor: CypherCacheFlushingMonitor[CacheAccessor[Statement, ExecutionPlan]],

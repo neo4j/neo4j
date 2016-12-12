@@ -50,7 +50,6 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
 
   val monitors = mock[Monitors]
   val parser = new CypherParser
-  val semanticChecker = new SemanticChecker
   val rewriterSequencer = RewriterStepSequencer.newValidating _
   val astRewriter = new ASTRewriter(rewriterSequencer, shouldExtractParameters = false)
   val mockRel = newPatternRelationship("a", "b", "r")
@@ -171,7 +170,6 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       rewriterSequencer = rewriterSequencer,
       plannerName = None,
       runtimeBuilder = InterpretedRuntimeBuilder(InterpretedPlanBuilder(Clock.systemUTC(), monitors, IdentityTypeConverter)),
-      semanticChecker = semanticChecker,
       updateStrategy = None,
       config = config,
       publicTypeConverter = identity)
@@ -205,18 +203,18 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     val parsedStatement = parser.parse(query.replace("\r\n", "\n"))
     val mkException = new SyntaxExceptionCreator(query, Some(pos))
     val cleanedStatement: Statement = parsedStatement.endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException)))
-    val semanticState = semanticChecker.check(cleanedStatement, mkException)
+    val semanticState = SemanticChecker.check(cleanedStatement, mkException)
     val astRewriterResultStatement = astRewriter.rewrite(query, cleanedStatement, semanticState)._1
     val resolvedStatement = (procLookup, fcnLookup) match {
       case (None, None) => astRewriterResultStatement
-      case (Some(pl), None) =>  astRewriterResultStatement.endoRewrite(rewriteProcedureCalls(pl, _ => None))
-      case (None, Some(fl)) =>  astRewriterResultStatement.endoRewrite(rewriteProcedureCalls(_ => signature, fl))
-      case (Some(pl), Some(fl)) =>  astRewriterResultStatement.endoRewrite(rewriteProcedureCalls(pl, fl))
+      case (Some(pl), None) =>  astRewriterResultStatement.endoRewrite(new RewriteProcedureCalls(pl, _ => None).rewriter)
+      case (None, Some(fl)) =>  astRewriterResultStatement.endoRewrite(new RewriteProcedureCalls(_ => signature, fl).rewriter)
+      case (Some(pl), Some(fl)) =>  astRewriterResultStatement.endoRewrite(new RewriteProcedureCalls(pl, fl).rewriter)
 
     }
     val semanticTable: SemanticTable = SemanticTable(types = semanticState.typeTable)
     val (rewrittenAst: Statement, _) = CostBasedExecutablePlanBuilder.rewriteStatement(resolvedStatement, semanticState.scopeTree,
-      semanticTable, RewriterStepSequencer.newValidating, semanticChecker, Set.empty, mock[AstRewritingMonitor])
+      semanticTable, RewriterStepSequencer.newValidating, Set.empty, mock[AstRewritingMonitor])
 
     // This fakes pattern expression naming for testing purposes
     // In the actual code path, this renaming happens as part of planning

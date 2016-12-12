@@ -21,17 +21,29 @@ package org.neo4j.cypher.internal.compiler.v3_2.phases
 
 import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase.SEMANTIC_CHECK
 import org.neo4j.cypher.internal.compiler.v3_2.SemanticChecker
-import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilationState.{State2, State3}
+import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilationState.{State2, State3, State4}
+import org.neo4j.cypher.internal.frontend.v3_2.SemanticState
+import org.neo4j.cypher.internal.frontend.v3_2.ast.Statement
 
-case object SemanticAnalysis extends Phase[State2, State3] {
-  private val checker = new SemanticChecker
-
-  override def transform(from: State2, context: Context): State3 = {
-    val semanticState = checker.check(from.statement, context.exceptionCreator)
+object SemanticAnalysis {
+  def handle(statement: Statement, context: Context): SemanticState = {
+    val semanticState = SemanticChecker.check(statement, context.exceptionCreator)
     semanticState.notifications.foreach(context.notificationLogger.log)
-    from.add(semanticState)
+    semanticState
   }
 
+  case object Early extends SemanticAnalysis[State2, State3] {
+    override def transform(from: State2, context: Context): State3 =
+      from.add(handle(from.statement, context))
+  }
+
+  case object Late extends SemanticAnalysis[State4, State4] {
+    override def transform(from: State4, context: Context): State4 =
+      from.copy(semantics = handle(from.statement, context))
+  }
+}
+
+abstract class SemanticAnalysis[A,B] extends Phase[A,B] {
   override def phase = SEMANTIC_CHECK
 
   override def why = "Does variable binding, typing, type checking and other semantic checks"

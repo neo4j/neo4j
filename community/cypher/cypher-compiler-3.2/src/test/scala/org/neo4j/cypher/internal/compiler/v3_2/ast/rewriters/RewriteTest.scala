@@ -30,13 +30,12 @@ trait RewriteTest {
   import parser.ParserFixture._
 
   def rewriterUnderTest: Rewriter
-  val semanticChecker = new SemanticChecker
 
   protected def assertRewrite(originalQuery: String, expectedQuery: String) {
     val original = parseForRewriting(originalQuery)
     val expected = parseForRewriting(expectedQuery)
     val mkException = new SyntaxExceptionCreator(originalQuery, Some(DummyPosition(0)))
-    semanticChecker.check(original, mkException)
+    SemanticChecker.check(original, mkException)
 
     val result = rewrite(original)
     assert(result === expected, "\n" + originalQuery)

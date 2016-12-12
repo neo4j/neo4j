@@ -44,7 +44,6 @@ case class CostBasedExecutablePlanBuilder(monitors: Monitors,
                                           queryPlanner: QueryPlanner,
                                           queryGraphSolver: QueryGraphSolver,
                                           rewriterSequencer: (String) => RewriterStepSequencer,
-                                          semanticChecker: SemanticChecker,
                                           plannerName: CostBasedPlannerName,
                                           runtimeBuilder: RuntimeBuilder,
                                           updateStrategy: UpdateStrategy,
@@ -61,8 +60,7 @@ case class CostBasedExecutablePlanBuilder(monitors: Monitors,
         semanticTable = inputQuery.semanticTable,
         rewriterSequencer = rewriterSequencer,
         preConditions = inputQuery.conditions,
-        monitor = monitors.newMonitor[AstRewritingMonitor](),
-        semanticChecker = semanticChecker)
+        monitor = monitors.newMonitor[AstRewritingMonitor]())
 
     //monitor success of compilation
     val planBuilderMonitor = monitors.newMonitor[NewRuntimeSuccessRateMonitor](CypherCompilerFactory.monitorTag)
@@ -112,7 +110,6 @@ object CostBasedExecutablePlanBuilder {
                        scopeTree: Scope,
                        semanticTable: SemanticTable,
                        rewriterSequencer: (String) => RewriterStepSequencer,
-                       semanticChecker: SemanticChecker,
                        preConditions: Set[RewriterCondition],
                        monitor: AstRewritingMonitor): (Statement, SemanticTable) = {
     val statementRewriter = StatementRewriter(rewriterSequencer, preConditions, monitor)
@@ -123,7 +120,7 @@ object CostBasedExecutablePlanBuilder {
       CNFNormalizer()(monitor)
     )
 
-    val state = semanticChecker.check(namespacedStatement, mkException = (msg, pos) => throw new InternalException(s"Unexpected error during late semantic checking: $msg at $pos"))
+    val state = SemanticChecker.check(namespacedStatement, mkException = (msg, pos) => throw new InternalException(s"Unexpected error during late semantic checking: $msg at $pos"))
     val table = semanticTable.copy(types = state.typeTable, recordedScopes = state.recordedScopes)
 
     val newStatement = statementRewriter.rewriteStatement(namespacedStatement)(

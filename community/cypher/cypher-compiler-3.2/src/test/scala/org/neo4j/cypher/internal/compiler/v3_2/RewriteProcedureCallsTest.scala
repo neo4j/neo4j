@@ -41,7 +41,7 @@ class RewriteProcedureCallsTest extends CypherFunSuite with AstConstructionTestS
     val unresolved = UnresolvedCall(ns, name, None, None)(pos)
     val original = Query(None, SingleQuery(Seq(unresolved))_)(pos)
 
-    val rewritten = rewriteProcedureCalls(procLookup, fcnLookup)(original)
+    val rewritten = rewriteProcedureCalls(procLookup, fcnLookup, original)
 
     rewritten should equal(
       Query(None, SingleQuery(Seq(ResolvedCall(procLookup)(unresolved).coerceArguments.withFakedFullDeclarations))_)(pos)
@@ -53,10 +53,16 @@ class RewriteProcedureCallsTest extends CypherFunSuite with AstConstructionTestS
     val headClause = Unwind(varFor("x"), varFor("y"))(pos)
     val original = Query(None, SingleQuery(Seq(headClause, unresolved))_)(pos)
 
-    val rewritten = rewriteProcedureCalls(procLookup, fcnLookup)(original)
+    val rewritten = rewriteProcedureCalls(procLookup, fcnLookup, original)
 
     rewritten should equal(
       Query(None, SingleQuery(Seq(headClause, ResolvedCall(procLookup)(unresolved).coerceArguments))_)(pos)
     )
+  }
+
+  def rewriteProcedureCalls(procSignatureLookup: QualifiedName => ProcedureSignature,
+                            funcSignatureLookup: QualifiedName => Option[UserFunctionSignature],
+                            original: Query) = {
+    new RewriteProcedureCalls(procLookup, fcnLookup).rewriter
   }
 }

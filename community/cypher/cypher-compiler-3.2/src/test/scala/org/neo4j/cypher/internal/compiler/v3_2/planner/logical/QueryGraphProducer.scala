@@ -36,13 +36,12 @@ trait QueryGraphProducer extends MockitoSugar {
     val q = query + " RETURN 1 AS Result"
     val ast = parser.parse(q)
     val mkException = new SyntaxExceptionCreator(query, Some(pos))
-    val semanticChecker = new SemanticChecker
     val cleanedStatement: Statement = ast.endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException)))
-    val semanticState = semanticChecker.check(cleanedStatement, mkException)
+    val semanticState = SemanticChecker.check(cleanedStatement, mkException)
 
     val (firstRewriteStep, _, postConditions) = astRewriter.rewrite(query, cleanedStatement, semanticState)
     val semanticTable = SemanticTable(types = semanticState.typeTable, recordedScopes = semanticState.recordedScopes)
-    val (rewrittenAst, rewrittenTable) = CostBasedExecutablePlanBuilder.rewriteStatement(firstRewriteStep, semanticState.scopeTree, semanticTable, rewriterSequencer, semanticChecker, postConditions, mock[AstRewritingMonitor])
+    val (rewrittenAst, rewrittenTable) = CostBasedExecutablePlanBuilder.rewriteStatement(firstRewriteStep, semanticState.scopeTree, semanticTable, rewriterSequencer, postConditions, mock[AstRewritingMonitor])
     (toUnionQuery(rewrittenAst.asInstanceOf[Query], semanticTable).queries.head, rewrittenTable)
   }
 

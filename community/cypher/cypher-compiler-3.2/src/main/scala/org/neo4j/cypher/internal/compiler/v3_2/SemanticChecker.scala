@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_2
 import org.neo4j.cypher.internal.frontend.v3_2._
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Statement
 
-class SemanticChecker {
+object SemanticChecker {
   def check(statement: Statement, mkException: (String, InputPosition) => CypherException): SemanticState = {
 
     val SemanticCheckResult(semanticState, semanticErrors) = statement.semanticCheck(SemanticState.clean)

@@ -42,7 +42,6 @@ object CypherCompilerFactory {
                         runtimeName: Option[RuntimeName],
                         updateStrategy: Option[UpdateStrategy],
                         typeConverter: RuntimeTypeConverter): CypherCompiler = {
-    val checker = new SemanticChecker
     val rewriter = new ASTRewriter(rewriterSequencer)
     val metricsFactory = CachedMetricsFactory(SimpleMetricsFactory)
     val queryPlanner = DefaultQueryPlanner(LogicalPlanRewriter(rewriterSequencer))
@@ -58,7 +57,6 @@ object CypherCompilerFactory {
       metricsFactory = metricsFactory,
       queryPlanner = queryPlanner,
       rewriterSequencer = rewriterSequencer,
-      semanticChecker = checker,
       plannerName = plannerName,
       runtimeBuilder = runtimeBuilder,
       config = config,
@@ -76,7 +74,7 @@ object CypherCompilerFactory {
     val cacheMonitor = monitors.newMonitor[AstCacheMonitor](monitorTag)
     val cache = new MonitoringCacheAccessor[Statement, ExecutionPlan](cacheMonitor)
 
-    CypherCompiler(checker, execPlanBuilder, rewriter, cache, planCacheFactory, cacheMonitor, monitors, rewriterSequencer)
+    CypherCompiler(execPlanBuilder, rewriter, cache, planCacheFactory, cacheMonitor, monitors, rewriterSequencer)
   }
 
   private def logStalePlanRemovalMonitor(log: InfoLogger) = new AstCacheMonitor {

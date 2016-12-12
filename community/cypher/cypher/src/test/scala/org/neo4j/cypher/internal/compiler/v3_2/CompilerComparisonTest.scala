@@ -294,7 +294,6 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
     val kernelMonitors = new KernelMonitors()
     val monitors = WrappedMonitors(kernelMonitors)
     val parser = new CypherParser
-    val checker = new SemanticChecker
     val rewriter = new ASTRewriter(rewriterSequencer)
     val planBuilderMonitor = monitors.newMonitor[NewLogicalPlanSuccessRateMonitor](monitorTag)
     val metricsFactory = CachedMetricsFactory(metricsFactoryInput)
@@ -306,7 +305,6 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
       rewriterSequencer = rewriterSequencer,
       queryPlanner = queryPlanner,
       runtimeBuilder = SilentFallbackRuntimeBuilder(InterpretedPlanBuilder(clock, monitors, IdentityTypeConverter), CompiledPlanBuilder(clock,GeneratedQueryStructure)),
-      semanticChecker = checker,
       config = config,
       updateStrategy = None,
       publicTypeConverter = identity
@@ -319,7 +317,7 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
       monitors.newMonitor[CypherCacheFlushingMonitor[CacheAccessor[Statement, ExecutionPlan]]](monitorTag)
     val cache = new MonitoringCacheAccessor[Statement, ExecutionPlan](cacheHitMonitor)
 
-    CypherCompiler(checker, execPlanBuilder, rewriter, cache, planCacheFactory, cacheFlushMonitor, monitors, rewriterSequencer)
+    CypherCompiler(execPlanBuilder, rewriter, cache, planCacheFactory, cacheFlushMonitor, monitors, rewriterSequencer)
   }
 
   case class QueryExecutionResult(compiler: String, dbHits: Option[Long], plan: InternalPlanDescription) {

@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v3_2.SyntaxExceptionCreator
 import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.plannerQuery.StatementConverters.toUnionQuery
 import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters.flattenBooleanOperators
 import org.neo4j.cypher.internal.compiler.v3_2.planner._
+import org.neo4j.cypher.internal.compiler.v3_2.{SemanticChecker, SyntaxExceptionCreator}
 import org.neo4j.cypher.internal.frontend.v3_2.Rewritable._
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Query
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.fixedPoint
@@ -196,7 +196,7 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
   private def getUnionQueryFrom(query: String): UnionQuery = {
     val ast = parseForRewriting(query).endoRewrite(flattenBooleanOperators)
     val mkException = new SyntaxExceptionCreator(query, Some(DummyPosition(0)))
-    val semanticState = semanticChecker.check(ast, mkException)
+    val semanticState = SemanticChecker.check(ast, mkException)
     val table = SemanticTable(types = semanticState.typeTable, recordedScopes = semanticState.recordedScopes)
     toUnionQuery(ast.asInstanceOf[Query], table)
   }

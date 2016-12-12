@@ -19,38 +19,18 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2
 
+import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
 import org.neo4j.cypher.internal.compiler.v3_2.ast.{ResolvedCall, ResolvedFunctionInvocation}
+import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilationState.State4
+import org.neo4j.cypher.internal.compiler.v3_2.phases.{Context, EndoPhase}
 import org.neo4j.cypher.internal.compiler.v3_2.spi.{ProcedureSignature, QualifiedName, UserFunctionSignature}
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.{Rewriter, bottomUp}
 
-// Given a way to lookup procedure signatures, this factory returns a rewriter that
-// turns unresolved calls into resolved calls
-object rewriteProcedureCalls {
-
-  def apply(procSignatureLookup: QualifiedName => ProcedureSignature,
-            funcSignatureLookup: QualifiedName => Option[UserFunctionSignature]) = {
-
-    // rewriter that amends unresolved procedure calls with procedure signature information
-    val resolveCalls = bottomUp(Rewriter.lift {
-      case unresolved: UnresolvedCall =>
-        val resolved = ResolvedCall(procSignatureLookup)(unresolved)
-        // We coerce here to ensure that the semantic check run after this rewriter assigns a type
-        // to the coercion expression
-        val coerced = resolved.coerceArguments
-        coerced
-
-      case function: FunctionInvocation if function.needsToBeResolved =>
-          val resolved = ResolvedFunctionInvocation(funcSignatureLookup)(function)
-
-          // We coerce here to ensure that the semantic check run after this rewriter assigns a type
-          // to the coercion expression
-          val coerced = resolved.coerceArguments
-          coerced
-    })
-
-    resolveCalls andThen fakeStandaloneCallDeclarations
-  }
+// Given a way to lookup procedure signatures, this phase rewrites unresolved calls into resolved calls
+class RewriteProcedureCalls(procSignatureLookup: QualifiedName => ProcedureSignature,
+                            funcSignatureLookup: QualifiedName => Option[UserFunctionSignature])
+  extends EndoPhase[State4] {
 
   // Current procedure calling syntax allows simplified short-hand syntax for queries
   // that only consist of a standalone procedure call. In all other cases attempts to
@@ -58,10 +38,39 @@ object rewriteProcedureCalls {
   //
   // This rewriter rewrites standalone calls in simplified syntax to calls in standard
   // syntax to prevent them from being rejected during semantic checking.
-  //
   private val fakeStandaloneCallDeclarations = Rewriter.lift {
     case q@Query(None, part@SingleQuery(Seq(resolved@ResolvedCall(_, _, _, _, _)))) if !resolved.fullyDeclared =>
       val result = q.copy(part = part.copy(clauses = Seq(resolved.withFakedFullDeclarations))(part.position))(q.position)
       result
+  }
+
+  val resolverProcedureCall = bottomUp(Rewriter.lift {
+    case unresolved: UnresolvedCall =>
+      val resolved = ResolvedCall(procSignatureLookup)(unresolved)
+      // We coerce here to ensure that the semantic check run after this rewriter assigns a type
+      // to the coercion expressions
+      val coerced = resolved.coerceArguments
+      coerced
+
+    case function: FunctionInvocation if function.needsToBeResolved =>
+      val resolved = ResolvedFunctionInvocation(funcSignatureLookup)(function)
+
+      // We coerce here to ensure that the semantic check run after this rewriter assigns a type
+      // to the coercion expression
+      val coerced = resolved.coerceArguments
+      coerced
+  })
+
+  // rewriter that amends unresolved procedure calls with procedure signature information
+  val rewriter: AnyRef => AnyRef =
+    resolverProcedureCall andThen fakeStandaloneCallDeclarations
+
+  override def phase = AST_REWRITE
+
+  override def why = "procedure resolver"
+
+  override def transform(from: State4, context: Context): State4 = {
+    val rewrittenStatement = from.statement.endoRewrite(rewriter)
+    from.copy(statement = rewrittenStatement)
   }
 }
