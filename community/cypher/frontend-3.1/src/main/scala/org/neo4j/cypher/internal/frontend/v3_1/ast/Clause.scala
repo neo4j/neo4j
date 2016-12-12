@@ -180,7 +180,6 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
    */
   private def applicable(other: Expression) = {
     other match {
-//      case _: Property => false
       case f: FunctionInvocation => f.function != functions.Id
       case _ => true
     }
