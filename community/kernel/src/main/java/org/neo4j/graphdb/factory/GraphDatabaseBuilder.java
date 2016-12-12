@@ -39,8 +39,13 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
  */
 public class GraphDatabaseBuilder
 {
+    @Deprecated
     public interface DatabaseCreator
     {
+        /**
+         * This method will no longer accept a map in 4.0, but a Config object instead.
+         */
+        @Deprecated
         GraphDatabaseService newDatabase( Map<String, String> config );
     }
 
@@ -125,7 +130,6 @@ public class GraphDatabaseBuilder
      * @return the builder
      * @throws IllegalArgumentException if the builder was unable to load from the given filename
      */
-
     public GraphDatabaseBuilder loadPropertiesFromFile( String fileName )
             throws IllegalArgumentException
     {

@@ -81,6 +81,10 @@ public class GraphDatabaseFactory
         return new GraphDatabaseBuilder( creator );
     }
 
+    /**
+     * Will return a different interface in 4.0
+     */
+    @Deprecated
     protected GraphDatabaseBuilder.DatabaseCreator createDatabaseCreator(
             final File storeDir, final GraphDatabaseFactoryState state )
     {
@@ -96,6 +100,7 @@ public class GraphDatabaseFactory
         // Let the default configuration pass through.
     }
 
+    @Deprecated
     protected GraphDatabaseService newDatabase( File storeDir, Map<String,String> settings,
             GraphDatabaseFacadeFactory.Dependencies dependencies )
     {
