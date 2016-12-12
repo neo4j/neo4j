@@ -22,6 +22,7 @@ package org.neo4j.causalclustering.core.consensus.log.segmented;
 import java.util.Arrays;
 
 import static java.lang.Math.max;
+import static java.lang.String.format;
 
 /**
  * Keeps track of all the terms in memory for efficient lookup.
@@ -54,11 +55,13 @@ public class Terms
     {
         if ( index != max + 1 )
         {
-            throw new IllegalStateException( "Must append in order" );
+            throw new IllegalStateException( format( "Must append in order. %s but expected index is %d",
+                    appendMessage( index, term ), max + 1 ) );
         }
         else if ( size > 0 && term < terms[size - 1] )
         {
-            throw new IllegalStateException( "Non-monotonic term" );
+            throw new IllegalStateException( format( "Non-monotonic term. %s but highest term is %d",
+                    appendMessage( index, term ), terms[size - 1] ) );
         }
 
         max = index;
@@ -69,6 +72,11 @@ public class Terms
             indexes[size - 1] = index;
             terms[size - 1] = term;
         }
+    }
+
+    private String appendMessage( long index, long term )
+    {
+        return format( "Tried to append [index: %d, term: %d]", index, term );
     }
 
     private void setSize( int newSize )
@@ -88,6 +96,11 @@ public class Terms
      */
     synchronized void truncate( long fromIndex )
     {
+        if ( fromIndex < 0 || fromIndex < min )
+        {
+            throw new IllegalStateException( "Cannot truncate a negative index. Tried to truncate from " + fromIndex );
+        }
+
         max = fromIndex - 1;
 
         int newSize = size;
