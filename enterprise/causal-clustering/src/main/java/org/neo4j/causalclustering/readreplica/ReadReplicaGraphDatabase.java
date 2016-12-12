@@ -20,8 +20,6 @@
 package org.neo4j.causalclustering.readreplica;
 
 import java.io.File;
-import java.util.Collections;
-import java.util.Map;
 import java.util.function.Function;
 
 import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
@@ -40,22 +38,9 @@ public class ReadReplicaGraphDatabase extends GraphDatabaseFacade
     public static final String CUSTOM_IO_EXCEPTION_MESSAGE =
             "Read replica mode is not allowed with custom IO integrations";
 
-    public ReadReplicaGraphDatabase( File storeDir, Map<String,String> params, Dependencies dependencies )
-    {
-        this( storeDir, params, dependencies, new HazelcastDiscoveryServiceFactory() );
-    }
-
     public ReadReplicaGraphDatabase( File storeDir, Config config, Dependencies dependencies )
     {
         this( storeDir, config, dependencies, new HazelcastDiscoveryServiceFactory() );
-    }
-
-    public ReadReplicaGraphDatabase( File storeDir, Map<String,String> params, Dependencies dependencies,
-            DiscoveryServiceFactory discoveryServiceFactory )
-    {
-        this( storeDir,
-                Config.embeddedDefaults( params, Collections.emptyList() ),
-                dependencies, discoveryServiceFactory );
     }
 
     public ReadReplicaGraphDatabase( File storeDir, Config config, Dependencies dependencies,

@@ -131,7 +131,7 @@ public class CoreClusterMember implements ClusterMember
     @Override
     public void start()
     {
-        database = new CoreGraphDatabase( storeDir, config,
+        database = new CoreGraphDatabase( storeDir, Config.embeddedDefaults( config ),
                 GraphDatabaseDependencies.newDependencies(), discoveryServiceFactory );
     }
 
