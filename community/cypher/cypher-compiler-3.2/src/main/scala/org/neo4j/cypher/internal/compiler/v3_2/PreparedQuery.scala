@@ -50,30 +50,6 @@ sealed trait PreparedQuery {
   }
 }
 
-// Result of syntactical analysis of a Cypher query
-//
-// The contained statement is known to be syntactically correct, have correctly bound names
-// (i.e. does not contain variables that hasn't been declared in an accessible scope before)
-// and has passed limited type checking (without correct procedure signatures)
-//
-case class PreparedQuerySyntax(statement: Statement,
-                               queryText: String,
-                               offset: Option[InputPosition],
-                               extractedParams: Map[String, Any])(val plannerName: String = "",
-                                                                  val conditions: Set[RewriterCondition] = Set.empty)
-
-  extends PreparedQuery {
-
-  override type SELF = PreparedQuerySyntax
-
-  override def rewrite(rewriter: Rewriter): PreparedQuerySyntax =
-    copy(statement = statement.endoRewrite(rewriter))(plannerName, conditions)
-
-  def withSemantics(semanticTable: SemanticTable,
-                    scopeTree: Scope) =
-    PreparedQuerySemantics(statement, queryText, offset, extractedParams, semanticTable, scopeTree)(plannerName, conditions)
-}
-
 // Result of semantic analysis of a Cypher query
 //
 // The contained statement has passed all syntactic checks as well as full type checking

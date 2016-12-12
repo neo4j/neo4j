@@ -38,16 +38,18 @@ case class CypherCompiler(executionPlanBuilder: ExecutionPlanBuilder,
   def planQuery(queryText: String, context: PlanContext, notificationLogger: InternalNotificationLogger,
                 plannerName: String = "",
                 offset: Option[InputPosition] = None): (ExecutionPlan, Map[String, Any]) = {
-    planPreparedQuery(prepareSyntacticQuery(queryText, queryText, notificationLogger, plannerName), notificationLogger, context, offset, CompilationPhaseTracer.NO_TRACING)
+    val step1: State4 = prepareSyntacticQuery(queryText, queryText, notificationLogger, plannerName)
+    planPreparedQuery(step1, notificationLogger, context, offset, CompilationPhaseTracer.NO_TRACING)
   }
 
-  def planPreparedQuery(syntacticQuery: PreparedQuerySyntax, notificationLogger: InternalNotificationLogger,
+  def planPreparedQuery(input: State4,
+                        notificationLogger: InternalNotificationLogger,
                         context: PlanContext,
                         offset: Option[InputPosition] = None,
                         tracer: CompilationPhaseTracer): (ExecutionPlan, Map[String, Any]) = {
-    val semanticQuery = prepareSemanticQuery(syntacticQuery, notificationLogger, context, offset, tracer)
+    val semanticQuery = prepareSemanticQuery(input, notificationLogger, context)
     val cache = provideCache(cacheAccessor, cacheMonitor, context)
-    val (executionPlan, _) = cache.getOrElseUpdate(syntacticQuery.statement, syntacticQuery.queryText,
+    val (executionPlan, _) = cache.getOrElseUpdate(input.statement, input.queryText,
       _.isStale (context.txIdProvider, context.statistics),
       executionPlanBuilder.build(context, semanticQuery, tracer)
     )
@@ -57,29 +59,25 @@ case class CypherCompiler(executionPlanBuilder: ExecutionPlanBuilder,
   def prepareSyntacticQuery(queryText: String, rawQueryText: String, notificationLogger: InternalNotificationLogger,
                             plannerName: String = "",
                             offset: Option[InputPosition] = None,
-                            tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING): PreparedQuerySyntax = {
+                            tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING): State4 = {
     val exceptionCreator = new SyntaxExceptionCreator(rawQueryText, offset)
-    val startState = State1(queryText, offset)
+    val startState = State1(queryText, offset, plannerName)
     val context = Context(exceptionCreator, tracer, notificationLogger)
-    val finalState: State4 = firstPipePline.transform(startState, context)
-
-    val postConditions = finalState.postConditions
-    val extractedParams = finalState.extractedParams
-    PreparedQuerySyntax(finalState.statement, rawQueryText, offset, extractedParams)(plannerName, postConditions)
+    firstPipeline.transform(startState, context)
   }
 
   private val astRewriting = AstRewriting(sequencer)
 
-  private val firstPipePline =
+  private val firstPipeline =
       Parsing andThen
       DeprecationWarnings andThen
       PreparatoryRewriting andThen
       SemanticAnalysis.Early andThen
       astRewriting
 
-  def prepareSemanticQuery(syntacticQuery: PreparedQuerySyntax, notificationLogger: InternalNotificationLogger,
+  def prepareSemanticQuery(in: State4,
+                           notificationLogger: InternalNotificationLogger,
                            context: PlanContext,
-                           offset: Option[InputPosition] = None,
                            tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING): PreparedQuerySemantics = {
     val rewriteProcedureCalls = new RewriteProcedureCalls(context.procedureSignature, context.functionSignature)
 
@@ -87,22 +85,18 @@ case class CypherCompiler(executionPlanBuilder: ExecutionPlanBuilder,
       rewriteProcedureCalls andThen
       SemanticAnalysis.Late
 
-    val exceptionCreator = new SyntaxExceptionCreator(syntacticQuery.queryText, offset)
+    val exceptionCreator = new SyntaxExceptionCreator(in.queryText, in.startPosition)
 
-    val input = State4(
-      queryText = syntacticQuery.queryText,
-      startPosition = syntacticQuery.offset,
-      statement = syntacticQuery.statement,
-      semantics = null,
-      extractedParams = syntacticQuery.extractedParams,
-      postConditions = syntacticQuery.conditions)
-
-    val output = secondPipeLine.transform(input, Context(exceptionCreator, null, notificationLogger))
+    val output = secondPipeLine.transform(in, Context(exceptionCreator, tracer, notificationLogger))
 
     val table = SemanticTable(types = output.semantics.typeTable, recordedScopes = output.semantics.recordedScopes)
-    val copy1 = syntacticQuery.copy(statement = output.statement)(syntacticQuery.plannerName, syntacticQuery.conditions)
-    val result = copy1.withSemantics(table, output.semantics.scopeTree)
-    result
+    PreparedQuerySemantics(
+      statement = in.statement,
+      queryText = in.queryText,
+      offset = in.startPosition,
+      extractedParams = in.extractedParams,
+      semanticTable = table,
+      scopeTree = output.semantics.scopeTree)(in.plannerName, in.postConditions)
   }
 
   private def provideCache(cacheAccessor: CacheAccessor[Statement, ExecutionPlan],

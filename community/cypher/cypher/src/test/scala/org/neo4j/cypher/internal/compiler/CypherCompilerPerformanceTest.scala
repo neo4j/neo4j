@@ -168,7 +168,7 @@ class CypherCompilerPerformanceTest extends GraphDatabaseFunSuite {
     val compiler = createCurrentCompiler
     val (preparedSyntacticQueryTime, preparedSyntacticQuery) = measure(compiler.prepareSyntacticQuery(query, query, devNullLogger))
     val planTime = graph.inTx {
-      val (semanticTime, semanticQuery) = measure(compiler.prepareSemanticQuery(preparedSyntacticQuery, devNullLogger, planContext, None, CompilationPhaseTracer.NO_TRACING))
+      val (semanticTime, semanticQuery) = measure(compiler.prepareSemanticQuery(preparedSyntacticQuery, devNullLogger, planContext, CompilationPhaseTracer.NO_TRACING))
       val (planTime, _) = measure(compiler.executionPlanBuilder.build(planContext, semanticQuery))
       planTime + semanticTime
     }

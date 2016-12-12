@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.executionplan
 
 import org.neo4j.cypher.internal.compiler.v3_2.planner.CantHandleQueryException
 import org.neo4j.cypher.internal.compiler.v3_2.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v3_2.{PreparedQuerySemantics, CompilationPhaseTracer, PreparedQuerySyntax}
+import org.neo4j.cypher.internal.compiler.v3_2.{CompilationPhaseTracer, PreparedQuerySemantics}
 import org.neo4j.cypher.internal.frontend.v3_2.InvalidArgumentException
 
 case class ErrorReportingExecutablePlanBuilder(inner: ExecutablePlanBuilder) extends ExecutablePlanBuilder {

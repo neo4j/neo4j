@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_2.phases
 
 import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterCondition
-import org.neo4j.cypher.internal.frontend.v3_2.ast.Statement
+import org.neo4j.cypher.internal.frontend.v3_2.ast.{Query, Statement}
 import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, SemanticState}
 
 object CompilationState {
@@ -31,6 +31,7 @@ object CompilationState {
   sealed trait S1 {
     val queryText: String
     val startPosition: Option[InputPosition]
+    val plannerName: String
   }
 
   sealed trait S2 extends S1 {
@@ -47,30 +48,41 @@ object CompilationState {
   }
 
   case class State1(queryText: String,
-                    startPosition: Option[InputPosition]) extends S1 {
+                    startPosition: Option[InputPosition],
+                    plannerName: String) extends S1 {
     def add(statement: Statement): State2 =
-      State2(queryText, startPosition, statement)
+      State2(queryText, startPosition, plannerName, statement)
   }
 
   case class State2(queryText: String,
                     startPosition: Option[InputPosition],
+                    plannerName: String,
                     statement: Statement) extends S2 {
     def add(semantics: SemanticState): State3 =
-      State3(queryText, startPosition, statement, semantics)
+      State3(queryText, startPosition, statement, plannerName, semantics)
   }
 
   case class State3(queryText: String,
                     startPosition: Option[InputPosition],
                     statement: Statement,
+                    plannerName: String,
                     semantics: SemanticState) extends S3 {
     def add(extractedParams: Map[String, Any], postConditions: Set[RewriterCondition]): State4 =
-      State4(queryText, startPosition, statement, semantics, extractedParams, postConditions)
+      State4(queryText, startPosition, plannerName, statement, semantics, extractedParams, postConditions)
   }
 
   case class State4(queryText: String,
                     startPosition: Option[InputPosition],
+                    plannerName: String,
                     statement: Statement,
                     semantics: SemanticState,
-                    extractedParams: Map[String, Any], postConditions: Set[RewriterCondition]) extends S4
+                    extractedParams: Map[String, Any], postConditions: Set[RewriterCondition]) extends S4 {
+
+    def isPeriodicCommit: Boolean = statement match {
+      case Query(Some(_), _) => true
+      case _ => false
+    }
+
+  }
 
 }
