@@ -32,6 +32,8 @@ import java.util.function.BooleanSupplier;
 
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.HazelcastDiscoveryServiceFactory;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 
@@ -58,6 +60,8 @@ public class CatchupStoreCopyInteractionStressTesting
     private static final String DEFAULT_ENABLE_INDEXES = "false";
     private static final String DEFAULT_TX_PRUNE = "50 files";
     private static final String DEFAULT_WORKING_DIR = new File( getProperty( "java.io.tmpdir" ) ).getPath();
+
+    private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
 
     @Test
     public void shouldBehaveCorrectlyUnderStress() throws Exception
@@ -100,8 +104,8 @@ public class CatchupStoreCopyInteractionStressTesting
             }
 
             Future<Throwable> workload = service.submit( new Workload( keepGoing, onFailure, cluster ) );
-            Future<Throwable> startStopWorker =
-                    service.submit( new StartStopLoad( keepGoing, onFailure, cluster, numberOfCores, numberOfEdges ) );
+            Future<Throwable> startStopWorker = service.submit(
+                    new StartStopLoad( fs, keepGoing, onFailure, cluster, numberOfCores, numberOfEdges ) );
             Future<Throwable> catchUpWorker = service.submit( new CatchUpLoad( keepGoing, onFailure, cluster ) );
 
             long timeout = durationInMinutes + 5;
