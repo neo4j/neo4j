@@ -310,6 +310,12 @@ public class RaftMembershipManager extends LifecycleAdapter implements RaftMembe
         }
     }
 
+    @Override
+    public void prune( long pruneIndex )
+    {
+        // only the actual log prunes
+    }
+
     public MembershipEntry getCommitted()
     {
         return state.committed();
