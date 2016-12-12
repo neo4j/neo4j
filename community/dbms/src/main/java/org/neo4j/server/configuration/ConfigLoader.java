@@ -39,10 +39,6 @@ public class ConfigLoader
 {
     public static final String DEFAULT_CONFIG_FILE_NAME = "neo4j.conf";
 
-    public ConfigLoader()
-    {
-    }
-
     public static Config loadConfig( Optional<File> configFile, Pair<String,String>... configOverrides ) throws
             IOException
     {
