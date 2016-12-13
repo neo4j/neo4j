@@ -2712,6 +2712,8 @@ public abstract class PageCacheTest<T extends PageCache>
         //Get a write lock to pause the unmapper
         CountDownLatch writeLockLatch = new CountDownLatch( 1 );
         Thread writeLockFork = fork( $writeLock( pagedFile, 2, writeLockLatch ) );
+        awaitThreadState( writeLockFork, 1000,
+                Thread.State.BLOCKED, Thread.State.WAITING, Thread.State.TIMED_WAITING );
         //Try to unmap the file.
         Thread unmapper = fork( $close( pagedFile ) );
         awaitThreadState( unmapper, 1000,
