@@ -74,39 +74,6 @@ class IndexNestedLoopJoinAcceptanceTest extends ExecutionEngineFunSuite with New
     result should not(use("ValueHashJoin", "CartesianProduct", "NodeByLabelScan", "Filter"))
   }
 
-  test("should use index on literal value") {
-    val node = createLabeledNode(Map("id" -> 123), "Foo")
-    graph.createIndex("Foo", "id")
-    val query =
-      """
-        |PROFILE
-        | MATCH (f:Foo)
-        | USING INDEX f:Foo(id)
-        | WHERE f.id=123
-        | RETURN f
-      """.stripMargin
-    val result = executeWithCostPlannerOnly(query)
-    result.columnAs[Node]("f").toList should equal(List(node))
-    result.executionPlanDescription() should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "f")
-  }
-
-  test("should use index on variable defined from literal value") {
-    val node = createLabeledNode(Map("id" -> 123), "Foo")
-    graph.createIndex("Foo", "id")
-    val query =
-      """
-        |PROFILE
-        | WITH 123 AS row
-        | MATCH (f:Foo)
-        | USING INDEX f:Foo(id)
-        | WHERE f.id=row
-        | RETURN f
-      """.stripMargin
-    val result = executeWithCostPlannerOnly(query)
-    result.columnAs[Node]("f").toList should equal(List(node))
-    result.executionPlanDescription() should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "f")
-  }
-
   test("should use index on literal map expression") {
     val nodes = Range(0,125).map(i => createLabeledNode(Map("id" -> i), "Foo"))
     graph.createIndex("Foo", "id")

@@ -24,12 +24,44 @@ import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescr
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription.Arguments.KeyNames
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.{NodeHashJoin, NodeIndexSeek}
 import org.neo4j.cypher.{ExecutionEngineFunSuite, IndexHintException, NewPlannerTestSupport, SyntaxException, _}
-import org.neo4j.graphdb.QueryExecutionException
+import org.neo4j.graphdb.{QueryExecutionException,Node}
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.api.exceptions.Status
-import org.scalatest.matchers.{MatchResult, Matcher}
 
 class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport with RunWithConfigTestSupport {
+
+  test("should use index on literal value") {
+    val node = createLabeledNode(Map("id" -> 123), "Foo")
+    graph.createIndex("Foo", "id")
+    val query =
+      """
+        |PROFILE
+        | MATCH (f:Foo)
+        | USING INDEX f:Foo(id)
+        | WHERE f.id=123
+        | RETURN f
+      """.stripMargin
+    val result = executeWithCostPlannerOnly(query)
+    result.columnAs[Node]("f").toList should equal(List(node))
+    result.executionPlanDescription() should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "f")
+  }
+
+  test("should use index on variable defined from literal value") {
+    val node = createLabeledNode(Map("id" -> 123), "Foo")
+    graph.createIndex("Foo", "id")
+    val query =
+      """
+        |PROFILE
+        | WITH 123 AS row
+        | MATCH (f:Foo)
+        | USING INDEX f:Foo(id)
+        | WHERE f.id=row
+        | RETURN f
+      """.stripMargin
+    val result = executeWithCostPlannerOnly(query)
+    result.columnAs[Node]("f").toList should equal(List(node))
+    result.executionPlanDescription() should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "f")
+  }
 
   test("fail if using index with start clause") {
     // GIVEN
