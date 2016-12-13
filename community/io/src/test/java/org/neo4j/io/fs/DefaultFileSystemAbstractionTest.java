@@ -21,6 +21,7 @@ package org.neo4j.io.fs;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
@@ -28,9 +29,12 @@ import java.io.IOException;
 import java.util.UUID;
 
 import org.neo4j.graphdb.mockfs.CloseTrackingFileSystem;
+import org.neo4j.io.fs.watcher.FileWatcher;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -38,13 +42,16 @@ import static org.junit.Assert.fail;
 
 public class DefaultFileSystemAbstractionTest
 {
+    @Rule
+    public TestDirectory testDirectory = TestDirectory.testDirectory();
+
     private DefaultFileSystemAbstraction defaultFileSystemAbstraction;
     private File path;
 
     @Before
     public void before() throws Exception
     {
-        path = new File( "target/" + UUID.randomUUID() );
+        path = testDirectory.file( "testFile" );
         defaultFileSystemAbstraction = new DefaultFileSystemAbstraction();
     }
 
@@ -52,6 +59,15 @@ public class DefaultFileSystemAbstractionTest
     public void tearDown() throws IOException
     {
         defaultFileSystemAbstraction.close();
+    }
+
+    @Test
+    public void fileWatcherCreation() throws IOException
+    {
+        try (FileWatcher fileWatcher = defaultFileSystemAbstraction.fileWatcher())
+        {
+            assertNotNull( fileWatcher.watch( testDirectory.directory( "testDirectory" ) ) );
+        }
     }
 
     @Test
@@ -97,7 +113,7 @@ public class DefaultFileSystemAbstractionTest
     @Test
     public void shouldFailGracefullyWhenPathCannotBeCreated() throws Exception
     {
-        path = new File( "target/" + UUID.randomUUID() )
+        path = new File( testDirectory.directory(), String.valueOf( UUID.randomUUID() ) )
         {
             @Override
             public boolean mkdirs()
@@ -136,5 +152,4 @@ public class DefaultFileSystemAbstractionTest
 
         assertTrue( closeTrackingFileSystem.isClosed() );
     }
-
 }

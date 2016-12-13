@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.factory;
 
 import java.io.File;
 import java.io.IOException;
-import java.time.Clock;
 import java.util.List;
 import java.util.Map;
 
@@ -31,6 +30,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemLifecycleAdapter;
+import org.neo4j.io.fs.watcher.FileWatcher;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
@@ -49,6 +49,8 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerMonitor;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
+import org.neo4j.kernel.impl.util.watcher.DefaultFileDeletionEventListener;
+import org.neo4j.kernel.impl.util.watcher.WatcherLifecycleAdapterFactory;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.info.JvmChecker;
 import org.neo4j.kernel.info.JvmMetadataRepository;
@@ -170,6 +172,10 @@ public class PlatformModule
         dependencies.satisfyDependency( firstImplementor(
                 CheckPointerMonitor.class, tracers.checkPointTracer, CheckPointerMonitor.NULL ) );
 
+        FileWatcher fileWatcher = createFileWatcher();
+        dependencies.satisfyDependencies( fileWatcher );
+        life.add( WatcherLifecycleAdapterFactory.createLifecycleAdapter( jobScheduler, fileWatcher ) );
+
         pageCache = dependencies.satisfyDependency( createPageCache( fileSystem, config, logging, tracers ) );
         life.add( new PageCacheLifecycle( pageCache ) );
 
@@ -194,6 +200,24 @@ public class PlatformModule
         urlAccessRule = dependencies.satisfyDependency( URLAccessRules.combined( externalDependencies.urlAccessRules() ) );
 
         publishPlatformInfo( dependencies.resolveDependency( UsageData.class ) );
+    }
+
+    protected FileWatcher createFileWatcher()
+    {
+        try
+        {
+            FileWatcher watcher = fileSystem.fileWatcher();
+            watcher.addFileWatchEventListener( new DefaultFileDeletionEventListener( logging ) );
+            watcher.watch( storeDir );
+            return watcher;
+        }
+        catch ( Exception e )
+        {
+            Log log = logging.getInternalLog( getClass() );
+            log.warn( "Can not create file watcher for current file system. File monitoring capabilities for store " +
+                    "files will be disabled.", e );
+            return FileWatcher.SILENT_WATCHER;
+        }
     }
 
     protected SystemNanoClock createClock()
@@ -272,9 +296,7 @@ public class PlatformModule
         return new Neo4jJobScheduler();
     }
 
-    protected PageCache createPageCache( FileSystemAbstraction fileSystem,
-            Config config,
-            LogService logging,
+    protected PageCache createPageCache( FileSystemAbstraction fileSystem, Config config, LogService logging,
             Tracers tracers )
     {
         Log pageCacheLog = logging.getInternalLog( PageCache.class );
@@ -311,4 +333,5 @@ public class PlatformModule
 
         return totalSettingsClasses;
     }
+
 }

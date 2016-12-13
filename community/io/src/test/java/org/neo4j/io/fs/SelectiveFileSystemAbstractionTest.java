@@ -22,12 +22,17 @@ package org.neo4j.io.fs;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
 
 import org.neo4j.graphdb.mockfs.SelectiveFileSystemAbstraction;
+import org.neo4j.io.fs.watcher.FileWatcher;
+import org.neo4j.io.fs.watcher.resource.WatchedResource;
 
+import static org.junit.Assert.assertSame;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 public class SelectiveFileSystemAbstractionTest
 {
@@ -73,6 +78,33 @@ public class SelectiveFileSystemAbstractionTest
             verify( normal ).open( otherFile, "r" );
             verifyNoMoreInteractions( special );
             verifyNoMoreInteractions( normal );
+        }
+    }
+
+    @Test
+    public void provideSelectiveWatcher() throws IOException
+    {
+        File specialFile = new File("special");
+        File otherFile = new File("other");
+
+        FileSystemAbstraction normal = mock( FileSystemAbstraction.class );
+        FileSystemAbstraction special = mock( FileSystemAbstraction.class );
+
+        FileWatcher specialWatcher = mock( FileWatcher.class );
+        FileWatcher normalWatcher = mock( FileWatcher.class );
+        WatchedResource specialResource = mock( WatchedResource.class );
+        WatchedResource normalResource = mock( WatchedResource.class );
+
+        when( special.fileWatcher() ).thenReturn( specialWatcher );
+        when( normal.fileWatcher() ).thenReturn( normalWatcher );
+        when( specialWatcher.watch( specialFile ) ).thenReturn( specialResource );
+        when( normalWatcher.watch( otherFile ) ).thenReturn( normalResource );
+
+        try ( SelectiveFileSystemAbstraction fs = new SelectiveFileSystemAbstraction( specialFile, special, normal ) )
+        {
+            FileWatcher fileWatcher = fs.fileWatcher();
+            assertSame( specialResource, fileWatcher.watch( specialFile ) );
+            assertSame( normalResource, fileWatcher.watch( otherFile ) );
         }
     }
 }

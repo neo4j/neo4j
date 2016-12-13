@@ -171,6 +171,11 @@ public interface JobScheduler extends Lifecycle
          * Native security.
          */
         public static Group nativeSecurity = new Group( "NativeSecurity", POOLED );
+
+        /**
+         * File watch service group
+         */
+        public static Group fileWatch = new Group( "FileWatcher", NEW_THREAD );
     }
 
     interface JobHandle

@@ -39,10 +39,12 @@ import java.util.Map;
 import java.util.function.Function;
 
 import org.neo4j.adversaries.Adversary;
+import org.neo4j.adversaries.watcher.AdversarialFileWatcher;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.fs.StoreFileChannel;
+import org.neo4j.io.fs.watcher.FileWatcher;
 
 /**
  * Used by the robustness suite to check for partial failures.
@@ -62,6 +64,13 @@ public class AdversarialFileSystemAbstraction implements FileSystemAbstraction
     {
         this.adversary = adversary;
         this.delegate = delegate;
+    }
+
+    @Override
+    public FileWatcher fileWatcher() throws IOException
+    {
+        adversary.injectFailure( UnsupportedOperationException.class, IOException.class );
+        return new AdversarialFileWatcher( delegate.fileWatcher(), adversary );
     }
 
     public StoreChannel open( File fileName, String mode ) throws IOException

@@ -98,7 +98,7 @@ public class GraphDatabaseFactory
             @Override
             public GraphDatabaseService newDatabase( @Nonnull Config config )
             {
-                return GraphDatabaseFactory.this.newDatabase( storeDir,
+                return GraphDatabaseFactory.this.newEmbeddedDatabase( storeDir,
                         config.with( stringMap( "unsupported.dbms.ephemeral", "false" ) ),
                         state.databaseDependencies() );
             }
@@ -118,6 +118,12 @@ public class GraphDatabaseFactory
             GraphDatabaseFacadeFactory.Dependencies dependencies )
     {
         return newDatabase( storeDir, Config.embeddedDefaults( settings ), dependencies );
+    }
+
+    protected GraphDatabaseService newEmbeddedDatabase( File storeDir, Config config,
+            GraphDatabaseFacadeFactory.Dependencies dependencies )
+    {
+        return GraphDatabaseFactory.this.newDatabase( storeDir, config, dependencies );
     }
 
     protected GraphDatabaseService newDatabase( File storeDir, Config config,
@@ -149,4 +155,5 @@ public class GraphDatabaseFactory
     {
         return Edition.community.toString();
     }
+
 }

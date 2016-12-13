@@ -69,6 +69,7 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.fs.StoreFileChannel;
+import org.neo4j.io.fs.watcher.FileWatcher;
 import org.neo4j.test.impl.ChannelInputStream;
 import org.neo4j.test.impl.ChannelOutputStream;
 
@@ -248,6 +249,12 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
                 }
             }
         }
+    }
+
+    @Override
+    public FileWatcher fileWatcher() throws IOException
+    {
+        return FileWatcher.SILENT_WATCHER;
     }
 
     @Override

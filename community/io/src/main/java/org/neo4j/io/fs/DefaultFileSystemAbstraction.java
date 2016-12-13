@@ -34,12 +34,16 @@ import java.io.Writer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
 import java.nio.file.CopyOption;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
+import java.nio.file.WatchService;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
 import org.neo4j.io.IOUtils;
+import org.neo4j.io.fs.watcher.DefaultFileSystemWatcher;
+import org.neo4j.io.fs.watcher.FileWatcher;
 
 import static java.lang.String.format;
 
@@ -49,6 +53,13 @@ import static java.lang.String.format;
 public class DefaultFileSystemAbstraction implements FileSystemAbstraction
 {
     static final String UNABLE_TO_CREATE_DIRECTORY_FORMAT = "Unable to create directory path [%s] for Neo4j store.";
+
+    @Override
+    public FileWatcher fileWatcher() throws IOException
+    {
+        WatchService watchService = FileSystems.getDefault().newWatchService();
+        return new DefaultFileSystemWatcher( watchService );
+    }
 
     @Override
     public StoreFileChannel open( File fileName, String mode ) throws IOException

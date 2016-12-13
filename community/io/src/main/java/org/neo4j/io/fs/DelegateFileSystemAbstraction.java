@@ -44,6 +44,8 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 import org.neo4j.io.IOUtils;
+import org.neo4j.io.fs.watcher.DefaultFileSystemWatcher;
+import org.neo4j.io.fs.watcher.FileWatcher;
 
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
@@ -59,6 +61,12 @@ public class DelegateFileSystemAbstraction implements FileSystemAbstraction
     public DelegateFileSystemAbstraction( FileSystem fs )
     {
         this.fs = fs;
+    }
+
+    @Override
+    public FileWatcher fileWatcher() throws IOException
+    {
+        return new DefaultFileSystemWatcher( fs.newWatchService() );
     }
 
     @Override

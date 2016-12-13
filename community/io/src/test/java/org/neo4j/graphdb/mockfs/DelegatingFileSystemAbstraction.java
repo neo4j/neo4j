@@ -32,6 +32,7 @@ import java.util.function.Function;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.fs.watcher.FileWatcher;
 
 public class DelegatingFileSystemAbstraction implements FileSystemAbstraction
 {
@@ -40,6 +41,12 @@ public class DelegatingFileSystemAbstraction implements FileSystemAbstraction
     public DelegatingFileSystemAbstraction( FileSystemAbstraction delegate )
     {
         this.delegate = delegate;
+    }
+
+    @Override
+    public FileWatcher fileWatcher() throws IOException
+    {
+        return delegate.fileWatcher();
     }
 
     @Override
