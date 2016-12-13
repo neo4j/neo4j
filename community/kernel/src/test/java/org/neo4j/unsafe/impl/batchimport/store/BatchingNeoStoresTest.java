@@ -34,7 +34,7 @@ import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
+import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.PageCacheRule;
@@ -90,7 +90,7 @@ public class BatchingNeoStoresTest
                 GraphDatabaseSettings.string_block_size.name(), String.valueOf( size ) ) );
 
         // WHEN
-        RecordFormats recordFormats = StandardV3_0.RECORD_FORMATS;
+        RecordFormats recordFormats = Standard.LATEST_RECORD_FORMATS;
         int headerSize = recordFormats.dynamic().getRecordHeaderSize();
         try ( BatchingNeoStores store = new BatchingNeoStores( fsr.get(), storeDir, recordFormats, DEFAULT,
                 NullLogService.getInstance(), EMPTY, config ) )

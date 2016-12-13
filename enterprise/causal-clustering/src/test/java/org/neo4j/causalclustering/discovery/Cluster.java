@@ -54,7 +54,7 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.security.WriteOperationsNotAllowedException;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.NamedThreadFactory;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
+import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
@@ -143,14 +143,14 @@ public class Cluster
 
     public CoreClusterMember addCoreMemberWithId( int memberId )
     {
-        return addCoreMemberWithId( memberId, stringMap(), emptyMap(), StandardV3_0.NAME );
+        return addCoreMemberWithId( memberId, stringMap(), emptyMap(), Standard.LATEST_NAME );
     }
 
     public CoreClusterMember addCoreMemberWithIdAndInitialMembers( int memberId,
             List<AdvertisedSocketAddress> initialMembers )
     {
         CoreClusterMember coreClusterMember = new  CoreClusterMember( memberId, DEFAULT_CLUSTER_SIZE, initialMembers,
-                discoveryServiceFactory, StandardV3_0.NAME, parentDir,
+                discoveryServiceFactory, Standard.LATEST_NAME, parentDir,
                 emptyMap(), emptyMap() );
         coreMembers.put( memberId, coreClusterMember );
         return coreClusterMember;
@@ -167,14 +167,14 @@ public class Cluster
 
     public ReadReplica addReadReplicaWithId( int memberId )
     {
-        return addReadReplicaWithIdAndRecordFormat( memberId, StandardV3_0.NAME );
+        return addReadReplicaWithIdAndRecordFormat( memberId, Standard.LATEST_NAME );
     }
 
     public ReadReplica addReadReplicaWithIdAndMonitors( int memberId, Monitors monitors )
     {
         List<AdvertisedSocketAddress> hazelcastAddresses = buildAddresses( coreMembers.keySet() );
         ReadReplica member = new ReadReplica( parentDir, memberId, discoveryServiceFactory,
-                hazelcastAddresses, stringMap(), emptyMap(), StandardV3_0.NAME, monitors );
+                hazelcastAddresses, stringMap(), emptyMap(), Standard.LATEST_NAME, monitors );
         readReplicas.put( memberId, member );
         return member;
     }

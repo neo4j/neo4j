@@ -19,14 +19,14 @@
  */
 package org.neo4j.kernel.impl.store.format;
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.stream.StreamSupport;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-
-import org.apache.commons.lang3.StringUtils;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
@@ -35,13 +35,13 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
+import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_0;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_1;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_2;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.logging.NullLogProvider;
 
 import static java.util.Arrays.asList;
 import static org.neo4j.helpers.collection.Iterables.concat;
@@ -57,7 +57,7 @@ import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
  */
 public class RecordFormatSelector
 {
-    private static final RecordFormats DEFAULT_FORMAT = StandardV3_0.RECORD_FORMATS;
+    private static final RecordFormats DEFAULT_FORMAT = Standard.LATEST_RECORD_FORMATS;
 
     private static final Iterable<RecordFormats> KNOWN_FORMATS = asList(
             StandardV2_0.RECORD_FORMATS,
@@ -303,9 +303,9 @@ public class RecordFormatSelector
     {
         if ( StringUtils.isNotEmpty( recordFormat ) )
         {
-            if ( StandardV3_0.NAME.equals( recordFormat ) )
+            if ( Standard.LATEST_NAME.equals( recordFormat ) )
             {
-                return StandardV3_0.RECORD_FORMATS;
+                return Standard.LATEST_RECORD_FORMATS;
             }
             RecordFormats.Factory formatFactory = Service.loadSilently( RecordFormats.Factory.class, recordFormat );
             if ( formatFactory != null )

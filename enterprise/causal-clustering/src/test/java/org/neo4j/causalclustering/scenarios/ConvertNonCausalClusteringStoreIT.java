@@ -38,7 +38,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
+import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.test.causalclustering.ClusterRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -64,7 +64,7 @@ public class ConvertNonCausalClusteringStoreIT
     @Parameterized.Parameters(name = "Record format {0}")
     public static Collection<Object> data()
     {
-        return Arrays.asList( new Object[]{StandardV3_0.NAME, HighLimit.NAME} );
+        return Arrays.asList( new Object[]{Standard.LATEST_NAME, HighLimit.NAME} );
     }
 
     @Test

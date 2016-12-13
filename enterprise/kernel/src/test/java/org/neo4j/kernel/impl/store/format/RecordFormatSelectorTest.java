@@ -34,6 +34,7 @@ import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.store.format.highlimit.v300.HighLimitV3_0_0;
 import org.neo4j.kernel.impl.store.format.highlimit.v306.HighLimitV3_0_6;
+import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_0;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_1;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_2;
@@ -82,7 +83,7 @@ public class RecordFormatSelectorTest
     @Test
     public void defaultFormatTest()
     {
-        assertSame( StandardV3_0.RECORD_FORMATS, defaultFormat() );
+        assertSame( Standard.LATEST_RECORD_FORMATS, defaultFormat() );
     }
 
     @Test
@@ -114,7 +115,7 @@ public class RecordFormatSelectorTest
     @Test
     public void selectForConfigWithRecordFormatParameter()
     {
-        assertSame( StandardV3_0.RECORD_FORMATS, selectForConfig( config( StandardV3_0.NAME ), LOG ) );
+        assertSame( Standard.LATEST_RECORD_FORMATS, selectForConfig( config( Standard.LATEST_NAME ), LOG ) );
         assertSame( HighLimit.RECORD_FORMATS, selectForConfig( config( HighLimit.NAME ), LOG ) );
     }
 
@@ -179,11 +180,11 @@ public class RecordFormatSelectorTest
     public void selectForStoreOrConfigWithSameStandardConfiguredAndStoredFormat() throws IOException
     {
         PageCache pageCache = getPageCache();
-        prepareNeoStoreFile( StandardV3_0.STORE_VERSION, pageCache );
+        prepareNeoStoreFile( Standard.LATEST_STORE_VERSION, pageCache );
 
-        Config config = config( StandardV3_0.NAME );
+        Config config = config( Standard.LATEST_NAME );
 
-        assertSame( StandardV3_0.RECORD_FORMATS, selectForStoreOrConfig( config, storeDir, fs, pageCache, LOG ) );
+        assertSame( Standard.LATEST_RECORD_FORMATS, selectForStoreOrConfig( config, storeDir, fs, pageCache, LOG ) );
     }
 
     @Test
@@ -201,7 +202,7 @@ public class RecordFormatSelectorTest
     public void selectForStoreOrConfigWithDifferentlyConfiguredAndStoredFormat() throws IOException
     {
         PageCache pageCache = getPageCache();
-        prepareNeoStoreFile( StandardV3_0.STORE_VERSION, pageCache );
+        prepareNeoStoreFile( Standard.LATEST_STORE_VERSION, pageCache );
 
         Config config = config( HighLimit.NAME );
 
@@ -220,11 +221,11 @@ public class RecordFormatSelectorTest
     public void selectForStoreOrConfigWithOnlyStandardStoredFormat() throws IOException
     {
         PageCache pageCache = getPageCache();
-        prepareNeoStoreFile( StandardV3_0.STORE_VERSION, pageCache );
+        prepareNeoStoreFile( Standard.LATEST_STORE_VERSION, pageCache );
 
         Config config = Config.empty();
 
-        assertSame( StandardV3_0.RECORD_FORMATS, selectForStoreOrConfig( config, storeDir, fs, pageCache, LOG ) );
+        assertSame( Standard.LATEST_RECORD_FORMATS, selectForStoreOrConfig( config, storeDir, fs, pageCache, LOG ) );
     }
 
     @Test
@@ -243,9 +244,9 @@ public class RecordFormatSelectorTest
     {
         PageCache pageCache = getPageCache();
 
-        Config config = config( StandardV3_0.NAME );
+        Config config = config( Standard.LATEST_NAME );
 
-        assertSame( StandardV3_0.RECORD_FORMATS, selectForStoreOrConfig( config, storeDir, fs, pageCache, LOG ) );
+        assertSame( Standard.LATEST_RECORD_FORMATS, selectForStoreOrConfig( config, storeDir, fs, pageCache, LOG ) );
     }
 
     @Test
@@ -284,8 +285,8 @@ public class RecordFormatSelectorTest
     @Test
     public void selectNewestFormatWithConfiguredStandardFormat()
     {
-        assertSame( StandardV3_0.RECORD_FORMATS,
-                selectNewestFormat( config( StandardV3_0.NAME ), storeDir, fs, getPageCache(), LOG ) );
+        assertSame( Standard.LATEST_RECORD_FORMATS,
+                selectNewestFormat( config( Standard.LATEST_NAME ), storeDir, fs, getPageCache(), LOG ) );
     }
 
     @Test
@@ -318,11 +319,11 @@ public class RecordFormatSelectorTest
     public void selectNewestFormatForExistingStandardStore() throws IOException
     {
         PageCache pageCache = getPageCache();
-        prepareNeoStoreFile( StandardV3_0.STORE_VERSION, pageCache );
+        prepareNeoStoreFile( Standard.LATEST_STORE_VERSION, pageCache );
 
         Config config = Config.empty();
 
-        assertSame( StandardV3_0.RECORD_FORMATS, selectNewestFormat( config, storeDir, fs, getPageCache(), LOG ) );
+        assertSame( Standard.LATEST_RECORD_FORMATS, selectNewestFormat( config, storeDir, fs, getPageCache(), LOG ) );
     }
 
     @Test

@@ -39,7 +39,7 @@ import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.format.ForcedSecondaryUnitRecordFormats;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
+import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
@@ -69,8 +69,8 @@ public class RelationshipGroupDefragmenterTest
     public static Collection<Object[]> formats()
     {
         return asList(
-                new Object[] {StandardV3_0.RECORD_FORMATS, 1},
-                new Object[] {new ForcedSecondaryUnitRecordFormats( StandardV3_0.RECORD_FORMATS ), 2} );
+                new Object[] {Standard.LATEST_RECORD_FORMATS, 1},
+                new Object[] {new ForcedSecondaryUnitRecordFormats( Standard.LATEST_RECORD_FORMATS ), 2} );
     }
 
     private final TestDirectory directory = TestDirectory.testDirectory();

@@ -53,7 +53,7 @@ import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RecordStore;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
+import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
@@ -1122,7 +1122,7 @@ public class TransactionRecordStateTest
     public void shouldPrepareRelevantRecords() throws Exception
     {
         // GIVEN
-        PrepareTrackingRecordFormats format = new PrepareTrackingRecordFormats( StandardV3_0.RECORD_FORMATS );
+        PrepareTrackingRecordFormats format = new PrepareTrackingRecordFormats( Standard.LATEST_RECORD_FORMATS );
         NeoStores neoStores = neoStoresRule.open( format,
                 GraphDatabaseSettings.dense_node_threshold.name(), "1" );
 

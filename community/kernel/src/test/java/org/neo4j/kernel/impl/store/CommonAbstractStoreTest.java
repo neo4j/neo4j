@@ -45,7 +45,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
+import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
@@ -174,7 +174,7 @@ public class CommonAbstractStoreTest
         when( pagedFile.io( 0L, PagedFile.PF_SHARED_READ_LOCK ) ).thenReturn( pageCursor );
         when( pageCursor.next() ).thenReturn( false );
 
-        RecordFormats recordFormats = StandardV3_0.RECORD_FORMATS;
+        RecordFormats recordFormats = Standard.LATEST_RECORD_FORMATS;
 
         expectedException.expect( StoreNotFoundException.class );
         expectedException.expectMessage( "Fail to read header record of store file: " + storeFile.getAbsolutePath() );
@@ -196,7 +196,7 @@ public class CommonAbstractStoreTest
         PageCache pageCache = pageCacheRule.getPageCache( fileSystemRule.get(), tracer, Config.empty() );
 
         try ( NodeStore store = new NodeStore( storeFile, Config.empty(), new DefaultIdGeneratorFactory( fileSystemRule.get() ),
-                pageCache, NullLogProvider.getInstance(), null, StandardV3_0.RECORD_FORMATS ) )
+                pageCache, NullLogProvider.getInstance(), null, Standard.LATEST_RECORD_FORMATS ) )
         {
             store.initialise( true );
             assertNull( tracer.tryObserve( Event.class ) );

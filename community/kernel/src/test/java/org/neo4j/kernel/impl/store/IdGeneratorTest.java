@@ -51,7 +51,7 @@ import org.neo4j.kernel.impl.store.format.standard.NodeRecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.PropertyKeyTokenRecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.PropertyRecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.RelationshipRecordFormat;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
+import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -550,7 +550,7 @@ public class IdGeneratorTest
     @Test
     public void makeSureIdCapacityCannotBeExceeded() throws Exception
     {
-        RecordFormats formats = StandardV3_0.RECORD_FORMATS;
+        RecordFormats formats = Standard.LATEST_RECORD_FORMATS;
         List<RecordFormat<? extends AbstractBaseRecord>> recordFormats = Arrays.asList( formats.node(),
                 formats.dynamic(),
                 formats.labelToken(),
