@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v3_1.ast
 
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.Pipe
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.frontend.v3_1.ast.Expression
 import org.neo4j.cypher.internal.frontend.v3_1.ast.Expression.SemanticContext
 import org.neo4j.cypher.internal.frontend.v3_1.{InputPosition, SemanticCheck, SemanticCheckResult}
+import org.neo4j.cypher.internal.ir.v3_1.logical.plans.LogicalPlan
 
 case class NestedPlanExpression(plan: LogicalPlan, projection: Expression)(val position: InputPosition) extends Expression {
   def semanticCheck(ctx: SemanticContext): SemanticCheck = SemanticCheckResult.success

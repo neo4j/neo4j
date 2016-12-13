@@ -19,12 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v3_1.pipes.LazyTypes
-import org.neo4j.cypher.internal.compiler.v3_1.planner._
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.LogicalPlanningContext
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_1.SemanticDirection.{INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
+import org.neo4j.cypher.internal.ir.v3_1.logical.plans.{LogicalPlan, RelationshipCountFromCountStore}
+import org.neo4j.cypher.internal.ir.v3_1.{IdName, PatternRelationship, Predicate, Selections, SimplePatternLength, _}
 
 case object countStorePlanner {
 
@@ -104,7 +103,7 @@ case object countStorePlanner {
         if variableName.forall(_ == relId.name) && noWrongPredicates(Set(startNodeId, endNodeId), selections) =>
 
         def planRelAggr(fromLabel: Option[LabelName], toLabel: Option[LabelName]) =
-          Some(context.logicalPlanProducer.planCountStoreRelationshipAggregation(query, IdName(columnName), fromLabel, LazyTypes(types.map(_.name)), toLabel, argumentIds)(context))
+          Some(context.logicalPlanProducer.planCountStoreRelationshipAggregation(query, IdName(columnName), fromLabel, types, toLabel, argumentIds)(context))
 
         (findLabel(startNodeId, selections), direction, findLabel(endNodeId, selections)) match {
           case (None,       OUTGOING, None) => planRelAggr(None, None)

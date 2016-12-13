@@ -27,9 +27,11 @@ import org.neo4j.cypher.internal.frontend.v3_1.helpers.Eagerly
 import pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 import org.neo4j.cypher.internal.compiler.v3_1.spi.Operations
-import org.neo4j.graphdb.{Relationship, Node, PropertyContainer}
+import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
+
 import collection.Map
 import org.neo4j.cypher.internal.compiler.v3_1.helpers._
+import org.neo4j.cypher.internal.ir.v3_1.helpers.UnNamedNameGenerator
 
 object NamedExpectation {
   def apply(name: String): NamedExpectation = NamedExpectation(name, Map.empty)

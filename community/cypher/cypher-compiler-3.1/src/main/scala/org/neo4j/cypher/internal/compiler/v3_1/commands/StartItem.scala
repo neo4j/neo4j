@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.planDescription.Argument
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.compiler.v3_1.symbols.{SymbolTable, TypeSafe}
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
+import org.neo4j.cypher.internal.ir.v3_1.QueryExpression
 
 trait NodeStartItemVariables extends StartItem {
   def variables: Seq[(String, CypherType)] = Seq(variableName -> CTNode)
@@ -95,29 +96,6 @@ sealed abstract class SchemaIndexKind
 
 case object AnyIndex extends SchemaIndexKind
 case object UniqueIndex extends SchemaIndexKind
-
-// TODO Unify with Sargable
-
-trait QueryExpression[+T] {
-  def expression: T
-  def map[R](f: T => R): QueryExpression[R]
-}
-
-case class ScanQueryExpression[T](expression: T) extends QueryExpression[T] {
-  def map[R](f: (T) => R) = ScanQueryExpression(f(expression))
-}
-
-case class SingleQueryExpression[T](expression: T) extends QueryExpression[T] {
-  def map[R](f: (T) => R) = SingleQueryExpression(f(expression))
-}
-
-case class ManyQueryExpression[T](expression: T) extends QueryExpression[T] {
-  def map[R](f: (T) => R) = ManyQueryExpression(f(expression))
-}
-
-case class RangeQueryExpression[T](expression: T) extends QueryExpression[T] {
-  override def map[R](f: (T) => R) = RangeQueryExpression(f(expression))
-}
 
 case class SchemaIndex(variable: String, label: String, property: String, kind: SchemaIndexKind, query: Option[QueryExpression[Expression]])
   extends StartItem(variable, query.map(q => Arguments.LegacyExpression(q.expression)).toIndexedSeq :+ Arguments.Index(label, property))

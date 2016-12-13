@@ -20,11 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v3_1.ast.convert.plannerQuery
 
 import org.neo4j.cypher.internal.compiler.v3_1.planner._
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.{IdName, PatternRelationship, SimplePatternLength}
 import org.neo4j.cypher.internal.frontend.v3_1.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_1.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.ir.v3_1.{CreateNodePattern, CreateRelationshipPattern, ForeachPattern, IdName, PatternRelationship, QueryGraph, RegularPlannerQuery, RegularQueryProjection, Selections, SetNodePropertyPattern, SetRelationshipPropertyPattern, SimplePatternLength, UnwindProjection}
 
 class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSupport {
 

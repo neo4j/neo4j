@@ -19,10 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans
 
-import org.neo4j.cypher.internal.frontend.v3_1.ast.PatternExpression
+import org.neo4j.cypher.internal.compiler.v3_1.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.steps.argumentLeafPlanner
-import org.neo4j.cypher.internal.compiler.v3_1.planner.{LogicalPlanningTestSupport, QueryGraph}
+import org.neo4j.cypher.internal.frontend.v3_1.ast.PatternExpression
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.ir.v3_1.QueryGraph
+import org.neo4j.cypher.internal.ir.v3_1.logical.plans.Argument
 
 class ArgumentLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 

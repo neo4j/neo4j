@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.compiler.v3_1._
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_1.{Rewriter, bottomUp}
+import org.neo4j.cypher.internal.ir.v3_1.logical.plans.LogicalPlan
 
 /**
  * Runs through LogicalPlan and copies duplicate plans to make sure the

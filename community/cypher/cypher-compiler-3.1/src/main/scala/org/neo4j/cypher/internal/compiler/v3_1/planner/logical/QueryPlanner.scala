@@ -20,8 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v3_1.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_1.planner._
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.{LogicalPlan, ProduceResult}
 import org.neo4j.cypher.internal.frontend.v3_1.Rewriter
+import org.neo4j.cypher.internal.ir.v3_1.logical.plans.{LogicalPlan, ProduceResult}
+import org.neo4j.cypher.internal.ir.v3_1.{PeriodicCommit, PlannerQuery, UnionQuery}
 
 trait QueryPlanner {
   def plan(plannerQuery: UnionQuery)(implicit context: LogicalPlanningContext): (Option[PeriodicCommit], LogicalPlan)

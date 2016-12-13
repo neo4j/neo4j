@@ -21,9 +21,10 @@ package org.neo4j.cypher.internal.compiler.v3_1.planner.logical.cardinality
 
 import org.neo4j.cypher.internal.compiler.v3_1.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.Metrics._
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.{Cardinality, Metrics}
+import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.Metrics
 import org.neo4j.cypher.internal.compiler.v3_1.spi.GraphStatistics
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.ir.v3_1.Cardinality
 
 trait CardinalityModelTestHelper extends CardinalityTestHelper {
 

@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.planner.logical
 
-import org.neo4j.cypher.internal.frontend.v3_1.ast.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.compiler.v3_1.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.{Projection, SingleRow}
+import org.neo4j.cypher.internal.frontend.v3_1.ast.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.ir.v3_1.logical.plans.{Projection, SingleRow}
 
 class SingleRowPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
   test("should build plans containing single row") {

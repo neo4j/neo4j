@@ -27,11 +27,12 @@ import org.neo4j.cypher.internal.compiler.v3_1.helpers.{Counter, RuntimeJavaValu
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.{ExternalCSVResource, QueryState}
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription.Arguments.{DbHits, Rows, Signature}
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.{Id, NoChildren, PlanDescriptionImpl}
-import org.neo4j.cypher.internal.compiler.v3_1.spi.{GraphStatistics, PlanContext, ProcedureSignature, QueryContext}
+import org.neo4j.cypher.internal.compiler.v3_1.spi.{GraphStatistics, PlanContext, QueryContext}
 import org.neo4j.cypher.internal.compiler.v3_1.{ExecutionContext, ExecutionMode, ExplainExecutionResult, ExplainMode, ProcedurePlannerName, ProcedureRuntimeName, TaskCloser, _}
 import org.neo4j.cypher.internal.frontend.v3_1.ast.Expression
 import org.neo4j.cypher.internal.frontend.v3_1.notification.InternalNotification
 import org.neo4j.cypher.internal.frontend.v3_1.symbols.CypherType
+import org.neo4j.cypher.internal.ir.v3_1.ProcedureSignature
 
 /**
   * Execution plan for calling procedures

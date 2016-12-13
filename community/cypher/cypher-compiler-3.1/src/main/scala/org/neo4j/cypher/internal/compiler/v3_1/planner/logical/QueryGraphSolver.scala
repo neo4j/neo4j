@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v3_1.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.{IdName, LogicalPlan}
 import org.neo4j.cypher.internal.frontend.v3_1.InternalException
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
+import org.neo4j.cypher.internal.ir.v3_1.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.ir.v3_1.{IdName, QueryGraph}
 
 trait QueryGraphSolver {
   def plan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan] = None): LogicalPlan

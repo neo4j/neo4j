@@ -21,14 +21,14 @@ package org.neo4j.cypher.internal.compiler.v3_1.planner.logical.cardinality
 
 import org.neo4j.cypher.internal.compiler.v3_1.helpers.MapSupport._
 import org.neo4j.cypher.internal.compiler.v3_1.helpers.SemanticTableHelper
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.Cardinality.NumericCardinality
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.{IdName, StrictnessMode}
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.{Cardinality, QueryGraphProducer, Selectivity}
-import org.neo4j.cypher.internal.compiler.v3_1.planner.{LogicalPlanningTestSupport, QueryGraph}
+import org.neo4j.cypher.internal.compiler.v3_1.planner.LogicalPlanningTestSupport
+import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.QueryGraphProducer
 import org.neo4j.cypher.internal.compiler.v3_1.spi.GraphStatistics
 import org.neo4j.cypher.internal.frontend.v3_1.ast.Variable
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_1.{LabelId, PropertyKeyId, RelTypeId, SemanticTable}
+import org.neo4j.cypher.internal.ir.v3_1.Cardinality.NumericCardinality
+import org.neo4j.cypher.internal.ir.v3_1.{Cardinality, IdName, QueryGraph, Selectivity, StrictnessMode}
 import org.scalatest.matchers.{MatchResult, Matcher}
 
 import scala.collection.mutable

@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.{IdName, PatternRelationship, ShortestPathPattern, SimplePatternLength}
-import org.neo4j.cypher.internal.compiler.v3_1.planner.{LogicalPlanningTestSupport, QueryGraph, Selections}
+import org.neo4j.cypher.internal.compiler.v3_1.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.frontend.v3_1.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.ir.v3_1.{IdName, PatternRelationship, QueryGraph, Selections, ShortestPathPattern, SimplePatternLength}
 
 class QueryGraphConnectedComponentsTest
   extends CypherFunSuite with AstConstructionTestSupport with LogicalPlanningTestSupport {
@@ -173,7 +173,7 @@ class QueryGraphConnectedComponentsTest
   }
 
   test("two disconnected pattern nodes with one shortest path between them") {
-    val shortestPath: ShortestPathPattern = ShortestPathPattern(Some(IdName("r")), A_to_B, single = true)(null)
+    val shortestPath = ShortestPathPattern(Some(IdName("r")), A_to_B, single = true)(null)
 
     val graph = QueryGraph(patternNodes = Set(A, B), shortestPathPatterns = Set(shortestPath))
 
@@ -184,7 +184,7 @@ class QueryGraphConnectedComponentsTest
   }
 
   test("a connected pattern that has a shortest path in it") {
-    val shortestPath: ShortestPathPattern = ShortestPathPattern(Some(IdName("r")), A_to_B, single = true)(null)
+    val shortestPath = ShortestPathPattern(Some(IdName("r")), A_to_B, single = true)(null)
 
     val graph = QueryGraph(
       patternNodes = Set(A, B),

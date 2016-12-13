@@ -20,11 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v3_1.ast.convert.plannerQuery
 
 import org.neo4j.cypher.internal.compiler.v3_1.ast.convert.plannerQuery.ExpressionConverters._
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.{IdName, PatternRelationship, SimplePatternLength}
-import org.neo4j.cypher.internal.compiler.v3_1.planner.{LogicalPlanningTestSupport, Predicate, Selections}
-import org.neo4j.cypher.internal.frontend.v3_1.ast.{Expression, Variable}
+import org.neo4j.cypher.internal.compiler.v3_1.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_1.{SemanticDirection, ast}
+import org.neo4j.cypher.internal.ir.v3_1.{IdName, PatternRelationship, Predicate, Selections, SimplePatternLength}
 
 class PatternExpressionConverterTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -38,10 +37,6 @@ class PatternExpressionConverterTest extends CypherFunSuite with LogicalPlanning
   val rRelWithType: ast.RelationshipPattern = rRel.copy(types = Seq(TYP)) _
   val planRel = PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
   val planRelWithType = PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), SemanticDirection.OUTGOING, Seq(TYP), SimplePatternLength)
-
-  private def projections(names: String*): Map[String, Expression] = names.map {
-    case x => x -> Variable(x)(pos)
-  }.toMap
 
   test("(a)-[r]->(b)") {
     // Given

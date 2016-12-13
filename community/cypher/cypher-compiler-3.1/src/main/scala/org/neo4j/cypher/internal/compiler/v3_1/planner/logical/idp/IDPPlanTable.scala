@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_1.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.Solvable
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.ir.v3_1.logical.plans.LogicalPlan
 
 import scala.collection.{Map, mutable}
 

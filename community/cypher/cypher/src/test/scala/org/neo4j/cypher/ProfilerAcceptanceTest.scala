@@ -23,11 +23,12 @@ import org.neo4j.cypher.internal.compiler.v3_1
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription.Arguments.{DbHits, EstimatedRows, Rows, Signature}
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.{Argument, InternalPlanDescription}
-import org.neo4j.cypher.internal.compiler.v3_1.spi.{GraphStatistics, QualifiedName}
+import org.neo4j.cypher.internal.compiler.v3_1.spi.GraphStatistics
 import org.neo4j.cypher.internal.compiler.v3_1.test_helpers.CreateTempFileTestSupport
 import org.neo4j.cypher.internal.frontend.v3_1.helpers.StringHelper.RichString
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 import org.neo4j.cypher.internal.helpers.TxCounts
+import org.neo4j.cypher.internal.ir.v3_1.QualifiedName
 import org.neo4j.graphdb.QueryExecutionException
 
 import scala.reflect.ClassTag

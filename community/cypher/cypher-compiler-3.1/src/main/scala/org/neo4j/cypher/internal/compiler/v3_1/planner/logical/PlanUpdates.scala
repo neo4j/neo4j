@@ -20,9 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v3_1.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_1.planner._
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.steps.mergeUniqueIndexSeekLeafPlanner
 import org.neo4j.cypher.internal.frontend.v3_1.ast.{ContainerIndex, PathExpression, Variable}
+import org.neo4j.cypher.internal.ir.v3_1._
+import org.neo4j.cypher.internal.ir.v3_1.logical.plans.LogicalPlan
 
 /*
  * This coordinates PlannerQuery planning of updates.

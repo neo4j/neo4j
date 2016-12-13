@@ -21,25 +21,26 @@ package org.neo4j.cypher.internal.compiler.v3_1.planner.execution
 
 import java.time.Clock
 
-import org.neo4j.cypher.internal.compiler.v3_1.ast.ResolvedCall
 import org.neo4j.cypher.internal.compiler.v3_1.ast.convert.commands.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v3_1.ast.convert.commands.PatternConverters._
+import org.neo4j.cypher.internal.compiler.v3_1.ast.convert.commands.SeekArgsConverter._
 import org.neo4j.cypher.internal.compiler.v3_1.ast.convert.commands.StatementConverters
-import org.neo4j.cypher.internal.compiler.v3_1.ast.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.compiler.v3_1.commands.EntityProducerFactory
-import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.{AggregationExpression, Expression => CommandExpression, Literal}
+import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.{AggregationExpression, Literal, Expression => CommandExpression}
 import org.neo4j.cypher.internal.compiler.v3_1.commands.predicates.{True, _}
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.builders.prepare.KeyTokenResolver
 import org.neo4j.cypher.internal.compiler.v3_1.pipes._
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.{Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
-import org.neo4j.cypher.internal.compiler.v3_1.planner.{CantHandleQueryException, PeriodicCommit, logical}
+import org.neo4j.cypher.internal.compiler.v3_1.planner.CantHandleQueryException
 import org.neo4j.cypher.internal.compiler.v3_1.spi.{InstrumentedGraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.compiler.v3_1.symbols.SymbolTable
-import org.neo4j.cypher.internal.compiler.v3_1.{ExecutionContext, Monitors, ast => compilerAst, pipes}
+import org.neo4j.cypher.internal.compiler.v3_1.{ExecutionContext, Monitors, pipes, ast => compilerAst}
 import org.neo4j.cypher.internal.frontend.v3_1._
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.frontend.v3_1.helpers.Eagerly
+import org.neo4j.cypher.internal.ir.v3_1.logical.plans.{LogicalPlan, Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
+import org.neo4j.cypher.internal.ir.v3_1.{IdName, PeriodicCommit, ResolvedCall, VarPatternLength}
+import org.neo4j.cypher.internal.ir.{v3_1 => ir}
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 
 import scala.collection.mutable
@@ -181,19 +182,19 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
       NodeCountFromCountStorePipe(id, label.map(LazyLabel.apply))()
 
     case RelationshipCountFromCountStore(IdName(id), startLabel, typeNames, endLabel, _) =>
-      RelationshipCountFromCountStorePipe(id, startLabel.map(LazyLabel.apply), typeNames, endLabel.map(LazyLabel.apply))()
+      RelationshipCountFromCountStorePipe(id, startLabel.map(LazyLabel.apply), LazyTypes(typeNames.map(_.name)), endLabel.map(LazyLabel.apply))()
 
     case NodeByLabelScan(IdName(id), label, _) =>
       NodeByLabelScanPipe(id, LazyLabel(label))()
 
     case NodeByIdSeek(IdName(id), nodeIdExpr, _) =>
-      NodeByIdSeekPipe(id, nodeIdExpr.asCommandSeekArgs)()
+      NodeByIdSeekPipe(id, toCommandSeekArgs(nodeIdExpr))()
 
     case DirectedRelationshipByIdSeek(IdName(id), relIdExpr, IdName(fromNode), IdName(toNode), _) =>
-      DirectedRelationshipByIdSeekPipe(id, relIdExpr.asCommandSeekArgs, toNode, fromNode)()
+      DirectedRelationshipByIdSeekPipe(id, toCommandSeekArgs(relIdExpr), toNode, fromNode)()
 
     case UndirectedRelationshipByIdSeek(IdName(id), relIdExpr, IdName(fromNode), IdName(toNode), _) =>
-      UndirectedRelationshipByIdSeekPipe(id, relIdExpr.asCommandSeekArgs, toNode, fromNode)()
+      UndirectedRelationshipByIdSeekPipe(id, toCommandSeekArgs(relIdExpr), toNode, fromNode)()
 
     case NodeIndexSeek(IdName(id), label, propertyKey, valueExpr, _) =>
       val indexSeekMode = IndexSeekModeFactory(unique = false, readOnly = readOnly).fromQueryExpression(valueExpr)
@@ -336,7 +337,7 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
       CreateRelationshipPipe(source, idName.name, startNode.name, LazyType(typ)(context.semanticTable), endNode.name, props.map(toCommandExpression))()
 
     case MergeCreateRelationship(_, idName, startNode, typ, endNode, props) =>
-      MergeCreateRelationshipPipe(source, idName.name, startNode.name, typ, endNode.name, props.map(toCommandExpression))()
+      MergeCreateRelationshipPipe(source, idName.name, startNode.name, LazyType(typ.name), endNode.name, props.map(toCommandExpression))()
 
     case SetLabels(_, IdName(name), labels) =>
      SetPipe(source, SetLabelsOperation(name, labels.map(LazyLabel.apply)))()
@@ -518,8 +519,8 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
     toCommandPredicate(rewrittenExpr).rewrite(resolver.resolveExpressions(_, planContext)).asInstanceOf[Predicate]
   }
 
-  private def translateSortDescription(s: logical.SortDescription): pipes.SortDescription = s match {
-    case logical.Ascending(IdName(name)) => pipes.Ascending(name)
-    case logical.Descending(IdName(name)) => pipes.Descending(name)
+  private def translateSortDescription(s: ir.SortDescription): pipes.SortDescription = s match {
+    case ir.Ascending(IdName(name)) => pipes.Ascending(name)
+    case ir.Descending(IdName(name)) => pipes.Descending(name)
   }
 }

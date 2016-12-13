@@ -19,12 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v3_1.pipes.LazyType
 import org.neo4j.cypher.internal.compiler.v3_1.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_1.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.ir.v3_1.IdName
+import org.neo4j.cypher.internal.ir.v3_1.logical.plans._
 
 class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
@@ -42,7 +43,7 @@ class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with Logic
     val createNodeA = MergeCreateNode(argument, aId, Seq(LabelName("A")(pos)), None)(solved)
     val createNodeB = MergeCreateNode(createNodeA, bId, Seq.empty, None)(solved)
 
-    val onCreate = MergeCreateRelationship(createNodeB, rId, aId, LazyType("R"), bId, None)(solved)
+    val onCreate = MergeCreateRelationship(createNodeB, rId, aId, RelTypeName("R")(pos), bId, None)(solved)
 
     val mergeNode = AntiConditionalApply(optional, onCreate, Seq(aId, bId, rId))(solved)
     val emptyResult = EmptyResult(mergeNode)(solved)
@@ -62,7 +63,7 @@ class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with Logic
     val createNodeA = MergeCreateNode(argument, aId, Seq(LabelName("A")(pos)), Some(MapExpression(Seq((PropertyKeyName("p")(pos), Variable("arg")(pos))))(pos)))(solved)
     val createNodeB = MergeCreateNode(createNodeA, bId, Seq.empty, None)(solved)
 
-    val onCreate = MergeCreateRelationship(createNodeB, rId, aId, LazyType("R"), bId, None)(solved)
+    val onCreate = MergeCreateRelationship(createNodeB, rId, aId, RelTypeName("R")(pos), bId, None)(solved)
 
     val mergeNode = AntiConditionalApply(optional, onCreate, Seq(aId, bId, rId))(solved)
     val apply = Apply(projection, mergeNode)(solved)
@@ -106,7 +107,7 @@ class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with Logic
               MergeCreateNode(
                 Argument(Set(IdName("n")))(solved)(),
                 IdName("b"), Seq.empty, None)(solved),
-              IdName("r"), IdName("n"), LazyType("T"), IdName("b"), None)(solved),
+              IdName("r"), IdName("n"), RelTypeName("T")(pos), IdName("b"), None)(solved),
             Seq(IdName("b"), IdName("r")))(solved)
         )(solved)
       )(solved)
@@ -130,7 +131,7 @@ class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with Logic
             )(solved),
             MergeCreateRelationship(
               Argument(Set(IdName("n"), IdName("m")))(solved)(),
-              IdName("r"), IdName("n"), LazyType("T"), IdName("m"), None)(solved),
+              IdName("r"), IdName("n"), RelTypeName("T")(pos), IdName("m"), None)(solved),
             Seq(IdName("r")))(solved)
         )(solved)
       )(solved)
@@ -157,7 +158,7 @@ class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with Logic
             )(solved),
             MergeCreateRelationship(
               Argument(Set(IdName("a"), IdName("b")))(solved)(),
-              IdName("r"), IdName("a"), LazyType("T"), IdName("b"), None)(solved),
+              IdName("r"), IdName("a"), RelTypeName("T")(pos), IdName("b"), None)(solved),
             Seq(IdName("r")))(solved)
         )(solved)
       )(solved)
@@ -183,7 +184,7 @@ class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with Logic
               MergeCreateNode(
                 Argument(Set(IdName("a")))(solved)(),
                 IdName("b"), Seq.empty, None)(solved),
-              IdName("r"), IdName("a"), LazyType("T"), IdName("b"), None)(solved),
+              IdName("r"), IdName("a"), RelTypeName("T")(pos), IdName("b"), None)(solved),
             Seq(IdName("b"), IdName("r")))(solved)
         )(solved)
       )(solved)

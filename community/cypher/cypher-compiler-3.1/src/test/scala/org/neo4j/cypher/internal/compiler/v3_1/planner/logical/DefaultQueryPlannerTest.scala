@@ -24,13 +24,14 @@ import org.mockito.Mockito.{times, verify, when}
 import org.neo4j.cypher.internal.compiler.v3_1.devNullLogger
 import org.neo4j.cypher.internal.compiler.v3_1.planner._
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.Metrics.QueryGraphSolverInput
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.v3_1.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_1.ast.{ASTAnnotationMap, Expression, Hint}
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_1.{ExpressionTypeInfo, Rewriter, SemanticTable}
+import org.neo4j.cypher.internal.ir.v3_1.logical.plans.{LogicalPlan, ProduceResult, Projection, SingleRow}
+import org.neo4j.cypher.internal.ir.v3_1.{CardinalityEstimation, IdName, LazyMode, PlannerQuery, QueryGraph, RegularPlannerQuery, RegularQueryProjection, UnionQuery}
 
 class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 

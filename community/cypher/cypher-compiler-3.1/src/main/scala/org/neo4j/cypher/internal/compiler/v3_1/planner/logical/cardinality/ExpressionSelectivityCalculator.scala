@@ -23,9 +23,8 @@ import java.math
 import java.math.RoundingMode
 
 import org.neo4j.cypher.internal.compiler.v3_1.PrefixRange
-import org.neo4j.cypher.internal.compiler.v3_1.planner.Selections
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.{IdName, _}
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.{Cardinality, Selectivity}
+import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans._
+import org.neo4j.cypher.internal.ir.v3_1.{Cardinality, IdName, Selections, Selectivity}
 import org.neo4j.cypher.internal.compiler.v3_1.spi.GraphStatistics
 import org.neo4j.cypher.internal.compiler.v3_1.spi.GraphStatistics._
 import org.neo4j.cypher.internal.frontend.v3_1.ast._

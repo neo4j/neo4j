@@ -19,13 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v3_1.planner.{QueryGraph, LogicalPlanningTestSupport2}
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.{LogicalPlan, SingleRow}
-import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
-import org.mockito.Mockito.verify
-import org.mockito.Mockito.verifyZeroInteractions
-import org.mockito.Mockito.when
 import org.mockito.Matchers.any
+import org.mockito.Mockito.{verify, verifyZeroInteractions, when}
+import org.neo4j.cypher.internal.compiler.v3_1.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.ir.v3_1.QueryGraph
+import org.neo4j.cypher.internal.ir.v3_1.logical.plans.SingleRow
 
 class PriorityLeafPlannerListTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
   private val queryGraph = QueryGraph.empty

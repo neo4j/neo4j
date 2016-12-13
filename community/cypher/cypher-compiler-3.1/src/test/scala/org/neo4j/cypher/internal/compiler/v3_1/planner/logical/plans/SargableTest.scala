@@ -23,6 +23,7 @@ import org.mockito.Mockito
 import org.neo4j.cypher.internal.compiler.v3_1.PrefixRange
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.ir.v3_1.logical.plans.{ManySeekableArgs, SingleSeekableArg}
 
 class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
 

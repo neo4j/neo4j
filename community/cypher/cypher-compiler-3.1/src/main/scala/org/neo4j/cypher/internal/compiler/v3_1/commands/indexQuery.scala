@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.helpers.IsList
 import org.neo4j.cypher.internal.compiler.v3_1.mutation.{GraphElementPropertyFunctions, makeValueNeoSafe}
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_1.CypherTypeException
+import org.neo4j.cypher.internal.ir.v3_1.{ManyQueryExpression, QueryExpression, RangeQueryExpression, SingleQueryExpression}
 import org.neo4j.graphdb.Node
 
 import scala.collection.GenTraversableOnce

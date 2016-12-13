@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v3_1.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.steps._
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.steps.solveOptionalMatches.OptionalSolver
 import org.neo4j.cypher.internal.compiler.v3_1.{UpdateStrategy, defaultUpdateStrategy}
+import org.neo4j.cypher.internal.ir.v3_1.QueryGraph
+import org.neo4j.cypher.internal.ir.v3_1.logical.plans.LogicalPlan
 
 object QueryPlannerConfiguration {
   val default: QueryPlannerConfiguration = QueryPlannerConfiguration(

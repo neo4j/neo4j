@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.pipes
 
-import org.neo4j.cypher.internal.compiler.v3_1.commands.{QueryExpression, RangeQueryExpression}
+import org.neo4j.cypher.internal.ir.v3_1.{QueryExpression, RangeQueryExpression}
 import org.neo4j.graphdb.Node
 import org.neo4j.kernel.api.index.IndexDescriptor
 

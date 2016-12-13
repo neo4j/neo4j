@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.ast.rewriters
 
-import org.neo4j.cypher.internal.compiler.v3_1.helpers.FreshIdNameGenerator
 import org.neo4j.cypher.internal.frontend.v3_1._
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
+import org.neo4j.cypher.internal.ir.v3_1.helpers.FreshIdNameGenerator
 
 /**
  * This rewriter makes sure that all return items in a RETURN clauses are aliased, and moves

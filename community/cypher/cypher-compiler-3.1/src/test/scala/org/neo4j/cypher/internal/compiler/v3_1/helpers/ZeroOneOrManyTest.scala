@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_1.helpers
 
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.ir.v3_1.helpers.{Many, One, Zero, ZeroOneOrMany}
 
 class ZeroOneOrManyTest extends CypherFunSuite {
 

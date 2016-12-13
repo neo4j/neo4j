@@ -21,8 +21,9 @@ package org.neo4j.cypher.internal.compiler.v3_1.ast.convert.plannerQuery
 
 import org.neo4j.cypher.internal.compiler.v3_1.ast.convert.plannerQuery.ClauseConverters._
 import org.neo4j.cypher.internal.compiler.v3_1.planner._
-import org.neo4j.cypher.internal.frontend.v3_1.{SemanticTable, Foldable, ast}
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
+import org.neo4j.cypher.internal.frontend.v3_1.{Foldable, SemanticTable, ast}
+import org.neo4j.cypher.internal.ir.v3_1.{PeriodicCommit, UnionQuery}
 
 object StatementConverters {
   import Foldable._

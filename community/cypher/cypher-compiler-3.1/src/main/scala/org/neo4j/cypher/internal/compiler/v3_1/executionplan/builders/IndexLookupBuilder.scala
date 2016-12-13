@@ -26,8 +26,8 @@ import org.neo4j.cypher.internal.compiler.v3_1.commands.predicates._
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.PipeMonitor
 import org.neo4j.cypher.internal.compiler.v3_1.spi.PlanContext
-import org.neo4j.cypher.internal.frontend.v3_1.parser.{MatchText, ParsedLikePattern, WildcardLikePatternOp}
 import org.neo4j.cypher.internal.frontend.v3_1.{ExclusiveBound, InclusiveBound, IndexHintException}
+import org.neo4j.cypher.internal.ir.v3_1.{ManyQueryExpression, QueryExpression, RangeQueryExpression, ScanQueryExpression, SingleQueryExpression}
 
 class IndexLookupBuilder extends PlanBuilder {
   def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor) =

@@ -41,4 +41,10 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   def literalInt(intValue: Int): SignedDecimalIntegerLiteral =
     SignedDecimalIntegerLiteral(intValue.toString)(pos)
+
+  def identHasLabel(name: String, labelName: String): HasLabels = {
+    val labelNameObj: LabelName = LabelName(labelName)_
+    HasLabels(Variable(name)_, Seq(labelNameObj))_
+  }
+
 }

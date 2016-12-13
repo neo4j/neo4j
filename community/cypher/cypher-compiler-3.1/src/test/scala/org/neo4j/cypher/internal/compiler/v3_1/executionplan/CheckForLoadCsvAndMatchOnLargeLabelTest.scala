@@ -19,18 +19,18 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.executionplan
 
-import org.mockito.Mockito._
 import org.mockito.Matchers._
+import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.compiler.v3_1.commands.NodeByLabel
 import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.Literal
-import org.neo4j.cypher.internal.compiler.v3_1.pipes.{LazyLabel, NodeByLabelScanPipe, SingleRowPipe, NodeByLabelEntityProducer, NodeStartPipe, PipeMonitor, HasHeaders, AllNodesScanPipe, LoadCSVPipe, EagerPipe}
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.Cardinality
+import org.neo4j.cypher.internal.compiler.v3_1.pipes._
 import org.neo4j.cypher.internal.compiler.v3_1.spi.{GraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.frontend.v3_1.LabelId
 import org.neo4j.cypher.internal.frontend.v3_1.notification.LargeLabelWithLoadCsvNotification
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.ir.v3_1.{Cardinality, HasHeaders}
 class CheckForLoadCsvAndMatchOnLargeLabelTest extends CypherFunSuite {
   private val THRESHOLD = 100
   private val labelOverThreshold = "A"

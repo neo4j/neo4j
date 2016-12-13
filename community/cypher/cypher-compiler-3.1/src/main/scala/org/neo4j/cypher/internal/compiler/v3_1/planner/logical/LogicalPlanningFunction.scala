@@ -19,9 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.planner.logical
 
-
-import org.neo4j.cypher.internal.compiler.v3_1.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.ir.v3_1.QueryGraph
+import org.neo4j.cypher.internal.ir.v3_1.logical.plans.LogicalPlan
 
 trait LogicalPlanningFunction0[+B] {
   def apply(implicit context: LogicalPlanningContext): B

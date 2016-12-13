@@ -30,10 +30,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.spi.QueryContext
 import org.neo4j.cypher.internal.compiler.v3_1.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_1.LoadExternalResourceException
 import org.neo4j.cypher.internal.frontend.v3_1.symbols.{AnyType, ListType, MapType}
-
-sealed trait CSVFormat
-case object HasHeaders extends CSVFormat
-case object NoHeaders extends CSVFormat
+import org.neo4j.cypher.internal.ir.v3_1.{CSVFormat, HasHeaders, NoHeaders}
 
 case class LoadCSVPipe(source: Pipe,
                        format: CSVFormat,

@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1
 
-import org.neo4j.cypher.internal.compiler.v3_1.ast.{ResolvedCall, ResolvedFunctionInvocation}
-import org.neo4j.cypher.internal.compiler.v3_1.spi.{ProcedureSignature, QualifiedName, UserFunctionSignature}
+import org.neo4j.cypher.internal.compiler.v3_1.ast.ResolvedFunctionInvocation
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.frontend.v3_1.{Rewriter, bottomUp}
+import org.neo4j.cypher.internal.ir.v3_1.{ProcedureSignature, QualifiedName, ResolvedCall, UserFunctionSignature}
 
 // Given a way to lookup procedure signatures, this factory returns a rewriter that
 // turns unresolved calls into resolved calls

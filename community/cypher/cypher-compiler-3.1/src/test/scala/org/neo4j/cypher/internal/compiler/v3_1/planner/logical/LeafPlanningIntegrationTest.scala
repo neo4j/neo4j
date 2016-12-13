@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v3_1.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_1._
 import org.neo4j.cypher.internal.compiler.v3_1.ast.{InequalitySeekRangeWrapper, PrefixSeekRangeWrapper}
-import org.neo4j.cypher.internal.compiler.v3_1.commands.{ManyQueryExpression, RangeQueryExpression, SingleQueryExpression}
 import org.neo4j.cypher.internal.compiler.v3_1.planner.BeLikeMatcher._
 import org.neo4j.cypher.internal.compiler.v3_1.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.Metrics.QueryGraphSolverInput
@@ -31,6 +30,8 @@ import org.neo4j.cypher.internal.frontend.v3_1.helpers.NonEmptyList
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_1.{ExclusiveBound, InclusiveBound, LabelId, PropertyKeyId}
+import org.neo4j.cypher.internal.ir.v3_1.logical.plans._
+import org.neo4j.cypher.internal.ir.v3_1.{Cost, IdName, ManyQueryExpression, RangeQueryExpression, SingleQueryExpression}
 
 class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 

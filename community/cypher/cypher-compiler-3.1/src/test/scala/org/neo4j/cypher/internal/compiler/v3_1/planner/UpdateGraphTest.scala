@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.planner
 
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.{IdName, PatternRelationship, SimplePatternLength}
-import org.neo4j.cypher.internal.frontend.v3_1.ast.{HasLabels, In, LabelName, MapExpression, Property, PropertyKeyName, RelTypeName, SignedDecimalIntegerLiteral, Variable}
+import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_1.{DummyPosition, SemanticDirection}
+import org.neo4j.cypher.internal.ir.v3_1.{CreateNodePattern, CreateRelationshipPattern, DeleteExpression, IdName, MergeNodePattern, PatternRelationship, QueryGraph, Selections, SetLabelPattern, SimplePatternLength}
 
 class UpdateGraphTest extends CypherFunSuite {
   private val pos = DummyPosition(0)

@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v3_1
 import java.time.Clock
 
 import org.neo4j.cypher.internal.compiler.v3_1.CompilationPhaseTracer.CompilationPhase.{AST_REWRITE, PARSING, SEMANTIC_CHECK}
-import org.neo4j.cypher.internal.compiler.v3_1.ast.ResolvedCall
 import org.neo4j.cypher.internal.compiler.v3_1.ast.rewriters.replaceAliasedFunctionInvocations.aliases
 import org.neo4j.cypher.internal.compiler.v3_1.ast.rewriters.{expandCallWhere, normalizeReturnClauses, normalizeWithClauses, replaceAliasedFunctionInvocations}
 import org.neo4j.cypher.internal.compiler.v3_1.codegen.CodeStructure
@@ -32,12 +31,13 @@ import org.neo4j.cypher.internal.compiler.v3_1.helpers.{RuntimeTypeConverter, cl
 import org.neo4j.cypher.internal.compiler.v3_1.planner._
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.rewriter.LogicalPlanRewriter
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.{CachedMetricsFactory, DefaultQueryPlanner, SimpleMetricsFactory}
-import org.neo4j.cypher.internal.compiler.v3_1.spi.{PlanContext, ProcedureSignature}
+import org.neo4j.cypher.internal.compiler.v3_1.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v3_1.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_1.ast.{FunctionInvocation, FunctionName, Statement}
 import org.neo4j.cypher.internal.frontend.v3_1.notification.{DeprecatedFunctionNotification, DeprecatedProcedureNotification, InternalNotification}
 import org.neo4j.cypher.internal.frontend.v3_1.parser.CypherParser
 import org.neo4j.cypher.internal.frontend.v3_1.{InputPosition, SemanticTable, inSequence}
+import org.neo4j.cypher.internal.ir.v3_1.{ProcedureSignature, ResolvedCall}
 import org.neo4j.kernel.GraphDatabaseQueryService
 
 trait AstRewritingMonitor {

@@ -19,12 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v3_1.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.{CandidateGenerator, LogicalPlanningContext}
 import org.neo4j.cypher.internal.frontend.v3_1.SemanticDirection
-import org.neo4j.cypher.internal.frontend.v3_1.ast._
-import org.neo4j.cypher.internal.frontend.v3_1.ast.Expression
+import org.neo4j.cypher.internal.frontend.v3_1.ast.{Expression, _}
+import org.neo4j.cypher.internal.ir.v3_1.logical.plans.{Expand, ExpandAll, LogicalPlan, Selection}
+import org.neo4j.cypher.internal.ir.v3_1.{IdName, QueryGraph}
 
 object triadicSelectionFinder extends CandidateGenerator[LogicalPlan] {
 

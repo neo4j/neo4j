@@ -21,8 +21,9 @@ package org.neo4j.cypher.internal.compiler.v3_1.executionplan.builders
 
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.{ExecutionPlanInProgress, PlanBuilder}
 import org.neo4j.cypher.internal.compiler.v3_1.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v3_1.pipes.{PipeMonitor, HasHeaders, NoHeaders, LoadCSVPipe}
+import org.neo4j.cypher.internal.compiler.v3_1.pipes.{LoadCSVPipe, PipeMonitor}
 import org.neo4j.cypher.internal.compiler.v3_1.commands.LoadCSV
+import org.neo4j.cypher.internal.ir.v3_1.{HasHeaders, NoHeaders}
 
 class LoadCSVBuilder extends PlanBuilder {
   def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor): Boolean = {

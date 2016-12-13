@@ -19,10 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.planner.logical.steps
 
+import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.frontend.v3_1.ast
 import org.neo4j.cypher.internal.frontend.v3_1.ast.Expression
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.LogicalPlanningContext
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans._
+import org.neo4j.cypher.internal.ir.v3_1.IdName
+import org.neo4j.cypher.internal.ir.v3_1.logical.plans.LogicalPlan
 
 object projection {
 

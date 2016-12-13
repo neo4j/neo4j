@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans
 
-import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.compiler.v3_1.ast.convert.commands.ExpressionConverters._
-import org.neo4j.cypher.internal.compiler.v3_1.commands.{ManyQueryExpression, QueryExpression, SingleQueryExpression}
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.{ManySeekArgs, SeekArgs}
+import org.neo4j.cypher.internal.frontend.v3_1.ast._
+import org.neo4j.cypher.internal.ir.v3_1.{ManyQueryExpression, QueryExpression, SingleQueryExpression}
 
 object Seek {
   def unapply(v: Any) = v match {
