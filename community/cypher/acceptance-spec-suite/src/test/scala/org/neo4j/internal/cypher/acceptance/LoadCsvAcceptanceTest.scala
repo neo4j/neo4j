@@ -43,6 +43,40 @@ class LoadCsvAcceptanceTest
     createZipCSVTempFileURL(f)
   )
 
+  test("import three rows with headers and match from import using index hint") {
+    val urls = csvUrls({
+      writer =>
+        writer.println("USERID,OrderId,field1,field2")
+        writer.println("1, '4', 1, '4'")
+        writer.println("2, '5', 2, '5'")
+        writer.println("3, '6', 3, '6'")
+    })
+
+    val result = executeWithCostPlannerOnly(
+      s"""LOAD CSV WITH HEADERS FROM '${urls(0)}' AS row
+          | CREATE (user:User{userID: row.USERID})
+          | CREATE (order:Order{orderID: row.OrderId})
+          | CREATE (user)-[acc:ORDERED]->(order)
+          | RETURN count(*)""".stripMargin
+    )
+    graph.createIndex("User", "userID")
+    assertStats(result, nodesCreated = 6, relationshipsCreated = 3, labelsAdded = 6, propertiesWritten = 6)
+
+    for (url <- urls) {
+      val result = executeWithCostPlannerOnly(
+        s"""LOAD CSV WITH HEADERS FROM '$url' AS row
+            | MATCH (user:User{userID: row.USERID}) USING INDEX user:User(userID)
+            | MATCH (order:Order{orderID: row.OrderId})
+            | MATCH (user)-[acc:ORDERED]->(order)
+            | SET acc.field1=row.field1,
+            | acc.field2=row.field2
+            | RETURN count(*); """.stripMargin
+      )
+
+      assertStats(result, propertiesWritten = 6)
+    }
+  }
+
   test("import three strings") {
     val urls = csvUrls({
       writer =>
