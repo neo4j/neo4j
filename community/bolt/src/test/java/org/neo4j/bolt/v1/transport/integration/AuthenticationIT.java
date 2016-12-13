@@ -36,9 +36,11 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.function.Consumer;
 
+import org.neo4j.bolt.v1.messaging.message.AckFailureMessage;
 import org.neo4j.bolt.v1.messaging.message.FailureMessage;
 import org.neo4j.bolt.v1.messaging.message.InitMessage;
 import org.neo4j.bolt.v1.messaging.message.PullAllMessage;
+import org.neo4j.bolt.v1.messaging.message.ResetMessage;
 import org.neo4j.bolt.v1.messaging.message.ResponseMessage;
 import org.neo4j.bolt.v1.messaging.message.RunMessage;
 import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
@@ -61,7 +63,9 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgFailure;
+import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgIgnored;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
+import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyDisconnects;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
@@ -129,6 +133,14 @@ public class AuthenticationIT
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, eventuallyReceives( msgSuccess( map( "credentials_expired", true , "server", version)) ) );
+
+        verifyConnectionOpen();
+    }
+
+    private void verifyConnectionOpen() throws IOException
+    {
+        client.send( TransportTestUtil.chunk( ResetMessage.reset() ) );
+        assertThat( client, eventuallyReceives( msgSuccess() ) );
     }
 
     @Test
@@ -145,6 +157,8 @@ public class AuthenticationIT
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, eventuallyReceives( msgFailure( Status.Security.Unauthorized,
                 "The client is unauthorized due to authentication failure." ) ) );
+
+        assertThat( client, eventuallyDisconnects() );
     }
 
     @Test
@@ -184,6 +198,8 @@ public class AuthenticationIT
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, eventuallyReceives( msgFailure( Status.Security.Unauthorized,
                 "The client is unauthorized due to authentication failure." ) ) );
+
+        assertThat( client, eventuallyDisconnects() );
     }
 
     @Test
@@ -200,6 +216,8 @@ public class AuthenticationIT
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, eventuallyReceives( msgFailure( Status.Security.Unauthorized,
                 "The value associated with the key `principal` must be a String but was: ArrayList" ) ) );
+
+        assertThat( client, eventuallyDisconnects() );
     }
 
     @Test
@@ -216,6 +234,8 @@ public class AuthenticationIT
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, eventuallyReceives( msgFailure( Status.Security.Unauthorized,
                 "The value associated with the key `credentials` must be a String but was: null" ) ) );
+
+        assertThat( client, eventuallyDisconnects() );
     }
 
     @Test
@@ -232,6 +252,8 @@ public class AuthenticationIT
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, eventuallyReceives( msgFailure( Status.Security.Unauthorized,
                 "The value associated with the key `scheme` must be a String but was: null" ) ) );
+
+        assertThat( client, eventuallyDisconnects() );
     }
 
     @Test
@@ -249,6 +271,8 @@ public class AuthenticationIT
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, eventuallyReceives( msgFailure( Status.Security.Unauthorized,
                 "Unsupported authentication scheme 'unknown'." ) ) );
+
+        assertThat( client, eventuallyDisconnects() );
     }
 
     @Test
@@ -272,6 +296,7 @@ public class AuthenticationIT
             assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
             assertThat( client, eventuallyReceives( failureMatcher ) );
 
+            assertThat( client, eventuallyDisconnects() );
             reconnect();
         }
 
@@ -437,6 +462,13 @@ public class AuthenticationIT
         // Then
         assertThat( client, eventuallyReceives( msgFailure(Status.General.InvalidArguments,
                 "Old password and new password cannot be the same.") ) );
+
+        // However you should also be able to recover
+        client.send( TransportTestUtil.chunk(
+                AckFailureMessage.ackFailure(),
+                RunMessage.run( "CALL dbms.security.changePassword", Collections.singletonMap( "password", "abc" ) ),
+                PullAllMessage.pullAll() ) );
+        assertThat( client, eventuallyReceives( msgIgnored(), msgSuccess(), msgSuccess(), msgSuccess() ) );
     }
 
     @Test
@@ -461,6 +493,13 @@ public class AuthenticationIT
         // Then
         assertThat( client, eventuallyReceives( msgFailure(Status.General.InvalidArguments,
                 "A password cannot be empty.") ) );
+
+        // However you should also be able to recover
+        client.send( TransportTestUtil.chunk(
+                AckFailureMessage.ackFailure(),
+                RunMessage.run( "CALL dbms.security.changePassword", Collections.singletonMap( "password", "abc" ) ),
+                PullAllMessage.pullAll() ) );
+        assertThat( client, eventuallyReceives( msgIgnored(), msgSuccess(), msgSuccess(), msgSuccess() ) );
     }
 
     @Test
@@ -485,6 +524,8 @@ public class AuthenticationIT
         // Then
         assertThat( client, eventuallyReceives( msgFailure( Status.Security.CredentialsExpired,
                 "The credentials you provided were valid, but must be changed before you can use this instance." ) ) );
+
+        assertThat( client, eventuallyDisconnects() );
     }
 
     @Before
