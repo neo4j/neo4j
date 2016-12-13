@@ -65,5 +65,21 @@ public class CertificatesIT
         assertFalse( certificateAttributes.permissions().contains( PosixFilePermission.OTHERS_READ ) );
         assertFalse( certificateAttributes.permissions().contains( PosixFilePermission.OTHERS_WRITE ) );
         assertFalse( certificateAttributes.permissions().contains( PosixFilePermission.OTHERS_EXECUTE ) );
+
+        PosixFileAttributes privateKey =
+                Files.getFileAttributeView( testDirectory.file( "privateKey" ).toPath(), PosixFileAttributeView.class )
+                        .readAttributes();
+
+        assertTrue( privateKey.permissions().contains( PosixFilePermission.OWNER_READ ) );
+        assertTrue( privateKey.permissions().contains( PosixFilePermission.OWNER_WRITE ) );
+        assertFalse( privateKey.permissions().contains( PosixFilePermission.OWNER_EXECUTE ) );
+
+        assertFalse( privateKey.permissions().contains( PosixFilePermission.GROUP_READ ) );
+        assertFalse( privateKey.permissions().contains( PosixFilePermission.GROUP_WRITE ) );
+        assertFalse( privateKey.permissions().contains( PosixFilePermission.GROUP_EXECUTE ) );
+
+        assertFalse( privateKey.permissions().contains( PosixFilePermission.OTHERS_READ ) );
+        assertFalse( privateKey.permissions().contains( PosixFilePermission.OTHERS_WRITE ) );
+        assertFalse( privateKey.permissions().contains( PosixFilePermission.OTHERS_EXECUTE ) );
     }
 }
