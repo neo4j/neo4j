@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.ast.convert.plannerQuery
 
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.{LogicalPlanningTestSupport, _}
 import org.neo4j.cypher.internal.compiler.v3_2.spi._
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection.{BOTH, INCOMING, OUTGOING}
@@ -1059,6 +1058,17 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val hint: LegacyIndexHint = NodeByIndexQuery(varFor("n"), "nodes", StringLiteral("name:A")_)_
 
     query.queryGraph.hints should equal(Set(hint))
+    query.tail should equal(None)
+  }
+
+  test("START n=rel:relationships(\"name:A\") RETURN n") {
+    val query = buildPlannerQuery("START r=rel:relationships(\"name:A\") RETURN r")
+
+    val hint: LegacyIndexHint = RelationshipByIndexQuery(varFor("r"), "relationships", StringLiteral("name:A") _) _
+
+    query.queryGraph.hints should equal(Set(hint))
+    query.queryGraph.patternRelationships should not(be(empty))
+
     query.tail should equal(None)
   }
 

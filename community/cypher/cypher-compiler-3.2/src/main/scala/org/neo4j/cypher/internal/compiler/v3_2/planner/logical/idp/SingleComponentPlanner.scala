@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps.solveOptionalMatches.OptionalSolver
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps.{applyOptional, leafPlanOptions, outerHashJoin}
 import org.neo4j.cypher.internal.frontend.v3_2.InternalException
+import org.neo4j.cypher.internal.frontend.v3_2.ast.RelationshipStartItem
 import org.neo4j.cypher.internal.ir.v3_2.PatternRelationship
 
 /**
@@ -97,12 +98,13 @@ case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
 
   private def planSinglePattern(qg: QueryGraph, pattern: PatternRelationship, leaves: Set[LogicalPlan])
                                (implicit context: LogicalPlanningContext): Iterable[LogicalPlan] = {
-
     leaves.flatMap {
       case plan if plan.solved.lastQueryGraph.patternRelationships.contains(pattern) =>
         Set(plan)
       case plan if plan.solved.lastQueryGraph.allCoveredIds.contains(pattern.name) =>
         Set(planSingleProjectEndpoints(pattern, plan))
+      case plan if plan.solved.lastQueryGraph.patternNodes.isEmpty && plan.solved.lastQueryGraph.hints.exists(_.isInstanceOf[RelationshipStartItem]) =>
+        Set(context.logicalPlanProducer.planEndpointProjection(plan, pattern.nodes._1, startInScope = false, pattern.nodes._2, endInScope = false, pattern))
       case plan =>
         val (start, end) = pattern.nodes
         val leftExpand = planSinglePatternSide(qg, pattern, plan, start)

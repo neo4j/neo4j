@@ -19,10 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.ast.convert.plannerQuery
 
-import org.neo4j.cypher.internal.compiler.v3_2.helpers.ListSupport
+import org.neo4j.cypher.internal.compiler.v3_2.helpers.{ListSupport, UnNamedNameGenerator}
 import org.neo4j.cypher.internal.compiler.v3_2.planner._
-import org.neo4j.cypher.internal.frontend.v3_2.SemanticTable
-import org.neo4j.cypher.internal.ir.v3_2.IdName
+import org.neo4j.cypher.internal.frontend.v3_2.ast.RelationshipStartItem
+import org.neo4j.cypher.internal.frontend.v3_2.{SemanticDirection, SemanticTable}
+import org.neo4j.cypher.internal.ir.v3_2.{IdName, PatternRelationship, SimplePatternLength}
 
 case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: SemanticTable, returns: Seq[IdName] = Seq.empty)
   extends ListSupport {
@@ -92,6 +93,22 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: Seman
       plannerQuery.amendQueryGraph(qg => newMergeMatchGraph.map(qg.withMergeMatch).getOrElse(qg)).updateTail(fixArgumentIdsOnMerge)
     }
 
+    def fixQueriesWithOnlyRelationshipIndex(plannerQuery: PlannerQuery): PlannerQuery = {
+      val qg = plannerQuery.queryGraph
+      val patternRelationships = qg.hints.collect {
+        case r: RelationshipStartItem if !qg.patternRelationships.exists(_.name.name == r.name) =>
+          val lNode = UnNamedNameGenerator.name(r.position)
+          val rNode = UnNamedNameGenerator.name(r.position.bumped())
+
+          PatternRelationship(IdName(r.name), (IdName(lNode), IdName(rNode)), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+      }
+
+      val patternNodes = patternRelationships.flatMap(relationship => Set(relationship.nodes._1, relationship.nodes._2))
+      plannerQuery
+        .amendQueryGraph(_.addPatternRelationships(patternRelationships.toSeq).addPatternNodes(patternNodes.toSeq:_*))
+        .updateTail(fixQueriesWithOnlyRelationshipIndex)
+    }
+
     val fixedArgumentIds = q.foldMap {
       case (head, tail) =>
         val symbols = head.horizon.exposedSymbols(head.queryGraph)
@@ -116,7 +133,8 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: Seman
 
     val withFixedOptionalMatchArgumentIds = fixArgumentIdsOnOptionalMatch(fixedArgumentIds)
     val withFixedMergeArgumentIds = fixArgumentIdsOnMerge(withFixedOptionalMatchArgumentIds)
-    groupInequalities(withFixedMergeArgumentIds)
+    val groupedInequalities = groupInequalities(withFixedMergeArgumentIds)
+    fixQueriesWithOnlyRelationshipIndex(groupedInequalities)
   }
 }
 

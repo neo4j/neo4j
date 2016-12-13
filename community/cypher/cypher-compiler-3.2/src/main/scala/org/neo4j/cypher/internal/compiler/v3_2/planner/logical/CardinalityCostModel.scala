@@ -85,7 +85,8 @@ object CardinalityCostModel extends CostModel {
     => 0.1
 
     case _: FindShortestPaths |
-         _: LegacyIndexSeek |
+         _: LegacyNodeIndexSeek |
+         _: LegacyRelationshipIndexSeek |
          _: DirectedRelationshipByIdSeek |
          _: UndirectedRelationshipByIdSeek
     => 12.0

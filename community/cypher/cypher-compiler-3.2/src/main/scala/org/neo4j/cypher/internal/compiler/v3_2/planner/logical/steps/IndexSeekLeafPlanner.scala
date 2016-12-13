@@ -202,11 +202,3 @@ object indexSeekLeafPlanner extends AbstractIndexSeekLeafPlanner {
   private def uniqueIndex(label: String, property: String)(implicit context: LogicalPlanningContext) = context.planContext.getUniqueIndexRule(label, property)
 }
 
-object legacyHintLeafPlanner extends LeafPlanner {
-  def apply(qg: QueryGraph)(implicit context: LogicalPlanningContext) = {
-    qg.hints.toIndexedSeq.collect {
-      case hint: LegacyIndexHint if !qg.argumentIds(IdName(hint.variable.name)) =>
-        context.logicalPlanProducer.planLegacyHintSeek(IdName(hint.variable.name), hint, qg.argumentIds)
-    }
-  }
-}

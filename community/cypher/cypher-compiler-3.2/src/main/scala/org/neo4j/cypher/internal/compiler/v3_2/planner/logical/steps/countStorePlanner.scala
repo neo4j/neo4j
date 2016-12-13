@@ -97,7 +97,7 @@ case object countStorePlanner {
 
   private def trySolveRelationshipAggregation(query: PlannerQuery, columnName: String, variableName: Option[String],
                                               patternRelationships: Set[PatternRelationship], argumentIds: Set[IdName],
-                                              selections: Selections)(implicit context: LogicalPlanningContext): Option[RelationshipCountFromCountStore] = {
+                                              selections: Selections)(implicit context: LogicalPlanningContext): Option[LogicalPlan] = {
     patternRelationships.head match {
 
       case PatternRelationship(relId, (startNodeId, endNodeId), direction, types, SimplePatternLength)

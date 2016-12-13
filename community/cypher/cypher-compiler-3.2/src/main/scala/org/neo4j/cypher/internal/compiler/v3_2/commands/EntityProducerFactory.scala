@@ -45,6 +45,10 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
       nodeByIndexQuery orElse
       nodeByIndexHint(readOnly = true)
 
+  def readRelationshipLegacy: PartialFunction[(PlanContext, StartItem), EntityProducer[Relationship]] =
+    relationshipByIndex orElse
+    relationshipByIndexQuery
+
   val nodeByIndex: PartialFunction[(PlanContext, StartItem), EntityProducer[Node]] = {
     case (planContext, startItem @ NodeByIndex(varName, idxName, key, value)) =>
       planContext.checkNodeIndex(idxName)

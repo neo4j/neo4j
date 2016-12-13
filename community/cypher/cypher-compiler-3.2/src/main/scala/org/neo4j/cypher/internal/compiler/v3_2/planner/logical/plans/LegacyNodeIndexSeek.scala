@@ -19,13 +19,20 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans
 
-import org.neo4j.cypher.internal.frontend.v3_2.ast.LegacyIndexHint
 import org.neo4j.cypher.internal.compiler.v3_2.planner.{CardinalityEstimation, PlannerQuery}
+import org.neo4j.cypher.internal.frontend.v3_2.ast.LegacyIndexHint
 import org.neo4j.cypher.internal.ir.v3_2.IdName
 
-case class LegacyIndexSeek(idName: IdName, hint: LegacyIndexHint, argumentIds: Set[IdName])
-                          (val solved: PlannerQuery with CardinalityEstimation)
+case class LegacyNodeIndexSeek(idName: IdName, hint: LegacyIndexHint, argumentIds: Set[IdName])
+                              (val solved: PlannerQuery with CardinalityEstimation)
   extends NodeLogicalLeafPlan {
 
-  def availableSymbols = argumentIds + idName
+  def availableSymbols: Set[IdName] = argumentIds + idName
+}
+
+case class LegacyRelationshipIndexSeek(idName: IdName, hint: LegacyIndexHint, argumentIds: Set[IdName])
+                                      (val solved: PlannerQuery with CardinalityEstimation)
+  extends NodeLogicalLeafPlan {
+
+  def availableSymbols: Set[IdName] = argumentIds + idName
 }
