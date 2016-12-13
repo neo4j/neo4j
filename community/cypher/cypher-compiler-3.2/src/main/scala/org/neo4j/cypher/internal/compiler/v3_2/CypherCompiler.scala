@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2
 
+import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters.NameSpacerPhase
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilationState.{State1, State4}
 import org.neo4j.cypher.internal.compiler.v3_2.phases._
@@ -83,7 +84,8 @@ case class CypherCompiler(executionPlanBuilder: ExecutionPlanBuilder,
 
     val secondPipeLine =
       rewriteProcedureCalls andThen
-      SemanticAnalysis.Late
+      SemanticAnalysis.Late andThen
+      NameSpacerPhase
 
     val exceptionCreator = new SyntaxExceptionCreator(in.queryText, in.startPosition)
 

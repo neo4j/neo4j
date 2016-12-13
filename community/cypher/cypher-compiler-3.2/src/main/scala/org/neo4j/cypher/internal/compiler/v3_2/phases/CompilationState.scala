@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.phases
 
 import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterCondition
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{Query, Statement}
-import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, SemanticState}
+import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, SemanticState, SemanticTable}
 
 object CompilationState {
 
@@ -36,6 +36,11 @@ object CompilationState {
 
   sealed trait S2 extends S1 {
     val statement: Statement
+
+    def isPeriodicCommit: Boolean = statement match {
+      case Query(Some(_), _) => true
+      case _ => false
+    }
   }
 
   sealed trait S3 extends S2 {
@@ -45,6 +50,10 @@ object CompilationState {
   sealed trait S4 extends S3 {
     val extractedParams: Map[String, Any]
     val postConditions: Set[RewriterCondition]
+  }
+
+  sealed trait S5 extends S4 {
+    val semanticTable: SemanticTable
   }
 
   case class State1(queryText: String,
@@ -76,13 +85,18 @@ object CompilationState {
                     plannerName: String,
                     statement: Statement,
                     semantics: SemanticState,
-                    extractedParams: Map[String, Any], postConditions: Set[RewriterCondition]) extends S4 {
-
-    def isPeriodicCommit: Boolean = statement match {
-      case Query(Some(_), _) => true
-      case _ => false
-    }
-
+                    extractedParams: Map[String, Any],
+                    postConditions: Set[RewriterCondition]) extends S4 {
+    def add(semanticTable: SemanticTable): State5 =
+      State5(queryText, startPosition, plannerName, statement, semantics, extractedParams, postConditions, semanticTable)
   }
 
+  case class State5(queryText: String,
+                    startPosition: Option[InputPosition],
+                    plannerName: String,
+                    statement: Statement,
+                    semantics: SemanticState,
+                    extractedParams: Map[String, Any],
+                    postConditions: Set[RewriterCondition],
+                    semanticTable: SemanticTable) extends S5
 }
