@@ -70,7 +70,6 @@ import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.LockService;
-import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.BufferedIdController;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.DefaultIdController;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.IdController;
@@ -117,6 +116,7 @@ import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageStatement;
+import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
@@ -222,7 +222,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             labelScanStore = labelScanStoreProvider.getLabelScanStore();
 
             schemaIndexProviderMap = new DefaultSchemaIndexProviderMap( indexProvider );
-            indexStoreView = new DynamicIndexStoreView( labelScanStore, lockService, neoStores );
+            indexStoreView = new DynamicIndexStoreView( labelScanStore, lockService, neoStores, logProvider );
             indexingService = IndexingServiceFactory.createIndexingService( config, scheduler, schemaIndexProviderMap,
                     indexStoreView, tokenNameLookup,
                     Iterators.asList( new SchemaStorage( neoStores.getSchemaStore() ).allIndexRules() ), logProvider,

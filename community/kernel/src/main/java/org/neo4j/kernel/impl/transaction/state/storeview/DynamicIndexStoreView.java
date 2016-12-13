@@ -25,6 +25,7 @@ import java.util.function.IntPredicate;
 import java.util.stream.IntStream;
 
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.api.labelscan.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.index.NodePropertyUpdates;
@@ -32,6 +33,8 @@ import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.register.Registers;
 import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
@@ -48,12 +51,15 @@ public class DynamicIndexStoreView extends NeoStoreIndexStoreView
 
     private final LabelScanStore labelScanStore;
     private final CountsTracker counts;
+    private final Log log;
 
-    public DynamicIndexStoreView( LabelScanStore labelScanStore, LockService locks, NeoStores neoStores )
+    public DynamicIndexStoreView( LabelScanStore labelScanStore, LockService locks, NeoStores neoStores,
+            LogProvider logProvider )
     {
         super( locks, neoStores );
         this.counts = neoStores.getCounts();
         this.labelScanStore = labelScanStore;
+        this.log = logProvider.getLog( getClass() );
     }
 
     @Override
@@ -71,12 +77,24 @@ public class DynamicIndexStoreView extends NeoStoreIndexStoreView
 
     private boolean useAllNodeStoreScan( int[] labelIds )
     {
-        return ArrayUtils.isEmpty( labelIds ) || isEmptyLabelScanStore() || isNumberOfLabeledNodesExceedThreshold( labelIds );
+        try
+        {
+            return ArrayUtils.isEmpty( labelIds ) || isEmptyLabelScanStore() ||
+                    isNumberOfLabeledNodesExceedThreshold( labelIds );
+        }
+        catch ( Exception e )
+        {
+            log.error( "Can not determine number of labeled nodes, falling back to all nodes scan.", e );
+            return true;
+        }
     }
 
-    private boolean isEmptyLabelScanStore()
+    private boolean isEmptyLabelScanStore() throws Exception
     {
-        return labelScanStore.allNodeLabelRanges().maxCount() == 0;
+        try ( AllEntriesLabelScanReader nodeLabelRanges = labelScanStore.allNodeLabelRanges() )
+        {
+            return nodeLabelRanges.maxCount() == 0;
+        }
     }
 
     private boolean isNumberOfLabeledNodesExceedThreshold( int[] labelIds )

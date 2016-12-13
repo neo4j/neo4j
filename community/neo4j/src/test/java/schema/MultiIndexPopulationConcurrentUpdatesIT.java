@@ -377,7 +377,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         DynamicIndexStoreViewWrapper( LabelScanStore labelScanStore, LockService locks, NeoStores neoStores,
                 List<NodePropertyUpdate> updates )
         {
-            super( labelScanStore, locks, neoStores );
+            super( labelScanStore, locks, neoStores, NullLogProvider.getInstance() );
             this.updates = updates;
         }
 
