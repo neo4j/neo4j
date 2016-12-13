@@ -36,6 +36,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.security.WriteOperationsNotAllowedException;
 import org.neo4j.test.causalclustering.ClusterRule;
+import org.neo4j.test.rule.SuppressOutput;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
@@ -51,6 +52,8 @@ public class CoreReplicationIT
     @Rule
     public final ClusterRule clusterRule =
             new ClusterRule( getClass() ).withNumberOfCoreMembers( 3 ).withNumberOfReadReplicas( 0 );
+    @Rule
+    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
     private Cluster cluster;
 
