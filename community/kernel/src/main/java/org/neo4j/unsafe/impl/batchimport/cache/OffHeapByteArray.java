@@ -108,7 +108,7 @@ public class OffHeapByteArray extends OffHeapNumberArray<ByteArray> implements B
             return UnsafeUtil.getShort( p );
         }
 
-        return UnsafeUtil.getShortByteWiseLittleEndian( p );
+        return UnsafeUtil.getShortByteWise( p );
     }
 
     @Override
@@ -124,7 +124,7 @@ public class OffHeapByteArray extends OffHeapNumberArray<ByteArray> implements B
             return UnsafeUtil.getInt( p );
         }
 
-        return UnsafeUtil.getIntByteWiseLittleEndian( p );
+        return UnsafeUtil.getIntByteWise( p );
     }
 
     @Override
@@ -145,7 +145,7 @@ public class OffHeapByteArray extends OffHeapNumberArray<ByteArray> implements B
             return UnsafeUtil.getLong( p );
         }
 
-        return UnsafeUtil.getLongByteWiseLittleEndian( p );
+        return UnsafeUtil.getLongByteWise( p );
     }
 
     @Override
@@ -178,7 +178,7 @@ public class OffHeapByteArray extends OffHeapNumberArray<ByteArray> implements B
         }
         else
         {
-            UnsafeUtil.putShortByteWiseLittleEndian( p, value );
+            UnsafeUtil.putShortByteWise( p, value );
         }
     }
 
@@ -196,7 +196,7 @@ public class OffHeapByteArray extends OffHeapNumberArray<ByteArray> implements B
         }
         else
         {
-            UnsafeUtil.putIntByteWiseLittleEndian( p, value );
+            UnsafeUtil.putIntByteWise( p, value );
         }
     }
 
@@ -218,7 +218,7 @@ public class OffHeapByteArray extends OffHeapNumberArray<ByteArray> implements B
         }
         else
         {
-            UnsafeUtil.putLongByteWiseLittleEndian( p, value );
+            UnsafeUtil.putLongByteWise( p, value );
         }
     }
 

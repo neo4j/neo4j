@@ -139,12 +139,12 @@ class TreeNode<KEY,VALUE>
 
     long gen( PageCursor cursor )
     {
-        return cursor.getInt( BYTE_POS_GEN ) & GenSafePointer.GENERATION_MASK;
+        return cursor.getIntBE( BYTE_POS_GEN ) & GenSafePointer.GENERATION_MASK;
     }
 
     int keyCount( PageCursor cursor )
     {
-        return cursor.getInt( BYTE_POS_KEYCOUNT );
+        return cursor.getIntBE( BYTE_POS_KEYCOUNT );
     }
 
     long rightSibling( PageCursor cursor, long stableGeneration, long unstableGeneration )
@@ -168,12 +168,12 @@ class TreeNode<KEY,VALUE>
     void setGen( PageCursor cursor, long generation )
     {
         GenSafePointer.assertGeneration( generation );
-        cursor.putInt( BYTE_POS_GEN, (int) generation );
+        cursor.putIntBE( BYTE_POS_GEN, (int) generation );
     }
 
     void setKeyCount( PageCursor cursor, int count )
     {
-        cursor.putInt( BYTE_POS_KEYCOUNT, count );
+        cursor.putIntBE( BYTE_POS_KEYCOUNT, count );
     }
 
     void setRightSibling( PageCursor cursor, long rightSiblingId, long stableGeneration, long unstableGeneration )

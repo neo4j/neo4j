@@ -220,15 +220,23 @@ public class StubPageCursor extends PageCursor
     }
 
     @Override
-    public long getLong()
+    public long getLongBE()
     {
-        long value = getLong( currentOffset );
+        long value = getLongBE( currentOffset );
         currentOffset += 8;
         return value;
     }
 
     @Override
-    public long getLong( int offset )
+    public long getLongLE()
+    {
+        long value =getLongLE( currentOffset );
+        currentOffset += 8;
+        return value;
+    }
+
+    @Override
+    public long getLongBE( int offset )
     {
         try
         {
@@ -241,14 +249,34 @@ public class StubPageCursor extends PageCursor
     }
 
     @Override
-    public void putLong( long value )
+    public long getLongLE( int offset )
     {
-        putLong( currentOffset, value );
+        try
+        {
+            return page.getLong( offset );
+        }
+        catch ( IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
+        {
+            return handleOverflow();
+        }
+    }
+
+    @Override
+    public void putLongBE( long value )
+    {
+        putLongBE( currentOffset, value );
         currentOffset += 8;
     }
 
     @Override
-    public void putLong( int offset, long value )
+    public void putLongLE( long value )
+    {
+       putLongLE( currentOffset, value );
+        currentOffset += 8;
+    }
+
+    @Override
+    public void putLongBE( int offset, long value )
     {
         try
         {
@@ -261,15 +289,36 @@ public class StubPageCursor extends PageCursor
     }
 
     @Override
-    public int getInt()
+    public void putLongLE( int offset, long value )
     {
-        int value = getInt( currentOffset );
+        try
+        {
+            page.putLong( value, offset );
+        }
+        catch ( IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
+        {
+            handleOverflow();
+        }
+    }
+
+    @Override
+    public int getIntBE()
+    {
+        int value = getIntBE( currentOffset );
         currentOffset += 4;
         return value;
     }
 
     @Override
-    public int getInt( int offset )
+    public int getIntLE()
+    {
+        int value = getIntLE( currentOffset );
+        currentOffset += 4;
+        return value;
+    }
+
+    @Override
+    public int getIntBE( int offset )
     {
         try
         {
@@ -282,18 +331,133 @@ public class StubPageCursor extends PageCursor
     }
 
     @Override
-    public void putInt( int value )
+    public int getIntLE( int offset )
     {
-        putInt( currentOffset, value );
+        try
+        {
+            return page.getInt( offset );
+        }
+        catch ( IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
+        {
+            return handleOverflow();
+        }
+    }
+
+    @Override
+    public void putIntBE( int value )
+    {
+        putIntBE( currentOffset, value );
         currentOffset += 4;
     }
 
     @Override
-    public void putInt( int offset, int value )
+    public void putIntLE( int value )
+    {
+      putIntLE( currentOffset, value );
+        currentOffset += 4;
+    }
+
+    @Override
+    public void putIntBE( int offset, int value )
     {
         try
         {
             page.putInt( value, offset );
+        }
+        catch ( IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
+        {
+            handleOverflow();
+        }
+    }
+
+    @Override
+    public void putIntLE( int offset, int value )
+    {
+        try
+        {
+            page.putInt( value, offset );
+        }
+        catch ( IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
+        {
+            handleOverflow();
+        }
+    }
+
+    @Override
+    public short getShortBE()
+    {
+        short value = getShortBE( currentOffset );
+        currentOffset += 2;
+        return value;
+    }
+
+    @Override
+    public short getShortLE()
+    {
+        short value = getShortLE( currentOffset );
+        currentOffset += 2;
+        return value;
+    }
+
+    @Override
+    public short getShortBE( int offset )
+    {
+        try
+        {
+            return page.getShort( offset );
+        }
+        catch ( IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
+        {
+            return handleOverflow();
+        }
+    }
+
+    @Override
+    public short getShortLE( int offset )
+    {
+        try
+        {
+            return page.getShort( offset );
+        }
+        catch ( IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
+        {
+            return handleOverflow();
+        }
+    }
+
+    @Override
+    public void putShortBE( short value )
+    {
+        putShortBE( currentOffset, value );
+        currentOffset += 2;
+    }
+
+    @Override
+    public void putShortLE( short value )
+    {
+        putShortLE( currentOffset, value );
+        currentOffset += 2;
+    }
+
+    @Override
+    public void putShortBE( int offset, short value )
+    {
+        try
+        {
+            page.putShort( value, offset );
+        }
+        catch ( IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
+        {
+            handleOverflow();
+        }
+    }
+
+    @Override
+    public void putShortLE( int offset, short value )
+    {
+        try
+        {
+            page.putShort( value, offset );
         }
         catch ( IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
         {
@@ -334,47 +498,6 @@ public class StubPageCursor extends PageCursor
         {
             page.putBytes( data, currentOffset, arrayOffset, length );
             currentOffset += length;
-        }
-        catch ( IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
-        {
-            handleOverflow();
-        }
-    }
-
-    @Override
-    public short getShort()
-    {
-        short value = getShort( currentOffset );
-        currentOffset += 2;
-        return value;
-    }
-
-    @Override
-    public short getShort( int offset )
-    {
-        try
-        {
-            return page.getShort( offset );
-        }
-        catch ( IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
-        {
-            return handleOverflow();
-        }
-    }
-
-    @Override
-    public void putShort( short value )
-    {
-        putShort( currentOffset, value );
-        currentOffset += 2;
-    }
-
-    @Override
-    public void putShort( int offset, short value )
-    {
-        try
-        {
-            page.putShort( value, offset );
         }
         catch ( IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
         {

@@ -109,7 +109,7 @@ class RelationshipRecordFormatV3_0_6 extends BaseHighLimitRecordFormatV3_0_6<Rel
     protected void doReadInternal(
             RelationshipRecord record, PageCursor cursor, int recordSize, long headerByte, boolean inUse )
     {
-        int type = cursor.getShort() & 0xFFFF;
+        int type = cursor.getShortBE() & 0xFFFF;
         if (record.isUseFixedReferences())
         {
             // read record in fixed reference format
@@ -163,7 +163,7 @@ class RelationshipRecordFormatV3_0_6 extends BaseHighLimitRecordFormatV3_0_6<Rel
     protected void doWriteInternal( RelationshipRecord record, PageCursor cursor )
             throws IOException
     {
-        cursor.putShort( (short) record.getType() );
+        cursor.putShortBE( (short) record.getType() );
         if (record.isUseFixedReferences())
         {
             // write record in fixed reference format
@@ -248,25 +248,25 @@ class RelationshipRecordFormatV3_0_6 extends BaseHighLimitRecordFormatV3_0_6<Rel
         // [xx  ,    ] next prop high order bits
         long modifiers = cursor.getByte();
 
-        long firstNode = cursor.getInt() & 0xFFFFFFFFL;
+        long firstNode = cursor.getIntBE() & 0xFFFFFFFFL;
         long firstNodeMod = (modifiers & FIRST_NODE_BIT) << 32;
 
-        long secondNode = cursor.getInt() & 0xFFFFFFFFL;
+        long secondNode = cursor.getIntBE() & 0xFFFFFFFFL;
         long secondNodeMod = (modifiers & SECOND_NODE_BIT) << 31;
 
-        long firstPrevRel = cursor.getInt() & 0xFFFFFFFFL;
+        long firstPrevRel = cursor.getIntBE() & 0xFFFFFFFFL;
         long firstPrevRelMod = (modifiers & FIRST_PREV_REL_BIT) << 30;
 
-        long firstNextRel = cursor.getInt() & 0xFFFFFFFFL;
+        long firstNextRel = cursor.getIntBE() & 0xFFFFFFFFL;
         long firstNextRelMod = (modifiers & FIRST_NEXT_REL_BIT) << 29;
 
-        long secondPrevRel = cursor.getInt() & 0xFFFFFFFFL;
+        long secondPrevRel = cursor.getIntBE() & 0xFFFFFFFFL;
         long secondPrevRelMod = (modifiers & SECOND_RREV_REL_BIT) << 28;
 
-        long secondNextRel = cursor.getInt() & 0xFFFFFFFFL;
+        long secondNextRel = cursor.getIntBE() & 0xFFFFFFFFL;
         long secondNextRelMod = (modifiers & SECOND_NEXT_REL_BIT) << 27;
 
-        long nextProp = cursor.getInt() & 0xFFFFFFFFL;
+        long nextProp = cursor.getIntBE() & 0xFFFFFFFFL;
         long nextPropMod = (modifiers & NEXT_PROP_BIT) << 26;
 
         record.initialize( inUse,
@@ -316,12 +316,12 @@ class RelationshipRecordFormatV3_0_6 extends BaseHighLimitRecordFormatV3_0_6<Rel
                                    secondPrevRelMod | secondNextRelMod | nextPropMod);
 
         cursor.putByte( (byte) modifiers );
-        cursor.putInt( (int) firstNode );
-        cursor.putInt( (int) secondNode );
-        cursor.putInt( (int) firstPrevRel );
-        cursor.putInt( (int) firstNextRel );
-        cursor.putInt( (int) secondPrevRel );
-        cursor.putInt( (int) secondNextRel );
-        cursor.putInt( (int) nextProp );
+        cursor.putIntBE( (int) firstNode );
+        cursor.putIntBE( (int) secondNode );
+        cursor.putIntBE( (int) firstPrevRel );
+        cursor.putIntBE( (int) firstNextRel );
+        cursor.putIntBE( (int) secondPrevRel );
+        cursor.putIntBE( (int) secondNextRel );
+        cursor.putIntBE( (int) nextProp );
     }
 }

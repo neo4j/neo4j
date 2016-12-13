@@ -60,12 +60,12 @@ public class RelationshipGroupRecordFormat extends BaseOneByteHeaderRecordFormat
             // [ xxx,    ] high firstLoop bits
             long highByte = cursor.getByte();
 
-            int type = cursor.getShort() & 0xFFFF;
-            long nextLowBits = cursor.getInt() & 0xFFFFFFFFL;
-            long nextOutLowBits = cursor.getInt() & 0xFFFFFFFFL;
-            long nextInLowBits = cursor.getInt() & 0xFFFFFFFFL;
-            long nextLoopLowBits = cursor.getInt() & 0xFFFFFFFFL;
-            long owningNode = (cursor.getInt() & 0xFFFFFFFFL) | (((long)cursor.getByte()) << 32);
+            int type = cursor.getShortBE() & 0xFFFF;
+            long nextLowBits = cursor.getIntBE() & 0xFFFFFFFFL;
+            long nextOutLowBits = cursor.getIntBE() & 0xFFFFFFFFL;
+            long nextInLowBits = cursor.getIntBE() & 0xFFFFFFFFL;
+            long nextLoopLowBits = cursor.getIntBE() & 0xFFFFFFFFL;
+            long owningNode = (cursor.getIntBE() & 0xFFFFFFFFL) | (((long)cursor.getByte()) << 32);
 
             long nextMod = (headerByte & 0xE) << 31;
             long nextOutMod = (headerByte & 0x70) << 28;
@@ -101,12 +101,12 @@ public class RelationshipGroupRecordFormat extends BaseOneByteHeaderRecordFormat
             // [ xxx,    ] high firstLoop bits
             cursor.putByte( (byte) (nextLoopMod | nextInMod) );
 
-            cursor.putShort( (short) record.getType() );
-            cursor.putInt( (int) record.getNext() );
-            cursor.putInt( (int) record.getFirstOut() );
-            cursor.putInt( (int) record.getFirstIn() );
-            cursor.putInt( (int) record.getFirstLoop() );
-            cursor.putInt( (int) record.getOwningNode() );
+            cursor.putShortBE( (short) record.getType() );
+            cursor.putIntBE( (int) record.getNext() );
+            cursor.putIntBE( (int) record.getFirstOut() );
+            cursor.putIntBE( (int) record.getFirstIn() );
+            cursor.putIntBE( (int) record.getFirstLoop() );
+            cursor.putIntBE( (int) record.getOwningNode() );
             cursor.putByte( (byte) (record.getOwningNode() >> 32) );
         }
         else

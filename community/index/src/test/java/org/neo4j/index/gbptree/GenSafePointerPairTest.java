@@ -1009,7 +1009,7 @@ public class GenSafePointerPairTest
         cursor.setOffset( offset + GenSafePointer.SIZE - GenSafePointer.CHECKSUM_SIZE );
         short checksum = GenSafePointer.readChecksum( cursor );
         cursor.setOffset( offset + GenSafePointer.SIZE - GenSafePointer.CHECKSUM_SIZE );
-        cursor.putShort( (short) ~checksum );
+        cursor.putShortBE( (short) ~checksum );
     }
 
     private void assertBrokenA()

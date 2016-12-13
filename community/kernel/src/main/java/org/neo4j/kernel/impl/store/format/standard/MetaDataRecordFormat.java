@@ -60,7 +60,7 @@ public class MetaDataRecordFormat extends BaseOneByteHeaderRecordFormat<MetaData
         int offset = position.id() * recordSize;
         cursor.setOffset( offset );
         boolean inUse = cursor.getByte() == Record.IN_USE.byteValue();
-        long value = inUse ? cursor.getLong() : FIELD_NOT_PRESENT;
+        long value = inUse ? cursor.getLongBE() : FIELD_NOT_PRESENT;
         record.initialize( inUse, value );
     }
 
@@ -70,6 +70,6 @@ public class MetaDataRecordFormat extends BaseOneByteHeaderRecordFormat<MetaData
     {
         assert record.inUse();
         cursor.putByte( Record.IN_USE.byteValue() );
-        cursor.putLong( record.getValue() );
+        cursor.putLongBE( record.getValue() );
     }
 }

@@ -92,48 +92,148 @@ public abstract class PageCursor implements AutoCloseable
     public abstract void putByte( int offset, byte value );
 
     /**
-     * Get the signed long at the current page offset, and then increment the offset by one.
+     * Get the signed long in big-endian format at the current page offset,
+     * and then increment the offset by one.
      */
-    public abstract long getLong();
+    public abstract long getLongBE();
 
     /**
-     * Get the signed long at the given offset into the page.
+     * Get the signed long in little-endian format at the current page offset,
+     * and then increment the offset by one.
+     */
+    public abstract long getLongLE();
+
+    /**
+     * Get the signed long in big-endian format at the given offset into the page.
      * Leaves the current page offset unchanged.
      */
-    public abstract long getLong( int offset );
+    public abstract long getLongBE( int offset );
 
     /**
-     * Set the signed long at the current offset into the page, and then increment the offset by one.
-     */
-    public abstract void putLong( long value );
-
-    /**
-     * Set the signed long at the given offset into the page.
+     * Get the signed long in little-endian format at the given offset into the page.
      * Leaves the current page offset unchanged.
      */
-    public abstract void putLong( int offset, long value );
+    public abstract long getLongLE( int offset );
 
     /**
-     * Get the signed int at the current page offset, and then increment the offset by one.
+     * Set the signed long in big-endian format at the current offset into the page,
+     * and then increment the offset by one.
      */
-    public abstract int getInt();
+    public abstract void putLongBE( long value );
 
     /**
-     * Get the signed int at the given offset into the page.
+     * Set the signed long in little-endian format at the current offset into the page,
+     * and then increment the offset by one.
+     */
+    public abstract void putLongLE( long value );
+
+    /**
+     * Set the signed long in big-endian format at the given offset into the page.
      * Leaves the current page offset unchanged.
      */
-    public abstract int getInt( int offset );
+    public abstract void putLongBE( int offset, long value );
 
     /**
-     * Set the signed int at the current offset into the page, and then increment the offset by one.
-     */
-    public abstract void putInt( int value );
-
-    /**
-     * Set the signed int at the given offset into the page.
+     * Set the signed long in little-endian format at the given offset into the page.
      * Leaves the current page offset unchanged.
      */
-    public abstract void putInt( int offset, int value );
+    public abstract void putLongLE( int offset, long value );
+
+    /**
+     * Get the signed int in big-endian format at the current page offset,
+     * and then increment the offset by one.
+     */
+    public abstract int getIntBE();
+
+    /**
+     * Get the signed int in little-endian format at the current page offset,
+     * and then increment the offset by one.
+     */
+    public abstract int getIntLE();
+
+    /**
+     * Get the signed int in big-endian format at the given offset into the page.
+     * Leaves the current page offset unchanged.
+     */
+    public abstract int getIntBE( int offset );
+
+    /**
+     * Get the signed int in little-endian format at the given offset into the page.
+     * Leaves the current page offset unchanged.
+     */
+    public abstract int getIntLE( int offset );
+
+    /**
+     * Set the signed int in big-endian format at the current offset into the page,
+     * and then increment the offset by one.
+     */
+    public abstract void putIntBE( int value );
+
+    /**
+     * Set the signed int in little-endian format at the current offset into the page,
+     * and then increment the offset by one.
+     */
+    public abstract void putIntLE( int value );
+
+    /**
+     * Set the signed int in big-endian format at the given offset into the page.
+     * Leaves the current page offset unchanged.
+     */
+    public abstract void putIntBE( int offset, int value );
+
+    /**
+     * Set the signed int in little-endian format at the given offset into the page.
+     * Leaves the current page offset unchanged.
+     */
+    public abstract void putIntLE( int offset, int value );
+
+    /**
+     * Get the signed short in big-endian format at the current page offset,
+     * and then increment the offset by one.
+     */
+    public abstract short getShortBE();
+
+    /**
+     * Get the signed short in little-endian format at the current page offset,
+     * and then increment the offset by one.
+     */
+    public abstract short getShortLE();
+
+    /**
+     * Get the signed short in big-endian format at the given offset into the page.
+     * Leaves the current page offset unchanged.
+     */
+    public abstract short getShortBE( int offset );
+
+    /**
+     * Get the signed short in little-endian format at the given offset into the page.
+     * Leaves the current page offset unchanged.
+     */
+    public abstract short getShortLE( int offset );
+
+    /**
+     * Set the signed short in big-endian format at the current offset into the page,
+     * and then increment the offset by one.
+     */
+    public abstract void putShortBE( short value );
+
+    /**
+     * Set the signed short in little-endian format at the current offset into the page,
+     * and then increment the offset by one.
+     */
+    public abstract void putShortLE( short value );
+
+    /**
+     * Set the signed short in big-endian format at the given offset into the page.
+     * Leaves the current page offset unchanged.
+     */
+    public abstract void putShortBE( int offset, short value );
+
+    /**
+     * Set the signed short in little-endian format at the given offset into the page.
+     * Leaves the current page offset unchanged.
+     */
+    public abstract void putShortLE( int offset, short value );
 
     /**
      * Fill the given array with bytes from the page, beginning at the current offset into the page,
@@ -158,28 +258,6 @@ public abstract class PageCursor implements AutoCloseable
      * beginning at the current offset into the page, and then increment the current offset by the length argument.
      */
     public abstract void putBytes( byte[] data, int arrayOffset, int length );
-
-    /**
-     * Get the signed short at the current page offset, and then increment the offset by one.
-     */
-    public abstract short getShort();
-
-    /**
-     * Get the signed short at the given offset into the page.
-     * Leaves the current page offset unchanged.
-     */
-    public abstract short getShort( int offset );
-
-    /**
-     * Set the signed short at the current offset into the page, and then increment the offset by one.
-     */
-    public abstract void putShort( short value );
-
-    /**
-     * Set the signed short at the given offset into the page.
-     * Leaves the current page offset unchanged.
-     */
-    public abstract void putShort( int offset, short value );
 
     /**
      * Set the current offset into the page, for interacting with the page through the read and write methods that do

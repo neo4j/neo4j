@@ -83,7 +83,7 @@ public class PropertyRecordFormatV3_0_0 extends BaseOneByteHeaderRecordFormat<Pr
             }
             while ( blockCount-- > 0 )
             {
-                record.addLoadedBlock( cursor.getLong() );
+                record.addLoadedBlock( cursor.getLongBE() );
             }
         }
     }
@@ -102,7 +102,7 @@ public class PropertyRecordFormatV3_0_0 extends BaseOneByteHeaderRecordFormat<Pr
             {
                 for ( long propertyBlock : block.getValueBlocks() )
                 {
-                    cursor.putLong( propertyBlock );
+                    cursor.putLongBE( propertyBlock );
                 }
             }
         }

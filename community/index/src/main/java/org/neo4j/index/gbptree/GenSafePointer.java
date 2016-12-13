@@ -65,9 +65,9 @@ class GenSafePointer
     public static void write( PageCursor cursor, long generation, long pointer )
     {
         assertGeneration( generation );
-        cursor.putInt( (int) generation );
+        cursor.putIntBE( (int) generation );
         put6BLong( cursor, pointer );
-        cursor.putShort( checksumOf( generation, pointer ) );
+        cursor.putShortBE( checksumOf( generation, pointer ) );
     }
 
     static void assertGeneration( long generation )
@@ -81,7 +81,7 @@ class GenSafePointer
 
     public static long readGeneration( PageCursor cursor )
     {
-        return cursor.getInt() & GENERATION_MASK;
+        return cursor.getIntBE() & GENERATION_MASK;
     }
 
     public static long readPointer( PageCursor cursor )
@@ -92,19 +92,19 @@ class GenSafePointer
 
     public static short readChecksum( PageCursor cursor )
     {
-        return cursor.getShort();
+        return cursor.getShortBE();
     }
 
     public static boolean verifyChecksum( PageCursor cursor, long generation, long pointer )
     {
-        short checksum = cursor.getShort();
+        short checksum = cursor.getShortBE();
         return checksum == checksumOf( generation, pointer );
     }
 
     private static long get6BLong( PageCursor cursor )
     {
-        long lsb = cursor.getInt() & GENERATION_MASK;
-        long msb = cursor.getShort() & UNSIGNED_SHORT_MASK;
+        long lsb = cursor.getIntBE() & GENERATION_MASK;
+        long msb = cursor.getShortBE() & UNSIGNED_SHORT_MASK;
         return lsb | (msb << Integer.SIZE);
     }
 
@@ -112,8 +112,8 @@ class GenSafePointer
     {
         int lsb = (int) value;
         short msb = (short) (value >>> Integer.SIZE);
-        cursor.putInt( lsb );
-        cursor.putShort( msb );
+        cursor.putIntBE( lsb );
+        cursor.putShortBE( msb );
     }
 
     /**

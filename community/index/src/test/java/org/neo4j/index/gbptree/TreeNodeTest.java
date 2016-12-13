@@ -371,7 +371,7 @@ public class TreeNodeTest
         node.insertKeyAt( cursor, key, 1, 1, tmp );
 
         // WHEN
-        node.readKeysWithInsertRecordInPosition( cursor, c -> c.putLong( 2 ), 1, 3, tmp );
+        node.readKeysWithInsertRecordInPosition( cursor, c -> c.putLongBE( 2 ), 1, 3, tmp );
         node.writeKeys( cursor, tmp, 0, 0, 3 );
 
         // THEN
@@ -392,7 +392,7 @@ public class TreeNodeTest
         node.insertValueAt( cursor, value, 1, 1, tmp );
 
         // WHEN
-        node.readValuesWithInsertRecordInPosition( cursor, c -> c.putLong( 2 ), 1, 3, tmp );
+        node.readValuesWithInsertRecordInPosition( cursor, c -> c.putLongBE( 2 ), 1, 3, tmp );
         node.writeValues( cursor, tmp, 0, 0, 3 );
 
         // THEN

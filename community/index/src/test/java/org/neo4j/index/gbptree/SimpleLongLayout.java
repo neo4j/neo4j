@@ -79,25 +79,25 @@ class SimpleLongLayout implements Layout<MutableLong,MutableLong>
     @Override
     public void writeKey( PageCursor cursor, MutableLong key )
     {
-        cursor.putLong( key.longValue() );
+        cursor.putLongBE( key.longValue() );
     }
 
     @Override
     public void writeValue( PageCursor cursor, MutableLong value )
     {
-        cursor.putLong( value.longValue() );
+        cursor.putLongBE( value.longValue() );
     }
 
     @Override
     public void readKey( PageCursor cursor, MutableLong into )
     {
-        into.setValue( cursor.getLong() );
+        into.setValue( cursor.getLongBE() );
     }
 
     @Override
     public void readValue( PageCursor cursor, MutableLong into )
     {
-        into.setValue( cursor.getLong() );
+        into.setValue( cursor.getLongBE() );
     }
 
     @Override
@@ -127,7 +127,7 @@ class SimpleLongLayout implements Layout<MutableLong,MutableLong>
     private static void writeString( PageCursor cursor, String string )
     {
         byte[] bytes = string.getBytes( UTF_8 );
-        cursor.putInt( string.length() );
+        cursor.putIntBE( string.length() );
         cursor.putBytes( bytes );
     }
 
@@ -148,7 +148,7 @@ class SimpleLongLayout implements Layout<MutableLong,MutableLong>
 
     private String readString( PageCursor cursor )
     {
-        int length = cursor.getInt();
+        int length = cursor.getIntBE();
         byte[] bytes = new byte[length];
         cursor.getBytes( bytes );
         return new String( bytes, UTF_8 );

@@ -234,7 +234,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
                     {
                         cursor.setOffset( offset );
                         inUse = cursor.getByte();
-                        record = cursor.getLong();
+                        record = cursor.getLongBE();
 
                         if ( inUse == Record.IN_USE.byteValue() )
                         {
@@ -244,7 +244,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
                         // Write the value
                         cursor.setOffset( offset );
                         cursor.putByte( Record.IN_USE.byteValue() );
-                        cursor.putLong( value );
+                        cursor.putLongBE( value );
                     }
                     while ( cursor.shouldRetry() );
                     if ( cursor.checkAndClearBoundsFlag() )
@@ -471,8 +471,8 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         long value;
         do
         {
-            value = cursor.getLong( offset ) + 1;
-            cursor.putLong( offset, value );
+            value = cursor.getLongBE( offset ) + 1;
+            cursor.putLongBE( offset, value );
         }
         while ( cursor.shouldRetry() );
         checkForDecodingErrors( cursor, Position.LOG_VERSION.id, NORMAL );
@@ -637,7 +637,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         {
             cursor.setOffset( offset );
             cursor.putByte( Record.IN_USE.byteValue() );
-            cursor.putLong( value );
+            cursor.putLongBE( value );
         }
         while ( cursor.shouldRetry() );
         checkForDecodingErrors( cursor, position.id, NORMAL );

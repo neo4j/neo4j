@@ -161,10 +161,10 @@ class NodeRecordFormat extends BaseHighLimitRecordFormat<NodeRecord>
         long relModifier = (modifiers & LOWER_NIBBLE_READ_MASK) << 32;
         long propModifier = (modifiers & HIGHER_NIBBLE_READ_MASK) << 28;
 
-        long nextRel = cursor.getInt() & 0xFFFFFFFFL;
-        long nextProp = cursor.getInt() & 0xFFFFFFFFL;
+        long nextRel = cursor.getIntBE() & 0xFFFFFFFFL;
+        long nextProp = cursor.getIntBE() & 0xFFFFFFFFL;
 
-        long lsbLabels = cursor.getInt() & 0xFFFFFFFFL;
+        long lsbLabels = cursor.getIntBE() & 0xFFFFFFFFL;
         long hsbLabels = cursor.getByte() & 0xFF; // so that a negative byte won't fill the "extended" bits with ones.
         long labels = lsbLabels | (hsbLabels << 32);
 
@@ -186,12 +186,12 @@ class NodeRecordFormat extends BaseHighLimitRecordFormat<NodeRecord>
         short modifiers = (short) ( relModifier | propModifier );
 
         cursor.putByte( (byte) modifiers );
-        cursor.putInt( (int) nextRel );
-        cursor.putInt( (int) nextProp );
+        cursor.putIntBE( (int) nextRel );
+        cursor.putIntBE( (int) nextProp );
 
         // lsb of labels
         long labelField = record.getLabelField();
-        cursor.putInt( (int) labelField );
+        cursor.putIntBE( (int) labelField );
         // msb of labels
         cursor.putByte( (byte) ((labelField & 0xFF_0000_0000L) >> 32) );
     }

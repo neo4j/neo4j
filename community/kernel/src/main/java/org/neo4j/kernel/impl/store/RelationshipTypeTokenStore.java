@@ -66,6 +66,6 @@ public class RelationshipTypeTokenStore extends TokenStore<RelationshipTypeToken
     @Override
     protected boolean isRecordReserved( PageCursor cursor )
     {
-        return cursor.getInt() == Record.RESERVED.intValue();
+        return cursor.getIntBE() == Record.RESERVED.intValue();
     }
 }

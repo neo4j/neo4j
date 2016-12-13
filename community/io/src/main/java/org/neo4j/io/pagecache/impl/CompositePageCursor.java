@@ -56,7 +56,7 @@ public class CompositePageCursor extends PageCursor
         {
             private int offset;
             @Override
-            public int getInt()
+            public int getIntBE()
             {
                 int a = getByte( offset ) & 0xFF;
                 int b = getByte( offset + 1 ) & 0xFF;
@@ -67,14 +67,14 @@ public class CompositePageCursor extends PageCursor
             }
 
             @Override
-            public int getInt( int offset )
+            public int getIntBE( int offset )
             {
                 this.offset = offset;
-                return getInt();
+                return getIntBE();
             }
 
             @Override
-            public short getShort()
+            public short getShortBE()
             {
                 int a = getByte( offset ) & 0xFF;
                 int b = getByte( offset + 1 ) & 0xFF;
@@ -83,14 +83,14 @@ public class CompositePageCursor extends PageCursor
             }
 
             @Override
-            public short getShort( int offset )
+            public short getShortBE( int offset )
             {
                 this.offset = offset;
-                return getShort();
+                return getShortBE();
             }
 
             @Override
-            public long getLong()
+            public long getLongBE()
             {
                 long a = getByte( offset ) & 0xFF;
                 long b = getByte( offset + 1 ) & 0xFF;
@@ -105,10 +105,10 @@ public class CompositePageCursor extends PageCursor
             }
 
             @Override
-            public long getLong( int offset )
+            public long getLongBE( int offset )
             {
                 this.offset = offset;
-                return getLong();
+                return getLongBE();
             }
 
             @Override
@@ -121,7 +121,7 @@ public class CompositePageCursor extends PageCursor
             }
 
             @Override
-            public void putInt( int value )
+            public void putIntBE( int value )
             {
                 putByte( offset    , (byte)  (value >> 24) );
                 putByte( offset + 1, (byte) ((value >> 16) & 0xFF) );
@@ -130,28 +130,28 @@ public class CompositePageCursor extends PageCursor
             }
 
             @Override
-            public void putInt( int offset, int value )
+            public void putIntBE( int offset, int value )
             {
                 this.offset = offset;
-                putInt( value );
+                putIntBE( value );
             }
 
             @Override
-            public void putShort( short value )
+            public void putShortBE( short value )
             {
                 putByte( offset    , (byte)  (value >>  8) );
                 putByte( offset + 1, (byte) ((value      ) & 0xFF) );
             }
 
             @Override
-            public void putShort( int offset, short value )
+            public void putShortBE( int offset, short value )
             {
                 this.offset = offset;
-                putShort( value );
+                putShortBE( value );
             }
 
             @Override
-            public void putLong( long value )
+            public void putLongBE( long value )
             {
                 putByte( offset    , (byte)  (value >> 56) );
                 putByte( offset + 1, (byte) ((value >> 48) & 0xFF) );
@@ -164,10 +164,10 @@ public class CompositePageCursor extends PageCursor
             }
 
             @Override
-            public void putLong( int offset, long value )
+            public void putLongBE( int offset, long value )
             {
                 this.offset = offset;
-                putLong( value );
+                putLongBE( value );
             }
 
             @Override
@@ -244,58 +244,167 @@ public class CompositePageCursor extends PageCursor
     }
 
     @Override
-    public long getLong()
+    public long getLongBE()
     {
-        long l = cursor( Long.BYTES ).getLong();
+        long l = cursor( Long.BYTES ).getLongBE();
         offset += Long.BYTES;
         return l;
     }
 
     @Override
-    public long getLong( int offset )
+    public long getLongLE()
     {
-        return cursor( offset, Long.BYTES ).getLong( relative( offset ) );
+        long l = cursor( Long.BYTES ).getLongLE();
+        offset += Long.BYTES;
+        return l;
     }
 
     @Override
-    public void putLong( long value )
+    public long getLongBE( int offset )
     {
-        cursor( Long.BYTES ).putLong( value );
+        return cursor( offset, Long.BYTES ).getLongBE( relative( offset ) );
+    }
+
+    @Override
+    public long getLongLE( int offset )
+    {
+        return cursor( offset, Long.BYTES ).getLongLE( relative( offset ) );
+    }
+
+    @Override
+    public void putLongBE( long value )
+    {
+        cursor( Long.BYTES ).putLongBE( value );
         offset += Long.BYTES;
     }
 
     @Override
-    public void putLong( int offset, long value )
+    public void putLongLE( long value )
     {
-        cursor( offset, Long.BYTES ).putLong( relative( offset ), value );
+        cursor( Long.BYTES ).putLongLE( value );
+        offset += Long.BYTES;
     }
 
     @Override
-    public int getInt()
+    public void putLongBE( int offset, long value )
     {
-        int i = cursor( Integer.BYTES ).getInt();
+        cursor( offset, Long.BYTES ).putLongBE( relative( offset ), value );
+    }
+
+    @Override
+    public void putLongLE( int offset, long value )
+    {
+        cursor( offset, Long.BYTES ).putLongLE( relative( offset ), value );
+    }
+
+    @Override
+    public int getIntBE()
+    {
+        int i = cursor( Integer.BYTES ).getIntBE();
         offset += Integer.BYTES;
         return i;
     }
 
     @Override
-    public int getInt( int offset )
+    public int getIntLE()
     {
-        return cursor( offset, Integer.BYTES ).getInt( relative( offset ) );
+        int i = cursor( Integer.BYTES ).getIntLE();
+        offset += Integer.BYTES;
+        return i;
     }
 
     @Override
-    public void putInt( int value )
+    public int getIntBE( int offset )
+    {
+        return cursor( offset, Integer.BYTES ).getIntBE( relative( offset ) );
+    }
+
+    @Override
+    public int getIntLE( int offset )
+    {
+        return cursor( offset, Integer.BYTES ).getIntLE( relative( offset ) );
+    }
+
+    @Override
+    public void putIntBE( int value )
     {
         PageCursor cursor = cursor( Integer.BYTES );
-        cursor.putInt( value );
+        cursor.putIntBE( value );
         offset += Integer.BYTES;
     }
 
     @Override
-    public void putInt( int offset, int value )
+    public void putIntLE( int value )
     {
-        cursor( offset, Integer.BYTES ).putInt( relative( offset ), value );
+        PageCursor cursor = cursor( Integer.BYTES );
+        cursor.putIntLE( value );
+        offset += Integer.BYTES;
+    }
+
+    @Override
+    public void putIntBE( int offset, int value )
+    {
+        cursor( offset, Integer.BYTES ).putIntBE( relative( offset ), value );
+    }
+
+    @Override
+    public void putIntLE( int offset, int value )
+    {
+        cursor( offset, Integer.BYTES ).putIntLE( relative( offset ), value );
+    }
+
+    @Override
+    public short getShortBE()
+    {
+        short s = cursor( Short.BYTES ).getShortBE();
+        offset += Short.BYTES;
+        return s;
+    }
+
+    @Override
+    public short getShortLE()
+    {
+        short s = cursor( Short.BYTES ).getShortLE();
+        offset += Short.BYTES;
+        return s;
+    }
+
+    @Override
+    public short getShortBE( int offset )
+    {
+        return cursor( offset, Short.BYTES ).getShortBE( relative( offset ) );
+    }
+
+    @Override
+    public short getShortLE( int offset )
+    {
+        return cursor( offset, Short.BYTES ).getShortLE( relative( offset ) );
+    }
+
+    @Override
+    public void putShortBE( short value )
+    {
+        cursor( Short.BYTES ).putShortBE( value );
+        offset += Short.BYTES;
+    }
+
+    @Override
+    public void putShortLE( short value )
+    {
+        cursor( Short.BYTES ).putShortLE( value );
+        offset += Short.BYTES;
+    }
+
+    @Override
+    public void putShortBE( int offset, short value )
+    {
+        cursor( offset, Short.BYTES ).putShortBE( relative( offset ), value );
+    }
+
+    @Override
+    public void putShortLE( int offset, short value )
+    {
+        cursor( offset, Short.BYTES ).putShortLE( relative( offset ), value );
     }
 
     @Override
@@ -322,33 +431,6 @@ public class CompositePageCursor extends PageCursor
     public void putBytes( byte[] data, int arrayOffset, int length )
     {
         throw new UnsupportedOperationException( "Composite page cursor does not yet support this operation" );
-    }
-
-    @Override
-    public short getShort()
-    {
-        short s = cursor( Short.BYTES ).getShort();
-        offset += Short.BYTES;
-        return s;
-    }
-
-    @Override
-    public short getShort( int offset )
-    {
-        return cursor( offset, Short.BYTES ).getShort( relative( offset ) );
-    }
-
-    @Override
-    public void putShort( short value )
-    {
-        cursor( Short.BYTES ).putShort( value );
-        offset += Short.BYTES;
-    }
-
-    @Override
-    public void putShort( int offset, short value )
-    {
-        cursor( offset, Short.BYTES ).putShort( relative( offset ), value );
     }
 
     @Override

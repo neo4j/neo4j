@@ -68,13 +68,13 @@ public class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRe
         boolean inUse = isInUse( headerByte );
         if ( mode.shouldLoad( inUse ) )
         {
-            int length = cursor.getShort() | cursor.getByte() << 16;
+            int length = cursor.getShortBE() | cursor.getByte() << 16;
             if ( length > recordSize | length < 0 )
             {
                 cursor.setCursorException( payloadLengthErrorMessage( record, recordSize, length ) );
                 return;
             }
-            long next = cursor.getLong();
+            long next = cursor.getLongBE();
             boolean isStartRecord = (headerByte & START_RECORD_BIT) != 0;
             record.initialize( inUse, isStartRecord, next, -1, length );
             readData( record, cursor );
@@ -107,9 +107,9 @@ public class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRe
             byte headerByte = (byte) ((record.inUse() ? IN_USE_BIT : 0) |
                     (record.isStartRecord() ? START_RECORD_BIT : 0));
             cursor.putByte( headerByte );
-            cursor.putShort( (short) record.getLength() );
+            cursor.putShortBE( (short) record.getLength() );
             cursor.putByte( (byte) (record.getLength() >>> 16 ) );
-            cursor.putLong( record.getNextBlock() );
+            cursor.putLongBE( record.getNextBlock() );
             cursor.putBytes( record.getData() );
         }
         else

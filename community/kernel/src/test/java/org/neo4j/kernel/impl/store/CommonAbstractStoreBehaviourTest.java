@@ -325,7 +325,7 @@ public class CommonAbstractStoreBehaviourTest
             boolean inUse = false;
             for ( int i = 0; i < intsPerRecord; i++ )
             {
-                inUse |= cursor.getInt() != 0;
+                inUse |= cursor.getIntBE() != 0;
             }
             maybeSetCursorError( cursor, recordId );
             return inUse;
@@ -337,7 +337,7 @@ public class CommonAbstractStoreBehaviourTest
         {
             for ( int i = 0; i < intsPerRecord; i++ )
             {
-                record.value = cursor.getInt();
+                record.value = cursor.getIntBE();
             }
             record.setInUse( true );
             maybeSetCursorError( cursor, record.getId() );
@@ -356,7 +356,7 @@ public class CommonAbstractStoreBehaviourTest
         {
             for ( int i = 0; i < intsPerRecord; i++ )
             {
-                cursor.putInt( record.value );
+                cursor.putIntBE( record.value );
             }
         }
 
@@ -369,16 +369,16 @@ public class CommonAbstractStoreBehaviourTest
         @Override
         public void writeHeader( PageCursor cursor )
         {
-            cursor.putLong( 0xA5A5A5_7E7E7EL );
-            cursor.putLong( 0x3B3B3B_1A1A1AL );
+            cursor.putLongBE( 0xA5A5A5_7E7E7EL );
+            cursor.putLongBE( 0x3B3B3B_1A1A1AL );
         }
 
         @Override
         public LongLongHeader readHeader( PageCursor cursor )
         {
             LongLongHeader header = new LongLongHeader();
-            cursor.getLong(); // pretend to read fields into the header
-            cursor.getLong();
+            cursor.getLongBE(); // pretend to read fields into the header
+            cursor.getLongBE();
             return header;
         }
     }

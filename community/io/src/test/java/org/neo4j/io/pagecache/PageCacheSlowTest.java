@@ -160,7 +160,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
                             do
                             {
                                 cursor.setOffset( offset );
-                                counter = cursor.getInt();
+                                counter = cursor.getIntBE();
                             }
                             while ( cursor.shouldRetry() );
                             String lockName = updateCounter ? "PF_SHARED_WRITE_LOCK" : "PF_SHARED_READ_LOCK";
@@ -179,7 +179,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
                             counter++;
                             pageCounts[pageId]++;
                             cursor.setOffset( offset );
-                            cursor.putInt( counter );
+                            cursor.putIntBE( counter );
                         }
                     }
                 }
@@ -225,7 +225,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
                     do
                     {
                         cursor.setOffset( threadId * 4 );
-                        actualCount = cursor.getInt();
+                        actualCount = cursor.getIntBE();
                     }
                     while ( cursor.shouldRetry() );
 
@@ -290,7 +290,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
                             do
                             {
                                 cursor.setOffset( offset );
-                                counter = cursor.getInt();
+                                counter = cursor.getIntBE();
                             }
                             while ( cursor.shouldRetry() );
                             String lockName = updateCounter ? "PF_SHARED_WRITE_LOCK" : "PF_SHARED_READ_LOCK";
@@ -303,7 +303,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
                                 counter++;
                                 pageCounts[pageId]++;
                                 cursor.setOffset( offset );
-                                cursor.putInt( counter );
+                                cursor.putIntBE( counter );
                             }
                         }
                         for ( PageCursor cursor : cursors )

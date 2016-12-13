@@ -186,11 +186,11 @@ class RelationshipGroupRecordFormat extends BaseHighLimitRecordFormat<Relationsh
 
         int type = getType( cursor );
 
-        long nextLowBits = cursor.getInt() & 0xFFFFFFFFL;
-        long firstOutLowBits = cursor.getInt() & 0xFFFFFFFFL;
-        long firstInLowBits = cursor.getInt() & 0xFFFFFFFFL;
-        long firstLoopLowBits = cursor.getInt() & 0xFFFFFFFFL;
-        long owningNodeLowBits = cursor.getInt() & 0xFFFFFFFFL;
+        long nextLowBits = cursor.getIntBE() & 0xFFFFFFFFL;
+        long firstOutLowBits = cursor.getIntBE() & 0xFFFFFFFFL;
+        long firstInLowBits = cursor.getIntBE() & 0xFFFFFFFFL;
+        long firstLoopLowBits = cursor.getIntBE() & 0xFFFFFFFFL;
+        long owningNodeLowBits = cursor.getIntBE() & 0xFFFFFFFFL;
 
         long nextMod = (modifiers & NEXT_RECORD_BIT) << 32;
         long firstOutMod = (modifiers & FIRST_OUT_BIT) << 31;
@@ -223,23 +223,23 @@ class RelationshipGroupRecordFormat extends BaseHighLimitRecordFormat<Relationsh
 
         writeType( cursor, record.getType() );
 
-        cursor.putInt( (int) record.getNext() );
-        cursor.putInt( (int) record.getFirstOut() );
-        cursor.putInt( (int) record.getFirstIn() );
-        cursor.putInt( (int) record.getFirstLoop() );
-        cursor.putInt( (int) record.getOwningNode() );
+        cursor.putIntBE( (int) record.getNext() );
+        cursor.putIntBE( (int) record.getFirstOut() );
+        cursor.putIntBE( (int) record.getFirstIn() );
+        cursor.putIntBE( (int) record.getFirstLoop() );
+        cursor.putIntBE( (int) record.getOwningNode() );
     }
 
     private int getType( PageCursor cursor )
     {
-        int typeLowWord = cursor.getShort() & 0xFFFF;
+        int typeLowWord = cursor.getShortBE() & 0xFFFF;
         int typeHighByte = cursor.getByte() & 0xFF;
         return ((typeHighByte << Short.SIZE) | typeLowWord);
     }
 
     private void writeType( PageCursor cursor, int type )
     {
-        cursor.putShort( (short) type );
+        cursor.putShortBE( (short) type );
         cursor.putByte( (byte) (type >>> Short.SIZE) );
     }
 }

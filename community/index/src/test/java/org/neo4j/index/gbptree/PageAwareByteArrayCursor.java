@@ -167,51 +167,147 @@ class PageAwareByteArrayCursor extends PageCursor
     }
 
     @Override
-    public long getLong()
+    public long getLongBE()
     {
-        return current.getLong();
+        return current.getLongBE();
     }
 
     @Override
-    public long getLong( int offset )
+    public long getLongLE()
     {
-        return current.getLong( offset );
+        return current.getLongLE();
     }
 
     @Override
-    public void putLong( long value )
+    public long getLongBE( int offset )
     {
-        current.putLong( value );
+        return current.getLongBE( offset );
     }
 
     @Override
-    public void putLong( int offset, long value )
+    public long getLongLE( int offset )
     {
-        current.putLong( offset, value );
+        return current.getLongLE( offset );
     }
 
     @Override
-    public int getInt()
+    public void putLongBE( long value )
     {
-        return current.getInt();
+        current.putLongBE( value );
     }
 
     @Override
-    public int getInt( int offset )
+    public void putLongLE( long value )
     {
-        return current.getInt( offset );
+        current.putLongLE( value );
     }
 
     @Override
-    public void putInt( int value )
+    public void putLongBE( int offset, long value )
     {
-        current.putInt( value );
+        current.putLongBE( offset, value );
     }
 
     @Override
-    public void putInt( int offset, int value )
+    public void putLongLE( int offset, long value )
     {
-        current.putInt( offset, value );
+        current.putLongLE( offset, value );
+    }
+
+    @Override
+    public int getIntBE()
+    {
+        return current.getIntBE();
+    }
+
+    @Override
+    public int getIntLE()
+    {
+        return current.getIntLE();
+    }
+
+    @Override
+    public int getIntBE( int offset )
+    {
+        return current.getIntBE( offset );
+    }
+
+    @Override
+    public int getIntLE( int offset )
+    {
+        return current.getIntLE( offset );
+    }
+
+    @Override
+    public void putIntBE( int value )
+    {
+        current.putIntBE( value );
+    }
+
+    @Override
+    public void putIntLE( int value )
+    {
+        current.putIntLE( value );
+    }
+
+    @Override
+    public void putIntBE( int offset, int value )
+    {
+        current.putIntBE( offset, value );
+    }
+
+    @Override
+    public void putIntLE( int offset, int value )
+    {
+        current.putIntLE( offset, value );
+    }
+
+    @Override
+    public short getShortBE()
+    {
+        return current.getShortBE();
+    }
+
+    @Override
+    public short getShortLE()
+    {
+        return current.getShortLE();
+    }
+
+    @Override
+    public short getShortBE( int offset )
+    {
+        return current.getShortBE( offset );
+    }
+
+    @Override
+    public short getShortLE( int offset )
+    {
+        return current.getShortLE( offset );
+    }
+
+    @Override
+    public void putShortBE( short value )
+    {
+        current.putShortBE( value );
+    }
+
+    @Override
+    public void putShortLE( short value )
+    {
+        current.putShortLE( value );
+    }
+
+    @Override
+    public void putShortBE( int offset, short value )
+    {
+        current.putShortBE( offset, value );
+    }
+
+    @Override
+    public void putShortLE( int offset, short value )
+    {
+        current.putShortLE( offset, value );
     }
 
     @Override
@@ -236,30 +332,6 @@ class PageAwareByteArrayCursor extends PageCursor
     public void putBytes( byte[] data, int arrayOffset, int length )
     {
         current.putBytes( data, arrayOffset, length );
-    }
-
-    @Override
-    public short getShort()
-    {
-        return current.getShort();
-    }
-
-    @Override
-    public short getShort( int offset )
-    {
-        return current.getShort( offset );
-    }
-
-    @Override
-    public void putShort( short value )
-    {
-        current.putShort( value );
-    }
-
-    @Override
-    public void putShort( int offset, short value )
-    {
-        current.putShort( offset, value );
     }
 
     @Override

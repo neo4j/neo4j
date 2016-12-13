@@ -439,135 +439,279 @@ abstract class MuninnPageCursor extends PageCursor
     }
 
     @Override
-    public long getLong()
+    public long getLongBE()
     {
-        long value = getLong( offset );
+        long value = getLongBE( offset );
         offset += SIZE_OF_LONG;
         return value;
     }
 
     @Override
-    public long getLong( int offset )
+    public long getLongLE()
+    {
+        long value = getLongLE( offset );
+        offset += SIZE_OF_LONG;
+        return value;
+    }
+
+    @Override
+    public long getLongBE( int offset )
     {
         long p = getBoundedPointer( offset, SIZE_OF_LONG );
         long value;
         if ( UnsafeUtil.allowUnalignedMemoryAccess )
         {
             value = UnsafeUtil.getLong( p );
-            if ( !UnsafeUtil.storeByteOrderIsNative )
-            {
-                value = Long.reverseBytes( value );
-            }
         }
         else
         {
-            value = getLongBigEndian( p );
+            value = UnsafeUtil.getLongByteWise( p );
         }
-        return value;
-    }
-
-    private long getLongBigEndian( long p )
-    {
-        long a = UnsafeUtil.getByte( p     ) & 0xFF;
-        long b = UnsafeUtil.getByte( p + 1 ) & 0xFF;
-        long c = UnsafeUtil.getByte( p + 2 ) & 0xFF;
-        long d = UnsafeUtil.getByte( p + 3 ) & 0xFF;
-        long e = UnsafeUtil.getByte( p + 4 ) & 0xFF;
-        long f = UnsafeUtil.getByte( p + 5 ) & 0xFF;
-        long g = UnsafeUtil.getByte( p + 6 ) & 0xFF;
-        long h = UnsafeUtil.getByte( p + 7 ) & 0xFF;
-        return (a << 56) | (b << 48) | (c << 40) | (d << 32) | (e << 24) | (f << 16) | (g << 8) | h;
+        return UnsafeUtil.nativeByteOrderIsBigEndian ? value : Long.reverseBytes( value );
     }
 
     @Override
-    public void putLong( long value )
+    public long getLongLE( int offset )
     {
-        putLong( offset, value );
+        long p = getBoundedPointer( offset, SIZE_OF_LONG );
+        long value;
+        if ( UnsafeUtil.allowUnalignedMemoryAccess )
+        {
+            value = UnsafeUtil.getLong( p );
+        }
+        else
+        {
+            value = UnsafeUtil.getLongByteWise( p );
+        }
+        return UnsafeUtil.nativeByteOrderIsBigEndian ? Long.reverseBytes( value ) : value;
+    }
+
+    @Override
+    public void putLongBE( long value )
+    {
+        putLongBE( offset, value );
         offset += SIZE_OF_LONG;
     }
 
     @Override
-    public void putLong( int offset, long value )
+    public void putLongLE( long value )
     {
-        long p = getBoundedPointer( offset, SIZE_OF_LONG );
-        if ( UnsafeUtil.allowUnalignedMemoryAccess )
-        {
-            UnsafeUtil.putLong( p, UnsafeUtil.storeByteOrderIsNative ? value : Long.reverseBytes( value ) );
-        }
-        else
-        {
-            putLongBigEndian( value, p );
-        }
-    }
-
-    private void putLongBigEndian( long value, long p )
-    {
-        UnsafeUtil.putByte( p    , (byte)( value >> 56 ) );
-        UnsafeUtil.putByte( p + 1, (byte)( value >> 48 ) );
-        UnsafeUtil.putByte( p + 2, (byte)( value >> 40 ) );
-        UnsafeUtil.putByte( p + 3, (byte)( value >> 32 ) );
-        UnsafeUtil.putByte( p + 4, (byte)( value >> 24 ) );
-        UnsafeUtil.putByte( p + 5, (byte)( value >> 16 ) );
-        UnsafeUtil.putByte( p + 6, (byte)( value >> 8  ) );
-        UnsafeUtil.putByte( p + 7, (byte)( value       ) );
+        putLongLE( offset, value );
+        offset += SIZE_OF_LONG;
     }
 
     @Override
-    public int getInt()
+    public void putLongBE( int offset, long value )
     {
-        int i = getInt( offset );
+        long p = getBoundedPointer( offset, SIZE_OF_LONG );
+        value = UnsafeUtil.nativeByteOrderIsBigEndian ? value : Long.reverseBytes( value );
+        if ( UnsafeUtil.allowUnalignedMemoryAccess )
+        {
+            UnsafeUtil.putLong( p, value );
+        }
+        else
+        {
+            UnsafeUtil.putLongByteWise( p, value );
+        }
+    }
+
+    @Override
+    public void putLongLE( int offset, long value )
+    {
+        long p = getBoundedPointer( offset, SIZE_OF_LONG );
+        value = UnsafeUtil.nativeByteOrderIsBigEndian ? Long.reverseBytes( value ) : value;
+        if ( UnsafeUtil.allowUnalignedMemoryAccess )
+        {
+            UnsafeUtil.putLong( p, value );
+        }
+        else
+        {
+            UnsafeUtil.putLongByteWise( p, value );
+        }
+    }
+
+    @Override
+    public int getIntBE()
+    {
+        int i = getIntBE( offset );
         offset += SIZE_OF_INT;
         return i;
     }
 
     @Override
-    public int getInt( int offset )
+    public int getIntLE()
     {
-        long p = getBoundedPointer( offset, SIZE_OF_INT );
-        if ( UnsafeUtil.allowUnalignedMemoryAccess )
-        {
-            int x = UnsafeUtil.getInt( p );
-            return UnsafeUtil.storeByteOrderIsNative ? x : Integer.reverseBytes( x );
-        }
-        return getIntBigEndian( p );
-    }
-
-    private int getIntBigEndian( long p )
-    {
-        int a = UnsafeUtil.getByte( p     ) & 0xFF;
-        int b = UnsafeUtil.getByte( p + 1 ) & 0xFF;
-        int c = UnsafeUtil.getByte( p + 2 ) & 0xFF;
-        int d = UnsafeUtil.getByte( p + 3 ) & 0xFF;
-        return (a << 24) | (b << 16) | (c << 8) | d;
+        int i = getIntLE( offset );
+        offset += SIZE_OF_INT;
+        return i;
     }
 
     @Override
-    public void putInt( int value )
+    public int getIntBE( int offset )
     {
-        putInt( offset, value );
+        long p = getBoundedPointer( offset, SIZE_OF_INT );
+        int value;
+        if ( UnsafeUtil.allowUnalignedMemoryAccess )
+        {
+            value = UnsafeUtil.getInt( p );
+        }
+        else
+        {
+            value = UnsafeUtil.getIntByteWise( p );
+        }
+        return UnsafeUtil.nativeByteOrderIsBigEndian ? value : Integer.reverseBytes( value );
+    }
+
+    @Override
+    public int getIntLE( int offset )
+    {
+        long p = getBoundedPointer( offset, SIZE_OF_INT );
+        int value;
+        if ( UnsafeUtil.allowUnalignedMemoryAccess )
+        {
+            value = UnsafeUtil.getInt( p );
+        }
+        else
+        {
+            value = UnsafeUtil.getIntByteWise( p );
+        }
+        return UnsafeUtil.nativeByteOrderIsBigEndian ? Integer.reverseBytes( value ) : value;
+    }
+
+    @Override
+    public void putIntBE( int value )
+    {
+        putIntBE( offset, value );
         offset += SIZE_OF_INT;
     }
 
     @Override
-    public void putInt( int offset, int value )
+    public void putIntLE( int value )
+    {
+        putIntLE( offset, value );
+        offset += SIZE_OF_INT;
+    }
+
+    @Override
+    public void putIntBE( int offset, int value )
     {
         long p = getBoundedPointer( offset, SIZE_OF_INT );
+        value = UnsafeUtil.nativeByteOrderIsBigEndian ? value : Integer.reverseBytes( value );
         if ( UnsafeUtil.allowUnalignedMemoryAccess )
         {
-            UnsafeUtil.putInt( p, UnsafeUtil.storeByteOrderIsNative ? value : Integer.reverseBytes( value ) );
+            UnsafeUtil.putInt( p, value );
         }
         else
         {
-            putIntBigEndian( value, p );
+            UnsafeUtil.putIntByteWise( p, value );
         }
     }
 
-    private void putIntBigEndian( int value, long p )
+    @Override
+    public void putIntLE( int offset, int value )
     {
-        UnsafeUtil.putByte( p    , (byte)( value >> 24 ) );
-        UnsafeUtil.putByte( p + 1, (byte)( value >> 16 ) );
-        UnsafeUtil.putByte( p + 2, (byte)( value >> 8  ) );
-        UnsafeUtil.putByte( p + 3, (byte)( value       ) );
+        long p = getBoundedPointer( offset, SIZE_OF_INT );
+        value = UnsafeUtil.nativeByteOrderIsBigEndian ? Integer.reverseBytes( value ) : value;
+        if ( UnsafeUtil.allowUnalignedMemoryAccess )
+        {
+            UnsafeUtil.putInt( p, value );
+        }
+        else
+        {
+            UnsafeUtil.putIntByteWise( p, value );
+        }
+    }
+
+    @Override
+    public short getShortBE()
+    {
+        short s = getShortBE( offset );
+        offset += SIZE_OF_SHORT;
+        return s;
+    }
+
+    @Override
+    public short getShortLE()
+    {
+        short s = getShortLE( offset );
+        offset += SIZE_OF_SHORT;
+        return s;
+    }
+
+    @Override
+    public short getShortBE( int offset )
+    {
+        long p = getBoundedPointer( offset, SIZE_OF_SHORT );
+        short value;
+        if ( UnsafeUtil.allowUnalignedMemoryAccess )
+        {
+            value = UnsafeUtil.getShort( p );
+        }
+        else
+        {
+            value = UnsafeUtil.getShortByteWise( p );
+        }
+        return UnsafeUtil.nativeByteOrderIsBigEndian ? value : Short.reverseBytes( value );
+    }
+
+    @Override
+    public short getShortLE( int offset )
+    {
+        long p = getBoundedPointer( offset, SIZE_OF_SHORT );
+        short value;
+        if ( UnsafeUtil.allowUnalignedMemoryAccess )
+        {
+            value = UnsafeUtil.getShort( p );
+        }
+        else
+        {
+            value = UnsafeUtil.getShortByteWise( p );
+        }
+        return UnsafeUtil.nativeByteOrderIsBigEndian ? Short.reverseBytes( value ) : value;
+    }
+
+    @Override
+    public void putShortBE( short value )
+    {
+        putShortBE( offset, value );
+        offset += SIZE_OF_SHORT;
+    }
+
+    @Override
+    public void putShortLE( short value )
+    {
+        putShortLE( offset, value );
+        offset += SIZE_OF_SHORT;
+    }
+
+    @Override
+    public void putShortBE( int offset, short value )
+    {
+        long p = getBoundedPointer( offset, SIZE_OF_SHORT );
+        value = UnsafeUtil.nativeByteOrderIsBigEndian ? value : Short.reverseBytes( value );
+        if ( UnsafeUtil.allowUnalignedMemoryAccess )
+        {
+            UnsafeUtil.putShort( p, value );
+        }
+        else
+        {
+            UnsafeUtil.putShortByteWise( p, value );
+        }
+    }
+
+    @Override
+    public void putShortLE( int offset, short value )
+    {
+        long p = getBoundedPointer( offset, SIZE_OF_SHORT );
+        value = UnsafeUtil.nativeByteOrderIsBigEndian ? Short.reverseBytes( value ) : value;
+        if ( UnsafeUtil.allowUnalignedMemoryAccess )
+        {
+            UnsafeUtil.putShort( p, value );
+        }
+        else
+        {
+            UnsafeUtil.putShortByteWise( p, value );
+        }
     }
 
     @Override
@@ -609,60 +753,6 @@ abstract class MuninnPageCursor extends PageCursor
             }
         }
         offset += length;
-    }
-
-    @Override
-    public final short getShort()
-    {
-        short s = getShort( offset );
-        offset += SIZE_OF_SHORT;
-        return s;
-    }
-
-    @Override
-    public short getShort( int offset )
-    {
-        long p = getBoundedPointer( offset, SIZE_OF_SHORT );
-        if ( UnsafeUtil.allowUnalignedMemoryAccess )
-        {
-            short x = UnsafeUtil.getShort( p );
-            return UnsafeUtil.storeByteOrderIsNative ? x : Short.reverseBytes( x );
-        }
-        return getShortBigEndian( p );
-    }
-
-    private short getShortBigEndian( long p )
-    {
-        short a = (short) (UnsafeUtil.getByte( p     ) & 0xFF);
-        short b = (short) (UnsafeUtil.getByte( p + 1 ) & 0xFF);
-        return (short) ((a << 8) | b);
-    }
-
-    @Override
-    public void putShort( short value )
-    {
-        putShort( offset, value );
-        offset += SIZE_OF_SHORT;
-    }
-
-    @Override
-    public void putShort( int offset, short value )
-    {
-        long p = getBoundedPointer( offset, SIZE_OF_SHORT );
-        if ( UnsafeUtil.allowUnalignedMemoryAccess )
-        {
-            UnsafeUtil.putShort( p, UnsafeUtil.storeByteOrderIsNative ? value : Short.reverseBytes( value ) );
-        }
-        else
-        {
-            putShortBigEndian( value, p );
-        }
-    }
-
-    private void putShortBigEndian( short value, long p )
-    {
-        UnsafeUtil.putByte( p    , (byte)( value >> 8 ) );
-        UnsafeUtil.putByte( p + 1, (byte)( value      ) );
     }
 
     @Override

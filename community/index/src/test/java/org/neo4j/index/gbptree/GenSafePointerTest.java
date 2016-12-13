@@ -78,7 +78,7 @@ public class GenSafePointerTest
         write( cursor, offset, initial );
 
         // WHEN
-        cursor.putInt( offset, (int) (initial.generation + 5) );
+        cursor.putIntBE( offset, (int) (initial.generation + 5) );
 
         // THEN
         boolean matches = read( cursor, offset, read );
@@ -96,7 +96,7 @@ public class GenSafePointerTest
         write( cursor, offset, initial );
 
         // WHEN
-        cursor.putShort( offset + GenSafePointer.SIZE - GenSafePointer.CHECKSUM_SIZE,
+        cursor.putShortBE( offset + GenSafePointer.SIZE - GenSafePointer.CHECKSUM_SIZE,
                 (short) (checksumOf( initial ) - 2) );
 
         // THEN

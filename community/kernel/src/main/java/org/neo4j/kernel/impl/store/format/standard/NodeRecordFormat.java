@@ -52,13 +52,13 @@ public class NodeRecordFormat extends BaseOneByteHeaderRecordFormat<NodeRecord>
         record.setInUse( inUse );
         if ( mode.shouldLoad( inUse ) )
         {
-            long nextRel = cursor.getInt() & 0xFFFFFFFFL;
-            long nextProp = cursor.getInt() & 0xFFFFFFFFL;
+            long nextRel = cursor.getIntBE() & 0xFFFFFFFFL;
+            long nextProp = cursor.getIntBE() & 0xFFFFFFFFL;
 
             long relModifier = (headerByte & 0xEL) << 31;
             long propModifier = (headerByte & 0xF0L) << 28;
 
-            long lsbLabels = cursor.getInt() & 0xFFFFFFFFL;
+            long lsbLabels = cursor.getIntBE() & 0xFFFFFFFFL;
             long hsbLabels = cursor.getByte() & 0xFF; // so that a negative byte won't fill the "extended" bits with ones.
             long labels = lsbLabels | (hsbLabels << 32);
             byte extra = cursor.getByte();
@@ -88,12 +88,12 @@ public class NodeRecordFormat extends BaseOneByteHeaderRecordFormat<NodeRecord>
             inUseUnsignedByte = (short) ( inUseUnsignedByte | relModifier | propModifier );
 
             cursor.putByte( (byte) inUseUnsignedByte );
-            cursor.putInt( (int) nextRel );
-            cursor.putInt( (int) nextProp );
+            cursor.putIntBE( (int) nextRel );
+            cursor.putIntBE( (int) nextProp );
 
             // lsb of labels
             long labelField = record.getLabelField();
-            cursor.putInt( (int) labelField );
+            cursor.putIntBE( (int) labelField );
             // msb of labels
             cursor.putByte( (byte) ((labelField & 0xFF00000000L) >> 32) );
 
