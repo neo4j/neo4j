@@ -55,6 +55,7 @@ import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgRecord;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
 import static org.neo4j.bolt.v1.runtime.spi.StreamMatchers.eqRecord;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.chunk;
+import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyDisconnects;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
@@ -221,6 +222,7 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, eventuallyReceives( msgFailure( Status.Security.Unauthorized,
                 "The client is unauthorized due to authentication failure." ) ) );
+        assertThat( client, eventuallyDisconnects() );
     }
 
     protected void assertReadSucceeds() throws Exception
