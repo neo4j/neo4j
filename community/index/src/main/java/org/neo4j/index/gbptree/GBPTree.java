@@ -297,7 +297,7 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
             {
                 readMeta( indexFile, layout, pagedFile );
                 pagedFile = mapWithCorrectPageSize( pageCache, indexFile, pagedFile );
-                readState( pagedFile );
+                loadState( pagedFile );
                 return pagedFile;
             }
             catch ( Throwable t )
@@ -332,39 +332,46 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         }
     }
 
-    private void readState( PagedFile pagedFile ) throws IOException
+    private void loadState( PagedFile pagedFile ) throws IOException
     {
-        try ( PageCursor cursor = pagedFile.io( 0L /*ignored*/, PagedFile.PF_SHARED_WRITE_LOCK ) )
-        {
-            Pair<TreeState,TreeState> states = TreeStatePair.readStatePages(
-                    cursor, IdSpace.STATE_PAGE_A, IdSpace.STATE_PAGE_B );
-            checkOutOfBounds( cursor );
-
-            TreeState state = TreeStatePair.selectNewestValidState( states );
-            rootId = state.rootId();
-            lastId = state.lastId();
-            generation = Generation.generation( state.stableGeneration(), state.unstableGeneration() );
-        }
+        Pair<TreeState,TreeState> states = readStatePages( pagedFile );
+        TreeState state = TreeStatePair.selectNewestValidState( states );
+        rootId = state.rootId();
+        lastId = state.lastId();
+        generation = Generation.generation( state.stableGeneration(), state.unstableGeneration() );
     }
 
     private void writeState( PagedFile pagedFile ) throws IOException
     {
-        try ( PageCursor cursor = pagedFile.io( 0L /*ignored*/, PagedFile.PF_SHARED_WRITE_LOCK ) )
+        Pair<TreeState,TreeState> states = readStatePages( pagedFile );
+        TreeState oldestState = TreeStatePair.selectOldestOrInvalid( states );
+        long pageToOverwrite = oldestState.pageId();
+        try ( PageCursor cursor = pagedFile.io( pageToOverwrite, PagedFile.PF_SHARED_WRITE_LOCK ) )
         {
-            Pair<TreeState,TreeState> states = TreeStatePair.readStatePages(
-                    cursor, IdSpace.STATE_PAGE_A, IdSpace.STATE_PAGE_B );
-            checkOutOfBounds( cursor );
-            TreeState oldestState = TreeStatePair.selectOldestOrInvalid( states );
-            long pageToOverwrite = oldestState.pageId();
             PageCursorUtil.goTo( cursor, "state page", pageToOverwrite );
-            cursor.setOffset( 0 );
             TreeState.write( cursor, stableGeneration( generation ), unstableGeneration( generation ), rootId, lastId );
+            checkOutOfBounds( cursor );
         }
     }
 
-    private static PageCursor openMetaPageCursor( PagedFile pagedFile ) throws IOException
+    private Pair<TreeState,TreeState> readStatePages( PagedFile pagedFile ) throws IOException
     {
-        PageCursor metaCursor = pagedFile.io( IdSpace.META_PAGE_ID, PagedFile.PF_SHARED_WRITE_LOCK );
+        Pair<TreeState,TreeState> states;
+        try ( PageCursor cursor = pagedFile.io( 0L /*ignored*/, PagedFile.PF_SHARED_READ_LOCK ) )
+        {
+            do
+            {
+                states = TreeStatePair.readStatePages(
+                        cursor, IdSpace.STATE_PAGE_A, IdSpace.STATE_PAGE_B );
+            } while ( cursor.shouldRetry() );
+            checkOutOfBounds( cursor );
+        }
+        return states;
+    }
+
+    private static PageCursor openMetaPageCursor( PagedFile pagedFile, int pfFlags ) throws IOException
+    {
+        PageCursor metaCursor = pagedFile.io( IdSpace.META_PAGE_ID, pfFlags );
         PageCursorUtil.goTo( metaCursor, "meta page", IdSpace.META_PAGE_ID );
         return metaCursor;
     }
@@ -376,7 +383,7 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         long layoutIdentifier;
         int majorVersion;
         int minorVersion;
-        try ( PageCursor metaCursor = openMetaPageCursor( pagedFile ) )
+        try ( PageCursor metaCursor = openMetaPageCursor( pagedFile, PagedFile.PF_SHARED_READ_LOCK ) )
         {
             do
             {
@@ -405,7 +412,7 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
 
     private void writeMeta( Layout<KEY,VALUE> layout, PagedFile pagedFile ) throws IOException
     {
-        try ( PageCursor metaCursor = openMetaPageCursor( pagedFile ) )
+        try ( PageCursor metaCursor = openMetaPageCursor( pagedFile, PagedFile.PF_SHARED_WRITE_LOCK ) )
         {
             metaCursor.putInt( pageSize );
             metaCursor.putLong( layout.identifier() );
