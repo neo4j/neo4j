@@ -71,7 +71,6 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
     relate(node2, node1)
     val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a)--() RETURN DISTINCT a")
     result.toList should equal(List(Map("a" -> node1), Map("a" -> node2)))
-
   }
 
   test("distinct aggregation on array property") {
@@ -80,5 +79,13 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
     createNode("prop"-> Array(1337))
     val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a) RETURN DISTINCT a.prop")
     result.toComparableResult should equal(List(Map("a.prop" -> List(1337)), Map("a.prop" -> List(42))))
+  }
+
+  test("Node count from count store plan should work with labeled nodes") {
+    val node1 = createLabeledNode("Person")
+    val node2 = createLabeledNode("Person")
+    val node3 = createNode()
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a:Person) WITH count(a) as c RETURN c")
+    result.toList should equal(List(Map("c" -> 2L)))
   }
 }
