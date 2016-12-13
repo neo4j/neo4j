@@ -112,6 +112,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     runWithConfig() {
       db =>
         db.execute("CREATE INDEX ON :Person(name)")
+        db.execute("CALL db.awaitIndex(':Person(name)')")
         shouldHaveNoWarnings(
           db.execute(s"EXPLAIN MATCH (n:Person) USING INDEX n:Person(name) WHERE n.name = 'John' RETURN n")
         )
@@ -312,6 +313,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     runWithConfig() {
       engine =>
         engine.execute("CREATE INDEX ON :Person(name)")
+        engine.execute("CALL db.awaitIndex(':Person(name)')")
         shouldHaveNoWarnings(
           engine.execute(s"EXPLAIN MATCH (n:Person), (c:Company) USING INDEX n:Person(name) USING SCAN c:Company WHERE n.name = 'John' RETURN n")
         )
