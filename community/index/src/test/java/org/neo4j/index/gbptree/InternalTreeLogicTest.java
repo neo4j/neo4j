@@ -430,7 +430,7 @@ public class InternalTreeLogicTest
         }
         long rootId = newRootFromSplit( structurePropagation );
 
-        // when and key to remove exists in internal
+        // when key to remove exists in internal
         Long keyToRemove = structurePropagation.primKey.getValue();
         assertThat( keyAt( 0 ), is( keyToRemove ) );
 

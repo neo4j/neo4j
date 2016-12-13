@@ -25,19 +25,15 @@ interface ThrowingRunnable
 
     static Runnable throwing( ThrowingRunnable callable )
     {
-        return new Runnable()
+        return () ->
         {
-            @Override
-            public void run()
+            try
             {
-                try
-                {
-                    callable.run();
-                }
-                catch ( Exception e )
-                {
-                    throw new RuntimeException( e );
-                }
+                callable.run();
+            }
+            catch ( Exception e )
+            {
+                throw new RuntimeException( e );
             }
         };
     }
