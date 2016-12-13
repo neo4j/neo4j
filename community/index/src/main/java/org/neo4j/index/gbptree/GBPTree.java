@@ -479,7 +479,7 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
             // Flush dirty pages since that last flush above. This should be a very small set of pages
             // and should be rather fast. In here writers are blocked and we want to minimize this
             // windows of time as much as possible, that's why there's an initial flush outside this lock.
-            pagedFile.flushAndForce( ioLimiter );
+            pagedFile.flushAndForce();
 
             // Increment generation, i.e. stable becomes current unstable and unstable increments by one
             // and write the tree state (rootId, lastId, generation a.s.o.) to state page.
@@ -488,7 +488,7 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
             writeState( pagedFile );
 
             // Flush the state page.
-            pagedFile.flushAndForce( ioLimiter );
+            pagedFile.flushAndForce();
 
             // Expose this fact.
             monitor.checkpointCompleted();
