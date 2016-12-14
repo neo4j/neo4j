@@ -19,7 +19,6 @@
  */
 package org.neo4j.graphdb.factory;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.lang.reflect.Field;
@@ -107,21 +106,6 @@ public class GraphDatabaseSettingsTest
         // then
         assertEquals( hostname, advertisedSocketAddress.getHostname() );
         assertEquals( port, advertisedSocketAddress.getPort() );
-    }
-
-    @Test
-    @Ignore("No, not for embedded. This is loaded via default values in the config file.")
-    public void shouldEnableBoltByDefault() throws Exception
-    {
-        // given
-        Config config = Config.defaults();
-
-        // when
-        BoltConnector boltConnector = boltConnectors( config ).get( 0 );
-        ListenSocketAddress listenSocketAddress = config.get( boltConnector.listen_address );
-
-        // then
-        assertEquals( new ListenSocketAddress( "localhost", 7687 ), listenSocketAddress );
     }
 
     @Test
