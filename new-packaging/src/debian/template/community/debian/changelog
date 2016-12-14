@@ -1,0 +1,6 @@
+neo4j (${VERSION}) ${STABILITY}; urgency=low
+
+  * See https://github.com/neo4j/neo4j/wiki/Changelog for more details.
+
+ -- Neo Technology <debian@neotechnology.com>  ${DATE}
+
