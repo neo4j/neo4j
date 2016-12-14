@@ -72,6 +72,7 @@ public abstract class ServerBootstrapper implements Bootstrapper
     @SafeVarargs
     public final int start( File homeDir, Optional<File> configFile, Pair<String, String>... configOverrides )
     {
+        addShutdownHook();
         try
         {
             Config config = createConfig( homeDir, configFile, configOverrides );
@@ -89,8 +90,6 @@ public abstract class ServerBootstrapper implements Bootstrapper
 
             server = createNeoServer( config, dependencies, userLogProvider );
             server.start();
-
-            addShutdownHook();
 
             return OK;
         }

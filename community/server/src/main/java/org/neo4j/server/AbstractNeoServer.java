@@ -52,6 +52,7 @@ import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.configuration.ClientConnectorSettings;
@@ -137,6 +138,7 @@ public abstract class AbstractNeoServer implements NeoServer
     private TransactionHandleRegistry transactionRegistry;
 
     private boolean initialized = false;
+    private LifecycleAdapter serverComponents;
 
     protected abstract Iterable<ServerModule> createServerModules();
 
@@ -194,28 +196,43 @@ public abstract class AbstractNeoServer implements NeoServer
         init();
         try
         {
+            serverComponents = new LifecycleAdapter()
+            {
+                @Override
+                public void start()
+                        throws Throwable
+                {
+                    DiagnosticsManager diagnosticsManager = resolveDependency( DiagnosticsManager.class );
+                    Log diagnosticsLog = diagnosticsManager.getTargetLog();
+                    diagnosticsLog.info( "--- SERVER STARTED START ---" );
+                    databaseActions = createDatabaseActions();
+
+                    transactionFacade = createTransactionalActions();
+
+                    cypherExecutor = new CypherExecutor( database, logProvider );
+
+                    configureWebServer();
+
+                    cypherExecutor.start();
+
+                    startModules();
+
+                    startWebServer();
+
+                    diagnosticsLog.info( "--- SERVER STARTED END ---" );
+                }
+
+                @Override
+                public void stop()
+                        throws Throwable
+                {
+                    stopWebServer();
+                    stopModules();
+                }
+            };
+            life.add( serverComponents );
             life.start();
 
-            DiagnosticsManager diagnosticsManager = resolveDependency(DiagnosticsManager.class);
-
-            Log diagnosticsLog = diagnosticsManager.getTargetLog();
-            diagnosticsLog.info( "--- SERVER STARTED START ---" );
-
-            databaseActions = createDatabaseActions();
-
-            transactionFacade = createTransactionalActions();
-
-            cypherExecutor = new CypherExecutor( database, logProvider );
-
-            configureWebServer();
-
-            cypherExecutor.start();
-
-            startModules();
-
-            startWebServer();
-
-            diagnosticsLog.info( "--- SERVER STARTED END ---" );
         }
         catch ( Throwable t )
         {
@@ -417,12 +434,8 @@ public abstract class AbstractNeoServer implements NeoServer
     @Override
     public void stop()
     {
-        // TODO: All components should be moved over to the LifeSupport instance, life, in here.
-        new RunCarefully(
-                this::stopWebServer,
-                this::stopModules,
-                life::stop
-        ).run();
+        life.stop();
+        life.remove( serverComponents );
     }
 
     private void stopWebServer()
