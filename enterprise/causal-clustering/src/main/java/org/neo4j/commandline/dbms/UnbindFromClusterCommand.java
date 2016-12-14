@@ -102,16 +102,16 @@ public class UnbindFromClusterCommand implements AdminCommand
         {
             throw new IncorrectUsage( e.getMessage() );
         }
-        catch ( UnbindFailureException | CannotWriteException e )
+        catch ( UnbindFailureException | CannotWriteException | IOException e )
         {
             throw new CommandFailed( "Unbind failed: " + e.getMessage(), e );
         }
     }
 
     private void confirmTargetDirectoryIsWritable( Path pathToSpecificDatabase )
-            throws CommandFailed, CannotWriteException
+            throws CommandFailed, CannotWriteException, IOException
     {
-        new StoreLockChecker().withLock( pathToSpecificDatabase );
+        new StoreLockChecker().withLock( pathToSpecificDatabase ).close();
     }
 
     private Path clusterStateFrom( Path target )
