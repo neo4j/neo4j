@@ -882,7 +882,6 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
      */
     public void beforeModeSwitch()
     {
-        kernelModule.kernelTransactions().blockNewTransactions();
         clearTransactions();
     }
 
@@ -903,7 +902,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     public void afterModeSwitch()
     {
         storageEngine.loadSchemaCache();
-        kernelModule.kernelTransactions().unblockNewTransactions();
+        clearTransactions();
     }
 
     @SuppressWarnings( "deprecation" )
