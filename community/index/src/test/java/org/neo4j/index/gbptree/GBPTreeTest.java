@@ -498,7 +498,6 @@ public class GBPTreeTest
 
     /* Randomized tests */
 
-
     @Test
     public void shouldSplitCorrectly() throws Exception
     {

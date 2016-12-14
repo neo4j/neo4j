@@ -76,7 +76,6 @@ public class SeekCursorTest
     private final MutableLong from = layout.newKey();
     private final MutableLong to = layout.newKey();
 
-
     private static long stableGen = GenSafePointer.MIN_GENERATION;
     private static long unstableGen = stableGen + 1;
 
