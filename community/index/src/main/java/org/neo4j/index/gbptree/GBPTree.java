@@ -19,11 +19,16 @@
  */
 package org.neo4j.index.gbptree;
 
+import org.apache.commons.lang3.tuple.Pair;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.StandardOpenOption;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.LongSupplier;
 
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.Hit;
@@ -31,9 +36,17 @@ import org.neo4j.index.Index;
 import org.neo4j.index.IndexWriter;
 import org.neo4j.index.ValueMerger;
 import org.neo4j.index.ValueMergers;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+
+import static java.lang.String.format;
+
+import static org.neo4j.index.gbptree.Generation.generation;
+import static org.neo4j.index.gbptree.Generation.stableGeneration;
+import static org.neo4j.index.gbptree.Generation.unstableGeneration;
+import static org.neo4j.index.gbptree.PageCursorUtil.checkOutOfBounds;
 
 /**
  * A generation-aware B+tree (GB+Tree) implementation directly atop a {@link PageCache} with no caching in between.
@@ -41,11 +54,11 @@ import org.neo4j.io.pagecache.PagedFile;
  * this to provide correct reading when concurrently {@link #writer(IndexWriter.Options) modifying}
  * the tree.
  * <p>
- * Generation is incremented on {@link #flush() flushing a.k.a check-pointing}.
- * Generation awareness allows for recovery from last {@link #flush()}, provided the same updates will be
- * replayed onto the index since that point in time.
+ * Generation is incremented on {@link Index#checkpoint(IOLimiter) check-pointing}.
+ * Generation awareness allows for recovery from last {@link Index#checkpoint(IOLimiter)}, provided the same updates
+ * will be replayed onto the index since that point in time.
  * <p>
- * Changes to tree nodes are made so that stable nodes (i.e. nodes that have survived at least one flush)
+ * Changes to tree nodes are made so that stable nodes (i.e. nodes that have survived at least one checkpoint)
  * are immutable w/ regards to keys values and child/sibling pointers.
  * Making a change in a stable node will copy the node to an unstable generation first and then make the change
  * in that unstable version. Further change in that node in the same generation will not require a copy since
@@ -69,6 +82,38 @@ import org.neo4j.io.pagecache.PagedFile;
  * The isolation level is thus read committed.
  * The tree have no knowledge about transactions and apply updates as isolated units of work one entry at the time.
  * Therefore, readers can see parts of transactions that are not fully applied yet.
+ * <p>
+ * A note on recovery:
+ * <p>
+ * {@link GBPTree} is designed to be able to handle non-clean shutdown / crash, but needs external help
+ * in order to do so.
+ * {@link #writer(org.neo4j.index.IndexWriter.Options) Writes} happen to the tree and are made durable and
+ * safe on next call to {@link #checkpoint(IOLimiter)}. Writes which happens after the last
+ * {@link #checkpoint(IOLimiter)} are not safe if there's a {@link #close()} or JVM crash in between, i.e:
+ *
+ * <pre>
+ * w: write
+ * c: checkpoint
+ * x: crash or {@link #close()}
+ *
+ * TIME |--w--w----w--c--ww--w-c-w--w-ww--w--w---x------|
+ *         ^------ safe -----^   ^- unsafe --^
+ * </pre>
+
+ * The writes that happened before the last checkpoint are durable and safe, but the writes after it are not.
+ * The tree can however get back to a consistent state by:
+ * <ol>
+ * <li>Creator of this tree detects that recovery is required (i.e. non-clean shutdown) and if so must call
+ * {@link #prepareForRecovery()} ones, before any writes during recovery are made.</li>
+ * <li>Replaying all the writes, exactly as they were made, since the last checkpoint all the way up
+ * to the crash ({@code x}). Even including writes before the last checkpoint is OK, important is that
+ * <strong>at least</strong> writes since last checkpoint are included.
+ * </ol>
+ *
+ * Failure to follow the above steps will result in unknown state of the tree after a crash.
+ * <p>
+ * The reason as to why {@link #close()} doesn't do a checkpoint is that checkpointing as a whole should
+ * be managed externally, keeping multiple resources in sync w/ regards to checkpoints.
  *
  * @param <KEY> type of keys
  * @param <VALUE> type of values
@@ -76,9 +121,36 @@ import org.neo4j.io.pagecache.PagedFile;
 public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
 {
     /**
+     * For monitoring {@link GBPTree}.
+     */
+    public interface Monitor
+    {
+        /**
+         * Called when a {@link GBPTree#checkpoint(IOLimiter)} has been completed, but right before
+         * {@link GBPTree#writer(org.neo4j.index.IndexWriter.Options) writers} are re-enabled.
+         */
+        default void checkpointCompleted()
+        {   // no-op by default
+        }
+    }
+
+    /**
+     * No-op {@link Monitor}.
+     */
+    public static final Monitor NO_MONITOR = new Monitor()
+    {   // does nothing
+    };
+
+    /**
      * Paged file in a {@link PageCache} providing the means of storage.
      */
     private final PagedFile pagedFile;
+
+    /**
+     * {@link File} to map in {@link PageCache} for storing this tree.
+     */
+    private final File indexFile;
+    private final byte[] zeroPage;
 
     /**
      * User-provided layout of key/value as well as custom additional meta information.
@@ -94,11 +166,23 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
     private final TreeNode<KEY,VALUE> bTreeNode;
 
     /**
-     * Currently an index only supports one concurrent writer and so this reference will act both as
-     * guard so that only one thread can have it at any given time and also as synchronization between threads
-     * wanting it.
+     * A single instance {@link IndexWriter} because tree only supports single writer.
      */
-    private final AtomicReference<SingleIndexWriter> writer;
+    private final SingleIndexWriter writer;
+
+    /**
+     * Check-pointing flushes updates to stable storage.
+     * There's a critical section in check-pointing where, in order to guarantee a consistent check-pointed state
+     * on stable storage, no writes are allowed to happen.
+     * For this reason both writer and check-pointing acquires this lock.
+     */
+    private final Lock writerCheckpointMutex = new ReentrantLock();
+
+    /**
+     * Currently an index only supports one concurrent writer and so this boolean will act as
+     * guard so that only one thread can have it at any given time.
+     */
+    private final AtomicBoolean writerTaken = new AtomicBoolean();
 
     /**
      * Page size, i.e. tree node size, of the tree nodes in this tree. The page size is determined on
@@ -122,17 +206,30 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
     private volatile long lastId = rootId;
 
     /**
-     * Stable generation, i.e. generation which has survived the last {@link #flush()}.
-     * Unsigned int.
+     * Generation of the tree. This variable contains both stable and unstable generation and is
+     * represented as one long to get atomic updates of both stable and unstable generation for readers.
+     * Both stable and unstable generation are unsigned ints, i.e. 32 bits each.
+     *
+     * <ul>
+     * <li>stable generation, generation which has survived the last {@link Index#checkpoint(IOLimiter)}</li>
+     * <li>unstable generation, current generation under evolution. This generation will be the
+     * {@link Generation#stableGeneration(long)} after the next {@link Index#checkpoint(IOLimiter)}</li>
+     * </ul>
      */
-    private volatile long stableGeneration = 0;
+    private volatile long generation;
 
     /**
-     * Unstable generation, i.e. the current generation under evolution. This generation will be the
-     * {@link #stableGeneration} in the next {@link #flush()}.
-     * Unsigned int.
+     * Supplier of generation to readers. This supplier will actually very rarely be used, because normally
+     * a {@link SeekCursor} is bootstrapped from {@link #generation}. The only time this supplier will be
+     * used is so that a long-running {@link SeekCursor} can keep up with a generation change after
+     * a checkpoint, if the cursor lives that long.
      */
-    private volatile long unstableGeneration = 1;
+    private final LongSupplier generationSupplier = () -> generation;
+
+    /**
+     * Called on certain events.
+     */
+    private final Monitor monitor;
 
     /**
      * Opens an index {@code indexFile} in the {@code pageCache}, creating and initializing it if it doesn't exist.
@@ -145,31 +242,47 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
      *
      * @param pageCache {@link PageCache} to use to map index file
      * @param indexFile {@link File} containing the actual index
-     * @param tentativePageSize page size, i.e. tree node size. Must be less than or equal to that of the page cache.
-     * A pageSize of {@code 0} means to use whatever the page cache has (at creation)
      * @param layout {@link Layout} to use in the tree, this must match the existing layout
      * we're just opening the index
+     * @param tentativePageSize page size, i.e. tree node size. Must be less than or equal to that of the page cache.
+     * A pageSize of {@code 0} means to use whatever the page cache has (at creation)
+     * @param monitor {@link Monitor} for monitoring {@link GBPTree}.
      * @throws IOException on page cache error
      */
-    public GBPTree( PageCache pageCache, File indexFile, Layout<KEY,VALUE> layout, int tentativePageSize )
-            throws IOException
+    public GBPTree( PageCache pageCache, File indexFile, Layout<KEY,VALUE> layout, int tentativePageSize,
+            Monitor monitor ) throws IOException
     {
+        this.indexFile = indexFile;
+        this.monitor = monitor;
+        this.generation = Generation.generation( GenSafePointer.MIN_GENERATION, GenSafePointer.MIN_GENERATION + 1 );
         this.layout = layout;
         this.pagedFile = openOrCreate( pageCache, indexFile, tentativePageSize, layout );
         this.bTreeNode = new TreeNode<>( pageSize, layout );
-        this.writer = new AtomicReference<>(
-                new SingleIndexWriter( new InternalTreeLogic<>( this, bTreeNode, layout ) ) );
+        this.writer = new SingleIndexWriter( new InternalTreeLogic<>( this, bTreeNode, layout ) );
+        this.zeroPage = new byte[pageSize];
 
         if ( created )
         {
-            // Initialize index root node to a leaf node.
-            try ( PageCursor cursor = pagedFile.io( rootId, PagedFile.PF_SHARED_WRITE_LOCK ) )
-            {
-                goToRoot( cursor );
-                bTreeNode.initializeLeaf( cursor, stableGeneration, unstableGeneration );
-                checkOutOfBounds( cursor );
-            }
+            initializeAfterCreation( layout );
         }
+    }
+
+    private void initializeAfterCreation( Layout<KEY,VALUE> layout ) throws IOException
+    {
+        // Write meta
+        writeMeta( layout, pagedFile );
+
+        // Initialize index root node to a leaf node.
+        try ( PageCursor cursor = pagedFile.io( rootId, PagedFile.PF_SHARED_WRITE_LOCK ) )
+        {
+            long stableGeneration = stableGeneration( generation );
+            long unstableGeneration = unstableGeneration( generation );
+            goToRoot( cursor, stableGeneration, unstableGeneration );
+            bTreeNode.initializeLeaf( cursor, stableGeneration, unstableGeneration );
+            checkOutOfBounds( cursor );
+        }
+
+        checkpoint( IOLimiter.unlimited() );
     }
 
     private PagedFile openOrCreate( PageCache pageCache, File indexFile,
@@ -182,49 +295,9 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
 
             try
             {
-                // Read header
-                long layoutIdentifier;
-                int majorVersion;
-                int minorVersion;
-                try ( PageCursor metaCursor = openMetaPageCursor( pagedFile ) )
-                {
-                    do
-                    {
-                        pageSize = metaCursor.getInt();
-                        rootId = metaCursor.getLong();
-                        lastId = metaCursor.getLong();
-                        layoutIdentifier = metaCursor.getLong();
-                        majorVersion = metaCursor.getInt();
-                        minorVersion = metaCursor.getInt();
-                        layout.readMetaData( metaCursor );
-                    }
-                    while ( metaCursor.shouldRetry() );
-                    checkOutOfBounds( metaCursor );
-                }
-                if ( layoutIdentifier != layout.identifier() )
-                {
-                    throw new IllegalArgumentException( "Tried to open " + indexFile + " using different layout "
-                            + layout.identifier() + " than what it was created with " + layoutIdentifier );
-                }
-                if ( majorVersion != layout.majorVersion() || minorVersion != layout.minorVersion() )
-                {
-                    throw new IllegalArgumentException( "Index is of another version than the layout " +
-                            "it tries to be opened with. Index version is [" + majorVersion + "." + minorVersion + "]" +
-                            ", but tried to load the index with version [" +
-                            layout.majorVersion() + "." + layout.minorVersion() + "]" );
-                }
-                // This index was created with another page size, re-open with that actual page size
-                if ( pageSize != pageCache.pageSize() )
-                {
-                    if ( pageSize > pageCache.pageSize() )
-                    {
-                        throw new IllegalStateException( "Index was created with page size:" + pageSize
-                                + ", but page cache used to open it this time has a smaller page size:"
-                                + pageCache.pageSize() + " so cannot be opened" );
-                    }
-                    pagedFile.close();
-                    pagedFile = pageCache.map( indexFile, pageSize );
-                }
+                readMeta( indexFile, layout, pagedFile );
+                pagedFile = mapWithCorrectPageSize( pageCache, indexFile, pagedFile );
+                loadState( pagedFile );
                 return pagedFile;
             }
             catch ( Throwable t )
@@ -242,43 +315,131 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         }
         catch ( NoSuchFileException e )
         {
+            // First time
             pageSize = pageSizeForCreation == 0 ? pageCache.pageSize() : pageSizeForCreation;
             if ( pageSize > pageCache.pageSize() )
             {
-                throw new IllegalStateException( "Index was about to be created with page size:" + pageSize +
+                throw new MetadataMismatchException( "Tree in " + indexFile.getAbsolutePath() +
+                        " was about to be created with page size:" + pageSize +
                         ", but page cache used to create it has a smaller page size:" +
                         pageCache.pageSize() + " so cannot be created" );
             }
 
             // We need to create this index
             PagedFile pagedFile = pageCache.map( indexFile, pageSize, StandardOpenOption.CREATE );
-
-            // Write header
-            try ( PageCursor metaCursor = openMetaPageCursor( pagedFile ) )
-            {
-                metaCursor.putInt( pageSize );
-                metaCursor.putLong( rootId );
-                metaCursor.putLong( lastId );
-                metaCursor.putLong( layout.identifier() );
-                metaCursor.putInt( layout.majorVersion() );
-                metaCursor.putInt( layout.minorVersion() );
-                layout.writeMetaData( metaCursor );
-                checkOutOfBounds( metaCursor );
-            }
-            pagedFile.flushAndForce();
             created = true;
             return pagedFile;
         }
     }
 
-    private PageCursor openMetaPageCursor( PagedFile pagedFile ) throws IOException
+    private void loadState( PagedFile pagedFile ) throws IOException
     {
-        PageCursor metaCursor = pagedFile.io( IdSpace.META_PAGE_ID, PagedFile.PF_SHARED_WRITE_LOCK );
-        if ( !metaCursor.next() )
+        Pair<TreeState,TreeState> states = readStatePages( pagedFile );
+        TreeState state = TreeStatePair.selectNewestValidState( states );
+        rootId = state.rootId();
+        lastId = state.lastId();
+        generation = Generation.generation( state.stableGeneration(), state.unstableGeneration() );
+    }
+
+    private void writeState( PagedFile pagedFile ) throws IOException
+    {
+        Pair<TreeState,TreeState> states = readStatePages( pagedFile );
+        TreeState oldestState = TreeStatePair.selectOldestOrInvalid( states );
+        long pageToOverwrite = oldestState.pageId();
+        try ( PageCursor cursor = pagedFile.io( pageToOverwrite, PagedFile.PF_SHARED_WRITE_LOCK ) )
         {
-            throw new IllegalStateException( "Couldn't go to meta data page " + IdSpace.META_PAGE_ID );
+            PageCursorUtil.goTo( cursor, "state page", pageToOverwrite );
+            TreeState.write( cursor, stableGeneration( generation ), unstableGeneration( generation ), rootId, lastId );
+            checkOutOfBounds( cursor );
         }
+    }
+
+    private Pair<TreeState,TreeState> readStatePages( PagedFile pagedFile ) throws IOException
+    {
+        Pair<TreeState,TreeState> states;
+        try ( PageCursor cursor = pagedFile.io( 0L /*ignored*/, PagedFile.PF_SHARED_READ_LOCK ) )
+        {
+            do
+            {
+                states = TreeStatePair.readStatePages(
+                        cursor, IdSpace.STATE_PAGE_A, IdSpace.STATE_PAGE_B );
+            } while ( cursor.shouldRetry() );
+            checkOutOfBounds( cursor );
+        }
+        return states;
+    }
+
+    private static PageCursor openMetaPageCursor( PagedFile pagedFile, int pfFlags ) throws IOException
+    {
+        PageCursor metaCursor = pagedFile.io( IdSpace.META_PAGE_ID, pfFlags );
+        PageCursorUtil.goTo( metaCursor, "meta page", IdSpace.META_PAGE_ID );
         return metaCursor;
+    }
+
+    private void readMeta( File indexFile, Layout<KEY,VALUE> layout, PagedFile pagedFile )
+            throws IOException
+    {
+        // Read meta
+        long layoutIdentifier;
+        int majorVersion;
+        int minorVersion;
+        try ( PageCursor metaCursor = openMetaPageCursor( pagedFile, PagedFile.PF_SHARED_READ_LOCK ) )
+        {
+            do
+            {
+                pageSize = metaCursor.getInt();
+                layoutIdentifier = metaCursor.getLong();
+                majorVersion = metaCursor.getInt();
+                minorVersion = metaCursor.getInt();
+                layout.readMetaData( metaCursor );
+            }
+            while ( metaCursor.shouldRetry() );
+            checkOutOfBounds( metaCursor );
+        }
+        if ( layoutIdentifier != layout.identifier() )
+        {
+            throw new MetadataMismatchException( "Tried to open " + indexFile + " using different layout identifier " +
+                    "than what it was created with. Created with:" + layoutIdentifier + ", opened with " +
+                    layout.identifier() );
+        }
+        if ( majorVersion != layout.majorVersion() || minorVersion != layout.minorVersion() )
+        {
+            throw new MetadataMismatchException( "Tried to open " + indexFile + " using different layout version " +
+                    "than what it was created with. Created with:" + majorVersion + "." + minorVersion +
+                    ", opened with " + layout.majorVersion() + "." + layout.minorVersion() );
+        }
+    }
+
+    private void writeMeta( Layout<KEY,VALUE> layout, PagedFile pagedFile ) throws IOException
+    {
+        try ( PageCursor metaCursor = openMetaPageCursor( pagedFile, PagedFile.PF_SHARED_WRITE_LOCK ) )
+        {
+            metaCursor.putInt( pageSize );
+            metaCursor.putLong( layout.identifier() );
+            metaCursor.putInt( layout.majorVersion() );
+            metaCursor.putInt( layout.minorVersion() );
+            layout.writeMetaData( metaCursor );
+            checkOutOfBounds( metaCursor );
+        }
+    }
+
+    private PagedFile mapWithCorrectPageSize( PageCache pageCache, File indexFile, PagedFile pagedFile )
+            throws IOException
+    {
+        // This index was created with another page size, re-open with that actual page size
+        if ( pageSize != pageCache.pageSize() )
+        {
+            if ( pageSize > pageCache.pageSize() )
+            {
+                throw new MetadataMismatchException( "Tree in " + indexFile.getAbsolutePath() +
+                        " was created with page size:" + pageSize +
+                        ", but page cache used to open it this time has a smaller page size:" +
+                        pageCache.pageSize() + " so cannot be opened" );
+            }
+            pagedFile.close();
+            return pageCache.map( indexFile, pageSize );
+        }
+        return pagedFile;
     }
 
     @Override
@@ -287,94 +448,69 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         PageCursor cursor = pagedFile.io( rootId, PagedFile.PF_SHARED_READ_LOCK );
         KEY key = layout.newKey();
         VALUE value = layout.newValue();
-        goToRoot( cursor );
-
-        boolean isInternal;
-        int keyCount;
-        long childId = 0; // initialized to satisfy compiler
-        int pos;
-        do
-        {
-            do
-            {
-                isInternal = bTreeNode.isInternal( cursor );
-                // Find the left-most key within from-range
-                keyCount = bTreeNode.keyCount( cursor );
-                int search = KeySearch.search( cursor, bTreeNode, fromInclusive, key, keyCount );
-                pos = KeySearch.positionOf( search );
-
-                // Assuming unique keys
-                if ( isInternal && KeySearch.isHit( search ) )
-                {
-                    pos++;
-                }
-
-                if ( isInternal )
-                {
-                    childId = bTreeNode.childAt( cursor, pos, stableGeneration, unstableGeneration );
-                }
-            }
-            while ( cursor.shouldRetry() );
-            checkOutOfBounds( cursor );
-
-            if ( isInternal )
-            {
-                PointerChecking.checkChildPointer( childId );
-
-                bTreeNode.goTo( cursor, childId, stableGeneration, unstableGeneration );
-            }
-        }
-        while ( isInternal && keyCount > 0 );
+        long generation = this.generation;
+        long stableGeneration = stableGeneration( generation );
+        long unstableGeneration = unstableGeneration( generation );
+        goToRoot( cursor, stableGeneration, unstableGeneration );
 
         // Returns cursor which is now initiated with left-most leaf node for the specified range
         return new SeekCursor<>( cursor, key, value, bTreeNode, fromInclusive, toExclusive, layout,
-                stableGeneration, unstableGeneration, pos, keyCount );
+                stableGeneration, unstableGeneration, generationSupplier );
     }
 
     @Override
-    public long acquireNewId()
+    public long acquireNewId() throws IOException
     {
         lastId++;
+        try ( PageCursor cursor = pagedFile.io( lastId, PagedFile.PF_SHARED_WRITE_LOCK ) )
+        {
+            cursor.next();
+            // TODO use cursor.clear() when available
+            cursor.putBytes( zeroPage );
+        }
         return lastId;
     }
 
-    // Utility method
-    public void printTree() throws IOException
-    {
-        try ( PageCursor cursor = pagedFile.io( rootId, PagedFile.PF_SHARED_READ_LOCK ) )
-        {
-            cursor.next();
-            TreePrinter.printTree( cursor, bTreeNode, layout, stableGeneration, unstableGeneration, System.out );
-        }
-    }
-
-    // Utility method
-    boolean consistencyCheck() throws IOException
-    {
-        try ( PageCursor cursor = pagedFile.io( rootId, PagedFile.PF_SHARED_READ_LOCK ) )
-        {
-            cursor.next();
-            return new ConsistencyChecker<>( bTreeNode, layout, stableGeneration, unstableGeneration )
-                    .check( cursor );
-        }
-    }
-
     @Override
-    public void flush() throws IOException
+    public void checkpoint( IOLimiter ioLimiter ) throws IOException
     {
-        try ( PageCursor cursor = openMetaPageCursor( pagedFile ) )
+        // Flush dirty pages of the tree, do this before acquiring the lock so that writers won't be
+        // blocked while we do this
+        pagedFile.flushAndForce( ioLimiter );
+
+        // Block writers, or if there's a current writer then wait for it to complete and then block
+        // From this point and till the lock is released we know that the tree won't change.
+        writerCheckpointMutex.lock();
+        try
         {
-            cursor.putLong( 4, rootId );
-            cursor.putLong( 12, lastId );
-            // generations should be incremented as part of flush, but this functionality doesn't exist yet.
-            checkOutOfBounds( cursor );
+            // Flush dirty pages since that last flush above. This should be a very small set of pages
+            // and should be rather fast. In here writers are blocked and we want to minimize this
+            // windows of time as much as possible, that's why there's an initial flush outside this lock.
+            pagedFile.flushAndForce();
+
+            // Increment generation, i.e. stable becomes current unstable and unstable increments by one
+            // and write the tree state (rootId, lastId, generation a.s.o.) to state page.
+            long unstableGeneration = unstableGeneration( generation );
+            generation = Generation.generation( unstableGeneration, unstableGeneration + 1 );
+            writeState( pagedFile );
+
+            // Flush the state page.
+            pagedFile.flushAndForce();
+
+            // Expose this fact.
+            monitor.checkpointCompleted();
+        }
+        finally
+        {
+            // Unblock writers, any writes after this point and up until the next checkpoint will have
+            // the new unstable generation.
+            writerCheckpointMutex.unlock();
         }
     }
 
     @Override
     public void close() throws IOException
     {
-        flush();
         pagedFile.close();
     }
 
@@ -387,25 +523,91 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
     @Override
     public IndexWriter<KEY,VALUE> writer( IndexWriter.Options options ) throws IOException
     {
-        SingleIndexWriter result = this.writer.getAndSet( null );
-        if ( result == null )
+        if ( !writerTaken.compareAndSet( false, true ) )
         {
-            throw new IllegalStateException( "Only supports one concurrent writer" );
+            throw new IllegalStateException( "Writer in " + this + " is already acquired by someone else. " +
+                    "Only a single writer is allowed. The writer will become available as soon as " +
+                    "acquired writer is closed" );
         }
-        return result.take( rootId, options );
+
+        writerCheckpointMutex.lock();
+        boolean success = false;
+        try
+        {
+            writer.take( rootId, options );
+            success = true;
+            return writer;
+        }
+        finally
+        {
+            if ( !success )
+            {
+                releaseWriter();
+            }
+        }
     }
 
-    private void goToRoot( PageCursor cursor ) throws IOException
+    private void releaseWriter()
     {
-        bTreeNode.goTo( cursor, rootId, stableGeneration, unstableGeneration );
+        writerCheckpointMutex.unlock();
+        if ( !writerTaken.compareAndSet( true, false ) )
+        {
+            throw new IllegalStateException( "Tried to give back the writer of " + this +
+                    ", but somebody else already did" );
+        }
     }
 
-    private void checkOutOfBounds( PageCursor cursor )
+    private void goToRoot( PageCursor cursor, long stableGeneration, long unstableGeneration ) throws IOException
     {
-        if ( cursor.checkAndClearBoundsFlag() )
+        bTreeNode.goTo( cursor, "root", rootId, stableGeneration, unstableGeneration );
+    }
+
+    /**
+     * {@link GBPTree} class-level javadoc mentions how this method interacts with recovery,
+     * it's an essential piece to be able to recover properly and must be called when external party
+     * detects that recovery is required, before re-applying the recovered updates.
+     *
+     * @throws IOException on {@link PageCache} error.
+     */
+    public void prepareForRecovery() throws IOException
+    {
+        // Increment unstable generation, widening the gap between stable and unstable generation
+        // so that generations in between are considered crash generation(s).
+        generation = generation( stableGeneration( generation ), unstableGeneration( generation ) + 1 );
+        writeState( pagedFile );
+        pagedFile.flushAndForce();
+    }
+
+    // Utility method
+    void printTree() throws IOException
+    {
+        try ( PageCursor cursor = pagedFile.io( rootId, PagedFile.PF_SHARED_READ_LOCK ) )
         {
-            throw new IllegalStateException( "Some internal problem causing out of bounds" );
+            cursor.next();
+            TreePrinter.printTree( cursor, bTreeNode, layout,
+                    stableGeneration( generation ), unstableGeneration( generation ), System.out );
         }
+    }
+
+    // Utility method
+    boolean consistencyCheck() throws IOException
+    {
+        try ( PageCursor cursor = pagedFile.io( rootId, PagedFile.PF_SHARED_READ_LOCK ) )
+        {
+            cursor.next();
+            return new ConsistencyChecker<>( bTreeNode, layout,
+                    stableGeneration( generation ), unstableGeneration( generation ) )
+                    .check( cursor );
+        }
+    }
+
+    @Override
+    public String toString()
+    {
+        long generation = this.generation;
+        return format( "GB+Tree[file:%s, layout:%s, gen:%d/%d]",
+                indexFile.getAbsolutePath(), layout,
+                stableGeneration( generation ), unstableGeneration( generation ) );
     }
 
     private class SingleIndexWriter implements IndexWriter<KEY,VALUE>
@@ -416,17 +618,23 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         private IndexWriter.Options options;
         private final byte[] tmp = new byte[0];
 
+        // Writer can't live past a checkpoint because of the mutex with checkpoint,
+        // therefore safe to locally cache these generation fields from the volatile generation in the tree
+        private long stableGeneration;
+        private long unstableGeneration;
+
         SingleIndexWriter( InternalTreeLogic<KEY,VALUE> treeLogic )
         {
             this.structurePropagation = new StructurePropagation<>( layout.newKey() );
             this.treeLogic = treeLogic;
         }
 
-        SingleIndexWriter take( long rootId, IndexWriter.Options options ) throws IOException
+        void take( long rootId, IndexWriter.Options options ) throws IOException
         {
             this.options = options;
             cursor = pagedFile.io( rootId, PagedFile.PF_SHARED_WRITE_LOCK );
-            return this;
+            stableGeneration = stableGeneration( generation );
+            unstableGeneration = unstableGeneration( generation );
         }
 
         @Override
@@ -438,7 +646,7 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         @Override
         public void merge( KEY key, VALUE value, ValueMerger<VALUE> valueMerger ) throws IOException
         {
-            goToRoot( cursor );
+            goToRoot( cursor, stableGeneration, unstableGeneration );
 
             treeLogic.insert( cursor, structurePropagation, key, value, valueMerger, options,
                     stableGeneration, unstableGeneration );
@@ -447,10 +655,7 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
             {
                 // New root
                 long newRootId = acquireNewId();
-                if ( !cursor.next( newRootId ) )
-                {
-                    throw new IllegalStateException( "Could not go to new root " + newRootId );
-                }
+                PageCursorUtil.goTo( cursor, "new root", newRootId );
 
                 bTreeNode.initializeInternal( cursor, stableGeneration, unstableGeneration );
                 bTreeNode.insertKeyAt( cursor, structurePropagation.primKey, 0, 0, tmp );
@@ -471,7 +676,7 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         @Override
         public VALUE remove( KEY key ) throws IOException
         {
-            goToRoot( cursor );
+            goToRoot( cursor, stableGeneration, unstableGeneration );
 
             VALUE result = treeLogic.remove( cursor, structurePropagation, key, layout.newValue(),
                     stableGeneration, unstableGeneration );
@@ -488,20 +693,14 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>, IdProvider
         @Override
         public void close() throws IOException
         {
-            boolean success = false;
-            try
+            if ( cursor == null )
             {
-                cursor.close();
-                success = true;
+                return;
             }
-            finally
-            {
-                // Check success to avoid suppressing exception from cursor.close()
-                if ( success && !GBPTree.this.writer.compareAndSet( null, this ) )
-                {
-                    throw new IllegalStateException( "Tried to give back the writer, but somebody else already did" );
-                }
-            }
+
+            cursor.close();
+            cursor = null;
+            releaseWriter();
         }
     }
 }

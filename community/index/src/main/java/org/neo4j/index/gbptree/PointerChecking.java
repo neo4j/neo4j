@@ -29,29 +29,21 @@ class PointerChecking
      *
      * @param result result from {@link GenSafePointerPair#READ} or
      * {@link GenSafePointerPair#write(PageCursor, long, long, long)}.
+     * @param allowNoNode If {@link TreeNode#NO_NODE_FLAG} is allowed as pointer value.
      */
-    static void checkChildPointer( long result )
+    static void checkPointer( long result, boolean allowNoNode )
     {
         if ( !GenSafePointerPair.isSuccess( result ) )
         {
-            throw new IllegalStateException( GenSafePointerPair.failureDescription( result ) );
+            throw new TreeInconsistencyException( GenSafePointerPair.failureDescription( result ) );
+        }
+        if ( allowNoNode && result == TreeNode.NO_NODE_FLAG )
+        {
+            return;
         }
         if ( result < IdSpace.MIN_TREE_NODE_ID )
         {
-            throw new IllegalStateException( "Pointer to id " + result + " not allowed. Minimum node id allowed is " +
-                                             IdSpace.MIN_TREE_NODE_ID );
-        }
-    }
-
-    static void checkSiblingPointer( long result )
-    {
-        if ( !GenSafePointerPair.isSuccess( result ) )
-        {
-            throw new IllegalStateException( GenSafePointerPair.failureDescription( result ) );
-        }
-        if ( result < IdSpace.MIN_TREE_NODE_ID && result != TreeNode.NO_NODE_FLAG )
-        {
-            throw new IllegalStateException( "Pointer to id " + result + " not allowed. Minimum node id allowed is " +
+            throw new TreeInconsistencyException( "Pointer to id " + result + " not allowed. Minimum node id allowed is " +
                     IdSpace.MIN_TREE_NODE_ID );
         }
     }

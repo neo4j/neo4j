@@ -22,6 +22,7 @@ package org.neo4j.index;
 import java.io.Closeable;
 import java.io.IOException;
 import org.neo4j.cursor.RawCursor;
+import org.neo4j.io.pagecache.IOLimiter;
 
 /**
  * An index which can have data {@link #writer(IndexWriter.Options) added/removed} and
@@ -57,9 +58,10 @@ public interface Index<KEY,VALUE> extends Closeable
     IndexWriter<KEY,VALUE> writer( IndexWriter.Options options ) throws IOException;
 
     /**
-     * Flushes any pending changes to storage.
+     * Checkpoints and flushes any pending changes to storage.
      *
+     * @param ioLimiter for controlling I/O usage.
      * @throws IOException on error flushing to storage.
      */
-    void flush() throws IOException;
+    void checkpoint( IOLimiter ioLimiter ) throws IOException;
 }

@@ -42,7 +42,7 @@ class TreePrinter
      * @param out target to print tree at.
      * @throws IOException on page cache access error.
      */
-    public static <KEY,VALUE> void printTree( PageCursor cursor, TreeNode<KEY,VALUE> treeNode,
+    static <KEY,VALUE> void printTree( PageCursor cursor, TreeNode<KEY,VALUE> treeNode,
             Layout<KEY,VALUE> layout, long stableGeneration, long unstableGeneration, PrintStream out )
                     throws IOException
     {

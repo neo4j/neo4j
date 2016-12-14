@@ -19,13 +19,18 @@
  */
 package org.neo4j.index.gbptree;
 
-import java.io.IOException;
-
 /**
- * Provide tree node (page) ids which can be used for storing tree node data.
- * Bytes on returned page ids must be empty (all zeros).
+ * Thrown to signal mismatches between meta data about tree and user-provided configuration.
  */
-interface IdProvider
+public class MetadataMismatchException extends RuntimeException
 {
-    long acquireNewId() throws IOException;
+    MetadataMismatchException( String format, Object... args )
+    {
+        super( String.format( format, args ) );
+    }
+
+    MetadataMismatchException( String message )
+    {
+        super( message );
+    }
 }

@@ -64,17 +64,17 @@ import org.neo4j.io.pagecache.PageCursor;
  */
 class TreeNode<KEY,VALUE>
 {
-    private static final int SIZE_PAGE_REFERENCE = GenSafePointerPair.SIZE;
-    private static final int BYTE_POS_TYPE = 0;
-    private static final int BYTE_POS_GEN = BYTE_POS_TYPE + Byte.BYTES;
-    private static final int BYTE_POS_KEYCOUNT = BYTE_POS_GEN + Integer.BYTES;
-    private static final int BYTE_POS_RIGHTSIBLING = BYTE_POS_KEYCOUNT + Integer.BYTES;
-    private static final int BYTE_POS_LEFTSIBLING = BYTE_POS_RIGHTSIBLING + SIZE_PAGE_REFERENCE;
-    private static final int BYTE_POS_NEWGEN = BYTE_POS_LEFTSIBLING + SIZE_PAGE_REFERENCE;
+    static final int SIZE_PAGE_REFERENCE = GenSafePointerPair.SIZE;
+    static final int BYTE_POS_TYPE = 0;
+    static final int BYTE_POS_GEN = BYTE_POS_TYPE + Byte.BYTES;
+    static final int BYTE_POS_KEYCOUNT = BYTE_POS_GEN + Integer.BYTES;
+    static final int BYTE_POS_RIGHTSIBLING = BYTE_POS_KEYCOUNT + Integer.BYTES;
+    static final int BYTE_POS_LEFTSIBLING = BYTE_POS_RIGHTSIBLING + SIZE_PAGE_REFERENCE;
+    static final int BYTE_POS_NEWGEN = BYTE_POS_LEFTSIBLING + SIZE_PAGE_REFERENCE;
     static final int HEADER_LENGTH = BYTE_POS_NEWGEN + SIZE_PAGE_REFERENCE;
 
     private static final byte LEAF_FLAG = 1;
-    private static final byte INTERNAL_FLAG = 0;
+    static final byte INTERNAL_FLAG = 0;
     static final long NO_NODE_FLAG = 0;
 
     private final int internalMaxKeyCount;
@@ -95,12 +95,12 @@ class TreeNode<KEY,VALUE>
 
         if ( internalMaxKeyCount < 2 )
         {
-            throw new IllegalArgumentException( "A page size of " + pageSize + " would only fit " +
-                    internalMaxKeyCount + " internal keys, minimum is 2" );
+            throw new MetadataMismatchException( "For layout " + layout + " a page size of " + pageSize +
+                    " would only fit " + internalMaxKeyCount + " internal keys, minimum is 2" );
         }
         if ( leafMaxKeyCount < 2 )
         {
-            throw new IllegalArgumentException( "A page size of " + pageSize + " would only fit " +
+            throw new MetadataMismatchException( "A page size of " + pageSize + " would only fit " +
                     leafMaxKeyCount + " leaf keys, minimum is 2" );
         }
     }
@@ -167,7 +167,7 @@ class TreeNode<KEY,VALUE>
 
     void setGen( PageCursor cursor, long generation )
     {
-        GenSafePointer.assertGeneration( generation );
+        GenSafePointer.assertGenerationOnWrite( generation );
         cursor.putInt( BYTE_POS_GEN, (int) generation );
     }
 
@@ -179,19 +179,22 @@ class TreeNode<KEY,VALUE>
     void setRightSibling( PageCursor cursor, long rightSiblingId, long stableGeneration, long unstableGeneration )
     {
         cursor.setOffset( BYTE_POS_RIGHTSIBLING );
-        GenSafePointerPair.write( cursor, rightSiblingId, stableGeneration, unstableGeneration );
+        long result = GenSafePointerPair.write( cursor, rightSiblingId, stableGeneration, unstableGeneration );
+        GenSafePointerPair.assertSuccess( result );
     }
 
     void setLeftSibling( PageCursor cursor, long leftSiblingId, long stableGeneration, long unstableGeneration )
     {
         cursor.setOffset( BYTE_POS_LEFTSIBLING );
-        GenSafePointerPair.write( cursor, leftSiblingId, stableGeneration, unstableGeneration );
+        long result = GenSafePointerPair.write( cursor, leftSiblingId, stableGeneration, unstableGeneration );
+        GenSafePointerPair.assertSuccess( result );
     }
 
     void setNewGen( PageCursor cursor, long newGenId, long stableGeneration, long unstableGeneration )
     {
         cursor.setOffset( BYTE_POS_NEWGEN );
-        GenSafePointerPair.write( cursor, newGenId, stableGeneration, unstableGeneration );
+        long result = GenSafePointerPair.write( cursor, newGenId, stableGeneration, unstableGeneration );
+        GenSafePointerPair.assertSuccess( result );
     }
 
     // BODY METHODS
@@ -371,13 +374,10 @@ class TreeNode<KEY,VALUE>
                 childSize(), childOffset( 0 ), into );
     }
 
-    void goTo( PageCursor cursor, long childId, long stableGeneration, long unstableGeneration )
+    void goTo( PageCursor cursor, String messageOnError, long nodeId, long stableGeneration, long unstableGeneration )
             throws IOException
     {
-        if ( !cursor.next( childId ) )
-        {
-            throw new IllegalStateException( "Could not go to " + childId );
-        }
+        PageCursorUtil.goTo( cursor, messageOnError, nodeId );
         verifyGen( cursor, stableGeneration, unstableGeneration );
     }
 
@@ -386,7 +386,7 @@ class TreeNode<KEY,VALUE>
         long gen = gen( cursor );
         if ( ( gen > stableGeneration && gen < unstableGeneration ) || gen > unstableGeneration )
         {
-            throw new IllegalStateException( "Reached a node with generation=" + gen +
+            throw new TreeInconsistencyException( "Reached a node with generation=" + gen +
                     ", stableGeneration=" + stableGeneration + ", unstableGeneration=" + unstableGeneration );
         }
     }

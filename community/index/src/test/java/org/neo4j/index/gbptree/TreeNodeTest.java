@@ -305,11 +305,12 @@ public class TreeNodeTest
     public void shouldOverwriteChild() throws Exception
     {
         // GIVEN
+        long child = GenSafePointer.MIN_POINTER;
         node.initializeInternal( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
-        node.insertChildAt( cursor, 1, 0, 0, tmp, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.insertChildAt( cursor, child, 0, 0, tmp, STABLE_GENERATION, UNSTABLE_GENERATION );
 
         // WHEN
-        long overwrittenChild = 2;
+        long overwrittenChild = child + 1;
         node.setChildAt( cursor, overwrittenChild, 0, STABLE_GENERATION, UNSTABLE_GENERATION );
 
         // THEN
@@ -405,18 +406,22 @@ public class TreeNodeTest
     public void shouldReadAndInsertChildren() throws Exception
     {
         // GIVEN
+        long firstChild = GenSafePointer.MIN_POINTER;
+        long secondChild = firstChild + 1;
+        long thirdChild = secondChild + 1;
         node.initializeInternal( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
-        node.insertChildAt( cursor, 1, 0, 0, tmp, STABLE_GENERATION, UNSTABLE_GENERATION );
-        node.insertChildAt( cursor, 3, 1, 1, tmp, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.insertChildAt( cursor, firstChild, 0, 0, tmp, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.insertChildAt( cursor, thirdChild, 1, 1, tmp, STABLE_GENERATION, UNSTABLE_GENERATION );
 
         // WHEN
-        node.readChildrenWithInsertRecordInPosition( cursor, c -> node.writeChild( c, 2, STABLE_GENERATION, UNSTABLE_GENERATION ), 1, 3, tmp );
+        node.readChildrenWithInsertRecordInPosition( cursor,
+                c -> node.writeChild( c, secondChild, STABLE_GENERATION, UNSTABLE_GENERATION ), 1, 3, tmp );
         node.writeChildren( cursor, tmp, 0, 0, 3 );
 
         // THEN
-        assertEquals( 1, node.childAt( cursor, 0, STABLE_GENERATION, UNSTABLE_GENERATION ) );
-        assertEquals( 2, node.childAt( cursor, 1, STABLE_GENERATION, UNSTABLE_GENERATION ) );
-        assertEquals( 3, node.childAt( cursor, 2, STABLE_GENERATION, UNSTABLE_GENERATION ) );
+        assertEquals( firstChild, node.childAt( cursor, 0, STABLE_GENERATION, UNSTABLE_GENERATION ) );
+        assertEquals( secondChild, node.childAt( cursor, 1, STABLE_GENERATION, UNSTABLE_GENERATION ) );
+        assertEquals( thirdChild, node.childAt( cursor, 2, STABLE_GENERATION, UNSTABLE_GENERATION ) );
     }
 
     @Test
@@ -428,10 +433,10 @@ public class TreeNodeTest
         try
         {
             // WHEN
-            node.goTo( cursor, cursor.getCurrentPageId(), STABLE_GENERATION, UNSTABLE_GENERATION );
+            node.goTo( cursor, "page id", cursor.getCurrentPageId(), STABLE_GENERATION, UNSTABLE_GENERATION );
             fail( "Expected throw" );
         }
-        catch ( IllegalStateException e )
+        catch ( TreeInconsistencyException e )
         {
             // THEN
             // Good
@@ -447,10 +452,10 @@ public class TreeNodeTest
         try
         {
             // WHEN
-            node.goTo( cursor, cursor.getCurrentPageId(), STABLE_GENERATION, UNSTABLE_GENERATION );
+            node.goTo( cursor, "page id", cursor.getCurrentPageId(), STABLE_GENERATION, UNSTABLE_GENERATION );
             fail( "Expected throw" );
         }
-        catch ( IllegalStateException e )
+        catch ( TreeInconsistencyException e )
         {
             // THEN
             // Good
@@ -466,10 +471,10 @@ public class TreeNodeTest
         try
         {
             // WHEN
-            node.goTo( cursor, cursor.getCurrentPageId(), STABLE_GENERATION, UNSTABLE_GENERATION );
+            node.goTo( cursor, "page id", cursor.getCurrentPageId(), STABLE_GENERATION, UNSTABLE_GENERATION );
             fail( "Expected throw" );
         }
-        catch ( IllegalStateException e )
+        catch ( TreeInconsistencyException e )
         {
             // THEN
             // Good
@@ -485,10 +490,10 @@ public class TreeNodeTest
         try
         {
             // WHEN
-            node.goTo( cursor, cursor.getCurrentPageId(), STABLE_GENERATION, UNSTABLE_GENERATION );
+            node.goTo( cursor, "page id", cursor.getCurrentPageId(), STABLE_GENERATION, UNSTABLE_GENERATION );
             fail( "Expected throw" );
         }
-        catch ( IllegalStateException e )
+        catch ( TreeInconsistencyException e )
         {
             // THEN
             // Good
@@ -578,7 +583,7 @@ public class TreeNodeTest
             new TreeNode<>( TreeNode.HEADER_LENGTH + layout.keySize() + layout.valueSize(), layout );
             fail( "Should have failed" );
         }
-        catch ( IllegalArgumentException e )
+        catch ( MetadataMismatchException e )
         {
             // THEN good
         }

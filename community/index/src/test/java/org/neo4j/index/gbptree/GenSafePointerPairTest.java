@@ -20,6 +20,13 @@
 package org.neo4j.index.gbptree;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
+
+import java.util.ArrayList;
+import java.util.Collection;
 
 import org.neo4j.io.pagecache.PageCursor;
 
@@ -29,28 +36,24 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.index.gbptree.GenSafePointerPair.BROKEN;
-import static org.neo4j.index.gbptree.GenSafePointerPair.CRASH;
-import static org.neo4j.index.gbptree.GenSafePointerPair.EMPTY;
 import static org.neo4j.index.gbptree.GenSafePointerPair.GEN_COMPARISON_MASK;
 import static org.neo4j.index.gbptree.GenSafePointerPair.READ;
 import static org.neo4j.index.gbptree.GenSafePointerPair.READ_OR_WRITE_MASK;
-import static org.neo4j.index.gbptree.GenSafePointerPair.STABLE;
 import static org.neo4j.index.gbptree.GenSafePointerPair.STATE_SHIFT_A;
 import static org.neo4j.index.gbptree.GenSafePointerPair.STATE_SHIFT_B;
-import static org.neo4j.index.gbptree.GenSafePointerPair.UNSTABLE;
 import static org.neo4j.index.gbptree.GenSafePointerPair.WRITE;
 import static org.neo4j.index.gbptree.GenSafePointerPair.failureDescription;
 import static org.neo4j.index.gbptree.GenSafePointerPair.isRead;
 import static org.neo4j.index.gbptree.GenSafePointerPair.pointerStateFromResult;
 import static org.neo4j.index.gbptree.GenSafePointerPair.pointerStateName;
 
+@RunWith( Parameterized.class )
 public class GenSafePointerPairTest
 {
     private static final int PAGE_SIZE = 128;
-    private static final int OLDER_STABLE_GENERATION = 1;
+    private static final int OLD_STABLE_GENERATION = 1;
     private static final int STABLE_GENERATION = 2;
-    private static final int OLDER_CRASH_GENERATION = 3;
+    private static final int OLD_CRASH_GENERATION = 3;
     private static final int CRASH_GENERATION = 4;
     private static final int UNSTABLE_GENERATION = 5;
     private static final long EMPTY_POINTER = 0L;
@@ -66,826 +69,96 @@ public class GenSafePointerPairTest
 
     private static final boolean SLOT_A = true;
     private static final boolean SLOT_B = false;
+    private static final int SLOT_A_OFFSET = 0;
+    private static final int SLOT_B_OFFSET = GenSafePointer.SIZE;
+
+    @Parameters( name = "{0},{1},read {2},write {3}" )
+    public static Collection<Object[]> data()
+    {
+        Collection<Object[]> data = new ArrayList<>();
+
+        //             ┌──────────────────┬─────────────────┬───────────────────┬───────────────────────┐
+        //             │ State A          │ State B         │ Read outcome      │ Write outcome         │
+        //             └──────────────────┴─────────────────┴───────────────────┴───────────────────────┘
+        data.add( array( State.EMPTY,      State.EMPTY,      Fail.GEN_DISREGARD, Success.A ) );
+        data.add( array( State.EMPTY,      State.UNSTABLE,   Success.B,          Success.B ) );
+        data.add( array( State.EMPTY,      State.STABLE,     Success.B,          Success.A ) );
+        data.add( array( State.EMPTY,      State.CRASH,      Fail.GEN_DISREGARD, Fail.GEN_DISREGARD ) );
+        data.add( array( State.EMPTY,      State.BROKEN,     Fail.GEN_DISREGARD, Fail.GEN_DISREGARD ) );
+        data.add( array( State.UNSTABLE,   State.EMPTY,      Success.A,          Success.A ) );
+        data.add( array( State.UNSTABLE,   State.UNSTABLE,   Fail.GEN_EQUAL,     Fail.GEN_EQUAL ) );
+        data.add( array( State.UNSTABLE,   State.STABLE,     Success.A,          Success.A ) );
+        data.add( array( State.UNSTABLE,   State.CRASH,      Fail.GEN_A_BIG,     Fail.GEN_A_BIG ) );
+        data.add( array( State.UNSTABLE,   State.BROKEN,     Fail.GEN_DISREGARD, Fail.GEN_DISREGARD ) );
+        data.add( array( State.STABLE,     State.EMPTY,      Success.A,          Success.B ) );
+        data.add( array( State.STABLE,     State.UNSTABLE,   Success.B,          Success.B ) );
+        data.add( array( State.STABLE,     State.OLD_STABLE, Success.A,          Success.B ) );
+        data.add( array( State.OLD_STABLE, State.STABLE,     Success.B,          Success.A ) );
+        data.add( array( State.STABLE,     State.STABLE,     Fail.GEN_EQUAL,     Fail.GEN_EQUAL ) );
+        data.add( array( State.STABLE,     State.CRASH,      Success.A,          Success.B ) );
+        data.add( array( State.STABLE,     State.BROKEN,     Success.A,          Success.B ) );
+        data.add( array( State.CRASH,      State.EMPTY,      Fail.GEN_DISREGARD, Fail.GEN_DISREGARD ) );
+        data.add( array( State.CRASH,      State.UNSTABLE,   Fail.GEN_B_BIG,     Fail.GEN_B_BIG ) );
+        data.add( array( State.CRASH,      State.STABLE,     Success.B,          Success.A ) );
+        data.add( array( State.CRASH,      State.OLD_CRASH,  Fail.GEN_A_BIG,     Fail.GEN_A_BIG ) );
+        data.add( array( State.OLD_CRASH,  State.CRASH,      Fail.GEN_B_BIG,     Fail.GEN_B_BIG ) );
+        data.add( array( State.CRASH,      State.CRASH,      Fail.GEN_EQUAL,     Fail.GEN_EQUAL ) );
+        data.add( array( State.CRASH,      State.BROKEN,     Fail.GEN_DISREGARD, Fail.GEN_DISREGARD ) );
+        data.add( array( State.BROKEN,     State.EMPTY,      Fail.GEN_DISREGARD, Fail.GEN_DISREGARD ) );
+        data.add( array( State.BROKEN,     State.UNSTABLE,   Fail.GEN_DISREGARD, Fail.GEN_DISREGARD ) );
+        data.add( array( State.BROKEN,     State.STABLE,     Success.B,          Success.A ) );
+        data.add( array( State.BROKEN,     State.CRASH,      Fail.GEN_DISREGARD, Fail.GEN_DISREGARD ) );
+        data.add( array( State.BROKEN,     State.BROKEN,     Fail.GEN_DISREGARD, Fail.GEN_DISREGARD ) );
+
+        return data;
+    }
+
+    @Parameter( 0 )
+    public State stateA;
+    @Parameter( 1 )
+    public State stateB;
+    @Parameter( 2 )
+    public Slot expectedReadOutcome;
+    @Parameter( 3 )
+    public Slot expectedWriteOutcome;
 
     private final PageCursor cursor = ByteArrayPageCursor.wrap( new byte[PAGE_SIZE] );
 
     @Test
-    public void readEmptyEmptyShouldFail() throws Exception
-    {
-        // WHEN
-        long result = read();
-
-        // THEN
-        assertFailure( result, READ, EXPECTED_GEN_DISREGARD, EMPTY, EMPTY );
-    }
-
-    @Test
-    public void writeEmptyEmptyShouldWriteSlotA() throws Exception
-    {
-        // WHEN
-        long written = write( WRITTEN_POINTER );
-
-        // THEN
-        assertWriteSuccess( SLOT_A, written );
-        assertEquals( WRITTEN_POINTER, readSlotA() );
-        assertEquals( EMPTY_POINTER, readSlotB() );
-    }
-
-    @Test
-    public void readEmptyUnstableShouldReadSlotB() throws Exception
+    public void shouldRead() throws Exception
     {
         // GIVEN
-        writeSlotB( UNSTABLE_GENERATION );
+        cursor.setOffset( SLOT_A_OFFSET );
+        long preStatePointerA = stateA.materialize( cursor, POINTER_A );
+        cursor.setOffset( SLOT_B_OFFSET );
+        long preStatePointerB = stateB.materialize( cursor, POINTER_B );
 
         // WHEN
-        long result = read();
+        cursor.setOffset( 0 );
+        long result = GenSafePointerPair.read( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
 
         // THEN
-        assertReadSuccess( POINTER_B, result );
+        expectedReadOutcome.verifyRead( cursor, result, stateA, stateB, preStatePointerA, preStatePointerB );
     }
 
     @Test
-    public void writeEmptyUnstableShouldWriteSlotB() throws Exception
+    public void shouldWrite() throws Exception
     {
         // GIVEN
-        writeSlotB( UNSTABLE_GENERATION );
+        cursor.setOffset( SLOT_A_OFFSET );
+        long preStatePointerA = stateA.materialize( cursor, POINTER_A );
+        cursor.setOffset( SLOT_B_OFFSET );
+        long preStatePointerB = stateB.materialize( cursor, POINTER_B );
 
         // WHEN
-        long written = write( WRITTEN_POINTER );
+        cursor.setOffset( 0 );
+        long written = GenSafePointerPair.write( cursor, WRITTEN_POINTER, STABLE_GENERATION, UNSTABLE_GENERATION );
 
         // THEN
-        assertWriteSuccess( SLOT_B, written );
-        assertEquals( EMPTY_POINTER, readSlotA() );
-        assertEquals( WRITTEN_POINTER, readSlotB() );
+        expectedWriteOutcome.verifyWrite( cursor, written, stateA, stateB, preStatePointerA, preStatePointerB );
     }
 
-    @Test
-    public void readEmptyStableShouldReadSlotB() throws Exception
-    {
-        // GIVEN
-        writeSlotB( STABLE_GENERATION );
-
-        // WHEN
-        long result = read();
-
-        // THEN
-        assertReadSuccess( POINTER_B, result );
-    }
-
-    @Test
-    public void writeEmptyStableShouldWriteSlotA() throws Exception
-    {
-        // GIVEN
-        writeSlotB( STABLE_GENERATION );
-
-        // WHEN
-        long written = write( WRITTEN_POINTER );
-
-        // THEN
-        assertWriteSuccess( SLOT_A, written );
-        assertEquals( WRITTEN_POINTER, readSlotA() );
-        assertEquals( POINTER_B, readSlotB() );
-    }
-
-    @Test
-    public void readEmptyCrashShouldFail() throws Exception
-    {
-        // GIVEN
-        writeSlotB( CRASH_GENERATION );
-
-        // WHEN
-        long result = read();
-
-        // THEN
-        assertFailure( result, READ, EXPECTED_GEN_DISREGARD, EMPTY, CRASH );
-    }
-
-    @Test
-    public void writeEmptyCrashShouldFail() throws Exception
-    {
-        // GIVEN
-        writeSlotB( CRASH_GENERATION );
-
-        // WHEN
-        long written = write( WRITTEN_POINTER );
-
-        // THEN
-        assertFailure( written, WRITE, EXPECTED_GEN_DISREGARD, EMPTY, CRASH );
-        assertEquals( EMPTY_POINTER, readSlotA() );
-        assertEquals( POINTER_B, readSlotB() );
-    }
-
-    @Test
-    public void readEmptyBrokenShouldFail() throws Exception
-    {
-        // GIVEN
-        writeBrokenSlotB();
-
-        // WHEN
-        long result = read();
-
-        // THEN
-        assertFailure( result, READ, EXPECTED_GEN_DISREGARD, EMPTY, BROKEN );
-    }
-
-    @Test
-    public void writeEmptyBrokenShouldFail() throws Exception
-    {
-        // GIVEN
-        writeBrokenSlotB();
-
-        // WHEN
-        long written = write( WRITTEN_POINTER );
-
-        // THEN
-        assertFailure( written, WRITE, EXPECTED_GEN_DISREGARD, EMPTY, BROKEN );
-        assertEquals( EMPTY_POINTER, readSlotA() );
-        assertBrokenB();
-    }
-
-    @Test
-    public void readUnstableEmptyShouldReadSlotA() throws Exception
-    {
-        // GIVEN
-        writeSlotA( UNSTABLE_GENERATION );
-
-        // WHEN
-        long result = read();
-
-        // THEN
-        assertReadSuccess( POINTER_A, result );
-    }
-
-    @Test
-    public void writeUnstableEmptyShouldWriteSlotA() throws Exception
-    {
-        // GIVEN
-        writeSlotA( UNSTABLE_GENERATION );
-
-        // WHEN
-        long written = write( WRITTEN_POINTER );
-
-        // THEN
-        assertWriteSuccess( SLOT_A, written );
-        assertEquals( WRITTEN_POINTER, readSlotA() );
-        assertEquals( EMPTY_POINTER, readSlotB() );
-    }
-
-    @Test
-    public void readUnstableUnstableShouldFail() throws Exception
-    {
-        // GIVEN
-        writeSlotA( UNSTABLE_GENERATION );
-        writeSlotB( UNSTABLE_GENERATION );
-
-        // WHEN
-        long result = read();
-
-        // THEN
-        assertFailure( result, READ, EXPECTED_GEN_EQUAL, UNSTABLE, UNSTABLE );
-    }
-
-    @Test
-    public void writeUnstableUnstableShouldFail() throws Exception
-    {
-        // GIVEN
-        writeSlotA( UNSTABLE_GENERATION );
-        writeSlotB( UNSTABLE_GENERATION );
-
-        // WHEN
-        long written = write( WRITTEN_POINTER );
-
-        // THEN
-        assertFailure( written, WRITE, EXPECTED_GEN_EQUAL, UNSTABLE, UNSTABLE );
-        assertEquals( POINTER_A, readSlotA() );
-        assertEquals( POINTER_B, readSlotB() );
-    }
-
-    @Test
-    public void readUnstableCrashShouldFail() throws Exception
-    {
-        // GIVEN
-        writeSlotA( UNSTABLE_GENERATION );
-        writeSlotB( CRASH_GENERATION );
-
-        // WHEN
-        long result = read();
-
-        // THEN
-        assertFailure( result, READ, EXPECTED_GEN_A_BIG, UNSTABLE, CRASH );
-    }
-
-    @Test
-    public void writeUnstableCrashShouldFail() throws Exception
-    {
-        // GIVEN
-        writeSlotA( UNSTABLE_GENERATION );
-        writeSlotB( CRASH_GENERATION );
-
-        // WHEN
-        long written = write( WRITTEN_POINTER );
-
-        // THEN
-        assertFailure( written, WRITE, EXPECTED_GEN_A_BIG, UNSTABLE, CRASH );
-        assertEquals( POINTER_A, readSlotA() );
-        assertEquals( POINTER_B, readSlotB() );
-    }
-
-    @Test
-    public void readUnstableBrokenShouldFail() throws Exception
-    {
-        // GIVEN
-        writeSlotA( UNSTABLE_GENERATION );
-        writeBrokenSlotB();
-
-        // WHEN
-        long result = read();
-
-        // THEN
-        assertFailure( result, READ, EXPECTED_GEN_DISREGARD, UNSTABLE, BROKEN );
-    }
-
-    @Test
-    public void writeUnstableBrokenShouldFail() throws Exception
-    {
-        // GIVEN
-        writeSlotA( UNSTABLE_GENERATION );
-        writeBrokenSlotB();
-
-        // WHEN
-        long written = write( WRITTEN_POINTER );
-
-        // THEN
-        assertFailure( written, WRITE, EXPECTED_GEN_DISREGARD, UNSTABLE, BROKEN );
-        assertEquals( POINTER_A, readSlotA() );
-        assertBrokenB();
-    }
-
-    @Test
-    public void readStableEmptyShouldReadSlotA() throws Exception
-    {
-        // GIVEN
-        writeSlotA( STABLE_GENERATION );
-
-        // WHEN
-        long result = read();
-
-        // THEN
-        assertReadSuccess( POINTER_A, result );
-    }
-
-    @Test
-    public void writeStableEmptyShouldWriteSlotB() throws Exception
-    {
-        // GIVEN
-        writeSlotA( STABLE_GENERATION );
-
-        // WHEN
-        long written = write( WRITTEN_POINTER );
-
-        // THEN
-        assertWriteSuccess( SLOT_B, written );
-        assertEquals( POINTER_A, readSlotA() );
-        assertEquals( WRITTEN_POINTER, readSlotB() );
-    }
-
-    @Test
-    public void readStableUnstableShouldReadSlotB() throws Exception
-    {
-        // GIVEN
-        writeSlotA( STABLE_GENERATION );
-        writeSlotB( UNSTABLE_GENERATION );
-
-        // WHEN
-        long result = read();
-
-        // THEN
-        assertReadSuccess( POINTER_B, result );
-    }
-
-    @Test
-    public void writeStableUnstableShouldWriteSlotB() throws Exception
-    {
-        // GIVEN
-        writeSlotA( STABLE_GENERATION );
-        writeSlotB( UNSTABLE_GENERATION );
-
-        // WHEN
-        long written = write( WRITTEN_POINTER );
-
-        // THEN
-        assertWriteSuccess( SLOT_B, written );
-        assertEquals( POINTER_A, readSlotA() );
-        assertEquals( WRITTEN_POINTER, readSlotB() );
-    }
-
-    @Test
-    public void readStableStableShouldFail() throws Exception
-    {
-        // GIVEN
-        writeSlotA( STABLE_GENERATION );
-        writeSlotB( STABLE_GENERATION );
-
-        // WHEN
-        long result = read();
-
-        // THEN
-        assertFailure( result, READ, EXPECTED_GEN_EQUAL, STABLE, STABLE );
-    }
-
-    @Test
-    public void writeStableStableShouldFail() throws Exception
-    {
-        // GIVEN
-        writeSlotA( STABLE_GENERATION );
-        writeSlotB( STABLE_GENERATION );
-
-        // WHEN
-        long written = write( WRITTEN_POINTER );
-
-        // THEN
-        assertFailure( written, WRITE, EXPECTED_GEN_EQUAL, STABLE, STABLE );
-        assertEquals( POINTER_A, readSlotA() );
-        assertEquals( POINTER_B, readSlotB() );
-    }
-
-    @Test
-    public void readStableOlderStableShouldReadSlotA() throws Exception
-    {
-        // GIVEN
-        writeSlotA( STABLE_GENERATION );
-        writeSlotB( OLDER_STABLE_GENERATION );
-
-        // WHEN
-        long result = read();
-
-        // THEN
-        assertReadSuccess( POINTER_A, result );
-    }
-
-    @Test
-    public void writeStableOlderStableShouldWriteSlotB() throws Exception
-    {
-        // GIVEN
-        writeSlotA( STABLE_GENERATION );
-        writeSlotB( OLDER_STABLE_GENERATION );
-
-        // WHEN
-        long written = write( WRITTEN_POINTER );
-
-        // THEN
-        assertWriteSuccess( SLOT_B, written );
-        assertEquals( POINTER_A, readSlotA() );
-        assertEquals( WRITTEN_POINTER, readSlotB() );
-    }
-
-    @Test
-    public void readOlderStableStableShouldReadSlotB() throws Exception
-    {
-        // GIVEN
-        writeSlotA( OLDER_STABLE_GENERATION );
-        writeSlotB( STABLE_GENERATION );
-
-        // WHEN
-        long result = read();
-
-        // THEN
-        assertReadSuccess( POINTER_B, result );
-    }
-
-    @Test
-    public void writeOlderStableStableShouldWriteSlotA() throws Exception
-    {
-        // GIVEN
-        writeSlotA( OLDER_STABLE_GENERATION );
-        writeSlotB( STABLE_GENERATION );
-
-        // WHEN
-        long written = write( WRITTEN_POINTER );
-
-        // THEN
-        assertWriteSuccess( SLOT_A, written );
-        assertEquals( WRITTEN_POINTER, readSlotA() );
-        assertEquals( POINTER_B, readSlotB() );
-    }
-
-    @Test
-    public void readStableCrashShouldReadSlotA() throws Exception
-    {
-        // GIVEN
-        writeSlotA( STABLE_GENERATION );
-        writeSlotB( CRASH_GENERATION );
-
-        // WHEN
-        long result = read();
-
-        // THEN
-        assertReadSuccess( POINTER_A, result );
-    }
-
-    @Test
-    public void writeStableCrashShouldWriteSlotB() throws Exception
-    {
-        // GIVEN
-        writeSlotA( STABLE_GENERATION );
-        writeSlotB( CRASH_GENERATION );
-
-        // WHEN
-        long written = write( WRITTEN_POINTER );
-
-        // THEN
-        assertWriteSuccess( SLOT_B, written );
-        assertEquals( POINTER_A, readSlotA() );
-        assertEquals( WRITTEN_POINTER, readSlotB() );
-    }
-
-    @Test
-    public void readStableBrokenShouldReadSlotA() throws Exception
-    {
-        // GIVEN
-        writeSlotA( STABLE_GENERATION );
-        writeBrokenSlotB();
-
-        // WHEN
-        long result = read();
-
-        // THEN
-        assertReadSuccess( POINTER_A, result );
-    }
-
-    @Test
-    public void writeStableBrokenShouldWriteSlotB() throws Exception
-    {
-        // GIVEN
-        writeSlotA( STABLE_GENERATION );
-        writeBrokenSlotB();
-
-        // WHEN
-        long written = write( WRITTEN_POINTER );
-
-        // THEN
-        assertWriteSuccess( SLOT_B, written );
-        assertEquals( POINTER_A, readSlotA() );
-        assertEquals( WRITTEN_POINTER, readSlotB() );
-    }
-
-    @Test
-    public void readCrashEmptyShouldFail() throws Exception
-    {
-        // GIVEN
-        writeSlotA( CRASH_GENERATION );
-
-        // WHEN
-        long result = read();
-
-        // THEN
-        assertFailure( result, READ, EXPECTED_GEN_DISREGARD, CRASH, EMPTY );
-    }
-
-    @Test
-    public void writeCrashEmptyShouldFail() throws Exception
-    {
-        // GIVEN
-        writeSlotA( CRASH_GENERATION );
-
-        // WHEN
-        long written = write( WRITTEN_POINTER );
-
-        // THEN
-        assertFailure( written, WRITE, EXPECTED_GEN_DISREGARD, CRASH, EMPTY );
-        assertEquals( POINTER_A, readSlotA() );
-        assertEquals( EMPTY_POINTER, readSlotB() );
-    }
-
-    @Test
-    public void readCrashUnstableShouldFail() throws Exception
-    {
-        // GIVEN
-        writeSlotA( CRASH_GENERATION );
-        writeSlotB( UNSTABLE_GENERATION );
-
-        // WHEN
-        long result = read();
-
-        // THEN
-        assertFailure( result, READ, EXPECTED_GEN_B_BIG, CRASH, UNSTABLE );
-    }
-
-    @Test
-    public void writeCrashUnstableShouldFail() throws Exception
-    {
-        // GIVEN
-        writeSlotA( CRASH_GENERATION );
-        writeSlotB( UNSTABLE_GENERATION );
-
-        // WHEN
-        long written = write( WRITTEN_POINTER );
-
-        // THEN
-        assertFailure( written, WRITE, EXPECTED_GEN_B_BIG, CRASH, UNSTABLE );
-        assertEquals( POINTER_A, readSlotA() );
-        assertEquals( POINTER_B, readSlotB() );
-    }
-
-    @Test
-    public void readCrashStableShouldReadSlotB() throws Exception
-    {
-        // GIVEN
-        writeSlotA( CRASH_GENERATION );
-        writeSlotB( STABLE_GENERATION );
-
-        // WHEN
-        long result = read();
-
-        // THEN
-        assertReadSuccess( POINTER_B, result );
-    }
-
-    @Test
-    public void writeCrashStableShouldWriteSlotA() throws Exception
-    {
-        // GIVEN
-        writeSlotA( CRASH_GENERATION );
-        writeSlotB( STABLE_GENERATION );
-
-        // WHEN
-        long written = write( WRITTEN_POINTER );
-
-        // THEN
-        assertWriteSuccess( SLOT_A, written );
-        assertEquals( WRITTEN_POINTER, readSlotA() );
-        assertEquals( POINTER_B, readSlotB() );
-    }
-
-    @Test
-    public void readCrashCrashShouldFail() throws Exception
-    {
-        // GIVEN
-        writeSlotA( CRASH_GENERATION );
-        writeSlotB( CRASH_GENERATION );
-
-        // WHEN
-        long result = read();
-
-        // THEN
-        assertFailure( result, READ, EXPECTED_GEN_EQUAL, CRASH, CRASH );
-    }
-
-    @Test
-    public void writeCrashCrashShouldFail() throws Exception
-    {
-        // GIVEN
-        writeSlotA( CRASH_GENERATION );
-        writeSlotB( CRASH_GENERATION );
-
-        // WHEN
-        long written = write( WRITTEN_POINTER );
-
-        // THEN
-        assertFailure( written, WRITE, EXPECTED_GEN_EQUAL, CRASH, CRASH );
-        assertEquals( POINTER_A, readSlotA() );
-        assertEquals( POINTER_B, readSlotB() );
-    }
-
-    @Test
-    public void readCrashOlderCrashShouldFail() throws Exception
-    {
-        // GIVEN
-        writeSlotA( CRASH_GENERATION );
-        writeSlotB( OLDER_CRASH_GENERATION );
-
-        // WHEN
-        long result = read();
-
-        // THEN
-        assertFailure( result, READ, EXPECTED_GEN_A_BIG, CRASH, CRASH );
-    }
-
-    @Test
-    public void writeCrashOlderCrashShouldFail() throws Exception
-    {
-        // GIVEN
-        writeSlotA( CRASH_GENERATION );
-        writeSlotB( OLDER_CRASH_GENERATION );
-
-        // WHEN
-        long written = write( WRITTEN_POINTER );
-
-        // THEN
-        assertFailure( written, WRITE, EXPECTED_GEN_A_BIG, CRASH, CRASH );
-        assertEquals( POINTER_A, readSlotA() );
-        assertEquals( POINTER_B, readSlotB() );
-    }
-
-    @Test
-    public void readOlderCrashCrashShouldFail() throws Exception
-    {
-        // GIVEN
-        writeSlotA( OLDER_CRASH_GENERATION );
-        writeSlotB( CRASH_GENERATION );
-
-        // WHEN
-        long result = read();
-
-        // THEN
-        assertFailure( result, READ, EXPECTED_GEN_B_BIG, CRASH, CRASH );
-    }
-
-    @Test
-    public void writeOlderCrashCrashShouldFail() throws Exception
-    {
-        // GIVEN
-        writeSlotA( OLDER_CRASH_GENERATION );
-        writeSlotB( CRASH_GENERATION );
-
-        // WHEN
-        long written = write( WRITTEN_POINTER );
-
-        // THEN
-        assertFailure( written, WRITE, EXPECTED_GEN_B_BIG, CRASH, CRASH );
-        assertEquals( POINTER_A, readSlotA() );
-        assertEquals( POINTER_B, readSlotB() );
-    }
-
-    @Test
-    public void readCrashBrokenShouldFail() throws Exception
-    {
-        // GIVEN
-        writeSlotA( CRASH_GENERATION );
-        writeBrokenSlotB();
-
-        // WHEN
-        long result = read();
-
-        // THEN
-        assertFailure( result, READ, EXPECTED_GEN_DISREGARD, CRASH, BROKEN );
-    }
-
-    @Test
-    public void writeCrashBrokenShouldFail() throws Exception
-    {
-        // GIVEN
-        writeSlotA( CRASH_GENERATION );
-        writeBrokenSlotB();
-
-        // WHEN
-        long written = write( WRITTEN_POINTER );
-
-        // THEN
-        assertFailure( written, WRITE, EXPECTED_GEN_DISREGARD, CRASH, BROKEN );
-        assertEquals( POINTER_A, readSlotA() );
-        assertBrokenB();
-    }
-
-    @Test
-    public void readBrokenEmptyShouldFail() throws Exception
-    {
-        // GIVEN
-        writeBrokenSlotA();
-
-        // WHEN
-        long result = read();
-
-        // THEN
-        assertFailure( result, READ, EXPECTED_GEN_DISREGARD, BROKEN, EMPTY );
-    }
-
-    @Test
-    public void writeBrokenEmptyShouldFail() throws Exception
-    {
-        // GIVEN
-        writeBrokenSlotA();
-
-        // WHEN
-        long written = write( WRITTEN_POINTER );
-
-        // THEN
-        assertFailure( written, WRITE, EXPECTED_GEN_DISREGARD, BROKEN, EMPTY );
-        assertBrokenA();
-        assertEquals( EMPTY_POINTER, readSlotB() );
-    }
-
-    @Test
-    public void readBrokenUnstableShouldFail() throws Exception
-    {
-        // GIVEN
-        writeBrokenSlotA();
-        writeSlotB( UNSTABLE_GENERATION );
-
-        // WHEN
-        long result = read();
-
-        // THEN
-        assertFailure( result, READ, EXPECTED_GEN_DISREGARD, BROKEN, UNSTABLE );
-    }
-
-    @Test
-    public void writeBrokenUnstableShouldFail() throws Exception
-    {
-        // GIVEN
-        writeBrokenSlotA();
-        writeSlotB( UNSTABLE_GENERATION );
-
-        // WHEN
-        long written = write( WRITTEN_POINTER );
-
-        // THEN
-        assertFailure( written, WRITE, EXPECTED_GEN_DISREGARD, BROKEN, UNSTABLE );
-        assertBrokenA();
-        assertEquals( POINTER_B, readSlotB() );
-    }
-
-    @Test
-    public void readBrokenStableShouldReadSlotB() throws Exception
-    {
-        // GIVEN
-        writeBrokenSlotA();
-        writeSlotB( STABLE_GENERATION );
-
-        // WHEN
-        long result = read();
-
-        // THEN
-        assertReadSuccess( POINTER_B, result );
-    }
-
-    @Test
-    public void writeBrokenStableShouldWriteSlotA() throws Exception
-    {
-        // GIVEN
-        writeBrokenSlotA();
-        writeSlotB( STABLE_GENERATION );
-
-        // WHEN
-        long written = write( WRITTEN_POINTER );
-
-        // THEN
-        assertWriteSuccess( SLOT_A, written );
-        assertEquals( WRITTEN_POINTER, readSlotA() );
-        assertEquals( POINTER_B, readSlotB() );
-    }
-
-    @Test
-    public void readBrokenCrashShouldFail() throws Exception
-    {
-        // GIVEN
-        writeBrokenSlotA();
-        writeSlotB( CRASH_GENERATION );
-
-        // WHEN
-        long result = read();
-
-        // THEN
-        assertFailure( result, READ, EXPECTED_GEN_DISREGARD, BROKEN, CRASH );
-    }
-
-    @Test
-    public void writeBrokenCrashShouldFail() throws Exception
-    {
-        // GIVEN
-        writeBrokenSlotA();
-        writeSlotB( CRASH_GENERATION );
-
-        // WHEN
-        long written = write( WRITTEN_POINTER );
-
-        // THEN
-        assertFailure( written, WRITE, EXPECTED_GEN_DISREGARD, BROKEN, CRASH );
-        assertBrokenA();
-        assertEquals( POINTER_B, readSlotB() );
-    }
-
-    @Test
-    public void readBrokenBrokenShouldFail() throws Exception
-    {
-        // GIVEN
-        writeBrokenSlotA();
-        writeBrokenSlotB();
-
-        // WHEN
-        long result = read();
-
-        // THEN
-        assertFailure( result, READ, EXPECTED_GEN_DISREGARD, BROKEN, BROKEN );
-    }
-
-    @Test
-    public void writeBrokenBrokenShouldFail() throws Exception
-    {
-        // GIVEN
-        writeBrokenSlotA();
-        writeBrokenSlotB();
-
-        // WHEN
-        long written = write( WRITTEN_POINTER );
-
-        // THEN
-        assertFailure( written, WRITE, EXPECTED_GEN_DISREGARD, BROKEN, BROKEN );
-        assertBrokenA();
-        assertBrokenB();
-    }
-
-    private void assertFailure( long result, long readOrWrite, int genComparison,
+    private static void assertFailure( long result, long readOrWrite, int genComparison,
             byte pointerStateA, byte pointerStateB )
     {
         assertFalse( GenSafePointerPair.isSuccess( result ) );
@@ -910,7 +183,7 @@ public class GenSafePointerPairTest
         assertThat( failureDescription, containsString( pointerStateName( pointerStateB ) ) );
     }
 
-    private String genComparisonName( int genComparison )
+    private static String genComparisonName( int genComparison )
     {
         switch ( genComparison )
         {
@@ -925,7 +198,7 @@ public class GenSafePointerPairTest
         }
     }
 
-    private long genComparisonBits( int genComparison )
+    private static long genComparisonBits( int genComparison )
     {
         switch ( genComparison )
         {
@@ -940,19 +213,19 @@ public class GenSafePointerPairTest
         }
     }
 
-    private long readSlotA()
+    private static long readSlotA( PageCursor cursor )
     {
         cursor.setOffset( 0 );
-        return readSlot();
+        return readSlot( cursor );
     }
 
-    private long readSlotB()
+    private static long readSlotB( PageCursor cursor )
     {
         cursor.setOffset( GenSafePointer.SIZE );
-        return readSlot();
+        return readSlot( cursor );
     }
 
-    private long readSlot()
+    private static long readSlot( PageCursor cursor )
     {
         long generation = GenSafePointer.readGeneration( cursor );
         long pointer = GenSafePointer.readPointer( cursor );
@@ -961,93 +234,236 @@ public class GenSafePointerPairTest
         return pointer;
     }
 
-    private long read()
+    private static Object[] array( Object... array )
     {
-        cursor.setOffset( 0 );
-        return GenSafePointerPair.read( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        return array;
     }
 
-    private long write( long pointer )
+    enum State
     {
-        cursor.setOffset( 0 );
-        return GenSafePointerPair.write( cursor, pointer, STABLE_GENERATION, UNSTABLE_GENERATION );
+        EMPTY( GenSafePointerPair.EMPTY )
+        {
+            @Override
+            long materialize( PageCursor cursor, long pointer )
+            {   // Nothing to write
+                return EMPTY_POINTER;
+            }
+        },
+        BROKEN( GenSafePointerPair.BROKEN )
+        {
+            @Override
+            long materialize( PageCursor cursor, long pointer )
+            {
+                // write an arbitrary GSP
+                int offset = cursor.getOffset();
+                GenSafePointer.write( cursor, 10, 20 );
+
+                // then break its checksum
+                cursor.setOffset( offset + GenSafePointer.SIZE - GenSafePointer.CHECKSUM_SIZE );
+                short checksum = GenSafePointer.readChecksum( cursor );
+                cursor.setOffset( offset + GenSafePointer.SIZE - GenSafePointer.CHECKSUM_SIZE );
+                cursor.putShort( (short) ~checksum );
+                return pointer;
+            }
+
+            @Override
+            void verify( PageCursor cursor, long expectedPointer, boolean slotA )
+            {
+                cursor.setOffset( slotA ? SLOT_A_OFFSET : SLOT_B_OFFSET );
+
+                long generation = GenSafePointer.readGeneration( cursor );
+                long pointer = GenSafePointer.readPointer( cursor );
+                short checksum = GenSafePointer.readChecksum( cursor );
+                assertNotEquals( GenSafePointer.checksumOf( generation, pointer ), checksum );
+            }
+        },
+        OLD_CRASH( GenSafePointerPair.CRASH )
+        {
+            @Override
+            long materialize( PageCursor cursor, long pointer )
+            {
+                GenSafePointer.write( cursor, OLD_CRASH_GENERATION, pointer );
+                return pointer;
+            }
+        },
+        CRASH( GenSafePointerPair.CRASH )
+        {
+            @Override
+            long materialize( PageCursor cursor, long pointer )
+            {
+                GenSafePointer.write( cursor, CRASH_GENERATION, pointer );
+                return pointer;
+            }
+        },
+        OLD_STABLE( GenSafePointerPair.STABLE )
+        {
+            @Override
+            long materialize( PageCursor cursor, long pointer )
+            {
+                GenSafePointer.write( cursor, OLD_STABLE_GENERATION, pointer );
+                return pointer;
+            }
+        },
+        STABLE( GenSafePointerPair.STABLE )
+        {
+            @Override
+            long materialize( PageCursor cursor, long pointer )
+            {
+                GenSafePointer.write( cursor, STABLE_GENERATION, pointer );
+                return pointer;
+            }
+        },
+        UNSTABLE( GenSafePointerPair.UNSTABLE )
+        {
+            @Override
+            long materialize( PageCursor cursor, long pointer )
+            {
+                GenSafePointer.write( cursor, UNSTABLE_GENERATION, pointer );
+                return pointer;
+            }
+        };
+
+        /**
+         * Actual {@link GenSafePointerPair} pointer state value.
+         */
+        private final byte byteValue;
+
+        private State( byte byteValue )
+        {
+            this.byteValue = byteValue;
+        }
+
+        /**
+         * Writes this state onto cursor.
+         *
+         * @param cursor {@link PageCursor} to write pre-state to.
+         * @param pointer pointer to write in GSP. Generation is decided by the pre-state.
+         * @return written pointer.
+         */
+        abstract long materialize( PageCursor cursor, long pointer );
+
+        /**
+         * Verifies result after WHEN section in test.
+         *
+         * @param cursor {@link PageCursor} to read actual pointer from.
+         * @param expectedPointer expected pointer, as received from {@link #materialize(PageCursor, long)}.
+         * @param slotA whether or not this is for slot A, otherwise B.
+         */
+        void verify( PageCursor cursor, long expectedPointer, boolean slotA )
+        {
+            assertEquals( expectedPointer, slotA ? readSlotA( cursor ) : readSlotB( cursor ) );
+        }
     }
 
-    private void writeSlotA( long generation )
+    interface Slot
     {
-        cursor.setOffset( 0 );
-        writeSlot( generation, POINTER_A );
+        /**
+         * @param cursor {@link PageCursor} to read actual result from.
+         * @param result read-result from {@link GenSafePointerPair#read(PageCursor, long, long)}.
+         * @param stateA state of pointer A when read.
+         * @param stateB state of pointer B when read.
+         * @param preStatePointerA pointer A as it looked like in pre-state.
+         * @param preStatePointerB pointer B as it looked like in pre-state.
+         */
+        void verifyRead( PageCursor cursor, long result, State stateA, State stateB,
+                long preStatePointerA, long preStatePointerB );
+
+        /**
+         * @param cursor {@link PageCursor} to read actual result from.
+         * @param result write-result from {@link GenSafePointerPair#write(PageCursor, long, long, long)}.
+         * @param stateA state of pointer A when written.
+         * @param stateB state of pointer B when written.
+         * @param preStatePointerA pointer A as it looked like in pre-state.
+         * @param preStatePointerB pointer B as it looked like in pre-state.
+         */
+        void verifyWrite( PageCursor cursor, long result, State stateA, State stateB,
+                long preStatePointerA, long preStatePointerB );
     }
 
-    private void writeSlotB( long generation )
+    enum Success implements Slot
     {
-        cursor.setOffset( GenSafePointer.SIZE );
-        writeSlot( generation, POINTER_B );
+        A( POINTER_A, SLOT_A ),
+        B( POINTER_B, SLOT_B );
+
+        private final long expectedPointer;
+        private final boolean expectedSlot;
+
+        private Success( long expectedPointer, boolean expectedSlot )
+        {
+            this.expectedPointer = expectedPointer;
+            this.expectedSlot = expectedSlot;
+        }
+
+        @Override
+        public void verifyRead( PageCursor cursor, long result, State stateA, State stateB,
+                long preStatePointerA, long preStatePointerB )
+        {
+            assertSuccess( result );
+            assertEquals( expectedPointer, result );
+
+            stateA.verify( cursor, preStatePointerA, SLOT_A );
+            stateB.verify( cursor, preStatePointerB, SLOT_B );
+        }
+
+        @Override
+        public void verifyWrite( PageCursor cursor, long result, State stateA, State stateB,
+                long preStatePointerA, long preStatePointerB )
+        {
+            assertSuccess( result );
+            boolean actuallyWrittenSlot =
+                    (result & GenSafePointerPair.WRITE_TO_MASK) == GenSafePointerPair.WRITE_TO_A ? SLOT_A : SLOT_B;
+            assertEquals( expectedSlot, actuallyWrittenSlot );
+
+            if ( expectedSlot == SLOT_A )
+            {
+                // Expect slot A to have been written, B staying the same
+                assertEquals( WRITTEN_POINTER, readSlotA( cursor ) );
+                assertEquals( preStatePointerB, readSlotB( cursor ) );
+            }
+            else
+            {
+                // Expect slot B to have been written, A staying the same
+                assertEquals( preStatePointerA, readSlotA( cursor ) );
+                assertEquals( WRITTEN_POINTER, readSlotB( cursor ) );
+            }
+        }
+
+        private static void assertSuccess( long result )
+        {
+            assertTrue( GenSafePointerPair.isSuccess( result ) );
+        }
     }
 
-    private void writeSlot( long generation, long pointer )
+    enum Fail implements Slot
     {
-        GenSafePointer.write( cursor, generation, pointer );
-    }
+        GEN_DISREGARD( EXPECTED_GEN_DISREGARD ),
+        GEN_B_BIG( EXPECTED_GEN_B_BIG ),
+        GEN_EQUAL( EXPECTED_GEN_EQUAL ),
+        GEN_A_BIG( EXPECTED_GEN_A_BIG );
 
-    private void writeBrokenSlotA()
-    {
-        cursor.setOffset( 0 );
-        writeBrokenSlot();
-    }
+        private final int genComparison;
 
-    private void writeBrokenSlotB()
-    {
-        cursor.setOffset( GenSafePointer.SIZE );
-        writeBrokenSlot();
-    }
+        private Fail( int genComparison )
+        {
+            this.genComparison = genComparison;
+        }
 
-    private void writeBrokenSlot()
-    {
-        int offset = cursor.getOffset();
-        writeSlot( 10, 20 );
-        cursor.setOffset( offset + GenSafePointer.SIZE - GenSafePointer.CHECKSUM_SIZE );
-        short checksum = GenSafePointer.readChecksum( cursor );
-        cursor.setOffset( offset + GenSafePointer.SIZE - GenSafePointer.CHECKSUM_SIZE );
-        cursor.putShort( (short) ~checksum );
-    }
+        @Override
+        public void verifyRead( PageCursor cursor, long result, State stateA, State stateB,
+                long preStatePointerA, long preStatePointerB )
+        {
+            assertFailure( result, READ, genComparison, stateA.byteValue, stateB.byteValue );
+            stateA.verify( cursor, preStatePointerA, SLOT_A );
+            stateB.verify( cursor, preStatePointerB, SLOT_B );
+        }
 
-    private void assertBrokenA()
-    {
-        cursor.setOffset( 0 );
-        assertBroken();
-    }
-
-    private void assertBrokenB()
-    {
-        cursor.setOffset( GenSafePointer.SIZE );
-        assertBroken();
-    }
-
-    private void assertBroken()
-    {
-        long generation = GenSafePointer.readGeneration( cursor );
-        long pointer = GenSafePointer.readPointer( cursor );
-        short checksum = GenSafePointer.readChecksum( cursor );
-        assertNotEquals( GenSafePointer.checksumOf( generation, pointer ), checksum );
-    }
-
-    private void assertSuccess( long result )
-    {
-        assertTrue( GenSafePointerPair.isSuccess( result ) );
-    }
-
-    private void assertWriteSuccess( boolean expectedSlot, long result )
-    {
-        assertSuccess( result );
-        boolean actuallyWrittenSlot =
-                (result & GenSafePointerPair.WRITE_TO_MASK) == GenSafePointerPair.WRITE_TO_A ? SLOT_A : SLOT_B;
-        assertEquals( expectedSlot, actuallyWrittenSlot );
-    }
-
-    private void assertReadSuccess( long expectedPointer, long result )
-    {
-        assertSuccess( result );
-        assertEquals( result, expectedPointer );
+        @Override
+        public void verifyWrite( PageCursor cursor, long result, State stateA, State stateB,
+                long preStatePointerA, long preStatePointerB )
+        {
+            assertFailure( result, WRITE, genComparison, stateA.byteValue, stateB.byteValue );
+            stateA.verify( cursor, preStatePointerA, SLOT_A );
+            stateB.verify( cursor, preStatePointerB, SLOT_B );
+        }
     }
 }

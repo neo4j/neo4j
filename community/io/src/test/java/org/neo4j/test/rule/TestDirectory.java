@@ -26,11 +26,11 @@ import org.junit.runners.model.Statement;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.net.URISyntaxException;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.fs.FileUtils.MaybeWindowsMemoryMappedFileReleaseProblem;
 import org.neo4j.test.Digests;
 
@@ -269,9 +269,10 @@ public class TestDirectory implements TestRule
 
     private void register( String test, String dir )
     {
-        try
+        try ( PrintStream printStream =
+                    new PrintStream( fileSystem.openAsOutputStream( new File( ensureBase(), ".register" ), true ) ) )
         {
-            FileUtils.writeToFile( new File( ensureBase(), ".register" ), format( "%s=%s\n", dir, test ), true );
+            printStream.println( format( "%s=%s\n", dir, test ) );
         }
         catch ( IOException e )
         {

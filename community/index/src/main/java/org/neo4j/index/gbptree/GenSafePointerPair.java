@@ -67,7 +67,7 @@ import static org.neo4j.index.gbptree.GenSafePointer.readPointer;
  */
 class GenSafePointerPair
 {
-    public static final int SIZE = GenSafePointer.SIZE * 2;
+    static final int SIZE = GenSafePointer.SIZE * 2;
 
     // Pointer states
     static final byte STABLE = 0;     // any previous generation made safe by a checkpoint
@@ -374,7 +374,7 @@ class GenSafePointerPair
         return generationA > generationB ? GEN_A_BIG : generationB > generationA ? GEN_B_BIG : GEN_EQUAL;
     }
 
-    private static byte pointerState( long stableGeneration, long unstableGeneration,
+    static byte pointerState( long stableGeneration, long unstableGeneration,
             long generation, long pointer, boolean checksumIsCorrect )
     {
         if ( GenSafePointer.isEmpty( generation, pointer ) )
@@ -387,7 +387,7 @@ class GenSafePointerPair
         }
         if ( generation < MIN_GENERATION )
         {
-            throw new UnsupportedOperationException( "Generation was less than MIN_GENERATION " + MIN_GENERATION +
+            throw new TreeInconsistencyException( "Generation was less than MIN_GENERATION " + MIN_GENERATION +
                     " but checksum was correct. Pointer was " + generation + "," + pointer );
         }
         if ( generation <= stableGeneration )
@@ -408,7 +408,7 @@ class GenSafePointerPair
      * @param result result from {@link #read(PageCursor, long, long)} or {@link #write(PageCursor, long, long, long)}.
      * @return {@code true} if successful read/write, otherwise {@code false}.
      */
-    public static boolean isSuccess( long result )
+    static boolean isSuccess( long result )
     {
         return (result & SUCCESS_MASK) == SUCCESS;
     }
@@ -426,7 +426,7 @@ class GenSafePointerPair
      * {@link #write(PageCursor, long, long, long)}.
      * @return a human-friendly description of the failure.
      */
-    public static String failureDescription( long result )
+    static String failureDescription( long result )
     {
         StringBuilder builder =
                 new StringBuilder( "GSPP " + (isRead( result ) ? "READ" : "WRITE") + " failure" );
@@ -438,7 +438,23 @@ class GenSafePointerPair
         return builder.toString();
     }
 
-    static String generationComparisonFromResult( long result )
+    /**
+     * Asserts that a result is {@link #isSuccess(long) successful}, otherwise throws {@link IllegalStateException}.
+     *
+     * @param result result returned from {@link #read(PageCursor, long, long)} or
+     * {@link #write(PageCursor, long, long, long)}
+     * @return {@code true} if {@link #isSuccess(long) successful}, for interoperability with {@code assert}.
+     */
+    static boolean assertSuccess( long result )
+    {
+        if ( !isSuccess( result ) )
+        {
+            throw new TreeInconsistencyException( failureDescription( result ) );
+        }
+        return true;
+    }
+
+    private static String generationComparisonFromResult( long result )
     {
         long bits = result & GEN_COMPARISON_MASK;
         if ( bits == GEN_EQUAL )

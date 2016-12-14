@@ -31,9 +31,9 @@ import static org.neo4j.index.gbptree.GenSafePointerPair.write;
 public class PointerCheckingTest
 {
     private final PageCursor cursor = ByteArrayPageCursor.wrap( GenSafePointerPair.SIZE );
-    private final int firstGeneration = 1;
-    private final int secondGeneration = 2;
-    private final int thirdGeneration = 3;
+    private final long firstGeneration = 1;
+    private final long secondGeneration = 2;
+    private final long thirdGeneration = 3;
 
     @Test
     public void checkChildShouldThrowOnNoNode() throws Exception
@@ -41,10 +41,10 @@ public class PointerCheckingTest
         // WHEN
         try
         {
-            PointerChecking.checkChildPointer( TreeNode.NO_NODE_FLAG );
+            PointerChecking.checkPointer( TreeNode.NO_NODE_FLAG, false );
             fail( "Should have failed ");
         }
-        catch ( IllegalStateException e )
+        catch ( TreeInconsistencyException e )
         {
             // THEN good
         }
@@ -59,10 +59,10 @@ public class PointerCheckingTest
         // WHEN
         try
         {
-            PointerChecking.checkChildPointer( result );
+            PointerChecking.checkPointer( result, false );
             fail( "Should have failed ");
         }
-        catch ( IllegalStateException e )
+        catch ( TreeInconsistencyException e )
         {
             // THEN good
         }
@@ -82,10 +82,10 @@ public class PointerCheckingTest
         long result = write( cursor, 789, 0, thirdGeneration );
         try
         {
-            PointerChecking.checkChildPointer( result );
+            PointerChecking.checkPointer( result, false );
             fail( "Should have failed ");
         }
-        catch ( IllegalStateException e )
+        catch ( TreeInconsistencyException e )
         {
             // THEN good
         }
@@ -95,14 +95,14 @@ public class PointerCheckingTest
     public void checkChildShouldPassOnReadSuccess() throws Exception
     {
         // GIVEN
-        PointerChecking.checkChildPointer( write( cursor, 123, 0, firstGeneration ) );
+        PointerChecking.checkPointer( write( cursor, 123, 0, firstGeneration ), false );
         cursor.rewind();
 
         // WHEN
         long result = read( cursor, 0, firstGeneration );
 
         // THEN
-        PointerChecking.checkChildPointer( result );
+        PointerChecking.checkPointer( result, false );
     }
 
     @Test
@@ -112,7 +112,7 @@ public class PointerCheckingTest
         long result = write( cursor, 123, 0, firstGeneration );
 
         // THEN
-        PointerChecking.checkChildPointer( result );
+        PointerChecking.checkPointer( result, false );
     }
 
     @Test
@@ -126,7 +126,7 @@ public class PointerCheckingTest
         long result = read( cursor, firstGeneration, secondGeneration );
 
         // THEN
-        PointerChecking.checkSiblingPointer( result );
+        PointerChecking.checkPointer( result, true );
     }
 
     @Test
@@ -141,7 +141,7 @@ public class PointerCheckingTest
         long result = read( cursor, firstGeneration, secondGeneration );
 
         // THEN
-        PointerChecking.checkSiblingPointer( result );
+        PointerChecking.checkPointer( result, true );
     }
 
     @Test
@@ -153,10 +153,10 @@ public class PointerCheckingTest
         // WHEN
         try
         {
-            PointerChecking.checkSiblingPointer( result );
+            PointerChecking.checkPointer( result, true );
             fail( "Should have failed" );
         }
-        catch ( IllegalStateException e )
+        catch ( TreeInconsistencyException e )
         {
             // THEN good
         }
@@ -166,19 +166,25 @@ public class PointerCheckingTest
     public void checkSiblingShouldThrowOnReadIllegalPointer() throws Exception
     {
         // GIVEN
-        GenSafePointer.write( cursor, secondGeneration, IdSpace.STATE_PAGE_A );
+        long generation = IdSpace.STATE_PAGE_A;
+        long pointer = this.secondGeneration;
+
+        // Can not use GenSafePointer.write because it will fail on pointer assertion.
+        cursor.putInt( (int) pointer );
+        GenSafePointer.put6BLong( cursor, generation );
+        cursor.putShort( GenSafePointer.checksumOf( generation, pointer ) );
         cursor.rewind();
 
         // WHEN
-        long result = read( cursor, firstGeneration, secondGeneration );
+        long result = read( cursor, firstGeneration, pointer );
 
         // WHEN
         try
         {
-            PointerChecking.checkSiblingPointer( result );
+            PointerChecking.checkPointer( result, true );
             fail( "Should have failed" );
         }
-        catch ( IllegalStateException e )
+        catch ( TreeInconsistencyException e )
         {
             // THEN good
         }

@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -56,7 +57,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
-import static org.neo4j.test.rule.fs.EphemeralFileSystemRule.shutdownDbAction;
 
 
 /**
@@ -338,7 +338,8 @@ public class TestRecoveryScenarios
     @SuppressWarnings("deprecation")
     private void crashAndRestart( InMemoryIndexProvider indexProvider ) throws Exception
     {
-        FileSystemAbstraction uncleanFs = fsRule.snapshot( shutdownDbAction( db ) );
+        final GraphDatabaseService db1 = db;
+        FileSystemAbstraction uncleanFs = fsRule.snapshot( () -> db1.shutdown() );
         db = (GraphDatabaseAPI) databaseFactory( uncleanFs, indexProvider ).newImpermanentDatabase();
     }
 }

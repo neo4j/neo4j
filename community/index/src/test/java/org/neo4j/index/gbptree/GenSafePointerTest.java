@@ -28,6 +28,7 @@ import org.neo4j.test.rule.RandomRule;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class GenSafePointerTest
 {
@@ -73,8 +74,6 @@ public class GenSafePointerTest
         // GIVEN
         int offset = 0;
         GSP initial = gsp( 123, 456 );
-        initial.generation = 123;
-        initial.pointer = 456;
         write( cursor, offset, initial );
 
         // WHEN
@@ -91,8 +90,6 @@ public class GenSafePointerTest
         // GIVEN
         int offset = 0;
         GSP initial = gsp( 123, 456 );
-        initial.generation = 123;
-        initial.pointer = 456;
         write( cursor, offset, initial );
 
         // WHEN
@@ -108,7 +105,7 @@ public class GenSafePointerTest
     public void shouldWriteAndReadGspCloseToGenerationMax() throws Exception
     {
         // GIVEN
-        long generation = 0xFFFFFFFEL;
+        long generation = GenSafePointer.MAX_GENERATION;
         GSP expected = gsp( generation, 12345 );
         write( cursor, 0, expected );
 
@@ -126,7 +123,7 @@ public class GenSafePointerTest
     public void shouldWriteAndReadGspCloseToPointerMax() throws Exception
     {
         // GIVEN
-        long pointer = 0xFFFF_FFFFFFFEL;
+        long pointer = GenSafePointer.MAX_POINTER;
         GSP expected = gsp( 12345, pointer );
         write( cursor, 0, expected );
 
@@ -144,8 +141,8 @@ public class GenSafePointerTest
     public void shouldWriteAndReadGspCloseToGenerationAndPointerMax() throws Exception
     {
         // GIVEN
-        long generation = 0xFFFFFFFEL;
-        long pointer = 0xFFFF_FFFFFFFEL;
+        long generation = GenSafePointer.MAX_GENERATION;
+        long pointer = GenSafePointer.MAX_POINTER;
         GSP expected = gsp( generation, pointer );
         write( cursor, 0, expected );
 
@@ -161,6 +158,90 @@ public class GenSafePointerTest
     }
 
     @Test
+    public void shouldThrowIfPointerToLarge() throws Exception
+    {
+        // GIVEN
+        long generation = GenSafePointer.MIN_GENERATION;
+        long pointer = GenSafePointer.MAX_POINTER + 1;
+        GSP broken = gsp( generation, pointer );
+
+        // WHEN
+        try
+        {
+            write( cursor, 0, broken );
+            fail( "Expected to throw" );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // THEN
+            // good
+        }
+    }
+
+    @Test
+    public void shouldThrowIfPointerToSmall() throws Exception
+    {
+        // GIVEN
+        long generation = GenSafePointer.MIN_GENERATION;
+        long pointer = GenSafePointer.MIN_POINTER - 1;
+        GSP broken = gsp( generation, pointer );
+
+        // WHEN
+        try
+        {
+            write( cursor, 0, broken );
+            fail( "Expected to throw" );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // THEN
+            // good
+        }
+    }
+
+    @Test
+    public void shouldThrowIfGenerationToLarge() throws Exception
+    {
+        // GIVEN
+        long generation = GenSafePointer.MAX_GENERATION + 1;
+        long pointer = GenSafePointer.MIN_POINTER;
+        GSP broken = gsp( generation, pointer );
+
+        // WHEN
+        try
+        {
+            write( cursor, 0, broken );
+            fail( "Expected to throw" );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // THEN
+            // good
+        }
+    }
+
+    @Test
+    public void shouldThrowIfGenerationToSmall() throws Exception
+    {
+        // GIVEN
+        long generation = GenSafePointer.MIN_GENERATION - 1;
+        long pointer = GenSafePointer.MIN_POINTER;
+        GSP broken = gsp( generation, pointer );
+
+        // WHEN
+        try
+        {
+            write( cursor, 0, broken );
+            fail( "Expected to throw" );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // THEN
+            // good
+        }
+    }
+
+    @Test
     public void shouldHaveLowAccidentalChecksumCollision() throws Exception
     {
         // GIVEN
@@ -173,7 +254,7 @@ public class GenSafePointerTest
         for ( int i = 0; i < count; i++ )
         {
             gsp.generation = random.nextLong( GenSafePointer.MAX_GENERATION );
-            gsp.pointer = random.nextLong( 0xFFFF_FFFFFFFFL );
+            gsp.pointer = random.nextLong( GenSafePointer.MAX_POINTER );
             short checksum = checksumOf( gsp );
             if ( i == 0 )
             {

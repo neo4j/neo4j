@@ -49,17 +49,17 @@ class ByteArrayPageCursor extends PageCursor
 {
     private final ByteBuffer buffer;
 
-    public static PageCursor wrap( byte[] array, int offset, int length )
+    static PageCursor wrap( byte[] array, int offset, int length )
     {
         return new ByteArrayPageCursor( array, offset, length );
     }
 
-    public static PageCursor wrap( byte[] array )
+    static PageCursor wrap( byte[] array )
     {
         return wrap( array, 0, array.length );
     }
 
-    public static PageCursor wrap( int length )
+    static PageCursor wrap( int length )
     {
         return wrap( new byte[length] );
     }

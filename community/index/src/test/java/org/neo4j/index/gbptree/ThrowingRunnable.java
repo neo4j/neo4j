@@ -19,13 +19,22 @@
  */
 package org.neo4j.index.gbptree;
 
-import java.io.IOException;
-
-/**
- * Provide tree node (page) ids which can be used for storing tree node data.
- * Bytes on returned page ids must be empty (all zeros).
- */
-interface IdProvider
+interface ThrowingRunnable
 {
-    long acquireNewId() throws IOException;
+    void run() throws Exception;
+
+    static Runnable throwing( ThrowingRunnable callable )
+    {
+        return () ->
+        {
+            try
+            {
+                callable.run();
+            }
+            catch ( Exception e )
+            {
+                throw new RuntimeException( e );
+            }
+        };
+    }
 }

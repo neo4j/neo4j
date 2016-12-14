@@ -19,13 +19,18 @@
  */
 package org.neo4j.index.gbptree;
 
-import java.io.IOException;
-
 /**
- * Provide tree node (page) ids which can be used for storing tree node data.
- * Bytes on returned page ids must be empty (all zeros).
+ * Thrown to signal inconsistencies in the tree, either between tree nodes or inside a tree node.
  */
-interface IdProvider
+public class TreeInconsistencyException extends RuntimeException
 {
-    long acquireNewId() throws IOException;
+    TreeInconsistencyException( String format, Object... args )
+    {
+        super( String.format( format, args ) );
+    }
+
+    TreeInconsistencyException( String message )
+    {
+        super( message );
+    }
 }

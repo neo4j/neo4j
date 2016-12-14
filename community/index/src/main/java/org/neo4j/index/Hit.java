@@ -29,7 +29,15 @@ package org.neo4j.index;
  */
 public interface Hit<KEY,VALUE>
 {
+    /**
+     * @return key of this hit. This returned key instance shouldn't be held on to, rather its contents,
+     * because key instances can be mutable and change within a result set to be overwritten with the next hit.
+     */
     KEY key();
 
+    /**
+     * @return value of this hit. This returned value instance shouldn't be held on to, rather its contents,
+     * because value instances can be mutable and change within a result set to be overwritten with the next hit.
+     */
     VALUE value();
 }

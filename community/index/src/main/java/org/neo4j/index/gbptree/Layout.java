@@ -23,19 +23,23 @@ import java.util.Comparator;
 
 import org.neo4j.io.pagecache.PageCursor;
 
+import static java.lang.String.format;
+
 /**
  * Main point of interaction for customizing a {@link GBPTree}, how its keys and values are represented
  * as bytes and what keys and values contains.
  * <p>
  * Additionally custom meta data can be supplied, which will be persisted in {@link GBPTree}.
+ * <p>
+ * Rather extend {@link Adapter} as to get standard implementation of e.g. {@link Adapter#toString()}.
  *
  * @param <KEY> type of key
  * @param <VALUE> type of value
  */
-public interface Layout<KEY,VALUE> extends Comparator<KEY>
+public interface Layout<KEY, VALUE> extends Comparator<KEY>
 {
     /**
-     * @return new key instances.
+     * @return new key instance.
      */
     KEY newKey();
 
@@ -98,6 +102,7 @@ public interface Layout<KEY,VALUE> extends Comparator<KEY>
     /**
      * Used as a checksum for when loading an index after creation, to verify that the same layout is used,
      * as the one it was initially created with.
+     *
      * @return a long acting as an identifier, written in the header of an index.
      */
     long identifier();
@@ -125,12 +130,16 @@ public interface Layout<KEY,VALUE> extends Comparator<KEY>
      * Constructor-provided meta data can be {@code null} to skip this verification.
      *
      * @param cursor {@link PageCursor} to read from, at its current offset.
-     * @throws IllegalArgumentException if read meta data doesn't match with the meta data provided in constructor.
+     * @throws MetadataMismatchException if read meta data doesn't match with the meta data provided in constructor.
      */
     void readMetaData( PageCursor cursor );
 
     /**
      * Utility method for generating an {@link #identifier()}.
+     *
+     * @param name name to be part of this identifier, must at most be 4 characters.
+     * @param checksum checksum to include into the identifier.
+     * @return a long which is a combination of {@code name} and {@code checksum}.
      */
     static long namedIdentifier( String name, int checksum )
     {
@@ -140,13 +149,30 @@ public interface Layout<KEY,VALUE> extends Comparator<KEY>
             throw new IllegalArgumentException( "Maximum 4 character name, was '" + name + "'" );
         }
         long upperInt = 0;
-        for ( int i = 0; i < chars.length; i++ )
+        for ( char aChar : chars )
         {
-            byte byteValue = (byte) (((byte) chars[i]) ^ ((byte) (chars[i] >> 8)));
+            byte byteValue = (byte) (((byte) aChar) ^ ((byte) (aChar >> 8)));
             upperInt <<= 8;
             upperInt |= (byteValue & 0xFF);
         }
 
         return upperInt << Integer.SIZE | (checksum & 0xFFFFFFFF);
+    }
+
+    /**
+     * Adapter for {@link Layout}, which contains convenient standard implementations of some methods.
+     *
+     * @param <KEY> type of key
+     * @param <VALUE> type of value
+     */
+    abstract class Adapter<KEY,VALUE> implements Layout<KEY,VALUE>
+    {
+        @Override
+        public String toString()
+        {
+            return format( "%s[version:%d.%d, identifier:%d, keySize:%d, valueSize:%d]",
+                    getClass().getSimpleName(), majorVersion(), minorVersion(), identifier(),
+                    keySize(), valueSize() );
+        }
     }
 }

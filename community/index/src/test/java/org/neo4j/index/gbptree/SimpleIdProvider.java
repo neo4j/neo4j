@@ -19,13 +19,31 @@
  */
 package org.neo4j.index.gbptree;
 
-import java.io.IOException;
+import org.neo4j.io.pagecache.PageCursor;
 
-/**
- * Provide tree node (page) ids which can be used for storing tree node data.
- * Bytes on returned page ids must be empty (all zeros).
- */
-interface IdProvider
+class SimpleIdProvider implements IdProvider
 {
-    long acquireNewId() throws IOException;
+    private long lastId;
+
+    SimpleIdProvider()
+    {
+        reset();
+    }
+
+    @Override
+    public long acquireNewId()
+    {
+        lastId++;
+        return lastId;
+    }
+
+    long lastId()
+    {
+        return lastId;
+    }
+
+    void reset()
+    {
+        lastId = IdSpace.MIN_TREE_NODE_ID - 1;
+    }
 }
