@@ -442,7 +442,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             assertTransactionOpen();
             if ( transactionStatus.isShutdown() )
             {
-                throw new TransactionFailureException( Status.Transaction.TransactionTerminated,
+                throw new TransactionFailureException( Status.General.DatabaseUnavailable,
                         "Transaction terminated since database is shutting down." );
             }
             else
