@@ -35,6 +35,7 @@ Function global:New-InvalidNeo4jInstall($ServerType = 'Enterprise', $ServerVersi
 
 Function global:New-MockNeo4jInstall(
   $IncludeFiles = $true,
+  $RootDir = $global:mockNeo4jHome,
   $ServerType = 'Community',
   $ServerVersion = '0.0',
   $DatabaseMode = '',
@@ -43,7 +44,6 @@ Function global:New-MockNeo4jInstall(
   $NeoWrapperConfSettings = @()
   ) {
   # Creates a skeleton directory and file structure of a Neo4j Installation
-  $RootDir = $global:mockNeo4jHome
   New-Item $RootDir -ItemType Directory | Out-Null
   New-Item "$RootDir\lib" -ItemType Directory | Out-Null
   New-Item "$RootDir\bin" -ItemType Directory | Out-Null

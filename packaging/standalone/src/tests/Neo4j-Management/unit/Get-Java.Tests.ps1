@@ -11,7 +11,7 @@ InModuleScope Neo4j-Management {
     # Setup mocking environment
     #  Mock Java environment
     $javaHome = global:New-MockJavaHome
-    Mock Get-Neo4jEnv { $javaHome } -ParameterFilter { $Name -eq 'JAVA_HOME' } 
+    Mock Get-Neo4jEnv { $javaHome } -ParameterFilter { $Name -eq 'JAVA_HOME' }
     Mock Test-Path { $false } -ParameterFilter {
       $Path -like 'Registry::*\JavaSoft\Java Runtime Environment'
     }
@@ -54,7 +54,7 @@ InModuleScope Neo4j-Management {
     }
 
     Context "Valid Java install in Registry (32bit Java on 64bit OS)" {
-      Mock Get-Neo4jEnv { $null } -ParameterFilter { $Name -eq 'JAVA_HOME' } 
+      Mock Get-Neo4jEnv { $null } -ParameterFilter { $Name -eq 'JAVA_HOME' }
       Mock Test-Path -Verifiable { return $true } -ParameterFilter {
         ($Path -eq 'Registry::HKLM\SOFTWARE\Wow6432Node\JavaSoft\Java Runtime Environment')
       }
@@ -77,7 +77,7 @@ InModuleScope Neo4j-Management {
     }
 
     Context "Valid Java install in Registry" {
-      Mock Get-Neo4jEnv { $null } -ParameterFilter { $Name -eq 'JAVA_HOME' } 
+      Mock Get-Neo4jEnv { $null } -ParameterFilter { $Name -eq 'JAVA_HOME' }
       Mock Test-Path -Verifiable { return $true } -ParameterFilter {
         ($Path -eq 'Registry::HKLM\SOFTWARE\JavaSoft\Java Runtime Environment')
       }
@@ -101,7 +101,7 @@ InModuleScope Neo4j-Management {
 
     Context "Invalid Java install in Registry" {
       Mock Test-Path { $false } -ParameterFile { $Path -like "$javaHome\bin\java.exe" }
-      Mock Get-Neo4jEnv { $null } -ParameterFilter { $Name -eq 'JAVA_HOME' } 
+      Mock Get-Neo4jEnv { $null } -ParameterFilter { $Name -eq 'JAVA_HOME' }
       Mock Test-Path -Verifiable { return $true } -ParameterFilter {
         ($Path -eq 'Registry::HKLM\SOFTWARE\JavaSoft\Java Runtime Environment')
       }
@@ -122,7 +122,7 @@ InModuleScope Neo4j-Management {
     }
 
     Context "Valid Java install in search path" {
-      Mock Get-Neo4jEnv { $null } -ParameterFilter { $Name -eq 'JAVA_HOME' } 
+      Mock Get-Neo4jEnv { $null } -ParameterFilter { $Name -eq 'JAVA_HOME' }
 
       Mock Get-Command -Verifiable { return @{ 'Path' = "$javaHome\bin\java.exe" } }
 
@@ -138,7 +138,7 @@ InModuleScope Neo4j-Management {
     }
 
     Context "No Java install at all" {
-      Mock Get-Neo4jEnv { $null } -ParameterFilter { $Name -eq 'JAVA_HOME' } 
+      Mock Get-Neo4jEnv { $null } -ParameterFilter { $Name -eq 'JAVA_HOME' }
       Mock Get-Command { $null }
 
       It "should throw if java not detected" {
@@ -263,5 +263,23 @@ InModuleScope Neo4j-Management {
       }
     }
 
+	Context "Server Invoke - Should handle paths with spaces" {
+        $serverObject = global:New-MockNeo4jInstall -ServerVersion '3.0' -ServerType 'Community' `
+	      -RootDir 'TestDrive:\Neo4j Home' `
+          -NeoConfSettings 'dbms.logs.gc.enabled=true'
+
+      $result = Get-Java -ForServer -Neo4jServer $serverObject
+	  $argList = $result.args
+
+	  It "should have literal quotes around config path" {
+		$argList -contains "--config-dir=`"TestDrive:\Neo4j Home\conf`"" | Should Be True
+	  }
+	  It "should have literal quotes around home path" {
+		$argList -contains "--home-dir=`"TestDrive:\Neo4j Home`"" | Should Be True
+	  }
+	  It "should have literal quotes around gclog path" {
+		$argList -contains "-Xloggc:`"TestDrive:\Neo4j Home/gc.log`"" | Should Be True
+	  }
+    }
   }
 }

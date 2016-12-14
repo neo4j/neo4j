@@ -179,7 +179,7 @@ Function Get-Java
       # Parse Java config settings - GC
       $option = (Get-Neo4jSetting -Name 'dbms.logs.gc.enabled' -Neo4jServer $Neo4jServer)
       if (($option -ne $null) -and ($option.Value.ToLower() -eq 'true')) {
-        $ShellArgs += "-Xloggc:$($Neo4jServer.Home)/gc.log"
+        $ShellArgs += "-Xloggc:`"$($Neo4jServer.Home)/gc.log`""
 
         $option = (Get-Neo4jSetting -Name 'dbms.logs.gc.options' -Neo4jServer $Neo4jServer)
         if ($option -eq $null) {
@@ -208,7 +208,10 @@ Function Get-Java
           $ShellArgs += "-XX:NumberOfGCLogFiles=5"
         }
       }
-      $ShellArgs += @("-Dfile.encoding=UTF-8",$serverMainClass,"--config-dir=$($Neo4jServer.ConfDir)","--home-dir=$($Neo4jServer.Home)")
+        $ShellArgs += @("-Dfile.encoding=UTF-8",
+                        $serverMainClass,
+                        "--config-dir=`"$($Neo4jServer.ConfDir)`"",
+                        "--home-dir=`"$($Neo4jServer.Home)`"")
     }
 
     # Shell arguments for the utility classes e.g. Import, Shell
