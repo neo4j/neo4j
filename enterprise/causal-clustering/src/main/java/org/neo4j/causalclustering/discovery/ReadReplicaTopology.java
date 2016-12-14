@@ -19,9 +19,12 @@
  */
 package org.neo4j.causalclustering.discovery;
 
+import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.neo4j.causalclustering.identity.ClusterId;
+import org.neo4j.helpers.collection.Pair;
 
 public class ReadReplicaTopology
 {
@@ -37,9 +40,31 @@ public class ReadReplicaTopology
         return readReplicaMembers;
     }
 
+    public Set<ReadReplicaAddresses> difference( ReadReplicaTopology other )
+    {
+        Pair<Set<ReadReplicaAddresses>, Set<ReadReplicaAddresses>> split = split( readReplicaMembers, other.members() );
+        Set<ReadReplicaAddresses> big = split.first();
+        Set<ReadReplicaAddresses> small = split.other();
+
+        return big.stream().filter( n -> !small.contains( n ) ).collect( Collectors.toSet() );
+    }
+
+    private Pair<Set<ReadReplicaAddresses>, Set<ReadReplicaAddresses>> split(
+            Set<ReadReplicaAddresses> one, Set<ReadReplicaAddresses> two )
+    {
+        if ( one.size() > two.size() )
+        {
+            return Pair.pair( one, two );
+        }
+        else
+        {
+            return Pair.pair( two, one );
+        }
+    }
+
     @Override
     public String toString()
     {
-        return String.format( "ReadReplicaTopology{readReplicas=%s}", readReplicaMembers );
+        return String.format( "{readReplicas=%s}", readReplicaMembers );
     }
 }

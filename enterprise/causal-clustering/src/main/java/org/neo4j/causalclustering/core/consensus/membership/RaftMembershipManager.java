@@ -113,9 +113,15 @@ public class RaftMembershipManager extends LifecycleAdapter implements RaftMembe
 
     public void setTargetMembershipSet( Set<MemberId> targetMembers )
     {
+        boolean targetMembershipChanged = !targetMembers.equals( this.targetMembers );
+
         this.targetMembers = new HashSet<>( targetMembers );
 
-        log.info( "Target membership: " + targetMembers );
+        if ( targetMembershipChanged )
+        {
+            log.info( "Target membership: " + targetMembers );
+        }
+
         membershipChanger.onTargetChanged( targetMembers );
 
         checkForStartCondition();
@@ -175,7 +181,20 @@ public class RaftMembershipManager extends LifecycleAdapter implements RaftMembe
 
     private boolean isSafeToRemoveMember()
     {
-        return votingMembers() != null && votingMembers().size() > expectedClusterSize;
+        Set<MemberId> votingMembers = votingMembers();
+        boolean safeToRemoveMember = votingMembers != null && votingMembers.size() > expectedClusterSize;
+
+        if ( !safeToRemoveMember )
+        {
+            Set<MemberId> membersToRemove = superfluousMembers();
+
+            log.info( "Not safe to remove %s %s because it would reduce the number of voting members below the expected " +
+                            "cluster size of %d. Voting members: %s",
+                    membersToRemove.size() > 1 ? "members" : "member",
+                    membersToRemove, expectedClusterSize, votingMembers  );
+        }
+
+        return safeToRemoveMember;
     }
 
     private Set<MemberId> superfluousMembers()
@@ -196,7 +215,7 @@ public class RaftMembershipManager extends LifecycleAdapter implements RaftMembe
         {
             membershipChanger.onMissingMember( first( missingMembers() ) );
         }
-        else if ( isSafeToRemoveMember() && superfluousMembers().size() > 0 )
+        else if ( superfluousMembers().size() > 0 && isSafeToRemoveMember(  ) )
         {
             membershipChanger.onSuperfluousMember( first( superfluousMembers() ) );
         }
@@ -209,6 +228,7 @@ public class RaftMembershipManager extends LifecycleAdapter implements RaftMembe
      */
     void doConsensus( Set<MemberId> newVotingMemberSet )
     {
+        log.info( "Getting consensus on new voting member set %s", newVotingMemberSet );
         sendToMyself.replicate( memberSetBuilder.build( newVotingMemberSet ) );
     }
 
@@ -288,12 +308,14 @@ public class RaftMembershipManager extends LifecycleAdapter implements RaftMembe
 
                 if ( state.append( baseIndex, new HashSet<>( raftGroup.getMembers() ) ) )
                 {
+                    log.info( "Appending new member set %s", state );
                     storage.persistStoreData( state );
                     updateMemberSets();
                 }
                 else
                 {
-                    log.warn( "Appending member set was ignored. Current state: %s, Appended set: %s, Log index: %d%n", state, raftGroup, baseIndex );
+                    log.warn( "Appending member set was ignored. Current state: %s, Appended set: %s, Log index: %d%n",
+                            state, raftGroup, baseIndex );
                 }
             }
             baseIndex++;
