@@ -175,7 +175,7 @@ trait StringOperator {
     case (null, _) => None
     case (_, null) => None
     case (l: String, r: String) => Some(compare(l,r))
-    case (l, r) => throw new CypherTypeException(s"Expected two strings, but got $l and $r")
+    case (_, _) => None
   }
 
   def lhs: Expression

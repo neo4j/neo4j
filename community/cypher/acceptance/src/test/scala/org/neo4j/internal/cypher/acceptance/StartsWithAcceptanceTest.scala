@@ -42,6 +42,36 @@ class StartsWithAcceptanceTest extends ExecutionEngineFunSuite with QueryStatist
     fNode = createLabeledNode("LABEL")
   }
 
+  test("should return null when end with is used on none strings"){
+    val result = executeWithAllPlanners("""
+                                          | CREATE ({name: 1})
+                                          | WITH *
+                                          | MATCH (a)
+                                          | WHERE a.name ENDS WITH 'foo'
+                                          | RETURN a.name""".stripMargin)
+    result.columnAs("a.name").toList should be (List())
+  }
+
+  test("should return null when contains is used on none strings"){
+    val result = executeWithAllPlanners("""
+                                          | CREATE ({name: 1})
+                                          | WITH *
+                                          | MATCH (a)
+                                          | WHERE a.name CONTAINS 'foo'
+                                          | RETURN a.name""".stripMargin)
+    result.columnAs("a.name").toList should be (List())
+  }
+
+  test("should return null when starts with is used on none strings"){
+    val result = executeWithAllPlanners("""
+                                          | CREATE ({name: 1})
+                                          | WITH *
+                                          | MATCH (a)
+                                          | WHERE a.name STARTS WITH 'foo'
+                                          | RETURN a.name""".stripMargin)
+    result.columnAs("a.name").toList should be (List())
+  }
+
   // *** TESTS OF PREFIX SEARCH
   test("should not plan an IndexSeek when index doesn't exist") {
 
