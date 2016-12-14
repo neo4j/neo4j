@@ -22,6 +22,7 @@ package org.neo4j.index.gbptree;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
@@ -61,10 +62,11 @@ import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 
 public class GBPTreeIT
 {
+    private final TemporaryFolder folder = new TemporaryFolder( new File( "target" ) );
+    private final RandomRule random = new RandomRule();
     @Rule
-    public final TemporaryFolder folder = new TemporaryFolder( new File( "target" ) );
-    @Rule
-    public final RandomRule random = new RandomRule();
+    public RuleChain ruleChain = RuleChain.outerRule( random ).around( folder );
+
     private final Layout<MutableLong,MutableLong> layout = new SimpleLongLayout();
     private GBPTree<MutableLong,MutableLong> index;
 
@@ -481,10 +483,6 @@ public class GBPTreeIT
                 readerThread.join( SECONDS.toMillis( 10 ) );
             }
             checkpointer.join();
-            if ( failHalt.get() )
-            {
-                index.printTree( false);
-            }
             if ( readerError.get() != null )
             {
                 throw readerError.get();

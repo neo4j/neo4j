@@ -1024,11 +1024,6 @@ public class SeekCursorTest
         // given
         long gen = node.gen( cursor );
         MutableBoolean triggered = new MutableBoolean( false );
-        GBPTree.RootCatchup rootCatchup = c ->
-        {
-            triggered.setTrue();
-            return gen;
-        };
 
         // a newer leaf
         long leftChild = cursor.getCurrentPageId();
@@ -1036,13 +1031,28 @@ public class SeekCursorTest
         cursor.next();
 
         // a root
+        long rootId = cursor.getCurrentPageId();
         node.initializeInternal( cursor, stableGen, unstableGen );
         long keyInRoot = 10L;
         insertKey.setValue( keyInRoot );
         node.insertKeyAt( cursor, insertKey, 0, 0, tmp );
         node.setKeyCount( cursor, 1 );
-        // with old pointer to child (simulating reuse of internal node)
+        // with old pointer to child (simulating reuse of child node)
         node.setChildAt( cursor, leftChild, 0, stableGen, unstableGen );
+
+        // a root catchup that records usage
+        GBPTree.RootCatchup rootCatchup = c ->
+        {
+            triggered.setTrue();
+
+            // and set child generation to match pointer
+            cursor.next( leftChild );
+            cursor.zapPage();
+            node.initializeLeaf( cursor, stableGen, unstableGen );
+
+            cursor.next( rootId );
+            return gen;
+        };
 
         // when
         from.setValue( 1L );

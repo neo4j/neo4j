@@ -175,6 +175,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
 
     private void traverseDownToFirstLeaf() throws IOException
     {
+        byte nodeType;
         long newGen;
         boolean isInternal;
         int keyCount;
@@ -186,6 +187,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
         {
             do
             {
+                nodeType = bTreeNode.nodeType( cursor );
                 currentNodeGen = bTreeNode.gen( cursor );
 
                 newGen = bTreeNode.newGen( cursor, stableGeneration, unstableGeneration );
@@ -217,11 +219,15 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
             while ( cursor.shouldRetry() );
             checkOutOfBounds( cursor );
 
-            if ( !verifyNodeGenInvariants() )
+            if ( nodeType != TreeNode.NODE_TYPE_TREE_NODE || !verifyNodeGenInvariants() )
             {
+                // This node has been reused. Restart seek from root.
                 generationCatchup();
                 lastFollowedPointerGen = rootCatchup.goTo( cursor );
+
+                // Force true in loop
                 isInternal = true;
+                keyCount = 1;
                 continue;
             }
 
@@ -268,12 +274,14 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
         while ( true )
         {
             pos++;
+            byte nodeType;
             long newGen;
             long rightSibling = -1; // initialized to satisfy the compiler
             long newGenGen = -1; // initialized to satisfy the compiler
             long rightSiblingGen = -1; // initialized to satisfy the compiler
             do
             {
+                nodeType = bTreeNode.nodeType( cursor );
                 currentNodeGen = bTreeNode.gen( cursor );
                 newGen = bTreeNode.newGen( cursor, stableGeneration, unstableGeneration );
                 keyCount = bTreeNode.keyCount( cursor );
@@ -309,15 +317,18 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
             while ( rediscoverKeyPosition = cursor.shouldRetry() );
             checkOutOfBounds( cursor );
 
+            if ( nodeType != TreeNode.NODE_TYPE_TREE_NODE )
+            {
+                // This node has been reused for something else than a tree node. Restart seek from root.
+                restartSeekFromRoot();
+                continue;
+            }
+
             if ( !verifyNodeGenInvariants() )
             {
-                generationCatchup();
-                lastFollowedPointerGen = rootCatchup.goTo( cursor );
-                if ( !first )
-                {
-                    layout.copyKey( prevKey, fromInclusive );
-                }
-                traverseDownToFirstLeaf();
+                // The node generation is newer than expected. This node has probably been reused during
+                // seekers lifetime. Restart seek from root.
+                restartSeekFromRoot();
                 continue;
             }
 
@@ -403,6 +414,17 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
             // We've come too far and so this means the end of the result set
             return false;
         }
+    }
+
+    private void restartSeekFromRoot() throws IOException
+    {
+        generationCatchup();
+        lastFollowedPointerGen = rootCatchup.goTo( cursor );
+        if ( !first )
+        {
+            layout.copyKey( prevKey, fromInclusive );
+        }
+        traverseDownToFirstLeaf();
     }
 
     private boolean verifyNodeGenInvariants()
