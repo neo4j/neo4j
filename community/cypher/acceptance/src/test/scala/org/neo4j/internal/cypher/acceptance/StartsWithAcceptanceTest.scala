@@ -42,7 +42,7 @@ class StartsWithAcceptanceTest extends ExecutionEngineFunSuite with QueryStatist
     fNode = createLabeledNode("LABEL")
   }
 
-  test("should return null when end with is used on none strings"){
+  test("should return null when END WITH is used on non-strings"){
     val result = executeWithAllPlanners("""
                                           | CREATE ({name: 1})
                                           | WITH *
@@ -52,7 +52,7 @@ class StartsWithAcceptanceTest extends ExecutionEngineFunSuite with QueryStatist
     result.columnAs("a.name").toList should be (List())
   }
 
-  test("should return null when contains is used on none strings"){
+  test("should return null when CONTAINS is used on non-strings"){
     val result = executeWithAllPlanners("""
                                           | CREATE ({name: 1})
                                           | WITH *
@@ -62,7 +62,7 @@ class StartsWithAcceptanceTest extends ExecutionEngineFunSuite with QueryStatist
     result.columnAs("a.name").toList should be (List())
   }
 
-  test("should return null when starts with is used on none strings that contains integers") {
+  test("should return null when CONTAINS is used on non-strings that contains integers") {
     val result = executeWithAllPlanners("""
                                           | CREATE ({name: 1})
                                           | WITH *
@@ -72,7 +72,7 @@ class StartsWithAcceptanceTest extends ExecutionEngineFunSuite with QueryStatist
     result.columnAs("a.name").toList should be(List())
   }
 
-  test("should return null when starts with is used on none strings"){
+  test("should return null when STARTS WITH is used on non-strings"){
     val result = executeWithAllPlanners("""
                                           | CREATE ({name: 1})
                                           | WITH *
