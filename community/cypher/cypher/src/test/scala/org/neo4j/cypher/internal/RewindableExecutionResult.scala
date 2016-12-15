@@ -253,6 +253,9 @@ object RewindableExecutionResult {
     override def executionPlanDescription(): InternalPlanDescription = lift(inner.executionPlanDescription())
 
     private def lift(planDescription: v3_1.planDescription.InternalPlanDescription): InternalPlanDescription = {
+
+      import v3_1.planDescription.InternalPlanDescription.{Arguments => Arguments3_1}
+
       val name: String = planDescription.name
       val children: Children = planDescription.children match {
         case v3_1.planDescription.NoChildren => NoChildren
@@ -261,35 +264,34 @@ object RewindableExecutionResult {
       }
 
       val arguments: Seq[Argument] = planDescription.arguments.map {
-        case v3_1.planDescription.InternalPlanDescription.Arguments.Time(value) => Arguments.Time(value)
-        case v3_1.planDescription.InternalPlanDescription.Arguments.Rows(value) => Arguments.Rows(value)
-        case v3_1.planDescription.InternalPlanDescription.Arguments.DbHits(value) => Arguments.DbHits(value)
-        case v3_1.planDescription.InternalPlanDescription.Arguments.ColumnsLeft(value) => Arguments.ColumnsLeft(value)
-        case v3_1.planDescription.InternalPlanDescription.Arguments.Expression(_) => Arguments.Expression(null)
-        case v3_1.planDescription.InternalPlanDescription.Arguments.LegacyExpression(_) => Arguments.LegacyExpression(null)
-        case v3_1.planDescription.InternalPlanDescription.Arguments.UpdateActionName(value) => Arguments.UpdateActionName(value)
-        case v3_1.planDescription.InternalPlanDescription.Arguments.MergePattern(startPoint) => Arguments.MergePattern(startPoint)
-        case v3_1.planDescription.InternalPlanDescription.Arguments.LegacyIndex(value) => Arguments.LegacyIndex(value)
-        case v3_1.planDescription.InternalPlanDescription.Arguments.Index(label, propertyKey) => Arguments.Index(label, propertyKey)
-        case v3_1.planDescription.InternalPlanDescription.Arguments.PrefixIndex(label, propertyKey, _) => Arguments.PrefixIndex(label, propertyKey, null)
-        case v3_1.planDescription.InternalPlanDescription.Arguments.InequalityIndex(label, propertyKey, bounds) => Arguments.InequalityIndex(label, propertyKey, bounds)
-        case v3_1.planDescription.InternalPlanDescription.Arguments.LabelName(label) => Arguments.LabelName(label)
-        case v3_1.planDescription.InternalPlanDescription.Arguments.KeyNames(keys) => Arguments.KeyNames(keys)
-        case v3_1.planDescription.InternalPlanDescription.Arguments.KeyExpressions(_) => Arguments.KeyExpressions(null)
-        case v3_1.planDescription.InternalPlanDescription.Arguments.EntityByIdRhs(_) => Arguments.EntityByIdRhs(null)
-        case v3_1.planDescription.InternalPlanDescription.Arguments.EstimatedRows(value) => Arguments.EstimatedRows(value)
-        case v3_1.planDescription.InternalPlanDescription.Arguments.Version(value) => Arguments.Version(value)
-        case v3_1.planDescription.InternalPlanDescription.Arguments.Planner(value) => Arguments.Planner(value)
-        case v3_1.planDescription.InternalPlanDescription.Arguments.PlannerImpl(value) => Arguments.PlannerImpl(value)
-        case v3_1.planDescription.InternalPlanDescription.Arguments.Runtime(value) => Arguments.Runtime(value)
-        case v3_1.planDescription.InternalPlanDescription.Arguments.RuntimeImpl(value) => Arguments.RuntimeImpl(value)
-        case v3_1.planDescription.InternalPlanDescription.Arguments.ExpandExpression(from, relName, relTypes, to, _, varLength) =>
-          val (min,max) = if(varLength) (1, None) else (1, Some(1))
+        case Arguments3_1.Time(value) => Arguments.Time(value)
+        case Arguments3_1.Rows(value) => Arguments.Rows(value)
+        case Arguments3_1.DbHits(value) => Arguments.DbHits(value)
+        case Arguments3_1.ColumnsLeft(value) => Arguments.ColumnsLeft(value)
+        case Arguments3_1.Expression(_) => Arguments.Expression(null)
+        case Arguments3_1.LegacyExpression(_) => Arguments.LegacyExpression(null)
+        case Arguments3_1.UpdateActionName(value) => Arguments.UpdateActionName(value)
+        case Arguments3_1.MergePattern(startPoint) => Arguments.MergePattern(startPoint)
+        case Arguments3_1.LegacyIndex(value) => Arguments.LegacyIndex(value)
+        case Arguments3_1.Index(label, propertyKey) => Arguments.Index(label, propertyKey)
+        case Arguments3_1.PrefixIndex(label, propertyKey, _) => Arguments.PrefixIndex(label, propertyKey, null)
+        case Arguments3_1.InequalityIndex(label, propertyKey, bounds) => Arguments.InequalityIndex(label, propertyKey, bounds)
+        case Arguments3_1.LabelName(label) => Arguments.LabelName(label)
+        case Arguments3_1.KeyNames(keys) => Arguments.KeyNames(keys)
+        case Arguments3_1.KeyExpressions(_) => Arguments.KeyExpressions(null)
+        case Arguments3_1.EntityByIdRhs(_) => Arguments.EntityByIdRhs(null)
+        case Arguments3_1.EstimatedRows(value) => Arguments.EstimatedRows(value)
+        case Arguments3_1.Version(value) => Arguments.Version(value)
+        case Arguments3_1.Planner(value) => Arguments.Planner(value)
+        case Arguments3_1.PlannerImpl(value) => Arguments.PlannerImpl(value)
+        case Arguments3_1.Runtime(value) => Arguments.Runtime(value)
+        case Arguments3_1.RuntimeImpl(value) => Arguments.RuntimeImpl(value)
+        case Arguments3_1.ExpandExpression(from, relName, relTypes, to,direction, min, max) =>
           Arguments.ExpandExpression(from, relName, relTypes, to, null, min, max)
-        case v3_1.planDescription.InternalPlanDescription.Arguments.SourceCode(className, sourceCode) =>
+        case Arguments3_1.SourceCode(className, sourceCode) =>
           Arguments.SourceCode(className, sourceCode)
       }
-      new PlanDescriptionImpl( new Id, name, children, arguments, planDescription.variables)
+      PlanDescriptionImpl(new Id, name, children, arguments, planDescription.variables)
     }
 
 
