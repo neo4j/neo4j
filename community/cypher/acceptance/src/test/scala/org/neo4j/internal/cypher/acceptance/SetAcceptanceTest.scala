@@ -19,10 +19,53 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{ExecutionEngineFunSuite, QueryStatisticsTestSupport}
+import org.neo4j.cypher.{CypherTypeException, ExecutionEngineFunSuite, QueryStatisticsTestSupport}
 import org.neo4j.graphdb.Node
 
 class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport {
+
+  test("should be able to set proporty to collection") {
+    // given
+    val node = createNode()
+
+    // when
+    val result = execute("MATCH (n) SET n.property = ['foo','bar'] RETURN n.property")
+
+    // then
+    assertStats(result, propertiesSet = 1)
+    node should haveProperty("property")
+
+    // and
+    val result2 = execute("MATCH (n) WHERE n.property = ['foo','bar'] RETURN count(*)")
+    result2.columnAs("count(*)").toList should be(List(1))
+  }
+
+  test("should not be able to set property to collection of collections") {
+    // given
+    val node = createNode()
+
+    // when
+    val result = intercept[CypherTypeException](
+      execute("MATCH (n) SET n.property = [['foo'],['bar']] RETURN n.property")
+    )
+
+    //then
+    result.toString should equal("org.neo4j.cypher.CypherTypeException: Collections containing collections can not be stored in properties.")
+  }
+
+  test("should not be able to set property to collection with null value") {
+    // given
+    val node = createNode()
+
+    // when
+    val result = intercept[CypherTypeException](
+      execute("MATCH (n) SET n.property = [null,null] RETURN n.property")
+    )
+
+    //then
+    result.toString should equal("org.neo4j.cypher.CypherTypeException: Collections containing null values can not be stored in properties.")
+  }
+
   test("set node property to null will remove existing property") {
     // given
     val node = createNode("property" -> 12)
