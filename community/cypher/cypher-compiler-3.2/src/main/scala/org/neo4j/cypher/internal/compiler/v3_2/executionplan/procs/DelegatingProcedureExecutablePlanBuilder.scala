@@ -21,8 +21,9 @@ package org.neo4j.cypher.internal.compiler.v3_2.executionplan.procs
 
 import org.neo4j.cypher.internal.compiler.v3_2.ast.ResolvedCall
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan._
+import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilationState.State5
 import org.neo4j.cypher.internal.compiler.v3_2.spi.{PlanContext, QueryContext}
-import org.neo4j.cypher.internal.compiler.v3_2.{CompilationPhaseTracer, PreparedQuerySemantics, SyntaxExceptionCreator}
+import org.neo4j.cypher.internal.compiler.v3_2.{CompilationPhaseTracer, SyntaxExceptionCreator}
 import org.neo4j.cypher.internal.frontend.v3_2._
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 
@@ -33,7 +34,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.ast._
   */
 case class DelegatingProcedureExecutablePlanBuilder(delegate: ExecutablePlanBuilder, publicTypeConverter: Any => Any) extends ExecutablePlanBuilder {
 
-  override def producePlan(inputQuery: PreparedQuerySemantics, planContext: PlanContext, tracer: CompilationPhaseTracer,
+  override def producePlan(inputQuery: State5, planContext: PlanContext, tracer: CompilationPhaseTracer,
                            createFingerprintReference: (Option[PlanFingerprint]) => PlanFingerprintReference): ExecutionPlan = {
 
     inputQuery.statement match {
@@ -41,7 +42,7 @@ case class DelegatingProcedureExecutablePlanBuilder(delegate: ExecutablePlanBuil
       // Global call: CALL foo.bar.baz("arg1", 2)
       case Query(None, SingleQuery(Seq(resolved@ResolvedCall(signature, args, _, _, _)))) =>
         val SemanticCheckResult(_, errors) = resolved.semanticCheck(SemanticState.clean)
-        val mkException = new SyntaxExceptionCreator(inputQuery.queryText, inputQuery.offset)
+        val mkException = new SyntaxExceptionCreator(inputQuery.queryText, inputQuery.startPosition)
         errors.foreach { error => throw mkException(error.msg, error.position) }
 
         ProcedureCallExecutionPlan(signature, args, resolved.callResultTypes, resolved.callResultIndices,

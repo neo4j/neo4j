@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.codegen.QueryExecutionTracer
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.profiling.ProfilingTracer
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.ExecutionPlanBuilder.DescriptionProvider
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.RuntimeTypeConverter
+import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilationState.State5
 import org.neo4j.cypher.internal.compiler.v3_2.pipes._
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{Id, InternalPlanDescription}
@@ -73,7 +74,7 @@ trait NewRuntimeSuccessRateMonitor {
 
 trait ExecutablePlanBuilder {
 
-  def producePlan(inputQuery: PreparedQuerySemantics, planContext: PlanContext,
+  def producePlan(inputQuery: State5, planContext: PlanContext,
                   tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING,
                   createFingerprintReference: (Option[PlanFingerprint]) => PlanFingerprintReference): ExecutionPlan
 }
@@ -81,7 +82,7 @@ trait ExecutablePlanBuilder {
 object InterpretedExecutionPlanBuilder {
   def interpretedToExecutionPlan(pipeInfo: PipeInfo,
                                  planContext: PlanContext,
-                                 inputQuery: PreparedQuerySemantics,
+                                 inputQuery: State5,
                                  createFingerprintReference: Option[PlanFingerprint] => PlanFingerprintReference,
                                  config: CypherCompilerConfiguration,
                                  typeConverter: RuntimeTypeConverter,

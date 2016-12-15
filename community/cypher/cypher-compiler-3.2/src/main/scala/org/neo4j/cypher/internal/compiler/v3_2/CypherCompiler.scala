@@ -21,12 +21,12 @@ package org.neo4j.cypher.internal.compiler.v3_2
 
 import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters.NameSpacerPhase
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan._
-import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilationState.{State1, State4}
+import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilationState.{State1, State4, State5}
 import org.neo4j.cypher.internal.compiler.v3_2.phases._
 import org.neo4j.cypher.internal.compiler.v3_2.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSequencer
+import org.neo4j.cypher.internal.frontend.v3_2.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Statement
-import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, SemanticTable}
 
 case class CypherCompiler(executionPlanBuilder: ExecutablePlanBuilder,
                           astRewriter: ASTRewriter,
@@ -70,14 +70,14 @@ case class CypherCompiler(executionPlanBuilder: ExecutablePlanBuilder,
 
   private val astRewriting = AstRewriting(sequencer)
 
-  private val firstPipeline =
+  private val firstPipeline: Transformer[State1, State4] =
       Parsing andThen
       DeprecationWarnings andThen
       PreparatoryRewriting andThen
       SemanticAnalysis.Early andThen
       astRewriting
 
-  private val secondPipeLine =
+  private val secondPipeLine: Transformer[State4, State5] =
       RewriteProcedureCalls andThen
       SemanticAnalysis.Late andThen
       NameSpacerPhase
@@ -85,20 +85,11 @@ case class CypherCompiler(executionPlanBuilder: ExecutablePlanBuilder,
   def prepareSemanticQuery(in: State4,
                            notificationLogger: InternalNotificationLogger,
                            planContext: PlanContext,
-                           tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING): PreparedQuerySemantics = {
+                           tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING): State5 = {
 
     val exceptionCreator = new SyntaxExceptionCreator(in.queryText, in.startPosition)
 
-    val output = secondPipeLine.transform(in, Context(exceptionCreator, tracer, notificationLogger, planContext))
-
-    val table = SemanticTable(types = output.semantics.typeTable, recordedScopes = output.semantics.recordedScopes)
-    PreparedQuerySemantics(
-      statement = in.statement,
-      queryText = in.queryText,
-      offset = in.startPosition,
-      extractedParams = in.extractedParams,
-      semanticTable = table,
-      scopeTree = output.semantics.scopeTree)(in.plannerName, in.postConditions)
+    secondPipeLine.transform(in, Context(exceptionCreator, tracer, notificationLogger, planContext))
   }
 
   private def provideCache(cacheAccessor: CacheAccessor[Statement, ExecutionPlan],

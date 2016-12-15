@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.executionplan.ExecutionPlanBuilde
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.InterpretedExecutionPlanBuilder.interpretedToExecutionPlan
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_2.helpers._
+import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilationState.State5
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.compiler.v3_2.planner.execution.{PipeExecutionBuilderContext, PipeExecutionPlanBuilder}
@@ -54,7 +55,7 @@ trait RuntimeBuilder {
   def apply(periodicCommit: Option[PeriodicCommit], logicalPlan: LogicalPlan, pipeBuildContext: PipeExecutionBuilderContext,
             planContext: PlanContext, tracer: CompilationPhaseTracer, semanticTable: SemanticTable,
             monitor: NewRuntimeSuccessRateMonitor, plannerName: PlannerName,
-            preparedQuery: PreparedQuerySemantics,
+            preparedQuery: State5,
             createFingerprintReference: Option[PlanFingerprint] => PlanFingerprintReference,
             config: CypherCompilerConfiguration): ExecutionPlan = {
     try {
@@ -64,8 +65,7 @@ trait RuntimeBuilder {
       case e: CantCompileQueryException =>
         monitor.unableToHandlePlan(logicalPlan, e)
         fallback(preparedQuery, planContext.notificationLogger())
-        interpretedProducer
-          .apply(periodicCommit, logicalPlan, pipeBuildContext, planContext, tracer, preparedQuery, createFingerprintReference, config)
+        interpretedProducer(periodicCommit, logicalPlan, pipeBuildContext, planContext, tracer, preparedQuery, createFingerprintReference, config)
     }
   }
 
@@ -73,19 +73,19 @@ trait RuntimeBuilder {
 
   def interpretedProducer: InterpretedPlanBuilder
 
-  def fallback(preparedQuery: PreparedQuerySemantics, notificationLogger: InternalNotificationLogger): Unit
+  def fallback(preparedQuery: State5, notificationLogger: InternalNotificationLogger): Unit
 }
 
 case class SilentFallbackRuntimeBuilder(interpretedProducer: InterpretedPlanBuilder, compiledProducer: CompiledPlanBuilder)
   extends RuntimeBuilder {
 
-  override def fallback(preparedQuery: PreparedQuerySemantics, notificationLogger: InternalNotificationLogger): Unit = {}
+  override def fallback(preparedQuery: State5, notificationLogger: InternalNotificationLogger): Unit = {}
 }
 
 case class WarningFallbackRuntimeBuilder(interpretedProducer: InterpretedPlanBuilder, compiledProducer: CompiledPlanBuilder)
   extends RuntimeBuilder {
 
-  override def fallback(preparedQuery: PreparedQuerySemantics, notificationLogger: InternalNotificationLogger): Unit =
+  override def fallback(preparedQuery: State5, notificationLogger: InternalNotificationLogger): Unit =
     notificationLogger.log(RuntimeUnsupportedNotification)
 }
 
@@ -93,7 +93,7 @@ case class InterpretedRuntimeBuilder(interpretedProducer: InterpretedPlanBuilder
   override def apply(periodicCommit: Option[PeriodicCommit], logicalPlan: LogicalPlan, pipeBuildContext: PipeExecutionBuilderContext,
                      planContext: PlanContext, tracer: CompilationPhaseTracer, semanticTable: SemanticTable,
                      monitor: NewRuntimeSuccessRateMonitor, plannerName: PlannerName,
-                     preparedQuery: PreparedQuerySemantics,
+                     preparedQuery: State5,
                      createFingerprintReference: Option[PlanFingerprint] => PlanFingerprintReference,
                      config: CypherCompilerConfiguration): ExecutionPlan =
     interpretedProducer(periodicCommit, logicalPlan, pipeBuildContext, planContext, tracer, preparedQuery, createFingerprintReference, config)
@@ -101,7 +101,7 @@ case class InterpretedRuntimeBuilder(interpretedProducer: InterpretedPlanBuilder
 
   override def compiledProducer = throw new InternalException("This should never be called")
 
-  override def fallback(preparedQuery: PreparedQuerySemantics, notificationLogger: InternalNotificationLogger) =
+  override def fallback(preparedQuery: State5, notificationLogger: InternalNotificationLogger) =
     throw new InternalException("This should never be called")
 }
 
@@ -109,14 +109,14 @@ case class ErrorReportingRuntimeBuilder(compiledProducer: CompiledPlanBuilder) e
 
   override def interpretedProducer = throw new InternalException("This should never be called")
 
-  override def fallback(preparedQuery: PreparedQuerySemantics, notificationLogger: InternalNotificationLogger) =
+  override def fallback(preparedQuery: State5, notificationLogger: InternalNotificationLogger) =
     throw new InvalidArgumentException("The given query is not currently supported in the selected runtime")
 }
 
 case class InterpretedPlanBuilder(clock: Clock, monitors: Monitors,typeConverter: RuntimeTypeConverter) {
 
   def apply(periodicCommit: Option[PeriodicCommit], logicalPlan: LogicalPlan, pipeBuildContext: PipeExecutionBuilderContext,
-            planContext: PlanContext, tracer: CompilationPhaseTracer, preparedQuery: PreparedQuerySemantics,
+            planContext: PlanContext, tracer: CompilationPhaseTracer, preparedQuery: State5,
             createFingerprintReference: Option[PlanFingerprint] => PlanFingerprintReference,
             config: CypherCompilerConfiguration) =
     closing(tracer.beginPhase(PIPE_BUILDING)) {
@@ -135,7 +135,7 @@ case class CompiledPlanBuilder(clock: Clock, structure:CodeStructure[GeneratedQu
   def apply(logicalPlan: LogicalPlan, semanticTable: SemanticTable, planContext: PlanContext,
             monitor: NewRuntimeSuccessRateMonitor, tracer: CompilationPhaseTracer,
             plannerName: PlannerName,
-            preparedQuery: PreparedQuerySemantics,
+            preparedQuery: State5,
             createFingerprintReference:Option[PlanFingerprint]=>PlanFingerprintReference): ExecutionPlan = {
             monitor.newPlanSeen(logicalPlan)
     closing(tracer.beginPhase(CODE_GENERATION)) {

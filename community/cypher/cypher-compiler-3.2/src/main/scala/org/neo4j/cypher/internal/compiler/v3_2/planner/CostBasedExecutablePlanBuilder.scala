@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.plannerQuery.Statemen
 import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters._
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{ExecutablePlanBuilder, NewRuntimeSuccessRateMonitor, PlanFingerprint, PlanFingerprintReference}
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.closing
+import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilationState.State5
 import org.neo4j.cypher.internal.compiler.v3_2.planner.execution.PipeExecutionBuilderContext
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans._
@@ -51,15 +52,15 @@ case class CostBasedExecutablePlanBuilder(monitors: Monitors,
                                           publicTypeConverter: Any => Any)
   extends ExecutablePlanBuilder {
 
-  override def producePlan(inputQuery: PreparedQuerySemantics, planContext: PlanContext, tracer: CompilationPhaseTracer,
+  override def producePlan(inputQuery: State5, planContext: PlanContext, tracer: CompilationPhaseTracer,
                            createFingerprintReference: (Option[PlanFingerprint]) => PlanFingerprintReference) = {
     val statement =
       CostBasedExecutablePlanBuilder.rewriteStatement(
         statement = inputQuery.statement,
-        scopeTree = inputQuery.scopeTree,
+        scopeTree = inputQuery.semantics.scopeTree,
         semanticTable = inputQuery.semanticTable,
         rewriterSequencer = rewriterSequencer,
-        preConditions = inputQuery.conditions,
+        preConditions = inputQuery.postConditions,
         monitor = monitors.newMonitor[AstRewritingMonitor]())
 
     //monitor success of compilation
