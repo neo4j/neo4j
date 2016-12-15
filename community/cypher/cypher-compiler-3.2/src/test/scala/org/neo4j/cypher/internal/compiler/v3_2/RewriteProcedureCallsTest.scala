@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_2
 
 import org.neo4j.cypher.internal.compiler.v3_2.ast.ResolvedCall
+import org.neo4j.cypher.internal.compiler.v3_2.phases.RewriteProcedureCalls
 import org.neo4j.cypher.internal.compiler.v3_2.spi._
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
@@ -64,13 +65,13 @@ class RewriteProcedureCallsTest extends CypherFunSuite with AstConstructionTestS
                             funcSignatureLookup: QualifiedName => Option[UserFunctionSignature],
                             original: Query) = {
     original.endoRewrite(
-      RewriteProcedureCalls.rewriter(new SignatureResolvingPlanContext(procSignatureLookup, funcSignatureLookup))
+      RewriteProcedureCalls.rewriter(new TestSignatureResolvingPlanContext(procSignatureLookup, funcSignatureLookup))
     )
   }
 }
 
-class SignatureResolvingPlanContext(procSignatureLookup: QualifiedName => ProcedureSignature,
-                                    funcSignatureLookup: QualifiedName => Option[UserFunctionSignature])
+class TestSignatureResolvingPlanContext(procSignatureLookup: QualifiedName => ProcedureSignature,
+                                        funcSignatureLookup: QualifiedName => Option[UserFunctionSignature])
   extends NotImplementedPlanContext {
   override def procedureSignature(name: QualifiedName): ProcedureSignature = procSignatureLookup(name)
 

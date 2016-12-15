@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.v3_2.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.{ApplyRewriter, RewriterCondition, RewriterStep, RewriterStepSequencer}
+import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.{RewriterCondition, RewriterStep, RewriterStepSequencer}
 import org.neo4j.cypher.internal.frontend.v3_2.Rewritable._
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.{InternalException, Scope, SemanticTable}
@@ -114,9 +114,7 @@ object CostBasedExecutablePlanBuilder {
                        preConditions: Set[RewriterCondition],
                        monitor: AstRewritingMonitor): (Statement, SemanticTable) = {
     val statementRewriter = StatementRewriter(rewriterSequencer, preConditions, monitor)
-    val namespacer = Namespacer(statement, scopeTree)
     val namespacedStatement = statementRewriter.rewriteStatement(statement)(
-      ApplyRewriter("Namespacer", namespacer.statementRewriter),
       rewriteEqualityToInPredicate,
       CNFNormalizer()(monitor)
     )

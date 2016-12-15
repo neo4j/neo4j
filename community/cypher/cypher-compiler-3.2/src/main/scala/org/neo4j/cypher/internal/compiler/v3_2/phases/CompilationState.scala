@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.phases
 
+import org.neo4j.cypher.internal.compiler.v3_2.executionplan.ExecutionPlan
 import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterCondition
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{Query, Statement}
 import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, SemanticState, SemanticTable}
@@ -99,4 +100,6 @@ object CompilationState {
                     extractedParams: Map[String, Any],
                     postConditions: Set[RewriterCondition],
                     semanticTable: SemanticTable) extends S5
+
+  case class EndState(executionPlan: ExecutionPlan)
 }

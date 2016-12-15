@@ -23,7 +23,6 @@ import java.time.Clock
 
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi.CodeStructure
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan._
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.procs.DelegatingProcedureExecutablePlanBuilder
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.RuntimeTypeConverter
 import org.neo4j.cypher.internal.compiler.v3_2.planner.CostBasedPipeBuilderFactory
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.rewriter.LogicalPlanRewriter
@@ -63,7 +62,6 @@ object CypherCompilerFactory {
       updateStrategy = updateStrategy,
       publicTypeConverter = typeConverter.asPublicType
     )
-    val procedurePlanProducer = DelegatingProcedureExecutablePlanBuilder(costPlanProducer, typeConverter.asPublicType)
 
     val createFingerprintReference: (Option[PlanFingerprint]) => PlanFingerprintReference =
       new PlanFingerprintReference(clock, config.queryPlanTTL, config.statsDivergenceThreshold, _)
@@ -72,7 +70,7 @@ object CypherCompilerFactory {
     val cacheMonitor = monitors.newMonitor[AstCacheMonitor](monitorTag)
     val cache = new MonitoringCacheAccessor[Statement, ExecutionPlan](cacheMonitor)
 
-    CypherCompiler(procedurePlanProducer, rewriter, cache, planCacheFactory, cacheMonitor, monitors, rewriterSequencer, createFingerprintReference)
+    CypherCompiler(costPlanProducer, rewriter, cache, planCacheFactory, cacheMonitor, monitors, rewriterSequencer, createFingerprintReference, typeConverter)
   }
 
   private def logStalePlanRemovalMonitor(log: InfoLogger) = new AstCacheMonitor {

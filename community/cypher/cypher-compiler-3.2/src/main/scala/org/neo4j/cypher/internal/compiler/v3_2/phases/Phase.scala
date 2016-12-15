@@ -60,3 +60,19 @@ class PipeLine[From, Temp, To](first: Transformer[From, Temp], after: Transforme
     after.transform(step, context)
   }
 }
+
+object OrElse {
+
+  implicit class OrElser[From, To](maybeTransform: Transformer[From, Option[To]]) {
+    def orElse(fallback: Transformer[From, To]) = OrElse(maybeTransform, fallback)
+  }
+
+}
+
+case class OrElse[From, To](first: Transformer[From, Option[To]], fallback: Transformer[From, To])
+  extends Transformer[From, To] {
+  override def transform(from: From, context: Context): To = {
+    val result = first.transform(from, context)
+    result getOrElse fallback.transform(from, context)
+  }
+}

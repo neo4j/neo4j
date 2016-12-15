@@ -19,85 +19,84 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.executionplan.procs
 
+import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase
+import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
 import org.neo4j.cypher.internal.compiler.v3_2.ast.ResolvedCall
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilationState.State5
-import org.neo4j.cypher.internal.compiler.v3_2.spi.{PlanContext, QueryContext}
-import org.neo4j.cypher.internal.compiler.v3_2.{CompilationPhaseTracer, SyntaxExceptionCreator}
+import org.neo4j.cypher.internal.compiler.v3_2.phases.{Context, Phase}
+import org.neo4j.cypher.internal.compiler.v3_2.spi.QueryContext
 import org.neo4j.cypher.internal.frontend.v3_2._
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 
 /**
   * This planner takes on queries that requires no planning such as procedures and schema commands
-  *
-  * @param delegate The plan builder to delegate to
   */
-case class DelegatingProcedureExecutablePlanBuilder(delegate: ExecutablePlanBuilder, publicTypeConverter: Any => Any) extends ExecutablePlanBuilder {
+case object ProcedureOrSchemaCommandPlanBuilder extends Phase[State5, Option[ExecutionPlan]] {
 
-  override def producePlan(inputQuery: State5, planContext: PlanContext, tracer: CompilationPhaseTracer,
-                           createFingerprintReference: (Option[PlanFingerprint]) => PlanFingerprintReference): ExecutionPlan = {
+  override def phase: CompilationPhase = PIPE_BUILDING
 
-    inputQuery.statement match {
+  override def description = "take on queries that require no planning such as procedures and schema commands"
 
+  override def transform(from: State5, context: Context): Option[ExecutionPlan] =
+    from.statement match {
       // Global call: CALL foo.bar.baz("arg1", 2)
       case Query(None, SingleQuery(Seq(resolved@ResolvedCall(signature, args, _, _, _)))) =>
         val SemanticCheckResult(_, errors) = resolved.semanticCheck(SemanticState.clean)
-        val mkException = new SyntaxExceptionCreator(inputQuery.queryText, inputQuery.startPosition)
-        errors.foreach { error => throw mkException(error.msg, error.position) }
+        errors.foreach { error => throw context.exceptionCreator(error.msg, error.position) }
 
-        ProcedureCallExecutionPlan(signature, args, resolved.callResultTypes, resolved.callResultIndices,
-          planContext.notificationLogger().notifications, publicTypeConverter)
+        Some(ProcedureCallExecutionPlan(signature, args, resolved.callResultTypes, resolved.callResultIndices,
+          context.notificationLogger.notifications, context.typeConverter.asPublicType))
 
       // CREATE CONSTRAINT ON (node:Label) ASSERT node.prop IS UNIQUE
       case CreateUniquePropertyConstraint(node, label, prop) =>
-        PureSideEffectExecutionPlan("CreateUniqueConstraint", SCHEMA_WRITE, (ctx) => {
+        Some(PureSideEffectExecutionPlan("CreateUniqueConstraint", SCHEMA_WRITE, (ctx) => {
           (ctx.createUniqueConstraint _).tupled(labelProp(ctx)(label, prop.propertyKey))
-        })
+        }))
 
       // DROP CONSTRAINT ON (node:Label) ASSERT node.prop IS UNIQUE
       case DropUniquePropertyConstraint(_, label, prop) =>
-        PureSideEffectExecutionPlan("DropUniqueConstraint", SCHEMA_WRITE, (ctx) => {
+        Some(PureSideEffectExecutionPlan("DropUniqueConstraint", SCHEMA_WRITE, (ctx) => {
           (ctx.dropUniqueConstraint _).tupled(labelProp(ctx)(label, prop.propertyKey))
-        })
+        }))
 
       // CREATE CONSTRAINT ON (node:Label) ASSERT node.prop EXISTS
       case CreateNodePropertyExistenceConstraint(_, label, prop) =>
-        PureSideEffectExecutionPlan("CreateNodePropertyExistenceConstraint", SCHEMA_WRITE, (ctx) => {
+        Some(PureSideEffectExecutionPlan("CreateNodePropertyExistenceConstraint", SCHEMA_WRITE, (ctx) => {
           (ctx.createNodePropertyExistenceConstraint _).tupled(labelProp(ctx)(label, prop.propertyKey))
-        })
+        }))
 
       // DROP CONSTRAINT ON (node:Label) ASSERT node.prop EXISTS
       case DropNodePropertyExistenceConstraint(_, label, prop) =>
-        PureSideEffectExecutionPlan("CreateNodePropertyExistenceConstraint", SCHEMA_WRITE, (ctx) => {
+        Some(PureSideEffectExecutionPlan("CreateNodePropertyExistenceConstraint", SCHEMA_WRITE, (ctx) => {
           (ctx.dropNodePropertyExistenceConstraint _).tupled(labelProp(ctx)(label, prop.propertyKey))
-        })
+        }))
 
       // CREATE CONSTRAINT ON ()-[r:R]-() ASSERT r.prop EXISTS
       case CreateRelationshipPropertyExistenceConstraint(_, relType, prop) =>
-        PureSideEffectExecutionPlan("CreateRelationshipPropertyExistenceConstraint", SCHEMA_WRITE, (ctx) => {
+        Some(PureSideEffectExecutionPlan("CreateRelationshipPropertyExistenceConstraint", SCHEMA_WRITE, (ctx) => {
           (ctx.createRelationshipPropertyExistenceConstraint _).tupled(typeProp(ctx)(relType, prop.propertyKey))
-        })
+        }))
 
       // DROP CONSTRAINT ON ()-[r:R]-() ASSERT r.prop EXISTS
       case DropRelationshipPropertyExistenceConstraint(_, relType, prop) =>
-        PureSideEffectExecutionPlan("DropRelationshipPropertyExistenceConstraint", SCHEMA_WRITE, (ctx) => {
+        Some(PureSideEffectExecutionPlan("DropRelationshipPropertyExistenceConstraint", SCHEMA_WRITE, (ctx) => {
           (ctx.dropRelationshipPropertyExistenceConstraint _).tupled(typeProp(ctx)(relType, prop.propertyKey))
-        })
+        }))
 
       // CREATE INDEX ON :LABEL(prop)
       case CreateIndex(label, prop) =>
-        PureSideEffectExecutionPlan("CreateIndex", SCHEMA_WRITE, (ctx) => {
+        Some(PureSideEffectExecutionPlan("CreateIndex", SCHEMA_WRITE, (ctx) => {
           (ctx.addIndexRule _).tupled(labelProp(ctx)(label, prop))
-        })
+        }))
 
       // DROP INDEX ON :LABEL(prop)
       case DropIndex(label, prop) =>
-        PureSideEffectExecutionPlan("DropIndex", SCHEMA_WRITE, (ctx) => {
+        Some(PureSideEffectExecutionPlan("DropIndex", SCHEMA_WRITE, (ctx) => {
           (ctx.dropIndexRule _).tupled(labelProp(ctx)(label, prop))
-        })
+        }))
 
-      case _ => delegate.producePlan(inputQuery, planContext, tracer, createFingerprintReference)
-    }
+      case _ => None
   }
 
   private def labelProp(ctx: QueryContext)(label: LabelName, prop: PropertyKeyName) =
@@ -105,9 +104,4 @@ case class DelegatingProcedureExecutablePlanBuilder(delegate: ExecutablePlanBuil
 
   private def typeProp(ctx: QueryContext)(relType: RelTypeName, prop: PropertyKeyName) =
     (ctx.getOrCreateRelTypeId(relType.name), ctx.getOrCreatePropertyKeyId(prop.name))
-
 }
-
-
-
-

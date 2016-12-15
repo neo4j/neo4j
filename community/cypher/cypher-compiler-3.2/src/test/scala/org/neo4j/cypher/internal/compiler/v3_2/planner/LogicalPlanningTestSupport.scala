@@ -42,6 +42,9 @@ import org.neo4j.cypher.internal.frontend.v3_2.parser.CypherParser
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.ir.v3_2._
+import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters.Namespacer
+import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilationState.State4
+import org.neo4j.cypher.internal.compiler.v3_2.phases.RewriteProcedureCalls
 
 import scala.collection.mutable
 
@@ -210,12 +213,14 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       case _ =>
         val procs: (QualifiedName) => ProcedureSignature = procLookup.getOrElse(_ => signature)
         val funcs: (QualifiedName) => Option[UserFunctionSignature] = fcnLookup.getOrElse(_ => None)
-        val planContext = new SignatureResolvingPlanContext(procs, funcs)
+        val planContext = new TestSignatureResolvingPlanContext(procs, funcs)
         val rewriter = RewriteProcedureCalls.rewriter(planContext)
         astRewriterResultStatement.endoRewrite(rewriter)
     }
-    val semanticTable: SemanticTable = SemanticTable(types = semanticState.typeTable)
-    val (rewrittenAst: Statement, _) = CostBasedExecutablePlanBuilder.rewriteStatement(resolvedStatement, semanticState.scopeTree,
+    val state = State4(query, None, "", resolvedStatement, SemanticChecker.check(cleanedStatement, mkException), Map.empty, Set.empty)
+    val output = Namespacer.transform(state, null)
+    val semanticTable: SemanticTable = SemanticTable(types = output.semantics.typeTable)
+    val (rewrittenAst: Statement, _) = CostBasedExecutablePlanBuilder.rewriteStatement(output.statement, semanticState.scopeTree,
       semanticTable, RewriterStepSequencer.newValidating, Set.empty, mock[AstRewritingMonitor])
 
     // This fakes pattern expression naming for testing purposes

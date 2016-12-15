@@ -22,9 +22,10 @@ package org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.StatementHelper._
 import org.neo4j.cypher.internal.compiler.v3_2.parser.ParserFixture.parser
+import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilationState.State4
 import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_2._
-import org.neo4j.cypher.internal.frontend.v3_2.ast.{ASTAnnotationMap, AstConstructionTestSupport, Variable, Statement}
+import org.neo4j.cypher.internal.frontend.v3_2.ast.{ASTAnnotationMap, AstConstructionTestSupport, Statement, Variable}
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 
 class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport {
@@ -82,53 +83,16 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport {
       }
   }
 
-  test("Renames variables in semantic table") {
-    val idA1 = Variable("a")(InputPosition(1, 0, 1))
-    val idA2 = Variable("a")(InputPosition(2, 0, 2))
-    val idA3 = Variable("a")(InputPosition(3, 0, 3))
-    val idB5 = Variable("b")(InputPosition(5, 0, 5))
-
-    val infoA1 = mock[ExpressionTypeInfo]
-    val infoA2 = mock[ExpressionTypeInfo]
-    val infoA3 = mock[ExpressionTypeInfo]
-    val infoA4 = mock[ExpressionTypeInfo]
-    val infoB5 = mock[ExpressionTypeInfo]
-
-    val table = SemanticTable(ASTAnnotationMap(
-      idA1 -> infoA1,
-      idA2 -> infoA2,
-      idA3 -> infoA3,
-      idB5 -> infoB5
-    ))
-
-    val renamings = Map(
-      Ref(idA1) -> Variable("a@1")(InputPosition(1, 0, 1)),
-      Ref(idA2) -> Variable("a@2")(InputPosition(2, 0, 2))
-    )
-
-    val namespacer = Namespacer(renamings)
-
-    val newTable = namespacer.tableRewriter(table)
-
-    newTable.types should equal(ASTAnnotationMap(
-      Variable("a@1")(InputPosition(1, 0, 1)) -> infoA1,
-      Variable("a@2")(InputPosition(2, 0, 2)) -> infoA2,
-      idA3 -> infoA3,
-      idB5 -> infoB5
-    ))
-  }
-
   val astRewriter = new ASTRewriter(RewriterStepSequencer.newValidating, false)
 
   private def assertRewritten(from: String, to: String) = {
     val fromAst = parseAndRewrite(from)
-    val state = fromAst.semanticState
-    val namespacer = Namespacer(fromAst, state.scopeTree)
-    val namespacedAst = fromAst.endoRewrite(namespacer.statementRewriter)
+    val fromState = State4(from, None, "", fromAst, fromAst.semanticState, Map.empty, Set.empty)
+    val toState = Namespacer.transform(fromState, null)
 
     val expectedAst = parseAndRewrite(to)
 
-    namespacedAst should equal(expectedAst)
+    toState.statement should equal(expectedAst)
   }
 
   private def parseAndRewrite(queryText: String): Statement = {
