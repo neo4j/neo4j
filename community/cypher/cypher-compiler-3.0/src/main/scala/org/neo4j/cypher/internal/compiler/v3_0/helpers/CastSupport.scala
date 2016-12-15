@@ -81,6 +81,10 @@ object CastSupport {
 
       case (_: Double, _: Number) => a
 
+      case (a, b) if a == null || b == null => throw new CypherTypeException("Collections containing null values can not be stored in properties.")
+
+      case (a, b) if a.isInstanceOf[Seq[_]] || b.isInstanceOf[Seq[_]] => throw new CypherTypeException("Collections containing collections can not be stored in properties.")
+
       case _ => throw new CypherTypeException("Collections containing mixed types can not be stored in properties.")
     }
   }
