@@ -66,8 +66,14 @@ case class ToLowerFunction(argument: Expression) extends StringFunction(argument
 
 case class ReverseFunction(argument: Expression) extends StringFunction(argument) {
   override def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = {
-    val string: String = asString(argument(m))
-    if (string == null) null else new java.lang.StringBuilder(string).reverse.toString
+    argument(m) match {
+      case null => null
+      case string: String => new java.lang.StringBuilder(string).reverse.toString
+      case seq: Seq[_] => seq.reverse
+      case a => throw new CypherTypeException(
+        "Expected a string value or a list; perhaps you'd like to cast to a string it with str() or create a list."
+          .format(toString(), a.toString))
+    }
   }
 
   override def rewrite(f: (Expression) => Expression) = f(ReverseFunction(argument.rewrite(f)))
