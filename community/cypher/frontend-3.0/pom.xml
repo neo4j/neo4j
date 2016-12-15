@@ -3,14 +3,14 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>cypher-parent</artifactId>
-    <version>3.0.8-SNAPSHOT</version>
+    <version>3.0.9-SNAPSHOT</version>
     <relativePath>../</relativePath>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>neo4j-cypher-frontend-3.0</artifactId>
   <packaging>jar</packaging>
-  <version>3.0.8-SNAPSHOT</version>
+  <version>3.0.9-SNAPSHOT</version>
   <name>Neo4j - Cypher Frontend 3.0</name>
 
   <description>Front end of the Cypher compiler</description>
