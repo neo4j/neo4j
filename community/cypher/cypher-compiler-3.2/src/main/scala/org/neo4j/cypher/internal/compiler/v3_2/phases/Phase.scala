@@ -27,7 +27,7 @@ trait Phase[FROM, TO] extends Transformer[FROM, TO] {
 
   def phase: CompilationPhase
 
-  def why: String
+  def description: String
 
   def transformReporting(from: FROM, context: Context): TO =
     closing(context.tracer.beginPhase(phase)) {

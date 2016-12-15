@@ -31,5 +31,5 @@ case object Parsing extends Phase[State1, State2] {
 
   override val phase = PARSING
 
-  override val why = "Parses text into an AST object"
+  override val description = "parse text into an AST object"
 }

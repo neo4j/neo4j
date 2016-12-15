@@ -46,5 +46,5 @@ object SemanticAnalysis {
 abstract class SemanticAnalysis[A,B] extends Phase[A,B] {
   override def phase = SEMANTIC_CHECK
 
-  override def why = "Does variable binding, typing, type checking and other semantic checks"
+  override def description = "do variable binding, typing, type checking and other semantic checks"
 }

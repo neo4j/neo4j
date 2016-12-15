@@ -44,5 +44,5 @@ object DeprecationWarnings extends VisitorPhase[State2] {
 
   override def phase = DEPRECATION_WARNINGS
 
-  override def why: String = "find deprecated Cypher constructs or procs and generate warnings for them"
+  override def description: String = "find deprecated Cypher constructs or procs and generate warnings for them"
 }

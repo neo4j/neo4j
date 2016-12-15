@@ -40,5 +40,5 @@ case object PreparatoryRewriting extends EndoPhase[State2] {
 
   override val phase = AST_REWRITE
 
-  override val why = "Rewrites the AST into a shape that we can do semantic analysis on"
+  override val description = "rewrite the AST into a shape that semantic analysis can be performed on"
 }

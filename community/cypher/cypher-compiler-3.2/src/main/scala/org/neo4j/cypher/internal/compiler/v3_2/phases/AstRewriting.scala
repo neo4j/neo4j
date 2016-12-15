@@ -36,5 +36,5 @@ case class AstRewriting(sequencer: String => RewriterStepSequencer) extends Phas
 
   override def phase = AST_REWRITE
 
-  override def why: String = "Normalizes the AST into a form easier for the planner to work with"
+  override def description: String = "normalize the AST into a form easier for the planner to work with"
 }
