@@ -49,6 +49,21 @@ public class ExecutingQueryListTest
     }
 
     @Test
+    public void shouldNotChangeAListWhenRemovingAQueryThatIsNotInTheList() throws Exception
+    {
+        // given
+        ExecutingQuery query1 = createExecutingQuery( 1, "query1" );
+        ExecutingQuery query2 = createExecutingQuery( 2, "query2" );
+        ExecutingQueryList list = ExecutingQueryList.EMPTY.push( query1 );
+
+        // when
+        ExecutingQueryList result = list.remove( query2 );
+
+        // then
+        assertThat( result, equalTo( list ) );
+    }
+
+    @Test
     public void addingQueriesKeepsInsertOrder()
     {
         // Given

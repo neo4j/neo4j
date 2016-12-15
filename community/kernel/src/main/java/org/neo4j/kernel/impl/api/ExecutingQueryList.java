@@ -23,17 +23,36 @@ import java.util.stream.Stream;
 
 import org.neo4j.kernel.api.ExecutingQuery;
 
-interface ExecutingQueryList
+abstract class ExecutingQueryList
 {
-    Stream<ExecutingQuery> queries();
+    abstract Stream<ExecutingQuery> queries();
 
-    ExecutingQueryList push( ExecutingQuery newExecutingQuery );
+    abstract ExecutingQueryList push( ExecutingQuery newExecutingQuery );
 
-    ExecutingQueryList remove( ExecutingQuery executingQuery );
+    abstract ExecutingQueryList remove( ExecutingQuery executingQuery );
 
-    ExecutingQueryList EMPTY = new Empty();
+    static ExecutingQueryList EMPTY = new ExecutingQueryList()
+    {
+        @Override
+        public Stream<ExecutingQuery> queries()
+        {
+            return Stream.empty();
+        }
 
-    class Entry implements ExecutingQueryList
+        @Override
+        public ExecutingQueryList push( ExecutingQuery newExecutingQuery )
+        {
+            return new Entry( newExecutingQuery, this );
+        }
+
+        @Override
+        public ExecutingQueryList remove( ExecutingQuery executingQuery )
+        {
+            return this;
+        }
+    };
+
+    private static class Entry extends ExecutingQueryList
     {
         final ExecutingQuery query;
         final ExecutingQueryList next;
@@ -74,29 +93,16 @@ interface ExecutingQueryList
             }
             else
             {
-                return next == EMPTY ? EMPTY : new Entry( query, next.remove( executingQuery ) );
+                ExecutingQueryList removed = next.remove( executingQuery );
+                if ( removed == next )
+                {
+                    return this;
+                }
+                else
+                {
+                    return new Entry( query, removed );
+                }
             }
-        }
-    }
-
-    class Empty implements ExecutingQueryList
-    {
-        @Override
-        public Stream<ExecutingQuery> queries()
-        {
-            return Stream.empty();
-        }
-
-        @Override
-        public ExecutingQueryList push( ExecutingQuery newExecutingQuery )
-        {
-            return new Entry(newExecutingQuery, this);
-        }
-
-        @Override
-        public ExecutingQueryList remove( ExecutingQuery executingQuery )
-        {
-            return this;
         }
     }
 }
