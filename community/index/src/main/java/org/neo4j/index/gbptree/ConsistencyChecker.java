@@ -72,10 +72,15 @@ class ConsistencyChecker<KEY>
 
     private void assertOnTreeNode( PageCursor cursor )
     {
-        // TODO also check node type when available
+        if ( TreeNode.nodeType( cursor ) != TreeNode.NODE_TYPE_TREE_NODE )
+        {
+            throw new IllegalArgumentException( "Cursor is not pinned to a tree node page. pageId:" +
+                    cursor.getCurrentPageId() );
+        }
         if ( !node.isInternal( cursor ) && !node.isLeaf( cursor ) )
         {
-            throw new IllegalArgumentException( "Cursor is not pinned to a page containing a tree node." );
+            throw new IllegalArgumentException( "Cursor is not pinned to a page containing a tree node. pageId:" +
+                    cursor.getCurrentPageId() );
         }
     }
 
