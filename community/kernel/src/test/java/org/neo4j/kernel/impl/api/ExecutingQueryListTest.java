@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 
 import org.neo4j.kernel.api.ExecutingQuery;
 import org.neo4j.kernel.impl.query.QuerySource;
+import org.neo4j.time.CpuClock;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.equalTo;
@@ -114,6 +115,6 @@ public class ExecutingQueryListTest
     private ExecutingQuery createExecutingQuery( int queryId, String query )
     {
         return new ExecutingQuery( queryId, QuerySource.UNKNOWN, "me", query,
-                Collections.emptyMap(), 10, Collections.emptyMap() );
+                Collections.emptyMap(), 10, Collections.emptyMap(), Thread.currentThread(), CpuClock.CPU_CLOCK );
     }
 }

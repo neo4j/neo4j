@@ -440,7 +440,8 @@ public class EnterpriseBuiltInDbmsProcedures
                 q.startTime(),
                 clock.instant().minusMillis( q.startTime() ).toEpochMilli(),
                 q.querySource(),
-                q.metaData()
+                q.metaData(),
+                q.cpuTime()
         );
     }
 
@@ -453,6 +454,7 @@ public class EnterpriseBuiltInDbmsProcedures
         public final String startTime;
         public final String elapsedTime;
         public final String connectionDetails;
+        public final long cpuTime;
         public final Map<String,Object> metaData;
 
         QueryStatusResult(
@@ -463,7 +465,8 @@ public class EnterpriseBuiltInDbmsProcedures
                 long startTime,
                 long elapsedTime,
                 QuerySource querySource,
-                Map<String,Object> txMetaData
+                Map<String,Object> txMetaData,
+                long cpuTime
         ) {
             this.queryId = queryId.toString();
             this.username = username;
@@ -473,6 +476,7 @@ public class EnterpriseBuiltInDbmsProcedures
             this.elapsedTime = formatInterval( elapsedTime );
             this.connectionDetails = querySource.toString();
             this.metaData = txMetaData;
+            this.cpuTime = cpuTime;
         }
 
         private static String formatTime( final long startTime )

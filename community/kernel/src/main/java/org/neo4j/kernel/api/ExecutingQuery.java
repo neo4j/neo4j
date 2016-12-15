@@ -22,6 +22,7 @@ package org.neo4j.kernel.api;
 import java.util.Map;
 
 import org.neo4j.kernel.impl.query.QuerySource;
+import org.neo4j.time.CpuClock;
 
 import static java.lang.String.format;
 
@@ -37,6 +38,9 @@ public class ExecutingQuery
     private final String queryText;
     private final Map<String, Object> queryParameters;
     private final long startTime;
+    private final Thread threadExecutingTheQuery;
+    private final CpuClock cpuClock;
+    private final long cpuTimeWhenQueryStarted;
     private Map<String,Object> metaData;
 
     public ExecutingQuery(
@@ -46,7 +50,9 @@ public class ExecutingQuery
             String queryText,
             Map<String,Object> queryParameters,
             long startTime,
-            Map<String,Object> metaData
+            Map<String,Object> metaData,
+            Thread threadExecutingTheQuery,
+            CpuClock cpuClock
     ) {
         this.queryId = queryId;
         this.querySource = querySource;
@@ -55,6 +61,9 @@ public class ExecutingQuery
         this.queryParameters = queryParameters;
         this.startTime = startTime;
         this.metaData = metaData;
+        this.threadExecutingTheQuery = threadExecutingTheQuery;
+        this.cpuClock = cpuClock;
+        this.cpuTimeWhenQueryStarted = cpuClock.cpuTime( threadExecutingTheQuery );
     }
 
     @Override
@@ -109,6 +118,14 @@ public class ExecutingQuery
     public long startTime()
     {
         return startTime;
+    }
+
+    /**
+     * @return the CPU time used by the query, in nanoseconds.
+     */
+    public long cpuTime()
+    {
+        return cpuClock.cpuTime( threadExecutingTheQuery ) - cpuTimeWhenQueryStarted;
     }
 
     @Override
