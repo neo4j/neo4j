@@ -62,6 +62,16 @@ class StartsWithAcceptanceTest extends ExecutionEngineFunSuite with QueryStatist
     result.columnAs("a.name").toList should be (List())
   }
 
+  test("should return null when starts with is used on none strings that contains integers") {
+    val result = executeWithAllPlanners("""
+                                          | CREATE ({name: 1})
+                                          | WITH *
+                                          | MATCH (a)
+                                          | WHERE a.name CONTAINS '1'
+                                          | RETURN a.name""".stripMargin)
+    result.columnAs("a.name").toList should be(List())
+  }
+
   test("should return null when starts with is used on none strings"){
     val result = executeWithAllPlanners("""
                                           | CREATE ({name: 1})
