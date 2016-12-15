@@ -100,7 +100,7 @@ public class ConsistencyCheckerTest
                 {
                     goTo( cursor, "new root", idProvider.acquireNewId( stableGeneration, unstableGeneration ) );
                     node.initializeInternal( cursor, stableGeneration, unstableGeneration );
-                    node.insertKeyAt( cursor, structure.primKey, 0, 0, new byte[0] );
+                    node.insertKeyAt( cursor, structure.primKey, 0, 0 );
                     node.setKeyCount( cursor, 1 );
                     node.setChildAt( cursor, structure.left, 0, stableGeneration, unstableGeneration );
                     node.setChildAt( cursor, structure.right, 1, stableGeneration, unstableGeneration );

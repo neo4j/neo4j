@@ -195,11 +195,10 @@ class InternalTreeLogic<KEY,VALUE>
             // No overflow
             int pos = positionOf( search( cursor, bTreeNode, primKey, readKey, keyCount ) );
 
-            bTreeNode.insertKeyAt( cursor, primKey, pos, keyCount, tmpForKeys );
+            bTreeNode.insertKeyAt( cursor, primKey, pos, keyCount );
             // NOTE pos+1 since we never insert a new child before child(0) because its key is really
             // the one from the parent.
-            bTreeNode.insertChildAt( cursor, rightChild, pos + 1, keyCount, tmpForChildren,
-                    stableGeneration, unstableGeneration );
+            bTreeNode.insertChildAt( cursor, rightChild, pos + 1, keyCount, stableGeneration, unstableGeneration );
 
             // Increase key count
             bTreeNode.setKeyCount( cursor, keyCount + 1 );
@@ -343,8 +342,8 @@ class InternalTreeLogic<KEY,VALUE>
         if ( keyCount < bTreeNode.leafMaxKeyCount() )
         {
             // No overflow, insert key and value
-            bTreeNode.insertKeyAt( cursor, key, pos, keyCount, tmpForKeys );
-            bTreeNode.insertValueAt( cursor, value, pos, keyCount, tmpForValues );
+            bTreeNode.insertKeyAt( cursor, key, pos, keyCount );
+            bTreeNode.insertValueAt( cursor, value, pos, keyCount );
             bTreeNode.setKeyCount( cursor, keyCount + 1 );
 
             return; // No split has occurred
@@ -580,9 +579,9 @@ class InternalTreeLogic<KEY,VALUE>
         // Remove key/value
         createUnstableVersionIfNeeded( cursor, structurePropagation, stableGeneration, unstableGeneration );
 
-        bTreeNode.removeKeyAt( cursor, pos, keyCount, tmpForKeys );
+        bTreeNode.removeKeyAt( cursor, pos, keyCount );
         bTreeNode.valueAt( cursor, into, pos );
-        bTreeNode.removeValueAt( cursor, pos, keyCount, tmpForValues );
+        bTreeNode.removeValueAt( cursor, pos, keyCount );
 
         // Decrease key count
         bTreeNode.setKeyCount( cursor, keyCount - 1 );

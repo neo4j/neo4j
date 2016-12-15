@@ -1099,7 +1099,7 @@ public class InternalTreeLogicTest
         long rootId = id.acquireNewId( stableGen, unstableGen );
         goTo( cursor, rootId );
         node.initializeInternal( cursor, stableGen, unstableGen );
-        node.insertKeyAt( cursor, split.primKey, 0, 0, tmp );
+        node.insertKeyAt( cursor, split.primKey, 0, 0 );
         node.setKeyCount( cursor, 1 );
         node.setChildAt( cursor, split.left, 0, stableGen, unstableGen );
         node.setChildAt( cursor, split.right, 1, stableGen, unstableGen );

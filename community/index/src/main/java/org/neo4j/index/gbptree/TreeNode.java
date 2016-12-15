@@ -236,51 +236,38 @@ class TreeNode<KEY,VALUE>
         return into;
     }
 
-    void insertKeyAt( PageCursor cursor, KEY key, int pos, int keyCount, byte[] tmp )
+    void insertKeyAt( PageCursor cursor, KEY key, int pos, int keyCount )
     {
-        insertSlotAt( cursor, pos, keyCount, keyOffset( 0 ), keySize, tmp );
+        insertSlotAt( cursor, pos, keyCount, keyOffset( 0 ), keySize );
         cursor.setOffset( keyOffset( pos ) );
         layout.writeKey( cursor, key );
     }
 
-    void removeKeyAt( PageCursor cursor, int pos, int keyCount, byte[] tmp )
+    void removeKeyAt( PageCursor cursor, int pos, int keyCount )
     {
-        removeSlotAt( cursor, pos, keyCount, keyOffset( 0 ), keySize, tmp );
+        removeSlotAt( cursor, pos, keyCount, keyOffset( 0 ), keySize );
     }
 
-    private void removeSlotAt( PageCursor cursor, int pos, int keyCount, int baseOffset, int itemSize, byte[] tmp )
+    private void removeSlotAt( PageCursor cursor, int pos, int keyCount, int baseOffset, int itemSize )
     {
-        int from = pos + 1;
-        int count = keyCount - from;
-        copyItems( cursor, from, count, baseOffset, itemSize, tmp );
-        writeItems( cursor, pos, count, baseOffset, itemSize, tmp );
+        for ( int posToMoveLeft = pos + 1, offset = baseOffset + posToMoveLeft * itemSize;
+                posToMoveLeft < keyCount; posToMoveLeft++, offset += itemSize )
+        {
+            cursor.copyTo( offset, cursor, offset - itemSize, itemSize );
+        }
     }
 
     /**
      * Moves items (key/value/child) one step to the right, which means rewriting all items of the particular type
      * from pos - keyCount.
      */
-    private void insertSlotAt( PageCursor cursor, int pos, int toExcluding, int baseOffset, int itemSize, byte[] tmp )
+    private void insertSlotAt( PageCursor cursor, int pos, int toExcluding, int baseOffset, int itemSize )
     {
-        // Move all items after pos one step to the right
-        int count = toExcluding - pos;
-        if ( count > 0 )
+        for ( int posToMoveRight = toExcluding - 1, offset = baseOffset + posToMoveRight * itemSize;
+                posToMoveRight >= pos; posToMoveRight--, offset -= itemSize )
         {
-            copyItems( cursor, pos, count, baseOffset, itemSize, tmp );
-            writeItems( cursor, pos + 1, count, baseOffset, itemSize, tmp );
+            cursor.copyTo( offset, cursor, offset + itemSize, itemSize );
         }
-    }
-
-    private void writeItems( PageCursor cursor, int pos, int count, int baseOffset, int itemSize, byte[] tmp )
-    {
-        cursor.setOffset( baseOffset + pos * itemSize );
-        cursor.putBytes( tmp, 0, count * itemSize );
-    }
-
-    private void copyItems( PageCursor cursor, int pos, int count, int baseOffset, int itemSize, byte[] tmp )
-    {
-        cursor.setOffset( baseOffset + pos * itemSize );
-        cursor.getBytes( tmp, 0, count * itemSize );
     }
 
     VALUE valueAt( PageCursor cursor, VALUE value, int pos )
@@ -290,15 +277,15 @@ class TreeNode<KEY,VALUE>
         return value;
     }
 
-    void insertValueAt( PageCursor cursor, VALUE value, int pos, int keyCount, byte[] tmp )
+    void insertValueAt( PageCursor cursor, VALUE value, int pos, int keyCount )
     {
-        insertSlotAt( cursor, pos, keyCount, valueOffset( 0 ), valueSize, tmp );
+        insertSlotAt( cursor, pos, keyCount, valueOffset( 0 ), valueSize );
         setValueAt( cursor, value, pos );
     }
 
-    void removeValueAt( PageCursor cursor, int pos, int keyCount, byte[] tmp )
+    void removeValueAt( PageCursor cursor, int pos, int keyCount )
     {
-        removeSlotAt( cursor, pos, keyCount, valueOffset( 0 ), valueSize, tmp );
+        removeSlotAt( cursor, pos, keyCount, valueOffset( 0 ), valueSize );
     }
 
     void setValueAt( PageCursor cursor, VALUE value, int pos )
@@ -313,10 +300,10 @@ class TreeNode<KEY,VALUE>
         return read( cursor, stableGeneration, unstableGeneration, pos );
     }
 
-    void insertChildAt( PageCursor cursor, long child, int pos, int keyCount, byte[] tmp,
+    void insertChildAt( PageCursor cursor, long child, int pos, int keyCount,
             long stableGeneration, long unstableGeneration )
     {
-        insertSlotAt( cursor, pos, keyCount + 1, childOffset( 0 ), SIZE_PAGE_REFERENCE, tmp );
+        insertSlotAt( cursor, pos, keyCount + 1, childOffset( 0 ), SIZE_PAGE_REFERENCE );
         setChildAt( cursor, child, pos, stableGeneration, unstableGeneration );
     }
 

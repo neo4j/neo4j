@@ -1036,7 +1036,7 @@ public class SeekCursorTest
         node.initializeInternal( cursor, stableGen, unstableGen );
         long keyInRoot = 10L;
         insertKey.setValue( keyInRoot );
-        node.insertKeyAt( cursor, insertKey, 0, 0, tmp );
+        node.insertKeyAt( cursor, insertKey, 0, 0 );
         node.setKeyCount( cursor, 1 );
         // with old pointer to child (simulating reuse of child node)
         node.setChildAt( cursor, leftChild, 0, stableGen, unstableGen );
@@ -1112,7 +1112,7 @@ public class SeekCursorTest
         node.initializeInternal( cursor, stableGen - 1, unstableGen - 1 );
         long keyInRoot = 10L;
         insertKey.setValue( keyInRoot );
-        node.insertKeyAt( cursor, insertKey, 0, 0, tmp );
+        node.insertKeyAt( cursor, insertKey, 0, 0 );
         node.setKeyCount( cursor, 1 );
         // with old pointer to child (simulating reuse of internal node)
         node.setChildAt( cursor, leftChild, 0, stableGen, unstableGen );
@@ -1145,7 +1145,7 @@ public class SeekCursorTest
         long rootId = id.acquireNewId( stableGen, unstableGen );
         cursor.next( rootId );
         node.initializeInternal( cursor, stableGen, unstableGen );
-        node.insertKeyAt( cursor, split.primKey, 0, 0, tmp );
+        node.insertKeyAt( cursor, split.primKey, 0, 0 );
         node.setKeyCount( cursor, 1 );
         node.setChildAt( cursor, split.left, 0, stableGen, unstableGen );
         node.setChildAt( cursor, split.right, 1, stableGen, unstableGen );
@@ -1255,8 +1255,8 @@ public class SeekCursorTest
         int keyCount = node.keyCount( cursor );
         insertKey.setValue( k );
         insertValue.setValue( valueForKey( k ) );
-        node.insertKeyAt( cursor, insertKey, keyCount, keyCount, tmp );
-        node.insertValueAt( cursor, insertValue, keyCount, keyCount, tmp );
+        node.insertKeyAt( cursor, insertKey, keyCount, keyCount );
+        node.insertValueAt( cursor, insertValue, keyCount, keyCount );
         node.setKeyCount( cursor, keyCount + 1 );
     }
 
@@ -1269,16 +1269,16 @@ public class SeekCursorTest
         }
         insertKey.setValue( k );
         insertValue.setValue( valueForKey( k ) );
-        node.insertKeyAt( cursor, insertKey, pos, keyCount, tmp );
-        node.insertValueAt( cursor, insertValue, pos, keyCount, tmp );
+        node.insertKeyAt( cursor, insertKey, pos, keyCount );
+        node.insertValueAt( cursor, insertValue, pos, keyCount );
         node.setKeyCount( cursor, keyCount + 1 );
     }
 
     private void remove( int pos )
     {
         int keyCount = node.keyCount( cursor );
-        node.removeKeyAt( cursor, pos, keyCount, tmp );
-        node.removeValueAt( cursor, pos, keyCount, tmp );
+        node.removeKeyAt( cursor, pos, keyCount );
+        node.removeValueAt( cursor, pos, keyCount );
         node.setKeyCount( cursor, keyCount - 1 );
     }
 

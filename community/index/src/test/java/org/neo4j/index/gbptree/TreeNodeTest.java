@@ -151,11 +151,11 @@ public class TreeNodeTest
         // WHEN
         long firstKey = 10;
         key.setValue( firstKey );
-        node.insertKeyAt( cursor, key, 0, 0, tmp );
+        node.insertKeyAt( cursor, key, 0, 0 );
 
         long otherKey = 19;
         key.setValue( otherKey );
-        node.insertKeyAt( cursor, key, 1, 1, tmp );
+        node.insertKeyAt( cursor, key, 1, 1 );
 
         // THEN
         assertEquals( firstKey, node.keyAt( cursor, key, 0 ).longValue() );
@@ -188,16 +188,16 @@ public class TreeNodeTest
         MutableLong key = layout.newKey();
         long firstKey = 10;
         key.setValue( firstKey );
-        node.insertKeyAt( cursor, key, 0, 0, tmp );
+        node.insertKeyAt( cursor, key, 0, 0 );
         long otherKey = 19;
         key.setValue( otherKey );
-        node.insertKeyAt( cursor, key, 1, 1, tmp );
+        node.insertKeyAt( cursor, key, 1, 1 );
         long thirdKey = 123;
         key.setValue( thirdKey );
-        node.insertKeyAt( cursor, key, 2, 2, tmp );
+        node.insertKeyAt( cursor, key, 2, 2 );
 
         // WHEN
-        node.removeKeyAt( cursor, 1, 3, tmp );
+        node.removeKeyAt( cursor, 1, 3 );
 
         // THEN
         assertEquals( firstKey, node.keyAt( cursor, key, 0 ).longValue() );
@@ -234,11 +234,11 @@ public class TreeNodeTest
         // WHEN
         long firstValue = 123456789;
         value.setValue( firstValue );
-        node.insertValueAt( cursor, value, 0, 0, tmp );
+        node.insertValueAt( cursor, value, 0, 0 );
 
         long otherValue = 987654321;
         value.setValue( otherValue );
-        node.insertValueAt( cursor, value, 1, 1, tmp );
+        node.insertValueAt( cursor, value, 1, 1 );
 
         // THEN
         assertEquals( firstValue, node.valueAt( cursor, value, 0 ).longValue() );
@@ -253,16 +253,16 @@ public class TreeNodeTest
         MutableLong value = layout.newKey();
         long firstValue = 123456789;
         value.setValue( firstValue );
-        node.insertValueAt( cursor, value, 0, 0, tmp );
+        node.insertValueAt( cursor, value, 0, 0 );
         long otherValue = 987654321;
         value.setValue( otherValue );
-        node.insertValueAt( cursor, value, 1, 1, tmp );
+        node.insertValueAt( cursor, value, 1, 1 );
         long thirdValue = 49756;
         value.setValue( thirdValue );
-        node.insertValueAt( cursor, value, 2, 2, tmp );
+        node.insertValueAt( cursor, value, 2, 2 );
 
         // WHEN
-        node.removeValueAt( cursor, 1, 3, tmp );
+        node.removeValueAt( cursor, 1, 3 );
 
         // THEN
         assertEquals( firstValue, node.valueAt( cursor, value, 0 ).longValue() );
@@ -276,7 +276,7 @@ public class TreeNodeTest
         node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
         MutableLong value = layout.newValue();
         value.setValue( 1 );
-        node.insertValueAt( cursor, value, 0, 0, tmp );
+        node.insertValueAt( cursor, value, 0, 0 );
 
         // WHEN
         long overwrittenValue = 2;
@@ -295,10 +295,10 @@ public class TreeNodeTest
 
         // WHEN
         long firstChild = 123456789;
-        node.insertChildAt( cursor, firstChild, 0, 0, tmp, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.insertChildAt( cursor, firstChild, 0, 0, STABLE_GENERATION, UNSTABLE_GENERATION );
 
         long otherChild = 987654321;
-        node.insertChildAt( cursor, otherChild, 1, 1, tmp, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.insertChildAt( cursor, otherChild, 1, 1, STABLE_GENERATION, UNSTABLE_GENERATION );
 
         // THEN
         assertEquals( firstChild, childAt( cursor, 0, STABLE_GENERATION, UNSTABLE_GENERATION ) );
@@ -311,7 +311,7 @@ public class TreeNodeTest
         // GIVEN
         long child = GenSafePointer.MIN_POINTER;
         node.initializeInternal( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
-        node.insertChildAt( cursor, child, 0, 0, tmp, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.insertChildAt( cursor, child, 0, 0, STABLE_GENERATION, UNSTABLE_GENERATION );
 
         // WHEN
         long overwrittenChild = child + 1;
@@ -371,9 +371,9 @@ public class TreeNodeTest
         node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
         MutableLong key = layout.newKey();
         key.setValue( 1 );
-        node.insertKeyAt( cursor, key, 0, 0, tmp );
+        node.insertKeyAt( cursor, key, 0, 0 );
         key.setValue( 3 );
-        node.insertKeyAt( cursor, key, 1, 1, tmp );
+        node.insertKeyAt( cursor, key, 1, 1 );
 
         // WHEN
         node.readKeysWithInsertRecordInPosition( cursor, c -> c.putLong( 2 ), 1, 3, tmp );
@@ -392,9 +392,9 @@ public class TreeNodeTest
         node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
         MutableLong value = layout.newKey();
         value.setValue( 1 );
-        node.insertValueAt( cursor, value, 0, 0, tmp );
+        node.insertValueAt( cursor, value, 0, 0 );
         value.setValue( 3 );
-        node.insertValueAt( cursor, value, 1, 1, tmp );
+        node.insertValueAt( cursor, value, 1, 1 );
 
         // WHEN
         node.readValuesWithInsertRecordInPosition( cursor, c -> c.putLong( 2 ), 1, 3, tmp );
@@ -414,8 +414,8 @@ public class TreeNodeTest
         long secondChild = firstChild + 1;
         long thirdChild = secondChild + 1;
         node.initializeInternal( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
-        node.insertChildAt( cursor, firstChild, 0, 0, tmp, STABLE_GENERATION, UNSTABLE_GENERATION );
-        node.insertChildAt( cursor, thirdChild, 1, 1, tmp, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.insertChildAt( cursor, firstChild, 0, 0, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.insertChildAt( cursor, thirdChild, 1, 1, STABLE_GENERATION, UNSTABLE_GENERATION );
 
         // WHEN
         node.readChildrenWithInsertRecordInPosition( cursor,
@@ -458,11 +458,11 @@ public class TreeNodeTest
                     }
                     while ( contains( expectedKeys, 0, expectedKeyCount, key.longValue() ) );
 
-                    node.insertKeyAt( cursor, key, position, expectedKeyCount, tmp );
+                    node.insertKeyAt( cursor, key, position, expectedKeyCount );
                     insert( expectedKeys, expectedKeyCount, key.longValue(), position );
 
                     value.setValue( random.nextLong() );
-                    node.insertValueAt( cursor, value, position, expectedKeyCount, tmp );
+                    node.insertValueAt( cursor, value, position, expectedKeyCount );
                     insert( expectedValues, expectedKeyCount, value.longValue(), position );
 
                     node.setKeyCount( cursor, ++expectedKeyCount );
@@ -474,12 +474,12 @@ public class TreeNodeTest
                 {   // there are things to remove
                     int position = random.nextInt( expectedKeyCount );
                     node.keyAt( cursor, key, position );
-                    node.removeKeyAt( cursor, position, expectedKeyCount, tmp );
+                    node.removeKeyAt( cursor, position, expectedKeyCount );
                     long expectedKey = remove( expectedKeys, expectedKeyCount, position );
                     assertEquals( expectedKey, key.longValue() );
 
                     node.valueAt( cursor, value, position );
-                    node.removeValueAt( cursor, position, expectedKeyCount, tmp );
+                    node.removeValueAt( cursor, position, expectedKeyCount );
                     long expectedValue = remove( expectedValues, expectedKeyCount, position );
                     assertEquals( expectedValue, value.longValue() );
 

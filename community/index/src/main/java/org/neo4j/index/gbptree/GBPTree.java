@@ -664,7 +664,6 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>
         private final StructurePropagation<KEY> structurePropagation;
         private PageCursor cursor;
         private IndexWriter.Options options;
-        private final byte[] tmp = new byte[0];
 
         // Writer can't live past a checkpoint because of the mutex with checkpoint,
         // therefore safe to locally cache these generation fields from the volatile generation in the tree
@@ -704,7 +703,7 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>
                 PageCursorUtil.goTo( cursor, "new root", newRootId );
 
                 bTreeNode.initializeInternal( cursor, stableGeneration, unstableGeneration );
-                bTreeNode.insertKeyAt( cursor, structurePropagation.primKey, 0, 0, tmp );
+                bTreeNode.insertKeyAt( cursor, structurePropagation.primKey, 0, 0 );
                 bTreeNode.setKeyCount( cursor, 1 );
                 bTreeNode.setChildAt( cursor, structurePropagation.left, 0, stableGeneration, unstableGeneration );
                 bTreeNode.setChildAt( cursor, structurePropagation.right, 1, stableGeneration, unstableGeneration );
