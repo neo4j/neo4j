@@ -207,10 +207,12 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     val astRewriterResultStatement = astRewriter.rewrite(query, cleanedStatement, semanticState)._1
     val resolvedStatement = (procLookup, fcnLookup) match {
       case (None, None) => astRewriterResultStatement
-      case (Some(pl), None) =>  astRewriterResultStatement.endoRewrite(new RewriteProcedureCalls(pl, _ => None).rewriter)
-      case (None, Some(fl)) =>  astRewriterResultStatement.endoRewrite(new RewriteProcedureCalls(_ => signature, fl).rewriter)
-      case (Some(pl), Some(fl)) =>  astRewriterResultStatement.endoRewrite(new RewriteProcedureCalls(pl, fl).rewriter)
-
+      case _ =>
+        val procs: (QualifiedName) => ProcedureSignature = procLookup.getOrElse(_ => signature)
+        val funcs: (QualifiedName) => Option[UserFunctionSignature] = fcnLookup.getOrElse(_ => None)
+        val planContext = new SignatureResolvingPlanContext(procs, funcs)
+        val rewriter = RewriteProcedureCalls.rewriter(planContext)
+        astRewriterResultStatement.endoRewrite(rewriter)
     }
     val semanticTable: SemanticTable = SemanticTable(types = semanticState.typeTable)
     val (rewrittenAst: Statement, _) = CostBasedExecutablePlanBuilder.rewriteStatement(resolvedStatement, semanticState.scopeTree,

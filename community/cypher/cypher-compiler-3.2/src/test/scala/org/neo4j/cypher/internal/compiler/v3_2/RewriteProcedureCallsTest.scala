@@ -63,6 +63,16 @@ class RewriteProcedureCallsTest extends CypherFunSuite with AstConstructionTestS
   def rewriteProcedureCalls(procSignatureLookup: QualifiedName => ProcedureSignature,
                             funcSignatureLookup: QualifiedName => Option[UserFunctionSignature],
                             original: Query) = {
-    new RewriteProcedureCalls(procLookup, fcnLookup).rewriter
+    original.endoRewrite(
+      RewriteProcedureCalls.rewriter(new SignatureResolvingPlanContext(procSignatureLookup, funcSignatureLookup))
+    )
   }
+}
+
+class SignatureResolvingPlanContext(procSignatureLookup: QualifiedName => ProcedureSignature,
+                                    funcSignatureLookup: QualifiedName => Option[UserFunctionSignature])
+  extends NotImplementedPlanContext {
+  override def procedureSignature(name: QualifiedName): ProcedureSignature = procSignatureLookup(name)
+
+  override def functionSignature(name: QualifiedName): Option[UserFunctionSignature] = funcSignatureLookup(name)
 }

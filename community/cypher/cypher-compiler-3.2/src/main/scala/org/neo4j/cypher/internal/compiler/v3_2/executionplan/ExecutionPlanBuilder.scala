@@ -19,12 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.executionplan
 
-import java.time.Clock
-
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.QueryExecutionTracer
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.profiling.ProfilingTracer
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.ExecutionPlanBuilder.DescriptionProvider
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.builders._
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.RuntimeTypeConverter
 import org.neo4j.cypher.internal.compiler.v3_2.pipes._
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments
@@ -79,18 +76,6 @@ trait ExecutablePlanBuilder {
   def producePlan(inputQuery: PreparedQuerySemantics, planContext: PlanContext,
                   tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING,
                   createFingerprintReference: (Option[PlanFingerprint]) => PlanFingerprintReference): ExecutionPlan
-}
-
-class ExecutionPlanBuilder(clock: Clock,
-                           executionPlanBuilder: ExecutablePlanBuilder,
-                           createFingerprintReference: Option[PlanFingerprint] => PlanFingerprintReference)
-  extends PatternGraphBuilder {
-
-  def build(planContext: PlanContext, inputQuery: PreparedQuerySemantics,
-            tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING): ExecutionPlan = {
-
-    executionPlanBuilder.producePlan(inputQuery, planContext, tracer, createFingerprintReference)
-  }
 }
 
 object InterpretedExecutionPlanBuilder {

@@ -71,5 +71,3 @@ case class ValidatingRewriterStepSequencer(sequenceName: String, taskProcessor: 
     RewriterContract(rewriters, postConditions)
   }
 }
-
-

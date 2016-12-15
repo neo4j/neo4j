@@ -28,13 +28,14 @@ import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSeq
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, SemanticTable}
 
-case class CypherCompiler(executionPlanBuilder: ExecutionPlanBuilder,
+case class CypherCompiler(executionPlanBuilder: ExecutablePlanBuilder,
                           astRewriter: ASTRewriter,
                           cacheAccessor: CacheAccessor[Statement, ExecutionPlan],
                           planCacheFactory: () => LFUCache[Statement, ExecutionPlan],
                           cacheMonitor: CypherCacheFlushingMonitor[CacheAccessor[Statement, ExecutionPlan]],
                           monitors: Monitors,
-                          sequencer: String => RewriterStepSequencer) {
+                          sequencer: String => RewriterStepSequencer,
+                          createFingerprintReference: Option[PlanFingerprint] => PlanFingerprintReference) {
 
   def planQuery(queryText: String, context: PlanContext, notificationLogger: InternalNotificationLogger,
                 plannerName: String = "",
@@ -52,7 +53,7 @@ case class CypherCompiler(executionPlanBuilder: ExecutionPlanBuilder,
     val cache = provideCache(cacheAccessor, cacheMonitor, context)
     val (executionPlan, _) = cache.getOrElseUpdate(input.statement, input.queryText,
       _.isStale (context.txIdProvider, context.statistics),
-      executionPlanBuilder.build(context, semanticQuery, tracer)
+      executionPlanBuilder.producePlan(semanticQuery, context, tracer, createFingerprintReference)
     )
     (executionPlan, semanticQuery.extractedParams)
   }
@@ -63,7 +64,7 @@ case class CypherCompiler(executionPlanBuilder: ExecutionPlanBuilder,
                             tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING): State4 = {
     val exceptionCreator = new SyntaxExceptionCreator(rawQueryText, offset)
     val startState = State1(queryText, offset, plannerName)
-    val context = Context(exceptionCreator, tracer, notificationLogger)
+    val context = Context(exceptionCreator, tracer, notificationLogger, null) //TODO: short cut
     firstPipeline.transform(startState, context)
   }
 
@@ -76,20 +77,19 @@ case class CypherCompiler(executionPlanBuilder: ExecutionPlanBuilder,
       SemanticAnalysis.Early andThen
       astRewriting
 
-  def prepareSemanticQuery(in: State4,
-                           notificationLogger: InternalNotificationLogger,
-                           context: PlanContext,
-                           tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING): PreparedQuerySemantics = {
-    val rewriteProcedureCalls = new RewriteProcedureCalls(context.procedureSignature, context.functionSignature)
-
-    val secondPipeLine =
-      rewriteProcedureCalls andThen
+  private val secondPipeLine =
+      RewriteProcedureCalls andThen
       SemanticAnalysis.Late andThen
       NameSpacerPhase
 
+  def prepareSemanticQuery(in: State4,
+                           notificationLogger: InternalNotificationLogger,
+                           planContext: PlanContext,
+                           tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING): PreparedQuerySemantics = {
+
     val exceptionCreator = new SyntaxExceptionCreator(in.queryText, in.startPosition)
 
-    val output = secondPipeLine.transform(in, Context(exceptionCreator, tracer, notificationLogger))
+    val output = secondPipeLine.transform(in, Context(exceptionCreator, tracer, notificationLogger, planContext))
 
     val table = SemanticTable(types = output.semantics.typeTable, recordedScopes = output.semantics.recordedScopes)
     PreparedQuerySemantics(

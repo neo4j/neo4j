@@ -19,9 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler
 
+import org.mockito.Matchers._
+import org.mockito.Mockito._
 import org.neo4j.cypher.GraphDatabaseFunSuite
 import org.neo4j.cypher.internal.CypherCompiler.{CLOCK, DEFAULT_QUERY_PLAN_TTL, DEFAULT_STATISTICS_DIVERGENCE_THRESHOLD}
 import org.neo4j.cypher.internal.compatibility.v3_2.WrappedMonitors
+import org.neo4j.cypher.internal.compiler.v3_2.executionplan.PlanFingerprintReference
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.IdentityTypeConverter
 import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.compiler.v3_2.{CypherCompilerFactory, InfoLogger, _}
@@ -169,7 +172,9 @@ class CypherCompilerPerformanceTest extends GraphDatabaseFunSuite {
     val (preparedSyntacticQueryTime, preparedSyntacticQuery) = measure(compiler.prepareSyntacticQuery(query, query, devNullLogger))
     val planTime = graph.inTx {
       val (semanticTime, semanticQuery) = measure(compiler.prepareSemanticQuery(preparedSyntacticQuery, devNullLogger, planContext, CompilationPhaseTracer.NO_TRACING))
-      val (planTime, _) = measure(compiler.executionPlanBuilder.build(planContext, semanticQuery))
+      val reference = mock[PlanFingerprintReference]
+      when(reference.isStale(any(), any())).thenReturn(false)
+      val (planTime, _) = measure(compiler.executionPlanBuilder.producePlan(semanticQuery, planContext, CompilationPhaseTracer.NO_TRACING, _ => reference))
       planTime + semanticTime
     }
     (preparedSyntacticQueryTime, planTime)

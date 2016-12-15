@@ -81,11 +81,11 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
     def table = Map.empty[PatternExpression, QueryGraph]
 
-    def planContext = new PlanContext {
-      def statistics: GraphStatistics =
+    def planContext = new NotImplementedPlanContext {
+      override def statistics: GraphStatistics =
         config.graphStatistics
 
-      def getUniqueIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor] =
+      override def getUniqueIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor] =
         if (config.uniqueIndexes((labelName, propertyKey)))
           Some(new IndexDescriptor(
             semanticTable.resolvedLabelIds(labelName).id,
@@ -94,7 +94,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         else
           None
 
-      def getUniquenessConstraint(labelName: String, propertyKey: String): Option[UniquenessConstraint] = {
+      override def getUniquenessConstraint(labelName: String, propertyKey: String): Option[UniquenessConstraint] = {
         if (config.uniqueIndexes((labelName, propertyKey)))
           Some(new UniquenessConstraint(
             semanticTable.resolvedLabelIds(labelName).id,
@@ -104,7 +104,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
           None
       }
 
-      def getIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor] =
+      override def getIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor] =
         if (config.indexes((labelName, propertyKey)) || config.uniqueIndexes((labelName, propertyKey)))
           Some(new IndexDescriptor(
             semanticTable.resolvedLabelIds(labelName).id,
@@ -113,45 +113,17 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         else
           None
 
-      def hasIndexRule(labelName: String): Boolean =
+      override def hasIndexRule(labelName: String): Boolean =
         config.indexes.exists(_._1 == labelName) || config.uniqueIndexes.exists(_._1 == labelName)
 
-      def getOptPropertyKeyId(propertyKeyName: String) =
+      override def getOptPropertyKeyId(propertyKeyName: String) =
         semanticTable.resolvedPropertyKeyNames.get(propertyKeyName).map(_.id)
 
-      def getOptLabelId(labelName: String): Option[Int] =
+      override def getOptLabelId(labelName: String): Option[Int] =
         semanticTable.resolvedLabelIds.get(labelName).map(_.id)
 
-      def getOptRelTypeId(relType: String): Option[Int] =
+      override def getOptRelTypeId(relType: String): Option[Int] =
         semanticTable.resolvedRelTypeNames.get(relType).map(_.id)
-
-      def checkNodeIndex(idxName: String): Unit = ???
-
-      def checkRelIndex(idxName: String): Unit = ???
-
-      def getOrCreateFromSchemaState[T](key: Any, f: => T): T = ???
-
-      def getRelTypeName(id: Int): String = ???
-
-      def getRelTypeId(relType: String): Int = ???
-
-      def getLabelName(id: Int): String = ???
-
-      def getPropertyKeyId(propertyKeyName: String): Int = ???
-
-      def getPropertyKeyName(id: Int): String = ???
-
-      def getLabelId(labelName: String): Int = ???
-
-      def txIdProvider: () => Long = ???
-
-      override def hasPropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean = ???
-
-      override def procedureSignature(name: QualifiedName): ProcedureSignature = ???
-
-      override def functionSignature(name: QualifiedName): Option[UserFunctionSignature] = ???
-
-      override def notificationLogger(): InternalNotificationLogger = ???
     }
 
     def planFor(queryString: String): SemanticPlan = {

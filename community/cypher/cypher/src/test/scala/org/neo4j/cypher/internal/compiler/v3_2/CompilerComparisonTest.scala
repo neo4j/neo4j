@@ -309,15 +309,15 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
       updateStrategy = None,
       publicTypeConverter = identity
     )
-    val execPlanBuilder =
-      new ExecutionPlanBuilder(clock, planner, new PlanFingerprintReference(clock, config.queryPlanTTL, config.statsDivergenceThreshold, _))
+    val referenceCreator: (Option[PlanFingerprint]) => PlanFingerprintReference =
+      new PlanFingerprintReference(clock, config.queryPlanTTL, config.statsDivergenceThreshold, _)
     val planCacheFactory = () => new LFUCache[Statement, ExecutionPlan](100)
     val cacheHitMonitor = monitors.newMonitor[CypherCacheHitMonitor[Statement]](monitorTag)
     val cacheFlushMonitor =
       monitors.newMonitor[CypherCacheFlushingMonitor[CacheAccessor[Statement, ExecutionPlan]]](monitorTag)
     val cache = new MonitoringCacheAccessor[Statement, ExecutionPlan](cacheHitMonitor)
 
-    CypherCompiler(execPlanBuilder, rewriter, cache, planCacheFactory, cacheFlushMonitor, monitors, rewriterSequencer)
+    CypherCompiler(planner, rewriter, cache, planCacheFactory, cacheFlushMonitor, monitors, rewriterSequencer, referenceCreator)
   }
 
   case class QueryExecutionResult(compiler: String, dbHits: Option[Long], plan: InternalPlanDescription) {

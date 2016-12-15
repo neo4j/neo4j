@@ -23,14 +23,12 @@ import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.Compilatio
 import org.neo4j.cypher.internal.compiler.v3_2.ast.{ResolvedCall, ResolvedFunctionInvocation}
 import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilationState.State4
 import org.neo4j.cypher.internal.compiler.v3_2.phases.{Context, EndoPhase}
-import org.neo4j.cypher.internal.compiler.v3_2.spi.{ProcedureSignature, QualifiedName, UserFunctionSignature}
+import org.neo4j.cypher.internal.compiler.v3_2.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.{Rewriter, bottomUp}
 
 // Given a way to lookup procedure signatures, this phase rewrites unresolved calls into resolved calls
-class RewriteProcedureCalls(procSignatureLookup: QualifiedName => ProcedureSignature,
-                            funcSignatureLookup: QualifiedName => Option[UserFunctionSignature])
-  extends EndoPhase[State4] {
+case object RewriteProcedureCalls extends EndoPhase[State4] {
 
   // Current procedure calling syntax allows simplified short-hand syntax for queries
   // that only consist of a standalone procedure call. In all other cases attempts to
@@ -44,16 +42,16 @@ class RewriteProcedureCalls(procSignatureLookup: QualifiedName => ProcedureSigna
       result
   }
 
-  val resolverProcedureCall = bottomUp(Rewriter.lift {
+  def resolverProcedureCall(context: PlanContext) = bottomUp(Rewriter.lift {
     case unresolved: UnresolvedCall =>
-      val resolved = ResolvedCall(procSignatureLookup)(unresolved)
+      val resolved = ResolvedCall(context.procedureSignature)(unresolved)
       // We coerce here to ensure that the semantic check run after this rewriter assigns a type
       // to the coercion expressions
       val coerced = resolved.coerceArguments
       coerced
 
     case function: FunctionInvocation if function.needsToBeResolved =>
-      val resolved = ResolvedFunctionInvocation(funcSignatureLookup)(function)
+      val resolved = ResolvedFunctionInvocation(context.functionSignature)(function)
 
       // We coerce here to ensure that the semantic check run after this rewriter assigns a type
       // to the coercion expression
@@ -62,15 +60,15 @@ class RewriteProcedureCalls(procSignatureLookup: QualifiedName => ProcedureSigna
   })
 
   // rewriter that amends unresolved procedure calls with procedure signature information
-  val rewriter: AnyRef => AnyRef =
-    resolverProcedureCall andThen fakeStandaloneCallDeclarations
+  def rewriter(context: PlanContext): AnyRef => AnyRef =
+    resolverProcedureCall(context) andThen fakeStandaloneCallDeclarations
 
   override def phase = AST_REWRITE
 
   override def why = "procedure resolver"
 
   override def transform(from: State4, context: Context): State4 = {
-    val rewrittenStatement = from.statement.endoRewrite(rewriter)
+    val rewrittenStatement = from.statement.endoRewrite(rewriter(context.planContext))
     from.copy(statement = rewrittenStatement)
   }
 }

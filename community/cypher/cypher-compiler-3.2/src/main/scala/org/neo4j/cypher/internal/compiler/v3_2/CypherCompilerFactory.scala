@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSeq
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Statement
 
 object CypherCompilerFactory {
-  val monitorTag = "cypher3.1"
+  val monitorTag = "cypher3.2"
 
   def costBasedCompiler(config: CypherCompilerConfiguration, clock: Clock,
                         structure: CodeStructure[GeneratedQuery],
@@ -65,16 +65,14 @@ object CypherCompilerFactory {
     )
     val procedurePlanProducer = DelegatingProcedureExecutablePlanBuilder(costPlanProducer, typeConverter.asPublicType)
 
-    // Pick planner based on input
-    val planBuilder: ExecutablePlanBuilder = procedurePlanProducer
-
-    val execPlanBuilder = new ExecutionPlanBuilder(clock, planBuilder, new PlanFingerprintReference(clock, config.queryPlanTTL, config.statsDivergenceThreshold, _) )
+    val createFingerprintReference: (Option[PlanFingerprint]) => PlanFingerprintReference =
+      new PlanFingerprintReference(clock, config.queryPlanTTL, config.statsDivergenceThreshold, _)
     val planCacheFactory = () => new LFUCache[Statement, ExecutionPlan](config.queryCacheSize)
     monitors.addMonitorListener(logStalePlanRemovalMonitor(logger), monitorTag)
     val cacheMonitor = monitors.newMonitor[AstCacheMonitor](monitorTag)
     val cache = new MonitoringCacheAccessor[Statement, ExecutionPlan](cacheMonitor)
 
-    CypherCompiler(execPlanBuilder, rewriter, cache, planCacheFactory, cacheMonitor, monitors, rewriterSequencer)
+    CypherCompiler(procedurePlanProducer, rewriter, cache, planCacheFactory, cacheMonitor, monitors, rewriterSequencer, createFingerprintReference)
   }
 
   private def logStalePlanRemovalMonitor(log: InfoLogger) = new AstCacheMonitor {
