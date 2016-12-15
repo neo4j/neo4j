@@ -261,9 +261,9 @@ class TreeNode<KEY,VALUE>
      * Moves items (key/value/child) one step to the right, which means rewriting all items of the particular type
      * from pos - keyCount.
      */
-    private void insertSlotAt( PageCursor cursor, int pos, int toExcluding, int baseOffset, int itemSize )
+    private void insertSlotAt( PageCursor cursor, int pos, int keyCount, int baseOffset, int itemSize )
     {
-        for ( int posToMoveRight = toExcluding - 1, offset = baseOffset + posToMoveRight * itemSize;
+        for ( int posToMoveRight = keyCount - 1, offset = baseOffset + posToMoveRight * itemSize;
                 posToMoveRight >= pos; posToMoveRight--, offset -= itemSize )
         {
             cursor.copyTo( offset, cursor, offset + itemSize, itemSize );
@@ -335,7 +335,7 @@ class TreeNode<KEY,VALUE>
         return HEADER_LENGTH + pos * keySize;
     }
 
-    private int valueOffset( int pos )
+    int valueOffset( int pos )
     {
         return HEADER_LENGTH + leafMaxKeyCount * keySize + pos * valueSize;
     }

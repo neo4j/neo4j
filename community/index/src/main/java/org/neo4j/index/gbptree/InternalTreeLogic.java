@@ -431,10 +431,10 @@ class InternalTreeLogic<KEY,VALUE>
         int pos = positionOf( search( cursor, bTreeNode, newKey, readKey, keyCount ) );
 
         // arrays to temporarily store all keys and values
-        bTreeNode.readKeysWithInsertRecordInPosition( cursor,
-                c -> layout.writeKey( c, newKey ), pos, bTreeNode.leafMaxKeyCount() + 1, tmpForKeys );
-        bTreeNode.readValuesWithInsertRecordInPosition( cursor,
-                c -> layout.writeValue( c, newValue ), pos, bTreeNode.leafMaxKeyCount() + 1, tmpForValues );
+//        bTreeNode.readKeysWithInsertRecordInPosition( cursor,
+//                c -> layout.writeKey( c, newKey ), pos, bTreeNode.leafMaxKeyCount() + 1, tmpForKeys );
+//        bTreeNode.readValuesWithInsertRecordInPosition( cursor,
+//                c -> layout.writeValue( c, newValue ), pos, bTreeNode.leafMaxKeyCount() + 1, tmpForValues );
 
         int keyCountAfterInsert = keyCount + 1;
         int middlePos = middle( keyCountAfterInsert, options.splitRetentionFactor() );
@@ -459,33 +459,75 @@ class InternalTreeLogic<KEY,VALUE>
             bTreeNode.keyAt( cursor, structurePropagation.primKey, pos < middlePos ? middlePos - 1 : middlePos );
         }
 
-        {   // Update new right
-            goTo( cursor, "new right sibling in split", newRight );
-            bTreeNode.initializeLeaf( cursor, stableGeneration, unstableGeneration );
-            bTreeNode.setRightSibling( cursor, oldRight, stableGeneration, unstableGeneration );
-            bTreeNode.setLeftSibling( cursor, current, stableGeneration, unstableGeneration );
-            bTreeNode.writeKeys( cursor, tmpForKeys, middlePos, 0, keyCountAfterInsert - middlePos );
-            bTreeNode.writeValues( cursor, tmpForValues, middlePos, 0, keyCountAfterInsert - middlePos );
-            bTreeNode.setKeyCount( cursor, keyCountAfterInsert - middlePos );
+        // Update new right
+        try ( PageCursor rightCursor = cursor.openLinkedCursor( newRight ) )
+        {
+            goTo( rightCursor, "new right sibling in split", newRight );
+            bTreeNode.initializeLeaf( rightCursor, stableGeneration, unstableGeneration );
+            bTreeNode.setRightSibling( rightCursor, oldRight, stableGeneration, unstableGeneration );
+            bTreeNode.setLeftSibling( rightCursor, current, stableGeneration, unstableGeneration );
+            int rightKeyCount = keyCountAfterInsert - middlePos;
+
+            if ( pos < middlePos )
+            {
+                //                  v-------v       copy
+                // before _,_,_,_,_,_,_,_,_,_
+                // insert _,_,_,X,_,_,_,_,_,_,_
+                // middle           ^
+                copyKeysAndValues( cursor, middlePos - 1, rightCursor, 0, rightKeyCount );
+            }
+            else
+            {
+                //                  v---v           first copy
+                //                        v-v       second copy
+                // before _,_,_,_,_,_,_,_,_,_
+                // insert _,_,_,_,_,_,_,_,X,_,_
+                // middle           ^
+                int countBeforePos = pos - middlePos;
+                if ( countBeforePos > 0 )
+                {
+                    // first copy
+                    copyKeysAndValues( cursor, middlePos, rightCursor, 0, countBeforePos );
+                }
+                bTreeNode.insertKeyAt( rightCursor, newKey, countBeforePos, countBeforePos );
+                bTreeNode.insertValueAt( rightCursor, newValue, countBeforePos, countBeforePos );
+                int countAfterPos = keyCount - pos;
+                if ( countAfterPos > 0 )
+                {
+                    // second copy
+                    copyKeysAndValues( cursor, pos, rightCursor, countBeforePos + 1, countAfterPos );
+                }
+            }
+            bTreeNode.setKeyCount( rightCursor, rightKeyCount );
         }
 
         // Update old right with new left sibling (newRight)
         if ( TreeNode.isNode( oldRight ) )
         {
-            bTreeNode.goTo( cursor, "old right sibling", oldRight );
-            bTreeNode.setLeftSibling( cursor, newRight, stableGeneration, unstableGeneration );
+            try ( PageCursor oldRightCursor = cursor.openLinkedCursor( oldRight ) )
+            {
+                bTreeNode.goTo( oldRightCursor, "old right sibling", oldRight );
+                bTreeNode.setLeftSibling( oldRightCursor, newRight, stableGeneration, unstableGeneration );
+            }
         }
 
         // Update left child
-        bTreeNode.goTo( cursor, "left", current );
-        bTreeNode.setKeyCount( cursor, middlePos );
         // If pos < middle. Write shifted values to left node. Else, don't write anything.
         if ( pos < middlePos )
         {
-            bTreeNode.writeKeys( cursor, tmpForKeys, pos, pos, middlePos - pos );
-            bTreeNode.writeValues( cursor, tmpForValues, pos, pos, middlePos - pos );
+            bTreeNode.insertKeyAt( cursor, newKey, pos, middlePos - 1 );
+            bTreeNode.insertValueAt( cursor, newValue, pos, middlePos - 1 );
         }
+        bTreeNode.setKeyCount( cursor, middlePos );
         bTreeNode.setRightSibling( cursor, newRight, stableGeneration, unstableGeneration );
+    }
+
+    private void copyKeysAndValues( PageCursor cursor, int fromPos, PageCursor rightCursor, int toPos, int count )
+    {
+        cursor.copyTo( bTreeNode.keyOffset( fromPos ), rightCursor, bTreeNode.keyOffset( toPos ),
+                count * bTreeNode.keySize() );
+        cursor.copyTo( bTreeNode.valueOffset( fromPos ), rightCursor, bTreeNode.valueOffset( toPos ),
+                count * bTreeNode.valueSize() );
     }
 
     /**
