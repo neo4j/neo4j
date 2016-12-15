@@ -39,6 +39,7 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.register.Register;
 import org.neo4j.register.Registers;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
@@ -48,6 +49,7 @@ import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class DynamicIndexStoreViewTest
@@ -83,8 +85,8 @@ public class DynamicIndexStoreViewTest
         mockLabelNodeCount( countStore, 2 );
         mockLabelNodeCount( countStore, 3 );
 
-        DynamicIndexStoreView storeView =
-                new DynamicIndexStoreView( labelScanStore, LockService.NO_LOCK_SERVICE, neoStores );
+        DynamicIndexStoreView storeView = new DynamicIndexStoreView( labelScanStore, LockService.NO_LOCK_SERVICE,
+                neoStores, NullLogProvider.getInstance() );
 
         StoreScan<Exception> storeScan = storeView
                 .visitNodes( new int[]{1, 2, 3}, propertyKeyIdFilter, propertyUpdateVisitor, labelUpdateVisitor );
@@ -93,6 +95,17 @@ public class DynamicIndexStoreViewTest
 
         Mockito.verify( nodeStore, times( 10 ) )
                 .getRecord( anyLong(), any( NodeRecord.class ), any( RecordLoad.class ) );
+    }
+
+    @Test
+    public void closeAllEntriesScanReaderWhenCheckingLabelScanStore() throws Exception
+    {
+        DynamicIndexStoreView storeView = new DynamicIndexStoreView( labelScanStore, LockService.NO_LOCK_SERVICE,
+                neoStores, NullLogProvider.getInstance() );
+
+        storeView.visitNodes( new int[]{1, 2, 3}, propertyKeyIdFilter, propertyUpdateVisitor, labelUpdateVisitor );
+
+        verify( nodeLabelRanges ).close();
     }
 
     @Test
@@ -110,8 +123,8 @@ public class DynamicIndexStoreViewTest
         mockLabelNodeCount( countStore, 2 );
         mockLabelNodeCount( countStore, 6 );
 
-        DynamicIndexStoreView storeView =
-                new DynamicIndexStoreView( labelScanStore, LockService.NO_LOCK_SERVICE, neoStores );
+        DynamicIndexStoreView storeView = new DynamicIndexStoreView( labelScanStore, LockService.NO_LOCK_SERVICE,
+                neoStores, NullLogProvider.getInstance() );
 
         StoreScan<Exception> storeScan = storeView
                 .visitNodes( new int[]{2, 6}, propertyKeyIdFilter, propertyUpdateVisitor, labelUpdateVisitor );
