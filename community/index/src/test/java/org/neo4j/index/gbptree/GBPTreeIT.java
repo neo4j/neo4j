@@ -20,6 +20,7 @@
 package org.neo4j.index.gbptree;
 
 import org.apache.commons.lang3.mutable.MutableLong;
+import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -75,6 +76,7 @@ public class GBPTreeIT
     {
         return createIndex( pageSize, NO_MONITOR );
     }
+
     private GBPTree<MutableLong,MutableLong> createIndex( int pageSize, GBPTree.Monitor monitor )
             throws IOException
     {
@@ -88,6 +90,12 @@ public class GBPTreeIT
         PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory();
         swapperFactory.setFileSystemAbstraction( new DefaultFileSystemAbstraction() );
         return swapperFactory;
+    }
+
+    @After
+    public void consistencyCheck() throws IOException
+    {
+        index.consistencyCheck();
     }
 
     @Test

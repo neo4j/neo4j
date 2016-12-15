@@ -85,6 +85,7 @@ class TreeNode<KEY,VALUE>
     static final byte INTERNAL_FLAG = 0;
     static final long NO_NODE_FLAG = 0;
 
+    private final int pageSize;
     private final int internalMaxKeyCount;
     private final int leafMaxKeyCount;
     private final Layout<KEY,VALUE> layout;
@@ -94,6 +95,7 @@ class TreeNode<KEY,VALUE>
 
     TreeNode( int pageSize, Layout<KEY,VALUE> layout )
     {
+        this.pageSize = pageSize;
         this.layout = layout;
         this.keySize = layout.keySize();
         this.valueSize = layout.valueSize();
@@ -127,6 +129,11 @@ class TreeNode<KEY,VALUE>
         setRightSibling( cursor, NO_NODE_FLAG, stableGeneration, unstableGeneration );
         setLeftSibling( cursor, NO_NODE_FLAG, stableGeneration, unstableGeneration );
         setNewGen( cursor, NO_NODE_FLAG, stableGeneration, unstableGeneration );
+    }
+
+    int pageSize()
+    {
+        return pageSize;
     }
 
     void initializeLeaf( PageCursor cursor, long stableGeneration, long unstableGeneration )
@@ -479,7 +486,7 @@ class TreeNode<KEY,VALUE>
     @Override
     public String toString()
     {
-        return "TreeNode[internalMax:" + internalMaxKeyCount +
+        return "TreeNode[pageSize:" + pageSize + ", internalMax:" + internalMaxKeyCount +
                 ", leafMax:" + leafMaxKeyCount + ", keySize:" + keySize + ", valueSize:" + valueSize + "]";
     }
 }

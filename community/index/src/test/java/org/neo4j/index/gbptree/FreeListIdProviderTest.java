@@ -30,6 +30,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
+import org.neo4j.index.gbptree.FreeListIdProvider.Monitor;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.test.rule.RandomRule;
@@ -40,6 +41,8 @@ import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
+import static org.neo4j.index.gbptree.FreeListIdProvider.NO_MONITOR;
 
 public class FreeListIdProviderTest
 {
@@ -52,7 +55,8 @@ public class FreeListIdProviderTest
 
     private final PageAwareByteArrayCursor cursor = new PageAwareByteArrayCursor( PAGE_SIZE );
     private final PagedFile pagedFile = mock( PagedFile.class );
-    private final FreeListIdProvider freelist = new FreeListIdProvider( pagedFile, PAGE_SIZE, BASE_ID );
+    private final FreelistPageMonitor monitor = new FreelistPageMonitor();
+    private final FreeListIdProvider freelist = new FreeListIdProvider( pagedFile, PAGE_SIZE, BASE_ID, monitor );
 
     @Rule
     public final RandomRule random = new RandomRule();
@@ -184,6 +188,62 @@ public class FreeListIdProviderTest
         assertTrue( String.valueOf( freelist.lastId() ), freelist.lastId() < 200 );
     }
 
+    @Test
+    public void shouldVisitUnacquiredIds() throws Exception
+    {
+        // GIVEN a couple of released ids
+        PrimitiveLongSet expected = Primitive.longSet();
+        for ( int i = 0; i < 100; i++ )
+        {
+            expected.add( freelist.acquireNewId( GENERATION_ONE, GENERATION_TWO ) );
+        }
+        expected.visitKeys( id ->
+        {
+            freelist.releaseId( GENERATION_ONE, GENERATION_TWO, id );
+            return false;
+        } );
+        // and only a few acquired
+        for ( int i = 0; i < 10; i++ )
+        {
+            long acquiredId = freelist.acquireNewId( GENERATION_TWO, GENERATION_THREE );
+            assertTrue( expected.remove( acquiredId ) );
+        }
+
+        // WHEN/THEN
+        freelist.visitUnacquiredIds( unacquiredId -> assertTrue( expected.remove( unacquiredId ) ), GENERATION_THREE );
+        assertTrue( expected.isEmpty() );
+    }
+
+    @Test
+    public void shouldVisitFreelistPageIds() throws Exception
+    {
+        // GIVEN a couple of released ids
+        PrimitiveLongSet expected = Primitive.longSet();
+        // Add the already allocated free-list page id
+        expected.add( BASE_ID + 1 );
+        monitor.set( new Monitor()
+        {
+            @Override
+            public void acquiredFreelistPageId( long freelistPageId )
+            {
+                expected.add( freelistPageId );
+            }
+        } );
+        for ( int i = 0; i < 100; i++ )
+        {
+            long id = freelist.acquireNewId( GENERATION_ONE, GENERATION_TWO );
+            freelist.releaseId( GENERATION_ONE, GENERATION_TWO, id );
+        }
+        assertTrue( expected.size() > 0 );
+
+        // WHEN/THEN
+        freelist.visitFreelistPageIds( id ->
+        {
+            assertTrue( expected.remove( id ) );
+        } );
+        assertTrue( expected.isEmpty() );
+    }
+
     private void fillPageWithCrapData( long releasedId ) throws IOException
     {
         cursor.next( releasedId );
@@ -192,13 +252,35 @@ public class FreeListIdProviderTest
         cursor.putBytes( crapData );
     }
 
-    private void assertEmpty( PageCursor cursor )
+    private static void assertEmpty( PageCursor cursor )
     {
         byte[] data = new byte[PAGE_SIZE];
         cursor.getBytes( data );
         for ( byte b : data )
         {
             assertEquals( 0, b );
+        }
+    }
+
+    private static class FreelistPageMonitor implements Monitor
+    {
+        private Monitor actual = NO_MONITOR;
+
+        void set( Monitor actual )
+        {
+            this.actual = actual;
+        }
+
+        @Override
+        public void acquiredFreelistPageId( long freelistPageId )
+        {
+            actual.acquiredFreelistPageId( freelistPageId );
+        }
+
+        @Override
+        public void releasedFreelistPageId( long freelistPageId )
+        {
+            actual.releasedFreelistPageId( freelistPageId );
         }
     }
 }

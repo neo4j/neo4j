@@ -30,6 +30,8 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.LongSupplier;
 
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.Hit;
 import org.neo4j.index.Index;
@@ -278,7 +280,7 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>
         this.layout = layout;
         this.pagedFile = openOrCreate( pageCache, indexFile, tentativePageSize, layout );
         this.bTreeNode = new TreeNode<>( pageSize, layout );
-        this.freeList = new FreeListIdProvider( pagedFile, pageSize, rootId );
+        this.freeList = new FreeListIdProvider( pagedFile, pageSize, rootId, FreeListIdProvider.NO_MONITOR );
         this.writer = new SingleIndexWriter( new InternalTreeLogic<>( freeList, bTreeNode, layout ) );
 
         if ( created )
@@ -308,7 +310,7 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>
 
         // Initialize free-list
         long freelistPageId = freeList.lastId() + 1;
-        freeList.initialize( freelistPageId, freelistPageId, freelistPageId, 0, 0 );
+        freeList.initializeAfterCreation();
         checkpoint( IOLimiter.unlimited() );
     }
 
@@ -645,10 +647,20 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>
     {
         try ( PageCursor cursor = pagedFile.io( rootId, PagedFile.PF_SHARED_READ_LOCK ) )
         {
-            cursor.next();
-            return new ConsistencyChecker<>( bTreeNode, layout,
-                    stableGeneration( generation ), unstableGeneration( generation ) )
-                    .check( cursor, rootGen );
+            PageCursorUtil.goTo( cursor, "root", rootId );
+            long unstableGeneration = unstableGeneration( generation );
+            ConsistencyChecker<KEY> consistencyChecker = new ConsistencyChecker<>( bTreeNode, layout,
+                    stableGeneration( generation ), unstableGeneration );
+
+            boolean check = consistencyChecker.check( cursor, rootGen );
+            PageCursorUtil.goTo( cursor, "root", rootId );
+
+            PrimitiveLongSet freelistIds = Primitive.longSet();
+            freeList.visitFreelistPageIds( id -> freelistIds.add( id ) );
+            freeList.visitUnacquiredIds( id -> freelistIds.add( id ), unstableGeneration );
+            boolean checkSpace = consistencyChecker.checkSpace( cursor, freeList.lastId(), freelistIds.iterator() );
+
+            return check & checkSpace;
         }
     }
 

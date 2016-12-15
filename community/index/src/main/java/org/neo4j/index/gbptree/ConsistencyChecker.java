@@ -21,11 +21,14 @@ package org.neo4j.index.gbptree;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.Comparator;
 import java.util.List;
 
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.io.pagecache.PageCursor;
 
+import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
 
 import static org.neo4j.index.gbptree.GenSafePointerPair.pointer;
@@ -42,6 +45,7 @@ import static org.neo4j.index.gbptree.GenSafePointerPair.pointer;
 class ConsistencyChecker<KEY>
 {
     private final TreeNode<KEY,?> node;
+    private final FreelistNode freelistNode;
     private final KEY readKey;
     private final Comparator<KEY> comparator;
     private final Layout<KEY,?> layout;
@@ -52,6 +56,7 @@ class ConsistencyChecker<KEY>
     ConsistencyChecker( TreeNode<KEY,?> node, Layout<KEY,?> layout, long stableGeneration, long unstableGeneration )
     {
         this.node = node;
+        this.freelistNode = new FreelistNode( node.pageSize() );
         this.readKey = layout.newKey();
         this.comparator = node.keyComparator();
         this.layout = layout;
@@ -68,6 +73,112 @@ class ConsistencyChecker<KEY>
         // Assert that rightmost node on each level has empty right sibling.
         rightmostPerLevel.forEach( RightmostInChain::assertLast );
         return result;
+    }
+
+    /**
+     * Checks so that all pages between {@link IdSpace#MIN_TREE_NODE_ID} and highest allocated id
+     * are either in use in the tree, on the free-list or free-list nodes.
+     *
+     * @param cursor {@link PageCursor} to use for reading.
+     * @return {@code true} if all pages are taken, otherwise {@code false}. Also is compatible with java
+     * assert calls.
+     * @throws IOException on {@link PageCursor} error.
+     */
+    public boolean checkSpace( PageCursor cursor, long lastId, PrimitiveLongIterator freelistIds ) throws IOException
+    {
+        assertOnTreeNode( cursor );
+
+        // TODO: limitation, can't run on an index larger than Integer.MAX_VALUE pages (which is fairly large)
+        long highId = lastId + 1;
+        BitSet seenIds = new BitSet( toIntExact( highId ) );
+        while ( freelistIds.hasNext() )
+        {
+            addToSeenList( seenIds, freelistIds.next(), lastId );
+        }
+
+        // Traverse the tree
+        boolean isInternal;
+        do
+        {
+            // One level at the time
+            long leftmostSibling = cursor.getCurrentPageId();
+            addToSeenList( seenIds, leftmostSibling, lastId );
+
+            // Go right through all siblings
+            long rightSibling;
+            do
+            {
+                do
+                {
+                    rightSibling = node.rightSibling( cursor, stableGeneration, unstableGeneration );
+                }
+                while ( cursor.shouldRetry() );
+
+                if ( TreeNode.isNode( rightSibling ) )
+                {
+                    node.goTo( cursor, "right sibling", rightSibling );
+                    addToSeenList( seenIds, pointer( rightSibling ), lastId );
+                }
+            }
+            while ( TreeNode.isNode( rightSibling ) );
+
+            // Then go back to the left again and go down to child:0
+            node.goTo( cursor, "back", leftmostSibling );
+
+            do
+            {
+                isInternal = node.isInternal( cursor );
+                if ( isInternal )
+                {
+                    leftmostSibling = node.childAt( cursor, 0, stableGeneration, unstableGeneration );
+                }
+            }
+            while ( cursor.shouldRetry() );
+
+            if ( isInternal )
+            {
+                node.goTo( cursor, "child", leftmostSibling );
+            }
+        }
+        while ( isInternal );
+
+        long expectedNumberOfPages = highId - IdSpace.MIN_TREE_NODE_ID;
+        if ( seenIds.cardinality() != expectedNumberOfPages )
+        {
+            StringBuilder builder = new StringBuilder( "[" );
+            int index = 0;
+            int count = 0;
+            while ( index >= 0 && index < highId )
+            {
+                index = seenIds.nextClearBit( index );
+                if ( index != -1 )
+                {
+                    if ( count++ > 0 )
+                    {
+                        builder.append( "," );
+                    }
+                    builder.append( index );
+                    index++;
+                }
+            }
+            builder.append( "]" );
+            throw new RuntimeException( "There are " + count + " unused pages in the store:" + builder );
+        }
+        return true;
+    }
+
+    private static void addToSeenList( BitSet target, long id, long lastId )
+    {
+        int index = toIntExact( id );
+        if ( target.get( index ) )
+        {
+            throw new IllegalStateException( id + " already seen" );
+        }
+        if ( id > lastId )
+        {
+            throw new IllegalStateException( "Unexpectedly high id " + id + " seen when last id is " + lastId );
+        }
+        target.set( index );
     }
 
     private void assertOnTreeNode( PageCursor cursor )
