@@ -600,7 +600,7 @@ public class SeekCursorTest
     public void mustRereadHeadersOnRetry() throws Exception
     {
         // GIVEN
-        int keyCount = 10;
+        int keyCount = maxKeyCount - 1;
         insertKeysAndValues( keyCount );
         MutableLong from = layout.newKey();
         MutableLong to = layout.newKey();

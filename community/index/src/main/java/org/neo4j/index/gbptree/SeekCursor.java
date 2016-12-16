@@ -26,7 +26,10 @@ import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.Hit;
 import org.neo4j.io.pagecache.PageCursor;
 
+import static java.lang.Integer.max;
+
 import static org.neo4j.index.gbptree.PageCursorUtil.checkOutOfBounds;
+import static org.neo4j.index.gbptree.TreeNode.NODE_TYPE_TREE_NODE;
 
 /**
  * {@link RawCursor} over tree leaves, making keys/values accessible to user. Given a starting leaf
@@ -151,6 +154,12 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
      */
     private long expectedCurrentNodeGen;
 
+    /**
+     * Max of leaf/internal key count that a tree node can have at most. This is used to sanity check
+     * key counts read from {@link TreeNode#keyCount(PageCursor)}.
+     */
+    private final int maxKeyCount;
+
     SeekCursor( PageCursor leafCursor, KEY mutableKey, VALUE mutableValue, TreeNode<KEY,VALUE> bTreeNode,
             KEY fromInclusive, KEY toExclusive, Layout<KEY,VALUE> layout,
             long stableGeneration, long unstableGeneration, LongSupplier generationSupplier,
@@ -169,25 +178,34 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
         this.rootCatchup = rootCatchup;
         this.lastFollowedPointerGen = lastFollowedPointerGen;
         this.prevKey = layout.newKey();
+        this.maxKeyCount = max( bTreeNode.internalMaxKeyCount(), bTreeNode.leafMaxKeyCount() );
 
         traverseDownToFirstLeaf();
     }
 
     private void traverseDownToFirstLeaf() throws IOException
     {
+        // some variables below are initialized to satisfy the compiler
         byte nodeType;
-        long newGen;
-        boolean isInternal;
-        int keyCount;
-        long childId = -1; // initialized to satisfy compiler
-        int pos;
-        long newGenGen = -1; // initialized to satisfy compiler
-        long childIdGen = -1; // initialized to satisfy compiler
+        long newGen = -1;
+        boolean isInternal = false;
+        int keyCount = -1;
+        long childId = -1;
+        int pos = -1;
+        long newGenGen = -1;
+        long childIdGen = -1;
         do
         {
             do
             {
-                nodeType = bTreeNode.nodeType( cursor );
+                nodeType = TreeNode.nodeType( cursor );
+                if ( nodeType != TreeNode.NODE_TYPE_TREE_NODE )
+                {
+                    // If this node doesn't even look like a tree node then anything we read from it
+                    // will be just random data when looking at it as if it were a tree node.
+                    continue;
+                }
+
                 currentNodeGen = bTreeNode.gen( cursor );
 
                 newGen = bTreeNode.newGen( cursor, stableGeneration, unstableGeneration );
@@ -198,6 +216,13 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
                 isInternal = bTreeNode.isInternal( cursor );
                 // Find the left-most key within from-range
                 keyCount = bTreeNode.keyCount( cursor );
+                if ( keyCount > maxKeyCount )
+                {
+                    // keyCount is bigger than what a tree  node can hold. This must be that we're
+                    // reading from an evicted page that just happened to look like a tree node.
+                    continue;
+                }
+
                 int search = KeySearch.search( cursor, bTreeNode, fromInclusive, mutableKey, keyCount );
                 pos = KeySearch.positionOf( search );
 
@@ -219,7 +244,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
             while ( cursor.shouldRetry() );
             checkOutOfBounds( cursor );
 
-            if ( nodeType != TreeNode.NODE_TYPE_TREE_NODE || !verifyNodeGenInvariants() )
+            if ( nodeType != NODE_TYPE_TREE_NODE || !saneKeyCountRead( keyCount ) || !verifyNodeGenInvariants() )
             {
                 // This node has been reused. Restart seek from root.
                 generationCatchup();
@@ -237,7 +262,6 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
             }
             else if ( TreeNode.isNode( newGen ) )
             {
-                // JUMP
                 bTreeNode.goTo( cursor, "new gen", newGen );
                 lastFollowedPointerGen = newGenGen;
                 continue;
@@ -250,7 +274,6 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
                     continue;
                 }
 
-                // JUMP
                 bTreeNode.goTo( cursor, "child", childId );
                 lastFollowedPointerGen = childIdGen;
             }
@@ -260,6 +283,20 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
         // We've now come to the first relevant leaf, initialize the state for the coming leaf scan
         this.pos = pos - 1;
         this.keyCount = keyCount;
+    }
+
+    /**
+     * {@link TreeNode#keyCount(PageCursor) keyCount} is the only value read inside a do-shouldRetry loop
+     * which is used as data fed into another read. Because of that extra assertions are made around
+     * keyCount, both inside do-shouldRetry (requesting one more round in the loop) and outside
+     * (calling this method, which may throw exception).
+     *
+     * @param keyCount key count read from {@link TreeNode#keyCount(PageCursor)} and has "survived"
+     * a do-shouldRetry loop.
+     */
+    private boolean saneKeyCountRead( int keyCount )
+    {
+        return keyCount <= maxKeyCount;
     }
 
     @Override
@@ -274,17 +311,31 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
         while ( true )
         {
             pos++;
+            // some variables below are initialized to satisfy the compiler
             byte nodeType;
-            long newGen;
-            long rightSibling = -1; // initialized to satisfy the compiler
-            long newGenGen = -1; // initialized to satisfy the compiler
-            long rightSiblingGen = -1; // initialized to satisfy the compiler
+            long newGen = -1;
+            long rightSibling = -1;
+            long newGenGen = -1;
+            long rightSiblingGen = -1;
             do
             {
-                nodeType = bTreeNode.nodeType( cursor );
+                nodeType = TreeNode.nodeType( cursor );
+                if ( nodeType != TreeNode.NODE_TYPE_TREE_NODE )
+                {
+                    // If this node doesn't even look like a tree node then anything we read from it
+                    // will be just random data when looking at it as if it were a tree node.
+                    continue;
+                }
+
                 currentNodeGen = bTreeNode.gen( cursor );
                 newGen = bTreeNode.newGen( cursor, stableGeneration, unstableGeneration );
                 keyCount = bTreeNode.keyCount( cursor );
+                if ( keyCount > maxKeyCount )
+                {
+                    // keyCount is bigger than what a tree node can hold. This must be that we're
+                    // reading from an evicted page that just happened to look like a tree node.
+                    continue;
+                }
 
                 if ( GenSafePointerPair.isSuccess( newGen ) )
                 {
@@ -317,7 +368,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
             while ( rediscoverKeyPosition = cursor.shouldRetry() );
             checkOutOfBounds( cursor );
 
-            if ( nodeType != TreeNode.NODE_TYPE_TREE_NODE )
+            if ( nodeType != TreeNode.NODE_TYPE_TREE_NODE || !saneKeyCountRead( keyCount ) )
             {
                 // This node has been reused for something else than a tree node. Restart seek from root.
                 restartSeekFromRoot();
