@@ -88,7 +88,7 @@ public class CommunityLockClient implements Locks.Client
     }
 
     @Override
-    public void acquireShared( ResourceType resourceType, long...resourceIds )
+    public void acquireShared( Locks.Tracer tracer, ResourceType resourceType, long... resourceIds )
     {
         stateHolder.incrementActiveClients( this );
         try
@@ -122,7 +122,7 @@ public class CommunityLockClient implements Locks.Client
     }
 
     @Override
-    public void acquireExclusive( ResourceType resourceType, long...resourceIds )
+    public void acquireExclusive( Locks.Tracer tracer, ResourceType resourceType, long... resourceIds )
     {
         stateHolder.incrementActiveClients( this );
         try

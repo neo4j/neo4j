@@ -112,7 +112,7 @@ public class LockingStatementOperationsTest
         lockingOps.nodeAddLabel( state, 123, 456 );
 
         // then
-        order.verify( locks ).acquireExclusive( ResourceTypes.NODE, 123 );
+        order.verify( locks ).acquireExclusive( Locks.Tracer.NONE, ResourceTypes.NODE, 123 );
         order.verify( entityWriteOps ).nodeAddLabel( state, 123, 456 );
     }
 
@@ -124,7 +124,7 @@ public class LockingStatementOperationsTest
         lockingOps.nodeAddLabel( state, 123, 456 );
 
         // then
-        order.verify( locks, never() ).acquireExclusive( ResourceTypes.NODE, 123 );
+        order.verify( locks, never() ).acquireExclusive( Locks.Tracer.NONE, ResourceTypes.NODE, 123 );
         order.verify( entityWriteOps ).nodeAddLabel( state, 123, 456 );
     }
 
@@ -135,7 +135,7 @@ public class LockingStatementOperationsTest
         lockingOps.nodeAddLabel( state, 123, 456 );
 
         // then
-        order.verify( locks ).acquireShared( ResourceTypes.SCHEMA, schemaResource() );
+        order.verify( locks ).acquireShared( Locks.Tracer.NONE, ResourceTypes.SCHEMA, schemaResource() );
         order.verify( entityWriteOps ).nodeAddLabel( state, 123, 456 );
     }
 
@@ -149,7 +149,7 @@ public class LockingStatementOperationsTest
         lockingOps.nodeSetProperty( state, 123, property );
 
         // then
-        order.verify( locks ).acquireExclusive( ResourceTypes.NODE, 123 );
+        order.verify( locks ).acquireExclusive( Locks.Tracer.NONE, ResourceTypes.NODE, 123 );
         order.verify( entityWriteOps ).nodeSetProperty( state, 123, property );
     }
 
@@ -164,7 +164,7 @@ public class LockingStatementOperationsTest
         lockingOps.nodeSetProperty( state, 123, property );
 
         // then
-        order.verify( locks, never() ).acquireExclusive( ResourceTypes.NODE, 123 );
+        order.verify( locks, never() ).acquireExclusive( Locks.Tracer.NONE, ResourceTypes.NODE, 123 );
         order.verify( entityWriteOps ).nodeSetProperty( state, 123, property );
     }
 
@@ -178,7 +178,7 @@ public class LockingStatementOperationsTest
         lockingOps.nodeSetProperty( state, 123, property );
 
         // then
-        order.verify( locks ).acquireShared( ResourceTypes.SCHEMA, schemaResource() );
+        order.verify( locks ).acquireShared( Locks.Tracer.NONE, ResourceTypes.SCHEMA, schemaResource() );
         order.verify( entityWriteOps ).nodeSetProperty( state, 123, property );
     }
 
@@ -190,7 +190,7 @@ public class LockingStatementOperationsTest
         lockingOps.nodeDelete( state, 123 );
 
         //THEN
-        order.verify( locks ).acquireExclusive( ResourceTypes.NODE, 123 );
+        order.verify( locks ).acquireExclusive( Locks.Tracer.NONE, ResourceTypes.NODE, 123 );
         order.verify( entityWriteOps ).nodeDelete( state, 123 );
     }
 
@@ -202,7 +202,7 @@ public class LockingStatementOperationsTest
         lockingOps.nodeDelete( state, 123 );
 
         //THEN
-        order.verify( locks, never() ).acquireExclusive( ResourceTypes.NODE, 123 );
+        order.verify( locks, never() ).acquireExclusive( Locks.Tracer.NONE, ResourceTypes.NODE, 123 );
         order.verify( entityWriteOps ).nodeDelete( state, 123 );
     }
 
@@ -218,7 +218,7 @@ public class LockingStatementOperationsTest
 
         // then
         assertSame( rule, result );
-        order.verify( locks ).acquireExclusive( ResourceTypes.SCHEMA, schemaResource() );
+        order.verify( locks ).acquireExclusive( Locks.Tracer.NONE, ResourceTypes.SCHEMA, schemaResource() );
         order.verify( schemaWriteOps ).indexCreate( state, 123, 456 );
     }
 
@@ -232,7 +232,7 @@ public class LockingStatementOperationsTest
         lockingOps.indexDrop( state, rule );
 
         // then
-        order.verify( locks ).acquireExclusive( ResourceTypes.SCHEMA, schemaResource() );
+        order.verify( locks ).acquireExclusive( Locks.Tracer.NONE, ResourceTypes.SCHEMA, schemaResource() );
         order.verify( schemaWriteOps ).indexDrop( state, rule );
     }
 
@@ -248,7 +248,7 @@ public class LockingStatementOperationsTest
 
         // then
         assertSame( rules, result );
-        order.verify( locks ).acquireShared( ResourceTypes.SCHEMA, schemaResource() );
+        order.verify( locks ).acquireShared( Locks.Tracer.NONE, ResourceTypes.SCHEMA, schemaResource() );
         order.verify( schemaReadOps ).indexesGetAll( state );
     }
 
@@ -264,7 +264,7 @@ public class LockingStatementOperationsTest
 
         // then
         assertSame( constraint, result );
-        order.verify( locks ).acquireExclusive( ResourceTypes.SCHEMA, schemaResource() );
+        order.verify( locks ).acquireExclusive( Locks.Tracer.NONE, ResourceTypes.SCHEMA, schemaResource() );
         order.verify( schemaWriteOps ).uniquePropertyConstraintCreate( state, 123, 456 );
     }
 
@@ -278,7 +278,7 @@ public class LockingStatementOperationsTest
         lockingOps.constraintDrop( state, constraint );
 
         // then
-        order.verify( locks ).acquireExclusive( ResourceTypes.SCHEMA, schemaResource() );
+        order.verify( locks ).acquireExclusive( Locks.Tracer.NONE, ResourceTypes.SCHEMA, schemaResource() );
         order.verify( schemaWriteOps ).constraintDrop( state, constraint );
     }
 
@@ -294,7 +294,7 @@ public class LockingStatementOperationsTest
 
         // then
         assertSame( constraints, result );
-        order.verify( locks ).acquireShared( ResourceTypes.SCHEMA, schemaResource() );
+        order.verify( locks ).acquireShared( Locks.Tracer.NONE, ResourceTypes.SCHEMA, schemaResource() );
         order.verify( schemaReadOps ).constraintsGetForLabelAndPropertyKey( state, 123, 456 );
     }
 
@@ -310,7 +310,7 @@ public class LockingStatementOperationsTest
 
         // then
         assertSame( constraints, result );
-        order.verify( locks ).acquireShared( ResourceTypes.SCHEMA, schemaResource() );
+        order.verify( locks ).acquireShared( Locks.Tracer.NONE, ResourceTypes.SCHEMA, schemaResource() );
         order.verify( schemaReadOps ).constraintsGetForLabel( state, 123 );
     }
 
@@ -326,7 +326,7 @@ public class LockingStatementOperationsTest
 
         // then
         assertSame( constraints, result );
-        order.verify( locks ).acquireShared( ResourceTypes.SCHEMA, schemaResource() );
+        order.verify( locks ).acquireShared( Locks.Tracer.NONE, ResourceTypes.SCHEMA, schemaResource() );
         order.verify( schemaReadOps ).constraintsGetAll( state );
     }
 
@@ -340,7 +340,7 @@ public class LockingStatementOperationsTest
         lockingOps.schemaStateGetOrCreate( state, null, creator );
 
         // then
-        order.verify( locks ).acquireShared( ResourceTypes.SCHEMA, schemaResource() );
+        order.verify( locks ).acquireShared( Locks.Tracer.NONE, ResourceTypes.SCHEMA, schemaResource() );
         order.verify( schemaStateOps ).schemaStateGetOrCreate( state, null, creator );
     }
 
@@ -351,7 +351,7 @@ public class LockingStatementOperationsTest
         lockingOps.schemaStateContains( state, null );
 
         // then
-        order.verify( locks ).acquireShared( ResourceTypes.SCHEMA, schemaResource() );
+        order.verify( locks ).acquireShared( Locks.Tracer.NONE, ResourceTypes.SCHEMA, schemaResource() );
         order.verify( schemaStateOps ).schemaStateContains( state, null );
     }
 
@@ -362,7 +362,7 @@ public class LockingStatementOperationsTest
         lockingOps.schemaStateFlush( state );
 
         // then
-        order.verify( locks ).acquireShared( ResourceTypes.SCHEMA, schemaResource() );
+        order.verify( locks ).acquireShared( Locks.Tracer.NONE, ResourceTypes.SCHEMA, schemaResource() );
         order.verify( schemaStateOps ).schemaStateFlush( state );
     }
 
@@ -373,8 +373,8 @@ public class LockingStatementOperationsTest
         lockingOps.relationshipCreate( state, 1, 2, 3 );
 
         // then
-        order.verify( locks ).acquireExclusive( ResourceTypes.NODE, 2 );
-        order.verify( locks ).acquireExclusive( ResourceTypes.NODE, 3 );
+        order.verify( locks ).acquireExclusive( Locks.Tracer.NONE, ResourceTypes.NODE, 2 );
+        order.verify( locks ).acquireExclusive( Locks.Tracer.NONE, ResourceTypes.NODE, 3 );
         order.verify( entityWriteOps ).relationshipCreate( state, 1, 2, 3 );
     }
 
@@ -391,8 +391,8 @@ public class LockingStatementOperationsTest
 
             // THEN
             InOrder lockingOrder = inOrder( locks );
-            lockingOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, lowId );
-            lockingOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, highId );
+            lockingOrder.verify( locks ).acquireExclusive( Locks.Tracer.NONE, ResourceTypes.NODE, lowId );
+            lockingOrder.verify( locks ).acquireExclusive( Locks.Tracer.NONE, ResourceTypes.NODE, highId );
             lockingOrder.verifyNoMoreInteractions();
             reset( locks );
         }
@@ -403,8 +403,8 @@ public class LockingStatementOperationsTest
 
             // THEN
             InOrder lockingOrder = inOrder( locks );
-            lockingOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, lowId );
-            lockingOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, highId );
+            lockingOrder.verify( locks ).acquireExclusive( Locks.Tracer.NONE, ResourceTypes.NODE, lowId );
+            lockingOrder.verify( locks ).acquireExclusive( Locks.Tracer.NONE, ResourceTypes.NODE, highId );
             lockingOrder.verifyNoMoreInteractions();
         }
     }
@@ -433,9 +433,9 @@ public class LockingStatementOperationsTest
 
             // THEN
             InOrder lockingOrder = inOrder( locks );
-            lockingOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, lowId );
-            lockingOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, highId );
-            lockingOrder.verify( locks ).acquireExclusive( ResourceTypes.RELATIONSHIP, relationshipId );
+            lockingOrder.verify( locks ).acquireExclusive( Locks.Tracer.NONE, ResourceTypes.NODE, lowId );
+            lockingOrder.verify( locks ).acquireExclusive( Locks.Tracer.NONE, ResourceTypes.NODE, highId );
+            lockingOrder.verify( locks ).acquireExclusive( Locks.Tracer.NONE, ResourceTypes.RELATIONSHIP, relationshipId );
             lockingOrder.verifyNoMoreInteractions();
             reset( locks );
         }
@@ -455,9 +455,9 @@ public class LockingStatementOperationsTest
 
             // THEN
             InOrder lockingOrder = inOrder( locks );
-            lockingOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, lowId );
-            lockingOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, highId );
-            lockingOrder.verify( locks ).acquireExclusive( ResourceTypes.RELATIONSHIP, relationshipId );
+            lockingOrder.verify( locks ).acquireExclusive( Locks.Tracer.NONE, ResourceTypes.NODE, lowId );
+            lockingOrder.verify( locks ).acquireExclusive( Locks.Tracer.NONE, ResourceTypes.NODE, highId );
+            lockingOrder.verify( locks ).acquireExclusive( Locks.Tracer.NONE, ResourceTypes.RELATIONSHIP, relationshipId );
             lockingOrder.verifyNoMoreInteractions();
         }
     }
@@ -472,7 +472,7 @@ public class LockingStatementOperationsTest
         lockingOps.relationshipSetProperty( state, 123, property );
 
         // then
-        order.verify( locks ).acquireExclusive( ResourceTypes.RELATIONSHIP, 123 );
+        order.verify( locks ).acquireExclusive( Locks.Tracer.NONE, ResourceTypes.RELATIONSHIP, 123 );
         order.verify( entityWriteOps ).relationshipSetProperty( state, 123, property );
     }
 
@@ -487,7 +487,7 @@ public class LockingStatementOperationsTest
         lockingOps.relationshipSetProperty( state, 123, property );
 
         // then
-        order.verify( locks, never() ).acquireExclusive( ResourceTypes.RELATIONSHIP, 123 );
+        order.verify( locks, never() ).acquireExclusive( Locks.Tracer.NONE, ResourceTypes.RELATIONSHIP, 123 );
         order.verify( entityWriteOps ).relationshipSetProperty( state, 123, property );
     }
 
@@ -504,7 +504,7 @@ public class LockingStatementOperationsTest
 
         lockingOps.nodeDetachDelete( state, nodeId );
 
-        order.verify( locks ).acquireExclusive( ResourceTypes.NODE, nodeId );
+        order.verify( locks ).acquireExclusive( Locks.Tracer.NONE, ResourceTypes.NODE, nodeId );
         order.verify( locks, times( 0 ) ).releaseExclusive( ResourceTypes.NODE, nodeId );
         order.verify( entityWriteOps ).nodeDetachDelete( state, nodeId );
     }
@@ -534,8 +534,8 @@ public class LockingStatementOperationsTest
 
         lockingOps.nodeDetachDelete( state, startNodeId );
 
-        order.verify( locks ).acquireExclusive( ResourceTypes.NODE, startNodeId );
-        order.verify( locks ).acquireExclusive( ResourceTypes.NODE, endNodeId );
+        order.verify( locks ).acquireExclusive( Locks.Tracer.NONE, ResourceTypes.NODE, startNodeId );
+        order.verify( locks ).acquireExclusive( Locks.Tracer.NONE, ResourceTypes.NODE, endNodeId );
         order.verify( locks, times( 0 ) ).releaseExclusive( ResourceTypes.NODE, startNodeId );
         order.verify( locks, times( 0 ) ).releaseExclusive( ResourceTypes.NODE, endNodeId );
         order.verify( entityWriteOps ).nodeDetachDelete( state, startNodeId );

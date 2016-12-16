@@ -57,7 +57,7 @@ public class LeaderOnlyLockManagerTest
                 new LeaderOnlyLockManager( me, replicator, leaderLocator, locks, replicatedLockStateMachine );
 
         // when
-        lockManager.newClient().acquireExclusive( ResourceTypes.NODE, 0L );
+        lockManager.newClient().acquireExclusive( Locks.Tracer.NONE, ResourceTypes.NODE, 0L );
 
         // then
     }
@@ -85,7 +85,7 @@ public class LeaderOnlyLockManagerTest
         Locks.Client lockClient = lockManager.newClient();
         try
         {
-            lockClient.acquireExclusive( ResourceTypes.NODE, 0L );
+            lockClient.acquireExclusive( Locks.Tracer.NONE, ResourceTypes.NODE, 0L );
             fail( "Should have thrown exception" );
         }
         catch ( AcquireLockTimeoutException e )

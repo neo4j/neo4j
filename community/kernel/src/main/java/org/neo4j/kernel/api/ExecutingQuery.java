@@ -20,28 +20,41 @@
 package org.neo4j.kernel.api;
 
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
+import org.apache.commons.lang3.builder.ToStringBuilder;
+
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.query.QuerySource;
+import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.time.CpuClock;
+import org.neo4j.time.SystemNanoClock;
 
-import static java.lang.String.format;
+import static java.util.concurrent.atomic.AtomicLongFieldUpdater.newUpdater;
 
 /**
  * Represents a currently running query.
  */
 public class ExecutingQuery
 {
+    private static final AtomicLongFieldUpdater<ExecutingQuery> WAIT_TIME =
+            newUpdater( ExecutingQuery.class, "waitTimeNanos" );
     private final long queryId;
+    private final Locks.Tracer lockTracer = ExecutingQuery.this::waitForLock;
 
     private final String username;
     private final QuerySource querySource;
     private final String queryText;
     private final Map<String, Object> queryParameters;
-    private final long startTime;
+    private final long startTime; // timestamp in milliseconds
     private final Thread threadExecutingTheQuery;
+    private final SystemNanoClock clock;
     private final CpuClock cpuClock;
-    private final long cpuTimeWhenQueryStarted;
+    private final long cpuTimeNanosWhenQueryStarted;
     private Map<String,Object> metaData;
+    private volatile ExecutingQueryStatus status = ExecutingQueryStatus.RUNNING;
+    private volatile long waitTimeNanos;
 
     public ExecutingQuery(
             long queryId,
@@ -49,9 +62,9 @@ public class ExecutingQuery
             String username,
             String queryText,
             Map<String,Object> queryParameters,
-            long startTime,
             Map<String,Object> metaData,
             Thread threadExecutingTheQuery,
+            SystemNanoClock clock,
             CpuClock cpuClock
     ) {
         this.queryId = queryId;
@@ -59,11 +72,12 @@ public class ExecutingQuery
         this.username = username;
         this.queryText = queryText;
         this.queryParameters = queryParameters;
-        this.startTime = startTime;
+        this.clock = clock;
+        this.startTime = clock.millis();
         this.metaData = metaData;
         this.threadExecutingTheQuery = threadExecutingTheQuery;
         this.cpuClock = cpuClock;
-        this.cpuTimeWhenQueryStarted = cpuClock.cpuTime( threadExecutingTheQuery );
+        this.cpuTimeNanosWhenQueryStarted = cpuClock.cpuTime( threadExecutingTheQuery );
     }
 
     @Override
@@ -120,25 +134,54 @@ public class ExecutingQuery
         return startTime;
     }
 
+    public long elapsedTime()
+    {
+        return clock.millis() - startTime;
+    }
+
     /**
      * @return the CPU time used by the query, in nanoseconds.
      */
     public long cpuTime()
     {
-        return cpuClock.cpuTime( threadExecutingTheQuery ) - cpuTimeWhenQueryStarted;
+        return cpuClock.cpuTime( threadExecutingTheQuery ) - cpuTimeNanosWhenQueryStarted;
+    }
+
+    public long waitTime()
+    {
+        return TimeUnit.NANOSECONDS.toMillis( waitTimeNanos + status.waitTimeNanos( clock ) );
     }
 
     @Override
     public String toString()
     {
-        return format(
-            "ExecutingQuery{queryId=%d, querySource='%s', username='%s', queryText='%s', queryParameters=%s, " +
-            "startTime=%d}",
-            queryId, querySource.toString( ":" ), username, queryText, queryParameters, startTime );
+        return ToStringBuilder.reflectionToString( this );
     }
 
     public Map<String,Object> metaData()
     {
         return metaData;
+    }
+
+    public Locks.Tracer lockTracer()
+    {
+        return lockTracer;
+    }
+
+    public Map<String,Object> status()
+    {
+        return status.toMap( clock );
+    }
+
+    private Locks.WaitEvent waitForLock( ResourceType resourceType, long[] resourceIds )
+    {
+        ExecutingQueryStatus previous = status;
+        long startTimeNanos = clock.nanos();
+        status = new ExecutingQueryStatus.WaitingOnLock( resourceType, resourceIds, startTimeNanos );
+        return () ->
+        {
+            WAIT_TIME.addAndGet( ExecutingQuery.this, clock.nanos() - startTimeNanos );
+            status = previous;
+        };
     }
 }

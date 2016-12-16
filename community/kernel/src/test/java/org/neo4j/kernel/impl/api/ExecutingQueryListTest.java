@@ -21,12 +21,14 @@ package org.neo4j.kernel.impl.api;
 
 import org.junit.Test;
 
+import java.time.Clock;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import org.neo4j.kernel.api.ExecutingQuery;
 import org.neo4j.kernel.impl.query.QuerySource;
+import org.neo4j.time.Clocks;
 import org.neo4j.time.CpuClock;
 
 import static java.util.Arrays.asList;
@@ -115,6 +117,9 @@ public class ExecutingQueryListTest
     private ExecutingQuery createExecutingQuery( int queryId, String query )
     {
         return new ExecutingQuery( queryId, QuerySource.UNKNOWN, "me", query,
-                Collections.emptyMap(), 10, Collections.emptyMap(), Thread.currentThread(), CpuClock.CPU_CLOCK );
+                Collections.emptyMap(), Collections.emptyMap(), Thread.currentThread(),
+                Clocks.nanoClock(),
+                CpuClock.CPU_CLOCK
+        );
     }
 }

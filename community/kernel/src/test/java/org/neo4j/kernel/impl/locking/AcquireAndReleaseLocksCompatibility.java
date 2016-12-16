@@ -44,7 +44,7 @@ public class AcquireAndReleaseLocksCompatibility extends LockingCompatibilityTes
     public void exclusiveShouldWaitForExclusive() throws Exception
     {
         // When
-        clientA.acquireExclusive( NODE, 1L );
+        clientA.acquireExclusive( Locks.Tracer.NONE, NODE, 1L );
 
         // Then
         Future<Object> clientBLock = acquireExclusive( clientB, NODE, 1L ).callAndAssertWaiting();
@@ -60,10 +60,10 @@ public class AcquireAndReleaseLocksCompatibility extends LockingCompatibilityTes
     public void exclusiveShouldWaitForShared() throws Exception
     {
         // When
-        clientA.acquireShared( NODE, 1L );
+        clientA.acquireShared( Locks.Tracer.NONE, NODE, 1L );
 
         // Then other shared locks are allowed
-        clientC.acquireShared( NODE, 1L );
+        clientC.acquireShared( Locks.Tracer.NONE, NODE, 1L );
 
         // But exclusive locks should wait
         Future<Object> clientBLock = acquireExclusive( clientB, NODE, 1L ).callAndAssertWaiting();
@@ -80,7 +80,7 @@ public class AcquireAndReleaseLocksCompatibility extends LockingCompatibilityTes
     public void sharedShouldWaitForExclusive() throws Exception
     {
         // When
-        clientA.acquireExclusive( NODE, 1L );
+        clientA.acquireExclusive( Locks.Tracer.NONE, NODE, 1L );
 
         // Then shared locks should wait
         Future<Object> clientBLock = acquireShared( clientB, NODE, 1L ).callAndAssertWaiting();
@@ -135,7 +135,7 @@ public class AcquireAndReleaseLocksCompatibility extends LockingCompatibilityTes
     public void shouldUpgradeExclusiveOnTry() throws Exception
     {
         // Given I've grabbed a shared lock
-        clientA.acquireShared( NODE, 1L );
+        clientA.acquireShared( Locks.Tracer.NONE, NODE, 1L );
 
         // When
         assertTrue( clientA.tryExclusiveLock( NODE, 1L ) );
@@ -147,7 +147,7 @@ public class AcquireAndReleaseLocksCompatibility extends LockingCompatibilityTes
     @Test
     public void shouldAcquireMultipleSharedLocks()
     {
-        clientA.acquireShared( NODE, 10, 100, 1000 );
+        clientA.acquireShared( Locks.Tracer.NONE, NODE, 10, 100, 1000 );
 
         assertFalse( clientB.tryExclusiveLock( NODE, 10 ) );
         assertFalse( clientB.tryExclusiveLock( NODE, 100 ) );
@@ -159,7 +159,7 @@ public class AcquireAndReleaseLocksCompatibility extends LockingCompatibilityTes
     @Test
     public void shouldAcquireMultipleExclusiveLocks()
     {
-        clientA.acquireExclusive( NODE, 10, 100, 1000 );
+        clientA.acquireExclusive( Locks.Tracer.NONE, NODE, 10, 100, 1000 );
 
         assertFalse( clientB.trySharedLock( NODE, 10 ) );
         assertFalse( clientB.trySharedLock( NODE, 100 ) );
@@ -171,8 +171,8 @@ public class AcquireAndReleaseLocksCompatibility extends LockingCompatibilityTes
     @Test
     public void shouldAcquireMultipleAlreadyAcquiredSharedLocks()
     {
-        clientA.acquireShared( NODE, 10, 100, 1000 );
-        clientA.acquireShared( NODE, 100, 1000, 10000 );
+        clientA.acquireShared( Locks.Tracer.NONE, NODE, 10, 100, 1000 );
+        clientA.acquireShared( Locks.Tracer.NONE, NODE, 100, 1000, 10000 );
 
         assertFalse( clientB.tryExclusiveLock( NODE, 10 ) );
         assertFalse( clientB.tryExclusiveLock( NODE, 100 ) );
@@ -185,8 +185,8 @@ public class AcquireAndReleaseLocksCompatibility extends LockingCompatibilityTes
     @Test
     public void shouldAcquireMultipleAlreadyAcquiredExclusiveLocks()
     {
-        clientA.acquireExclusive( NODE, 10, 100, 1000 );
-        clientA.acquireExclusive( NODE, 100, 1000, 10000 );
+        clientA.acquireExclusive( Locks.Tracer.NONE, NODE, 10, 100, 1000 );
+        clientA.acquireExclusive( Locks.Tracer.NONE, NODE, 100, 1000, 10000 );
 
         assertFalse( clientB.trySharedLock( NODE, 10 ) );
         assertFalse( clientB.trySharedLock( NODE, 100 ) );
@@ -199,8 +199,8 @@ public class AcquireAndReleaseLocksCompatibility extends LockingCompatibilityTes
     @Test
     public void shouldAcquireMultipleSharedLocksWhileHavingSomeExclusiveLocks()
     {
-        clientA.acquireExclusive( NODE, 10, 100, 1000 );
-        clientA.acquireShared( NODE, 100, 1000, 10000 );
+        clientA.acquireExclusive( Locks.Tracer.NONE, NODE, 10, 100, 1000 );
+        clientA.acquireShared( Locks.Tracer.NONE, NODE, 100, 1000, 10000 );
 
         assertFalse( clientB.trySharedLock( NODE, 10 ) );
         assertFalse( clientB.trySharedLock( NODE, 100 ) );
@@ -213,7 +213,7 @@ public class AcquireAndReleaseLocksCompatibility extends LockingCompatibilityTes
     @Test
     public void shouldReleaseSharedLocksAcquiredInABatch()
     {
-        clientA.acquireShared( NODE, 1, 10, 100 );
+        clientA.acquireShared( Locks.Tracer.NONE, NODE, 1, 10, 100 );
         assertEquals( 3, lockCount() );
 
         clientA.releaseShared( NODE, 1 );
@@ -229,7 +229,7 @@ public class AcquireAndReleaseLocksCompatibility extends LockingCompatibilityTes
     @Test
     public void shouldReleaseExclusiveLocksAcquiredInABatch()
     {
-        clientA.acquireExclusive( NODE, 1, 10, 100 );
+        clientA.acquireExclusive( Locks.Tracer.NONE, NODE, 1, 10, 100 );
         assertEquals( 3, lockCount() );
 
         clientA.releaseExclusive( NODE, 1 );

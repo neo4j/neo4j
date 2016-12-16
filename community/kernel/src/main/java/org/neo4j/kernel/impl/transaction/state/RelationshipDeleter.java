@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -76,7 +77,7 @@ public class RelationshipDeleter
             return;
         }
 
-        locks.acquireExclusive( ResourceTypes.RELATIONSHIP, otherRelId );
+        locks.acquireExclusive( Locks.Tracer.NONE, ResourceTypes.RELATIONSHIP, otherRelId );
         RelationshipRecord otherRel = relChanges.getOrLoad( otherRelId, null ).forChangingLinkage();
         boolean changed = false;
         long newId = pointer.get( rel );
@@ -191,7 +192,7 @@ public class RelationshipDeleter
         boolean firstInChain = relIsFirstInChain( nodeId, rel );
         if ( !firstInChain )
         {
-            locks.acquireExclusive( ResourceTypes.RELATIONSHIP, firstRelId );
+            locks.acquireExclusive( Locks.Tracer.NONE, ResourceTypes.RELATIONSHIP, firstRelId );
         }
         RelationshipRecord firstRel = relRecords.getOrLoad( firstRelId, null ).forChangingLinkage();
         if ( nodeId == firstRel.getFirstNode() )

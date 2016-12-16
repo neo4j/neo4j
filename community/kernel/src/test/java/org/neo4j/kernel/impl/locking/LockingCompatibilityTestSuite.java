@@ -186,7 +186,7 @@ public abstract class LockingCompatibilityTestSuite
                 @Override
                 public void doWork( Locks.Client client ) throws AcquireLockTimeoutException
                 {
-                    client.acquireExclusive( resourceType, key );
+                    client.acquireExclusive( Locks.Tracer.NONE, resourceType, key );
                 }
             };
         }
@@ -201,7 +201,7 @@ public abstract class LockingCompatibilityTestSuite
                 @Override
                 public void doWork( Locks.Client client ) throws AcquireLockTimeoutException
                 {
-                    client.acquireShared( resourceType, key );
+                    client.acquireShared( Locks.Tracer.NONE, resourceType, key );
                 }
             };
         }

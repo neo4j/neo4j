@@ -202,16 +202,16 @@ public class LeaderOnlyLockManager implements Locks
         }
 
         @Override
-        public void acquireShared( ResourceType resourceType, long... resourceId ) throws AcquireLockTimeoutException
+        public void acquireShared( Tracer tracer, ResourceType resourceType, long... resourceId ) throws AcquireLockTimeoutException
         {
-            localClient.acquireShared( resourceType, resourceId );
+            localClient.acquireShared( tracer, resourceType, resourceId );
         }
 
         @Override
-        public void acquireExclusive( ResourceType resourceType, long... resourceId ) throws AcquireLockTimeoutException
+        public void acquireExclusive( Tracer tracer, ResourceType resourceType, long... resourceId ) throws AcquireLockTimeoutException
         {
             ensureHoldingToken();
-            localClient.acquireExclusive( resourceType, resourceId );
+            localClient.acquireExclusive( tracer, resourceType, resourceId );
         }
 
         @Override

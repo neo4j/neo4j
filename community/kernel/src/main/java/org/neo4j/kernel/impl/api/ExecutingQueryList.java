@@ -19,9 +19,12 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import org.neo4j.kernel.api.ExecutingQuery;
+import org.neo4j.kernel.impl.locking.Locks;
 
 abstract class ExecutingQueryList
 {
@@ -50,7 +53,15 @@ abstract class ExecutingQueryList
         {
             return this;
         }
+
+        @Override
+        <T> T reduce( T defaultValue, Function<ExecutingQuery,T> accessor, BiFunction<T,T,T> combinator )
+        {
+            return defaultValue;
+        }
     };
+
+    abstract <T> T reduce( T defaultValue, Function<ExecutingQuery,T> accessor, BiFunction<T,T,T> combinator );
 
     private static class Entry extends ExecutingQueryList
     {
@@ -80,7 +91,7 @@ abstract class ExecutingQueryList
         @Override
         public ExecutingQueryList push( ExecutingQuery newExecutingQuery )
         {
-            assert( newExecutingQuery.internalQueryId() > query.internalQueryId() );
+            assert (newExecutingQuery.internalQueryId() > query.internalQueryId());
             return new Entry( newExecutingQuery, this );
         }
 
@@ -103,6 +114,12 @@ abstract class ExecutingQueryList
                     return new Entry( query, removed );
                 }
             }
+        }
+
+        @Override
+        <T> T reduce( T defaultValue, Function<ExecutingQuery,T> accessor, BiFunction<T,T,T> combinator )
+        {
+            return next.reduce( combinator.apply( defaultValue, accessor.apply( query ) ), accessor, combinator );
         }
     }
 }

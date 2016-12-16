@@ -145,7 +145,7 @@ public class ForsetiClient implements Locks.Client
     }
 
     @Override
-    public void acquireShared( ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException
+    public void acquireShared( Locks.Tracer tracer, ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException
     {
         hasLocks = true;
         stateHolder.incrementActiveClients( this );
@@ -233,7 +233,7 @@ public class ForsetiClient implements Locks.Client
                         throw new UnsupportedOperationException( "Unknown lock type: " + existingLock );
                     }
 
-                    applyWaitStrategy( resourceType, tries++ );
+                    applyWaitStrategy( tracer, resourceType, resourceId, tries++ );
 
                     // And take note of who we are waiting for. This is used for deadlock detection.
                     markAsWaitingFor( existingLock, resourceType, resourceId );
@@ -253,7 +253,7 @@ public class ForsetiClient implements Locks.Client
     }
 
     @Override
-    public void acquireExclusive( ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException
+    public void acquireExclusive( Locks.Tracer tracer, ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException
     {
         hasLocks = true;
         stateHolder.incrementActiveClients( this );
@@ -288,14 +288,14 @@ public class ForsetiClient implements Locks.Client
                     {
                         // Then we should upgrade that lock
                         SharedLock sharedLock = (SharedLock) existingLock;
-                        if ( tryUpgradeSharedToExclusive( resourceType, lockMap, resourceId, sharedLock,
+                        if ( tryUpgradeSharedToExclusive( tracer, resourceType, lockMap, resourceId, sharedLock,
                                 waitStartMillis ) )
                         {
                             break;
                         }
                     }
 
-                    applyWaitStrategy( resourceType, tries++ );
+                    applyWaitStrategy( tracer, resourceType, resourceId, tries++ );
                     markAsWaitingFor( existingLock, resourceType, resourceId );
                 }
 
@@ -689,7 +689,7 @@ public class ForsetiClient implements Locks.Client
     /**
      * Attempt to upgrade a share lock to an exclusive lock, grabbing the share lock if we don't hold it.
      **/
-    private boolean tryUpgradeSharedToExclusive( ResourceType resourceType, ConcurrentMap<Long,ForsetiLockManager.Lock> lockMap,
+    private boolean tryUpgradeSharedToExclusive( Locks.Tracer tracer, ResourceType resourceType, ConcurrentMap<Long,ForsetiLockManager.Lock> lockMap,
             long resourceId, SharedLock sharedLock, long waitStartMillis )
             throws AcquireLockTimeoutException
     {
@@ -705,7 +705,7 @@ public class ForsetiClient implements Locks.Client
 
             try
             {
-                if ( tryUpgradeToExclusiveWithShareLockHeld( resourceType, resourceId, sharedLock, tries,
+                if ( tryUpgradeToExclusiveWithShareLockHeld( tracer, resourceType, resourceId, sharedLock, tries,
                         waitStartMillis ) )
                 {
                     return true;
@@ -725,13 +725,13 @@ public class ForsetiClient implements Locks.Client
         else
         {
             // We do hold the shared lock, so no reason to deal with the complexity in the case above.
-            return tryUpgradeToExclusiveWithShareLockHeld( resourceType, resourceId, sharedLock, tries,
+            return tryUpgradeToExclusiveWithShareLockHeld( tracer, resourceType, resourceId, sharedLock, tries,
                     waitStartMillis );
         }
     }
 
     /** Attempt to upgrade a share lock that we hold to an exclusive lock. */
-    private boolean tryUpgradeToExclusiveWithShareLockHeld( ResourceType resourceType, long resourceId,
+    private boolean tryUpgradeToExclusiveWithShareLockHeld( Locks.Tracer tracer, ResourceType resourceType, long resourceId,
             SharedLock sharedLock, int tries, long waitStartMillis ) throws AcquireLockTimeoutException
     {
         if ( sharedLock.tryAcquireUpdateLock( this ) )
@@ -742,7 +742,7 @@ public class ForsetiClient implements Locks.Client
                 while ( sharedLock.numberOfHolders() > 1 )
                 {
                     assertValid( waitStartMillis, resourceType, resourceId );
-                    applyWaitStrategy( resourceType, tries++ );
+                    applyWaitStrategy( tracer, resourceType, resourceId, tries++ );
                     markAsWaitingFor( sharedLock, resourceType, resourceId );
                 }
 
@@ -851,10 +851,13 @@ public class ForsetiClient implements Locks.Client
         return clientId;
     }
 
-    private void applyWaitStrategy( ResourceType resourceType, int tries )
+    private void applyWaitStrategy( Locks.Tracer tracer, ResourceType resourceType, long resourceId, int tries )
     {
         WaitStrategy<AcquireLockTimeoutException> waitStrategy = waitStrategies[resourceType.typeId()];
-        waitStrategy.apply( tries );
+        try ( Locks.WaitEvent event = tracer.waitForLock( resourceType, resourceId ) )
+        {
+            waitStrategy.apply( tries );
+        }
     }
 
     private void assertValid( long waitStartMillis, ResourceType resourceType, long resourceId )

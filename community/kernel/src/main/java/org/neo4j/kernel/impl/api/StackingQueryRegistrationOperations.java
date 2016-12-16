@@ -28,14 +28,15 @@ import org.neo4j.kernel.impl.api.operations.QueryRegistrationOperations;
 import org.neo4j.kernel.impl.query.QuerySource;
 import org.neo4j.kernel.impl.util.MonotonicCounter;
 import org.neo4j.time.CpuClock;
+import org.neo4j.time.SystemNanoClock;
 
 public class StackingQueryRegistrationOperations implements QueryRegistrationOperations
 {
 
     private final MonotonicCounter lastQueryId = MonotonicCounter.newAtomicMonotonicCounter();
-    private final Clock clock;
+    private final SystemNanoClock clock;
 
-    public StackingQueryRegistrationOperations( Clock clock )
+    public StackingQueryRegistrationOperations( SystemNanoClock clock )
     {
         this.clock = clock;
     }
@@ -64,7 +65,7 @@ public class StackingQueryRegistrationOperations implements QueryRegistrationOpe
         Thread thread = Thread.currentThread();
         ExecutingQuery executingQuery =
                 new ExecutingQuery( queryId, querySource, statement.username(), queryText, queryParameters,
-                        clock.millis(), statement.getTransaction().getMetaData(), thread, CpuClock.CPU_CLOCK );
+                        statement.getTransaction().getMetaData(), thread, clock, CpuClock.CPU_CLOCK );
         registerExecutingQuery( statement, executingQuery );
         return executingQuery;
     }

@@ -100,7 +100,7 @@ class SlaveLocksClient implements Locks.Client
     }
 
     @Override
-    public void acquireShared( ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException
+    public void acquireShared( Locks.Tracer tracer, ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException
     {
         assertNotStopped();
 
@@ -108,7 +108,10 @@ class SlaveLocksClient implements Locks.Client
         long[] newResourceIds = onlyFirstTimeLocks( lockMap, resourceIds );
         if ( newResourceIds.length > 0 )
         {
-            acquireSharedOnMaster( resourceType, newResourceIds );
+            try ( Locks.WaitEvent event = tracer.waitForLock( resourceType, resourceIds ) )
+            {
+                acquireSharedOnMaster( resourceType, newResourceIds );
+            }
             for ( long resourceId : newResourceIds )
             {
                 if ( client.trySharedLock( resourceType, resourceId ) )
@@ -125,7 +128,7 @@ class SlaveLocksClient implements Locks.Client
     }
 
     @Override
-    public void acquireExclusive( ResourceType resourceType, long... resourceIds ) throws
+    public void acquireExclusive( Locks.Tracer tracer, ResourceType resourceType, long... resourceIds ) throws
             AcquireLockTimeoutException
     {
         assertNotStopped();
@@ -134,7 +137,10 @@ class SlaveLocksClient implements Locks.Client
         long[] newResourceIds = onlyFirstTimeLocks( lockMap, resourceIds );
         if ( newResourceIds.length > 0 )
         {
-            acquireExclusiveOnMaster( resourceType, newResourceIds );
+            try ( Locks.WaitEvent event = tracer.waitForLock( resourceType, resourceIds ) )
+            {
+                acquireExclusiveOnMaster( resourceType, newResourceIds );
+            }
             for ( long resourceId : newResourceIds )
             {
                 if ( client.tryExclusiveLock( resourceType, resourceId ) )

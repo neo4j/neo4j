@@ -69,14 +69,14 @@ public class DeferringStatementLocksTest
         final DeferringStatementLocks statementLocks = new DeferringStatementLocks( client );
 
         // WHEN
-        statementLocks.optimistic().acquireExclusive( ResourceTypes.NODE, 1 );
-        statementLocks.optimistic().acquireExclusive( ResourceTypes.RELATIONSHIP, 42 );
-        verify( client, never() ).acquireExclusive( any( ResourceType.class ), anyLong() );
+        statementLocks.optimistic().acquireExclusive( Locks.Tracer.NONE, ResourceTypes.NODE, 1 );
+        statementLocks.optimistic().acquireExclusive( Locks.Tracer.NONE, ResourceTypes.RELATIONSHIP, 42 );
+        verify( client, never() ).acquireExclusive( Locks.Tracer.NONE, any( ResourceType.class ), anyLong() );
         statementLocks.prepareForCommit();
 
         // THEN
-        verify( client ).acquireExclusive( ResourceTypes.NODE, 1 );
-        verify( client ).acquireExclusive( ResourceTypes.RELATIONSHIP, 42 );
+        verify( client ).acquireExclusive( Locks.Tracer.NONE, ResourceTypes.NODE, 1 );
+        verify( client ).acquireExclusive( Locks.Tracer.NONE, ResourceTypes.RELATIONSHIP, 42 );
         verifyNoMoreInteractions( client );
     }
 

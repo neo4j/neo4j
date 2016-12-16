@@ -67,6 +67,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.time.Clocks;
 
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
@@ -123,7 +124,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
                 new Tracers( "null", NullLog.getInstance(), monitors, jobScheduler ),
                 mock( Procedures.class ),
                 IOLimiter.unlimited(),
-                mock( AvailabilityGuard.class ), Clock.systemUTC(), new CanWrite() );
+                mock( AvailabilityGuard.class ), Clocks.nanoClock(), new CanWrite() );
 
         return dataSource;
     }

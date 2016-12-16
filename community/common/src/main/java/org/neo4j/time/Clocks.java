@@ -20,6 +20,8 @@
 package org.neo4j.time;
 
 import java.time.Clock;
+import java.time.temporal.ChronoField;
+import java.time.temporal.TemporalAccessor;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -71,5 +73,12 @@ public class Clocks
     public static FakeClock fakeClock( long initialTime, TimeUnit unit )
     {
         return new FakeClock( initialTime, unit );
+    }
+
+    public static FakeClock fakeClock( TemporalAccessor initialTime )
+    {
+        FakeClock clock = new FakeClock( initialTime.getLong( ChronoField.INSTANT_SECONDS ), TimeUnit.SECONDS );
+        clock.forward( initialTime.getLong( ChronoField.NANO_OF_SECOND ), TimeUnit.NANOSECONDS );
+        return clock;
     }
 }

@@ -155,6 +155,7 @@ import org.neo4j.logging.Logger;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.time.SystemNanoClock;
 
 import static org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory.fromConfigValue;
 
@@ -257,7 +258,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     private final Procedures procedures;
     private final IOLimiter ioLimiter;
     private final AvailabilityGuard availabilityGuard;
-    private final Clock clock;
+    private final SystemNanoClock clock;
 
     private Dependencies dependencies;
     private LifeSupport life;
@@ -309,7 +310,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             Procedures procedures,
             IOLimiter ioLimiter,
             AvailabilityGuard availabilityGuard,
-            Clock clock,
+            SystemNanoClock clock,
             AccessCapability accessCapability )
     {
         this.storeDir = storeDir;

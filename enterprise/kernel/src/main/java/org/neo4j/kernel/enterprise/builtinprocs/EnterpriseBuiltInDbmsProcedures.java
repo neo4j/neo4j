@@ -76,7 +76,6 @@ import static org.neo4j.procedure.Mode.DBMS;
 @SuppressWarnings( "unused" )
 public class EnterpriseBuiltInDbmsProcedures
 {
-    private static Clock clock = Clocks.systemClock();
     private static final int HARD_CHAR_LIMIT = 2048;
 
     @Context
@@ -438,10 +437,12 @@ public class EnterpriseBuiltInDbmsProcedures
                 q.queryText(),
                 q.queryParameters(),
                 q.startTime(),
-                clock.instant().minusMillis( q.startTime() ).toEpochMilli(),
+                q.elapsedTime(),
                 q.querySource(),
                 q.metaData(),
-                q.cpuTime()
+                q.cpuTime(),
+                q.status(),
+                q.waitTime()
         );
     }
 
@@ -455,6 +456,8 @@ public class EnterpriseBuiltInDbmsProcedures
         public final String elapsedTime;
         public final String connectionDetails;
         public final long cpuTime;
+        public final Map<String,Object> status;
+        public final long waitTime;
         public final Map<String,Object> metaData;
 
         QueryStatusResult(
@@ -466,7 +469,9 @@ public class EnterpriseBuiltInDbmsProcedures
                 long elapsedTime,
                 QuerySource querySource,
                 Map<String,Object> txMetaData,
-                long cpuTime
+                long cpuTime,
+                Map<String,Object> status,
+                long waitTime
         ) {
             this.queryId = queryId.toString();
             this.username = username;
@@ -477,6 +482,8 @@ public class EnterpriseBuiltInDbmsProcedures
             this.connectionDetails = querySource.toString();
             this.metaData = txMetaData;
             this.cpuTime = cpuTime;
+            this.status = status;
+            this.waitTime = waitTime;
         }
 
         private static String formatTime( final long startTime )

@@ -154,7 +154,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
         {
             IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
             assertIndexOnline( state, indexDescriptor );
-            state.locks().optimistic().acquireExclusive( INDEX_ENTRY,
+            state.locks().optimistic().acquireExclusive( state.lockTracer(), INDEX_ENTRY,
                     indexEntryResourceId( labelId, propertyKeyId, Strings.prettyPrint( value ) ) );
 
             long existing = entityReadOperations.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value );
@@ -331,21 +331,22 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
         // If we find the node - hold a shared lock. If we don't find a node - hold an exclusive lock.
         // If locks are deferred than both shared and exclusive locks will be taken only at commit time.
         Locks.Client locks = state.locks().optimistic();
+        Locks.Tracer lockTracer = state.lockTracer();
         long indexEntryId = indexEntryResourceId( labelId, propertyKeyId, stringVal );
 
-        locks.acquireShared( INDEX_ENTRY, indexEntryId );
+        locks.acquireShared( lockTracer, INDEX_ENTRY, indexEntryId );
 
         long nodeId = entityReadOperations.nodeGetFromUniqueIndexSeek( state, index, value );
         if ( NO_SUCH_NODE == nodeId )
         {
             locks.releaseShared( INDEX_ENTRY, indexEntryId );
-            locks.acquireExclusive( INDEX_ENTRY, indexEntryId );
+            locks.acquireExclusive( lockTracer, INDEX_ENTRY, indexEntryId );
 
             nodeId = entityReadOperations.nodeGetFromUniqueIndexSeek( state, index, value );
             if ( NO_SUCH_NODE != nodeId ) // we found it under the exclusive lock
             {
                 // downgrade to a shared lock
-                locks.acquireShared( INDEX_ENTRY, indexEntryId );
+                locks.acquireShared( lockTracer, INDEX_ENTRY, indexEntryId );
                 locks.releaseExclusive( INDEX_ENTRY, indexEntryId );
             }
         }

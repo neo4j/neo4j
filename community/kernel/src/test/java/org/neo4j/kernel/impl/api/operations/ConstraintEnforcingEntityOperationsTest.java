@@ -61,6 +61,7 @@ public class ConstraintEnforcingEntityOperationsTest
         when( schemaReadOps.indexGetState( state, indexDescriptor ) ).thenReturn( InternalIndexState.ONLINE );
         this.locks = mock( Locks.Client.class );
         when( state.locks() ).thenReturn( new SimpleStatementLocks( locks ) );
+        when( state.lockTracer() ).thenReturn( Locks.Tracer.NONE );
 
         this.ops = new ConstraintEnforcingEntityOperations( new StandardConstraintSemantics(), null, readOps, schemaWriteOps, schemaReadOps );
     }
@@ -77,7 +78,9 @@ public class ConstraintEnforcingEntityOperationsTest
 
         // then
         assertEquals( expectedNodeId, nodeId );
-        verify( locks).acquireShared( INDEX_ENTRY, indexEntryResourceId( labelId, propertyKeyId, value ) );
+        verify( locks).acquireShared(
+                Locks.Tracer.NONE,
+                INDEX_ENTRY, indexEntryResourceId( labelId, propertyKeyId, value ) );
         verifyNoMoreInteractions( locks );
     }
 
@@ -92,8 +95,12 @@ public class ConstraintEnforcingEntityOperationsTest
 
         // then
         assertEquals( NO_SUCH_NODE, nodeId );
-        verify( locks ).acquireShared( INDEX_ENTRY, indexEntryResourceId( labelId, propertyKeyId, value ) );
-        verify( locks ).acquireExclusive( INDEX_ENTRY, indexEntryResourceId( labelId, propertyKeyId, value ) );
+        verify( locks ).acquireShared(
+                Locks.Tracer.NONE,
+                INDEX_ENTRY, indexEntryResourceId( labelId, propertyKeyId, value ) );
+        verify( locks ).acquireExclusive(
+                Locks.Tracer.NONE,
+                INDEX_ENTRY, indexEntryResourceId( labelId, propertyKeyId, value ) );
         verify( locks ).releaseShared( INDEX_ENTRY, indexEntryResourceId( labelId, propertyKeyId, value ) );
         verifyNoMoreInteractions( locks );
     }
@@ -112,8 +119,12 @@ public class ConstraintEnforcingEntityOperationsTest
 
         // then
         assertEquals( expectedNodeId, nodeId );
-        verify( locks, times(2) ).acquireShared( INDEX_ENTRY, indexEntryResourceId( labelId, propertyKeyId, value ) );
-        verify( locks ).acquireExclusive( INDEX_ENTRY, indexEntryResourceId( labelId, propertyKeyId, value ) );
+        verify( locks, times(2) ).acquireShared(
+                Locks.Tracer.NONE,
+                INDEX_ENTRY, indexEntryResourceId( labelId, propertyKeyId, value ) );
+        verify( locks ).acquireExclusive(
+                Locks.Tracer.NONE,
+                INDEX_ENTRY, indexEntryResourceId( labelId, propertyKeyId, value ) );
         verify( locks ).releaseShared( INDEX_ENTRY, indexEntryResourceId( labelId, propertyKeyId, value ) );
         verify( locks ).releaseExclusive( INDEX_ENTRY, indexEntryResourceId( labelId, propertyKeyId, value ) );
         verifyNoMoreInteractions( locks );

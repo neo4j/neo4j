@@ -53,7 +53,7 @@ public class LockWorker extends OtherThreadExecutor<LockWorkerState>
             protected void acquireLock( LockWorkerState state ) throws AcquireLockTimeoutException
             {
                 state.doing( "+R " + resource + ", wait:" + wait );
-                state.client.acquireShared( NODE, resource );
+                state.client.acquireShared( Locks.Tracer.NONE, NODE, resource );
                 state.done();
             }
         }, wait );
@@ -67,7 +67,7 @@ public class LockWorker extends OtherThreadExecutor<LockWorkerState>
             protected void acquireLock( LockWorkerState state ) throws AcquireLockTimeoutException
             {
                 state.doing( "+W " + resource + ", wait:" + wait );
-                state.client.acquireExclusive( NODE, resource );
+                state.client.acquireExclusive( Locks.Tracer.NONE, NODE, resource );
                 state.done();
             }
         }, wait );

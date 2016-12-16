@@ -39,6 +39,7 @@ import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.factory.AccessCapability;
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.storageengine.api.StorageStatement;
@@ -189,6 +190,11 @@ public class KernelStatement implements TxStateHolder, Statement
     public StatementLocks locks()
     {
         return statementLocks;
+    }
+
+    public Locks.Tracer lockTracer()
+    {
+        return executingQueryList.reduce( Locks.Tracer.NONE, ExecutingQuery::lockTracer, Locks.Tracer::combine );
     }
 
     public final void acquire()
