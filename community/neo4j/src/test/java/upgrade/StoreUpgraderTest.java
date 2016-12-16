@@ -57,11 +57,11 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
+import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_0;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_1;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_2;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UnableToUpgradeException;
@@ -563,12 +563,12 @@ public class StoreUpgraderTest
 
     protected RecordFormats getRecordFormats()
     {
-        return StandardV3_0.RECORD_FORMATS;
+        return Standard.LATEST_RECORD_FORMATS;
     }
 
     protected String getRecordFormatsName()
     {
-        return StandardV3_0.NAME;
+        return Standard.LATEST_NAME;
     }
 
     private Set<String> versionSet(String... versions)

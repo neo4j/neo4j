@@ -17,14 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.format;
+package org.neo4j.kernel.impl.store.format.standard;
 
-import org.neo4j.kernel.impl.store.format.standard.Standard;
-
-public class StandardRecordFormatTest extends AbstractRecordFormatTest
+import org.neo4j.kernel.impl.store.format.RecordFormats;
+/**
+ * This is a utility class always pointing to the latest Standard record format.
+ */
+public class Standard
 {
-    public StandardRecordFormatTest()
-    {
-        super( Standard.LATEST_RECORD_FORMATS, 35, 36 );
-    }
+    public static final String LATEST_STORE_VERSION = StandardV3_0.STORE_VERSION;
+    public static final RecordFormats LATEST_RECORD_FORMATS = StandardV3_0.RECORD_FORMATS;
+    public static final String LATEST_NAME = StandardV3_0.NAME;
 }

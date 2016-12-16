@@ -57,7 +57,7 @@ import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
+import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.Randoms;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -238,7 +238,7 @@ public class ParallelBatchImporterTest
 
     protected RecordFormats getFormat()
     {
-        return StandardV3_0.RECORD_FORMATS;
+        return Standard.LATEST_RECORD_FORMATS;
     }
 
     public abstract static class InputIdGenerator

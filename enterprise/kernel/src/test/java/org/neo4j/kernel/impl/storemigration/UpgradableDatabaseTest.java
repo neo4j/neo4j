@@ -39,12 +39,12 @@ import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.StoreVersion;
+import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.format.standard.StandardFormatFamily;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_0;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_1;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_2;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStoreVersionCheck;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.string.UTF8;
@@ -292,6 +292,6 @@ public class UpgradableDatabaseTest
 
     private static RecordFormats getRecordFormat()
     {
-        return StandardV3_0.RECORD_FORMATS;
+        return Standard.LATEST_RECORD_FORMATS;
     }
 }

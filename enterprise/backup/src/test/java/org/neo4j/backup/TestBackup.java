@@ -60,7 +60,7 @@ import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.MetaDataStore.Position;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
+import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
@@ -107,7 +107,7 @@ public class TestBackup
     @Parameters( name = "{0}" )
     public static List<String> recordFormatNames()
     {
-        return Arrays.asList( StandardV3_0.NAME, HighLimit.NAME );
+        return Arrays.asList( Standard.LATEST_NAME, HighLimit.NAME );
     }
 
     @Before

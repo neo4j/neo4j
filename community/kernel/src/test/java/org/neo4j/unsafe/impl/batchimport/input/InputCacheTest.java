@@ -29,7 +29,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.io.ByteUnit;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
+import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.test.Randoms;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
@@ -69,7 +69,7 @@ public class InputCacheTest
     public void shouldCacheAndRetrieveNodes() throws Exception
     {
         // GIVEN
-        try ( InputCache cache = new InputCache( fileSystemRule.get(), dir.directory(), StandardV3_0.RECORD_FORMATS,
+        try ( InputCache cache = new InputCache( fileSystemRule.get(), dir.directory(), Standard.LATEST_RECORD_FORMATS,
                 withMaxProcessors( 50 ), (int) ByteUnit.kibiBytes( 8 ), BATCH_SIZE ) )
         {
             List<InputNode> nodes = new ArrayList<>();
@@ -111,7 +111,7 @@ public class InputCacheTest
     public void shouldCacheAndRetrieveRelationships() throws Exception
     {
         // GIVEN
-        try ( InputCache cache = new InputCache( fileSystemRule.get(), dir.directory(), StandardV3_0.RECORD_FORMATS,
+        try ( InputCache cache = new InputCache( fileSystemRule.get(), dir.directory(), Standard.LATEST_RECORD_FORMATS,
                 withMaxProcessors( 50 ), (int) ByteUnit.kibiBytes( 8 ), BATCH_SIZE ) )
         {
             List<InputRelationship> relationships = new ArrayList<>();

@@ -41,7 +41,7 @@ import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.store.format.highlimit.v300.HighLimitV3_0_0;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
+import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UnexpectedUpgradingStoreFormatException;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.TestDirectory;
@@ -125,7 +125,7 @@ public class RecordFormatsMigrationIT
 
     private GraphDatabaseService startStandardFormatDb()
     {
-        return startDb( StandardV3_0.NAME );
+        return startDb( Standard.LATEST_NAME );
     }
 
     private GraphDatabaseService startHighLimitFormatDb()
@@ -143,7 +143,7 @@ public class RecordFormatsMigrationIT
 
     private void assertLatestStandardStore() throws IOException
     {
-        assertStoreFormat( StandardV3_0.RECORD_FORMATS );
+        assertStoreFormat( Standard.LATEST_RECORD_FORMATS );
     }
 
     private void assertLatestHighLimitStore() throws IOException

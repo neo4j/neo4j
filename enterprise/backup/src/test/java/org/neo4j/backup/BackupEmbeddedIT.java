@@ -19,11 +19,6 @@
  */
 package org.neo4j.backup;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.junit.Before;
@@ -36,6 +31,11 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 import org.neo4j.commandline.admin.AdminTool;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -45,7 +45,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.proc.ProcessUtil;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
+import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.ProcessStreamHandler;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
@@ -74,7 +74,7 @@ public class BackupEmbeddedIT
     @Parameters( name = "{0}" )
     public static List<String> recordFormats()
     {
-        return Arrays.asList( StandardV3_0.NAME, HighLimit.NAME );
+        return Arrays.asList( Standard.LATEST_NAME, HighLimit.NAME );
     }
 
     @Before

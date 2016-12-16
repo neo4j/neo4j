@@ -34,7 +34,7 @@ import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.SharedDiscoveryService;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
+import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
@@ -66,10 +66,10 @@ public class ClusterSeedingIT
                 serverId -> (":" + (8000 + serverId)) );
 
         backupCluster = new Cluster( testDir.directory( "cluster-for-backup" ), 3, 0, new SharedDiscoveryService(), stringMap(),
-                instanceCoreParams, stringMap(), new HashMap<>(), StandardV3_0.NAME );
+                instanceCoreParams, stringMap(), new HashMap<>(), Standard.LATEST_NAME );
 
         cluster = new Cluster( testDir.directory( "cluster-b" ), 3, 0, new SharedDiscoveryService(), stringMap(),
-                new HashMap<>(), stringMap(), new HashMap<>(), StandardV3_0.NAME );
+                new HashMap<>(), stringMap(), new HashMap<>(), Standard.LATEST_NAME );
     }
 
     @After
