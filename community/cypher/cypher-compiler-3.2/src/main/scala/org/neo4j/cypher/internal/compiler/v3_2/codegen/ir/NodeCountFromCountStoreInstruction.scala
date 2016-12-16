@@ -29,7 +29,7 @@ case class NodeCountFromCountStoreInstruction(opName: String, variable: Variable
       body.incrementDbHits()
       if (label.nonEmpty) {
         val (token, _) = label.get
-        val expression = token.map(t => body.constantExpression(Int.box(t))).getOrElse(body.loadVariable(tokenVar))
+        val expression = token.map(t => body.token(Int.box(t))).getOrElse(body.loadVariable(tokenVar))
         body.assign(variable.name, variable.codeGenType,
                     generator.nodeCountFromCountStore(expression))
       } else {
@@ -49,6 +49,7 @@ case class NodeCountFromCountStoreInstruction(opName: String, variable: Variable
     label.foreach {
       case (token, name) if token.isEmpty =>
         generator.lookupLabelId(tokenVar, name)
+      case _ => ()
     }
   }
 
