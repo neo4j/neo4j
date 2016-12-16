@@ -21,8 +21,9 @@ package org.neo4j.cypher.internal.compiler.v3_2.planner
 
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.plannerQuery.StatementConverters._
-import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters.{Namespacer, normalizeReturnClauses, normalizeWithClauses, rewriteEqualityToInPredicate}
+import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters._
 import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilationState.State4
+import org.neo4j.cypher.internal.compiler.v3_2.phases.Context
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.cardinality.QueryGraphCardinalityModel
@@ -127,6 +128,11 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         semanticTable.resolvedRelTypeNames.get(relType).map(_.id)
     }
 
+    private def context = Context(null, null, null, null, null, null, mock[AstRewritingMonitor])
+
+    private val pipeLine =
+      Namespacer andThen rewriteEqualityToInPredicate andThen CNFNormalizer
+
     def planFor(queryString: String): SemanticPlan = {
 
       val parsedStatement = parser.parse(queryString)
@@ -136,7 +142,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       val (rewrittenStatement, _, postConditions) = astRewriter.rewrite(queryString, cleanedStatement, semanticState)
 
       val state = State4(queryString, None, "", rewrittenStatement, semanticState, Map.empty, Set.empty)
-      val output = (Namespacer andThen rewriteEqualityToInPredicate).transform(state, null)
+      val output = pipeLine.transform(state, context)
 
       CostBasedExecutablePlanBuilder.rewriteStatement(output.statement, output.semantics.scopeTree,
         output.semanticTable, rewriterSequencer, postConditions, mock[AstRewritingMonitor]) match {
@@ -159,7 +165,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       val (rewrittenStatement, _, postConditions) = astRewriter.rewrite(queryString, parsedStatement, semanticState)
 
       val state = State4(queryString, None, "", rewrittenStatement, semanticState, Map.empty, Set.empty)
-      val output = (Namespacer andThen rewriteEqualityToInPredicate).transform(state, null)
+      val output = pipeLine.transform(state, context)
       val table = output.semanticTable
       config.updateSemanticTableWithTokens(table)
 

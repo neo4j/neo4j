@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_2
 
 import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase._
-import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters.{Namespacer, rewriteEqualityToInPredicate}
+import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters.{CNFNormalizer, Namespacer, rewriteEqualityToInPredicate}
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.procs.ProcedureOrSchemaCommandPlanBuilder
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.RuntimeTypeConverter
@@ -92,6 +92,7 @@ case class CypherCompiler(executionPlanBuilder: ExecutablePlanBuilder,
   private val thirdPipeLine =
     ProcedureOrSchemaCommandPlanBuilder orElse {
       rewriteEqualityToInPredicate andThen
+      CNFNormalizer andThen
       RestOfPipeLine
     }
 
@@ -125,7 +126,7 @@ case class CypherCompiler(executionPlanBuilder: ExecutablePlanBuilder,
   private def createContext(tracer: CompilationPhaseTracer, notificationLogger: InternalNotificationLogger, planContext: PlanContext, queryText: String, offset: Option[InputPosition]):Context = {
     val exceptionCreator = new SyntaxExceptionCreator(queryText, offset)
     val monitor = monitors.newMonitor[AstRewritingMonitor]()
-    Context(exceptionCreator, tracer, notificationLogger, planContext, typeConverter, createFingerprintReference)
+    Context(exceptionCreator, tracer, notificationLogger, planContext, typeConverter, createFingerprintReference, monitor)
   }
 }
 

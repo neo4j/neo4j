@@ -35,7 +35,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.{RewriterCondition, RewriterStepSequencer}
 import org.neo4j.cypher.internal.frontend.v3_2.Rewritable._
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
-import org.neo4j.cypher.internal.frontend.v3_2.{InternalException, Scope, SemanticTable}
+import org.neo4j.cypher.internal.frontend.v3_2.{Scope, SemanticTable}
 import org.neo4j.cypher.internal.ir.v3_2.PeriodicCommit
 
 /* This class is responsible for taking a query from an AST object to a runnable object.  */
@@ -113,13 +113,6 @@ object CostBasedExecutablePlanBuilder {
                        rewriterSequencer: (String) => RewriterStepSequencer,
                        preConditions: Set[RewriterCondition],
                        monitor: AstRewritingMonitor): (Statement, SemanticTable) = {
-    val firstRewriter = CNFNormalizer()(monitor)
-
-    val firstStep = statement.endoRewrite(firstRewriter)
-
-    val state = SemanticChecker.check(firstStep, mkException = (msg, pos) => throw new InternalException(s"Unexpected error during late semantic checking: $msg at $pos"))
-    val table = semanticTable.copy(types = state.typeTable, recordedScopes = state.recordedScopes)
-
     val secondRewriter = rewriterSequencer("Planner").withPrecondition(preConditions)(
       collapseMultipleInPredicates,
       nameUpdatingClauses,
@@ -127,6 +120,6 @@ object CostBasedExecutablePlanBuilder {
       enableCondition(containsNamedPathOnlyForShortestPath),
       projectFreshSortExpressions
     ).rewriter
-    (firstStep.endoRewrite(secondRewriter), table)
+    (statement.endoRewrite(secondRewriter), semanticTable)
   }
 }

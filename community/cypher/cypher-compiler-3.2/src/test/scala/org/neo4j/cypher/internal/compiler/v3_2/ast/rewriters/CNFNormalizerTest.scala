@@ -22,11 +22,14 @@ package org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_2.AstRewritingMonitor
+import org.neo4j.cypher.internal.compiler.v3_2.phases.Context
 import org.neo4j.cypher.internal.frontend.v3_2.Rewriter
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 
 class CNFNormalizerTest extends CypherFunSuite with PredicateTestSupport {
-  def rewriter: Rewriter = CNFNormalizer()(mock[AstRewritingMonitor])
+
+  var rewriter: Rewriter = _
+  var astRewritingMonitor: AstRewritingMonitor = _
 
   test("should not touch a simple predicate") {
     P <=> P
@@ -102,12 +105,18 @@ class CNFNormalizerTest extends CypherFunSuite with PredicateTestSupport {
               and(p15, p16)))), or(
           and(p17, p18),
           and(p19, p20)))
-    val monitor = mock[AstRewritingMonitor]
 
     // When
-    bigPredicate.rewrite(CNFNormalizer()(monitor))
+    bigPredicate.rewrite(rewriter)
 
     // Then the rewriting was aborted
-    verify(monitor, times(1)).abortedRewriting(any())
+    verify(astRewritingMonitor, times(1)).abortedRewriting(any())
   }
+
+  override protected def beforeEach(): Unit = {
+    super.beforeEach()
+    astRewritingMonitor = mock[AstRewritingMonitor]
+    rewriter = CNFNormalizer.instance(Context(null, null, null, null, null, null, astRewritingMonitor))
+  }
+
 }

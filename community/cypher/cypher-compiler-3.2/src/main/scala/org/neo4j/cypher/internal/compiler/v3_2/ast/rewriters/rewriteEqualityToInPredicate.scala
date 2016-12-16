@@ -30,7 +30,7 @@ case object rewriteEqualityToInPredicate extends StatementRewriterState5 {
 
   override def description: String = "normalize equality predicates into IN comparisons"
 
-  val instance: Rewriter = bottomUp(Rewriter.lift {
+  def instance(ignored: Context): Rewriter = bottomUp(Rewriter.lift {
     // id(a) = value => id(a) IN [value]
     case predicate@Equals(func@FunctionInvocation(_, _, _, IndexedSeq(idExpr)), idValueExpr)
       if func.function == functions.Id =>
@@ -49,10 +49,10 @@ case object rewriteEqualityToInPredicate extends StatementRewriterState5 {
 trait StatementRewriterState5 extends EndoPhase[State5] {
   override def phase: CompilationPhase = AST_REWRITE
 
-  val instance: Rewriter
+  def instance(context: Context): Rewriter
 
   override def transform(from: State5, context: Context): State5 = {
-    val rewritten = from.statement.endoRewrite(instance)
+    val rewritten = from.statement.endoRewrite(instance(context))
     from.copy(statement = rewritten)
   }
 }

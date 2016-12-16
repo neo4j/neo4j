@@ -20,24 +20,28 @@
 package org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v3_2._
-import org.neo4j.cypher.internal.frontend.v3_2.ast._
-import org.neo4j.cypher.internal.frontend.v3_2.Rewritable._
+import org.neo4j.cypher.internal.compiler.v3_2.phases.Context
 import org.neo4j.cypher.internal.frontend.v3_2.Foldable._
+import org.neo4j.cypher.internal.frontend.v3_2.Rewritable._
+import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.fixedPoint
 import org.neo4j.cypher.internal.frontend.v3_2.{Rewriter, bottomUp, inSequence}
 
-case class CNFNormalizer()(implicit monitor: AstRewritingMonitor) extends Rewriter {
+case object CNFNormalizer extends StatementRewriterState5 {
 
-  def apply(that: AnyRef): AnyRef = instance(that)
+  override def description: String = "normalize boolean predicates into conjunctive normal form"
 
-  private val instance: Rewriter = inSequence(
-    deMorganRewriter(),
-    distributeLawsRewriter(),
-    flattenBooleanOperators,
-    simplifyPredicates,
-    // Redone here since CNF normalization might introduce negated inequalities (which this removes)
-    normalizeSargablePredicates
-  )
+  override def instance(context: Context): Rewriter = {
+    implicit val monitor = context.monitor
+    inSequence(
+      deMorganRewriter(),
+      distributeLawsRewriter(),
+      flattenBooleanOperators,
+      simplifyPredicates,
+      // Redone here since CNF normalization might introduce negated inequalities (which this removes)
+      normalizeSargablePredicates
+    )
+  }
 }
 
 case class deMorganRewriter()(implicit monitor: AstRewritingMonitor) extends Rewriter {
