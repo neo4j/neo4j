@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.{ApplyRewriter,
 import org.neo4j.cypher.internal.frontend.v3_2.Rewritable._
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.{InternalException, Scope, SemanticTable}
+import org.neo4j.cypher.internal.ir.v3_2.PeriodicCommit
 
 /* This class is responsible for taking a query from an AST object to a runnable object.  */
 case class CostBasedExecutablePlanBuilder(monitors: Monitors,

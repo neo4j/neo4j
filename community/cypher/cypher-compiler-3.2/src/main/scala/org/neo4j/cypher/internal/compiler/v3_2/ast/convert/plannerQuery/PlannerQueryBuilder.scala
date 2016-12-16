@@ -41,14 +41,14 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: Seman
   }
 
   private def currentlyExposedSymbols: Set[IdName] = {
-    q.lastQueryHorizon.exposedSymbols(q.lastQueryGraph)
+    q.lastQueryHorizon.exposedSymbols(q.lastQueryGraph.allCoveredIds)
   }
 
   def currentlyAvailableVariables: Set[IdName] = {
     val allPlannerQueries = q.allPlannerQueries
     val previousAvailableSymbols = if (allPlannerQueries.length > 1) {
       val current = allPlannerQueries(allPlannerQueries.length - 2)
-      current.horizon.exposedSymbols(current.queryGraph)
+      current.horizon.exposedSymbols(current.queryGraph.allCoveredIds)
     } else Set.empty
 
     // for the last planner query we should not consider the return projection
@@ -61,7 +61,7 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: Seman
     val allPlannerQueries = q.allPlannerQueries
     val previousPatternNodes = if (allPlannerQueries.length > 1) {
       val current = allPlannerQueries(allPlannerQueries.length - 2)
-      val projectedNodes = current.horizon.exposedSymbols(current.queryGraph).collect {
+      val projectedNodes = current.horizon.exposedSymbols(current.queryGraph.allCoveredIds).collect {
         case id@IdName(n) if semanticTable.containsNode(n) => id
       }
       projectedNodes ++ current.queryGraph.allPatternNodes
@@ -111,7 +111,7 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: Seman
 
     val fixedArgumentIds = q.foldMap {
       case (head, tail) =>
-        val symbols = head.horizon.exposedSymbols(head.queryGraph)
+        val symbols = head.horizon.exposedSymbols(head.queryGraph.allCoveredIds)
         val newTailGraph = tail.queryGraph.withArgumentIds(symbols)
         tail.withQueryGraph(newTailGraph)
     }

@@ -17,21 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans
+package org.neo4j.cypher.internal.ir.v3_2
 
-import org.neo4j.cypher.internal.compiler.v3_2.planner.{CardinalityEstimation, PlannerQuery}
-import org.neo4j.cypher.internal.frontend.v3_2.ast.Expression
-import org.neo4j.cypher.internal.ir.v3_2.{IdName, StrictnessMode}
+sealed trait CSVFormat
 
-case class DeleteRelationship(source: LogicalPlan, expression: Expression)
-                           (val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan {
+case object HasHeaders extends CSVFormat
 
-  override def lhs: Option[LogicalPlan] = Some(source)
-
-  override def availableSymbols: Set[IdName] = source.availableSymbols
-
-  override def rhs: Option[LogicalPlan] = None
-
-  override def strictness: StrictnessMode = source.strictness
-}
+case object NoHeaders extends CSVFormat

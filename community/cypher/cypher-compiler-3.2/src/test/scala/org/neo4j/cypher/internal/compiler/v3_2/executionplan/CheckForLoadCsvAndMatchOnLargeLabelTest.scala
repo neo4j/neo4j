@@ -30,7 +30,8 @@ import org.neo4j.cypher.internal.compiler.v3_2.spi.{GraphStatistics, PlanContext
 import org.neo4j.cypher.internal.frontend.v3_2.LabelId
 import org.neo4j.cypher.internal.frontend.v3_2.notification.LargeLabelWithLoadCsvNotification
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_2.Cardinality
+import org.neo4j.cypher.internal.ir.v3_2.{Cardinality, HasHeaders}
+
 class CheckForLoadCsvAndMatchOnLargeLabelTest extends CypherFunSuite {
   private val THRESHOLD = 100
   private val labelOverThreshold = "A"
