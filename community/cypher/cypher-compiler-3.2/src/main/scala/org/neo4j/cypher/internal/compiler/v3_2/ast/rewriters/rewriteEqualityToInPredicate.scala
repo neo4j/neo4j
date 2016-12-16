@@ -19,18 +19,18 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters
 
+import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase
+import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
+import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilationState.State5
+import org.neo4j.cypher.internal.compiler.v3_2.phases.{Context, EndoPhase}
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.{Rewriter, bottomUp}
 
-/*
-This class rewrites equality predicates into IN comparisons which can then be turned into
-either index lookup or node-by-id operations
- */
-case object rewriteEqualityToInPredicate extends Rewriter {
+case object rewriteEqualityToInPredicate extends StatementRewriterState5 {
 
-  override def apply(that: AnyRef) = instance(that)
+  override def description: String = "normalize equality predicates into IN comparisons"
 
-  private val instance: Rewriter = bottomUp(Rewriter.lift {
+  val instance: Rewriter = bottomUp(Rewriter.lift {
     // id(a) = value => id(a) IN [value]
     case predicate@Equals(func@FunctionInvocation(_, _, _, IndexedSeq(idExpr)), idValueExpr)
       if func.function == functions.Id =>
@@ -44,4 +44,15 @@ case object rewriteEqualityToInPredicate extends Rewriter {
     case predicate@Equals(prop@Property(id: Variable, propKeyName), idValueExpr) =>
       In(prop, ListLiteral(Seq(idValueExpr))(idValueExpr.position))(predicate.position)
   })
+}
+
+trait StatementRewriterState5 extends EndoPhase[State5] {
+  override def phase: CompilationPhase = AST_REWRITE
+
+  val instance: Rewriter
+
+  override def transform(from: State5, context: Context): State5 = {
+    val rewritten = from.statement.endoRewrite(instance)
+    from.copy(statement = rewritten)
+  }
 }

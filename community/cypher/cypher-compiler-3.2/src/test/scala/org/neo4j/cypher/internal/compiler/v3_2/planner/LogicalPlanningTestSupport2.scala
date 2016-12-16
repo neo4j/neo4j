@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.planner
 
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.plannerQuery.StatementConverters._
-import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters.{Namespacer, normalizeReturnClauses, normalizeWithClauses}
+import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters.{Namespacer, normalizeReturnClauses, normalizeWithClauses, rewriteEqualityToInPredicate}
 import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilationState.State4
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical._
@@ -134,13 +134,15 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       val cleanedStatement: Statement = parsedStatement.endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException)))
       val semanticState = SemanticChecker.check(cleanedStatement, mkException)
       val (rewrittenStatement, _, postConditions) = astRewriter.rewrite(queryString, cleanedStatement, semanticState)
-      val postRewriteSemanticState = SemanticChecker.check(rewrittenStatement, mkException)
-      val semanticTable = SemanticTable(types = postRewriteSemanticState.typeTable)
-      CostBasedExecutablePlanBuilder.rewriteStatement(rewrittenStatement, postRewriteSemanticState.scopeTree,
-        semanticTable, rewriterSequencer, postConditions, mock[AstRewritingMonitor]) match {
+
+      val state = State4(queryString, None, "", rewrittenStatement, semanticState, Map.empty, Set.empty)
+      val output = (Namespacer andThen rewriteEqualityToInPredicate).transform(state, null)
+
+      CostBasedExecutablePlanBuilder.rewriteStatement(output.statement, output.semantics.scopeTree,
+        output.semanticTable, rewriterSequencer, postConditions, mock[AstRewritingMonitor]) match {
         case (ast: Query, newTable) =>
           tokenResolver.resolve(ast)(newTable, planContext)
-          val unionQuery = toUnionQuery(ast, semanticTable)
+          val unionQuery = toUnionQuery(ast, output.semanticTable)
           val metrics = metricsFactory.newMetrics(planContext.statistics)
           val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality)
           val context = LogicalPlanningContext(planContext, logicalPlanProducer, metrics, newTable, queryGraphSolver, QueryGraphSolverInput.empty, notificationLogger = devNullLogger)
@@ -156,8 +158,8 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       val semanticState = SemanticChecker.check(parsedStatement, mkException)
       val (rewrittenStatement, _, postConditions) = astRewriter.rewrite(queryString, parsedStatement, semanticState)
 
-      val state = State4(queryString, None, "", rewrittenStatement, SemanticChecker.check(rewrittenStatement, mkException), Map.empty, Set.empty)
-      val output = Namespacer.transform(state, null)
+      val state = State4(queryString, None, "", rewrittenStatement, semanticState, Map.empty, Set.empty)
+      val output = (Namespacer andThen rewriteEqualityToInPredicate).transform(state, null)
       val table = output.semanticTable
       config.updateSemanticTableWithTokens(table)
 

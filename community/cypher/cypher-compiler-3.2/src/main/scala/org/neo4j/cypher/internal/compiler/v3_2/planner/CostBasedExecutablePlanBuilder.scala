@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.v3_2.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.{RewriterCondition, RewriterStep, RewriterStepSequencer}
+import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.{RewriterCondition, RewriterStepSequencer}
 import org.neo4j.cypher.internal.frontend.v3_2.Rewritable._
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.{InternalException, Scope, SemanticTable}
@@ -113,30 +113,20 @@ object CostBasedExecutablePlanBuilder {
                        rewriterSequencer: (String) => RewriterStepSequencer,
                        preConditions: Set[RewriterCondition],
                        monitor: AstRewritingMonitor): (Statement, SemanticTable) = {
-    val statementRewriter = StatementRewriter(rewriterSequencer, preConditions, monitor)
-    val namespacedStatement = statementRewriter.rewriteStatement(statement)(
-      rewriteEqualityToInPredicate,
-      CNFNormalizer()(monitor)
-    )
+    val firstRewriter = CNFNormalizer()(monitor)
 
-    val state = SemanticChecker.check(namespacedStatement, mkException = (msg, pos) => throw new InternalException(s"Unexpected error during late semantic checking: $msg at $pos"))
+    val firstStep = statement.endoRewrite(firstRewriter)
+
+    val state = SemanticChecker.check(firstStep, mkException = (msg, pos) => throw new InternalException(s"Unexpected error during late semantic checking: $msg at $pos"))
     val table = semanticTable.copy(types = state.typeTable, recordedScopes = state.recordedScopes)
 
-    val newStatement = statementRewriter.rewriteStatement(namespacedStatement)(
+    val secondRewriter = rewriterSequencer("Planner").withPrecondition(preConditions)(
       collapseMultipleInPredicates,
-      nameUpdatingClauses /* this is actually needed as a precondition for projectedNamedPaths even though we do not handle updates in Ronja */ ,
+      nameUpdatingClauses,
       projectNamedPaths,
       enableCondition(containsNamedPathOnlyForShortestPath),
       projectFreshSortExpressions
-    )
-    (newStatement, table)
-  }
-
-  case class StatementRewriter(rewriterSequencer: (String) => RewriterStepSequencer, preConditions: Set[RewriterCondition], monitor: AstRewritingMonitor) {
-    def rewriteStatement(statement: Statement)(steps: RewriterStep*): Statement = {
-      val rewriter = rewriterSequencer("Planner").withPrecondition(preConditions)(steps: _*).rewriter
-      statement.endoRewrite(rewriter)
-    }
+    ).rewriter
+    (firstStep.endoRewrite(secondRewriter), table)
   }
 }
-

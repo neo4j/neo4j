@@ -25,8 +25,10 @@ import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.plannerQuery.StatementConverters._
-import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters.{namePatternPredicatePatternElements, normalizeReturnClauses, normalizeWithClauses}
+import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters._
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.IdentityTypeConverter
+import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilationState.State4
+import org.neo4j.cypher.internal.compiler.v3_2.phases.RewriteProcedureCalls
 import org.neo4j.cypher.internal.compiler.v3_2.planner.execution.PipeExecutionBuilderContext
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical._
@@ -42,9 +44,6 @@ import org.neo4j.cypher.internal.frontend.v3_2.parser.CypherParser
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.ir.v3_2._
-import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters.Namespacer
-import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilationState.State4
-import org.neo4j.cypher.internal.compiler.v3_2.phases.RewriteProcedureCalls
 
 import scala.collection.mutable
 
@@ -218,7 +217,8 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
         astRewriterResultStatement.endoRewrite(rewriter)
     }
     val state = State4(query, None, "", resolvedStatement, SemanticChecker.check(cleanedStatement, mkException), Map.empty, Set.empty)
-    val output = Namespacer.transform(state, null)
+
+    val output = (Namespacer andThen rewriteEqualityToInPredicate).transform(state, null)
     val semanticTable: SemanticTable = SemanticTable(types = output.semantics.typeTable)
     val (rewrittenAst: Statement, _) = CostBasedExecutablePlanBuilder.rewriteStatement(output.statement, semanticState.scopeTree,
       semanticTable, RewriterStepSequencer.newValidating, Set.empty, mock[AstRewritingMonitor])
