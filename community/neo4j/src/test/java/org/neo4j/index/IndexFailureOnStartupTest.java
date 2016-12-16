@@ -26,6 +26,7 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
@@ -114,7 +115,7 @@ public class IndexFailureOnStartupTest
         assertThat( archiveFile(), nullValue() );
 
         // when
-        db.restartDatabase( new DeleteIndexFile( "segments_1" ) );
+        db.restartDatabase( new DeleteIndexFile( "segments_" ) );
 
         // then
         indexStateShouldBe( equalTo( ONLINE ) );
@@ -178,22 +179,19 @@ public class IndexFailureOnStartupTest
 
     private static class DeleteIndexFile implements DatabaseRule.RestartAction
     {
-        private final String source;
+        private final String prefix;
 
-        DeleteIndexFile( String source )
+        DeleteIndexFile( String prefix )
         {
-            this.source = source;
+            this.prefix = prefix;
         }
 
         @Override
         public void run( FileSystemAbstraction fs, File base ) throws IOException
         {
-            File fileToDelete = new File( new File( soleIndexDir( fs, base ), "1" ), source );
-            if ( !fs.fileExists( fileToDelete ) )
-            {
-                throw new AssertionError( fileToDelete + " does not exist" );
-            }
-            fs.deleteFile( fileToDelete );
+            File indexRootDirectory = new File( soleIndexDir( fs, base ), "1" );
+            File[] files = fs.listFiles( indexRootDirectory, ( dir, name ) -> name.startsWith( prefix ) );
+            Stream.of(files).forEach( fs::deleteFile );
         }
     }
 

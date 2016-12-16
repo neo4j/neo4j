@@ -358,8 +358,10 @@ public class IndexingService extends LifecycleAdapter
         }
     }
 
+    // We need to stop indexing service on shutdown since we can have transactions that are ongoing/finishing
+    // after we start stopping components and those transactions should be able to finish successfully
     @Override
-    public void stop()
+    public void shutdown()
     {
         state = State.STOPPED;
         samplingController.stop();

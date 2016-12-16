@@ -324,6 +324,8 @@ public class IndexingServiceTest
         // given
         SchemaIndexProvider provider = mock( SchemaIndexProvider.class );
         when( provider.getProviderDescriptor() ).thenReturn( PROVIDER_DESCRIPTOR );
+        when( provider.getOnlineAccessor( anyLong(), any( IndexConfiguration.class ), any( IndexSamplingConfig.class ) ) )
+                .thenReturn( mock( IndexAccessor.class ) );
         SchemaIndexProviderMap providerMap = new DefaultSchemaIndexProviderMap( provider );
         TokenNameLookup mockLookup = mock( TokenNameLookup.class );
 
@@ -534,13 +536,13 @@ public class IndexingServiceTest
     }
 
     @Test
-    public void applicationOfIndexUpdatesShouldThrowIfServiceIsStopped()
+    public void applicationOfIndexUpdatesShouldThrowIfServiceIsShutdown()
             throws IOException, IndexEntryConflictException
     {
         // Given
         IndexingService indexingService = newIndexingServiceWithMockedDependencies( populator, accessor, withData() );
         life.start();
-        life.stop();
+        life.shutdown();
 
         try
         {
