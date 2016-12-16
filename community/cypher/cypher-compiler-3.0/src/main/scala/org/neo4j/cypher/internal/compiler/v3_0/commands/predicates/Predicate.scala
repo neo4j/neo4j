@@ -172,8 +172,6 @@ case class PropertyExists(variable: Expression, propertyKey: KeyToken) extends P
 trait StringOperator {
   self: Predicate =>
   override def isMatch(m: ExecutionContext)(implicit state: QueryState) = (lhs(m), rhs(m)) match {
-    case (null, _) => None
-    case (_, null) => None
     case (l: String, r: String) => Some(compare(l,r))
     case (_, _) => None
   }
