@@ -49,17 +49,8 @@ cat ${template_common_directory}/directories.conf >>${package_directory}/server/
 cp -r ${template_common_directory}/manpages ${package_directory}
 
 # Make scripts executable
-chmod 700 ${package_directory}/server/bin/neo4j
-chmod 700 ${package_directory}/server/bin/neo4j-shell
-chmod 700 ${package_directory}/server/bin/neo4j-import
-#chmod 700 ${package_directory}/server/bin/neo4j-backup
-chmod 700 ${package_directory}/server/bin/neo4j-admin
-
-chmod 700 ${package_directory}/server/scripts/neo4j
-chmod 700 ${package_directory}/server/scripts/neo4j-shell
-chmod 700 ${package_directory}/server/scripts/neo4j-import
-#chmod 700 ${package_directory}/server/scripts/neo4j-backup
-chmod 700 ${package_directory}/server/scripts/neo4j-admin
+chmod 700 ${package_directory}/server/bin/*
+chmod 700 ${package_directory}/server/scripts/*
 
 # build package and metadata files
 (cd ${package_directory} && debuild -B -uc -us --lintian-opts --profile debian)
