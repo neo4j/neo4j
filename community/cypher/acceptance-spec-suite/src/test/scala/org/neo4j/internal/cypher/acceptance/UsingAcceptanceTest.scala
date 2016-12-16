@@ -46,6 +46,23 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     result.executionPlanDescription() should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "f")
   }
 
+
+  test("should use index on literal map expression") {
+    val nodes = Range(0,125).map(i => createLabeledNode(Map("id" -> i), "Foo"))
+    graph.createIndex("Foo", "id")
+    val query =
+      """
+        |PROFILE
+        | MATCH (f:Foo)
+        | USING INDEX f:Foo(id)
+        | WHERE f.id={id: 123}.id
+        | RETURN f
+      """.stripMargin
+    val result = executeWithCostPlannerOnly(query)
+    result.columnAs[Node]("f").toSet should equal(Set(nodes(123)))
+    result.executionPlanDescription() should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "f")
+  }
+
   test("should use index on variable defined from literal value") {
     val node = createLabeledNode(Map("id" -> 123), "Foo")
     graph.createIndex("Foo", "id")

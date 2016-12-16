@@ -24,6 +24,7 @@ import java.net.{URL, URLConnection, URLStreamHandler, URLStreamHandlerFactory}
 
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.ExecutionEngine
+import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.compiler.v3_1.test_helpers.CreateTempFileTestSupport
 import org.neo4j.cypher.internal.frontend.v3_1.helpers.StringHelper.RichString
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
@@ -74,6 +75,7 @@ class LoadCsvAcceptanceTest
       )
 
       assertStats(result, propertiesWritten = 6)
+      result.executionPlanDescription() should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "user")
     }
   }
 
