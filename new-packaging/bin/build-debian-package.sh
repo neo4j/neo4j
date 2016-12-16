@@ -7,7 +7,7 @@ workspace=${1}
 template_common_directory=${2}
 template_directory=${3}
 version=${4}
-stability=${5}
+distribution=${5}
 package=${6}
 
 # Prepare workspace
@@ -16,7 +16,7 @@ mkdir -p ${package_directory}
 cp -r ${template_directory}/* ${package_directory}
 
 # Update changelog
-VERSION=${version} STABILITY=${stability} DATE=`date -R` envsubst '${VERSION} ${STABILITY} ${DATE}' < ${template_directory}/debian/changelog > ${package_directory}/debian/changelog
+VERSION=${version} DISTRIBUTION=${distribution} DATE=`date -R` envsubst '${VERSION} ${DISTRIBUTION} ${DATE}' < ${template_directory}/debian/changelog > ${package_directory}/debian/changelog
 VERSION=${version} envsubst '${VERSION}' < ${template_directory}/debian/files > ${package_directory}/debian/files
 
 # Untar the tarball

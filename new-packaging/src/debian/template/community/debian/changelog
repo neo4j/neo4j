@@ -1,4 +1,4 @@
-neo4j (${VERSION}) ${STABILITY}; urgency=low
+neo4j (${VERSION}) ${DISTRIBUTION}; urgency=low
 
   * See https://github.com/neo4j/neo4j/wiki/Changelog for more details.
 
