@@ -25,10 +25,16 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FilenameFilter;
 import java.io.IOException;
+import java.nio.channels.FileChannel;
 import java.nio.file.OpenOption;
+import java.nio.file.StandardOpenOption;
+import java.util.Arrays;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -40,6 +46,7 @@ import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
@@ -151,5 +158,28 @@ public class StoreFactoryTest
         // THEN
         neoStores.close();
         assertEquals( 0, fsRule.get().listFiles( storeDir ).length );
+    }
+
+    @Test
+    public void shouldHandleStoreConsistingOfOneEmptyFile() throws Exception
+    {
+        StoreFactory storeFactory = storeFactory( Config.empty() );
+        FileSystemAbstraction fs = fsRule.get();
+        fs.create( new File( storeDir, "neostore.nodestore.db.labels" ) );
+        storeFactory.openAllNeoStores( true ).close();
+    }
+
+    @Test
+    public void shouldCompleteInitializationOfStoresWithIncompleteHeaders() throws Exception
+    {
+        StoreFactory storeFactory = storeFactory( Config.empty() );
+        storeFactory.openAllNeoStores( true ).close();
+        FileSystemAbstraction fs = fsRule.get();
+        File[] files = fs.listFiles( storeDir, ( file, s ) -> !s.endsWith( ".id" ) );
+        for ( File f : fs.listFiles( storeDir ) )
+        {
+            fs.truncate( f, 0 );
+        }
+        storeFactory.openAllNeoStores( true ).close();
     }
 }

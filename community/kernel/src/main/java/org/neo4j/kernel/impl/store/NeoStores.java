@@ -46,6 +46,7 @@ import org.neo4j.kernel.impl.store.format.CapabilityType;
 import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.kvstore.DataInitializer;
@@ -185,11 +186,15 @@ public class NeoStores implements AutoCloseable
         try
         {
             String expectedStoreVersion = recordFormats.storeVersion();
-            String actualStoreVersion = versionLongToString( getRecord( pageCache, neoStoreFileName, STORE_VERSION ) );
-            RecordFormats actualStoreFormat = RecordFormatSelector.selectForVersion( actualStoreVersion );
-            if ( !isCompatibleFormats( actualStoreFormat ) )
+            long record = getRecord( pageCache, neoStoreFileName, STORE_VERSION );
+            if ( record != MetaDataRecordFormat.FIELD_NOT_PRESENT )
             {
-                throw new UnexpectedStoreVersionException( actualStoreVersion, expectedStoreVersion );
+                String actualStoreVersion = versionLongToString( record );
+                RecordFormats actualStoreFormat = RecordFormatSelector.selectForVersion( actualStoreVersion );
+                if ( !isCompatibleFormats( actualStoreFormat ) )
+                {
+                    throw new UnexpectedStoreVersionException( actualStoreVersion, expectedStoreVersion );
+                }
             }
         }
         catch ( NoSuchFileException e )

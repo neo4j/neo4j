@@ -217,12 +217,7 @@ public class WriteTransactionCommandOrderingTest
         }
 
         @Override
-        protected void checkStorage( boolean createIfNotExists )
-        {
-        }
-
-        @Override
-        protected void loadStorage()
+        protected void checkAndLoadStorage( boolean createIfNotExists )
         {
         }
     }
@@ -244,12 +239,7 @@ public class WriteTransactionCommandOrderingTest
         }
 
         @Override
-        protected void checkStorage( boolean createIfNotExists )
-        {
-        }
-
-        @Override
-        protected void loadStorage()
+        protected void checkAndLoadStorage( boolean createIfNotExists )
         {
         }
 
@@ -279,14 +269,10 @@ public class WriteTransactionCommandOrderingTest
         }
 
         @Override
-        protected void checkStorage( boolean createIfNotExists )
+        protected void checkAndLoadStorage( boolean createIfNotExists )
         {
         }
 
-        @Override
-        protected void loadStorage()
-        {
-        }
     }
 
     private static class OrderVerifyingCommandHandler extends CommandVisitor.Adapter
