@@ -19,7 +19,7 @@ cp -r ${template_directory}/* ${package_directory}
 VERSION=${version} DISTRIBUTION=${distribution} DATE=`date -R` envsubst '${VERSION} ${DISTRIBUTION} ${DATE}' < ${template_directory}/debian/changelog > ${package_directory}/debian/changelog
 VERSION=${version} envsubst '${VERSION}' < ${template_directory}/debian/files > ${package_directory}/debian/files
 
-# Untar the tarball
+# Copy in tarball contents
 cp -r ${package}/* ${package_directory}/server
 
 # Make the Neo4j init scripts available to debuild
