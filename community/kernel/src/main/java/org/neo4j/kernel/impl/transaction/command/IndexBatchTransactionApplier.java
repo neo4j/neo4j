@@ -85,8 +85,22 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
         return transactionApplier;
     }
 
-    private void applyIndexUpdates() throws IOException
+    private void applyPendingLabelAndIndexUpdates() throws IOException
     {
+        if ( labelUpdates != null )
+        {
+            // Updates are sorted according to node id here, an artifact of node commands being sorted
+            // by node id when extracting from TransactionRecordState.
+            try
+            {
+                labelScanStoreSync.apply( new LabelUpdateWork( labelUpdates ) );
+            }
+            catch ( ExecutionException e )
+            {
+                throw new IOException( "Failed to flush label updates", e );
+            }
+            labelUpdates = null;
+        }
         if ( indexUpdates != null && indexUpdates.hasUpdates() )
         {
             try
@@ -95,7 +109,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
             }
             catch ( ExecutionException e )
             {
-                throw new IOException( "Failed to flush index updates prior to applying schema change", e );
+                throw new IOException( "Failed to flush index updates", e );
             }
             indexUpdates = null;
         }
@@ -104,16 +118,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
     @Override
     public void close() throws Exception
     {
-        // Apply all the label updates within this whole batch of transactions.
-        if ( labelUpdates != null )
-        {
-            // Updates are sorted according to node id here, an artifact of node commands being sorted
-            // by node id when extracting from TransactionRecordState.
-            labelScanStoreSync.apply( new LabelUpdateWork( labelUpdates ) );
-        }
-
-        // Apply all the index updates within this whole batch of transactions.
-        applyIndexUpdates();
+        applyPendingLabelAndIndexUpdates();
     }
 
     /**
@@ -218,7 +223,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
                 // In that scenario the index would be created, populated and then fed the [this time duplicate]
                 // update for the node created before the index. The most straight forward solution is to
                 // apply pending index updates up to this point in this batch before index schema changes occur.
-                applyIndexUpdates();
+                applyPendingLabelAndIndexUpdates();
 
                 switch ( command.getMode() )
                 {
