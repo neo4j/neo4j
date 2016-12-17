@@ -21,8 +21,10 @@ package org.neo4j.cypher.internal.compiler.v3_2.phases
 
 import org.neo4j.cypher.internal.compiler.v3_2.ASTRewriter
 import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
+import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters._
 import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilationState.{State3, State4}
 import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSequencer
+import org.neo4j.cypher.internal.frontend.v3_2.{Rewriter, inSequence}
 
 case class AstRewriting(sequencer: String => RewriterStepSequencer) extends Phase[State3, State4] {
 
@@ -37,4 +39,16 @@ case class AstRewriting(sequencer: String => RewriterStepSequencer) extends Phas
   override def phase = AST_REWRITE
 
   override def description: String = "normalize the AST into a form easier for the planner to work with"
+}
+
+object LateAstRewriting extends StatementRewriterState5 {
+  override def instance(context: Context): Rewriter = inSequence(
+    collapseMultipleInPredicates,
+    nameUpdatingClauses,
+    projectNamedPaths,
+//    enableCondition(containsNamedPathOnlyForShortestPath), // TODO Re-enable
+    projectFreshSortExpressions
+  )
+
+  override def description: String = "normalize the AST"
 }

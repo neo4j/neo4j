@@ -93,6 +93,7 @@ case class CypherCompiler(executionPlanBuilder: ExecutablePlanBuilder,
     ProcedureOrSchemaCommandPlanBuilder orElse {
       rewriteEqualityToInPredicate andThen
       CNFNormalizer andThen
+      LateAstRewriting andThen
       RestOfPipeLine
     }
 

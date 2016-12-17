@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.plannerQuery.Statemen
 import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters._
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.IdentityTypeConverter
 import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilationState.State4
-import org.neo4j.cypher.internal.compiler.v3_2.phases.{Context, RewriteProcedureCalls}
+import org.neo4j.cypher.internal.compiler.v3_2.phases.{Context, LateAstRewriting, RewriteProcedureCalls}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.execution.PipeExecutionBuilderContext
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical._
@@ -219,10 +219,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     val state = State4(query, None, "", resolvedStatement, SemanticChecker.check(cleanedStatement, mkException), Map.empty, Set.empty)
 
     val context = Context(null, null, null, null, null, null, mock[AstRewritingMonitor])
-    val output = (Namespacer andThen rewriteEqualityToInPredicate andThen CNFNormalizer).transform(state, context)
-    val semanticTable: SemanticTable = SemanticTable(types = output.semantics.typeTable)
-    val (rewrittenAst: Statement, _) = CostBasedExecutablePlanBuilder.rewriteStatement(output.statement, semanticState.scopeTree,
-      semanticTable, RewriterStepSequencer.newValidating, Set.empty, mock[AstRewritingMonitor])
+    val output = (Namespacer andThen rewriteEqualityToInPredicate andThen CNFNormalizer andThen LateAstRewriting).transform(state, context)
 
     // This fakes pattern expression naming for testing purposes
     // In the actual code path, this renaming happens as part of planning
@@ -230,8 +227,8 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     // cf. QueryPlanningStrategy
     //
 
-    val namedAst: Statement = rewrittenAst.endoRewrite(namePatternPredicatePatternElements)
-    val unionQuery = toUnionQuery(namedAst.asInstanceOf[Query], semanticTable)
+    val namedAst: Statement = output.statement.endoRewrite(namePatternPredicatePatternElements)
+    val unionQuery = toUnionQuery(namedAst.asInstanceOf[Query], output.semanticTable)
     unionQuery
   }
 

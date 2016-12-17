@@ -23,14 +23,14 @@ import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.plannerQuery.StatementConverters._
 import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters._
 import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilationState.State4
-import org.neo4j.cypher.internal.compiler.v3_2.phases.Context
+import org.neo4j.cypher.internal.compiler.v3_2.phases.{Context, LateAstRewriting}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.Metrics._
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.cardinality.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.idp.{IDPQueryGraphSolver, IDPQueryGraphSolverMonitor, SingleComponentPlanner, cartesianProductsOrValueJoins}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.rewriter.{LogicalPlanRewriter, unnestApply}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps.LogicalPlanProducer
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.{LogicalPlanningContext, _}
 import org.neo4j.cypher.internal.compiler.v3_2.spi._
 import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
@@ -131,7 +131,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     private def context = Context(null, null, null, null, null, null, mock[AstRewritingMonitor])
 
     private val pipeLine =
-      Namespacer andThen rewriteEqualityToInPredicate andThen CNFNormalizer
+      Namespacer andThen rewriteEqualityToInPredicate andThen CNFNormalizer andThen LateAstRewriting
 
     def planFor(queryString: String): SemanticPlan = {
 
@@ -144,18 +144,16 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       val state = State4(queryString, None, "", rewrittenStatement, semanticState, Map.empty, Set.empty)
       val output = pipeLine.transform(state, context)
 
-      CostBasedExecutablePlanBuilder.rewriteStatement(output.statement, output.semantics.scopeTree,
-        output.semanticTable, rewriterSequencer, postConditions, mock[AstRewritingMonitor]) match {
-        case (ast: Query, newTable) =>
-          tokenResolver.resolve(ast)(newTable, planContext)
-          val unionQuery = toUnionQuery(ast, output.semanticTable)
-          val metrics = metricsFactory.newMetrics(planContext.statistics)
-          val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality)
-          val context = LogicalPlanningContext(planContext, logicalPlanProducer, metrics, newTable, queryGraphSolver, QueryGraphSolverInput.empty, notificationLogger = devNullLogger)
-          val plannerQuery = unionQuery.queries.head
-          val resultPlan = planner.internalPlan(plannerQuery)(context)
-          SemanticPlan(resultPlan.endoRewrite(fixedPoint(unnestApply)), newTable)
-      }
+      val ast = output.statement.asInstanceOf[Query]
+
+      tokenResolver.resolve(ast)(output.semanticTable, planContext)
+      val unionQuery = toUnionQuery(ast, output.semanticTable)
+      val metrics = metricsFactory.newMetrics(planContext.statistics)
+      val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality)
+      val planningContext = LogicalPlanningContext(planContext, logicalPlanProducer, metrics, output.semanticTable, queryGraphSolver, QueryGraphSolverInput.empty, notificationLogger = devNullLogger)
+      val plannerQuery = unionQuery.queries.head
+      val resultPlan = planner.internalPlan(plannerQuery)(planningContext)
+      SemanticPlan(resultPlan.endoRewrite(fixedPoint(unnestApply)), output.semanticTable)
     }
 
     def getLogicalPlanFor(queryString: String): (Option[PeriodicCommit], LogicalPlan, SemanticTable) = {
@@ -168,17 +166,15 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       val output = pipeLine.transform(state, context)
       val table = output.semanticTable
       config.updateSemanticTableWithTokens(table)
+      val ast = output.statement.asInstanceOf[Query]
 
-      CostBasedExecutablePlanBuilder.rewriteStatement(output.statement, semanticState.scopeTree, table, rewriterSequencer, postConditions, mock[AstRewritingMonitor]) match {
-        case (ast: Query, newTable) =>
-          tokenResolver.resolve(ast)(newTable, planContext)
-          val unionQuery = toUnionQuery(ast, semanticTable)
-          val metrics = metricsFactory.newMetrics(planContext.statistics)
-          val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality)
-          val context = LogicalPlanningContext(planContext, logicalPlanProducer, metrics, table, queryGraphSolver, QueryGraphSolverInput.empty, notificationLogger = devNullLogger)
-          val (periodicCommit, plan) = planner.plan(unionQuery)(context)
-          (periodicCommit, plan, table)
-      }
+      tokenResolver.resolve(ast)(output.semanticTable, planContext)
+      val unionQuery = toUnionQuery(ast, semanticTable)
+      val metrics = metricsFactory.newMetrics(planContext.statistics)
+      val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality)
+      val logicalPlanningContext = LogicalPlanningContext(planContext, logicalPlanProducer, metrics, table, queryGraphSolver, QueryGraphSolverInput.empty, notificationLogger = devNullLogger)
+      val (periodicCommit, plan) = planner.plan(unionQuery)(logicalPlanningContext)
+      (periodicCommit, plan, table)
     }
 
     def estimate(qg: QueryGraph, input: QueryGraphSolverInput = QueryGraphSolverInput.empty) =

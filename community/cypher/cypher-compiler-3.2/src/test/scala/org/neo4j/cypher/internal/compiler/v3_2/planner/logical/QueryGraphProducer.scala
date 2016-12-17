@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.planner.logical
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters._
 import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilationState.State4
-import org.neo4j.cypher.internal.compiler.v3_2.phases.Context
+import org.neo4j.cypher.internal.compiler.v3_2.phases.{Context, LateAstRewriting}
 import org.neo4j.cypher.internal.compiler.v3_2.planner._
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{Query, Statement}
 import org.neo4j.cypher.internal.frontend.v3_2.{SemanticTable, inSequence}
@@ -44,11 +44,9 @@ trait QueryGraphProducer extends MockitoSugar {
     val (firstRewriteStep, _, _) = astRewriter.rewrite(query, cleanedStatement, semanticState)
     val state = State4(query, None, "", firstRewriteStep, semanticState, Map.empty, Set.empty)
     val context = Context(null, null, null, null, null, null, mock[AstRewritingMonitor])
-    val output = (Namespacer andThen rewriteEqualityToInPredicate andThen CNFNormalizer).transform(state, context)
+    val output = (Namespacer andThen rewriteEqualityToInPredicate andThen CNFNormalizer andThen LateAstRewriting).transform(state, context)
 
-    val semanticTable = SemanticTable(types = semanticState.typeTable, recordedScopes = semanticState.recordedScopes)
-    val (rewrittenAst, rewrittenTable) = CostBasedExecutablePlanBuilder.rewriteStatement(output.statement, semanticState.scopeTree, semanticTable, rewriterSequencer, Set.empty, mock[AstRewritingMonitor])
-    (toUnionQuery(rewrittenAst.asInstanceOf[Query], semanticTable).queries.head, rewrittenTable)
+    (toUnionQuery(output.statement.asInstanceOf[Query], output.semanticTable).queries.head, output.semanticTable)
   }
 
   def produceQueryGraphForPattern(query: String): (QueryGraph, SemanticTable) = {

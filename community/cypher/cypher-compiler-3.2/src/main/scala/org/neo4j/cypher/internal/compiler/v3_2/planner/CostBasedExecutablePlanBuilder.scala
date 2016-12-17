@@ -21,9 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.planner
 
 import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
 import org.neo4j.cypher.internal.compiler.v3_2._
-import org.neo4j.cypher.internal.compiler.v3_2.ast.conditions.containsNamedPathOnlyForShortestPath
 import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.plannerQuery.StatementConverters._
-import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters._
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{ExecutablePlanBuilder, NewRuntimeSuccessRateMonitor, PlanFingerprint, PlanFingerprintReference}
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.closing
 import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilationState.State5
@@ -32,10 +30,10 @@ import org.neo4j.cypher.internal.compiler.v3_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.v3_2.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.{RewriterCondition, RewriterStepSequencer}
+import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_2.Rewritable._
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
-import org.neo4j.cypher.internal.frontend.v3_2.{Scope, SemanticTable}
+import org.neo4j.cypher.internal.frontend.v3_2.{InternalException, SemanticTable}
 import org.neo4j.cypher.internal.ir.v3_2.PeriodicCommit
 
 /* This class is responsible for taking a query from an AST object to a runnable object.  */
@@ -54,27 +52,18 @@ case class CostBasedExecutablePlanBuilder(monitors: Monitors,
 
   override def producePlan(inputQuery: State5, planContext: PlanContext, tracer: CompilationPhaseTracer,
                            createFingerprintReference: (Option[PlanFingerprint]) => PlanFingerprintReference) = {
-    val statement =
-      CostBasedExecutablePlanBuilder.rewriteStatement(
-        statement = inputQuery.statement,
-        scopeTree = inputQuery.semantics.scopeTree,
-        semanticTable = inputQuery.semanticTable,
-        rewriterSequencer = rewriterSequencer,
-        preConditions = inputQuery.postConditions,
-        monitor = monitors.newMonitor[AstRewritingMonitor]())
-
     //monitor success of compilation
     val planBuilderMonitor = monitors.newMonitor[NewRuntimeSuccessRateMonitor](CypherCompilerFactory.monitorTag)
 
-    statement match {
-      case (ast: Query, rewrittenSemanticTable) =>
+    inputQuery.statement match {
+      case ast: Query =>
         val (periodicCommit, logicalPlan, pipeBuildContext) = closing(tracer.beginPhase(LOGICAL_PLANNING)) {
-          produceLogicalPlan(ast, rewrittenSemanticTable)(planContext, planContext.notificationLogger())
+          produceLogicalPlan(ast, inputQuery.semanticTable)(planContext, planContext.notificationLogger())
         }
-          runtimeBuilder(periodicCommit, logicalPlan, pipeBuildContext, planContext, tracer, rewrittenSemanticTable,
+          runtimeBuilder(periodicCommit, logicalPlan, pipeBuildContext, planContext, tracer, inputQuery.semanticTable,
                          planBuilderMonitor, plannerName, inputQuery, createFingerprintReference, config)
       case x =>
-        throw new CantHandleQueryException(x.toString())
+        throw new InternalException(s"Can't plan a $x query with the cost planner")
     }
   }
 
@@ -101,25 +90,5 @@ case class CostBasedExecutablePlanBuilder(monitors: Monitors,
     if (plan.solved.all(_.queryGraph.readOnly)) checkForUnresolvedTokens(ast, semanticTable).foreach(notificationLogger.log)
 
     (periodicCommit, plan, pipeBuildContext)
-  }
-}
-
-object CostBasedExecutablePlanBuilder {
-  import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStep._
-
-  def rewriteStatement(statement: Statement,
-                       scopeTree: Scope,
-                       semanticTable: SemanticTable,
-                       rewriterSequencer: (String) => RewriterStepSequencer,
-                       preConditions: Set[RewriterCondition],
-                       monitor: AstRewritingMonitor): (Statement, SemanticTable) = {
-    val secondRewriter = rewriterSequencer("Planner").withPrecondition(preConditions)(
-      collapseMultipleInPredicates,
-      nameUpdatingClauses,
-      projectNamedPaths,
-      enableCondition(containsNamedPathOnlyForShortestPath),
-      projectFreshSortExpressions
-    ).rewriter
-    (statement.endoRewrite(secondRewriter), semanticTable)
   }
 }
