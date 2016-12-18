@@ -71,25 +71,26 @@ case class CypherCompiler(executionPlanBuilder: ExecutablePlanBuilder,
                             offset: Option[InputPosition] = None,
                             tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING): State4 = {
     val startState = State1(queryText, offset, plannerName)
-    val context = createContext(tracer, notificationLogger, null, queryText, offset) //TODO: short cut
+    val context = createContext(tracer, notificationLogger, null, rawQueryText, offset) //TODO: short cut
     firstPipeline.transform(startState, context)
   }
 
   private val astRewriting = AstRewriting(sequencer)
 
-  private val firstPipeline: Transformer[State1, State4] =
+  val firstPipeline: Transformer[State1, State4] =
       Parsing andThen
-      DeprecationWarnings andThen
+      SyntaxDeprecationWarnings andThen
       PreparatoryRewriting andThen
       SemanticAnalysis.Early andThen
       astRewriting
 
-  private val secondPipeLine: Transformer[State4, State5] =
+  val secondPipeLine: Transformer[State4, State5] =
       RewriteProcedureCalls andThen
+      ProcedureDeprecationWarnings andThen
       SemanticAnalysis.Late andThen
       Namespacer
 
-  private val thirdPipeLine =
+  val thirdPipeLine: Transformer[State5, ExecutionPlan] =
     ProcedureOrSchemaCommandPlanBuilder orElse {
       rewriteEqualityToInPredicate andThen
       CNFNormalizer andThen
@@ -102,7 +103,7 @@ case class CypherCompiler(executionPlanBuilder: ExecutablePlanBuilder,
                            planContext: PlanContext,
                            tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING): State5 = {
 
-    secondPipeLine.transform(in, createContext(tracer, devNullLogger, planContext, in.queryText, in.startPosition))
+    secondPipeLine.transform(in, createContext(tracer, notificationLogger, planContext, in.queryText, in.startPosition))
   }
 
   private def provideCache(cacheAccessor: CacheAccessor[Statement, ExecutionPlan],

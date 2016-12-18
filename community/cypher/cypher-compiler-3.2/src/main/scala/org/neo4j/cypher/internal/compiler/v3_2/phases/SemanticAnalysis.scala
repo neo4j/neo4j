@@ -26,15 +26,15 @@ import org.neo4j.cypher.internal.frontend.v3_2.SemanticState
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Statement
 
 object SemanticAnalysis {
-  def handle(statement: Statement, context: Context): SemanticState = {
-    val semanticState = SemanticChecker.check(statement, context.exceptionCreator)
-    semanticState.notifications.foreach(context.notificationLogger.log)
-    semanticState
-  }
+  def handle(statement: Statement, context: Context): SemanticState =
+    SemanticChecker.check(statement, context.exceptionCreator)
 
   case object Early extends SemanticAnalysis[State2, State3] {
-    override def transform(from: State2, context: Context): State3 =
-      from.add(handle(from.statement, context))
+    override def transform(from: State2, context: Context): State3 = {
+      val semanticState = handle(from.statement, context)
+      semanticState.notifications.foreach(context.notificationLogger.log)
+      from.add(semanticState)
+    }
   }
 
   case object Late extends SemanticAnalysis[State4, State4] {

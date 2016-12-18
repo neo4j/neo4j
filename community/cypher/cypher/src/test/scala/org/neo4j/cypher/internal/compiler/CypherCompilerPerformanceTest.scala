@@ -24,8 +24,11 @@ import org.mockito.Mockito._
 import org.neo4j.cypher.GraphDatabaseFunSuite
 import org.neo4j.cypher.internal.CypherCompiler.{CLOCK, DEFAULT_QUERY_PLAN_TTL, DEFAULT_STATISTICS_DIVERGENCE_THRESHOLD}
 import org.neo4j.cypher.internal.compatibility.v3_2.WrappedMonitors
+import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.NO_TRACING
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.PlanFingerprintReference
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.IdentityTypeConverter
+import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilationState.{State4, State5}
+import org.neo4j.cypher.internal.compiler.v3_2.phases.Context
 import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.compiler.v3_2.{CypherCompilerFactory, InfoLogger, _}
 import org.neo4j.cypher.internal.spi.v3_2.codegen.GeneratedQueryStructure
@@ -107,7 +110,7 @@ class CypherCompilerPerformanceTest extends GraphDatabaseFunSuite {
     queries.foreach(assertIsPlannedTimely)
   }
 
-  def assertIsPlannedTimely(query: String) = {
+  private def assertIsPlannedTimely(query: String) = {
     val result = plan(NUMBER_OF_RUNS)(query)
 
     withClue("Planning of the first query took too long:\n" + result.description) {
@@ -164,17 +167,19 @@ class CypherCompilerPerformanceTest extends GraphDatabaseFunSuite {
       (sorted(mid - 1) + sorted(mid)) / 2
   }
 
-  def indent(text: String, indent: String = "    ") =
+  private def indent(text: String, indent: String = "    ") =
     indent + text.replace("\n", s"\n$indent")
 
   def plan(query: String): (Long, Long) = {
     val compiler = createCurrentCompiler
-    val (preparedSyntacticQueryTime, preparedSyntacticQuery) = measure(compiler.prepareSyntacticQuery(query, query, devNullLogger))
+    val (preparedSyntacticQueryTime, preparedSyntacticQuery: State4) = measure(compiler.prepareSyntacticQuery(query, query, devNullLogger))
     val planTime = graph.inTx {
-      val (semanticTime, semanticQuery) = measure(compiler.prepareSemanticQuery(preparedSyntacticQuery, devNullLogger, planContext, CompilationPhaseTracer.NO_TRACING))
+      val (semanticTime, state5: State5) = measure(compiler.prepareSemanticQuery(preparedSyntacticQuery, devNullLogger, planContext, NO_TRACING))
       val reference = mock[PlanFingerprintReference]
       when(reference.isStale(any(), any())).thenReturn(false)
-      val (planTime, _) = measure(compiler.executionPlanBuilder.producePlan(semanticQuery, planContext, CompilationPhaseTracer.NO_TRACING, _ => reference))
+      val context = Context(null, NO_TRACING, devNullLogger, planContext, null, _ => mock[PlanFingerprintReference], mock[AstRewritingMonitor])
+
+      val (planTime, _) = measure(compiler.thirdPipeLine.transform(state5, context))
       planTime + semanticTime
     }
     (preparedSyntacticQueryTime, planTime)
@@ -187,7 +192,7 @@ class CypherCompilerPerformanceTest extends GraphDatabaseFunSuite {
     (stop - start, result)
   }
 
-  def createCurrentCompiler = {
+  private def createCurrentCompiler = {
     CypherCompilerFactory.costBasedCompiler(
       CypherCompilerConfiguration(
         queryCacheSize = 1,
@@ -201,7 +206,7 @@ class CypherCompilerPerformanceTest extends GraphDatabaseFunSuite {
       ),
       clock = CLOCK,
       structure = GeneratedQueryStructure,
-      monitors = new WrappedMonitors(kernelMonitors),
+      monitors = WrappedMonitors(kernelMonitors),
       logger = DEV_NULL,
       rewriterSequencer = RewriterStepSequencer.newPlain,
       plannerName = Some(IDPPlannerName),
