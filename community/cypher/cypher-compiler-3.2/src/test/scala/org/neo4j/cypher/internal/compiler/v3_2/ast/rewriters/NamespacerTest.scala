@@ -22,10 +22,10 @@ package org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.StatementHelper._
 import org.neo4j.cypher.internal.compiler.v3_2.parser.ParserFixture.parser
-import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilationState.State4
+import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilationState
 import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_2._
-import org.neo4j.cypher.internal.frontend.v3_2.ast.{ASTAnnotationMap, AstConstructionTestSupport, Statement, Variable}
+import org.neo4j.cypher.internal.frontend.v3_2.ast.{AstConstructionTestSupport, Statement}
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 
 class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport {
@@ -87,7 +87,7 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport {
 
   private def assertRewritten(from: String, to: String) = {
     val fromAst = parseAndRewrite(from)
-    val fromState = State4(from, None, "", fromAst, fromAst.semanticState, Map.empty, Set.empty)
+    val fromState = CompilationState(from, None, "", Some(fromAst), Some(fromAst.semanticState))
     val toState = Namespacer.transform(fromState, null)
 
     val expectedAst = parseAndRewrite(to)

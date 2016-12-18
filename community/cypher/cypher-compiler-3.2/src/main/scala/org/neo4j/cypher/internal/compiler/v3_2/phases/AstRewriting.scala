@@ -22,18 +22,20 @@ package org.neo4j.cypher.internal.compiler.v3_2.phases
 import org.neo4j.cypher.internal.compiler.v3_2.ASTRewriter
 import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
 import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters._
-import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilationState.{State3, State4}
 import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_2.{Rewriter, inSequence}
 
-case class AstRewriting(sequencer: String => RewriterStepSequencer) extends Phase[State3, State4] {
+case class AstRewriting(sequencer: String => RewriterStepSequencer) extends Phase[CompilationState, CompilationState] {
 
   private val astRewriter = new ASTRewriter(sequencer, true)
 
-  override def transform(in: State3, context: Context): State4 = {
+  override def transform(in: CompilationState, context: Context): CompilationState = {
 
     val (rewrittenStatement, extractedParams, postConditions) = astRewriter.rewrite(in.queryText, in.statement, in.semantics)
-    in.copy(statement = rewrittenStatement).add(extractedParams, postConditions)
+    in.copy(
+      maybeStatement = Some(rewrittenStatement),
+      maybeExtractedParams = Some(extractedParams),
+      maybePostConditions = Some(postConditions))
   }
 
   override def phase = AST_REWRITE
@@ -41,7 +43,7 @@ case class AstRewriting(sequencer: String => RewriterStepSequencer) extends Phas
   override def description: String = "normalize the AST into a form easier for the planner to work with"
 }
 
-object LateAstRewriting extends StatementRewriterState5 {
+object LateAstRewriting extends StatementRewriter {
   override def instance(context: Context): Rewriter = inSequence(
     collapseMultipleInPredicates,
     nameUpdatingClauses,

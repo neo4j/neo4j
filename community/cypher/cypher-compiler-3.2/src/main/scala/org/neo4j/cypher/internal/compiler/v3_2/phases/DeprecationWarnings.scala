@@ -22,15 +22,14 @@ package org.neo4j.cypher.internal.compiler.v3_2.phases
 import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase.DEPRECATION_WARNINGS
 import org.neo4j.cypher.internal.compiler.v3_2.ast.ResolvedCall
 import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters.replaceAliasedFunctionInvocations.aliases
-import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilationState.{State2, State4}
 import org.neo4j.cypher.internal.compiler.v3_2.spi.ProcedureSignature
 import org.neo4j.cypher.internal.frontend.v3_2.InternalException
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{FunctionInvocation, FunctionName, Statement, UnresolvedCall}
 import org.neo4j.cypher.internal.frontend.v3_2.notification.{DeprecatedFunctionNotification, DeprecatedProcedureNotification, InternalNotification}
 
 
-object SyntaxDeprecationWarnings extends VisitorPhase[State2] {
-  override def visit(value: State2, context: Context): Unit = {
+object SyntaxDeprecationWarnings extends VisitorPhase[CompilationState] {
+  override def visit(value: CompilationState, context: Context): Unit = {
     val warnings = findDeprecations(value.statement)
 
     warnings.foreach(context.notificationLogger.log)
@@ -44,11 +43,11 @@ object SyntaxDeprecationWarnings extends VisitorPhase[State2] {
 
   override def phase = DEPRECATION_WARNINGS
 
-  override def description = "find deprecated Cypher constructs or procs and generate warnings for them"
+  override def description = "find deprecated Cypher constructs and generate warnings for them"
 }
 
-object ProcedureDeprecationWarnings extends VisitorPhase[State4] {
-  override def visit(value: State4, context: Context): Unit = {
+object ProcedureDeprecationWarnings extends VisitorPhase[CompilationState] {
+  override def visit(value: CompilationState, context: Context): Unit = {
     val warnings = findDeprecations(value.statement)
 
     warnings.foreach(context.notificationLogger.log)
@@ -64,5 +63,5 @@ object ProcedureDeprecationWarnings extends VisitorPhase[State4] {
 
   override def phase = DEPRECATION_WARNINGS
 
-  override def description = "find deprecated Cypher constructs or procs and generate warnings for them"
+  override def description = "find calls to deprecated procedures and generate warnings for them"
 }

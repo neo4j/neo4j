@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.plannerQuery.StatementConverters._
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{ExecutablePlanBuilder, NewRuntimeSuccessRateMonitor, PlanFingerprint, PlanFingerprintReference}
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.closing
-import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilationState.State5
+import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilationState
 import org.neo4j.cypher.internal.compiler.v3_2.planner.execution.PipeExecutionBuilderContext
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans._
@@ -50,7 +50,7 @@ case class CostBasedExecutablePlanBuilder(monitors: Monitors,
                                           publicTypeConverter: Any => Any)
   extends ExecutablePlanBuilder {
 
-  override def producePlan(inputQuery: State5, planContext: PlanContext, tracer: CompilationPhaseTracer,
+  override def producePlan(inputQuery: CompilationState, planContext: PlanContext, tracer: CompilationPhaseTracer,
                            createFingerprintReference: (Option[PlanFingerprint]) => PlanFingerprintReference) = {
     //monitor success of compilation
     val planBuilderMonitor = monitors.newMonitor[NewRuntimeSuccessRateMonitor](CypherCompilerFactory.monitorTag)

@@ -27,8 +27,7 @@ import org.neo4j.cypher.internal.compatibility.v3_2.WrappedMonitors
 import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.NO_TRACING
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.PlanFingerprintReference
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.IdentityTypeConverter
-import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilationState.{State4, State5}
-import org.neo4j.cypher.internal.compiler.v3_2.phases.Context
+import org.neo4j.cypher.internal.compiler.v3_2.phases.{CompilationState, Context}
 import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.compiler.v3_2.{CypherCompilerFactory, InfoLogger, _}
 import org.neo4j.cypher.internal.spi.v3_2.codegen.GeneratedQueryStructure
@@ -172,14 +171,14 @@ class CypherCompilerPerformanceTest extends GraphDatabaseFunSuite {
 
   def plan(query: String): (Long, Long) = {
     val compiler = createCurrentCompiler
-    val (preparedSyntacticQueryTime, preparedSyntacticQuery: State4) = measure(compiler.prepareSyntacticQuery(query, query, devNullLogger))
+    val (preparedSyntacticQueryTime, preparedSyntacticQuery: CompilationState) = measure(compiler.prepareSyntacticQuery(query, query, devNullLogger))
     val planTime = graph.inTx {
-      val (semanticTime, state5: State5) = measure(compiler.prepareSemanticQuery(preparedSyntacticQuery, devNullLogger, planContext, NO_TRACING))
+      val (semanticTime, state: CompilationState) = measure(compiler.prepareSemanticQuery(preparedSyntacticQuery, devNullLogger, planContext, NO_TRACING))
       val reference = mock[PlanFingerprintReference]
       when(reference.isStale(any(), any())).thenReturn(false)
       val context = Context(null, NO_TRACING, devNullLogger, planContext, null, _ => mock[PlanFingerprintReference], mock[AstRewritingMonitor])
 
-      val (planTime, _) = measure(compiler.thirdPipeLine.transform(state5, context))
+      val (planTime, _) = measure(compiler.thirdPipeLine.transform(state, context))
       planTime + semanticTime
     }
     (preparedSyntacticQueryTime, planTime)

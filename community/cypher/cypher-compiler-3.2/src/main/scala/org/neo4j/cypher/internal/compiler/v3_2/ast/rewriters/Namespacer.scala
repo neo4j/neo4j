@@ -20,13 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase
-import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilationState.{State4, State5}
-import org.neo4j.cypher.internal.compiler.v3_2.phases.{Context, Phase}
+import org.neo4j.cypher.internal.compiler.v3_2.phases.{CompilationState, Context, Phase}
 import org.neo4j.cypher.internal.frontend.v3_2.Foldable._
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.{Ref, Rewriter, SemanticTable, bottomUp, _}
 
-object Namespacer extends Phase[State4, State5] {
+object Namespacer extends Phase[CompilationState, CompilationState] {
   type VariableRenamings = Map[Ref[Variable], Variable]
 
   import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
@@ -35,7 +34,7 @@ object Namespacer extends Phase[State4, State5] {
 
   override def description: String = "rename variables so they are all unique"
 
-  override def transform(from: State4, ignored: Context): State5 = {
+  override def transform(from: CompilationState, ignored: Context): CompilationState = {
     val ambiguousNames = shadowedNames(from.semantics.scopeTree)
     val variableDefinitions: Map[SymbolUse, SymbolUse] = from.semantics.scopeTree.allVariableDefinitions
     val protectedVariables = returnAliases(from.statement)
@@ -45,7 +44,7 @@ object Namespacer extends Phase[State4, State5] {
     val table = SemanticTable(types = from.semantics.typeTable, recordedScopes = from.semantics.recordedScopes)
 
     val newSemanticTable: SemanticTable = tableRewriter(renamings)(table)
-    from.copy(statement = newStatement).add(newSemanticTable)
+    from.copy(maybeStatement = Some(newStatement), maybeSemanticTable = Some(newSemanticTable))
   }
 
   private def shadowedNames(scopeTree: Scope): Set[String] = {

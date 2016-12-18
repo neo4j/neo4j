@@ -19,87 +19,31 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.phases
 
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.ExecutionPlan
 import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterCondition
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{Query, Statement}
-import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, SemanticState, SemanticTable}
+import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, InternalException, SemanticState, SemanticTable}
 
-object CompilationState {
+case class CompilationState(queryText: String,
+                            startPosition: Option[InputPosition],
+                            plannerName: String,
+                            maybeStatement: Option[Statement] = None,
+                            maybeSemantics: Option[SemanticState] = None,
+                            maybeExtractedParams: Option[Map[String, Any]] = None,
+                            maybePostConditions: Option[Set[RewriterCondition]] = None,
+                            maybeSemanticTable: Option[SemanticTable] = None) {
 
-  /*
-  The reason for all these traits is to make sure that for each stage, we add but do not loose information
-   */
-  sealed trait S1 {
-    val queryText: String
-    val startPosition: Option[InputPosition]
-    val plannerName: String
+  def isPeriodicCommit: Boolean = statement match {
+    case Query(Some(_), _) => true
+    case _ => false
   }
 
-  sealed trait S2 extends S1 {
-    val statement: Statement
+  def statement = maybeStatement getOrElse fail
+  def semantics = maybeSemantics getOrElse fail
+  def extractedParams = maybeExtractedParams getOrElse fail
+  def postConditions = maybePostConditions getOrElse fail
+  def semanticTable =  maybeSemanticTable getOrElse fail
 
-    def isPeriodicCommit: Boolean = statement match {
-      case Query(Some(_), _) => true
-      case _ => false
-    }
+  private def fail = {
+    throw new InternalException("Statement not yet initialised")
   }
-
-  sealed trait S3 extends S2 {
-    val semantics: SemanticState
-  }
-
-  sealed trait S4 extends S3 {
-    val extractedParams: Map[String, Any]
-    val postConditions: Set[RewriterCondition]
-  }
-
-  sealed trait S5 extends S4 {
-    val semanticTable: SemanticTable
-  }
-
-  case class State1(queryText: String,
-                    startPosition: Option[InputPosition],
-                    plannerName: String) extends S1 {
-    def add(statement: Statement): State2 =
-      State2(queryText, startPosition, plannerName, statement)
-  }
-
-  case class State2(queryText: String,
-                    startPosition: Option[InputPosition],
-                    plannerName: String,
-                    statement: Statement) extends S2 {
-    def add(semantics: SemanticState): State3 =
-      State3(queryText, startPosition, statement, plannerName, semantics)
-  }
-
-  case class State3(queryText: String,
-                    startPosition: Option[InputPosition],
-                    statement: Statement,
-                    plannerName: String,
-                    semantics: SemanticState) extends S3 {
-    def add(extractedParams: Map[String, Any], postConditions: Set[RewriterCondition]): State4 =
-      State4(queryText, startPosition, plannerName, statement, semantics, extractedParams, postConditions)
-  }
-
-  case class State4(queryText: String,
-                    startPosition: Option[InputPosition],
-                    plannerName: String,
-                    statement: Statement,
-                    semantics: SemanticState,
-                    extractedParams: Map[String, Any],
-                    postConditions: Set[RewriterCondition]) extends S4 {
-    def add(semanticTable: SemanticTable): State5 =
-      State5(queryText, startPosition, plannerName, statement, semantics, extractedParams, postConditions, semanticTable)
-  }
-
-  case class State5(queryText: String,
-                    startPosition: Option[InputPosition],
-                    plannerName: String,
-                    statement: Statement,
-                    semantics: SemanticState,
-                    extractedParams: Map[String, Any],
-                    postConditions: Set[RewriterCondition],
-                    semanticTable: SemanticTable) extends S5
-
-  case class EndState(executionPlan: ExecutionPlan)
 }

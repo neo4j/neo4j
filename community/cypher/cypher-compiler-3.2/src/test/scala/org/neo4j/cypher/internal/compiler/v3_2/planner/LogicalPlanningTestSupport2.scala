@@ -22,8 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.planner
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.plannerQuery.StatementConverters._
 import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters._
-import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilationState.State4
-import org.neo4j.cypher.internal.compiler.v3_2.phases.{Context, LateAstRewriting}
+import org.neo4j.cypher.internal.compiler.v3_2.phases.{CompilationState, Context, LateAstRewriting}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.cardinality.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.idp.{IDPQueryGraphSolver, IDPQueryGraphSolverMonitor, SingleComponentPlanner, cartesianProductsOrValueJoins}
@@ -141,7 +140,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       val semanticState = SemanticChecker.check(cleanedStatement, mkException)
       val (rewrittenStatement, _, postConditions) = astRewriter.rewrite(queryString, cleanedStatement, semanticState)
 
-      val state = State4(queryString, None, "", rewrittenStatement, semanticState, Map.empty, Set.empty)
+      val state = CompilationState(queryString, None, "", Some(rewrittenStatement), Some(semanticState))
       val output = pipeLine.transform(state, context)
 
       val ast = output.statement.asInstanceOf[Query]
@@ -162,7 +161,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       val semanticState = SemanticChecker.check(parsedStatement, mkException)
       val (rewrittenStatement, _, postConditions) = astRewriter.rewrite(queryString, parsedStatement, semanticState)
 
-      val state = State4(queryString, None, "", rewrittenStatement, semanticState, Map.empty, Set.empty)
+      val state = CompilationState(queryString, None, "", Some(rewrittenStatement), Some(semanticState))
       val output = pipeLine.transform(state, context)
       val table = output.semanticTable
       config.updateSemanticTableWithTokens(table)

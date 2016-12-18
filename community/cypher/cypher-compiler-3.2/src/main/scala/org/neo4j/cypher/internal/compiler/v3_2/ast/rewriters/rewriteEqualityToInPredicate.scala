@@ -21,12 +21,11 @@ package org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
-import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilationState.State5
-import org.neo4j.cypher.internal.compiler.v3_2.phases.{Context, EndoPhase}
+import org.neo4j.cypher.internal.compiler.v3_2.phases.{CompilationState, Context, EndoPhase}
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.{Rewriter, bottomUp}
 
-case object rewriteEqualityToInPredicate extends StatementRewriterState5 {
+case object rewriteEqualityToInPredicate extends StatementRewriter {
 
   override def description: String = "normalize equality predicates into IN comparisons"
 
@@ -46,13 +45,13 @@ case object rewriteEqualityToInPredicate extends StatementRewriterState5 {
   })
 }
 
-trait StatementRewriterState5 extends EndoPhase[State5] {
+trait StatementRewriter extends EndoPhase[CompilationState] {
   override def phase: CompilationPhase = AST_REWRITE
 
   def instance(context: Context): Rewriter
 
-  override def transform(from: State5, context: Context): State5 = {
+  override def transform(from: CompilationState, context: Context): CompilationState = {
     val rewritten = from.statement.endoRewrite(instance(context))
-    from.copy(statement = rewritten)
+    from.copy(maybeStatement = Some(rewritten))
   }
 }

@@ -27,8 +27,7 @@ import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.plannerQuery.StatementConverters._
 import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters._
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.IdentityTypeConverter
-import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilationState.State4
-import org.neo4j.cypher.internal.compiler.v3_2.phases.{Context, LateAstRewriting, RewriteProcedureCalls}
+import org.neo4j.cypher.internal.compiler.v3_2.phases.{CompilationState, Context, LateAstRewriting, RewriteProcedureCalls}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.execution.PipeExecutionBuilderContext
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical._
@@ -216,7 +215,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
         val rewriter = RewriteProcedureCalls.rewriter(planContext)
         astRewriterResultStatement.endoRewrite(rewriter)
     }
-    val state = State4(query, None, "", resolvedStatement, SemanticChecker.check(cleanedStatement, mkException), Map.empty, Set.empty)
+    val state = CompilationState(query, None, "", Some(resolvedStatement), Some(SemanticChecker.check(cleanedStatement, mkException)))
 
     val context = Context(null, null, null, null, null, null, mock[AstRewritingMonitor])
     val output = (Namespacer andThen rewriteEqualityToInPredicate andThen CNFNormalizer andThen LateAstRewriting).transform(state, context)

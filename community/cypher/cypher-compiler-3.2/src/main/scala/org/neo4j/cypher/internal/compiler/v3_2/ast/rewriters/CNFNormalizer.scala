@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.fixedPoint
 import org.neo4j.cypher.internal.frontend.v3_2.{Rewriter, bottomUp, inSequence}
 
-case object CNFNormalizer extends StatementRewriterState5 {
+case object CNFNormalizer extends StatementRewriter {
 
   override def description: String = "normalize boolean predicates into conjunctive normal form"
 

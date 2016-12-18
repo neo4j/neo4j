@@ -21,13 +21,12 @@ package org.neo4j.cypher.internal.compiler.v3_2.phases
 
 import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
 import org.neo4j.cypher.internal.compiler.v3_2.ast.{ResolvedCall, ResolvedFunctionInvocation}
-import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilationState.State4
 import org.neo4j.cypher.internal.compiler.v3_2.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{FunctionInvocation, Query, SingleQuery, UnresolvedCall}
 import org.neo4j.cypher.internal.frontend.v3_2.{Rewriter, bottomUp}
 
 // Given a way to lookup procedure signatures, this phase rewrites unresolved calls into resolved calls
-case object RewriteProcedureCalls extends EndoPhase[State4] {
+case object RewriteProcedureCalls extends EndoPhase[CompilationState] {
 
   // Current procedure calling syntax allows simplified short-hand syntax for queries
   // that only consist of a standalone procedure call. In all other cases attempts to
@@ -66,8 +65,8 @@ case object RewriteProcedureCalls extends EndoPhase[State4] {
 
   override def description = "resolve procedure calls"
 
-  override def transform(from: State4, context: Context): State4 = {
+  override def transform(from: CompilationState, context: Context): CompilationState = {
     val rewrittenStatement = from.statement.endoRewrite(rewriter(context.planContext))
-    from.copy(statement = rewrittenStatement)
+    from.copy(maybeStatement = Some(rewrittenStatement))
   }
 }

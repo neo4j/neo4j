@@ -20,14 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v3_2.phases
 
 import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase.PARSING
-import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilationState.{State1, State2}
 import org.neo4j.cypher.internal.frontend.v3_2.parser.CypherParser
 
-case object Parsing extends Phase[State1, State2] {
+case object Parsing extends Phase[CompilationState, CompilationState] {
   private val parser = new CypherParser
 
-  override def transform(in: State1, ignored: Context): State2 =
-    in.add(parser.parse(in.queryText, in.startPosition))
+  override def transform(in: CompilationState, ignored: Context): CompilationState =
+    in.copy(maybeStatement = Some(parser.parse(in.queryText, in.startPosition)))
 
   override val phase = PARSING
 

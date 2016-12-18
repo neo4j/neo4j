@@ -21,12 +21,11 @@ package org.neo4j.cypher.internal.compiler.v3_2.phases
 
 import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
 import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters.{expandCallWhere, normalizeReturnClauses, normalizeWithClauses, replaceAliasedFunctionInvocations}
-import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilationState.State2
 import org.neo4j.cypher.internal.frontend.v3_2.inSequence
 
-case object PreparatoryRewriting extends EndoPhase[State2] {
+case object PreparatoryRewriting extends EndoPhase[CompilationState] {
 
-  override def transform(from: State2, context: Context): State2 = {
+  override def transform(from: CompilationState, context: Context): CompilationState = {
 
     val rewrittenStatement = from.statement.endoRewrite(inSequence(
       normalizeReturnClauses(context.exceptionCreator),
@@ -34,7 +33,7 @@ case object PreparatoryRewriting extends EndoPhase[State2] {
       expandCallWhere,
       replaceAliasedFunctionInvocations))
 
-    from.copy(statement = rewrittenStatement)
+    from.copy(maybeStatement = Some(rewrittenStatement))
   }
 
 
