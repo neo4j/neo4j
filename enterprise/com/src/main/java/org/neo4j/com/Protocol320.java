@@ -17,11 +17,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.ha.lock;
+package org.neo4j.com;
 
-public enum LockStatus
+public class Protocol320 extends Protocol310
 {
-    OK_LOCKED,
-    NOT_LOCKED,
-    DEAD_LOCKED
+    public Protocol320( int chunkSize, byte applicationProtocolVersion, byte internalProtocolVersion )
+    {
+        super( chunkSize, applicationProtocolVersion, internalProtocolVersion );
+    }
 }

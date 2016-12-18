@@ -30,6 +30,8 @@ import org.jboss.netty.channel.Channels;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.handler.queue.BlockingReadHandler;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -46,6 +48,7 @@ import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
+import org.neo4j.kernel.impl.util.HexPrinter;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.logging.Log;
@@ -179,7 +182,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
 
     protected Protocol createProtocol( int chunkSize, byte applicationProtocolVersion )
     {
-        return new Protocol310( chunkSize, applicationProtocolVersion, getInternalProtocolVersion() );
+        return new Protocol320( chunkSize, applicationProtocolVersion, getInternalProtocolVersion() );
     }
 
     public abstract ProtocolVersion getProtocolVersion();
@@ -430,6 +433,29 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
     {
         ChannelPipeline pipeline = channelContext.channel().getPipeline();
         return (BlockingReadHandler<ChannelBuffer>) pipeline.get( BLOCKING_CHANNEL_HANDLER_NAME );
+    }
+
+    protected static String beginningOfBufferAsHexString( ChannelBuffer buffer, int maxBytesToPrint )
+    {
+        // read buffer from pos 0 - writeIndex
+        int prevIndex = buffer.readerIndex();
+        buffer.readerIndex( 0 );
+        try
+        {
+            ByteArrayOutputStream byteArrayStream = new ByteArrayOutputStream( buffer.readableBytes() );
+            PrintStream stream = new PrintStream( byteArrayStream );
+            HexPrinter printer = new HexPrinter( stream ).withLineNumberDigits( 4 );
+            for ( int i = 0; buffer.readable() && i < maxBytesToPrint; i++ )
+            {
+                printer.append( buffer.readByte() );
+            }
+            stream.flush();
+            return byteArrayStream.toString();
+        }
+        finally
+        {
+            buffer.readerIndex( prevIndex );
+        }
     }
 
     @Override
