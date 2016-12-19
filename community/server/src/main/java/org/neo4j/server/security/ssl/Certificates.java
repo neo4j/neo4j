@@ -193,5 +193,9 @@ public class Certificates
             writer.writeObject( new PemObject( type, encodedContent ) );
             writer.flush();
         }
+        path.setReadable( false, false );
+        path.setWritable( false, false );
+        path.setReadable( true );
+        path.setWritable( true );
     }
 }
