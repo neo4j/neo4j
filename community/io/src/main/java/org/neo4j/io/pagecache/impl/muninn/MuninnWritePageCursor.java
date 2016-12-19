@@ -42,6 +42,7 @@ final class MuninnWritePageCursor extends MuninnPageCursor
     @Override
     public boolean next() throws IOException
     {
+        unpinCurrentPage();
         assertPagedFileStillMapped();
         if ( nextPageId > lastPageId )
         {
@@ -54,7 +55,6 @@ final class MuninnWritePageCursor extends MuninnPageCursor
                 pagedFile.increaseLastPageIdTo( nextPageId );
             }
         }
-        unpinCurrentPage();
         pin( nextPageId, true );
         currentPageId = nextPageId;
         nextPageId++;

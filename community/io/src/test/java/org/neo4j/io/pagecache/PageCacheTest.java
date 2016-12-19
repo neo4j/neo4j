@@ -343,6 +343,30 @@ public abstract class PageCacheTest<T extends PageCache>
         };
     }
 
+    protected Runnable $writeLock( final PagedFile file, final long pageId, final CountDownLatch latch )
+    {
+        return new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                try ( PageCursor cursor = file.io( pageId, PF_EXCLUSIVE_LOCK ) )
+                {
+                    assertTrue( cursor.next() );
+                    latch.await();
+                }
+                catch ( IOException e )
+                {
+                    throw new AssertionError( e );
+                }
+                catch ( InterruptedException e )
+                {
+                    throw new AssertionError( e );
+                }
+            }
+        };
+    }
+
     /**
      * We implement 'assumeTrue' ourselves because JUnit insist on adding hamcrest matchers to the
      * AssumptionViolatedException instances it throws. This is a problem because those matchers are not serializable,
@@ -2645,6 +2669,92 @@ public abstract class PageCacheTest<T extends PageCache>
         cursor.close();
 
         unmapper.join();
+    }
+
+    @Test( timeout = SHORT_TIMEOUT_MILLIS )
+    public void writeLockedPageNextOnUnmappedFileMustNotBlockFileUnmapping() throws Exception
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+
+        PagedFile pagedFile = pageCache.map( file( "a" ), filePageSize );
+        //Get a write lock
+        PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK );
+        assertTrue( cursor.next() );
+        //Try to unmap the paged file
+        Thread unmapper = fork( $close( pagedFile ) );
+        awaitThreadState( unmapper, 1000,
+                Thread.State.BLOCKED, Thread.State.WAITING, Thread.State.TIMED_WAITING );
+
+        try
+        {
+            // This needs to unpin before checking if file is still mapped, otherwise the unmapper will be unable to
+            // unmap the file due to us still having a writelock on a page.
+            cursor.next();
+            fail( "Should have thrown" );
+        }
+        catch ( IllegalStateException e )
+        {
+            unmapper.join();
+        }
+        cursor.close();
+    }
+
+    @Test( timeout = SHORT_TIMEOUT_MILLIS )
+    public void readLockedPageNextOnUnmappedFileMustNotBlockFileUnmapping() throws Exception
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        File a = file( "a" );
+        generateFileWithRecords( a, 1, recordSize );
+        PagedFile pagedFile = pageCache.map( a, filePageSize );
+        //Get a pessimistic read lock
+        PageCursor cursor = pagedFile.io( 0, PF_SHARED_LOCK );
+        assertTrue( cursor.next() );
+        //Get a write lock to pause the unmapper
+        CountDownLatch writeLockLatch = new CountDownLatch( 1 );
+        Thread writeLockFork = fork( $writeLock( pagedFile, 2, writeLockLatch ) );
+        awaitThreadState( writeLockFork, 1000,
+                Thread.State.BLOCKED, Thread.State.WAITING, Thread.State.TIMED_WAITING );
+        //Try to unmap the file.
+        Thread unmapper = fork( $close( pagedFile ) );
+        awaitThreadState( unmapper, 1000,
+                Thread.State.BLOCKED, Thread.State.WAITING, Thread.State.TIMED_WAITING );
+
+        try
+        {
+            //This must unpin the current page before checking if the page is still mapped, otherwise we will be left
+            // with a pessimistic read lock with no associated cursor.
+            cursor.next();
+            fail( "Should have thrown" );
+        }
+        catch ( IllegalStateException e )
+        {
+            writeLockLatch.countDown();
+            writeLockFork.join();
+            unmapper.join();
+        }
+        //Try to take a write lock on all pages in the page cache to make sure that there is no rouge read lock.
+        //If unsuccessful we will be pagefaulting forever.
+        pagedFile = pageCache.map( a, filePageSize );
+        writeLockLatch = new CountDownLatch( 1 );
+        Thread[] writeLockers = new Thread[maxPages];
+        for ( int i = 0; i < maxPages; i++ )
+        {
+            writeLockers[i] = fork( $writeLock( pagedFile, i, writeLockLatch ) );
+            awaitThreadState( writeLockers[i], 1000,
+                    Thread.State.BLOCKED, Thread.State.WAITING, Thread.State.TIMED_WAITING );
+        }
+        writeLockLatch.countDown();
+        try
+        {
+            for ( Thread writeLocker : writeLockers )
+            {
+                writeLocker.join();
+            }
+        }
+        finally
+        {
+            pagedFile.close();
+        }
     }
 
     @Test( timeout = SHORT_TIMEOUT_MILLIS )
