@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.phases
 import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase.PARSING
 import org.neo4j.cypher.internal.frontend.v3_2.parser.CypherParser
 
-case object Parsing extends Phase[CompilationState, CompilationState] {
+case object Parsing extends Phase {
   private val parser = new CypherParser
 
   override def transform(in: CompilationState, ignored: Context): CompilationState =

@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters._
 import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_2.{Rewriter, inSequence}
 
-case class AstRewriting(sequencer: String => RewriterStepSequencer) extends Phase[CompilationState, CompilationState] {
+case class AstRewriting(sequencer: String => RewriterStepSequencer) extends Phase {
 
   private val astRewriter = new ASTRewriter(sequencer, true)
 

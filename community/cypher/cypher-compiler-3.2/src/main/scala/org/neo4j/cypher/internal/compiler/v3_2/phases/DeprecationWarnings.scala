@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.ast.{FunctionInvocation, Function
 import org.neo4j.cypher.internal.frontend.v3_2.notification.{DeprecatedFunctionNotification, DeprecatedProcedureNotification, InternalNotification}
 
 
-object SyntaxDeprecationWarnings extends VisitorPhase[CompilationState] {
+object SyntaxDeprecationWarnings extends VisitorPhase {
   override def visit(value: CompilationState, context: Context): Unit = {
     val warnings = findDeprecations(value.statement)
 
@@ -46,7 +46,7 @@ object SyntaxDeprecationWarnings extends VisitorPhase[CompilationState] {
   override def description = "find deprecated Cypher constructs and generate warnings for them"
 }
 
-object ProcedureDeprecationWarnings extends VisitorPhase[CompilationState] {
+object ProcedureDeprecationWarnings extends VisitorPhase {
   override def visit(value: CompilationState, context: Context): Unit = {
     val warnings = findDeprecations(value.statement)
 

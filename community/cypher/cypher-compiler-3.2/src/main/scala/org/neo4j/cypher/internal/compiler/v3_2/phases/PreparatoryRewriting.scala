@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.Compilatio
 import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters.{expandCallWhere, normalizeReturnClauses, normalizeWithClauses, replaceAliasedFunctionInvocations}
 import org.neo4j.cypher.internal.frontend.v3_2.inSequence
 
-case object PreparatoryRewriting extends EndoPhase[CompilationState] {
+case object PreparatoryRewriting extends Phase {
 
   override def transform(from: CompilationState, context: Context): CompilationState = {
 

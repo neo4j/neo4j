@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters.{CNFNormalizer, Nam
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.procs.ProcedureOrSchemaCommandPlanBuilder
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.RuntimeTypeConverter
-import org.neo4j.cypher.internal.compiler.v3_2.phases.OrElse._
-import org.neo4j.cypher.internal.compiler.v3_2.phases.{CompilationState, RewriteProcedureCalls, _}
+import org.neo4j.cypher.internal.compiler.v3_2.phases.Transformer.identity
+import org.neo4j.cypher.internal.compiler.v3_2.phases.{CompilationState, Phase, RewriteProcedureCalls, _}
 import org.neo4j.cypher.internal.compiler.v3_2.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_2.InputPosition
@@ -60,7 +60,8 @@ case class CypherCompiler(executionPlanBuilder: ExecutablePlanBuilder,
     val isStale = (plan: ExecutionPlan) => plan.isStale(planContext.txIdProvider, planContext.statistics)
     val (executionPlan, _) = cache.getOrElseUpdate(input.statement, input.queryText, isStale, {
       val context = createContext(tracer, notificationLogger, planContext, input.queryText, offset)
-      thirdPipeLine.transform(semanticQuery, context)
+      val result: CompilationState = thirdPipeLine.transform(semanticQuery, context)
+      result.executionPlan
     })
     (executionPlan, semanticQuery.extractedParams)
   }
@@ -76,26 +77,32 @@ case class CypherCompiler(executionPlanBuilder: ExecutablePlanBuilder,
 
   private val astRewriting = AstRewriting(sequencer)
 
-  val firstPipeline: Transformer[CompilationState, CompilationState] =
+  val firstPipeline: Transformer =
       Parsing andThen
       SyntaxDeprecationWarnings andThen
       PreparatoryRewriting andThen
       SemanticAnalysis(warn = true) andThen
       astRewriting
 
-  val secondPipeLine: Transformer[CompilationState, CompilationState] =
+  val secondPipeLine: Transformer =
     RewriteProcedureCalls andThen
     ProcedureDeprecationWarnings andThen
     SemanticAnalysis(warn = false) andThen
     Namespacer
 
-  val thirdPipeLine: Transformer[CompilationState, ExecutionPlan] =
-    ProcedureOrSchemaCommandPlanBuilder orElse {
-      rewriteEqualityToInPredicate andThen
-      CNFNormalizer andThen
-      LateAstRewriting andThen
-      RestOfPipeLine
-    }
+  val costBasedPlan =
+    rewriteEqualityToInPredicate andThen
+    CNFNormalizer andThen
+    LateAstRewriting andThen
+    RestOfPipeLine
+
+  val thirdPipeLine: Transformer =
+    ProcedureOrSchemaCommandPlanBuilder andThen
+      (If(_.maybeExecutionPlan.isEmpty)(
+        costBasedPlan
+      ) orElse
+        identity
+      )
 
   def prepareSemanticQuery(in: CompilationState,
                            notificationLogger: InternalNotificationLogger,
@@ -114,13 +121,14 @@ case class CypherCompiler(executionPlanBuilder: ExecutablePlanBuilder,
       new QueryCache(cacheAccessor, lRUCache)
     })
 
-  object RestOfPipeLine extends Phase[CompilationState, ExecutionPlan] {
+  object RestOfPipeLine extends Phase {
     override def phase: CompilationPhase = LOGICAL_PLANNING
 
     override def description: String = "place holder until pipe line has been cleaned up"
 
-    override def transform(from: CompilationState, context: Context): ExecutionPlan = {
-      executionPlanBuilder.producePlan(from, context.planContext, context.tracer, context.createFingerprintReference)
+    override def transform(from: CompilationState, context: Context): CompilationState = {
+      val executionPlan = executionPlanBuilder.producePlan(from, context.planContext, context.tracer, context.createFingerprintReference)
+      from.copy(maybeExecutionPlan = Some(executionPlan))
     }
   }
 

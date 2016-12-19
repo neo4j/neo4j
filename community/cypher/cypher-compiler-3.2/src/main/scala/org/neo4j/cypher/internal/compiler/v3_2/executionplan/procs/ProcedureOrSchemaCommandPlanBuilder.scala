@@ -31,14 +31,14 @@ import org.neo4j.cypher.internal.frontend.v3_2.ast._
 /**
   * This planner takes on queries that requires no planning such as procedures and schema commands
   */
-case object ProcedureOrSchemaCommandPlanBuilder extends Phase[CompilationState, Option[ExecutionPlan]] {
+case object ProcedureOrSchemaCommandPlanBuilder extends Phase {
 
   override def phase: CompilationPhase = PIPE_BUILDING
 
   override def description = "take on queries that require no planning such as procedures and schema commands"
 
-  override def transform(from: CompilationState, context: Context): Option[ExecutionPlan] =
-    from.statement match {
+  override def transform(from: CompilationState, context: Context): CompilationState = {
+    val maybeExecutionPlan: Option[ExecutionPlan] = from.statement match {
       // Global call: CALL foo.bar.baz("arg1", 2)
       case Query(None, SingleQuery(Seq(resolved@ResolvedCall(signature, args, _, _, _)))) =>
         val SemanticCheckResult(_, errors) = resolved.semanticCheck(SemanticState.clean)
@@ -96,6 +96,9 @@ case object ProcedureOrSchemaCommandPlanBuilder extends Phase[CompilationState, 
         }))
 
       case _ => None
+    }
+
+    from.copy(maybeExecutionPlan = maybeExecutionPlan)
   }
 
   private def labelProp(ctx: QueryContext)(label: LabelName, prop: PropertyKeyName) =

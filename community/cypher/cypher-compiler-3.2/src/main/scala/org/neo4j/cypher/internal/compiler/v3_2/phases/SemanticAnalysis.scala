@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.phases
 import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase.SEMANTIC_CHECK
 import org.neo4j.cypher.internal.compiler.v3_2.SemanticChecker
 
-case class SemanticAnalysis(warn: Boolean) extends Phase[CompilationState, CompilationState] {
+case class SemanticAnalysis(warn: Boolean) extends Phase {
 
   override def transform(from: CompilationState, context: Context): CompilationState = {
     val semanticState = SemanticChecker.check(from.statement, context.exceptionCreator)

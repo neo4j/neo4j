@@ -22,57 +22,54 @@ package org.neo4j.cypher.internal.compiler.v3_2.phases
 import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.closing
 
-trait Phase[FROM, TO] extends Transformer[FROM, TO] {
+trait Phase extends Transformer {
   self =>
 
   def phase: CompilationPhase
 
   def description: String
 
-  def transformReporting(from: FROM, context: Context): TO =
+  def transformReporting(from: CompilationState, context: Context): CompilationState =
     closing(context.tracer.beginPhase(phase)) {
       transform(from, context)
     }
 }
 
-trait EndoPhase[K] extends Phase[K, K]
-
-trait VisitorPhase[K] extends EndoPhase[K] {
-  override def transform(from: K, context: Context): K = {
+trait VisitorPhase extends Phase {
+  override def transform(from: CompilationState, context: Context): CompilationState = {
     visit(from, context)
     from
   }
 
-  def visit(value: K, context: Context): Unit
+  def visit(value: CompilationState, context: Context): Unit
 }
 
-trait Transformer[FROM, TO] {
-  def transform(from: FROM, context: Context): TO
+trait Transformer {
+  def transform(from: CompilationState, context: Context): CompilationState
 
-  def andThen[newTO, newContext](other: Transformer[TO, newTO]) =
+  def andThen(other: Transformer) =
     new PipeLine(this, other)
 }
 
-class PipeLine[From, Temp, To](first: Transformer[From, Temp], after: Transformer[Temp, To])
-  extends Transformer[From, To] {
-  override def transform(from: From, context: Context): To = {
+object Transformer {
+  val identity = new Transformer {
+    override def transform(from: CompilationState, context: Context) = from
+  }
+}
+
+class PipeLine(first: Transformer, after: Transformer) extends Transformer {
+  override def transform(from: CompilationState, context: Context): CompilationState = {
     val step = first.transform(from, context)
     after.transform(step, context)
   }
 }
 
-object OrElse {
-
-  implicit class OrElser[From, To](maybeTransform: Transformer[From, Option[To]]) {
-    def orElse(fallback: Transformer[From, To]) = OrElse(maybeTransform, fallback)
-  }
-
-}
-
-case class OrElse[From, To](first: Transformer[From, Option[To]], fallback: Transformer[From, To])
-  extends Transformer[From, To] {
-  override def transform(from: From, context: Context): To = {
-    val result = first.transform(from, context)
-    result getOrElse fallback.transform(from, context)
+case class If(f: CompilationState => Boolean)(thenT: Transformer) {
+  def orElse(elseT: Transformer) = new Transformer {
+    override def transform(from: CompilationState, context: Context): CompilationState =
+      if (f(from))
+        thenT.transform(from, context)
+      else
+        elseT.transform(from, context)
   }
 }
