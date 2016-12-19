@@ -44,7 +44,7 @@ import static org.junit.Assert.fail;
 public class AcquisitionTimeoutCompatibility extends LockingCompatibilityTestSuite.Compatibility
 {
 
-    private final long TEST_TIMEOUT = 2000;
+    private final long TEST_TIMEOUT = 4000;
     private FakeClock clock;
     private Config customConfig;
     private Locks lockManager;

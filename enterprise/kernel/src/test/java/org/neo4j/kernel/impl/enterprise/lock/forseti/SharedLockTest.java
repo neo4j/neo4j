@@ -21,9 +21,9 @@ package org.neo4j.kernel.impl.enterprise.lock.forseti;
 
 import org.junit.Test;
 
-import static junit.framework.Assert.assertTrue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 
 public class SharedLockTest
