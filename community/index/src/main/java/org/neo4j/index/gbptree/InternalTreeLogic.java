@@ -79,9 +79,6 @@ class InternalTreeLogic<KEY,VALUE>
 {
     private final IdProvider idProvider;
     private final TreeNode<KEY,VALUE> bTreeNode;
-    private final byte[] tmpForKeys;
-    private final byte[] tmpForValues;
-    private final byte[] tmpForChildren;
     private final Layout<KEY,VALUE> layout;
     private final KEY primKeyPlaceHolder;
     private final KEY readKey;
@@ -93,9 +90,6 @@ class InternalTreeLogic<KEY,VALUE>
         this.bTreeNode = bTreeNode;
         this.layout = layout;
         int maxKeyCount = max( bTreeNode.internalMaxKeyCount(), bTreeNode.leafMaxKeyCount() );
-        this.tmpForKeys = new byte[(maxKeyCount + 1) * layout.keySize()];
-        this.tmpForValues = new byte[(maxKeyCount + 1) * layout.valueSize()];
-        this.tmpForChildren = new byte[(maxKeyCount + 2) * bTreeNode.childSize()];
         this.primKeyPlaceHolder = layout.newKey();
         this.readKey = layout.newKey();
         this.readValue = layout.newValue();

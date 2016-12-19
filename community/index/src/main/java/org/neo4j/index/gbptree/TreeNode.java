@@ -370,99 +370,10 @@ class TreeNode<KEY,VALUE>
         return layout;
     }
 
-    int readKeysWithInsertRecordInPosition( PageCursor cursor, Consumer<PageCursor> newRecordWriter,
-            int insertPosition, int totalNumberOfRecords, byte[] into )
-    {
-        return readRecordsWithInsertRecordInPosition( cursor, newRecordWriter, insertPosition, totalNumberOfRecords,
-                keySize, keyOffset( 0 ), into );
-    }
-
-    int readValuesWithInsertRecordInPosition( PageCursor cursor, Consumer<PageCursor> newRecordWriter,
-            int insertPosition, int totalNumberOfRecords, byte[] into )
-    {
-        return readRecordsWithInsertRecordInPosition( cursor, newRecordWriter, insertPosition, totalNumberOfRecords,
-                valueSize, valueOffset( 0 ), into );
-    }
-
-    int readChildrenWithInsertRecordInPosition( PageCursor cursor, Consumer<PageCursor> newRecordWriter,
-            int insertPosition, int totalNumberOfRecords, byte[] into )
-    {
-        return readRecordsWithInsertRecordInPosition( cursor, newRecordWriter, insertPosition, totalNumberOfRecords,
-                childSize(), childOffset( 0 ), into );
-    }
-
     void goTo( PageCursor cursor, String messageOnError, long nodeId )
             throws IOException
     {
         PageCursorUtil.goTo( cursor, messageOnError, GenSafePointerPair.pointer( nodeId ) );
-    }
-
-    /**
-     * Leaves cursor on same page as when called. No guarantees on offset.
-     * <p>
-     * Create a byte[] with totalNumberOfRecords of recordSize from cursor reading from baseRecordOffset
-     * with newRecord inserted in insertPosition, with the following records shifted to the right.
-     * <p>
-     * Simply: Records of size recordSize that can be read from offset baseRecordOffset in page pinned by cursor has
-     * some ordering. This ordering is preserved with new record inserted in insertPosition in the returned byte[],
-     * NOT in the page.
-     *
-     * @param cursor                {@link org.neo4j.io.pagecache.PageCursor} pinned to page to read records from
-     * @param newRecordWriter       new data to be inserted in insertPosition in returned byte[].
-     *                              This is a {@link Consumer} since the type of data can differ (value/child),
-     *                              although perhaps this can be done in a better way
-     * @param insertPosition        position of newRecord. 0 being before all other records,
-     *                              (totalNumberOfRecords - 1) being after all other records
-     * @param totalNumberOfRecords  the total number of records to be contained in returned byte[], including newRecord
-     * @param recordSize            the size in number of bytes of one record
-     * @param baseRecordOffset      the offset from where cursor should start read records
-     * @param into                  byte array to copy bytes into
-     * @return                      number of bytes copied into the {@code into} byte[],
-     *                              that is insertPosition * recordSize
-     */
-    private int readRecordsWithInsertRecordInPosition( PageCursor cursor, Consumer<PageCursor> newRecordWriter,
-            int insertPosition, int totalNumberOfRecords, int recordSize, int baseRecordOffset, byte[] into )
-    {
-        int length = (totalNumberOfRecords) * recordSize;
-
-        // First read all records
-
-        // Read all records on previous to insertPosition
-        cursor.setOffset( baseRecordOffset );
-        cursor.getBytes( into, 0, insertPosition * recordSize );
-
-        // Read newRecord
-        PageCursor buffer = ByteArrayPageCursor.wrap( into, insertPosition * recordSize, recordSize );
-        newRecordWriter.accept( buffer );
-
-        // Read all records following insertPosition
-        cursor.setOffset( baseRecordOffset + insertPosition * recordSize );
-        cursor.getBytes( into, (insertPosition + 1) * recordSize,
-                ((totalNumberOfRecords - 1) - insertPosition) * recordSize );
-        return length;
-    }
-
-    private void writeAll( PageCursor cursor, byte[] source, int sourcePos, int targetPos, int count,
-            int baseOffset, int recordSize )
-    {
-        int arrayOffset = sourcePos * recordSize;
-        cursor.setOffset( baseOffset + recordSize * targetPos );
-        cursor.putBytes( source, arrayOffset, count * recordSize );
-    }
-
-    void writeKeys( PageCursor cursor, byte[] source, int sourcePos, int targetPos, int count )
-    {
-        writeAll( cursor, source, sourcePos, targetPos, count, keyOffset( 0 ), keySize() );
-    }
-
-    void writeValues( PageCursor cursor, byte[] source, int sourcePos, int targetPos, int count )
-    {
-        writeAll( cursor, source, sourcePos, targetPos, count, valueOffset( 0 ), valueSize() );
-    }
-
-    void writeChildren( PageCursor cursor, byte[] source, int sourcePos, int targetPos, int count )
-    {
-        writeAll( cursor, source, sourcePos, targetPos, count, childOffset( 0 ), childSize() );
     }
 
     @Override

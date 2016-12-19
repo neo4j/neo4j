@@ -376,8 +376,8 @@ public class TreeNodeTest
         node.insertKeyAt( cursor, key, 1, 1 );
 
         // WHEN
-        node.readKeysWithInsertRecordInPosition( cursor, c -> c.putLong( 2 ), 1, 3, tmp );
-        node.writeKeys( cursor, tmp, 0, 0, 3 );
+        key.setValue( 2 );
+        node.insertKeyAt( cursor, key, 1, 2 );
 
         // THEN
         assertEquals( 1, node.keyAt( cursor, key, 0 ).longValue() );
@@ -397,8 +397,8 @@ public class TreeNodeTest
         node.insertValueAt( cursor, value, 1, 1 );
 
         // WHEN
-        node.readValuesWithInsertRecordInPosition( cursor, c -> c.putLong( 2 ), 1, 3, tmp );
-        node.writeValues( cursor, tmp, 0, 0, 3 );
+        value.setValue( 2 );
+        node.insertValueAt( cursor, value, 1, 2 );
 
         // THEN
         assertEquals( 1, node.valueAt( cursor, value, 0 ).longValue() );
@@ -418,9 +418,7 @@ public class TreeNodeTest
         node.insertChildAt( cursor, thirdChild, 1, 1, STABLE_GENERATION, UNSTABLE_GENERATION );
 
         // WHEN
-        node.readChildrenWithInsertRecordInPosition( cursor,
-                c -> node.writeChild( c, secondChild, STABLE_GENERATION, UNSTABLE_GENERATION ), 1, 3, tmp );
-        node.writeChildren( cursor, tmp, 0, 0, 3 );
+        node.insertChildAt( cursor, secondChild, 1, 2, STABLE_GENERATION, UNSTABLE_GENERATION );
 
         // THEN
         assertEquals( firstChild, childAt( cursor, 0, STABLE_GENERATION, UNSTABLE_GENERATION ) );
