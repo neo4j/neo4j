@@ -157,6 +157,7 @@ trait MethodStructure[E] {
   def node(nodeIdVar: String): E
   def materializeRelationship(relIdVar: String): E
   def relationship(relIdVar: String): E
+  def materializeAny(variable: String): E
   /** Feed single row to the given visitor */
   def visitorAccept(): Unit
   def setInRow(column: String, value: E): Unit

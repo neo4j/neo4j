@@ -30,9 +30,8 @@ import org.neo4j.cypher.internal.codegen.CompiledConversionUtils.CompositeKey
 import org.neo4j.cypher.internal.codegen._
 import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.commands.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.compiler.v3_2.codegen._
-import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions.{Parameter => _, _}
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions.{CodeGenType, IntType, Parameter => _, ReferenceType}
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi._
-import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions.{CodeGenType, IntType, ReferenceType}
 import org.neo4j.cypher.internal.compiler.v3_2.helpers._
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_2.symbols.{CTNode, CTRelationship}
@@ -288,6 +287,10 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   override def relationship(relIdVar: String) = createNewInstance(typeRef[RelationshipIdWrapper],
                                                                   (typeRef[Long], generator.load(relIdVar)))
+
+  override def materializeAny(variable: String) =
+    // TODO: Generate code directly instead of helper method call
+    invoke(materializeAnyResult, nodeManager, generator.load(variable))
 
   override def trace[V](planStepId: String)(block: MethodStructure[Expression] => V) = if (!tracing) block(this)
   else {

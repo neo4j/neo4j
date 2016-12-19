@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.functions.functionConv
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi.MethodStructure
 import org.neo4j.cypher.internal.compiler.v3_2.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.frontend.v3_2.ast
-import org.neo4j.cypher.internal.frontend.v3_2.symbols.{CTBoolean, CTNode, CTRelationship}
+import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 
 object ExpressionConverter {
 
@@ -98,10 +98,14 @@ object ExpressionConverter {
 
     val variable = context.getVariable(variableQueryVariable)
 
-    variable.codeGenType match {
-      case CodeGenType(CTNode, IntType) => NodeProjection(variable)
-      case CodeGenType(CTRelationship, IntType) => RelationshipProjection(variable)
-      case other => LoadVariable(variable)
+    variable.codeGenType.ct match {
+      case CTNode => NodeProjection(variable)
+      case CTRelationship => RelationshipProjection(variable)
+      case CTString | CTBoolean | CTInteger | CTFloat => LoadVariable(variable)
+      case CTAny => AnyProjection(variable)
+      case CTMap => AnyProjection(variable)
+      case ListType(_) => AnyProjection(variable) // TODO: We could have a more specialized projection when the inner type is known
+      case _ => throw new CantCompileQueryException(s"The compiled runtime cannot handle results of type ${variable.codeGenType.ct}")
     }
   }
 

@@ -23,11 +23,16 @@ import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
+import org.neo4j.cypher.internal.compiler.v3_2.helpers.JavaListWrapper;
 import org.neo4j.cypher.internal.frontend.v3_2.CypherTypeException;
 import org.neo4j.cypher.internal.frontend.v3_2.IncomparableValuesException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.kernel.impl.core.NodeManager;
 
 // Class with static methods used by compiled execution plans
 public abstract class CompiledConversionUtils
@@ -169,6 +174,37 @@ public abstract class CompiledConversionUtils
         else
         {
             return value;
+        }
+    }
+
+    public static final Object materializeAnyResult( NodeManager nodeManager, Object anyValue )
+    {
+        if ( anyValue instanceof NodeIdWrapper )
+        {
+            return nodeManager.newNodeProxyById( ((NodeIdWrapper) anyValue).id() );
+        }
+        else if ( anyValue instanceof RelationshipIdWrapper )
+        {
+            return nodeManager.newRelationshipProxyById( ((RelationshipIdWrapper) anyValue).id() );
+        }
+        else if ( anyValue instanceof JavaListWrapper )
+        {
+            return ((JavaListWrapper) anyValue).inner().stream()
+                    .map( v -> materializeAnyResult( nodeManager, v ) ).collect( Collectors.toList() );
+        }
+        else if ( anyValue instanceof List )
+        {
+            return ((List) anyValue).stream()
+                    .map( v -> materializeAnyResult( nodeManager, v ) ).collect( Collectors.toList() );
+        }
+        else if ( anyValue instanceof Map )
+        {
+            ((Map) anyValue).replaceAll( (k, v) -> materializeAnyResult( nodeManager, v ) );
+            return anyValue;
+        }
+        else
+        {
+            return anyValue;
         }
     }
 }
