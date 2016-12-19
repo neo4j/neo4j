@@ -264,9 +264,9 @@ InModuleScope Neo4j-Management {
     }
 
 	Context "Server Invoke - Should handle paths with spaces" {
-        $serverObject = global:New-MockNeo4jInstall -ServerVersion '3.0' -ServerType 'Community' `
-	      -RootDir 'TestDrive:\Neo4j Home' `
-          -NeoConfSettings 'dbms.logs.gc.enabled=true'
+      $serverObject = global:New-MockNeo4jInstall -ServerVersion '3.0' -ServerType 'Community' `
+	    -RootDir 'TestDrive:\Neo4j Home' `
+        -NeoConfSettings 'dbms.logs.gc.enabled=true'
 
       $result = Get-Java -ForServer -Neo4jServer $serverObject
 	  $argList = $result.args
