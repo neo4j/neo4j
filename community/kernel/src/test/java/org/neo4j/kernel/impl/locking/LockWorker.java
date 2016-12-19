@@ -114,7 +114,7 @@ public class LockWorker extends OtherThreadExecutor<LockWorkerState>
         for ( String op : state.completedOperations )
             logger.log( op );
         logger.log( "Doing right now:" );
-        logger.log( state.doing );
+        logger.log( state.doing == null ? "???" : state.doing );
     }
 
     private abstract static class AcquireLockCommand implements WorkerCommand<LockWorkerState, Void>

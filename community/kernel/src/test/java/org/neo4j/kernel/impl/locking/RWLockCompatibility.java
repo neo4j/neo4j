@@ -195,7 +195,7 @@ public class RWLockCompatibility extends LockingCompatibilityTestSuite.Compatibi
         }
         catch ( Exception e )
         {
-            LockWorkFailureDump dumper = new LockWorkFailureDump( testDir.directory( getClass().getSimpleName() ) );
+            LockWorkFailureDump dumper = new LockWorkFailureDump( testDir.file( getClass().getSimpleName() ) );
             File file = dumper.dumpState( locks, t1, t2, t3, t4 );
             throw new RuntimeException( "Failed, forensics information dumped to " + file.getAbsolutePath(), e );
         }

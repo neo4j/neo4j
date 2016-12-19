@@ -47,7 +47,7 @@ public class AcquireAndReleaseLocksCompatibility extends LockingCompatibilityTes
         clientA.acquireExclusive( Locks.Tracer.NONE, NODE, 1L );
 
         // Then
-        Future<Object> clientBLock = acquireExclusive( clientB, NODE, 1L ).callAndAssertWaiting();
+        Future<Object> clientBLock = acquireExclusive( clientB, Locks.Tracer.NONE, NODE, 1L ).callAndAssertWaiting();
 
         // And when
         clientA.releaseExclusive( NODE, 1L );
@@ -66,7 +66,7 @@ public class AcquireAndReleaseLocksCompatibility extends LockingCompatibilityTes
         clientC.acquireShared( Locks.Tracer.NONE, NODE, 1L );
 
         // But exclusive locks should wait
-        Future<Object> clientBLock = acquireExclusive( clientB, NODE, 1L ).callAndAssertWaiting();
+        Future<Object> clientBLock = acquireExclusive( clientB, Locks.Tracer.NONE, NODE, 1L ).callAndAssertWaiting();
 
         // And when
         clientA.releaseShared( NODE, 1L );
@@ -83,7 +83,7 @@ public class AcquireAndReleaseLocksCompatibility extends LockingCompatibilityTes
         clientA.acquireExclusive( Locks.Tracer.NONE, NODE, 1L );
 
         // Then shared locks should wait
-        Future<Object> clientBLock = acquireShared( clientB, NODE, 1L ).callAndAssertWaiting();
+        Future<Object> clientBLock = acquireShared( clientB, Locks.Tracer.NONE, NODE, 1L ).callAndAssertWaiting();
 
         // And when
         clientA.releaseExclusive( NODE, 1L );

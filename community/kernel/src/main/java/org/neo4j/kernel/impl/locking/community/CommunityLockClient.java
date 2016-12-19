@@ -104,7 +104,7 @@ public class CommunityLockClient implements Locks.Client
                 else
                 {
                     resource = new LockResource( resourceType, resourceId );
-                    if ( manager.getReadLock( resource, lockTransaction ) )
+                    if ( manager.getReadLock( tracer, resource, lockTransaction ) )
                     {
                         localLocks.put( resourceId, resource );
                     }
@@ -138,7 +138,7 @@ public class CommunityLockClient implements Locks.Client
                 else
                 {
                     resource = new LockResource( resourceType, resourceId );
-                    if ( manager.getWriteLock( resource, lockTransaction ) )
+                    if ( manager.getWriteLock( tracer, resource, lockTransaction ) )
                     {
                         localLocks.put( resourceId, resource );
                     }

@@ -185,58 +185,73 @@ public class ForsetiClient implements Locks.Client
                 SharedLock mySharedLock = null;
                 long waitStartMillis = clock.millis();
 
-                // Retry loop
-                while ( true )
+                Locks.WaitEvent waitEvent = null;
+                try
                 {
-                    assertValid( waitStartMillis, resourceType, resourceId );
-
-                    // Check if there is a lock for this entity in the map
-                    ForsetiLockManager.Lock existingLock = lockMap.get( resourceId );
-
-                    // No lock
-                    if ( existingLock == null )
+                    // Retry loop
+                    while ( true )
                     {
-                        // Try to create a new shared lock
-                        if ( mySharedLock == null )
+                        assertValid( waitStartMillis, resourceType, resourceId );
+
+                        // Check if there is a lock for this entity in the map
+                        ForsetiLockManager.Lock existingLock = lockMap.get( resourceId );
+
+                        // No lock
+                        if ( existingLock == null )
                         {
-                            mySharedLock = new SharedLock( this );
+                            // Try to create a new shared lock
+                            if ( mySharedLock == null )
+                            {
+                                mySharedLock = new SharedLock( this );
+                            }
+
+                            if ( lockMap.putIfAbsent( resourceId, mySharedLock ) == null )
+                            {
+                                // Success, we now hold the shared lock.
+                                break;
+                            }
+                            else
+                            {
+                                continue;
+                            }
                         }
 
-                        if ( lockMap.putIfAbsent( resourceId, mySharedLock ) == null )
+                        // Someone holds shared lock on this entity, try and get in on that action
+                        else if ( existingLock instanceof SharedLock )
                         {
-                            // Success, we now hold the shared lock.
-                            break;
+                            if ( ((SharedLock) existingLock).acquire( this ) )
+                            {
+                                // Success!
+                                break;
+                            }
+                        }
+
+                        // Someone holds an exclusive lock on this entity
+                        else if ( existingLock instanceof ExclusiveLock )
+                        {
+                            // We need to wait, just let the loop run.
                         }
                         else
                         {
-                            continue;
+                            throw new UnsupportedOperationException( "Unknown lock type: " + existingLock );
                         }
-                    }
 
-                    // Someone holds shared lock on this entity, try and get in on that action
-                    else if ( existingLock instanceof SharedLock )
-                    {
-                        if ( ((SharedLock) existingLock).acquire( this ) )
+                        if ( waitEvent == null )
                         {
-                            // Success!
-                            break;
+                            waitEvent = tracer.waitForLock( resourceType, resourceId );
                         }
-                    }
+                        applyWaitStrategy( resourceType, tries++ );
 
-                    // Someone holds an exclusive lock on this entity
-                    else if ( existingLock instanceof ExclusiveLock )
+                        // And take note of who we are waiting for. This is used for deadlock detection.
+                        markAsWaitingFor( existingLock, resourceType, resourceId );
+                    }
+                }
+                finally
+                {
+                    if ( waitEvent != null )
                     {
-                        // We need to wait, just let the loop run.
+                        waitEvent.close();
                     }
-                    else
-                    {
-                        throw new UnsupportedOperationException( "Unknown lock type: " + existingLock );
-                    }
-
-                    applyWaitStrategy( tracer, resourceType, resourceId, tries++ );
-
-                    // And take note of who we are waiting for. This is used for deadlock detection.
-                    markAsWaitingFor( existingLock, resourceType, resourceId );
                 }
 
                 // Got the lock, no longer waiting for anyone.
@@ -273,30 +288,46 @@ public class ForsetiClient implements Locks.Client
                     continue;
                 }
 
-                // Grab the global lock
-                ForsetiLockManager.Lock existingLock;
-                int tries = 0;
-                long waitStartMillis = clock.millis();
-                while ( (existingLock = lockMap.putIfAbsent( resourceId, myExclusiveLock )) != null )
+
+                Locks.WaitEvent waitEvent = null;
+                try
                 {
-                    assertValid( waitStartMillis, resourceType, resourceId );
-
-                    // If this is a shared lock:
-                    // Given a grace period of tries (to try and not starve readers), grab an update lock and wait
-                    // for it to convert to an exclusive lock.
-                    if ( tries > 50 && existingLock instanceof SharedLock )
+                    // Grab the global lock
+                    ForsetiLockManager.Lock existingLock;
+                    int tries = 0;
+                    long waitStartMillis = clock.millis();
+                    while ( (existingLock = lockMap.putIfAbsent( resourceId, myExclusiveLock )) != null )
                     {
-                        // Then we should upgrade that lock
-                        SharedLock sharedLock = (SharedLock) existingLock;
-                        if ( tryUpgradeSharedToExclusive( tracer, resourceType, lockMap, resourceId, sharedLock,
-                                waitStartMillis ) )
-                        {
-                            break;
-                        }
-                    }
+                        assertValid( waitStartMillis, resourceType, resourceId );
 
-                    applyWaitStrategy( tracer, resourceType, resourceId, tries++ );
-                    markAsWaitingFor( existingLock, resourceType, resourceId );
+                        // If this is a shared lock:
+                        // Given a grace period of tries (to try and not starve readers), grab an update lock and wait
+                        // for it to convert to an exclusive lock.
+                        if ( tries > 50 && existingLock instanceof SharedLock )
+                        {
+                            // Then we should upgrade that lock
+                            SharedLock sharedLock = (SharedLock) existingLock;
+                            if ( tryUpgradeSharedToExclusive( tracer, waitEvent, resourceType, lockMap, resourceId, sharedLock,
+                                    waitStartMillis ) )
+                            {
+                                break;
+                            }
+                        }
+
+                        if ( waitEvent == null )
+                        {
+                            waitEvent = tracer.waitForLock( resourceType, resourceId );
+                        }
+                        applyWaitStrategy( resourceType, tries++ );
+                        markAsWaitingFor( existingLock, resourceType, resourceId );
+                    }
+                }
+                finally
+                {
+                    if ( waitEvent != null )
+                    {
+                        waitEvent.close();
+                    }
                 }
 
                 clearWaitList();
@@ -689,8 +720,14 @@ public class ForsetiClient implements Locks.Client
     /**
      * Attempt to upgrade a share lock to an exclusive lock, grabbing the share lock if we don't hold it.
      **/
-    private boolean tryUpgradeSharedToExclusive( Locks.Tracer tracer, ResourceType resourceType, ConcurrentMap<Long,ForsetiLockManager.Lock> lockMap,
-            long resourceId, SharedLock sharedLock, long waitStartMillis )
+    private boolean tryUpgradeSharedToExclusive(
+            Locks.Tracer tracer,
+            Locks.WaitEvent waitEvent,
+            ResourceType resourceType,
+            ConcurrentMap<Long,ForsetiLockManager.Lock> lockMap,
+            long resourceId,
+            SharedLock sharedLock,
+            long waitStartMillis )
             throws AcquireLockTimeoutException
     {
         int tries = 0;
@@ -705,8 +742,8 @@ public class ForsetiClient implements Locks.Client
 
             try
             {
-                if ( tryUpgradeToExclusiveWithShareLockHeld( tracer, resourceType, resourceId, sharedLock, tries,
-                        waitStartMillis ) )
+                if ( tryUpgradeToExclusiveWithShareLockHeld( tracer, waitEvent, resourceType, resourceId, sharedLock,
+                        tries, waitStartMillis ) )
                 {
                     return true;
                 }
@@ -725,24 +762,30 @@ public class ForsetiClient implements Locks.Client
         else
         {
             // We do hold the shared lock, so no reason to deal with the complexity in the case above.
-            return tryUpgradeToExclusiveWithShareLockHeld( tracer, resourceType, resourceId, sharedLock, tries,
-                    waitStartMillis );
+            return tryUpgradeToExclusiveWithShareLockHeld( tracer, waitEvent, resourceType, resourceId, sharedLock,
+                    tries, waitStartMillis );
         }
     }
 
     /** Attempt to upgrade a share lock that we hold to an exclusive lock. */
-    private boolean tryUpgradeToExclusiveWithShareLockHeld( Locks.Tracer tracer, ResourceType resourceType, long resourceId,
+    private boolean tryUpgradeToExclusiveWithShareLockHeld(
+            Locks.Tracer tracer, Locks.WaitEvent priorEvent, ResourceType resourceType, long resourceId,
             SharedLock sharedLock, int tries, long waitStartMillis ) throws AcquireLockTimeoutException
     {
         if ( sharedLock.tryAcquireUpdateLock( this ) )
         {
+            Locks.WaitEvent waitEvent = null;
             try
             {
                 // Now we just wait for all clients to release the the share lock
                 while ( sharedLock.numberOfHolders() > 1 )
                 {
                     assertValid( waitStartMillis, resourceType, resourceId );
-                    applyWaitStrategy( tracer, resourceType, resourceId, tries++ );
+                    if ( waitEvent == null && priorEvent == null )
+                    {
+                        waitEvent = tracer.waitForLock( resourceType, resourceId );
+                    }
+                    applyWaitStrategy( resourceType, tries++ );
                     markAsWaitingFor( sharedLock, resourceType, resourceId );
                 }
 
@@ -765,6 +808,13 @@ public class ForsetiClient implements Locks.Client
             {
                 handleUpgradeToExclusiveFailure( sharedLock );
                 throw new RuntimeException( e );
+            }
+            finally
+            {
+                if ( waitEvent != null )
+                {
+                    waitEvent.close();
+                }
             }
         }
         return false;
@@ -851,13 +901,10 @@ public class ForsetiClient implements Locks.Client
         return clientId;
     }
 
-    private void applyWaitStrategy( Locks.Tracer tracer, ResourceType resourceType, long resourceId, int tries )
+    private void applyWaitStrategy( ResourceType resourceType, int tries )
     {
         WaitStrategy<AcquireLockTimeoutException> waitStrategy = waitStrategies[resourceType.typeId()];
-        try ( Locks.WaitEvent event = tracer.waitForLock( resourceType, resourceId ) )
-        {
-            waitStrategy.apply( tries );
-        }
+        waitStrategy.apply( tries );
     }
 
     private void assertValid( long waitStartMillis, ResourceType resourceType, long resourceId )

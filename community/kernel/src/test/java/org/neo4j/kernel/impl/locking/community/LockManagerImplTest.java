@@ -25,6 +25,7 @@ import org.junit.rules.ExpectedException;
 import org.mockito.Mockito;
 
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.time.Clocks;
 
@@ -47,9 +48,9 @@ public class LockManagerImplTest
         LockManagerImpl lockManager = createLockManager();
 
         // expect
-        assertTrue( lockManager.getReadLock( node1, lockTransaction ) );
-        assertTrue( lockManager.getReadLock( node2, lockTransaction ) );
-        assertTrue( lockManager.getWriteLock( node2, lockTransaction ) );
+        assertTrue( lockManager.getReadLock( Locks.Tracer.NONE, node1, lockTransaction ) );
+        assertTrue( lockManager.getReadLock( Locks.Tracer.NONE, node2, lockTransaction ) );
+        assertTrue( lockManager.getWriteLock( Locks.Tracer.NONE, node2, lockTransaction ) );
 
         lockManager.releaseReadLock( node1, lockTransaction );
         lockManager.releaseReadLock( node2, lockTransaction );
@@ -82,7 +83,7 @@ public class LockManagerImplTest
         LockResource node = new LockResource( ResourceTypes.NODE, 1L );
         LockTransaction lockTransaction = new LockTransaction();
         LockManagerImpl lockManager = createLockManager();
-        lockManager.getWriteLock( node, lockTransaction );
+        lockManager.getWriteLock( Locks.Tracer.NONE, node, lockTransaction );
 
         // expect
         assertTrue( lockManager.tryReadLock( node, lockTransaction ) );

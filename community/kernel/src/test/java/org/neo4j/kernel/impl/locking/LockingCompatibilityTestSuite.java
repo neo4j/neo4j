@@ -58,7 +58,8 @@ import static org.neo4j.test.rule.concurrent.OtherThreadRule.isWaiting;
         RWLockCompatibility.class,
         StopCompatibility.class,
         CloseCompatibility.class,
-        AcquisitionTimeoutCompatibility.class
+        AcquisitionTimeoutCompatibility.class,
+        TracerCompatibility.class,
 })
 public abstract class LockingCompatibilityTestSuite
 {
@@ -178,6 +179,7 @@ public abstract class LockingCompatibilityTestSuite
 
         protected LockCommand acquireExclusive(
                 final Locks.Client client,
+                final Locks.Tracer tracer,
                 final ResourceType resourceType,
                 final long key )
         {
@@ -186,13 +188,14 @@ public abstract class LockingCompatibilityTestSuite
                 @Override
                 public void doWork( Locks.Client client ) throws AcquireLockTimeoutException
                 {
-                    client.acquireExclusive( Locks.Tracer.NONE, resourceType, key );
+                    client.acquireExclusive( tracer, resourceType, key );
                 }
             };
         }
 
         protected LockCommand acquireShared(
                 Locks.Client client,
+                final Locks.Tracer tracer,
                 final ResourceType resourceType,
                 final long key )
         {
@@ -201,7 +204,7 @@ public abstract class LockingCompatibilityTestSuite
                 @Override
                 public void doWork( Locks.Client client ) throws AcquireLockTimeoutException
                 {
-                    client.acquireShared( Locks.Tracer.NONE, resourceType, key );
+                    client.acquireShared( tracer, resourceType, key );
                 }
             };
         }

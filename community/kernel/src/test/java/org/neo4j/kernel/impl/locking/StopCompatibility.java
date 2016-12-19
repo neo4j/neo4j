@@ -84,8 +84,8 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
         clientA.acquireShared( Locks.Tracer.NONE, NODE, 1L );
         clientB.acquireShared( Locks.Tracer.NONE, NODE, 2L );
         clientC.acquireShared( Locks.Tracer.NONE, NODE, 3L );
-        acquireExclusive( clientB, NODE, 1L ).callAndAssertWaiting();
-        acquireExclusive( clientC, NODE, 1L ).callAndAssertWaiting();
+        acquireExclusive( clientB, Locks.Tracer.NONE, NODE, 1L ).callAndAssertWaiting();
+        acquireExclusive( clientC, Locks.Tracer.NONE, NODE, 1L ).callAndAssertWaiting();
 
         // when
         clientC.stop();
@@ -103,7 +103,7 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
     {  // given
         clientA.acquireExclusive( Locks.Tracer.NONE, NODE, 1L );
         clientB.acquireExclusive( Locks.Tracer.NONE, NODE, 2L );
-        acquireShared( clientB, NODE, 1L ).callAndAssertWaiting();
+        acquireShared( clientB, Locks.Tracer.NONE, NODE, 1L ).callAndAssertWaiting();
 
         // when
         clientB.stop();

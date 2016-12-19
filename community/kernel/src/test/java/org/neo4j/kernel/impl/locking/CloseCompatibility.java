@@ -68,9 +68,9 @@ public class CloseCompatibility extends LockingCompatibilityTestSuite.Compatibil
         clientA.acquireShared( Locks.Tracer.NONE, NODE, 1L );
         clientA.acquireShared( Locks.Tracer.NONE, NODE, 3L );
         clientB.acquireShared( Locks.Tracer.NONE, NODE, 1L );
-        acquireShared( clientC, NODE, 2L );
-        acquireExclusive( clientB, NODE, 1L ).callAndAssertWaiting();
-        acquireExclusive( clientC, NODE, 1L ).callAndAssertWaiting();
+        acquireShared( clientC, Locks.Tracer.NONE, NODE, 2L );
+        acquireExclusive( clientB, Locks.Tracer.NONE, NODE, 1L ).callAndAssertWaiting();
+        acquireExclusive( clientC, Locks.Tracer.NONE, NODE, 1L ).callAndAssertWaiting();
 
         // when
         clientB.close();
