@@ -20,13 +20,13 @@
 package org.neo4j.index.gbptree;
 
 import java.io.IOException;
-
 import org.neo4j.index.IndexWriter;
 import org.neo4j.index.ValueMerger;
 import org.neo4j.io.pagecache.PageCursor;
 
 import static java.lang.Integer.max;
 import static java.lang.Integer.min;
+
 import static org.neo4j.index.gbptree.KeySearch.isHit;
 import static org.neo4j.index.gbptree.KeySearch.positionOf;
 import static org.neo4j.index.gbptree.KeySearch.search;
@@ -83,6 +83,7 @@ class InternalTreeLogic<KEY,VALUE>
     private final byte[] tmpForValues;
     private final byte[] tmpForChildren;
     private final Layout<KEY,VALUE> layout;
+    private final KEY primKeyPlaceHolder;
     private final KEY readKey;
     private final VALUE readValue;
 
@@ -95,6 +96,7 @@ class InternalTreeLogic<KEY,VALUE>
         this.tmpForKeys = new byte[(maxKeyCount + 1) * layout.keySize()];
         this.tmpForValues = new byte[(maxKeyCount + 1) * layout.valueSize()];
         this.tmpForChildren = new byte[(maxKeyCount + 2) * bTreeNode.childSize()];
+        this.primKeyPlaceHolder = layout.newKey();
         this.readKey = layout.newKey();
         this.readValue = layout.newValue();
     }
@@ -207,7 +209,9 @@ class InternalTreeLogic<KEY,VALUE>
         }
 
         // Overflow
-        splitInternal( cursor, structurePropagation, primKey, rightChild, keyCount, options,
+        // We will overwrite primKey in structurePropagation, so copy it over to a place holder
+        layout.copyKey( structurePropagation.primKey, primKeyPlaceHolder );
+        splitInternal( cursor, structurePropagation, primKeyPlaceHolder, rightChild, keyCount, options,
                 stableGeneration, unstableGeneration );
     }
 
@@ -235,37 +239,107 @@ class InternalTreeLogic<KEY,VALUE>
         // Find position to insert new key
         int pos = positionOf( search( cursor, bTreeNode, primKey, readKey, keyCount ) );
 
-        // Arrays to temporarily store keys and children in sorted order.
-        bTreeNode.readKeysWithInsertRecordInPosition( cursor,
-                c -> layout.writeKey( c, primKey ), pos, keyCount+1, tmpForKeys );
-        bTreeNode.readChildrenWithInsertRecordInPosition( cursor,
-                c -> bTreeNode.writeChild( c, newRightChild, stableGeneration, unstableGeneration ),
-                pos+1, keyCount+2, tmpForChildren );
-
         int keyCountAfterInsert = keyCount + 1;
         int middlePos = middle( keyCountAfterInsert, options.splitRetentionFactor() );
 
+        // Update structurePropagation
         structurePropagation.hasSplit = true;
         structurePropagation.left = current;
         structurePropagation.right = newRight;
+        if ( middlePos == pos )
+        {
+            layout.copyKey( primKey, structurePropagation.primKey );
+        }
+        else
+        {
+            bTreeNode.keyAt( cursor, structurePropagation.primKey, pos < middlePos ? middlePos - 1 : middlePos );
+        }
 
-        {   // Update new right
-            // NOTE: don't include middle
-            goTo( cursor, "new right sibling in split", newRight );
-            bTreeNode.initializeInternal( cursor, stableGeneration, unstableGeneration );
-            bTreeNode.setRightSibling( cursor, oldRight, stableGeneration, unstableGeneration );
-            bTreeNode.setLeftSibling( cursor, current, stableGeneration, unstableGeneration );
-            bTreeNode.writeKeys( cursor, tmpForKeys, middlePos + 1, 0, keyCountAfterInsert - (middlePos + 1) );
-            bTreeNode.writeChildren( cursor, tmpForChildren, middlePos + 1, 0,
-                    keyCountAfterInsert - middlePos /*there's one more child than key to copy*/ );
-            bTreeNode.setKeyCount( cursor, keyCount - middlePos );
+        // Update new right
+        try ( PageCursor rightCursor = cursor.openLinkedCursor( newRight ) )
+        {
+            goTo( rightCursor, "new right sibling in split", newRight );
+            bTreeNode.initializeInternal( rightCursor, stableGeneration, unstableGeneration );
+            bTreeNode.setRightSibling( rightCursor, oldRight, stableGeneration, unstableGeneration );
+            bTreeNode.setLeftSibling( rightCursor, current, stableGeneration, unstableGeneration );
+            int rightKeyCount = keyCountAfterInsert - middlePos - 1; // -1 because don't keep prim key in internal
 
-            // Extract middle key (prim key)
-            int middleOffset = middlePos * bTreeNode.keySize();
-            PageCursor buffer = ByteArrayPageCursor.wrap( tmpForKeys, middleOffset, bTreeNode.keySize() );
+            if ( pos < middlePos )
+            {
+                //                         v-------v       copy
+                // before key    _,_,_,_,_,_,_,_,_,_
+                // before child -,-,-,-,-,-,-,-,-,-,-
+                // insert key    _,_,X,_,_,_,_,_,_,_,_
+                // insert child -,-,-,x,-,-,-,-,-,-,-,-
+                // middle key              ^
 
-            // Populate split result
-            layout.readKey( buffer, structurePropagation.primKey );
+                // children
+                cursor.copyTo( bTreeNode.keyOffset( middlePos ), rightCursor, bTreeNode.keyOffset( 0 ),
+                        rightKeyCount * bTreeNode.keySize() );
+                cursor.copyTo( bTreeNode.childOffset( middlePos ), rightCursor, bTreeNode.childOffset( 0 ),
+                        (rightKeyCount + 1) * bTreeNode.childSize() );
+            }
+            else
+            {
+                // pos > middlePos
+                //                         v-v          first copy
+                //                             v-v-v    second copy
+                // before key    _,_,_,_,_,_,_,_,_,_
+                // before child -,-,-,-,-,-,-,-,-,-,-
+                // insert key    _,_,_,_,_,_,_,X,_,_,_
+                // insert child -,-,-,-,-,-,-,-,x,-,-,-
+                // middle key              ^
+
+                // pos == middlePos
+                //                                      first copy
+                //                         v-v-v-v-v    second copy
+                // before key    _,_,_,_,_,_,_,_,_,_
+                // before child -,-,-,-,-,-,-,-,-,-,-
+                // insert key    _,_,_,_,_,X,_,_,_,_,_
+                // insert child -,-,-,-,-,-,x,-,-,-,-,-
+                // middle key              ^
+
+                // Keys
+                int countBeforePos = pos - (middlePos + 1);
+                // ... first copy
+                if ( countBeforePos > 0 )
+                {
+                    cursor.copyTo( bTreeNode.keyOffset( middlePos + 1 ), rightCursor, bTreeNode.keyOffset( 0 ),
+                            countBeforePos * bTreeNode.keySize() );
+                }
+                // ... insert
+                if ( countBeforePos >= 0 )
+                {
+                    bTreeNode.insertKeyAt( rightCursor, primKey, countBeforePos, countBeforePos );
+                }
+                // ... second copy
+                int countAfterPos = keyCount - pos;
+                if ( countAfterPos > 0 )
+                {
+                    cursor.copyTo( bTreeNode.keyOffset( pos ), rightCursor,
+                            bTreeNode.keyOffset( countBeforePos + 1 ), countAfterPos * bTreeNode.keySize() );
+                }
+
+                // Children
+                countBeforePos = pos - middlePos;
+                // ... first copy
+                if ( countBeforePos > 0 )
+                {
+                    // first copy
+                    cursor.copyTo( bTreeNode.childOffset( middlePos + 1 ), rightCursor, bTreeNode.childOffset( 0 ),
+                            countBeforePos * bTreeNode.childSize() );
+                }
+                // ... insert
+                bTreeNode.insertChildAt( rightCursor, newRightChild, countBeforePos, countBeforePos,
+                        stableGeneration, unstableGeneration );
+                // ... second copy
+                if ( countAfterPos > 0 )
+                {
+                    cursor.copyTo( bTreeNode.childOffset( pos + 1 ), rightCursor,
+                            bTreeNode.childOffset( countBeforePos + 1 ), countAfterPos * bTreeNode.childSize() );
+                }
+            }
+            bTreeNode.setKeyCount( rightCursor, rightKeyCount );
         }
 
         // Update old right with new left sibling (newRight)
@@ -281,14 +355,9 @@ class InternalTreeLogic<KEY,VALUE>
         bTreeNode.setKeyCount( cursor, middlePos );
         if ( pos < middlePos )
         {
-            // Write keys to left
-            int arrayOffset = pos * bTreeNode.keySize();
-            cursor.setOffset( bTreeNode.keyOffset( pos ) );
-            cursor.putBytes( tmpForKeys, arrayOffset, (middlePos - pos) * bTreeNode.keySize() );
-
-            cursor.setOffset( bTreeNode.childOffset( pos + 1 ) );
-            arrayOffset = (pos + 1) * bTreeNode.childSize();
-            cursor.putBytes( tmpForChildren, arrayOffset, (middlePos - pos) * bTreeNode.childSize() );
+            bTreeNode.insertKeyAt( cursor, primKey, pos, middlePos - 1 );
+            bTreeNode.insertChildAt( cursor, newRightChild, pos + 1, middlePos - 1,
+                    stableGeneration, unstableGeneration );
         }
 
         bTreeNode.setRightSibling( cursor, newRight, stableGeneration, unstableGeneration );
@@ -429,13 +498,6 @@ class InternalTreeLogic<KEY,VALUE>
 
         // Position where newKey / newValue is to be inserted
         int pos = positionOf( search( cursor, bTreeNode, newKey, readKey, keyCount ) );
-
-        // arrays to temporarily store all keys and values
-//        bTreeNode.readKeysWithInsertRecordInPosition( cursor,
-//                c -> layout.writeKey( c, newKey ), pos, bTreeNode.leafMaxKeyCount() + 1, tmpForKeys );
-//        bTreeNode.readValuesWithInsertRecordInPosition( cursor,
-//                c -> layout.writeValue( c, newValue ), pos, bTreeNode.leafMaxKeyCount() + 1, tmpForValues );
-
         int keyCountAfterInsert = keyCount + 1;
         int middlePos = middle( keyCountAfterInsert, options.splitRetentionFactor() );
 
