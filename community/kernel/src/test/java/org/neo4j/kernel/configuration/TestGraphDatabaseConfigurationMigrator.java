@@ -124,6 +124,35 @@ public class TestGraphDatabaseConfigurationMigrator
         assertContainsWarningMessage();
     }
 
+    @Test
+    public void migrateTransactionEndTimeout()
+    {
+        Map<String,String> migratedProperties = migrator.apply( stringMap( "unsupported.dbms.shutdown_transaction_end_timeout", "12s" ), getLog() );
+        assertEquals( "Old property should be migrated to new",
+                migratedProperties, stringMap( "dbms.shutdown_transaction_end_timeout", "12s" ));
+
+        assertContainsWarningMessage("unsupported.dbms.shutdown_transaction_end_timeout has been " +
+                "replaced with dbms.shutdown_transaction_end_timeout.");
+    }
+
+    @Test
+    public void skipMigrationOfTransactionEndTimeoutIfNotPresent()
+    {
+        Map<String,String> migratedProperties = migrator.apply( stringMap( "dbms.shutdown_transaction_end_timeout", "12s" ), getLog() );
+        assertEquals( "Nothing to migrate", migratedProperties, stringMap( "dbms.shutdown_transaction_end_timeout", "12s" ));
+        logProvider.assertNoLoggingOccurred();
+    }
+
+    @Test
+    public void skipMigrationOfTransactionEndTimeoutIfCustomTransactionEndTimeoutConfigured()
+    {
+        Map<String,String> migratedProperties = migrator.apply( stringMap( "unsupported.dbms.shutdown_transaction_end_timeout", "12s",
+                "dbms.shutdown_transaction_end_timeout", "14s" ), getLog() );
+        assertEquals( "Should keep pre configured transaction timeout.",
+                migratedProperties, stringMap( "dbms.shutdown_transaction_end_timeout", "14s" ));
+        assertContainsWarningMessage();
+    }
+
     private Log getLog()
     {
         return logProvider.getLog( GraphDatabaseConfigurationMigrator.class );
