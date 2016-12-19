@@ -17,31 +17,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.security.ssl;
+package org.neo4j.bolt.v1.transport.integration;
 
 import org.apache.commons.lang.SystemUtils;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.attribute.PosixFileAttributeView;
 import java.nio.file.attribute.PosixFileAttributes;
 import java.nio.file.attribute.PosixFilePermission;
 
+import org.neo4j.bolt.security.ssl.Certificates;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.*;
 import static org.junit.Assume.assumeTrue;
-import static org.neo4j.test.TargetDirectory.testDirForTest;
 
-public class CertificatesIT
+public class SelfSignedCertificatesIT
 {
     @Rule
     public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
 
     @Test
-    public void createSelfSignedCertificate() throws Exception
+    public void createSelfSignedCertificateWithCorrectPermissions() throws Exception
     {
         assumeTrue( !SystemUtils.IS_OS_WINDOWS );
 
