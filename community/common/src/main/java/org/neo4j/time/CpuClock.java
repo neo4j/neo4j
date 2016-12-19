@@ -29,7 +29,7 @@ public abstract class CpuClock
         private final ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
 
         @Override
-        public long cpuTime( long threadId )
+        public long cpuTimeNanos( long threadId )
         {
             if ( !threadMXBean.isThreadCpuTimeSupported() )
             {
@@ -50,9 +50,9 @@ public abstract class CpuClock
      *         the thread to get the used CPU time for.
      * @return the current CPU time used by the thread, in nanoseconds.
      */
-    public final long cpuTime( Thread thread )
+    public final long cpuTimeNanos( Thread thread )
     {
-        return cpuTime( thread.getId() );
+        return cpuTimeNanos( thread.getId() );
     }
 
     /**
@@ -62,5 +62,5 @@ public abstract class CpuClock
      *         the id of the thread to get the used CPU time for.
      * @return the current CPU time used by the thread, in nanoseconds.
      */
-    public abstract long cpuTime( long threadId );
+    public abstract long cpuTimeNanos( long threadId );
 }

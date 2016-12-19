@@ -77,7 +77,7 @@ public class ExecutingQuery
         this.metaData = metaData;
         this.threadExecutingTheQuery = threadExecutingTheQuery;
         this.cpuClock = cpuClock;
-        this.cpuTimeNanosWhenQueryStarted = cpuClock.cpuTime( threadExecutingTheQuery );
+        this.cpuTimeNanosWhenQueryStarted = cpuClock.cpuTimeNanos( threadExecutingTheQuery );
     }
 
     @Override
@@ -144,7 +144,7 @@ public class ExecutingQuery
      */
     public long cpuTime()
     {
-        return cpuClock.cpuTime( threadExecutingTheQuery ) - cpuTimeNanosWhenQueryStarted;
+        return cpuClock.cpuTimeNanos( threadExecutingTheQuery ) - cpuTimeNanosWhenQueryStarted;
     }
 
     public long waitTime()

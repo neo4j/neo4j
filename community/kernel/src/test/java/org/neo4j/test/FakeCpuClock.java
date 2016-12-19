@@ -30,7 +30,7 @@ public class FakeCpuClock extends CpuClock
     private final PrimitiveLongLongMap cpuTimes = Primitive.offHeapLongLongMap();
 
     @Override
-    public long cpuTime( long threadId )
+    public long cpuTimeNanos( long threadId )
     {
         return Math.max( 0, cpuTimes.get( threadId ) );
     }
@@ -47,6 +47,6 @@ public class FakeCpuClock extends CpuClock
 
     public void add( long threadId, long nanos )
     {
-        cpuTimes.put( threadId, cpuTime( threadId ) + nanos );
+        cpuTimes.put( threadId, cpuTimeNanos( threadId ) + nanos );
     }
 }

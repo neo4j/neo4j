@@ -20,10 +20,6 @@
 package org.neo4j.kernel.enterprise.builtinprocs;
 
 import java.io.IOException;
-import java.time.Clock;
-import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -50,20 +46,13 @@ import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.proc.Procedures;
-import org.neo4j.kernel.impl.query.QuerySource;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
-import org.neo4j.time.Clocks;
 
 import static java.lang.String.format;
-import static java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME;
-import static java.util.concurrent.TimeUnit.HOURS;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.MINUTES;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.neo4j.function.ThrowingFunction.catchThrown;
@@ -247,7 +236,7 @@ public class EnterpriseBuiltInDbmsProcedures
             return getKernelTransactions().activeTransactions().stream()
                 .flatMap( KernelTransactionHandle::executingQueries )
                 .filter( query -> isAdminOrSelf( query.username() ) )
-                .map( catchThrown( InvalidArgumentsException.class, this::queryStatusResult ) );
+                .map( catchThrown( InvalidArgumentsException.class, QueryStatusResult::new ) );
         }
         catch ( UncaughtCheckedException uncaught )
         {
@@ -428,72 +417,6 @@ public class EnterpriseBuiltInDbmsProcedures
         }
     }
 
-    private QueryStatusResult queryStatusResult( ExecutingQuery q )
-            throws InvalidArgumentsException
-    {
-        return new QueryStatusResult(
-                ofInternalId( q.internalQueryId() ),
-                q.username(),
-                q.queryText(),
-                q.queryParameters(),
-                q.startTime(),
-                q.elapsedTime(),
-                q.querySource(),
-                q.metaData(),
-                q.cpuTime(),
-                q.status(),
-                q.waitTime()
-        );
-    }
-
-    public static class QueryStatusResult
-    {
-        public final String queryId;
-        public final String username;
-        public final String query;
-        public final Map<String,Object> parameters;
-        public final String startTime;
-        public final String elapsedTime;
-        public final String connectionDetails;
-        public final long cpuTime;
-        public final Map<String,Object> status;
-        public final long waitTime;
-        public final Map<String,Object> metaData;
-
-        QueryStatusResult(
-                QueryId queryId,
-                String username,
-                String query,
-                Map<String,Object> parameters,
-                long startTime,
-                long elapsedTime,
-                QuerySource querySource,
-                Map<String,Object> txMetaData,
-                long cpuTime,
-                Map<String,Object> status,
-                long waitTime
-        ) {
-            this.queryId = queryId.toString();
-            this.username = username;
-            this.query = query;
-            this.parameters = parameters;
-            this.startTime = formatTime( startTime );
-            this.elapsedTime = formatInterval( elapsedTime );
-            this.connectionDetails = querySource.toString();
-            this.metaData = txMetaData;
-            this.cpuTime = cpuTime;
-            this.status = status;
-            this.waitTime = waitTime;
-        }
-
-        private static String formatTime( final long startTime )
-        {
-            return OffsetDateTime
-                .ofInstant( Instant.ofEpochMilli( startTime ), ZoneId.systemDefault() )
-                .format( ISO_OFFSET_DATE_TIME );
-        }
-    }
-
     public static class QueryTerminationResult
     {
         public final String queryId;
@@ -540,14 +463,5 @@ public class EnterpriseBuiltInDbmsProcedures
             this.username = username;
             this.connectionCount = connectionCount;
         }
-    }
-
-    private static String formatInterval( final long l )
-    {
-        final long hr = MILLISECONDS.toHours( l );
-        final long min = MILLISECONDS.toMinutes( l - HOURS.toMillis( hr ) );
-        final long sec = MILLISECONDS.toSeconds( l - HOURS.toMillis( hr ) - MINUTES.toMillis( min ) );
-        final long ms = l - HOURS.toMillis( hr ) - MINUTES.toMillis( min ) - SECONDS.toMillis( sec );
-        return String.format( "%02d:%02d:%02d.%03d", hr, min, sec, ms );
     }
 }
