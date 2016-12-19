@@ -220,7 +220,7 @@ public class InMemoryLabelScanStore implements LabelScanStore
             @Override
             public long maxCount()
             {
-                return 0;
+                return nodesToLabels.size();
             }
 
             @Override
