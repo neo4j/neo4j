@@ -29,7 +29,7 @@ import java.nio.file.attribute.PosixFileAttributes;
 import java.nio.file.attribute.PosixFilePermission;
 
 import org.neo4j.bolt.security.ssl.Certificates;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.*;
 import static org.junit.Assume.assumeTrue;
@@ -37,7 +37,7 @@ import static org.junit.Assume.assumeTrue;
 public class SelfSignedCertificatesIT
 {
     @Rule
-    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+    public TestDirectory testDirectory = TestDirectory.testDirectory( getClass() );
 
     @Test
     public void createSelfSignedCertificateWithCorrectPermissions() throws Exception
