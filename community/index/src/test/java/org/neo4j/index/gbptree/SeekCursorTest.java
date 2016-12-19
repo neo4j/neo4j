@@ -30,6 +30,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.LongSupplier;
+import java.util.function.Supplier;
 
 import org.neo4j.index.Hit;
 import org.neo4j.io.pagecache.PageCursor;
@@ -54,7 +55,7 @@ public class SeekCursorTest
             return Generation.generation( stableGen, unstableGen );
         }
     };
-    private static final GBPTree.RootCatchup failingRootCatchup = c -> {
+    private static final Supplier<Root> failingRootCatchup = () -> {
         throw new AssertionError( "Should not happen" );
     };
 
@@ -998,17 +999,18 @@ public class SeekCursorTest
     public void shouldCatchupRootWhenRootNodeHasTooNewGeneration() throws Exception
     {
         // given
+        long id = cursor.getCurrentPageId();
         long gen = node.gen( cursor );
         MutableBoolean triggered = new MutableBoolean( false );
-        GBPTree.RootCatchup rootCatchup = c ->
+        Supplier<Root> rootCatchup = () ->
         {
             triggered.setTrue();
-            return gen;
+            return new Root( id, gen );
         };
 
         // when
-        try ( SeekCursor<MutableLong,MutableLong> seek = new SeekCursor<>( cursor, readKey, readValue, node, from, to, layout, stableGen, unstableGen,
-                generationSupplier, rootCatchup, gen - 1 ) )
+        try ( SeekCursor<MutableLong,MutableLong> seek = new SeekCursor<>( cursor, readKey, readValue, node, from, to,
+                layout, stableGen, unstableGen, generationSupplier, rootCatchup, gen - 1 ) )
         {
             // do nothing
         }
@@ -1040,17 +1042,24 @@ public class SeekCursorTest
         node.setChildAt( cursor, leftChild, 0, stableGen, unstableGen );
 
         // a root catchup that records usage
-        GBPTree.RootCatchup rootCatchup = c ->
+        Supplier<Root> rootCatchup = () ->
         {
-            triggered.setTrue();
+            try
+            {
+                triggered.setTrue();
 
-            // and set child generation to match pointer
-            cursor.next( leftChild );
-            cursor.zapPage();
-            node.initializeLeaf( cursor, stableGen, unstableGen );
+                // and set child generation to match pointer
+                cursor.next( leftChild );
+                cursor.zapPage();
+                node.initializeLeaf( cursor, stableGen, unstableGen );
 
-            cursor.next( rootId );
-            return gen;
+                cursor.next( rootId );
+                return new Root( rootId, gen );
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( e );
+            }
         };
 
         // when
@@ -1077,12 +1086,19 @@ public class SeekCursorTest
         node.initializeLeaf( cursor, stableGen, unstableGen );
         cursor.next();
 
-        GBPTree.RootCatchup rootCatchup = c ->
+        Supplier<Root> rootCatchup = () ->
         {
-            // Use right child as new start over root to terminate test
-            cursor.next( rightChild );
-            triggered.setTrue();
-            return node.gen( cursor );
+            try
+            {
+                // Use right child as new start over root to terminate test
+                cursor.next( rightChild );
+                triggered.setTrue();
+                return new Root( cursor.getCurrentPageId(), node.gen( cursor ) );
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( e );
+            }
         };
 
         // a left leaf

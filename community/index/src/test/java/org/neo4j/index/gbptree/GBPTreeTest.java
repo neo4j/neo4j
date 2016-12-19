@@ -431,7 +431,7 @@ public class GBPTreeTest
         checkpointer.start();
         monitor.barrier.awaitUninterruptibly();
         // now we're in the smack middle of a checkpoint
-        Thread t2 = new Thread( throwing( () -> index.writer( DEFAULTS ) ) );
+        Thread t2 = new Thread( throwing( () -> index.writer( DEFAULTS ).close() ) );
         t2.start();
         t2.join( 200 );
         assertTrue( Arrays.toString( checkpointer.getStackTrace() ), t2.isAlive() );

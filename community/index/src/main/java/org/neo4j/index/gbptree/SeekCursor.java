@@ -21,6 +21,7 @@ package org.neo4j.index.gbptree;
 
 import java.io.IOException;
 import java.util.function.LongSupplier;
+import java.util.function.Supplier;
 
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.Hit;
@@ -97,7 +98,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
      * the root generation. This is used when a query is re-traversing from the root, due to e.g. ending up
      * on a reused tree node and not knowing how to proceed from there.
      */
-    private final GBPTree.RootCatchup rootCatchup;
+    private final Supplier<Root> rootCatchup;
 
     /**
      * Whether or not some result has been found, i.e. if {@code true} if there have been no call to
@@ -163,7 +164,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
     SeekCursor( PageCursor leafCursor, KEY mutableKey, VALUE mutableValue, TreeNode<KEY,VALUE> bTreeNode,
             KEY fromInclusive, KEY toExclusive, Layout<KEY,VALUE> layout,
             long stableGeneration, long unstableGeneration, LongSupplier generationSupplier,
-            GBPTree.RootCatchup rootCatchup, long lastFollowedPointerGen ) throws IOException
+            Supplier<Root> rootCatchup, long lastFollowedPointerGen ) throws IOException
     {
         this.cursor = leafCursor;
         this.mutableKey = mutableKey;
@@ -248,7 +249,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
             {
                 // This node has been reused. Restart seek from root.
                 generationCatchup();
-                lastFollowedPointerGen = rootCatchup.goTo( cursor );
+                lastFollowedPointerGen = rootCatchup.get().goTo( cursor );
 
                 // Force true in loop
                 isInternal = true;
@@ -470,7 +471,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
     private void restartSeekFromRoot() throws IOException
     {
         generationCatchup();
-        lastFollowedPointerGen = rootCatchup.goTo( cursor );
+        lastFollowedPointerGen = rootCatchup.get().goTo( cursor );
         if ( !first )
         {
             layout.copyKey( prevKey, fromInclusive );
