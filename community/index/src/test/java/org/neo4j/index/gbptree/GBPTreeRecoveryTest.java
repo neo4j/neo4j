@@ -27,7 +27,6 @@ import org.junit.rules.RuleChain;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -58,6 +57,7 @@ import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 public class GBPTreeRecoveryTest
 {
     private static final int PAGE_SIZE = 256;
+    private static final Action CHECKPOINT = index -> index.checkpoint( unlimited() );
 
     private final RandomRule random = new RandomRule();
     private final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
@@ -127,11 +127,28 @@ public class GBPTreeRecoveryTest
         // a tree which has had random updates and checkpoints in it, load generated with specific seed
         File file = directory.file( "index" );
         List<Action> load = generateLoad();
+        int lastCheckPointIndex = indexOfLastCheckpoint( load );
+
         {
+            // _,_,_,_,_,_,_,c,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,c,_,_,_,_,_,_,_,_,_,_,_
+            //                                                 ^             ^
+            //                                                 |             |------------ crash flush index
+            //                                                 |-------------------------- last checkpoint index
+            //
+
             PageCache pageCache = createPageCache();
             GBPTree<MutableLong,MutableLong> index = createIndex( pageCache, file );
-            execute( load, index );
+            // Execute all actions up to and including last checkpoint ...
+            execute( load.subList( 0, lastCheckPointIndex + 1 ), index );
+            // ... a random amount of the remaining "unsafe" actions ...
+            int numberOfRemainingActions = load.size() - lastCheckPointIndex - 1;
+            int crashFlushIndex = lastCheckPointIndex + random.nextInt( numberOfRemainingActions ) + 1;
+            execute( load.subList( lastCheckPointIndex + 1, crashFlushIndex ), index );
+            // ... flush ...
             pageCache.flushAndForce();
+            // ... execute the remaining actions
+            execute( load.subList( crashFlushIndex, load.size() ), index );
+            // ... and finally crash
             fs.snapshot( throwing( () ->
             {
                 index.close();
@@ -140,13 +157,30 @@ public class GBPTreeRecoveryTest
         }
 
         // WHEN doing recovery
-        // using the same seed, generate the same load and replay all transactions from the last checkpoint
+        List<Action> recoveryActions = load.subList( lastCheckPointIndex + 1, load.size() );
+
+        // first crashing during recovery
+        int numberOfCrashesDuringRecovery = random.intBetween( 0, 3 );
+        for ( int i = 0; i < numberOfCrashesDuringRecovery; i++ )
+        {
+            PageCache pageCache = createPageCache();
+            GBPTree<MutableLong,MutableLong> index = createIndex( pageCache, file );
+            int numberOfActionsToRecoverBeforeCrashing = random.intBetween( 1, recoveryActions.size() );
+            recover( recoveryActions.subList( 0, numberOfActionsToRecoverBeforeCrashing ), index );
+            pageCache.flushAndForce();
+
+            fs.snapshot( throwing( () ->
+            {
+                index.close();
+                pageCache.close();
+            } ) );
+        }
+
+        // to finally apply all actions after last checkpoint and verify tree
         try ( PageCache pageCache = createPageCache();
                 GBPTree<MutableLong,MutableLong> index = createIndex( pageCache, file ) )
         {
-            // this is the mimic:ed recovery
-            index.prepareForRecovery();
-            execute( fromLastCheckPoint( load ), index );
+            recover( recoveryActions, index );
 
             // THEN
             // we should end up with a consistent index containing all the stuff load says
@@ -165,6 +199,12 @@ public class GBPTreeRecoveryTest
                 assertFalse( cursor.next() );
             }
         }
+    }
+
+    private void recover( List<Action> load, GBPTree<MutableLong,MutableLong> index ) throws IOException
+    {
+        index.prepareForRecovery();
+        execute( load, index );
     }
 
     private static void execute( List<Action> load, Index<MutableLong,MutableLong> index )
@@ -191,23 +231,13 @@ public class GBPTreeRecoveryTest
         return result;
     }
 
-    private static List<Action> fromLastCheckPoint( List<Action> actions ) throws IOException
-    {
-        int lastCheckpoint = indexOfLastCheckpoint( actions );
-        return actions.size() > lastCheckpoint + 1
-                ? actions.subList( lastCheckpoint + 1, actions.size() )
-                : Collections.emptyList();
-    }
-
     private static int indexOfLastCheckpoint( List<Action> actions ) throws IOException
     {
-        CapturingIndex index = new CapturingIndex();
         int i = 0;
         int lastCheckpoint = -1;
         for ( Action action : actions )
         {
-            action.execute( index );
-            if ( index.wasCheckpoint() )
+            if ( action == CHECKPOINT )
             {
                 lastCheckpoint = i;
             }
@@ -220,14 +250,36 @@ public class GBPTreeRecoveryTest
     {
         List<Action> actions = new ArrayList<>();
         int count = random.intBetween( 300, 1_000 );
+        boolean hasCheckPoint = false;
         for ( int i = 0; i < count; i++ )
         {
-            actions.add( randomAction() );
+            Action action = randomAction( true );
+            actions.add( action );
+            if ( action == CHECKPOINT )
+            {
+                hasCheckPoint = true;
+            }
+        }
+
+        // Guarantee that there's at least one check point, i.e. if there's none then append one at the end
+        if ( !hasCheckPoint )
+        {
+            actions.add( CHECKPOINT );
+        }
+
+        // Guarantee that there are at least some non-checkpoint actions after last checkpoint
+        if ( actions.get( actions.size() - 1 ) == CHECKPOINT )
+        {
+            int additional = random.intBetween( 1, 10 );
+            for ( int i = 0; i < additional; i++ )
+            {
+                actions.add( randomAction( false ) );
+            }
         }
         return actions;
     }
 
-    private Action randomAction()
+    private Action randomAction( boolean allowCheckPoint )
     {
         float randomized = random.nextFloat();
         if ( randomized <= 0.7 )
@@ -247,7 +299,7 @@ public class GBPTreeRecoveryTest
                 }
             };
         }
-        else if ( randomized <= 0.95 )
+        else if ( randomized <= 0.95 || !allowCheckPoint )
         {
             // remove
             long[] data = modificationData( 5, 20 );
@@ -266,8 +318,7 @@ public class GBPTreeRecoveryTest
         }
         else
         {
-            // checkpoint
-            return index -> index.checkpoint( unlimited() );
+            return CHECKPOINT;
         }
     }
 
@@ -303,7 +354,6 @@ public class GBPTreeRecoveryTest
     private static class CapturingIndex implements Index<MutableLong,MutableLong>, IndexWriter<MutableLong,MutableLong>
     {
         private final TreeMap<Long,Long> map = new TreeMap<>();
-        private boolean checkpointCalled;
 
         @Override
         public void close() throws IOException
@@ -323,22 +373,9 @@ public class GBPTreeRecoveryTest
             return this;
         }
 
-        boolean wasCheckpoint()
-        {
-            try
-            {
-                return checkpointCalled;
-            }
-            finally
-            {
-                checkpointCalled = false;
-            }
-        }
-
         @Override
         public void checkpoint( IOLimiter ioLimiter ) throws IOException
         {
-            checkpointCalled = true;
         }
 
         @Override
