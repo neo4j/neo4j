@@ -295,5 +295,23 @@ InModuleScope Neo4j-Management {
       }
     }
 
+	Context "Server Invoke - Should handle paths with spaces" {
+      $serverObject = global:New-MockNeo4jInstall -ServerVersion '3.0' -ServerType 'Community' `
+	    -RootDir 'TestDrive:\Neo4j Home' `
+        -NeoConfSettings 'dbms.logs.gc.enabled=true'
+
+      $result = Get-Java -ForServer -Neo4jServer $serverObject
+	  $argList = $result.args
+
+	  It "should have literal quotes around config path" {
+		$argList -contains "--config-dir=`"TestDrive:\Neo4j Home\conf`"" | Should Be True
+	  }
+	  It "should have literal quotes around home path" {
+		$argList -contains "--home-dir=`"TestDrive:\Neo4j Home`"" | Should Be True
+	  }
+	  It "should have literal quotes around gclog path" {
+		$argList -contains "-Xloggc:`"TestDrive:\Neo4j Home/gc.log`"" | Should Be True
+	  }
+    }
   }
 }
