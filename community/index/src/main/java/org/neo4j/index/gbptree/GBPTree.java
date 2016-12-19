@@ -656,8 +656,8 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>
             PageCursorUtil.goTo( cursor, "root", rootId );
 
             PrimitiveLongSet freelistIds = Primitive.longSet();
-            freeList.visitFreelistPageIds( id -> freelistIds.add( id ) );
-            freeList.visitUnacquiredIds( id -> freelistIds.add( id ), unstableGeneration );
+            freeList.visitFreelistPageIds( freelistIds::add );
+            freeList.visitUnacquiredIds( freelistIds::add, unstableGeneration );
             boolean checkSpace = consistencyChecker.checkSpace( cursor, freeList.lastId(), freelistIds.iterator() );
 
             return check & checkSpace;

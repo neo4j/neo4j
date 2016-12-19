@@ -74,7 +74,7 @@ public class FreeListIdProviderTest
     {
         // GIVEN
         long releasedId = 11;
-        fillPageWithCrapData( releasedId );
+        fillPageWithRandomBytes( releasedId );
 
         // WHEN
         freelist.releaseId( GENERATION_ONE, GENERATION_TWO, releasedId );
@@ -244,7 +244,7 @@ public class FreeListIdProviderTest
         assertTrue( expected.isEmpty() );
     }
 
-    private void fillPageWithCrapData( long releasedId ) throws IOException
+    private void fillPageWithRandomBytes( long releasedId ) throws IOException
     {
         cursor.next( releasedId );
         byte[] crapData = new byte[PAGE_SIZE];

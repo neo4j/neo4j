@@ -29,7 +29,7 @@ import static org.neo4j.index.gbptree.GenSafePointerPair.NO_LOGICAL_POS;
 import static org.neo4j.index.gbptree.GenSafePointerPair.read;
 
 /**
- * Methods to manipulate single node such as set and get header fields,
+ * Methods to manipulate single tree node such as set and get header fields,
  * insert and fetch keys, values and children.
  * <p>
  * DESIGN
@@ -129,11 +129,6 @@ class TreeNode<KEY,VALUE>
         setRightSibling( cursor, NO_NODE_FLAG, stableGeneration, unstableGeneration );
         setLeftSibling( cursor, NO_NODE_FLAG, stableGeneration, unstableGeneration );
         setNewGen( cursor, NO_NODE_FLAG, stableGeneration, unstableGeneration );
-    }
-
-    int pageSize()
-    {
-        return pageSize;
     }
 
     void initializeLeaf( PageCursor cursor, long stableGeneration, long unstableGeneration )

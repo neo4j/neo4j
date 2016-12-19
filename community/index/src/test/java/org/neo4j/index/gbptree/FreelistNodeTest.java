@@ -38,7 +38,7 @@ public class FreelistNodeTest
     public void shouldInitializeTreeNode() throws Exception
     {
         // GIVEN
-        freelist.initialize( cursor );
+        FreelistNode.initialize( cursor );
 
         // WHEN
         byte nodeType = TreeNode.nodeType( cursor );
@@ -51,13 +51,13 @@ public class FreelistNodeTest
     public void shouldNodeOverwriteNodeType() throws Exception
     {
         // GIVEN
-        freelist.initialize( cursor );
+        FreelistNode.initialize( cursor );
         byte nodeType = TreeNode.nodeType( cursor );
         assertEquals( TreeNode.NODE_TYPE_FREE_LIST_NODE, nodeType );
 
         // WHEN
         long someId = 1234;
-        freelist.setNext( cursor, someId );
+        FreelistNode.setNext( cursor, someId );
 
         // THEN
         nodeType = TreeNode.nodeType( cursor );
@@ -71,8 +71,8 @@ public class FreelistNodeTest
         long nextId = 12345;
 
         // WHEN
-        freelist.setNext( cursor, nextId );
-        long readNextId = freelist.next( cursor );
+        FreelistNode.setNext( cursor, nextId );
+        long readNextId = FreelistNode.next( cursor );
 
         // THEN
         assertEquals( nextId, readNextId );

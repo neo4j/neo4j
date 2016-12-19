@@ -25,12 +25,24 @@ import static org.neo4j.index.gbptree.PageCursorUtil.get6BLong;
 import static org.neo4j.index.gbptree.PageCursorUtil.getUnsignedInt;
 import static org.neo4j.index.gbptree.PageCursorUtil.put6BLong;
 
+/**
+ * Manages the physical format of a free-list node, i.e. how bytes about free-list pages
+ * are represented out in {@link PageCursor}. High-level view of the format:
+ *
+ * <pre>
+ * [HEADER         ][RELEASED PAGE IDS...                         ]
+ * [NODE TYPE][NEXT][GENERATION,ID][GENERATION,ID][...............]
+ * </pre>
+ *
+ * A free-list node is a page in the same {@link org.neo4j.io.pagecache.PagedFile mapped page cache file}
+ * as a {@link TreeNode}. They distinguish themselves from one another by a "node type" one-byte header.
+ */
 class FreelistNode
 {
-    static final int PAGE_ID_SIZE = GenSafePointer.POINTER_SIZE;
-    static final int BYTE_POS_NEXT = TreeNode.BYTE_POS_NODE_TYPE + Byte.BYTES;
-    static final int HEADER_LENGTH = BYTE_POS_NEXT + PAGE_ID_SIZE;
-    static final int ENTRY_SIZE = GenSafePointer.GENERATION_SIZE + PAGE_ID_SIZE;
+    private static final int PAGE_ID_SIZE = GenSafePointer.POINTER_SIZE;
+    private static final int BYTE_POS_NEXT = TreeNode.BYTE_POS_NODE_TYPE + Byte.BYTES;
+    private static final int HEADER_LENGTH = BYTE_POS_NEXT + PAGE_ID_SIZE;
+    private static final int ENTRY_SIZE = GenSafePointer.GENERATION_SIZE + PAGE_ID_SIZE;
     static final long NO_PAGE_ID = TreeNode.NO_NODE_FLAG;
 
     private final int maxEntries;
@@ -40,7 +52,7 @@ class FreelistNode
         this.maxEntries = (pageSize - HEADER_LENGTH) / ENTRY_SIZE;
     }
 
-    void initialize( PageCursor cursor )
+    static void initialize( PageCursor cursor )
     {
         cursor.putByte( TreeNode.BYTE_POS_NODE_TYPE, TreeNode.NODE_TYPE_FREE_LIST_NODE );
     }
@@ -53,7 +65,7 @@ class FreelistNode
         }
         assertPos( pos );
         GenSafePointer.assertGenerationOnWrite( unstableGeneration );
-        cursor.setOffset( HEADER_LENGTH + pos * ENTRY_SIZE );
+        cursor.setOffset( entryOffset( pos ) );
         cursor.putInt( (int) unstableGeneration );
         put6BLong( cursor, pageId );
     }
@@ -73,10 +85,14 @@ class FreelistNode
     long read( PageCursor cursor, long stableGeneration, int pos )
     {
         assertPos( pos );
-        cursor.setOffset( HEADER_LENGTH + pos * ENTRY_SIZE );
+        cursor.setOffset( entryOffset( pos ) );
         long generation = getUnsignedInt( cursor );
-        long result = generation <= stableGeneration ? get6BLong( cursor ) : NO_PAGE_ID;
-        return result;
+        return generation <= stableGeneration ? get6BLong( cursor ) : NO_PAGE_ID;
+    }
+
+    private static int entryOffset( int pos )
+    {
+        return HEADER_LENGTH + pos * ENTRY_SIZE;
     }
 
     int maxEntries()
@@ -84,13 +100,13 @@ class FreelistNode
         return maxEntries;
     }
 
-    void setNext( PageCursor cursor, long nextFreelistPage )
+    static void setNext( PageCursor cursor, long nextFreelistPage )
     {
         cursor.setOffset( BYTE_POS_NEXT );
         put6BLong( cursor, nextFreelistPage );
     }
 
-    long next( PageCursor cursor )
+    static long next( PageCursor cursor )
     {
         cursor.setOffset( BYTE_POS_NEXT );
         return get6BLong( cursor );
