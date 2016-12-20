@@ -188,7 +188,6 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
     public void terminateTransactions()
     {
         markAllTransactionsAsTerminated();
-        markAllTransactionsAsClosed();
     }
 
     private void markAllTransactionsAsTerminated()
@@ -197,11 +196,6 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
         // won't be reused, ever. Each transaction has, among other things, a Locks.Client and we
         // certainly want to keep that from being reused from this point.
         allTransactions.forEach( tx -> tx.markForTermination( Status.General.DatabaseUnavailable ) );
-    }
-
-    private void markAllTransactionsAsClosed()
-    {
-        allTransactions.forEach( KernelTransactionImplementation::markAsShutdown );
     }
 
     public boolean haveClosingTransaction()
