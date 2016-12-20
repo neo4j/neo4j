@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.Compilatio
 import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
 import org.neo4j.cypher.internal.compiler.v3_2.ast.ResolvedCall
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan._
-import org.neo4j.cypher.internal.compiler.v3_2.phases.{CompilationState, Context, Phase}
+import org.neo4j.cypher.internal.compiler.v3_2.phases.{CompilationState, Condition, Context, Phase}
 import org.neo4j.cypher.internal.compiler.v3_2.spi.QueryContext
 import org.neo4j.cypher.internal.frontend.v3_2._
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
@@ -36,6 +36,8 @@ case object ProcedureOrSchemaCommandPlanBuilder extends Phase {
   override def phase: CompilationPhase = PIPE_BUILDING
 
   override def description = "take on queries that require no planning such as procedures and schema commands"
+
+  override def postConditions: Set[Condition] = Set.empty
 
   override def transform(from: CompilationState, context: Context): CompilationState = {
     val maybeExecutionPlan: Option[ExecutionPlan] = from.statement match {

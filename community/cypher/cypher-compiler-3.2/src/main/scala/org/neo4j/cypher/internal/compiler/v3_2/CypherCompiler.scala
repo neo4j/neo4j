@@ -130,6 +130,8 @@ case class CypherCompiler(executionPlanBuilder: ExecutablePlanBuilder,
       val executionPlan = executionPlanBuilder.producePlan(from, context.planContext, context.tracer, context.createFingerprintReference)
       from.copy(maybeExecutionPlan = Some(executionPlan))
     }
+
+    override def postConditions: Set[Condition] = Set.empty
   }
 
   private def createContext(tracer: CompilationPhaseTracer, notificationLogger: InternalNotificationLogger, planContext: PlanContext, queryText: String, offset: Option[InputPosition]):Context = {

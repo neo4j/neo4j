@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v3_2.phases
 
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.ExecutionPlan
-import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterCondition
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{Query, Statement}
 import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, InternalException, SemanticState, SemanticTable}
 
@@ -30,9 +29,9 @@ case class CompilationState(queryText: String,
                             maybeStatement: Option[Statement] = None,
                             maybeSemantics: Option[SemanticState] = None,
                             maybeExtractedParams: Option[Map[String, Any]] = None,
-                            maybePostConditions: Option[Set[RewriterCondition]] = None,
                             maybeSemanticTable: Option[SemanticTable] = None,
-                            maybeExecutionPlan: Option[ExecutionPlan] = None) {
+                            maybeExecutionPlan: Option[ExecutionPlan] = None,
+                            accumulatedConditions: Set[Condition] = Set.empty) {
 
   def isPeriodicCommit: Boolean = statement match {
     case Query(Some(_), _) => true
@@ -42,7 +41,6 @@ case class CompilationState(queryText: String,
   def statement = maybeStatement getOrElse fail("Statement")
   def semantics = maybeSemantics getOrElse fail("Semantics")
   def extractedParams = maybeExtractedParams getOrElse fail("Extracted parameters")
-  def postConditions = maybePostConditions getOrElse fail("Post conditions")
   def semanticTable =  maybeSemanticTable getOrElse fail("Semantic table")
   def executionPlan =  maybeExecutionPlan getOrElse fail("Execution plan")
 

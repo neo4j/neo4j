@@ -20,7 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v3_2.phases
 
 import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
+import org.neo4j.cypher.internal.compiler.v3_2.ast.conditions.containsNoNodesOfType
 import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters.{expandCallWhere, normalizeReturnClauses, normalizeWithClauses, replaceAliasedFunctionInvocations}
+import org.neo4j.cypher.internal.frontend.v3_2.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.frontend.v3_2.inSequence
 
 case object PreparatoryRewriting extends Phase {
@@ -36,8 +38,9 @@ case object PreparatoryRewriting extends Phase {
     from.copy(maybeStatement = Some(rewrittenStatement))
   }
 
-
   override val phase = AST_REWRITE
 
   override val description = "rewrite the AST into a shape that semantic analysis can be performed on"
+
+  override def postConditions = Set(StatementCondition(containsNoNodesOfType[UnaliasedReturnItem]))
 }

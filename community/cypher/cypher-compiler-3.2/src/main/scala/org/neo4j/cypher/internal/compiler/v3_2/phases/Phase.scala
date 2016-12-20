@@ -33,6 +33,8 @@ trait Phase extends Transformer {
     closing(context.tracer.beginPhase(phase)) {
       transform(from, context)
     }
+
+  def postConditions: Set[Condition]
 }
 
 trait VisitorPhase extends Phase {
@@ -42,6 +44,8 @@ trait VisitorPhase extends Phase {
   }
 
   def visit(value: CompilationState, context: Context): Unit
+
+  override def postConditions: Set[Condition] = Set.empty
 }
 
 trait Transformer {
@@ -58,9 +62,31 @@ object Transformer {
 }
 
 class PipeLine(first: Transformer, after: Transformer) extends Transformer {
+
   override def transform(from: CompilationState, context: Context): CompilationState = {
-    val step = first.transform(from, context)
-    after.transform(step, context)
+    var step = first.transform(from, context)
+    var messages: Set[String] = Set.empty
+    assert({
+      // Checking conditions inside assert so they are not run in production
+      // TODO: Make sure this is really only run if assertions are enabled
+      step = addConditions(step, first)
+      messages = step.accumulatedConditions.flatMap(condition => condition.check(step))
+      messages.isEmpty // If this is not true, we will fail if run with -ea
+    }, messages.mkString(", "))
+    step = after.transform(step, context)
+    assert({
+      step = addConditions(step, after)
+      messages = step.accumulatedConditions.flatMap(condition => condition.check(step))
+      messages.isEmpty
+    }, messages.mkString(", "))
+    step
+  }
+
+  private def addConditions(state: CompilationState, transformer: Transformer): CompilationState = {
+    transformer match {
+      case phase: Phase => state.copy(accumulatedConditions = state.accumulatedConditions ++ phase.postConditions)
+      case _ => state
+    }
   }
 }
 

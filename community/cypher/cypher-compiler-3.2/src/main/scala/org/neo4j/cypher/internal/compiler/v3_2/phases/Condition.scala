@@ -19,19 +19,21 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.phases
 
-import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase.PARSING
+import org.neo4j.cypher.internal.frontend.v3_2.SemanticState
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Statement
-import org.neo4j.cypher.internal.frontend.v3_2.parser.CypherParser
 
-case object Parsing extends Phase {
-  private val parser = new CypherParser
+import scala.reflect.ClassTag
 
-  override def transform(in: CompilationState, ignored: Context): CompilationState =
-    in.copy(maybeStatement = Some(parser.parse(in.queryText, in.startPosition)))
+trait Condition {
+  def check(state: CompilationState): Seq[String]
+}
 
-  override val phase = PARSING
-
-  override val description = "parse text into an AST object"
-
-  override def postConditions: Set[Condition] = Set(Contains[Statement])
+case class Contains[T: ClassTag](implicit manifest: Manifest[T]) extends Condition {
+  override def check(state: CompilationState): Seq[String] = {
+    manifest.runtimeClass match {
+      case x if classOf[Statement] == x && state.maybeStatement.isEmpty => Seq("Statement missing")
+      case x if classOf[SemanticState] == x && state.maybeSemantics.isEmpty => Seq("Semantic State missing")
+      case _ => Seq.empty
+    }
+  }
 }

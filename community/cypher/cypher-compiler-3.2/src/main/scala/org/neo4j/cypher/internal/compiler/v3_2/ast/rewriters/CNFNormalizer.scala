@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v3_2._
-import org.neo4j.cypher.internal.compiler.v3_2.phases.Context
+import org.neo4j.cypher.internal.compiler.v3_2.phases.{Condition, Context}
 import org.neo4j.cypher.internal.frontend.v3_2.Foldable._
 import org.neo4j.cypher.internal.frontend.v3_2.Rewritable._
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
@@ -42,6 +42,8 @@ case object CNFNormalizer extends StatementRewriter {
       normalizeSargablePredicates
     )
   }
+
+  override def postConditions: Set[Condition] = Set.empty
 }
 
 case class deMorganRewriter()(implicit monitor: AstRewritingMonitor) extends Rewriter {

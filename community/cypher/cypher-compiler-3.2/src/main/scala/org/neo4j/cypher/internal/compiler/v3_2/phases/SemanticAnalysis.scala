@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.phases
 
 import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase.SEMANTIC_CHECK
 import org.neo4j.cypher.internal.compiler.v3_2.SemanticChecker
+import org.neo4j.cypher.internal.frontend.v3_2.SemanticState
 
 case class SemanticAnalysis(warn: Boolean) extends Phase {
 
@@ -32,4 +33,6 @@ case class SemanticAnalysis(warn: Boolean) extends Phase {
   override def phase = SEMANTIC_CHECK
 
   override def description = "do variable binding, typing, type checking and other semantic checks"
+
+  override def postConditions: Set[Condition] = Set(Contains[SemanticState])
 }
