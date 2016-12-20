@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.phases
 
+import org.neo4j.cypher.internal.compiler.v3_2.planner.UnionQuery
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticState
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Statement
 
@@ -29,10 +30,19 @@ trait Condition {
 }
 
 case class Contains[T: ClassTag](implicit manifest: Manifest[T]) extends Condition {
+  private val acceptableTypes: Set[Class[_]] = Set(
+    classOf[Statement],
+    classOf[SemanticState],
+    classOf[UnionQuery]
+  )
+
+  assert(acceptableTypes.contains(manifest.runtimeClass))
+
   override def check(state: CompilationState): Seq[String] = {
     manifest.runtimeClass match {
       case x if classOf[Statement] == x && state.maybeStatement.isEmpty => Seq("Statement missing")
       case x if classOf[SemanticState] == x && state.maybeSemantics.isEmpty => Seq("Semantic State missing")
+      case x if classOf[UnionQuery] == x && state.maybeUnionQuery.isEmpty => Seq("Union query missing")
       case _ => Seq.empty
     }
   }

@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v3_2.planner
 
 import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
 import org.neo4j.cypher.internal.compiler.v3_2._
-import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.plannerQuery.StatementConverters._
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{ExecutablePlanBuilder, NewRuntimeSuccessRateMonitor, PlanFingerprint, PlanFingerprintReference}
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.closing
 import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilationState
@@ -31,7 +30,6 @@ import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.v3_2.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSequencer
-import org.neo4j.cypher.internal.frontend.v3_2.Rewritable._
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.{InternalException, SemanticTable}
 import org.neo4j.cypher.internal.ir.v3_2.PeriodicCommit
@@ -49,29 +47,29 @@ case class CostBasedExecutablePlanBuilder(monitors: Monitors,
                                           publicTypeConverter: Any => Any)
   extends ExecutablePlanBuilder {
 
-  override def producePlan(inputQuery: CompilationState, planContext: PlanContext, tracer: CompilationPhaseTracer,
+  override def producePlan(input: CompilationState,
+                           planContext: PlanContext,
+                           tracer: CompilationPhaseTracer,
                            createFingerprintReference: (Option[PlanFingerprint]) => PlanFingerprintReference) = {
     //monitor success of compilation
     val planBuilderMonitor = monitors.newMonitor[NewRuntimeSuccessRateMonitor](CypherCompilerFactory.monitorTag)
 
-    inputQuery.statement match {
+    input.statement match {
       case ast: Query =>
         val (periodicCommit, logicalPlan, pipeBuildContext) = closing(tracer.beginPhase(LOGICAL_PLANNING)) {
-          produceLogicalPlan(ast, inputQuery.semanticTable)(planContext, planContext.notificationLogger())
+          produceLogicalPlan(ast, input.unionQuery, input.semanticTable)(planContext, planContext.notificationLogger())
         }
-          runtimeBuilder(periodicCommit, logicalPlan, pipeBuildContext, planContext, tracer, inputQuery.semanticTable,
-                         planBuilderMonitor, plannerName, inputQuery, createFingerprintReference, config)
+          runtimeBuilder(periodicCommit, logicalPlan, pipeBuildContext, planContext, tracer, input.semanticTable,
+                         planBuilderMonitor, plannerName, input, createFingerprintReference, config)
       case x =>
         throw new InternalException(s"Can't plan a $x query with the cost planner")
     }
   }
 
-  private def produceLogicalPlan(ast: Query, semanticTable: SemanticTable)
+  private def produceLogicalPlan(ast: Query, original: UnionQuery, semanticTable: SemanticTable)
                         (planContext: PlanContext, notificationLogger: InternalNotificationLogger):
   (Option[PeriodicCommit], LogicalPlan, PipeExecutionBuilderContext) = {
 
-    val original = toUnionQuery(ast, semanticTable)
-    val unionQuery = original.endoRewrite(OptionalMatchRemover)
     val metrics = metricsFactory.newMetrics(planContext.statistics)
     val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality)
 
@@ -80,7 +78,7 @@ case class CostBasedExecutablePlanBuilder(monitors: Monitors,
       errorIfShortestPathFallbackUsedAtRuntime = config.errorIfShortestPathFallbackUsedAtRuntime,
       config = QueryPlannerConfiguration.default.withUpdateStrategy(updateStrategy))
 
-    val (periodicCommit, plan) = queryPlanner.plan(unionQuery)(context)
+    val (periodicCommit, plan) = queryPlanner.plan(original)(context)
 
     val pipeBuildContext = PipeExecutionBuilderContext(metrics.cardinality, semanticTable, plannerName)
 

@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_2.phases
 
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.ExecutionPlan
+import org.neo4j.cypher.internal.compiler.v3_2.planner.UnionQuery
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{Query, Statement}
 import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, InternalException, SemanticState, SemanticTable}
 
@@ -31,6 +32,7 @@ case class CompilationState(queryText: String,
                             maybeExtractedParams: Option[Map[String, Any]] = None,
                             maybeSemanticTable: Option[SemanticTable] = None,
                             maybeExecutionPlan: Option[ExecutionPlan] = None,
+                            maybeUnionQuery: Option[UnionQuery] = None,
                             accumulatedConditions: Set[Condition] = Set.empty) {
 
   def isPeriodicCommit: Boolean = statement match {
@@ -41,8 +43,9 @@ case class CompilationState(queryText: String,
   def statement = maybeStatement getOrElse fail("Statement")
   def semantics = maybeSemantics getOrElse fail("Semantics")
   def extractedParams = maybeExtractedParams getOrElse fail("Extracted parameters")
-  def semanticTable =  maybeSemanticTable getOrElse fail("Semantic table")
-  def executionPlan =  maybeExecutionPlan getOrElse fail("Execution plan")
+  def semanticTable = maybeSemanticTable getOrElse fail("Semantic table")
+  def executionPlan = maybeExecutionPlan getOrElse fail("Execution plan")
+  def unionQuery = maybeUnionQuery getOrElse fail("Union query")
 
   private def fail(what: String) = {
     throw new InternalException(s"$what not yet initialised")
