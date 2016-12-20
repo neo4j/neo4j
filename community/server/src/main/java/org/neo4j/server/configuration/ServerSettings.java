@@ -122,7 +122,7 @@ public interface ServerSettings
             },
             EMPTY );
 
-    @Description( "Directory for storing certificates to be used by Neo4j for TLS connections" )
+    @Description( "Directory for storing certificates to be used by Neo4j for TLS connections. Certificate files must be named _neo4j.cert_ and _neo4j.key_" )
     Setting<File> certificates_directory = BoltKernelExtension.Settings.certificates_directory;
 
     @Internal
