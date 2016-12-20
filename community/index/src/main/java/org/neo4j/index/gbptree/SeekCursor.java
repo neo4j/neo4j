@@ -217,10 +217,8 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
                 isInternal = bTreeNode.isInternal( cursor );
                 // Find the left-most key within from-range
                 keyCount = bTreeNode.keyCount( cursor );
-                if ( keyCount > maxKeyCount )
+                if ( !keyCountIsSane() )
                 {
-                    // keyCount is bigger than what a tree  node can hold. This must be that we're
-                    // reading from an evicted page that just happened to look like a tree node.
                     continue;
                 }
 
@@ -331,10 +329,8 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
                 currentNodeGen = bTreeNode.gen( cursor );
                 newGen = bTreeNode.newGen( cursor, stableGeneration, unstableGeneration );
                 keyCount = bTreeNode.keyCount( cursor );
-                if ( keyCount > maxKeyCount )
+                if ( !keyCountIsSane() )
                 {
-                    // keyCount is bigger than what a tree node can hold. This must be that we're
-                    // reading from an evicted page that just happened to look like a tree node.
                     continue;
                 }
 
@@ -466,6 +462,13 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
             // We've come too far and so this means the end of the result set
             return false;
         }
+    }
+
+    private boolean keyCountIsSane()
+    {
+        // if keyCount is out of bounds of what a tree node can hold, it must be that we're
+        // reading from an evicted page that just happened to look like a tree node.
+        return keyCount >= 0 && keyCount <= maxKeyCount;
     }
 
     private void restartSeekFromRoot() throws IOException
