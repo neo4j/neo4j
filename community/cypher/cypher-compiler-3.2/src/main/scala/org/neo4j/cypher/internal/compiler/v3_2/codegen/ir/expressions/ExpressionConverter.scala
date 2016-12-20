@@ -75,26 +75,8 @@ object ExpressionConverter {
   def createExpression(expression: ast.Expression)
                       (implicit context: CodeGenContext): CodeGenExpression = expressionConverter(expression, createExpression)
 
-  def createProjection(expression: ast.Expression)
-                      (implicit context: CodeGenContext): CodeGenExpression = {
-
-    expression match {
-      case node@ast.Variable(name) if context.semanticTable.isNode(node) =>
-        val variable = context.getVariable(name)
-        if (variable.codeGenType.isPrimitive) NodeProjection(variable)
-        else LoadVariable(variable)
-
-      case rel@ast.Variable(name) if context.semanticTable.isRelationship(rel) =>
-        val variable = context.getVariable(name)
-        if (variable.codeGenType.isPrimitive) RelationshipProjection(variable)
-        else LoadVariable(variable)
-
-      case e => expressionConverter(e, createProjection)
-    }
-  }
-
-  def createExpressionForVariable(variableQueryVariable: String)
-                                 (implicit context: CodeGenContext): CodeGenExpression = {
+  def createMaterializeExpressionForVariable(variableQueryVariable: String)
+                                            (implicit context: CodeGenContext): CodeGenExpression = {
 
     val variable = context.getVariable(variableQueryVariable)
 

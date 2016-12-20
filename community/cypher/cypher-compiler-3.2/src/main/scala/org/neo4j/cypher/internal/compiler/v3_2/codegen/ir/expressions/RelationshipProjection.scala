@@ -31,9 +31,10 @@ case class RelationshipProjection(relId: Variable) extends CodeGenExpression {
 
   override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) ={
     if (relId.nullable)
-      structure.nullableReference(relId.name, CodeGenType.primitiveRel, structure.materializeRelationship(relId.name))
+      structure.nullableReference(relId.name, CodeGenType.primitiveRel,
+        structure.materializeRelationship(relId.name, relId.codeGenType))
     else
-      structure.materializeRelationship(relId.name)
+      structure.materializeRelationship(relId.name, relId.codeGenType)
   }
 
   override def nullable(implicit context: CodeGenContext) = relId.nullable

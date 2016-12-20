@@ -187,11 +187,6 @@ public abstract class CompiledConversionUtils
         {
             return nodeManager.newRelationshipProxyById( ((RelationshipIdWrapper) anyValue).id() );
         }
-        else if ( anyValue instanceof JavaListWrapper )
-        {
-            return ((JavaListWrapper) anyValue).inner().stream()
-                    .map( v -> materializeAnyResult( nodeManager, v ) ).collect( Collectors.toList() );
-        }
         else if ( anyValue instanceof List )
         {
             return ((List) anyValue).stream()
@@ -201,6 +196,10 @@ public abstract class CompiledConversionUtils
         {
             ((Map) anyValue).replaceAll( (k, v) -> materializeAnyResult( nodeManager, v ) );
             return anyValue;
+        }
+        else if ( anyValue instanceof JavaListWrapper )
+        {
+            throw new IllegalStateException( "JavaListWrapper should not leak into compiled runtime" );
         }
         else
         {

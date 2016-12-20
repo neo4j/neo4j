@@ -81,9 +81,8 @@ object LogicalPlanConverter {
 
     override def consume(context: CodeGenContext, child: CodeGenPlan) = {
       val projectionOpName = context.registerOperator(projection)
-      // TODO: Remove intermediate materialization of values
       val columns = immutableMapValues(projection.expressions,
-                                       (e: ast.Expression) => ExpressionConverter.createProjection(e)(context))
+                                       (e: ast.Expression) => ExpressionConverter.createExpression(e)(context))
       val vars = columns.map {
         case (name, expr) =>
           val variable = Variable(context.namer.newVarName(), CodeGenType(expr.codeGenType(context).ct, ReferenceType),
@@ -109,7 +108,7 @@ object LogicalPlanConverter {
     override def consume(context: CodeGenContext, child: CodeGenPlan) = {
       val produceResultOpName = context.registerOperator(produceResults)
       val projections = produceResults.columns.map(c =>
-        c -> ExpressionConverter.createExpressionForVariable(c)(context)).toMap
+        c -> ExpressionConverter.createMaterializeExpressionForVariable(c)(context)).toMap
 
       (None, List(AcceptVisitor(produceResultOpName, projections)))
     }

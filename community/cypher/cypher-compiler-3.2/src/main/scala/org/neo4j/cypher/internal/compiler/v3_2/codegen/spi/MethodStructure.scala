@@ -153,9 +153,9 @@ trait MethodStructure[E] {
   def returnSuccessfully(): Unit
 
   // results
-  def materializeNode(nodeIdVar: String): E
+  def materializeNode(nodeIdVar: String, codeGenType: CodeGenType): E
   def node(nodeIdVar: String): E
-  def materializeRelationship(relIdVar: String): E
+  def materializeRelationship(relIdVar: String, codeGenType: CodeGenType): E
   def relationship(relIdVar: String): E
   def materializeAny(variable: String): E
   /** Feed single row to the given visitor */

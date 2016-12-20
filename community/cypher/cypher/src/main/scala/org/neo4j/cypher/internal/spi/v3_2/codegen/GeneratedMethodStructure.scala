@@ -258,8 +258,12 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   }
 
 
-  override def materializeNode(nodeIdVar: String) =
-    invoke(nodeManager, newNodeProxyById, generator.load(nodeIdVar))
+  override def materializeNode(nodeIdVar: String, codeGenType: CodeGenType) =
+    if (codeGenType.isPrimitive)
+      invoke(nodeManager, newNodeProxyById, generator.load(nodeIdVar))
+    else
+      invoke(nodeManager, newNodeProxyById,
+        invoke(cast(typeRef[NodeIdWrapper], generator.load(nodeIdVar)), nodeId))
 
   override def node(nodeIdVar: String) = createNewInstance(typeRef[NodeIdWrapper],
                                                            (typeRef[Long], generator.load(nodeIdVar)))
@@ -282,14 +286,17 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     case _ => ternaryOnNull(generator.load(varName), constant(null), onSuccess)
   }
 
-  override def materializeRelationship(relIdVar: String) =
-    invoke(nodeManager, newRelationshipProxyById, generator.load(relIdVar))
+  override def materializeRelationship(relIdVar: String, codeGenType: CodeGenType) =
+    if (codeGenType.isPrimitive)
+      invoke(nodeManager, newRelationshipProxyById, generator.load(relIdVar))
+    else
+      invoke(nodeManager, newRelationshipProxyById,
+        invoke(cast(typeRef[RelationshipIdWrapper], generator.load(relIdVar)), relId))
 
   override def relationship(relIdVar: String) = createNewInstance(typeRef[RelationshipIdWrapper],
                                                                   (typeRef[Long], generator.load(relIdVar)))
 
   override def materializeAny(variable: String) =
-    // TODO: Generate code directly instead of helper method call
     invoke(materializeAnyResult, nodeManager, generator.load(variable))
 
   override def trace[V](planStepId: String)(block: MethodStructure[Expression] => V) = if (!tracing) block(this)
