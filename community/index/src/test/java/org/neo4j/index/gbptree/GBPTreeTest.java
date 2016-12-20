@@ -21,9 +21,10 @@ package org.neo4j.index.gbptree;
 
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
@@ -39,16 +40,14 @@ import org.neo4j.index.Hit;
 import org.neo4j.index.Index;
 import org.neo4j.index.IndexWriter;
 import org.neo4j.index.gbptree.GBPTree.Monitor;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
-import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
@@ -57,15 +56,18 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.index.gbptree.GBPTree.NO_MONITOR;
+import static org.neo4j.index.gbptree.PageCacheTestUtil.pageCache;
 import static org.neo4j.index.gbptree.ThrowingRunnable.throwing;
-import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 
 public class GBPTreeTest
 {
+    private final DefaultFileSystemRule fs = new DefaultFileSystemRule();
+    private final TestDirectory directory = TestDirectory.testDirectory( getClass(), fs.get() );
+    private final RandomRule random = new RandomRule();
+
     @Rule
-    public final TemporaryFolder folder = new TemporaryFolder( new File( "target" ) );
-    @Rule
-    public final RandomRule random = new RandomRule();
+    public final RuleChain rules = RuleChain.outerRule( fs ).around( directory ).around( random );
+
     private PageCache pageCache;
     private File indexFile;
     private final Layout<MutableLong,MutableLong> layout = new SimpleLongLayout();
@@ -80,20 +82,26 @@ public class GBPTreeTest
     private GBPTree<MutableLong,MutableLong> createIndex( int pageSize, Monitor monitor )
             throws IOException
     {
-        pageCache = new MuninnPageCache( swapperFactory(), 10_000, pageSize, NULL );
-        indexFile = new File( folder.getRoot(), "index" );
+        pageCache = createPageCache( pageSize );
         return index = new GBPTree<>( pageCache, indexFile, layout, 0/*use whatever page cache says*/, monitor );
     }
 
-    private static PageSwapperFactory swapperFactory()
+    private PageCache createPageCache( int pageSize )
     {
-        PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory();
-        swapperFactory.setFileSystemAbstraction( new DefaultFileSystemAbstraction() );
-        return swapperFactory;
+        return pageCache( fs.get() )
+                .pageSize( pageSize )
+                .inconsistentReadAdversary()
+                .build();
+    }
+
+    @Before
+    public void setUpIndexFile()
+    {
+        indexFile = directory.file( "index" );
     }
 
     @After
-    public void closePageCache() throws IOException
+    public void closeIndexAndPageCache() throws IOException
     {
         if ( index != null )
         {
@@ -115,30 +123,6 @@ public class GBPTreeTest
 
         // WHEN
         index = new GBPTree<>( pageCache, indexFile, layout, 0, NO_MONITOR );
-
-        // THEN being able to open validates that the same meta data was read
-        // the test also closes the index afterwards
-    }
-
-    @Test
-    public void shouldFailToOpenOnDifferentMetaData() throws Exception
-    {
-        // GIVEN
-        try ( Index<MutableLong,MutableLong> index = createIndex( 1024 ) )
-        {   // Open/close is enough
-        }
-        index = null;
-
-        // WHEN
-        try ( Index<MutableLong,MutableLong> index =
-                new GBPTree<>( pageCache, indexFile, new SimpleLongLayout( "Something else" ), 0, NO_MONITOR ) )
-        {
-            fail( "Should not load" );
-        }
-        catch ( MetadataMismatchException e )
-        {
-            // THEN good
-        }
 
         // THEN being able to open validates that the same meta data was read
         // the test also closes the index afterwards
@@ -241,7 +225,7 @@ public class GBPTreeTest
 
         // WHEN
         pageCache.close();
-        pageCache = new MuninnPageCache( swapperFactory(), 10_000, pageSize / 2, NULL );
+        pageCache = createPageCache( pageSize / 2 );
         try ( Index<MutableLong,MutableLong> index = new GBPTree<>( pageCache, indexFile, layout, 0, NO_MONITOR ) )
         {
             fail( "Should not load" );
@@ -258,8 +242,7 @@ public class GBPTreeTest
     {
         // WHEN
         int pageSize = 512;
-        pageCache = new MuninnPageCache( swapperFactory(), 10_000, pageSize, NULL );
-        indexFile = new File( folder.getRoot(), "index" );
+        pageCache = createPageCache( pageSize );
         try ( Index<MutableLong,MutableLong> index =
                 new GBPTree<>( pageCache, indexFile, layout, pageSize * 2, NO_MONITOR ) )
         {
@@ -277,8 +260,7 @@ public class GBPTreeTest
     {
         // WHEN
         int pageSize = 1024;
-        pageCache = new MuninnPageCache( swapperFactory(), 10_000, pageSize, NULL );
-        indexFile = new File( folder.getRoot(), "index" );
+        pageCache = createPageCache( pageSize );
         try ( Index<MutableLong,MutableLong> index =
                 new GBPTree<>( pageCache, indexFile, layout, pageSize / 2, NO_MONITOR ) )
         {
@@ -291,15 +273,14 @@ public class GBPTreeTest
     {
         // WHEN
         int pageSize = 1024;
-        pageCache = new MuninnPageCache( swapperFactory(), 10_000, pageSize, NULL );
-        indexFile = new File( folder.getRoot(), "index" );
+        pageCache = createPageCache( pageSize );
         try ( Index<MutableLong,MutableLong> index =
                 new GBPTree<>( pageCache, indexFile, layout, pageSize, NO_MONITOR ) )
         {
             // Good
         }
 
-        pageCache = new MuninnPageCache( swapperFactory(), 10_000, pageSize / 2, NULL );
+        pageCache = createPageCache( pageSize / 2 );
         try ( GBPTree<MutableLong, MutableLong> index =
                 new GBPTree<>( pageCache, indexFile, layout, pageSize, NO_MONITOR ) )
         {
@@ -317,8 +298,7 @@ public class GBPTreeTest
     {
         // WHEN
         int pageSize = 1024;
-        pageCache = new MuninnPageCache( swapperFactory(), 10_000, pageSize, NULL );
-        indexFile = new File( folder.getRoot(), "index" );
+        pageCache = createPageCache( pageSize );
         List<Long> expectedData = new ArrayList<>();
         for ( long i = 0; i < 100; i++ )
         {
@@ -588,7 +568,7 @@ public class GBPTreeTest
     private void setFormatVersion( int pageSize, int formatVersion ) throws IOException
     {
         try ( PagedFile pagedFile = pageCache.map( indexFile, pageSize );
-                PageCursor cursor = pagedFile.io( IdSpace.META_PAGE_ID, PagedFile.PF_SHARED_WRITE_LOCK ) )
+              PageCursor cursor = pagedFile.io( IdSpace.META_PAGE_ID, PagedFile.PF_SHARED_WRITE_LOCK ) )
         {
             assertTrue( cursor.next() );
             cursor.putInt( formatVersion );

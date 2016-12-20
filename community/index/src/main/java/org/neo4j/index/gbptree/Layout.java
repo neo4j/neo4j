@@ -118,23 +118,6 @@ public interface Layout<KEY, VALUE> extends Comparator<KEY>
     int minorVersion();
 
     /**
-     * Writes meta data specific to this layout instance to {@code cursor} at its current offset.
-     *
-     * @param cursor {@link PageCursor} to write into, at its current offset.
-     */
-    void writeMetaData( PageCursor cursor );
-
-    /**
-     * Reads meta data specific to this layout instance from {@code cursor} at its current offset.
-     * The read meta data must also be verified against meta data provided in constructor of this Layout.
-     * Constructor-provided meta data can be {@code null} to skip this verification.
-     *
-     * @param cursor {@link PageCursor} to read from, at its current offset.
-     * @throws MetadataMismatchException if read meta data doesn't match with the meta data provided in constructor.
-     */
-    void readMetaData( PageCursor cursor );
-
-    /**
      * Utility method for generating an {@link #identifier()}.
      *
      * @param name name to be part of this identifier, must at most be 4 characters.

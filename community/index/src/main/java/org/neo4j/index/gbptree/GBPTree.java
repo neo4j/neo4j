@@ -435,7 +435,6 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>
                 layoutIdentifier = metaCursor.getLong();
                 majorVersion = metaCursor.getInt();
                 minorVersion = metaCursor.getInt();
-                layout.readMetaData( metaCursor );
             }
             while ( metaCursor.shouldRetry() );
             checkOutOfBounds( metaCursor );
@@ -469,7 +468,6 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>
             metaCursor.putLong( layout.identifier() );
             metaCursor.putInt( layout.majorVersion() );
             metaCursor.putInt( layout.minorVersion() );
-            layout.writeMetaData( metaCursor );
             checkOutOfBounds( metaCursor );
         }
     }
