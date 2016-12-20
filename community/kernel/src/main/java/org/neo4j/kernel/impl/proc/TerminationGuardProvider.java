@@ -19,10 +19,13 @@
  */
 package org.neo4j.kernel.impl.proc;
 
+import java.util.Optional;
+
 import org.neo4j.graphdb.TransactionGuardException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.guard.GuardException;
@@ -59,10 +62,11 @@ public class TerminationGuardProvider implements ComponentRegistry.Provider<Term
         @Override
         public void check()
         {
-            ktx.getReasonIfTerminated().ifPresent( reason ->
+            Optional<Status> terminationReason = ktx.getReasonIfTerminated();
+            if ( terminationReason.isPresent() )
             {
-                throw new TransactionTerminatedException( reason );
-            } );
+                throw new TransactionTerminatedException( terminationReason.get() );
+            }
             if ( ktx.isOpen() )
             {
                 try

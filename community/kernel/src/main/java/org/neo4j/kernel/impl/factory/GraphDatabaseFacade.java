@@ -23,6 +23,7 @@ import java.io.File;
 import java.net.URL;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
@@ -60,6 +61,7 @@ import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
@@ -742,9 +744,10 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
 
     private void assertTransactionOpen()
     {
-        spi.currentTransaction().getReasonIfTerminated().ifPresent( reason ->
+        Optional<Status> terminationReason = spi.currentTransaction().getReasonIfTerminated();
+        if ( terminationReason.isPresent() )
         {
-            throw new TransactionTerminatedException( reason );
-        } );
+            throw new TransactionTerminatedException( terminationReason.get() );
+        }
     }
 }
