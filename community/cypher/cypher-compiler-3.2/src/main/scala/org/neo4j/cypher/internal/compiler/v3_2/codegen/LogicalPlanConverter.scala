@@ -81,6 +81,7 @@ object LogicalPlanConverter {
 
     override def consume(context: CodeGenContext, child: CodeGenPlan) = {
       val projectionOpName = context.registerOperator(projection)
+      // TODO: Remove intermediate materialization of values
       val columns = immutableMapValues(projection.expressions,
                                        (e: ast.Expression) => ExpressionConverter.createProjection(e)(context))
       val vars = columns.map {
@@ -107,12 +108,8 @@ object LogicalPlanConverter {
 
     override def consume(context: CodeGenContext, child: CodeGenPlan) = {
       val produceResultOpName = context.registerOperator(produceResults)
-      val projections = (produceResults.lhs.get match {
-        // if lhs is projection than we can simply load things that it projected
-        case _: plans.Projection => produceResults.columns.map(c => c -> LoadVariable(context.getVariable(c)))
-        // else we have to evaluate all expressions ourselves
-        case _ => produceResults.columns.map(c => c -> ExpressionConverter.createExpressionForVariable(c)(context))
-      }).toMap
+      val projections = produceResults.columns.map(c =>
+        c -> ExpressionConverter.createExpressionForVariable(c)(context)).toMap
 
       (None, List(AcceptVisitor(produceResultOpName, projections)))
     }

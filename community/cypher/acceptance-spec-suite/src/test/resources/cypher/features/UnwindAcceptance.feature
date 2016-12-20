@@ -102,17 +102,45 @@ Feature: UnwindAcceptance
       WITH *
       UNWIND [ {k: [n]},
                {k: [r]},
-               {k: [n], l: 42},
+               {k: [n, r], l: 42},
                {k: [r], l: 's'},
-               [ {k: [n]} ]
+               [ {k: [n, r]} ]
              ] as i
       RETURN i
       """
     Then the result should be:
-      | i                   |
-      | {k: [(:A)]}         |
-      | {k: [[:R]]}         |
-      | {k: [(:A)], l: 42}  |
-      | {k: [[:R]], l: 's'} |
-      | [{k: [(:A)]}]       |
+      | i                        |
+      | {k: [(:A)]}              |
+      | {k: [[:R]]}              |
+      | {k: [(:A), [:R]], l: 42} |
+      | {k: [[:R]], l: 's'}      |
+      | [{k: [(:A), [:R]]}]      |
+    And no side effects
+
+  Scenario: Nested type support with mixed list and map literals with projection
+    Given an empty graph
+    And having executed:
+      """
+      CREATE (:A)-[:R]->()
+      """
+    When executing query:
+      """
+      MATCH (n:A)-[r:R]->()
+      WITH *
+      UNWIND [ {k: [n]},
+               {k: [r]},
+               {k: [n, r], l: 42},
+               {k: [r], l: 's'},
+               [ {k: [n, r]} ]
+             ] as i
+      WITH i as j
+      RETURN j
+      """
+    Then the result should be:
+      | j                        |
+      | {k: [(:A)]}              |
+      | {k: [[:R]]}              |
+      | {k: [(:A), [:R]], l: 42} |
+      | {k: [[:R]], l: 's'}     |
+      | [{k: [(:A), [:R]]}]      |
     And no side effects
