@@ -238,8 +238,8 @@ public class BasicAuthenticationTest
         // Expect
         exception.expect( AuthenticationException.class );
         exception.expect( hasStatus( Status.Security.Unauthorized ) );
-        exception.expectMessage(
-                "The value associated with the key `principal` must be a String but was: SingletonList" );
+        exception.expectMessage( "Unsupported authentication token, the value associated with the key `principal` " +
+                "must be a String but was: SingletonList" );
 
         // When
         authentication
