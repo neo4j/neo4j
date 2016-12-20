@@ -69,12 +69,17 @@ class TreeStatePair
         else if ( stateA.isValid() && stateB.isValid() )
         {
             // return newest
-            if ( stateA.stableGeneration() > stateB.stableGeneration() &&
+
+            // compare unstable generations of A/B and include sanity check for stable generations
+            // such that there cannot be a state S compared to other state O where
+            // S.unstableGeneration > O.unstableGeneration AND S.stableGeneration < O.stableGeneration
+
+            if ( stateA.stableGeneration() >= stateB.stableGeneration() &&
                     stateA.unstableGeneration() > stateB.unstableGeneration() )
             {
                 return Optional.of( stateA );
             }
-            else if ( stateA.stableGeneration() < stateB.stableGeneration() &&
+            else if ( stateA.stableGeneration() <= stateB.stableGeneration() &&
                     stateA.unstableGeneration() < stateB.unstableGeneration() )
             {
                 return Optional.of( stateB );

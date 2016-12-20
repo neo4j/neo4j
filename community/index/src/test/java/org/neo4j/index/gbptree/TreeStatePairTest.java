@@ -39,23 +39,36 @@ public class TreeStatePairTest
     @Parameterized.Parameters( name = "{0},{1}" )
     public static Collection<Object[]> variants()
     {
-        // State A, State B, Select newest, Select oldest
-
         Collection<Object[]> variants = new ArrayList<>();
-        variants.add( new Object[] {State.EMPTY, State.EMPTY, Selected.FAIL, Selected.A} );
-        variants.add( new Object[] {State.EMPTY, State.BROKEN, Selected.FAIL, Selected.A} );
-        variants.add( new Object[] {State.EMPTY, State.VALID, Selected.B, Selected.A} );
 
-        variants.add( new Object[] {State.BROKEN, State.EMPTY, Selected.FAIL, Selected.A} );
-        variants.add( new Object[] {State.BROKEN, State.BROKEN, Selected.FAIL, Selected.A} );
-        variants.add( new Object[] {State.BROKEN, State.VALID, Selected.B, Selected.A} );
+        //               ┌──────────────────┬──────────────────┬───────────────┬───────────────┐
+        //               │ State A          │ State B          │ Select newest │ Select oldest │
+        //               └──────────────────┴──────────────────┴───────────────┴───────────────┘
+        variant( variants, State.EMPTY,       State.EMPTY,       Selected.FAIL,  Selected.A );
+        variant( variants, State.EMPTY,       State.BROKEN,      Selected.FAIL,  Selected.A );
+        variant( variants, State.EMPTY,       State.VALID,       Selected.B,     Selected.A );
 
-        variants.add( new Object[] {State.VALID, State.EMPTY, Selected.A, Selected.B} );
-        variants.add( new Object[] {State.VALID, State.BROKEN, Selected.A, Selected.B} );
-        variants.add( new Object[] {State.VALID, State.OLD_VALID, Selected.A, Selected.B} );
-        variants.add( new Object[] {State.VALID, State.VALID, Selected.FAIL, Selected.A} );
-        variants.add( new Object[] {State.OLD_VALID, State.VALID, Selected.B, Selected.A} );
+        variant( variants, State.BROKEN,      State.EMPTY,       Selected.FAIL,  Selected.A );
+        variant( variants, State.BROKEN,      State.BROKEN,      Selected.FAIL,  Selected.A );
+        variant( variants, State.BROKEN,      State.VALID,       Selected.B,     Selected.A );
+
+        variant( variants, State.VALID,       State.EMPTY,       Selected.A,     Selected.B );
+        variant( variants, State.VALID,       State.BROKEN,      Selected.A,     Selected.B );
+        variant( variants, State.VALID,       State.OLD_VALID,   Selected.A,     Selected.B );
+        variant( variants, State.VALID,       State.VALID,       Selected.FAIL,  Selected.A );
+        variant( variants, State.OLD_VALID,   State.VALID,       Selected.B,     Selected.A );
+
+        variant( variants, State.CRASH_VALID, State.VALID,       Selected.A,     Selected.B );
+        variant( variants, State.VALID,       State.CRASH_VALID, Selected.B,     Selected.A );
+        variant( variants, State.WIDE_VALID,  State.CRASH_VALID, Selected.FAIL,  Selected.A );
+        variant( variants, State.CRASH_VALID, State.WIDE_VALID,  Selected.FAIL,  Selected.A );
         return variants;
+    }
+
+    private static void variant( Collection<Object[]> variants, State stateA, State stateB,
+            Selected newest, Selected oldest )
+    {
+        variants.add( new Object[] {stateA, stateB, newest, oldest} );
     }
 
     private static final long PAGE_A = 1;
@@ -133,7 +146,7 @@ public class TreeStatePairTest
                 cursor.putLong( cursor.getOffset(), ~someOfTheBits );
             }
         },
-        VALID
+        VALID // stableGeneration:5 and unstableGeneration:6
         {
             @Override
             void write( PageCursor cursor ) throws IOException
@@ -141,7 +154,23 @@ public class TreeStatePairTest
                 TreeState.write( cursor, 5, 6, 7, 8 );
             }
         },
-        OLD_VALID
+        CRASH_VALID // stableGeneration:5 and unstableGeneration:7, i.e. crashed from VALID state
+        {
+            @Override
+            void write( PageCursor cursor ) throws IOException
+            {
+                TreeState.write( cursor, 5, 7, 7, 8 );
+            }
+        },
+        WIDE_VALID // stableGeneration:4 and unstableGeneration:8, i.e. crashed but wider gap between generations
+        {
+            @Override
+            void write( PageCursor cursor ) throws IOException
+            {
+                TreeState.write( cursor, 5, 7, 7, 8 );
+            }
+        },
+        OLD_VALID // stableGeneration:2 and unstableGeneration:3
         {
             @Override
             void write( PageCursor cursor ) throws IOException
