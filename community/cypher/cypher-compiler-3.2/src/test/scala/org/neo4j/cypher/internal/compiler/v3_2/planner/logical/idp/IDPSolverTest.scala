@@ -20,11 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_2.planner.logical.idp
 
 import org.mockito.Mockito.{spy, verify, verifyNoMoreInteractions}
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.Metrics.CardinalityModel
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps.LogicalPlanProducer
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.{LogicalPlanningContext, Metrics, ProjectingSelector, QueryGraphSolver}
-import org.neo4j.cypher.internal.compiler.v3_2.spi.PlanContext
-import org.neo4j.cypher.internal.frontend.v3_2.SemanticTable
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.ProjectingSelector
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 
 import scala.collection.immutable.BitSet
@@ -146,7 +142,6 @@ class IDPSolverTest extends CypherFunSuite {
     solver(seed, result)
 
     monitor.maxStartIteration should equal(monitor.foundPlanIteration)
-    println(monitor.maxStartIteration)
     monitor.maxStartIteration
   }
 

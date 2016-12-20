@@ -28,8 +28,6 @@ sealed trait InternalNotificationLogger {
   def log(notification: InternalNotification)
 
   def notifications: Set[InternalNotification]
-
-  def +=(notification: InternalNotification) = log(notification)
 }
 
 /**

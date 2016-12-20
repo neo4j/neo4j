@@ -24,6 +24,7 @@ public interface CompilationPhaseTracer
     enum CompilationPhase
     {
         PARSING,
+        DEPRECATION_WARNINGS,
         SEMANTIC_CHECK,
         AST_REWRITE,
         LOGICAL_PLANNING,

@@ -19,8 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters
 
-import org.neo4j.cypher.internal.frontend.v3_2.ast.Query
+import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilationState
 import org.neo4j.cypher.internal.compiler.v3_2.planner.AstRewritingTestSupport
+import org.neo4j.cypher.internal.frontend.v3_2.ast.Query
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 
 class RewriteEqualityToInPredicateTest extends CypherFunSuite with AstRewritingTestSupport {
@@ -70,9 +71,10 @@ class RewriteEqualityToInPredicateTest extends CypherFunSuite with AstRewritingT
     val original = parser.parse(from).asInstanceOf[Query]
     val expected = parser.parse(to).asInstanceOf[Query]
 
-    val result = rewriteEqualityToInPredicate(original)
+    val input = CompilationState(null, null, null, Some(original))
+    val result = rewriteEqualityToInPredicate.transform(input, null)
 
-    result should equal(expected)
+    result.statement should equal(expected)
   }
 
   private def shouldNotRewrite(q: String) {

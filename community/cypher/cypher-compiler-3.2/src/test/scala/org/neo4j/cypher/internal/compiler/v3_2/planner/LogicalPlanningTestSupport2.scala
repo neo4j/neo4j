@@ -21,14 +21,15 @@ package org.neo4j.cypher.internal.compiler.v3_2.planner
 
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.plannerQuery.StatementConverters._
-import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters.{normalizeReturnClauses, normalizeWithClauses}
+import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters._
+import org.neo4j.cypher.internal.compiler.v3_2.phases.{CompilationState, Context, LateAstRewriting}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.Metrics._
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.cardinality.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.idp.{IDPQueryGraphSolver, IDPQueryGraphSolverMonitor, SingleComponentPlanner, cartesianProductsOrValueJoins}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.rewriter.{LogicalPlanRewriter, unnestApply}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps.LogicalPlanProducer
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.{LogicalPlanningContext, _}
 import org.neo4j.cypher.internal.compiler.v3_2.spi._
 import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
@@ -53,7 +54,6 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
   val solved = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(0))
   var parser = new CypherParser
-  var semanticChecker = new SemanticChecker
   val rewriterSequencer = RewriterStepSequencer.newValidating _
   var astRewriter = new ASTRewriter(rewriterSequencer, shouldExtractParameters = false)
   var tokenResolver = new SimpleTokenResolver()
@@ -82,11 +82,11 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
     def table = Map.empty[PatternExpression, QueryGraph]
 
-    def planContext = new PlanContext {
-      def statistics: GraphStatistics =
+    def planContext = new NotImplementedPlanContext {
+      override def statistics: GraphStatistics =
         config.graphStatistics
 
-      def getUniqueIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor] =
+      override def getUniqueIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor] =
         if (config.uniqueIndexes((labelName, propertyKey)))
           Some(new IndexDescriptor(
             semanticTable.resolvedLabelIds(labelName).id,
@@ -95,7 +95,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         else
           None
 
-      def getUniquenessConstraint(labelName: String, propertyKey: String): Option[UniquenessConstraint] = {
+      override def getUniquenessConstraint(labelName: String, propertyKey: String): Option[UniquenessConstraint] = {
         if (config.uniqueIndexes((labelName, propertyKey)))
           Some(new UniquenessConstraint(
             semanticTable.resolvedLabelIds(labelName).id,
@@ -105,7 +105,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
           None
       }
 
-      def getIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor] =
+      override def getIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor] =
         if (config.indexes((labelName, propertyKey)) || config.uniqueIndexes((labelName, propertyKey)))
           Some(new IndexDescriptor(
             semanticTable.resolvedLabelIds(labelName).id,
@@ -114,89 +114,66 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         else
           None
 
-      def hasIndexRule(labelName: String): Boolean =
+      override def hasIndexRule(labelName: String): Boolean =
         config.indexes.exists(_._1 == labelName) || config.uniqueIndexes.exists(_._1 == labelName)
 
-      def getOptPropertyKeyId(propertyKeyName: String) =
+      override def getOptPropertyKeyId(propertyKeyName: String) =
         semanticTable.resolvedPropertyKeyNames.get(propertyKeyName).map(_.id)
 
-      def getOptLabelId(labelName: String): Option[Int] =
+      override def getOptLabelId(labelName: String): Option[Int] =
         semanticTable.resolvedLabelIds.get(labelName).map(_.id)
 
-      def getOptRelTypeId(relType: String): Option[Int] =
+      override def getOptRelTypeId(relType: String): Option[Int] =
         semanticTable.resolvedRelTypeNames.get(relType).map(_.id)
-
-      def checkNodeIndex(idxName: String): Unit = ???
-
-      def checkRelIndex(idxName: String): Unit = ???
-
-      def getOrCreateFromSchemaState[T](key: Any, f: => T): T = ???
-
-      def getRelTypeName(id: Int): String = ???
-
-      def getRelTypeId(relType: String): Int = ???
-
-      def getLabelName(id: Int): String = ???
-
-      def getPropertyKeyId(propertyKeyName: String): Int = ???
-
-      def getPropertyKeyName(id: Int): String = ???
-
-      def getLabelId(labelName: String): Int = ???
-
-      def txIdProvider: () => Long = ???
-
-      override def hasPropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean = ???
-
-      override def procedureSignature(name: QualifiedName): ProcedureSignature = ???
-
-      override def functionSignature(name: QualifiedName): Option[UserFunctionSignature] = ???
-
-      override def notificationLogger(): InternalNotificationLogger = ???
     }
+
+    private def context = Context(null, null, null, null, null, null, mock[AstRewritingMonitor])
+
+    private val pipeLine =
+      Namespacer andThen rewriteEqualityToInPredicate andThen CNFNormalizer andThen LateAstRewriting
 
     def planFor(queryString: String): SemanticPlan = {
 
       val parsedStatement = parser.parse(queryString)
       val mkException = new SyntaxExceptionCreator(queryString, Some(pos))
       val cleanedStatement: Statement = parsedStatement.endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException)))
-      val semanticState = semanticChecker.check(queryString, cleanedStatement, mkException)
+      val semanticState = SemanticChecker.check(cleanedStatement, mkException)
       val (rewrittenStatement, _, postConditions) = astRewriter.rewrite(queryString, cleanedStatement, semanticState)
-      val postRewriteSemanticState = semanticChecker.check(queryString, rewrittenStatement, mkException)
-      val semanticTable = SemanticTable(types = postRewriteSemanticState.typeTable)
-      CostBasedExecutablePlanBuilder.rewriteStatement(rewrittenStatement, postRewriteSemanticState.scopeTree,
-        semanticTable, rewriterSequencer, semanticChecker, postConditions, mock[AstRewritingMonitor]) match {
-        case (ast: Query, newTable) =>
-          tokenResolver.resolve(ast)(newTable, planContext)
-          val unionQuery = toUnionQuery(ast, semanticTable)
-          val metrics = metricsFactory.newMetrics(planContext.statistics)
-          val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality)
-          val context = LogicalPlanningContext(planContext, logicalPlanProducer, metrics, newTable, queryGraphSolver, QueryGraphSolverInput.empty, notificationLogger = devNullLogger)
-          val plannerQuery = unionQuery.queries.head
-          val resultPlan = planner.internalPlan(plannerQuery)(context)
-          SemanticPlan(resultPlan.endoRewrite(fixedPoint(unnestApply)), newTable)
-      }
+
+      val state = CompilationState(queryString, None, "", Some(rewrittenStatement), Some(semanticState))
+      val output = pipeLine.transform(state, context)
+
+      val ast = output.statement.asInstanceOf[Query]
+
+      tokenResolver.resolve(ast)(output.semanticTable, planContext)
+      val unionQuery = toUnionQuery(ast, output.semanticTable)
+      val metrics = metricsFactory.newMetrics(planContext.statistics)
+      val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality)
+      val planningContext = LogicalPlanningContext(planContext, logicalPlanProducer, metrics, output.semanticTable, queryGraphSolver, QueryGraphSolverInput.empty, notificationLogger = devNullLogger)
+      val plannerQuery = unionQuery.queries.head
+      val resultPlan = planner.internalPlan(plannerQuery)(planningContext)
+      SemanticPlan(resultPlan.endoRewrite(fixedPoint(unnestApply)), output.semanticTable)
     }
 
     def getLogicalPlanFor(queryString: String): (Option[PeriodicCommit], LogicalPlan, SemanticTable) = {
       val parsedStatement = parser.parse(queryString)
       val mkException = new SyntaxExceptionCreator(queryString, Some(pos))
-      val semanticState = semanticChecker.check(queryString, parsedStatement, mkException)
+      val semanticState = SemanticChecker.check(parsedStatement, mkException)
       val (rewrittenStatement, _, postConditions) = astRewriter.rewrite(queryString, parsedStatement, semanticState)
 
-      val table = SemanticTable(types = semanticState.typeTable, recordedScopes = semanticState.recordedScopes)
+      val state = CompilationState(queryString, None, "", Some(rewrittenStatement), Some(semanticState))
+      val output = pipeLine.transform(state, context)
+      val table = output.semanticTable
       config.updateSemanticTableWithTokens(table)
+      val ast = output.statement.asInstanceOf[Query]
 
-      CostBasedExecutablePlanBuilder.rewriteStatement(rewrittenStatement, semanticState.scopeTree, table, rewriterSequencer, semanticChecker, postConditions, mock[AstRewritingMonitor]) match {
-        case (ast: Query, newTable) =>
-          tokenResolver.resolve(ast)(newTable, planContext)
-          val unionQuery = toUnionQuery(ast, semanticTable)
-          val metrics = metricsFactory.newMetrics(planContext.statistics)
-          val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality)
-          val context = LogicalPlanningContext(planContext, logicalPlanProducer, metrics, table, queryGraphSolver, QueryGraphSolverInput.empty, notificationLogger = devNullLogger)
-          val (periodicCommit, plan) = planner.plan(unionQuery)(context)
-          (periodicCommit, plan, table)
-      }
+      tokenResolver.resolve(ast)(output.semanticTable, planContext)
+      val unionQuery = toUnionQuery(ast, semanticTable)
+      val metrics = metricsFactory.newMetrics(planContext.statistics)
+      val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality)
+      val logicalPlanningContext = LogicalPlanningContext(planContext, logicalPlanProducer, metrics, table, queryGraphSolver, QueryGraphSolverInput.empty, notificationLogger = devNullLogger)
+      val (periodicCommit, plan) = planner.plan(unionQuery)(logicalPlanningContext)
+      (periodicCommit, plan, table)
     }
 
     def estimate(qg: QueryGraph, input: QueryGraphSolverInput = QueryGraphSolverInput.empty) =

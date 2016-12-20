@@ -46,7 +46,7 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
     }
 
     //then
-    verify(logger, times(1)) += CartesianProductNotification(InputPosition(0, 1, 1), Set("c", "d"))
+    verify(logger, times(1)).log(CartesianProductNotification(InputPosition(0, 1, 1), Set("c", "d")))
   }
 
   test("should not warn when connected patterns") {
@@ -58,7 +58,7 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
     graph.inTx(compiler.planQuery("MATCH (a)-->(b), (a)-->(c) RETURN *", planContext, logger))
 
     //then
-    verify(logger, never) += any()
+    verify(logger, never).log(any())
   }
 
   test("should warn when one disconnected pattern in otherwise connected pattern") {
@@ -72,7 +72,7 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
     }
 
     //then
-    verify(logger, times(1)) += CartesianProductNotification(InputPosition(0, 1, 1), Set("x", "y"))
+    verify(logger, times(1)).log(CartesianProductNotification(InputPosition(0, 1, 1), Set("x", "y")))
   }
 
   test("should not warn when disconnected patterns in multiple match clauses") {
@@ -84,7 +84,7 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
     graph.inTx(compiler.planQuery("MATCH (a)-->(b) MATCH (c)-->(d) RETURN *", planContext, logger))
 
     //then
-    verify(logger, never) += any()
+    verify(logger, never).log(any())
   }
 
   test("this query does not contain a cartesian product") {
@@ -98,7 +98,7 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
                                     |RETURN DISTINCT d""".stripMargin, planContext, logger))
 
     //then
-    verify(logger, never) += any()
+    verify(logger, never).log(any())
   }
 
   private def createCompiler() = {

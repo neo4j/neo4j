@@ -67,7 +67,7 @@ trait Compatibility {
         val (planImpl, extractedParameters) = compiler.planPreparedQuery(syntacticQuery, notificationLogger, planContext, Some(preParsedQuery.offset), tracer)
 
         // Log notifications/warnings from planning
-        planImpl.notifications(planContext).foreach(notificationLogger += _)
+        planImpl.notifications(planContext).foreach(notificationLogger.log)
 
         (new ExecutionPlanWrapper(planImpl), extractedParameters)
       }

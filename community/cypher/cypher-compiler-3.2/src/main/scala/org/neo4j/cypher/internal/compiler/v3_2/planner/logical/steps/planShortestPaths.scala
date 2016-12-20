@@ -76,7 +76,7 @@ case object planShortestPaths {
                                             queryGraph: QueryGraph)
                                            (implicit context: LogicalPlanningContext): LogicalPlan = {
     // create warning for planning a shortest path fallback
-    context.notificationLogger += ExhaustiveShortestPathForbiddenNotification(shortestPath.expr.position)
+    context.notificationLogger.log(ExhaustiveShortestPathForbiddenNotification(shortestPath.expr.position))
 
     val lpp = context.logicalPlanProducer
 

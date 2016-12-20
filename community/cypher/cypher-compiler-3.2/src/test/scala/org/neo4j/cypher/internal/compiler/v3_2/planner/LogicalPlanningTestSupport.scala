@@ -25,8 +25,9 @@ import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.plannerQuery.StatementConverters._
-import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters.{namePatternPredicatePatternElements, normalizeReturnClauses, normalizeWithClauses}
+import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters._
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.IdentityTypeConverter
+import org.neo4j.cypher.internal.compiler.v3_2.phases.{CompilationState, Context, LateAstRewriting, RewriteProcedureCalls}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.execution.PipeExecutionBuilderContext
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical._
@@ -50,7 +51,6 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
 
   val monitors = mock[Monitors]
   val parser = new CypherParser
-  val semanticChecker = new SemanticChecker
   val rewriterSequencer = RewriterStepSequencer.newValidating _
   val astRewriter = new ASTRewriter(rewriterSequencer, shouldExtractParameters = false)
   val mockRel = newPatternRelationship("a", "b", "r")
@@ -171,7 +171,6 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       rewriterSequencer = rewriterSequencer,
       plannerName = None,
       runtimeBuilder = InterpretedRuntimeBuilder(InterpretedPlanBuilder(Clock.systemUTC(), monitors, IdentityTypeConverter)),
-      semanticChecker = semanticChecker,
       updateStrategy = None,
       config = config,
       publicTypeConverter = identity)
@@ -205,18 +204,21 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     val parsedStatement = parser.parse(query.replace("\r\n", "\n"))
     val mkException = new SyntaxExceptionCreator(query, Some(pos))
     val cleanedStatement: Statement = parsedStatement.endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException)))
-    val semanticState = semanticChecker.check(query, cleanedStatement, mkException)
+    val semanticState = SemanticChecker.check(cleanedStatement, mkException)
     val astRewriterResultStatement = astRewriter.rewrite(query, cleanedStatement, semanticState)._1
     val resolvedStatement = (procLookup, fcnLookup) match {
       case (None, None) => astRewriterResultStatement
-      case (Some(pl), None) =>  astRewriterResultStatement.endoRewrite(rewriteProcedureCalls(pl, _ => None))
-      case (None, Some(fl)) =>  astRewriterResultStatement.endoRewrite(rewriteProcedureCalls(_ => signature, fl))
-      case (Some(pl), Some(fl)) =>  astRewriterResultStatement.endoRewrite(rewriteProcedureCalls(pl, fl))
-
+      case _ =>
+        val procs: (QualifiedName) => ProcedureSignature = procLookup.getOrElse(_ => signature)
+        val funcs: (QualifiedName) => Option[UserFunctionSignature] = fcnLookup.getOrElse(_ => None)
+        val planContext = new TestSignatureResolvingPlanContext(procs, funcs)
+        val rewriter = RewriteProcedureCalls.rewriter(planContext)
+        astRewriterResultStatement.endoRewrite(rewriter)
     }
-    val semanticTable: SemanticTable = SemanticTable(types = semanticState.typeTable)
-    val (rewrittenAst: Statement, _) = CostBasedExecutablePlanBuilder.rewriteStatement(resolvedStatement, semanticState.scopeTree,
-      semanticTable, RewriterStepSequencer.newValidating, semanticChecker, Set.empty, mock[AstRewritingMonitor])
+    val state = CompilationState(query, None, "", Some(resolvedStatement), Some(SemanticChecker.check(cleanedStatement, mkException)))
+
+    val context = Context(null, null, null, null, null, null, mock[AstRewritingMonitor])
+    val output = (Namespacer andThen rewriteEqualityToInPredicate andThen CNFNormalizer andThen LateAstRewriting).transform(state, context)
 
     // This fakes pattern expression naming for testing purposes
     // In the actual code path, this renaming happens as part of planning
@@ -224,8 +226,8 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     // cf. QueryPlanningStrategy
     //
 
-    val namedAst: Statement = rewrittenAst.endoRewrite(namePatternPredicatePatternElements)
-    val unionQuery = toUnionQuery(namedAst.asInstanceOf[Query], semanticTable)
+    val namedAst: Statement = output.statement.endoRewrite(namePatternPredicatePatternElements)
+    val unionQuery = toUnionQuery(namedAst.asInstanceOf[Query], output.semanticTable)
     unionQuery
   }
 

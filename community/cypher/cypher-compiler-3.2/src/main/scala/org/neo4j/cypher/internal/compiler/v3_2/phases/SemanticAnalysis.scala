@@ -17,22 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_2
+package org.neo4j.cypher.internal.compiler.v3_2.phases
 
-import org.neo4j.cypher.internal.frontend.v3_2._
-import org.neo4j.cypher.internal.frontend.v3_2.ast.Statement
+import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase.SEMANTIC_CHECK
+import org.neo4j.cypher.internal.compiler.v3_2.SemanticChecker
 
-object SemanticChecker {
-  def check(statement: Statement, mkException: (String, InputPosition) => CypherException): SemanticState = {
+case class SemanticAnalysis(warn: Boolean) extends Phase {
 
-    val SemanticCheckResult(semanticState, semanticErrors) = statement.semanticCheck(SemanticState.clean)
-
-    val scopeTreeIssues = ScopeTreeVerifier.verify(semanticState.scopeTree)
-    if (scopeTreeIssues.nonEmpty)
-      throw new InternalException(scopeTreeIssues.mkString(s"\n"))
-
-    semanticErrors.map { error => throw mkException(error.msg, error.position) }
-
-    semanticState
+  override def transform(from: CompilationState, context: Context): CompilationState = {
+    val semanticState = SemanticChecker.check(from.statement, context.exceptionCreator)
+    if (warn) semanticState.notifications.foreach(context.notificationLogger.log)
+    from.copy(maybeSemantics = Some(semanticState))
   }
+  override def phase = SEMANTIC_CHECK
+
+  override def description = "do variable binding, typing, type checking and other semantic checks"
 }

@@ -17,22 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_2
+package org.neo4j.cypher.internal.compiler.v3_2.phases
 
-import org.neo4j.cypher.internal.frontend.v3_2._
-import org.neo4j.cypher.internal.frontend.v3_2.ast.Statement
+import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase.PARSING
+import org.neo4j.cypher.internal.frontend.v3_2.parser.CypherParser
 
-object SemanticChecker {
-  def check(statement: Statement, mkException: (String, InputPosition) => CypherException): SemanticState = {
+case object Parsing extends Phase {
+  private val parser = new CypherParser
 
-    val SemanticCheckResult(semanticState, semanticErrors) = statement.semanticCheck(SemanticState.clean)
+  override def transform(in: CompilationState, ignored: Context): CompilationState =
+    in.copy(maybeStatement = Some(parser.parse(in.queryText, in.startPosition)))
 
-    val scopeTreeIssues = ScopeTreeVerifier.verify(semanticState.scopeTree)
-    if (scopeTreeIssues.nonEmpty)
-      throw new InternalException(scopeTreeIssues.mkString(s"\n"))
+  override val phase = PARSING
 
-    semanticErrors.map { error => throw mkException(error.msg, error.position) }
-
-    semanticState
-  }
+  override val description = "parse text into an AST object"
 }
