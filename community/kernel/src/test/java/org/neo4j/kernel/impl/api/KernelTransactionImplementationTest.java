@@ -470,15 +470,6 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     }
 
     @Test
-    public void markForTerminationNotInitializedTransaction()
-    {
-        KernelTransactionImplementation tx = newNotInitializedTransaction();
-        tx.markForTermination( Status.General.UnknownError );
-
-        assertEquals( Status.General.UnknownError, tx.getReasonIfTerminated().get() );
-    }
-
-    @Test
     public void markForTerminationInitializedTransaction()
     {
         Locks.Client locksClient = mock( Locks.Client.class );
