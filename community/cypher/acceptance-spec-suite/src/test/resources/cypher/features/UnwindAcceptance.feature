@@ -111,8 +111,8 @@ Feature: UnwindAcceptance
     Then the result should be:
       | i                   |
       | {k: [(:A)]}         |
-      | {k: [(:R)]}         |
+      | {k: [[:R]]}         |
       | {k: [(:A)], l: 42}  |
-      | {k: [(:R)], l: 's'} |
+      | {k: [[:R]], l: 's'} |
       | [{k: [(:A)]}]       |
     And no side effects
