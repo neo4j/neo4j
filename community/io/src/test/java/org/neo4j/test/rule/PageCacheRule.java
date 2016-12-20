@@ -26,6 +26,7 @@ import org.neo4j.adversaries.Adversary;
 import org.neo4j.adversaries.pagecache.AdversarialPageCache;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.checking.AccessCheckingPageCache;
 import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 
@@ -40,6 +41,7 @@ public class PageCacheRule extends ExternalResource
         protected Integer pageSize;
         protected AtomicBoolean nextReadIsInconsistent;
         protected PageCacheTracer tracer;
+        private boolean accessChecks;
 
         private PageCacheConfig()
         {
@@ -96,6 +98,19 @@ public class PageCacheRule extends ExternalResource
         public PageCacheConfig withTracer( PageCacheTracer tracer )
         {
             this.tracer = tracer;
+            return this;
+        }
+
+        /**
+         * Decorates PageCache with access checking wrapper to add some amount of verifications that
+         * reads happen inside shouldRetry-loops.
+         *
+         * @param accessChecks whether or not to add access checking to the opened PageCache.
+         * @return this instance.
+         */
+        public PageCacheConfig withAccessChecks( boolean accessChecks )
+        {
+            this.accessChecks = accessChecks;
             return this;
         }
     }
@@ -167,6 +182,10 @@ public class PageCacheRule extends ExternalResource
                     ? new AtomicBooleanInconsistentReadAdversary( controller )
                     : new RandomInconsistentReadAdversary();
             pageCache = new AdversarialPageCache( pageCache, adversary );
+        }
+        if ( selectConfig( baseConfig.accessChecks, overriddenConfig.accessChecks, false ) )
+        {
+            pageCache = new AccessCheckingPageCache( pageCache );
         }
     }
 
