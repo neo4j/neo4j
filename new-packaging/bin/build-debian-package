@@ -24,7 +24,7 @@ cp -r ${skeleton_directory}/* ${package_directory}
 # Rename rules input files to match package
 for file in $(cd ${package_directory}/debian && ls package.*)
 do
-  postfix=$(echo ${file} | cut -c7-)
+  postfix=$(echo ${file} | cut -c8-)
   newname=${package_directory}/debian/${package_name}${postfix}
   mv ${package_directory}/debian/${file} ${newname}
 done
