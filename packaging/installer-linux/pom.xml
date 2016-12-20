@@ -18,6 +18,5 @@
 
     <modules>
         <module>installer-debian</module>
-        <module>installer-rpm</module>
     </modules>
 </project>

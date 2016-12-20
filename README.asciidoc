@@ -23,13 +23,15 @@ Neo4j is built using http://maven.apache.org/[Apache Maven] version 3.3 and a re
 
 OS X users need to have http://brew.sh/[Homebrew] installed.
 
-=== With brew on OSX ===
+=== With brew on OS X ===
 
-  brew install graphviz libtool maven
+  brew install maven
+
+Please note that we do not support building Debian packages on OS X.
 
 === With apt-get on Ubuntu ===
 
-  sudo apt-get install graphviz maven make openjdk-8-jdk devscripts debhelper rpm
+  apt install debhelper devscripts dpkg maven openjdk-8-jdk
 
 == Building Neo4j ==
 
