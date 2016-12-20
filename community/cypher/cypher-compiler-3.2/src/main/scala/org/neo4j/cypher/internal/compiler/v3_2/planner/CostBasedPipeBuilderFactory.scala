@@ -31,7 +31,6 @@ object CostBasedPipeBuilderFactory {
              metricsFactory: MetricsFactory,
              queryPlanner: QueryPlanner,
              rewriterSequencer: (String) => RewriterStepSequencer,
-             tokenResolver: SimpleTokenResolver = new SimpleTokenResolver(),
              plannerName: Option[CostBasedPlannerName],
              runtimeBuilder: RuntimeBuilder,
              config: CypherCompilerConfiguration,
@@ -60,7 +59,7 @@ object CostBasedPipeBuilderFactory {
 
     val actualPlannerName = plannerName.getOrElse(CostBasedPlannerName.default)
     val actualUpdateStrategy = updateStrategy.getOrElse(defaultUpdateStrategy)
-    CostBasedExecutablePlanBuilder(monitors, metricsFactory, tokenResolver, queryPlanner,
+    CostBasedExecutablePlanBuilder(monitors, metricsFactory, queryPlanner,
       createQueryGraphSolver(actualPlannerName), rewriterSequencer, actualPlannerName, runtimeBuilder,
       actualUpdateStrategy,
       config, publicTypeConverter)

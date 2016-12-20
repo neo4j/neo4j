@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.executionplan.procs.ProcedureOrSc
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.RuntimeTypeConverter
 import org.neo4j.cypher.internal.compiler.v3_2.phases.Transformer.identity
 import org.neo4j.cypher.internal.compiler.v3_2.phases.{CompilationState, Phase, RewriteProcedureCalls, _}
+import org.neo4j.cypher.internal.compiler.v3_2.planner.ResolveTokens
 import org.neo4j.cypher.internal.compiler.v3_2.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_2.InputPosition
@@ -94,6 +95,7 @@ case class CypherCompiler(executionPlanBuilder: ExecutablePlanBuilder,
     rewriteEqualityToInPredicate andThen
     CNFNormalizer andThen
     LateAstRewriting andThen
+    ResolveTokens andThen
     RestOfPipeLine
 
   val thirdPipeLine: Transformer =

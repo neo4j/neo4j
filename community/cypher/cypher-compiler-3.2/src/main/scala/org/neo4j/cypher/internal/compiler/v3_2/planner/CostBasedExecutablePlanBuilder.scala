@@ -39,7 +39,6 @@ import org.neo4j.cypher.internal.ir.v3_2.PeriodicCommit
 /* This class is responsible for taking a query from an AST object to a runnable object.  */
 case class CostBasedExecutablePlanBuilder(monitors: Monitors,
                                           metricsFactory: MetricsFactory,
-                                          tokenResolver: SimpleTokenResolver,
                                           queryPlanner: QueryPlanner,
                                           queryGraphSolver: QueryGraphSolver,
                                           rewriterSequencer: (String) => RewriterStepSequencer,
@@ -71,7 +70,6 @@ case class CostBasedExecutablePlanBuilder(monitors: Monitors,
                         (planContext: PlanContext, notificationLogger: InternalNotificationLogger):
   (Option[PeriodicCommit], LogicalPlan, PipeExecutionBuilderContext) = {
 
-    tokenResolver.resolve(ast)(semanticTable, planContext)
     val original = toUnionQuery(ast, semanticTable)
     val unionQuery = original.endoRewrite(OptionalMatchRemover)
     val metrics = metricsFactory.newMetrics(planContext.statistics)

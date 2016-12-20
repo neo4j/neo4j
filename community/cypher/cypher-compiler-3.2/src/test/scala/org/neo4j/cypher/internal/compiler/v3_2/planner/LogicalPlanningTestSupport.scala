@@ -54,7 +54,6 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   val rewriterSequencer = RewriterStepSequencer.newValidating _
   val astRewriter = new ASTRewriter(rewriterSequencer, shouldExtractParameters = false)
   val mockRel = newPatternRelationship("a", "b", "r")
-  val tokenResolver = new SimpleTokenResolver()
   val solved = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(1))
 
   def solvedWithEstimation(cardinality: Cardinality) = CardinalityEstimation.lift(PlannerQuery.empty, cardinality)

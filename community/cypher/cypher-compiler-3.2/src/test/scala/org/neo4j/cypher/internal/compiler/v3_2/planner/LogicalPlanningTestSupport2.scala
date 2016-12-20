@@ -56,7 +56,6 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
   var parser = new CypherParser
   val rewriterSequencer = RewriterStepSequencer.newValidating _
   var astRewriter = new ASTRewriter(rewriterSequencer, shouldExtractParameters = false)
-  var tokenResolver = new SimpleTokenResolver()
   val planRewriter = LogicalPlanRewriter(rewriterSequencer)
   final var planner = new DefaultQueryPlanner(planRewriter) {
     def internalPlan(query: PlannerQuery)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan] = None): LogicalPlan =
@@ -127,10 +126,10 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         semanticTable.resolvedRelTypeNames.get(relType).map(_.id)
     }
 
-    private def context = Context(null, null, null, null, null, null, mock[AstRewritingMonitor])
+    private def context = Context(null, null, null, planContext, null, null, mock[AstRewritingMonitor])
 
     private val pipeLine =
-      Namespacer andThen rewriteEqualityToInPredicate andThen CNFNormalizer andThen LateAstRewriting
+      Namespacer andThen rewriteEqualityToInPredicate andThen CNFNormalizer andThen LateAstRewriting andThen ResolveTokens
 
     def planFor(queryString: String): SemanticPlan = {
 
@@ -145,7 +144,6 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
       val ast = output.statement.asInstanceOf[Query]
 
-      tokenResolver.resolve(ast)(output.semanticTable, planContext)
       val unionQuery = toUnionQuery(ast, output.semanticTable)
       val metrics = metricsFactory.newMetrics(planContext.statistics)
       val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality)
@@ -167,7 +165,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       config.updateSemanticTableWithTokens(table)
       val ast = output.statement.asInstanceOf[Query]
 
-      tokenResolver.resolve(ast)(output.semanticTable, planContext)
+      ResolveTokens.resolve(ast)(output.semanticTable, planContext)
       val unionQuery = toUnionQuery(ast, semanticTable)
       val metrics = metricsFactory.newMetrics(planContext.statistics)
       val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality)
