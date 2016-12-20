@@ -21,13 +21,20 @@ package org.neo4j.server.security.enterprise.auth;
 
 import org.apache.shiro.authc.AuthenticationToken;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 
 public class ShiroAuthToken implements AuthenticationToken
 {
+    private static final String VALUE_QOUTE = "'";
+    private static final String PAIR_DELIMITER = ", ";
+    private static final String KEY_VALUE_DELIMITER = "=";
+
     private final Map<String,Object> authToken;
 
     public ShiroAuthToken( Map<String,Object> authToken )
@@ -52,6 +59,12 @@ public class ShiroAuthToken implements AuthenticationToken
         return AuthToken.safeCast( AuthToken.SCHEME_KEY, authToken );
     }
 
+    public String getSchemeSilently()
+    {
+        Object scheme = authToken.get( AuthToken.SCHEME_KEY );
+        return scheme == null ? null : scheme.toString();
+    }
+
     public Map<String,Object> getAuthTokenMap()
     {
         return authToken;
@@ -64,5 +77,35 @@ public class ShiroAuthToken implements AuthenticationToken
                authToken.get( AuthToken.REALM_KEY ).toString().length() == 0 ||
                authToken.get( AuthToken.REALM_KEY ).equals( "*" ) ||
                authToken.get( AuthToken.REALM_KEY ).equals( realm );
+    }
+
+    @Override
+    public String toString()
+    {
+        if ( authToken.isEmpty() )
+        {
+            return "{}";
+        }
+
+        List<String> keys = new ArrayList<>(authToken.keySet());
+        int schemeIndex = keys.indexOf( AuthToken.SCHEME_KEY );
+        if ( schemeIndex > 0 )
+        {
+            keys.set( schemeIndex, keys.get( 0 ) );
+            keys.set( 0, AuthToken.SCHEME_KEY );
+        }
+
+        Iterable<String> keyValuePairs =
+                keys.stream()
+                    .map( this::keyValueString )
+                    .collect( Collectors.toList() );
+
+        return "{ " + String.join( PAIR_DELIMITER, keyValuePairs ) + " }";
+    }
+
+    private String keyValueString( String key )
+    {
+        String valueString = ( key.equals( AuthToken.CREDENTIALS ) ? "******" : authToken.get( key ).toString() );
+        return key + KEY_VALUE_DELIMITER + VALUE_QOUTE + valueString + VALUE_QOUTE;
     }
 }

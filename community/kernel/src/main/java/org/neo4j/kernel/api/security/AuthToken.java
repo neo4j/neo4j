@@ -19,11 +19,14 @@
  */
 package org.neo4j.kernel.api.security;
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.util.Collections;
 import java.util.Map;
 
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 
+import static java.lang.String.format;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
 public interface AuthToken
@@ -40,11 +43,14 @@ public interface AuthToken
     static String safeCast( String key, Map<String,Object> authToken ) throws InvalidAuthTokenException
     {
         Object value = authToken.get( key );
-        if ( value == null || !(value instanceof String) )
+        if ( value == null )
         {
-            throw new InvalidAuthTokenException(
-                    "The value associated with the key `" + key + "` must be a String but was: " +
-                    (value == null ? "null" : value.getClass().getSimpleName()) );
+            throw invalidToken( "missing key `" + key + "`" );
+        }
+        else if ( !(value instanceof String) )
+        {
+            throw invalidToken( "the value associated with the key `" + key + "` must be a String but was: "
+                    + value.getClass().getSimpleName() );
         }
         return (String) value;
     }
@@ -67,6 +73,15 @@ public interface AuthToken
                     "The value associated with the key `" + key + "` must be a Map but was: " +
                     value.getClass().getSimpleName() );
         }
+    }
+
+    static InvalidAuthTokenException invalidToken( String explanation )
+    {
+        if ( StringUtils.isNotEmpty( explanation ) && !explanation.matches( "^[,.:;].*" ) )
+        {
+            explanation = ", " + explanation;
+        }
+        return new InvalidAuthTokenException( format( "Unsupported authentication token%s", explanation ) );
     }
 
     static Map<String,Object> newBasicAuthToken( String username, String password )

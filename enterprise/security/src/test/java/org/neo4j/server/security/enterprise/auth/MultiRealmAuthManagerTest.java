@@ -262,12 +262,30 @@ public class MultiRealmAuthManagerTest extends InitialUserTests
     {
         manager.start();
 
-        assertException( () -> manager.login( map( AuthToken.SCHEME_KEY, "supercool", AuthToken.PRINCIPAL, "neo4j" ) ),
-                InvalidAuthTokenException.class, "does not support authentication token" );
-        assertException( () -> manager.login( map( "key", "value" ) ),
-                InvalidAuthTokenException.class, "The value associated with the key `scheme` must be a String but was: null" );
-        assertException( () -> manager.login( map( AuthToken.SCHEME_KEY, "basic", AuthToken.PRINCIPAL, "neo4j" ) ),
-                InvalidAuthTokenException.class, "The value associated with the key `credentials` must be a String but was: null" );
+        assertException(
+                () -> manager.login( map( AuthToken.SCHEME_KEY, "supercool", AuthToken.PRINCIPAL, "neo4j" ) ),
+                InvalidAuthTokenException.class,
+                "Unsupported authentication token: { scheme='supercool', principal='neo4j' }" );
+
+        assertException(
+                () -> manager.login( map( AuthToken.SCHEME_KEY, "none" ) ),
+                InvalidAuthTokenException.class,
+                "Unsupported authentication token, scheme='none' only allowed when auth is disabled: { scheme='none' }" );
+
+        assertException(
+                () -> manager.login( map( "key", "value" ) ),
+                InvalidAuthTokenException.class,
+                "Unsupported authentication token, missing key `scheme`: { key='value' }" );
+
+        assertException(
+                () -> manager.login( map( AuthToken.SCHEME_KEY, "basic", AuthToken.PRINCIPAL, "neo4j" ) ),
+                InvalidAuthTokenException.class,
+                "Unsupported authentication token, missing key `credentials`: { scheme='basic', principal='neo4j' }" );
+
+        assertException(
+                () -> manager.login( map( AuthToken.SCHEME_KEY, "basic", AuthToken.CREDENTIALS, "very-secret" ) ),
+                InvalidAuthTokenException.class,
+                "Unsupported authentication token, missing key `principal`: { scheme='basic', credentials='******' }" );
     }
 
     @Test

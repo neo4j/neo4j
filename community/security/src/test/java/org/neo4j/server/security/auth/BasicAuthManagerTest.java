@@ -27,7 +27,7 @@ import org.junit.Test;
 
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.AuthManager;
-import org.neo4j.kernel.api.security.AuthSubject;
+import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
@@ -43,11 +43,13 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.api.security.AuthenticationResult.FAILURE;
 import static org.neo4j.kernel.api.security.AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
 import static org.neo4j.kernel.api.security.AuthenticationResult.SUCCESS;
 import static org.neo4j.kernel.api.security.AuthenticationResult.TOO_MANY_ATTEMPTS;
 import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
+import static org.neo4j.test.assertion.Assert.assertException;
 
 public class BasicAuthManagerTest extends InitialUserTests
 {
@@ -219,6 +221,37 @@ public class BasicAuthManagerTest extends InitialUserTests
         {
             // expected
         }
+    }
+
+    @Test
+    public void shouldFailWhenAuthTokenIsInvalid() throws Throwable
+    {
+        manager.start();
+
+        assertException(
+                () -> manager.login( map( AuthToken.SCHEME_KEY, "supercool", AuthToken.PRINCIPAL, "neo4j" ) ),
+                InvalidAuthTokenException.class,
+                "Unsupported authentication token, scheme 'supercool' is not supported." );
+
+        assertException(
+                () -> manager.login( map( AuthToken.SCHEME_KEY, "none" ) ),
+                InvalidAuthTokenException.class,
+                "Unsupported authentication token, scheme 'none' is only allowed when auth is disabled" );
+
+        assertException(
+                () -> manager.login( map( "key", "value" ) ),
+                InvalidAuthTokenException.class,
+                "Unsupported authentication token, missing key `scheme`" );
+
+        assertException(
+                () -> manager.login( map( AuthToken.SCHEME_KEY, "basic", AuthToken.PRINCIPAL, "neo4j" ) ),
+                InvalidAuthTokenException.class,
+                "Unsupported authentication token, missing key `credentials`" );
+
+        assertException(
+                () -> manager.login( map( AuthToken.SCHEME_KEY, "basic", AuthToken.CREDENTIALS, "very-secret" ) ),
+                InvalidAuthTokenException.class,
+                "Unsupported authentication token, missing key `principal`" );
     }
 
     private void assertLoginGivesResult( String username, String password, AuthenticationResult expectedResult )
