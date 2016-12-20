@@ -36,4 +36,6 @@ public interface OutsideWorld
     FileSystemAbstraction fileSystem();
 
     PrintStream errorStream();
+
+    PrintStream outStream();
 }

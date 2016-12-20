@@ -33,6 +33,7 @@ import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.commandline.arguments.MandatoryNamedArg;
 import org.neo4j.commandline.arguments.OptionalBooleanArg;
 import org.neo4j.commandline.arguments.OptionalNamedArg;
+import org.neo4j.commandline.arguments.common.MandatoryCanonicalPath;
 import org.neo4j.commandline.arguments.common.OptionalCanonicalPath;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.ConsistencyCheckSettings;
@@ -40,7 +41,9 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.server.configuration.ConfigLoader;
 
 import static java.util.Arrays.asList;
@@ -50,15 +53,20 @@ public class OnlineBackupCommand implements AdminCommand
 {
 
     public static final Arguments arguments = new Arguments()
+            .withArgument( new MandatoryCanonicalPath( "backup-dir", "backup-path",
+                    "Directory to place backup in." ) )
+            .withArgument( new MandatoryNamedArg( "name", "graph.db-backup",
+                    "Name of backup. If a backup with this name already exists an incremental backup will be " +
+                            "attempted." ) )
             .withArgument( new OptionalNamedArg( "from", "address", "localhost:6362",
                     "Host and port of Neo4j." ) )
-            .withArgument( new MandatoryNamedArg( "to", "backup-path",
-                    "Directory where the backup will be made; if there is already a backup present an " +
-                            "incremental backup will be attempted." ) )
+            .withArgument( new OptionalBooleanArg( "fallback-to-full", true,
+                    "If a failed incremental backup will move the old backup to <name>.err.<N> and fallback to a " +
+                            "full backup instead." ) )
             .withArgument( new OptionalBooleanArg( "check-consistency", true,
                     "If a consistency check should be made." ) )
             .withArgument( new OptionalCanonicalPath( "cc-report-dir", "directory", ".",
-                    "Directory where consistency report will be written.") )
+                    "Directory where consistency report will be written." ) )
             .withAdditionalConfig()
             .withArgument( new OptionalNamedArg( "timeout", "timeout", "20m",
                     "Timeout in the form <time>[ms|s|m|h], where the default unit is seconds." ) );
@@ -79,79 +87,179 @@ public class OnlineBackupCommand implements AdminCommand
         @Override
         public String description()
         {
-            return "Perform a backup, over the network, from a running Neo4j server into a local copy " +
-                    "of the database store (the backup). Neo4j Server must be configured to run a backup service. " +
-                    "See http://neo4j.com/docs/operations-manual/current/backup/ for more details.\n" +
-                    "\n" +
-                    "WARNING: this command is experimental and subject to change.";
+            return "Perform an online backup from a running Neo4j enterprise server. Neo4j's backup service must have" +
+                    " been configured on the server beforehand. " +
+                    "See http://neo4j.com/docs/operations-manual/current/backup/ for more details.";
         }
 
         @Override
         public String summary()
         {
-            return "Perform a backup, over the network, from a running Neo4j server.";
+            return "Perform an online backup from a running Neo4j enterprise server.";
         }
 
         @Override
         public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
         {
             return new OnlineBackupCommand(
-                    new BackupTool( new BackupService( outsideWorld.errorStream() ), outsideWorld.errorStream() ),
-                    homeDir, configDir, new ConsistencyCheckService() );
+                    new BackupService( outsideWorld.errorStream() ), homeDir, configDir,
+                    new ConsistencyCheckService(), outsideWorld );
         }
     }
 
-    private final BackupTool backupTool;
+    static final int MAX_OLD_BACKUPS = 1000;
+    private final BackupService backupService;
     private final Path homeDir;
     private final Path configDir;
     private ConsistencyCheckService consistencyCheckService;
+    private final OutsideWorld outsideWorld;
 
-    public OnlineBackupCommand( BackupTool backupTool, Path homeDir, Path configDir,
-                                ConsistencyCheckService consistencyCheckService )
+    public OnlineBackupCommand( BackupService backupService, Path homeDir, Path configDir,
+            ConsistencyCheckService consistencyCheckService,
+            OutsideWorld outsideWorld )
     {
-        this.backupTool = backupTool;
+        this.backupService = backupService;
         this.homeDir = homeDir;
         this.configDir = configDir;
         this.consistencyCheckService = consistencyCheckService;
+        this.outsideWorld = outsideWorld;
     }
 
     @Override
     public void execute( String[] args ) throws IncorrectUsage, CommandFailed
     {
-        HostnamePort address;
-        File destination;
-        ConsistencyCheck consistencyCheck = ConsistencyCheck.NONE;
-        Optional<Path> additionalConfig;
-        long timeout;
+        final HostnamePort address;
+        final Path folder;
+        final String name;
+        final boolean fallbackToFull;
+        final boolean doConsistencyCheck;
+        final Optional<Path> additionalConfig;
+        final Path reportDir;
+        final long timeout;
+
         try
         {
             address = toHostnamePort( new HostnamePort( "localhost", 6362 ) )
                     .apply( arguments.parse( "from", args ) );
-            destination = arguments.parseMandatoryPath( "to", args ).toFile();
+            folder = arguments.parseMandatoryPath( "backup-dir", args );
+            name = arguments.parse( "name", args );
+            fallbackToFull = arguments.parseBoolean( "fallback-to-full", args );
+            doConsistencyCheck = arguments.parseBoolean( "check-consistency", args );
             timeout = parseTimeout( args );
             additionalConfig = arguments.parseOptionalPath( "additional-config", args );
-            if ( arguments.parseBoolean( "check-consistency", args ) )
-            {
-                Path reportDir = arguments.parseOptionalPath( "cc-report-dir", args )
-                        .orElseThrow( () ->
-                        new IllegalArgumentException( "cc-report-dir must be a path" ) );
-                consistencyCheck = ConsistencyCheck.full( reportDir.toFile(), consistencyCheckService );
-            }
+            reportDir = arguments.parseOptionalPath( "cc-report-dir", args ).orElseThrow( () ->
+                    new IllegalArgumentException( "cc-report-dir must be a path" ) );
         }
         catch ( IllegalArgumentException e )
         {
             throw new IncorrectUsage( e.getMessage() );
         }
 
-        try
+        // Make sure destination exists
+        if ( !outsideWorld.fileSystem().isDirectory( folder.toFile() ) )
         {
-            backupTool.executeBackup(
-                    address, destination, consistencyCheck, loadConfig( additionalConfig ), timeout, false );
+            throw new CommandFailed( String.format( "Directory '%s' does not exist.", folder ) );
         }
-        catch ( BackupTool.ToolFailureException e )
+
+        if ( !outsideWorld.fileSystem().isDirectory( reportDir.toFile() ) )
         {
-            throw new CommandFailed( "backup failed: " + e.getMessage(), e );
+            throw new CommandFailed( String.format( "Directory '%s' does not exist.", reportDir ) );
         }
+
+        File destination = folder.resolve( name ).toFile();
+        Config config = loadConfig( additionalConfig );
+        boolean done = false;
+
+        File[] listFiles = outsideWorld.fileSystem().listFiles( destination );
+        if ( listFiles != null && listFiles.length > 0 )
+        {
+            outsideWorld.stdOutLine( "Destination is not empty, doing incremental backup..." );
+            try
+            {
+                backupService.doIncrementalBackup( address.getHost(), address.getPort(),
+                        destination, timeout, config );
+                done = true;
+            }
+            catch ( Exception e )
+            {
+                if ( fallbackToFull )
+                {
+                    outsideWorld.stdErrLine( "Incremental backup failed: " + e.getMessage() );
+                    String renamed = renameExistingBackup( folder, name );
+                    outsideWorld.stdErrLine( String.format( "Old backup renamed to '%s'.", renamed ) );
+                }
+                else
+                {
+                    throw new CommandFailed( "Backup failed: " + e.getMessage(), e );
+                }
+            }
+        }
+
+        if ( !done )
+        {
+            outsideWorld.stdOutLine( "Doing full backup..." );
+            try
+            {
+                backupService.doFullBackup( address.getHost(), address.getPort(), destination,
+                        ConsistencyCheck.NONE, config, timeout, false );
+            }
+            catch ( Exception e )
+            {
+                throw new CommandFailed( "Backup failed: " + e.getMessage(), e );
+            }
+        }
+
+        if ( doConsistencyCheck )
+        {
+            try
+            {
+                ConsistencyCheckService.Result ccResult = consistencyCheckService
+                        .runFullConsistencyCheck( destination, config,
+                                ProgressMonitorFactory.textual( outsideWorld.errorStream() ),
+                                FormattedLogProvider.toOutputStream( outsideWorld.outStream() ),
+                                outsideWorld.fileSystem(),
+                                false, reportDir.toFile() );
+
+                if ( !ccResult.isSuccessful() )
+                {
+                    throw new CommandFailed( String.format( "Inconsistencies found. See '%s' for details.",
+                            ccResult.reportFile() ) );
+                }
+            }
+            catch ( Exception e )
+            {
+                throw new CommandFailed( "Failed to do consistency check on backup: " + e.getMessage(), e );
+            }
+        }
+
+        outsideWorld.stdOutLine( "Backup complete." );
+    }
+
+    private String renameExistingBackup( final Path folder, final String oldName ) throws CommandFailed
+    {
+        int i = 1;
+        while ( i < MAX_OLD_BACKUPS )
+        {
+            String newName = oldName + ".err." + i;
+            if ( outsideWorld.fileSystem().fileExists( folder.resolve( newName ).toFile() ) )
+            {
+                i++;
+            }
+            else
+            {
+                try
+                {
+                    outsideWorld.fileSystem().renameFile( folder.resolve( oldName ).toFile(),
+                            folder.resolve( newName ).toFile() );
+                    return newName;
+                }
+                catch ( IOException e )
+                {
+                    throw new CommandFailed( "Failed to move old backup out of the way: " + e.getMessage(), e );
+                }
+            }
+        }
+        throw new CommandFailed( "Failed to move old backup out of the way: too many old backups." );
     }
 
     private long parseTimeout( String[] args )
