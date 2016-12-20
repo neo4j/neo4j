@@ -24,6 +24,7 @@ import org.neo4j.adversaries.pagecache.AdversarialPageCache;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageSwapperFactory;
+import org.neo4j.io.pagecache.checking.AccessCheckingPageCache;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -44,6 +45,7 @@ class PageCacheTestUtil
         private int pageSize = (int) kibiBytes( 1 );
         private PageCacheTracer tracer = PageCacheTracer.NULL;
         private Adversary adversary;
+        private boolean checkAccess;
 
         Builder( FileSystemAbstraction fs )
         {
@@ -85,6 +87,12 @@ class PageCacheTestUtil
             return adversary( new RandomInconsistentReadAdversary() );
         }
 
+        Builder checkAccess()
+        {
+            this.checkAccess = true;
+            return this;
+        }
+
         PageCache build()
         {
             PageSwapperFactory swapperFactory =
@@ -94,6 +102,10 @@ class PageCacheTestUtil
             if ( adversary != null )
             {
                 pageCache = new AdversarialPageCache( pageCache, adversary );
+            }
+            if ( checkAccess )
+            {
+                pageCache = new AccessCheckingPageCache( pageCache );
             }
             return pageCache;
         }
