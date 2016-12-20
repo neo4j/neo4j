@@ -401,13 +401,8 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>
         Pair<TreeState,TreeState> states;
         try ( PageCursor cursor = pagedFile.io( 0L /*ignored*/, PagedFile.PF_SHARED_READ_LOCK ) )
         {
-            do
-            {
-                states = TreeStatePair.readStatePages(
-                        cursor, IdSpace.STATE_PAGE_A, IdSpace.STATE_PAGE_B );
-            }
-            while ( cursor.shouldRetry() );
-            checkOutOfBounds( cursor );
+            states = TreeStatePair.readStatePages(
+                    cursor, IdSpace.STATE_PAGE_A, IdSpace.STATE_PAGE_B );
         }
         return states;
     }

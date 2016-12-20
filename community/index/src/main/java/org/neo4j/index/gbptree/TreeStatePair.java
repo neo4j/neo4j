@@ -26,6 +26,8 @@ import java.util.Optional;
 
 import org.neo4j.io.pagecache.PageCursor;
 
+import static org.neo4j.index.gbptree.PageCursorUtil.checkOutOfBounds;
+
 /**
  * Pair of {@link TreeState}, ability to make decision about which of the two to read and write respectively,
  * depending on the {@link TreeState#isValid() validity} and {@link TreeState#stableGeneration()} of each.
@@ -35,6 +37,7 @@ class TreeStatePair
     /**
      * Reads the tree state pair, one from each of {@code pageIdA} and {@code pageIdB}, deciding their validity
      * and returning them as a {@link Pair}.
+     * do-shouldRetry is managed inside this method because data is read from two pages.
      *
      * @param cursor {@link PageCursor} to use when reading. This cursor will be moved to the two pages
      * one after the other, to read their states.
@@ -45,17 +48,22 @@ class TreeStatePair
      */
     static Pair<TreeState,TreeState> readStatePages( PageCursor cursor, long pageIdA, long pageIdB ) throws IOException
     {
-        TreeState stateA;
-        TreeState stateB;
-
-        // Use write lock to avoid should retry. Fine because there can be no concurrency at this point anyway
-
-        PageCursorUtil.goTo( cursor, "state page A", pageIdA );
-        stateA = TreeState.read( cursor );
-
-        PageCursorUtil.goTo( cursor, "state page B", pageIdB );
-        stateB = TreeState.read( cursor );
+        TreeState stateA = readStatePage( cursor, pageIdA );
+        TreeState stateB = readStatePage( cursor, pageIdB );
         return Pair.of( stateA, stateB );
+    }
+
+    private static TreeState readStatePage( PageCursor cursor, long pageIdA ) throws IOException
+    {
+        PageCursorUtil.goTo( cursor, "state page", pageIdA );
+        TreeState state;
+        do
+        {
+            state = TreeState.read( cursor );
+        }
+        while ( cursor.shouldRetry() );
+        checkOutOfBounds( cursor );
+        return state;
     }
 
     /**
