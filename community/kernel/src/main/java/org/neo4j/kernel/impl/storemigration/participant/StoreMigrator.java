@@ -29,6 +29,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -36,10 +38,14 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
+import java.util.stream.StreamSupport;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.FileHandle;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.store.StorePropertyCursor;
@@ -425,7 +431,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                     readAdditionalIds( lastTxId, lastTxChecksum, lastTxLogVersion, lastTxLogByteOffset );
 
             // We have to make sure to keep the token ids if we're migrating properties/labels
-            BatchImporter importer = new ParallelBatchImporter( migrationDir.getAbsoluteFile(), fileSystem,
+            BatchImporter importer = new ParallelBatchImporter( migrationDir.getAbsoluteFile(), fileSystem, pageCache,
                     importConfig, logService,
                     withDynamicProcessorAssignment( migrationBatchImporterMonitor( legacyStore, progressMonitor,
                             importConfig ), importConfig ), additionalInitialIds, config, newFormat );
@@ -466,6 +472,29 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
             }
             StoreFile.fileOperation( DELETE, fileSystem, migrationDir, null, storesToDeleteFromMigratedDirectory,
                     true, null, StoreFileType.values() );
+            try
+            {
+                Iterable<FileHandle> fileHandles = pageCache.streamFilesRecursive( migrationDir )::iterator;
+                for ( FileHandle fh : fileHandles )
+                {
+                    if ( storesToDeleteFromMigratedDirectory
+                            .stream().anyMatch( storeFile -> storeFile.fileName( StoreFileType.STORE )
+                                    .equals( fh.getFile().getName() ) ) )
+                    {
+                        final Optional<PagedFile> optionalPagedFile = pageCache.getExistingMapping( fh.getFile() );
+                        if ( optionalPagedFile.isPresent() )
+                        {
+                            optionalPagedFile.get().close();
+                        }
+                        fh.delete();
+                    }
+                }
+            }
+            catch ( IOException e )
+            {
+                //TODO This might not be the entire thruth
+                // This means that we had no files only present in the page cache, this is fine.
+            }
         }
     }
 
@@ -478,7 +507,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     private void prepareBatchImportMigration( File storeDir, File migrationDir, RecordFormats oldFormat,
             RecordFormats newFormat ) throws IOException
     {
-        BatchingNeoStores.createStore( fileSystem, migrationDir.getPath(), config, newFormat );
+        BatchingNeoStores.createStore( fileSystem, pageCache, migrationDir.getPath(), newFormat );
 
         // We use the batch importer for migrating the data, and we use it in a special way where we only
         // rewrite the stores that have actually changed format. We know that to be node and relationship
@@ -497,9 +526,33 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                 StoreFile.NODE_LABEL_STORE};
         if ( newFormat.dynamic().equals( oldFormat.dynamic() ) )
         {
-            StoreFile.fileOperation( COPY, fileSystem, storeDir, migrationDir, Arrays.asList(storesFilesToMigrate),
+            for ( StoreFile file : storesFilesToMigrate )
+            {
+                File fromPath = new File( storeDir, file.fileName( StoreFileType.STORE ) );
+                File toPath = new File( migrationDir, file.fileName( StoreFileType.STORE ) );
+                int pageSize = pageCache.pageSize();
+                try ( PagedFile fromFile = pageCache.map( fromPath, pageSize );
+                      PagedFile toFile = pageCache.map( toPath, pageSize, StandardOpenOption.CREATE );
+                      PageCursor fromCursor = fromFile.io( 0L, PagedFile.PF_SHARED_READ_LOCK );
+                      PageCursor toCursor = toFile.io( 0L, PagedFile.PF_SHARED_WRITE_LOCK ); )
+                {
+                    toCursor.next();
+                    while ( fromCursor.next() )
+                    {
+                        do
+                        {
+                            fromCursor.copyTo( 0, toCursor, 0, pageSize );
+                        }
+                        while ( fromCursor.shouldRetry() );
+                    }
+
+                }
+
+            }
+
+            StoreFile.fileOperation( COPY, fileSystem, storeDir, migrationDir, Arrays.asList( storesFilesToMigrate ),
                     true, // OK if it's not there (1.9)
-                    ExistingTargetStrategy.FAIL, StoreFileType.values() );
+                    ExistingTargetStrategy.FAIL, StoreFileType.ID);
         }
         else
         {
@@ -602,7 +655,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         };
     }
 
-    private <ENTITY extends InputEntity,RECORD extends PrimitiveRecord> BiConsumer<ENTITY,RECORD> propertyDecorator(
+    private <ENTITY extends InputEntity, RECORD extends PrimitiveRecord> BiConsumer<ENTITY,RECORD> propertyDecorator(
             boolean requiresPropertyMigration, RecordCursors cursors )
     {
         if ( !requiresPropertyMigration )
@@ -612,7 +665,8 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
 
         final StorePropertyCursor cursor = new StorePropertyCursor( cursors, ignored -> {} );
         final List<Object> scratch = new ArrayList<>();
-        return (ENTITY entity, RECORD record) -> {
+        return ( ENTITY entity, RECORD record ) ->
+        {
             cursor.init( record.getNextProp(), LockService.NO_LOCK );
             scratch.clear();
             while ( cursor.next() )
@@ -634,6 +688,29 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                 true, // allow to skip non existent source files
                 ExistingTargetStrategy.OVERWRITE, // allow to overwrite target files
                 StoreFileType.values() );
+        try
+        {
+            Iterable<FileHandle> fileHandles = pageCache.streamFilesRecursive( migrationDir )::iterator;
+            for ( FileHandle fh : fileHandles )
+            {
+                if ( StreamSupport.stream( StoreFile.currentStoreFiles().spliterator(), false )
+                        .anyMatch( storeFile -> storeFile.fileName( StoreFileType.STORE ).equals( fh.getFile()
+                                .getName() )
+                        ) )
+                {
+                    final Optional<PagedFile> optionalPagedFile = pageCache.getExistingMapping( fh.getFile() );
+                    if ( optionalPagedFile.isPresent() )
+                    {
+                        optionalPagedFile.get().close();
+                    }
+                    fh.rename( new File( storeDir, fh.getFile().getName() ), StandardCopyOption.REPLACE_EXISTING );
+                }
+            }
+        }
+        catch ( IOException e )
+        {
+            //This means that we had no files only present in the page cache, this is fine.
+        }
 
         RecordFormats oldFormat = selectForVersion( versionToUpgradeFrom );
         RecordFormats newFormat = selectForVersion( versionToUpgradeTo );

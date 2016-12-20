@@ -243,7 +243,7 @@ public class StoreMigratorFrom20IT
     private StoreUpgrader upgrader( SchemaIndexMigrator indexMigrator, StoreMigrator storeMigrator )
     {
         Config config = getConfig().augment( stringMap( GraphDatabaseSettings.allow_store_upgrade.name(), "true" ) );
-        StoreUpgrader upgrader = new StoreUpgrader( upgradableDatabase, monitor, config, fs,
+        StoreUpgrader upgrader = new StoreUpgrader( upgradableDatabase, monitor, config, fs, pageCache,
                 NullLogProvider.getInstance() );
         upgrader.addParticipant( indexMigrator );
         upgrader.addParticipant( storeMigrator );

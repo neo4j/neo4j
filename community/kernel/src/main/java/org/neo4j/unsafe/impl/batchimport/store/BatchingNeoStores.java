@@ -97,41 +97,37 @@ public class BatchingNeoStores implements AutoCloseable
     // Some stores are considered temporary during the import and will be reordered/restructured
     // into the main store. These temporary stores will live here
     private final NeoStores temporaryNeoStores;
+    private boolean externalPageCache;
 
-    public BatchingNeoStores( FileSystemAbstraction fileSystem, File storeDir, RecordFormats recordFormats,
-            Configuration config, LogService logService, AdditionalInitialIds initialIds, Config dbConfig )
+    private BatchingNeoStores( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir,
+            RecordFormats recordFormats, Config neo4jConfig, LogService logService, AdditionalInitialIds initialIds,
+            boolean externalPageCache, IoTracer ioTracer )
     {
         this.fileSystem = fileSystem;
         this.recordFormats = recordFormats;
         this.logProvider = logService.getInternalLogProvider();
         this.storeDir = storeDir;
-        long mappedMemory = config.pageCacheMemory();
-        // 30 is the minimum number of pages the page cache wants to keep free at all times.
-        // Having less than that might result in an evicted page will reading, which would mean
-        // unnecessary re-reading. Having slightly more leaves some leg room.
-        int pageSize = config.pageSize();
-        this.neo4jConfig = new Config( stringMap( dbConfig.getParams(),
-                dense_node_threshold.name(), valueOf( config.denseNodeThreshold() ),
-                pagecache_memory.name(), valueOf( mappedMemory ),
-                mapped_memory_page_size.name(), valueOf( pageSize ) ),
-                GraphDatabaseSettings.class );
-        final PageCacheTracer tracer = new DefaultPageCacheTracer();
-        this.pageCache = createPageCache( fileSystem, neo4jConfig, logProvider, tracer );
-        this.ioTracer = tracer::bytesWritten;
+        this.neo4jConfig = neo4jConfig;
+        this.pageCache = pageCache;
+        this.ioTracer = ioTracer;
+        this.externalPageCache = externalPageCache;
         this.neoStores = newStoreFactory( DEFAULT_NAME ).openAllNeoStores( true );
         if ( alreadyContainsData( neoStores ) )
         {
             neoStores.close();
             IllegalStateException ise =
                     new IllegalStateException( storeDir + " already contains data, cannot do import here" );
-            try
+            if ( !externalPageCache )
             {
-                pageCache.close();
-            }
-            catch ( Exception e )
-            {
-                // Oddly enough we can't close the page cache, how to communicate this? Here we add as suppressed
-                ise.addSuppressed( e );
+                try
+                {
+                    pageCache.close();
+                }
+                catch ( Exception e )
+                {
+                    // Oddly enough we can't close the page cache, how to communicate this? Here we add as suppressed
+                    ise.addSuppressed( e );
+                }
             }
             throw ise;
         }
@@ -160,7 +156,7 @@ public class BatchingNeoStores implements AutoCloseable
 
         // Initialize kernel extensions
         Dependencies dependencies = new Dependencies();
-        dependencies.satisfyDependency( neo4jConfig );
+        dependencies.satisfyDependency( this.neo4jConfig );
         dependencies.satisfyDependency( fileSystem );
         dependencies.satisfyDependency( this );
         dependencies.satisfyDependency( logService );
@@ -174,6 +170,38 @@ public class BatchingNeoStores implements AutoCloseable
         life.start();
         labelScanStore = life.add( extensions.resolveDependency( LabelScanStoreProvider.class,
                 HighestSelectionStrategy.getInstance() ).getLabelScanStore() );
+    }
+
+    public static BatchingNeoStores batchingNeoStores( FileSystemAbstraction fileSystem, File storeDir,
+            RecordFormats recordFormats, Configuration config, LogService logService, AdditionalInitialIds initialIds,
+            Config dbConfig )
+    {
+        Config neo4jConfig = new Config( stringMap( dbConfig.getParams(),
+                dense_node_threshold.name(), valueOf( config.denseNodeThreshold() ),
+                pagecache_memory.name(), valueOf( config.pageCacheMemory() ),
+                mapped_memory_page_size.name(), valueOf( config.pageSize() ) ),
+                GraphDatabaseSettings.class );
+        final PageCacheTracer tracer = new DefaultPageCacheTracer();
+        PageCache pageCache = createPageCache( fileSystem, neo4jConfig, logService.getInternalLogProvider(), tracer );
+        BatchingNeoStores batchingNeoStores =
+                new BatchingNeoStores( fileSystem, pageCache, storeDir, recordFormats, neo4jConfig, logService,
+                        initialIds, false, tracer::bytesWritten );
+        return batchingNeoStores;
+    }
+
+    public static BatchingNeoStores batchingNeoStoresWithExternalPageCache( FileSystemAbstraction fileSystem,
+            PageCache pageCache, PageCacheTracer tracer, File storeDir, RecordFormats recordFormats, Configuration config,
+            LogService logService, AdditionalInitialIds initialIds, Config dbConfig )
+    {
+        Config neo4jConfig = new Config( stringMap( dbConfig.getParams(),
+                dense_node_threshold.name(), valueOf( config.denseNodeThreshold() ),
+                pagecache_memory.name(), valueOf( config.pageCacheMemory() ),
+                mapped_memory_page_size.name(), valueOf( config.pageSize() ) ),
+                GraphDatabaseSettings.class );
+        BatchingNeoStores batchingNeoStores =
+                new BatchingNeoStores( fileSystem, pageCache, storeDir, recordFormats, neo4jConfig, logService,
+                        initialIds, true, tracer::bytesWritten );
+        return batchingNeoStores;
     }
 
     private static PageCache createPageCache( FileSystemAbstraction fileSystem, Config config, LogProvider log,
@@ -194,25 +222,21 @@ public class BatchingNeoStores implements AutoCloseable
      * Useful for store migration where the {@link ParallelBatchImporter} is used as migrator and some of
      * its data need to be communicated by copying a store file.
      */
-    public static void createStore( FileSystemAbstraction fileSystem, String storeDir, Config dbConfig,
+    public static void createStore( FileSystemAbstraction fileSystem, PageCache pageCache, String storeDir,
             RecordFormats newFormat )
             throws IOException
     {
-        try ( PageCache pageCache = createPageCache( fileSystem, dbConfig, NullLogProvider.getInstance(),
-                PageCacheTracer.NULL ) )
+        StoreFactory storeFactory = new StoreFactory( new File( storeDir ), pageCache, fileSystem, newFormat,
+                NullLogProvider.getInstance() );
+        try ( NeoStores neoStores = storeFactory.openAllNeoStores( true ) )
         {
-            StoreFactory storeFactory = new StoreFactory( new File( storeDir ), pageCache, fileSystem, newFormat,
-                            NullLogProvider.getInstance() );
-            try ( NeoStores neoStores = storeFactory.openAllNeoStores( true ) )
-            {
-                neoStores.getMetaDataStore();
-                neoStores.getLabelTokenStore();
-                neoStores.getNodeStore();
-                neoStores.getPropertyStore();
-                neoStores.getRelationshipGroupStore();
-                neoStores.getRelationshipStore();
-                neoStores.getSchemaStore();
-            }
+            neoStores.getMetaDataStore();
+            neoStores.getLabelTokenStore();
+            neoStores.getNodeStore();
+            neoStores.getPropertyStore();
+            neoStores.getRelationshipGroupStore();
+            neoStores.getRelationshipStore();
+            neoStores.getSchemaStore();
         }
     }
 
@@ -289,7 +313,10 @@ public class BatchingNeoStores implements AutoCloseable
         neoStores.close();
         // These temporary stores are configured to be deleted when closed
         temporaryNeoStores.close();
-        pageCache.close();
+        if ( !externalPageCache )
+        {
+            pageCache.close();
+        }
     }
 
     public long getLastCommittedTransactionId()

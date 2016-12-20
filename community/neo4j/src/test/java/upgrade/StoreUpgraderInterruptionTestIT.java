@@ -225,7 +225,7 @@ public class StoreUpgraderInterruptionTestIT
                 .allow_store_upgrade.name(), "true" ) );
 
         StoreUpgrader upgrader = new StoreUpgrader( upgradableDatabase, progressMonitor, allowUpgrade, fs,
-                NullLogProvider.getInstance() );
+                pageCacheRule.getPageCache( fs ), NullLogProvider.getInstance() );
         upgrader.addParticipant( indexMigrator );
         upgrader.addParticipant( migrator );
         return upgrader;

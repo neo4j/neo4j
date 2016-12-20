@@ -70,7 +70,7 @@ public class BatchingNeoStoresTest
         {
             RecordFormats recordFormats = RecordFormatSelector.selectForConfig( Config.empty(),
                     NullLogProvider.getInstance() );
-            new BatchingNeoStores( fsr.get(), storeDir, recordFormats, DEFAULT, NullLogService.getInstance(), EMPTY,
+            BatchingNeoStores.batchingNeoStores( fsr.get(), storeDir, recordFormats, DEFAULT, NullLogService.getInstance(), EMPTY,
                     Config.empty() );
             fail( "Should fail on existing data" );
         }
@@ -93,7 +93,7 @@ public class BatchingNeoStoresTest
         // WHEN
         RecordFormats recordFormats = StandardV3_0.RECORD_FORMATS;
         int headerSize = recordFormats.dynamic().getRecordHeaderSize();
-        try ( BatchingNeoStores store = new BatchingNeoStores( fsr.get(), storeDir, recordFormats, DEFAULT,
+        try ( BatchingNeoStores store = BatchingNeoStores.batchingNeoStores( fsr.get(), storeDir, recordFormats, DEFAULT,
                 NullLogService.getInstance(), EMPTY, config ) )
         {
             // THEN

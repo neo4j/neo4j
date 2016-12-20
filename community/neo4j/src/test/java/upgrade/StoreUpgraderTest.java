@@ -199,7 +199,7 @@ public class StoreUpgraderTest
         StoreMigrator defaultMigrator = new StoreMigrator( fs, pageCache, getTuningConfig(), NullLogService.getInstance(),
                 schemaIndexProvider );
         StoreUpgrader upgrader = new StoreUpgrader( upgradableDatabase, progressMonitor, allowMigrateConfig, fs,
-                NullLogProvider.getInstance() );
+                pageCache, NullLogProvider.getInstance() );
         upgrader.addParticipant( defaultMigrator );
 
         expectedException.expect( UnableToUpgradeException.class );
@@ -510,7 +510,7 @@ public class StoreUpgraderTest
         SchemaIndexMigrator indexMigrator =
                 new SchemaIndexMigrator( fileSystem, schemaIndexProvider, labelScanStoreProvider );
 
-        StoreUpgrader upgrader = new StoreUpgrader( upgradableDatabase, progressMonitor, config, fileSystem,
+        StoreUpgrader upgrader = new StoreUpgrader( upgradableDatabase, progressMonitor, config, fileSystem, pageCache,
                 NullLogProvider.getInstance() );
         upgrader.addParticipant( indexMigrator );
         upgrader.addParticipant( defaultMigrator );

@@ -28,6 +28,8 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Format;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.logging.LogService;
@@ -90,6 +92,7 @@ public class ParallelBatchImporter implements BatchImporter
     private final AdditionalInitialIds additionalInitialIds;
     private final Config dbConfig;
     private final RecordFormats recordFormats;
+    private final PageCache pageCache;
 
     /**
      * Advanced usage of the parallel batch importer, for special and very specific cases. Please use
@@ -100,6 +103,27 @@ public class ParallelBatchImporter implements BatchImporter
             AdditionalInitialIds additionalInitialIds,
             Config dbConfig, RecordFormats recordFormats )
     {
+        this.storeDir = storeDir;
+        this.fileSystem = fileSystem;
+        this.pageCache = null;
+        this.config = config;
+        this.logService = logService;
+        this.dbConfig = dbConfig;
+        this.recordFormats = recordFormats;
+        this.log = logService.getInternalLogProvider().getLog( getClass() );
+        this.executionMonitor = executionMonitor;
+        this.additionalInitialIds = additionalInitialIds;
+    }
+
+    /**
+     * Advanced usage of the parallel batch importer, for special and very specific cases. Please use
+     * a constructor with fewer arguments instead.
+     */
+    public ParallelBatchImporter( File storeDir, FileSystemAbstraction fileSystem, PageCache pageCache,
+            Configuration config, LogService logService, ExecutionMonitor executionMonitor,
+            AdditionalInitialIds additionalInitialIds, Config dbConfig, RecordFormats recordFormats )
+    {
+        this.pageCache = pageCache;
         this.storeDir = storeDir;
         this.fileSystem = fileSystem;
         this.config = config;
@@ -121,7 +145,7 @@ public class ParallelBatchImporter implements BatchImporter
     {
         this( storeDir, new DefaultFileSystemAbstraction(), config, logService,
                 withDynamicProcessorAssignment( executionMonitor, config ), EMPTY, dbConfig,
-                RecordFormatSelector.selectForConfig( dbConfig, NullLogProvider.getInstance() ));
+                RecordFormatSelector.selectForConfig( dbConfig, NullLogProvider.getInstance() ) );
     }
 
     @Override
@@ -135,10 +159,9 @@ public class ParallelBatchImporter implements BatchImporter
         NodeLabelsCache nodeLabelsCache = null;
         long startTime = currentTimeMillis();
         CountingStoreUpdateMonitor storeUpdateMonitor = new CountingStoreUpdateMonitor();
-        try ( BatchingNeoStores neoStore = new BatchingNeoStores( fileSystem, storeDir, recordFormats, config, logService,
-                additionalInitialIds, dbConfig );
+        try ( BatchingNeoStores neoStore = getBatchingNeoStores();
               CountsAccessor.Updater countsUpdater = neoStore.getCountsStore().reset(
-                    neoStore.getLastCommittedTransactionId() );
+                      neoStore.getLastCommittedTransactionId() );
               InputCache inputCache = new InputCache( fileSystem, storeDir, recordFormats, config ) )
         {
             Collector badCollector = input.badCollector();
@@ -231,6 +254,15 @@ public class ParallelBatchImporter implements BatchImporter
         }
     }
 
+    private BatchingNeoStores getBatchingNeoStores()
+    {
+        return (pageCache ==  null)
+              ? BatchingNeoStores.batchingNeoStores( fileSystem, storeDir, recordFormats, config, logService,
+                      additionalInitialIds, dbConfig )
+              : BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fileSystem, pageCache, PageCacheTracer.NULL,
+                      storeDir, recordFormats, config, logService, additionalInitialIds, dbConfig );
+    }
+
     private long totalMemoryUsageOf( MemoryStatsVisitor.Visitable... users )
     {
         GatheringMemoryStatsVisitor total = new GatheringMemoryStatsVisitor();
@@ -279,7 +311,7 @@ public class ParallelBatchImporter implements BatchImporter
 
             InputIterator<InputRelationship> perType = perTypeIterator.next();
             String topic = " [:" + currentType + "] (" +
-                    (i+1) + "/" + allRelationshipTypes.length + ")";
+                           (i + 1) + "/" + allRelationshipTypes.length + ")";
             final RelationshipStage relationshipStage = new RelationshipStage( topic, config,
                     writeMonitor, perType, idMapper, neoStore, nodeRelationshipCache,
                     storeUpdateMonitor, nextRelationshipId );
