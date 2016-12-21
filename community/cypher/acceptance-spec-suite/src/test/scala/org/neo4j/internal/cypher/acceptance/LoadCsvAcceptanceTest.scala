@@ -24,6 +24,7 @@ import java.net.{URL, URLConnection, URLStreamHandler, URLStreamHandlerFactory}
 
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.ExecutionEngine
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.compiler.v3_2.test_helpers.CreateTempFileTestSupport
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.StringHelper.RichString
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
@@ -42,6 +43,41 @@ class LoadCsvAcceptanceTest
     createGzipCSVTempFileURL(f),
     createZipCSVTempFileURL(f)
   )
+
+  test("import three rows with headers and match from import using index hint") {
+    val urls = csvUrls({
+      writer =>
+        writer.println("USERID,OrderId,field1,field2")
+        writer.println("1, '4', 1, '4'")
+        writer.println("2, '5', 2, '5'")
+        writer.println("3, '6', 3, '6'")
+    })
+
+    val result = executeWithCostPlannerOnly(
+      s"""LOAD CSV WITH HEADERS FROM '${urls(0)}' AS row
+          | CREATE (user:User{userID: row.USERID})
+          | CREATE (order:Order{orderID: row.OrderId})
+          | CREATE (user)-[acc:ORDERED]->(order)
+          | RETURN count(*)""".stripMargin
+    )
+    graph.createIndex("User", "userID")
+    assertStats(result, nodesCreated = 6, relationshipsCreated = 3, labelsAdded = 6, propertiesWritten = 6)
+
+    for (url <- urls) {
+      val result = executeWithCostPlannerOnly(
+        s"""LOAD CSV WITH HEADERS FROM '$url' AS row
+            | MATCH (user:User{userID: row.USERID}) USING INDEX user:User(userID)
+            | MATCH (order:Order{orderID: row.OrderId})
+            | MATCH (user)-[acc:ORDERED]->(order)
+            | SET acc.field1=row.field1,
+            | acc.field2=row.field2
+            | RETURN count(*); """.stripMargin
+      )
+
+      assertStats(result, propertiesWritten = 6)
+      result.executionPlanDescription() should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "user")
+    }
+  }
 
   test("import three strings") {
     val urls = csvUrls({

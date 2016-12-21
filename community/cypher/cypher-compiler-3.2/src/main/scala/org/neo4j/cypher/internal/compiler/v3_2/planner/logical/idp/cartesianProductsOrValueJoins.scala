@@ -144,11 +144,10 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
                       kit: QueryPlannerKit,
                       singleComponentPlanner: SingleComponentPlannerTrait) = {
 
-    val builtOnTopOfOtherPlans = rhsQG.argumentIds.nonEmpty
     val notSingleComponent = rhsQG.connectedComponents.size > 1
     val containsOptionals = rhsInputPlan.solved.lastQueryGraph.optionalMatches.nonEmpty
 
-    if (builtOnTopOfOtherPlans || notSingleComponent || containsOptionals) None
+    if (notSingleComponent || containsOptionals) None
     else {
       // Replan the RHS with the LHS arguments available. If good indexes exist, they can now be used
       val ids = rhsInputPlan.solved.lastQueryGraph.addArgumentIds(lhsQG.coveredIds.toIndexedSeq).addPredicates(predicate)

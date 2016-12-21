@@ -20,19 +20,66 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.compiler.v3_2.IDPPlannerName
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.KeyNames
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{NodeHashJoin, NodeIndexSeek}
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.{ExecutionEngineFunSuite, IndexHintException, NewPlannerTestSupport, SyntaxException, _}
-import org.neo4j.graphdb.QueryExecutionException
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
+import org.neo4j.graphdb.{Node, QueryExecutionException}
 import org.neo4j.kernel.api.exceptions.Status
-import org.scalatest.matchers.{MatchResult, Matcher}
 
 
 class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport with RunWithConfigTestSupport {
   override def databaseConfig(): Map[Setting[_], String] = Map(GraphDatabaseSettings.cypher_hints_error -> "true")
+
+  test("should use index on literal value") {
+    val node = createLabeledNode(Map("id" -> 123), "Foo")
+    graph.createIndex("Foo", "id")
+    val query =
+      """
+        |PROFILE
+        | MATCH (f:Foo)
+        | USING INDEX f:Foo(id)
+        | WHERE f.id=123
+        | RETURN f
+      """.stripMargin
+    val result = executeWithCostPlannerOnly(query)
+    result.columnAs[Node]("f").toList should equal(List(node))
+    result.executionPlanDescription() should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "f")
+  }
+
+
+  test("should use index on literal map expression") {
+    val nodes = Range(0,125).map(i => createLabeledNode(Map("id" -> i), "Foo"))
+    graph.createIndex("Foo", "id")
+    val query =
+      """
+        |PROFILE
+        | MATCH (f:Foo)
+        | USING INDEX f:Foo(id)
+        | WHERE f.id={id: 123}.id
+        | RETURN f
+      """.stripMargin
+    val result = executeWithCostPlannerOnly(query)
+    result.columnAs[Node]("f").toSet should equal(Set(nodes(123)))
+    result.executionPlanDescription() should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "f")
+  }
+
+  test("should use index on variable defined from literal value") {
+    val node = createLabeledNode(Map("id" -> 123), "Foo")
+    graph.createIndex("Foo", "id")
+    val query =
+      """
+        |PROFILE
+        | WITH 123 AS row
+        | MATCH (f:Foo)
+        | USING INDEX f:Foo(id)
+        | WHERE f.id=row
+        | RETURN f
+      """.stripMargin
+    val result = executeWithCostPlannerOnly(query)
+    result.columnAs[Node]("f").toList should equal(List(node))
+    result.executionPlanDescription() should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "f")
+  }
 
   test("fail if using index with start clause") {
     // GIVEN
@@ -680,58 +727,4 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
         intercept[QueryExecutionException](db.execute(s"EXPLAIN $query")).getStatusCode should equal("Neo.DatabaseError.Statement.ExecutionFailed")
     }
   }
-
-  case class includeOnlyOneHashJoinOn(nodeVariable: String) extends Matcher[InternalPlanDescription] {
-
-    private val hashJoinStr = classOf[NodeHashJoin].getSimpleName
-
-    override def apply(result: InternalPlanDescription): MatchResult = {
-      val hashJoins = result.flatten.filter { description =>
-        description.name == hashJoinStr && description.arguments.contains(KeyNames(Seq(nodeVariable)))
-      }
-      val numberOfHashJoins = hashJoins.length
-
-      MatchResult(numberOfHashJoins == 1, matchResultMsg(negated = false, result, numberOfHashJoins), matchResultMsg(negated = true, result, numberOfHashJoins))
-    }
-
-    private def matchResultMsg(negated: Boolean, result: InternalPlanDescription, numberOfHashJoins: Integer) =
-      s"$hashJoinStr on node '$nodeVariable' should exist only once in the plan description ${if (negated) "" else s", but it occurred $numberOfHashJoins times"}\n $result"
-  }
-
-  case class includeOnlyOne[T](operator: Class[T], withVariable: String = "") extends includeOnly(operator, withVariable) {
-    override def verifyOccurences(actualOccurences: Int) =
-      actualOccurences == 1
-
-    override def matchResultMsg(negated: Boolean, result: InternalPlanDescription, numberOfOperatorOccurences: Integer) =
-      s"$joinStr on node '$withVariable' should occur only once in the plan description${if (negated) "" else s", but it occurred $numberOfOperatorOccurences times"}\n $result"
-  }
-
-  case class includeAtLeastOne[T](operator: Class[T], withVariable: String = "") extends includeOnly(operator, withVariable) {
-    override def verifyOccurences(actualOccurences: Int) =
-      actualOccurences >= 1
-
-    override def matchResultMsg(negated: Boolean, result: InternalPlanDescription, numberOfOperatorOccurences: Integer) =
-      s"$joinStr on node '$withVariable' should occur at least once in the plan description${if (negated) "" else s", but it was not found\n $result"}"
-  }
-
-  abstract class includeOnly[T](operator: Class[T], withVariable: String = "") extends Matcher[InternalPlanDescription] {
-    protected val joinStr = operator.getSimpleName
-
-    def verifyOccurences(actualOccurences: Int): Boolean
-
-    def matchResultMsg(negated: Boolean, result: InternalPlanDescription, numberOfOperatorOccurences: Integer): String
-
-    override def apply(result: InternalPlanDescription): MatchResult = {
-      val operatorOccurrences = result.flatten.filter { description =>
-        val nameCondition = description.name == joinStr
-        val variableCondition = withVariable == "" || description.variables.contains(withVariable)
-        nameCondition && variableCondition
-      }
-      val numberOfOperatorOccurrences = operatorOccurrences.length
-      val matches = verifyOccurences(numberOfOperatorOccurrences)
-
-      MatchResult(matches, matchResultMsg(negated = false, result, numberOfOperatorOccurrences), matchResultMsg(negated = true, result, numberOfOperatorOccurrences))
-    }
-  }
-
 }

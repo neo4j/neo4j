@@ -22,7 +22,7 @@ package org.neo4j.internal.cypher.acceptance
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport}
 
 class QueryPlanCompactionAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport
-  with NewPlannerTestSupport with QueryPlanTestSupport {
+  with NewPlannerTestSupport {
 
   test("Compact very long query containing consecutive update operations") {
     val query =
