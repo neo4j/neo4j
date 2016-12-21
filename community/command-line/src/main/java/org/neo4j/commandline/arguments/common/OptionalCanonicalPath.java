@@ -33,9 +33,9 @@ public class OptionalCanonicalPath extends OptionalNamedArg
 
     private static String canonicalize( String path )
     {
-        if ( path.isEmpty() )
+        if ( path == null || path.isEmpty() )
         {
-            return path;
+            return "";
         }
 
         return Util.canonicalPath( path ).toString();
