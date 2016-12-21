@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.cardinality.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.idp.{IDPQueryGraphSolver, IDPQueryGraphSolverMonitor, SingleComponentPlanner, cartesianProductsOrValueJoins}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.rewriter.{LogicalPlanRewriter, unnestApply}
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.rewriter.unnestApply
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.{LogicalPlanningContext, _}
 import org.neo4j.cypher.internal.compiler.v3_2.spi._
@@ -56,8 +56,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
   var parser = new CypherParser
   val rewriterSequencer = RewriterStepSequencer.newValidating _
   var astRewriter = new ASTRewriter(rewriterSequencer, shouldExtractParameters = false)
-  val planRewriter = LogicalPlanRewriter(rewriterSequencer)
-  final var planner = new DefaultQueryPlanner(planRewriter) {
+  final var planner = new QueryPlanner() {
     def internalPlan(query: PlannerQuery)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan] = None): LogicalPlan =
       planSingleQuery(query)
   }
@@ -126,7 +125,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         semanticTable.resolvedRelTypeNames.get(relType).map(_.id)
     }
 
-    private def context = Context(null, null, null, planContext, null, null, mock[AstRewritingMonitor])
+    private def context = Context(null, null, null, planContext, null, null, mock[AstRewritingMonitor], null, null, null, null)
 
     private val pipeLine =
       Namespacer andThen rewriteEqualityToInPredicate andThen CNFNormalizer andThen LateAstRewriting andThen ResolveTokens

@@ -116,7 +116,7 @@ class CNFNormalizerTest extends CypherFunSuite with PredicateTestSupport {
   override protected def beforeEach(): Unit = {
     super.beforeEach()
     astRewritingMonitor = mock[AstRewritingMonitor]
-    rewriter = CNFNormalizer.instance(Context(null, null, null, null, null, null, astRewritingMonitor))
+    rewriter = CNFNormalizer.instance(Context(null, null, null, null, null, null, astRewritingMonitor, null, null, null, null))
   }
 
 }

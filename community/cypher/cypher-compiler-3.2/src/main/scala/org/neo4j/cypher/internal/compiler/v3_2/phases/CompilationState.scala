@@ -21,8 +21,10 @@ package org.neo4j.cypher.internal.compiler.v3_2.phases
 
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.ExecutionPlan
 import org.neo4j.cypher.internal.compiler.v3_2.planner.UnionQuery
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{Query, Statement}
 import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, InternalException, SemanticState, SemanticTable}
+import org.neo4j.cypher.internal.ir.v3_2.PeriodicCommit
 
 case class CompilationState(queryText: String,
                             startPosition: Option[InputPosition],
@@ -33,6 +35,8 @@ case class CompilationState(queryText: String,
                             maybeSemanticTable: Option[SemanticTable] = None,
                             maybeExecutionPlan: Option[ExecutionPlan] = None,
                             maybeUnionQuery: Option[UnionQuery] = None,
+                            maybeLogicalPlan: Option[LogicalPlan] = None,
+                            maybePeriodicCommit: Option[Option[PeriodicCommit]] = None,
                             accumulatedConditions: Set[Condition] = Set.empty) {
 
   def isPeriodicCommit: Boolean = statement match {
@@ -46,6 +50,9 @@ case class CompilationState(queryText: String,
   def semanticTable = maybeSemanticTable getOrElse fail("Semantic table")
   def executionPlan = maybeExecutionPlan getOrElse fail("Execution plan")
   def unionQuery = maybeUnionQuery getOrElse fail("Union query")
+  def logicalPlan = maybeLogicalPlan getOrElse fail("Logical plan")
+  def periodicCommit = maybePeriodicCommit getOrElse fail("Periodic commit")
+  def astAsQuery = statement.asInstanceOf[Query]
 
   private def fail(what: String) = {
     throw new InternalException(s"$what not yet initialised")

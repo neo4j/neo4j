@@ -72,13 +72,6 @@ trait NewRuntimeSuccessRateMonitor {
   def unableToHandlePlan(plan: LogicalPlan, origin: CantCompileQueryException)
 }
 
-trait ExecutablePlanBuilder {
-
-  def producePlan(inputQuery: CompilationState, planContext: PlanContext,
-                  tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING,
-                  createFingerprintReference: (Option[PlanFingerprint]) => PlanFingerprintReference): ExecutionPlan
-}
-
 object InterpretedExecutionPlanBuilder {
   def interpretedToExecutionPlan(pipeInfo: PipeInfo,
                                  planContext: PlanContext,

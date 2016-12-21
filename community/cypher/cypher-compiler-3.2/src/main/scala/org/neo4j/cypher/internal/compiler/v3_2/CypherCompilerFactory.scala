@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi.CodeStructure
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.RuntimeTypeConverter
 import org.neo4j.cypher.internal.compiler.v3_2.planner.CostBasedPipeBuilderFactory
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.rewriter.LogicalPlanRewriter
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.{CachedMetricsFactory, DefaultQueryPlanner, SimpleMetricsFactory}
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical._
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.idp._
 import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Statement
 
@@ -43,7 +43,7 @@ object CypherCompilerFactory {
                         typeConverter: RuntimeTypeConverter): CypherCompiler = {
     val rewriter = new ASTRewriter(rewriterSequencer)
     val metricsFactory = CachedMetricsFactory(SimpleMetricsFactory)
-    val queryPlanner = DefaultQueryPlanner(LogicalPlanRewriter(rewriterSequencer))
+    val queryPlanner = QueryPlanner()
 
     val compiledPlanBuilder = CompiledPlanBuilder(clock, structure)
     val interpretedPlanBuilder = InterpretedPlanBuilder(clock, monitors, typeConverter)
@@ -51,6 +51,10 @@ object CypherCompilerFactory {
     // Pick runtime based on input
     val runtimeBuilder = RuntimeBuilder.create(runtimeName, interpretedPlanBuilder, compiledPlanBuilder, config.useErrorsOverWarnings)
 
+    val planner = plannerName.getOrElse(CostBasedPlannerName.default)
+    val queryGraphSolver = createQueryGraphSolver(planner, monitors, config)
+
+    val actualUpdateStrategy: UpdateStrategy = updateStrategy.getOrElse(defaultUpdateStrategy)
     val costPlanProducer = CostBasedPipeBuilderFactory.create(
       monitors = monitors,
       metricsFactory = metricsFactory,
@@ -59,8 +63,9 @@ object CypherCompilerFactory {
       plannerName = plannerName,
       runtimeBuilder = runtimeBuilder,
       config = config,
-      updateStrategy = updateStrategy,
-      publicTypeConverter = typeConverter.asPublicType
+      updateStrategy = actualUpdateStrategy,
+      publicTypeConverter = typeConverter.asPublicType,
+      queryGraphSolver
     )
 
     val createFingerprintReference: (Option[PlanFingerprint]) => PlanFingerprintReference =
@@ -70,8 +75,25 @@ object CypherCompilerFactory {
     val cacheMonitor = monitors.newMonitor[AstCacheMonitor](monitorTag)
     val cache = new MonitoringCacheAccessor[Statement, ExecutionPlan](cacheMonitor)
 
-    CypherCompiler(costPlanProducer, rewriter, cache, planCacheFactory, cacheMonitor, monitors, rewriterSequencer, createFingerprintReference, typeConverter)
+    CypherCompiler(costPlanProducer, rewriter, cache, planCacheFactory, cacheMonitor, monitors, rewriterSequencer, createFingerprintReference, typeConverter, metricsFactory, queryGraphSolver, config, actualUpdateStrategy)
   }
+
+  def createQueryGraphSolver(n: CostBasedPlannerName, monitors: Monitors, config: CypherCompilerConfiguration): QueryGraphSolver = n match {
+    case IDPPlannerName =>
+      val monitor = monitors.newMonitor[IDPQueryGraphSolverMonitor]()
+      val solverConfig = new ConfigurableIDPSolverConfig(
+        maxTableSize = config.idpMaxTableSize,
+        iterationDurationLimit = config.idpIterationDuration
+      )
+      val singleComponentPlanner = SingleComponentPlanner(monitor, solverConfig)
+      IDPQueryGraphSolver(singleComponentPlanner, cartesianProductsOrValueJoins, monitor)
+
+    case DPPlannerName =>
+      val monitor = monitors.newMonitor[IDPQueryGraphSolverMonitor]()
+      val singleComponentPlanner = SingleComponentPlanner(monitor, DPSolverConfig)
+      IDPQueryGraphSolver(singleComponentPlanner, cartesianProductsOrValueJoins, monitor)
+  }
+
 
   private def logStalePlanRemovalMonitor(log: InfoLogger) = new AstCacheMonitor {
     override def cacheDiscard(key: Statement, userKey: String) {

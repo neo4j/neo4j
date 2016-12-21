@@ -21,9 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.planner
 
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical._
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.idp._
 import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSequencer
-import org.neo4j.cypher.internal.frontend.v3_2.InternalException
 
 object CostBasedPipeBuilderFactory {
 
@@ -34,34 +32,13 @@ object CostBasedPipeBuilderFactory {
              plannerName: Option[CostBasedPlannerName],
              runtimeBuilder: RuntimeBuilder,
              config: CypherCompilerConfiguration,
-             updateStrategy: Option[UpdateStrategy],
-             publicTypeConverter: Any => Any
-  ) = {
+             updateStrategy: UpdateStrategy,
+             publicTypeConverter: Any => Any,
+             queryGraphSolver: QueryGraphSolver): ExecutablePlanBuilder = {
 
-    def createQueryGraphSolver(n: CostBasedPlannerName): QueryGraphSolver = n match {
-      case IDPPlannerName =>
-        val monitor = monitors.newMonitor[IDPQueryGraphSolverMonitor]()
-        val solverConfig = new ConfigurableIDPSolverConfig(
-          maxTableSize = config.idpMaxTableSize,
-          iterationDurationLimit = config.idpIterationDuration
-        )
-        val singleComponentPlanner = SingleComponentPlanner(monitor, solverConfig)
-
-        IDPQueryGraphSolver(singleComponentPlanner, cartesianProductsOrValueJoins, monitor)
-
-      case DPPlannerName =>
-        val monitor = monitors.newMonitor[IDPQueryGraphSolverMonitor]()
-        val singleComponentPlanner = SingleComponentPlanner(monitor, DPSolverConfig)
-        IDPQueryGraphSolver(singleComponentPlanner, cartesianProductsOrValueJoins, monitor)
-
-      case _ => throw new InternalException(s"$n is not a valid planner")
-    }
 
     val actualPlannerName = plannerName.getOrElse(CostBasedPlannerName.default)
-    val actualUpdateStrategy = updateStrategy.getOrElse(defaultUpdateStrategy)
-    CostBasedExecutablePlanBuilder(monitors, metricsFactory, queryPlanner,
-      createQueryGraphSolver(actualPlannerName), rewriterSequencer, actualPlannerName, runtimeBuilder,
-      actualUpdateStrategy,
-      config, publicTypeConverter)
+    ExecutablePlanBuilder(monitors, metricsFactory, queryPlanner, queryGraphSolver, rewriterSequencer,
+      actualPlannerName, runtimeBuilder, updateStrategy, config, publicTypeConverter)
   }
 }

@@ -90,12 +90,11 @@ class PipeLine(first: Transformer, after: Transformer) extends Transformer {
   }
 }
 
-case class If(f: CompilationState => Boolean)(thenT: Transformer) {
-  def orElse(elseT: Transformer) = new Transformer {
-    override def transform(from: CompilationState, context: Context): CompilationState =
-      if (f(from))
-        thenT.transform(from, context)
-      else
-        elseT.transform(from, context)
+case class If(f: CompilationState => Boolean)(thenT: Transformer) extends Transformer {
+  override def transform(from: CompilationState, context: Context): CompilationState = {
+    if (f(from))
+      thenT.transform(from, context)
+    else
+      from
   }
 }

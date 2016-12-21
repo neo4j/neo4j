@@ -42,7 +42,7 @@ trait QueryGraphProducer extends MockitoSugar {
 
     val (firstRewriteStep, _, _) = astRewriter.rewrite(query, cleanedStatement, semanticState)
     val state = CompilationState(query, None, "", Some(firstRewriteStep), Some(semanticState))
-    val context = Context(null, null, null, null, null, null, mock[AstRewritingMonitor])
+    val context = Context(null, null, null, null, null, null, mock[AstRewritingMonitor], null, null, null, null)
     val output = (Namespacer andThen rewriteEqualityToInPredicate andThen CNFNormalizer andThen LateAstRewriting).transform(state, context)
 
     (toUnionQuery(output.statement.asInstanceOf[Query], output.semanticTable).queries.head, output.semanticTable)

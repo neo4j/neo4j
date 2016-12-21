@@ -19,28 +19,48 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.planner.logical
 
+import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
+import org.neo4j.cypher.internal.compiler.v3_2.phases._
 import org.neo4j.cypher.internal.compiler.v3_2.planner._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{LogicalPlan, ProduceResult}
-import org.neo4j.cypher.internal.frontend.v3_2.Rewriter
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.ir.v3_2.PeriodicCommit
 
-trait QueryPlanner {
-  def plan(plannerQuery: UnionQuery)(implicit context: LogicalPlanningContext): (Option[PeriodicCommit], LogicalPlan)
-}
+case class QueryPlanner(planSingleQuery: LogicalPlanningFunction1[PlannerQuery, LogicalPlan] = PlanSingleQuery()) extends Phase {
 
-case class DefaultQueryPlanner(planRewriter: Rewriter,
-                               planSingleQuery: LogicalPlanningFunction1[PlannerQuery, LogicalPlan] = PlanSingleQuery())
-  extends QueryPlanner {
+  override def phase = LOGICAL_PLANNING
 
-  def plan(unionQuery: UnionQuery)(implicit context: LogicalPlanningContext): (Option[PeriodicCommit], LogicalPlan) = unionQuery match {
-    case UnionQuery(queries, distinct, returns, periodicCommitHint) =>
-      val plan = planQueries(queries, distinct)
-      val rewrittenPlan = plan.endoRewrite(planRewriter)
-      (periodicCommitHint, createProduceResultOperator(rewrittenPlan, unionQuery))
+  override def description = "using cost estimates, plan the query to a logical plan"
 
-    case _ =>
-      throw new CantHandleQueryException
+  override def postConditions = Set(Contains[LogicalPlan])
+
+  override def transform(from: CompilationState, context: Context): CompilationState = {
+    val logicalPlanProducer = LogicalPlanProducer(context.metrics.cardinality)
+    val logicalPlanningContext = LogicalPlanningContext(
+      planContext = context.planContext,
+      logicalPlanProducer = logicalPlanProducer,
+      metrics = context.metrics,
+      semanticTable = from.semanticTable,
+      strategy = context.queryGraphSolver,
+      notificationLogger = context.notificationLogger,
+      useErrorsOverWarnings = context.config.useErrorsOverWarnings,
+      errorIfShortestPathFallbackUsedAtRuntime = context.config.errorIfShortestPathFallbackUsedAtRuntime,
+      config = QueryPlannerConfiguration.default.withUpdateStrategy(context.updateStrategy))
+
+    val (perCommit, logicalPlan) = plan(from.unionQuery)(logicalPlanningContext)
+
+    from.copy(maybePeriodicCommit = Some(perCommit), maybeLogicalPlan = Some(logicalPlan))
   }
+
+  def plan(unionQuery: UnionQuery)(implicit context: LogicalPlanningContext): (Option[PeriodicCommit], LogicalPlan) =
+    unionQuery match {
+      case UnionQuery(queries, distinct, returns, periodicCommitHint) =>
+        val plan = planQueries(queries, distinct)
+        (periodicCommitHint, createProduceResultOperator(plan, unionQuery))
+
+      case _ =>
+        throw new CantHandleQueryException
+    }
 
   private def createProduceResultOperator(in: LogicalPlan, unionQuery: UnionQuery)
                                          (implicit context: LogicalPlanningContext): LogicalPlan = {

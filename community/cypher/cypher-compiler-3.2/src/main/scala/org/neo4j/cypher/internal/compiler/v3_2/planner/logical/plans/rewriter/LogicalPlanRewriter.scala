@@ -19,6 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.rewriter
 
+import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase
+import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
+import org.neo4j.cypher.internal.compiler.v3_2.phases.{CompilationState, Condition, Context, Phase}
 import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_2.Rewriter
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.fixedPoint
@@ -28,8 +31,12 @@ import org.neo4j.cypher.internal.frontend.v3_2.helpers.fixedPoint
  * receiving a valid plan and producing a valid plan. It should be possible
  * to disable any and all of these rewriters, and still produce correct behavior.
  */
-case class LogicalPlanRewriter(rewriterSequencer: String => RewriterStepSequencer) extends Rewriter {
-  val instance = fixedPoint(rewriterSequencer("LogicalPlanRewriter")(
+case class PlanRewriter(rewriterSequencer: String => RewriterStepSequencer) extends LogicalPlanRewriter {
+  override def description: String = "optimize logical plans using heuristic rewriting"
+
+  override def postConditions: Set[Condition] = Set.empty
+
+  override def instance(context: Context) = fixedPoint(rewriterSequencer("LogicalPlanRewriter")(
     fuseSelections,
     unnestApply,
     cleanUpEager,
@@ -39,6 +46,15 @@ case class LogicalPlanRewriter(rewriterSequencer: String => RewriterStepSequence
     removeIdenticalPlans,
     pruningVarExpander
   ).rewriter)
+}
 
-  def apply(that: AnyRef) = instance(that)
+trait LogicalPlanRewriter extends Phase {
+  override def phase: CompilationPhase = LOGICAL_PLANNING
+
+  def instance(context: Context): Rewriter
+
+  override def transform(from: CompilationState, context: Context): CompilationState = {
+    val rewritten = from.logicalPlan.endoRewrite(instance(context))
+    from.copy(maybeLogicalPlan = Some(rewritten))
+  }
 }

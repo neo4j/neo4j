@@ -30,7 +30,6 @@ import org.neo4j.cypher.internal.compiler.v3_2.helpers.IdentityTypeConverter
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_2.planner._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical._
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.rewriter.LogicalPlanRewriter
 import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_2.parser.CypherParser
@@ -297,17 +296,19 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
     val rewriter = new ASTRewriter(rewriterSequencer)
     val planBuilderMonitor = monitors.newMonitor[NewLogicalPlanSuccessRateMonitor](monitorTag)
     val metricsFactory = CachedMetricsFactory(metricsFactoryInput)
-    val queryPlanner = DefaultQueryPlanner(LogicalPlanRewriter(rewriterSequencer))
-    val planner: CostBasedExecutablePlanBuilder = CostBasedPipeBuilderFactory.create(
+    val queryPlanner = QueryPlanner()
+    val runtimeBuilder: RuntimeBuilder = SilentFallbackRuntimeBuilder(InterpretedPlanBuilder(clock, monitors, IdentityTypeConverter), CompiledPlanBuilder(clock, GeneratedQueryStructure))
+    val planner: ExecutablePlanBuilder = CostBasedPipeBuilderFactory.create(
       monitors = monitors,
       metricsFactory = metricsFactory,
       plannerName = Some(plannerName),
       rewriterSequencer = rewriterSequencer,
       queryPlanner = queryPlanner,
-      runtimeBuilder = SilentFallbackRuntimeBuilder(InterpretedPlanBuilder(clock, monitors, IdentityTypeConverter), CompiledPlanBuilder(clock,GeneratedQueryStructure)),
+      runtimeBuilder = runtimeBuilder,
       config = config,
-      updateStrategy = None,
-      publicTypeConverter = identity
+      updateStrategy = defaultUpdateStrategy,
+      publicTypeConverter = identity,
+      queryGraphSolver = null
     )
     val referenceCreator: (Option[PlanFingerprint]) => PlanFingerprintReference =
       new PlanFingerprintReference(clock, config.queryPlanTTL, config.statsDivergenceThreshold, _)
@@ -317,7 +318,7 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
       monitors.newMonitor[CypherCacheFlushingMonitor[CacheAccessor[Statement, ExecutionPlan]]](monitorTag)
     val cache = new MonitoringCacheAccessor[Statement, ExecutionPlan](cacheHitMonitor)
 
-    CypherCompiler(planner, rewriter, cache, planCacheFactory, cacheFlushMonitor, monitors, rewriterSequencer, referenceCreator, IdentityTypeConverter)
+    CypherCompiler(planner, rewriter, cache, planCacheFactory, cacheFlushMonitor, monitors, rewriterSequencer, referenceCreator, IdentityTypeConverter, metricsFactory, null, null, null)
   }
 
   case class QueryExecutionResult(compiler: String, dbHits: Option[Long], plan: InternalPlanDescription) {

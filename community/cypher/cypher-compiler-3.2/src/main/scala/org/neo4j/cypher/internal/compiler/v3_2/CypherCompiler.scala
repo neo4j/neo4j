@@ -23,12 +23,12 @@ import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.Compilatio
 import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase._
 import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters.{CNFNormalizer, Namespacer, rewriteEqualityToInPredicate}
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan._
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.procs.ProcedureOrSchemaCommandPlanBuilder
+import org.neo4j.cypher.internal.compiler.v3_2.executionplan.procs.ProcedureCallOrSchemaCommandPlanBuilder
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.RuntimeTypeConverter
-import org.neo4j.cypher.internal.compiler.v3_2.phases.Transformer.identity
 import org.neo4j.cypher.internal.compiler.v3_2.phases.{CompilationState, Phase, RewriteProcedureCalls, _}
-import org.neo4j.cypher.internal.compiler.v3_2.planner.ResolveTokens
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.OptionalMatchRemover
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical._
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.rewriter.PlanRewriter
+import org.neo4j.cypher.internal.compiler.v3_2.planner.{ExecutablePlanBuilder, ResolveTokens}
 import org.neo4j.cypher.internal.compiler.v3_2.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_2.InputPosition
@@ -42,8 +42,11 @@ case class CypherCompiler(executionPlanBuilder: ExecutablePlanBuilder,
                           monitors: Monitors,
                           sequencer: String => RewriterStepSequencer,
                           createFingerprintReference: Option[PlanFingerprint] => PlanFingerprintReference,
-                          typeConverter: RuntimeTypeConverter) {
-
+                          typeConverter: RuntimeTypeConverter,
+                          metricsFactory: MetricsFactory,
+                          queryGraphSolver: QueryGraphSolver,
+                          config: CypherCompilerConfiguration,
+                          updateStrategy: UpdateStrategy) {
 
   def planQuery(queryText: String, context: PlanContext, notificationLogger: InternalNotificationLogger,
                 plannerName: String = "",
@@ -77,14 +80,12 @@ case class CypherCompiler(executionPlanBuilder: ExecutablePlanBuilder,
     firstPipeline.transform(startState, context)
   }
 
-  private val astRewriting = AstRewriting(sequencer)
-
   val firstPipeline: Transformer =
       Parsing andThen
       SyntaxDeprecationWarnings andThen
       PreparatoryRewriting andThen
       SemanticAnalysis(warn = true) andThen
-      astRewriting
+      AstRewriting(sequencer)
 
   val secondPipeLine: Transformer =
     RewriteProcedureCalls andThen
@@ -99,15 +100,15 @@ case class CypherCompiler(executionPlanBuilder: ExecutablePlanBuilder,
     ResolveTokens andThen
     CreatePlannerQuery andThen
     OptionalMatchRemover andThen
+    QueryPlanner(PlanSingleQuery()) andThen
+    PlanRewriter(sequencer) andThen
     RestOfPipeLine
 
   val thirdPipeLine: Transformer =
-    ProcedureOrSchemaCommandPlanBuilder andThen
-      (If(_.maybeExecutionPlan.isEmpty)(
-        costBasedPlan
-      ) orElse
-        identity
-      )
+    ProcedureCallOrSchemaCommandPlanBuilder andThen
+    If(_.maybeExecutionPlan.isEmpty)(
+      costBasedPlan
+    )
 
   def prepareSemanticQuery(in: CompilationState,
                            notificationLogger: InternalNotificationLogger,
@@ -139,10 +140,21 @@ case class CypherCompiler(executionPlanBuilder: ExecutablePlanBuilder,
     override def postConditions: Set[Condition] = Set.empty
   }
 
-  private def createContext(tracer: CompilationPhaseTracer, notificationLogger: InternalNotificationLogger, planContext: PlanContext, queryText: String, offset: Option[InputPosition]):Context = {
+  private def createContext(tracer: CompilationPhaseTracer,
+                            notificationLogger: InternalNotificationLogger,
+                            planContext: PlanContext,
+                            queryText: String,
+                            offset: Option[InputPosition]): Context = {
     val exceptionCreator = new SyntaxExceptionCreator(queryText, offset)
     val monitor = monitors.newMonitor[AstRewritingMonitor]()
-    Context(exceptionCreator, tracer, notificationLogger, planContext, typeConverter, createFingerprintReference, monitor)
+
+    val metrics: Metrics = if (planContext == null)
+      null
+    else
+      metricsFactory.newMetrics(planContext.statistics)
+
+    Context(exceptionCreator, tracer, notificationLogger, planContext, typeConverter, createFingerprintReference,
+      monitor, metrics, queryGraphSolver, config, updateStrategy)
   }
 }
 

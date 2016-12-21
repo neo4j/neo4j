@@ -33,7 +33,6 @@ import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.idp._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.rewriter.LogicalPlanRewriter
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.v3_2.spi._
 import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSequencer
@@ -161,8 +160,8 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     FakePlan(ids)(CardinalityEstimation.lift(RegularPlannerQuery(qg), Cardinality(0)))
   }
 
-  def newPlanner(metricsFactory: MetricsFactory): CostBasedExecutablePlanBuilder = {
-    val queryPlanner = new DefaultQueryPlanner(LogicalPlanRewriter(rewriterSequencer))
+  def newPlanner(metricsFactory: MetricsFactory): ExecutablePlanBuilder = {
+    val queryPlanner = new QueryPlanner()
     CostBasedPipeBuilderFactory.create(
       monitors = monitors,
       metricsFactory = metricsFactory,
@@ -170,9 +169,10 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       rewriterSequencer = rewriterSequencer,
       plannerName = None,
       runtimeBuilder = InterpretedRuntimeBuilder(InterpretedPlanBuilder(Clock.systemUTC(), monitors, IdentityTypeConverter)),
-      updateStrategy = None,
+      updateStrategy = defaultUpdateStrategy,
       config = config,
-      publicTypeConverter = identity)
+      publicTypeConverter = identity,
+      queryGraphSolver = null)
   }
 
   val config = CypherCompilerConfiguration(
@@ -216,7 +216,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     }
     val state = CompilationState(query, None, "", Some(resolvedStatement), Some(SemanticChecker.check(cleanedStatement, mkException)))
 
-    val context = Context(null, null, null, null, null, null, mock[AstRewritingMonitor])
+    val context = Context(null, null, null, null, null, null, mock[AstRewritingMonitor], null, null, null, null)
     val output = (Namespacer andThen rewriteEqualityToInPredicate andThen CNFNormalizer andThen LateAstRewriting).transform(state, context)
 
     // This fakes pattern expression naming for testing purposes
