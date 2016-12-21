@@ -82,7 +82,7 @@ class TreePrinter<KEY,VALUE>
     private void printTreeNode( PageCursor cursor, int keyCount, boolean isLeaf, PrintStream out, boolean printValues )
             throws IOException
     {
-        out.print( (isLeaf ? "[" : "|") + "{" + cursor.getCurrentPageId() + "}" );
+        out.print( "{" + cursor.getCurrentPageId() + "} " );
         KEY key = layout.newKey();
         VALUE value = layout.newValue();
         for ( int i = 0; i < keyCount; i++ )
@@ -102,14 +102,11 @@ class TreePrinter<KEY,VALUE>
             }
             while ( cursor.shouldRetry() );
 
-            if ( i > 0 )
-            {
-                out.print( "," );
-            }
+            out.print( "#" + i + " " );
 
             if ( isLeaf )
             {
-                out.print( "#" + i + ":" + key );
+                out.print( key );
                 if ( printValues )
                 {
                     out.print( "=" + value );
@@ -117,9 +114,9 @@ class TreePrinter<KEY,VALUE>
             }
             else
             {
-                out.print( "#" + i + ":" + "|" + child + "|" + key + "|" );
-
+                out.print( "/" + child + "\\ [" + key + "]" );
             }
+            out.print( " " );
         }
         if ( !isLeaf )
         {
@@ -130,9 +127,9 @@ class TreePrinter<KEY,VALUE>
             }
             while ( cursor.shouldRetry() );
 
-            out.print( "#" + keyCount + ":|" + child + "|" );
+            out.print( "#" + keyCount + " /" + child + "\\" );
         }
-        out.println( (isLeaf ? "]" : "|") );
+        out.println();
     }
 
     private boolean goToLeftmostChild( PageCursor cursor ) throws IOException
