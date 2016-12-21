@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
+import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
 import org.neo4j.graphdb.Node
 
@@ -71,5 +72,59 @@ class IndexNestedLoopJoinAcceptanceTest extends ExecutionEngineFunSuite with New
     // then
     result should use("Apply", "NodeIndexSeek")
     result should not(use("ValueHashJoin", "CartesianProduct", "NodeByLabelScan", "Filter"))
+  }
+
+  test("should use index on variable defined from literal map") {
+    val nodes = Range(0,125).map(i => createLabeledNode(Map("id" -> i), "Foo"))
+    graph.createIndex("Foo", "id")
+    val query =
+      """
+        |PROFILE
+        | WITH [{id: 123}, {id: 122}] AS rows
+        | UNWIND rows AS row
+        | MATCH (f:Foo)
+        | USING INDEX f:Foo(id)
+        | WHERE f.id=row.id
+        | RETURN f
+      """.stripMargin
+    val result = executeWithCostPlannerOnly(query)
+    result.columnAs[Node]("f").toSet should equal(Set(nodes(122),nodes(123)))
+    result.executionPlanDescription() should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "f")
+  }
+
+  test("should use index on other node property value where there is no incoming horizon") {
+    val nodes = Range(0,125).map(i => createLabeledNode(Map("id" -> i), "Foo"))
+    val n1=createLabeledNode(Map("id"->122),"Bar")
+    val n2=createLabeledNode(Map("id"->123),"Bar")
+    graph.createIndex("Foo", "id")
+    val query =
+      """
+        |PROFILE
+        | MATCH (b:Bar) WHERE b.id = 123
+        | MATCH (f:Foo) WHERE f.id = b.id
+        | RETURN f
+      """.stripMargin
+    val result = executeWithCostPlannerOnly(query)
+    result.columnAs[Node]("f").toList should equal(List(nodes(123)))
+    result.executionPlanDescription() should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "f")
+  }
+
+  test("should use index on other node property value where there is an incoming horizon") {
+    val nodes = Range(0,125).map(i => createLabeledNode(Map("id" -> i), "Foo"))
+    val n1=createLabeledNode(Map("id"->122),"Bar")
+    val n2=createLabeledNode(Map("id"->123),"Bar")
+    graph.createIndex("Foo", "id")
+    val query =
+      """
+        |PROFILE
+        | WITH [122, 123] AS rows
+        | UNWIND rows AS row
+        | MATCH (b:Bar) WHERE b.id = row
+        | MATCH (f:Foo) WHERE f.id = b.id
+        | RETURN f
+      """.stripMargin
+    val result = executeWithCostPlannerOnly(query)
+    result.columnAs[Node]("f").toSet should equal(Set(nodes(122), nodes(123)))
+    result.executionPlanDescription() should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "f")
   }
 }
