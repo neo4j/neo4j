@@ -21,14 +21,12 @@ package org.neo4j.kernel.impl.api.store;
 
 import java.util.function.Supplier;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.IndexReaderFactory;
 import org.neo4j.kernel.impl.locking.LockService;
-import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RecordCursors;
@@ -153,13 +151,13 @@ public class StoreStatement implements StorageStatement
     @Override
     public Cursor<NodeItem> nodesGetAllCursor()
     {
-        return acquireIteratorNodeCursor( new AllStoreIdIterator( nodeStore ) );
+        return acquireIteratorNodeCursor( new AllIdIterator( nodeStore ) );
     }
 
     @Override
     public Cursor<RelationshipItem> relationshipsGetAllCursor()
     {
-        return acquireIteratorRelationshipCursor( new AllStoreIdIterator( relationshipStore ) );
+        return acquireIteratorRelationshipCursor( new AllIdIterator( relationshipStore ) );
     }
 
     @Override
@@ -191,49 +189,6 @@ public class StoreStatement implements StorageStatement
         {
             labelScanReader.close();
             labelScanReader = null;
-        }
-    }
-
-    private static class AllStoreIdIterator extends PrimitiveLongCollections.PrimitiveLongBaseIterator
-    {
-        private final CommonAbstractStore<?,?> store;
-        private long highId;
-        private long currentId;
-
-        AllStoreIdIterator( CommonAbstractStore<?,?> store )
-        {
-            this.store = store;
-            highId = store.getHighestPossibleIdInUse();
-        }
-
-        @Override
-        protected boolean fetchNext()
-        {
-            while ( true )
-            {   // This outer loop is for checking if highId has changed since we started.
-                if ( currentId <= highId )
-                {
-                    try
-                    {
-                        return next( currentId );
-                    }
-                    finally
-                    {
-                        currentId++;
-                    }
-                }
-
-                long newHighId = store.getHighestPossibleIdInUse();
-                if ( newHighId > highId )
-                {
-                    highId = newHighId;
-                }
-                else
-                {
-                    break;
-                }
-            }
-            return false;
         }
     }
 
