@@ -358,9 +358,10 @@ public class ClusterTest
             }
             catch ( Exception e )
             {
+                assertThat( e, instanceOf( TransientTransactionFailureException.class ) );
                 Throwable rootCause = rootCause( e );
-                assertThat( rootCause, instanceOf( org.neo4j.kernel.api.exceptions.TransactionFailureException.class ) );
-                assertThat( ((org.neo4j.kernel.api.exceptions.TransactionFailureException)rootCause).status(),
+                assertThat( rootCause, instanceOf( TransactionTerminatedException.class ) );
+                assertThat( ((TransactionTerminatedException)rootCause).status(),
                         Matchers.equalTo( Status.General.DatabaseUnavailable ) );
             }
         }
