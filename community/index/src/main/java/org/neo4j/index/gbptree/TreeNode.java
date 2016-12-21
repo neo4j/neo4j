@@ -143,12 +143,12 @@ class TreeNode<KEY,VALUE>
 
     // HEADER METHODS
 
-    boolean isLeaf( PageCursor cursor )
+    static boolean isLeaf( PageCursor cursor )
     {
         return cursor.getByte( BYTE_POS_TYPE ) == LEAF_FLAG;
     }
 
-    boolean isInternal( PageCursor cursor )
+    static boolean isInternal( PageCursor cursor )
     {
         return cursor.getByte( BYTE_POS_TYPE ) == INTERNAL_FLAG;
     }
