@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.phases.{CompilationState, Phase, 
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.rewriter.PlanRewriter
-import org.neo4j.cypher.internal.compiler.v3_2.planner.{ExecutablePlanBuilder, ResolveTokens, UnionQuery}
+import org.neo4j.cypher.internal.compiler.v3_2.planner.{CheckForUnresolvedTokens, ExecutablePlanBuilder, ResolveTokens, UnionQuery}
 import org.neo4j.cypher.internal.compiler.v3_2.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Statement
@@ -103,6 +103,7 @@ case class CypherCompiler(executionPlanBuilder: ExecutablePlanBuilder,
     OptionalMatchRemover andThen
     QueryPlanner().adds[LogicalPlan] andThen
     PlanRewriter(sequencer) andThen
+    CheckForUnresolvedTokens
     RestOfPipeLine
 
   val thirdPipeLine: Transformer =

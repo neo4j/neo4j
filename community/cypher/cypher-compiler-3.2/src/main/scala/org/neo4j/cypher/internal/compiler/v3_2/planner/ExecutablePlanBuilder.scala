@@ -19,19 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.planner
 
-import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan._
-import org.neo4j.cypher.internal.compiler.v3_2.helpers.closing
 import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilationState
 import org.neo4j.cypher.internal.compiler.v3_2.planner.execution.PipeExecutionBuilderContext
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical._
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_2.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_2.InternalException
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
-import org.neo4j.cypher.internal.ir.v3_2.PeriodicCommit
 
 /* This class is responsible for taking a query from an AST object to a runnable object.  */
 case class ExecutablePlanBuilder(monitors: Monitors,
@@ -54,27 +50,16 @@ case class ExecutablePlanBuilder(monitors: Monitors,
 
     input.statement match {
       case ast: Query =>
-        val (periodicCommit, logicalPlan, pipeBuildContext) = closing(tracer.beginPhase(LOGICAL_PLANNING)) {
-          produceLogicalPlan(input)(planContext, planContext.notificationLogger())
-        }
-          runtimeBuilder(periodicCommit, logicalPlan, pipeBuildContext, planContext, tracer, input.semanticTable,
+        val pipeBuildContext = createPipeExecutionBuilderContext(input, planContext)
+          runtimeBuilder(input.periodicCommit, input.logicalPlan, pipeBuildContext, planContext, tracer, input.semanticTable,
                          planBuilderMonitor, plannerName, input, createFingerprintReference, config)
       case x =>
         throw new InternalException(s"Can't plan a $x query with the cost planner")
     }
   }
 
-  private def produceLogicalPlan(input: CompilationState)
-                                (planContext: PlanContext, notificationLogger: InternalNotificationLogger):
-  (Option[PeriodicCommit], LogicalPlan, PipeExecutionBuilderContext) = {
-
+  private def createPipeExecutionBuilderContext(input: CompilationState, planContext: PlanContext): PipeExecutionBuilderContext = {
     val metrics = metricsFactory.newMetrics(planContext.statistics)
-    val plan = input.logicalPlan
-    val pipeBuildContext = PipeExecutionBuilderContext(metrics.cardinality, input.semanticTable, plannerName)
-
-    //Check for unresolved tokens for read-only queries
-    if (plan.solved.all(_.queryGraph.readOnly)) checkForUnresolvedTokens(input.astAsQuery, input.semanticTable).foreach(notificationLogger.log)
-
-    (input.periodicCommit, plan, pipeBuildContext)
+    PipeExecutionBuilderContext(metrics.cardinality, input.semanticTable, plannerName)
   }
 }

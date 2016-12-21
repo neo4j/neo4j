@@ -19,21 +19,20 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.planner
 
-import org.neo4j.cypher.internal.frontend.v3_2.SemanticTable
+import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
+import org.neo4j.cypher.internal.compiler.v3_2.phases.{CompilationState, Context, VisitorPhase}
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
-import org.neo4j.cypher.internal.frontend.v3_2.notification.{MissingPropertyNameNotification, MissingRelTypeNotification, MissingLabelNotification, InternalNotification}
+import org.neo4j.cypher.internal.frontend.v3_2.notification.{InternalNotification, MissingLabelNotification, MissingPropertyNameNotification, MissingRelTypeNotification}
 
-/**
-  * Parses ast and looks for unresolved tokens
-  */
-object checkForUnresolvedTokens extends ((Query, SemanticTable) => Seq[InternalNotification]) {
+object CheckForUnresolvedTokens extends VisitorPhase {
 
-  def apply(ast: Query, table: SemanticTable) = {
+  override def visit(value: CompilationState, context: Context): Unit = {
+    val table = value.semanticTable
     def isEmptyLabel(label: String) = !table.resolvedLabelIds.contains(label)
     def isEmptyRelType(relType: String) = !table.resolvedRelTypeNames.contains(relType)
     def isEmptyPropertyName(name: String) = !table.resolvedPropertyKeyNames.contains(name)
 
-    ast.treeFold(Seq.empty[InternalNotification]) {
+    val notifications = value.statement.treeFold(Seq.empty[InternalNotification]) {
       case label@LabelName(name) if isEmptyLabel(name) => acc =>
         (acc :+ MissingLabelNotification(label.position, name), Some(identity))
 
@@ -43,5 +42,11 @@ object checkForUnresolvedTokens extends ((Query, SemanticTable) => Seq[InternalN
       case Property(_, prop@PropertyKeyName(name)) if isEmptyPropertyName(name) => acc =>
         (acc :+ MissingPropertyNameNotification(prop.position, name), Some(identity))
     }
+
+    notifications foreach context.notificationLogger.log
   }
+
+  override def phase = LOGICAL_PLANNING
+
+  override def description = "find labels, relationships types and property keys that do not exist in the db and issue warnings"
 }

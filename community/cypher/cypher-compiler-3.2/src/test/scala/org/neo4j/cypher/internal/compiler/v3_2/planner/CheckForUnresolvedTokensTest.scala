@@ -19,8 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.planner
 
+import org.neo4j.cypher.internal.compiler.v3_2.RecordingNotificationLogger
+import org.neo4j.cypher.internal.compiler.v3_2.phases.{CompilationState, Context}
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Query
-import org.neo4j.cypher.internal.frontend.v3_2.notification.{MissingLabelNotification, MissingPropertyNameNotification, MissingRelTypeNotification}
+import org.neo4j.cypher.internal.frontend.v3_2.notification.{InternalNotification, MissingLabelNotification, MissingPropertyNameNotification, MissingRelTypeNotification}
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, LabelId, PropertyKeyId, RelTypeId, SemanticTable}
 
@@ -34,7 +36,9 @@ class CheckForUnresolvedTokensTest extends CypherFunSuite with AstRewritingTestS
     val ast = parse("MATCH (a:A)-->(b:B) RETURN *")
 
     //then
-    checkForUnresolvedTokens(ast, semanticTable) should equal(Seq(
+    val notifications = checkForTokens(ast, semanticTable)
+
+    notifications should equal(Set(
       MissingLabelNotification(InputPosition(9, 1, 10), "A"),
       MissingLabelNotification(InputPosition(17, 1, 18), "B")))
   }
@@ -49,7 +53,7 @@ class CheckForUnresolvedTokensTest extends CypherFunSuite with AstRewritingTestS
     val ast = parse("MATCH (a:A)-->(b:B) RETURN *")
 
     //then
-    checkForUnresolvedTokens(ast, semanticTable) shouldBe empty
+    checkForTokens(ast, semanticTable) shouldBe empty
   }
 
   test("warn when missing relationship type") {
@@ -62,7 +66,7 @@ class CheckForUnresolvedTokensTest extends CypherFunSuite with AstRewritingTestS
     val ast = parse("MATCH (a:A)-[r:R1|R2]->(b:B) RETURN *")
 
     //then
-    checkForUnresolvedTokens(ast, semanticTable) should equal(Seq(
+    checkForTokens(ast, semanticTable) should equal(Set(
       MissingRelTypeNotification(InputPosition(15, 1, 16), "R1"),
       MissingRelTypeNotification(InputPosition(18, 1, 19), "R2")))
   }
@@ -79,7 +83,7 @@ class CheckForUnresolvedTokensTest extends CypherFunSuite with AstRewritingTestS
     val ast = parse("MATCH (a:A)-[r:R1|R2]->(b:B) RETURN *")
 
     //then
-    checkForUnresolvedTokens(ast, semanticTable) shouldBe empty
+    checkForTokens(ast, semanticTable) shouldBe empty
   }
 
   test("warn when missing property key name") {
@@ -90,7 +94,7 @@ class CheckForUnresolvedTokensTest extends CypherFunSuite with AstRewritingTestS
     val ast = parse("MATCH (a) WHERE a.prop = 42 RETURN a")
 
     //then
-    checkForUnresolvedTokens(ast, semanticTable) should equal(Seq(
+    checkForTokens(ast, semanticTable) should equal(Set(
       MissingPropertyNameNotification(InputPosition(18, 1, 19), "prop")))
   }
 
@@ -103,7 +107,7 @@ class CheckForUnresolvedTokensTest extends CypherFunSuite with AstRewritingTestS
     val ast = parse("MATCH (a {prop: 42}) RETURN a")
 
     //then
-    checkForUnresolvedTokens(ast, semanticTable) shouldBe empty
+    checkForTokens(ast, semanticTable) shouldBe empty
   }
 
   test("don't warn for literal maps") {
@@ -114,7 +118,15 @@ class CheckForUnresolvedTokensTest extends CypherFunSuite with AstRewritingTestS
     val ast = parse("RETURN {prop: 'foo'}")
 
     //then
-    checkForUnresolvedTokens(ast, semanticTable) shouldBe empty
+    checkForTokens(ast, semanticTable) shouldBe empty
+  }
+
+  private def checkForTokens(ast: Query, semanticTable: SemanticTable): Set[InternalNotification] = {
+    val notificationLogger = new RecordingNotificationLogger
+    val compilationState = CompilationState(queryText = "apa", startPosition = None, plannerName = "", maybeStatement = Some(ast), maybeSemanticTable = Some(semanticTable))
+    val context = Context(null, null, notificationLogger, null, null, null, null, null, null, null, null)
+    CheckForUnresolvedTokens.transform(compilationState, context)
+    notificationLogger.notifications
   }
 
   private def parse(query: String): Query = parser.parse(query) match {
