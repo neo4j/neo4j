@@ -31,7 +31,7 @@ case class ListLiteral(expressions: Seq[CodeGenExpression]) extends CodeGenExpre
     }
 
   override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) =
-    structure.asList(expressions.map(e => structure.box(e.generateExpression(structure))))
+    structure.asList(expressions.map(e => structure.box(e.generateExpression(structure), e.codeGenType)))
 
   override def nullable(implicit context: CodeGenContext) = false
 

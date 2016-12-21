@@ -366,9 +366,15 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   override def notNull(varName: String, codeGenType: CodeGenType) = not(isNull(varName, codeGenType))
 
-  override def box(expression: Expression) = Expression.box(expression)
+  override def box(expression: Expression, codeGenType: CodeGenType) = codeGenType match {
+    case CodeGenType(symbols.CTNode, IntType) =>
+      createNewInstance(typeRef[NodeIdWrapper], (typeRef[Long], expression))
+    case CodeGenType(symbols.CTRelationship, IntType) =>
+      createNewInstance(typeRef[RelationshipIdWrapper], (typeRef[Long], expression))
+    case _ => Expression.box(expression)
+  }
 
-  override def unbox(expression: Expression, cType: CodeGenType) = cType match {
+  override def unbox(expression: Expression, codeGenType: CodeGenType) = codeGenType match {
     case c if c.isPrimitive => expression
     case CodeGenType(symbols.CTNode, ReferenceType) => invoke(expression, Methods.unboxNode)
     case CodeGenType(symbols.CTRelationship, ReferenceType) => invoke(expression, Methods.unboxRel)

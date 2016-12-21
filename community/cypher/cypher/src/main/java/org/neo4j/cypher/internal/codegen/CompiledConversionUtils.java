@@ -197,10 +197,6 @@ public abstract class CompiledConversionUtils
             ((Map) anyValue).replaceAll( (k, v) -> materializeAnyResult( nodeManager, v ) );
             return anyValue;
         }
-        else if ( anyValue instanceof JavaListWrapper )
-        {
-            throw new IllegalStateException( "JavaListWrapper should not leak into compiled runtime" );
-        }
         else
         {
             return anyValue;

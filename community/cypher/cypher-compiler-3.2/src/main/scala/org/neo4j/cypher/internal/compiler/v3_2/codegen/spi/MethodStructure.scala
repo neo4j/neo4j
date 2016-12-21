@@ -100,7 +100,7 @@ trait MethodStructure[E] {
   def nullableReference(varName: String, codeGenType: CodeGenType, onSuccess: E): E
   def isNull(name: String, codeGenType: CodeGenType): E
   def notNull(name: String, codeGenType: CodeGenType): E
-  def box(expression:E): E
+  def box(expression:E, codeGenType: CodeGenType = CodeGenType.Any): E
   def unbox(expression:E, codeGenType: CodeGenType): E
   def toFloat(expression:E): E
 
