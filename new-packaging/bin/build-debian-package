@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-set -exu
-# build-debian-packages.sh:
+set -eu
+# build-debian-packages:
 # Build Debian packages for Neo4j Community from tarball
 
 if [ $# -ne 5 ]
