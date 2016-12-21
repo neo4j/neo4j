@@ -341,7 +341,9 @@ public class GBPTreeRecoveryTest
         return pageCache( fs.get() )
                 .maxPages( 4_000 )
                 .pageSize( PAGE_SIZE )
-                .inconsistentReadAdversary().build();
+                .inconsistentReadAdversary()
+                .checkAccess()
+                .build();
     }
 
     interface Action

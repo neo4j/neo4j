@@ -80,6 +80,7 @@ public class GBPTreeIT
         pageCache = pageCache( fs.get() )
                 .pageSize( pageSize )
                 .inconsistentReadAdversary()
+                .checkAccess()
                 .build();
         return index = new GBPTree<>( pageCache, directory.file( "index" ),
                 layout, 0/*use whatever page cache says*/, monitor );

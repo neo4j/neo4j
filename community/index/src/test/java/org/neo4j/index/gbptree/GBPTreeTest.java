@@ -91,6 +91,7 @@ public class GBPTreeTest
         return pageCache( fs.get() )
                 .pageSize( pageSize )
                 .inconsistentReadAdversary()
+                .checkAccess()
                 .build();
     }
 

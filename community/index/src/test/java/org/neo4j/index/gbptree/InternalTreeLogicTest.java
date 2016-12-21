@@ -1065,12 +1065,18 @@ public class InternalTreeLogicTest
     private void assertSiblingOrderAndPointers( long... children ) throws IOException
     {
         long currentPageId = cursor.getCurrentPageId();
-        RightmostInChain<MutableLong> rightmost =
-                new RightmostInChain<>( node, stableGen, unstableGen );
+        RightmostInChain rightmost = new RightmostInChain();
         for ( long child : children )
         {
             goTo( cursor, child );
-            rightmost.assertNext( cursor );
+            long leftSibling = node.leftSibling( cursor, stableGen, unstableGen );
+            long rightSibling = node.rightSibling( cursor, stableGen, unstableGen );
+            rightmost.assertNext( cursor,
+                    node.gen( cursor ),
+                    pointer( leftSibling ),
+                    node.pointerGen( cursor, leftSibling ),
+                    pointer( rightSibling ),
+                    node.pointerGen( cursor, rightSibling ) );
         }
         rightmost.assertLast();
         goTo( cursor, currentPageId );
