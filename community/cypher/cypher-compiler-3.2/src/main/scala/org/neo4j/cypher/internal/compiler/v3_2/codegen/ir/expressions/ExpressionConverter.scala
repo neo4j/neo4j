@@ -96,18 +96,18 @@ object ExpressionConverter {
 
     expression match {
       case node@ast.Variable(name) if context.semanticTable.isNode(node) =>
-        NodeExpression(context.getInternalVariable(name))
+        NodeExpression(context.getVariable(name))
 
       case rel@ast.Variable(name) if context.semanticTable.isRelationship(rel) =>
-        RelationshipExpression(context.getInternalVariable(name))
+        RelationshipExpression(context.getVariable(name))
 
       case ast.Property(node@ast.Variable(name), propKey) if context.semanticTable.isNode(node) =>
         val token = propKey.id(context.semanticTable).map(_.id)
-        NodeProperty(token, propKey.name, context.getInternalVariable(name), context.namer.newVarName())
+        NodeProperty(token, propKey.name, context.getVariable(name), context.namer.newVarName())
 
       case ast.Property(rel@ast.Variable(name), propKey) if context.semanticTable.isRelationship(rel) =>
         val token = propKey.id(context.semanticTable).map(_.id)
-        RelProperty(token, propKey.name, context.getInternalVariable(name), context.namer.newVarName())
+        RelProperty(token, propKey.name, context.getVariable(name), context.namer.newVarName())
 
       case ast.Parameter(name, _) => expressions.Parameter(name, context.namer.newVarName())
 

@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi.MethodStructure
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.{CodeGenContext, Variable}
 import org.neo4j.cypher.internal.frontend.v3_2.symbols
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 
 case class RelationshipExpression(relId: Variable) extends CodeGenExpression {
   assert(relId.codeGenType.ct == symbols.CTRelationship)
@@ -31,13 +30,14 @@ case class RelationshipExpression(relId: Variable) extends CodeGenExpression {
 
   override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) = {
     if (relId.nullable)
-      structure.nullableReference(relId.name, CodeGenType.primitiveRel, structure.relationship(relId.name))
+      structure.nullableReference(relId.name, CodeGenType.primitiveRel,
+        structure.relationship(relId.name, relId.codeGenType))
     else
-      structure.relationship(relId.name)
+      structure.relationship(relId.name, relId.codeGenType)
 
   }
 
   override def nullable(implicit context: CodeGenContext) = relId.nullable
 
-  override def codeGenType(implicit context: CodeGenContext) = CodeGenType(CTRelationship, ReferenceType)
+  override def codeGenType(implicit context: CodeGenContext) = relId.codeGenType
 }

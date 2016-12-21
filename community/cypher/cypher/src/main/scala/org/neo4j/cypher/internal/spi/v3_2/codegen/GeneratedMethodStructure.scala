@@ -265,8 +265,11 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
       invoke(nodeManager, newNodeProxyById,
         invoke(cast(typeRef[NodeIdWrapper], generator.load(nodeIdVar)), nodeId))
 
-  override def node(nodeIdVar: String) = createNewInstance(typeRef[NodeIdWrapper],
-                                                           (typeRef[Long], generator.load(nodeIdVar)))
+  override def node(nodeIdVar: String, codeGenType: CodeGenType) =
+    if (codeGenType.isPrimitive)
+      generator.load(nodeIdVar)
+    else
+      createNewInstance(typeRef[NodeIdWrapper], (typeRef[Long], generator.load(nodeIdVar)))
 
   override def nullablePrimitive(varName: String, codeGenType: CodeGenType, onSuccess: Expression) = codeGenType match {
     case CodeGenType(CTNode, IntType) | CodeGenType(CTRelationship, IntType) =>
@@ -293,8 +296,11 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
       invoke(nodeManager, newRelationshipProxyById,
         invoke(cast(typeRef[RelationshipIdWrapper], generator.load(relIdVar)), relId))
 
-  override def relationship(relIdVar: String) = createNewInstance(typeRef[RelationshipIdWrapper],
-                                                                  (typeRef[Long], generator.load(relIdVar)))
+  override def relationship(relIdVar: String, codeGenType: CodeGenType) =
+    if (codeGenType.isPrimitive)
+      generator.load(relIdVar)
+    else
+      createNewInstance(typeRef[RelationshipIdWrapper], (typeRef[Long], generator.load(relIdVar)))
 
   override def materializeAny(variable: String) =
     invoke(materializeAnyResult, nodeManager, generator.load(variable))

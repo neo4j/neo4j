@@ -56,7 +56,7 @@ class GeneratedMethodStructureTest extends CypherFunSuite {
         }),
         Operation("load node from parameters", m => {
           m.declare("a", CodeGenType.primitiveNode)
-          m.generator.assign(typeRef[Object], "node", m.node("a"))
+          m.generator.assign(typeRef[Object], "node", m.node("a", CodeGenType.primitiveNode))
         }),
         Operation("nullable node", m => {
           m.declare("foo", CodeGenType.primitiveNode)
