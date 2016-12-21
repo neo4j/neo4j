@@ -16,7 +16,7 @@ distribution=${4}
 version=${5}
 
 # Prepare workspace
-package_directory=${workspace}/${package_name}/
+package_directory=${workspace}/${package_name}
 mkdir -p ${package_directory}
 skeleton_directory=src/debian/skeleton
 cp -r ${skeleton_directory}/* ${package_directory}
