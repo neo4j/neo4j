@@ -24,6 +24,7 @@ import org.junit.Test;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.index.ValueMergers;
+import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
 
 import static org.hamcrest.CoreMatchers.containsString;
@@ -59,9 +60,10 @@ public class ConsistencyCheckerTest
         {
             assertNoCrashOrBrokenPointerInGSPP( cursor, stableGeneration, unstableGeneration,
                     pointerFieldName, TreeNode.BYTE_POS_NEWGEN, treeNode );
+            cursor.checkAndClearCursorException();
             fail( "Should have failed" );
         }
-        catch ( TreeInconsistencyException e )
+        catch ( CursorException e )
         {
             // THEN
             assertThat( e.getMessage(), containsString( pointerFieldName ) );

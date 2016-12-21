@@ -66,7 +66,7 @@ public class GBPTreeTest
 {
     private final DefaultFileSystemRule fs = new DefaultFileSystemRule();
     private final TestDirectory directory = TestDirectory.testDirectory( getClass(), fs.get() );
-    private final PageCacheRule pageCacheRule = new PageCacheRule();
+    private final PageCacheRule pageCacheRule = new PageCacheRule( config().withAccessChecks( true ) );
     private final RandomRule random = new RandomRule();
 
     @Rule

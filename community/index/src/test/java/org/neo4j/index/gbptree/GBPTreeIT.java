@@ -85,7 +85,7 @@ public class GBPTreeIT
     private GBPTree<MutableLong,MutableLong> createIndex( int pageSize, GBPTree.Monitor monitor )
             throws IOException
     {
-        pageCache = pageCacheRule.getPageCache( fs.get(), config().withPageSize( pageSize ) );
+        pageCache = pageCacheRule.getPageCache( fs.get(), config().withPageSize( pageSize ).withAccessChecks( true ) );
         return index = new GBPTree<>( pageCache, directory.file( "index" ),
                 layout, 0/*use whatever page cache says*/, monitor );
     }

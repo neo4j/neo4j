@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
 
@@ -44,6 +45,7 @@ import org.neo4j.io.pagecache.PageCursor;
 class ByteArrayPageCursor extends PageCursor
 {
     private final ByteBuffer buffer;
+    private CursorException cursorException;
 
     static PageCursor wrap( byte[] array, int offset, int length )
     {
@@ -258,7 +260,18 @@ class ByteArrayPageCursor extends PageCursor
 
     @Override
     public void checkAndClearCursorException() throws CursorException
-    {   // Don't check
+    {
+        if ( cursorException != null )
+        {
+            try
+            {
+                throw cursorException;
+            }
+            finally
+            {
+                cursorException = null;
+            }
+        }
     }
 
     @Override
@@ -270,7 +283,7 @@ class ByteArrayPageCursor extends PageCursor
     @Override
     public void setCursorException( String message )
     {
-        throw new UnsupportedOperationException();
+        cursorException = Exceptions.chain( cursorException, new CursorException( message ) );
     }
 
     @Override

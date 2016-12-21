@@ -61,7 +61,8 @@ public class GBPTreeRecoveryTest
 
     private final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private final TestDirectory directory = TestDirectory.testDirectory( getClass(), fs.get() );
-    private final PageCacheRule pageCacheRule = new PageCacheRule( config().withPageSize( PAGE_SIZE ) );
+    private final PageCacheRule pageCacheRule = new PageCacheRule(
+            config().withPageSize( PAGE_SIZE ).withAccessChecks( true ) );
     private final RandomRule random = new RandomRule();
 
     @Rule
