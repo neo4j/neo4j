@@ -645,8 +645,8 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>
     {
         try ( PageCursor cursor = openRootCursor( PagedFile.PF_SHARED_READ_LOCK ) )
         {
-            TreePrinter.printTree( cursor, bTreeNode, layout,
-                    stableGeneration( generation ), unstableGeneration( generation ), System.out, printValues );
+            new TreePrinter<>( bTreeNode, layout, stableGeneration( generation ), unstableGeneration( generation ) )
+                .printTree( cursor, System.out, printValues );
         }
     }
 

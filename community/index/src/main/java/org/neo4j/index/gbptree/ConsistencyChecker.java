@@ -196,7 +196,7 @@ class ConsistencyChecker<KEY>
         target.set( index );
     }
 
-    private void assertOnTreeNode( PageCursor cursor ) throws IOException
+    static void assertOnTreeNode( PageCursor cursor ) throws IOException
     {
         byte nodeType;
         boolean isInternal;
@@ -204,8 +204,8 @@ class ConsistencyChecker<KEY>
         do
         {
             nodeType = TreeNode.nodeType( cursor );
-            isInternal = node.isInternal( cursor );
-            isLeaf = node.isLeaf( cursor );
+            isInternal = TreeNode.isInternal( cursor );
+            isLeaf = TreeNode.isLeaf( cursor );
         }
         while ( cursor.shouldRetry() );
 
