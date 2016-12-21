@@ -172,10 +172,8 @@ case class PropertyExists(variable: Expression, propertyKey: KeyToken) extends P
 trait StringOperator {
   self: Predicate =>
   override def isMatch(m: ExecutionContext)(implicit state: QueryState) = (lhs(m), rhs(m)) match {
-    case (null, _) => None
-    case (_, null) => None
     case (l: String, r: String) => Some(compare(l,r))
-    case (l, r) => throw new CypherTypeException(s"Expected two strings, but got $l and $r")
+    case (_, _) => None
   }
 
   def lhs: Expression

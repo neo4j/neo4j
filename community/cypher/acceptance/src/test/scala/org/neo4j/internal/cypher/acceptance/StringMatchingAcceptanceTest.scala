@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.pipes.{IndexSeekByRange, UniqueIn
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport}
 import org.neo4j.graphdb.{Node, ResourceIterator}
 
-class StartsWithAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
+class StringMatchingAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
 
   var aNode: Node = null
   var bNode: Node = null
@@ -40,6 +40,46 @@ class StartsWithAcceptanceTest extends ExecutionEngineFunSuite with QueryStatist
     dNode = createLabeledNode(Map("name" -> "ab"), "LABEL")
     eNode = createLabeledNode(Map("name" -> ""), "LABEL")
     fNode = createLabeledNode("LABEL")
+  }
+
+  test("should return null when END WITH is used on non-strings"){
+    val result = executeWithAllPlanners("""
+                                          | CREATE ({name: 1})
+                                          | WITH *
+                                          | MATCH (a)
+                                          | WHERE a.name ENDS WITH 'foo'
+                                          | RETURN a.name""".stripMargin)
+    result.columnAs("a.name").toList should be (List())
+  }
+
+  test("should return null when CONTAINS is used on non-strings"){
+    val result = executeWithAllPlanners("""
+                                          | CREATE ({name: 1})
+                                          | WITH *
+                                          | MATCH (a)
+                                          | WHERE a.name CONTAINS 'foo'
+                                          | RETURN a.name""".stripMargin)
+    result.columnAs("a.name").toList should be (List())
+  }
+
+  test("should return null when CONTAINS is used on non-strings that contains integers") {
+    val result = executeWithAllPlanners("""
+                                          | CREATE ({name: 1})
+                                          | WITH *
+                                          | MATCH (a)
+                                          | WHERE a.name CONTAINS '1'
+                                          | RETURN a.name""".stripMargin)
+    result.columnAs("a.name").toList should be(List())
+  }
+
+  test("should return null when STARTS WITH is used on non-strings"){
+    val result = executeWithAllPlanners("""
+                                          | CREATE ({name: 1})
+                                          | WITH *
+                                          | MATCH (a)
+                                          | WHERE a.name STARTS WITH 'foo'
+                                          | RETURN a.name""".stripMargin)
+    result.columnAs("a.name").toList should be (List())
   }
 
   // *** TESTS OF PREFIX SEARCH
