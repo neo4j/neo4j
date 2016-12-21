@@ -27,12 +27,13 @@ import org.neo4j.cypher.internal.compiler.v3_2.executionplan.procs.ProcedureCall
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.RuntimeTypeConverter
 import org.neo4j.cypher.internal.compiler.v3_2.phases.{CompilationState, Phase, RewriteProcedureCalls, _}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical._
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.rewriter.PlanRewriter
-import org.neo4j.cypher.internal.compiler.v3_2.planner.{ExecutablePlanBuilder, ResolveTokens}
+import org.neo4j.cypher.internal.compiler.v3_2.planner.{ExecutablePlanBuilder, ResolveTokens, UnionQuery}
 import org.neo4j.cypher.internal.compiler.v3_2.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSequencer
-import org.neo4j.cypher.internal.frontend.v3_2.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Statement
+import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, SemanticState}
 
 case class CypherCompiler(executionPlanBuilder: ExecutablePlanBuilder,
                           astRewriter: ASTRewriter,
@@ -81,10 +82,10 @@ case class CypherCompiler(executionPlanBuilder: ExecutablePlanBuilder,
   }
 
   val firstPipeline: Transformer =
-      Parsing andThen
+      Parsing.adds[Statement] andThen
       SyntaxDeprecationWarnings andThen
       PreparatoryRewriting andThen
-      SemanticAnalysis(warn = true) andThen
+      SemanticAnalysis(warn = true).adds[SemanticState] andThen
       AstRewriting(sequencer)
 
   val secondPipeLine: Transformer =
@@ -98,9 +99,9 @@ case class CypherCompiler(executionPlanBuilder: ExecutablePlanBuilder,
     CNFNormalizer andThen
     LateAstRewriting andThen
     ResolveTokens andThen
-    CreatePlannerQuery andThen
+    CreatePlannerQuery.adds[UnionQuery] andThen
     OptionalMatchRemover andThen
-    QueryPlanner(PlanSingleQuery()) andThen
+    QueryPlanner().adds[LogicalPlan] andThen
     PlanRewriter(sequencer) andThen
     RestOfPipeLine
 

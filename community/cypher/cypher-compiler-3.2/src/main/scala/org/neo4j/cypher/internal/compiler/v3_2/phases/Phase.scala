@@ -20,7 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v3_2.phases
 
 import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase
+import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.closing
+
+import scala.reflect.ClassTag
 
 trait Phase extends Transformer {
   self =>
@@ -53,6 +56,18 @@ trait Transformer {
 
   def andThen(other: Transformer) =
     new PipeLine(this, other)
+
+  def adds[T: ClassTag](implicit manifest: Manifest[T]): Transformer = this andThen AddCondition(Contains[T])
+}
+
+case class AddCondition(postCondition: Condition) extends Phase {
+  override def phase: CompilationPhase = PIPE_BUILDING
+
+  override def description: String = "adds a condition"
+
+  override def transform(from: CompilationState, context: Context): CompilationState = from
+
+  override def postConditions: Set[Condition] = Set(postCondition)
 }
 
 object Transformer {
