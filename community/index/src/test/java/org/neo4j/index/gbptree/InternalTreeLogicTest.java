@@ -33,8 +33,8 @@ import java.util.List;
 
 import org.neo4j.index.ValueMerger;
 import org.neo4j.index.ValueMergers;
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.test.rule.RandomRule;
-
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -47,6 +47,7 @@ import static org.junit.Assume.assumeTrue;
 import static org.neo4j.index.IndexWriter.Options.DEFAULTS;
 import static org.neo4j.index.ValueMergers.overwrite;
 import static org.neo4j.index.gbptree.ConsistencyChecker.assertNoCrashOrBrokenPointerInGSPP;
+import static org.neo4j.index.gbptree.GenSafePointerPair.pointer;
 
 @RunWith( Parameterized.class )
 public class InternalTreeLogicTest
@@ -103,8 +104,8 @@ public class InternalTreeLogicTest
     public void setUp() throws IOException
     {
         id.reset();
-        long newId = id.acquireNewId();
-        cursor.next( newId );
+        long newId = id.acquireNewId( stableGen, unstableGen );
+        goTo( cursor, newId );
     }
 
     @Test
@@ -284,8 +285,8 @@ public class InternalTreeLogicTest
         newRootFromSplit( structurePropagation );
 
         // Assert child pointers and sibling pointers are intact after split in root
-        long child0 = node.childAt( cursor, 0, stableGen, unstableGen );
-        long child1 = node.childAt( cursor, 1, stableGen, unstableGen );
+        long child0 = childAt( cursor, 0, stableGen, unstableGen );
+        long child1 = childAt( cursor, 1, stableGen, unstableGen );
         assertSiblingOrderAndPointers( child0, child1 );
 
         // Insert until we have another split in leftmost leaf
@@ -301,9 +302,9 @@ public class InternalTreeLogicTest
 
         // Assert child pointers and sibling pointers are intact
         // AND that node not involved in split also has its left sibling pointer updated
-        child0 = node.childAt( cursor, 0, stableGen, unstableGen );
-        child1 = node.childAt( cursor, 1, stableGen, unstableGen );
-        long child2 = node.childAt( cursor, 2, stableGen, unstableGen ); // <- right sibling to split-node before split
+        child0 = childAt( cursor, 0, stableGen, unstableGen );
+        child1 = childAt( cursor, 1, stableGen, unstableGen );
+        long child2 = childAt( cursor, 2, stableGen, unstableGen ); // <- right sibling to split-node before split
 
         assertSiblingOrderAndPointers( child0, child1, child2 );
     }
@@ -409,13 +410,13 @@ public class InternalTreeLogicTest
 
         // when
         generationManager.checkpoint();
-        cursor.next( structurePropagation.left );
+        goTo( cursor, structurePropagation.left );
         assertThat( keyAt( 0 ), is( 0L ) );
-        cursor.next( rootId );
+        goTo( cursor, rootId );
         remove( 0, readValue );
 
         // then
-        cursor.next( structurePropagation.left );
+        goTo( cursor, structurePropagation.left );
         assertThat( keyAt( 0 ), is( 1L ) );
     }
 
@@ -436,13 +437,13 @@ public class InternalTreeLogicTest
 
         // and as first key in right child
         long rightChild = structurePropagation.right;
-        cursor.next( rightChild );
+        goTo( cursor, rightChild );
         int keyCountInRightChild = node.keyCount( cursor );
         assertThat( keyAt( 0 ), is( keyToRemove ) );
 
         // and we remove it
         generationManager.checkpoint();
-        cursor.next( rootId );
+        goTo( cursor, rootId );
         remove( keyToRemove, readValue );
 
         // then we should still find it in internal
@@ -450,8 +451,8 @@ public class InternalTreeLogicTest
         assertThat( keyAt( 0 ), is( keyToRemove ) );
 
         // but not in right leaf
-        rightChild = node.childAt( cursor, 1, stableGen, unstableGen );
-        cursor.next( rightChild );
+        rightChild = childAt( cursor, 1, stableGen, unstableGen );
+        goTo( cursor, rightChild );
         assertThat( node.keyCount( cursor ), is( keyCountInRightChild - 1 ) );
         assertThat( keyAt( 0 ), is( keyToRemove + 1 ) );
     }
@@ -516,27 +517,27 @@ public class InternalTreeLogicTest
 
         // and as first key in right child
         long currentRightChild = structurePropagation.right;
-        cursor.next( currentRightChild );
+        goTo( cursor, currentRightChild );
         int keyCountInRightChild = node.keyCount( cursor );
         assertThat( keyAt( 0 ), is( keyToRemove ) );
 
         // and we remove it
         generationManager.checkpoint();
-        cursor.next( rootId );
+        goTo( cursor, rootId );
         remove( keyToRemove, readValue ); // Possibly create new gen of right child
-        currentRightChild = node.childAt( cursor, 1, stableGen, unstableGen );
+        currentRightChild = childAt( cursor, 1, stableGen, unstableGen );
 
         // then we should still find it in internal
         assertThat( node.keyCount( cursor ), is( 1 ) );
         assertThat( keyAt( 0 ), is( keyToRemove ) );
 
         // but not in right leaf
-        cursor.next( currentRightChild );
+        goTo( cursor, currentRightChild );
         assertThat( node.keyCount( cursor ), is( keyCountInRightChild - 1 ) );
         assertThat( keyAt( 0 ), is( keyToRemove + 1 ) );
 
         // and when we remove same key again, nothing should change
-        cursor.next( rootId );
+        goTo( cursor, rootId );
         assertNull( remove( keyToRemove, readValue ) );
     }
 
@@ -549,6 +550,7 @@ public class InternalTreeLogicTest
         // given
         node.initializeLeaf( cursor, stableGen, unstableGen );
         int numberOfEntries = 100_000;
+        long rootGen = unstableGen;
         for ( int i = 0; i < numberOfEntries; i++ )
         {
             // when
@@ -556,6 +558,11 @@ public class InternalTreeLogicTest
             if ( structurePropagation.hasSplit )
             {
                 newRootFromSplit( structurePropagation );
+                rootGen = unstableGen;
+            }
+            else if ( structurePropagation.hasNewGen )
+            {
+                rootGen = unstableGen;
             }
 
             if ( i == numberOfEntries / 2 )
@@ -567,7 +574,7 @@ public class InternalTreeLogicTest
         // then
         ConsistencyChecker<MutableLong> consistencyChecker =
                 new ConsistencyChecker<>( node, layout, stableGen, unstableGen );
-        consistencyChecker.check( cursor );
+        consistencyChecker.check( cursor, rootGen );
     }
 
     /* TEST VALUE MERGER */
@@ -656,7 +663,7 @@ public class InternalTreeLogicTest
         insert( key, toAdd, ADDER );
 
         // THEN
-        cursor.next( structurePropagation.left );
+        goTo( cursor, structurePropagation.left );
         int searchResult = KeySearch.search( cursor, node, key( key ), new MutableLong(), node.keyCount( cursor ) );
         assertTrue( KeySearch.isHit( searchResult ) );
         int pos = KeySearch.positionOf( searchResult );
@@ -684,8 +691,8 @@ public class InternalTreeLogicTest
         insert( key, toAdd, ADDER );
 
         // THEN
-        long rightChild = node.childAt( cursor, 1, stableGen, unstableGen );
-        cursor.next( rightChild );
+        long rightChild = childAt( cursor, 1, stableGen, unstableGen );
+        goTo( cursor, rightChild );
         int searchResult = KeySearch.search( cursor, node, key( key ), new MutableLong(), node.keyCount( cursor ) );
         assertTrue( KeySearch.isHit( searchResult ) );
         int pos = KeySearch.positionOf( searchResult );
@@ -719,8 +726,8 @@ public class InternalTreeLogicTest
         insert( key, toAdd, ADDER );
 
         // THEN
-        long middle = node.childAt( cursor, 1, stableGen, unstableGen );
-        cursor.next( middle );
+        long middle = childAt( cursor, 1, stableGen, unstableGen );
+        goTo( cursor, middle );
         int searchResult = KeySearch.search( cursor, node, key( key ), new MutableLong(), node.keyCount( cursor ) );
         assertTrue( KeySearch.isHit( searchResult ) );
         int pos = KeySearch.positionOf( searchResult );
@@ -749,8 +756,8 @@ public class InternalTreeLogicTest
         assertNotEquals( oldGenId, newGenId );
         assertEquals( 1, node.keyCount( cursor ) );
 
-        node.goTo( cursor, "old gen", oldGenId, stableGen, unstableGen );
-        assertEquals( newGenId, node.newGen( cursor, stableGen, unstableGen ) );
+        node.goTo( cursor, "old gen", oldGenId );
+        assertEquals( newGenId, newGen( cursor, stableGen, unstableGen ) );
         assertEquals( 0, node.keyCount( cursor ) );
     }
 
@@ -777,8 +784,8 @@ public class InternalTreeLogicTest
         assertNotEquals( oldGenId, newGenId );
         assertEquals( 0, node.keyCount( cursor ) );
 
-        node.goTo( cursor, "old gen", oldGenId, stableGen, unstableGen );
-        assertEquals( newGenId, node.newGen( cursor, stableGen, unstableGen ) );
+        node.goTo( cursor, "old gen", oldGenId );
+        assertEquals( newGenId, newGen( cursor, stableGen, unstableGen ) );
         assertEquals( 1, node.keyCount( cursor ) );
     }
 
@@ -804,9 +811,9 @@ public class InternalTreeLogicTest
             }
         }
         assertEquals( 2, node.keyCount( cursor ) );
-        long leftChild = node.childAt( cursor, 0, stableGen, unstableGen );
-        long middleChild = node.childAt( cursor, 1, stableGen, unstableGen );
-        long rightChild = node.childAt( cursor, 2, stableGen, unstableGen );
+        long leftChild = childAt( cursor, 0, stableGen, unstableGen );
+        long middleChild = childAt( cursor, 1, stableGen, unstableGen );
+        long rightChild = childAt( cursor, 2, stableGen, unstableGen );
         assertSiblings( leftChild, middleChild, rightChild );
 
         // WHEN
@@ -815,25 +822,25 @@ public class InternalTreeLogicTest
         long middleKey = i / 2; // Should be located in middle leaf
         long newValue = middleKey * 100;
         insert( middleKey, newValue );
-        cursor.next( 5 );
-        cursor.next( root );
+        goTo( cursor, 5 );
+        goTo( cursor, root );
 
         // THEN
         // root have new middle child
         long expectedNewMiddleChild = targetLastId + 1;
         assertEquals( expectedNewMiddleChild, id.lastId() );
-        long newMiddleChild = node.childAt( cursor, 1, stableGen, unstableGen );
+        long newMiddleChild = childAt( cursor, 1, stableGen, unstableGen );
         assertEquals( expectedNewMiddleChild, newMiddleChild );
 
         // old middle child has new gen
-        cursor.next( middleChild );
-        assertEquals( newMiddleChild, node.newGen( cursor, stableGen, unstableGen ) );
+        goTo( cursor, middleChild );
+        assertEquals( newMiddleChild, newGen( cursor, stableGen, unstableGen ) );
 
         // old middle child has seen no change
         assertKeyAssociatedWithValue( middleKey, middleKey );
 
         // new middle child has seen change
-        cursor.next( newMiddleChild );
+        goTo( cursor, newMiddleChild );
         assertKeyAssociatedWithValue( middleKey, newValue );
 
         // sibling pointers updated
@@ -862,9 +869,9 @@ public class InternalTreeLogicTest
             }
         }
         assertEquals( 2, node.keyCount( cursor ) );
-        long leftChild = node.childAt( cursor, 0, stableGen, unstableGen );
-        long middleChild = node.childAt( cursor, 1, stableGen, unstableGen );
-        long rightChild = node.childAt( cursor, 2, stableGen, unstableGen );
+        long leftChild = childAt( cursor, 0, stableGen, unstableGen );
+        long middleChild = childAt( cursor, 1, stableGen, unstableGen );
+        long rightChild = childAt( cursor, 2, stableGen, unstableGen );
         assertSiblings( leftChild, middleChild, rightChild );
 
         // WHEN
@@ -872,25 +879,25 @@ public class InternalTreeLogicTest
         long root = cursor.getCurrentPageId();
         long middleKey = i / 2; // Should be located in middle leaf
         remove( middleKey, insertValue );
-        cursor.next( 5 );
-        cursor.next( root );
+        goTo( cursor, 5 );
+        goTo( cursor, root );
 
         // THEN
         // root have new middle child
         long expectedNewMiddleChild = targetLastId + 1;
         assertEquals( expectedNewMiddleChild, id.lastId() );
-        long newMiddleChild = node.childAt( cursor, 1, stableGen, unstableGen );
+        long newMiddleChild = childAt( cursor, 1, stableGen, unstableGen );
         assertEquals( expectedNewMiddleChild, newMiddleChild );
 
         // old middle child has new gen
-        cursor.next( middleChild );
-        assertEquals( newMiddleChild, node.newGen( cursor, stableGen, unstableGen ) );
+        goTo( cursor, middleChild );
+        assertEquals( newMiddleChild, newGen( cursor, stableGen, unstableGen ) );
 
         // old middle child has seen no change
         assertKeyAssociatedWithValue( middleKey, middleKey );
 
         // new middle child has seen change
-        cursor.next( newMiddleChild );
+        goTo( cursor, newMiddleChild );
         assertKeyNotFound( middleKey );
 
         // sibling pointers updated
@@ -922,8 +929,8 @@ public class InternalTreeLogicTest
         }
         long root = cursor.getCurrentPageId();
         assertEquals( 1, node.keyCount( cursor ) );
-        long leftChild = node.childAt( cursor, 0, stableGen, unstableGen );
-        long rightChild = node.childAt( cursor, 1, stableGen, unstableGen );
+        long leftChild = childAt( cursor, 0, stableGen, unstableGen );
+        long rightChild = childAt( cursor, 1, stableGen, unstableGen );
         assertSiblings( leftChild, rightChild, TreeNode.NO_NODE_FLAG );
 
         // WHEN
@@ -936,17 +943,17 @@ public class InternalTreeLogicTest
         insert( i, i );
         assertTrue( structurePropagation.hasNewGen );
         long newRoot = cursor.getCurrentPageId();
-        leftChild = node.childAt( cursor, 0, stableGen, unstableGen );
-        rightChild = node.childAt( cursor, 1, stableGen, unstableGen );
+        leftChild = childAt( cursor, 0, stableGen, unstableGen );
+        rightChild = childAt( cursor, 1, stableGen, unstableGen );
 
         // THEN
         // siblings are correct
-        long farRightChild = node.childAt( cursor, 2, stableGen, unstableGen );
+        long farRightChild = childAt( cursor, 2, stableGen, unstableGen );
         assertSiblings( leftChild, rightChild, farRightChild );
 
         // old root points to new gen root
-        cursor.next( root );
-        assertEquals( newRoot, node.newGen( cursor, stableGen, unstableGen ) );
+        goTo( cursor, root );
+        assertEquals( newRoot, newGen( cursor, stableGen, unstableGen ) );
     }
 
     @Test
@@ -969,16 +976,16 @@ public class InternalTreeLogicTest
         }
         long root = cursor.getCurrentPageId();
         assertEquals( 1, node.keyCount( cursor ) );
-        long leftInternal = node.childAt( cursor, 0, stableGen, unstableGen );
-        long rightInternal = node.childAt( cursor, 1, stableGen, unstableGen );
+        long leftInternal = childAt( cursor, 0, stableGen, unstableGen );
+        long rightInternal = childAt( cursor, 1, stableGen, unstableGen );
         assertSiblings( leftInternal, rightInternal, TreeNode.NO_NODE_FLAG );
-        cursor.next( leftInternal );
+        goTo( cursor, leftInternal );
         int leftInternalKeyCount = node.keyCount( cursor );
         assertTrue( node.isInternal( cursor ) );
-        long leftLeaf = node.childAt( cursor, 0, stableGen, unstableGen );
-        cursor.next( leftLeaf );
+        long leftLeaf = childAt( cursor, 0, stableGen, unstableGen );
+        goTo( cursor, leftLeaf );
         long firstKeyInLeaf = node.keyAt( cursor, readKey, 0 ).longValue();
-        cursor.next( root );
+        goTo( cursor, root );
 
         // WHEN
         generationManager.checkpoint();
@@ -995,14 +1002,14 @@ public class InternalTreeLogicTest
 
         // there's a new generation of left internal w/ one more key in
         long newGenLeftInternal = id.lastId();
-        assertEquals( newGenLeftInternal, node.childAt( cursor, 0, stableGen, unstableGen ) );
-        cursor.next( newGenLeftInternal );
+        assertEquals( newGenLeftInternal, childAt( cursor, 0, stableGen, unstableGen ) );
+        goTo( cursor, newGenLeftInternal );
         int newGenLeftInternalKeyCount = node.keyCount( cursor );
         assertEquals( leftInternalKeyCount + 1, newGenLeftInternalKeyCount );
 
         // and left internal points to the new gen
-        cursor.next( leftInternal );
-        assertEquals( newGenLeftInternal, node.newGen( cursor, stableGen, unstableGen ) );
+        goTo( cursor, leftInternal );
+        assertEquals( newGenLeftInternal, newGen( cursor, stableGen, unstableGen ) );
         assertSiblings( newGenLeftInternal, rightInternal, TreeNode.NO_NODE_FLAG );
     }
 
@@ -1021,7 +1028,7 @@ public class InternalTreeLogicTest
         // recovery happens
         generationManager.recovery();
         // start up on stable root
-        cursor.next( originalNodeId );
+        goTo( cursor, originalNodeId );
         // replay transaction TX1 will create a new heir
         insert( 1L, 10L );
         assertTrue( structurePropagation.hasNewGen );
@@ -1030,7 +1037,7 @@ public class InternalTreeLogicTest
         // new gen pointer for heir should not have broken or crashed GSPP slot
         assertNewGenPointerNotCrashOrBroken();
         // and previously crashed new gen GSPP slot should have been overwritten
-        cursor.next( originalNodeId );
+        goTo( cursor, originalNodeId );
         assertNewGenPointerNotCrashOrBroken();
     }
 
@@ -1059,26 +1066,26 @@ public class InternalTreeLogicTest
     private void assertSiblings( long left, long middle, long right ) throws IOException
     {
         long origin = cursor.getCurrentPageId();
-        cursor.next( middle );
-        assertEquals( right, node.rightSibling( cursor, stableGen, unstableGen ) );
-        assertEquals( left, node.leftSibling( cursor, stableGen, unstableGen ) );
+        goTo( cursor, middle );
+        assertEquals( right, rightSibling( cursor, stableGen, unstableGen ) );
+        assertEquals( left, leftSibling( cursor, stableGen, unstableGen ) );
         if ( left != TreeNode.NO_NODE_FLAG )
         {
-            cursor.next( left );
-            assertEquals( middle, node.rightSibling( cursor, stableGen, unstableGen ) );
+            goTo( cursor, left );
+            assertEquals( middle, rightSibling( cursor, stableGen, unstableGen ) );
         }
         if ( right != TreeNode.NO_NODE_FLAG )
         {
-            cursor.next( right );
-            assertEquals( middle, node.leftSibling( cursor, stableGen, unstableGen ) );
+            goTo( cursor, right );
+            assertEquals( middle, leftSibling( cursor, stableGen, unstableGen ) );
         }
-        cursor.next( origin );
+        goTo( cursor, origin );
     }
 
     // KEEP even if unused
     private void printTree() throws IOException
     {
-        TreePrinter.printTree( cursor, node, layout, stableGen, unstableGen, System.out );
+        TreePrinter.printTree( cursor, node, layout, stableGen, unstableGen, System.out, true );
     }
 
     private MutableLong key( long key )
@@ -1089,8 +1096,8 @@ public class InternalTreeLogicTest
     private long newRootFromSplit( StructurePropagation<MutableLong> split ) throws IOException
     {
         assertTrue( split.hasSplit );
-        long rootId = id.acquireNewId();
-        cursor.next( rootId );
+        long rootId = id.acquireNewId( stableGen, unstableGen );
+        goTo( cursor, rootId );
         node.initializeInternal( cursor, stableGen, unstableGen );
         node.insertKeyAt( cursor, split.primKey, 0, 0, tmp );
         node.setKeyCount( cursor, 1 );
@@ -1107,11 +1114,11 @@ public class InternalTreeLogicTest
                 new RightmostInChain<>( node, stableGen, unstableGen );
         for ( long child : children )
         {
-            cursor.next( child );
+            goTo( cursor, child );
             rightmost.assertNext( cursor );
         }
         rightmost.assertLast();
-        cursor.next( currentPageId );
+        goTo( cursor, currentPageId );
     }
 
     private Long keyAt( int pos )
@@ -1181,5 +1188,30 @@ public class InternalTreeLogicTest
                 unstableGen++;
             }
         };
+    }
+
+    private void goTo( PageCursor cursor, long pageId ) throws IOException
+    {
+        PageCursorUtil.goTo( cursor, "test", pointer( pageId ) );
+    }
+
+    private long childAt( PageCursor cursor, int pos, long stableGen, long unstableGen )
+    {
+        return pointer( node.childAt( cursor, pos, stableGen, unstableGen ) );
+    }
+
+    private long rightSibling( PageCursor cursor, long stableGen, long unstableGen )
+    {
+        return pointer( node.rightSibling( cursor, stableGen, unstableGen ) );
+    }
+
+    private long leftSibling( PageCursor cursor, long stableGen, long unstableGen )
+    {
+        return pointer( node.leftSibling( cursor, stableGen, unstableGen ) );
+    }
+
+    private long newGen( PageCursor cursor, long stableGen, long unstableGen )
+    {
+        return pointer( node.newGen( cursor, stableGen, unstableGen ) );
     }
 }

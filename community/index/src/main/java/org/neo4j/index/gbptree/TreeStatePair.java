@@ -26,8 +26,23 @@ import java.util.Optional;
 
 import org.neo4j.io.pagecache.PageCursor;
 
+/**
+ * Pair of {@link TreeState}, ability to make decision about which of the two to read and write respectively,
+ * depending on the {@link TreeState#isValid() validity} and {@link TreeState#stableGeneration()} of each.
+ */
 class TreeStatePair
 {
+    /**
+     * Reads the tree state pair, one from each of {@code pageIdA} and {@code pageIdB}, deciding their validity
+     * and returning them as a {@link Pair}.
+     *
+     * @param cursor {@link PageCursor} to use when reading. This cursor will be moved to the two pages
+     * one after the other, to read their states.
+     * @param pageIdA page id containing the first state.
+     * @param pageIdB page id containing the second state.
+     * @return {@link Pair} of both tree states.
+     * @throws IOException on {@link PageCursor} reading error.
+     */
     static Pair<TreeState,TreeState> readStatePages( PageCursor cursor, long pageIdA, long pageIdB ) throws IOException
     {
         TreeState stateA;
@@ -43,6 +58,12 @@ class TreeStatePair
         return Pair.of( stateA, stateB );
     }
 
+    /**
+     * @param states the two states to compare.
+     * @return newest (w/ regards to {@link TreeState#stableGeneration()}) {@link TreeState#isValid() valid}
+     * {@link TreeState} of the two.
+     * @throws IllegalStateException if none were valid.
+     */
     static TreeState selectNewestValidState( Pair<TreeState,TreeState> states )
     {
         return selectNewestValidStateOptionally( states ).orElseThrow( () ->
@@ -50,6 +71,11 @@ class TreeStatePair
                         states.getLeft(), states.getRight() ) );
     }
 
+    /**
+     * @param states the two states to compare.
+     * @return oldest (w/ regards to {@link TreeState#stableGeneration()}) {@link TreeState#isValid() invalid}
+     * {@link TreeState} of the two. If both are invalid then the {@link Pair#getLeft() first one} is returned.
+     */
     static TreeState selectOldestOrInvalid( Pair<TreeState,TreeState> states )
     {
         TreeState newestValidState = selectNewestValidStateOptionally( states ).orElse( states.getRight() );

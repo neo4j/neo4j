@@ -21,12 +21,17 @@ package org.neo4j.index.gbptree;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.Comparator;
 import java.util.List;
 
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.io.pagecache.PageCursor;
 
+import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
+
+import static org.neo4j.index.gbptree.GenSafePointerPair.pointer;
 
 /**
  * <ul>
@@ -57,27 +62,155 @@ class ConsistencyChecker<KEY>
         this.unstableGeneration = unstableGeneration;
     }
 
-    public boolean check( PageCursor cursor ) throws IOException
+    public boolean check( PageCursor cursor, long expectedGen ) throws IOException
     {
         assertOnTreeNode( cursor );
         KeyRange<KEY> openRange = new KeyRange<>( comparator, null, null, layout, null );
-        boolean result = checkSubtree( cursor, openRange, 0 );
+        boolean result = checkSubtree( cursor, openRange, expectedGen, 0 );
 
         // Assert that rightmost node on each level has empty right sibling.
         rightmostPerLevel.forEach( RightmostInChain::assertLast );
         return result;
     }
 
-    private void assertOnTreeNode( PageCursor cursor )
+    /**
+     * Checks so that all pages between {@link IdSpace#MIN_TREE_NODE_ID} and highest allocated id
+     * are either in use in the tree, on the free-list or free-list nodes.
+     *
+     * @param cursor {@link PageCursor} to use for reading.
+     * @return {@code true} if all pages are taken, otherwise {@code false}. Also is compatible with java
+     * assert calls.
+     * @throws IOException on {@link PageCursor} error.
+     */
+    public boolean checkSpace( PageCursor cursor, long lastId, PrimitiveLongIterator freelistIds ) throws IOException
     {
-        // TODO also check node type when available
-        if ( !node.isInternal( cursor ) && !node.isLeaf( cursor ) )
+        assertOnTreeNode( cursor );
+
+        // TODO: limitation, can't run on an index larger than Integer.MAX_VALUE pages (which is fairly large)
+        long highId = lastId + 1;
+        BitSet seenIds = new BitSet( toIntExact( highId ) );
+        while ( freelistIds.hasNext() )
         {
-            throw new IllegalArgumentException( "Cursor is not pinned to a page containing a tree node." );
+            addToSeenList( seenIds, freelistIds.next(), lastId );
+        }
+
+        // Traverse the tree
+        do
+        {
+            // One level at the time
+            long leftmostSibling = cursor.getCurrentPageId();
+            addToSeenList( seenIds, leftmostSibling, lastId );
+
+            // Go right through all siblings
+            traverseAndAddRightSiblings( cursor, seenIds, lastId );
+
+            // Then go back to the left-most node on this level
+            node.goTo( cursor, "back", leftmostSibling );
+        }
+        // And continue down to next level if this level was an internal level
+        while ( goToLeftmostChild( cursor ) );
+
+        assertAllIdsOccupied( highId, seenIds );
+        return true;
+    }
+
+    private boolean goToLeftmostChild( PageCursor cursor ) throws IOException
+    {
+        boolean isInternal;
+        long leftmostSibling = -1;
+        do
+        {
+            isInternal = node.isInternal( cursor );
+            if ( isInternal )
+            {
+                leftmostSibling = node.childAt( cursor, 0, stableGeneration, unstableGeneration );
+            }
+        }
+        while ( cursor.shouldRetry() );
+
+        if ( isInternal )
+        {
+            node.goTo( cursor, "child", leftmostSibling );
+        }
+        return isInternal;
+    }
+
+    private static void assertAllIdsOccupied( long highId, BitSet seenIds )
+    {
+        long expectedNumberOfPages = highId - IdSpace.MIN_TREE_NODE_ID;
+        if ( seenIds.cardinality() != expectedNumberOfPages )
+        {
+            StringBuilder builder = new StringBuilder( "[" );
+            int index = (int) IdSpace.MIN_TREE_NODE_ID;
+            int count = 0;
+            while ( index >= 0 && index < highId )
+            {
+                index = seenIds.nextClearBit( index );
+                if ( index != -1 )
+                {
+                    if ( count++ > 0 )
+                    {
+                        builder.append( "," );
+                    }
+                    builder.append( index );
+                    index++;
+                }
+            }
+            builder.append( "]" );
+            throw new RuntimeException( "There are " + count + " unused pages in the store:" + builder );
         }
     }
 
-    private boolean checkSubtree( PageCursor cursor, KeyRange<KEY> range, int level ) throws IOException
+    private void traverseAndAddRightSiblings( PageCursor cursor, BitSet seenIds, long lastId ) throws IOException
+    {
+        long rightSibling;
+        do
+        {
+            do
+            {
+                rightSibling = node.rightSibling( cursor, stableGeneration, unstableGeneration );
+            }
+            while ( cursor.shouldRetry() );
+
+            if ( TreeNode.isNode( rightSibling ) )
+            {
+                node.goTo( cursor, "right sibling", rightSibling );
+                addToSeenList( seenIds, pointer( rightSibling ), lastId );
+            }
+        }
+        while ( TreeNode.isNode( rightSibling ) );
+    }
+
+    private static void addToSeenList( BitSet target, long id, long lastId )
+    {
+        int index = toIntExact( id );
+        if ( target.get( index ) )
+        {
+            throw new IllegalStateException( id + " already seen" );
+        }
+        if ( id > lastId )
+        {
+            throw new IllegalStateException( "Unexpectedly high id " + id + " seen when last id is " + lastId );
+        }
+        target.set( index );
+    }
+
+    private void assertOnTreeNode( PageCursor cursor )
+    {
+        if ( TreeNode.nodeType( cursor ) != TreeNode.NODE_TYPE_TREE_NODE )
+        {
+            throw new IllegalArgumentException( "Cursor is not pinned to a tree node page. pageId:" +
+                    cursor.getCurrentPageId() );
+        }
+        if ( !node.isInternal( cursor ) && !node.isLeaf( cursor ) )
+        {
+            throw new IllegalArgumentException( "Cursor is not pinned to a page containing a tree node. pageId:" +
+                    cursor.getCurrentPageId() );
+        }
+    }
+
+    private boolean checkSubtree( PageCursor cursor, KeyRange<KEY> range, long expectedGen, int level )
+            throws IOException
     {
         // check header pointers
         assertNoCrashOrBrokenPointerInGSPP(
@@ -88,6 +221,10 @@ class ConsistencyChecker<KEY>
                 cursor, stableGeneration, unstableGeneration, "NewGen", TreeNode.BYTE_POS_NEWGEN, node );
 
         long pageId = assertSiblings( cursor, level );
+
+        checkNewGenPointerGen( cursor );
+
+        assertPointerGenMatchesGen( cursor, expectedGen );
 
         if ( node.isInternal( cursor ) )
         {
@@ -103,6 +240,34 @@ class ConsistencyChecker<KEY>
                     " isn't a tree node, parent expected range " + range );
         }
         return true;
+    }
+
+    private void assertPointerGenMatchesGen( PageCursor cursor, long expectedGen )
+    {
+        long nodeGen = node.gen( cursor );
+        assert nodeGen <= expectedGen : "Expected node:" + cursor.getCurrentPageId() + " gen:" + nodeGen +
+                " to be ≤ pointer gen:" + expectedGen;
+    }
+
+    private void checkNewGenPointerGen( PageCursor cursor ) throws IOException
+    {
+        long newGen = node.newGen( cursor, stableGeneration, unstableGeneration );
+        if ( TreeNode.isNode( newGen ) )
+        {
+            System.err.println( "WARNING: we ended up on an old generation " + cursor.getCurrentPageId() +
+                    " which had newGen:" + pointer( newGen ) );
+            long newGenGen = node.pointerGen( cursor, newGen );
+            long origin = cursor.getCurrentPageId();
+            node.goTo( cursor, "newGen", newGen );
+            try
+            {
+                assertPointerGenMatchesGen( cursor, newGenGen );
+            }
+            finally
+            {
+                node.goTo( cursor, "back", origin );
+            }
+        }
     }
 
     // Assumption: We traverse the tree from left to right on every level
@@ -138,7 +303,8 @@ class ConsistencyChecker<KEY>
             }
 
             long child = childAt( cursor, pos );
-            cursor.next( child );
+            long childGen = node.pointerGen( cursor, child );
+            node.goTo( cursor, "child at pos " + pos, child );
             if ( pos == 0 )
             {
                 childRange = range.restrictRight( readKey );
@@ -147,8 +313,8 @@ class ConsistencyChecker<KEY>
             {
                 childRange = range.restrictLeft( prev ).restrictRight( readKey );
             }
-            checkSubtree( cursor, childRange, level + 1 );
-            cursor.next( pageId );
+            checkSubtree( cursor, childRange, childGen, level + 1 );
+            node.goTo( cursor, "parent", pageId );
 
             layout.copyKey( readKey, prev );
             pos++;
@@ -156,10 +322,11 @@ class ConsistencyChecker<KEY>
 
         // Check last child
         long child = childAt( cursor, pos );
-        cursor.next( child );
+        long childGen = node.pointerGen( cursor, child );
+        node.goTo( cursor, "child at pos " + pos, child );
         childRange = range.restrictLeft( prev );
-        checkSubtree( cursor, childRange, level + 1 );
-        cursor.next( pageId );
+        checkSubtree( cursor, childRange, childGen, level + 1 );
+        node.goTo( cursor, "parent", pageId );
     }
 
     private long childAt( PageCursor cursor, int pos )

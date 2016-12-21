@@ -21,6 +21,7 @@ package org.neo4j.index.gbptree;
 
 import org.neo4j.io.pagecache.PageCursor;
 
+import static org.neo4j.index.gbptree.GenSafePointerPair.pointer;
 import static org.neo4j.index.gbptree.TreeNode.NO_NODE_FLAG;
 
 /**
@@ -38,6 +39,8 @@ class RightmostInChain<KEY>
 
     private long currentRightmost;
     private long expectedNextRightmost;
+    private long expectedNextRightmostGen;
+    private long currentRightmostGen;
 
     RightmostInChain( TreeNode<KEY,?> node, long stableGeneration, long unstableGeneration )
     {
@@ -54,19 +57,32 @@ class RightmostInChain<KEY>
 
         long leftSibling = node.leftSibling( cursor, stableGeneration, unstableGeneration );
         long rightSibling = node.rightSibling( cursor, stableGeneration, unstableGeneration );
+        long leftSiblingGen = node.pointerGen( cursor, leftSibling );
+        long rightSiblingGen = node.pointerGen( cursor, rightSibling );
+        leftSibling = pointer( leftSibling );
+        rightSibling = pointer( rightSibling );
+        long gen = node.gen( cursor );
 
         // Assert we have reached expected node and that we agree about being siblings
         assert leftSibling == currentRightmost :
                 "Sibling pointer does align with tree structure. Expected left sibling to be " +
                 currentRightmost + " but was " + leftSibling;
+        assert leftSiblingGen <= currentRightmostGen || currentRightmost == NO_NODE_FLAG:
+                "Sibling pointer gen differs from expected. Expected left sigling gen to be " +
+                currentRightmostGen + ", but was " + leftSiblingGen;
         assert pageId == expectedNextRightmost ||
                (expectedNextRightmost == NO_NODE_FLAG && currentRightmost == NO_NODE_FLAG) :
                 "Sibling pointer does not align with tree structure. Expected right sibling to be " +
                 expectedNextRightmost + " but was " + rightSibling;
+        assert gen <= expectedNextRightmostGen || expectedNextRightmost == NO_NODE_FLAG:
+                "Sibling pointer gen differs from expected. Expected right sigling gen to be " +
+                expectedNextRightmostGen + ", but was " + gen;
 
         // Update currentRightmost = pageId;
         currentRightmost = pageId;
+        currentRightmostGen = gen;
         expectedNextRightmost = rightSibling;
+        expectedNextRightmostGen = rightSiblingGen;
         return pageId;
     }
 
@@ -75,5 +91,4 @@ class RightmostInChain<KEY>
         assert expectedNextRightmost == NO_NODE_FLAG : "Expected rightmost right sibling to be " +
                                                        NO_NODE_FLAG + " but was " + expectedNextRightmost;
     }
-
 }

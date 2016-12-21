@@ -21,6 +21,10 @@ package org.neo4j.index.gbptree;
 
 import org.neo4j.io.pagecache.PageCursor;
 
+import static org.neo4j.index.gbptree.PageCursorUtil.get6BLong;
+import static org.neo4j.index.gbptree.PageCursorUtil.getUnsignedInt;
+import static org.neo4j.index.gbptree.PageCursorUtil.put6BLong;
+
 /**
  * Provides static methods for getting and manipulating GSP (gen-safe pointer) data.
  * All interaction is made using a {@link PageCursor}. These methods are about a single GSP,
@@ -51,11 +55,13 @@ class GenSafePointer
     static final long MAX_POINTER = 0xFFFF_FFFFFFFFL;
     static final int UNSIGNED_SHORT_MASK = 0xFFFF;
 
+    static final int GENERATION_SIZE = 4;
+    static final int POINTER_SIZE = 6;
     static final int CHECKSUM_SIZE = 2;
     static final int SIZE =
-            4 +             // generation (unsigned int)
-            6 +             // pointer (6B long)
-            CHECKSUM_SIZE;  // checksum for generation & pointer
+            GENERATION_SIZE +
+            POINTER_SIZE +
+            CHECKSUM_SIZE;
 
     /**
      * Writes GSP at the given {@code offset}, the two fields (generation, pointer) + a checksum will be written.
@@ -84,7 +90,7 @@ class GenSafePointer
 
     private static void assertPointerOnWrite( long pointer )
     {
-        if ( (pointer > MAX_POINTER || pointer < MIN_POINTER) && pointer != TreeNode.NO_NODE_FLAG )
+        if ( (pointer > MAX_POINTER || pointer < MIN_POINTER) && TreeNode.isNode( pointer ) )
         {
             throw new IllegalArgumentException( "Can not write pointer " + pointer +
                     " because outside boundary for valid pointer" );
@@ -93,7 +99,7 @@ class GenSafePointer
 
     public static long readGeneration( PageCursor cursor )
     {
-        return cursor.getInt() & GENERATION_MASK;
+        return getUnsignedInt( cursor );
     }
 
     public static long readPointer( PageCursor cursor )
@@ -113,22 +119,7 @@ class GenSafePointer
         return checksum == checksumOf( generation, pointer );
     }
 
-    private static long get6BLong( PageCursor cursor )
-    {
-        long lsb = cursor.getInt() & GENERATION_MASK;
-        long msb = cursor.getShort() & UNSIGNED_SHORT_MASK;
-        return lsb | (msb << Integer.SIZE);
-    }
-
     // package visible for test purposes
-    static void put6BLong( PageCursor cursor, long value )
-    {
-        int lsb = (int) value;
-        short msb = (short) (value >>> Integer.SIZE);
-        cursor.putInt( lsb );
-        cursor.putShort( msb );
-    }
-
     /**
      * Calculates a 2-byte checksum from GSP data.
      *

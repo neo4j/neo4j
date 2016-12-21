@@ -138,6 +138,11 @@ public class RandomRule implements TestRule
         return Math.abs( nextLong() ) % n;
     }
 
+    public long nextLong( long origin, long bound )
+    {
+        return nextLong( (bound - origin) + 1L ) + origin;
+    }
+
     // ============================
     // Methods from Randoms
     // ============================
