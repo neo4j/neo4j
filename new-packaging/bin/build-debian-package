@@ -16,7 +16,7 @@ distribution=${4}
 version=${5}
 
 # Prepare workspace
-package_directory=${workspace}/${package_name}/
+package_directory=${workspace}/${package_name}
 mkdir -p ${package_directory}
 skeleton_directory=src/debian/skeleton
 cp -r ${skeleton_directory}/* ${package_directory}
@@ -56,7 +56,7 @@ then
 fi
 
 # Make UDC successful
-sed -i 's/unsupported.dbms.udc.source=tarball/unsupported.dbms.udc.source=debian/' ${package_directory}/server/conf/neo4j-wrapper.conf
+sed -i 's/unsupported.dbms.udc.source=tarball/unsupported.dbms.udc.source=debian/' ${package_directory}/server/conf/neo4j.conf
 
 # Modify directories to match the FHS (https://www.debian.org/doc/packaging-manuals/fhs/fhs-2.3.html)
 configuration_file=${package_directory}/server/conf/neo4j.conf
