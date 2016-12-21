@@ -159,7 +159,7 @@ public class TreeStatePairTest
             @Override
             void write( PageCursor cursor ) throws IOException
             {
-                TreeState.write( cursor, 5, 7, 7, 8 );
+                TreeState.write( cursor, 5, 7, 7, 8, 9, 10, 11, 12, 13 );
             }
         },
         WIDE_VALID // stableGeneration:4 and unstableGeneration:8, i.e. crashed but wider gap between generations
@@ -167,7 +167,7 @@ public class TreeStatePairTest
             @Override
             void write( PageCursor cursor ) throws IOException
             {
-                TreeState.write( cursor, 5, 7, 7, 8 );
+                TreeState.write( cursor, 4, 8, 9, 10, 11, 12, 13, 14, 15 );
             }
         },
         OLD_VALID // stableGeneration:2 and unstableGeneration:3
