@@ -73,7 +73,7 @@ case "$1" in
             fi
             echo "The configuration files have changed in 3.0. A config migration tool exists to help with this."
             echo "You will have to copy your changed configuration files to the original location so the"
-            echo "config-migrator can find them first."
+            echo "2.x-config-migrator can find them first."
             echo
             for old_config_file in /etc/neo4j/neo4j.properties.dpkg-bak \
                                    /etc/neo4j/neo4j-server.properties.dpkg-bak \
@@ -83,9 +83,9 @@ case "$1" in
                 fi
             done
             echo
-            echo "And then reun the config-migrator like so:"
+            echo "And then reun the 2.x-config-migrator like so:"
             echo
-            echo "    sudo -u neo4j -g adm java -jar /usr/share/neo4j/bin/tools/config-migrator.jar /var/lib/neo4j /var/lib/neo4j"
+            echo "    sudo -u neo4j -g adm java -jar /usr/share/neo4j/bin/tools/2.x-config-migrator.jar /var/lib/neo4j /var/lib/neo4j"
             echo
             echo "You must tell the database to migrate your active database when the service starts."
             echo "To do this, use the following command:"
@@ -98,6 +98,12 @@ case "$1" in
             echo "-----------------------------------------------------------------------------"
             rm /tmp/neo4j-upgraded-from-2.x
         else
+            if [ -f /etc/neo4j/neo4j-wrapper.conf ]; then
+                echo >> /etc/neo4j/neo4j.conf
+                cat /etc/neo4j/neo4j-wrapper.conf >> /etc/neo4j/neo4j.conf
+                rm /etc/neo4j/neo4j-wrapper.conf
+            fi
+
             # Start neo4j
             invoke-rc.d neo4j start
         fi
