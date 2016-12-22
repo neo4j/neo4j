@@ -21,8 +21,9 @@ package org.neo4j.cypher.internal.compiler.v3_2.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters._
-import org.neo4j.cypher.internal.compiler.v3_2.phases.{CompilationState, Context, LateAstRewriting}
+import org.neo4j.cypher.internal.compiler.v3_2.phases.{CompilationState, LateAstRewriting}
 import org.neo4j.cypher.internal.compiler.v3_2.planner._
+import org.neo4j.cypher.internal.compiler.v3_2.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{Query, Statement}
 import org.neo4j.cypher.internal.frontend.v3_2.{SemanticTable, inSequence}
 import org.scalatest.mock.MockitoSugar
@@ -41,8 +42,8 @@ trait QueryGraphProducer extends MockitoSugar {
     val semanticState = SemanticChecker.check(cleanedStatement, mkException)
 
     val (firstRewriteStep, _, _) = astRewriter.rewrite(query, cleanedStatement, semanticState)
-    val state = CompilationState(query, None, "", Some(firstRewriteStep), Some(semanticState))
-    val context = Context(null, null, null, null, null, null, mock[AstRewritingMonitor], null, null, null, null)
+    val state = CompilationState(query, None, IDPPlannerName, Some(firstRewriteStep), Some(semanticState))
+    val context = ContextHelper.create()
     val output = (Namespacer andThen rewriteEqualityToInPredicate andThen CNFNormalizer andThen LateAstRewriting).transform(state, context)
 
     (toUnionQuery(output.statement.asInstanceOf[Query], output.semanticTable).queries.head, output.semanticTable)

@@ -27,9 +27,10 @@ import org.neo4j.cypher.internal.compatibility.v3_2.WrappedMonitors
 import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.NO_TRACING
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.PlanFingerprintReference
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.IdentityTypeConverter
-import org.neo4j.cypher.internal.compiler.v3_2.phases.{CompilationState, Context}
+import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilationState
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.Metrics
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.Metrics.{CardinalityModel, CostModel}
+import org.neo4j.cypher.internal.compiler.v3_2.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.compiler.v3_2.{CypherCompilerFactory, InfoLogger, _}
 import org.neo4j.cypher.internal.ir.v3_2.{Cardinality, Cost}
@@ -190,7 +191,7 @@ class CypherCompilerPerformanceTest extends GraphDatabaseFunSuite {
         idpIterationDuration = 10,
         errorIfShortestPathFallbackUsedAtRuntime = true,
         nonIndexedLabelWarningThreshold = 494)
-      val context = Context(null, NO_TRACING, devNullLogger, planContext, null, _ => mock[PlanFingerprintReference], mock[AstRewritingMonitor], metrics, compiler.queryGraphSolver, config, defaultUpdateStrategy)
+      val context = ContextHelper.create(planContext = planContext, metrics = metrics, queryGraphSolver = compiler.queryGraphSolver, config = config)
 
       val (planTime, _) = measure(compiler.thirdPipeLine.transform(state, context))
       planTime + semanticTime

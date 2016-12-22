@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters
 
 import org.mockito.Matchers._
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.compiler.v3_2.AstRewritingMonitor
-import org.neo4j.cypher.internal.compiler.v3_2.phases.Context
+import org.neo4j.cypher.internal.compiler.v3_2.test_helpers.ContextHelper
+import org.neo4j.cypher.internal.compiler.v3_2.{AstRewritingMonitor, Monitors}
 import org.neo4j.cypher.internal.frontend.v3_2.Rewriter
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 
@@ -115,8 +115,10 @@ class CNFNormalizerTest extends CypherFunSuite with PredicateTestSupport {
 
   override protected def beforeEach(): Unit = {
     super.beforeEach()
+    val monitors = mock[Monitors]
     astRewritingMonitor = mock[AstRewritingMonitor]
-    rewriter = CNFNormalizer.instance(Context(null, null, null, null, null, null, astRewritingMonitor, null, null, null, null))
+    when(monitors.newMonitor[AstRewritingMonitor]()).thenReturn(astRewritingMonitor)
+    rewriter = CNFNormalizer.instance(ContextHelper.create(monitors = monitors))
   }
 
 }

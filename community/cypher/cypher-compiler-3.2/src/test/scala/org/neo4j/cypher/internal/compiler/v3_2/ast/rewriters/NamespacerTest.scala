@@ -87,7 +87,7 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport {
 
   private def assertRewritten(from: String, to: String) = {
     val fromAst = parseAndRewrite(from)
-    val fromState = CompilationState(from, None, "", Some(fromAst), Some(fromAst.semanticState))
+    val fromState = CompilationState(from, None, IDPPlannerName, Some(fromAst), Some(fromAst.semanticState))
     val toState = Namespacer.transform(fromState, null)
 
     val expectedAst = parseAndRewrite(to)

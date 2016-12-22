@@ -38,6 +38,8 @@ trait Phase extends Transformer {
     }
 
   def postConditions: Set[Condition]
+
+  def name = getClass.getSimpleName
 }
 
 trait VisitorPhase extends Phase {
@@ -58,6 +60,8 @@ trait Transformer {
     new PipeLine(this, other)
 
   def adds[T: ClassTag](implicit manifest: Manifest[T]): Transformer = this andThen AddCondition(Contains[T])
+
+  def name: String
 }
 
 case class AddCondition(postCondition: Condition) extends Phase {
@@ -73,6 +77,8 @@ case class AddCondition(postCondition: Condition) extends Phase {
 object Transformer {
   val identity = new Transformer {
     override def transform(from: CompilationState, context: Context) = from
+
+    override def name: String = "identity"
   }
 }
 
@@ -87,13 +93,13 @@ class PipeLine(first: Transformer, after: Transformer) extends Transformer {
       step = addConditions(step, first)
       messages = step.accumulatedConditions.flatMap(condition => condition.check(step))
       messages.isEmpty // If this is not true, we will fail if run with -ea
-    }, messages.mkString(", "))
+    }, name + messages.mkString(", "))
     step = after.transform(step, context)
     assert({
       step = addConditions(step, after)
       messages = step.accumulatedConditions.flatMap(condition => condition.check(step))
       messages.isEmpty
-    }, messages.mkString(", "))
+    }, name + messages.mkString(", "))
     step
   }
 
@@ -103,6 +109,8 @@ class PipeLine(first: Transformer, after: Transformer) extends Transformer {
       case _ => state
     }
   }
+
+  override def name: String = first.name + ", " + after.name
 }
 
 case class If(f: CompilationState => Boolean)(thenT: Transformer) extends Transformer {
@@ -112,4 +120,20 @@ case class If(f: CompilationState => Boolean)(thenT: Transformer) extends Transf
     else
       from
   }
+
+  override def name: String = s"if(<f>) ${thenT.name}"
+}
+
+object Do {
+  def apply(voidFunction: Context => Unit) = new Do((from, context) => {
+    voidFunction(context)
+    from
+  })
+}
+
+case class Do(f: (CompilationState, Context) => CompilationState) extends Transformer {
+  override def transform(from: CompilationState, context: Context): CompilationState =
+    f(from, context)
+
+  override def name: String = "do <f>"
 }

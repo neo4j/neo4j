@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.planner
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.plannerQuery.StatementConverters._
 import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters._
-import org.neo4j.cypher.internal.compiler.v3_2.phases.{CompilationState, Context, LateAstRewriting}
+import org.neo4j.cypher.internal.compiler.v3_2.phases.{CompilationState, LateAstRewriting}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.cardinality.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.idp.{IDPQueryGraphSolver, IDPQueryGraphSolverMonitor, SingleComponentPlanner, cartesianProductsOrValueJoins}
@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.rewriter.un
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.{LogicalPlanningContext, _}
 import org.neo4j.cypher.internal.compiler.v3_2.spi._
+import org.neo4j.cypher.internal.compiler.v3_2.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.fixedPoint
@@ -125,20 +126,20 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         semanticTable.resolvedRelTypeNames.get(relType).map(_.id)
     }
 
-    private def context = Context(null, null, null, planContext, null, null, mock[AstRewritingMonitor], null, null, null, null)
+    private def context = ContextHelper.create(planContext = planContext)
 
     private val pipeLine =
       Namespacer andThen rewriteEqualityToInPredicate andThen CNFNormalizer andThen LateAstRewriting andThen ResolveTokens
 
     def planFor(queryString: String): SemanticPlan = {
-
+// TODO: This should be cleaned up to use the new pipe line
       val parsedStatement = parser.parse(queryString)
       val mkException = new SyntaxExceptionCreator(queryString, Some(pos))
       val cleanedStatement: Statement = parsedStatement.endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException)))
       val semanticState = SemanticChecker.check(cleanedStatement, mkException)
       val (rewrittenStatement, _, postConditions) = astRewriter.rewrite(queryString, cleanedStatement, semanticState)
 
-      val state = CompilationState(queryString, None, "", Some(rewrittenStatement), Some(semanticState))
+      val state = CompilationState(queryString, None, IDPPlannerName, Some(rewrittenStatement), Some(semanticState))
       val output = pipeLine.transform(state, context)
 
       val ast = output.statement.asInstanceOf[Query]
@@ -153,12 +154,13 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     }
 
     def getLogicalPlanFor(queryString: String): (Option[PeriodicCommit], LogicalPlan, SemanticTable) = {
+      // TODO: This should be cleaned up to use the new pipe line
       val parsedStatement = parser.parse(queryString)
       val mkException = new SyntaxExceptionCreator(queryString, Some(pos))
       val semanticState = SemanticChecker.check(parsedStatement, mkException)
       val (rewrittenStatement, _, postConditions) = astRewriter.rewrite(queryString, parsedStatement, semanticState)
 
-      val state = CompilationState(queryString, None, "", Some(rewrittenStatement), Some(semanticState))
+      val state = CompilationState(queryString, None, IDPPlannerName, Some(rewrittenStatement), Some(semanticState))
       val output = pipeLine.transform(state, context)
       val table = output.semanticTable
       config.updateSemanticTableWithTokens(table)

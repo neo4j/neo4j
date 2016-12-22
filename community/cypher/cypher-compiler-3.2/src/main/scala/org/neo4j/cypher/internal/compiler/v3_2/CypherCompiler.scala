@@ -19,23 +19,24 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2
 
-import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase
-import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase._
+import java.time.Clock
+
 import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters.{CNFNormalizer, Namespacer, rewriteEqualityToInPredicate}
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi.CodeStructure
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.procs.ProcedureCallOrSchemaCommandPlanBuilder
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.RuntimeTypeConverter
-import org.neo4j.cypher.internal.compiler.v3_2.phases.{CompilationState, Phase, RewriteProcedureCalls, _}
+import org.neo4j.cypher.internal.compiler.v3_2.phases.{CompilationState, RewriteProcedureCalls, _}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.rewriter.PlanRewriter
-import org.neo4j.cypher.internal.compiler.v3_2.planner.{CheckForUnresolvedTokens, ExecutablePlanBuilder, ResolveTokens, UnionQuery}
+import org.neo4j.cypher.internal.compiler.v3_2.planner.{CheckForUnresolvedTokens, ResolveTokens, UnionQuery}
 import org.neo4j.cypher.internal.compiler.v3_2.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, SemanticState}
 
-case class CypherCompiler(executionPlanBuilder: ExecutablePlanBuilder,
+case class CypherCompiler(createExecutionPlan: Transformer,
                           astRewriter: ASTRewriter,
                           cacheAccessor: CacheAccessor[Statement, ExecutionPlan],
                           planCacheFactory: () => LFUCache[Statement, ExecutionPlan],
@@ -47,9 +48,13 @@ case class CypherCompiler(executionPlanBuilder: ExecutablePlanBuilder,
                           metricsFactory: MetricsFactory,
                           queryGraphSolver: QueryGraphSolver,
                           config: CypherCompilerConfiguration,
-                          updateStrategy: UpdateStrategy) {
+                          updateStrategy: UpdateStrategy,
+                          clock: Clock,
+                          structure: CodeStructure[GeneratedQuery]) {
 
-  def planQuery(queryText: String, context: PlanContext, notificationLogger: InternalNotificationLogger,
+  def planQuery(queryText: String,
+                context: PlanContext,
+                notificationLogger: InternalNotificationLogger,
                 plannerName: String = "",
                 offset: Option[InputPosition] = None): (ExecutionPlan, Map[String, Any]) = {
     val step1: CompilationState = prepareSyntacticQuery(queryText, queryText, notificationLogger, plannerName)
@@ -61,7 +66,7 @@ case class CypherCompiler(executionPlanBuilder: ExecutablePlanBuilder,
                         planContext: PlanContext,
                         offset: Option[InputPosition] = None,
                         tracer: CompilationPhaseTracer): (ExecutionPlan, Map[String, Any]) = {
-    val semanticQuery: CompilationState = prepareSemanticQuery(input, notificationLogger, planContext)
+    val semanticQuery: CompilationState = prepareSemanticQuery(input, notificationLogger, planContext, tracer)
     val cache = provideCache(cacheAccessor, cacheMonitor, planContext)
     val isStale = (plan: ExecutionPlan) => plan.isStale(planContext.txIdProvider, planContext.statistics)
     val (executionPlan, _) = cache.getOrElseUpdate(input.statement, input.queryText, isStale, {
@@ -72,12 +77,15 @@ case class CypherCompiler(executionPlanBuilder: ExecutablePlanBuilder,
     (executionPlan, semanticQuery.extractedParams)
   }
 
-  def prepareSyntacticQuery(queryText: String, rawQueryText: String, notificationLogger: InternalNotificationLogger,
-                            plannerName: String = "",
+  def prepareSyntacticQuery(queryText: String,
+                            rawQueryText: String,
+                            notificationLogger: InternalNotificationLogger,
+                            plannerNameText: String = "",
                             offset: Option[InputPosition] = None,
                             tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING): CompilationState = {
+    val plannerName = PlannerName(plannerNameText)
     val startState = CompilationState(queryText, offset, plannerName)
-    val context = createContext(tracer, notificationLogger, null, rawQueryText, offset) //TODO: short cut
+    val context = createContext(tracer, notificationLogger, null, rawQueryText, offset) //TODO: these nulls are a short cut
     firstPipeline.transform(startState, context)
   }
 
@@ -86,7 +94,7 @@ case class CypherCompiler(executionPlanBuilder: ExecutablePlanBuilder,
       SyntaxDeprecationWarnings andThen
       PreparatoryRewriting andThen
       SemanticAnalysis(warn = true).adds[SemanticState] andThen
-      AstRewriting(sequencer)
+      AstRewriting(sequencer, shouldExtractParams = true)
 
   val secondPipeLine: Transformer =
     RewriteProcedureCalls andThen
@@ -94,7 +102,7 @@ case class CypherCompiler(executionPlanBuilder: ExecutablePlanBuilder,
     SemanticAnalysis(warn = false) andThen
     Namespacer
 
-  val costBasedPlan =
+  val costBasedPlanning: PipeLine =
     rewriteEqualityToInPredicate andThen
     CNFNormalizer andThen
     LateAstRewriting andThen
@@ -104,18 +112,18 @@ case class CypherCompiler(executionPlanBuilder: ExecutablePlanBuilder,
     QueryPlanner().adds[LogicalPlan] andThen
     PlanRewriter(sequencer) andThen
     CheckForUnresolvedTokens
-    RestOfPipeLine
 
   val thirdPipeLine: Transformer =
     ProcedureCallOrSchemaCommandPlanBuilder andThen
     If(_.maybeExecutionPlan.isEmpty)(
-      costBasedPlan
+      costBasedPlanning andThen
+      createExecutionPlan.adds[ExecutionPlan]
     )
 
   def prepareSemanticQuery(in: CompilationState,
                            notificationLogger: InternalNotificationLogger,
                            planContext: PlanContext,
-                           tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING): CompilationState = {
+                           tracer: CompilationPhaseTracer): CompilationState = {
 
     secondPipeLine.transform(in, createContext(tracer, notificationLogger, planContext, in.queryText, in.startPosition))
   }
@@ -129,26 +137,12 @@ case class CypherCompiler(executionPlanBuilder: ExecutablePlanBuilder,
       new QueryCache(cacheAccessor, lRUCache)
     })
 
-  object RestOfPipeLine extends Phase {
-    override def phase: CompilationPhase = LOGICAL_PLANNING
-
-    override def description: String = "place holder until pipe line has been cleaned up"
-
-    override def transform(from: CompilationState, context: Context): CompilationState = {
-      val executionPlan = executionPlanBuilder.producePlan(from, context.planContext, context.tracer, context.createFingerprintReference)
-      from.copy(maybeExecutionPlan = Some(executionPlan))
-    }
-
-    override def postConditions: Set[Condition] = Set.empty
-  }
-
   private def createContext(tracer: CompilationPhaseTracer,
                             notificationLogger: InternalNotificationLogger,
                             planContext: PlanContext,
                             queryText: String,
                             offset: Option[InputPosition]): Context = {
     val exceptionCreator = new SyntaxExceptionCreator(queryText, offset)
-    val monitor = monitors.newMonitor[AstRewritingMonitor]()
 
     val metrics: Metrics = if (planContext == null)
       null
@@ -156,7 +150,7 @@ case class CypherCompiler(executionPlanBuilder: ExecutablePlanBuilder,
       metricsFactory.newMetrics(planContext.statistics)
 
     Context(exceptionCreator, tracer, notificationLogger, planContext, typeConverter, createFingerprintReference,
-      monitor, metrics, queryGraphSolver, config, updateStrategy)
+      monitors, metrics, queryGraphSolver, config, updateStrategy, clock, structure)
   }
 }
 

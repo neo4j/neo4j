@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.phases
 
+import org.neo4j.cypher.internal.compiler.v3_2.PlannerName
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.ExecutionPlan
 import org.neo4j.cypher.internal.compiler.v3_2.planner.UnionQuery
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.LogicalPlan
@@ -28,7 +29,7 @@ import org.neo4j.cypher.internal.ir.v3_2.PeriodicCommit
 
 case class CompilationState(queryText: String,
                             startPosition: Option[InputPosition],
-                            plannerName: String,
+                            plannerName: PlannerName,
                             maybeStatement: Option[Statement] = None,
                             maybeSemantics: Option[SemanticState] = None,
                             maybeExtractedParams: Option[Map[String, Any]] = None,

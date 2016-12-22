@@ -24,15 +24,11 @@ import java.text.NumberFormat
 import java.time.Clock
 import java.util.{Collections, Date, Locale}
 
-import org.neo4j.cypher.internal.compatibility.v3_2.WrappedMonitors
+import org.neo4j.cypher.internal.compatibility.v3_2.{WrappedMonitors, typeConversions}
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan._
-import org.neo4j.cypher.internal.compiler.v3_2.helpers.IdentityTypeConverter
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compiler.v3_2.planner._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical._
-import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSequencer
-import org.neo4j.cypher.internal.frontend.v3_2.ast.Statement
-import org.neo4j.cypher.internal.frontend.v3_2.parser.CypherParser
+import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSequencer.newPlain
 import org.neo4j.cypher.internal.spi.v3_2.codegen.GeneratedQueryStructure
 import org.neo4j.cypher.internal.spi.v3_2.{TransactionBoundPlanContext, TransactionBoundQueryContext, TransactionalContextWrapper}
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
@@ -287,38 +283,18 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
 
   private def format(in: Option[Long]) = in.map(l => NumberFormat.getNumberInstance(Locale.US).format(l)).getOrElse("???")
 
-  private val rewriterSequencer = RewriterStepSequencer.newPlain _
+  private val rewriterSequencer = newPlain _
 
   private def ronjaCompiler(plannerName: CostBasedPlannerName, metricsFactoryInput: MetricsFactory = SimpleMetricsFactory)(graph: GraphDatabaseQueryService): CypherCompiler = {
+
     val kernelMonitors = new KernelMonitors()
     val monitors = WrappedMonitors(kernelMonitors)
-    val parser = new CypherParser
-    val rewriter = new ASTRewriter(rewriterSequencer)
-    val planBuilderMonitor = monitors.newMonitor[NewLogicalPlanSuccessRateMonitor](monitorTag)
-    val metricsFactory = CachedMetricsFactory(metricsFactoryInput)
-    val queryPlanner = QueryPlanner()
-    val runtimeBuilder: RuntimeBuilder = SilentFallbackRuntimeBuilder(InterpretedPlanBuilder(clock, monitors, IdentityTypeConverter), CompiledPlanBuilder(clock, GeneratedQueryStructure))
-    val planner: ExecutablePlanBuilder = CostBasedPipeBuilderFactory.create(
-      monitors = monitors,
-      metricsFactory = metricsFactory,
-      plannerName = Some(plannerName),
-      rewriterSequencer = rewriterSequencer,
-      queryPlanner = queryPlanner,
-      runtimeBuilder = runtimeBuilder,
-      config = config,
-      updateStrategy = defaultUpdateStrategy,
-      publicTypeConverter = identity,
-      queryGraphSolver = null
-    )
-    val referenceCreator: (Option[PlanFingerprint]) => PlanFingerprintReference =
-      new PlanFingerprintReference(clock, config.queryPlanTTL, config.statsDivergenceThreshold, _)
-    val planCacheFactory = () => new LFUCache[Statement, ExecutionPlan](100)
-    val cacheHitMonitor = monitors.newMonitor[CypherCacheHitMonitor[Statement]](monitorTag)
-    val cacheFlushMonitor =
-      monitors.newMonitor[CypherCacheFlushingMonitor[CacheAccessor[Statement, ExecutionPlan]]](monitorTag)
-    val cache = new MonitoringCacheAccessor[Statement, ExecutionPlan](cacheHitMonitor)
+    val infoLogger = new InfoLogger {
+      override def info(message: String) = {}
+    }
 
-    CypherCompiler(planner, rewriter, cache, planCacheFactory, cacheFlushMonitor, monitors, rewriterSequencer, referenceCreator, IdentityTypeConverter, metricsFactory, null, null, null)
+    CypherCompilerFactory.costBasedCompiler(config, Clock.systemUTC(), GeneratedQueryStructure, monitors, infoLogger,
+      newPlain, None, None, None, typeConversions)
   }
 
   case class QueryExecutionResult(compiler: String, dbHits: Option[Long], plan: InternalPlanDescription) {

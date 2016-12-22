@@ -24,7 +24,6 @@ import java.time.Clock
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi.CodeStructure
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.RuntimeTypeConverter
-import org.neo4j.cypher.internal.compiler.v3_2.planner.CostBasedPipeBuilderFactory
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.idp._
 import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSequencer
@@ -33,7 +32,8 @@ import org.neo4j.cypher.internal.frontend.v3_2.ast.Statement
 object CypherCompilerFactory {
   val monitorTag = "cypher3.2"
 
-  def costBasedCompiler(config: CypherCompilerConfiguration, clock: Clock,
+  def costBasedCompiler(config: CypherCompilerConfiguration,
+                        clock: Clock,
                         structure: CodeStructure[GeneratedQuery],
                         monitors: Monitors, logger: InfoLogger,
                         rewriterSequencer: (String) => RewriterStepSequencer,
@@ -43,30 +43,14 @@ object CypherCompilerFactory {
                         typeConverter: RuntimeTypeConverter): CypherCompiler = {
     val rewriter = new ASTRewriter(rewriterSequencer)
     val metricsFactory = CachedMetricsFactory(SimpleMetricsFactory)
-    val queryPlanner = QueryPlanner()
-
-    val compiledPlanBuilder = CompiledPlanBuilder(clock, structure)
-    val interpretedPlanBuilder = InterpretedPlanBuilder(clock, monitors, typeConverter)
 
     // Pick runtime based on input
-    val runtimeBuilder = RuntimeBuilder.create(runtimeName, interpretedPlanBuilder, compiledPlanBuilder, config.useErrorsOverWarnings)
+    val runtimePipeline = RuntimeBuilder.create(runtimeName, config.useErrorsOverWarnings)
 
     val planner = plannerName.getOrElse(CostBasedPlannerName.default)
     val queryGraphSolver = createQueryGraphSolver(planner, monitors, config)
 
     val actualUpdateStrategy: UpdateStrategy = updateStrategy.getOrElse(defaultUpdateStrategy)
-    val costPlanProducer = CostBasedPipeBuilderFactory.create(
-      monitors = monitors,
-      metricsFactory = metricsFactory,
-      queryPlanner = queryPlanner,
-      rewriterSequencer = rewriterSequencer,
-      plannerName = plannerName,
-      runtimeBuilder = runtimeBuilder,
-      config = config,
-      updateStrategy = actualUpdateStrategy,
-      publicTypeConverter = typeConverter.asPublicType,
-      queryGraphSolver
-    )
 
     val createFingerprintReference: (Option[PlanFingerprint]) => PlanFingerprintReference =
       new PlanFingerprintReference(clock, config.queryPlanTTL, config.statsDivergenceThreshold, _)
@@ -75,7 +59,8 @@ object CypherCompilerFactory {
     val cacheMonitor = monitors.newMonitor[AstCacheMonitor](monitorTag)
     val cache = new MonitoringCacheAccessor[Statement, ExecutionPlan](cacheMonitor)
 
-    CypherCompiler(costPlanProducer, rewriter, cache, planCacheFactory, cacheMonitor, monitors, rewriterSequencer, createFingerprintReference, typeConverter, metricsFactory, queryGraphSolver, config, actualUpdateStrategy)
+    CypherCompiler(runtimePipeline, rewriter, cache, planCacheFactory, cacheMonitor, monitors, rewriterSequencer,
+      createFingerprintReference, typeConverter, metricsFactory, queryGraphSolver, config, actualUpdateStrategy, clock, structure)
   }
 
   def createQueryGraphSolver(n: CostBasedPlannerName, monitors: Monitors, config: CypherCompilerConfiguration): QueryGraphSolver = n match {

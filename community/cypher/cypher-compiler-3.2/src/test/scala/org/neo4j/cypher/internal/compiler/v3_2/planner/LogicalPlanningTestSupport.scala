@@ -19,15 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.planner
 
-import java.time.Clock
-
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_2._
-import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.plannerQuery.StatementConverters._
 import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters._
-import org.neo4j.cypher.internal.compiler.v3_2.helpers.IdentityTypeConverter
-import org.neo4j.cypher.internal.compiler.v3_2.phases.{CompilationState, Context, LateAstRewriting, RewriteProcedureCalls}
+import org.neo4j.cypher.internal.compiler.v3_2.phases._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.execution.PipeExecutionBuilderContext
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical._
@@ -35,7 +31,9 @@ import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.idp._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.v3_2.spi._
+import org.neo4j.cypher.internal.compiler.v3_2.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSequencer
+import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSequencer.newPlain
 import org.neo4j.cypher.internal.frontend.v3_2._
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.parser.CypherParser
@@ -160,21 +158,6 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     FakePlan(ids)(CardinalityEstimation.lift(RegularPlannerQuery(qg), Cardinality(0)))
   }
 
-  def newPlanner(metricsFactory: MetricsFactory): ExecutablePlanBuilder = {
-    val queryPlanner = new QueryPlanner()
-    CostBasedPipeBuilderFactory.create(
-      monitors = monitors,
-      metricsFactory = metricsFactory,
-      queryPlanner = queryPlanner,
-      rewriterSequencer = rewriterSequencer,
-      plannerName = None,
-      runtimeBuilder = InterpretedRuntimeBuilder(InterpretedPlanBuilder(Clock.systemUTC(), monitors, IdentityTypeConverter)),
-      updateStrategy = defaultUpdateStrategy,
-      config = config,
-      publicTypeConverter = identity,
-      queryGraphSolver = null)
-  }
-
   val config = CypherCompilerConfiguration(
     queryCacheSize = 100,
     statsDivergenceThreshold = 0.5,
@@ -191,6 +174,30 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     queries.head
   }
 
+  val pipeLine =
+    Parsing andThen
+    PreparatoryRewriting andThen
+    SemanticAnalysis(warn = true) andThen
+    AstRewriting(newPlain, shouldExtractParams = false) andThen
+    RewriteProcedureCalls andThen
+    Namespacer andThen
+    rewriteEqualityToInPredicate andThen
+    CNFNormalizer andThen
+    LateAstRewriting andThen
+//    ResolveTokens andThen
+    // This fakes pattern expression naming for testing purposes
+    // In the actual code path, this renaming happens as part of planning
+    //
+    // cf. QueryPlanningStrategy
+    //
+    Do(rewriteStuff _) andThen
+    CreatePlannerQuery
+
+  private def rewriteStuff(input: CompilationState, context: Context): CompilationState = {
+    val newStatement = input.statement.endoRewrite(namePatternPredicatePatternElements)
+    input.copy(maybeStatement = Some(newStatement))
+  }
+
   def buildPlannerUnionQuery(query: String, procLookup: Option[QualifiedName => ProcedureSignature] = None,
                              fcnLookup: Option[QualifiedName => Option[UserFunctionSignature]] = None) = {
     val signature = ProcedureSignature(
@@ -200,34 +207,16 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       outputSignature = Some(IndexedSeq(FieldSignature("all", CTInteger))),
       accessMode = ProcedureReadOnlyAccess(Array.empty)
     )
-    val parsedStatement = parser.parse(query.replace("\r\n", "\n"))
     val mkException = new SyntaxExceptionCreator(query, Some(pos))
-    val cleanedStatement: Statement = parsedStatement.endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException)))
-    val semanticState = SemanticChecker.check(cleanedStatement, mkException)
-    val astRewriterResultStatement = astRewriter.rewrite(query, cleanedStatement, semanticState)._1
-    val resolvedStatement = (procLookup, fcnLookup) match {
-      case (None, None) => astRewriterResultStatement
-      case _ =>
-        val procs: (QualifiedName) => ProcedureSignature = procLookup.getOrElse(_ => signature)
-        val funcs: (QualifiedName) => Option[UserFunctionSignature] = fcnLookup.getOrElse(_ => None)
-        val planContext = new TestSignatureResolvingPlanContext(procs, funcs)
-        val rewriter = RewriteProcedureCalls.rewriter(planContext)
-        astRewriterResultStatement.endoRewrite(rewriter)
-    }
-    val state = CompilationState(query, None, "", Some(resolvedStatement), Some(SemanticChecker.check(cleanedStatement, mkException)))
+    val procs: (QualifiedName) => ProcedureSignature = procLookup.getOrElse(_ => signature)
+    val funcs: (QualifiedName) => Option[UserFunctionSignature] = fcnLookup.getOrElse(_ => None)
+    val planContext = new TestSignatureResolvingPlanContext(procs, funcs)
+    val state = CompilationState(query, None, CostBasedPlannerName.default)
 
-    val context = Context(null, null, null, null, null, null, mock[AstRewritingMonitor], null, null, null, null)
-    val output = (Namespacer andThen rewriteEqualityToInPredicate andThen CNFNormalizer andThen LateAstRewriting).transform(state, context)
+    val context = ContextHelper.create(exceptionCreator = mkException, planContext = planContext)
+    val output = pipeLine.transform(state, context)
 
-    // This fakes pattern expression naming for testing purposes
-    // In the actual code path, this renaming happens as part of planning
-    //
-    // cf. QueryPlanningStrategy
-    //
-
-    val namedAst: Statement = output.statement.endoRewrite(namePatternPredicatePatternElements)
-    val unionQuery = toUnionQuery(namedAst.asInstanceOf[Query], output.semanticTable)
-    unionQuery
+    output.unionQuery
   }
 
   def identHasLabel(name: String, labelName: String): HasLabels = {

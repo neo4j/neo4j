@@ -115,7 +115,7 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
       ),
       Clock.systemUTC(),
       GeneratedQueryStructure,
-      new WrappedMonitors(kernelMonitors),
+      WrappedMonitors(kernelMonitors),
       new StringInfoLogger(NullLog.getInstance),
       plannerName = Some(IDPPlannerName),
       runtimeName = Some(CompiledRuntimeName),

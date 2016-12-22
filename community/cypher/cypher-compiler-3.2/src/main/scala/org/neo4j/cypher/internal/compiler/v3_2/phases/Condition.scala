@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.phases
 
+import org.neo4j.cypher.internal.compiler.v3_2.executionplan.ExecutionPlan
 import org.neo4j.cypher.internal.compiler.v3_2.planner.UnionQuery
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticState
@@ -35,7 +36,8 @@ case class Contains[T: ClassTag](implicit manifest: Manifest[T]) extends Conditi
     classOf[Statement],
     classOf[SemanticState],
     classOf[UnionQuery],
-    classOf[LogicalPlan]
+    classOf[LogicalPlan],
+    classOf[ExecutionPlan]
   )
 
   assert(acceptableTypes.contains(manifest.runtimeClass))
@@ -46,6 +48,7 @@ case class Contains[T: ClassTag](implicit manifest: Manifest[T]) extends Conditi
       case x if classOf[SemanticState] == x && state.maybeSemantics.isEmpty => Seq("Semantic State missing")
       case x if classOf[UnionQuery] == x && state.maybeUnionQuery.isEmpty => Seq("Union query missing")
       case x if classOf[LogicalPlan] == x && state.maybeLogicalPlan.isEmpty => Seq("Logical plan missing")
+      case x if classOf[ExecutionPlan] == x && state.maybeExecutionPlan.isEmpty => Seq("Execution plan missing")
       case _ => Seq.empty
     }
   }
