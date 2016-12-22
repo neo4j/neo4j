@@ -61,8 +61,8 @@ public class OnlineBackupCommand implements AdminCommand
             .withArgument( new OptionalNamedArg( "from", "address", "localhost:6362",
                     "Host and port of Neo4j." ) )
             .withArgument( new OptionalBooleanArg( "fallback-to-full", true,
-                    "If a failed incremental backup will move the old backup to <name>.err.<N> and fallback to a " +
-                            "full backup instead." ) )
+                    "If an incremental backup fails backup will move the old backup to <name>.err.<N> and " +
+                            "fallback to a full backup instead." ) )
             .withArgument( new OptionalBooleanArg( "check-consistency", true,
                     "If a consistency check should be made." ) )
             .withArgument( new OptionalCanonicalPath( "cc-report-dir", "directory", ".",

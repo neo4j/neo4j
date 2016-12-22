@@ -560,10 +560,10 @@ public class OnlineBackupCommandTest
                             "                                           backup will be attempted.%n" +
                             "  --from=<address>                         Host and port of Neo4j.%n" +
                             "                                           [default:localhost:6362]%n" +
-                            "  --fallback-to-full=<true|false>          If a failed incremental backup will%n" +
-                            "                                           move the old backup to <name>.err.<N>%n" +
-                            "                                           and fallback to a full backup%n" +
-                            "                                           instead. [default:true]%n" +
+                            "  --fallback-to-full=<true|false>          If an incremental backup fails backup%n" +
+                            "                                           will move the old backup to%n" +
+                            "                                           <name>.err.<N> and fallback to a full%n" +
+                            "                                           backup instead. [default:true]%n" +
                             "  --check-consistency=<true|false>         If a consistency check should be%n" +
                             "                                           made. [default:true]%n" +
                             "  --cc-report-dir=<directory>              Directory where consistency report%n" +
