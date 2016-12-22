@@ -21,23 +21,16 @@ package org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi.MethodStructure
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.{CodeGenContext, Variable}
-import org.neo4j.cypher.internal.frontend.v3_2.symbols
 
 case class NodeExpression(nodeIdVar: Variable) extends CodeGenExpression {
 
-  assert(nodeIdVar.codeGenType.ct == symbols.CTNode)
+  assert(nodeIdVar.codeGenType == CodeGenType.primitiveNode)
 
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {}
 
-  override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) = {
+  override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) =
     // Nullable primitive variables already have their nullValue (-1L) in the same domain as their possible values and do not need a null check
-    if (nodeIdVar.nullable && !nodeIdVar.codeGenType.isPrimitive) {
-      structure.nullableReference(nodeIdVar.name, nodeIdVar.codeGenType,
-        structure.node(nodeIdVar.name, nodeIdVar.codeGenType))
-    }
-    else
-      structure.node(nodeIdVar.name, nodeIdVar.codeGenType)
-  }
+    structure.node(nodeIdVar.name, nodeIdVar.codeGenType)
 
   override def nullable(implicit context: CodeGenContext) = nodeIdVar.nullable
 

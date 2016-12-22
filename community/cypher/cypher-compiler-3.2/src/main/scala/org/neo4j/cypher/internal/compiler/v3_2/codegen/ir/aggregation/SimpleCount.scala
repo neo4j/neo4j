@@ -34,7 +34,7 @@ case class SimpleCount(variable: Variable, expression: CodeGenExpression, distin
     expression.init(generator)
     generator.assign(variable.name, CodeGenType.primitiveInt, generator.constantExpression(Long.box(0L)))
     if (distinct) {
-      generator.newDistinctSet(setName(variable), Seq(internalExpressionType))
+      generator.newDistinctSet(setName(variable), Seq(expression.codeGenType))
     }
   }
 
@@ -49,7 +49,7 @@ case class SimpleCount(variable: Variable, expression: CodeGenExpression, distin
                           (implicit context: CodeGenContext) = {
 
     structure.distinctSetIfNotContains(
-      setName(variable), Map(typeName(variable) ->(internalExpressionType -> internalExpression(structure))))(block)
+      setName(variable), Map(typeName(variable) -> (expression.codeGenType -> expression.generateExpression(structure))))(block)
   }
 
   private def setName(variable: Variable) = variable.name + "Set"

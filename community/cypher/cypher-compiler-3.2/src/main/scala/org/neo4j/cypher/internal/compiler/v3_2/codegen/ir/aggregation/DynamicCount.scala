@@ -40,7 +40,7 @@ class DynamicCount(opName: String, variable: Variable, expression: CodeGenExpres
     val key = groupingKey.map(_.codeGenType).toIndexedSeq
     generator.newAggregationMap(mapName, key)
     if (distinct) {
-      generator.newMapOfSets(seenSet, key, internalExpressionType)
+      generator.newMapOfSets(seenSet, key, expression.codeGenType)
     }
   }
 

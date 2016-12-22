@@ -47,9 +47,7 @@ abstract class BaseAggregateExpression(expression: CodeGenExpression, distinct: 
                           (implicit context: CodeGenContext) = {
     expression match {
       case NodeExpression(v) => primitiveIfNot(v, structure)(block(_))
-      case NodeProjection(v) => primitiveIfNot(v, structure)(block(_))
       case RelationshipExpression(v) => primitiveIfNot(v, structure)(block(_))
-      case RelationshipProjection(v) => primitiveIfNot(v, structure)(block(_))
       case _ =>
         val tmpName = context.namer.newVarName()
         structure.assign(tmpName, expression.codeGenType, expression.generateExpression(structure))
@@ -62,24 +60,6 @@ abstract class BaseAggregateExpression(expression: CodeGenExpression, distinct: 
           else block(body)
         }
     }
-  }
-
-  protected def internalExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext): E = {
-    expression match {
-      case NodeExpression(v) => structure.loadVariable(v.name)
-      case NodeProjection(v) => structure.loadVariable(v.name)
-      case RelationshipExpression(v) => structure.loadVariable(v.name)
-      case RelationshipProjection(v) => structure.loadVariable(v.name)
-      case _ => expression.generateExpression(structure)
-    }
-  }
-
-  protected def internalExpressionType(implicit context: CodeGenContext) = expression match {
-    case NodeExpression(v) => CodeGenType.primitiveNode
-    case NodeProjection(v) => CodeGenType.primitiveNode
-    case RelationshipExpression(v) => CodeGenType.primitiveRel
-    case RelationshipProjection(v) => CodeGenType.primitiveRel
-    case _ => expression.codeGenType
   }
 
   private def primitiveIfNot[E](v: Variable, structure: MethodStructure[E])(block: MethodStructure[E] => Unit)

@@ -21,22 +21,15 @@ package org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi.MethodStructure
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.{CodeGenContext, Variable}
-import org.neo4j.cypher.internal.frontend.v3_2.symbols
 
 case class RelationshipExpression(relId: Variable) extends CodeGenExpression {
-  assert(relId.codeGenType.ct == symbols.CTRelationship)
+  assert(relId.codeGenType == CodeGenType.primitiveRel)
 
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {}
 
-  override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) = {
+  override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) =
     // Nullable primitive variables already have their nullValue (-1L) in the same domain as their possible values and do not need a null check
-    if (relId.nullable && !relId.codeGenType.isPrimitive) {
-      structure.nullableReference(relId.name, relId.codeGenType,
-        structure.relationship(relId.name, relId.codeGenType))
-    }
-    else
-      structure.relationship(relId.name, relId.codeGenType)
-  }
+    structure.relationship(relId.name, relId.codeGenType)
 
   override def nullable(implicit context: CodeGenContext) = relId.nullable
 
