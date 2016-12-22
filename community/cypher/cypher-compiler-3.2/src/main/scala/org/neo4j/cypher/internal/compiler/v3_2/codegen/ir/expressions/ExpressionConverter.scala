@@ -84,9 +84,10 @@ object ExpressionConverter {
       case CTNode => NodeProjection(variable)
       case CTRelationship => RelationshipProjection(variable)
       case CTString | CTBoolean | CTInteger | CTFloat => LoadVariable(variable)
+      case ListType(CTString) | ListType(CTBoolean) | ListType(CTInteger) | ListType(CTFloat) => LoadVariable(variable)
       case CTAny => AnyProjection(variable)
       case CTMap => AnyProjection(variable)
-      case ListType(_) => AnyProjection(variable) // TODO: We could have a more specialized projection when the inner type is known
+      case ListType(_) => AnyProjection(variable) // TODO: We could have a more specialized projection when the inner type is known to be node or relationship
       case _ => throw new CantCompileQueryException(s"The compiled runtime cannot handle results of type ${variable.codeGenType.ct}")
     }
   }

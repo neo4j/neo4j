@@ -1146,7 +1146,7 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     result.toList should equal(List(Map("a.prop" -> null, "count(a)" -> 6), Map("a.prop" -> "value", "count(a)" -> 3)))
   }
 
-  test("unwind list") { // UNWIND [1, 2, 3] as x RETURN x
+  test("unwind list of integers") { // UNWIND [1, 2, 3] as x RETURN x
     // given
     val listLiteral = ListLiteral(Seq(
       SignedDecimalIntegerLiteral("1")(pos),
@@ -1165,7 +1165,7 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     result.toList should equal(List(Map("x" -> 1L), Map("x" -> 2L), Map("x" -> 3L)))
   }
 
-  test("unwind list with projection") { // UNWIND [1, 2, 3] as x WITH x as y RETURN y
+  test("unwind list of integers with projection") { // UNWIND [1, 2, 3] as x WITH x as y RETURN y
     // given
     val listLiteral = literalIntList(1, 2, 3)
 
@@ -1179,6 +1179,21 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     // then
     val result = getResult(compiled, "y")
     result.toList should equal(List(Map("y" -> 1L), Map("y" -> 2L), Map("y" -> 3L)))
+  }
+
+  test("projection of int list") { // WITH [1, 2, 3] as x RETURN x
+    // given
+    val listLiteral = literalIntList(1, 2, 3)
+
+    val projection = Projection(SingleRow()(solved), Map("x" -> listLiteral))(solved)
+    val plan = ProduceResult(List("x"), projection)
+
+    // when
+    val compiled = compileAndExecute(plan)
+
+    // then
+    val result = getResult(compiled, "x")
+    result.toList should equal(List(Map("x" -> List(1L, 2L, 3L))))
   }
 
   private def compile(plan: LogicalPlan) = {
