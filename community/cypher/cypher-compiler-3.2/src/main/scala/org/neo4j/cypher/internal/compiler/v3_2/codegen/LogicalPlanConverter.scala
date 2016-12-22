@@ -44,7 +44,7 @@ object LogicalPlanConverter {
     case p: NodeByIdSeek => nodeByIdSeekAsCodeGenPlan(p)
     case p: NodeUniqueIndexSeek => nodeUniqueIndexSeekAsCodeGen(p)
     case p: Expand => expandAsCodeGenPlan(p)
-    case p: OptionalExpand => optExpandAsCodeGenPlan(p)
+    case p: OptionalExpand => optionalExpandAsCodeGenPlan(p)
     case p: NodeHashJoin => nodeHashJoinAsCodeGenPlan(p)
     case p: CartesianProduct => cartesianProductAsCodeGenPlan(p)
     case p: Selection => selectionAsCodeGenPlan(p)
@@ -336,7 +336,7 @@ object LogicalPlanConverter {
     }
   }
 
-  private def optExpandAsCodeGenPlan(optionalExpand: OptionalExpand) = new CodeGenPlan {
+  private def optionalExpandAsCodeGenPlan(optionalExpand: OptionalExpand) = new CodeGenPlan {
 
     override val logicalPlan: LogicalPlan = optionalExpand
 

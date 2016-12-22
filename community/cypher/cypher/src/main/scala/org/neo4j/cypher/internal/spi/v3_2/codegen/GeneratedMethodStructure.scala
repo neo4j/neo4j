@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.codegen.CompiledConversionUtils.CompositeKey
 import org.neo4j.cypher.internal.codegen._
 import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.commands.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.compiler.v3_2.codegen._
-import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions.{CodeGenType, IntType, Parameter => _, ReferenceType}
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions.{BoolType, CodeGenType, FloatType, IntType, Parameter => _, ReferenceType}
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi._
 import org.neo4j.cypher.internal.compiler.v3_2.helpers._
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
@@ -1026,10 +1026,21 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     generator.assign(localVariable, constant(null))
   }
 
+  override def declareAndInitialize(varName: String, codeGenType: CodeGenType) = {
+    val localVariable = generator.declare(lowerType(codeGenType), varName)
+    locals += (varName -> localVariable)
+    codeGenType match {
+      case CodeGenType(symbols.CTInteger, IntType) => constant(0L)
+      case CodeGenType(symbols.CTFloat, FloatType) => constant(0.0)
+      case CodeGenType(symbols.CTBoolean, BoolType) => constant(false)
+      case CodeGenType(symbols.CTInteger, _) => constant(0L)
+      case _ => generator.assign(localVariable, nullValue(codeGenType))
+    }
+  }
+
   override def declare(varName: String, codeGenType: CodeGenType) = {
     val localVariable = generator.declare(lowerType(codeGenType), varName)
     locals += (varName -> localVariable)
-    generator.assign(localVariable, nullValue(codeGenType))
   }
 
   override def assign(varName: String, codeGenType: CodeGenType, expression: Expression) = {

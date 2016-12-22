@@ -43,6 +43,7 @@ trait MethodStructure[E] {
   def updateFlag(name: String, newValue: Boolean)
   def declarePredicate(name: String): Unit
   def assign(varName: String, codeGenType: CodeGenType, value: E): Unit
+  def declareAndInitialize(varName: String, codeGenType: CodeGenType): Unit
   def declare(varName: String, codeGenType: CodeGenType): Unit
   def declareProperty(name: String): Unit
   def declareCounter(name: String, initialValue: E): Unit
