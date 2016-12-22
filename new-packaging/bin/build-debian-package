@@ -50,6 +50,7 @@ cp ${script} ${scripts_directory}/neo4j
 cp ${script} ${scripts_directory}/neo4j-admin
 cp ${script} ${scripts_directory}/neo4j-import
 cp ${script} ${scripts_directory}/neo4j-shell
+cp ${script} ${scripts_directory}/cypher-shell
 if [ ${package_name} = "neo4j-enterprise" ]
 then
   cp ${script} ${scripts_directory}/neo4j-backup
