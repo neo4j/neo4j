@@ -1146,6 +1146,41 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     result.toList should equal(List(Map("a.prop" -> null, "count(a)" -> 6), Map("a.prop" -> "value", "count(a)" -> 3)))
   }
 
+  test("unwind list") { // UNWIND [1, 2, 3] as x RETURN x
+    // given
+    val listLiteral = ListLiteral(Seq(
+      SignedDecimalIntegerLiteral("1")(pos),
+      SignedDecimalIntegerLiteral("2")(pos),
+      SignedDecimalIntegerLiteral("3")(pos)
+    ))(pos)
+
+    val unwind = UnwindCollection(SingleRow()(solved), IdName("x"), listLiteral)(solved)
+    val plan = ProduceResult(List("x"), unwind)
+
+    // when
+    val compiled = compileAndExecute(plan)
+
+    // then
+    val result = getResult(compiled, "x")
+    result.toList should equal(List(Map("x" -> 1L), Map("x" -> 2L), Map("x" -> 3L)))
+  }
+
+  test("unwind list with projection") { // UNWIND [1, 2, 3] as x WITH x as y RETURN y
+    // given
+    val listLiteral = literalIntList(1, 2, 3)
+
+    val unwind = UnwindCollection(SingleRow()(solved), IdName("x"), listLiteral)(solved)
+    val projection = Projection(unwind, Map("y" -> varFor("x")))(solved)
+    val plan = ProduceResult(List("y"), projection)
+
+    // when
+    val compiled = compileAndExecute(plan)
+
+    // then
+    val result = getResult(compiled, "y")
+    result.toList should equal(List(Map("y" -> 1L), Map("y" -> 2L), Map("y" -> 3L)))
+  }
+
   private def compile(plan: LogicalPlan) = {
     generator.generate(plan, newMockedPlanContext, semanticTable, CostBasedPlannerName.default)
   }
@@ -1191,6 +1226,13 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
   when(semanticTable.isNode(varFor("i"))).thenReturn(true)
   when(semanticTable.isRelationship(varFor("r1"))).thenReturn(true)
   when(semanticTable.isRelationship(varFor("r2"))).thenReturn(true)
+  // x, y, z reserved for variables that are not node or relationship
+  when(semanticTable.isNode(varFor("x"))).thenReturn(false)
+  when(semanticTable.isRelationship(varFor("x"))).thenReturn(false)
+  when(semanticTable.isNode(varFor("y"))).thenReturn(false)
+  when(semanticTable.isRelationship(varFor("y"))).thenReturn(false)
+  when(semanticTable.isNode(varFor("z"))).thenReturn(false)
+  when(semanticTable.isRelationship(varFor("z"))).thenReturn(false)
 
   private val allNodes = Seq(aNode, bNode, cNode, dNode, eNode, fNode, gNode, hNode, iNode)
   private val nodesForLabel = Map("T1" -> Seq(aNode, bNode, cNode), "T2" -> Seq(fNode, gNode), "T3" -> Seq(hNode, iNode))

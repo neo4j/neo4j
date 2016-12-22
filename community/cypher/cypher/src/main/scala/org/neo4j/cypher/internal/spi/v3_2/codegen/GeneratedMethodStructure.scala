@@ -1033,7 +1033,6 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
       case CodeGenType(symbols.CTInteger, IntType) => constant(0L)
       case CodeGenType(symbols.CTFloat, FloatType) => constant(0.0)
       case CodeGenType(symbols.CTBoolean, BoolType) => constant(false)
-      case CodeGenType(symbols.CTInteger, _) => constant(0L)
       case _ => generator.assign(localVariable, nullValue(codeGenType))
     }
   }
