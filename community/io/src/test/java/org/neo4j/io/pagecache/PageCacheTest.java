@@ -5420,4 +5420,26 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             }
         }
     }
+
+    @Test
+    public void isWriteLockingMustBeTrueForCursorOpenedWithSharedWriteLock() throws Exception
+    {
+        configureStandardPageCache();
+        try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
+              PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
+        {
+            assertTrue( cursor.isWriteLocked() );
+        }
+    }
+
+    @Test
+    public void isWriteLockingMustBeFalseForCursorOpenedWithSharedReadLock() throws Exception
+    {
+        configureStandardPageCache();
+        try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
+              PageCursor cursor = pf.io( 0, PF_SHARED_READ_LOCK ) )
+        {
+            assertFalse( cursor.isWriteLocked() );
+        }
+    }
 }

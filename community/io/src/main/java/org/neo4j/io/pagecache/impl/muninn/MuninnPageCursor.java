@@ -32,6 +32,7 @@ import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 import org.neo4j.io.pagecache.tracing.PinEvent;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.flag;
 
 abstract class MuninnPageCursor extends PageCursor
@@ -790,5 +791,11 @@ abstract class MuninnPageCursor extends PageCursor
         {
             UnsafeUtil.setMemory( pointer, pageSize, (byte) 0 );
         }
+    }
+
+    @Override
+    public boolean isWriteLocked()
+    {
+        return (pf_flags & PF_SHARED_WRITE_LOCK) == PF_SHARED_WRITE_LOCK;
     }
 }

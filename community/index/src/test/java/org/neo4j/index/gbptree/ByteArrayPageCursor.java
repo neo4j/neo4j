@@ -289,4 +289,12 @@ class ByteArrayPageCursor extends PageCursor
     {
         Arrays.fill( buffer.array(), (byte) 0 );
     }
+
+    @Override
+    public boolean isWriteLocked()
+    {
+        // Because we allow writes; they can't possibly conflict because this class is meant to be used by only one
+        // thread at a time anyway.
+        return true;
+    }
 }

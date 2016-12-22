@@ -1258,4 +1258,40 @@ public class CompositePageCursorTest
         second.checkAndClearCursorException();
         cursor.checkAndClearCursorException();
     }
+
+    @Test
+    public void isWriteLockedMustBeTrueIfBothCursorsAreWriteLocked() throws Exception
+    {
+        PageCursor cursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
+        first.setWriteLocked( true );
+        second.setWriteLocked( true );
+        assertTrue( cursor.isWriteLocked() );
+    }
+
+    @Test
+    public void isWriteLockedMustBeFalseIfBothCursorsAreNotWriteLocked() throws Exception
+    {
+        PageCursor cursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
+        first.setWriteLocked( false );
+        second.setWriteLocked( false );
+        assertFalse( cursor.isWriteLocked() );
+    }
+
+    @Test
+    public void isWriteLockedMustBeFalseIfFirstCursorIsNotWriteLocked() throws Exception
+    {
+        PageCursor cursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
+        first.setWriteLocked( false );
+        second.setWriteLocked( true );
+        assertFalse( cursor.isWriteLocked() );
+    }
+
+    @Test
+    public void isWriteLockedMustBeFalseIfSecondCursorIsNotWriteLocked() throws Exception
+    {
+        PageCursor cursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
+        first.setWriteLocked( true );
+        second.setWriteLocked( false );
+        assertFalse( cursor.isWriteLocked() );
+    }
 }

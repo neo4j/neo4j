@@ -260,6 +260,12 @@ public class DelegatingPageCursor extends PageCursor
         delegate.zapPage();
     }
 
+    @Override
+    public boolean isWriteLocked()
+    {
+        return delegate.isWriteLocked();
+    }
+
     public DelegatingPageCursor( PageCursor delegate )
     {
         this.delegate = delegate;

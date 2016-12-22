@@ -42,12 +42,11 @@ public class StubPageCursor extends PageCursor
     private boolean closed;
     private boolean needsRetry;
     protected StubPageCursor linkedCursor;
+    private boolean writeLocked;
 
     public StubPageCursor( long initialPageId, int pageSize )
     {
-        this.pageId = initialPageId;
-        this.pageSize = pageSize;
-        this.page = new ByteBufferPage( ByteBuffer.allocateDirect( pageSize ) );
+        this( initialPageId, ByteBuffer.allocateDirect( pageSize ) );
     }
 
     public StubPageCursor( long initialPageId, ByteBuffer buffer )
@@ -55,6 +54,7 @@ public class StubPageCursor extends PageCursor
         this.pageId = initialPageId;
         this.pageSize = buffer.capacity();
         this.page = new ByteBufferPage( buffer );
+        this.writeLocked = true;
     }
 
     @Override
@@ -416,5 +416,16 @@ public class StubPageCursor extends PageCursor
                "currentOffset=" + currentOffset +
                ", page=" + page +
                '}';
+    }
+
+    @Override
+    public boolean isWriteLocked()
+    {
+        return writeLocked;
+    }
+
+    public void setWriteLocked( boolean writeLocked )
+    {
+        this.writeLocked = writeLocked;
     }
 }

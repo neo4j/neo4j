@@ -354,4 +354,10 @@ public abstract class PageCursor implements AutoCloseable
      * Sets all bytes in this page to zero, as if this page was newly allocated at the end of the file.
      */
     public abstract void zapPage();
+
+    /**
+     * @return {@code true} if this page cursor was opened with {@link PagedFile#PF_SHARED_WRITE_LOCK},
+     * {@code false} otherwise.
+     */
+    public abstract boolean isWriteLocked();
 }

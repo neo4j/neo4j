@@ -381,4 +381,10 @@ class PageAwareByteArrayCursor extends PageCursor
     {
         current.zapPage();
     }
+
+    @Override
+    public boolean isWriteLocked()
+    {
+        return current == null || current.isWriteLocked();
+    }
 }
