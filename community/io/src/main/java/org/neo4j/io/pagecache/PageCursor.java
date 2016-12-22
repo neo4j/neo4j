@@ -288,6 +288,10 @@ public abstract class PageCursor implements AutoCloseable
      * <p>
      * If the length reaches beyond the end of either cursor, then only as many bytes as are available in this cursor,
      * or can fit in the target cursor, are actually copied.
+     * <p>
+     * <strong>Note</strong> that {@code copyTo} is only guaranteed to work when both target and source cursor are from
+     * the <em>same</em> page cache implementation. Using wrappers, delegates or mixing cursor implementations may
+     * produce unspecified errors.
      *
      * @param sourceOffset The offset into this page to copy from.
      * @param targetCursor The cursor the data will be copied to.
