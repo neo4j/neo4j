@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+set -eu
+# tarball-name-2-debian-version:
+# Extract version from tarball filename and Debianify it. For example 'neo4j-community-3.1.0-unix.tar.gz' and
+# 'neo4j-enterprise-3.2.0-alpha02-unix.tar.gz' should yield '3.1.0' and '3.2.0-alpha02', respectively
+
+if [ $# -ne 1 ]
+then
+  echo "Usage: ${0} <tarball filename>"
+  exit 1
+fi
+
+tarball_filename=${1}
+
+edition_version_extension=${tarball_filename#*-}
+version_extension=${edition_version_extension#*-}
+version=${version_extension%-*}
+echo "version: '${version}'" 1>&2
+
+debianized_version=${version/-/.}
+echo "version debianized: '${version}'" 1>&2
+
+echo ${debianized_version}
