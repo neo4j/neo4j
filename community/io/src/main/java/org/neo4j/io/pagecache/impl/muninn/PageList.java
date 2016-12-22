@@ -197,6 +197,11 @@ class PageList
         OffHeapPageLock.unlockFlush( offLock( pageRef ), stamp, success );
     }
 
+    public void explicitlyMarkPageUnmodifiedUnderExclusiveLock( long pageRef )
+    {
+        OffHeapPageLock.explicitlyMarkPageUnmodifiedUnderExclusiveLock( offLock( pageRef ) );
+    }
+
     public int getCachePageSize()
     {
         return cachePageSize;
@@ -290,7 +295,7 @@ class PageList
     {
         if ( swapper == null )
         {
-            throw new IllegalArgumentException( "swapper cannot be null" );
+            throw swapperCannotBeNull();
         }
         int currentSwapper = getSwapperId( pageRef );
         long currentFilePageId = getFilePageId( pageRef );
@@ -313,7 +318,12 @@ class PageList
         setSwapperId( pageRef, swapperId ); // Page now considered isBoundTo( swapper, filePageId )
     }
 
-    private IllegalStateException cannotFaultException( long pageRef, PageSwapper swapper, int swapperId,
+    private static IllegalArgumentException swapperCannotBeNull()
+    {
+        return new IllegalArgumentException( "swapper cannot be null" );
+    }
+
+    private static IllegalStateException cannotFaultException( long pageRef, PageSwapper swapper, int swapperId,
                                                         long filePageId, int currentSwapper, long currentFilePageId )
     {
         String msg = format(
@@ -326,6 +336,32 @@ class PageList
 
     public boolean tryEvict( long pageRef, PageSwapper swapper )
     {
+        if ( swapper == null )
+        {
+            throw swapperCannotBeNull();
+        }
+        if ( tryExclusiveLock( pageRef ) )
+        {
+            if ( isLoaded( pageRef ) )
+            {
+                clearBinding( pageRef );
+                if ( isModified( pageRef ) )
+                {
+                    explicitlyMarkPageUnmodifiedUnderExclusiveLock( pageRef );
+                }
+                return true;
+            }
+            else
+            {
+                unlockExclusive( pageRef );
+            }
+        }
         return false;
+    }
+
+    private void clearBinding( long pageRef )
+    {
+        setFilePageId( pageRef, PageCursor.UNBOUND_PAGE_ID );
+        setSwapperId( pageRef, 0 );
     }
 }

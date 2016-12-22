@@ -37,6 +37,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongFunction;
 
 import org.neo4j.io.ByteUnit;
@@ -70,7 +72,8 @@ public class PageListTest
     public static Iterable<Object[]> parameters()
     {
         LongFunction<Object[]> toArray = x -> new Object[]{x};
-        return () -> Arrays.stream( pageIds ).mapToObj( toArray ).iterator();
+//        return () -> Arrays.stream( pageIds ).mapToObj( toArray ).iterator();
+        return () -> Arrays.stream( new long[]{0} ).mapToObj( toArray ).iterator();
     }
 
     private static ExecutorService executor;
@@ -712,6 +715,17 @@ public class PageListTest
     }
 
     @Test
+    public void turningExclusiveLockIntoWriteLockMustRaiseModifiedFlag() throws Exception
+    {
+        assertFalse( pageList.isModified( pageRef ) );
+        assertTrue( pageList.tryExclusiveLock( pageRef ) );
+        assertFalse( pageList.isModified( pageRef ) );
+        pageList.unlockExclusiveAndTakeWriteLock( pageRef );
+        assertTrue( pageList.isModified( pageRef ) );
+        pageList.unlockWrite( pageRef );
+    }
+
+    @Test
     public void releasingFlushLockMustLowerModifiedFlagIfSuccessful() throws Exception
     {
         assertTrue( pageList.tryWriteLock( pageRef ) );
@@ -802,6 +816,47 @@ public class PageListTest
         assertFalse( pageList.isModified( prevPageRef ) );
         assertTrue( pageList.isModified( pageRef ) );
         assertFalse( pageList.isModified( nextPageRef ) );
+    }
+
+    @Test( expected = IllegalStateException.class )
+    public void disallowUnlockedPageToExplicitlyLowerModifiedFlag() throws Exception
+    {
+        pageList.explicitlyMarkPageUnmodifiedUnderExclusiveLock( pageRef );
+    }
+
+    @Test( expected = IllegalStateException.class )
+    public void disallowReadLockedPageToExplicitlyLowerModifiedFlag() throws Exception
+    {
+        pageList.tryOptimisticReadLock( pageRef );
+        pageList.explicitlyMarkPageUnmodifiedUnderExclusiveLock( pageRef );
+    }
+
+    @Test( expected = IllegalStateException.class )
+    public void disallowFlushLockedPageToExplicitlyLowerModifiedFlag() throws Exception
+    {
+        assertThat( pageList.tryFlushLock( pageRef ), is( not( 0L ) ) );
+        pageList.explicitlyMarkPageUnmodifiedUnderExclusiveLock( pageRef );
+    }
+
+    @Test( expected = IllegalStateException.class )
+    public void disallowWriteLockedPageToExplicitlyLowerModifiedFlag() throws Exception
+    {
+        assertTrue( pageList.tryWriteLock( pageRef ) );
+        pageList.explicitlyMarkPageUnmodifiedUnderExclusiveLock( pageRef );
+    }
+
+    @Test
+    public void allowExclusiveLockedPageToExplicitlyLowerModifiedFlag() throws Exception
+    {
+        assertFalse( pageList.isModified( pageRef ) );
+        assertTrue( pageList.tryWriteLock( pageRef ) );
+        pageList.unlockWrite( pageRef );
+        assertTrue( pageList.isModified( pageRef ) );
+        assertTrue( pageList.tryExclusiveLock( pageRef ) );
+        assertTrue( pageList.isModified( pageRef ) );
+        pageList.explicitlyMarkPageUnmodifiedUnderExclusiveLock( pageRef );
+        assertFalse( pageList.isModified( pageRef ) );
+        pageList.unlockExclusive( pageRef );
     }
 
     // xxx ---[ Page state tests ]---
@@ -1178,18 +1233,110 @@ public class PageListTest
     }
 
     @Test
+    public void tryEvictThatFailsOnExclusiveLockMustNotUndoSaidLock() throws Exception
+    {
+        doFault( 1, 42 ); // page is now loaded
+        // pages are delivered from the fault routine with the exclusive lock already held!
+        pageList.tryEvict( pageRef, DUMMY_SWAPPER ); // This attempt will fail
+        assertTrue( pageList.isExclusivelyLocked( pageRef ) ); // page should still have its lock
+    }
+
+    @Test
     public void tryEvictMustFailIfPageIsNotLoaded() throws Exception
     {
         assertFalse( pageList.tryEvict( pageRef, DUMMY_SWAPPER ) );
     }
-    // todo try evict must leave page exclusively locked on success
+
+    @Test
+    public void tryEvictMustWhenPageIsNotLoadedMustNotLeavePageLocked() throws Exception
+    {
+        pageList.tryEvict( pageRef, DUMMY_SWAPPER ); // This attempt fails
+        assertFalse( pageList.isExclusivelyLocked( pageRef ) ); // Page should not be left in locked state
+    }
+
+    @Test( expected = IllegalArgumentException.class )
+    public void tryEvictMustThrowIfSwapperIsNull() throws Exception
+    {
+        pageList.tryEvict( pageRef, null );
+    }
+
+    @Test
+    public void tryEvictMustLeavePageExclusivelyLockedOnSuccess() throws Exception
+    {
+        doFault( 1, 42 ); // page now bound & exclusively locked
+        pageList.unlockExclusive( pageRef ); // no longer exclusively locked; can now be evicted
+        assertTrue( pageList.tryEvict( pageRef, DUMMY_SWAPPER ) );
+        pageList.unlockExclusive( pageRef ); // will throw if lock is not held
+    }
+
+    @Test
+    public void pageMustNotBeLoadedAfterSuccessfulEviction() throws Exception
+    {
+        doFault( 1, 42 ); // page now bound & exclusively locked
+        pageList.unlockExclusive( pageRef ); // no longer exclusively locked; can now be evicted
+        assertTrue( pageList.isLoaded( pageRef ) );
+        pageList.tryEvict( pageRef, DUMMY_SWAPPER );
+        assertFalse( pageList.isLoaded( pageRef ) );
+    }
+
+    @Test
+    public void pageMustNotBeBoundAfterSuccessfulEviction() throws Exception
+    {
+        doFault( 1, 42 ); // page now bound & exclusively locked
+        pageList.unlockExclusive( pageRef ); // no longer exclusively locked; can now be evicted
+        assertTrue( pageList.isBoundTo( pageRef, 1, 42 ) );
+        assertTrue( pageList.isLoaded( pageRef ) );
+        assertThat( pageList.getSwapperId( pageRef ), is( 1 ) );
+        pageList.tryEvict( pageRef, DUMMY_SWAPPER );
+        assertFalse( pageList.isBoundTo( pageRef, 1, 42 ) );
+        assertFalse( pageList.isLoaded( pageRef ) );
+        assertThat( pageList.getSwapperId( pageRef ), is( 0 ) );
+    }
+
+    @Test
+    public void pageMustNotBeModifiedAfterSuccessfulEviction() throws Exception
+    {
+        doFault( 1, 42 );
+        pageList.unlockExclusiveAndTakeWriteLock( pageRef );
+        pageList.unlockWrite( pageRef ); // page is now modified
+        assertTrue( pageList.isModified( pageRef ) );
+        assertTrue( pageList.tryEvict( pageRef, DUMMY_SWAPPER ) );
+        assertFalse( pageList.isModified( pageRef ) );
+    }
+
+    @Test
+    public void tryEvictMustFlushPageIfModified() throws Exception
+    {
+        AtomicLong writtenFilePageId = new AtomicLong( -1 );
+        AtomicLong writtenBufferAddress = new AtomicLong( -1 );
+        AtomicInteger writtenBufferSize = new AtomicInteger( -1 );
+        PageSwapper swapper = new DummyPageSwapper( "file" )
+        {
+            @Override
+            public long write( long filePageId, long bufferAddress, int bufferSize ) throws IOException
+            {
+                assertTrue( writtenFilePageId.compareAndSet( -1, filePageId ) );
+                assertTrue( writtenBufferAddress.compareAndSet( -1, bufferAddress ) );
+                assertTrue( writtenBufferSize.compareAndSet( -1, bufferSize ) );
+                return super.write( filePageId, bufferAddress, bufferSize );
+            }
+        };
+        doFault( 1, 42 );
+        pageList.unlockExclusiveAndTakeWriteLock( pageRef );
+        pageList.unlockWrite( pageRef ); // page is now modified
+        assertTrue( pageList.isModified( pageRef ) );
+        assertTrue( pageList.tryEvict( pageRef, swapper ) );
+        assertThat( writtenFilePageId.get(), is( 42L ) );
+        assertThat( writtenBufferAddress.get(), is( pageList.address( pageRef ) ) );
+//        assertThat( writtenBufferSize.get(), is( /* ... */ ) ); // todo
+    }
     // todo try evict must flush page if modified
-    // todo page must not be loaded after successful eviction
-    // todo page must not be bound after successful eviction
-    // todo page must not be modified after successful eviction
+    // todo try evict must not flush page if not modified
     // todo try evict must notify swapper on success
     // todo try evict must leave page unlocked if flush throws
     // todo try evict must leave page loaded if flush throws
+    // todo try evict must leave page bound if flush throws
+    // todo try evict must leave page modified if flush throws
     // todo try evict must report to eviction event
     // todo try evict that flushes must report to flush event
     // todo try evict that fails must not interfere with adjacent pages

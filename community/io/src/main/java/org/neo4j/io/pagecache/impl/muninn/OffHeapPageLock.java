@@ -122,7 +122,7 @@ public final class OffHeapPageLock
      * Start an optimistic critical section, and return a stamp that can be used to validate if the read lock was
      * consistent. That is, if no write or exclusive lock was overlapping with the optimistic read lock.
      *
-     * @return A stamp that must be passed to {@link #validateReadLock(long,long)} to validate the critical section.
+     * @return A stamp that must be passed to {@link #validateReadLock(long, long)} to validate the critical section.
      */
     public static long tryOptimisticReadLock( long address )
     {
@@ -130,9 +130,9 @@ public final class OffHeapPageLock
     }
 
     /**
-     * Validate a stamp from {@link #tryOptimisticReadLock(long)} or {@link #unlockExclusive(long)}, and return {@code true}
-     * if no write or exclusive lock overlapped with the critical section of the optimistic read lock represented by
-     * the stamp.
+     * Validate a stamp from {@link #tryOptimisticReadLock(long)} or {@link #unlockExclusive(long)}, and return
+     * {@code true} if no write or exclusive lock overlapped with the critical section of the optimistic read lock
+     * represented by the stamp.
      *
      * @param stamp The stamp of the optimistic read lock.
      * @return {@code true} if the optimistic read lock was valid, {@code false} otherwise.
@@ -165,7 +165,7 @@ public final class OffHeapPageLock
     public static boolean tryWriteLock( long address )
     {
         long s, n;
-        for (; ; )
+        for ( ; ; )
         {
             s = getState( address );
             boolean unwritablyLocked = (s & EXL_MASK) != 0;
@@ -267,7 +267,7 @@ public final class OffHeapPageLock
     public static void unlockExclusiveAndTakeWriteLock( long address )
     {
         long s = initiateExclusiveLockRelease( address );
-        long n = nextSeq( s ) - EXL_MASK + CNT_UNIT;
+        long n = (nextSeq( s ) - EXL_MASK + CNT_UNIT) | MOD_MASK;
         unconditionallySetState( address, n );
     }
 
@@ -287,16 +287,35 @@ public final class OffHeapPageLock
     }
 
     /**
+     * If the given lock is exclusively held, then the <em>modified</em> flag will be explicitly lowered (marked as
+     * unmodified) if the <em>modified</em> is currently raised.
+     * <p>
+     * If the <em>modified</em> flag is currently not raised, then this method does nothing.
+     *
+     * @throws IllegalStateException if the lock at the given address is not in the exclusively locked state.
+     */
+    public static void explicitlyMarkPageUnmodifiedUnderExclusiveLock( long address )
+    {
+        long s = getState( address );
+        if ( (s & EXL_MASK) != EXL_MASK )
+        {
+            throw new IllegalStateException( "Page must be exclusively locked to explicitly lower modified bit" );
+        }
+        s = s & (~MOD_MASK);
+        unconditionallySetState( address, s );
+    }
+
+    /**
      * Grab the flush lock if it is immediately available. Flush locks prevent overlapping exclusive locks,
      * but do not invalidate optimistic read locks, nor do they prevent overlapping write locks. Only one flush lock
      * can be held at a time. If any flush or exclusive lock is already held, the attempt to take the flush lock will
      * fail.
      * <p>
      * Successfully grabbed flush locks must always be paired with a corresponding
-     * {@link #unlockFlush(long,long,boolean)}.
+     * {@link #unlockFlush(long, long, boolean)}.
      *
      * @return If the lock is successfully grabbed, the method will return a stamp value that must be passed to the
-     * {@link #unlockFlush(long,long,boolean)}, and which is used for detecting any overlapping write locks. If the
+     * {@link #unlockFlush(long, long, boolean)}, and which is used for detecting any overlapping write locks. If the
      * flush lock could not be taken, {@code 0} will be returned.
      */
     public static long tryFlushLock( long address )
