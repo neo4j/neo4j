@@ -265,10 +265,17 @@ public abstract class PageCursor implements AutoCloseable
     public abstract void close();
 
     /**
-     * Returns true if the page has entered an inconsistent state since the
-     * last call to next() or shouldRetry().
-     * If this method returns true, the in-page offset of the cursor will be
-     * reset to zero.
+     * Returns true if the page has entered an inconsistent state since the last call to next() or shouldRetry().
+     * <p>
+     * If this method returns true, the in-page offset of the cursor will be reset to zero.
+     * <p>
+     * Note that {@link PagedFile#PF_SHARED_WRITE_LOCK write locked} cursors never conflict with each other, nor with
+     * eviction, and thus technically don't require a {@code shouldRetry} check. This method always returns
+     * {@code false} for write-locking cursors.
+     * <p>
+     * Cursors that are {@link PagedFile#PF_SHARED_READ_LOCK read locked} must <em>always</em> perform their reads in a
+     * {@code shouldRetry} loop, and avoid interpreting the data they read until {@code shouldRetry} has confirmed that
+     * the reads were consistent.
      *
      * @throws IOException If the page was evicted while doing IO, the cursor will have
      * to do a page fault to get the page back.
@@ -319,7 +326,8 @@ public abstract class PageCursor implements AutoCloseable
      * message, unless the error has gotten cleared by a {@link #shouldRetry()} call that returned {@code true},
      * a call to {@link #next()} or {@link #next(long)}, or the cursor is closed.
      *
-     * @param message The message of the {@link CursorException} that {@link #checkAndClearCursorException()} will throw.
+     * @param message The message of the {@link CursorException} that {@link #checkAndClearCursorException()} will
+     * throw.
      */
     public abstract void setCursorException( String message );
 
