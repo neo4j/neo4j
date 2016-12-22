@@ -20,6 +20,8 @@
 
 package org.neo4j.configuration;
 
+import org.junit.Test;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -32,30 +34,29 @@ import org.neo4j.helpers.collection.MapUtil;
 import static java.util.Collections.emptyMap;
 import static org.junit.Assert.assertEquals;
 
-
 public class LoadableConfigTest
 {
-    @org.junit.Test
+    @Test
     public void getConfigOptions() throws Exception
     {
         Map<String,String> config = MapUtil.stringMap( "myInt", "123", "myString", "bah" );
 
-        Test testSettings = new Test();
+        TestConfig testSettings = new TestConfig();
 
         List<ConfigOptions> options = testSettings.getConfigOptions();
 
         assertEquals( 2, options.size() );
 
-        assertEquals( 1, options.get( 0 ).settingGroup().values( emptyMap() ).get("myInt") );
-        assertEquals( 123, options.get( 0 ).settingGroup().values( config ).get("myInt") );
+        assertEquals( 1, options.get( 0 ).settingGroup().values( emptyMap() ).get( "myInt" ) );
+        assertEquals( 123, options.get( 0 ).settingGroup().values( config ).get( "myInt" ) );
         assertEquals( Optional.empty(), options.get( 0 ).description() );
 
-        assertEquals( "bob", options.get( 1 ).settingGroup().values( emptyMap() ).get("myString") );
-        assertEquals( "bah", options.get( 1 ).settingGroup().values( config ).get("myString") );
+        assertEquals( "bob", options.get( 1 ).settingGroup().values( emptyMap() ).get( "myString" ) );
+        assertEquals( "bah", options.get( 1 ).settingGroup().values( config ).get( "myString" ) );
         assertEquals( "A string setting", options.get( 1 ).description().get() );
     }
 
-    private static class Test implements LoadableConfig
+    private static class TestConfig implements LoadableConfig
     {
         @SuppressWarnings( "unused" )
         public static final Setting<Integer> integer = new Setting<Integer>()
