@@ -22,12 +22,6 @@ package org.neo4j.causalclustering.backup;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-
-import java.io.File;
-import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.List;
-
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
@@ -42,9 +36,14 @@ import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.causalclustering.ClusterRule;
 
+import java.io.File;
+import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.List;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
-import static org.neo4j.backup.BackupEmbeddedIT.runBackupToolFromOtherJvmToGetExitCode;
+import static org.neo4j.backup.OnlineBackupCommandIT.runBackupToolFromOtherJvmToGetExitCode;
 import static org.neo4j.graphdb.Label.label;
 
 public class BackupCoreIT
@@ -72,15 +71,15 @@ public class BackupCoreIT
         {
             // Run backup
             DbRepresentation beforeChange = DbRepresentation.of( createSomeData( cluster ) );
-            File backupDir = new File( backupsDir, Integer.toString( db.serverId() ) );
-            String[] args = backupArguments( backupAddress( db.database() ), backupDir.getPath() );
+            String[] args = backupArguments( backupAddress( db.database() ), backupsDir, "" + db.serverId() );
             assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( args ) );
 
             // Add some new data
             DbRepresentation afterChange = DbRepresentation.of( createSomeData( cluster ) );
 
             // Verify that old data is back
-            DbRepresentation backupRepresentation = DbRepresentation.of( backupDir, getConfig() );
+            DbRepresentation backupRepresentation = DbRepresentation.of( new File( backupsDir, "" + db.serverId() ),
+                    getConfig() );
             assertEquals( beforeChange, backupRepresentation );
             assertNotEquals( backupRepresentation, afterChange );
         }
@@ -104,13 +103,13 @@ public class BackupCoreIT
         return inetSocketAddress.getHostName() + ":" + (inetSocketAddress.getPort() + 2000);
     }
 
-    static String[] backupArguments( String from, String to )
+    static String[] backupArguments( String from, File backupsDir, String name )
     {
         List<String> args = new ArrayList<>();
-        args.add( "-from" );
-        args.add( from );
-        args.add( "-to" );
-        args.add( to );
+        args.add( "--from=" + from );
+        args.add( "--cc-report-dir=" + backupsDir );
+        args.add( "--backup-dir=" + backupsDir );
+        args.add( "--name=" + name );
         return args.toArray( new String[args.size()] );
     }
 

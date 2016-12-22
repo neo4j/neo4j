@@ -19,9 +19,7 @@
  */
 package org.neo4j.backup;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.SystemUtils;
-import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -53,9 +51,10 @@ import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeFalse;
 
 @RunWith( Parameterized.class )
-public class BackupEmbeddedIT
+public class OnlineBackupCommandIT
 {
     @ClassRule
     public static final TestDirectory testDirectory = TestDirectory.testDirectory();
@@ -66,7 +65,7 @@ public class BackupEmbeddedIT
     public final RuleChain ruleChain = RuleChain.outerRule( SuppressOutput.suppressAll() ).around( db );
 
     private static final String ip = "127.0.0.1";
-    private final File backupPath = testDirectory.directory( "backup-db" );
+    private final File backupDir = testDirectory.directory( "backups" );
 
     @Parameter
     public String recordFormat;
@@ -77,19 +76,9 @@ public class BackupEmbeddedIT
         return Arrays.asList( Standard.LATEST_NAME, HighLimit.NAME );
     }
 
-    @Before
-    public void before() throws Exception
-    {
-        if ( SystemUtils.IS_OS_WINDOWS )
-        {
-            return;
-        }
-        FileUtils.deleteDirectory( backupPath );
-    }
-
     public static DbRepresentation createSomeData( GraphDatabaseService db )
     {
-        try (Transaction tx = db.beginTx())
+        try ( Transaction tx = db.beginTx() )
         {
             Node node = db.createNode();
             node.setProperty( "name", "Neo" );
@@ -102,53 +91,64 @@ public class BackupEmbeddedIT
     @Test
     public void makeSureBackupCanBePerformedWithDefaultPort() throws Exception
     {
-        if ( SystemUtils.IS_OS_WINDOWS ) return;
+        assumeFalse( SystemUtils.IS_OS_WINDOWS );
+
         startDb( null );
         assertEquals(
                 0,
                 runBackupToolFromOtherJvmToGetExitCode( "--from", ip,
-                        "--to", backupPath.getPath() ) );
-        assertEquals( getDbRepresentation(), getBackupDbRepresentation() );
+                        "cc-report-dir=" + backupDir,
+                        "--backup-dir=" + backupDir,
+                        "--name=defaultport" ) );
+        assertEquals( getDbRepresentation(), getBackupDbRepresentation( "defaultport" ) );
         createSomeData( db );
         assertEquals(
                 0,
                 runBackupToolFromOtherJvmToGetExitCode( "--from", ip,
-                        "--to", backupPath.getPath() ) );
-        assertEquals( getDbRepresentation(), getBackupDbRepresentation() );
+                        "cc-report-dir=" + backupDir,
+                        "--backup-dir=" + backupDir,
+                        "--name=defaultport" ) );
+        assertEquals( getDbRepresentation(), getBackupDbRepresentation( "defaultport" ) );
     }
 
     @Test
     public void makeSureBackupCanBePerformedWithCustomPort() throws Exception
     {
-        if ( SystemUtils.IS_OS_WINDOWS ) return;
+        assumeFalse( SystemUtils.IS_OS_WINDOWS );
+
         int port = 4445;
         startDb( "" + port );
         assertEquals(
                 1,
                 runBackupToolFromOtherJvmToGetExitCode( "--from", ip,
-                        "--to", backupPath.getPath() ) );
+                        "cc-report-dir=" + backupDir,
+                        "--backup-dir=" + backupDir,
+                        "--name=customport" ) );
         assertEquals(
                 0,
                 runBackupToolFromOtherJvmToGetExitCode( "--from",
                         ip + ":" + port,
-                        "--to", backupPath.getPath() ) );
-        assertEquals( getDbRepresentation(), getBackupDbRepresentation() );
+                        "cc-report-dir=" + backupDir,
+                        "--backup-dir=" + backupDir,
+                        "--name=customport" ) );
+        assertEquals( getDbRepresentation(), getBackupDbRepresentation( "customport" ) );
         createSomeData( db );
         assertEquals(
                 0,
-                runBackupToolFromOtherJvmToGetExitCode( "--from", ip +":"
-                                 + port, "--to",
-                        backupPath.getPath() ) );
-        assertEquals( getDbRepresentation(), getBackupDbRepresentation() );
+                runBackupToolFromOtherJvmToGetExitCode( "--from", ip + ":" + port,
+                        "cc-report-dir=" + backupDir,
+                        "--backup-dir=" + backupDir,
+                        "--name=customport" ) );
+        assertEquals( getDbRepresentation(), getBackupDbRepresentation( "customport" ) );
     }
 
     private void startDb( String backupPort )
     {
         db.setConfig( GraphDatabaseSettings.record_format, recordFormat );
         db.setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE );
-        if(backupPort != null)
+        if ( backupPort != null )
         {
-            db.setConfig( OnlineBackupSettings.online_backup_server, ip +":" + backupPort );
+            db.setConfig( OnlineBackupSettings.online_backup_server, ip + ":" + backupPort );
         }
         db.ensureStarted();
         createSomeData( db );
@@ -160,10 +160,10 @@ public class BackupEmbeddedIT
         List<String> allArgs = new ArrayList<>( Arrays.asList(
                 ProcessUtil.getJavaExecutable().toString(), "-cp", ProcessUtil.getClassPath(),
                 AdminTool.class.getName() ) );
-        allArgs.add("backup");
+        allArgs.add( "backup" );
         allArgs.addAll( Arrays.asList( args ) );
 
-        Process process = Runtime.getRuntime().exec( allArgs.toArray( new String[allArgs.size()] ));
+        Process process = Runtime.getRuntime().exec( allArgs.toArray( new String[allArgs.size()] ) );
         return new ProcessStreamHandler( process, false ).waitForResult();
     }
 
@@ -172,8 +172,8 @@ public class BackupEmbeddedIT
         return DbRepresentation.of( db );
     }
 
-    private DbRepresentation getBackupDbRepresentation()
+    private DbRepresentation getBackupDbRepresentation( String name )
     {
-        return DbRepresentation.of( backupPath );
+        return DbRepresentation.of( new File( backupDir, name ) );
     }
 }

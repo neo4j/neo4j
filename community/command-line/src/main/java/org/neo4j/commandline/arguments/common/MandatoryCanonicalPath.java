@@ -26,9 +26,9 @@ import org.neo4j.commandline.arguments.MandatoryNamedArg;
 public class MandatoryCanonicalPath extends MandatoryNamedArg
 {
 
-    public MandatoryCanonicalPath( String name, String value, String description )
+    public MandatoryCanonicalPath( String name, String exampleValue, String description )
     {
-        super( name, value, description );
+        super( name, exampleValue, description );
     }
 
     private static String canonicalize( String path )

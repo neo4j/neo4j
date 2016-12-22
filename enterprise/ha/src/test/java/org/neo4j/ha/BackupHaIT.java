@@ -22,11 +22,6 @@ package org.neo4j.ha;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
@@ -34,10 +29,14 @@ import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.ha.ClusterRule;
 import org.neo4j.test.rule.SuppressOutput;
 
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
-import static org.neo4j.backup.BackupEmbeddedIT.createSomeData;
-import static org.neo4j.backup.BackupEmbeddedIT.runBackupToolFromOtherJvmToGetExitCode;
+import static org.neo4j.backup.OnlineBackupCommandIT.createSomeData;
+import static org.neo4j.backup.OnlineBackupCommandIT.runBackupToolFromOtherJvmToGetExitCode;
 
 public class BackupHaIT
 {
@@ -58,27 +57,20 @@ public class BackupHaIT
     }
 
     @Test
-    public void makeSureBackupCanBePerformedFromWronglyNamedCluster() throws Throwable
-    {
-        assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode(
-                backupArguments( "localhost:4445", backupPath.getPath(), "non.existent" ) ) );
-    }
-
-    @Test
     public void makeSureBackupCanBePerformed() throws Throwable
     {
         // Run backup
         ManagedCluster cluster = clusterRule.startCluster();
         DbRepresentation beforeChange = DbRepresentation.of( cluster.getMaster() );
         assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( backupArguments( "localhost:4445",
-                backupPath.getPath(), null ) ) );
+                backupPath, "basic" ) ) );
 
         // Add some new data
         DbRepresentation afterChange = createSomeData( cluster.getMaster() );
         cluster.sync();
 
         // Verify that backed up database can be started and compare representation
-        DbRepresentation backupRepresentation = DbRepresentation.of( backupPath );
+        DbRepresentation backupRepresentation = DbRepresentation.of( new File( backupPath, "basic" ) );
         assertEquals( beforeChange, backupRepresentation );
         assertNotEquals( backupRepresentation, afterChange );
     }
@@ -94,31 +86,26 @@ public class BackupHaIT
             // Run backup
             DbRepresentation beforeChange = DbRepresentation.of( cluster.getMaster() );
             assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( backupArguments( "localhost:" + port,
-                    backupPath.getPath(), null ) ) );
+                    backupPath, "anyinstance" ) ) );
 
             // Add some new data
             DbRepresentation afterChange = createSomeData( cluster.getMaster() );
             cluster.sync();
 
             // Verify that old data is back
-            DbRepresentation backupRepresentation = DbRepresentation.of( backupPath );
+            DbRepresentation backupRepresentation = DbRepresentation.of( new File( backupPath, "anyinstance" ) );
             assertEquals( beforeChange, backupRepresentation );
             assertNotEquals( backupRepresentation, afterChange );
         }
     }
 
-    private String[] backupArguments( String from, String to, String clusterName )
+    private String[] backupArguments( String from, File backupDir, String name )
     {
         List<String> args = new ArrayList<>();
-        args.add( "-from" );
-        args.add( from );
-        args.add( "-to" );
-        args.add( to );
-        if ( clusterName != null )
-        {
-            args.add( "-cluster" );
-            args.add( clusterName );
-        }
+        args.add( "--from=" + from );
+        args.add( "cc-report-dir=" + backupDir );
+        args.add( "--backup-dir=" + backupDir );
+        args.add( "--name=" + name );
         return args.toArray( new String[args.size()] );
     }
 }

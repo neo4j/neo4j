@@ -37,4 +37,6 @@ public interface OutsideWorld extends Closeable
     FileSystemAbstraction fileSystem();
 
     PrintStream errorStream();
+
+    PrintStream outStream();
 }

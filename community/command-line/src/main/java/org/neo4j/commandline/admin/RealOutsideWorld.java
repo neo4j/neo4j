@@ -72,4 +72,10 @@ public class RealOutsideWorld implements OutsideWorld
     {
         fileSystemAbstraction.close();
     }
+
+    @Override
+    public PrintStream outStream()
+    {
+        return System.out;
+    }
 }

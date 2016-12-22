@@ -62,4 +62,10 @@ public class NullOutsideWorld implements OutsideWorld
     public void close() throws IOException
     {
     }
+
+    @Override
+    public PrintStream outStream()
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
 }
