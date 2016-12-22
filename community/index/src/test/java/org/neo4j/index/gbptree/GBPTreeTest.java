@@ -42,7 +42,9 @@ import org.neo4j.index.gbptree.GBPTree.Monitor;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageSwapperFactory;
+import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.test.Barrier;
@@ -362,6 +364,29 @@ public class GBPTreeTest
     }
 
     @Test
+    public void shouldFailWhenTryingToOpenWithDifferentFormatVersion() throws Exception
+    {
+        // GIVEN
+        int pageSize = 1024;
+        try ( Index<MutableLong,MutableLong> index = createIndex( pageSize ) )
+        {   // Open/close is enough
+        }
+        index = null;
+        setFormatVersion( pageSize, GBPTree.FORMAT_VERSION - 1 );
+
+        try
+        {
+            // WHEN
+            index = new GBPTree<>( pageCache, indexFile, layout, 0, NO_MONITOR );
+            fail( "Should have failed" );
+        }
+        catch ( MetadataMismatchException e )
+        {
+            // THEN good
+        }
+    }
+
+    @Test
     public void shouldReturnNoResultsOnEmptyIndex() throws Exception
     {
         // GIVEN
@@ -561,4 +586,13 @@ public class GBPTreeTest
         }
     }
 
+    private void setFormatVersion( int pageSize, int formatVersion ) throws IOException
+    {
+        try ( PagedFile pagedFile = pageCache.map( indexFile, pageSize );
+                PageCursor cursor = pagedFile.io( IdSpace.META_PAGE_ID, PagedFile.PF_SHARED_WRITE_LOCK ) )
+        {
+            assertTrue( cursor.next() );
+            cursor.putInt( formatVersion );
+        }
+    }
 }

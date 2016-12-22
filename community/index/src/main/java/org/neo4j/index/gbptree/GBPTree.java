@@ -123,6 +123,19 @@ import static org.neo4j.index.gbptree.PageCursorUtil.checkOutOfBounds;
 public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>
 {
     /**
+     * Version of the format that makes up the tree. This includes:
+     * <ul>
+     * <li>{@link TreeNode} format, header, keys, children, values</li>
+     * <li>{@link GenSafePointer} and {@link GenSafePointerPair}</li>
+     * <li>{@link IdSpace} i.e. which pages are fixed</li>
+     * <li>{@link TreeState} and {@link TreeStatePair}</li>
+     * </ul>
+     * If any of the above changes the on-page format then this version should be bumped, so that opening
+     * an index on wrong format version fails and user will need to rebuild.
+     */
+    static final int FORMAT_VERSION = 1;
+
+    /**
      * For monitoring {@link GBPTree}.
      */
     public interface Monitor
@@ -409,6 +422,7 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>
             throws IOException
     {
         // Read meta
+        int formatVersion;
         long layoutIdentifier;
         int majorVersion;
         int minorVersion;
@@ -416,6 +430,7 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>
         {
             do
             {
+                formatVersion = metaCursor.getInt();
                 pageSize = metaCursor.getInt();
                 layoutIdentifier = metaCursor.getLong();
                 majorVersion = metaCursor.getInt();
@@ -424,6 +439,12 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>
             }
             while ( metaCursor.shouldRetry() );
             checkOutOfBounds( metaCursor );
+        }
+        if ( formatVersion != FORMAT_VERSION )
+        {
+            throw new MetadataMismatchException( "Tried to open %s with a different format version than " +
+                    "what it was created with. Created with:%d, opened with %d",
+                    indexFile, formatVersion, FORMAT_VERSION );
         }
         if ( layoutIdentifier != layout.identifier() )
         {
@@ -443,6 +464,7 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>
     {
         try ( PageCursor metaCursor = openMetaPageCursor( pagedFile, PagedFile.PF_SHARED_WRITE_LOCK ) )
         {
+            metaCursor.putInt( FORMAT_VERSION );
             metaCursor.putInt( pageSize );
             metaCursor.putLong( layout.identifier() );
             metaCursor.putInt( layout.majorVersion() );
