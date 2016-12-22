@@ -63,4 +63,10 @@ public class RealOutsideWorld implements OutsideWorld
     {
         return System.err;
     }
+
+    @Override
+    public PrintStream outStream()
+    {
+        return System.out;
+    }
 }

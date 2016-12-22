@@ -26,16 +26,16 @@ import org.neo4j.commandline.arguments.OptionalNamedArg;
 public class OptionalCanonicalPath extends OptionalNamedArg
 {
 
-    public OptionalCanonicalPath( String name, String value, String defaultValue, String description )
+    public OptionalCanonicalPath( String name, String exampleValue, String defaultValue, String description )
     {
-        super( name, value, defaultValue, description );
+        super( name, exampleValue, defaultValue, description );
     }
 
     private static String canonicalize( String path )
     {
-        if ( path.isEmpty() )
+        if ( path == null || path.isEmpty() )
         {
-            return path;
+            return "";
         }
 
         return Util.canonicalPath( path ).toString();

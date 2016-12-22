@@ -19,15 +19,15 @@
  */
 package org.neo4j.causalclustering.backup;
 
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.util.concurrent.TimeUnit;
-
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
@@ -41,8 +41,7 @@ import org.neo4j.test.rule.SuppressOutput;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
-
-import static org.neo4j.backup.BackupEmbeddedIT.runBackupToolFromOtherJvmToGetExitCode;
+import static org.neo4j.backup.OnlineBackupCommandIT.runBackupToolFromOtherJvmToGetExitCode;
 import static org.neo4j.causalclustering.backup.BackupCoreIT.backupAddress;
 import static org.neo4j.causalclustering.backup.BackupCoreIT.backupArguments;
 import static org.neo4j.causalclustering.backup.BackupCoreIT.createSomeData;
@@ -61,7 +60,8 @@ public class BackupReadReplicaIT
             .withSharedCoreParam( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
             .withNumberOfReadReplicas( 1 )
             .withSharedReadReplicaParam( OnlineBackupSettings.online_backup_enabled, Settings.TRUE )
-            .withInstanceReadReplicaParam( OnlineBackupSettings.online_backup_server, serverId -> ":" + findFreePort( 8000, 9000 ) );
+            .withInstanceReadReplicaParam( OnlineBackupSettings.online_backup_server,
+                    serverId -> ":" + findFreePort( 8000, 9000 ) );
 
     private Cluster cluster;
     private File backupPath;
@@ -75,8 +75,10 @@ public class BackupReadReplicaIT
 
     private boolean readReplicasUpToDateAsTheLeader( CoreGraphDatabase leader, ReadReplicaGraphDatabase readReplica )
     {
-        long leaderTxId = leader.getDependencyResolver().resolveDependency( TransactionIdStore.class ).getLastClosedTransactionId();
-        long lastClosedTxId = readReplica.getDependencyResolver().resolveDependency( TransactionIdStore.class ).getLastClosedTransactionId();
+        long leaderTxId = leader.getDependencyResolver().resolveDependency( TransactionIdStore.class )
+                .getLastClosedTransactionId();
+        long lastClosedTxId = readReplica.getDependencyResolver().resolveDependency( TransactionIdStore.class )
+                .getLastClosedTransactionId();
         return lastClosedTxId == leaderTxId;
     }
 
@@ -93,14 +95,15 @@ public class BackupReadReplicaIT
         DbRepresentation beforeChange = DbRepresentation.of( readReplica );
         String backupAddress = backupAddress( readReplica );
         System.out.println( backupAddress );
-        String[] args = backupArguments( backupAddress, backupPath.getPath() );
+        String[] args = backupArguments( backupAddress, backupPath, "readreplica" );
         assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( args ) );
 
         // Add some new data
         DbRepresentation afterChange = DbRepresentation.of( createSomeData( cluster ) );
 
         // Verify that backed up database can be started and compare representation
-        DbRepresentation backupRepresentation = DbRepresentation.of( backupPath, getConfig() );
+        DbRepresentation backupRepresentation = DbRepresentation.of( new File( backupPath, "readreplica" ),
+                getConfig() );
         assertEquals( beforeChange, backupRepresentation );
         assertNotEquals( backupRepresentation, afterChange );
     }

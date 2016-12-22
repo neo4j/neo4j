@@ -39,7 +39,7 @@ import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.backup.BackupEmbeddedIT.runBackupToolFromOtherJvmToGetExitCode;
+import static org.neo4j.backup.OnlineBackupCommandIT.runBackupToolFromOtherJvmToGetExitCode;
 import static org.neo4j.causalclustering.backup.BackupCoreIT.backupAddress;
 import static org.neo4j.causalclustering.discovery.Cluster.dataMatchesEventually;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -61,8 +61,9 @@ public class ClusterSeedingIT
                 OnlineBackupSettings.online_backup_server.name(),
                 serverId -> (":" + (8000 + serverId)) );
 
-        backupCluster = new Cluster( testDir.directory( "cluster-for-backup" ), 3, 0, new SharedDiscoveryService(), stringMap(),
-                instanceCoreParams, stringMap(), new HashMap<>(), StandardV3_0.NAME );
+        backupCluster =
+                new Cluster( testDir.directory( "cluster-for-backup" ), 3, 0, new SharedDiscoveryService(), stringMap(),
+                        instanceCoreParams, stringMap(), new HashMap<>(), StandardV3_0.NAME );
 
         cluster = new Cluster( testDir.directory( "cluster-b" ), 3, 0, new SharedDiscoveryService(), stringMap(),
                 new HashMap<>(), stringMap(), new HashMap<>(), StandardV3_0.NAME );
@@ -88,11 +89,11 @@ public class ClusterSeedingIT
         backupCluster.start();
         CoreGraphDatabase db = BackupCoreIT.createSomeData( backupCluster );
 
-        String[] args = BackupCoreIT.backupArguments( backupAddress( db ), backupDir.getPath() );
+        String[] args = BackupCoreIT.backupArguments( backupAddress( db ), backupDir, "core" );
         assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( args ) );
         backupCluster.shutdown();
 
-        return backupDir;
+        return new File( backupDir, "core" );
     }
 
     @Test
@@ -103,9 +104,9 @@ public class ClusterSeedingIT
         DbRepresentation before = DbRepresentation.of( backupDir );
 
         // when
-        fsa.copyRecursively( testDir.directory( "backups" ), cluster.getCoreMemberById( 0 ).storeDir() );
-        fsa.copyRecursively( testDir.directory( "backups" ), cluster.getCoreMemberById( 1 ).storeDir() );
-        fsa.copyRecursively( testDir.directory( "backups" ), cluster.getCoreMemberById( 2 ).storeDir() );
+        fsa.copyRecursively( backupDir, cluster.getCoreMemberById( 0 ).storeDir() );
+        fsa.copyRecursively( backupDir, cluster.getCoreMemberById( 1 ).storeDir() );
+        fsa.copyRecursively( backupDir, cluster.getCoreMemberById( 2 ).storeDir() );
         cluster.start();
 
         // then
@@ -113,7 +114,7 @@ public class ClusterSeedingIT
     }
 
     @Test
-    @Ignore("need to seed all members for now")
+    @Ignore( "need to seed all members for now" )
     public void shouldRestoreBySeedingSingleMember() throws Throwable
     {
         // given
@@ -121,7 +122,7 @@ public class ClusterSeedingIT
         DbRepresentation before = DbRepresentation.of( backupDir );
 
         // when
-        fsa.copyRecursively( testDir.directory( "backups" ), cluster.getCoreMemberById( 0 ).storeDir() );
+        fsa.copyRecursively( backupDir, cluster.getCoreMemberById( 0 ).storeDir() );
         cluster.getCoreMemberById( 0 ).start();
         Thread.sleep( 2_000 );
         cluster.getCoreMemberById( 1 ).start();
