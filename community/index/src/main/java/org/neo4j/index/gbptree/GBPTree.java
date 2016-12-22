@@ -262,9 +262,7 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>
      * If the index doesn't exist it will be created and the {@link Layout} and {@code pageSize} will
      * be written in index header.
      * If the index exists it will be opened and the {@link Layout} will be matched with the information
-     * in the header. At the very least {@link Layout#identifier()} will be matched, but also if the
-     * index has {@link Layout#writeMetaData(PageCursor)} additional meta data it will be
-     * {@link Layout#readMetaData(PageCursor)}.
+     * in the header. At the very least {@link Layout#identifier()} will be matched.
      *
      * @param pageCache {@link PageCache} to use to map index file
      * @param indexFile {@link File} containing the actual index

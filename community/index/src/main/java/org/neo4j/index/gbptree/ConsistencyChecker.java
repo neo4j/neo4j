@@ -79,6 +79,8 @@ class ConsistencyChecker<KEY>
      * are either in use in the tree, on the free-list or free-list nodes.
      *
      * @param cursor {@link PageCursor} to use for reading.
+     * @param lastId highest allocated id in the store.
+     * @param freelistIds page ids making up free-list pages and page ids on the free-list.
      * @return {@code true} if all pages are taken, otherwise {@code false}. Also is compatible with java
      * assert calls.
      * @throws IOException on {@link PageCursor} error.
