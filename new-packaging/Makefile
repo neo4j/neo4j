@@ -10,12 +10,10 @@ clean:
 	rm -rf ${OUT}
 
 debian-community: requires-distribution tarball-community-extracted ${OUT}/tarballs/community-version-debianized.txt
-	VERSION=$(cat ${OUT}/tarballs/community-version-debianized.txt)
-	build-debian-package ${OUT}/debian neo4j ${OUT}/tarballs/extracted/neo4j-community-* ${DISTRIBUTION} ${VERSION}
+	build-debian-package ${OUT}/debian neo4j ${OUT}/tarballs/extracted/neo4j-community-* ${DISTRIBUTION} ${OUT}/tarballs/community-version-debianized.txt
 
 debian-enterprise: requires-distribution tarball-enterprise-extracted  ${OUT}/tarballs/enterprise-version-debianized.txt
-	VERSION=$(cat ${OUT}/tarballs/enterprise-version-debianized.txt)
-	build-debian-package ${OUT}/debian neo4j-enterprise ${OUT}/tarballs/extracted/neo4j-enterprise-* ${DISTRIBUTION} ${VERSION}
+	build-debian-package ${OUT}/debian neo4j-enterprise ${OUT}/tarballs/extracted/neo4j-enterprise-* ${DISTRIBUTION} ${OUT}/tarballs/enterprise-version-debianized.txt
 
 requires-distribution:
 ifndef DISTRIBUTION
