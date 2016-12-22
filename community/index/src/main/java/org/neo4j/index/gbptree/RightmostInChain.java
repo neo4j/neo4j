@@ -25,8 +25,8 @@ import static org.neo4j.index.gbptree.TreeNode.NO_NODE_FLAG;
 
 /**
  * Used to verify a chain of siblings starting with leftmost node.
- * Call {@link #assertNext(PageCursor)} with cursor pointing at sibling expected to be right sibling to previous call
- * to verify that they are indeed linked together correctly.
+ * Call {@link #assertNext(PageCursor, long, long, long, long, long)} with cursor pointing at sibling expected
+ * to be right sibling to previous call to verify that they are indeed linked together correctly.
  * <p>
  * When assertNext has been called on node that is expected to be last in chain, use {@link #assertLast()} to verify.
  */

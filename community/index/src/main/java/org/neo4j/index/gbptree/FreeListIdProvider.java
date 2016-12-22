@@ -242,7 +242,7 @@ class FreeListIdProvider implements IdProvider
      * Visits all page ids currently in use as free-list pages.
      *
      * @param visitor {@link LongConsumer} getting calls about free-list page ids.
-     * @throws IOException
+     * @throws IOException on {@link PageCursor} error.
      */
     void visitFreelistPageIds( LongConsumer visitor ) throws IOException
     {

@@ -50,10 +50,6 @@ class TreePrinter<KEY,VALUE>
      * Will print sub-tree from that point. Leaves cursor at same page as when called. No guarantees on offset.
      *
      * @param cursor {@link PageCursor} placed at root of tree or sub-tree.
-     * @param treeNode {@link TreeNode} knowing about how to read keys, values and children.
-     * @param layout {@link Layout} for key/value.
-     * @param stableGeneration stable generation.
-     * @param unstableGeneration unstable generation.
      * @param out target to print tree at.
      * @throws IOException on page cache access error.
      */
