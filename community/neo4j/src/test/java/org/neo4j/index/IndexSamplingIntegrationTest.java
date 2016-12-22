@@ -30,6 +30,9 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -189,7 +192,8 @@ public class IndexSamplingIntegrationTest
             GraphDatabaseAPI api = (GraphDatabaseAPI) db;
             CountsTracker countsTracker = api.getDependencyResolver().resolveDependency( RecordStorageEngine.class )
                     .testAccessNeoStores().getCounts();
-            IndexSampleKey key = CountsKeyFactory.indexSampleKey( 0, 0 ); // cheating a bit...
+            IndexDescriptor descriptor = IndexDescriptorFactory.from( new NodePropertyDescriptor( 0, 0 ) );
+            IndexSampleKey key = CountsKeyFactory.indexSampleKey( descriptor ); // cheating a bit...
             return countsTracker.get( key, Registers.newDoubleLongRegister() );
         }
         finally
@@ -211,7 +215,8 @@ public class IndexSamplingIntegrationTest
             GraphDatabaseAPI api = (GraphDatabaseAPI) db;
             CountsTracker countsTracker = api.getDependencyResolver().resolveDependency( RecordStorageEngine.class )
                     .testAccessNeoStores().getCounts();
-            IndexStatisticsKey key = CountsKeyFactory.indexStatisticsKey( 0, 0 ); // cheating a bit...
+            IndexDescriptor descriptor = IndexDescriptorFactory.from( new NodePropertyDescriptor( 0, 0 ) );
+            IndexStatisticsKey key = CountsKeyFactory.indexStatisticsKey( descriptor ); // cheating a bit...
             return countsTracker.get( key, Registers.newDoubleLongRegister() );
         }
         finally

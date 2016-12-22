@@ -19,19 +19,31 @@
  */
 package org.neo4j.kernel.impl.coreapi.schema;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.schema.IndexDefinition;
 
 import static java.util.Objects.requireNonNull;
 
-abstract class NodeConstraintDefinition extends PropertyConstraintDefinition
+abstract class NodeConstraintDefinition extends MultiPropertyConstraintDefinition
 {
     protected final Label label;
 
-    protected NodeConstraintDefinition( InternalSchemaActions actions, Label label, String propertyKey )
+    protected NodeConstraintDefinition( InternalSchemaActions actions, Label label, String[] propertyKeys )
     {
-        super( actions, propertyKey );
+        super( actions, propertyKeys );
         this.label = requireNonNull( label );
+    }
+
+    protected NodeConstraintDefinition( InternalSchemaActions actions, IndexDefinition indexDefinition )
+    {
+        super( actions, indexDefinition );
+        this.label = requireNonNull( indexDefinition.getLabel() );
     }
 
     @Override
@@ -60,13 +72,27 @@ abstract class NodeConstraintDefinition extends PropertyConstraintDefinition
             return false;
         }
         NodeConstraintDefinition that = (NodeConstraintDefinition) o;
-        return label.name().equals( that.label.name() ) && propertyKey.equals( that.propertyKey );
+        return label.name().equals( that.label.name() ) && Arrays.equals( propertyKeys, that.propertyKeys );
 
+    }
+
+    protected String propertyText()
+    {
+        String nodeVariable = label.name().toLowerCase();
+        if ( propertyKeys.length == 1 )
+        {
+            return nodeVariable + "." + propertyKeys[0];
+        }
+        else
+        {
+            return "(" + Arrays.stream( propertyKeys ).map( p -> nodeVariable + "." + p )
+                    .collect( Collectors.joining( "," ) ) + ")";
+        }
     }
 
     @Override
     public int hashCode()
     {
-        return 31 * label.name().hashCode() + propertyKey.hashCode();
+        return IndexDefinitionImpl.hashCode( label, propertyKeys );
     }
 }

@@ -29,8 +29,9 @@ import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema.IndexState;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
 import org.neo4j.shell.AppCommandParser;
@@ -193,7 +194,8 @@ public class Schema extends TransactionProvidingApp
             throw new ShellException( "No property associated with '" + property + "' was found" );
         }
 
-        indexingService.triggerIndexSampling( new IndexDescriptor( labelKey, propertyKey ), samplingMode );
+        indexingService.triggerIndexSampling( IndexDescriptorFactory
+                .from( new NodePropertyDescriptor( labelKey, propertyKey ) ), samplingMode );
     }
 
     private IndexSamplingMode getSamplingMode( boolean forceSample )

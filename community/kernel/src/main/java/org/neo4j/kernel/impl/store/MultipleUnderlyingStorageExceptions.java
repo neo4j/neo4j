@@ -23,7 +23,7 @@ import java.util.Collections;
 import java.util.Set;
 
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
 
 import static java.lang.String.format;
 

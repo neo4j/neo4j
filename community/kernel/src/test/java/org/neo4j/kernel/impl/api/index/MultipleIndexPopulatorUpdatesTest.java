@@ -33,10 +33,12 @@ import java.util.Collections;
 import java.util.function.IntPredicate;
 
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexConfiguration;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
@@ -111,7 +113,7 @@ public class MultipleIndexPopulatorUpdatesTest
         IndexUpdater indexUpdater = mock( IndexUpdater.class );
         when( populator.newPopulatingUpdater( storeView ) ).thenReturn( indexUpdater );
 
-        IndexDescriptor descriptor = new IndexDescriptor( 1, 1 );
+        IndexDescriptor descriptor = IndexDescriptorFactory.from( new NodePropertyDescriptor( 1, 1 ) );
         addPopulator( indexPopulator, populator, descriptor );
 
         indexPopulator.create();

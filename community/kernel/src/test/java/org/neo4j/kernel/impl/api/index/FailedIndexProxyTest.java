@@ -23,8 +23,10 @@ import org.junit.Test;
 
 import java.io.IOException;
 
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.logging.AssertableLogProvider;
@@ -37,7 +39,7 @@ import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class FailedIndexProxyTest
 {
-    private final IndexDescriptor descriptor = new IndexDescriptor( 1, 2 );
+    private final IndexDescriptor descriptor = IndexDescriptorFactory.from( new NodePropertyDescriptor( 1, 2 ) );
     private final IndexConfiguration config = IndexConfiguration.NON_UNIQUE;
     private final SchemaIndexProvider.Descriptor providerDescriptor = mock( SchemaIndexProvider.Descriptor.class );
     private final String userDescription = "description";
@@ -68,8 +70,10 @@ public class FailedIndexProxyTest
         AssertableLogProvider logProvider = new AssertableLogProvider();
 
         // when
-        new FailedIndexProxy( new IndexDescriptor( 0, 0 ), config, new SchemaIndexProvider.Descriptor( "foo", "bar" ), "foo",
-                mock( IndexPopulator.class ), IndexPopulationFailure.failure( "it broke" ), indexCountsRemover, logProvider ).drop();
+        new FailedIndexProxy( IndexDescriptorFactory.from( new NodePropertyDescriptor( 0, 0 ) ), config,
+                new SchemaIndexProvider.Descriptor( "foo", "bar" ), "foo",
+                mock( IndexPopulator.class ), IndexPopulationFailure.failure( "it broke" ), indexCountsRemover,
+                logProvider ).drop();
 
         // then
         logProvider.assertAtLeastOnce(

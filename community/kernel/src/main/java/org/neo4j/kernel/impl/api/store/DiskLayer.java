@@ -29,7 +29,9 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
@@ -40,7 +42,8 @@ import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
@@ -177,14 +180,14 @@ public class DiskLayer implements StoreReadLayer
     }
 
     @Override
-    public IndexDescriptor indexGetForLabelAndPropertyKey( int labelId, int propertyKey )
+    public IndexDescriptor indexGetForLabelAndPropertyKey( NodePropertyDescriptor descriptor )
     {
-        return descriptor( schemaStorage.indexRule( labelId, propertyKey ) );
+        return descriptor( schemaStorage.indexRule( descriptor ) );
     }
 
     private static IndexDescriptor descriptor( IndexRule ruleRecord )
     {
-        return new IndexDescriptor( ruleRecord.getLabel(), ruleRecord.getPropertyKey() );
+        return IndexDescriptorFactory.from( ruleRecord );
     }
 
     @Override
@@ -235,20 +238,20 @@ public class DiskLayer implements StoreReadLayer
     @Override
     public Long indexGetOwningUniquenessConstraintId( IndexDescriptor index ) throws SchemaRuleNotFoundException
     {
-        return schemaStorage.indexRule( index.getLabelId(), index.getPropertyKeyId() ).getOwningConstraint();
+        return schemaStorage.indexRule( index.descriptor() ).getOwningConstraint();
     }
 
     @Override
     public IndexSchemaRule indexRule( IndexDescriptor index, Predicate<SchemaRule.Kind> filter )
     {
-        return schemaStorage.indexRule( index.getLabelId(), index.getPropertyKeyId() );
+        return schemaStorage.indexRule( index.descriptor() );
     }
 
     @Override
     public long indexGetCommittedId( IndexDescriptor index, Predicate<SchemaRule.Kind> filter )
             throws SchemaRuleNotFoundException
     {
-        return schemaStorage.indexRule( index.getLabelId(), index.getPropertyKeyId() ).getId();
+        return schemaStorage.indexRule( index.descriptor() ).getId();
     }
 
     @Override
@@ -284,10 +287,10 @@ public class DiskLayer implements StoreReadLayer
     }
 
     @Override
-    public Iterator<NodePropertyConstraint> constraintsGetForLabelAndPropertyKey( int labelId, final int propertyKeyId )
+    public Iterator<NodePropertyConstraint> constraintsGetForLabelAndPropertyKey( NodePropertyDescriptor descriptor )
     {
-        return schemaStorage.schemaRulesForNodes( NODE_RULE_TO_CONSTRAINT, NodePropertyConstraintRule.class, labelId,
-                rule -> rule.containsPropertyKeyId( propertyKeyId ) );
+        return schemaStorage.schemaRulesForNodes( NODE_RULE_TO_CONSTRAINT, NodePropertyConstraintRule.class,
+                descriptor.getLabelId(), rule -> rule.matches( descriptor ) );
     }
 
     @Override
@@ -298,12 +301,13 @@ public class DiskLayer implements StoreReadLayer
     }
 
     @Override
-    public Iterator<RelationshipPropertyConstraint> constraintsGetForRelationshipTypeAndPropertyKey( int typeId,
-            final int propertyKeyId )
+    public Iterator<RelationshipPropertyConstraint> constraintsGetForRelationshipTypeAndPropertyKey(
+            RelationshipPropertyDescriptor descriptor )
     {
         return schemaStorage
-                .schemaRulesForRelationships( REL_RULE_TO_CONSTRAINT, RelationshipPropertyConstraintRule.class, typeId,
-                        rule -> rule.containsPropertyKeyId( propertyKeyId ) );
+                .schemaRulesForRelationships( REL_RULE_TO_CONSTRAINT, RelationshipPropertyConstraintRule.class,
+                        descriptor.getRelationshipTypeId(),
+                        rule -> rule.containsPropertyKeyId( descriptor.getPropertyKeyId() ) );
     }
 
     @Override
@@ -503,15 +507,15 @@ public class DiskLayer implements StoreReadLayer
     }
 
     @Override
-    public DoubleLongRegister indexUpdatesAndSize( IndexDescriptor index, DoubleLongRegister target )
+    public DoubleLongRegister indexUpdatesAndSize( IndexDescriptor descriptor, DoubleLongRegister target )
     {
-        return counts.indexUpdatesAndSize( index.getLabelId(), index.getPropertyKeyId(), target );
+        return counts.indexUpdatesAndSize( descriptor, target );
     }
 
     @Override
-    public DoubleLongRegister indexSample( IndexDescriptor index, DoubleLongRegister target )
+    public DoubleLongRegister indexSample( IndexDescriptor descriptor, DoubleLongRegister target )
     {
-        return counts.indexSample( index.getLabelId(), index.getPropertyKeyId(), target );
+        return counts.indexSample( descriptor, target );
     }
 
     @Override

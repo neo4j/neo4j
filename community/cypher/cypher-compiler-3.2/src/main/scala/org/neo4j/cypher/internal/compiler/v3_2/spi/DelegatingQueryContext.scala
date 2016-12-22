@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{Expander, K
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
 import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
-import org.neo4j.kernel.api.index.IndexDescriptor
+import org.neo4j.cypher.internal.compiler.v3_2.IndexDescriptor
 
 import scala.collection.Iterator
 
@@ -88,9 +88,9 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
 
   override def getOrCreatePropertyKeyId(propertyKey: String) = singleDbHit(inner.getOrCreatePropertyKeyId(propertyKey))
 
-  override def addIndexRule(labelId: Int, propertyKeyId: Int) = singleDbHit(inner.addIndexRule(labelId, propertyKeyId))
+  override def addIndexRule(descriptor: IndexDescriptor) = singleDbHit(inner.addIndexRule(descriptor))
 
-  override def dropIndexRule(labelId: Int, propertyKeyId: Int) = singleDbHit(inner.dropIndexRule(labelId, propertyKeyId))
+  override def dropIndexRule(descriptor: IndexDescriptor) = singleDbHit(inner.dropIndexRule(descriptor))
 
   override def indexSeek(index: IndexDescriptor, value: Any): Iterator[Node] = manyDbHits(inner.indexSeek(index, value))
 
@@ -110,11 +110,11 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
   override def getOrCreateFromSchemaState[K, V](key: K, creator: => V): V =
     singleDbHit(inner.getOrCreateFromSchemaState(key, creator))
 
-  override def createUniqueConstraint(labelId: Int, propertyKeyId: Int) =
-    singleDbHit(inner.createUniqueConstraint(labelId, propertyKeyId))
+  override def createUniqueConstraint(descriptor: IndexDescriptor) =
+    singleDbHit(inner.createUniqueConstraint(descriptor))
 
-  override def dropUniqueConstraint(labelId: Int, propertyKeyId: Int) =
-    singleDbHit(inner.dropUniqueConstraint(labelId, propertyKeyId))
+  override def dropUniqueConstraint(descriptor: IndexDescriptor) =
+    singleDbHit(inner.dropUniqueConstraint(descriptor))
 
   override def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int) =
     singleDbHit(inner.createNodePropertyExistenceConstraint(labelId, propertyKeyId))

@@ -58,7 +58,7 @@ public class AlreadyConstrainedException extends SchemaKernelException
                 // is is safe to cast here because we only support indexes on nodes atm
                 NodePropertyConstraint nodePropertyConstraint = (NodePropertyConstraint) constraint;
                 return messageWithLabelAndPropertyName( tokenNameLookup, INDEX_CONTEXT_FORMAT,
-                        nodePropertyConstraint.label(), nodePropertyConstraint.propertyKey() );
+                        nodePropertyConstraint.descriptor() );
 
             case CONSTRAINT_CREATION:
                 return ALREADY_CONSTRAINED_MESSAGE_PREFIX + constraint.userDescription( tokenNameLookup );

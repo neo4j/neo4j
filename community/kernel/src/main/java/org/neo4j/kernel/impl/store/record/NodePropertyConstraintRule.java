@@ -19,28 +19,46 @@
  */
 package org.neo4j.kernel.impl.store.record;
 
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 
 public abstract class NodePropertyConstraintRule extends PropertyConstraintRule
 {
-    protected final int label;
+    protected final NodePropertyDescriptor descriptor;
 
-    public NodePropertyConstraintRule( long id, int label, Kind kind )
+    public NodePropertyConstraintRule( long id, NodePropertyDescriptor descriptor, Kind kind )
     {
         super( id, kind );
-        this.label = label;
+        this.descriptor = descriptor;
+    }
+
+    @Override
+    public final NodePropertyDescriptor descriptor()
+    {
+        return descriptor;
     }
 
     @Override
     public final int getLabel()
     {
-        return label;
+        return descriptor.getLabelId();
     }
 
     @Override
     public final int getRelationshipType()
     {
         throw new IllegalStateException( "Constraint rule is associated with nodes" );
+    }
+
+    @Override
+    public boolean containsPropertyKeyId( int propertyKeyId )
+    {
+        return this.descriptor.getPropertyKeyId() == propertyKeyId;
+    }
+
+    public boolean matches(NodePropertyDescriptor descriptor)
+    {
+        return this.descriptor.equals( descriptor );
     }
 
     @Override
@@ -61,13 +79,12 @@ public abstract class NodePropertyConstraintRule extends PropertyConstraintRule
         {
             return false;
         }
-        return label == ((NodePropertyConstraintRule) o).label;
-
+        return descriptor.equals( ((NodePropertyConstraintRule) o).descriptor );
     }
 
     @Override
     public int hashCode()
     {
-        return 31 * super.hashCode() + label;
+        return 31 * super.hashCode() + descriptor.hashCode();
     }
 }

@@ -22,26 +22,20 @@ package org.neo4j.kernel.impl.coreapi.schema;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 
-import static java.util.Collections.singleton;
+import static java.util.Arrays.asList;
 import static java.util.Objects.requireNonNull;
 
 abstract class PropertyConstraintDefinition implements ConstraintDefinition
 {
     protected final InternalSchemaActions actions;
-    protected final String propertyKey;
 
-    protected PropertyConstraintDefinition( InternalSchemaActions actions, String propertyKey )
+    protected PropertyConstraintDefinition( InternalSchemaActions actions )
     {
         this.actions = requireNonNull( actions );
-        this.propertyKey = requireNonNull( propertyKey );
     }
 
     @Override
-    public Iterable<String> getPropertyKeys()
-    {
-        assertInUnterminatedTransaction();
-        return singleton( propertyKey );
-    }
+    public abstract Iterable<String> getPropertyKeys();
 
     @Override
     public boolean isConstraintType( ConstraintType type )

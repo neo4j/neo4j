@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.spi.{InternalResultRow, InternalR
 import org.neo4j.graphdb.Direction
 import org.neo4j.helpers.collection.MapUtil
 import org.neo4j.kernel.api.ReadOperations
-import org.neo4j.kernel.api.index.IndexDescriptor
+import org.neo4j.kernel.api.schema.IndexDescriptor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.api.{RelationshipDataExtractor, RelationshipVisitor}
 import org.neo4j.kernel.impl.core.{NodeManager, NodeProxy, RelationshipProxy}

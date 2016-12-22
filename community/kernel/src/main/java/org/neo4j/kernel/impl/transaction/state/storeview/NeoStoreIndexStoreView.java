@@ -24,7 +24,7 @@ import java.util.function.IntPredicate;
 
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.properties.Property;
@@ -69,19 +69,17 @@ public class NeoStoreIndexStoreView implements IndexStoreView
     @Override
     public DoubleLongRegister indexUpdatesAndSize( IndexDescriptor descriptor, DoubleLongRegister output )
     {
-        return counts.indexUpdatesAndSize( descriptor.getLabelId(), descriptor.getPropertyKeyId(), output );
+        return counts.indexUpdatesAndSize( descriptor, output );
     }
 
     @Override
     public void replaceIndexCounts( IndexDescriptor descriptor,
                                     long uniqueElements, long maxUniqueElements, long indexSize )
     {
-        int labelId = descriptor.getLabelId();
-        int propertyKeyId = descriptor.getPropertyKeyId();
         try ( CountsAccessor.IndexStatsUpdater updater = counts.updateIndexCounts() )
         {
-            updater.replaceIndexSample( labelId, propertyKeyId, uniqueElements, maxUniqueElements );
-            updater.replaceIndexUpdateAndSize( labelId, propertyKeyId, 0L, indexSize );
+            updater.replaceIndexSample( descriptor, uniqueElements, maxUniqueElements );
+            updater.replaceIndexUpdateAndSize( descriptor, 0L, indexSize );
         }
     }
 
@@ -90,14 +88,14 @@ public class NeoStoreIndexStoreView implements IndexStoreView
     {
         try ( CountsAccessor.IndexStatsUpdater updater = counts.updateIndexCounts() )
         {
-            updater.incrementIndexUpdates( descriptor.getLabelId(), descriptor.getPropertyKeyId(), updatesDelta );
+            updater.incrementIndexUpdates( descriptor, updatesDelta );
         }
     }
 
     @Override
     public DoubleLongRegister indexSample( IndexDescriptor descriptor, DoubleLongRegister output )
     {
-        return counts.indexSample( descriptor.getLabelId(), descriptor.getPropertyKeyId(), output );
+        return counts.indexSample( descriptor, output );
     }
 
     @Override

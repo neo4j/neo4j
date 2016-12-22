@@ -24,5 +24,19 @@ package org.neo4j.storageengine.api;
  */
 public enum EntityType
 {
-    NODE, RELATIONSHIP, GRAPH
+    NODE( "label" ),
+    RELATIONSHIP( "relationship type" ),
+    GRAPH( "graph" );
+
+    private final String typeDescriptor;
+
+    EntityType( String typeDescriptor )
+    {
+        this.typeDescriptor = typeDescriptor;
+    }
+
+    public String getTypeDescriptor()
+    {
+        return typeDescriptor;
+    }
 }

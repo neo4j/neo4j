@@ -56,7 +56,7 @@ public class UniquenessConstraintVerificationFailedKernelException extends Const
             IndexEntryConflictException conflict = iterator.next();
             message.append( conflict.evidenceMessage(
                     tokenNameLookup.labelGetName( constraint.label() ),
-                    tokenNameLookup.propertyKeyGetName( constraint.propertyKey() )
+                    constraint.descriptor().propertyNameText( tokenNameLookup )
             ) );
             if ( iterator.hasNext() )
             {

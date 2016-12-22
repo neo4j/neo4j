@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -42,7 +43,8 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.impl.coreapi.schema.PropertyNameUtils;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
 public class SchemaProcedure
@@ -79,8 +81,9 @@ public class SchemaProcedure
                 ArrayList<String> indexes = new ArrayList<>();
                 while ( indexDescriptorIterator.hasNext() )
                 {
-                    indexes.add( statementTokenNameLookup
-                            .propertyKeyGetName( indexDescriptorIterator.next().getPropertyKeyId() ) );
+                    IndexDescriptor index = indexDescriptorIterator.next();
+                    String[] propertyNames = PropertyNameUtils.getPropertyKeys( statementTokenNameLookup, index.descriptor() );
+                    indexes.add( Arrays.stream( propertyNames ).collect( Collectors.joining( "," ) ) );
                 }
                 properties.put( "indexes", indexes );
 

@@ -24,10 +24,10 @@ import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.compiler.v3_2.InternalQueryStatistics
+import org.neo4j.cypher.internal.compiler.v3_2.IndexDescriptor
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.kernel.api.constraints.{NodePropertyExistenceConstraint, RelationshipPropertyExistenceConstraint, UniquenessConstraint}
-import org.neo4j.kernel.api.index.IndexDescriptor
 
 class UpdateCountingQueryContextTest extends CypherFunSuite {
 
@@ -57,7 +57,7 @@ class UpdateCountingQueryContextTest extends CypherFunSuite {
     }
   } )
 
-  when( inner.createUniqueConstraint(anyInt(), anyInt()) )
+  when(inner.createUniqueConstraint(anyObject()))
     .thenReturn(IdempotentResult(mock[UniquenessConstraint]))
 
   when( inner.createNodePropertyExistenceConstraint(anyInt(), anyInt()) )
@@ -66,7 +66,7 @@ class UpdateCountingQueryContextTest extends CypherFunSuite {
   when( inner.createRelationshipPropertyExistenceConstraint(anyInt(), anyInt()) )
     .thenReturn(IdempotentResult(mock[RelationshipPropertyExistenceConstraint]))
 
-  when( inner.addIndexRule(anyInt(), anyInt()) )
+  when(inner.addIndexRule(anyObject()))
     .thenReturn(IdempotentResult(mock[IndexDescriptor]))
 
   var context: UpdateCountingQueryContext = null
@@ -137,25 +137,25 @@ class UpdateCountingQueryContextTest extends CypherFunSuite {
   }
 
   test("add_index") {
-    context.addIndexRule(0, 1)
+    context.addIndexRule(IndexDescriptor(0, 1))
 
     context.getStatistics should equal(InternalQueryStatistics(indexesAdded = 1))
   }
 
   test("remove_index") {
-    context.dropIndexRule(0, 1)
+    context.dropIndexRule(IndexDescriptor(0, 1))
 
     context.getStatistics should equal(InternalQueryStatistics(indexesRemoved = 1))
   }
 
   test("create_unique_constraint") {
-    context.createUniqueConstraint(0, 1)
+    context.createUniqueConstraint(IndexDescriptor(0, 1))
 
     context.getStatistics should equal(InternalQueryStatistics(uniqueConstraintsAdded = 1))
   }
 
   test("constraint_dropped") {
-    context.dropUniqueConstraint(0, 42)
+    context.dropUniqueConstraint(IndexDescriptor(0, 42))
 
     context.getStatistics should equal(InternalQueryStatistics(uniqueConstraintsRemoved = 1))
   }

@@ -19,7 +19,8 @@
  */
 package org.neo4j.storageengine.api.schema;
 
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
 
 /**
  * Basically {@link IndexDescriptor} with access to storage data, such as id and ownder.
@@ -27,9 +28,11 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 public interface IndexSchemaRule extends SchemaRule
 {
     /**
-     * @return property key token id this index is associated to.
+     * Tests if this rule is specific to the label and property/properties specified
+     * @param descriptor specifying label and one or more properties
+     * @return true on matching label and property/properties
      */
-    int getPropertyKey();
+    boolean matches(NodePropertyDescriptor descriptor);
 
     /**
      * @return whether or not this index is related to a uniqueness constraint.

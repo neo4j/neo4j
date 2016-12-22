@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import java.util.Set;
 
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
@@ -43,7 +44,8 @@ public class CacheLayerTest
     public void shouldLoadAllConstraintsFromCache() throws Exception
     {
         // Given
-        Set<PropertyConstraint> constraints = asSet( (PropertyConstraint) new UniquenessConstraint( 0, 1 ) );
+        Set<PropertyConstraint> constraints =
+                asSet( (PropertyConstraint) new UniquenessConstraint( new NodePropertyDescriptor( 0, 1 ) ) );
         when( schemaCache.constraints() ).thenReturn( constraints.iterator() );
 
         // When & Then
@@ -55,7 +57,8 @@ public class CacheLayerTest
     {
         // Given
         int labelId = 0;
-        Set<NodePropertyConstraint> constraints = asSet( (NodePropertyConstraint) new UniquenessConstraint( labelId, 1 ) );
+        Set<NodePropertyConstraint> constraints =
+                asSet( (NodePropertyConstraint) new UniquenessConstraint( new NodePropertyDescriptor( labelId, 1 ) ) );
         when( schemaCache.constraintsForLabel( labelId ) ).thenReturn( constraints.iterator() );
 
         // When & Then
@@ -66,11 +69,11 @@ public class CacheLayerTest
     public void shouldLoadConstraintsByLabelAndPropertyFromCache() throws Exception
     {
         // Given
-        int labelId = 0, propertyId = 1;
-        Set<NodePropertyConstraint> constraints = asSet( (NodePropertyConstraint) new UniquenessConstraint( labelId, propertyId ) );
-        when( schemaCache.constraintsForLabelAndProperty( labelId, propertyId ) ).thenReturn( constraints.iterator() );
+        NodePropertyDescriptor descriptor = new NodePropertyDescriptor( 0, 1 );
+        Set<NodePropertyConstraint> constraints = asSet( (NodePropertyConstraint) new UniquenessConstraint( descriptor ) );
+        when( schemaCache.constraintsForLabelAndProperty( descriptor ) ).thenReturn( constraints.iterator() );
 
         // When & Then
-        assertThat( asSet( context.constraintsGetForLabelAndPropertyKey( labelId, propertyId ) ), equalTo( constraints ) );
+        assertThat( asSet( context.constraintsGetForLabelAndPropertyKey( descriptor ) ), equalTo( constraints ) );
     }
 }

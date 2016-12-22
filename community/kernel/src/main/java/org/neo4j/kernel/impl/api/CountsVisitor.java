@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import org.neo4j.kernel.api.schema.IndexDescriptor;
+
 public interface CountsVisitor
 {
     interface Visitable
@@ -30,9 +32,9 @@ public interface CountsVisitor
 
     void visitRelationshipCount( int startLabelId, int typeId, int endLabelId, long count );
 
-    void visitIndexStatistics( int labelId, int propertyKeyId, long updates, long size );
+    void visitIndexStatistics( IndexDescriptor descriptor, long updates, long size );
 
-    void visitIndexSample( int labelId, int propertyKeyId, long unique, long size );
+    void visitIndexSample( IndexDescriptor descriptor, long unique, long size );
 
     public static class Adapter implements CountsVisitor
     {
@@ -49,13 +51,13 @@ public interface CountsVisitor
         }
 
         @Override
-        public void visitIndexStatistics( int labelId, int propertyKeyId, long updates, long size )
+        public void visitIndexStatistics( IndexDescriptor descriptor, long updates, long size )
         {
             // override in subclasses
         }
 
         @Override
-        public void visitIndexSample( int labelId, int propertyKeyId, long unique, long size )
+        public void visitIndexSample( IndexDescriptor descriptor, long unique, long size )
         {
             // override in subclasses
         }
@@ -83,20 +85,20 @@ public interface CountsVisitor
                 }
 
                 @Override
-                public void visitIndexStatistics( int labelId, int propertyKeyId, long updates, long size )
+                public void visitIndexStatistics( IndexDescriptor descriptor, long updates, long size )
                 {
                     for ( CountsVisitor visitor : visitors )
                     {
-                        visitor.visitIndexStatistics( labelId, propertyKeyId, updates, size );
+                        visitor.visitIndexStatistics( descriptor, updates, size );
                     }
                 }
 
                 @Override
-                public void visitIndexSample( int labelId, int propertyKeyId, long unique, long size )
+                public void visitIndexSample( IndexDescriptor descriptor, long unique, long size )
                 {
                     for ( CountsVisitor visitor : visitors )
                     {
-                        visitor.visitIndexSample( labelId, propertyKeyId, unique, size );
+                        visitor.visitIndexSample( descriptor, unique, size );
                     }
                 }
             };

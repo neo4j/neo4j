@@ -315,7 +315,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
       val labelId = ctx.getOptLabelId(LABEL.name()).get
       val propKeyId = ctx.getOptPropertyKeyId(PROPERTY).get
       val labelToken = ast.LabelToken(LABEL.name(), LabelId(labelId))
-      val propertyKeyToken = ast.PropertyKeyToken(PROPERTY, PropertyKeyId(propKeyId))
+      val propertyKeyToken = Seq(ast.PropertyKeyToken(PROPERTY, PropertyKeyId(propKeyId)))
 
       NodeIndexSeekPipe(LABEL.name(), labelToken, propertyKeyToken, SingleQueryExpression(literal), IndexSeek)()
     }

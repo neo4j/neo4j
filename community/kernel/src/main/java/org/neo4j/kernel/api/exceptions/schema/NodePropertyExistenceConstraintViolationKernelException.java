@@ -19,21 +19,21 @@
  */
 package org.neo4j.kernel.api.exceptions.schema;
 
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.TokenNameLookup;
 
 import static java.lang.String.format;
 
 public class NodePropertyExistenceConstraintViolationKernelException extends ConstraintViolationKernelException
 {
-    private final int labelId;
-    private final int propertyKeyId;
+    private final NodePropertyDescriptor descriptor;
     private final long nodeId;
 
-    public NodePropertyExistenceConstraintViolationKernelException( int labelId, int propertyKeyId, long nodeId )
+    public NodePropertyExistenceConstraintViolationKernelException( NodePropertyDescriptor descriptor, long nodeId )
     {
-        super( "Node %d with label %d must have the property %d", nodeId, labelId, propertyKeyId);
-        this.labelId = labelId;
-        this.propertyKeyId = propertyKeyId;
+        super( "Node %d with label %d must have the property %d",
+                nodeId, descriptor.getEntityId(), descriptor.getPropertyKeyId() );
+        this.descriptor = descriptor;
         this.nodeId = nodeId;
     }
 
@@ -41,17 +41,6 @@ public class NodePropertyExistenceConstraintViolationKernelException extends Con
     public String getUserMessage( TokenNameLookup tokenNameLookup )
     {
         return format( "Node %d with label \"%s\" must have the property \"%s\" due to a constraint", nodeId,
-                tokenNameLookup.labelGetName( labelId ),
-                tokenNameLookup.propertyKeyGetName( propertyKeyId ) );
-    }
-
-    public int labelId()
-    {
-        return labelId;
-    }
-
-    public int propertyKeyId()
-    {
-        return propertyKeyId;
+                descriptor.entityNameText( tokenNameLookup ), descriptor.propertyNameText( tokenNameLookup ) );
     }
 }

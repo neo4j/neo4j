@@ -19,18 +19,18 @@
  */
 package org.neo4j.kernel.api.exceptions.schema;
 
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.index.IndexDescriptor;
 
 import static java.lang.String.format;
 
 public class IndexBelongsToConstraintException extends SchemaKernelException
 {
-    private final IndexDescriptor index;
+    private final NodePropertyDescriptor index;
     private static final String message = "Index belongs to constraint: %s";
 
-    public IndexBelongsToConstraintException( IndexDescriptor index )
+    public IndexBelongsToConstraintException( NodePropertyDescriptor index )
     {
         super( Status.Schema.ForbiddenOnConstraintIndex, format( "Index belongs to constraint: %s", index ) );
         this.index = index;

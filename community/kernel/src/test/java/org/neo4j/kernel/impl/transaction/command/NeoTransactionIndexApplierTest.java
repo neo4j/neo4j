@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.function.Supplier;
 
 import org.neo4j.concurrent.WorkSync;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.impl.api.TransactionApplier;
@@ -104,7 +105,7 @@ public class NeoTransactionIndexApplierTest
     public void shouldCreateIndexGivenCreateSchemaRuleCommand() throws Exception
     {
         // Given
-        final IndexRule indexRule = indexRule( 1, 42, 42, INDEX_DESCRIPTOR );
+        final IndexRule indexRule = indexRule( 1, new NodePropertyDescriptor( 42, 42 ), INDEX_DESCRIPTOR );
 
         final IndexBatchTransactionApplier applier = newIndexTransactionApplier();
 
@@ -127,7 +128,7 @@ public class NeoTransactionIndexApplierTest
     public void shouldDropIndexGivenDropSchemaRuleCommand() throws Exception
     {
         // Given
-        final IndexRule indexRule = indexRule( 1, 42, 42, INDEX_DESCRIPTOR );
+        final IndexRule indexRule = indexRule( 1, new NodePropertyDescriptor( 42, 42 ), INDEX_DESCRIPTOR );
 
         final IndexBatchTransactionApplier applier = newIndexTransactionApplier();
 

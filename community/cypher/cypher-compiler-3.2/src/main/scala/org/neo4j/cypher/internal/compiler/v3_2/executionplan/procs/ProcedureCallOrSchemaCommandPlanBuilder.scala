@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.executionplan.procs
 
 import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
+import org.neo4j.cypher.internal.compiler.v3_2.IndexDescriptor
 import org.neo4j.cypher.internal.compiler.v3_2.ast.ResolvedCall
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_2.phases.{CompilationState, Condition, Context, Phase}
@@ -52,13 +53,13 @@ case object ProcedureCallOrSchemaCommandPlanBuilder extends Phase {
       // CREATE CONSTRAINT ON (node:Label) ASSERT node.prop IS UNIQUE
       case CreateUniquePropertyConstraint(node, label, prop) =>
         Some(PureSideEffectExecutionPlan("CreateUniqueConstraint", SCHEMA_WRITE, (ctx) => {
-          (ctx.createUniqueConstraint _).tupled(labelProp(ctx)(label, prop.propertyKey))
+          ctx.createUniqueConstraint(IndexDescriptor(labelToId(ctx)(label), propertyToId(ctx)(prop.propertyKey)))
         }))
 
       // DROP CONSTRAINT ON (node:Label) ASSERT node.prop IS UNIQUE
       case DropUniquePropertyConstraint(_, label, prop) =>
         Some(PureSideEffectExecutionPlan("DropUniqueConstraint", SCHEMA_WRITE, (ctx) => {
-          (ctx.dropUniqueConstraint _).tupled(labelProp(ctx)(label, prop.propertyKey))
+          ctx.dropUniqueConstraint(IndexDescriptor(labelToId(ctx)(label), propertyToId(ctx)(prop.propertyKey)))
         }))
 
       // CREATE CONSTRAINT ON (node:Label) ASSERT node.prop EXISTS
@@ -86,15 +87,15 @@ case object ProcedureCallOrSchemaCommandPlanBuilder extends Phase {
         }))
 
       // CREATE INDEX ON :LABEL(prop)
-      case CreateIndex(label, prop) =>
+      case CreateIndex(label, props) =>
         Some(PureSideEffectExecutionPlan("CreateIndex", SCHEMA_WRITE, (ctx) => {
-          (ctx.addIndexRule _).tupled(labelProp(ctx)(label, prop))
+          ctx.addIndexRule(IndexDescriptor(labelToId(ctx)(label), propertiesToIds(ctx)(props)))
         }))
 
       // DROP INDEX ON :LABEL(prop)
-      case DropIndex(label, prop) =>
+      case DropIndex(label, props) =>
         Some(PureSideEffectExecutionPlan("DropIndex", SCHEMA_WRITE, (ctx) => {
-          (ctx.dropIndexRule _).tupled(labelProp(ctx)(label, prop))
+          ctx.dropIndexRule(IndexDescriptor(labelToId(ctx)(label), propertiesToIds(ctx)(props)))
         }))
 
       case _ => None
@@ -102,6 +103,15 @@ case object ProcedureCallOrSchemaCommandPlanBuilder extends Phase {
 
     from.copy(maybeExecutionPlan = maybeExecutionPlan)
   }
+
+  implicit private def labelToId(ctx: QueryContext)(label: LabelName): LabelId =
+    LabelId(ctx.getOrCreateLabelId(label.name))
+
+  implicit private def propertyToId(ctx: QueryContext)(property: PropertyKeyName): PropertyKeyId =
+    PropertyKeyId(ctx.getOrCreatePropertyKeyId(property.name))
+
+  implicit private def propertiesToIds(ctx: QueryContext)(properties: List[PropertyKeyName]): List[PropertyKeyId] =
+    properties.map(property => PropertyKeyId(ctx.getOrCreatePropertyKeyId(property.name)))
 
   private def labelProp(ctx: QueryContext)(label: LabelName, prop: PropertyKeyName) =
     (ctx.getOrCreateLabelId(label.name), ctx.getOrCreatePropertyKeyId(prop.name))

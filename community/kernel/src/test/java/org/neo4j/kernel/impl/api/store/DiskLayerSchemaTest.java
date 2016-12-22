@@ -25,6 +25,7 @@ import java.util.Set;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
@@ -45,11 +46,13 @@ public class DiskLayerSchemaTest extends DiskLayerTest
         Set<PropertyConstraint> constraints = asSet( disk.constraintsGetAll() );
 
         // Then
+        int labelId1 = labelId( label1 );
+        int labelId2 = labelId( label2 );
         int propKeyId = propertyKeyId( propertyKey );
 
         Set<?> expectedConstraints = asSet(
-                new UniquenessConstraint( labelId( label1 ), propKeyId ),
-                new UniquenessConstraint( labelId( label2 ), propKeyId ) );
+                new UniquenessConstraint( new NodePropertyDescriptor( labelId1, propKeyId ) ),
+                new UniquenessConstraint( new NodePropertyDescriptor( labelId2, propKeyId ) ) );
 
         assertEquals( expectedConstraints, constraints );
     }
@@ -65,8 +68,7 @@ public class DiskLayerSchemaTest extends DiskLayerTest
         Set<NodePropertyConstraint> constraints = asSet( disk.constraintsGetForLabel( labelId( label1 ) ) );
 
         // Then
-        Set<?> expectedConstraints = asSet(
-                new UniquenessConstraint( labelId( label1 ), propertyKeyId( propertyKey ) ) );
+        Set<?> expectedConstraints = asSet( new UniquenessConstraint( descriptorFrom( label1, propertyKey ) ) );
 
         assertEquals( expectedConstraints, constraints );
     }
@@ -80,11 +82,11 @@ public class DiskLayerSchemaTest extends DiskLayerTest
 
         // When
         Set<NodePropertyConstraint> constraints = asSet(
-                disk.constraintsGetForLabelAndPropertyKey( labelId( label1 ), propertyKeyId( propertyKey ) ) );
+                disk.constraintsGetForLabelAndPropertyKey( descriptorFrom( label1, propertyKey ) ) );
 
         // Then
         Set<?> expectedConstraints = asSet(
-                new UniquenessConstraint( labelId( label1 ), propertyKeyId( propertyKey ) ) );
+                new UniquenessConstraint( descriptorFrom( label1, propertyKey ) ) );
 
         assertEquals( expectedConstraints, constraints );
     }
@@ -96,5 +98,10 @@ public class DiskLayerSchemaTest extends DiskLayerTest
             db.schema().constraintFor( label ).assertPropertyIsUnique( propertyKey ).create();
             tx.success();
         }
+    }
+
+    private NodePropertyDescriptor descriptorFrom( Label label, String propertyKey )
+    {
+        return new NodePropertyDescriptor( labelId( label ), propertyKeyId( propertyKey ) );
     }
 }

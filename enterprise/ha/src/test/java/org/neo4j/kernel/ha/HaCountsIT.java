@@ -20,7 +20,6 @@
 package org.neo4j.kernel.ha;
 
 import org.junit.Before;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -29,9 +28,10 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
@@ -182,7 +182,8 @@ public class HaCountsIT
             Statement statement = statement( db );
             int labelId = statement.tokenWriteOperations().labelGetOrCreateForName( label.name() );
             int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( propertyName );
-            IndexDescriptor index = statement.schemaWriteOperations().indexCreate( labelId, propertyKeyId );
+            IndexDescriptor index = statement.schemaWriteOperations()
+                    .indexCreate( new NodePropertyDescriptor( labelId, propertyKeyId ) );
             tx.success();
             return index;
         }
@@ -202,15 +203,13 @@ public class HaCountsIT
 
     private void assertOnIndexCounts( int expectedIndexUpdates, int expectedIndexSize,
                                       int expectedUniqueValues, int expectedSampleSize,
-                                      IndexDescriptor indexDescriptor, HighlyAvailableGraphDatabase db )
+                                      IndexDescriptor descriptor, HighlyAvailableGraphDatabase db )
     {
         CountsTracker counts = counts( db );
-        int labelId = indexDescriptor.getLabelId();
-        int propertyKeyId = indexDescriptor.getPropertyKeyId();
         assertDoubleLongEquals( expectedIndexUpdates, expectedIndexSize,
-                counts.indexUpdatesAndSize( labelId, propertyKeyId, newDoubleLongRegister() ) );
+                counts.indexUpdatesAndSize( descriptor, newDoubleLongRegister() ) );
         assertDoubleLongEquals( expectedUniqueValues, expectedSampleSize,
-                counts.indexSample( labelId, propertyKeyId, newDoubleLongRegister() ) );
+                counts.indexSample( descriptor, newDoubleLongRegister() ) );
     }
 
     private void assertDoubleLongEquals( int expectedFirst, int expectedSecond, DoubleLongRegister actualValues )

@@ -19,41 +19,32 @@
  */
 package org.neo4j.kernel.api.exceptions.schema;
 
+import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.TokenNameLookup;
 
 import static java.lang.String.format;
 
 public class RelationshipPropertyExistenceConstraintViolationKernelException extends ConstraintViolationKernelException
 {
-    private final int relationshipTypeId;
-    private final int propertyKeyId;
+    private final RelationshipPropertyDescriptor descriptor;
     private final long relationshipId;
 
-    public RelationshipPropertyExistenceConstraintViolationKernelException( int relationshipTypeId, int propertyKeyId,
+    public RelationshipPropertyExistenceConstraintViolationKernelException( RelationshipPropertyDescriptor descriptor,
             long relationshipId )
     {
-        super( "Relationship %d with type %d must have the property %d", relationshipId, relationshipTypeId,
-                propertyKeyId );
-        this.relationshipTypeId = relationshipTypeId;
-        this.propertyKeyId = propertyKeyId;
+        super( "Relationship %d with type %d must have the property %d", relationshipId,
+                descriptor.getRelationshipTypeId(),
+                descriptor.getPropertyKeyId() );
+        this.descriptor = descriptor;
         this.relationshipId = relationshipId;
     }
 
     @Override
     public String getUserMessage( TokenNameLookup tokenNameLookup )
     {
-        return format( "Relationship %d with type \"%s\" must have the property \"%s\" due to a constraint", relationshipId,
-                tokenNameLookup.relationshipTypeGetName( relationshipTypeId ),
-                tokenNameLookup.propertyKeyGetName( propertyKeyId ) );
-    }
-
-    public int relationshipTypeId()
-    {
-        return relationshipTypeId;
-    }
-
-    public int propertyKeyId()
-    {
-        return propertyKeyId;
+        return format( "Relationship %d with type \"%s\" must have the property \"%s\" due to a constraint",
+                relationshipId,
+                tokenNameLookup.relationshipTypeGetName( descriptor.getRelationshipTypeId() ),
+                tokenNameLookup.propertyKeyGetName( descriptor.getPropertyKeyId() ) );
     }
 }

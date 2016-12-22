@@ -20,35 +20,29 @@
 package org.neo4j.kernel.impl.store.counts.keys;
 
 import static org.neo4j.kernel.impl.util.IdPrettyPrinter.label;
-import static org.neo4j.kernel.impl.util.IdPrettyPrinter.propertyKey;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
 
 abstract class IndexKey implements CountsKey
 {
-    private final int labelId;
-    private final int propertyKeyId;
+    private final IndexDescriptor descriptor;
     private final CountsKeyType type;
 
-    IndexKey( int labelId, int propertyKeyId, CountsKeyType type )
+    IndexKey( IndexDescriptor descriptor, CountsKeyType type )
     {
-        this.labelId = labelId;
-        this.propertyKeyId = propertyKeyId;
+        this.descriptor = descriptor;
         this.type = type;
     }
 
-    public int labelId()
+    public IndexDescriptor descriptor()
     {
-        return labelId;
-    }
-
-    public int propertyKeyId()
-    {
-        return propertyKeyId;
+        return descriptor;
     }
 
     @Override
     public String toString()
     {
-        return String.format( "IndexKey[%s (%s {%s})]", type.name(), label( labelId ), propertyKey( propertyKeyId ) );
+        String propertyText = descriptor.descriptor().propertyIdText();
+        return String.format( "IndexKey[%s (%s {%s})]", type.name(), label( descriptor.getLabelId() ), propertyText );
     }
 
     @Override
@@ -60,10 +54,7 @@ abstract class IndexKey implements CountsKey
     @Override
     public int hashCode()
     {
-        int result = labelId;
-        result = 31 * result + propertyKeyId;
-        result = 31 * result + type.hashCode();
-        return result;
+        return 31 * descriptor.hashCode() + type.hashCode();
     }
 
     @Override
@@ -79,6 +70,17 @@ abstract class IndexKey implements CountsKey
         }
 
         IndexKey indexKey = (IndexKey) other;
-        return labelId == indexKey.labelId && propertyKeyId == indexKey.propertyKeyId && type == indexKey.type;
+        return indexKey.descriptor.equals( descriptor );
+    }
+
+    @Override
+    public int compareTo( CountsKey other )
+    {
+        if ( other instanceof IndexKey )
+        {
+            IndexKey that = (IndexKey) other;
+            return this.descriptor.descriptor().compareTo( that.descriptor.descriptor() );
+        }
+        return recordType().ordinal() - other.recordType().ordinal();
     }
 }

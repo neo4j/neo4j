@@ -22,6 +22,8 @@ package org.neo4j.kernel.impl.constraints;
 import java.util.Iterator;
 
 import org.neo4j.cursor.Cursor;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
+import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.impl.store.record.PropertyConstraintRule;
@@ -36,21 +38,22 @@ import org.neo4j.storageengine.api.txstate.TxStateVisitor;
  */
 public interface ConstraintSemantics
 {
-    void validateNodePropertyExistenceConstraint( Iterator<Cursor<NodeItem>> allNodes, int label, int propertyKey )
+    void validateNodePropertyExistenceConstraint( Iterator<Cursor<NodeItem>> allNodes, NodePropertyDescriptor descriptor )
             throws CreateConstraintFailureException;
 
-    void validateRelationshipPropertyExistenceConstraint( Cursor<RelationshipItem> allRels, int type, int propertyKey )
-            throws CreateConstraintFailureException;
+    void validateRelationshipPropertyExistenceConstraint( Cursor<RelationshipItem> allRels,
+            RelationshipPropertyDescriptor descriptor ) throws CreateConstraintFailureException;
 
     PropertyConstraint readConstraint( PropertyConstraintRule rule );
 
-    PropertyConstraintRule writeUniquePropertyConstraint( long ruleId, int label, int propertyKey, long indexId );
+    PropertyConstraintRule writeUniquePropertyConstraint( long ruleId, NodePropertyDescriptor descriptor,
+            long indexId );
 
-    PropertyConstraintRule writeNodePropertyExistenceConstraint( long ruleId, int label, int propertyKey )
+    PropertyConstraintRule writeNodePropertyExistenceConstraint( long ruleId, NodePropertyDescriptor descriptor )
             throws CreateConstraintFailureException;
 
-    PropertyConstraintRule writeRelationshipPropertyExistenceConstraint( long ruleId, int type, int propertyKey )
-            throws CreateConstraintFailureException;
+    PropertyConstraintRule writeRelationshipPropertyExistenceConstraint( long ruleId,
+            RelationshipPropertyDescriptor descriptor ) throws CreateConstraintFailureException;
 
     TxStateVisitor decorateTxStateVisitor( StoreReadLayer storeLayer, ReadableTransactionState state,
             TxStateVisitor visitor );

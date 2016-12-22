@@ -37,6 +37,7 @@ import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.properties.DefinedProperty;
@@ -201,7 +202,8 @@ public class TransactionRecordStateTest
         // -- an index
         long ruleId = 0;
         TransactionRecordState recordState = newTransactionRecordState( neoStores );
-        SchemaRule rule = indexRule( ruleId, labelId, propertyKeyId, PROVIDER_DESCRIPTOR );
+        SchemaRule rule =
+                indexRule( ruleId, new NodePropertyDescriptor( labelId, propertyKeyId ), PROVIDER_DESCRIPTOR );
         recordState.createSchemaRule( rule );
         apply( neoStores, recordState );
 
@@ -678,7 +680,8 @@ public class TransactionRecordStateTest
         final long indexId = neoStores.getSchemaStore().nextId();
         final long constraintId = neoStores.getSchemaStore().nextId();
 
-        recordState.createSchemaRule( uniquenessConstraintRule( constraintId, 1, 1, indexId ) );
+        recordState.createSchemaRule(
+                uniquenessConstraintRule( constraintId, new NodePropertyDescriptor( 1, 1 ), indexId ) );
 
         // WHEN
         recordState.extractCommands( new ArrayList<>() );

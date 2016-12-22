@@ -19,24 +19,42 @@
  */
 package org.neo4j.kernel.api.constraints;
 
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.TokenNameLookup;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 
 /**
  * Base class describing property constraint on nodes.
  */
-public abstract class NodePropertyConstraint extends PropertyConstraint
+public abstract class NodePropertyConstraint implements PropertyConstraint, IndexBackedConstraint
 {
-    protected final int labelId;
+    protected final NodePropertyDescriptor descriptor;
 
-    public NodePropertyConstraint( int labelId, int propertyKeyId )
+    public NodePropertyConstraint( NodePropertyDescriptor descriptor )
     {
-        super( propertyKeyId );
-        this.labelId = labelId;
+        this.descriptor = descriptor;
     }
 
     public final int label()
     {
-        return labelId;
+        return descriptor.getLabelId();
+    }
+
+    public NodePropertyDescriptor descriptor()
+    {
+        return descriptor;
+    }
+
+    public boolean matches( NodePropertyDescriptor descriptor )
+    {
+        return this.descriptor.equals( descriptor );
+    }
+
+    @Override
+    public IndexDescriptor indexDescriptor()
+    {
+        return IndexDescriptorFactory.from( descriptor );
     }
 
     @Override
@@ -51,13 +69,13 @@ public abstract class NodePropertyConstraint extends PropertyConstraint
             return false;
         }
         NodePropertyConstraint that = (NodePropertyConstraint) o;
-        return propertyKeyId == that.propertyKeyId && labelId == that.labelId;
+        return this.descriptor.equals( that.descriptor );
 
     }
 
     protected String labelName( TokenNameLookup tokenNameLookup)
     {
-        String labelName = tokenNameLookup.labelGetName( labelId );
+        String labelName = tokenNameLookup.labelGetName( descriptor.getLabelId() );
         //if the labelName contains a `:` we must escape it to avoid disambiguation,
         //e.g. CONSTRAINT on foo:bar:foo:bar
         if (labelName.contains( ":" )) {
@@ -72,6 +90,6 @@ public abstract class NodePropertyConstraint extends PropertyConstraint
     @Override
     public int hashCode()
     {
-        return 31 * propertyKeyId + labelId;
+        return descriptor.hashCode();
     }
 }

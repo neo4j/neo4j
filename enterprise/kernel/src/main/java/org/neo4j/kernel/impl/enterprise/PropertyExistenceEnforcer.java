@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.enterprise;
 
-import java.util.Iterator;
-import java.util.Set;
+import java.util.*;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
@@ -131,11 +131,17 @@ class PropertyExistenceEnforcer extends TxStateVisitor.Delegator
                         }
 
                         // Check if this node has the mandatory property set
-                        if ( !propertyKeyIds.contains( constraint.propertyKey() ) )
+                        NodePropertyDescriptor descriptor = ((NodePropertyExistenceConstraint) constraint).descriptor();
+                        if ( descriptor.isComposite() )
                         {
-                            throw new NodePropertyExistenceConstraintViolationKernelException(
-                                    ((NodePropertyExistenceConstraint) constraint).label(),
-                                    constraint.propertyKey(), nodeId );
+                            for ( int propertyKey : descriptor.getPropertyKeyIds() )
+                            {
+                                validateNodeProperty( nodeId, propertyKey, descriptor );
+                            }
+                        }
+                        else
+                        {
+                            validateNodeProperty( nodeId, descriptor.getPropertyKeyId(), descriptor );
                         }
                     }
                 }
@@ -144,6 +150,15 @@ class PropertyExistenceEnforcer extends TxStateVisitor.Delegator
             {
                 throw new IllegalStateException( format( "Node %d with changes should exist.", nodeId ) );
             }
+        }
+    }
+
+    private void validateNodeProperty( long nodeId, int propertyKey, NodePropertyDescriptor descriptor )
+            throws ConstraintValidationKernelException
+    {
+        if ( !propertyKeyIds.contains( propertyKey ) )
+        {
+            throw new NodePropertyExistenceConstraintViolationKernelException( descriptor, nodeId );
         }
     }
 
@@ -195,11 +210,10 @@ class PropertyExistenceEnforcer extends TxStateVisitor.Delegator
                     }
 
                     // Check if this relationship has the mandatory property set
-                    if ( !propertyKeyIds.contains( constraint.propertyKey() ) )
+                    if ( !propertyKeyIds.contains( constraint.descriptor().getPropertyKeyId() ) )
                     {
                         throw new RelationshipPropertyExistenceConstraintViolationKernelException(
-                                constraint.relationshipType(),
-                                constraint.propertyKey(), id );
+                                constraint.descriptor(), id );
                     }
                 }
 

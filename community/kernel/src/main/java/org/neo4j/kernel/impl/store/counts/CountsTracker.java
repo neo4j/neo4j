@@ -25,6 +25,7 @@ import java.util.Optional;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.CountsVisitor;
@@ -183,16 +184,16 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey>
     }
 
     @Override
-    public Register.DoubleLongRegister indexUpdatesAndSize( int labelId, int propertyKeyId,
+    public Register.DoubleLongRegister indexUpdatesAndSize( IndexDescriptor descriptor,
                                                             Register.DoubleLongRegister target )
     {
-        return get( indexStatisticsKey( labelId, propertyKeyId ), target );
+        return get( indexStatisticsKey( descriptor ), target );
     }
 
     @Override
-    public Register.DoubleLongRegister indexSample( int labelId, int propertyKeyId, Register.DoubleLongRegister target )
+    public Register.DoubleLongRegister indexSample( IndexDescriptor descriptor, Register.DoubleLongRegister target )
     {
-        return get( indexSampleKey( labelId, propertyKeyId ), target );
+        return get( indexSampleKey( descriptor ), target );
     }
 
     public Optional<CountsAccessor.Updater> apply( long txId )

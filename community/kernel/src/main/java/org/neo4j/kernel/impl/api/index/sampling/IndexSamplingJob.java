@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index.sampling;
 
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
 
 public interface IndexSamplingJob extends Runnable
 {

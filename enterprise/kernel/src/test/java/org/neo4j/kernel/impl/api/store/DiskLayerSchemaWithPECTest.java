@@ -26,6 +26,8 @@ import java.util.Set;
 import org.neo4j.SchemaHelper;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
+import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
@@ -61,13 +63,18 @@ public class DiskLayerSchemaWithPECTest extends DiskLayerTest
         Set<PropertyConstraint> constraints = asSet( disk.constraintsGetAll() );
 
         // Then
+        int labelId1 = labelId( label1 );
+        int labelId2 = labelId( label2 );
         int propKeyId = propertyKeyId( propertyKey );
+        NodePropertyDescriptor descriptor1 = new NodePropertyDescriptor( labelId1, propKeyId );
+        NodePropertyDescriptor descriptor2 = new NodePropertyDescriptor( labelId2, propKeyId );
 
         Set<PropertyConstraint> expectedConstraints = asSet(
-                new UniquenessConstraint( labelId( label1 ), propKeyId ),
-                new UniquenessConstraint( labelId( label2 ), propKeyId ),
-                new NodePropertyExistenceConstraint( labelId( label2 ), propKeyId ),
-                new RelationshipPropertyExistenceConstraint( relationshipTypeId( relType1 ), propKeyId ) );
+                new UniquenessConstraint( descriptor1 ),
+                new UniquenessConstraint( descriptor2 ),
+                new NodePropertyExistenceConstraint( descriptor2 ),
+                new RelationshipPropertyExistenceConstraint(
+                        new RelationshipPropertyDescriptor( relationshipTypeId( relType1 ), propKeyId ) ) );
 
         assertEquals( expectedConstraints, constraints );
     }
@@ -88,8 +95,10 @@ public class DiskLayerSchemaWithPECTest extends DiskLayerTest
 
         // Then
         Set<NodePropertyConstraint> expectedConstraints = asSet(
-                new UniquenessConstraint( labelId( label1 ), propertyKeyId( propertyKey ) ),
-                new NodePropertyExistenceConstraint( labelId( label1 ), propertyKeyId( propertyKey ) ) );
+                new UniquenessConstraint(
+                        new NodePropertyDescriptor( labelId( label1 ), propertyKeyId( propertyKey ) ) ),
+                new NodePropertyExistenceConstraint(
+                        new NodePropertyDescriptor( labelId( label1 ), propertyKeyId( propertyKey ) ) ) );
 
         assertEquals( expectedConstraints, constraints );
     }
@@ -107,13 +116,14 @@ public class DiskLayerSchemaWithPECTest extends DiskLayerTest
         SchemaHelper.awaitIndexes( db );
 
         // When
-        Set<NodePropertyConstraint> constraints = asSet(
-                disk.constraintsGetForLabelAndPropertyKey( labelId( label1 ), propertyKeyId( propertyKey ) ) );
+        NodePropertyDescriptor descriptor =
+                new NodePropertyDescriptor( labelId( label1 ), propertyKeyId( propertyKey ) );
+        Set<NodePropertyConstraint> constraints = asSet( disk.constraintsGetForLabelAndPropertyKey( descriptor ) );
 
         // Then
         Set<NodePropertyConstraint> expectedConstraints = asSet(
-                new UniquenessConstraint( labelId( label1 ), propertyKeyId( propertyKey ) ),
-                new NodePropertyExistenceConstraint( labelId( label1 ), propertyKeyId( propertyKey ) ) );
+                new UniquenessConstraint( descriptor ),
+                new NodePropertyExistenceConstraint( descriptor ) );
 
         assertEquals( expectedConstraints, constraints );
     }
@@ -132,8 +142,10 @@ public class DiskLayerSchemaWithPECTest extends DiskLayerTest
 
         // Then
         Set<RelationshipPropertyConstraint> expectedConstraints = Iterators.<RelationshipPropertyConstraint>asSet(
-                new RelationshipPropertyExistenceConstraint( relTypeId, propertyKeyId( propertyKey ) ),
-                new RelationshipPropertyExistenceConstraint( relTypeId, propertyKeyId( otherPropertyKey ) ) );
+                new RelationshipPropertyExistenceConstraint(
+                        new RelationshipPropertyDescriptor( relTypeId, propertyKeyId( propertyKey ) ) ),
+                new RelationshipPropertyExistenceConstraint(
+                        new RelationshipPropertyDescriptor( relTypeId, propertyKeyId( otherPropertyKey ) ) ) );
 
         assertEquals( expectedConstraints, constraints );
     }
@@ -152,11 +164,13 @@ public class DiskLayerSchemaWithPECTest extends DiskLayerTest
         int relTypeId = relationshipTypeId( relType1 );
         int propKeyId = propertyKeyId( propertyKey );
         Set<RelationshipPropertyConstraint> constraints = asSet(
-                disk.constraintsGetForRelationshipTypeAndPropertyKey( relTypeId, propKeyId ) );
+                disk.constraintsGetForRelationshipTypeAndPropertyKey(
+                        new RelationshipPropertyDescriptor( relTypeId, propKeyId ) ) );
 
         // Then
         Set<RelationshipPropertyConstraint> expectedConstraints = Iterators.<RelationshipPropertyConstraint>asSet(
-                new RelationshipPropertyExistenceConstraint( relTypeId, propKeyId ) );
+                new RelationshipPropertyExistenceConstraint(
+                        new RelationshipPropertyDescriptor( relTypeId, propKeyId ) ) );
 
         assertEquals( expectedConstraints, constraints );
     }

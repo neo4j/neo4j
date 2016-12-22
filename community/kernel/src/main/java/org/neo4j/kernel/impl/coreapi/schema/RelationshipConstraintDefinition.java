@@ -24,7 +24,7 @@ import org.neo4j.graphdb.RelationshipType;
 
 import static java.util.Objects.requireNonNull;
 
-abstract class RelationshipConstraintDefinition extends PropertyConstraintDefinition
+abstract class RelationshipConstraintDefinition extends SinglePropertyConstraintDefinition
 {
     protected final RelationshipType relationshipType;
 

@@ -27,10 +27,13 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
+import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodePropertyConstraintRule;
@@ -55,7 +58,7 @@ public class SchemaCache
 
     private final Collection<NodePropertyConstraint> nodeConstraints = new HashSet<>();
     private final Collection<RelationshipPropertyConstraint> relationshipConstraints = new HashSet<>();
-    private final Map<Integer, Map<Integer, CommittedIndexDescriptor>> indexDescriptors = new HashMap<>();
+    private final Map<IndexDescriptor, CommittedIndexDescriptor> indexDescriptors = new HashMap<>();
     private final ConstraintSemantics constraintSemantics;
 
     public SchemaCache( ConstraintSemantics constraintSemantics, Iterable<SchemaRule> initialRules )
@@ -98,26 +101,31 @@ public class SchemaCache
 
     public Iterator<NodePropertyConstraint> constraintsForLabel( final int label )
     {
-        return Iterators.filter( constraint -> constraint.label() == label, nodeConstraints.iterator() );
+        return Iterators.filter(
+                constraint -> constraint.label() == label,
+                nodeConstraints.iterator() );
     }
 
-    public Iterator<NodePropertyConstraint> constraintsForLabelAndProperty( final int label, final int property )
+    public Iterator<NodePropertyConstraint> constraintsForLabelAndProperty( NodePropertyDescriptor descriptor )
     {
-        return Iterators.filter( constraint -> constraint.label() == label &&
-                                     constraint.propertyKey() == property, nodeConstraints.iterator() );
+        return Iterators.filter(
+                constraint -> constraint.matches( descriptor ),
+                nodeConstraints.iterator() );
     }
 
     public Iterator<RelationshipPropertyConstraint> constraintsForRelationshipType( final int typeId )
     {
-        return Iterators.filter( constraint -> constraint.relationshipType() == typeId, relationshipConstraints.iterator() );
+        return Iterators.filter(
+                constraint -> constraint.descriptor().getRelationshipTypeId() == typeId,
+                relationshipConstraints.iterator() );
     }
 
-    public Iterator<RelationshipPropertyConstraint> constraintsForRelationshipTypeAndProperty( final int typeId,
-            final int propertyKeyId )
+    public Iterator<RelationshipPropertyConstraint> constraintsForRelationshipTypeAndProperty(
+            RelationshipPropertyDescriptor descriptor )
     {
         return Iterators.filter(
-                constraint -> constraint.relationshipType() == typeId &&
-                              constraint.propertyKey() == propertyKeyId, relationshipConstraints.iterator() );
+                constraint -> constraint.matches( descriptor ),
+                relationshipConstraints.iterator() );
     }
 
     public void addSchemaRule( SchemaRule rule )
@@ -139,13 +147,11 @@ public class SchemaCache
         else if ( rule instanceof IndexRule )
         {
             IndexRule indexRule = (IndexRule) rule;
-            Map<Integer, CommittedIndexDescriptor> byLabel = indexDescriptors.get( indexRule.getLabel() );
-            if ( byLabel == null )
+            IndexDescriptor index = IndexDescriptorFactory.from( indexRule );
+            if ( !indexDescriptors.containsKey( index ) )
             {
-                indexDescriptors.put( indexRule.getLabel(), byLabel = new HashMap<>() );
+                indexDescriptors.put( index, new CommittedIndexDescriptor( index, indexRule.getId() ) );
             }
-            byLabel.put( indexRule.getPropertyKey(), new CommittedIndexDescriptor( indexRule.getLabel(),
-                    indexRule.getPropertyKey(), indexRule.getId() ) );
         }
     }
 
@@ -174,12 +180,12 @@ public class SchemaCache
     private static class CommittedIndexDescriptor
     {
         private final IndexDescriptor descriptor;
-        private final long id;
+//        private final long id;
 
-        public CommittedIndexDescriptor( int labelId, int propertyKey, long id )
+        public CommittedIndexDescriptor( IndexDescriptor descriptor, long id )
         {
-            this.descriptor = new IndexDescriptor( labelId, propertyKey );
-            this.id = id;
+            this.descriptor = descriptor;
+//            this.id = id;
         }
 
         public IndexDescriptor getDescriptor()
@@ -187,10 +193,10 @@ public class SchemaCache
             return descriptor;
         }
 
-        public long getId()
-        {
-            return id;
-        }
+//        public long getId()
+//        {
+//            return id;
+//        }
     }
 
     public void removeSchemaRule( long id )
@@ -212,26 +218,13 @@ public class SchemaCache
         else if ( rule instanceof IndexRule )
         {
             IndexRule indexRule = (IndexRule) rule;
-            Map<Integer, CommittedIndexDescriptor> byLabel = indexDescriptors.get( indexRule.getLabel() );
-            byLabel.remove( indexRule.getPropertyKey() );
-            if ( byLabel.isEmpty() )
-            {
-                indexDescriptors.remove( indexRule.getLabel() );
-            }
+            indexDescriptors.remove( IndexDescriptorFactory.from( indexRule ) );
         }
     }
 
-    public IndexDescriptor indexDescriptor( int labelId, int propertyKey )
+    public IndexDescriptor indexDescriptor( NodePropertyDescriptor descriptor )
     {
-        Map<Integer, CommittedIndexDescriptor> byLabel = indexDescriptors.get( labelId );
-        if ( byLabel != null )
-        {
-            CommittedIndexDescriptor committed = byLabel.get( propertyKey );
-            if ( committed != null )
-            {
-                return committed.getDescriptor();
-            }
-        }
-        return null;
+        IndexDescriptor indexDescriptor = IndexDescriptorFactory.from( descriptor );
+        return indexDescriptors.containsKey(indexDescriptor) ? indexDescriptor : null;
     }
 }

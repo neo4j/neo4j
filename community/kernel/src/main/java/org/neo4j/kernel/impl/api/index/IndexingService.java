@@ -42,7 +42,8 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexConfiguration;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
@@ -195,7 +196,7 @@ public class IndexingService extends LifecycleAdapter
             IndexProxy indexProxy;
 
             long indexId = indexRule.getId();
-            IndexDescriptor descriptor = new IndexDescriptor( indexRule.getLabel(), indexRule.getPropertyKey() );
+            IndexDescriptor descriptor = IndexDescriptorFactory.from( indexRule );
             SchemaIndexProvider.Descriptor providerDescriptor = indexRule.getProviderDescriptor();
             SchemaIndexProvider provider = providerMap.apply( providerDescriptor );
             InternalIndexState initialState = provider.getInitialState( indexId );
@@ -490,9 +491,7 @@ public class IndexingService extends LifecycleAdapter
     private void processUpdate( NodePropertyUpdate update, IndexUpdaterMap updaterMap, int labelId,
             int propertyKeyId ) throws IOException, IndexEntryConflictException
     {
-        IndexDescriptor descriptor = new IndexDescriptor( labelId, propertyKeyId );
-        IndexUpdater updater = updaterMap.getUpdater( descriptor );
-        if ( updater != null )
+        for ( IndexUpdater updater : updaterMap.getUpdaters( labelId, propertyKeyId ) )
         {
             updater.process( update );
         }
@@ -533,7 +532,7 @@ public class IndexingService extends LifecycleAdapter
                 indexMapRef.setIndexMap( indexMap );
                 continue;
             }
-            final IndexDescriptor descriptor = new IndexDescriptor( rule.getLabel(), rule.getPropertyKey() );
+            final IndexDescriptor descriptor = IndexDescriptorFactory.from( rule );
             SchemaIndexProvider.Descriptor providerDescriptor = rule.getProviderDescriptor();
             boolean constraint = rule.isConstraintIndex();
             if ( state == State.RUNNING )

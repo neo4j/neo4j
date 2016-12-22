@@ -25,7 +25,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 
 import org.neo4j.function.Predicates;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexMap;
 import org.neo4j.kernel.impl.api.index.IndexMapSnapshotProvider;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
@@ -354,16 +356,16 @@ public class IndexSamplingControllerTest
     private final IndexMap indexMap = new IndexMap();
     private final IndexProxy indexProxy = mock( IndexProxy.class );
     private final IndexProxy anotherIndexProxy = mock( IndexProxy.class );
-    private final IndexDescriptor descriptor = new IndexDescriptor( 3, 4 );
-    private final IndexDescriptor anotherDescriptor = new IndexDescriptor( 5, 6 );
+    private final NodePropertyDescriptor descriptor = new NodePropertyDescriptor( 3, 4 );
+    private final NodePropertyDescriptor anotherDescriptor = new NodePropertyDescriptor( 5, 6 );
     private final IndexSamplingJob job = mock( IndexSamplingJob.class );
     private final IndexSamplingJob anotherJob = mock( IndexSamplingJob.class );
 
     {
         when( samplingConfig.backgroundSampling() ).thenReturn( true );
         when( samplingConfig.jobLimit() ).thenReturn( 1 );
-        when( indexProxy.getDescriptor() ).thenReturn( descriptor );
-        when( anotherIndexProxy.getDescriptor() ).thenReturn( anotherDescriptor );
+        when( indexProxy.getDescriptor() ).thenReturn( IndexDescriptorFactory.from(descriptor) );
+        when( anotherIndexProxy.getDescriptor() ).thenReturn( IndexDescriptorFactory.from(anotherDescriptor) );
         when( snapshotProvider.indexMapSnapshot() ).thenReturn( indexMap );
         when( jobFactory.create( indexProxy ) ).thenReturn( job );
         when( jobFactory.create( anotherIndexProxy ) ).thenReturn( anotherJob );

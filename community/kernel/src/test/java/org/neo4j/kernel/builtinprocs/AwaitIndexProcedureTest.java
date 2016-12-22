@@ -27,13 +27,15 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IndexSchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.index.InternalIndexState;
 
 import static org.hamcrest.Matchers.is;
@@ -42,7 +44,7 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyObject;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -58,6 +60,9 @@ public class AwaitIndexProcedureTest
     private static final TimeUnit timeoutUnits = TimeUnit.MILLISECONDS;
     private final ReadOperations operations = mock( ReadOperations.class );
     private final IndexProcedures procedure = new IndexProcedures( new StubKernelTransaction( operations ), null );
+    private final NodePropertyDescriptor descriptor = new NodePropertyDescriptor( 123, 456 );
+    private final NodePropertyDescriptor anyDescriptor = new NodePropertyDescriptor( 0, 0 );
+    private final IndexDescriptor anyIndex = IndexDescriptorFactory.from( anyDescriptor );
 
     @Test
     public void shouldThrowAnExceptionIfTheLabelDoesntExist() throws ProcedureException
@@ -95,15 +100,14 @@ public class AwaitIndexProcedureTest
     public void shouldLookUpTheIndexByLabelIdAndPropertyKeyId()
             throws ProcedureException, SchemaRuleNotFoundException, IndexNotFoundKernelException
     {
-        when( operations.labelGetForName( anyString() ) ).thenReturn( 123 );
-        when( operations.propertyKeyGetForName( anyString() ) ).thenReturn( 456 );
-        when( operations.indexGetForLabelAndPropertyKey( anyInt(), anyInt() ) )
-                .thenReturn( new IndexDescriptor( 0, 0 ) );
+        when( operations.labelGetForName( anyString() ) ).thenReturn( descriptor.getLabelId() );
+        when( operations.propertyKeyGetForName( anyString() ) ).thenReturn( descriptor.getPropertyKeyId() );
+        when( operations.indexGetForLabelAndPropertyKey( anyObject() ) ).thenReturn( anyIndex );
         when( operations.indexGetState( any( IndexDescriptor.class ) ) ).thenReturn( ONLINE );
 
         procedure.awaitIndex( ":Person(name)", timeout, timeoutUnits );
 
-        verify( operations ).indexGetForLabelAndPropertyKey( 123, 456 );
+        verify( operations ).indexGetForLabelAndPropertyKey( descriptor );
     }
 
     @Test
@@ -113,8 +117,7 @@ public class AwaitIndexProcedureTest
     {
         when( operations.labelGetForName( anyString() ) ).thenReturn( 0 );
         when( operations.propertyKeyGetForName( anyString() ) ).thenReturn( 0 );
-        when( operations.indexGetForLabelAndPropertyKey( anyInt(), anyInt() ) )
-                .thenReturn( new IndexDescriptor( 0, 0 ) );
+        when( operations.indexGetForLabelAndPropertyKey( anyObject() ) ).thenReturn( anyIndex );
         when( operations.indexGetState( any( IndexDescriptor.class ) ) ).thenReturn( FAILED );
 
         try
@@ -135,8 +138,8 @@ public class AwaitIndexProcedureTest
     {
         when( operations.labelGetForName( anyString() ) ).thenReturn( 0 );
         when( operations.propertyKeyGetForName( anyString() ) ).thenReturn( 0 );
-        when( operations.indexGetForLabelAndPropertyKey( anyInt(), anyInt() ) )
-                .thenThrow( new IndexSchemaRuleNotFoundException( -1, -1 ) );
+        when( operations.indexGetForLabelAndPropertyKey( anyObject() ) )
+                .thenThrow( new IndexSchemaRuleNotFoundException( anyDescriptor ) );
 
         try
         {
@@ -155,8 +158,7 @@ public class AwaitIndexProcedureTest
     {
         when( operations.labelGetForName( anyString() ) ).thenReturn( 0 );
         when( operations.propertyKeyGetForName( anyString() ) ).thenReturn( 0 );
-        when( operations.indexGetForLabelAndPropertyKey( anyInt(), anyInt() ) )
-                .thenReturn( new IndexDescriptor( 0, 0 ) );
+        when( operations.indexGetForLabelAndPropertyKey( anyObject() ) ).thenReturn( anyIndex );
 
         AtomicReference<InternalIndexState> state = new AtomicReference<>( POPULATING );
         when( operations.indexGetState( any( IndexDescriptor.class ) ) ).then( new Answer<InternalIndexState>()
@@ -195,8 +197,7 @@ public class AwaitIndexProcedureTest
     {
         when( operations.labelGetForName( anyString() ) ).thenReturn( 0 );
         when( operations.propertyKeyGetForName( anyString() ) ).thenReturn( 0 );
-        when( operations.indexGetForLabelAndPropertyKey( anyInt(), anyInt() ) )
-                .thenReturn( new IndexDescriptor( 0, 0 ) );
+        when( operations.indexGetForLabelAndPropertyKey( anyObject() ) ).thenReturn( anyIndex );
         when( operations.indexGetState( any( IndexDescriptor.class ) ) ).thenReturn( POPULATING );
 
         AtomicReference<ProcedureException> exception = new AtomicReference<>();

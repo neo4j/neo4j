@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.exceptions.schema;
 
+import org.neo4j.kernel.api.schema.EntityPropertyDescriptor;
 import org.neo4j.kernel.api.TokenNameLookup;
 
 import static java.lang.String.format;
@@ -31,18 +32,15 @@ public class DuplicateIndexSchemaRuleException extends DuplicateSchemaRuleExcept
     private static final String DUPLICATE_INDEX_RULE_MESSAGE_TEMPLATE =
             "Multiple %s found for label '%s' and property '%s'.";
 
-    public DuplicateIndexSchemaRuleException( int ruleEntityId, int propertyKeyId,
-            boolean unique )
+    public DuplicateIndexSchemaRuleException( EntityPropertyDescriptor descriptor, boolean unique )
     {
-        super( DUPLICATE_INDEX_RULE_MESSAGE_TEMPLATE, ruleEntityId, propertyKeyId,
-                unique ? UNIQUE_INDEX_PREFIX : INDEX_PREFIX );
+        super( DUPLICATE_INDEX_RULE_MESSAGE_TEMPLATE, descriptor, unique ? UNIQUE_INDEX_PREFIX : INDEX_PREFIX );
     }
 
     @Override
     public String getUserMessage( TokenNameLookup tokenNameLookup )
     {
-        return format( messageTemplate, messagePrefix,
-                tokenNameLookup.labelGetName( ruleEntityId ),
-                tokenNameLookup.propertyKeyGetName( propertyKeyId ) );
+        return format( messageTemplate, messagePrefix, descriptor.entityNameText( tokenNameLookup ),
+                descriptor.propertyNameText( tokenNameLookup ));
     }
 }

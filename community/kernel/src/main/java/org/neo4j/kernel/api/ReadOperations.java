@@ -42,11 +42,13 @@ import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelExce
 import org.neo4j.kernel.api.exceptions.schema.DuplicateIndexSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.QualifiedName;
 import org.neo4j.kernel.api.proc.UserFunctionSignature;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
+import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.register.Register.DoubleLongRegister;
@@ -264,7 +266,7 @@ public interface ReadOperations
     //===========================================
 
     /** Returns the index rule for the given labelId and propertyKey. */
-    IndexDescriptor indexGetForLabelAndPropertyKey( int labelId, int propertyKey )
+    IndexDescriptor indexGetForLabelAndPropertyKey( NodePropertyDescriptor descriptor )
             throws SchemaRuleNotFoundException;
 
     /** Get all indexes for a label. */
@@ -274,7 +276,7 @@ public interface ReadOperations
     Iterator<IndexDescriptor> indexesGetAll();
 
     /** Returns the constraint index for the given labelId and propertyKey. */
-    IndexDescriptor uniqueIndexGetForLabelAndPropertyKey( int labelId, int propertyKeyId )
+    IndexDescriptor uniqueIndexGetForLabelAndPropertyKey( NodePropertyDescriptor descriptor )
             throws SchemaRuleNotFoundException, DuplicateIndexSchemaRuleException;
 
     /** Get all constraint indexes for a label. */
@@ -302,7 +304,7 @@ public interface ReadOperations
      * Get all constraints applicable to label and propertyKey. There are only {@link NodePropertyConstraint}
      * for the time being.
      */
-    Iterator<NodePropertyConstraint> constraintsGetForLabelAndPropertyKey( int labelId, int propertyKeyId );
+    Iterator<NodePropertyConstraint> constraintsGetForLabelAndPropertyKey( NodePropertyDescriptor descriptor );
 
     /**
      * Get all constraints applicable to label. There are only {@link NodePropertyConstraint}
@@ -320,7 +322,8 @@ public interface ReadOperations
      * Get all constraints applicable to relationship type and propertyKey.
      * There are only {@link RelationshipPropertyConstraint} for the time being.
      */
-    Iterator<RelationshipPropertyConstraint> constraintsGetForRelationshipTypeAndPropertyKey( int typeId, int propertyKeyId );
+    Iterator<RelationshipPropertyConstraint> constraintsGetForRelationshipTypeAndPropertyKey(
+            RelationshipPropertyDescriptor descriptor );
 
     /**
      * Get all constraints. There are only {@link PropertyConstraint}

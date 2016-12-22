@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.store.DynamicNodeLabels;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -140,9 +141,9 @@ public class Commands
     }
 
     public static SchemaRuleCommand createIndexRule( SchemaIndexProvider.Descriptor provider,
-            long id, int label, int property )
+            long id, NodePropertyDescriptor descriptor )
     {
-        SchemaRule rule = IndexRule.indexRule( id, label, property, provider );
+        SchemaRule rule = IndexRule.indexRule( id, descriptor, provider );
         RecordSerializer serializer = new RecordSerializer();
         serializer.append( (AbstractSchemaRule)rule );
         DynamicRecord record = new DynamicRecord( id );

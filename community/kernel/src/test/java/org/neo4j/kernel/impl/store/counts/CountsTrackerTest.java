@@ -28,6 +28,9 @@ import java.util.concurrent.Future;
 
 import org.neo4j.function.IOFunction;
 import org.neo4j.function.ThrowingFunction;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.CountsVisitor;
@@ -76,13 +79,14 @@ public class CountsTrackerTest
     {
         // given
         CountsTracker tracker = resourceManager.managed( newTracker() );
+        IndexDescriptor index = IndexDescriptorFactory.from( new NodePropertyDescriptor( 1, 1 ) );
         CountsOracle oracle = new CountsOracle();
         {
             CountsOracle.Node a = oracle.node( 1 );
             CountsOracle.Node b = oracle.node( 1 );
             oracle.relationship( a, 1, b );
-            oracle.indexSampling( 1, 1, 2, 2 );
-            oracle.indexUpdatesAndSize( 1, 1, 10, 2 );
+            oracle.indexSampling( index, 2, 2 );
+            oracle.indexUpdatesAndSize( index, 10, 2 );
         }
 
         // when
@@ -100,11 +104,11 @@ public class CountsTrackerTest
         // when
         try ( CountsAccessor.IndexStatsUpdater updater = tracker.updateIndexCounts() )
         {
-            updater.incrementIndexUpdates( 1, 1, 2 );
+            updater.incrementIndexUpdates( index, 2 );
         }
 
         // then
-        oracle.indexUpdatesAndSize( 1, 1, 12, 2 );
+        oracle.indexUpdatesAndSize( index, 12, 2 );
         oracle.verify( tracker );
 
         // when
@@ -271,7 +275,7 @@ public class CountsTrackerTest
         File before = tracker.currentFile();
         try ( CountsAccessor.IndexStatsUpdater updater = tracker.updateIndexCounts() )
         {
-            updater.incrementIndexUpdates( 7, 8, 100 );
+            updater.incrementIndexUpdates( IndexDescriptorFactory.from( new NodePropertyDescriptor( 7, 8 ) ), 100 );
         }
 
         // when
@@ -364,8 +368,9 @@ public class CountsTrackerTest
         oracle.relationship( n1, 1, n3 );
         oracle.relationship( n1, 1, n2 );
         oracle.relationship( n0, 1, n3 );
-        oracle.indexUpdatesAndSize( 1, 2, 0L, 50L );
-        oracle.indexSampling( 1, 2, 25L, 50L );
+        IndexDescriptor index = IndexDescriptorFactory.from( new NodePropertyDescriptor( 1, 2 ) );
+        oracle.indexUpdatesAndSize( index, 0L, 50L );
+        oracle.indexSampling( index, 25L, 50L );
         return oracle;
     }
 

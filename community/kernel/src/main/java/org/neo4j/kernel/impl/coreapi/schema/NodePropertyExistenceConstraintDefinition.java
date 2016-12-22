@@ -21,21 +21,27 @@ package org.neo4j.kernel.impl.coreapi.schema;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.schema.ConstraintType;
+import org.neo4j.graphdb.schema.IndexDefinition;
 
 import static java.lang.String.format;
 
 public class NodePropertyExistenceConstraintDefinition extends NodeConstraintDefinition
 {
-    public NodePropertyExistenceConstraintDefinition( InternalSchemaActions actions, Label label, String propertyKey )
+    public NodePropertyExistenceConstraintDefinition( InternalSchemaActions actions, Label label, String[] propertyKeys )
     {
-        super( actions, label, propertyKey );
+        super( actions, label, propertyKeys );
+    }
+
+    protected NodePropertyExistenceConstraintDefinition( InternalSchemaActions actions, IndexDefinition indexDefinition )
+    {
+        super( actions, indexDefinition );
     }
 
     @Override
     public void drop()
     {
         assertInUnterminatedTransaction();
-        actions.dropNodePropertyExistenceConstraint( label, propertyKey );
+        actions.dropNodePropertyExistenceConstraint( new IndexDefinitionImpl( actions, label, propertyKeys, true ) );
     }
 
     @Override
@@ -48,7 +54,15 @@ public class NodePropertyExistenceConstraintDefinition extends NodeConstraintDef
     @Override
     public String toString()
     {
-        return format( "ON (%1$s:%2$s) ASSERT exists(%1$s.%3$s)",
-                label.name().toLowerCase(), label.name(), propertyKey );
+        if ( propertyKeys.length == 1 )
+        {
+            return format( "ON (%1$s:%2$s) ASSERT exists(%3$s)",
+                    label.name().toLowerCase(), label.name(), propertyText() );
+        }
+        else
+        {
+            return format( "ON (%1$s:%2$s) ASSERT %3$s IS COMPOSITE KEY",
+                    label.name().toLowerCase(), label.name(), propertyText() );
+        }
     }
 }

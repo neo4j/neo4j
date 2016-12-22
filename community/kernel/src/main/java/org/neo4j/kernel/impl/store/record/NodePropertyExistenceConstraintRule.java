@@ -21,41 +21,41 @@ package org.neo4j.kernel.impl.store.record;
 
 import java.nio.ByteBuffer;
 
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
 
 public class NodePropertyExistenceConstraintRule extends NodePropertyConstraintRule
 {
-    private final int propertyKeyId;
 
-    public static NodePropertyExistenceConstraintRule nodePropertyExistenceConstraintRule( long id, int labelId,
-            int propertyKeyId )
+    public static NodePropertyExistenceConstraintRule nodePropertyExistenceConstraintRule( long id, NodePropertyDescriptor descriptor )
     {
-        return new NodePropertyExistenceConstraintRule( id, labelId, propertyKeyId );
+        return new NodePropertyExistenceConstraintRule( id, descriptor );
     }
 
     public static NodePropertyExistenceConstraintRule readNodePropertyExistenceConstraintRule( long id, int labelId,
             ByteBuffer buffer )
     {
-        return new NodePropertyExistenceConstraintRule( id, labelId, readPropertyKey( buffer ) );
+        //TODO: Support composite constraints
+        return new NodePropertyExistenceConstraintRule( id, new NodePropertyDescriptor( labelId, buffer.getInt() ) );
     }
 
-    private NodePropertyExistenceConstraintRule( long id, int labelId, int propertyKeyId )
+    private NodePropertyExistenceConstraintRule( long id, NodePropertyDescriptor descriptor )
     {
-        super( id, labelId, Kind.NODE_PROPERTY_EXISTENCE_CONSTRAINT );
-        this.propertyKeyId = propertyKeyId;
+        super( id, descriptor, Kind.NODE_PROPERTY_EXISTENCE_CONSTRAINT );
     }
 
     @Override
     public String toString()
     {
-        return "NodePropertyExistenceConstraintRule[id=" + id + ", label=" + label + ", kind=" + kind +
-               ", propertyKeyId=" + propertyKeyId + "]";
+        return "NodePropertyExistenceConstraintRule[id=" + id + ", label=" + descriptor.getLabelId() + ", kind=" +
+               kind + ", propertyKeyIds=" + descriptor.propertyIdText() + "]";
     }
 
     @Override
     public int length()
     {
+        //TODO: Support composite indexes (requires format update)
         return 4 /* label id */ +
                1 /* kind id */ +
                4; /* property key id */
@@ -64,55 +64,15 @@ public class NodePropertyExistenceConstraintRule extends NodePropertyConstraintR
     @Override
     public void serialize( ByteBuffer target )
     {
-        target.putInt( label );
+        //TODO: Support composite indexes (requires format update)
+        target.putInt( descriptor.getLabelId() );
         target.put( kind.id() );
-        target.putInt( propertyKeyId );
-    }
-
-    private static int readPropertyKey( ByteBuffer buffer )
-    {
-        return buffer.getInt();
-    }
-
-    public int getPropertyKey()
-    {
-        return propertyKeyId;
+        target.putInt( descriptor.getPropertyKeyId() );
     }
 
     @Override
     public NodePropertyConstraint toConstraint()
     {
-        return new NodePropertyExistenceConstraint( getLabel(), getPropertyKey() );
-    }
-
-    @Override
-    public boolean containsPropertyKeyId( int propertyKeyId )
-    {
-        return propertyKeyId == this.propertyKeyId;
-    }
-
-    @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
-            return true;
-        }
-        if ( o == null || getClass() != o.getClass() )
-        {
-            return false;
-        }
-        if ( !super.equals( o ) )
-        {
-            return false;
-        }
-        return propertyKeyId == ((NodePropertyExistenceConstraintRule) o).propertyKeyId;
-
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return 31 * super.hashCode() + propertyKeyId;
+        return new NodePropertyExistenceConstraint( descriptor );
     }
 }

@@ -27,10 +27,12 @@ import java.util.Set;
 
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Pair;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 
 import static java.lang.String.format;
 
@@ -85,9 +87,10 @@ public class DbStructureCollector implements DbStructureVisitor
             @Override
             public Iterator<Pair<String, String>> knownUniqueConstraints()
             {
+                //TODO: Add support for composite indexes
                 return Iterators.map( uniquenessConstraint -> {
                     String label = labels.byIdOrFail( uniquenessConstraint.label() );
-                    String propertyKey = propertyKeys.byIdOrFail( uniquenessConstraint.propertyKey() );
+                    String propertyKey = propertyKeys.byIdOrFail( uniquenessConstraint.descriptor().getPropertyKeyId() );
                     return Pair.of( label, propertyKey );
                 }, uniquenessConstraints.iterator() );
             }
@@ -95,9 +98,10 @@ public class DbStructureCollector implements DbStructureVisitor
             @Override
             public Iterator<Pair<String,String>> knownNodePropertyExistenceConstraints()
             {
+                //TODO: Add support for composite indexes
                 return Iterators.map( uniquenessConstraint -> {
                     String label = labels.byIdOrFail( uniquenessConstraint.label() );
-                    String propertyKey = propertyKeys.byIdOrFail( uniquenessConstraint.propertyKey() );
+                    String propertyKey = propertyKeys.byIdOrFail( uniquenessConstraint.descriptor().getPropertyKeyId() );
                     return Pair.of( label, propertyKey );
                 }, nodePropertyExistenceConstraints.iterator() );
             }
@@ -126,16 +130,20 @@ public class DbStructureCollector implements DbStructureVisitor
             @Override
             public double indexSelectivity( int labelId, int propertyKeyId )
             {
-                IndexStatistics result1 = regularIndices.getIndex( labelId, propertyKeyId );
-                IndexStatistics result2 = result1 == null ? uniqueIndices.getIndex( labelId, propertyKeyId ) : result1;
+                //TODO: Support composite indexes
+                NodePropertyDescriptor descriptor = new NodePropertyDescriptor( labelId, propertyKeyId );
+                IndexStatistics result1 = regularIndices.getIndex( descriptor );
+                IndexStatistics result2 = result1 == null ? uniqueIndices.getIndex( descriptor ) : result1;
                 return result2 == null ? Double.NaN : result2.uniqueValuesPercentage;
             }
 
             @Override
             public double indexPropertyExistsSelectivity( int labelId, int propertyKeyId )
             {
-                IndexStatistics result1 = regularIndices.getIndex( labelId, propertyKeyId );
-                IndexStatistics result2 = result1 == null ? uniqueIndices.getIndex( labelId, propertyKeyId ) : result1;
+                //TODO: Support composite indexes
+                NodePropertyDescriptor descriptor = new NodePropertyDescriptor( labelId, propertyKeyId );
+                IndexStatistics result1 = regularIndices.getIndex( descriptor );
+                IndexStatistics result2 = result1 == null ? uniqueIndices.getIndex( descriptor ) : result1;
                 return result2 == null ? Double.NaN : result2.size;
             }
         };
@@ -325,9 +333,9 @@ public class DbStructureCollector implements DbStructureVisitor
             indexMap.put( descriptor, new IndexStatistics(uniqueValuesPercentage, size) );
         }
 
-        public IndexStatistics getIndex( int labelId, int propertyKeyId )
+        public IndexStatistics getIndex( NodePropertyDescriptor descriptor )
         {
-            return indexMap.get( new IndexDescriptor( labelId, propertyKeyId ) );
+            return indexMap.get( IndexDescriptorFactory.from( descriptor ) );
         }
 
         public Iterator<Pair<String, String>> iterator()
@@ -344,6 +352,7 @@ public class DbStructureCollector implements DbStructureVisitor
                 @Override
                 public Pair<String, String> next()
                 {
+                    //TODO: Add support for composite indexes
                     IndexDescriptor next = iterator.next();
                     String label = labels.byIdOrFail( next.getLabelId() );
                     String propertyKey = propertyKeys.byIdOrFail( next.getPropertyKeyId() );
@@ -378,6 +387,16 @@ public class DbStructureCollector implements DbStructureVisitor
                 throw new IllegalArgumentException( format( "Didn't find %s token with id %s", tokenType, token ) );
             }
             return result;
+        }
+
+        public String[] byIdOrFail( int[] tokens )
+        {
+            String[] results = new String[tokens.length];
+            for ( int i = 0; i < tokens.length; i++ )
+            {
+                results[i] = byIdOrFail( tokens[i] );
+            }
+            return results;
         }
 
         public void putToken( int token, String name )

@@ -38,6 +38,7 @@ public class IndexSpecifier
         this.specification = specification;
         Pair<String, String> components = parse();
         label = components.first();
+        //TODO: Support composite indexes
         property = components.other();
     }
 

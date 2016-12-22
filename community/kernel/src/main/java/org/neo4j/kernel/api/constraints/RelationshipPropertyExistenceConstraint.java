@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.constraints;
 
+import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 
@@ -27,9 +28,9 @@ import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
  */
 public class RelationshipPropertyExistenceConstraint extends RelationshipPropertyConstraint
 {
-    public RelationshipPropertyExistenceConstraint( int relTypeId, int propertyKeyId )
+    public RelationshipPropertyExistenceConstraint( RelationshipPropertyDescriptor descriptor )
     {
-        super( relTypeId, propertyKeyId );
+        super( descriptor );
     }
 
     @Override
@@ -47,16 +48,16 @@ public class RelationshipPropertyExistenceConstraint extends RelationshipPropert
     @Override
     public String userDescription( TokenNameLookup tokenNameLookup )
     {
-        String typeName = tokenNameLookup.relationshipTypeGetName( relationshipTypeId );
+        String typeName = descriptor.entityNameText( tokenNameLookup );
         String boundIdentifier = typeName.toLowerCase();
         return String.format( "CONSTRAINT ON ()-[ %s:%s ]-() ASSERT exists(%s.%s)",
-                boundIdentifier, typeName, boundIdentifier, tokenNameLookup.propertyKeyGetName( propertyKeyId ) );
+                boundIdentifier, typeName, boundIdentifier, descriptor.propertyNameText( tokenNameLookup ) );
     }
 
     @Override
     public String toString()
     {
         return String.format( "CONSTRAINT ON ()-[ n:relationshipType[%s] ]-() ASSERT exists(n.property[%s])",
-                relationshipTypeId, propertyKeyId );
+                descriptor.getRelationshipTypeId(), descriptor.propertyIdText() );
     }
 }

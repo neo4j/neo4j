@@ -20,8 +20,9 @@
 package org.neo4j.kernel.impl.util.dbstructure;
 
 import org.neo4j.helpers.collection.Visitable;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 
 //
 // GENERATED FILE. DO NOT EDIT.
@@ -77,12 +78,12 @@ implements Visitable<DbStructureVisitor>
         visitor.visitRelationshipType( 2, "ACTS_IN" );
         visitor.visitRelationshipType( 3, "RATED" );
         visitor.visitRelationshipType( 4, "ROOT" );
-        visitor.visitIndex( new IndexDescriptor( 0, 9 ), ":Movie(title)", 1.0d, 12462L );
-        visitor.visitIndex( new IndexDescriptor( 1, 5 ), ":Person(name)", 1.0d, 49845L );
-        visitor.visitIndex( new IndexDescriptor( 3, 5 ), ":Actor(name)", 1.0d, 44689L );
-        visitor.visitIndex( new IndexDescriptor( 4, 5 ), ":Director(name)", 1.0d, 6010L );
-        visitor.visitUniqueIndex( new IndexDescriptor( 2, 3 ), ":User(login)", 1.0d, 45L );
-        visitor.visitUniqueConstraint( new UniquenessConstraint( 2, 3 ), "CONSTRAINT ON ( user:User ) ASSERT user.login IS UNIQUE" );
+        visitor.visitIndex( IndexDescriptorFactory.from( new NodePropertyDescriptor( 0, 9 ) ), ":Movie(title)", 1.0d, 12462L );
+        visitor.visitIndex( IndexDescriptorFactory.from( new NodePropertyDescriptor( 1, 5 ) ), ":Person(name)", 1.0d, 49845L );
+        visitor.visitIndex( IndexDescriptorFactory.from( new NodePropertyDescriptor( 3, 5 ) ), ":Actor(name)", 1.0d, 44689L );
+        visitor.visitIndex( IndexDescriptorFactory.from( new NodePropertyDescriptor( 4, 5 ) ), ":Director(name)", 1.0d, 6010L );
+        visitor.visitUniqueIndex( IndexDescriptorFactory.from( new NodePropertyDescriptor( 2, 3 ) ), ":User(login)", 1.0d, 45L );
+        visitor.visitUniqueConstraint( new UniquenessConstraint( new NodePropertyDescriptor( 2, 3 ) ), "CONSTRAINT ON ( user:User ) ASSERT user.login IS UNIQUE" );
         visitor.visitAllNodesCount( 63042L );
         visitor.visitNodeCount( 0, "Movie", 12862L );
         visitor.visitNodeCount( 1, "Person", 50179L );

@@ -23,10 +23,15 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.List;
 
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.index.IndexUpdater;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -56,13 +61,13 @@ public class IndexUpdaterMapTest
         indexMap = new IndexMap();
 
         indexProxy1 = mock( IndexProxy.class );
-        indexDescriptor1 = new IndexDescriptor( 2, 3 );
+        indexDescriptor1 = IndexDescriptorFactory.from( new NodePropertyDescriptor( 2, 3 ) );
         indexUpdater1 = mock( IndexUpdater.class );
         when( indexProxy1.getDescriptor() ).thenReturn( indexDescriptor1 );
         when( indexProxy1.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn( indexUpdater1 );
 
         indexProxy2 = mock( IndexProxy.class );
-        indexDescriptor2 = new IndexDescriptor( 5, 6 );
+        indexDescriptor2 = IndexDescriptorFactory.from( new NodePropertyDescriptor( 5, 6 ) );
         IndexUpdater indexUpdater2 = mock( IndexUpdater.class );
         when( indexProxy2.getDescriptor() ).thenReturn( indexDescriptor2 );
         when( indexProxy2.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn( indexUpdater2 );
@@ -82,6 +87,31 @@ public class IndexUpdaterMapTest
         // then
         assertEquals( indexUpdater1, updater );
         assertEquals( 1, updaterMap.size() );
+    }
+
+    @Test
+    public void shouldRetrieveUpdateUsingLabelAndProperty()
+    {
+        // given
+        indexMap.putIndexProxy( 0, indexProxy1 );
+
+        // when
+        List<IndexUpdater> updaters =
+                updaterMap.getUpdaters( indexDescriptor1.getLabelId(), indexDescriptor1.getPropertyKeyId() );
+
+        // then
+        assertThat( updaters, containsInAnyOrder( indexUpdater1 ) );
+    }
+
+    @Test
+    public void shouldRetrieveEmptyListOnNonExistentIndex()
+    {
+        // when
+        List<IndexUpdater> updaters =
+                updaterMap.getUpdaters( indexDescriptor1.getLabelId(), indexDescriptor1.getPropertyKeyId() );
+
+        // then
+        assertThat( updaters, containsInAnyOrder( ) );
     }
 
     @Test

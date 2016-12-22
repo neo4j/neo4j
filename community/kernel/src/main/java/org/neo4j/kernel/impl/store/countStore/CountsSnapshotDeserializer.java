@@ -23,6 +23,10 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.neo4j.kernel.api.schema.NodeMultiPropertyDescriptor;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKeyType;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosableChannel;
@@ -46,6 +50,7 @@ public class CountsSnapshotDeserializer
         for ( int i = 0; i < size; i++ )
         {
             CountsKeyType type = value( channel.get() );
+            IndexDescriptor descriptor;
             switch ( type )
             {
             case ENTITY_NODE:
@@ -64,13 +69,15 @@ public class CountsSnapshotDeserializer
                 break;
 
             case INDEX_SAMPLE:
-                key = indexSampleKey( channel.getInt(), channel.getInt() );
+                descriptor = IndexDescriptorFactory.from( readPropertyKeyIds( channel ) );
+                key = indexSampleKey( descriptor );
                 value = new long[]{channel.getLong(), channel.getLong()};
                 map.put( key, value );
                 break;
 
             case INDEX_STATISTICS:
-                key = indexStatisticsKey( channel.getInt(), channel.getInt() );
+                descriptor = IndexDescriptorFactory.from( readPropertyKeyIds( channel ) );
+                key = indexStatisticsKey( descriptor );
                 value = new long[]{channel.getLong(), channel.getLong()};
                 map.put( key, value );
                 break;
@@ -83,5 +90,24 @@ public class CountsSnapshotDeserializer
             }
         }
         return new CountsSnapshot( txid, map );
+    }
+
+    private static NodePropertyDescriptor readPropertyKeyIds( ReadableClosableChannel channel ) throws IOException
+    {
+        int labelId = channel.getInt();
+        short length = channel.getShort();
+        if ( length > 1 )
+        {
+            int[] propertyKeyIds = new int[length];
+            for ( int i = 0; i < length; i++ )
+            {
+                propertyKeyIds[i] = channel.getInt();
+            }
+            return new NodeMultiPropertyDescriptor( labelId, propertyKeyIds );
+        }
+        else
+        {
+            return new NodePropertyDescriptor( labelId, channel.getInt() );
+        }
     }
 }

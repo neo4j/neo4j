@@ -19,6 +19,7 @@
  */
 package org.neo4j.storageengine.api.schema;
 
+import org.neo4j.kernel.api.schema.EntityPropertyDescriptor;
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 
 /**
@@ -45,6 +46,11 @@ public interface SchemaRule
     int getRelationshipType();
 
     /**
+     * @return EntityPropertyDescriptor describing the label/type and property/properties this rule covers
+     */
+    EntityPropertyDescriptor descriptor();
+
+    /**
      * @return the kind of this schema rule
      */
     Kind getKind();
@@ -62,7 +68,7 @@ public interface SchemaRule
         private final boolean isIndex;
         private final boolean isConstraint;
 
-        private Kind( boolean isIndex, boolean isConstraint )
+        Kind( boolean isIndex, boolean isConstraint )
         {
             this.isIndex = isIndex;
             this.isConstraint = isConstraint;

@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_2.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{LabelToken, PropertyKeyToken}
 import org.neo4j.graphdb.Node
-import org.neo4j.kernel.api.index.IndexDescriptor
 
 abstract class AbstractNodeIndexStringScanPipe(ident: String,
                                                label: LabelToken,
@@ -33,7 +32,7 @@ abstract class AbstractNodeIndexStringScanPipe(ident: String,
                                                valueExpr: Expression)(implicit pipeMonitor: PipeMonitor)
   extends Pipe {
 
-  private val descriptor = new IndexDescriptor(label.nameId.id, propertyKey.nameId.id)
+  private val descriptor = IndexDescriptor(label.nameId.id, propertyKey.nameId.id)
 
   override protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     //register as parent so that stats are associated with this pipe

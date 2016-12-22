@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v3_2
 
 import org.neo4j.cypher.internal.compiler.v3_2.spi._
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
-import org.neo4j.kernel.api.index.IndexDescriptor
 
 class NotImplementedPlanContext extends PlanContext {
   override def getIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor] = ???

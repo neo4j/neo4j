@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.coreapi.schema;
 
+import java.util.Arrays;
+import java.util.stream.Collectors;
+
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.schema.IndexDefinition;
 
@@ -29,15 +32,21 @@ public class IndexDefinitionImpl implements IndexDefinition
     private final InternalSchemaActions actions;
 
     private final Label label;
-    private final String propertyKey;
+    private final String[] propertyKeys;
     private final boolean constraintIndex;
 
     public IndexDefinitionImpl( InternalSchemaActions actions, Label label, String propertyKey,
-                                boolean constraintIndex )
+            boolean constraintIndex )
+    {
+        this( actions, label, new String[]{propertyKey}, constraintIndex );
+    }
+
+    public IndexDefinitionImpl( InternalSchemaActions actions, Label label, String[] propertyKeys,
+            boolean constraintIndex )
     {
         this.actions = actions;
         this.label = label;
-        this.propertyKey = propertyKey;
+        this.propertyKeys = propertyKeys;
         this.constraintIndex = constraintIndex;
 
         assertInUnterminatedTransaction();
@@ -54,7 +63,7 @@ public class IndexDefinitionImpl implements IndexDefinition
     public Iterable<String> getPropertyKeys()
     {
         assertInUnterminatedTransaction();
-        return asList( propertyKey );
+        return asList( propertyKeys );
     }
 
     @Override
@@ -67,7 +76,7 @@ public class IndexDefinitionImpl implements IndexDefinition
                                              "instead drop the owning uniqueness constraint." );
         }
 
-        actions.dropIndexDefinitions( label, propertyKey );
+        actions.dropIndexDefinitions( this );
     }
 
     @Override
@@ -80,11 +89,7 @@ public class IndexDefinitionImpl implements IndexDefinition
     @Override
     public int hashCode()
     {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + label.name().hashCode();
-        result = prime * result + propertyKey.hashCode();
-        return result;
+        return hashCode(label, propertyKeys);
     }
 
     @Override
@@ -103,17 +108,30 @@ public class IndexDefinitionImpl implements IndexDefinition
             return false;
         }
         IndexDefinitionImpl other = (IndexDefinitionImpl) obj;
-        return label.name().equals( other.label.name() ) && propertyKey.equals( other.propertyKey );
+        return label.name().equals( other.label.name() ) && Arrays.equals( propertyKeys, other.propertyKeys );
     }
 
     @Override
     public String toString()
     {
-        return "IndexDefinition[label:" + label + ", on:" + propertyKey + "]";
+        return "IndexDefinition[label:" + label + ", on:" +
+               Arrays.stream( propertyKeys ).collect( Collectors.joining( "," ) ) + "]";
     }
 
     protected void assertInUnterminatedTransaction()
     {
         actions.assertInOpenTransaction();
+    }
+
+    public static int hashCode(Label label, String[] propertyKeys)
+    {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + label.name().hashCode();
+        for ( String propertyKey : propertyKeys )
+        {
+            result = prime * result + propertyKey.hashCode();
+        }
+        return result;
     }
 }
