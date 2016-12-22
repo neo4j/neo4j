@@ -28,10 +28,6 @@ import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
 
 /**
- * TODO: Adding another implementation of PageCursor (this implementation)
- * TODO: will mean Neo as a whole have three implementations in total.
- * TODO: This results in a slower method dispatch for ALL PageCursors. Is it worth it?
- * <p>
  * Wraps a byte array and present it as a PageCursor.
  * <p>
  * This class is bridging something which would otherwise make {@link InternalTreeLogic} code slightly more

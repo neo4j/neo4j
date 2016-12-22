@@ -236,51 +236,38 @@ class TreeNode<KEY,VALUE>
         return into;
     }
 
-    void insertKeyAt( PageCursor cursor, KEY key, int pos, int keyCount, byte[] tmp )
+    void insertKeyAt( PageCursor cursor, KEY key, int pos, int keyCount )
     {
-        insertSlotAt( cursor, pos, keyCount, keyOffset( 0 ), keySize, tmp );
+        insertSlotAt( cursor, pos, keyCount, keyOffset( 0 ), keySize );
         cursor.setOffset( keyOffset( pos ) );
         layout.writeKey( cursor, key );
     }
 
-    void removeKeyAt( PageCursor cursor, int pos, int keyCount, byte[] tmp )
+    void removeKeyAt( PageCursor cursor, int pos, int keyCount )
     {
-        removeSlotAt( cursor, pos, keyCount, keyOffset( 0 ), keySize, tmp );
+        removeSlotAt( cursor, pos, keyCount, keyOffset( 0 ), keySize );
     }
 
-    private void removeSlotAt( PageCursor cursor, int pos, int keyCount, int baseOffset, int itemSize, byte[] tmp )
+    private void removeSlotAt( PageCursor cursor, int pos, int keyCount, int baseOffset, int itemSize )
     {
-        int from = pos + 1;
-        int count = keyCount - from;
-        copyItems( cursor, from, count, baseOffset, itemSize, tmp );
-        writeItems( cursor, pos, count, baseOffset, itemSize, tmp );
+        for ( int posToMoveLeft = pos + 1, offset = baseOffset + posToMoveLeft * itemSize;
+                posToMoveLeft < keyCount; posToMoveLeft++, offset += itemSize )
+        {
+            cursor.copyTo( offset, cursor, offset - itemSize, itemSize );
+        }
     }
 
     /**
      * Moves items (key/value/child) one step to the right, which means rewriting all items of the particular type
      * from pos - keyCount.
      */
-    private void insertSlotAt( PageCursor cursor, int pos, int toExcluding, int baseOffset, int itemSize, byte[] tmp )
+    private void insertSlotAt( PageCursor cursor, int pos, int keyCount, int baseOffset, int itemSize )
     {
-        // Move all items after pos one step to the right
-        int count = toExcluding - pos;
-        if ( count > 0 )
+        for ( int posToMoveRight = keyCount - 1, offset = baseOffset + posToMoveRight * itemSize;
+                posToMoveRight >= pos; posToMoveRight--, offset -= itemSize )
         {
-            copyItems( cursor, pos, count, baseOffset, itemSize, tmp );
-            writeItems( cursor, pos + 1, count, baseOffset, itemSize, tmp );
+            cursor.copyTo( offset, cursor, offset + itemSize, itemSize );
         }
-    }
-
-    private void writeItems( PageCursor cursor, int pos, int count, int baseOffset, int itemSize, byte[] tmp )
-    {
-        cursor.setOffset( baseOffset + pos * itemSize );
-        cursor.putBytes( tmp, 0, count * itemSize );
-    }
-
-    private void copyItems( PageCursor cursor, int pos, int count, int baseOffset, int itemSize, byte[] tmp )
-    {
-        cursor.setOffset( baseOffset + pos * itemSize );
-        cursor.getBytes( tmp, 0, count * itemSize );
     }
 
     VALUE valueAt( PageCursor cursor, VALUE value, int pos )
@@ -290,15 +277,15 @@ class TreeNode<KEY,VALUE>
         return value;
     }
 
-    void insertValueAt( PageCursor cursor, VALUE value, int pos, int keyCount, byte[] tmp )
+    void insertValueAt( PageCursor cursor, VALUE value, int pos, int keyCount )
     {
-        insertSlotAt( cursor, pos, keyCount, valueOffset( 0 ), valueSize, tmp );
+        insertSlotAt( cursor, pos, keyCount, valueOffset( 0 ), valueSize );
         setValueAt( cursor, value, pos );
     }
 
-    void removeValueAt( PageCursor cursor, int pos, int keyCount, byte[] tmp )
+    void removeValueAt( PageCursor cursor, int pos, int keyCount )
     {
-        removeSlotAt( cursor, pos, keyCount, valueOffset( 0 ), valueSize, tmp );
+        removeSlotAt( cursor, pos, keyCount, valueOffset( 0 ), valueSize );
     }
 
     void setValueAt( PageCursor cursor, VALUE value, int pos )
@@ -313,10 +300,10 @@ class TreeNode<KEY,VALUE>
         return read( cursor, stableGeneration, unstableGeneration, pos );
     }
 
-    void insertChildAt( PageCursor cursor, long child, int pos, int keyCount, byte[] tmp,
+    void insertChildAt( PageCursor cursor, long child, int pos, int keyCount,
             long stableGeneration, long unstableGeneration )
     {
-        insertSlotAt( cursor, pos, keyCount + 1, childOffset( 0 ), SIZE_PAGE_REFERENCE, tmp );
+        insertSlotAt( cursor, pos, keyCount + 1, childOffset( 0 ), SIZE_PAGE_REFERENCE );
         setChildAt( cursor, child, pos, stableGeneration, unstableGeneration );
     }
 
@@ -348,7 +335,7 @@ class TreeNode<KEY,VALUE>
         return HEADER_LENGTH + pos * keySize;
     }
 
-    private int valueOffset( int pos )
+    int valueOffset( int pos )
     {
         return HEADER_LENGTH + leafMaxKeyCount * keySize + pos * valueSize;
     }
@@ -383,99 +370,10 @@ class TreeNode<KEY,VALUE>
         return layout;
     }
 
-    int readKeysWithInsertRecordInPosition( PageCursor cursor, Consumer<PageCursor> newRecordWriter,
-            int insertPosition, int totalNumberOfRecords, byte[] into )
-    {
-        return readRecordsWithInsertRecordInPosition( cursor, newRecordWriter, insertPosition, totalNumberOfRecords,
-                keySize, keyOffset( 0 ), into );
-    }
-
-    int readValuesWithInsertRecordInPosition( PageCursor cursor, Consumer<PageCursor> newRecordWriter,
-            int insertPosition, int totalNumberOfRecords, byte[] into )
-    {
-        return readRecordsWithInsertRecordInPosition( cursor, newRecordWriter, insertPosition, totalNumberOfRecords,
-                valueSize, valueOffset( 0 ), into );
-    }
-
-    int readChildrenWithInsertRecordInPosition( PageCursor cursor, Consumer<PageCursor> newRecordWriter,
-            int insertPosition, int totalNumberOfRecords, byte[] into )
-    {
-        return readRecordsWithInsertRecordInPosition( cursor, newRecordWriter, insertPosition, totalNumberOfRecords,
-                childSize(), childOffset( 0 ), into );
-    }
-
     void goTo( PageCursor cursor, String messageOnError, long nodeId )
             throws IOException
     {
         PageCursorUtil.goTo( cursor, messageOnError, GenSafePointerPair.pointer( nodeId ) );
-    }
-
-    /**
-     * Leaves cursor on same page as when called. No guarantees on offset.
-     * <p>
-     * Create a byte[] with totalNumberOfRecords of recordSize from cursor reading from baseRecordOffset
-     * with newRecord inserted in insertPosition, with the following records shifted to the right.
-     * <p>
-     * Simply: Records of size recordSize that can be read from offset baseRecordOffset in page pinned by cursor has
-     * some ordering. This ordering is preserved with new record inserted in insertPosition in the returned byte[],
-     * NOT in the page.
-     *
-     * @param cursor                {@link org.neo4j.io.pagecache.PageCursor} pinned to page to read records from
-     * @param newRecordWriter       new data to be inserted in insertPosition in returned byte[].
-     *                              This is a {@link Consumer} since the type of data can differ (value/child),
-     *                              although perhaps this can be done in a better way
-     * @param insertPosition        position of newRecord. 0 being before all other records,
-     *                              (totalNumberOfRecords - 1) being after all other records
-     * @param totalNumberOfRecords  the total number of records to be contained in returned byte[], including newRecord
-     * @param recordSize            the size in number of bytes of one record
-     * @param baseRecordOffset      the offset from where cursor should start read records
-     * @param into                  byte array to copy bytes into
-     * @return                      number of bytes copied into the {@code into} byte[],
-     *                              that is insertPosition * recordSize
-     */
-    private int readRecordsWithInsertRecordInPosition( PageCursor cursor, Consumer<PageCursor> newRecordWriter,
-            int insertPosition, int totalNumberOfRecords, int recordSize, int baseRecordOffset, byte[] into )
-    {
-        int length = (totalNumberOfRecords) * recordSize;
-
-        // First read all records
-
-        // Read all records on previous to insertPosition
-        cursor.setOffset( baseRecordOffset );
-        cursor.getBytes( into, 0, insertPosition * recordSize );
-
-        // Read newRecord
-        PageCursor buffer = ByteArrayPageCursor.wrap( into, insertPosition * recordSize, recordSize );
-        newRecordWriter.accept( buffer );
-
-        // Read all records following insertPosition
-        cursor.setOffset( baseRecordOffset + insertPosition * recordSize );
-        cursor.getBytes( into, (insertPosition + 1) * recordSize,
-                ((totalNumberOfRecords - 1) - insertPosition) * recordSize );
-        return length;
-    }
-
-    private void writeAll( PageCursor cursor, byte[] source, int sourcePos, int targetPos, int count,
-            int baseOffset, int recordSize )
-    {
-        int arrayOffset = sourcePos * recordSize;
-        cursor.setOffset( baseOffset + recordSize * targetPos );
-        cursor.putBytes( source, arrayOffset, count * recordSize );
-    }
-
-    void writeKeys( PageCursor cursor, byte[] source, int sourcePos, int targetPos, int count )
-    {
-        writeAll( cursor, source, sourcePos, targetPos, count, keyOffset( 0 ), keySize() );
-    }
-
-    void writeValues( PageCursor cursor, byte[] source, int sourcePos, int targetPos, int count )
-    {
-        writeAll( cursor, source, sourcePos, targetPos, count, valueOffset( 0 ), valueSize() );
-    }
-
-    void writeChildren( PageCursor cursor, byte[] source, int sourcePos, int targetPos, int count )
-    {
-        writeAll( cursor, source, sourcePos, targetPos, count, childOffset( 0 ), childSize() );
     }
 
     @Override

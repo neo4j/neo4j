@@ -459,7 +459,7 @@ public class KeySearchTest
         {
             keys[i] = currentKey;
             key.setValue( currentKey );
-            node.insertKeyAt( cursor, key, i, i, tmp );
+            node.insertKeyAt( cursor, key, i, i );
             currentKey += random.nextInt( 100 ) + 10;
         }
         node.setKeyCount( cursor, keyCount );
@@ -510,7 +510,7 @@ public class KeySearchTest
     {
         insertKey.setValue( key );
         int keyCount = node.keyCount( cursor );
-        node.insertKeyAt( cursor, insertKey, keyCount, keyCount, tmp );
+        node.insertKeyAt( cursor, insertKey, keyCount, keyCount );
         node.setKeyCount( cursor, keyCount + 1 );
     }
 
@@ -528,7 +528,7 @@ public class KeySearchTest
         for ( int i = 0; i < KEY_COUNT; i++ )
         {
             key.setValue( key( i ) );
-            node.insertKeyAt( cursor, key, i, i, tmp );
+            node.insertKeyAt( cursor, key, i, i );
         }
         node.setKeyCount( cursor, KEY_COUNT );
     }
