@@ -40,7 +40,7 @@ class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         case _                             => Double.MaxValue
       }
 
-    } planFor "MATCH (a:X)<-[r1]-(b)-[r2]->(c:X) RETURN b").plan
+    } getLogicalPlanFor "MATCH (a:X)<-[r1]-(b)-[r2]->(c:X) RETURN b")._2
 
     val expected =
       Selection(
@@ -74,7 +74,7 @@ class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes.size == 1 && queryGraph.selections.predicates.isEmpty => 10000.0
         case _ => Double.MaxValue
       }
-    } planFor cypherQuery).plan
+    }  getLogicalPlanFor cypherQuery)._2
 
     val expected =
       Selection(

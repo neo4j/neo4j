@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v3_2.planner.{LogicalPlanningConfiguration, QueryGraph, LogicalPlanningTestSupport2}
+import org.neo4j.cypher.internal.compiler.v3_2.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 import org.neo4j.kernel.impl.util.dbstructure.QMULDbStructure
 
@@ -33,8 +33,8 @@ class BenchmarkCardinalityEstimationTest extends CypherFunSuite with LogicalPlan
 
   implicit class RichLogicalPlanningEnvironment(val env: LogicalPlanningEnvironment[_]) {
     def assertNoRegression(query: String, actual: Double, expectedDifference: Double, allowedSlack: Double = 0.05): Unit = {
-      val plan = env.planFor(query)
-      val qg = plan.plan.solved.queryGraph
+      val (_, plan, semanticTable) = env.getLogicalPlanFor(query)
+      val qg = plan.solved.queryGraph
       val estimate = env.estimate(qg).amount
       val currentDifference = Math.abs(estimate - actual)
 

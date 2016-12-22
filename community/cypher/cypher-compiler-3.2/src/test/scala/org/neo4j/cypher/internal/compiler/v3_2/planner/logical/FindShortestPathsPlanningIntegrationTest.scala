@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.ir.v3_2.{IdName, PatternRelationship, ShortestP
 class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   test("finds shortest paths") {
-    planFor("MATCH (a), (b), shortestPath((a)-[r]->(b)) RETURN b").plan should equal(
+    planFor("MATCH (a), (b), shortestPath((a)-[r]->(b)) RETURN b")._2 should equal(
       FindShortestPaths(
         CartesianProduct(
           AllNodesScan("a", Set.empty)(solved),
@@ -45,7 +45,7 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
   }
 
   test("finds all shortest paths") {
-    planFor("MATCH (a), (b), allShortestPaths((a)-[r]->(b)) RETURN b").plan should equal(
+    planFor("MATCH (a), (b), allShortestPaths((a)-[r]->(b)) RETURN b")._2 should equal(
       FindShortestPaths(
         CartesianProduct(
           AllNodesScan("a", Set.empty)(solved),
@@ -71,7 +71,7 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
         case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternRelationships.size == 1 => 100.0
         case _                             => Double.MaxValue
       }
-    } planFor "MATCH (a:X)<-[r1]-(b)-[r2]->(c:X), p = shortestPath((a)-[r]->(c)) RETURN p").plan
+    } getLogicalPlanFor "MATCH (a:X)<-[r1]-(b)-[r2]->(c:X), p = shortestPath((a)-[r]->(c)) RETURN p")._2
 
     val expected =
       FindShortestPaths(

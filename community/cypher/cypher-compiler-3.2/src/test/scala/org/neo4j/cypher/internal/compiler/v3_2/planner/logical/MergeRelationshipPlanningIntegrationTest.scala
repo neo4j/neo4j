@@ -48,7 +48,7 @@ class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with Logic
     val mergeNode = AntiConditionalApply(optional, onCreate, Seq(aId, bId, rId))(solved)
     val emptyResult = EmptyResult(mergeNode)(solved)
 
-    planFor("MERGE (a:A)-[r:R]->(b)").plan should equal(emptyResult)
+    planFor("MERGE (a:A)-[r:R]->(b)")._2 should equal(emptyResult)
   }
 
   test("should plan simple expand with argument dependency") {
@@ -69,14 +69,14 @@ class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with Logic
     val apply = Apply(projection, mergeNode)(solved)
     val emptyResult = EmptyResult(apply)(solved)
 
-    planFor("WITH 42 AS arg MERGE (a:A {p: arg})-[r:R]->(b)").plan should equal(emptyResult)
+    planFor("WITH 42 AS arg MERGE (a:A {p: arg})-[r:R]->(b)")._2 should equal(emptyResult)
   }
 
   test("should use AssertSameNode when multiple unique index matches") {
     val plan = (new given {
       uniqueIndexOn("X", "prop")
       uniqueIndexOn("Y", "prop")
-    } planFor "MERGE (a:X:Y {prop: 42})-[:T]->(b)").plan
+    } getLogicalPlanFor "MERGE (a:X:Y {prop: 42})-[:T]->(b)")._2
 
     plan shouldBe using[AssertSameNode]
     plan shouldBe using[NodeUniqueIndexSeek]
@@ -85,14 +85,14 @@ class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with Logic
   test("should not use AssertSameNode when one unique index matches") {
     val plan = (new given {
       uniqueIndexOn("X", "prop")
-    } planFor "MERGE (a:X:Y {prop: 42})").plan
+    } getLogicalPlanFor "MERGE (a:X:Y {prop: 42})")._2
 
     plan should not be using[AssertSameNode]
     plan shouldBe using[NodeUniqueIndexSeek]
   }
 
   test("should plan only one create node when the other node is already in scope when creating a relationship") {
-    planFor("MATCH (n) MERGE (n)-[r:T]->(b)").plan should equal(
+    planFor("MATCH (n) MERGE (n)-[r:T]->(b)")._2 should equal(
       EmptyResult(
         Apply(
           AllNodesScan(IdName("n"), Set())(solved),
@@ -115,7 +115,7 @@ class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with Logic
   }
 
   test("should not plan two create nodes when they are already in scope when creating a relationship") {
-    planFor("MATCH (n) MATCH (m) MERGE (n)-[r:T]->(m)").plan should equal(
+    planFor("MATCH (n) MATCH (m) MERGE (n)-[r:T]->(m)")._2 should equal(
       EmptyResult(
         Apply(
           CartesianProduct(
@@ -139,7 +139,7 @@ class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with Logic
   }
 
   test("should not plan two create nodes when they are already in scope and aliased when creating a relationship") {
-    planFor("MATCH (n) MATCH (m) WITH n AS a, m AS b MERGE (a)-[r:T]->(b)").plan should equal(
+    planFor("MATCH (n) MATCH (m) WITH n AS a, m AS b MERGE (a)-[r:T]->(b)")._2 should equal(
       EmptyResult(
         Apply(
           Projection(
@@ -166,7 +166,7 @@ class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with Logic
   }
 
   test("should plan only one create node when the other node is already in scope and aliased when creating a relationship") {
-    planFor("MATCH (n) WITH n AS a MERGE (a)-[r:T]->(b)").plan should equal(
+    planFor("MATCH (n) WITH n AS a MERGE (a)-[r:T]->(b)")._2 should equal(
       EmptyResult(
         Apply(
           Projection(

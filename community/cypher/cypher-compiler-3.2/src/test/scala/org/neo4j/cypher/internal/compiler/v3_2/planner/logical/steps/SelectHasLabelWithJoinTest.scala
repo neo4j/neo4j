@@ -33,9 +33,9 @@ class SelectHasLabelWithJoinTest extends CypherFunSuite with LogicalPlanningTest
         case (_: NodeHashJoin, _) => 20.0
         case (_: NodeByLabelScan, _) => 20.0
       }
-    } planFor "MATCH (n:Foo:Bar:Baz) RETURN n"
+    } getLogicalPlanFor "MATCH (n:Foo:Bar:Baz) RETURN n"
 
-    plan.plan match {
+    plan._2 match {
       case NodeHashJoin(_,
       NodeHashJoin(_,
       NodeByLabelScan(_, _, _),

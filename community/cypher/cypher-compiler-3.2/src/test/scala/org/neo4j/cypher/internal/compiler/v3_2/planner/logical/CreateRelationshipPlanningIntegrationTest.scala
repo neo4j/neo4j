@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v3_2.pipes.{LazyLabel, LazyType}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
@@ -29,7 +28,7 @@ import org.neo4j.cypher.internal.ir.v3_2.IdName
 class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   test("should plan single create") {
-    planFor("CREATE (a)-[r:R]->(b)").plan should equal(
+    planFor("CREATE (a)-[r:R]->(b)")._2 should equal(
       EmptyResult(
         CreateRelationship(
           CreateNode(
@@ -41,7 +40,7 @@ class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with Logi
   }
 
   test("should plan complicated create") {
-    planFor("CREATE (a)-[r1:R1]->(b)<-[r2:R2]-(c)-[r3:R3]->(d)").plan should equal(
+    planFor("CREATE (a)-[r1:R1]->(b)<-[r2:R2]-(c)-[r3:R3]->(d)")._2 should equal(
       EmptyResult(
         CreateRelationship(
           CreateRelationship(
@@ -61,7 +60,7 @@ class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with Logi
   }
 
   test("should plan reversed create pattern") {
-    planFor("CREATE (a)<-[r1:R1]-(b)<-[r2:R2]-(c)").plan should equal(
+    planFor("CREATE (a)<-[r1:R1]-(b)<-[r2:R2]-(c)")._2 should equal(
       EmptyResult(
         CreateRelationship(
           CreateRelationship(
@@ -77,7 +76,7 @@ class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with Logi
   }
 
   test("should plan only one create node when the other node is already in scope when creating a relationship") {
-    planFor("MATCH (n) CREATE (n)-[r:T]->(b)").plan should equal(
+    planFor("MATCH (n) CREATE (n)-[r:T]->(b)")._2 should equal(
       EmptyResult(
         CreateRelationship(
           CreateNode(
@@ -89,7 +88,7 @@ class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with Logi
   }
 
   test("should not plan two create nodes when they are already in scope when creating a relationship") {
-    planFor("MATCH (n) MATCH (m) CREATE (n)-[r:T]->(m)").plan should equal(
+    planFor("MATCH (n) MATCH (m) CREATE (n)-[r:T]->(m)")._2 should equal(
       EmptyResult(
         CreateRelationship(
           CartesianProduct(
@@ -102,7 +101,7 @@ class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with Logi
   }
 
   test("should not plan two create nodes when they are already in scope and aliased when creating a relationship") {
-    planFor("MATCH (n) MATCH (m) WITH n AS a, m AS b CREATE (a)-[r:T]->(b)").plan should equal(
+    planFor("MATCH (n) MATCH (m) WITH n AS a, m AS b CREATE (a)-[r:T]->(b)")._2 should equal(
       EmptyResult(
         CreateRelationship(
           Projection(
@@ -116,7 +115,7 @@ class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with Logi
   }
 
   test("should plan only one create node when the other node is already in scope and aliased when creating a relationship") {
-    planFor("MATCH (n) WITH n AS a CREATE (a)-[r:T]->(b)").plan should equal(
+    planFor("MATCH (n) WITH n AS a CREATE (a)-[r:T]->(b)")._2 should equal(
       EmptyResult(
         CreateRelationship(
           CreateNode(
