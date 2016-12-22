@@ -30,9 +30,11 @@ case class NodeExpression(nodeIdVar: Variable) extends CodeGenExpression {
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {}
 
   override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) = {
-    if (nodeIdVar.nullable)
-      structure.nullableReference(nodeIdVar.name, CodeGenType.primitiveNode,
+    // Nullable primitive variables already have their nullValue (-1L) in the same domain as their possible values and do not need a null check
+    if (nodeIdVar.nullable && !nodeIdVar.codeGenType.isPrimitive) {
+      structure.nullableReference(nodeIdVar.name, nodeIdVar.codeGenType,
         structure.node(nodeIdVar.name, nodeIdVar.codeGenType))
+    }
     else
       structure.node(nodeIdVar.name, nodeIdVar.codeGenType)
   }
