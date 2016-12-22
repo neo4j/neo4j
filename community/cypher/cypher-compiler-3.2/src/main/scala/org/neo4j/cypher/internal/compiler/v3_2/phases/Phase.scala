@@ -19,12 +19,19 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.phases
 
+import org.neo4j.cypher.internal.compiler.v3_2.AssertionRunner
+import org.neo4j.cypher.internal.compiler.v3_2.AssertionRunner.Thunk
 import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.closing
+import org.neo4j.cypher.internal.frontend.v3_2.InternalException
 
 import scala.reflect.ClassTag
 
+/*
+A phase is a leaf component of the tree structure that is the compilation pipe line.
+It passes through the compilation state, and might add values to it
+ */
 trait Phase extends Transformer {
   self =>
 
@@ -42,6 +49,9 @@ trait Phase extends Transformer {
   def name = getClass.getSimpleName
 }
 
+/*
+A visitor is a phase that does not change the compilation state. All it's behaviour is side effects
+ */
 trait VisitorPhase extends Phase {
   override def transform(from: CompilationState, context: Context): CompilationState = {
     visit(from, context)
@@ -86,23 +96,31 @@ class PipeLine(first: Transformer, after: Transformer) extends Transformer {
 
   override def transform(from: CompilationState, context: Context): CompilationState = {
     var step = first.transform(from, context)
-    var messages: Set[String] = Set.empty
-    assert({
-      // Checking conditions inside assert so they are not run in production
-      // TODO: Make sure this is really only run if assertions are enabled
-      step = addConditions(step, first)
-      messages = step.accumulatedConditions.flatMap(condition => condition.check(step))
-      messages.isEmpty // If this is not true, we will fail if run with -ea
-    }, name + messages.mkString(", "))
+
+    // Checking conditions inside assert so they are not run in production
+    ifAssertionsEnabled({ step = accumulateAndCheckConditions(step, first) })
     step = after.transform(step, context)
-    assert({
-      step = addConditions(step, after)
-      messages = step.accumulatedConditions.flatMap(condition => condition.check(step))
-      messages.isEmpty
-    }, name + messages.mkString(", "))
+    ifAssertionsEnabled({ step = accumulateAndCheckConditions(step, after) })
+
     step
   }
 
+  private def accumulateAndCheckConditions(from: CompilationState, transformer: Transformer): CompilationState = {
+    // Checking conditions inside assert so they are not run in production
+    val result = transformer match {
+      case phase: Phase => from.copy(accumulatedConditions = from.accumulatedConditions ++ phase.postConditions)
+      case _ => from
+    }
+
+    val messages = result.accumulatedConditions.flatMap(condition => condition.check(result))
+    if (messages.nonEmpty) {
+      throw new InternalException(messages.mkString(", "))
+    }
+
+    throw new RuntimeException("yo mama!")
+
+    result
+  }
   private def addConditions(state: CompilationState, transformer: Transformer): CompilationState = {
     transformer match {
       case phase: Phase => state.copy(accumulatedConditions = state.accumulatedConditions ++ phase.postConditions)
@@ -111,6 +129,12 @@ class PipeLine(first: Transformer, after: Transformer) extends Transformer {
   }
 
   override def name: String = first.name + ", " + after.name
+
+  private def ifAssertionsEnabled(f: => Unit): Unit = {
+    AssertionRunner.runUnderAssertion(new Thunk {
+      override def apply() = f
+    })
+  }
 }
 
 case class If(f: CompilationState => Boolean)(thenT: Transformer) extends Transformer {
