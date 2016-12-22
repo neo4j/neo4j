@@ -228,25 +228,19 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
                 if ( cursor.next() )
                 {
                     // We're overwriting a record, get the previous value
-                    long record;
-                    byte inUse;
-                    do
+                    cursor.setOffset( offset );
+                    byte inUse = cursor.getByte();
+                    long record = cursor.getLong();
+
+                    if ( inUse == Record.IN_USE.byteValue() )
                     {
-                        cursor.setOffset( offset );
-                        inUse = cursor.getByte();
-                        record = cursor.getLong();
-
-                        if ( inUse == Record.IN_USE.byteValue() )
-                        {
-                            previousValue = record;
-                        }
-
-                        // Write the value
-                        cursor.setOffset( offset );
-                        cursor.putByte( Record.IN_USE.byteValue() );
-                        cursor.putLong( value );
+                        previousValue = record;
                     }
-                    while ( cursor.shouldRetry() );
+
+                    // Write the value
+                    cursor.setOffset( offset );
+                    cursor.putByte( Record.IN_USE.byteValue() );
+                    cursor.putLong( value );
                     if ( cursor.checkAndClearBoundsFlag() )
                     {
                         MetaDataRecord neoStoreRecord = new MetaDataRecord();
@@ -466,15 +460,14 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
 
     private void incrementVersion( PageCursor cursor ) throws IOException
     {
+        if ( !cursor.isWriteLocked() )
+        {
+            throw new IllegalArgumentException( "Cannot increment log version on page cursor that is not write-locked" );
+        }
         // offsets plus one to skip the inUse byte
         int offset = (Position.LOG_VERSION.id * getRecordSize()) + 1;
-        long value;
-        do
-        {
-            value = cursor.getLong( offset ) + 1;
-            cursor.putLong( offset, value );
-        }
-        while ( cursor.shouldRetry() );
+        long value = cursor.getLong( offset ) + 1;
+        cursor.putLong( offset, value );
         checkForDecodingErrors( cursor, Position.LOG_VERSION.id, NORMAL );
         versionField = value;
     }
@@ -632,14 +625,14 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
 
     private void setRecord( PageCursor cursor, Position position, long value ) throws IOException
     {
-        int offset = offsetForId( position.id );
-        do
+        if ( !cursor.isWriteLocked() )
         {
-            cursor.setOffset( offset );
-            cursor.putByte( Record.IN_USE.byteValue() );
-            cursor.putLong( value );
+            throw new IllegalArgumentException( "Cannot write record without a page cursor that is write-locked" );
         }
-        while ( cursor.shouldRetry() );
+        int offset = offsetForId( position.id );
+        cursor.setOffset( offset );
+        cursor.putByte( Record.IN_USE.byteValue() );
+        cursor.putLong( value );
         checkForDecodingErrors( cursor, position.id, NORMAL );
     }
 

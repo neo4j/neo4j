@@ -204,12 +204,8 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
             {
                 if ( pageCursor.next() )
                 {
-                    do
-                    {
-                        pageCursor.setOffset( 0 );
-                        createHeaderRecord( pageCursor );
-                    }
-                    while ( pageCursor.shouldRetry() );
+                    pageCursor.setOffset( 0 );
+                    createHeaderRecord( pageCursor );
                     if ( pageCursor.checkAndClearBoundsFlag() )
                     {
                         throw new UnderlyingStorageException(
@@ -457,9 +453,13 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     }
 
     private long rebuildIdGeneratorSlow( PageCursor cursor, int recordsPerPage, int blockSize,
-                                         long foundHighId )
-            throws IOException
+                                         long foundHighId ) throws IOException
     {
+        if ( !cursor.isWriteLocked() )
+        {
+            throw new IllegalArgumentException(
+                    "The store scanning id generator rebuild process requires a page cursor that is write-locked" );
+        }
         long defragCount = 0;
         long[] freedBatch = new long[recordsPerPage]; // we process in batches of one page worth of records
         int startingId = getNumberOfReservedLowIds();
@@ -470,35 +470,30 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         {
             long idPageOffset = (cursor.getCurrentPageId() * recordsPerPage);
 
-            do
+            defragged = 0;
+            for ( int i = startingId; i < recordsPerPage; i++ )
             {
-                defragged = 0;
-                done = false;
-                for ( int i = startingId; i < recordsPerPage; i++ )
-                {
-                    int offset = i * blockSize;
-                    cursor.setOffset( offset );
-                    long recordId = idPageOffset + i;
-                    if ( recordId >= foundHighId )
-                    {   // We don't have to go further than the high id we found earlier
-                        done = true;
-                        break;
-                    }
+                int offset = i * blockSize;
+                cursor.setOffset( offset );
+                long recordId = idPageOffset + i;
+                if ( recordId >= foundHighId )
+                {   // We don't have to go further than the high id we found earlier
+                    done = true;
+                    break;
+                }
 
-                    if ( !isInUse( cursor ) )
-                    {
-                        freedBatch[defragged++] = recordId;
-                    }
-                    else if ( isRecordReserved( cursor ) )
-                    {
-                        cursor.setOffset( offset );
-                        cursor.putByte( Record.NOT_IN_USE.byteValue() );
-                        cursor.putInt( 0 );
-                        freedBatch[defragged++] = recordId;
-                    }
+                if ( !isInUse( cursor ) )
+                {
+                    freedBatch[defragged++] = recordId;
+                }
+                else if ( isRecordReserved( cursor ) )
+                {
+                    cursor.setOffset( offset );
+                    cursor.putByte( Record.NOT_IN_USE.byteValue() );
+                    cursor.putInt( 0 );
+                    freedBatch[defragged++] = recordId;
                 }
             }
-            while ( cursor.shouldRetry() );
             checkIdScanCursorBounds( cursor );
 
             for ( int i = 0; i < defragged; i++ )
@@ -1061,12 +1056,8 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         {
             if ( cursor.next() )
             {
-                do
-                {
-                    cursor.setOffset( offset );
-                    recordFormat.write( record, cursor, recordSize );
-                }
-                while ( cursor.shouldRetry() );
+                cursor.setOffset( offset );
+                recordFormat.write( record, cursor, recordSize );
                 checkForDecodingErrors( cursor, id, NORMAL ); // We don't free ids if something weird goes wrong
                 if ( !record.inUse() )
                 {
