@@ -42,10 +42,6 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.Logger;
 
-import static org.neo4j.kernel.configuration.Settings.ANY;
-import static org.neo4j.kernel.configuration.Settings.STRING;
-import static org.neo4j.kernel.configuration.Settings.illegalValueMessage;
-import static org.neo4j.kernel.configuration.Settings.matches;
 import static org.neo4j.kernel.configuration.Settings.setting;
 import static org.neo4j.kernel.impl.query.QueryEngineProvider.noEngine;
 
@@ -91,18 +87,21 @@ public class GraphDatabaseFacadeFactory
                 setting( "unsupported.dbms.ephemeral", Settings.BOOLEAN, Settings.FALSE );
 
         // Kept here to have it not be publicly documented.
-        public static final Setting<String> lock_manager = setting( "unsupported.dbms.lock_manager", Settings.STRING, "" );
+        public static final Setting<String> lock_manager =
+                setting( "unsupported.dbms.lock_manager", Settings.STRING, "" );
 
         public static final Setting<String> tracer =
                 setting( "unsupported.dbms.tracer", Settings.STRING, (String) null ); // 'null' default.
 
-        public static final Setting<String> editionName = setting( "unsupported.dbms.edition", Settings.STRING, Edition.unknown.toString() );
+        public static final Setting<String> editionName =
+                setting( "unsupported.dbms.edition", Settings.STRING, Edition.unknown.toString() );
     }
 
     protected final DatabaseInfo databaseInfo;
     private final Function<PlatformModule,EditionModule> editionFactory;
 
-    public GraphDatabaseFacadeFactory( DatabaseInfo databaseInfo, Function<PlatformModule,EditionModule> editionFactory )
+    public GraphDatabaseFacadeFactory( DatabaseInfo databaseInfo,
+            Function<PlatformModule,EditionModule> editionFactory )
     {
         this.databaseInfo = databaseInfo;
         this.editionFactory = editionFactory;
@@ -120,6 +119,7 @@ public class GraphDatabaseFacadeFactory
     {
         return initFacade( storeDir, config, dependencies, new GraphDatabaseFacade() );
     }
+
     /**
      * Instantiate a graph database given configuration, dependencies, and a custom implementation of {@link org
      * .neo4j.kernel.impl.factory.GraphDatabaseFacade}.
@@ -133,7 +133,7 @@ public class GraphDatabaseFacadeFactory
     public GraphDatabaseFacade initFacade( File storeDir, Map<String,String> params, final Dependencies dependencies,
             final GraphDatabaseFacade graphDatabaseFacade )
     {
-        return initFacade( storeDir, Config.embeddedDefaults().with( params ), dependencies, graphDatabaseFacade );
+        return initFacade( storeDir, Config.embeddedDefaults( params ), dependencies, graphDatabaseFacade );
     }
 
     /**
@@ -160,10 +160,10 @@ public class GraphDatabaseFacadeFactory
 
         ClassicCoreSPI spi = new ClassicCoreSPI( platform, dataSource, msgLog, coreAPIAvailabilityGuard );
         graphDatabaseFacade.init(
-            spi,
-            dataSource.guard,
-            dataSource.threadToTransactionBridge,
-            platform.config
+                spi,
+                dataSource.guard,
+                dataSource.threadToTransactionBridge,
+                platform.config
         );
 
         // Start it
@@ -177,7 +177,7 @@ public class GraphDatabaseFacadeFactory
                 if ( engine == null )
                 {
                     engine = QueryEngineProvider.initialize(
-                        platform.dependencies, platform.graphDatabaseFacade, dependencies.executionEngines()
+                            platform.dependencies, platform.graphDatabaseFacade, dependencies.executionEngines()
                     );
                 }
 
@@ -242,9 +242,9 @@ public class GraphDatabaseFacadeFactory
      * Create the datasource module. Override to replace with custom module.
      */
     protected DataSourceModule createDataSource(
-        PlatformModule platformModule,
-        EditionModule editionModule,
-        Supplier<QueryExecutionEngine> queryEngine )
+            PlatformModule platformModule,
+            EditionModule editionModule,
+            Supplier<QueryExecutionEngine> queryEngine )
     {
         return new DataSourceModule( platformModule, editionModule, queryEngine );
     }

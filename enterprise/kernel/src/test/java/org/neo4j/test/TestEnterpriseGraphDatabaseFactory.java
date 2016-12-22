@@ -48,8 +48,13 @@ public class TestEnterpriseGraphDatabaseFactory extends TestGraphDatabaseFactory
         return new GraphDatabaseBuilder.DatabaseCreator()
         {
             @Override
-            @SuppressWarnings( "deprecation" )
             public GraphDatabaseService newDatabase( Map<String,String> config )
+            {
+                return newDatabase( Config.embeddedDefaults( config ) );
+            }
+
+            @Override
+            public GraphDatabaseService newDatabase( Config config )
             {
                 return new GraphDatabaseFacadeFactory( DatabaseInfo.ENTERPRISE, EnterpriseEditionModule::new )
                 {
@@ -102,7 +107,7 @@ public class TestEnterpriseGraphDatabaseFactory extends TestGraphDatabaseFactory
 
                         };
                     }
-                }.newFacade( storeDir, Config.embeddedDefaults().with( config ),
+                }.newFacade( storeDir, config,
                         GraphDatabaseDependencies.newDependencies( state.databaseDependencies() ) );
             }
         };

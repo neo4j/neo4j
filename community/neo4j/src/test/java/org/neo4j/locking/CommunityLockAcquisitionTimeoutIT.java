@@ -81,7 +81,8 @@ public class CommunityLockAcquisitionTimeoutIT
     private static GraphDatabaseService database;
 
     @BeforeClass
-    public static void setUp() {
+    public static void setUp()
+    {
         CustomClockFacadeFactory facadeFactory = new CustomClockFacadeFactory();
         database = new CustomClockTestGraphDatabaseFactory( facadeFactory )
                 .newEmbeddedDatabaseBuilder( directory.graphDbDir() )
@@ -136,7 +137,7 @@ public class CommunityLockAcquisitionTimeoutIT
             } );
             propertySetFuture.get();
 
-            fail("Should throw termination exception.");
+            fail( "Should throw termination exception." );
         }
     }
 
@@ -173,7 +174,7 @@ public class CommunityLockAcquisitionTimeoutIT
             } );
             propertySetFuture.get();
 
-            fail("Should throw termination exception.");
+            fail( "Should throw termination exception." );
         }
     }
 
@@ -209,8 +210,21 @@ public class CommunityLockAcquisitionTimeoutIT
         protected GraphDatabaseBuilder.DatabaseCreator createDatabaseCreator( File storeDir,
                 GraphDatabaseFactoryState state )
         {
-            return config -> customFacadeFactory.newFacade( storeDir, Config.embeddedDefaults( config ),
-                    GraphDatabaseDependencies.newDependencies( state.databaseDependencies() ) );
+            return new GraphDatabaseBuilder.DatabaseCreator()
+            {
+                @Override
+                public GraphDatabaseService newDatabase( Map<String,String> config )
+                {
+                    return newDatabase( Config.embeddedDefaults( config ) );
+                }
+
+                @Override
+                public GraphDatabaseService newDatabase( Config config )
+                {
+                    return customFacadeFactory.newFacade( storeDir, config,
+                            GraphDatabaseDependencies.newDependencies( state.databaseDependencies() ) );
+                }
+            };
         }
     }
 
@@ -219,14 +233,15 @@ public class CommunityLockAcquisitionTimeoutIT
 
         CustomClockFacadeFactory()
         {
-            super( DatabaseInfo.COMMUNITY, CommunityEditionModule::new);
+            super( DatabaseInfo.COMMUNITY, CommunityEditionModule::new );
         }
 
         @Override
         protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies,
                 GraphDatabaseFacade graphDatabaseFacade )
         {
-            return new PlatformModule( storeDir, config, databaseInfo, dependencies, graphDatabaseFacade ) {
+            return new PlatformModule( storeDir, config, databaseInfo, dependencies, graphDatabaseFacade )
+            {
                 @Override
                 protected SystemNanoClock createClock()
                 {

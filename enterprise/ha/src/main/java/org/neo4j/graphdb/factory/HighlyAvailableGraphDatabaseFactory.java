@@ -20,13 +20,17 @@
 package org.neo4j.graphdb.factory;
 
 import java.io.File;
+import java.util.Map;
 
 import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.factory.Edition;
 
 import static java.util.Arrays.asList;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 /**
  * Factory for HA Neo4j instances.
@@ -49,9 +53,21 @@ public class HighlyAvailableGraphDatabaseFactory extends GraphDatabaseFactory
     protected GraphDatabaseBuilder.DatabaseCreator createDatabaseCreator(
             final File storeDir, final GraphDatabaseFactoryState state )
     {
-        return config -> {
-            config.put( "unsupported.dbms.ephemeral", "false" );
-            return new HighlyAvailableGraphDatabase( storeDir, config, state.databaseDependencies() );
+        return new GraphDatabaseBuilder.DatabaseCreator()
+        {
+            @Override
+            public GraphDatabaseService newDatabase( Map<String,String> config )
+            {
+                return newDatabase( Config.embeddedDefaults( config ) );
+            }
+
+            @Override
+            public GraphDatabaseService newDatabase( Config config )
+            {
+                return new HighlyAvailableGraphDatabase( storeDir,
+                        config.with( stringMap( "unsupported.dbms.ephemeral", "false" ) ),
+                        state.databaseDependencies() );
+            }
         };
     }
 

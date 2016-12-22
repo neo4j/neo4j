@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Stream;
+import javax.annotation.Nonnull;
 
 import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
@@ -100,15 +101,18 @@ public class LabelsAcceptanceTest
         final Node node = dbRule.executeAndCommit(
                 (Function<GraphDatabaseService,Node>) GraphDatabaseService::createNode );
         // POST "FOOBAR"
-        dbRule.executeAndCommit( db -> {
+        dbRule.executeAndCommit( db ->
+        {
             node.addLabel( label( "FOOBAR" ) );
         } );
         // POST ["BAZQUX"]
-        dbRule.executeAndCommit( db -> {
+        dbRule.executeAndCommit( db ->
+        {
             node.addLabel( label( "BAZQUX" ) );
         } );
         // PUT ["BAZQUX"]
-        dbRule.executeAndCommit( db -> {
+        dbRule.executeAndCommit( db ->
+        {
             for ( Label label : node.getLabels() )
             {
                 node.removeLabel( label );
@@ -116,7 +120,8 @@ public class LabelsAcceptanceTest
             node.addLabel( label( "BAZQUX" ) );
         } );
         // GET
-        List<Label> labels = dbRule.executeAndCommit( db -> {
+        List<Label> labels = dbRule.executeAndCommit( db ->
+        {
             List<Label> labels1 = new ArrayList<>();
             for ( Label label : node.getLabels() )
             {
@@ -145,7 +150,8 @@ public class LabelsAcceptanceTest
         }
 
         // Then
-        assertThat( "Label should have been added to node", myNode, inTx( graphDatabase, hasLabel( Labels.MY_LABEL ) ) );
+        assertThat( "Label should have been added to node", myNode,
+                inTx( graphDatabase, hasLabel( Labels.MY_LABEL ) ) );
     }
 
     @Test
@@ -183,7 +189,7 @@ public class LabelsAcceptanceTest
         Node myNode = null;
 
         // When
-        try (Transaction tx = graphDatabase.beginTx())
+        try ( Transaction tx = graphDatabase.beginTx() )
         {
             myNode = graphDatabase.createNode();
             myNode.addLabel( Labels.MY_LABEL );
@@ -193,7 +199,8 @@ public class LabelsAcceptanceTest
         }
 
         // Then
-        assertThat( "Label should have been added to node", myNode, inTx( graphDatabase, hasLabel( Labels.MY_LABEL ) ) );
+        assertThat( "Label should have been added to node", myNode,
+                inTx( graphDatabase, hasLabel( Labels.MY_LABEL ) ) );
     }
 
     @Test
@@ -203,7 +210,7 @@ public class LabelsAcceptanceTest
         GraphDatabaseService graphDatabase = beansAPIWithNoMoreLabelIds();
 
         // When
-        try (Transaction tx = graphDatabase.beginTx())
+        try ( Transaction tx = graphDatabase.beginTx() )
         {
             graphDatabase.createNode().addLabel( Labels.MY_LABEL );
             fail( "Should have thrown exception" );
@@ -224,7 +231,7 @@ public class LabelsAcceptanceTest
         Node myNode = createNode( graphDatabase, label );
 
         // When
-        try (Transaction tx = graphDatabase.beginTx())
+        try ( Transaction tx = graphDatabase.beginTx() )
         {
             myNode.removeLabel( label );
             tx.success();
@@ -242,7 +249,7 @@ public class LabelsAcceptanceTest
 
         // WHEN
         Node node = null;
-        try (Transaction tx = db.beginTx())
+        try ( Transaction tx = db.beginTx() )
         {
             node = db.createNode( Labels.values() );
             tx.success();
@@ -251,7 +258,7 @@ public class LabelsAcceptanceTest
         // THEN
 
         Set<String> names = Stream.of( Labels.values() ).map( Labels::name ).collect( toSet() );
-        assertThat( node, inTx( db, hasLabels( names ) ));
+        assertThat( node, inTx( db, hasLabels( names ) ) );
     }
 
     @Test
@@ -263,7 +270,7 @@ public class LabelsAcceptanceTest
 
         // When
         Node myNode;
-        try (Transaction tx = beansAPI.beginTx())
+        try ( Transaction tx = beansAPI.beginTx() )
         {
             myNode = beansAPI.createNode();
             myNode.removeLabel( label );
@@ -284,14 +291,14 @@ public class LabelsAcceptanceTest
         Node myNode = createNode( beansAPI );
 
         // When
-        try (Transaction tx = beansAPI.beginTx())
+        try ( Transaction tx = beansAPI.beginTx() )
         {
             myNode.removeLabel( label );
             tx.success();
         }
 
         // THEN
-        assertThat( myNode, not( inTx( beansAPI, hasLabel( label ) ) ) ) ;
+        assertThat( myNode, not( inTx( beansAPI, hasLabel( label ) ) ) );
     }
 
     @Test
@@ -303,7 +310,7 @@ public class LabelsAcceptanceTest
 
         // When
         Node myNode;
-        try (Transaction tx = beansAPI.beginTx())
+        try ( Transaction tx = beansAPI.beginTx() )
         {
             myNode = beansAPI.createNode();
             myNode.addLabel( label );
@@ -323,7 +330,7 @@ public class LabelsAcceptanceTest
         GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
         Node node = null;
         Set<String> expected = asSet( Labels.MY_LABEL.name(), Labels.MY_OTHER_LABEL.name() );
-        try (Transaction tx = beansAPI.beginTx())
+        try ( Transaction tx = beansAPI.beginTx() )
         {
             node = beansAPI.createNode();
             for ( String label : expected )
@@ -333,7 +340,7 @@ public class LabelsAcceptanceTest
             tx.success();
         }
 
-        assertThat(node, inTx( beansAPI, hasLabels( expected ) ));
+        assertThat( node, inTx( beansAPI, hasLabels( expected ) ) );
     }
 
     @Test
@@ -344,7 +351,7 @@ public class LabelsAcceptanceTest
         Node node = createNode( beansAPI );
 
         // WHEN THEN
-        assertThat(node, inTx( beansAPI, hasNoLabels() ));
+        assertThat( node, inTx( beansAPI, hasNoLabels() ) );
     }
 
     @Test
@@ -378,7 +385,7 @@ public class LabelsAcceptanceTest
         // WHEN
         Node node3 = null;
         Set<Node> nodesWithMyLabel = null, nodesWithMyOtherLabel = null;
-        try (Transaction tx = beansAPI.beginTx())
+        try ( Transaction tx = beansAPI.beginTx() )
         {
             node3 = beansAPI.createNode( Labels.MY_LABEL );
             node2.removeLabel( Labels.MY_LABEL );
@@ -402,7 +409,7 @@ public class LabelsAcceptanceTest
         List<Label> labels = null;
 
         // When
-        try (Transaction tx = db.beginTx())
+        try ( Transaction tx = db.beginTx() )
         {
             labels = asList( db.getAllLabels() );
         }
@@ -419,7 +426,7 @@ public class LabelsAcceptanceTest
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         createNode( db, Labels.MY_LABEL );
         Node node = createNode( db, Labels.MY_OTHER_LABEL );
-        try( Transaction tx = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             node.delete();
             tx.success();
@@ -427,7 +434,7 @@ public class LabelsAcceptanceTest
         List<Label> labels = null;
 
         // When
-        try (Transaction tx = db.beginTx())
+        try ( Transaction tx = db.beginTx() )
         {
             labels = asList( db.getAllLabelsInUse() );
         }
@@ -463,7 +470,7 @@ public class LabelsAcceptanceTest
         } // tx.close(); - here comes the exception
 
         // THEN
-        try (Transaction transaction = db.beginTx())
+        try ( Transaction transaction = db.beginTx() )
         {
             assertEquals( 0, Iterables.count( db.getAllNodes() ) );
         }
@@ -686,7 +693,7 @@ public class LabelsAcceptanceTest
         return "Label-" + index;
     }
 
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings( "deprecation" )
     private GraphDatabaseService beansAPIWithNoMoreLabelIds()
     {
         final EphemeralIdGenerator.Factory idFactory = new EphemeralIdGenerator.Factory()
@@ -702,7 +709,8 @@ public class LabelsAcceptanceTest
                     IdGenerator generator = generators.get( idType );
                     if ( generator == null )
                     {
-                        IdTypeConfiguration idTypeConfiguration = idTypeConfigurationProvider.getIdTypeConfiguration( idType );
+                        IdTypeConfiguration idTypeConfiguration =
+                                idTypeConfigurationProvider.getIdTypeConfiguration( idType );
                         generator = new EphemeralIdGenerator( idType, idTypeConfiguration )
                         {
                             @Override
@@ -731,12 +739,19 @@ public class LabelsAcceptanceTest
                     @Override
                     public GraphDatabaseService newDatabase( Map<String,String> config )
                     {
-                        return new ImpermanentGraphDatabase( storeDir, config, GraphDatabaseDependencies.newDependencies(state.databaseDependencies() ))
+                        return newDatabase( Config.embeddedDefaults( config ) );
+                    }
+
+                    @Override
+                    public GraphDatabaseService newDatabase( @Nonnull Config config )
+                    {
+                        return new ImpermanentGraphDatabase( storeDir, config,
+                                GraphDatabaseDependencies.newDependencies( state.databaseDependencies() ) )
                         {
                             @Override
                             protected void create(
                                     File storeDir,
-                                    Map<String, String> params,
+                                    Map<String,String> params,
                                     GraphDatabaseFacadeFactory.Dependencies dependencies )
                             {
                                 Function<PlatformModule,EditionModule> factory =
@@ -744,7 +759,8 @@ public class LabelsAcceptanceTest
                                         {
                                             @Override
                                             protected IdGeneratorFactory createIdGeneratorFactory(
-                                                    FileSystemAbstraction fs, IdTypeConfigurationProvider idTypeConfigurationProvider )
+                                                    FileSystemAbstraction fs,
+                                                    IdTypeConfigurationProvider idTypeConfigurationProvider )
                                             {
                                                 return idFactory;
                                             }

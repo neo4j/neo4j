@@ -20,9 +20,14 @@
 package org.neo4j.graphdb.factory;
 
 import java.io.File;
+import java.util.Map;
 
 import org.neo4j.graphdb.EnterpriseGraphDatabase;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.Edition;
+
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class EnterpriseGraphDatabaseFactory extends GraphDatabaseFactory
 {
@@ -30,9 +35,21 @@ public class EnterpriseGraphDatabaseFactory extends GraphDatabaseFactory
     protected GraphDatabaseBuilder.DatabaseCreator createDatabaseCreator( final File storeDir,
             final GraphDatabaseFactoryState state )
     {
-        return config -> {
-            config.put( "unsupported.dbms.ephemeral", "false" );
-            return new EnterpriseGraphDatabase( storeDir, config, state.databaseDependencies() );
+        return new GraphDatabaseBuilder.DatabaseCreator()
+        {
+            @Override
+            public GraphDatabaseService newDatabase( Map<String,String> config )
+            {
+                return newDatabase( Config.embeddedDefaults( config ) );
+            }
+
+            @Override
+            public GraphDatabaseService newDatabase( Config config )
+            {
+                return new EnterpriseGraphDatabase( storeDir,
+                        config.with( stringMap( "unsupported.dbms.ephemeral", "false" ) ),
+                        state.databaseDependencies() );
+            }
         };
     }
 

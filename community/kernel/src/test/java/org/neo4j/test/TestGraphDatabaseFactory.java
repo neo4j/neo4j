@@ -22,6 +22,7 @@ package org.neo4j.test;
 import java.io.File;
 import java.util.Collections;
 import java.util.Map;
+import javax.annotation.Nonnull;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
@@ -47,8 +48,6 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.neo4j.kernel.configuration.Connector.ConnectorType.BOLT;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
-
 
 /**
  * Test factory for graph databases.
@@ -80,7 +79,7 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
         {
             Setting<?> key = entry.getKey();
             String value = entry.getValue();
-            builder.setConfig(key, value);
+            builder.setConfig( key, value );
         }
         return builder.newGraphDatabase();
     }
@@ -96,8 +95,8 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
         // Reduce the default page cache memory size to 8 mega-bytes for test databases.
         builder.setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
         builder.setConfig( GraphDatabaseSettings.shutdown_transaction_end_timeout, "1s" );
-        builder.setConfig( new BoltConnector("bolt").type, BOLT.name() );
-        builder.setConfig( new BoltConnector("bolt").enabled, "false" );
+        builder.setConfig( new BoltConnector( "bolt" ).type, BOLT.name() );
+        builder.setConfig( new BoltConnector( "bolt" ).enabled, "false" );
     }
 
     private void configure( GraphDatabaseBuilder builder, File storeDir )
@@ -192,8 +191,13 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
         return new GraphDatabaseBuilder.DatabaseCreator()
         {
             @Override
-            @SuppressWarnings( "deprecation" )
             public GraphDatabaseService newDatabase( Map<String,String> config )
+            {
+                return newDatabase( Config.embeddedDefaults( config ) );
+            }
+
+            @Override
+            public GraphDatabaseService newDatabase( @Nonnull Config config )
             {
                 return new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
                 {
@@ -246,7 +250,7 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
 
                         };
                     }
-                }.newFacade( storeDir, Config.embeddedDefaults( config ),
+                }.newFacade( storeDir, config,
                         GraphDatabaseDependencies.newDependencies( state.databaseDependencies() ) );
 
             }
