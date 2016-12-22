@@ -37,6 +37,7 @@ import org.neo4j.logging.Log;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
@@ -135,45 +136,7 @@ public class ConfigTest
     }
 
     @Test
-    public void shouldPassOnLogInWith() throws Exception
-    {
-        // Given
-        Log log = mock(Log.class);
-        Config first = Config.embeddedDefaults( stringMap( "first.jibberish", "bah" ) );
-
-        // When
-        first.setLogger( log );
-        Config second = first.with( stringMap( "second.jibberish", "baah" ) );
-        second.with( stringMap( "third.jibberish", "baah" ) );
-
-        // Then
-        verify( log ).warn( "Unknown config option: %s", "first.jibberish" );
-        verify( log ).warn( "Unknown config option: %s", "second.jibberish" );
-        verify( log ).warn( "Unknown config option: %s", "third.jibberish" );
-        verifyNoMoreInteractions( log );
-    }
-
-    @Test
-    public void shouldPassOnBufferedLogInWith() throws Exception
-    {
-        // Given
-        Log log = mock(Log.class);
-        Config first = Config.embeddedDefaults( stringMap( "first.jibberish", "bah" ) );
-
-        // When
-        Config second = first.with( stringMap( "second.jibberish", "baah" ) );
-        Config third = second.with( stringMap( "third.jibberish", "baah" ) );
-        third.setLogger( log );
-
-        // Then
-        verify( log ).warn( "Unknown config option: %s", "first.jibberish" );
-        verify( log ).warn( "Unknown config option: %s", "second.jibberish" );
-        verify( log ).warn( "Unknown config option: %s", "third.jibberish" );
-        verifyNoMoreInteractions( log );
-    }
-
-    @Test
-    public void shouldPassOnLogInWithDefaults() throws Exception
+    public void shouldRetainCustomConfigOutsideNamespaceAndPassOnBufferedLogInWithMethods() throws Exception
     {
         // Given
         Log log = mock(Log.class);
@@ -182,31 +145,32 @@ public class ConfigTest
         // When
         first.setLogger( log );
         Config second = first.withDefaults( stringMap( "second.jibberish", "baah" ) );
-        second.withDefaults( stringMap( "third.jibberish", "baah" ) );
+        Config third = second.with( stringMap( "third.jibberish", "baaah" ) );
 
         // Then
-        verify( log ).warn( "Unknown config option: %s", "first.jibberish" );
-        verify( log ).warn( "Unknown config option: %s", "second.jibberish" );
-        verify( log ).warn( "Unknown config option: %s", "third.jibberish" );
         verifyNoMoreInteractions( log );
+        assertEquals( Optional.of( "bah" ), third.getRaw( "first.jibberish" ) );
+        assertEquals( Optional.of( "baah" ), third.getRaw( "second.jibberish" ));
+        assertEquals( Optional.of( "baaah" ), third.getRaw( "third.jibberish" ) );
     }
 
     @Test
-    public void shouldPassOnBufferedLogInWithDefaults() throws Exception
+    public void shouldWarnAndDiscardUnknownOptionsInReserverdNamespaceAndPassOnBufferedLogInWithMethods()
+            throws Exception
     {
         // Given
         Log log = mock(Log.class);
-        Config first = Config.embeddedDefaults( stringMap( "first.jibberish", "bah" ) );
+        Config first = Config.embeddedDefaults( stringMap( "dbms.jibberish", "bah" ) );
 
         // When
-        Config second = first.withDefaults( stringMap( "second.jibberish", "baah" ) );
-        Config third = second.withDefaults( stringMap( "third.jibberish", "baah" ) );
-        third.setLogger( log );
+        first.setLogger( log );
+        Config second = first.with( stringMap( "ha.jibberish", "baah" ) );
+        second.withDefaults( stringMap( "causal_clustering.jibberish", "baah" ) );
 
         // Then
-        verify( log ).warn( "Unknown config option: %s", "first.jibberish" );
-        verify( log ).warn( "Unknown config option: %s", "second.jibberish" );
-        verify( log ).warn( "Unknown config option: %s", "third.jibberish" );
+        verify( log ).warn( "Ignored unknown config option: %s", "dbms.jibberish" );
+        verify( log ).warn( "Ignored unknown config option: %s", "ha.jibberish" );
+        verify( log ).warn( "Ignored unknown config option: %s", "causal_clustering.jibberish" );
         verifyNoMoreInteractions( log );
     }
 

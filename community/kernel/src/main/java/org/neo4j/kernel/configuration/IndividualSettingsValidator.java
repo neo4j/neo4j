@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.configuration;
 
+import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
@@ -37,6 +37,9 @@ import org.neo4j.logging.Log;
  */
 public class IndividualSettingsValidator implements ConfigurationValidator
 {
+    private static final List<String> reservedPrefixes =
+            Arrays.asList( "dbms.", "metrics.", "ha.", "causal_clustering.", "browser.", "tools." );
+
     @Override
     @Nonnull
     public Map<String,String> validate( @Nonnull Collection<SettingValidator> settingValidators,
@@ -52,7 +55,16 @@ public class IndividualSettingsValidator implements ConfigurationValidator
         {
             if ( !validConfig.containsKey( key ) )
             {
-                log.warn( "Unknown config option: %s", key );
+                // Plugins rely on custom config options being present.
+                // As a compromise, we only warn (and discard) for settings in our own "namespace"
+                if ( reservedPrefixes.stream().anyMatch( key::startsWith ) )
+                {
+                    log.warn( "Ignored unknown config option: %s", key );
+                }
+                else
+                {
+                    validConfig.put( key, value );
+                }
             }
         } );
 
