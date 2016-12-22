@@ -26,15 +26,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import javax.annotation.Nonnull;
 
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.SettingGroup;
-
-import static org.neo4j.kernel.configuration.Settings.options;
-import static org.neo4j.kernel.configuration.Settings.setting;
-
 
 public abstract class ConnectorValidator implements SettingGroup<Object>
 {

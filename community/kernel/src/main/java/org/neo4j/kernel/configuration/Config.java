@@ -280,7 +280,7 @@ public class Config implements DiagnosticsProvider, Configuration
     }
 
     /**
-     * Replays possible existing messages into this log
+     * Specify a log where errors and warnings will be reported.
      *
      * @param log to use
      */
