@@ -53,7 +53,7 @@ trait LogicalPlanRewriter extends Phase {
 
   def instance(context: Context): Rewriter
 
-  override def transform(from: CompilationState, context: Context): CompilationState = {
+  override def process(from: CompilationState, context: Context): CompilationState = {
     val rewritten = from.logicalPlan.endoRewrite(instance(context))
     from.copy(maybeLogicalPlan = Some(rewritten))
   }

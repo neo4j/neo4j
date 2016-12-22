@@ -34,7 +34,7 @@ case class QueryPlanner(planSingleQuery: LogicalPlanningFunction1[PlannerQuery, 
 
   override def postConditions = Set(Contains[LogicalPlan])
 
-  override def transform(from: CompilationState, context: Context): CompilationState = {
+  override def process(from: CompilationState, context: Context): CompilationState = {
     val logicalPlanProducer = LogicalPlanProducer(context.metrics.cardinality)
     val logicalPlanningContext = LogicalPlanningContext(
       planContext = context.planContext,

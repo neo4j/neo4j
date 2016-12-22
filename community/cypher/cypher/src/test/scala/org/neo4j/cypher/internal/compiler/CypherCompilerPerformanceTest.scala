@@ -19,21 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler
 
-import org.mockito.Matchers._
-import org.mockito.Mockito._
 import org.neo4j.cypher.GraphDatabaseFunSuite
 import org.neo4j.cypher.internal.CypherCompiler.{CLOCK, DEFAULT_QUERY_PLAN_TTL, DEFAULT_STATISTICS_DIVERGENCE_THRESHOLD}
 import org.neo4j.cypher.internal.compatibility.v3_2.WrappedMonitors
 import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.NO_TRACING
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.PlanFingerprintReference
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.IdentityTypeConverter
 import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilationState
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.Metrics
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.Metrics.{CardinalityModel, CostModel}
-import org.neo4j.cypher.internal.compiler.v3_2.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.compiler.v3_2.{CypherCompilerFactory, InfoLogger, _}
-import org.neo4j.cypher.internal.ir.v3_2.{Cardinality, Cost}
 import org.neo4j.cypher.internal.spi.v3_2.codegen.GeneratedQueryStructure
 
 import scala.concurrent.duration._
@@ -175,26 +168,10 @@ class CypherCompilerPerformanceTest extends GraphDatabaseFunSuite {
 
   def plan(query: String): (Long, Long) = {
     val compiler = createCurrentCompiler
-    val (preparedSyntacticQueryTime, preparedSyntacticQuery: CompilationState) = measure(compiler.prepareSyntacticQuery(query, query, devNullLogger))
+    val (preparedSyntacticQueryTime, preparedSyntacticQuery: CompilationState) = measure(compiler.parseQuery(query, query, devNullLogger, IDPPlannerName.name, None, NO_TRACING))
     val planTime = graph.withTx { tx =>
-      val (semanticTime, state: CompilationState) = measure(compiler.prepareSemanticQuery(preparedSyntacticQuery, devNullLogger, planContext, NO_TRACING))
-      val reference = mock[PlanFingerprintReference]
-      when(reference.isStale(any(), any())).thenReturn(false)
-      val stats: CardinalityModel = (_, _, _) => Cardinality.SINGLE
-      val cost: CostModel = (_,_) => Cost(12)
-      val metrics = Metrics(cost, stats, null)
-      val config = CypherCompilerConfiguration(queryCacheSize = 1,
-        statsDivergenceThreshold = 2,
-        queryPlanTTL = 1,
-        useErrorsOverWarnings = true,
-        idpMaxTableSize = 80,
-        idpIterationDuration = 10,
-        errorIfShortestPathFallbackUsedAtRuntime = true,
-        nonIndexedLabelWarningThreshold = 494)
-      val context = ContextHelper.create(planContext = planContext, metrics = metrics, queryGraphSolver = compiler.queryGraphSolver, config = config)
-
-      val (planTime, _) = measure(compiler.thirdPipeLine.transform(state, context))
-      planTime + semanticTime
+      val (planTime, _) = measure(compiler.planPreparedQuery(preparedSyntacticQuery, devNullLogger, planContext, None, NO_TRACING))
+      planTime
     }
     (preparedSyntacticQueryTime, planTime)
   }

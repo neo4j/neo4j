@@ -39,7 +39,7 @@ case object ProcedureCallOrSchemaCommandPlanBuilder extends Phase {
 
   override def postConditions: Set[Condition] = Set.empty
 
-  override def transform(from: CompilationState, context: Context): CompilationState = {
+  override def process(from: CompilationState, context: Context): CompilationState = {
     val maybeExecutionPlan: Option[ExecutionPlan] = from.statement match {
       // Global call: CALL foo.bar.baz("arg1", 2)
       case Query(None, SingleQuery(Seq(resolved@ResolvedCall(signature, args, _, _, _)))) =>

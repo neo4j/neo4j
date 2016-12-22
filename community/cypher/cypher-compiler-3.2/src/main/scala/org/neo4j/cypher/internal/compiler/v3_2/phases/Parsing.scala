@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.parser.CypherParser
 case object Parsing extends Phase {
   private val parser = new CypherParser
 
-  override def transform(in: CompilationState, ignored: Context): CompilationState =
+  override def process(in: CompilationState, ignored: Context): CompilationState =
     in.copy(maybeStatement = Some(parser.parse(in.queryText, in.startPosition)))
 
   override val phase = PARSING

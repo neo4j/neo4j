@@ -66,7 +66,7 @@ case object RewriteProcedureCalls extends Phase {
 
   override def description = "resolve procedure calls"
 
-  override def transform(from: CompilationState, context: Context): CompilationState = {
+  override def process(from: CompilationState, context: Context): CompilationState = {
     val rewrittenStatement = from.statement.endoRewrite(rewriter(context.planContext))
     from.copy(maybeStatement = Some(rewrittenStatement))
   }

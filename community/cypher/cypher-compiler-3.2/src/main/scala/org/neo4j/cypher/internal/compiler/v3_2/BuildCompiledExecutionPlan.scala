@@ -39,7 +39,7 @@ object BuildCompiledExecutionPlan extends Phase {
 
   override def postConditions = Set.empty// Can't yet guarantee that we can build an execution plan
 
-  override def transform(from: CompilationState, context: Context): CompilationState =
+  override def process(from: CompilationState, context: Context): CompilationState =
     try {
       val codeGen = new CodeGenerator(context.codeStructure, CodeGenConfiguration(mode = ByteCodeMode, clock = context.clock))
       val compiled: CompiledPlan = codeGen.generate(from.logicalPlan, context.planContext, from.semanticTable, from.plannerName)

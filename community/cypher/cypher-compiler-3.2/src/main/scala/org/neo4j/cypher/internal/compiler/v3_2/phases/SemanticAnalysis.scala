@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.ast.UnaliasedReturnItem
 
 case class SemanticAnalysis(warn: Boolean) extends Phase {
 
-  override def transform(from: CompilationState, context: Context): CompilationState = {
+  override def process(from: CompilationState, context: Context): CompilationState = {
     val semanticState = SemanticChecker.check(from.statement, context.exceptionCreator)
     if (warn) semanticState.notifications.foreach(context.notificationLogger.log)
     from.copy(maybeSemantics = Some(semanticState))

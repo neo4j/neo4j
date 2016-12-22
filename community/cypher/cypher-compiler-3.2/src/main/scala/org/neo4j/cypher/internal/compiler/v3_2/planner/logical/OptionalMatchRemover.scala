@@ -197,7 +197,7 @@ trait PlannerQueryRewriter extends Phase {
 
   def instance(context: Context): Rewriter
 
-  override def transform(from: CompilationState, context: Context): CompilationState = {
+  override def process(from: CompilationState, context: Context): CompilationState = {
     val query: UnionQuery = from.unionQuery
     val rewritten = query.endoRewrite(instance(context))
     from.copy(maybeUnionQuery = Some(rewritten))

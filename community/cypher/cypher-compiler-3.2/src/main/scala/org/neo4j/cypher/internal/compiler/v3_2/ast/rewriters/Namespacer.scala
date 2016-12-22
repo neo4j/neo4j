@@ -34,7 +34,7 @@ object Namespacer extends Phase {
 
   override def description: String = "rename variables so they are all unique"
 
-  override def transform(from: CompilationState, ignored: Context): CompilationState = {
+  override def process(from: CompilationState, ignored: Context): CompilationState = {
     val ambiguousNames = shadowedNames(from.semantics.scopeTree)
     val variableDefinitions: Map[SymbolUse, SymbolUse] = from.semantics.scopeTree.allVariableDefinitions
     val protectedVariables = returnAliases(from.statement)

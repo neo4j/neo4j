@@ -52,7 +52,7 @@ trait StatementRewriter extends Phase {
 
   def instance(context: Context): Rewriter
 
-  override def transform(from: CompilationState, context: Context): CompilationState = {
+  override def process(from: CompilationState, context: Context): CompilationState = {
     val rewritten = from.statement.endoRewrite(instance(context))
     from.copy(maybeStatement = Some(rewritten))
   }

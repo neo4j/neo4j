@@ -27,6 +27,13 @@ import org.neo4j.cypher.internal.frontend.v3_2.ast.{Query, Statement}
 import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, InternalException, SemanticState, SemanticTable}
 import org.neo4j.cypher.internal.ir.v3_2.PeriodicCommit
 
+/*
+This is the state that is used during query compilation. It accumulates more and more values as it passes through
+the compiler pipe line, finally ending up containing an execution plan.
+
+Normally, it is created with only the first three params as given, and the rest is built up while passing through
+the pipe line
+ */
 case class CompilationState(queryText: String,
                             startPosition: Option[InputPosition],
                             plannerName: PlannerName,

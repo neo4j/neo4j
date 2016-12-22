@@ -34,16 +34,18 @@ import org.neo4j.cypher.internal.spi.v3_2.codegen.GeneratedQueryStructure
 import org.neo4j.logging.NullLog
 
 class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSupport {
+  var logger: InternalNotificationLogger = _
+  var compiler: CypherCompiler = _
+
+  override protected def beforeEach(): Unit = {
+    super.beforeEach()
+    logger = mock[InternalNotificationLogger]
+    compiler = createCompiler()
+  }
 
   test("should warn when disconnected patterns") {
-    //given
-    val logger = mock[InternalNotificationLogger]
-    val compiler = createCompiler()
-
     //when
-    graph.inTx {
-      compiler.planQuery("MATCH (a)-->(b), (c)-->(d) RETURN *", planContext, logger)
-    }
+    runQuery("MATCH (a)-->(b), (c)-->(d) RETURN *")
 
     //then
     verify(logger, times(1)).log(CartesianProductNotification(InputPosition(0, 1, 1), Set("c", "d")))
@@ -51,11 +53,7 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
 
   test("should not warn when connected patterns") {
     //given
-    val logger = mock[InternalNotificationLogger]
-    val compiler = createCompiler()
-
-    //when
-    graph.inTx(compiler.planQuery("MATCH (a)-->(b), (a)-->(c) RETURN *", planContext, logger))
+    runQuery("MATCH (a)-->(b), (a)-->(c) RETURN *")
 
     //then
     verify(logger, never).log(any())
@@ -63,13 +61,7 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
 
   test("should warn when one disconnected pattern in otherwise connected pattern") {
     //given
-    val logger = mock[InternalNotificationLogger]
-    val compiler = createCompiler()
-
-    //when
-    graph.inTx {
-      compiler.planQuery("MATCH (a)-->(b), (b)-->(c), (x)-->(y), (c)-->(d), (d)-->(e) RETURN *", planContext, logger)
-    }
+    runQuery("MATCH (a)-->(b), (b)-->(c), (x)-->(y), (c)-->(d), (d)-->(e) RETURN *")
 
     //then
     verify(logger, times(1)).log(CartesianProductNotification(InputPosition(0, 1, 1), Set("x", "y")))
@@ -77,11 +69,7 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
 
   test("should not warn when disconnected patterns in multiple match clauses") {
     //given
-    val logger = mock[InternalNotificationLogger]
-    val compiler = createCompiler()
-
-    //when
-    graph.inTx(compiler.planQuery("MATCH (a)-->(b) MATCH (c)-->(d) RETURN *", planContext, logger))
+    runQuery("MATCH (a)-->(b) MATCH (c)-->(d) RETURN *")
 
     //then
     verify(logger, never).log(any())
@@ -93,12 +81,19 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
     val compiler = createCompiler()
 
     //when
-    graph.inTx(compiler.planQuery("""MATCH (p)-[r1]-(m),
-                                    |(m)-[r2]-(d), (d)-[r3]-(m2)
-                                    |RETURN DISTINCT d""".stripMargin, planContext, logger))
+    runQuery(
+      """MATCH (p)-[r1]-(m),
+        |(m)-[r2]-(d), (d)-[r3]-(m2)
+        |RETURN DISTINCT d""".stripMargin)
 
     //then
     verify(logger, never).log(any())
+  }
+
+  private def runQuery(query: String) = {
+    graph.inTx {
+      compiler.planQuery(query, planContext, logger, IDPPlannerName.name)
+    }
   }
 
   private def createCompiler() = {

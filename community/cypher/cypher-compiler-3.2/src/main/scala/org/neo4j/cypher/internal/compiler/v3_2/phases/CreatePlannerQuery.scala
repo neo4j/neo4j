@@ -32,7 +32,7 @@ object CreatePlannerQuery extends Phase {
 
   override def postConditions = Set(Contains[UnionQuery])
 
-  override def transform(from: CompilationState, context: Context): CompilationState = from.statement match {
+  override def process(from: CompilationState, context: Context): CompilationState = from.statement match {
     case query: Query =>
       val unionQuery: UnionQuery = toUnionQuery(query, from.semanticTable)
       from.copy(maybeUnionQuery = Some(unionQuery))

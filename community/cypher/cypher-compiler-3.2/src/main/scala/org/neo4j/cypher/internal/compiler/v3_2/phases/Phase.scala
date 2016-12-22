@@ -39,10 +39,12 @@ trait Phase extends Transformer {
 
   def description: String
 
-  def transformReporting(from: CompilationState, context: Context): CompilationState =
+  override def transform(from: CompilationState, context: Context): CompilationState =
     closing(context.tracer.beginPhase(phase)) {
-      transform(from, context)
+      process(from, context)
     }
+
+  def process(from: CompilationState, context: Context): CompilationState
 
   def postConditions: Set[Condition]
 
@@ -53,7 +55,7 @@ trait Phase extends Transformer {
 A visitor is a phase that does not change the compilation state. All it's behaviour is side effects
  */
 trait VisitorPhase extends Phase {
-  override def transform(from: CompilationState, context: Context): CompilationState = {
+  override def process(from: CompilationState, context: Context): CompilationState = {
     visit(from, context)
     from
   }
@@ -79,7 +81,7 @@ case class AddCondition(postCondition: Condition) extends Phase {
 
   override def description: String = "adds a condition"
 
-  override def transform(from: CompilationState, context: Context): CompilationState = from
+  override def process(from: CompilationState, context: Context): CompilationState = from
 
   override def postConditions: Set[Condition] = Set(postCondition)
 }
@@ -116,8 +118,6 @@ class PipeLine(first: Transformer, after: Transformer) extends Transformer {
     if (messages.nonEmpty) {
       throw new InternalException(messages.mkString(", "))
     }
-
-    throw new RuntimeException("yo mama!")
 
     result
   }

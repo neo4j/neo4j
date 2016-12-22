@@ -31,7 +31,7 @@ case class AstRewriting(sequencer: String => RewriterStepSequencer, shouldExtrac
 
   private val astRewriter = new ASTRewriter(sequencer, shouldExtractParams)
 
-  override def transform(in: CompilationState, context: Context): CompilationState = {
+  override def process(in: CompilationState, context: Context): CompilationState = {
 
     val (rewrittenStatement, extractedParams, postConditions) = astRewriter.rewrite(in.queryText, in.statement, in.semantics)
 

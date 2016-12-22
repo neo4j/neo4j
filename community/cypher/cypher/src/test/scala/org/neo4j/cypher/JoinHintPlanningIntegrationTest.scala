@@ -72,9 +72,9 @@ class JoinHintPlanningIntegrationTest extends CypherFunSuite with PatternGen wit
       }
 
       queryGraphSolver = solver
-    }.planFor(cypherQuery)
+    }.getLogicalPlanFor(cypherQuery)
 
-    semanticPlan.plan
+    semanticPlan._2
   }
 
 

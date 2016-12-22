@@ -23,6 +23,7 @@ import java.time.{Clock, Instant, ZoneOffset}
 
 import org.neo4j.cypher.GraphDatabaseTestSupport
 import org.neo4j.cypher.internal.compatibility.v3_2.{StringInfoLogger, WrappedMonitors}
+import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.NO_TRACING
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.ExecutionPlan
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.IdentityTypeConverter
 import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSequencer
@@ -86,76 +87,72 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
 
   override def databaseConfig(): Map[Setting[_], String] = Map(GraphDatabaseSettings.cypher_min_replan_interval -> "0")
 
-  test("should monitor cache misses") {
-    val counter = new CacheCounter()
-    val compiler = createCompiler()
+  var counter: CacheCounter = _
+  var compiler: CypherCompiler = _
+
+  override protected def beforeEach(): Unit = {
+    super.beforeEach()
+    counter = new CacheCounter()
+    compiler = createCompiler()
     compiler.monitors.addMonitorListener(counter)
+  }
 
-    graph.inTx { compiler.planQuery("return 42", planContext, devNullLogger) }
+  private def runQuery(query: String): Unit = {
+    graph.inTx {
+      compiler.planQuery(query, planContext, devNullLogger, IDPPlannerName.name)
+    }
+  }
 
-    counter.counts should equal(CacheCounts(hits = 0, misses = 1, flushes = 1))
+  test("should monitor cache misses") {
+    runQuery("return 42")
+
+    counter.counts should equal(CacheCounts(misses = 1, flushes = 1))
   }
 
   test("should monitor cache hits") {
-    val compiler = createCompiler()
-    val counter = new CacheCounter()
-    compiler.monitors.addMonitorListener(counter)
-
-    graph.inTx { compiler.planQuery("return 42", planContext, devNullLogger) }
-    graph.inTx { compiler.planQuery("return 42", planContext, devNullLogger) }
+    runQuery("return 42")
+    runQuery("return 42")
 
     counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1))
   }
 
   test("should not care about white spaces") {
-    val compiler = createCompiler()
-    val counter = new CacheCounter()
-    compiler.monitors.addMonitorListener(counter)
-
-    graph.inTx { compiler.planQuery("return 42", planContext, devNullLogger) }
-    graph.inTx { compiler.planQuery("\treturn          42", planContext, devNullLogger) }
+    runQuery("return 42")
+    runQuery("\treturn          42")
 
     counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1))
   }
 
   test("should cache easily parametrized queries") {
-    val compiler = createCompiler()
-    val counter = new CacheCounter()
-    compiler.monitors.addMonitorListener(counter)
-
-    graph.inTx { compiler.planQuery("return 42 as result", planContext, devNullLogger) }
-    graph.inTx { compiler.planQuery("return 43 as result", planContext, devNullLogger) }
+    runQuery("return 42 as result")
+    runQuery("return 43 as result")
 
     counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1))
   }
 
   test("should monitor cache flushes") {
-    val compiler = createCompiler()
-    val counter = new CacheCounter()
-    compiler.monitors.addMonitorListener(counter)
-
-    graph.inTx { compiler.planQuery("return 42", planContext, devNullLogger) }
+    runQuery("return 42")
     graph.createConstraint("Person", "id")
-    graph.inTx { compiler.planQuery("return 42", planContext, devNullLogger) }
+    runQuery("return 42")
 
     counter.counts should equal(CacheCounts(hits = 0, misses = 2, flushes = 2))
   }
 
   test("should monitor cache remove") {
     // given
-    val counter = new CacheCounter()
     val clock: Clock = Clock.fixed(Instant.ofEpochMilli(1000L), ZoneOffset.UTC)
-    val compiler = createCompiler(queryPlanTTL = 0, clock = clock)
+    counter = new CacheCounter()
+    compiler = createCompiler(queryPlanTTL = 0, clock = clock)
     compiler.monitors.addMonitorListener(counter)
     val query: String = "match (n:Person:Dog) return n"
 
     createLabeledNode("Dog")
     (0 until 50).foreach { _ => createLabeledNode("Person") }
-    graph.inTx { compiler.planQuery(query, planContext, devNullLogger) }
+    runQuery(query)
 
     // when
     (0 until 1000).foreach { _ => createLabeledNode("Dog") }
-    graph.inTx { compiler.planQuery(query, planContext, devNullLogger) }
+    runQuery(query)
 
     // then
     counter.counts should equal(CacheCounts(hits = 1, misses = 2, flushes = 1, evicted = 1))
@@ -163,21 +160,20 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
 
   test("should log on cache remove") {
     // given
-    val counter = new CacheCounter()
     val logProvider = new AssertableLogProvider()
     val clock: Clock = Clock.fixed(Instant.ofEpochMilli(1000L), ZoneOffset.UTC)
-    val compiler = createCompiler(queryPlanTTL = 0, clock = clock, log = logProvider.getLog(getClass))
+    compiler = createCompiler(queryPlanTTL = 0, clock = clock, log = logProvider.getLog(getClass))
     compiler.monitors.addMonitorListener(counter)
     val query: String = "match (n:Person:Dog) return n"
-    val statement = compiler.prepareSyntacticQuery(query, query, devNullLogger).statement
+    val statement = compiler.parseQuery(query, query, devNullLogger, offset = None, tracer = NO_TRACING).statement
 
     createLabeledNode("Dog")
     (0 until 50).foreach { _ => createLabeledNode("Person") }
-    graph.inTx { compiler.planQuery(query, planContext, devNullLogger) }
+    runQuery(query)
 
     // when
     (0 until 1000).foreach { _ => createLabeledNode("Dog") }
-    graph.inTx { compiler.planQuery(query, planContext, devNullLogger) }
+    runQuery(query)
 
     // then
     logProvider.assertExactly(

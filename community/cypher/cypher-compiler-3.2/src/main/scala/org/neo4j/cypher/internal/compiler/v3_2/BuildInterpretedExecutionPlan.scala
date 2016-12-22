@@ -37,7 +37,7 @@ object BuildInterpretedExecutionPlan extends Phase {
 
   override def postConditions = Set(Contains[ExecutionPlan])
 
-  override def transform(from: CompilationState, context: Context): CompilationState = {
+  override def process(from: CompilationState, context: Context): CompilationState = {
     val logicalPlan = from.logicalPlan
     val idMap = LogicalPlanIdentificationBuilder(logicalPlan)
     val executionPlanBuilder = new PipeExecutionPlanBuilder(context.clock, context.monitors)
