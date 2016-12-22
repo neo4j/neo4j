@@ -34,7 +34,7 @@ object idSeekLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
       // MATCH (a)-[r]-(b) WHERE id(r) IN expr
       // MATCH a WHERE id(a) IN {param}
       case predicate@AsIdSeekable(seekable) if seekable.args.dependencies.forall(arguments) && !arguments(seekable.ident) =>
-        Some(predicate, seekable.ident, seekable.args)
+        Some((predicate, seekable.ident, seekable.args))
       case _ => None
     }
 

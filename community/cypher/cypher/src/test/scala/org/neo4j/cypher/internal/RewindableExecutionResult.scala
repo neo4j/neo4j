@@ -30,11 +30,12 @@ import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{InternalExecutionResult, READ_WRITE, _}
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription._
-import org.neo4j.cypher.internal.compiler.v3_2.spi.InternalResultVisitor
+import org.neo4j.cypher.internal.compiler.v3_2.spi.{InternalResultVisitor, QualifiedName}
 import org.neo4j.cypher.internal.compiler.{v2_3, v3_1}
 import org.neo4j.cypher.internal.frontend.v2_3.{notification => notification_2_3}
-import org.neo4j.cypher.internal.frontend.v3_1.{notification => notification_3_1}
-import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, notification}
+import org.neo4j.cypher.internal.frontend.v3_1.{SemanticDirection => SemanticDirection3_1, notification => notification_3_1, symbols => symbols3_1}
+import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection.{BOTH, INCOMING, OUTGOING}
+import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, notification, symbols}
 import org.neo4j.graphdb.{QueryExecutionType, ResourceIterator}
 
 object RewindableExecutionResult {
@@ -223,6 +224,7 @@ object RewindableExecutionResult {
       case v3_1.executionplan.READ_WRITE => READ_WRITE
       case v3_1.executionplan.WRITE => WRITE
       case v3_1.executionplan.SCHEMA_WRITE => SCHEMA_WRITE
+      case v3_1.executionplan.DBMS => DBMS
     }
 
     override def columnAs[T](column: String): Iterator[T] = inner.columnAs(column)
@@ -286,14 +288,26 @@ object RewindableExecutionResult {
         case Arguments3_1.PlannerImpl(value) => Arguments.PlannerImpl(value)
         case Arguments3_1.Runtime(value) => Arguments.Runtime(value)
         case Arguments3_1.RuntimeImpl(value) => Arguments.RuntimeImpl(value)
-        case Arguments3_1.ExpandExpression(from, relName, relTypes, to,direction, min, max) =>
-          Arguments.ExpandExpression(from, relName, relTypes, to, null, min, max)
+        case Arguments3_1.ExpandExpression(from, relName, relTypes, to, direction, min, max) =>
+          val dir = direction match {
+            case SemanticDirection3_1.OUTGOING => OUTGOING
+            case SemanticDirection3_1.INCOMING => INCOMING
+            case SemanticDirection3_1.BOTH => BOTH
+          }
+          Arguments.ExpandExpression(from, relName, relTypes, to, dir, min, max)
         case Arguments3_1.SourceCode(className, sourceCode) =>
           Arguments.SourceCode(className, sourceCode)
+        case Arguments3_1.CountNodesExpression(ident, label) => Arguments.CountNodesExpression(ident, label.map(_.name))
+        case Arguments3_1.CountRelationshipsExpression(ident, startLabel, typeNames, endLabel) => Arguments
+          .CountRelationshipsExpression(ident, startLabel.map(_.name), typeNames.names, endLabel.map(_.name))
+        case Arguments3_1.LegacyExpressions(expressions) => Arguments.LegacyExpressions(
+          expressions.mapValues( _ => null ) )
+        case Arguments3_1.Signature(procedureName, _, results) =>
+          val procName = QualifiedName(procedureName.namespace, procedureName.name)
+          Arguments.Signature(procName, Seq.empty, results.map( pair => (pair._1, lift(pair._2))) )
       }
       PlanDescriptionImpl(new Id, name, children, arguments, planDescription.variables)
     }
-
 
     override def close(): Unit = inner.close()
 
@@ -313,10 +327,29 @@ object RewindableExecutionResult {
       case notification_3_1.MissingPropertyNameNotification(position, name) => notification.MissingPropertyNameNotification(lift(position), name)
       case notification_3_1.UnboundedShortestPathNotification(position) => notification.UnboundedShortestPathNotification(lift(position))
       case notification_3_1.DeprecatedProcedureNotification(position, oldName, newName) => notification.DeprecatedProcedureNotification(lift(position), oldName, newName)
+      case notification_3_1.DeprecatedFunctionNotification(position, oldName, newName) => notification.DeprecatedFunctionNotification(lift(position), oldName, newName)
+      case notification_3_1.DeprecatedPlannerNotification => notification.DeprecatedPlannerNotification
+      case notification_3_1.ExhaustiveShortestPathForbiddenNotification(position) => notification.ExhaustiveShortestPathForbiddenNotification(lift(position))
     }
 
     private def lift(position: frontend.v3_1.InputPosition): InputPosition = {
       InputPosition.apply(position.offset, position.line, position.column)
+    }
+
+    private def lift(cypherType: symbols3_1.CypherType): symbols.CypherType = cypherType match {
+      case symbols3_1.CTAny => symbols.CTAny
+      case symbols3_1.CTBoolean => symbols.CTBoolean
+      case symbols3_1.CTString => symbols.CTString
+      case symbols3_1.CTNumber => symbols.CTNumber
+      case symbols3_1.CTFloat => symbols.CTFloat
+      case symbols3_1.CTInteger => symbols.CTInteger
+      case symbols3_1.CTMap => symbols.CTMap
+      case symbols3_1.CTNode => symbols.CTNode
+      case symbols3_1.CTRelationship => symbols.CTRelationship
+      case symbols3_1.CTPoint => symbols.CTPoint
+      case symbols3_1.CTGeometry => symbols.CTGeometry
+      case symbols3_1.CTPath => symbols.CTPath
+      case symbols3_1.ListType(t) => symbols.ListType(lift(t))
     }
 
     override def planDescriptionRequested: Boolean = inner.planDescriptionRequested
