@@ -20,6 +20,9 @@
 package org.neo4j.index.gbptree;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Comparator;
+
 import org.neo4j.index.IndexWriter;
 import org.neo4j.index.ValueMerger;
 import org.neo4j.io.pagecache.PageCursor;
@@ -84,15 +87,230 @@ class InternalTreeLogic<KEY,VALUE>
     private final KEY readKey;
     private final VALUE readValue;
 
+    /**
+     * Current path down the tree
+     * - level:-1 is uninitialized (so that a call to {@link #initialize(PageCursor)} is required)
+     * - level: 0 is at root
+     * - level: 1 is at first level below root
+     * ... a.s.o
+     *
+     * Calling {@link #insert(PageCursor, StructurePropagation, Object, Object, ValueMerger, org.neo4j.index.IndexWriter.Options, long, long)}
+     * or {@link #remove(PageCursor, StructurePropagation, Object, Object, long, long)} leaves the cursor
+     * at the last updated page (tree node id) and remembers the path down the tree to where it is.
+     * Further inserts/removals will move the cursor from its current position to where the next change will
+     * take place using as few page pins as possible.
+     */
+    @SuppressWarnings( "unchecked" )
+    private Level<KEY>[] levels = new Level[0]; // grows on demand
+    private int currentLevel = -1;
+
+    /**
+     * Keeps information about one level in a path down the tree where the {@link PageCursor} is currently at.
+     *
+     * @param <KEY> type of keys in the tree.
+     */
+    private static class Level<KEY>
+    {
+        // For comparing keys
+        private final Comparator<KEY> layout;
+        // Id of the tree node id this level of the path
+        private long treeNodeId;
+
+        // Child position which was selected from parent to get to this level
+        private int childPos;
+        // Lower bound of key range this level covers
+        private final KEY lower;
+        // Whether or not the lower bound is fixed or open-ended (far left in the tree)
+        private boolean lowerIsOpenEnded;
+        // Upper bound of key range this level covers
+        private final KEY upper;
+        // Whether or not the upper bound is fixed or open-ended (far right in the tree)
+        private boolean upperIsOpenEnded;
+
+        Level( Layout<KEY,?> layout )
+        {
+            this.layout = layout;
+            this.lower = layout.newKey();
+            this.upper = layout.newKey();
+        }
+
+        /**
+         * Returns whether or not the key range of this level of the path covers the given {@code key}.
+         *
+         * @param key KEY to check.
+         * @return {@code true} if key is within the key range if this level, otherwise {@code false}.
+         */
+        boolean covers( KEY key )
+        {
+            if ( !lowerIsOpenEnded && layout.compare( key, lower ) < 0 )
+            {
+                return false;
+            }
+            if ( !upperIsOpenEnded && layout.compare( key, upper ) >= 0 )
+            {
+                return false;
+            }
+            return true;
+        }
+    }
+
     InternalTreeLogic( IdProvider idProvider, TreeNode<KEY,VALUE> bTreeNode, Layout<KEY,VALUE> layout )
     {
         this.idProvider = idProvider;
         this.bTreeNode = bTreeNode;
         this.layout = layout;
-        int maxKeyCount = max( bTreeNode.internalMaxKeyCount(), bTreeNode.leafMaxKeyCount() );
         this.primKeyPlaceHolder = layout.newKey();
         this.readKey = layout.newKey();
         this.readValue = layout.newValue();
+        ensureStackCapacity( 20 );
+    }
+
+    private void ensureStackCapacity( int depth )
+    {
+        if ( depth > levels.length )
+        {
+            int oldStackLength = levels.length;
+            levels = Arrays.copyOf( levels, depth );
+            for ( int i = oldStackLength; i < depth; i++ )
+            {
+                levels[i] = new Level<>( layout );
+            }
+        }
+    }
+
+    protected void initialize( PageCursor cursorAtRoot )
+    {
+        currentLevel = 0;
+        Level<KEY> level = levels[currentLevel];
+        level.treeNodeId = cursorAtRoot.getCurrentPageId();
+        level.lowerIsOpenEnded = true;
+        level.upperIsOpenEnded = true;
+    }
+
+    private boolean popLevel( PageCursor cursor ) throws IOException
+    {
+        currentLevel--;
+        if ( currentLevel >= 0 )
+        {
+            Level<KEY> level = levels[currentLevel];
+            bTreeNode.goTo( cursor, "parent", level.treeNodeId );
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Moves the cursor to the correct leaf for {@code key}, taking the current path into consideration
+     * and moving the cursor as few hops as possible to get from the current position to the target position,
+     * e.g given tree:
+     *
+     * <pre>
+     *              [A]
+     *       ------/ | \------
+     *      /        |        \
+     *    [B]       [C]       [D]
+     *   / | \     / | \     / | \
+     * [E][F][G] [H][I][J] [K][L][M]
+     * </pre>
+     *
+     * Examples:
+     * <p>
+     *
+     * inserting a key into J (path A,C,J) after previously have inserted a key into F (path A,B,F):
+     * <p>
+     * <ol>
+     * <li>Seeing that F doesn't cover new key</li>
+     * <li>Popping stack, seeing that B doesn't cover new key (only by asking existing information in path)</li>
+     * <li>Popping stack, seeing that A covers new key (only by asking existing information in path)</li>
+     * <li>Binary search A to select C to go down to</li>
+     * <li>Binary search C to select J to go down to</li>
+     * </ol>
+     * <p>
+     * inserting a key into G (path A,B,G) after previously have inserted a key into F (path A,B,F):
+     * <p>
+     * <ol>
+     * <li>Seeing that F doesn't cover new key</li>
+     * <li>Popping stack, seeing that B covers new key (only by asking existing information in path)</li>
+     * <li>Binary search B to select G to go down to</li>
+     * </ol>
+     *
+     * The closer keys are together from one change to the next, the fewer page pins and searches needs
+     * to be performed to get there.
+     *
+     * @param cursor {@link PageCursor} to move to the correct location.
+     * @param key KEY to make change for.
+     * @param stableGeneration stable generation.
+     * @param unstableGeneration unstable generation.
+     * @throws IOException on {@link PageCursor} error.
+     */
+    private void moveToCorrectLeaf( PageCursor cursor, KEY key, long stableGeneration, long unstableGeneration )
+            throws IOException
+    {
+        int previousLevel = currentLevel;
+        while ( !levels[currentLevel].covers( key ) )
+        {
+            currentLevel--;
+        }
+        if ( currentLevel != previousLevel )
+        {
+            goTo( cursor, "parent", levels[currentLevel].treeNodeId );
+        }
+
+        while ( bTreeNode.isInternal( cursor ) )
+        {
+            // We still need to go down further, but we're on the right path
+            int keyCount = bTreeNode.keyCount( cursor );
+            int searchResult = search( cursor, bTreeNode, key, readKey, keyCount );
+            int childPos = positionOf( searchResult );
+            if ( isHit( searchResult ) )
+            {
+                childPos++;
+            }
+
+            Level<KEY> parentLevel = levels[currentLevel];
+            currentLevel++;
+            ensureStackCapacity( currentLevel + 1 );
+            Level<KEY> level = levels[currentLevel];
+
+            // Restrict the key range as the cursor moves down to the next level
+            level.childPos = childPos;
+            level.lowerIsOpenEnded = childPos == 0 &&
+                    !TreeNode.isNode( bTreeNode.leftSibling( cursor, stableGeneration, unstableGeneration ) );
+            if ( !level.lowerIsOpenEnded )
+            {
+                if ( childPos == 0 )
+                {
+                    layout.copyKey( parentLevel.lower, level.lower );
+                    level.lowerIsOpenEnded = parentLevel.lowerIsOpenEnded;
+                }
+                else
+                {
+                    bTreeNode.keyAt( cursor, level.lower, childPos - 1 );
+                }
+            }
+            level.upperIsOpenEnded = childPos >= keyCount &&
+                    !TreeNode.isNode( bTreeNode.rightSibling( cursor, stableGeneration, unstableGeneration ) );
+            if ( !level.upperIsOpenEnded )
+            {
+                if ( childPos == keyCount )
+                {
+                    layout.copyKey( parentLevel.upper, level.upper );
+                    level.upperIsOpenEnded = parentLevel.upperIsOpenEnded;
+                }
+                else
+                {
+                    bTreeNode.keyAt( cursor, level.upper, childPos );
+                }
+            }
+
+            long childId = bTreeNode.childAt( cursor, childPos, stableGeneration, unstableGeneration );
+            PointerChecking.checkPointer( childId, false );
+
+            bTreeNode.goTo( cursor, "child", childId );
+            level.treeNodeId = cursor.getCurrentPageId();
+        }
+
+        assert bTreeNode.isLeaf( cursor );
     }
 
     /**
@@ -113,9 +331,10 @@ class InternalTreeLogic<KEY,VALUE>
      * When this method returns, {@code structurePropagation} will be populated with information about split or new
      * gen version of root. This needs to be handled by caller.
      * <p>
-     * Leaves cursor at same page as when called. No guarantees on offset.
+     * Leaves cursor at the page which was last updated. No guarantees on offset.
      *
-     * @param cursor {@link PageCursor} pinned to page where insertion is to be done.
+     * @param cursor {@link PageCursor} pinned to root of tree (if first insert/remove since {@link #clear()})
+     * or at where last insert/remove left it.
      * @param structurePropagation {@link StructurePropagation} used to report structure changes between tree levels.
      * @param key key to be inserted
      * @param value value to be associated with key
@@ -129,41 +348,32 @@ class InternalTreeLogic<KEY,VALUE>
             ValueMerger<VALUE> valueMerger, IndexWriter.Options options,
             long stableGeneration, long unstableGeneration ) throws IOException
     {
-        if ( bTreeNode.isLeaf( cursor ) )
+        assert currentLevel >= 0;
+        moveToCorrectLeaf( cursor, key, stableGeneration, unstableGeneration );
+
+        insertInLeaf( cursor, structurePropagation, key, value, valueMerger, options,
+                stableGeneration, unstableGeneration );
+
+        while ( structurePropagation.hasNewGen || structurePropagation.hasSplit )
         {
-            insertInLeaf( cursor, structurePropagation, key, value, valueMerger, options,
-                    stableGeneration, unstableGeneration );
-            return;
-        }
+            int pos = levels[currentLevel].childPos;
+            if ( !popLevel( cursor ) )
+            {
+                // Root split, let that be handled outside
+                break;
+            }
 
-        int keyCount = bTreeNode.keyCount( cursor );
-        int searchResult = search( cursor, bTreeNode, key, readKey, keyCount );
-        int pos = positionOf( searchResult );
-        if ( isHit( searchResult ) )
-        {
-            pos++;
-        }
-
-        long currentId = cursor.getCurrentPageId();
-        long childId = bTreeNode.childAt( cursor, pos, stableGeneration, unstableGeneration );
-        PointerChecking.checkPointer( childId, false );
-
-        bTreeNode.goTo( cursor, "child", childId );
-
-        insert( cursor, structurePropagation, key, value, valueMerger, options, stableGeneration, unstableGeneration );
-
-        bTreeNode.goTo( cursor, "parent", currentId );
-
-        if ( structurePropagation.hasNewGen )
-        {
-            structurePropagation.hasNewGen = false;
-            bTreeNode.setChildAt( cursor, structurePropagation.left, pos, stableGeneration, unstableGeneration );
-        }
-        if ( structurePropagation.hasSplit )
-        {
-            structurePropagation.hasSplit = false;
-            insertInInternal( cursor, structurePropagation, keyCount, structurePropagation.primKey,
-                    structurePropagation.right, options, stableGeneration, unstableGeneration );
+            if ( structurePropagation.hasNewGen )
+            {
+                structurePropagation.hasNewGen = false;
+                bTreeNode.setChildAt( cursor, structurePropagation.left, pos, stableGeneration, unstableGeneration );
+            }
+            if ( structurePropagation.hasSplit )
+            {
+                structurePropagation.hasSplit = false;
+                insertInInternal( cursor, structurePropagation, bTreeNode.keyCount( cursor ), structurePropagation.primKey,
+                        structurePropagation.right, options, stableGeneration, unstableGeneration );
+            }
         }
     }
 
@@ -173,8 +383,7 @@ class InternalTreeLogic<KEY,VALUE>
      * Insertion in internal is always triggered by a split in child.
      * The result of a split is a primary key that is sent upwards in the b+tree and the newly created right child.
      *
-     * @param cursor {@link PageCursor} pinned to page containing internal node,
-     * current node
+     * @param cursor {@link PageCursor} pinned to page containing internal node, current node
      * @param structurePropagation {@link StructurePropagation} used to report structure changes between tree levels.
      * @param keyCount the key count of current node
      * @param primKey the primary key to be inserted
@@ -214,7 +423,7 @@ class InternalTreeLogic<KEY,VALUE>
      * <p>
      * Split in internal node caused by an insertion of primKey and newRightChild
      *
-     * @param cursor {@link PageCursor} pinned to page containing internal node, fullNode.
+     * @param cursor {@link PageCursor} pinned to page containing internal node, full node.
      * @param structurePropagation {@link StructurePropagation} used to report structure changes between tree levels.
      * @param primKey primary key to be inserted, causing the split
      * @param newRightChild right child of primKey
@@ -370,8 +579,7 @@ class InternalTreeLogic<KEY,VALUE>
      * <p>
      * Split in leaf node caused by an insertion of key and value
      *
-     * @param cursor {@link PageCursor} pinned to page containing leaf node targeted for
-     * insertion.
+     * @param cursor {@link PageCursor} pinned to page containing leaf node targeted for insertion.
      * @param structurePropagation {@link StructurePropagation} used to report structure changes between tree levels.
      * @param key key to be inserted
      * @param value value to be associated with key
@@ -597,9 +805,10 @@ class InternalTreeLogic<KEY,VALUE>
      * at the time.
      * {@link StructurePropagation} is provided from outside to minimize garbage.
      * <p>
-     * Leaves cursor at same page as when called. No guarantees on offset.
+     * Leaves cursor at the page which was last updated. No guarantees on offset.
      *
-     * @param cursor {@link PageCursor} pinned to page where remove should traversing tree from.
+     * @param cursor {@link PageCursor} pinned to root of tree (if first insert/remove since {@link #clear()})
+     * or at where last insert/remove left it.
      * @param structurePropagation {@link StructurePropagation} used to report structure changes between tree levels.
      * @param key key to be removed
      * @param into {@code VALUE} instance to write removed value to
@@ -612,34 +821,31 @@ class InternalTreeLogic<KEY,VALUE>
     VALUE remove( PageCursor cursor, StructurePropagation<KEY> structurePropagation, KEY key, VALUE into,
             long stableGeneration, long unstableGeneration ) throws IOException
     {
-        if ( bTreeNode.isLeaf( cursor ) )
+        assert currentLevel >= 0;
+        moveToCorrectLeaf( cursor, key, stableGeneration, unstableGeneration );
+
+        if ( !removeFromLeaf( cursor, structurePropagation, key, into, stableGeneration, unstableGeneration ) )
         {
-            return removeFromLeaf( cursor, structurePropagation, key, into, stableGeneration, unstableGeneration );
+            return null;
         }
 
-        int keyCount = bTreeNode.keyCount( cursor );
-        int search = search( cursor, bTreeNode, key, readKey, keyCount );
-        int pos = positionOf( search );
-        if ( isHit( search ) )
+        while ( structurePropagation.hasNewGen )
         {
-            pos++;
+            int pos = levels[currentLevel].childPos;
+            if ( !popLevel( cursor ) )
+            {
+                // Root split, let that be handled outside
+                break;
+            }
+
+            if ( structurePropagation.hasNewGen )
+            {
+                structurePropagation.hasNewGen = false;
+                bTreeNode.setChildAt( cursor, structurePropagation.left, pos, stableGeneration, unstableGeneration );
+            }
         }
 
-        long currentId = cursor.getCurrentPageId();
-        long childId = bTreeNode.childAt( cursor, pos, stableGeneration, unstableGeneration );
-        PointerChecking.checkPointer( childId, false );
-        bTreeNode.goTo( cursor, "child", childId );
-
-        VALUE result = remove( cursor, structurePropagation, key, into, stableGeneration, unstableGeneration );
-
-        bTreeNode.goTo( cursor, "parent", currentId );
-        if ( structurePropagation.hasNewGen )
-        {
-            structurePropagation.hasNewGen = false;
-            bTreeNode.setChildAt( cursor, structurePropagation.left, pos, stableGeneration, unstableGeneration );
-        }
-
-        return result;
+        return into;
     }
 
     /**
@@ -656,11 +862,10 @@ class InternalTreeLogic<KEY,VALUE>
      * @param into {@code VALUE} instance to write removed value to
      * @param stableGeneration stable generation, i.e. generations <= this generation are considered stable.
      * @param unstableGeneration unstable generation, i.e. generation which is under development right now.
-     * @return Provided {@code into}, populated with removed value for convenience if {@code key} was removed.
-     * Otherwise {@code null}.
+     * @return {@code true} if key was removed, otherwise {@code false}.
      * @throws IOException on cursor failure
      */
-    private VALUE removeFromLeaf( PageCursor cursor, StructurePropagation<KEY> structurePropagation,
+    private boolean removeFromLeaf( PageCursor cursor, StructurePropagation<KEY> structurePropagation,
             KEY key, VALUE into, long stableGeneration, long unstableGeneration ) throws IOException
     {
         int keyCount = bTreeNode.keyCount( cursor );
@@ -671,7 +876,7 @@ class InternalTreeLogic<KEY,VALUE>
         boolean hit = isHit( search );
         if ( !hit )
         {
-            return null;
+            return false;
         }
 
         // Remove key/value
@@ -683,8 +888,7 @@ class InternalTreeLogic<KEY,VALUE>
 
         // Decrease key count
         bTreeNode.setKeyCount( cursor, keyCount - 1 );
-
-        return into;
+        return true;
     }
 
     /**

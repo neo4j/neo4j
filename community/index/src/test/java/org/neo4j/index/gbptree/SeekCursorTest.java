@@ -67,7 +67,6 @@ public class SeekCursorTest
             new StructurePropagation<>( layout.newKey() );
     private final PageAwareByteArrayCursor cursor = new PageAwareByteArrayCursor( PAGE_SIZE );
     private final int maxKeyCount = node.leafMaxKeyCount();
-    private final byte[] tmp = new byte[PAGE_SIZE];
 
     private final MutableLong insertKey = layout.newKey();
     private final MutableLong insertValue = layout.newValue();
@@ -80,11 +79,23 @@ public class SeekCursorTest
     private static long stableGen = GenSafePointer.MIN_GENERATION;
     private static long unstableGen = stableGen + 1;
 
+    private long rootId;
+    private long rootGen;
+    private int numberOfRootSplits;
+
     @Before
     public void setUp() throws IOException
     {
         cursor.next( id.acquireNewId( stableGen, unstableGen ) );
         node.initializeLeaf( cursor, stableGen, unstableGen );
+        updateRoot();
+    }
+
+    private void updateRoot()
+    {
+        rootId = cursor.getCurrentPageId();
+        rootGen = unstableGen;
+        treeLogic.initialize( cursor );
     }
 
     /* NO CONCURRENT INSERT */
@@ -656,24 +667,18 @@ public class SeekCursorTest
     public void shouldRereadSiblingIfReadFailureCausedByConcurrentCheckpoint() throws Exception
     {
         // given
-        long newRoot = 0L;
         long i = 0L;
-        while ( true )
+        while ( numberOfRootSplits == 0 )
         {
             insert( i, i * 10 );
             i++;
-            if ( structurePropagation.hasSplit )
-            {
-                newRoot = newRootFromSplit( structurePropagation );
-                break;
-            }
         }
 
         try ( SeekCursor<MutableLong,MutableLong> seek = seekCursor( 0L, i, cursor ) )
         {
             // when new generation of right sibling
             checkpoint();
-            PageAwareByteArrayCursor duplicate = cursor.duplicate( newRoot );
+            PageAwareByteArrayCursor duplicate = cursor.duplicate( rootId );
             duplicate.next();
             insert( i, i * 10, duplicate );
 
@@ -692,21 +697,16 @@ public class SeekCursorTest
         // given
         long newRoot;
         long i = 0L;
-        while ( true )
+        while ( numberOfRootSplits == 0 )
         {
             insert( i, i * 10 );
             i++;
-            if ( structurePropagation.hasSplit )
-            {
-                newRoot = newRootFromSplit( structurePropagation );
-                break;
-            }
         }
 
         try ( SeekCursor<MutableLong,MutableLong> seek = seekCursor( 0L, i, cursor ) )
         {
             // when right sibling pointer is corrupt
-            PageAwareByteArrayCursor duplicate = cursor.duplicate( newRoot );
+            PageAwareByteArrayCursor duplicate = cursor.duplicate( rootId );
             duplicate.next();
             long leftChild = childAt( duplicate, 0, stableGen, unstableGen );
             duplicate.next( leftChild );
@@ -806,37 +806,32 @@ public class SeekCursorTest
     {
         // given
         // a root with two leaves in old generation
-        long newRoot;
         long i = 0L;
-        while ( true )
+        while ( numberOfRootSplits == 0 )
         {
             insert( i, i * 10 );
             i++;
-            if ( structurePropagation.hasSplit )
-            {
-                newRoot = newRootFromSplit( structurePropagation );
-                break;
-            }
         }
 
         // a checkpoint
+        long oldRootId = rootId;
         long oldStableGen = stableGen;
         long oldUnstableGen = unstableGen;
         checkpoint();
         int keyCount = node.keyCount( cursor );
 
         // and update root with an insert in new generation
-        while ( node.keyCount( cursor ) == keyCount )
+        while ( keyCount( rootId ) == keyCount )
         {
             insert( i, i * 10 );
             i++;
         }
-        long newGenOfNewRoot = cursor.getCurrentPageId();
+        node.goTo( cursor, "root", rootId );
         long rightChild = childAt( cursor, 2, stableGen, unstableGen );
 
         // when
         // starting a seek on the old root with generation that is not up to date, simulating a concurrent checkpoint
-        PageAwareByteArrayCursor pageCursorForSeeker = cursor.duplicate( newRoot );
+        PageAwareByteArrayCursor pageCursorForSeeker = cursor.duplicate( oldRootId );
         BreadcrumbPageCursor breadcrumbCursor = new BreadcrumbPageCursor( pageCursorForSeeker );
         breadcrumbCursor.next();
         try ( SeekCursor<MutableLong,MutableLong> seek = seekCursor(
@@ -849,7 +844,21 @@ public class SeekCursorTest
 
         // then
         // make sure seek cursor went to new gen of root node
-        assertEquals( Arrays.asList( newRoot, newGenOfNewRoot, rightChild ), breadcrumbCursor.getBreadcrumbs() );
+        assertEquals( Arrays.asList( oldRootId, rootId, rightChild ), breadcrumbCursor.getBreadcrumbs() );
+    }
+
+    private int keyCount( long nodeId ) throws IOException
+    {
+        long prevId = cursor.getCurrentPageId();
+        try
+        {
+            node.goTo( cursor, "supplied", nodeId );
+            return node.keyCount( cursor );
+        }
+        finally
+        {
+            node.goTo( cursor, "prev", prevId );
+        }
     }
 
     @Test
@@ -857,17 +866,11 @@ public class SeekCursorTest
     {
         // given
         // a root with two leaves in old generation
-        long newRoot;
         long i = 0L;
-        while ( true )
+        while ( numberOfRootSplits == 0 )
         {
             insert( i, i * 10 );
             i++;
-            if ( structurePropagation.hasSplit )
-            {
-                newRoot = newRootFromSplit( structurePropagation );
-                break;
-            }
         }
 
         // a checkpoint
@@ -884,12 +887,12 @@ public class SeekCursorTest
         }
 
         // and corrupt new gen pointer
-        cursor.next( newRoot );
+        cursor.next( rootId );
         corruptGSPP( cursor, TreeNode.BYTE_POS_NEWGEN );
 
         // when
         // starting a seek on the old root with generation that is not up to date, simulating a concurrent checkpoint
-        PageAwareByteArrayCursor pageCursorForSeeker = cursor.duplicate( newRoot );
+        PageAwareByteArrayCursor pageCursorForSeeker = cursor.duplicate( rootId );
         pageCursorForSeeker.next();
         try ( SeekCursor<MutableLong,MutableLong> seek = seekCursor(
                 i, i + 1, pageCursorForSeeker, oldStableGen, oldUnstableGen ) )
@@ -908,17 +911,11 @@ public class SeekCursorTest
     {
         // given
         // a root with two leaves in old generation
-        long newRoot;
         long i = 0L;
-        while ( true )
+        while ( numberOfRootSplits == 0 )
         {
             insert( i, i * 10 );
             i++;
-            if ( structurePropagation.hasSplit )
-            {
-                newRoot = newRootFromSplit( structurePropagation );
-                break;
-            }
         }
 
         // a checkpoint
@@ -933,7 +930,7 @@ public class SeekCursorTest
 
         // when
         // starting a seek on the old root with generation that is not up to date, simulating a concurrent checkpoint
-        PageAwareByteArrayCursor pageCursorForSeeker = cursor.duplicate( newRoot );
+        PageAwareByteArrayCursor pageCursorForSeeker = cursor.duplicate( rootId );
         BreadcrumbPageCursor breadcrumbCursor = new BreadcrumbPageCursor( pageCursorForSeeker );
         breadcrumbCursor.next();
         try ( SeekCursor<MutableLong,MutableLong> seek = seekCursor(
@@ -946,7 +943,7 @@ public class SeekCursorTest
 
         // then
         // make sure seek cursor went to new gen of root node
-        assertEquals( Arrays.asList( newRoot, newRightChild ), breadcrumbCursor.getBreadcrumbs() );
+        assertEquals( Arrays.asList( rootId, newRightChild ), breadcrumbCursor.getBreadcrumbs() );
     }
 
     @Test
@@ -954,17 +951,11 @@ public class SeekCursorTest
     {
         // given
         // a root with two leaves in old generation
-        long newRoot;
         long i = 0L;
-        while ( true )
+        while ( numberOfRootSplits == 0 )
         {
             insert( i, i * 10 );
             i++;
-            if ( structurePropagation.hasSplit )
-            {
-                newRoot = newRootFromSplit( structurePropagation );
-                break;
-            }
         }
 
         // a checkpoint
@@ -981,7 +972,7 @@ public class SeekCursorTest
 
         // when
         // starting a seek on the old root with generation that is not up to date, simulating a concurrent checkpoint
-        PageAwareByteArrayCursor pageCursorForSeeker = cursor.duplicate( newRoot );
+        PageAwareByteArrayCursor pageCursorForSeeker = cursor.duplicate( rootId );
         pageCursorForSeeker.next();
         try ( SeekCursor<MutableLong,MutableLong> seek = seekCursor(
                 i, i + 1, pageCursorForSeeker, oldStableGen, oldUnstableGen ) )
@@ -1139,7 +1130,7 @@ public class SeekCursorTest
         unstableGen++;
     }
 
-    private long newRootFromSplit( StructurePropagation<MutableLong> split ) throws IOException
+    private void newRootFromSplit( StructurePropagation<MutableLong> split ) throws IOException
     {
         assertTrue( split.hasSplit );
         long rootId = id.acquireNewId( stableGen, unstableGen );
@@ -1150,7 +1141,8 @@ public class SeekCursorTest
         node.setChildAt( cursor, split.left, 0, stableGen, unstableGen );
         node.setChildAt( cursor, split.right, 1, stableGen, unstableGen );
         split.hasSplit = false;
-        return rootId;
+        numberOfRootSplits++;
+        updateRoot();
     }
 
     private void corruptGSPP( PageAwareByteArrayCursor duplicate, int offset )
@@ -1171,6 +1163,20 @@ public class SeekCursorTest
         insertKey.setValue( key );
         insertValue.setValue( value );
         treeLogic.insert( cursor, structurePropagation, insertKey, insertValue, overwrite(), DEFAULTS, stableGen, unstableGen );
+        handleAfterChange();
+    }
+
+    private void handleAfterChange() throws IOException
+    {
+        if ( structurePropagation.hasSplit )
+        {
+            newRootFromSplit( structurePropagation );
+        }
+        if ( structurePropagation.hasNewGen )
+        {
+            structurePropagation.hasNewGen = false;
+            updateRoot();
+        }
     }
 
     private SeekCursor<MutableLong,MutableLong> seekCursor( long fromInclusive, long toExclusive ) throws IOException
