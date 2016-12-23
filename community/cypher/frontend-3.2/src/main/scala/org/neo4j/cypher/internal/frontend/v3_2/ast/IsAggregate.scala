@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_2.ast
 
+import org.neo4j.cypher.internal.frontend.v3_2.ast.functions.UserDefinedFunctionInvocation
 
 object IsAggregate {
   def unapply(v: Any) = v match {
@@ -33,6 +34,9 @@ object IsAggregate {
         case fun: AggregatingFunction => Some(fi)
         case _                              => None
       }
+
+    case fi: UserDefinedFunctionInvocation if fi.isAggregate =>
+      Some(fi)
 
     case _ =>
       None

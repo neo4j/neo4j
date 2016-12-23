@@ -30,7 +30,7 @@ trait MinMax extends AggregationFunction with Comparer {
 
   private var biggestSeen: Any = null
 
-  def result: Any = biggestSeen
+  def result(implicit state: QueryState): Any = biggestSeen
 
   def apply(data: ExecutionContext)(implicit state: QueryState) {
     value(data) match {

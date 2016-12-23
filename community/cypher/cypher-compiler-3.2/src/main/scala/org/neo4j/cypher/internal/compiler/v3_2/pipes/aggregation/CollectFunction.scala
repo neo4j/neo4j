@@ -20,9 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v3_2.pipes.aggregation
 
 import org.neo4j.cypher.internal.compiler.v3_2._
-import commands.expressions.Expression
-import pipes.QueryState
-import collection.mutable.ListBuffer
+import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
+
+import scala.collection.mutable.ListBuffer
 
 class CollectFunction(value:Expression) extends AggregationFunction {
   val collection = new ListBuffer[Any]()
@@ -34,5 +35,5 @@ class CollectFunction(value:Expression) extends AggregationFunction {
     }
   }
 
-  def result: Any = collection.toIndexedSeq
+  def result(implicit state: QueryState): Any = collection.toIndexedSeq
 }

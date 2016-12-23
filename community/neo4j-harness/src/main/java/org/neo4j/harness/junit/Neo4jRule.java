@@ -154,6 +154,13 @@ public class Neo4jRule implements TestRule, TestServerBuilder
         return this;
     }
 
+    @Override
+    public Neo4jRule withAggregationFunction( Class<?> functionClass )
+    {
+        builder = builder.withAggregationFunction( functionClass );
+        return this;
+    }
+
     public URI boltURI()
     {
         if(controls == null)

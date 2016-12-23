@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.commands.ExpressionCo
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{InequalitySeekRangeExpression, PrefixSeekRangeExpression}
 import org.neo4j.cypher.internal.compiler.v3_2.commands.{QueryExpression, RangeQueryExpression}
 import org.neo4j.cypher.internal.compiler.v3_2.pipes._
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans._
@@ -262,10 +261,6 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
           case ExpandInto => "Into"
         }
         PlanDescriptionImpl(id, s"VarLengthExpand($modeDescr)", children, Seq(expandDescription) ++ predicatesDescription, variables)
-
-      case Aggregation(source, grouping, aggregation) =>
-        PlanDescriptionImpl(id = idMap(plan), name = "EagerAggregation", children ,
-                            Seq(Arguments.KeyNames(grouping.keys.toSeq)), variables)
 
       case x => throw new InternalException(s"Unknown plan type: ${x.getClass.getSimpleName}. Missing a case?")
     }

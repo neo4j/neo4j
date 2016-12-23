@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_2
 
 import java.net.URL
 
-import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{Expander, KernelPredicate}
+import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{Expander, KernelPredicate, UserDefinedAggregator}
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.compiler.v3_2.spi._
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
@@ -143,6 +143,11 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
 
   override def callFunction(name: QualifiedName, args: Seq[Any], allowed: Array[String]) =
     translateException(inner.callFunction(name, args, allowed))
+
+
+  override def aggregateFunction(name: QualifiedName,
+                                 allowed: Array[String]): UserDefinedAggregator =
+    translateException(inner.aggregateFunction(name, allowed))
 
   override def isGraphKernelResultValue(v: Any): Boolean =
     translateException(inner.isGraphKernelResultValue(v))

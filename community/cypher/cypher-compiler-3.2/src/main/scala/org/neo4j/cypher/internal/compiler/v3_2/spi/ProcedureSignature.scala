@@ -44,7 +44,8 @@ case class UserFunctionSignature(name: QualifiedName,
                                  outputType: CypherType,
                                  deprecationInfo: Option[String],
                                  allowed: Array[String],
-                                 description: Option[String]) {
+                                 description: Option[String],
+                                 isAggregate: Boolean) {
   override def toString = s"$name(${inputSignature.mkString(", ")}) :: ${outputType.toNeoTypeString}"
 }
 

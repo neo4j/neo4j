@@ -23,6 +23,7 @@ import org.neo4j.collection.RawIterator
 import org.neo4j.cypher._
 import org.neo4j.kernel.api.exceptions.ProcedureException
 import org.neo4j.kernel.api.proc.CallableProcedure.BasicProcedure
+import org.neo4j.kernel.api.proc.CallableUserAggregationFunction.{Aggregator, BasicUserAggregationFunction}
 import org.neo4j.kernel.api.proc.CallableUserFunction.BasicUserFunction
 import org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature
 import org.neo4j.kernel.api.proc.UserFunctionSignature.functionSignature
@@ -65,6 +66,23 @@ abstract class ProcedureCallAcceptanceTest extends ExecutionEngineFunSuite {
         override def apply(ctx: Context, input: Array[AnyRef]): AnyRef = value
       }
     }
+
+  protected def registerUserAggregationFunction(value: AnyRef, typ: Neo4jTypes.AnyType = Neo4jTypes.NTAny) =
+    registerUserDefinedAggregationFunction("my.first.value") { builder =>
+      val builder = functionSignature(Array("my", "first"), "value")
+      builder.out(typ)
+
+      new BasicUserAggregationFunction(builder.build) {
+
+        override def create(ctx: Context): Aggregator = new Aggregator {
+
+          override def result() = value
+
+          override def update(input: Array[AnyRef]) = {}
+        }
+      }
+    }
+
 
   protected def registerVoidProcedure() =
     registerProcedure("dbms.do_nothing") { builder =>

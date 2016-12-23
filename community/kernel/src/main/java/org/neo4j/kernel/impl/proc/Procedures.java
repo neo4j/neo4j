@@ -28,6 +28,7 @@ import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
+import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
 import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
@@ -86,10 +87,28 @@ public class Procedures extends LifecycleAdapter
     }
 
     /**
+     * Register a new function. This method must not be called concurrently with {@link #procedure(QualifiedName)}.
+     * @param function the fucntion.
+     */
+    public void register( CallableUserAggregationFunction function ) throws ProcedureException
+    {
+        register( function, false );
+    }
+
+    /**
      * Register a new procedure. This method must not be called concurrently with {@link #procedure(QualifiedName)}.
      * @param function the function.
      */
     public void register( CallableUserFunction function, boolean overrideCurrentImplementation ) throws ProcedureException
+    {
+        registry.register( function, overrideCurrentImplementation );
+    }
+
+    /**
+     * Register a new procedure. This method must not be called concurrently with {@link #procedure(QualifiedName)}.
+     * @param function the function.
+     */
+    public void register( CallableUserAggregationFunction function, boolean overrideCurrentImplementation ) throws ProcedureException
     {
         registry.register( function, overrideCurrentImplementation );
     }
@@ -131,6 +150,27 @@ public class Procedures extends LifecycleAdapter
     public void registerFunction( Class<?> func ) throws KernelException
     {
         registerFunction( func, false );
+    }
+
+    /**
+     * Register a new aggregation function defined with annotations on a java class.
+     * @param func the function class
+     */
+    public void registerAggregationFunction( Class<?> func, boolean overrideCurrentImplementation ) throws KernelException
+    {
+        for ( CallableUserAggregationFunction function : compiler.compileAggregationFunction( func ) )
+        {
+            register( function, overrideCurrentImplementation );
+        }
+    }
+
+    /**
+     * Register a new aggregation function defined with annotations on a java class.
+     * @param func the function class
+     */
+    public void registerAggregationFunction( Class<?> func ) throws KernelException
+    {
+        registerAggregationFunction( func, false );
     }
 
     /**
@@ -176,6 +216,11 @@ public class Procedures extends LifecycleAdapter
         return registry.function( name );
     }
 
+    public Optional<UserFunctionSignature> aggregationFunction( QualifiedName name )
+    {
+        return registry.aggregationFunction( name );
+    }
+
     public Set<ProcedureSignature> getAllProcedures()
     {
         return registry.getAllProcedures();
@@ -198,6 +243,11 @@ public class Procedures extends LifecycleAdapter
         return registry.callFunction( ctx, name, input );
     }
 
+    public CallableUserAggregationFunction.Aggregator createAggregationFunction( Context ctx, QualifiedName name ) throws ProcedureException
+    {
+        return registry.createAggregationFunction( ctx, name );
+    }
+
     @Override
     public void start() throws Throwable
     {
@@ -210,6 +260,11 @@ public class Procedures extends LifecycleAdapter
         }
 
         for ( CallableUserFunction function : callables.functions() )
+        {
+            register( function );
+        }
+
+        for ( CallableUserAggregationFunction function : callables.aggregationFunctions() )
         {
             register( function );
         }

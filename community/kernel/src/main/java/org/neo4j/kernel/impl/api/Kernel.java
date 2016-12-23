@@ -26,6 +26,7 @@ import org.neo4j.kernel.api.TransactionHook;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
+import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.configuration.Config;
@@ -122,6 +123,12 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
 
     @Override
     public void registerUserFunction( CallableUserFunction function ) throws ProcedureException
+    {
+        procedures.register( function );
+    }
+
+    @Override
+    public void registerUserAggregationFunction( CallableUserAggregationFunction function ) throws ProcedureException
     {
         procedures.register( function );
     }

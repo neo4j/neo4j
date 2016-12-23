@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.spi
 
 import java.net.URL
 
-import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{Expander, KernelPredicate}
+import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{Expander, KernelPredicate, UserDefinedAggregator}
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
 import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
@@ -131,6 +131,9 @@ trait QueryContextAdaptation {
   override def callDbmsProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] = ???
 
   override def callFunction(name: QualifiedName, args: Seq[Any], allowed: Array[String]): AnyRef = ???
+
+  override def aggregateFunction(name: QualifiedName,
+                                 allowed: Array[String]): UserDefinedAggregator = ???
 
   override def getOrCreateFromSchemaState[K, V](key: K, creator: => V): V = ???
 

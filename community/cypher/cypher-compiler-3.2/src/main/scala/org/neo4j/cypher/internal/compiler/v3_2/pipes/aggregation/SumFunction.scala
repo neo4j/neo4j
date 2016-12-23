@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v3_2.pipes.aggregation
 
 import org.neo4j.cypher.internal.compiler.v3_2._
-import commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.TypeSafeMathSupport
-import pipes.QueryState
+import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
 
 class SumFunction(val value: Expression)
   extends AggregationFunction
@@ -32,7 +32,7 @@ class SumFunction(val value: Expression)
   def name = "SUM"
 
   private var sum: OverflowAwareSum[_] = OverflowAwareSum(0L)
-  def result = sum.value
+  def result(implicit state: QueryState) = sum.value
 
   def apply(data: ExecutionContext)(implicit state: QueryState) {
     actOnNumber(value(data), (number) => {

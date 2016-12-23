@@ -37,6 +37,7 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Set[String], aggre
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
     //register as parent so that stats are associated with this pipe
     state.decorator.registerParentPipe(this)
+    implicit val s = state
 
     // This is the temporary storage used while the aggregation is going on
     val result = MutableMap[Equals, Seq[AggregationFunction]]()

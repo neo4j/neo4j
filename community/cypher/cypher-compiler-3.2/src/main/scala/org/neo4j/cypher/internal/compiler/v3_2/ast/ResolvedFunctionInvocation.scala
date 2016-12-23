@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.SemanticCheckResult._
 import org.neo4j.cypher.internal.frontend.v3_2._
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Expression.SemanticContext
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
+import org.neo4j.cypher.internal.frontend.v3_2.ast.functions.UserDefinedFunctionInvocation
 
 object ResolvedFunctionInvocation {
 
@@ -49,7 +50,7 @@ case class ResolvedFunctionInvocation(qualifiedName: QualifiedName,
                                       fcnSignature: Option[UserFunctionSignature],
                                       callArguments: IndexedSeq[Expression])
                                      (val position: InputPosition)
-  extends Expression {
+  extends Expression with UserDefinedFunctionInvocation {
 
   def coerceArguments: ResolvedFunctionInvocation = fcnSignature match {
     case Some(signature) =>
@@ -90,4 +91,6 @@ case class ResolvedFunctionInvocation(qualifiedName: QualifiedName,
              |meaning that it expects $expectedNumArgs $msg""".stripMargin, position))
         }
   }
+
+  override def isAggregate: Boolean = fcnSignature.exists(_.isAggregate)
 }

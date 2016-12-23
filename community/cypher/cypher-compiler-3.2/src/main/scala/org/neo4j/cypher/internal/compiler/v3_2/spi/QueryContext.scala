@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.spi
 import java.net.URL
 
 import org.neo4j.cypher.internal.compiler.v3_2.InternalQueryStatistics
-import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{Expander, KernelPredicate}
+import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{Expander, KernelPredicate, UserDefinedAggregator}
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
 import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
@@ -166,7 +166,9 @@ trait QueryContext extends TokenContext {
 
   def callFunction(name: QualifiedName, args: Seq[Any], allowed: Array[String]): AnyRef
 
-  // Check if a runtime value is a node, relationship, path or some such value returned from
+  def aggregateFunction(name: QualifiedName, allowed: Array[String]): UserDefinedAggregator
+
+    // Check if a runtime value is a node, relationship, path or some such value returned from
   // other query context values by calling down to the underlying database
   def isGraphKernelResultValue(v: Any): Boolean
 

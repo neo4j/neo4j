@@ -20,11 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v3_2.pipes.aggregation
 
 import org.neo4j.cypher.internal.compiler.v3_2._
-import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{Expression, Variable, NumericHelper}
+import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{Expression, NumericHelper, Variable}
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 
 trait StdevTest {
+  implicit val state = QueryStateHelper.empty
+
   def createAggregator(inner: Expression): AggregationFunction
 
   def getStdev(values: List[Any]): Double = {

@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v3_2.pipes.aggregation
 
 import org.neo4j.cypher.internal.compiler.v3_2._
-import commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.TypeSafeMathSupport
-import pipes.QueryState
+import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
 
 /**
  * AVG computation is calculated using cumulative moving average approach:
@@ -38,7 +38,7 @@ class AvgFunction(val value: Expression)
   private var count: Long = 0L
   private var sum: OverflowAwareSum[_] = OverflowAwareSum(0)
 
-  def result =
+  def result(implicit state: QueryState) =
     if (count > 0) {
       sum.value
     } else {

@@ -51,7 +51,7 @@ class PercentileContFunction(value: Expression, percentile: Expression)
 
   def name = "PERCENTILE_CONT"
 
-  def result: Any = {
+  def result(implicit state: QueryState): Any = {
     temp = temp.sortBy((num: Any) => asDouble(num))
 
     if (perc == 1.0 || count == 1) {
@@ -73,7 +73,7 @@ class PercentileDiscFunction(value: Expression, percentile: Expression)
 
   def name = "PERCENTILE_DISC"
 
-  def result: Any = {
+  def result(implicit state: QueryState): Any = {
     temp = temp.sortBy((num: Any) => asDouble(num))
 
     if (perc == 1.0 || count == 1) {

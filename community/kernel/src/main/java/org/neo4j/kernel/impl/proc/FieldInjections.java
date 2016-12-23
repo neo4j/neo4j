@@ -33,11 +33,11 @@ import org.neo4j.procedure.Context;
 /**
  * Injects annotated fields with appropriate values.
  */
-public class FieldInjections
+class FieldInjections
 {
     private final ComponentRegistry components;
 
-    public FieldInjections( ComponentRegistry components )
+    FieldInjections( ComponentRegistry components )
     {
         this.components = components;
     }
@@ -45,13 +45,13 @@ public class FieldInjections
     /**
      * On calling apply, injects the `value` for the field `field` on the provided `object`.
      */
-    public static class FieldSetter
+    static class FieldSetter
     {
         private final Field field;
         private final MethodHandle setter;
         private final ComponentRegistry.Provider<?> provider;
 
-        public FieldSetter( Field field, MethodHandle setter, ComponentRegistry.Provider<?> provider )
+        FieldSetter( Field field, MethodHandle setter, ComponentRegistry.Provider<?> provider )
         {
             this.field = field;
             this.setter = setter;
@@ -79,7 +79,7 @@ public class FieldInjections
      * @return A list of `FieldSetters`
      * @throws ProcedureException if the type of the injected field does not match what has been registered.
      */
-    public List<FieldSetter> setters( Class<?> cls ) throws ProcedureException
+    List<FieldSetter> setters( Class<?> cls ) throws ProcedureException
     {
         List<FieldSetter> setters = new LinkedList<>();
         Class<?> currentClass = cls;

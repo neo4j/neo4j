@@ -45,5 +45,5 @@ class DistinctFunction(value: Expression, inner: AggregationFunction) extends Ag
     }
   }
 
-  override def result = inner.result
+  override def result(implicit state: QueryState) = inner.result
 }
