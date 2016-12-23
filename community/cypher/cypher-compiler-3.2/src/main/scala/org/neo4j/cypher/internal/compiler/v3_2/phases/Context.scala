@@ -19,10 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.phases
 
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{PlanFingerprint, PlanFingerprintReference}
+import java.time.Clock
+
+import org.neo4j.cypher.internal.compiler.v3_2._
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi.CodeStructure
+import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{GeneratedQuery, PlanFingerprint, PlanFingerprintReference}
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.RuntimeTypeConverter
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.{Metrics, QueryGraphSolver}
 import org.neo4j.cypher.internal.compiler.v3_2.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v3_2.{AstRewritingMonitor, CompilationPhaseTracer, InternalNotificationLogger}
 import org.neo4j.cypher.internal.frontend.v3_2.{CypherException, InputPosition}
 
 case class Context(exceptionCreator: (String, InputPosition) => CypherException,
@@ -31,4 +35,10 @@ case class Context(exceptionCreator: (String, InputPosition) => CypherException,
                    planContext: PlanContext,
                    typeConverter: RuntimeTypeConverter,
                    createFingerprintReference: Option[PlanFingerprint] => PlanFingerprintReference,
-                   monitor: AstRewritingMonitor)
+                   monitors: Monitors,
+                   metrics: Metrics,
+                   queryGraphSolver: QueryGraphSolver,
+                   config: CypherCompilerConfiguration,
+                   updateStrategy: UpdateStrategy,
+                   clock: Clock,
+                   codeStructure: CodeStructure[GeneratedQuery])

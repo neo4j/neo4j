@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.ir.v3_2.IdName
 class CartesianProductPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   test("should build plans for simple cartesian product") {
-    planFor("MATCH (n), (m) RETURN n, m").plan should equal(
+    planFor("MATCH (n), (m) RETURN n, m")._2 should equal(
       CartesianProduct(
         AllNodesScan(IdName("n"), Set.empty)(solved),
         AllNodesScan(IdName("m"), Set.empty)(solved)
@@ -45,7 +45,7 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
       cardinality = mapCardinality {
         case RegularPlannerQuery(queryGraph, _, _) if queryGraph.selections.predicates.size == 1 => 10
       }
-    } planFor "MATCH (n), (m) WHERE n.prop = 12 AND m:Label RETURN n, m").plan should beLike {
+    } getLogicalPlanFor  "MATCH (n), (m) WHERE n.prop = 12 AND m:Label RETURN n, m")._2 should beLike {
       case CartesianProduct(_: Selection, _: NodeByLabelScan) => ()
     }
   }
@@ -57,9 +57,9 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
         "B" -> 20.0,
         "C" -> 10.0
       )
-    } planFor "MATCH (a), (b), (c) WHERE a:A AND b:B AND c:C RETURN a, b, c"
+    } getLogicalPlanFor "MATCH (a), (b), (c) WHERE a:A AND b:B AND c:C RETURN a, b, c"
 
-    plan.plan should equal(
+    plan._2 should equal(
       CartesianProduct(
         NodeByLabelScan("a", lblName("A"), Set.empty)(solved),
         CartesianProduct(
@@ -76,12 +76,12 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
         "A" -> 30.0,
         "B" -> 20.0
       )
-    } planFor "MATCH (a), (b) WHERE a:A AND b:B RETURN a, b"
+    } getLogicalPlanFor "MATCH (a), (b) WHERE a:A AND b:B RETURN a, b"
 
     // A x B = 30 * 2 + 30 * (20 * 2) => 1260
     // B x A = 20 * 2 + 20 * (30 * 2) => 1240
 
-    plan.plan should equal(
+    plan._2 should equal(
       CartesianProduct(
         NodeByLabelScan("b", lblName("B"), Set.empty)(solved),
         NodeByLabelScan("a", lblName("A"), Set.empty)(solved)

@@ -22,19 +22,14 @@ package org.neo4j.cypher.internal.compiler.v3_2.executionplan
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.QueryExecutionTracer
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.profiling.ProfilingTracer
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.ExecutionPlanBuilder.DescriptionProvider
-import org.neo4j.cypher.internal.compiler.v3_2.helpers.RuntimeTypeConverter
-import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilationState
 import org.neo4j.cypher.internal.compiler.v3_2.pipes._
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{Id, InternalPlanDescription}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_2.planner.{CantCompileQueryException, CantHandleQueryException}
-import org.neo4j.cypher.internal.compiler.v3_2.profiler.Profiler
 import org.neo4j.cypher.internal.compiler.v3_2.spi._
 import org.neo4j.cypher.internal.compiler.v3_2.{ExecutionMode, ProfileMode, _}
-import org.neo4j.cypher.internal.frontend.v3_2.PeriodicCommitInOpenTransactionException
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Statement
-import org.neo4j.cypher.internal.frontend.v3_2.notification.InternalNotification
 
 trait RunnablePlan {
   def apply(queryContext: QueryContext,
@@ -70,75 +65,6 @@ trait NewLogicalPlanSuccessRateMonitor {
 trait NewRuntimeSuccessRateMonitor {
   def newPlanSeen(plan: LogicalPlan)
   def unableToHandlePlan(plan: LogicalPlan, origin: CantCompileQueryException)
-}
-
-trait ExecutablePlanBuilder {
-
-  def producePlan(inputQuery: CompilationState, planContext: PlanContext,
-                  tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING,
-                  createFingerprintReference: (Option[PlanFingerprint]) => PlanFingerprintReference): ExecutionPlan
-}
-
-object InterpretedExecutionPlanBuilder {
-  def interpretedToExecutionPlan(pipeInfo: PipeInfo,
-                                 planContext: PlanContext,
-                                 inputQuery: CompilationState,
-                                 createFingerprintReference: Option[PlanFingerprint] => PlanFingerprintReference,
-                                 config: CypherCompilerConfiguration,
-                                 typeConverter: RuntimeTypeConverter,
-                                 logicalPlan: LogicalPlan,
-                                 idMap: Map[LogicalPlan, Id]) = {
-    val PipeInfo(pipe, updating, periodicCommitInfo, fp, planner) = pipeInfo
-    val columns = inputQuery.statement.returnColumns
-    val resultBuilderFactory = DefaultExecutionResultBuilderFactory(pipeInfo, columns, typeConverter, logicalPlan, idMap)
-    val func = getExecutionPlanFunction(periodicCommitInfo, inputQuery.queryText, updating, resultBuilderFactory, planContext.notificationLogger())
-    new ExecutionPlan {
-      private val fingerprint = createFingerprintReference(fp)
-
-      override def run(queryContext: QueryContext, planType: ExecutionMode, params: Map[String, Any]) =
-        func(queryContext, planType, params)
-
-      override def isPeriodicCommit = periodicCommitInfo.isDefined
-      override def plannerUsed = planner
-      override def isStale(lastTxId: () => Long, statistics: GraphStatistics) = fingerprint.isStale(lastTxId, statistics)
-
-      override def runtimeUsed = InterpretedRuntimeName
-
-      override def notifications(planContext: PlanContext) = checkForNotifications(pipe, planContext, config)
-    }
-  }
-
-  private def checkForNotifications(pipe: Pipe, planContext: PlanContext, config: CypherCompilerConfiguration): Seq[InternalNotification] = {
-    val notificationCheckers = Seq(checkForEagerLoadCsv,
-      CheckForLoadCsvAndMatchOnLargeLabel(planContext, config.nonIndexedLabelWarningThreshold))
-
-    notificationCheckers.flatMap(_(pipe))
-  }
-
-  private def getExecutionPlanFunction(periodicCommit: Option[PeriodicCommitInfo],
-                                       queryId: AnyRef,
-                                       updating: Boolean,
-                                       resultBuilderFactory: ExecutionResultBuilderFactory,
-                                       notificationLogger: InternalNotificationLogger):
-  (QueryContext, ExecutionMode, Map[String, Any]) => InternalExecutionResult =
-    (queryContext: QueryContext, planType: ExecutionMode, params: Map[String, Any]) => {
-      val builder = resultBuilderFactory.create()
-
-      val profiling = planType == ProfileMode
-      val builderContext = if (updating || profiling) new UpdateCountingQueryContext(queryContext) else queryContext
-      builder.setQueryContext(builderContext)
-
-      if (periodicCommit.isDefined) {
-        if (!builderContext.transactionalContext.isTopLevelTx)
-          throw new PeriodicCommitInOpenTransactionException()
-        builder.setLoadCsvPeriodicCommitObserver(periodicCommit.get.batchRowCount)
-      }
-
-      if (profiling)
-        builder.setPipeDecorator(new Profiler())
-
-      builder.build(queryId, planType, params, notificationLogger)
-    }
 }
 
 object ExecutionPlanBuilder {

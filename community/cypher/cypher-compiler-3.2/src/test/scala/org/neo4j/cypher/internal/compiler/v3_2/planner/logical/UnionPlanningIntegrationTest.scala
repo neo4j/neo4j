@@ -34,18 +34,16 @@ class UnionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
     implicit val (_, logicalPlan, _) = setup.getLogicalPlanFor("MATCH (a:A) RETURN a AS a UNION ALL MATCH (a:B) RETURN a AS a")
 
     logicalPlan should equal(
-      ProduceResult(Seq("a"),
-        Union(
-          Projection(
-            NodeByLabelScan("  a@7", lblName("A"), Set.empty)(solved),
-            Map("a" -> Variable("  a@7") _)
-          )(solved),
-          Projection(
-            NodeByLabelScan("  a@43", lblName("B"), Set.empty)(solved),
-            Map("a" -> Variable("  a@43") _)
-          )(solved)
+      Union(
+        Projection(
+          NodeByLabelScan("  a@7", lblName("A"), Set.empty)(solved),
+          Map("a" -> Variable("  a@7") _)
+        )(solved),
+        Projection(
+          NodeByLabelScan("  a@43", lblName("B"), Set.empty)(solved),
+          Map("a" -> Variable("  a@43") _)
         )(solved)
-      )
+      )(solved)
     )
   }
 
@@ -57,22 +55,20 @@ class UnionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
     implicit val (_, logicalPlan, _) = setup.getLogicalPlanFor("MATCH (a:A) RETURN a AS a UNION MATCH (a:B) RETURN a AS a")
 
     logicalPlan should equal(
-      ProduceResult(Seq("a"),
-        Aggregation(
-          left = Union(
-            Projection(
-              NodeByLabelScan("  a@7", lblName("A"), Set.empty)(solved),
-              Map("a" -> Variable("  a@7") _)
-            )(solved),
-            Projection(
-              NodeByLabelScan("  a@39", lblName("B"), Set.empty)(solved),
-              Map("a" -> Variable("  a@39") _)
-            )(solved)
+      Aggregation(
+        left = Union(
+          Projection(
+            NodeByLabelScan("  a@7", lblName("A"), Set.empty)(solved),
+            Map("a" -> Variable("  a@7") _)
           )(solved),
-          groupingExpressions = Map("a" -> varFor("a")),
-          aggregationExpression = Map.empty
-        )(solved)
-      )
+          Projection(
+            NodeByLabelScan("  a@39", lblName("B"), Set.empty)(solved),
+            Map("a" -> Variable("  a@39") _)
+          )(solved)
+        )(solved),
+        groupingExpressions = Map("a" -> varFor("a")),
+        aggregationExpression = Map.empty
+      )(solved)
     )
   }
 }

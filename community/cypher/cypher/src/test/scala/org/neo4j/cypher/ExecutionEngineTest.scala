@@ -987,7 +987,7 @@ order by a.COL1""")
 
     // WHEN
     eengine.execute(s"match (n:Person) return n", Map.empty[String, Any]).toList
-    planningListener.planRequests.toSeq should equal(Seq(
+    planningListener.planRequests should equal(Seq(
       s"match (n:Person) return n"
     ))
     (0 until 301).foreach { _ => createLabeledNode("Person") }

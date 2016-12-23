@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{ASTAnnotationMap, Expression, Hint}
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_2.{ExpressionTypeInfo, Rewriter, SemanticTable}
+import org.neo4j.cypher.internal.frontend.v3_2.{ExpressionTypeInfo, SemanticTable}
 import org.neo4j.cypher.internal.ir.v3_2.{IdName, LazyMode}
 
 class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
@@ -62,7 +62,7 @@ class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
     val inputPlan = mock[LogicalPlan]
     when(inputPlan.availableSymbols).thenReturn(columns.map(IdName.apply).toSet)
 
-    val queryPlanner = DefaultQueryPlanner(identity, planSingleQuery = new FakePlanner(inputPlan))
+    val queryPlanner = QueryPlanner(planSingleQuery = new FakePlanner(inputPlan))
 
     val pq = RegularPlannerQuery(horizon = RegularQueryProjection(columns.map(c => c -> varFor(c)).toMap))
 
@@ -102,7 +102,7 @@ class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
     when(producer.planStarProjection(any(), any(), any())(any())).thenReturn(lp)
     when(producer.planEmptyProjection(any())(any())).thenReturn(lp)
     when(context.logicalPlanProducer).thenReturn(producer)
-    val queryPlanner = new DefaultQueryPlanner(planRewriter = Rewriter.noop, planSingleQuery = PlanSingleQuery())
+    val queryPlanner = QueryPlanner(planSingleQuery = PlanSingleQuery())
 
     // when
     val query = UnionQuery(Seq(plannerQuery), distinct = false, Seq.empty, None)

@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v3_2.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_2.ast.NestedPlanExpression
+import org.neo4j.cypher.internal.compiler.v3_2.planner.BeLikeMatcher._
 import org.neo4j.cypher.internal.compiler.v3_2.planner._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v3_2.planner.BeLikeMatcher._
 
 class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
@@ -38,7 +38,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
         case RegularPlannerQuery(queryGraph, _, _) if containsArgumentOnly(queryGraph) => 1
         case _ => 4000000
       }
-    } planFor """MATCH (a:Person)-[:KNOWS]->(b:Person) WITH a, collect(b) AS friends RETURN a, [f IN friends WHERE (f)-[:WORKS_AT]->(:ComedyClub)] AS clowns""").plan
+    } getLogicalPlanFor """MATCH (a:Person)-[:KNOWS]->(b:Person) WITH a, collect(b) AS friends RETURN a, [f IN friends WHERE (f)-[:WORKS_AT]->(:ComedyClub)] AS clowns""")._2
 
     plan match {
       case Projection(_, expressions) =>
@@ -58,7 +58,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
   }
 
   test("should build plans containing semi apply for a single pattern predicate") {
-    planFor("MATCH (a) WHERE (a)-[:X]->() RETURN a").plan should equal(
+    planFor("MATCH (a) WHERE (a)-[:X]->() RETURN a")._2 should equal(
       SemiApply(
         AllNodesScan("a", Set.empty)(solved),
         Expand(
@@ -70,7 +70,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
   }
 
   test("should build plans containing anti semi apply for a single negated pattern predicate") {
-    planFor("MATCH (a) WHERE NOT (a)-[:X]->() RETURN a").plan should equal(
+    planFor("MATCH (a) WHERE NOT (a)-[:X]->() RETURN a")._2 should equal(
       AntiSemiApply(
         AllNodesScan("a", Set.empty)(solved),
         Expand(
@@ -82,7 +82,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
   }
 
   test("should build plans containing semi apply for two pattern predicates") {
-    planFor("MATCH (a) WHERE (a)-[:X]->() AND (a)-[:Y]->() RETURN a").plan should equal(
+    planFor("MATCH (a) WHERE (a)-[:X]->() AND (a)-[:Y]->() RETURN a")._2 should equal(
       SemiApply(
         SemiApply(
           AllNodesScan("a", Set.empty)(solved),
@@ -100,7 +100,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
   }
 
   test("should build plans containing select or semi apply for a pattern predicate and an expression") {
-    planFor("MATCH (a) WHERE (a)-[:X]->() OR a.prop > 4 RETURN a").plan should equal(
+    planFor("MATCH (a) WHERE (a)-[:X]->() OR a.prop > 4 RETURN a")._2 should equal(
       SelectOrSemiApply(
         AllNodesScan("a", Set.empty)(solved),
         Expand(
@@ -113,7 +113,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
   }
 
   test("should build plans containing select or semi apply for a pattern predicate and multiple expressions") {
-    planFor("MATCH (a) WHERE a.prop2 = 9 OR (a)-[:X]->() OR a.prop > 4 RETURN a").plan should equal(
+    planFor("MATCH (a) WHERE a.prop2 = 9 OR (a)-[:X]->() OR a.prop > 4 RETURN a")._2 should equal(
       SelectOrSemiApply(
         AllNodesScan("a", Set.empty)(solved),
         Expand(
@@ -129,7 +129,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
   }
 
   test("should build plans containing select or anti semi apply for a single negated pattern predicate") {
-    planFor("MATCH (a) WHERE a.prop = 9 OR NOT (a)-[:X]->() RETURN a").plan should equal(
+    planFor("MATCH (a) WHERE a.prop = 9 OR NOT (a)-[:X]->() RETURN a")._2 should equal(
       SelectOrAntiSemiApply(
         AllNodesScan("a", Set.empty)(solved),
         Expand(
@@ -142,7 +142,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
   }
 
   test("should build plans containing let select or semi apply and select or semi apply for two pattern predicates") {
-    planFor("MATCH (a) WHERE a.prop = 9 OR (a)-[:Y]->() OR NOT (a)-[:X]->() RETURN a").plan should equal(
+    planFor("MATCH (a) WHERE a.prop = 9 OR (a)-[:Y]->() OR NOT (a)-[:X]->() RETURN a")._2 should equal(
       SelectOrAntiSemiApply(
         LetSelectOrSemiApply(
           AllNodesScan("a", Set.empty)(solved),
@@ -163,7 +163,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
   }
 
   test("should build plans containing let semi apply and select or semi apply for two pattern predicates") {
-    planFor("MATCH (a) WHERE (a)-[:Y]->() OR NOT (a)-[:X]->() RETURN a").plan should equal(
+    planFor("MATCH (a) WHERE (a)-[:Y]->() OR NOT (a)-[:X]->() RETURN a")._2 should equal(
       SelectOrAntiSemiApply(
         LetSemiApply(
           AllNodesScan("a", Set.empty)(solved),
@@ -183,7 +183,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
   }
 
   test("should build plans containing let anti semi apply and select or semi apply for two pattern predicates") {
-    planFor("MATCH (a) WHERE NOT (a)-[:Y]->() OR NOT (a)-[:X]->() RETURN a").plan should equal(
+    planFor("MATCH (a) WHERE NOT (a)-[:Y]->() OR NOT (a)-[:X]->() RETURN a")._2 should equal(
       SelectOrAntiSemiApply(
         LetAntiSemiApply(
           AllNodesScan("a", Set.empty)(solved),
@@ -203,7 +203,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
   }
 
   test("should plan all predicates along with named varlength pattern") {
-    planFor("MATCH p=(a)-[r*]->(b) WHERE all(n in nodes(p) WHERE n.prop = 1337) RETURN p").plan should beLike {
+    planFor("MATCH p=(a)-[r*]->(b) WHERE all(n in nodes(p) WHERE n.prop = 1337) RETURN p")._2 should beLike {
       case Projection(
       VarExpand(_, _, _, _, _,_, _, _, _,
                      Seq((Variable("n"),
@@ -213,7 +213,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
   }
 
   test("should plan none predicates along with named varlength pattern") {
-    planFor("MATCH p=(a)-[r*]->(b) WHERE none(n in nodes(p) WHERE n.prop = 1337) RETURN p").plan should beLike {
+    planFor("MATCH p=(a)-[r*]->(b) WHERE none(n in nodes(p) WHERE n.prop = 1337) RETURN p")._2 should beLike {
       case Projection(
       VarExpand(_, _, _, _, _,_, _, _, _,
                 Seq((Variable("n"),

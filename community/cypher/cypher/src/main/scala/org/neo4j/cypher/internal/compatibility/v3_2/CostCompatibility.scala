@@ -58,8 +58,8 @@ case class CostCompatibility(config: CypherCompilerConfiguration,
 
     val logger = new StringInfoLogger(log)
     val monitors = WrappedMonitors(kernelMonitors)
-    CypherCompilerFactory.costBasedCompiler(config, clock, GeneratedQueryStructure, monitors, logger,
-      rewriterSequencer, plannerName, runtimeName, updateStrategy, typeConversions)
+    CypherCompilerFactory.costBasedCompiler(config, clock, GeneratedQueryStructure, monitors, logger, rewriterSequencer,
+      plannerName, runtimeName, updateStrategy, typeConversions)
   }
 
   override val queryCacheSize: Int = config.queryCacheSize

@@ -29,7 +29,7 @@ class PlanRewritingPlanningIntegrationTest  extends CypherFunSuite with LogicalP
 
   test("should use GetDegree to compute the degree of a node") {
     val result = (new given {
-    } planFor "MATCH (n) RETURN length((n)-->()) AS deg").plan
+    } getLogicalPlanFor  "MATCH (n) RETURN length((n)-->()) AS deg")._2
 
     result should equal(
       Projection(

@@ -21,10 +21,13 @@ package org.neo4j.cypher.internal.compiler.v3_2.phases
 
 import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase.SEMANTIC_CHECK
 import org.neo4j.cypher.internal.compiler.v3_2.SemanticChecker
+import org.neo4j.cypher.internal.compiler.v3_2.ast.conditions.containsNoNodesOfType
+import org.neo4j.cypher.internal.frontend.v3_2.SemanticState
+import org.neo4j.cypher.internal.frontend.v3_2.ast.UnaliasedReturnItem
 
 case class SemanticAnalysis(warn: Boolean) extends Phase {
 
-  override def transform(from: CompilationState, context: Context): CompilationState = {
+  override def process(from: CompilationState, context: Context): CompilationState = {
     val semanticState = SemanticChecker.check(from.statement, context.exceptionCreator)
     if (warn) semanticState.notifications.foreach(context.notificationLogger.log)
     from.copy(maybeSemantics = Some(semanticState))
@@ -32,4 +35,6 @@ case class SemanticAnalysis(warn: Boolean) extends Phase {
   override def phase = SEMANTIC_CHECK
 
   override def description = "do variable binding, typing, type checking and other semantic checks"
+
+  override def postConditions: Set[Condition] = Set(Contains[SemanticState], StatementCondition(containsNoNodesOfType[UnaliasedReturnItem]))
 }

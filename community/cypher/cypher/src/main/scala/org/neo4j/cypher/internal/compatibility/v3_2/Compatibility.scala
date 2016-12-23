@@ -53,7 +53,7 @@ trait Compatibility {
   def produceParsedQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer) = {
     val notificationLogger = new RecordingNotificationLogger
     val preparedSyntacticQueryForV_3_2 =
-      Try(compiler.prepareSyntacticQuery(preParsedQuery.statement,
+      Try(compiler.parseQuery(preParsedQuery.statement,
         preParsedQuery.rawStatement,
         notificationLogger,
         preParsedQuery.planner.name,

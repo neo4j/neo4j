@@ -17,21 +17,31 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_2.phases
+package org.neo4j.cypher.internal.compiler.v3_2;
 
-import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase.PARSING
-import org.neo4j.cypher.internal.frontend.v3_2.ast.Statement
-import org.neo4j.cypher.internal.frontend.v3_2.parser.CypherParser
+/*
+Why is this here!?
 
-case object Parsing extends Phase {
-  private val parser = new CypherParser
+assert in Scala does something different to assert in Java. In Scala, it's controlled through a compiler setting,
+which means you can't use the same binaries and enable/disable assertions through a JVM configuration.
 
-  override def process(in: CompilationState, ignored: Context): CompilationState =
-    in.copy(maybeStatement = Some(parser.parse(in.queryText, in.startPosition)))
+We want the Java behaviour in Scala, and this is how we achieve that.
+ */
+public class AssertionRunner
+{
+    public static void runUnderAssertion( Thunk thunk )
+    {
+        assert runIt(thunk);
+    }
 
-  override val phase = PARSING
+    private static boolean runIt( Thunk thunk )
+    {
+        thunk.apply();
+        return true;
+    }
 
-  override val description = "parse text into an AST object"
-
-  override def postConditions: Set[Condition] = Set(Contains[Statement])
+    public interface Thunk
+    {
+        void apply();
+    }
 }

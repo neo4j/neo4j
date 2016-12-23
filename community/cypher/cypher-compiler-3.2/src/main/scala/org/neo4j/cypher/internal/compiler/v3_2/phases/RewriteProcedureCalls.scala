@@ -20,9 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v3_2.phases
 
 import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
+import org.neo4j.cypher.internal.compiler.v3_2.ast.conditions.containsNoNodesOfType
 import org.neo4j.cypher.internal.compiler.v3_2.ast.{ResolvedCall, ResolvedFunctionInvocation}
 import org.neo4j.cypher.internal.compiler.v3_2.spi.PlanContext
-import org.neo4j.cypher.internal.frontend.v3_2.ast.{FunctionInvocation, Query, SingleQuery, UnresolvedCall}
+import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.{Rewriter, bottomUp}
 
 // Given a way to lookup procedure signatures, this phase rewrites unresolved calls into resolved calls
@@ -65,8 +66,10 @@ case object RewriteProcedureCalls extends Phase {
 
   override def description = "resolve procedure calls"
 
-  override def transform(from: CompilationState, context: Context): CompilationState = {
+  override def process(from: CompilationState, context: Context): CompilationState = {
     val rewrittenStatement = from.statement.endoRewrite(rewriter(context.planContext))
     from.copy(maybeStatement = Some(rewrittenStatement))
   }
+
+  override def postConditions: Set[Condition] = Set(StatementCondition(containsNoNodesOfType[UnresolvedCall]))
 }

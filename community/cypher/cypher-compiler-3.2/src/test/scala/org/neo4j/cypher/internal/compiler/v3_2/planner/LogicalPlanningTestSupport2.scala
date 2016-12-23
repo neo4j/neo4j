@@ -20,23 +20,24 @@
 package org.neo4j.cypher.internal.compiler.v3_2.planner
 
 import org.neo4j.cypher.internal.compiler.v3_2._
-import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.plannerQuery.StatementConverters._
 import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters._
-import org.neo4j.cypher.internal.compiler.v3_2.phases.{CompilationState, Context, LateAstRewriting}
+import org.neo4j.cypher.internal.compiler.v3_2.phases._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.cardinality.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.idp.{IDPQueryGraphSolver, IDPQueryGraphSolverMonitor, SingleComponentPlanner, cartesianProductsOrValueJoins}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.rewriter.{LogicalPlanRewriter, unnestApply}
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.rewriter.unnestApply
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.{LogicalPlanningContext, _}
 import org.neo4j.cypher.internal.compiler.v3_2.spi._
+import org.neo4j.cypher.internal.compiler.v3_2.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSequencer
+import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSequencer.newPlain
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.fixedPoint
 import org.neo4j.cypher.internal.frontend.v3_2.parser.CypherParser
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.{CypherFunSuite, CypherTestSupport}
-import org.neo4j.cypher.internal.frontend.v3_2.{Foldable, PropertyKeyId, SemanticTable, _}
+import org.neo4j.cypher.internal.frontend.v3_2.{Foldable, PropertyKeyId, SemanticTable}
 import org.neo4j.cypher.internal.ir.v3_2.{Cardinality, IdName, PeriodicCommit}
 import org.neo4j.helpers.collection.Visitable
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
@@ -47,8 +48,6 @@ import org.scalatest.matchers.{BeMatcher, MatchResult}
 import scala.language.reflectiveCalls
 import scala.reflect.ClassTag
 
-case class SemanticPlan(plan: LogicalPlan, semanticTable: SemanticTable)
-
 trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstructionTestSupport with LogicalPlanConstructionTestSupport {
   self: CypherFunSuite =>
 
@@ -56,9 +55,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
   var parser = new CypherParser
   val rewriterSequencer = RewriterStepSequencer.newValidating _
   var astRewriter = new ASTRewriter(rewriterSequencer, shouldExtractParameters = false)
-  var tokenResolver = new SimpleTokenResolver()
-  val planRewriter = LogicalPlanRewriter(rewriterSequencer)
-  final var planner = new DefaultQueryPlanner(planRewriter) {
+  final var planner = new QueryPlanner() {
     def internalPlan(query: PlannerQuery)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan] = None): LogicalPlan =
       planSingleQuery(query)
   }
@@ -127,53 +124,46 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         semanticTable.resolvedRelTypeNames.get(relType).map(_.id)
     }
 
-    private def context = Context(null, null, null, null, null, null, mock[AstRewritingMonitor])
+    val pipeLine =
+      Parsing andThen
+      PreparatoryRewriting andThen
+      SemanticAnalysis(warn = true) andThen
+      AstRewriting(newPlain, shouldExtractParams = false) andThen
+      RewriteProcedureCalls andThen
+      Namespacer andThen
+      rewriteEqualityToInPredicate andThen
+      CNFNormalizer andThen
+      LateAstRewriting andThen
+      ResolveTokens andThen
+      CreatePlannerQuery andThen
+      OptionalMatchRemover andThen
+      QueryPlanner().adds[LogicalPlan] andThen
+      Do(removeApply _)
 
-    private val pipeLine =
-      Namespacer andThen rewriteEqualityToInPredicate andThen CNFNormalizer andThen LateAstRewriting
+    // This fakes pattern expression naming for testing purposes
+    // In the actual code path, this renaming happens as part of planning
+    //
+    // cf. QueryPlanningStrategy
+    //
+    private def namePatternPredicates(input: CompilationState, context: Context): CompilationState = {
+      val newStatement = input.statement.endoRewrite(namePatternPredicatePatternElements)
+      input.copy(maybeStatement = Some(newStatement))
+    }
 
-    def planFor(queryString: String): SemanticPlan = {
-
-      val parsedStatement = parser.parse(queryString)
-      val mkException = new SyntaxExceptionCreator(queryString, Some(pos))
-      val cleanedStatement: Statement = parsedStatement.endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException)))
-      val semanticState = SemanticChecker.check(cleanedStatement, mkException)
-      val (rewrittenStatement, _, postConditions) = astRewriter.rewrite(queryString, cleanedStatement, semanticState)
-
-      val state = CompilationState(queryString, None, "", Some(rewrittenStatement), Some(semanticState))
-      val output = pipeLine.transform(state, context)
-
-      val ast = output.statement.asInstanceOf[Query]
-
-      tokenResolver.resolve(ast)(output.semanticTable, planContext)
-      val unionQuery = toUnionQuery(ast, output.semanticTable)
-      val metrics = metricsFactory.newMetrics(planContext.statistics)
-      val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality)
-      val planningContext = LogicalPlanningContext(planContext, logicalPlanProducer, metrics, output.semanticTable, queryGraphSolver, QueryGraphSolverInput.empty, notificationLogger = devNullLogger)
-      val plannerQuery = unionQuery.queries.head
-      val resultPlan = planner.internalPlan(plannerQuery)(planningContext)
-      SemanticPlan(resultPlan.endoRewrite(fixedPoint(unnestApply)), output.semanticTable)
+    private def removeApply(input: CompilationState, context: Context): CompilationState = {
+      val newPlan = input.logicalPlan.endoRewrite(fixedPoint(unnestApply))
+      input.copy(maybeLogicalPlan = Some(newPlan))
     }
 
     def getLogicalPlanFor(queryString: String): (Option[PeriodicCommit], LogicalPlan, SemanticTable) = {
-      val parsedStatement = parser.parse(queryString)
       val mkException = new SyntaxExceptionCreator(queryString, Some(pos))
-      val semanticState = SemanticChecker.check(parsedStatement, mkException)
-      val (rewrittenStatement, _, postConditions) = astRewriter.rewrite(queryString, parsedStatement, semanticState)
-
-      val state = CompilationState(queryString, None, "", Some(rewrittenStatement), Some(semanticState))
-      val output = pipeLine.transform(state, context)
-      val table = output.semanticTable
-      config.updateSemanticTableWithTokens(table)
-      val ast = output.statement.asInstanceOf[Query]
-
-      tokenResolver.resolve(ast)(output.semanticTable, planContext)
-      val unionQuery = toUnionQuery(ast, semanticTable)
       val metrics = metricsFactory.newMetrics(planContext.statistics)
-      val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality)
-      val logicalPlanningContext = LogicalPlanningContext(planContext, logicalPlanProducer, metrics, table, queryGraphSolver, QueryGraphSolverInput.empty, notificationLogger = devNullLogger)
-      val (periodicCommit, plan) = planner.plan(unionQuery)(logicalPlanningContext)
-      (periodicCommit, plan, table)
+      def context = ContextHelper.create(planContext = planContext, exceptionCreator = mkException, queryGraphSolver = queryGraphSolver, metrics = metrics)
+
+      val state = CompilationState(queryString, None, IDPPlannerName)
+      val output = pipeLine.transform(state, context)
+      val logicalPlan = output.logicalPlan.asInstanceOf[ProduceResult].inner
+      (output.periodicCommit, logicalPlan, output.semanticTable)
     }
 
     def estimate(qg: QueryGraph, input: QueryGraphSolverInput = QueryGraphSolverInput.empty) =
@@ -197,15 +187,16 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
   def fakeLogicalPlanFor(id: String*): FakePlan = FakePlan(id.map(IdName(_)).toSet)(solved)
 
-  def planFor(queryString: String): SemanticPlan = new given().planFor(queryString)
+  def planFor(queryString: String): (Option[PeriodicCommit], LogicalPlan, SemanticTable) =
+    new given().getLogicalPlanFor(queryString)
 
   class given extends StubbedLogicalPlanningConfiguration(realConfig)
 
   class fromDbStructure(dbStructure: Visitable[DbStructureVisitor])
     extends DelegatingLogicalPlanningConfiguration(DbStructureLogicalPlanningConfiguration(dbStructure))
 
-  implicit def propertyKeyId(label: String)(implicit plan: SemanticPlan): PropertyKeyId =
-    plan.semanticTable.resolvedPropertyKeyNames(label)
+  implicit def propertyKeyId(label: String)(implicit semanticTable: SemanticTable): PropertyKeyId =
+    semanticTable.resolvedPropertyKeyNames(label)
 
   def using[T <: LogicalPlan](implicit tag: ClassTag[T]): BeMatcher[LogicalPlan] = new BeMatcher[LogicalPlan] {
     import Foldable._

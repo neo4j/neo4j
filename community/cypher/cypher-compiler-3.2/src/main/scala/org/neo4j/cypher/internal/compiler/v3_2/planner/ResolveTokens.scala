@@ -19,12 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.planner
 
-import org.neo4j.cypher.internal.frontend.v3_2.ast._
+import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
+import org.neo4j.cypher.internal.compiler.v3_2.phases._
 import org.neo4j.cypher.internal.compiler.v3_2.spi.TokenContext
-import org.neo4j.cypher.internal.frontend.v3_2.ast.Query
-import org.neo4j.cypher.internal.frontend.v3_2.{SemanticTable, PropertyKeyId, RelTypeId, LabelId}
+import org.neo4j.cypher.internal.frontend.v3_2.ast.{Query, _}
+import org.neo4j.cypher.internal.frontend.v3_2.{LabelId, PropertyKeyId, RelTypeId, SemanticTable}
 
-class SimpleTokenResolver {
+object ResolveTokens extends VisitorPhase {
   def resolve(ast: Query)(implicit semanticTable: SemanticTable, tokenContext: TokenContext) {
     ast.fold(()) {
       case token: PropertyKeyName =>
@@ -58,5 +59,14 @@ class SimpleTokenResolver {
         semanticTable.resolvedRelTypeNames += name -> id
       case None =>
     }
+  }
+
+  override def phase = AST_REWRITE
+
+  override def description = "resolve token ids for labels, property keys and relationship types"
+
+  override def visit(value: CompilationState, context: Context): Unit = value.statement match {
+    case q: Query => resolve(q)(value.semanticTable, context.planContext)
+    case _ =>
   }
 }

@@ -21,26 +21,44 @@ package org.neo4j.cypher.internal.compiler.v3_2.phases
 
 import org.neo4j.cypher.internal.compiler.v3_2.ASTRewriter
 import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
+import org.neo4j.cypher.internal.compiler.v3_2.ast.conditions._
 import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters._
-import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSequencer
+import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.{RewriterCondition, RewriterStepSequencer, Condition => Rewriter_Condition}
+import org.neo4j.cypher.internal.frontend.v3_2.ast.NotEquals
 import org.neo4j.cypher.internal.frontend.v3_2.{Rewriter, inSequence}
 
-case class AstRewriting(sequencer: String => RewriterStepSequencer) extends Phase {
+case class AstRewriting(sequencer: String => RewriterStepSequencer, shouldExtractParams: Boolean) extends Phase {
 
-  private val astRewriter = new ASTRewriter(sequencer, true)
+  private val astRewriter = new ASTRewriter(sequencer, shouldExtractParams)
 
-  override def transform(in: CompilationState, context: Context): CompilationState = {
+  override def process(in: CompilationState, context: Context): CompilationState = {
 
     val (rewrittenStatement, extractedParams, postConditions) = astRewriter.rewrite(in.queryText, in.statement, in.semantics)
+
     in.copy(
       maybeStatement = Some(rewrittenStatement),
-      maybeExtractedParams = Some(extractedParams),
-      maybePostConditions = Some(postConditions))
+      maybeExtractedParams = Some(extractedParams))
   }
 
   override def phase = AST_REWRITE
 
-  override def description: String = "normalize the AST into a form easier for the planner to work with"
+  override def description = "normalize the AST into a form easier for the planner to work with"
+
+  override def postConditions: Set[Condition] = {
+    val rewriterConditions = Set(
+      noReferenceEqualityAmongVariables,
+      orderByOnlyOnVariables,
+      noDuplicatesInReturnItems,
+      containsNoReturnAll,
+      noUnnamedPatternElementsInMatch,
+      containsNoNodesOfType[NotEquals],
+      normalizedEqualsArguments,
+      aggregationsAreIsolated,
+      noUnnamedPatternElementsInPatternComprehension
+    )
+
+    rewriterConditions.map(StatementCondition.apply)
+  }
 }
 
 object LateAstRewriting extends StatementRewriter {
@@ -53,4 +71,14 @@ object LateAstRewriting extends StatementRewriter {
   )
 
   override def description: String = "normalize the AST"
+
+  override def postConditions: Set[Condition] = Set.empty
+}
+
+object StatementCondition {
+  def apply(inner: RewriterCondition) = new StatementCondition(inner.condition)
+}
+
+case class StatementCondition(inner: Any => Seq[String]) extends Condition {
+  override def check(state: CompilationState): Seq[String] = inner(state.statement)
 }

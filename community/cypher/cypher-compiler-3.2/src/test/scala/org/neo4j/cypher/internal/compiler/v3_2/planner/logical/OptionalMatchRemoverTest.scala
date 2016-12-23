@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.{DummyPosition, SemanticTable}
 
 class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
-  val rewriter = OptionalMatchRemover
+  val rewriter = OptionalMatchRemover.instance(null)
 
   assert_that(
     """MATCH (a)

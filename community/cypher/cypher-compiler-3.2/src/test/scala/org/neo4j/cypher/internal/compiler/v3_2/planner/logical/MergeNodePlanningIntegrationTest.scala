@@ -38,7 +38,7 @@ class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
     val mergeNode = AntiConditionalApply(optional, onCreate, Seq(aId))(solved)
     val emptyResult = EmptyResult(mergeNode)(solved)
 
-    planFor("MERGE (a)").plan should equal(emptyResult)
+    planFor("MERGE (a)")._2 should equal(emptyResult)
   }
 
   test("should plan single merge node from a label scan") {
@@ -54,7 +54,7 @@ class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
       labelCardinality = Map(
         "X" -> 30.0
       )
-    } planFor "MERGE (a:X)").plan should equal(emptyResult)
+    } getLogicalPlanFor "MERGE (a:X)")._2 should equal(emptyResult)
   }
 
   test("should plan single merge node with properties") {
@@ -73,7 +73,7 @@ class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
     val mergeNode = AntiConditionalApply(optional, onCreate, Seq(aId))(solved)
     val emptyResult = EmptyResult(mergeNode)(solved)
 
-    planFor("MERGE (a {prop: 42})").plan should equal(emptyResult)
+    planFor("MERGE (a {prop: 42})")._2 should equal(emptyResult)
   }
 
   test("should plan create followed by merge") {
@@ -85,7 +85,7 @@ class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
     val apply = Apply(createNode, mergeNode)(solved)
     val emptyResult = EmptyResult(apply)(solved)
 
-    planFor("CREATE (a) MERGE (b)").plan should equal(emptyResult)
+    planFor("CREATE (a) MERGE (b)")._2 should equal(emptyResult)
   }
 
   test("should plan merge followed by create") {
@@ -97,14 +97,14 @@ class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
     val createNode = CreateNode(eager, bId, Seq.empty, None)(solved)
     val emptyResult = EmptyResult(createNode)(solved)
 
-    planFor("MERGE(a) CREATE (b)").plan should equal(emptyResult)
+    planFor("MERGE(a) CREATE (b)")._2 should equal(emptyResult)
   }
 
   test("should use AssertSameNode when multiple unique index matches") {
     val plan = (new given {
       uniqueIndexOn("X", "prop")
       uniqueIndexOn("Y", "prop")
-    } planFor "MERGE (a:X:Y {prop: 42})").plan
+    } getLogicalPlanFor "MERGE (a:X:Y {prop: 42})")._2
 
     plan shouldBe using[AssertSameNode]
     plan shouldBe using[NodeUniqueIndexSeek]
@@ -113,7 +113,7 @@ class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
   test("should not use AssertSameNode when one unique index matches") {
     val plan = (new given {
       uniqueIndexOn("X", "prop")
-    } planFor "MERGE (a:X:Y {prop: 42})").plan
+    } getLogicalPlanFor "MERGE (a:X:Y {prop: 42})")._2
 
     plan should not be using[AssertSameNode]
     plan shouldBe using[NodeUniqueIndexSeek]
@@ -145,6 +145,6 @@ class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
     val mergeNode = AntiConditionalApply(onMatch, createAndOnCreate, Seq(aId))(solved)
     val emptyResult = EmptyResult(mergeNode)(solved)
 
-    planFor("MERGE (a) ON CREATE SET a.prop = 1 ON MATCH SET a:L").plan should equal(emptyResult)
+    planFor("MERGE (a) ON CREATE SET a.prop = 1 ON MATCH SET a:L")._2 should equal(emptyResult)
   }
 }

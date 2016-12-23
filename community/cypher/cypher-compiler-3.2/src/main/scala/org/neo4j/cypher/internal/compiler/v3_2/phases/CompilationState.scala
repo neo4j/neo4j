@@ -19,20 +19,33 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.phases
 
+import org.neo4j.cypher.internal.compiler.v3_2.PlannerName
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.ExecutionPlan
-import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterCondition
+import org.neo4j.cypher.internal.compiler.v3_2.planner.UnionQuery
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{Query, Statement}
 import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, InternalException, SemanticState, SemanticTable}
+import org.neo4j.cypher.internal.ir.v3_2.PeriodicCommit
 
+/*
+This is the state that is used during query compilation. It accumulates more and more values as it passes through
+the compiler pipe line, finally ending up containing an execution plan.
+
+Normally, it is created with only the first three params as given, and the rest is built up while passing through
+the pipe line
+ */
 case class CompilationState(queryText: String,
                             startPosition: Option[InputPosition],
-                            plannerName: String,
+                            plannerName: PlannerName,
                             maybeStatement: Option[Statement] = None,
                             maybeSemantics: Option[SemanticState] = None,
                             maybeExtractedParams: Option[Map[String, Any]] = None,
-                            maybePostConditions: Option[Set[RewriterCondition]] = None,
                             maybeSemanticTable: Option[SemanticTable] = None,
-                            maybeExecutionPlan: Option[ExecutionPlan] = None) {
+                            maybeExecutionPlan: Option[ExecutionPlan] = None,
+                            maybeUnionQuery: Option[UnionQuery] = None,
+                            maybeLogicalPlan: Option[LogicalPlan] = None,
+                            maybePeriodicCommit: Option[Option[PeriodicCommit]] = None,
+                            accumulatedConditions: Set[Condition] = Set.empty) {
 
   def isPeriodicCommit: Boolean = statement match {
     case Query(Some(_), _) => true
@@ -42,9 +55,12 @@ case class CompilationState(queryText: String,
   def statement = maybeStatement getOrElse fail("Statement")
   def semantics = maybeSemantics getOrElse fail("Semantics")
   def extractedParams = maybeExtractedParams getOrElse fail("Extracted parameters")
-  def postConditions = maybePostConditions getOrElse fail("Post conditions")
-  def semanticTable =  maybeSemanticTable getOrElse fail("Semantic table")
-  def executionPlan =  maybeExecutionPlan getOrElse fail("Execution plan")
+  def semanticTable = maybeSemanticTable getOrElse fail("Semantic table")
+  def executionPlan = maybeExecutionPlan getOrElse fail("Execution plan")
+  def unionQuery = maybeUnionQuery getOrElse fail("Union query")
+  def logicalPlan = maybeLogicalPlan getOrElse fail("Logical plan")
+  def periodicCommit = maybePeriodicCommit getOrElse fail("Periodic commit")
+  def astAsQuery = statement.asInstanceOf[Query]
 
   private def fail(what: String) = {
     throw new InternalException(s"$what not yet initialised")

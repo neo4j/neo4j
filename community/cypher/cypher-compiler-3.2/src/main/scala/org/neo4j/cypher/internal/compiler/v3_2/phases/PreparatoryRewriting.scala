@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.inSequence
 
 case object PreparatoryRewriting extends Phase {
 
-  override def transform(from: CompilationState, context: Context): CompilationState = {
+  override def process(from: CompilationState, context: Context): CompilationState = {
 
     val rewrittenStatement = from.statement.endoRewrite(inSequence(
       normalizeReturnClauses(context.exceptionCreator),
@@ -36,8 +36,9 @@ case object PreparatoryRewriting extends Phase {
     from.copy(maybeStatement = Some(rewrittenStatement))
   }
 
-
   override val phase = AST_REWRITE
 
   override val description = "rewrite the AST into a shape that semantic analysis can be performed on"
+
+  override def postConditions = Set.empty
 }

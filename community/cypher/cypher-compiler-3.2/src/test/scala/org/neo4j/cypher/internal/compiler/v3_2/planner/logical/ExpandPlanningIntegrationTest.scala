@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.ir.v3_2.{Cardinality, IdName}
 class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   test("Should build plans containing expand for single relationship pattern") {
-    planFor("MATCH (a)-[r]->(b) RETURN r").plan should equal(
+    planFor("MATCH (a)-[r]->(b) RETURN r")._2 should equal(
         Expand(
           AllNodesScan("b", Set.empty)(solved),
           "b", SemanticDirection.INCOMING, Seq.empty, "a", "r"
@@ -49,7 +49,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
         case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set(IdName("d")) => 4000.0
         case _ => 100.0
       }
-    } planFor "MATCH (a)-[r1]->(b), (c)-[r2]->(d) RETURN r1, r2").plan should beLike {
+    } getLogicalPlanFor "MATCH (a)-[r1]->(b), (c)-[r2]->(d) RETURN r1, r2")._2 should beLike {
       case
         Selection(_,
           CartesianProduct(
@@ -63,7 +63,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("Should build plans containing expand for self-referencing relationship patterns") {
-    val result = planFor("MATCH (a)-[r]->(a) RETURN r").plan
+    val result = planFor("MATCH (a)-[r]->(a) RETURN r")._2
 
     result should equal(
       Expand(
@@ -80,7 +80,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
         case _                                                                   => 1.0
       }
 
-    } planFor "MATCH (a)-[r1]->(b)<-[r2]-(a) RETURN r1, r2").plan should equal(
+    } getLogicalPlanFor "MATCH (a)-[r1]->(b)<-[r2]-(a) RETURN r1, r2")._2 should equal(
       Selection(Seq(Not(Equals(Variable("r1")_,Variable("r2")_)_)_),
         Expand(
           Expand(
@@ -100,7 +100,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
 
     (new given {
       cardinality = PartialFunction(myCardinality)
-    } planFor "MATCH (start)-[rel:x]-(a) WHERE a.name = 'Andres' return a").plan should equal(
+    } getLogicalPlanFor "MATCH (start)-[rel:x]-(a) WHERE a.name = 'Andres' return a")._2 should equal(
         Expand(
           Selection(
             Seq(In(Property(Variable("a")_, PropertyKeyName("name")_)_, ListLiteral(Seq(StringLiteral("Andres")_))_)_),
@@ -119,7 +119,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
       }
 
       indexOn("Person", "name")
-    } planFor "MATCH (a)-[r]->(b) USING INDEX b:Person(name) WHERE b:Person AND b.name = 'Andres' return r").plan should equal(
+    } getLogicalPlanFor "MATCH (a)-[r]->(b) USING INDEX b:Person(name) WHERE b:Person AND b.name = 'Andres' return r")._2 should equal(
         Expand(
           NodeIndexSeek("b", LabelToken("Person", LabelId(0)), PropertyKeyToken("name", PropertyKeyId(0)), SingleQueryExpression(StringLiteral("Andres")_), Set.empty)(solved),
           "b", SemanticDirection.INCOMING, Seq.empty, "a", "r"

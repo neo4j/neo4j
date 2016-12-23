@@ -19,9 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters
 
-import org.neo4j.cypher.internal.frontend.v3_2.{Rewriter, bottomUp}
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
+import org.neo4j.cypher.internal.frontend.v3_2.{Rewriter, bottomUp}
 
+// Rewrites CALL proc WHERE <p> ==> CALL proc WITH * WHERE <p>
 case object expandCallWhere extends Rewriter {
 
   private val instance = bottomUp(Rewriter.lift {

@@ -39,7 +39,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
         case (_: SingleRow, _) => 1.0
         case _ => Double.MaxValue
       }
-    } planFor "MATCH (a:X)-[r1]->(b) OPTIONAL MATCH (b)-[r2]->(c:Y) RETURN b").plan should equal(
+    } getLogicalPlanFor "MATCH (a:X)-[r1]->(b) OPTIONAL MATCH (b)-[r2]->(c:Y) RETURN b")._2 should equal(
         OuterHashJoin(Set("b"),
           Expand(NodeByLabelScan("a", lblName("X"), Set.empty)(solved), "a", SemanticDirection.OUTGOING, Seq(), "b", "r1")(solved),
           Expand(NodeByLabelScan("c", lblName("Y"), Set.empty)(solved), "c", SemanticDirection.INCOMING, Seq(), "b", "r2")(solved)
@@ -48,12 +48,12 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
   }
 
   test("should build simple optional match plans") { // This should be built using plan rewriting
-    planFor("OPTIONAL MATCH (a) RETURN a").plan should equal(
+    planFor("OPTIONAL MATCH (a) RETURN a")._2 should equal(
       Optional(AllNodesScan("a", Set.empty)(solved))(solved))
   }
 
   test("should build simple optional expand") {
-    planFor("MATCH (n) OPTIONAL MATCH (n)-[:NOT_EXIST]->(x) RETURN n").plan.endoRewrite(unnestOptional) match {
+    planFor("MATCH (n) OPTIONAL MATCH (n)-[:NOT_EXIST]->(x) RETURN n")._2.endoRewrite(unnestOptional) match {
       case OptionalExpand(
       AllNodesScan(IdName("n"), _),
       IdName("n"),
@@ -68,7 +68,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
   }
 
   test("should build optional ProjectEndpoints") {
-    planFor("MATCH (a1)-[r]->(b1) WITH r, a1 LIMIT 1 OPTIONAL MATCH (a1)<-[r]-(b2) RETURN a1, r, b2").plan match {
+    planFor("MATCH (a1)-[r]->(b1) WITH r, a1 LIMIT 1 OPTIONAL MATCH (a1)<-[r]-(b2) RETURN a1, r, b2")._2 match {
       case
         Apply(
         Limit(
@@ -85,7 +85,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
   }
 
   test("should build optional ProjectEndpoints with extra predicates") {
-    planFor("MATCH (a1)-[r]->(b1) WITH r, a1 LIMIT 1 OPTIONAL MATCH (a2)<-[r]-(b2) WHERE a1 = a2 RETURN a1, r, b2").plan match {
+    planFor("MATCH (a1)-[r]->(b1) WITH r, a1 LIMIT 1 OPTIONAL MATCH (a2)<-[r]-(b2) WHERE a1 = a2 RETURN a1, r, b2")._2 match {
       case Apply(
       Limit(Expand(AllNodesScan(IdName("b1"), _), _, _, _, _, _, _), _, _),
       Optional(
@@ -105,7 +105,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
   }
 
   test("should build optional ProjectEndpoints with extra predicates 2") {
-    planFor("MATCH (a1)-[r]->(b1) WITH r LIMIT 1 OPTIONAL MATCH (a2)-[r]->(b2) RETURN a2, r, b2").plan  match {
+    planFor("MATCH (a1)-[r]->(b1) WITH r LIMIT 1 OPTIONAL MATCH (a2)-[r]->(b2) RETURN a2, r, b2")._2  match {
       case Apply(
       Limit(Expand(AllNodesScan(IdName("b1"), _), _, _, _, _, _, _), _, _),
       Optional(
@@ -120,7 +120,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
   }
 
   test("should solve multiple optional matches") {
-    val plan = planFor("MATCH (a) OPTIONAL MATCH (a)-[:R1]->(x1) OPTIONAL MATCH (a)-[:R2]->(x2) RETURN a, x1, x2").plan.endoRewrite(unnestOptional)
+    val plan = planFor("MATCH (a) OPTIONAL MATCH (a)-[:R1]->(x1) OPTIONAL MATCH (a)-[:R2]->(x2) RETURN a, x1, x2")._2.endoRewrite(unnestOptional)
     plan should equal(
       OptionalExpand(
         OptionalExpand(
@@ -134,7 +134,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
     val plan = planFor("""MATCH (n)
                          |OPTIONAL MATCH (n)-[r]-(m)
                          |WHERE m.prop = 42
-                         |RETURN m""".stripMargin).plan.endoRewrite(unnestOptional)
+                         |RETURN m""".stripMargin)._2.endoRewrite(unnestOptional)
     val s = solved
     val allNodesN:LogicalPlan = AllNodesScan(IdName("n"),Set())(s)
     val predicate: Expression = In(Property(varFor("m"), PropertyKeyName("prop") _) _, ListLiteral(List(SignedDecimalIntegerLiteral("42") _)) _) _

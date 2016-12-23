@@ -117,7 +117,8 @@ case class PatternExpressionSolver(pathStepBuilder: EveryPath => PathStep = proj
     (plan, newProjections.result())
   }
 
-  private def solveUsingGetDegree(exp: Expression): Expression = exp.endoRewrite(getDegreeRewriter)
+  private def solveUsingGetDegree(exp: Expression): Expression =
+    exp.endoRewrite(getDegreeRewriter)
 }
 
 object PatternExpressionSolver {

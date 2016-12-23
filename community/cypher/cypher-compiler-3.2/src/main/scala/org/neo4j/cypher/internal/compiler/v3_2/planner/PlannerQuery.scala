@@ -26,7 +26,9 @@ import org.neo4j.cypher.internal.ir.v3_2._
 import scala.annotation.tailrec
 import scala.collection.GenTraversableOnce
 
-case class UnionQuery(queries: Seq[PlannerQuery], distinct: Boolean, returns: Seq[IdName], periodicCommit: Option[PeriodicCommit])
+case class UnionQuery(queries: Seq[PlannerQuery], distinct: Boolean, returns: Seq[IdName], periodicCommit: Option[PeriodicCommit]) {
+  def readOnly: Boolean = queries.forall(_.readOnly)
+}
 
 case class RegularPlannerQuery(queryGraph: QueryGraph = QueryGraph.empty,
                                horizon: QueryHorizon = QueryProjection.empty,
