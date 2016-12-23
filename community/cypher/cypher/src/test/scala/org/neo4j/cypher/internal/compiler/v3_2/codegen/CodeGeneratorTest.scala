@@ -1196,6 +1196,33 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     result.toList should equal(List(Map("x" -> List(1L, 2L, 3L))))
   }
 
+  test("compare nullable relationships with equals") {
+    //given
+    val scanT1 = NodeByLabelScan(IdName("a"), lblName("T1"), Set.empty)(solved)
+    val expand = Expand(scanT1,
+      from = IdName("a"), SemanticDirection.OUTGOING, Seq.empty,
+      to = IdName("b"), relName = IdName("r1"), ExpandAll)(solved)
+    val optionalExpandInto = OptionalExpand(expand,
+      from = IdName("b"), SemanticDirection.OUTGOING, Seq.empty,
+      to = IdName("a"), IdName("r2"), ExpandInto, Seq(HasLabels(varFor("a"), Seq(LabelName("T2")(pos)))(pos)))(solved)
+
+    val projection = Projection(optionalExpandInto, Map("sameRel" -> Equals(varFor("r1"), varFor("r2"))(pos)))(solved)
+    val plan = ProduceResult(List("sameRel"), projection)
+
+    //when
+    val compiled = compileAndExecute(plan)
+
+    //then
+    val result = getResult(compiled, "sameRel")
+
+    // Since r2 is null the result of equals should be null
+    result should equal(List(
+      Map("sameRel" -> null),
+      Map("sameRel" -> null),
+      Map("sameRel" -> null)
+    ))
+  }
+
   private def compile(plan: LogicalPlan) = {
     generator.generate(plan, newMockedPlanContext, semanticTable, CostBasedPlannerName.default)
   }

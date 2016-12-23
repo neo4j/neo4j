@@ -38,7 +38,6 @@ import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
   */
 trait MethodStructure[E] {
   // misc
-  def projectVariable(variableName: String, value: E)
   def declareFlag(name: String, initialValue: Boolean)
   def updateFlag(name: String, newValue: Boolean)
   def declarePredicate(name: String): Unit
@@ -91,6 +90,7 @@ trait MethodStructure[E] {
   def threeValuedNotExpression(value: E): E
   def notExpression(value: E): E
   def threeValuedEqualsExpression(lhs: E, rhs: E): E
+  def threeValuedPrimitiveEqualsExpression(lhs: E, rhs: E, codeGenType: CodeGenType): E
   def equalityExpression(lhs: E, rhs: E, codeGenType: CodeGenType): E
   def orExpression(lhs: E, rhs: E): E
   def threeValuedOrExpression(lhs: E, rhs: E): E

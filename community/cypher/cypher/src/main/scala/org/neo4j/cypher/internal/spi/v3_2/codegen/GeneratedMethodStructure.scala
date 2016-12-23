@@ -343,6 +343,17 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   override def threeValuedEqualsExpression(lhs: Expression, rhs: Expression) = invoke(Methods.ternaryEquals, lhs, rhs)
 
+  override def threeValuedPrimitiveEqualsExpression(lhs: Expression, rhs: Expression, codeGenType: CodeGenType) = {
+    // This is only for primitive nodes and relationships
+    assert(codeGenType == CodeGenType.primitiveNode || codeGenType == CodeGenType.primitiveRel)
+    ternary(
+      or(equal(nullValue(codeGenType), lhs),
+         equal(nullValue(codeGenType), rhs)),
+      constant(null),
+      box(equal(lhs, rhs))
+    )
+  }
+
   override def equalityExpression(lhs: Expression, rhs: Expression, codeGenType: CodeGenType) =
     if (codeGenType.isPrimitive) equal(lhs, rhs)
     else invoke(lhs, Methods.equals, rhs)
@@ -1064,13 +1075,6 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
       inner.assign(variable, res)
       generator.load(variable.name())
     }
-  }
-
-  override def projectVariable(variableName: String, expression: Expression) = {
-    // java.lang.Object is an ok type for result variables because we only put them into result row
-    val resultType = typeRef[Object]
-    val localVariable = generator.declare(resultType, variableName)
-    generator.assign(localVariable, expression)
   }
 
   override def declareFlag(name: String, initialValue: Boolean) = {

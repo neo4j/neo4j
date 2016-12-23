@@ -49,12 +49,17 @@ case class Equals(lhs: CodeGenExpression, rhs: CodeGenExpression) extends CodeGe
    */
   override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) = {
     (lhs, rhs, nullable) match {
-      // it does not matter to equals if node and relationship expressions are nullable or not
-      case (NodeExpression(v1), NodeExpression(v2), _) =>
+      case (NodeExpression(v1), NodeExpression(v2), false) =>
         structure.equalityExpression(structure.loadVariable(v1.name), structure.loadVariable(v2.name), CodeGenType.primitiveNode)
-      case (RelationshipExpression(v1), RelationshipExpression(v2), _) =>
+      case (NodeExpression(v1), NodeExpression(v2), true) =>
+        structure.threeValuedPrimitiveEqualsExpression(structure.loadVariable(v1.name), structure.loadVariable(v2.name),
+                                                       CodeGenType.primitiveNode)
+      case (RelationshipExpression(v1), RelationshipExpression(v2), false) =>
         structure.equalityExpression(structure.loadVariable(v1.name), structure.loadVariable(v2.name),
                                      CodeGenType.primitiveRel)
+      case (RelationshipExpression(v1), RelationshipExpression(v2), true) =>
+        structure.threeValuedPrimitiveEqualsExpression(structure.loadVariable(v1.name), structure.loadVariable(v2.name),
+                                                       CodeGenType.primitiveRel)
       case (NodeExpression(_), RelationshipExpression(_), _) => throw new
           IncomparableValuesException(symbols.CTNode.toString, symbols.CTRelationship.toString)
       case (RelationshipExpression(_), NodeExpression(_), _) => throw new
