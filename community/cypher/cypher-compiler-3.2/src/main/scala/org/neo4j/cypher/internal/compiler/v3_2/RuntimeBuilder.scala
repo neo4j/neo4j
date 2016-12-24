@@ -25,7 +25,13 @@ import org.neo4j.cypher.internal.frontend.v3_2.notification.RuntimeUnsupportedNo
 
 object RuntimeBuilder {
   def create(runtimeName: Option[RuntimeName], useErrorsOverWarnings: Boolean): Transformer = runtimeName match {
-    case None | Some(InterpretedRuntimeName) =>
+    case None =>
+      BuildCompiledExecutionPlan andThen
+      If(_.maybeExecutionPlan.isEmpty)(
+        BuildInterpretedExecutionPlan
+      )
+
+    case Some(InterpretedRuntimeName) =>
       BuildInterpretedExecutionPlan
 
     case Some(CompiledRuntimeName) if useErrorsOverWarnings =>
@@ -40,6 +46,5 @@ object RuntimeBuilder {
         Do(_.notificationLogger.log(RuntimeUnsupportedNotification)) andThen
         BuildInterpretedExecutionPlan
       )
-
   }
 }
