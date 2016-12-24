@@ -246,8 +246,8 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
       case Sort(_, orderBy) =>
         PlanDescriptionImpl(id, "Sort", children, Seq(KeyNames(orderBy.map(_.id.name))), variables)
 
-      case _: UnwindCollection =>
-        PlanDescriptionImpl(id, "Unwind", children, Seq(), variables)
+      case UnwindCollection(_, _, expression) =>
+        PlanDescriptionImpl(id, "Unwind", children, Seq(Expression(expression)), variables)
 
       case VarExpand(_, IdName(fromName), dir, _, types, IdName(toName), IdName(relName), length, mode, predicates) =>
         val expandDescription = ExpandExpression(fromName, relName, types.map(_.name), toName, dir, minLength = length.min, maxLength = length.max)

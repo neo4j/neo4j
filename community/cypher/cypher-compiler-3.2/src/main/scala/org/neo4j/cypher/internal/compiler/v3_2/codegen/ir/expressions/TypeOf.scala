@@ -30,7 +30,7 @@ case class TypeOf(relId: Variable)
 
   def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) = {
     val typeName = context.namer.newVarName()
-    structure.declare(typeName, CodeGenType(CTString, ReferenceType))
+    structure.declareAndInitialize(typeName, CodeGenType(CTString, ReferenceType))
     if (nullable) {
       structure.ifNotStatement(structure.isNull(relId.name, CodeGenType.primitiveRel)) { body =>
         body.relType(relId.name, typeName)

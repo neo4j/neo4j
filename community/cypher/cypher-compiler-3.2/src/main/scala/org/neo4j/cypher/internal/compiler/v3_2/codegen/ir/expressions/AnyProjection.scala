@@ -19,29 +19,17 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions
 
-import org.neo4j.cypher.internal.compiler.v3_2.codegen.CodeGenContext
+import org.neo4j.cypher.internal.compiler.v3_2.codegen._
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi.MethodStructure
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 
-case class ListLiteral(expressions: Seq[CodeGenExpression]) extends CodeGenExpression {
+case class AnyProjection(variable: Variable) extends CodeGenExpression {
+  override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {}
 
-  override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) =
-    expressions.foreach { instruction =>
-      instruction.init(generator)
-    }
-
-  override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) =
-    structure.asList(expressions.map(e => structure.box(e.generateExpression(structure), e.codeGenType)))
-
-  override def nullable(implicit context: CodeGenContext) = false
-
-  override def codeGenType(implicit context: CodeGenContext) = {
-    val commonType =
-      if (expressions.nonEmpty)
-        expressions.map(_.codeGenType.ct).reduce[CypherType](_ leastUpperBound _)
-      else
-        CTAny
-
-    CodeGenType(CTList(commonType), ReferenceType)
+  override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) ={
+    structure.materializeAny(variable.name)
   }
+
+  override def nullable(implicit context: CodeGenContext): Boolean = variable.nullable
+
+  override def codeGenType(implicit context: CodeGenContext) = variable.codeGenType
 }

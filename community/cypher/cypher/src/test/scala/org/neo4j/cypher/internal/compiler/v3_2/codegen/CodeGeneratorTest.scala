@@ -583,6 +583,49 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     result.toSet should equal(Set(Map("a" -> "BAR")))
   }
 
+  test("project nodes") {
+    val scan = AllNodesScan(IdName("a"), Set.empty)(solved)
+    val plan = ProduceResult(List("a"), Projection(scan, Map("a" -> varFor("a")))(solved))
+    val compiled = compileAndExecute(plan)
+
+    //then
+    val result = getNodesFromResult(compiled, "a")
+    result should equal(List(
+      Map("a" -> aNode),
+      Map("a" -> bNode),
+      Map("a" -> cNode),
+      Map("a" -> dNode),
+      Map("a" -> eNode),
+      Map("a" -> fNode),
+      Map("a" -> gNode),
+      Map("a" -> hNode),
+      Map("a" -> iNode)))
+  }
+
+  test("project relationships") { // MATCH (a)-[r]->(b) WITH r RETURN r
+    //given
+    val expand = Expand(
+        AllNodesScan(IdName("a"), Set.empty)(solved), IdName("a"),
+        SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r"), ExpandAll)(solved)
+    val projection = Projection(expand, Map("r" -> varFor("r")))(solved)
+    val plan = ProduceResult(List("r"), projection)
+
+    //when
+    val compiled = compileAndExecute(plan)
+
+    //then
+    val result = getResult(compiled, "r")
+
+    result should equal(List(
+      Map("r" -> relMap(11L).relationship),
+      Map("r" -> relMap(12L).relationship),
+      Map("r" -> relMap(13L).relationship),
+      Map("r" -> relMap(14L).relationship),
+      Map("r" -> relMap(15L).relationship),
+      Map("r" -> relMap(16L).relationship),
+      Map("r" -> relMap(17L).relationship)))
+  }
+
   test("project addition of two ints") {
     val lhs = SignedDecimalIntegerLiteral("1")(pos)
     val rhs = SignedDecimalIntegerLiteral("3")(pos)
@@ -1103,6 +1146,83 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     result.toList should equal(List(Map("a.prop" -> null, "count(a)" -> 6), Map("a.prop" -> "value", "count(a)" -> 3)))
   }
 
+  test("unwind list of integers") { // UNWIND [1, 2, 3] as x RETURN x
+    // given
+    val listLiteral = ListLiteral(Seq(
+      SignedDecimalIntegerLiteral("1")(pos),
+      SignedDecimalIntegerLiteral("2")(pos),
+      SignedDecimalIntegerLiteral("3")(pos)
+    ))(pos)
+
+    val unwind = UnwindCollection(SingleRow()(solved), IdName("x"), listLiteral)(solved)
+    val plan = ProduceResult(List("x"), unwind)
+
+    // when
+    val compiled = compileAndExecute(plan)
+
+    // then
+    val result = getResult(compiled, "x")
+    result.toList should equal(List(Map("x" -> 1L), Map("x" -> 2L), Map("x" -> 3L)))
+  }
+
+  test("unwind list of integers with projection") { // UNWIND [1, 2, 3] as x WITH x as y RETURN y
+    // given
+    val listLiteral = literalIntList(1, 2, 3)
+
+    val unwind = UnwindCollection(SingleRow()(solved), IdName("x"), listLiteral)(solved)
+    val projection = Projection(unwind, Map("y" -> varFor("x")))(solved)
+    val plan = ProduceResult(List("y"), projection)
+
+    // when
+    val compiled = compileAndExecute(plan)
+
+    // then
+    val result = getResult(compiled, "y")
+    result.toList should equal(List(Map("y" -> 1L), Map("y" -> 2L), Map("y" -> 3L)))
+  }
+
+  test("projection of int list") { // WITH [1, 2, 3] as x RETURN x
+    // given
+    val listLiteral = literalIntList(1, 2, 3)
+
+    val projection = Projection(SingleRow()(solved), Map("x" -> listLiteral))(solved)
+    val plan = ProduceResult(List("x"), projection)
+
+    // when
+    val compiled = compileAndExecute(plan)
+
+    // then
+    val result = getResult(compiled, "x")
+    result.toList should equal(List(Map("x" -> List(1L, 2L, 3L))))
+  }
+
+  test("compare nullable relationships with equals") {
+    //given
+    val scanT1 = NodeByLabelScan(IdName("a"), lblName("T1"), Set.empty)(solved)
+    val expand = Expand(scanT1,
+      from = IdName("a"), SemanticDirection.OUTGOING, Seq.empty,
+      to = IdName("b"), relName = IdName("r1"), ExpandAll)(solved)
+    val optionalExpandInto = OptionalExpand(expand,
+      from = IdName("b"), SemanticDirection.OUTGOING, Seq.empty,
+      to = IdName("a"), IdName("r2"), ExpandInto, Seq(HasLabels(varFor("a"), Seq(LabelName("T2")(pos)))(pos)))(solved)
+
+    val projection = Projection(optionalExpandInto, Map("sameRel" -> Equals(varFor("r1"), varFor("r2"))(pos)))(solved)
+    val plan = ProduceResult(List("sameRel"), projection)
+
+    //when
+    val compiled = compileAndExecute(plan)
+
+    //then
+    val result = getResult(compiled, "sameRel")
+
+    // Since r2 is null the result of equals should be null
+    result should equal(List(
+      Map("sameRel" -> null),
+      Map("sameRel" -> null),
+      Map("sameRel" -> null)
+    ))
+  }
+
   private def compile(plan: LogicalPlan) = {
     generator.generate(plan, newMockedPlanContext, semanticTable, CostBasedPlannerName.default)
   }
@@ -1148,6 +1268,13 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
   when(semanticTable.isNode(varFor("i"))).thenReturn(true)
   when(semanticTable.isRelationship(varFor("r1"))).thenReturn(true)
   when(semanticTable.isRelationship(varFor("r2"))).thenReturn(true)
+  // x, y, z reserved for variables that are not node or relationship
+  when(semanticTable.isNode(varFor("x"))).thenReturn(false)
+  when(semanticTable.isRelationship(varFor("x"))).thenReturn(false)
+  when(semanticTable.isNode(varFor("y"))).thenReturn(false)
+  when(semanticTable.isRelationship(varFor("y"))).thenReturn(false)
+  when(semanticTable.isNode(varFor("z"))).thenReturn(false)
+  when(semanticTable.isRelationship(varFor("z"))).thenReturn(false)
 
   private val allNodes = Seq(aNode, bNode, cNode, dNode, eNode, fNode, gNode, hNode, iNode)
   private val nodesForLabel = Map("T1" -> Seq(aNode, bNode, cNode), "T2" -> Seq(fNode, gNode), "T3" -> Seq(hNode, iNode))

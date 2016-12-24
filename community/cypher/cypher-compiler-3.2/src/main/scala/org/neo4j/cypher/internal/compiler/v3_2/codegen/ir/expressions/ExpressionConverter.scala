@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.functions.functionConv
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi.MethodStructure
 import org.neo4j.cypher.internal.compiler.v3_2.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.frontend.v3_2.ast
-import org.neo4j.cypher.internal.frontend.v3_2.symbols.{CTBoolean, CTNode, CTRelationship}
+import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 
 object ExpressionConverter {
 
@@ -75,33 +75,20 @@ object ExpressionConverter {
   def createExpression(expression: ast.Expression)
                       (implicit context: CodeGenContext): CodeGenExpression = expressionConverter(expression, createExpression)
 
-  def createProjection(expression: ast.Expression)
-                      (implicit context: CodeGenContext): CodeGenExpression = {
-
-    expression match {
-      case node@ast.Variable(name) if context.semanticTable.isNode(node) =>
-        val variable = context.getVariable(name)
-        if (variable.codeGenType.isPrimitive) NodeProjection(variable)
-        else LoadVariable(variable)
-
-      case rel@ast.Variable(name) if context.semanticTable.isRelationship(rel) =>
-        val variable = context.getVariable(name)
-        if (variable.codeGenType.isPrimitive) RelationshipProjection(variable)
-        else LoadVariable(variable)
-
-      case e => expressionConverter(e, createProjection)
-    }
-  }
-
-  def createExpressionForVariable(variableQueryVariable: String)
-                                 (implicit context: CodeGenContext): CodeGenExpression = {
+  def createMaterializeExpressionForVariable(variableQueryVariable: String)
+                                            (implicit context: CodeGenContext): CodeGenExpression = {
 
     val variable = context.getVariable(variableQueryVariable)
 
-    variable.codeGenType match {
-      case CodeGenType(CTNode, IntType) => NodeProjection(variable)
-      case CodeGenType(CTRelationship, IntType) => RelationshipProjection(variable)
-      case other => LoadVariable(variable)
+    variable.codeGenType.ct match {
+      case CTNode => NodeProjection(variable)
+      case CTRelationship => RelationshipProjection(variable)
+      case CTString | CTBoolean | CTInteger | CTFloat => LoadVariable(variable)
+      case ListType(CTString) | ListType(CTBoolean) | ListType(CTInteger) | ListType(CTFloat) => LoadVariable(variable)
+      case CTAny => AnyProjection(variable)
+      case CTMap => AnyProjection(variable)
+      case ListType(_) => AnyProjection(variable) // TODO: We could have a more specialized projection when the inner type is known to be node or relationship
+      case _ => throw new CantCompileQueryException(s"The compiled runtime cannot handle results of type ${variable.codeGenType.ct}")
     }
   }
 
@@ -110,18 +97,18 @@ object ExpressionConverter {
 
     expression match {
       case node@ast.Variable(name) if context.semanticTable.isNode(node) =>
-        NodeExpression(context.getInternalVariable(name))
+        NodeExpression(context.getVariable(name))
 
       case rel@ast.Variable(name) if context.semanticTable.isRelationship(rel) =>
-        RelationshipExpression(context.getInternalVariable(name))
+        RelationshipExpression(context.getVariable(name))
 
       case ast.Property(node@ast.Variable(name), propKey) if context.semanticTable.isNode(node) =>
         val token = propKey.id(context.semanticTable).map(_.id)
-        NodeProperty(token, propKey.name, context.getInternalVariable(name), context.namer.newVarName())
+        NodeProperty(token, propKey.name, context.getVariable(name), context.namer.newVarName())
 
       case ast.Property(rel@ast.Variable(name), propKey) if context.semanticTable.isRelationship(rel) =>
         val token = propKey.id(context.semanticTable).map(_.id)
-        RelProperty(token, propKey.name, context.getInternalVariable(name), context.namer.newVarName())
+        RelProperty(token, propKey.name, context.getVariable(name), context.namer.newVarName())
 
       case ast.Parameter(name, _) => expressions.Parameter(name, context.namer.newVarName())
 

@@ -88,4 +88,22 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
     val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a:Person) WITH count(a) as c RETURN c")
     result.toList should equal(List(Map("c" -> 2L)))
   }
+
+  test("Count should work with projected node variable") {
+    val node1 = createLabeledNode("Person")
+    val node2 = createLabeledNode("Person")
+    val node3 = createNode()
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a:Person) WITH a as b WITH count(b) as c RETURN c")
+    result.toList should equal(List(Map("c" -> 2L)))
+  }
+
+  test("Count should work with projected relationship variable") {
+    val node1 = createLabeledNode("Person")
+    val node2 = createNode()
+    val node3 = createNode()
+    val r1 = relate(node1, node2)
+    val r2 = relate(node1, node3)
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a:Person)-[r]->() WITH r as s WITH count(s) as c RETURN c")
+    result.toList should equal(List(Map("c" -> 2L)))
+  }
 }

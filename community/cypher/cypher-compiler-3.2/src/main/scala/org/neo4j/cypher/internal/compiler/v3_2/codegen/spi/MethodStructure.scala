@@ -38,11 +38,11 @@ import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
   */
 trait MethodStructure[E] {
   // misc
-  def projectVariable(variableName: String, value: E)
   def declareFlag(name: String, initialValue: Boolean)
   def updateFlag(name: String, newValue: Boolean)
   def declarePredicate(name: String): Unit
   def assign(varName: String, codeGenType: CodeGenType, value: E): Unit
+  def declareAndInitialize(varName: String, codeGenType: CodeGenType): Unit
   def declare(varName: String, codeGenType: CodeGenType): Unit
   def declareProperty(name: String): Unit
   def declareCounter(name: String, initialValue: E): Unit
@@ -90,6 +90,7 @@ trait MethodStructure[E] {
   def threeValuedNotExpression(value: E): E
   def notExpression(value: E): E
   def threeValuedEqualsExpression(lhs: E, rhs: E): E
+  def threeValuedPrimitiveEqualsExpression(lhs: E, rhs: E, codeGenType: CodeGenType): E
   def equalityExpression(lhs: E, rhs: E, codeGenType: CodeGenType): E
   def orExpression(lhs: E, rhs: E): E
   def threeValuedOrExpression(lhs: E, rhs: E): E
@@ -100,7 +101,7 @@ trait MethodStructure[E] {
   def nullableReference(varName: String, codeGenType: CodeGenType, onSuccess: E): E
   def isNull(name: String, codeGenType: CodeGenType): E
   def notNull(name: String, codeGenType: CodeGenType): E
-  def box(expression:E): E
+  def box(expression:E, codeGenType: CodeGenType = CodeGenType.Any): E
   def unbox(expression:E, codeGenType: CodeGenType): E
   def toFloat(expression:E): E
 
@@ -153,10 +154,11 @@ trait MethodStructure[E] {
   def returnSuccessfully(): Unit
 
   // results
-  def materializeNode(nodeIdVar: String): E
-  def node(nodeIdVar: String): E
-  def materializeRelationship(relIdVar: String): E
-  def relationship(relIdVar: String): E
+  def materializeNode(nodeIdVar: String, codeGenType: CodeGenType): E
+  def node(nodeIdVar: String, codeGenType: CodeGenType): E
+  def materializeRelationship(relIdVar: String, codeGenType: CodeGenType): E
+  def relationship(relIdVar: String, codeGenType: CodeGenType): E
+  def materializeAny(variable: String): E
   /** Feed single row to the given visitor */
   def visitorAccept(): Unit
   def setInRow(column: String, value: E): Unit

@@ -28,9 +28,10 @@ import org.neo4j.cypher.internal.compiler.v3_2.commands.{ManyQueryExpression, Qu
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.{One, ZeroOneOrMany}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{UnwindCollection, _}
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Expression
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.Eagerly.immutableMapValues
+import org.neo4j.cypher.internal.frontend.v3_2.symbols.ListType
 import org.neo4j.cypher.internal.frontend.v3_2.{InternalException, ast, symbols}
 
 object LogicalPlanConverter {
@@ -43,7 +44,7 @@ object LogicalPlanConverter {
     case p: NodeByIdSeek => nodeByIdSeekAsCodeGenPlan(p)
     case p: NodeUniqueIndexSeek => nodeUniqueIndexSeekAsCodeGen(p)
     case p: Expand => expandAsCodeGenPlan(p)
-    case p: OptionalExpand => optExpandAsCodeGenPlan(p)
+    case p: OptionalExpand => optionalExpandAsCodeGenPlan(p)
     case p: NodeHashJoin => nodeHashJoinAsCodeGenPlan(p)
     case p: CartesianProduct => cartesianProductAsCodeGenPlan(p)
     case p: Selection => selectionAsCodeGenPlan(p)
@@ -54,6 +55,7 @@ object LogicalPlanConverter {
     case p: plans.Aggregation => aggregationAsCodeGenPlan(p)
     case p: plans.NodeCountFromCountStore => nodeCountFromCountStore(p)
     case p: plans.RelationshipCountFromCountStore => relCountFromCountStore(p)
+    case p: UnwindCollection => unwindAsCodeGenPlan(p)
 
     case _ =>
       throw new CantCompileQueryException(s"$logicalPlan is not yet supported")
@@ -80,11 +82,10 @@ object LogicalPlanConverter {
     override def consume(context: CodeGenContext, child: CodeGenPlan) = {
       val projectionOpName = context.registerOperator(projection)
       val columns = immutableMapValues(projection.expressions,
-                                       (e: ast.Expression) => ExpressionConverter.createProjection(e)(context))
+                                       (e: ast.Expression) => ExpressionConverter.createExpression(e)(context))
       val vars = columns.map {
         case (name, expr) =>
-          val variable = Variable(context.namer.newVarName(), CodeGenType(expr.codeGenType(context).ct, ReferenceType),
-                                  expr.nullable(context))
+          val variable = Variable(context.namer.newVarName(), expr.codeGenType(context), expr.nullable(context))
           context.addVariable(name, variable)
           variable -> expr
       }
@@ -105,12 +106,8 @@ object LogicalPlanConverter {
 
     override def consume(context: CodeGenContext, child: CodeGenPlan) = {
       val produceResultOpName = context.registerOperator(produceResults)
-      val projections = (produceResults.lhs.get match {
-        // if lhs is projection than we can simply load things that it projected
-        case _: plans.Projection => produceResults.columns.map(c => c -> LoadVariable(context.getVariable(c)))
-        // else we have to evaluate all expressions ourselves
-        case _ => produceResults.columns.map(c => c -> ExpressionConverter.createExpressionForVariable(c)(context))
-      }).toMap
+      val projections = produceResults.columns.map(c =>
+        c -> ExpressionConverter.createMaterializeExpressionForVariable(c)(context)).toMap
 
       (None, List(AcceptVisitor(produceResultOpName, projections)))
     }
@@ -339,7 +336,7 @@ object LogicalPlanConverter {
     }
   }
 
-  private def optExpandAsCodeGenPlan(optionalExpand: OptionalExpand) = new CodeGenPlan {
+  private def optionalExpandAsCodeGenPlan(optionalExpand: OptionalExpand) = new CodeGenPlan {
 
     override val logicalPlan: LogicalPlan = optionalExpand
 
@@ -561,6 +558,28 @@ object LogicalPlanConverter {
       (methodHandle, RelationshipCountFromCountStoreInstruction(opName, variable, startLabel, types, endLabel, actions) :: tl)
     }
   }
+
+  private def unwindAsCodeGenPlan(unwind: plans.UnwindCollection) = new CodeGenPlan with SingleChildPlan {
+
+    override val logicalPlan = unwind
+
+    override def consume(context: CodeGenContext, child: CodeGenPlan) = {
+      val collection = ExpressionConverter.createExpression(unwind.expression)(context)
+
+      // TODO: Handle null and range
+      val elementType = collection.codeGenType(context).ct match {
+        case ListType(innerType) => innerType
+        case t => throw new CantCompileQueryException(s"Unwind collection type $t not supported")
+      }
+      val variable = Variable(unwind.variable.name, CodeGenType(elementType, ReferenceType), nullable = true)
+      context.addVariable(unwind.variable.name, variable)
+
+      val (methodHandle, actions :: tl) = context.popParent().consume(context, this)
+
+      (methodHandle, ForEachExpression(variable, collection, actions) :: tl)
+    }
+  }
+
   trait SingleChildPlan extends CodeGenPlan {
 
     final override def produce(context: CodeGenContext): (Option[JoinTableMethod], List[Instruction]) = {

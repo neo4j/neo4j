@@ -93,6 +93,7 @@ object Methods {
   val fetchNextRelationship = method[RelationshipIterator, Long]("next")
   val newNodeProxyById = method[NodeManager, NodeProxy]("newNodeProxyById", typeRef[Long])
   val newRelationshipProxyById = method[NodeManager, RelationshipProxy]("newRelationshipProxyById", typeRef[Long])
+  val materializeAnyResult = method[CompiledConversionUtils, Object]("materializeAnyResult", typeRef[NodeManager], typeRef[Object])
   val nodeId = method[NodeIdWrapper, Long]("id")
   val relId = method[RelationshipIdWrapper, Long]("id")
   val set = method[ResultRowImpl, Unit]("set", typeRef[String], typeRef[Object])

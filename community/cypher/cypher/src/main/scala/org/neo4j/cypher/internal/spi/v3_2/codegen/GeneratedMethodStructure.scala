@@ -30,9 +30,8 @@ import org.neo4j.cypher.internal.codegen.CompiledConversionUtils.CompositeKey
 import org.neo4j.cypher.internal.codegen._
 import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.commands.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.compiler.v3_2.codegen._
-import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions.{Parameter => _, _}
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions.{BoolType, CodeGenType, FloatType, IntType, Parameter => _, ReferenceType}
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi._
-import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions.{CodeGenType, IntType, ReferenceType}
 import org.neo4j.cypher.internal.compiler.v3_2.helpers._
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_2.symbols.{CTNode, CTRelationship}
@@ -259,11 +258,15 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   }
 
 
-  override def materializeNode(nodeIdVar: String) =
-    invoke(nodeManager, newNodeProxyById, generator.load(nodeIdVar))
+  override def materializeNode(nodeIdVar: String, codeGenType: CodeGenType) =
+    if (codeGenType.isPrimitive)
+      invoke(nodeManager, newNodeProxyById, generator.load(nodeIdVar))
+    else
+      invoke(nodeManager, newNodeProxyById,
+        invoke(cast(typeRef[NodeIdWrapper], generator.load(nodeIdVar)), nodeId))
 
-  override def node(nodeIdVar: String) = createNewInstance(typeRef[NodeIdWrapper],
-                                                           (typeRef[Long], generator.load(nodeIdVar)))
+  override def node(nodeIdVar: String, codeGenType: CodeGenType) =
+    generator.load(nodeIdVar)
 
   override def nullablePrimitive(varName: String, codeGenType: CodeGenType, onSuccess: Expression) = codeGenType match {
     case CodeGenType(CTNode, IntType) | CodeGenType(CTRelationship, IntType) =>
@@ -283,11 +286,18 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     case _ => ternaryOnNull(generator.load(varName), constant(null), onSuccess)
   }
 
-  override def materializeRelationship(relIdVar: String) =
-    invoke(nodeManager, newRelationshipProxyById, generator.load(relIdVar))
+  override def materializeRelationship(relIdVar: String, codeGenType: CodeGenType) =
+    if (codeGenType.isPrimitive)
+      invoke(nodeManager, newRelationshipProxyById, generator.load(relIdVar))
+    else
+      invoke(nodeManager, newRelationshipProxyById,
+        invoke(cast(typeRef[RelationshipIdWrapper], generator.load(relIdVar)), relId))
 
-  override def relationship(relIdVar: String) = createNewInstance(typeRef[RelationshipIdWrapper],
-                                                                  (typeRef[Long], generator.load(relIdVar)))
+  override def relationship(relIdVar: String, codeGenType: CodeGenType) =
+    generator.load(relIdVar)
+
+  override def materializeAny(variable: String) =
+    invoke(materializeAnyResult, nodeManager, generator.load(variable))
 
   override def trace[V](planStepId: String)(block: MethodStructure[Expression] => V) = if (!tracing) block(this)
   else {
@@ -333,6 +343,17 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   override def threeValuedEqualsExpression(lhs: Expression, rhs: Expression) = invoke(Methods.ternaryEquals, lhs, rhs)
 
+  override def threeValuedPrimitiveEqualsExpression(lhs: Expression, rhs: Expression, codeGenType: CodeGenType) = {
+    // This is only for primitive nodes and relationships
+    assert(codeGenType == CodeGenType.primitiveNode || codeGenType == CodeGenType.primitiveRel)
+    ternary(
+      or(equal(nullValue(codeGenType), lhs),
+         equal(nullValue(codeGenType), rhs)),
+      constant(null),
+      box(equal(lhs, rhs))
+    )
+  }
+
   override def equalityExpression(lhs: Expression, rhs: Expression, codeGenType: CodeGenType) =
     if (codeGenType.isPrimitive) equal(lhs, rhs)
     else invoke(lhs, Methods.equals, rhs)
@@ -350,9 +371,15 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   override def notNull(varName: String, codeGenType: CodeGenType) = not(isNull(varName, codeGenType))
 
-  override def box(expression: Expression) = Expression.box(expression)
+  override def box(expression: Expression, codeGenType: CodeGenType) = codeGenType match {
+    case CodeGenType(symbols.CTNode, IntType) =>
+      createNewInstance(typeRef[NodeIdWrapper], (typeRef[Long], expression))
+    case CodeGenType(symbols.CTRelationship, IntType) =>
+      createNewInstance(typeRef[RelationshipIdWrapper], (typeRef[Long], expression))
+    case _ => Expression.box(expression)
+  }
 
-  override def unbox(expression: Expression, cType: CodeGenType) = cType match {
+  override def unbox(expression: Expression, codeGenType: CodeGenType) = codeGenType match {
     case c if c.isPrimitive => expression
     case CodeGenType(symbols.CTNode, ReferenceType) => invoke(expression, Methods.unboxNode)
     case CodeGenType(symbols.CTRelationship, ReferenceType) => invoke(expression, Methods.unboxRel)
@@ -1004,10 +1031,20 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     generator.assign(localVariable, constant(null))
   }
 
+  override def declareAndInitialize(varName: String, codeGenType: CodeGenType) = {
+    val localVariable = generator.declare(lowerType(codeGenType), varName)
+    locals += (varName -> localVariable)
+    codeGenType match {
+      case CodeGenType(symbols.CTInteger, IntType) => constant(0L)
+      case CodeGenType(symbols.CTFloat, FloatType) => constant(0.0)
+      case CodeGenType(symbols.CTBoolean, BoolType) => constant(false)
+      case _ => generator.assign(localVariable, nullValue(codeGenType))
+    }
+  }
+
   override def declare(varName: String, codeGenType: CodeGenType) = {
     val localVariable = generator.declare(lowerType(codeGenType), varName)
     locals += (varName -> localVariable)
-    generator.assign(localVariable, nullValue(codeGenType))
   }
 
   override def assign(varName: String, codeGenType: CodeGenType, expression: Expression) = {
@@ -1038,13 +1075,6 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
       inner.assign(variable, res)
       generator.load(variable.name())
     }
-  }
-
-  override def projectVariable(variableName: String, expression: Expression) = {
-    // java.lang.Object is an ok type for result variables because we only put them into result row
-    val resultType = typeRef[Object]
-    val localVariable = generator.declare(resultType, variableName)
-    generator.assign(localVariable, expression)
   }
 
   override def declareFlag(name: String, initialValue: Boolean) = {
