@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
+import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.hamcrest.BaseMatcher;
@@ -28,11 +29,11 @@ import org.junit.Test;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -44,22 +45,24 @@ import org.neo4j.test.DoubleLatch;
 
 import static java.lang.String.format;
 import static java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME;
+import static java.util.Collections.emptyMap;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.hasItem;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.isA;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.neo4j.bolt.v1.runtime.integration.TransactionIT.createHttpServer;
 import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED;
 import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.PUBLISHER;
+import static org.neo4j.test.assertion.Assert.assertEventually;
 import static org.neo4j.test.matchers.CommonMatchers.matchesOneToOneInAnyOrder;
 
 public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureInteractionTestBase<S>
@@ -345,6 +348,8 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         String query2 = "MATCH (n:MyNode) SET n.prop = 10 RETURN 1";
         tx2.executeEarly( threading, writeSubject, KernelTransaction.Type.explicit, query2 );
 
+        assertQueryIsRunning( query2 );
+
         // get the query id of query2 and kill it
         assertSuccess( adminSubject,
                 "CALL dbms.listQueries() YIELD query, queryId " +
@@ -414,7 +419,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
             "WITH 'Hello' AS marker CALL dbms.listQueries() YIELD queryId AS id, query " +
             "WITH * WHERE query CONTAINS 'Hello' CALL dbms.killQuery(id) YIELD username " +
             "RETURN count(username) AS count, username",
-            Collections.emptyMap(),
+            emptyMap(),
             r -> {}
         );
 
@@ -985,6 +990,22 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         }
     }
 
+    private void assertQueryIsRunning( String query ) throws InterruptedException
+    {
+        assertEventually( "Query did not appear in dbms.listQueries output",
+                () -> queryIsRunning( query ),
+                equalTo( true ),
+                1, TimeUnit.MINUTES );
+    }
+
+    private boolean queryIsRunning( String targetQuery )
+    {
+        String query = "CALL dbms.listQueries() YIELD query WITH query WHERE query = '" + targetQuery + "' RETURN 1";
+        MutableBoolean resultIsNotEmpty = new MutableBoolean();
+        neo.executeQuery( adminSubject, query, emptyMap(), itr -> resultIsNotEmpty.setValue( itr.hasNext() ) );
+        return resultIsNotEmpty.booleanValue();
+    }
+
     /*
     ==================================================================================
      */
@@ -1083,7 +1104,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     @SuppressWarnings( "unchecked" )
     private Matcher<Map<String, Object>> hasNoParameters()
     {
-        return (Matcher<Map<String, Object>>) (Matcher) hasEntry( equalTo( "parameters" ), equalTo( Collections.emptyMap() ) );
+        return (Matcher<Map<String, Object>>) (Matcher) hasEntry( equalTo( "parameters" ), equalTo( emptyMap() ) );
     }
 
     @SuppressWarnings( "unchecked" )
