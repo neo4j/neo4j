@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{InequalityS
 import org.neo4j.cypher.internal.compiler.v3_2.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compiler.v3_2.commands.values.TokenType._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.values.UnresolvedRelType
-import org.neo4j.cypher.internal.compiler.v3_2.commands.{PathExtractorExpression, predicates, expressions => commandexpressions, values => commandvalues}
+import org.neo4j.cypher.internal.compiler.v3_2.commands.{predicates, expressions => commandexpressions, values => commandvalues}
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.ast.functions._
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.NonEmptyList
@@ -266,10 +266,6 @@ object ExpressionConverters {
     case e: ast.Property => toCommandProperty(e)
     case e: ast.Parameter => toCommandParameter(e)
     case e: ast.CaseExpression => caseExpression(e)
-    case e: ast.PatternExpression =>
-      val legacyPatterns = e.pattern.asLegacyPatterns
-      commands.PathExpression(legacyPatterns, predicates.True(), PathExtractorExpression(legacyPatterns), false)
-    case e: ast.PatternComprehension => commands.PathExpression(e.pattern.asLegacyPatterns, toCommandPredicate(e.predicate), toCommandExpression(e.projection), true)
     case e: ast.ShortestPathExpression => commandexpressions.ShortestPathExpression(e.pattern.asLegacyPatterns(None).head)
     case e: ast.HasLabels => hasLabels(e)
     case e: ast.ListLiteral => commandexpressions.ListLiteral(toCommandExpression(e.expressions): _*)
