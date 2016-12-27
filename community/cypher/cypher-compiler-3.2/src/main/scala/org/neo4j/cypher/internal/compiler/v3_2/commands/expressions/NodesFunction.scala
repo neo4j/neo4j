@@ -36,6 +36,4 @@ case class NodesFunction(path: Expression) extends NullInNullOutExpression(path)
   def rewrite(f: (Expression) => Expression) = f(NodesFunction(path.rewrite(f)))
 
   def arguments = Seq(path)
-
-  def symbolTableDependencies = path.symbolTableDependencies
 }

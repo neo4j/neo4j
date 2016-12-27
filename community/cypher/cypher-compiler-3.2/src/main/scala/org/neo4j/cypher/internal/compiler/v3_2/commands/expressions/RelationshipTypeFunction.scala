@@ -35,6 +35,4 @@ case class RelationshipTypeFunction(relationship: Expression) extends NullInNull
   override def rewrite(f: (Expression) => Expression) = f(RelationshipTypeFunction(relationship.rewrite(f)))
 
   override def arguments = Seq(relationship)
-
-  override def symbolTableDependencies = relationship.symbolTableDependencies
 }

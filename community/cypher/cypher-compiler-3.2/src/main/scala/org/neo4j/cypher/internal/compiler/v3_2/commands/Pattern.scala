@@ -24,13 +24,12 @@ import org.neo4j.cypher.internal.compiler.v3_2.commands.predicates.True
 import org.neo4j.cypher.internal.compiler.v3_2.commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.UnNamedNameGenerator
 import org.neo4j.cypher.internal.compiler.v3_2.mutation.GraphElementPropertyFunctions
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.TypeSafe
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection.{INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 
 import scala.collection.{Map, Seq}
-trait Pattern extends TypeSafe with AstNode[Pattern] {
+trait Pattern extends AstNode[Pattern] {
   def possibleStartPoints: Seq[(String,CypherType)]
   def relTypes:Seq[String]
 
@@ -78,8 +77,6 @@ case class SingleNode(name: String,
 
   def children = Seq.empty
 
-  def symbolTableDependencies = properties.symboltableDependencies
-
   override def toString: String = {
     val namePart = if (UnNamedNameGenerator.notNamed(name)) s"${name.drop(9)}" else name
     val labelPart = if (labels.isEmpty) "" else labels.mkString(":", ":", "")
@@ -120,11 +117,6 @@ case class RelatedTo(left: SingleNode,
 
   def rels = Seq(relName)
 
-  def symbolTableDependencies =
-      properties.symboltableDependencies ++
-      left.symbolTableDependencies ++
-      right.symbolTableDependencies
-
   def children = Seq.empty
 
   def changeEnds(left: SingleNode = this.left, right: SingleNode = this.right): RelatedTo =
@@ -156,11 +148,6 @@ case class VarLengthRelatedTo(pathName: String,
                               properties: Map[String, Expression]) extends PathPattern with GraphElementPropertyFunctions {
 
   override def toString: String = pathName + "=" + left + leftArrow(direction) + relInfo + rightArrow(direction) + right
-
-  def symbolTableDependencies =
-    properties.symboltableDependencies ++
-      left.symbolTableDependencies ++
-      right.symbolTableDependencies
 
   def cloneWithOtherName(newName: String) = copy(pathName = newName)
 

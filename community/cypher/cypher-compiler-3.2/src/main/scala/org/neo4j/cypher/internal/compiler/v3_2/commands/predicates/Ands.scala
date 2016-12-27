@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_2.commands.predicates
 
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{Expression, Variable, Property}
+import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{Expression, Property, Variable}
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.NonEmptyList
 
@@ -62,8 +62,6 @@ class And(val a: Predicate, val b: Predicate) extends Predicate {
     case other: And => a == other.a && b == other.b
     case _          => false
   }
-
-  def symbolTableDependencies = a.symbolTableDependencies ++ b.symbolTableDependencies
 }
 
 @deprecated("Use Ands (plural) instead")

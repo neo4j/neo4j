@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v3_2.commands.expressions
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.ListSupport
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 
 case class ReduceFunction(collection: Expression, id: String, expression: Expression, acc: String, init: Expression)
   extends NullInNullOutExpression(collection) with ListSupport {
@@ -42,8 +41,4 @@ case class ReduceFunction(collection: Expression, id: String, expression: Expres
   def arguments: Seq[Expression] = Seq(collection, init)
 
   override def children = Seq(collection, expression, init)
-
-  def variableDependencies(expectedType: CypherType) = AnyType
-
-  def symbolTableDependencies = (collection.symbolTableDependencies ++ expression.symbolTableDependencies ++ init.symbolTableDependencies) - id - acc
 }

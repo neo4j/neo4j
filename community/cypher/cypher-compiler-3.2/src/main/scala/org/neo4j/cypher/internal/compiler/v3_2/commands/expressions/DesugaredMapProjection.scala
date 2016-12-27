@@ -48,7 +48,5 @@ case class DesugaredMapProjection(id: String, includeAllProps: Boolean, literalE
 
   override def arguments = literalExpressions.values.toIndexedSeq
 
-  override def symbolTableDependencies = literalExpressions.symboltableDependencies + id
-
   override def toString = s"$id{.*, " + literalExpressions.mkString + "}"
 }

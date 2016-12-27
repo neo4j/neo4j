@@ -31,6 +31,4 @@ case class Modulo(a: Expression, b: Expression) extends Arithmetics(a, b) {
   }
 
   def rewrite(f: (Expression) => Expression) = f(Modulo(a.rewrite(f), b.rewrite(f)))
-
-  def symbolTableDependencies = a.symbolTableDependencies ++ b.symbolTableDependencies
 }

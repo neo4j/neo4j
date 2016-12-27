@@ -28,6 +28,4 @@ case class Null() extends Expression {
   def rewrite(f: (Expression) => Expression): Expression = f(this)
 
   def arguments = Seq()
-
-  def symbolTableDependencies = Set()
 }

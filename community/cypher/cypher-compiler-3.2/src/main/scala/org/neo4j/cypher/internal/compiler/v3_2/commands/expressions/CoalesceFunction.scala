@@ -40,6 +40,4 @@ case class CoalesceFunction(arguments: Expression*) extends Expression {
   override def toString = "coalesce(" + argumentsString + ")"
 
   def rewrite(f: (Expression) => Expression) = f(CoalesceFunction(arguments.map(e => e.rewrite(f)): _*))
-
-  def symbolTableDependencies = arguments.flatMap(_.symbolTableDependencies).toSet
 }

@@ -20,17 +20,16 @@
 package org.neo4j.cypher.internal.compiler.v3_2.commands
 
 import org.neo4j.cypher.internal.compiler.v3_2._
-import expressions.{Closure, Expression}
+import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v3_2.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.ListSupport
-import pipes.QueryState
+import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
 
-import collection.Seq
+import scala.collection.Seq
 
 abstract class InList(collectionExpression: Expression, id: String, predicate: Predicate)
   extends Predicate
-  with ListSupport
-  with Closure {
+  with ListSupport {
 
   type CollectionPredicate[U] = ((U) => Option[Boolean]) => Option[Boolean]
 
@@ -56,8 +55,6 @@ abstract class InList(collectionExpression: Expression, id: String, predicate: P
   override def children = Seq(collectionExpression, predicate)
 
   def arguments: scala.Seq[Expression] = Seq(collectionExpression)
-
-  def symbolTableDependencies = symbolTableDependencies(collectionExpression, predicate, id)
 }
 
 case class AllInList(collection: Expression, symbolName: String, inner: Predicate)

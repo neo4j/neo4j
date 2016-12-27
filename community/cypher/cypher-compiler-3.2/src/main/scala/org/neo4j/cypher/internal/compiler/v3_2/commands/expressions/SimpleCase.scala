@@ -51,9 +51,4 @@ case class SimpleCase(expression: Expression, alternatives: Seq[(Expression, Exp
 
     f(SimpleCase(expression.rewrite(f), newAlternatives, default.map(f)))
   }
-
-  def symbolTableDependencies: Set[String] = {
-    val expressions = default.toIndexedSeq ++ alternativeComparison ++ alternativeExpressions :+ expression
-    expressions.flatMap(_.symbolTableDependencies).toSet
-  }
 }

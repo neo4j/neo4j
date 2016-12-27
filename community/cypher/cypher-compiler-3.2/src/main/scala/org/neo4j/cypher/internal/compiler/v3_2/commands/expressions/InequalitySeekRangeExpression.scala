@@ -32,6 +32,4 @@ case class InequalitySeekRangeExpression(range: InequalitySeekRange[Expression])
   override def rewrite(f: (Expression) => Expression): Expression = f(this)
 
   override def arguments: Seq[Expression] = Seq.empty
-
-  override def symbolTableDependencies: Set[String] = Set.empty
 }

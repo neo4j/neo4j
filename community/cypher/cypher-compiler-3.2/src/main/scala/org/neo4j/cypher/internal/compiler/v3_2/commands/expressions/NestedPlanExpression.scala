@@ -29,8 +29,6 @@ case class NestedPlanExpression(logicalPlan: LogicalPlan) extends Expression {
 
   override def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = ???
 
-  override def symbolTableDependencies: Set[String] = ???
-
   override def toString: String = {
     val planDescription = logicalPlan.flatten.map(_.getClass.getSimpleName).mkString("-")
     s"NestedPlanExpression($planDescription)"

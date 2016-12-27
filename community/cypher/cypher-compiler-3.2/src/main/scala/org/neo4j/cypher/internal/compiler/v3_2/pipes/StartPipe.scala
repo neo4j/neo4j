@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2._
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{Effects, _}
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
@@ -43,8 +42,7 @@ sealed abstract class StartPipe[T <: PropertyContainer](source: Pipe,
 
 case class NodeStartPipe(source: Pipe,
                          name: String,
-                         createSource: EntityProducer[Node],
-                         itemEffects: Effects = Effects(ReadsAllNodes))
+                         createSource: EntityProducer[Node])
                         (val id: Id = new Id)
                         (implicit pipeMonitor: PipeMonitor)
   extends StartPipe[Node](source, name, createSource, pipeMonitor) {

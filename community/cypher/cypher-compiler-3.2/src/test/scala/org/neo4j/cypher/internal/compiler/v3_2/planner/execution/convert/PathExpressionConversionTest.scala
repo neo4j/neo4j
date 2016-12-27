@@ -39,7 +39,6 @@ class PathExpressionConversionTest extends CypherFunSuite {
 
     toCommandProjectedPath(expr) should equal(
       ProjectedPath(
-        Set("a"),
         singleNodeProjector("a", nilProjector)
       )
     )
@@ -50,7 +49,6 @@ class PathExpressionConversionTest extends CypherFunSuite {
 
     toCommandProjectedPath(expr) should equal(
       ProjectedPath(
-        Set("r", "b"),
         singleNodeProjector("b",
           singleIncomingRelationshipProjector("r", nilProjector)
         )
@@ -63,7 +61,6 @@ class PathExpressionConversionTest extends CypherFunSuite {
 
     toCommandProjectedPath(expr) should equal(
       ProjectedPath(
-        Set("r", "a"),
         singleNodeProjector("a",
           singleOutgoingRelationshipProjector("r", nilProjector)
         )
@@ -76,7 +73,6 @@ class PathExpressionConversionTest extends CypherFunSuite {
 
     toCommandProjectedPath(expr) should equal(
       ProjectedPath(
-        Set("r", "b"),
         singleNodeProjector("b",
           multiIncomingRelationshipProjector("r", nilProjector)
         )
@@ -89,7 +85,6 @@ class PathExpressionConversionTest extends CypherFunSuite {
 
     toCommandProjectedPath(expr) should equal(
       ProjectedPath(
-        Set("r", "a"),
         singleNodeProjector("a",
           multiOutgoingRelationshipProjector("r", nilProjector)
         )
@@ -107,7 +102,6 @@ class PathExpressionConversionTest extends CypherFunSuite {
 
     toCommandProjectedPath(expr) should equal(
       ProjectedPath(
-        Set("a", "r1", "r2"),
         singleNodeProjector("a",
           multiOutgoingRelationshipProjector("r1",
             singleIncomingRelationshipProjector("r2", nilProjector)
@@ -127,7 +121,6 @@ class PathExpressionConversionTest extends CypherFunSuite {
 
     toCommandProjectedPath(expr) should equal(
       ProjectedPath(
-        Set("a", "r1", "r2"),
         singleNodeProjector("a",
           multiOutgoingRelationshipProjector("r1",
             singleIncomingRelationshipProjector("r2", nilProjector)

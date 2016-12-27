@@ -68,8 +68,6 @@ case class DistanceFunction(p1: Expression, p2: Expression) extends Expression {
 
   override def arguments: Seq[Expression] = p1.arguments ++ p2.arguments
 
-  override def symbolTableDependencies = p1.symbolTableDependencies ++ p2.symbolTableDependencies
-
   override def toString = "Distance(" + p1 + ", " + p2 + ")"
 }
 

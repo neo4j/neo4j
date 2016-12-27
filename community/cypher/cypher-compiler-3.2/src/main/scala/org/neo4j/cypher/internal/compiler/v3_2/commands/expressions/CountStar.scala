@@ -27,6 +27,4 @@ case class CountStar() extends AggregationExpression {
   def createAggregationFunction = new CountStarFunction
 
   def arguments = Nil
-
-  def symbolTableDependencies = Set()
 }

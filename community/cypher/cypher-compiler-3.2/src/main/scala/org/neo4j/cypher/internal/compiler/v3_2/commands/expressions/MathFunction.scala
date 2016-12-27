@@ -29,8 +29,6 @@ abstract class MathFunction(arg: Expression) extends Expression with NumericHelp
   def innerExpectedType = CTNumber
 
   override def arguments = Seq(arg)
-
-  override def symbolTableDependencies = arg.symbolTableDependencies
 }
 
 abstract class NullSafeMathFunction(arg: Expression) extends MathFunction(arg) {
@@ -119,8 +117,6 @@ case class Atan2Function(y: Expression, x: Expression) extends Expression with N
   override def arguments = Seq(x, y)
 
   override def rewrite(f: (Expression) => Expression) = f(Atan2Function(y.rewrite(f), x.rewrite(f)))
-
-  override def symbolTableDependencies = x.symbolTableDependencies ++ y.symbolTableDependencies
 }
 
 case class CeilFunction(argument: Expression) extends NullSafeMathFunction(argument) {
@@ -156,8 +152,6 @@ case class EFunction() extends Expression() {
   override def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = math.E
 
   override def arguments = Seq()
-
-  override def symbolTableDependencies = Set[String]()
 
   override def rewrite(f: (Expression) => Expression) = f(EFunction())
 }
@@ -196,8 +190,6 @@ case class PiFunction() extends Expression {
 
   override def arguments = Seq()
 
-  override def symbolTableDependencies = Set()
-
   override def rewrite(f: (Expression) => Expression) = f(PiFunction())
 }
 
@@ -235,8 +227,6 @@ case class RandFunction() extends Expression {
 
   override def arguments = Seq()
 
-  override def symbolTableDependencies = Set[String]()
-
   override def rewrite(f: (Expression) => Expression) = f(RandFunction())
 }
 
@@ -257,10 +247,6 @@ case class RangeFunction(start: Expression, end: Expression, step: Expression) e
 
   override def rewrite(f: (Expression) => Expression) =
     f(RangeFunction(start.rewrite(f), end.rewrite(f), step.rewrite(f)))
-
-  override def symbolTableDependencies = start.symbolTableDependencies ++
-    end.symbolTableDependencies ++
-    step.symbolTableDependencies
 }
 
 case class SignFunction(argument: Expression) extends MathFunction(argument) {

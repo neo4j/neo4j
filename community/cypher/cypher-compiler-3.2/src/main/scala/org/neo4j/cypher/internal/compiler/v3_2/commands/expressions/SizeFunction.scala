@@ -39,7 +39,5 @@ case class SizeFunction(inner: Expression)
 
   def arguments = Seq(inner)
 
-  def symbolTableDependencies = inner.symbolTableDependencies
-
   override def toString = s"size($inner)"
 }

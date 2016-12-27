@@ -23,6 +23,4 @@ case class Multiply(a: Expression, b: Expression) extends Arithmetics(a, b) {
   def calc(a: Number, b: Number) = multiply(a, b)
 
   def rewrite(f: (Expression) => Expression) = f(Multiply(a.rewrite(f), b.rewrite(f)))
-
-  def symbolTableDependencies = a.symbolTableDependencies ++ b.symbolTableDependencies
 }

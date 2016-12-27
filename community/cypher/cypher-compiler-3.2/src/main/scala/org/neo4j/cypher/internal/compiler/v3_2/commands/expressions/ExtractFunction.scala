@@ -25,8 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
 
 case class ExtractFunction(collection: Expression, id: String, expression: Expression)
   extends NullInNullOutExpression(collection)
-  with ListSupport
-  with Closure {
+  with ListSupport {
 
   def compute(value: Any, m: ExecutionContext)(implicit state: QueryState) = makeTraversable(value).map {
     case iterValue =>
@@ -40,6 +39,4 @@ case class ExtractFunction(collection: Expression, id: String, expression: Expre
 
 
   def arguments: Seq[Expression] = Seq(collection)
-
-  def symbolTableDependencies = symbolTableDependencies(collection, expression, id)
 }

@@ -35,7 +35,5 @@ case class LiteralMap(data: Map[String, Expression]) extends Expression with Gra
 
   def arguments = data.values.toIndexedSeq
 
-  def symbolTableDependencies = data.symboltableDependencies
-
   override def toString = "LiteralMap(" + data + ")"
 }

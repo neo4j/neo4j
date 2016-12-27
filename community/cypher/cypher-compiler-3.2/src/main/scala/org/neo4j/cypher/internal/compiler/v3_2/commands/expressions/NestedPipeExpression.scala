@@ -36,7 +36,5 @@ case class NestedPipeExpression(pipe: Pipe, inner: Expression) extends Expressio
 
   override def arguments = Nil
 
-  override def symbolTableDependencies = Set()
-
   override def toString: String = s"NestedExpression()"
 }

@@ -38,6 +38,4 @@ case class Or(a: Predicate, b: Predicate) extends Predicate {
   def rewrite(f: (Expression) => Expression) = f(Or(a.rewriteAsPredicate(f), b.rewriteAsPredicate(f)))
 
   def arguments = Seq(a, b)
-
-  def symbolTableDependencies = a.symbolTableDependencies ++ b.symbolTableDependencies
 }

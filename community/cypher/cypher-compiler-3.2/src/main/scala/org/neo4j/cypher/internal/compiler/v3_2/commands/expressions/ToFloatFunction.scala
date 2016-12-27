@@ -24,8 +24,6 @@ import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_2.ParameterWrongTypeException
 
 case class ToFloatFunction(a: Expression) extends NullInNullOutExpression(a) {
-  def symbolTableDependencies: Set[String] = a.symbolTableDependencies
-
   def arguments: Seq[Expression] = Seq(a)
 
   def rewrite(f: (Expression) => Expression): Expression = f(ToFloatFunction(a.rewrite(f)))

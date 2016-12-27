@@ -217,7 +217,7 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
         val source = SingleRowPipe()(id = id)
         val startItem = StatementConverters.StartItemConverter(hint).asCommandStartItem
         val ep = entityProducerFactory.readNodeStartItems((planContext, startItem))
-        NodeStartPipe(source, ident.name, ep, Effects(ReadsAllNodes))(id = id)
+        NodeStartPipe(source, ident.name, ep)(id = id)
 
       case LegacyRelationshipIndexSeek(ident, hint: RelationshipStartItem, _) =>
         val source = SingleRowPipe()(id = id)

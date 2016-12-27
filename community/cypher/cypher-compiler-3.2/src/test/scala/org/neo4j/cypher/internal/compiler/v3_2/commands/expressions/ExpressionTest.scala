@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v3_2.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_2._
-import org.neo4j.cypher.internal.compiler.v3_2.commands._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.predicates.{CoercedPredicate, Not, True}
 import org.neo4j.cypher.internal.compiler.v3_2.commands.values.TokenType._
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
@@ -71,17 +70,6 @@ class ExpressionTest extends CypherFunSuite {
 
     //THEN
     aggregates.toList should equal( List(Collect(Property(Variable("n"), PropertyKey("bar")))))
-  }
-
-  test("should_find_inner_aggregations2") {
-    //GIVEN
-    val r = ReturnItem(Avg(Property(Variable("a"), PropertyKey("age"))), "avg(a.age)")
-
-    //WHEN
-    val aggregates = r.expression.filter(e => e.isInstanceOf[AggregationExpression])
-
-    //THEN
-    aggregates.toList should equal( List(Avg(Property(Variable("a"), PropertyKey("age")))))
   }
 
   test("should_handle_rewriting_to_non_predicates") {

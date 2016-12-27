@@ -38,7 +38,5 @@ case class LengthFunction(inner: Expression)
 
   def arguments = Seq(inner)
 
-  def symbolTableDependencies = inner.symbolTableDependencies
-
   override def toString = s"length($inner)"
 }

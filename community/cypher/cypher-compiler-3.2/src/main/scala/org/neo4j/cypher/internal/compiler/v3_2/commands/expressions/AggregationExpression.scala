@@ -42,6 +42,4 @@ abstract class AggregationWithInnerExpression(inner:Expression) extends Aggregat
   def expectedInnerType: CypherType
 
   def arguments = Seq(inner)
-
-  def symbolTableDependencies = inner.symbolTableDependencies
 }

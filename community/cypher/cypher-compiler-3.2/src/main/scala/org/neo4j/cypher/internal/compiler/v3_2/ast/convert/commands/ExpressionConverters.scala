@@ -431,7 +431,7 @@ object ExpressionConverters {
     val projector = project(e.step)
     val dependencies = e.step.dependencies.map(_.name)
 
-    ProjectedPath(dependencies, projector)
+    ProjectedPath(projector)
   }
 }
 

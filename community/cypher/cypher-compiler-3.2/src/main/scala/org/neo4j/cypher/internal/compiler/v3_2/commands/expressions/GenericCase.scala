@@ -53,8 +53,4 @@ case class GenericCase(alternatives: IndexedSeq[(Predicate, Expression)], defaul
     f(GenericCase(newAlternatives, newDefault))
   }
 
-  def symbolTableDependencies: Set[String] = {
-    val expressions = alternativePredicates ++ default.toIndexedSeq ++ alternativeExpressions
-    expressions.flatMap(_.symbolTableDependencies).toSet
-  }
 }

@@ -24,11 +24,10 @@ import org.neo4j.cypher.internal.compiler.v3_2.commands._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.predicates.{CoercedPredicate, Predicate}
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.TypeSafeMathSupport
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.TypeSafe
 import org.neo4j.cypher.internal.frontend.v3_2.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_2.symbols.CypherType
 
-abstract class Expression extends TypeSafe with AstNode[Expression] {
+abstract class Expression extends AstNode[Expression] {
   def rewrite(f: Expression => Expression): Expression
 
   def rewriteAsPredicate(f: Expression => Expression): Predicate = rewrite(f) match {
@@ -70,8 +69,6 @@ case class CachedExpression(key:String, typ:CypherType) extends Expression {
   def rewrite(f: (Expression) => Expression) = f(this)
 
   def arguments = Seq()
-
-  def symbolTableDependencies = Set(key)
 
   override def toString = "Cached(%s of type %s)".format(key, typ)
 }

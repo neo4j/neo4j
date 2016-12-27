@@ -26,8 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
 
 case class FilterFunction(collection: Expression, id: String, predicate: Predicate)
   extends NullInNullOutExpression(collection)
-  with ListSupport
-  with Closure {
+  with ListSupport {
   def compute(value: Any, m: ExecutionContext)(implicit state: QueryState) =
     makeTraversable(value).filter(element => predicate.isTrue(m.newWith(id -> element)  ))
 
@@ -37,6 +36,4 @@ case class FilterFunction(collection: Expression, id: String, predicate: Predica
   override def children = Seq(collection, predicate)
 
   def arguments: Seq[Expression] = Seq(collection)
-
-  def symbolTableDependencies = symbolTableDependencies(collection, predicate, id)
 }

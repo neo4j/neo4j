@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v3_2.commands
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions._
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Argument
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.TypeSafe
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 
 trait NodeStartItemVariables extends StartItem {
@@ -34,7 +33,7 @@ trait RelationshipStartItemVariables extends StartItem {
 }
 
 abstract class StartItem(val variableName: String, val arguments: Seq[Argument])
-  extends TypeSafe with AstNode[StartItem] {
+  extends AstNode[StartItem] {
   def producerType: String = getClass.getSimpleName
   def variables: Seq[(String, CypherType)]
 }
@@ -42,7 +41,6 @@ abstract class StartItem(val variableName: String, val arguments: Seq[Argument])
 trait ReadOnlyStartItem {
   // AstNode implementations
   def children: Seq[AstNode[_]] = Nil
-  def symbolTableDependencies:Set[String] = Set.empty
   def rewrite(f: (Expression) => Expression): this.type = this
 }
 

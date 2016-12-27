@@ -29,7 +29,5 @@ case class Literal(v: Any) extends Expression {
 
   def arguments = Nil
 
-  def symbolTableDependencies = Set()
-
   override def toString = "Literal(" + v + ")"
 }

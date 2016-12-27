@@ -23,6 +23,4 @@ case class Subtract(a: Expression, b: Expression) extends Arithmetics(a, b) {
   def calc(a: Number, b: Number) = minus(a, b)
 
   def rewrite(f: (Expression) => Expression) = f(Subtract(a.rewrite(f), b.rewrite(f)))
-
-  def symbolTableDependencies = a.symbolTableDependencies ++ b.symbolTableDependencies
 }

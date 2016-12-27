@@ -54,8 +54,6 @@ case class ConstantCachedIn(value: Expression, list: Expression) extends Predica
 
   override def arguments = Seq(list)
 
-  override def symbolTableDependencies = list.symbolTableDependencies ++ value.symbolTableDependencies
-
   override def rewrite(f: (Expression) => Expression) = f(ConstantCachedIn(value.rewrite(f), list.rewrite(f)))
 }
 
@@ -90,8 +88,6 @@ case class DynamicCachedIn(value: Expression, list: Expression) extends Predicat
   override def containsIsNull = false
 
   override def arguments = Seq(list)
-
-  override def symbolTableDependencies = list.symbolTableDependencies ++ value.symbolTableDependencies
 
   override def rewrite(f: (Expression) => Expression) = f(DynamicCachedIn(value.rewrite(f), list.rewrite(f)))
 }

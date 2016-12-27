@@ -31,6 +31,4 @@ case class Distinct(innerAggregator: AggregationExpression, expression: Expressi
     case inner: AggregationExpression => f(Distinct(inner, expression.rewrite(f)))
     case _                            => f(Distinct(innerAggregator, expression.rewrite(f)))
   }
-
-  override def symbolTableDependencies = innerAggregator.symbolTableDependencies ++ expression.symbolTableDependencies
 }

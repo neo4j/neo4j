@@ -36,7 +36,5 @@ case class PointFunction(data: Expression) extends NullInNullOutExpression(data)
 
   override def arguments = data.arguments
 
-  override def symbolTableDependencies = data.symbolTableDependencies
-
   override def toString = "Point(" + data + ")"
 }

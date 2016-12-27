@@ -54,6 +54,4 @@ case class Add(a: Expression, b: Expression) extends Expression with TypeSafeMat
     val mergedInnerType = collectionType.innerType.leastUpperBound(singleElement)
     CTList(mergedInnerType)
   }
-
-  def symbolTableDependencies = a.symbolTableDependencies ++ b.symbolTableDependencies
 }

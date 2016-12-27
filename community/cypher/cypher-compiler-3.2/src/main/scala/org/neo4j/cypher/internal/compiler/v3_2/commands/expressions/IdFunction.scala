@@ -34,6 +34,4 @@ case class IdFunction(inner: Expression) extends NullInNullOutExpression(inner) 
   def rewrite(f: (Expression) => Expression) = f(IdFunction(inner.rewrite(f)))
 
   def arguments = Seq(inner)
-
-  def symbolTableDependencies = inner.symbolTableDependencies
 }

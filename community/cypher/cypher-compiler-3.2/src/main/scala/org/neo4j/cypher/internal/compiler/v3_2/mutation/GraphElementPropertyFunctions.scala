@@ -37,8 +37,6 @@ trait GraphElementPropertyFunctions extends ListSupport {
     def rewrite(f: (Expression) => Expression): Map[String, Expression] = m.map {
       case (k, v) => k -> v.rewrite(f)
     }
-
-    def symboltableDependencies: Set[String] = m.values.flatMap(_.symbolTableDependencies).toSet
   }
 
   def setProperties(pc: PropertyContainer, props: Map[String, Expression], context: ExecutionContext, state: QueryState) {
