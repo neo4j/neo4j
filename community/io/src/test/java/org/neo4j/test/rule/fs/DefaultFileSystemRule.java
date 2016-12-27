@@ -22,6 +22,7 @@ package org.neo4j.test.rule.fs;
 import org.junit.rules.ExternalResource;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 
 public class DefaultFileSystemRule extends ExternalResource
 {
@@ -40,7 +41,7 @@ public class DefaultFileSystemRule extends ExternalResource
         }
     }
 
-    public DefaultFileSystemAbstraction get()
+    public FileSystemAbstraction get()
     {
         return fs;
     }

@@ -39,7 +39,7 @@ import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.graphdb.Node;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -75,7 +75,7 @@ public class ClusterIdentityIT
                                           .around( fileSystemRule ).around( clusterRule );
 
     private Cluster cluster;
-    private DefaultFileSystemAbstraction fs;
+    private FileSystemAbstraction fs;
 
     @Before
     public void setup() throws Exception

@@ -33,7 +33,7 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
@@ -64,7 +64,7 @@ public class TestArrayStore
     public void before() throws Exception
     {
         File dir = testDirectory.graphDbDir();
-        DefaultFileSystemAbstraction fs = fileSystemRule.get();
+        FileSystemAbstraction fs = fileSystemRule.get();
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         StoreFactory factory = new StoreFactory( dir, Config.empty(), idGeneratorFactory, pageCache, fs,
