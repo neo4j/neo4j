@@ -45,7 +45,7 @@ import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
-public class LuceneLabelScanStoreIT
+public abstract class LabelScanStoreStartupIT
 {
     @Rule
     public final DatabaseRule dbRule = new EmbeddedDatabaseRule( getClass() );
@@ -54,7 +54,7 @@ public class LuceneLabelScanStoreIT
     public void scanStoreStartWithoutExistentIndex() throws IOException
     {
         NeoStoreDataSource dataSource = getDataSource();
-        LabelScanStore labelScanStore = getLabelScanStore();
+        LabelScanStore labelScanStore = getLabelScanStore( dbRule );
         labelScanStore.shutdown();
 
         File labelScanStoreDirectory = getLabelScanStoreDirectory( dataSource );
@@ -70,7 +70,7 @@ public class LuceneLabelScanStoreIT
     public void scanStoreRecreateCorruptedIndexOnStartup() throws IOException
     {
         NeoStoreDataSource dataSource = getDataSource();
-        LabelScanStore labelScanStore = getLabelScanStore();
+        LabelScanStore labelScanStore = getLabelScanStore( dbRule );
 
         Node node = createTestNode();
         long[] labels = readNodeLabels( labelScanStore, node );
@@ -97,7 +97,7 @@ public class LuceneLabelScanStoreIT
 
     private Node createTestNode()
     {
-        Node node = null;
+        Node node;
         try (Transaction transaction = dbRule.beginTx())
         {
             node = dbRule.createNode( Label.label( "testLabel" ));
@@ -132,11 +132,7 @@ public class LuceneLabelScanStoreIT
         return dataSourceManager.getDataSource();
     }
 
-    private LabelScanStore getLabelScanStore()
-    {
-        DependencyResolver dependencyResolver = dbRule.getDependencyResolver();
-        return dependencyResolver.resolveDependency( LabelScanStore.class );
-    }
+    protected abstract LabelScanStore getLabelScanStore( DatabaseRule dbRule );
 
     private void checkLabelScanStoreAccessible( LabelScanStore labelScanStore ) throws IOException
     {

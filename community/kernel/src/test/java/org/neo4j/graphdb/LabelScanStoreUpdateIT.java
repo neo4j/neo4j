@@ -43,7 +43,7 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.emptySetOf;
 import static org.neo4j.helpers.collection.Iterators.single;
 
-public class LabelScanStoreIT
+public class LabelScanStoreUpdateIT
 {
     @ClassRule
     public static final DatabaseRule dbRule = new ImpermanentDatabaseRule();
