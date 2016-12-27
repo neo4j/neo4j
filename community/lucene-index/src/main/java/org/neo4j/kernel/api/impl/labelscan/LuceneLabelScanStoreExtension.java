@@ -34,7 +34,7 @@ import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 import static org.neo4j.kernel.api.impl.index.LuceneKernelExtensions.directoryFactory;
-import static org.neo4j.kernel.api.impl.labelscan.LuceneLabelScanStore.Monitor;
+import static org.neo4j.kernel.api.labelscan.LabelScanStore.Monitor;
 import static org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.fullStoreLabelUpdateStream;
 
 @Service.Implementation(KernelExtensionFactory.class)

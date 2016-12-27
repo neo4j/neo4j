@@ -43,54 +43,6 @@ public class LuceneLabelScanStore implements LabelScanStore
     private final Monitor monitor;
     private boolean needsRebuild;
 
-    public interface Monitor
-    {
-        Monitor EMPTY = new Monitor()
-        {
-            @Override
-            public void init()
-            {
-            }
-
-            @Override
-            public void noIndex()
-            {
-            }
-
-            @Override
-            public void lockedIndex( LockObtainFailedException e )
-            {
-            }
-
-            @Override
-            public void corruptedIndex()
-            {
-            }
-
-            @Override
-            public void rebuilding()
-            {
-            }
-
-            @Override
-            public void rebuilt( long roughNodeCount )
-            {
-            }
-        };
-
-        void init();
-
-        void noIndex();
-
-        void lockedIndex( LockObtainFailedException e );
-
-        void corruptedIndex();
-
-        void rebuilding();
-
-        void rebuilt( long roughNodeCount );
-    }
-
     public LuceneLabelScanStore( LabelScanIndex luceneIndex, FullStoreChangeStream fullStoreStream,
             LogProvider logProvider, Monitor monitor )
     {
@@ -151,7 +103,7 @@ public class LuceneLabelScanStore implements LabelScanStore
             else if ( !luceneIndex.isValid() )
             {
                 log.warn( "Lucene scan store index could not be read. Preparing to rebuild." );
-                monitor.corruptedIndex();
+                monitor.notValidIndex();
                 luceneIndex.drop();
                 luceneIndex.create();
                 needsRebuild = true;
