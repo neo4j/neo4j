@@ -255,7 +255,7 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
                            .databaseInfo );
         }
 
-        private class TestDatabasePlatformModule extends PlatformModule
+        class TestDatabasePlatformModule extends PlatformModule
         {
 
             TestDatabasePlatformModule( File storeDir, Config config, Dependencies dependencies,
