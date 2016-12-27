@@ -33,19 +33,16 @@ import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{KernelPredicate, OnlyDirectionExpander, TypeAndDirectionExpander, UserDefinedAggregator}
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.JavaConversionSupport
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.JavaConversionSupport._
-import org.neo4j.cypher.internal.compiler.v3_2.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.compiler.v3_2.spi._
 import org.neo4j.cypher.internal.frontend.v3_2._
 import org.neo4j.cypher.internal.spi.BeansAPIRelationshipIterator
 import org.neo4j.cypher.internal.spi.v3_2.TransactionBoundQueryContext.IndexSearchMonitor
-import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.cypher.{InternalException, internal}
 import org.neo4j.graphalgo.impl.path.ShortestPath
 import org.neo4j.graphalgo.impl.path.ShortestPath.ShortestPathPredicate
 import org.neo4j.graphdb.RelationshipType._
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.security.URLAccessValidationError
-import org.neo4j.graphdb.traversal.{Evaluators, TraversalDescription, Uniqueness}
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api._
 import org.neo4j.kernel.api.constraints.{NodePropertyExistenceConstraint, RelationshipPropertyExistenceConstraint, UniquenessConstraint}
@@ -530,40 +527,6 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   override def relationshipEndNode(rel: Relationship) = rel.getEndNode
 
   private lazy val tokenNameLookup = new StatementTokenNameLookup(transactionalContext.statement.readOperations())
-
-  // Legacy dependency between kernel and compiler
-  override def variableLengthPathExpand(node: PatternNode,
-                                        realNode: Node,
-                                        minHops: Option[Int],
-                                        maxHops: Option[Int],
-                                        direction: SemanticDirection,
-                                        relTypes: Seq[String]): Iterator[Path] = {
-    val depthEval = (minHops, maxHops) match {
-      case (None, None) => Evaluators.fromDepth(1)
-      case (Some(min), None) => Evaluators.fromDepth(min)
-      case (None, Some(max)) => Evaluators.includingDepths(1, max)
-      case (Some(min), Some(max)) => Evaluators.includingDepths(min, max)
-    }
-
-    // The RULE compiler makes use of older kernel API capabilities for variable length expanding
-    // TODO: Consider re-writing this using similar code to the COST var-length expand
-    val baseTraversalDescription: TraversalDescription = transactionalContext.graph.asInstanceOf[GraphDatabaseCypherService]
-      .getGraphDatabaseService
-      .traversalDescription()
-      .evaluator(depthEval)
-      .uniqueness(Uniqueness.RELATIONSHIP_PATH)
-
-    val traversalDescription = if (relTypes.isEmpty) {
-      baseTraversalDescription.expand(PathExpanderBuilder.allTypes(toGraphDb(direction)).build())
-    } else {
-      val emptyExpander = PathExpanderBuilder.empty()
-      val expander = relTypes.foldLeft(emptyExpander) {
-        case (e, t) => e.add(RelationshipType.withName(t), toGraphDb(direction))
-      }
-      baseTraversalDescription.expand(expander.build())
-    }
-    traversalDescription.traverse(realNode).iterator().asScala
-  }
 
   override def nodeCountByCountStore(labelId: Int): Long = {
     transactionalContext.statement.readOperations().countsForNode(labelId)

@@ -24,7 +24,6 @@ import java.net.URL
 import org.neo4j.cypher.internal.compiler.v3_2.spi.QualifiedName
 import org.neo4j.cypher.internal.compiler.v3_2.IndexDescriptor
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{Expander, KernelPredicate, UserDefinedAggregator}
-import org.neo4j.cypher.internal.compiler.v3_2.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.compiler.v3_2.spi._
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
 import org.neo4j.cypher.internal.spi.v3_2.ExceptionTranslationSupport
@@ -206,9 +205,6 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
 
   override def nodeIsDense(node: Long) =
     translateException(inner.nodeIsDense(node))
-
-  override def variableLengthPathExpand(node: PatternNode, realNode: Node, minHops: Option[Int], maxHops: Option[Int], direction: SemanticDirection, relTypes: Seq[String]) =
-    translateException(inner.variableLengthPathExpand(node, realNode, minHops, maxHops, direction, relTypes))
 
   override def singleShortestPath(left: Node, right: Node, depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path], filters: Seq[KernelPredicate[PropertyContainer]]) =
     translateException(inner.singleShortestPath(left, right, depth, expander, pathPredicate, filters))

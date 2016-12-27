@@ -23,7 +23,6 @@ import java.net.URL
 
 import org.neo4j.cypher.internal.compiler.v3_2.InternalQueryStatistics
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{Expander, KernelPredicate, UserDefinedAggregator}
-import org.neo4j.cypher.internal.compiler.v3_2.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
 import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
 import org.neo4j.kernel.api.constraints.{NodePropertyExistenceConstraint, RelationshipPropertyExistenceConstraint, UniquenessConstraint}
@@ -133,14 +132,6 @@ trait QueryContext extends TokenContext {
   def nodeGetDegree(node: Long, dir: SemanticDirection, relTypeId: Int): Int
 
   def nodeIsDense(node: Long): Boolean
-
-  // Legacy dependency between kernel and compiler
-  def variableLengthPathExpand(node: PatternNode,
-                               realNode: Node,
-                               minHops: Option[Int],
-                               maxHops: Option[Int],
-                               direction: SemanticDirection,
-                               relTypes: Seq[String]): Iterator[Path]
 
   def singleShortestPath(left: Node, right: Node, depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path],
                          filters: Seq[KernelPredicate[PropertyContainer]]): Option[Path]
