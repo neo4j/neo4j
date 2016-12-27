@@ -209,6 +209,8 @@ public class PlatformModule
             FileWatcher watcher = fileSystem.fileWatcher();
             watcher.addFileWatchEventListener( new DefaultFileDeletionEventListener( logging ) );
             watcher.watch( storeDir );
+            // register to watch store dir parent folder to see when store dir removed
+            watcher.watch( storeDir.getParentFile() );
             return watcher;
         }
         catch ( Exception e )

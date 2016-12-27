@@ -21,7 +21,11 @@ package org.neo4j.kernel.impl.util.watcher;
 
 import org.neo4j.io.fs.watcher.event.FileWatchEventListenerAdapter;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.logging.Log;
+
+import static java.lang.String.format;
 
 /**
  * Listener that will print notification about deleted filename into internal log.
@@ -29,6 +33,7 @@ import org.neo4j.logging.Log;
 public class DefaultFileDeletionEventListener extends FileWatchEventListenerAdapter
 {
 
+    private static final String EXTENSION_SEPARATOR = ".";
     private final Log internalLog;
 
     public DefaultFileDeletionEventListener( LogService logService )
@@ -39,7 +44,26 @@ public class DefaultFileDeletionEventListener extends FileWatchEventListenerAdap
     @Override
     public void fileDeleted( String fileName )
     {
-        internalLog.info( "Store file '" + fileName + "' was deleted while database was online." );
+        if ( isMonitoredFile( fileName ) )
+        {
+            internalLog.info( format( "Store %s '%s' was deleted while database was running.", getFileType( fileName ),
+                    fileName ) );
+        }
+    }
+
+    private static boolean isMonitoredFile( String fileName )
+    {
+        return !fileName.startsWith( PhysicalLogFile.DEFAULT_NAME );
+    }
+
+    private static String getFileType( String fileName )
+    {
+        return isFile( fileName ) ? "file" : "directory";
+    }
+
+    private static boolean isFile( String fileName )
+    {
+        return fileName.startsWith( MetaDataStore.DEFAULT_NAME ) || fileName.contains( EXTENSION_SEPARATOR );
     }
 
 }

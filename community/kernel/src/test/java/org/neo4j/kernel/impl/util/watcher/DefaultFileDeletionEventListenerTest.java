@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.util.watcher;
 import org.junit.Test;
 
 import org.neo4j.kernel.impl.logging.SimpleLogService;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
 
@@ -32,14 +33,30 @@ public class DefaultFileDeletionEventListenerTest
     public void notificationInLogAboutFileDeletion() throws Exception
     {
         AssertableLogProvider internalLogProvider = new AssertableLogProvider( false );
-        SimpleLogService logService = new SimpleLogService( NullLogProvider.getInstance(), internalLogProvider );
-        DefaultFileDeletionEventListener listener = new DefaultFileDeletionEventListener( logService );
-        listener.fileDeleted( "testFile" );
-        listener.fileDeleted( "anotherFile" );
+        DefaultFileDeletionEventListener listener = buildListener( internalLogProvider );
+        listener.fileDeleted( "testFile.db" );
+        listener.fileDeleted( "anotherDirectory" );
 
-        internalLogProvider.assertContainsMessageContaining( "Store file 'testFile' was " +
-                "deleted while database was online." );
-        internalLogProvider.assertContainsMessageContaining( "Store file 'anotherFile' was " +
-                "deleted while database was online." );
+        internalLogProvider.assertContainsMessageContaining( "Store file 'testFile.db' was " +
+                "deleted while database was running." );
+        internalLogProvider.assertContainsMessageContaining( "Store directory 'anotherDirectory' was " +
+                "deleted while database was running." );
+    }
+
+    @Test
+    public void noNotificationForTransactionLogs()
+    {
+        AssertableLogProvider internalLogProvider = new AssertableLogProvider( false );
+        DefaultFileDeletionEventListener listener = buildListener( internalLogProvider );
+        listener.fileDeleted( PhysicalLogFile.DEFAULT_NAME + ".0" );
+        listener.fileDeleted( PhysicalLogFile.DEFAULT_NAME + ".1" );
+
+        internalLogProvider.assertNoLoggingOccurred();
+    }
+
+    private DefaultFileDeletionEventListener buildListener( AssertableLogProvider internalLogProvider )
+    {
+        SimpleLogService logService = new SimpleLogService( NullLogProvider.getInstance(), internalLogProvider );
+        return new DefaultFileDeletionEventListener( logService );
     }
 }

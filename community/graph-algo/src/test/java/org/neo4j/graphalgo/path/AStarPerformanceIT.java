@@ -51,7 +51,7 @@ public class AStarPerformanceIT
     @Before
     public void setup()
     {
-        directory = testDirectory.directory( "graph-db" );
+        directory = testDirectory.graphDbDir();
     }
 
     @Test
