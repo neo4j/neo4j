@@ -90,7 +90,6 @@ public class FileWatchIT
                 "File monitoring capabilities for store files will be disabled." );
     }
 
-
     private void deleteMetadataStore( File storeDir )
     {
         File metadataStore = new File( storeDir, MetaDataStore.DEFAULT_NAME );
