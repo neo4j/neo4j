@@ -25,11 +25,13 @@ import java.util.function.BiConsumer;
 import org.neo4j.causalclustering.core.consensus.LeaderLocator;
 import org.neo4j.causalclustering.core.consensus.NoLeaderFoundException;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
-import org.neo4j.causalclustering.messaging.Outbound;
 import org.neo4j.causalclustering.core.replication.session.LocalSessionPool;
 import org.neo4j.causalclustering.core.replication.session.OperationContext;
 import org.neo4j.causalclustering.core.state.machines.tx.RetryStrategy;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.causalclustering.messaging.Outbound;
+import org.neo4j.graphdb.DatabaseShutdownException;
+import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
@@ -43,19 +45,20 @@ public class RaftReplicator extends LifecycleAdapter implements Replicator, List
     private final ProgressTracker progressTracker;
     private final LocalSessionPool sessionPool;
     private final RetryStrategy retryStrategy;
+    private final AvailabilityGuard availabilityGuard;
 
     private MemberId leader;
-    private volatile boolean shutdown;
 
     public RaftReplicator( LeaderLocator leaderLocator, MemberId me,
             Outbound<MemberId,RaftMessages.RaftMessage> outbound, LocalSessionPool sessionPool,
-            ProgressTracker progressTracker, RetryStrategy retryStrategy )
+            ProgressTracker progressTracker, RetryStrategy retryStrategy, AvailabilityGuard availabilityGuard )
     {
         this.me = me;
         this.outbound = outbound;
         this.progressTracker = progressTracker;
         this.sessionPool = sessionPool;
         this.retryStrategy = retryStrategy;
+        this.availabilityGuard = availabilityGuard;
 
         try
         {
@@ -114,17 +117,11 @@ public class RaftReplicator extends LifecycleAdapter implements Replicator, List
         progressTracker.triggerReplicationEvent();
     }
 
-    @Override
-    public void shutdown()
-    {
-        shutdown = true;
-    }
-
     private void assertDatabaseNotShutdown() throws InterruptedException
     {
-        if ( shutdown )
+        if ( availabilityGuard.isShutdown() )
         {
-            throw new InterruptedException( "Database has been shutdown, transaction cannot be replicated." );
+            throw new DatabaseShutdownException( "Database has been shutdown, transaction cannot be replicated." );
         }
     }
 }

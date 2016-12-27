@@ -21,8 +21,13 @@ package org.neo4j.kernel.impl.api;
 
 import org.junit.Test;
 
+import java.util.Optional;
+
+import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.txstate.TxStateHolder;
+import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.storageengine.api.StorageStatement;
@@ -38,7 +43,7 @@ public class KernelStatementTest
     public void shouldThrowTerminateExceptionWhenTransactionTerminated() throws Exception
     {
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
-        when( transaction.getReasonIfTerminated() ).thenReturn( Status.Transaction.Terminated );
+        when( transaction.getReasonIfTerminated() ).thenReturn( Optional.of( Status.Transaction.Terminated ) );
         when( transaction.securityContext() ).thenReturn( AUTH_DISABLED );
 
         KernelStatement statement = new KernelStatement( transaction, null, mock( StorageStatement.class ), null, new CanWrite() );
@@ -61,5 +66,19 @@ public class KernelStatementTest
 
         // then
         verify( storeStatement ).release();
+    }
+
+    @Test(expected = NotInTransactionException.class)
+    public void assertStatementIsNotOpenWhileAcquireIsNotInvoked()
+    {
+        KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
+        TxStateHolder txStateHolder = mock( TxStateHolder.class );
+        StorageStatement storeStatement = mock( StorageStatement.class );
+        AccessCapability accessCapability = mock( AccessCapability.class );
+        Procedures procedures = mock( Procedures.class );
+        KernelStatement statement = new KernelStatement( transaction, txStateHolder,
+                storeStatement, procedures, accessCapability );
+
+        statement.assertOpen();
     }
 }

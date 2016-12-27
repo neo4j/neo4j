@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.builtinprocs;
 
+import java.util.Optional;
+
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
@@ -72,7 +74,7 @@ public class StubKernelTransaction implements KernelTransaction
     }
 
     @Override
-    public Status getReasonIfTerminated()
+    public Optional<Status> getReasonIfTerminated()
     {
         throw new UnsupportedOperationException( "not implemented" );
     }

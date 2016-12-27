@@ -24,6 +24,7 @@ import org.mockito.InOrder;
 
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.Optional;
 import java.util.function.Function;
 
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
@@ -46,10 +47,10 @@ import org.neo4j.kernel.impl.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
 import org.neo4j.kernel.impl.api.state.StubCursors;
 import org.neo4j.kernel.impl.api.state.TxState;
-import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.api.store.CursorRelationshipIterator;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.api.store.StoreSingleNodeCursor;
+import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
@@ -90,6 +91,7 @@ public class LockingStatementOperationsTest
 
     public LockingStatementOperationsTest()
     {
+        when( transaction.getReasonIfTerminated() ).thenReturn( Optional.empty() );
         entityReadOps = mock( EntityReadOperations.class );
         entityWriteOps = mock( EntityWriteOperations.class );
         schemaReadOps = mock( SchemaReadOperations.class );

@@ -362,7 +362,7 @@ public class ClusterTest
                 Throwable rootCause = rootCause( e );
                 assertThat( rootCause, instanceOf( TransactionTerminatedException.class ) );
                 assertThat( ((TransactionTerminatedException)rootCause).status(),
-                        Matchers.<Status>equalTo( Status.General.DatabaseUnavailable ) );
+                        Matchers.equalTo( Status.General.DatabaseUnavailable ) );
             }
         }
         finally

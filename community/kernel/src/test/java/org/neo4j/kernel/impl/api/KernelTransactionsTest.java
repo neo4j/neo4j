@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import org.neo4j.graphdb.security.AuthorizationExpiredException;
+import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -71,7 +72,10 @@ import org.neo4j.time.Clocks;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.locks.LockSupport.parkNanos;
-import static org.hamcrest.CoreMatchers.*;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -99,7 +103,7 @@ public class KernelTransactionsTest
     public final OtherThreadRule<Void> t2 = new OtherThreadRule<>( "T2-" + getClass().getName() );
 
     @Test
-    public void shouldListActiveTransactions() throws Exception
+    public void shouldListActiveTransactions() throws Throwable
     {
         // Given
         KernelTransactions transactions = newTestKernelTransactions();
@@ -116,7 +120,7 @@ public class KernelTransactionsTest
     }
 
     @Test
-    public void shouldDisposeTransactionsWhenAsked() throws Exception
+    public void shouldDisposeTransactionsWhenAsked() throws Throwable
     {
         // Given
         KernelTransactions transactions = newKernelTransactions();
@@ -141,7 +145,7 @@ public class KernelTransactionsTest
     }
 
     @Test
-    public void shouldIncludeRandomBytesInAdditionalHeader() throws Exception
+    public void shouldIncludeRandomBytesInAdditionalHeader() throws Throwable
     {
         // Given
         TransactionRepresentation[] transactionRepresentation = new TransactionRepresentation[1];
@@ -163,7 +167,7 @@ public class KernelTransactionsTest
     }
 
     @Test
-    public void shouldReuseClosedTransactionObjects() throws Exception
+    public void shouldReuseClosedTransactionObjects() throws Throwable
     {
         // GIVEN
         KernelTransactions transactions = newKernelTransactions();
@@ -178,7 +182,7 @@ public class KernelTransactionsTest
     }
 
     @Test
-    public void shouldTellWhenTransactionsFromSnapshotHaveBeenClosed() throws Exception
+    public void shouldTellWhenTransactionsFromSnapshotHaveBeenClosed() throws Throwable
     {
         // GIVEN
         KernelTransactions transactions = newKernelTransactions();
@@ -263,7 +267,7 @@ public class KernelTransactionsTest
     }
 
     @Test
-    public void transactionCloseRemovesTxFromActiveTransactions() throws Exception
+    public void transactionCloseRemovesTxFromActiveTransactions() throws Throwable
     {
         KernelTransactions kernelTransactions = newTestKernelTransactions();
 
@@ -278,7 +282,7 @@ public class KernelTransactionsTest
     }
 
     @Test
-    public void disposeAllMarksAllTransactionsForTermination() throws Exception
+    public void disposeAllMarksAllTransactionsForTermination() throws Throwable
     {
         KernelTransactions kernelTransactions = newKernelTransactions();
 
@@ -288,13 +292,13 @@ public class KernelTransactionsTest
 
         kernelTransactions.disposeAll();
 
-        assertEquals( Status.General.DatabaseUnavailable, tx1.getReasonIfTerminated() );
-        assertEquals( Status.General.DatabaseUnavailable, tx2.getReasonIfTerminated() );
-        assertEquals( Status.General.DatabaseUnavailable, tx3.getReasonIfTerminated() );
+        assertEquals( Status.General.DatabaseUnavailable, tx1.getReasonIfTerminated().get() );
+        assertEquals( Status.General.DatabaseUnavailable, tx2.getReasonIfTerminated().get() );
+        assertEquals( Status.General.DatabaseUnavailable, tx3.getReasonIfTerminated().get() );
     }
 
     @Test
-    public void transactionClosesUnderlyingStoreStatementWhenDisposed() throws Exception
+    public void transactionClosesUnderlyingStoreStatementWhenDisposed() throws Throwable
     {
         StorageStatement storeStatement1 = mock( StorageStatement.class );
         StorageStatement storeStatement2 = mock( StorageStatement.class );
@@ -316,7 +320,7 @@ public class KernelTransactionsTest
     }
 
     @Test
-    public void threadThatBlocksNewTxsCantStartNewTxs() throws Exception
+    public void threadThatBlocksNewTxsCantStartNewTxs() throws Throwable
     {
         KernelTransactions kernelTransactions = newKernelTransactions();
         kernelTransactions.blockNewTransactions();
@@ -332,7 +336,7 @@ public class KernelTransactionsTest
     }
 
     @Test
-    public void blockNewTransactions() throws Exception
+    public void blockNewTransactions() throws Throwable
     {
         KernelTransactions kernelTransactions = newKernelTransactions();
         kernelTransactions.blockNewTransactions();
@@ -348,7 +352,7 @@ public class KernelTransactionsTest
     }
 
     @Test
-    public void unblockNewTransactionsFromWrongThreadThrows() throws Exception
+    public void unblockNewTransactionsFromWrongThreadThrows() throws Throwable
     {
         KernelTransactions kernelTransactions = newKernelTransactions();
         kernelTransactions.blockNewTransactions();
@@ -377,7 +381,8 @@ public class KernelTransactionsTest
     }
 
     @Test
-    public void shouldNotLeakTransactionOnSecurityContextFreezeFailure() throws Exception {
+    public void shouldNotLeakTransactionOnSecurityContextFreezeFailure() throws Throwable
+    {
         KernelTransactions kernelTransactions = newKernelTransactions();
         SecurityContext securityContext = mock(SecurityContext.class);
         when(securityContext.freeze()).thenThrow(new AuthorizationExpiredException("Freeze failed."));
@@ -400,30 +405,30 @@ public class KernelTransactionsTest
         }
     }
 
-    private static KernelTransactions newKernelTransactions() throws Exception
+    private static KernelTransactions newKernelTransactions() throws Throwable
     {
         return newKernelTransactions( mock( TransactionCommitProcess.class ) );
     }
 
-    private static KernelTransactions newTestKernelTransactions() throws Exception
+    private static KernelTransactions newTestKernelTransactions() throws Throwable
     {
         return newKernelTransactions( true, mock( TransactionCommitProcess.class ), mock( StorageStatement.class ) );
     }
 
-    private static KernelTransactions newKernelTransactions( TransactionCommitProcess commitProcess ) throws Exception
+    private static KernelTransactions newKernelTransactions( TransactionCommitProcess commitProcess ) throws Throwable
     {
         return newKernelTransactions( false, commitProcess, mock( StorageStatement.class ) );
     }
 
     private static KernelTransactions newKernelTransactions( TransactionCommitProcess commitProcess,
-            StorageStatement firstStoreStatements, StorageStatement... otherStorageStatements ) throws Exception
+            StorageStatement firstStoreStatements, StorageStatement... otherStorageStatements ) throws Throwable
     {
         return newKernelTransactions( false, commitProcess, firstStoreStatements, otherStorageStatements );
     }
 
     private static KernelTransactions newKernelTransactions( boolean testKernelTransactions,
             TransactionCommitProcess commitProcess, StorageStatement firstStoreStatements,
-            StorageStatement... otherStorageStatements ) throws Exception
+            StorageStatement... otherStorageStatements ) throws Throwable
     {
         Locks locks = mock( Locks.class );
         when( locks.newClient() ).thenReturn( mock( Locks.Client.class ) );
@@ -448,7 +453,7 @@ public class KernelTransactionsTest
     }
 
     private static KernelTransactions newKernelTransactions( Locks locks, StorageEngine storageEngine,
-            TransactionCommitProcess commitProcess, boolean testKernelTransactions )
+            TransactionCommitProcess commitProcess, boolean testKernelTransactions ) throws Throwable
     {
         LifeSupport life = new LifeSupport();
         life.start();
@@ -460,17 +465,45 @@ public class KernelTransactionsTest
         StatementLocksFactory statementLocksFactory = new SimpleStatementLocksFactory( locks );
 
         StatementOperationContainer statementOperationsContianer = new StatementOperationContainer( null, null );
+        Clock clock = Clocks.systemClock();
+        AvailabilityGuard availabilityGuard = new AvailabilityGuard( clock, NullLog.getInstance() );
+        KernelTransactions transactions;
         if ( testKernelTransactions )
         {
-            return new TestKernelTransactions( statementLocksFactory, null, statementOperationsContianer,
-                    null, DEFAULT,
-                    commitProcess, null, null, new TransactionHooks(), mock( TransactionMonitor.class ), life,
-                    tracers, storageEngine, new Procedures(), transactionIdStore, Clocks.systemClock(), new CanWrite() );
+            transactions = createTestTransactions( storageEngine, commitProcess, transactionIdStore, tracers,
+                    statementLocksFactory, statementOperationsContianer, clock, availabilityGuard );
         }
+        else
+        {
+            transactions = createTransactions( storageEngine, commitProcess, transactionIdStore, tracers,
+                    statementLocksFactory, statementOperationsContianer, clock, availabilityGuard );
+        }
+        transactions.start();
+        return transactions;
+    }
+
+    private static KernelTransactions createTransactions( StorageEngine storageEngine,
+            TransactionCommitProcess commitProcess, TransactionIdStore transactionIdStore, Tracers tracers,
+            StatementLocksFactory statementLocksFactory, StatementOperationContainer statementOperationsContianer,
+            Clock clock, AvailabilityGuard availabilityGuard )
+    {
         return new KernelTransactions( statementLocksFactory,
                 null, statementOperationsContianer, null, DEFAULT,
-                commitProcess, null, null, new TransactionHooks(), mock( TransactionMonitor.class ), life,
-                tracers, storageEngine, new Procedures(), transactionIdStore, Clocks.systemClock(), new CanWrite() );
+                commitProcess, null, null, new TransactionHooks(), mock( TransactionMonitor.class ),
+                availabilityGuard,
+                tracers, storageEngine, new Procedures(), transactionIdStore, clock, new CanWrite() );
+    }
+
+    private static TestKernelTransactions createTestTransactions( StorageEngine storageEngine,
+            TransactionCommitProcess commitProcess, TransactionIdStore transactionIdStore, Tracers tracers,
+            StatementLocksFactory statementLocksFactory, StatementOperationContainer statementOperationsContianer,
+            Clock clock, AvailabilityGuard availabilityGuard )
+    {
+        return new TestKernelTransactions( statementLocksFactory, null, statementOperationsContianer,
+                null, DEFAULT,
+                commitProcess, null, null, new TransactionHooks(), mock( TransactionMonitor.class ),
+                availabilityGuard, tracers, storageEngine, new Procedures(), transactionIdStore, clock,
+                new CanWrite() );
     }
 
     private static TransactionCommitProcess newRememberingCommitProcess( final TransactionRepresentation[] slot )
@@ -516,13 +549,14 @@ public class KernelTransactionsTest
                 SchemaWriteGuard schemaWriteGuard, TransactionHeaderInformationFactory txHeaderFactory,
                 TransactionCommitProcess transactionCommitProcess, IndexConfigStore indexConfigStore,
                 LegacyIndexProviderLookup legacyIndexProviderLookup, TransactionHooks hooks,
-                TransactionMonitor transactionMonitor, LifeSupport dataSourceLife, Tracers tracers,
+                TransactionMonitor transactionMonitor, AvailabilityGuard availabilityGuard, Tracers tracers,
                 StorageEngine storageEngine, Procedures procedures, TransactionIdStore transactionIdStore, Clock clock,
                 AccessCapability accessCapability )
         {
             super( statementLocksFactory, constraintIndexCreator, statementOperationsContianer, schemaWriteGuard,
                     txHeaderFactory, transactionCommitProcess, indexConfigStore, legacyIndexProviderLookup, hooks,
-                    transactionMonitor, dataSourceLife, tracers, storageEngine, procedures, transactionIdStore, clock,
+                    transactionMonitor, availabilityGuard, tracers, storageEngine, procedures, transactionIdStore,
+                    clock,
                     accessCapability );
         }
 

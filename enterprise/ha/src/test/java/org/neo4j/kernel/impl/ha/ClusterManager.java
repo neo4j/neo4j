@@ -141,6 +141,7 @@ public class ClusterManager
     public static final long DEFAULT_TIMEOUT_SECONDS = 60L;
     public static final Map<String,String> CONFIG_FOR_SINGLE_JVM_CLUSTER = unmodifiableMap( stringMap(
             GraphDatabaseSettings.pagecache_memory.name(), "8m",
+            GraphDatabaseSettings.shutdown_transaction_end_timeout.name(), "1s",
             boltConnector( "0" ).type.name(), "BOLT",
             boltConnector( "0" ).enabled.name(), "false"
     ) );

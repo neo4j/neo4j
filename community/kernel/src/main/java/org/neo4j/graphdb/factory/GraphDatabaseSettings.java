@@ -224,9 +224,8 @@ public abstract class GraphDatabaseSettings
 
     @Description( "The maximum amount of time to wait for running transactions to complete before allowing "
                   + "initiated database shutdown to continue" )
-    @Internal
     public static final Setting<Long> shutdown_transaction_end_timeout =
-            setting( "unsupported.dbms.shutdown_transaction_end_timeout", DURATION, "10s" );
+            setting( "dbms.shutdown_transaction_end_timeout", DURATION, "10s" );
 
     @Description("Location of the database plugin directory. Compiled Java JAR files that contain database " +
                  "procedures will be loaded if they are placed in this directory.")

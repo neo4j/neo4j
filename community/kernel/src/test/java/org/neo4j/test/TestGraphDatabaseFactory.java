@@ -93,6 +93,7 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
     {
         // Reduce the default page cache memory size to 8 mega-bytes for test databases.
         builder.setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
+        builder.setConfig( GraphDatabaseSettings.shutdown_transaction_end_timeout, "1s" );
         builder.setConfig( boltConnector("bolt").type, BOLT.name() );
         builder.setConfig( boltConnector("bolt").enabled, "false" );
     }

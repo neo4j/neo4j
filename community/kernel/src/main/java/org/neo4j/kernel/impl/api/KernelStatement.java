@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import java.util.Optional;
 import java.util.function.Function;
 
 import org.neo4j.graphdb.NotInTransactionException;
@@ -172,10 +173,10 @@ public class KernelStatement implements TxStateHolder, Statement
             throw new NotInTransactionException( "The statement has been closed." );
         }
 
-        Status terminationReason = transaction.getReasonIfTerminated();
-        if ( terminationReason != null )
+        Optional<Status> terminationReason = transaction.getReasonIfTerminated();
+        if ( terminationReason.isPresent() )
         {
-            throw new TransactionTerminatedException( terminationReason );
+            throw new TransactionTerminatedException( terminationReason.get() );
         }
     }
 

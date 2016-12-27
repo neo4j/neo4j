@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
@@ -80,47 +81,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      *   - the #release() method releases resources acquired in #initialize() or during the transaction's life time
      */
 
-    /**
-     * It is not allowed for the same transaction to perform database writes as well as schema writes.
-     * This enum tracks the current write state of the transaction, allowing it to transition from
-     * no writes (NONE) to data writes (DATA) or schema writes (SCHEMA), but it cannot transition between
-     * DATA and SCHEMA without throwing an InvalidTransactionTypeKernelException. Note that this behavior
-     * is orthogonal to the SecurityContext which manages what the transaction or statement is allowed to do
-     * based on authorization.
-     */
-    private enum TransactionWriteState
-    {
-        NONE,
-        DATA
-                {
-                    @Override
-                    TransactionWriteState upgradeToSchemaWrites() throws InvalidTransactionTypeKernelException
-                    {
-                        throw new InvalidTransactionTypeKernelException(
-                                "Cannot perform schema updates in a transaction that has performed data updates." );
-                    }
-                },
-        SCHEMA
-                {
-                    @Override
-                    TransactionWriteState upgradeToDataWrites() throws InvalidTransactionTypeKernelException
-                    {
-                        throw new InvalidTransactionTypeKernelException(
-                                "Cannot perform data updates in a transaction that has performed schema updates." );
-                    }
-                };
-
-        TransactionWriteState upgradeToDataWrites() throws InvalidTransactionTypeKernelException
-        {
-            return DATA;
-        }
-
-        TransactionWriteState upgradeToSchemaWrites() throws InvalidTransactionTypeKernelException
-        {
-            return SCHEMA;
-        }
-    }
-
     // default values for not committed tx id and tx commit time
     private static final long NOT_COMMITTED_TRANSACTION_ID = -1;
     private static final long NOT_COMMITTED_TRANSACTION_COMMIT_TIME = -1;
@@ -155,8 +115,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private SecurityContext securityContext;
     private volatile StatementLocks statementLocks;
     private boolean beforeHookInvoked;
-    private volatile boolean closing, closed;
-    private boolean failure, success;
+    private volatile boolean closing;
+    private volatile boolean closed;
+    private boolean failure;
+    private boolean success;
     private volatile Status terminationReason;
     private long startTimeMillis;
     private long timeoutMillis;
@@ -221,7 +183,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.type = type;
         this.statementLocks = statementLocks;
         this.terminationReason = null;
-        this.closing = closed = failure = success = beforeHookInvoked = false;
+        this.closing = false;
+        this. closed = false;
+        this.beforeHookInvoked = false;
+        this.failure = false;
+        this.success = false;
+        this.beforeHookInvoked = false;
         this.writeState = TransactionWriteState.NONE;
         this.startTimeMillis = clock.millis();
         this.timeoutMillis = transactionTimeout;
@@ -273,9 +240,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
-    public Status getReasonIfTerminated()
+    public Optional<Status> getReasonIfTerminated()
     {
-        return terminationReason;
+        return Optional.ofNullable( terminationReason );
     }
 
     boolean markForTermination( long expectedReuseCount, Status reason )
@@ -501,6 +468,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 release();
             }
         }
+    }
+
+    public boolean isClosing()
+    {
+        return closing;
     }
 
     /**
@@ -816,5 +788,46 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public void dispose()
     {
         storageStatement.close();
+    }
+
+    /**
+     * It is not allowed for the same transaction to perform database writes as well as schema writes.
+     * This enum tracks the current write transactionStatus of the transaction, allowing it to transition from
+     * no writes (NONE) to data writes (DATA) or schema writes (SCHEMA), but it cannot transition between
+     * DATA and SCHEMA without throwing an InvalidTransactionTypeKernelException. Note that this behavior
+     * is orthogonal to the SecurityContext which manages what the transaction or statement is allowed to do
+     * based on authorization.
+     */
+    private enum TransactionWriteState
+    {
+        NONE,
+        DATA
+                {
+                    @Override
+                    TransactionWriteState upgradeToSchemaWrites() throws InvalidTransactionTypeKernelException
+                    {
+                        throw new InvalidTransactionTypeKernelException(
+                                "Cannot perform schema updates in a transaction that has performed data updates." );
+                    }
+                },
+        SCHEMA
+                {
+                    @Override
+                    TransactionWriteState upgradeToDataWrites() throws InvalidTransactionTypeKernelException
+                    {
+                        throw new InvalidTransactionTypeKernelException(
+                                "Cannot perform data updates in a transaction that has performed schema updates." );
+                    }
+                };
+
+        TransactionWriteState upgradeToDataWrites() throws InvalidTransactionTypeKernelException
+        {
+            return DATA;
+        }
+
+        TransactionWriteState upgradeToSchemaWrites() throws InvalidTransactionTypeKernelException
+        {
+            return SCHEMA;
+        }
     }
 }

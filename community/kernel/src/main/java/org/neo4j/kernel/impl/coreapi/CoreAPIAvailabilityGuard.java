@@ -51,7 +51,7 @@ public class CoreAPIAvailabilityGuard
         }
         catch ( AvailabilityGuard.UnavailableException e )
         {
-            if( guard.isShutdown())
+            if ( guard.isShutdown() )
             {
                 throw new DatabaseShutdownException();
             }

@@ -81,7 +81,7 @@ public class TestKernelTransactionHandle implements KernelTransactionHandle
     @Override
     public Optional<Status> terminationReason()
     {
-        return Optional.ofNullable( tx.getReasonIfTerminated() );
+        return tx.getReasonIfTerminated();
     }
 
     @Override

@@ -23,6 +23,7 @@ import java.io.File;
 import java.net.URL;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
@@ -72,9 +73,7 @@ import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.guard.Guard;
-import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.TokenAccess;
-import org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexing;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
@@ -92,7 +91,6 @@ import org.neo4j.kernel.impl.coreapi.StandardNodeActions;
 import org.neo4j.kernel.impl.coreapi.StandardRelationshipActions;
 import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
 import org.neo4j.kernel.impl.coreapi.schema.SchemaImpl;
-import org.neo4j.kernel.impl.query.Neo4jTransactionalContext;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.query.TransactionalContext;
@@ -105,7 +103,6 @@ import org.neo4j.storageengine.api.EntityType;
 
 import static java.lang.String.format;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
-import static org.neo4j.function.Suppliers.*;
 import static org.neo4j.helpers.collection.Iterators.emptyIterator;
 import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
 import static org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexing.NODE_AUTO_INDEX;
@@ -747,10 +744,10 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
 
     private void assertTransactionOpen()
     {
-        Status reason = spi.currentTransaction().getReasonIfTerminated();
-        if ( reason != null )
+        Optional<Status> terminationReason = spi.currentTransaction().getReasonIfTerminated();
+        if ( terminationReason.isPresent() )
         {
-            throw new TransactionTerminatedException( reason );
+            throw new TransactionTerminatedException( terminationReason.get() );
         }
     }
 }

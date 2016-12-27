@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import java.util.Optional;
 import java.util.function.Supplier;
 
 import org.neo4j.graphdb.DatabaseShutdownException;
@@ -71,10 +72,10 @@ public class ThreadToStatementContextBridge extends LifecycleAdapter implements 
         {
             throw new BridgeNotInTransactionException();
         }
-        Status terminationReason = transaction.getReasonIfTerminated();
-        if ( terminationReason != null )
+        Optional<Status> terminationReason = transaction.getReasonIfTerminated();
+        if ( terminationReason.isPresent() )
         {
-            throw new TransactionTerminatedException( terminationReason );
+            throw new TransactionTerminatedException( terminationReason.get() );
         }
     }
 

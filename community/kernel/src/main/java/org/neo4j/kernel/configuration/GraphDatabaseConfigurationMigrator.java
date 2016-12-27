@@ -87,5 +87,18 @@ public class GraphDatabaseConfigurationMigrator extends BaseConfigurationMigrato
                 }
             }
         } );
+        add( new SpecificPropertyMigration( "unsupported.dbms.shutdown_transaction_end_timeout",
+                "unsupported.dbms.shutdown_transaction_end_timeout has been " +
+                        "replaced with dbms.shutdown_transaction_end_timeout." )
+        {
+            @Override
+            public void setValueWithOldSetting( String value, Map<String,String> rawConfiguration )
+            {
+                if ( StringUtils.isNotEmpty( value ) )
+                {
+                    rawConfiguration.putIfAbsent( GraphDatabaseSettings.shutdown_transaction_end_timeout.name(), value );
+                }
+            }
+        } );
     }
 }

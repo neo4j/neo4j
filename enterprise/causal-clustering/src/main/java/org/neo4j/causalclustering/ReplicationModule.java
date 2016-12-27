@@ -68,7 +68,7 @@ public class ReplicationModule
         progressTracker = new ProgressTrackerImpl( myGlobalSession );
 
         replicator = life.add( new RaftReplicator( consensusModule.raftMachine(), myself, outbound, sessionPool,
-            progressTracker, new ExponentialBackoffStrategy( 10, SECONDS ) ) );
+            progressTracker, new ExponentialBackoffStrategy( 10, SECONDS ), platformModule.availabilityGuard ) );
 
     }
 
