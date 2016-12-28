@@ -35,7 +35,7 @@ import org.neo4j.causalclustering.core.state.snapshot.CoreSnapshot;
 import org.neo4j.causalclustering.core.state.snapshot.CoreStateType;
 import org.neo4j.causalclustering.core.state.snapshot.RaftCoreState;
 import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
@@ -67,7 +67,7 @@ public class CoreBootstrapperTest
     {
         // given
         int nodeCount = 100;
-        DefaultFileSystemAbstraction fileSystem = fileSystemRule.get();
+        FileSystemAbstraction fileSystem = fileSystemRule.get();
         File classicNeo4jStore = RestoreClusterUtils.createClassicNeo4jStore(
                 testDirectory.directory(), fileSystem, nodeCount, Standard.LATEST_NAME );
 

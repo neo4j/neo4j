@@ -63,7 +63,7 @@ public class PartitionedIndexStorageTest
     @Rule
     public final TestDirectory testDir = TestDirectory.testDirectory( getClass(), fsRule.get() );
 
-    private DefaultFileSystemAbstraction fs;
+    private FileSystemAbstraction fs;
     private PartitionedIndexStorage storage;
 
     @Before

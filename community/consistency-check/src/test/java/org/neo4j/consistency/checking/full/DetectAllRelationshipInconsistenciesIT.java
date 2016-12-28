@@ -34,7 +34,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -146,7 +146,7 @@ public class DetectAllRelationshipInconsistenciesIT
 
     private StoreFactory newStoreFactory( PageCache pageCache )
     {
-        DefaultFileSystemAbstraction fileSystem = fileSystemRule.get();
+        FileSystemAbstraction fileSystem = fileSystemRule.get();
         return new StoreFactory( directory.directory(), getTuningConfiguration(),
                 new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem, NullLogProvider.getInstance() );
     }

@@ -34,7 +34,7 @@ import java.nio.file.OpenOption;
 import java.util.Arrays;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
@@ -306,7 +306,7 @@ public class CommonAbstractStoreTest
         // GIVEN
         File file = dir.file( "store" ).getAbsoluteFile();
         File idFile = new File( file.getParentFile(), StoreFileType.ID.augment( file.getName() ) );
-        DefaultFileSystemAbstraction fs = fileSystemRule.get();
+        FileSystemAbstraction fs = fileSystemRule.get();
         PageCache pageCache = pageCacheRule.getPageCache( fs, PageCacheTracer.NULL, Config.empty() );
         TheStore store = new TheStore( file, config, idType, new DefaultIdGeneratorFactory( fs ), pageCache,
                 NullLogProvider.getInstance(), recordFormat, DELETE_ON_CLOSE );

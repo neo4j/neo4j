@@ -26,7 +26,6 @@ import org.junit.rules.RuleChain;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -65,7 +64,7 @@ public class HighLimitStoreMigrationTest
     @Test
     public void migrateHighLimit3_0StoreFiles() throws IOException
     {
-        DefaultFileSystemAbstraction fileSystem = fileSystemRule.get();
+        FileSystemAbstraction fileSystem = fileSystemRule.get();
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         SchemaIndexProvider schemaIndexProvider = mock( SchemaIndexProvider.class );
 
