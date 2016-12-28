@@ -704,6 +704,7 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>
             cursor = openRootCursor( PagedFile.PF_SHARED_WRITE_LOCK );
             stableGeneration = stableGeneration( generation );
             unstableGeneration = unstableGeneration( generation );
+            treeLogic.initialize( cursor );
         }
 
         @Override
@@ -729,15 +730,21 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>
                 bTreeNode.setKeyCount( cursor, 1 );
                 bTreeNode.setChildAt( cursor, structurePropagation.left, 0, stableGeneration, unstableGeneration );
                 bTreeNode.setChildAt( cursor, structurePropagation.right, 1, stableGeneration, unstableGeneration );
-                setRoot( newRootId, unstableGeneration );
+                setRoot( newRootId );
             }
             else if ( structurePropagation.hasNewGen )
             {
-                setRoot( structurePropagation.left, unstableGeneration );
+                setRoot( structurePropagation.left );
             }
             structurePropagation.clear();
 
             checkOutOfBounds( cursor );
+        }
+
+        private void setRoot( long rootId )
+        {
+            GBPTree.this.setRoot( rootId, unstableGeneration );
+            treeLogic.initialize( cursor );
         }
 
         @Override
@@ -747,7 +754,7 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>
                     stableGeneration, unstableGeneration );
             if ( structurePropagation.hasNewGen )
             {
-                setRoot( structurePropagation.left, unstableGeneration );
+                setRoot( structurePropagation.left );
             }
             structurePropagation.clear();
 

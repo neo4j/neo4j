@@ -87,6 +87,7 @@ public class ConsistencyCheckerTest
         PageCursor cursor = new PageAwareByteArrayCursor( pageSize );
         cursor.next( idProvider.acquireNewId( stableGeneration, unstableGeneration ) );
         node.initializeLeaf( cursor, stableGeneration, unstableGeneration );
+        logic.initialize( cursor );
         StructurePropagation<MutableLong> structure = new StructurePropagation<>( layout.newKey() );
         MutableLong key = layout.newKey();
         for ( int g = 0, k = 0; g < 3; g++ )
@@ -104,6 +105,11 @@ public class ConsistencyCheckerTest
                     node.setKeyCount( cursor, 1 );
                     node.setChildAt( cursor, structure.left, 0, stableGeneration, unstableGeneration );
                     node.setChildAt( cursor, structure.right, 1, stableGeneration, unstableGeneration );
+                    logic.initialize( cursor );
+                }
+                if ( structure.hasNewGen )
+                {
+                    logic.initialize( cursor );
                 }
                 structure.clear();
             }
