@@ -333,8 +333,8 @@ class InternalTreeLogic<KEY,VALUE>
      * <p>
      * Leaves cursor at the page which was last updated. No guarantees on offset.
      *
-     * @param cursor {@link PageCursor} pinned to root of tree (if first insert/remove since {@link #clear()})
-     * or at where last insert/remove left it.
+     * @param cursor {@link PageCursor} pinned to root of tree (if first insert/remove since
+     * {@link #initialize(PageCursor)}) or at where last insert/remove left it.
      * @param structurePropagation {@link StructurePropagation} used to report structure changes between tree levels.
      * @param key key to be inserted
      * @param value value to be associated with key
@@ -807,8 +807,8 @@ class InternalTreeLogic<KEY,VALUE>
      * <p>
      * Leaves cursor at the page which was last updated. No guarantees on offset.
      *
-     * @param cursor {@link PageCursor} pinned to root of tree (if first insert/remove since {@link #clear()})
-     * or at where last insert/remove left it.
+     * @param cursor {@link PageCursor} pinned to root of tree (if first insert/remove since
+     * {@link #initialize(PageCursor)}) or at where last insert/remove left it.
      * @param structurePropagation {@link StructurePropagation} used to report structure changes between tree levels.
      * @param key key to be removed
      * @param into {@code VALUE} instance to write removed value to
