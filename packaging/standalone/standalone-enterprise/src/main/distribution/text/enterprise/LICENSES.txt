@@ -1942,6 +1942,7 @@ MIT License
   Modernizr
   Pure Feature Detection Library (has.js)
   SLF4J API Module
+  SLF4J NOP Binding
   Underscore.js
   UUID.js
 ------------------------------------------------------------------------------

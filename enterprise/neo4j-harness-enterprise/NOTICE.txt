@@ -105,6 +105,7 @@ GNU General Public License, version 2 with the Classpath Exception
 
 MIT License
   SLF4J API Module
+  SLF4J NOP Binding
 
 Mozilla Public License, Version 2.0
   Mozilla Rhino
