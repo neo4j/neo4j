@@ -304,6 +304,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ------------------------------------------------------------------------------
 MIT License
   SLF4J API Module
+  SLF4J NOP Binding
 ------------------------------------------------------------------------------
 
 The MIT License
