@@ -63,7 +63,7 @@ import static org.junit.Assume.assumeFalse;
 
 public class FileWatchIT
 {
-    private static final long TEST_TIMEOUT = 30_000;
+    private static final long TEST_TIMEOUT = 600_000;
 
     @Rule
     public TestDirectory testDirectory = TestDirectory.testDirectory();
