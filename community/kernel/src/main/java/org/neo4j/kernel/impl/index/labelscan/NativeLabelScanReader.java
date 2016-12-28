@@ -143,18 +143,4 @@ class NativeLabelScanReader implements LabelScanReader
             cursor.close();
         }
     }
-
-    /**
-     * Unsupported for this implementation and will throw {@link UnsupportedOperationException}.
-     * This information can be had by asking the node store directly instead.
-     *
-     * @param nodeId node id to get labels for.
-     * @return {@link PrimitiveLongIterator} with labels for {@code nodeId}.
-     * @throws UnsupportedOperationException since not supported by this implementation.
-     */
-    @Override
-    public PrimitiveLongIterator labelsForNode( long nodeId )
-    {
-        throw new UnsupportedOperationException( "Use your db..." );
-    }
 }

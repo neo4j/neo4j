@@ -28,6 +28,7 @@ import java.util.function.LongPredicate;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -575,6 +576,19 @@ public class PrimitiveLongCollectionsTest
 
         // THEN
         assertTrue( Arrays.equals( new long[] { 1, 2, 3 }, array ) );
+    }
+
+    @Test
+    public void shouldDedup() throws Exception
+    {
+        // GIVEN
+        long[] array = new long[] {1L, 1L, 2L, 5L, 6L, 6L};
+
+        // WHEN
+        long[] deduped = PrimitiveLongCollections.dedup( array );
+
+        // THEN
+        assertArrayEquals( new long[] {1L, 2L, 5L, 6L}, deduped );
     }
 
     private void assertNoMoreItems( PrimitiveLongIterator iterator )

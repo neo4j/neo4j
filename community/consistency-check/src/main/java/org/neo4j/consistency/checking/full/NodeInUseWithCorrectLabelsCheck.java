@@ -19,6 +19,7 @@
  */
 package org.neo4j.consistency.checking.full;
 
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.consistency.checking.CheckerEngine;
 import org.neo4j.consistency.checking.ComparativeRecordChecker;
 import org.neo4j.consistency.checking.LabelChainWalker;
@@ -32,7 +33,6 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 
-import static java.util.Arrays.binarySearch;
 import static java.util.Arrays.sort;
 
 public class NodeInUseWithCorrectLabelsCheck
@@ -43,7 +43,13 @@ public class NodeInUseWithCorrectLabelsCheck
 
     public NodeInUseWithCorrectLabelsCheck( long[] expectedLabels )
     {
-        this.expectedLabels = expectedLabels;
+        this.expectedLabels = sortAndDeduplicate( expectedLabels );
+    }
+
+    private long[] sortAndDeduplicate( long[] labels )
+    {
+        sort( labels );
+        return PrimitiveLongCollections.dedup( labels );
     }
 
     @Override
@@ -78,14 +84,40 @@ public class NodeInUseWithCorrectLabelsCheck
 
     private void validateLabelIds( NodeRecord nodeRecord, long[] actualLabels, REPORT report )
     {
-        sort(actualLabels);
-        for ( long expectedLabel : expectedLabels )
+        actualLabels = sortAndDeduplicate( actualLabels );
+
+        int expectedIndex = 0;
+        int actualIndex = 0;
+
+        do
         {
-            int labelIndex = binarySearch( actualLabels, expectedLabel );
-            if (labelIndex < 0)
-            {
-                report.nodeDoesNotHaveExpectedLabel( nodeRecord, expectedLabel );
+            long expectedLabel = expectedLabels[expectedIndex];
+            long actualLabel = actualLabels[actualIndex];
+            if ( expectedLabel < actualLabel )
+            {   // node store has a label which isn't in label scan store
+                report.nodeLabelNotInIndex( nodeRecord, expectedLabel );
+                expectedIndex++;
             }
+            else if ( expectedLabel > actualLabel )
+            {   // label scan store has a label which isn't in node store
+                report.nodeDoesNotHaveExpectedLabel( nodeRecord, actualLabel );
+                actualIndex++;
+            }
+            else
+            {   // both match
+                expectedIndex++;
+                actualIndex++;
+            }
+        }
+        while ( expectedIndex < expectedLabels.length && actualIndex < actualLabels.length );
+
+        while ( expectedIndex < expectedLabels.length )
+        {
+            report.nodeLabelNotInIndex( nodeRecord, expectedLabels[expectedIndex++] );
+        }
+        while ( actualIndex < actualLabels.length )
+        {
+            report.nodeDoesNotHaveExpectedLabel( nodeRecord, actualLabels[actualIndex++] );
         }
     }
 

@@ -20,6 +20,7 @@
 package org.neo4j.collection.primitive;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -825,5 +826,33 @@ public class PrimitiveIntCollections
             throw new IllegalStateException( "Encountered an already added item:" + item +
                     " when adding items uniquely to a collection:" + collection );
         }
+    }
+
+    /**
+     * Deduplicates values in the sorted {@code values} array.
+     *
+     * @param values sorted array of int values.
+     * @return the provided array if no duplicates were found, otherwise a new shorter array w/o duplicates.
+     */
+    public static int[] dedup( int[] values )
+    {
+        int unique = 0;
+        for ( int i = 0; i < values.length; i++ )
+        {
+            int value = values[i];
+            for ( int j = 0; j < unique; j++ )
+            {
+                if ( value == values[j] )
+                {
+                    value = -1; // signal that this value is not unique
+                    break; // we will not find more than one conflict
+                }
+            }
+            if ( value != -1 )
+            {   // this has to be done outside the inner loop, otherwise we'd never accept a single one...
+                values[unique++] = values[i];
+            }
+        }
+        return unique < values.length ? Arrays.copyOf( values, unique ) : values;
     }
 }

@@ -81,7 +81,7 @@ public class NodeInUseWithCorrectLabelsCheckTest
         checker(new long[] {labelId1, labelId2}).checkReference( null, node, engineFor( report ), null );
 
         // then
-        verify( report ).nodeDoesNotHaveExpectedLabel( node, labelId2 );
+        verify( report ).nodeLabelNotInIndex( node, labelId2 );
     }
 
     @Test
@@ -105,7 +105,7 @@ public class NodeInUseWithCorrectLabelsCheckTest
         recordAccess.checkDeferred();
 
         // then
-        verify( report ).nodeDoesNotHaveExpectedLabel( node, missingLabelId );
+        verify( report ).nodeLabelNotInIndex( node, missingLabelId );
     }
 
     @Test

@@ -43,7 +43,6 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.BoundedIterable;
-import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -62,7 +61,6 @@ import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.core.IsCollectionContaining.hasItem;
-import static org.hamcrest.core.IsCollectionContaining.hasItems;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -270,9 +268,11 @@ public abstract class LabelScanStoreTest
         // given
         long labelId = 0;
         List<NodeLabelUpdate> updates = new ArrayList<>();
+        Set<Long> nodes = new HashSet<>();
         for ( int i = 0; i < 34; i++ )
         {
             updates.add( NodeLabelUpdate.labelChanges( i, new long[]{}, new long[]{labelId} ) );
+            nodes.add( (long) i );
         }
 
         start( updates );
@@ -282,12 +282,7 @@ public abstract class LabelScanStoreTest
         Set<Long> nodesWithLabel = PrimitiveLongCollections.toSet( reader.nodesWithLabel( (int) labelId ) );
 
         // then
-        for ( long i = 0; i < 34; i++ )
-        {
-            assertThat( nodesWithLabel, hasItem( i ) );
-            Set<Long> labels = PrimitiveLongCollections.toSet( reader.labelsForNode( i ) );
-            assertThat( labels, hasItem( labelId ) );
-        }
+        assertEquals( nodes, nodesWithLabel );
     }
 
     @Test
@@ -296,9 +291,11 @@ public abstract class LabelScanStoreTest
         // given
         long label0Id = 0;
         List<NodeLabelUpdate> label0Updates = new ArrayList<>();
+        Set<Long> nodes = new HashSet<>();
         for ( int i = 0; i < 34; i++ )
         {
             label0Updates.add( NodeLabelUpdate.labelChanges( i, new long[]{}, new long[]{label0Id} ) );
+            nodes.add( (long) i );
         }
 
         start( label0Updates );
@@ -309,12 +306,7 @@ public abstract class LabelScanStoreTest
         // then
         LabelScanReader reader = store.newReader();
         Set<Long> nodesWithLabel0 = PrimitiveLongCollections.toSet( reader.nodesWithLabel( (int) label0Id ) );
-        for ( long i = 0; i < 34; i++ )
-        {
-            assertThat( nodesWithLabel0, hasItem( i ) );
-            Set<Long> labels = PrimitiveLongCollections.toSet( reader.labelsForNode( i ) );
-            assertThat( labels, hasItem( label0Id ) );
-        }
+        assertEquals( nodes, nodesWithLabel0 );
     }
 
     private void write( Iterator<NodeLabelUpdate> iterator ) throws IOException
@@ -397,27 +389,6 @@ public abstract class LabelScanStoreTest
 
         // THEN
         assertEquals( "Found gaps in node id range: " + gaps( nodeSet, nodeCount ), nodeCount, nodeSet.size() );
-    }
-
-    @Test
-    public void shouldFindAllLabelsForGivenNode() throws Exception
-    {
-        // GIVEN
-        // 16 is the magic number of the page iterator
-        // 32 is the number of nodes in each lucene document
-        final long labelId1 = 1, labelId2 = 2, labelId3 = 87;
-        start();
-
-        int nodeId = 42;
-        write( Iterators.iterator( labelChanges( nodeId, NO_LABELS, new long[]{labelId1, labelId2} ) ) );
-        write( Iterators.iterator( labelChanges( 41, NO_LABELS, new long[]{labelId3, labelId2} ) ) );
-
-        // WHEN
-        LabelScanReader reader = store.newReader();
-
-        // THEN
-        assertThat( PrimitiveLongCollections.toSet( reader.labelsForNode( nodeId ) ), hasItems( labelId1, labelId2 ) );
-        reader.close();
     }
 
     @Test

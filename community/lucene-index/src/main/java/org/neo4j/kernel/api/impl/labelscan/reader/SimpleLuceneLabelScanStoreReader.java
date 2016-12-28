@@ -60,12 +60,6 @@ public class SimpleLuceneLabelScanStoreReader implements LabelScanReader
     }
 
     @Override
-    public PrimitiveLongIterator labelsForNode( long nodeId )
-    {
-        return strategy.labelsForNode( partitionSearcher.getIndexSearcher(), nodeId );
-    }
-
-    @Override
     public void close()
     {
         try

@@ -75,12 +75,6 @@ public class PartitionedLuceneLabelScanStoreReader implements LabelScanReader
     }
 
     @Override
-    public PrimitiveLongIterator labelsForNode( long nodeId )
-    {
-        return partitionedOperation( storeReader -> storeReader.labelsForNode( nodeId ) );
-    }
-
-    @Override
     public void close()
     {
         try

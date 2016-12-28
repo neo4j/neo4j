@@ -39,6 +39,7 @@ import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 import org.neo4j.test.rule.DatabaseRule;
@@ -49,8 +50,12 @@ import static org.junit.Assert.assertEquals;
 
 public abstract class LabelScanStoreStartupIT
 {
+    private static final Label LABEL = Label.label( "testLabel" );
+
     @Rule
     public final DatabaseRule dbRule = new EmbeddedDatabaseRule( getClass() );
+
+    private int labelId;
 
     @Test
     public void scanStoreStartWithoutExistentIndex() throws IOException
@@ -75,7 +80,7 @@ public abstract class LabelScanStoreStartupIT
         LabelScanStore labelScanStore = getLabelScanStore( dbRule );
 
         Node node = createTestNode();
-        long[] labels = readNodeLabels( labelScanStore, node );
+        long[] labels = readNodesForLabel( labelScanStore );
         assertEquals( "Label scan store see 1 label for node", 1, labels.length );
         labelScanStore.force( IOLimiter.unlimited() );
         labelScanStore.shutdown();
@@ -85,24 +90,27 @@ public abstract class LabelScanStoreStartupIT
         labelScanStore.init();
         labelScanStore.start();
 
-        long[] rebuildLabels = readNodeLabels( labelScanStore, node );
+        long[] rebuildLabels = readNodesForLabel( labelScanStore );
         assertArrayEquals( "Store should rebuild corrupted index", labels, rebuildLabels );
     }
 
-    private long[] readNodeLabels( LabelScanStore labelScanStore, Node node )
+    private long[] readNodesForLabel( LabelScanStore labelScanStore )
     {
         try ( LabelScanReader reader = labelScanStore.newReader() )
         {
-            return PrimitiveLongCollections.asArray( reader.labelsForNode( node.getId() ) );
+            return PrimitiveLongCollections.asArray( reader.nodesWithLabel( labelId ) );
         }
     }
 
     private Node createTestNode()
     {
         Node node;
-        try (Transaction transaction = dbRule.beginTx())
+        try ( Transaction transaction = dbRule.beginTx() )
         {
-            node = dbRule.createNode( Label.label( "testLabel" ));
+            node = dbRule.createNode( LABEL);
+            labelId = dbRule.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class )
+                    .getKernelTransactionBoundToThisThread( true )
+                    .acquireStatement().readOperations().labelGetForName( LABEL.name() );
             transaction.success();
         }
         return node;
@@ -144,8 +152,7 @@ public abstract class LabelScanStoreStartupIT
         }
         try ( LabelScanReader labelScanReader = labelScanStore.newReader() )
         {
-            assertEquals( 1, labelScanReader.labelsForNode( 1 ).next() );
+            assertEquals( 1, labelScanReader.nodesWithLabel( labelId ).next() );
         }
     }
-
 }
