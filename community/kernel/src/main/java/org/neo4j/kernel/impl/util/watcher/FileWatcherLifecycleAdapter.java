@@ -71,6 +71,12 @@ public class FileWatcherLifecycleAdapter extends LifecycleAdapter
         }
     }
 
+    @Override
+    public void shutdown() throws Throwable
+    {
+        fileWatcher.close();
+    }
+
     private class FileSystemEventWatcher implements Runnable
     {
         @Override
@@ -85,7 +91,7 @@ public class FileWatcherLifecycleAdapter extends LifecycleAdapter
             }
         }
 
-        public void stopWatching()
+        void stopWatching()
         {
             fileWatcher.stopWatching();
         }

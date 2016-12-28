@@ -19,6 +19,7 @@
  */
 package org.neo4j.store.watch;
 
+import org.apache.commons.lang3.SystemUtils;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
@@ -58,6 +59,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 
 public class FileWatchIT
 {
@@ -87,6 +89,8 @@ public class FileWatchIT
     @Test(timeout = TEST_TIMEOUT)
     public void notifyAboutStoreFileDeletion() throws Exception
     {
+        assumeFalse( SystemUtils.IS_OS_WINDOWS );
+
         String fileName = MetaDataStore.DEFAULT_NAME;
         FileWatcher fileWatcher = getFileWatcher( database );
         CheckPointer checkpointer = getCheckpointer( database );
@@ -131,15 +135,17 @@ public class FileWatchIT
 
         FileWatcher fileWatcher = getFileWatcher( database );
         CheckPointer checkPointer = getCheckpointer( database );
-        DeletionLatchEventListener deletionListner = new DeletionLatchEventListener( monitoredDirectory );
-        fileWatcher.addFileWatchEventListener( deletionListner );
+        DeletionLatchEventListener deletionListener = new DeletionLatchEventListener( monitoredDirectory );
+        ModificationEventListener modificationEventListener = new ModificationEventListener( MetaDataStore.DEFAULT_NAME );
+        fileWatcher.addFileWatchEventListener( deletionListener );
+        fileWatcher.addFileWatchEventListener( modificationEventListener );
 
         createNode( database );
         forceCheckpoint( checkPointer );
-        deletionListner.awaitModificationNotification();
+        modificationEventListener.awaitModificationNotification();
 
         deleteStoreDirectory( storeDir, monitoredDirectory );
-        deletionListner.awaitDeletionNotification();
+        deletionListener.awaitDeletionNotification();
 
         logProvider.assertContainsMessageContaining(
                 "Store directory '" + monitoredDirectory + "' was deleted while database was running." );
@@ -181,6 +187,8 @@ public class FileWatchIT
     @Test(timeout = TEST_TIMEOUT)
     public void doNotMonitorTransactionLogFiles() throws InterruptedException, IOException
     {
+        assumeFalse( SystemUtils.IS_OS_WINDOWS );
+
         FileWatcher fileWatcher = getFileWatcher( database );
         CheckPointer checkpointer = getCheckpointer( database );
         ModificationEventListener modificationEventListener =
@@ -206,6 +214,8 @@ public class FileWatchIT
     @Test(timeout = TEST_TIMEOUT)
     public void notifyWhenWholeStoreDirectoryRemoved() throws IOException, InterruptedException
     {
+        assumeFalse( SystemUtils.IS_OS_WINDOWS );
+
         String fileName = MetaDataStore.DEFAULT_NAME;
         FileWatcher fileWatcher = getFileWatcher( database );
         CheckPointer checkpointer = getCheckpointer( database );

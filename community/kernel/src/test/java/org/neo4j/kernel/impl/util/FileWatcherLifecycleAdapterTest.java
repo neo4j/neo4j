@@ -74,6 +74,18 @@ public class FileWatcherLifecycleAdapterTest
         verify( fileWatcher ).stopWatching();
     }
 
+    @Test
+    public void closeFileWatcherOnShutdown() throws Throwable
+    {
+        FileWatcherLifecycleAdapter watcherAdapter = new FileWatcherLifecycleAdapter( jobScheduler, fileWatcher );
+        watcherAdapter.init();
+        watcherAdapter.start();
+        watcherAdapter.stop();
+        watcherAdapter.shutdown();
+
+        verify( fileWatcher ).close();
+    }
+
     private static class TestFileWatcher extends SilentFileWatcher
     {
 
