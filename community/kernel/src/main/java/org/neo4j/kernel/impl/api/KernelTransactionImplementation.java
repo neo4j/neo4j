@@ -117,7 +117,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private volatile StatementLocks statementLocks;
     private boolean beforeHookInvoked;
     private TransactionStatus transactionStatus = new TransactionStatus();
-    private volatile boolean failure;
+    private boolean failure;
     private boolean success;
     private long startTimeMillis;
     private long timeoutMillis;
@@ -249,7 +249,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         if ( transactionStatus.terminate( reason ) )
         {
-            failure = true;
             if ( statementLocks != null )
             {
                 statementLocks.stop();
@@ -816,7 +815,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         private static final int TERMINATED = 1 << 3;
 
         private AtomicInteger status = new AtomicInteger( CLOSED );
-        private volatile Status terminationReason;
+        private Status terminationReason;
 
         public void init()
         {
@@ -846,7 +845,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
         public boolean isTerminated()
         {
-            return terminationReason != null;
+            return (status.get() & TERMINATED) > 0;
         }
 
         public boolean terminate( Status reason )
@@ -859,9 +858,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 {
                     return false;
                 }
+                terminationReason = reason;
             }
             while ( !status.compareAndSet( currentStatus, currentStatus | TERMINATED ) );
-            terminationReason = reason;
             return true;
         }
 
@@ -903,7 +902,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
         Optional<Status> getTerminationReason()
         {
-            return Optional.ofNullable( terminationReason );
+            return isTerminated() ? Optional.ofNullable( terminationReason ) : Optional.empty();
         }
 
         private boolean is( int statusCode )
