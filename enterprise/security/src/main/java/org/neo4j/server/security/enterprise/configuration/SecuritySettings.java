@@ -301,23 +301,19 @@ public class SecuritySettings
     // Procedure security settings
     //=========================================================================
 
-    @Description( "The default role to assign to each procedure and user-defined function with an empty `allowed` " +
-                  "annotation field. This can be used to enable fine grained permission " +
-                  "control over third-party procedures and functions for which modifying source code is not possible. " +
-                  "Procedures with non-empty `allowed` fields will be unaffected by this setting. " +
-                  "If this setting is the empty string (default), procedures will be executed according to the same " +
-                  "security rules as normal Cypher statements." )
+    @Description( "The default role that can execute all procedures and user-defined functions that are not covered " +
+                  "by the `"+PROC_ALLOWED_SETTING_ROLES+"` setting. If the `" + PROC_ALLOWED_SETTING_DEFAULT_NAME + "` " +
+                  "setting is the empty string (default), procedures will be executed according to the same security " +
+                  "rules as normal Cypher statements." )
     public static final Setting<String> default_allowed = setting( PROC_ALLOWED_SETTING_DEFAULT_NAME, STRING, "" );
 
-    @Description( "The default role to assign to matching procedures with empty `allowed` annotation fields. " +
-                  "This provides a finer level of control over which roles are assigned to which procedures than the " +
-                  "`" + PROC_ALLOWED_SETTING_DEFAULT_NAME + "` setting. For example: `dbms.security.procedures" +
-                  ".roles=apoc.convert.*:reader,apoc.load.json:writer,apoc.trigger.add:TriggerHappy` will assign" +
-                  "the role `reader` to all procedures in the `apoc.convert` namespace, the role `writer` to " +
-                  "the `apoc.load.json` namespace and the role `TriggerHappy` to the the specific procedure " +
-                  "`apoc.trigger.add`. Procedures not matching any of these patterns will either be assigned the " +
-                  "role specified in `" + PROC_ALLOWED_SETTING_DEFAULT_NAME + "` or be subject to the security " +
-                  "rules of normal Cypher statements." )
+    @Description( "This provides a finer level of control over which roles can execute procedures than the " +
+                  "`" + PROC_ALLOWED_SETTING_DEFAULT_NAME + "` setting. For example: `dbms.security.procedures.roles=" +
+                  "apoc.convert.*:reader;apoc.load.json*:writer;apoc.trigger.add:TriggerHappy` will allow the role " +
+                  "`reader` to execute all procedures in the `apoc.convert` namespace, the role `writer` to execute " +
+                  "all procedures in the `apoc.load` namespace that starts with `json` and the role `TriggerHappy` " +
+                  "to execute the specific procedure `apoc.trigger.add`. Procedures not matching any of these " +
+                  "patterns will be subject to the `" + PROC_ALLOWED_SETTING_DEFAULT_NAME + "` setting." )
     public static final Setting<String> procedure_roles = setting( PROC_ALLOWED_SETTING_ROLES, STRING, "" );
 
     //=========================================================================
