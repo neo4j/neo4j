@@ -162,7 +162,9 @@ class InternalTreeLogic<KEY,VALUE>
         this.primKeyPlaceHolder = layout.newKey();
         this.readKey = layout.newKey();
         this.readValue = layout.newValue();
-        ensureStackCapacity( 20 );
+
+        // an arbitrary depth slightly bigger than an unimaginably big tree
+        ensureStackCapacity( 10 );
     }
 
     private void ensureStackCapacity( int depth )
@@ -310,7 +312,8 @@ class InternalTreeLogic<KEY,VALUE>
             level.treeNodeId = cursor.getCurrentPageId();
         }
 
-        assert bTreeNode.isLeaf( cursor );
+        assert bTreeNode.isLeaf( cursor ) : "Ended up on a tree node which isn't a leaf after moving cursor towards " +
+                key + ", cursor is at " + cursor.getCurrentPageId();
     }
 
     /**
@@ -348,7 +351,7 @@ class InternalTreeLogic<KEY,VALUE>
             ValueMerger<VALUE> valueMerger, IndexWriter.Options options,
             long stableGeneration, long unstableGeneration ) throws IOException
     {
-        assert currentLevel >= 0;
+        assert cursorIsAtExpectedLocation( cursor );
         moveToCorrectLeaf( cursor, key, stableGeneration, unstableGeneration );
 
         insertInLeaf( cursor, structurePropagation, key, value, valueMerger, options,
@@ -375,6 +378,21 @@ class InternalTreeLogic<KEY,VALUE>
                         structurePropagation.right, options, stableGeneration, unstableGeneration );
             }
         }
+    }
+
+    /**
+     * Asserts that cursor is where it's expected to be at, compared to current level.
+     *
+     * @param cursor
+     * @return {@code true} so that it can be called in an {@code assert} statement.
+     */
+    private boolean cursorIsAtExpectedLocation( PageCursor cursor )
+    {
+        assert currentLevel >= 0 : "Uninitialized tree logic, currentLevel:" + currentLevel;
+        assert cursor.getCurrentPageId() == levels[currentLevel].treeNodeId : "Expected cursor to be at page:" +
+                    levels[currentLevel].treeNodeId + " at level:" + currentLevel + ", but was at page:" +
+                    cursor.getCurrentPageId();
+        return true;
     }
 
     /**
@@ -821,7 +839,7 @@ class InternalTreeLogic<KEY,VALUE>
     VALUE remove( PageCursor cursor, StructurePropagation<KEY> structurePropagation, KEY key, VALUE into,
             long stableGeneration, long unstableGeneration ) throws IOException
     {
-        assert currentLevel >= 0;
+        assert cursorIsAtExpectedLocation( cursor );
         moveToCorrectLeaf( cursor, key, stableGeneration, unstableGeneration );
 
         if ( !removeFromLeaf( cursor, structurePropagation, key, into, stableGeneration, unstableGeneration ) )

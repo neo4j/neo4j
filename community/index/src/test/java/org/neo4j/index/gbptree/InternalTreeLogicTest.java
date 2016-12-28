@@ -741,7 +741,7 @@ public class InternalTreeLogicTest
         //       ------root-------
         //      /        |         \
         //     v         v          v
-        //   left <--> middle <--> right        initialize();
+        //   left <--> middle <--> right
         initialize();
         long targetLastId = id.lastId() + 3; // 2 splits and 1 new allocated root
         long i = 0;
@@ -957,6 +957,7 @@ public class InternalTreeLogicTest
         generationManager.recovery();
         // start up on stable root
         goTo( cursor, originalNodeId );
+        treeLogic.initialize( cursor );
         // replay transaction TX1 will create a new heir
         insert( 1L, 10L );
         assertEquals( 2, numberOfRootNewGens );
