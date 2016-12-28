@@ -40,7 +40,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.neo4j.index.IndexWriter.Options.DEFAULTS;
 import static org.neo4j.index.ValueMergers.overwrite;
 import static org.neo4j.index.gbptree.GenSafePointerPair.pointer;
 
@@ -1162,7 +1161,7 @@ public class SeekCursorTest
     {
         insertKey.setValue( key );
         insertValue.setValue( value );
-        treeLogic.insert( cursor, structurePropagation, insertKey, insertValue, overwrite(), DEFAULTS, stableGen, unstableGen );
+        treeLogic.insert( cursor, structurePropagation, insertKey, insertValue, overwrite(), stableGen, unstableGen );
         handleAfterChange();
     }
 

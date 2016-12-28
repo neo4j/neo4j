@@ -53,7 +53,7 @@ import static org.neo4j.index.gbptree.PageCursorUtil.checkOutOfBounds;
 /**
  * A generation-aware B+tree (GB+Tree) implementation directly atop a {@link PageCache} with no caching in between.
  * Additionally internal and leaf nodes on same level are linked both left and right (sibling pointers),
- * this to provide correct reading when concurrently {@link #writer(IndexWriter.Options) modifying}
+ * this to provide correct reading when concurrently {@link #writer() modifying}
  * the tree.
  * <p>
  * Generation is incremented on {@link Index#checkpoint(IOLimiter) check-pointing}.
@@ -89,7 +89,7 @@ import static org.neo4j.index.gbptree.PageCursorUtil.checkOutOfBounds;
  * <p>
  * {@link GBPTree} is designed to be able to handle non-clean shutdown / crash, but needs external help
  * in order to do so.
- * {@link #writer(org.neo4j.index.IndexWriter.Options) Writes} happen to the tree and are made durable and
+ * {@link #writer() Writes} happen to the tree and are made durable and
  * safe on next call to {@link #checkpoint(IOLimiter)}. Writes which happens after the last
  * {@link #checkpoint(IOLimiter)} are not safe if there's a {@link #close()} or JVM crash in between, i.e:
  *
@@ -142,7 +142,7 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>
     {
         /**
          * Called when a {@link GBPTree#checkpoint(IOLimiter)} has been completed, but right before
-         * {@link GBPTree#writer(org.neo4j.index.IndexWriter.Options) writers} are re-enabled.
+         * {@link GBPTree#writer() writers} are re-enabled.
          */
         default void checkpointCompleted()
         {   // no-op by default
@@ -497,7 +497,6 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>
      * Utility for {@link PagedFile#io(long, int) acquiring} a new {@link PageCursor},
      * placed at the current root id and which have had its {@link PageCursor#next()} called-
      *
-     * @param pagedFile {@link PagedFile} to acquire new {@link PageCursor} from.
      * @param pfFlags flags sent into {@link PagedFile#io(long, int)}.
      * @return {@link PageCursor} result from call to {@link PagedFile#io(long, int)} after it has been
      * placed at the current root and has had {@link PageCursor#next()} called.
@@ -577,7 +576,7 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>
      * returned writer.
      */
     @Override
-    public IndexWriter<KEY,VALUE> writer( IndexWriter.Options options ) throws IOException
+    public IndexWriter<KEY,VALUE> writer() throws IOException
     {
         if ( !writerTaken.compareAndSet( false, true ) )
         {
@@ -590,7 +589,7 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>
         boolean success = false;
         try
         {
-            writer.take( options );
+            writer.take();
             success = true;
             return writer;
         }
@@ -685,7 +684,6 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>
         private final InternalTreeLogic<KEY,VALUE> treeLogic;
         private final StructurePropagation<KEY> structurePropagation;
         private PageCursor cursor;
-        private IndexWriter.Options options;
 
         // Writer can't live past a checkpoint because of the mutex with checkpoint,
         // therefore safe to locally cache these generation fields from the volatile generation in the tree
@@ -698,9 +696,8 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>
             this.treeLogic = treeLogic;
         }
 
-        void take( IndexWriter.Options options ) throws IOException
+        void take() throws IOException
         {
-            this.options = options;
             cursor = openRootCursor( PagedFile.PF_SHARED_WRITE_LOCK );
             stableGeneration = stableGeneration( generation );
             unstableGeneration = unstableGeneration( generation );
@@ -716,7 +713,7 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>
         @Override
         public void merge( KEY key, VALUE value, ValueMerger<VALUE> valueMerger ) throws IOException
         {
-            treeLogic.insert( cursor, structurePropagation, key, value, valueMerger, options,
+            treeLogic.insert( cursor, structurePropagation, key, value, valueMerger,
                     stableGeneration, unstableGeneration );
 
             if ( structurePropagation.hasSplit )

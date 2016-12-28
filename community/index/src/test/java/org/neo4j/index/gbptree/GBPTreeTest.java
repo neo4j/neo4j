@@ -56,7 +56,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.neo4j.index.IndexWriter.Options.DEFAULTS;
 import static org.neo4j.index.gbptree.GBPTree.NO_MONITOR;
 import static org.neo4j.index.gbptree.ThrowingRunnable.throwing;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
@@ -329,7 +328,7 @@ public class GBPTreeTest
                 new GBPTree<>( pageCache, indexFile, layout, pageSize / 2, NO_MONITOR ) )
         {
             // Insert some data
-            try ( IndexWriter<MutableLong, MutableLong> writer = index.writer( IndexWriter.Options.DEFAULTS ) )
+            try ( IndexWriter<MutableLong, MutableLong> writer = index.writer() )
             {
                 MutableLong key = new MutableLong();
                 MutableLong value = new MutableLong();
@@ -405,12 +404,12 @@ public class GBPTreeTest
     {
         // GIVEN
         index = createIndex( 256 );
-        IndexWriter<MutableLong,MutableLong> writer = index.writer( DEFAULTS );
+        IndexWriter<MutableLong,MutableLong> writer = index.writer();
 
         // WHEN
         try
         {
-            index.writer( DEFAULTS );
+            index.writer();
             fail( "Should have failed" );
         }
         catch ( IllegalStateException e )
@@ -426,7 +425,7 @@ public class GBPTreeTest
     {
         // GIVEN
         index = createIndex( 256 );
-        IndexWriter<MutableLong,MutableLong> writer = index.writer( DEFAULTS );
+        IndexWriter<MutableLong,MutableLong> writer = index.writer();
         writer.put( new MutableLong( 0 ), new MutableLong( 1 ) );
         writer.close();
 
@@ -445,7 +444,7 @@ public class GBPTreeTest
         CheckpointControlledMonitor monitor = new CheckpointControlledMonitor();
         index = createIndex( 1024, monitor );
         long key = 10;
-        try ( IndexWriter<MutableLong,MutableLong> writer = index.writer( DEFAULTS ) )
+        try ( IndexWriter<MutableLong,MutableLong> writer = index.writer() )
         {
             writer.put( new MutableLong( key ), new MutableLong( key ) );
         }
@@ -456,7 +455,7 @@ public class GBPTreeTest
         checkpointer.start();
         monitor.barrier.awaitUninterruptibly();
         // now we're in the smack middle of a checkpoint
-        Thread t2 = new Thread( throwing( () -> index.writer( DEFAULTS ).close() ) );
+        Thread t2 = new Thread( throwing( () -> index.writer().close() ) );
         t2.start();
         t2.join( 200 );
         assertTrue( Arrays.toString( checkpointer.getStackTrace() ), t2.isAlive() );
@@ -476,7 +475,7 @@ public class GBPTreeTest
         Barrier.Control barrier = new Barrier.Control();
         Thread writerThread = new Thread( throwing( () ->
         {
-            try ( IndexWriter<MutableLong,MutableLong> writer = index.writer( DEFAULTS ) )
+            try ( IndexWriter<MutableLong,MutableLong> writer = index.writer() )
             {
                 writer.put( new MutableLong( 1 ), new MutableLong( 1 ) );
                 barrier.reached();
@@ -501,7 +500,7 @@ public class GBPTreeTest
     {
         index = createIndex( 256 );
         int count = 1000;
-        try ( IndexWriter<MutableLong,MutableLong> writer = index.writer( DEFAULTS ) )
+        try ( IndexWriter<MutableLong,MutableLong> writer = index.writer() )
         {
             for ( int i = 0; i < count; i++ )
             {
@@ -532,7 +531,7 @@ public class GBPTreeTest
         // WHEN
         int count = 1_000;
         PrimitiveLongSet seen = Primitive.longSet( count );
-        try ( IndexWriter<MutableLong,MutableLong> writer = index.writer( DEFAULTS ) )
+        try ( IndexWriter<MutableLong,MutableLong> writer = index.writer() )
         {
             for ( int i = 0; i < count; i++ )
             {

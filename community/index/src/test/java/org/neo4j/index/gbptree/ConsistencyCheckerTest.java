@@ -23,7 +23,6 @@ import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.Test;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.index.IndexWriter;
 import org.neo4j.index.ValueMergers;
 import org.neo4j.io.pagecache.PageCursor;
 
@@ -95,7 +94,7 @@ public class ConsistencyCheckerTest
             for ( int i = 0; i < 100; i++, k++ )
             {
                 key.setValue( k );
-                logic.insert( cursor, structure, key, key, ValueMergers.overwrite(), IndexWriter.Options.DEFAULTS,
+                logic.insert( cursor, structure, key, key, ValueMergers.overwrite(),
                         stableGeneration, unstableGeneration );
                 if ( structure.hasSplit )
                 {

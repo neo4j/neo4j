@@ -78,7 +78,7 @@ public class GBPTreeRecoveryTest
         {
             PageCache pageCache = createPageCache();
             GBPTree<MutableLong,MutableLong> index = createIndex( pageCache, file );
-            IndexWriter<MutableLong,MutableLong> writer = index.writer( IndexWriter.Options.DEFAULTS );
+            IndexWriter<MutableLong,MutableLong> writer = index.writer();
 
             key.setValue( 1L );
             value.setValue( 10L );
@@ -99,7 +99,7 @@ public class GBPTreeRecoveryTest
             // this is the mimic:ed recovery
             index.prepareForRecovery();
 
-            try ( IndexWriter<MutableLong,MutableLong> writer = index.writer( IndexWriter.Options.DEFAULTS ) )
+            try ( IndexWriter<MutableLong,MutableLong> writer = index.writer() )
             {
                 writer.put( key, value );
             }
@@ -231,7 +231,7 @@ public class GBPTreeRecoveryTest
         return result;
     }
 
-    private static int indexOfLastCheckpoint( List<Action> actions ) throws IOException
+    private static int indexOfLastCheckpoint( List<Action> actions )
     {
         int i = 0;
         int lastCheckpoint = -1;
@@ -288,7 +288,7 @@ public class GBPTreeRecoveryTest
             long[] data = modificationData( 30, 200 );
             return index ->
             {
-                try ( IndexWriter<MutableLong,MutableLong> writer = index.writer( IndexWriter.Options.DEFAULTS ) )
+                try ( IndexWriter<MutableLong,MutableLong> writer = index.writer() )
                 {
                     for ( int i = 0; i < data.length; )
                     {
@@ -305,7 +305,7 @@ public class GBPTreeRecoveryTest
             long[] data = modificationData( 5, 20 );
             return index ->
             {
-                try ( IndexWriter<MutableLong,MutableLong> writer = index.writer( IndexWriter.Options.DEFAULTS ) )
+                try ( IndexWriter<MutableLong,MutableLong> writer = index.writer() )
                 {
                     for ( int i = 0; i < data.length; )
                     {
@@ -368,7 +368,7 @@ public class GBPTreeRecoveryTest
         }
 
         @Override
-        public IndexWriter<MutableLong,MutableLong> writer( Options options ) throws IOException
+        public IndexWriter<MutableLong,MutableLong> writer() throws IOException
         {
             return this;
         }

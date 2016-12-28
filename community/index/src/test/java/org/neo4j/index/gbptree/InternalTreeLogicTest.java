@@ -43,7 +43,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
-import static org.neo4j.index.IndexWriter.Options.DEFAULTS;
 import static org.neo4j.index.ValueMergers.overwrite;
 import static org.neo4j.index.gbptree.ConsistencyChecker.assertNoCrashOrBrokenPointerInGSPP;
 import static org.neo4j.index.gbptree.GenSafePointerPair.pointer;
@@ -1098,8 +1097,7 @@ public class InternalTreeLogicTest
         structurePropagation.hasNewGen = false;
         insertKey.setValue( key );
         insertValue.setValue( value );
-        treeLogic.insert( cursor, structurePropagation, insertKey, insertValue, valueMerger, DEFAULTS,
-                stableGen, unstableGen );
+        treeLogic.insert( cursor, structurePropagation, insertKey, insertValue, valueMerger, stableGen, unstableGen );
         handleAfterChange();
     }
 

@@ -57,7 +57,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.neo4j.index.IndexWriter.Options.DEFAULTS;
 import static org.neo4j.index.gbptree.GBPTree.NO_MONITOR;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 
@@ -112,7 +111,7 @@ public class GBPTreeIT
         }
 
         // WHEN
-        try ( IndexWriter<MutableLong,MutableLong> writer = index.writer( DEFAULTS ) )
+        try ( IndexWriter<MutableLong,MutableLong> writer = index.writer() )
         {
             for ( Map.Entry<MutableLong,MutableLong> entry : data.entrySet() )
             {
@@ -276,7 +275,7 @@ public class GBPTreeIT
             int inserted = 0;
             while ( (inserted < 100_000 || numberOfReads.get() < 100) && readerError.get() == null )
             {
-                try ( IndexWriter<MutableLong,MutableLong> writer = index.writer( DEFAULTS ) )
+                try ( IndexWriter<MutableLong,MutableLong> writer = index.writer() )
                 {
                     int groupCount = random1.nextInt( 1000 ) + 1;
                     for ( int i = 0; i < groupCount; i++, inserted++ )
@@ -461,7 +460,7 @@ public class GBPTreeIT
             int iteration = currentWriteIteration.get();
             while ( !failHalt.get() && numberOfReads.get() < wantedNbrOfReads && readerError.get() == null )
             {
-                try ( IndexWriter<MutableLong,MutableLong> writer = index.writer( DEFAULTS ) )
+                try ( IndexWriter<MutableLong,MutableLong> writer = index.writer() )
                 {
                     for ( long i = minRange( nbrOfGroups, rangeWidth, iteration ) + iteration % nbrOfGroups;
                           i < maxRange( nbrOfGroups, rangeWidth, iteration ); i += nbrOfGroups )
@@ -619,7 +618,7 @@ public class GBPTreeIT
             int iteration = currentWriteIteration.get();
             while ( !failHalt.get() && readerError.get() == null && lastRemovedKey.get() < maxValue - 2)
             {
-                try ( IndexWriter<MutableLong,MutableLong> writer = index.writer( DEFAULTS ) )
+                try ( IndexWriter<MutableLong,MutableLong> writer = index.writer() )
                 {
                     int minRange = minRange( nbrOfGroups, rangeWidth, iteration );
                     int maxRange = maxRange( nbrOfGroups, rangeWidth, iteration );
@@ -664,7 +663,7 @@ public class GBPTreeIT
         MutableLong key = new MutableLong();
         MutableLong value = new MutableLong();
 
-        try ( IndexWriter<MutableLong,MutableLong> writer = index.writer( IndexWriter.Options.DEFAULTS ) )
+        try ( IndexWriter<MutableLong,MutableLong> writer = index.writer() )
         {
             while ( nextToInsert < maxValue )
             {
@@ -710,7 +709,7 @@ public class GBPTreeIT
             Map<MutableLong,MutableLong> data, Random random ) throws IOException
     {
         int changeCount = random.nextInt( 10 ) + 10;
-        try ( IndexWriter<MutableLong,MutableLong> writer = index.writer( DEFAULTS ) )
+        try ( IndexWriter<MutableLong,MutableLong> writer = index.writer() )
         {
             for ( int i = 0; i < changeCount; i++ )
             {
