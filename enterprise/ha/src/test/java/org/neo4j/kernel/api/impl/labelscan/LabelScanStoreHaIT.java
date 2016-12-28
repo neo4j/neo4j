@@ -44,7 +44,7 @@ import static org.neo4j.helpers.collection.Iterators.count;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allAvailabilityGuardsReleased;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 
-public class LabelScanStoreHaIT
+public abstract class LabelScanStoreHaIT
 {
     @Test
     public void shouldCopyLabelScanStoreToNewSlaves() throws Exception
@@ -107,7 +107,7 @@ public class LabelScanStoreHaIT
     @Before
     public void setUp()
     {
-        KernelExtensionFactory<?> testExtension = new LuceneLabelScanStoreExtension( 100, monitor );
+        KernelExtensionFactory<?> testExtension = labelScanStoreExtension( monitor );
         TestHighlyAvailableGraphDatabaseFactory factory = new TestHighlyAvailableGraphDatabaseFactory();
         factory.addKernelExtensions( Collections.singletonList( testExtension ) );
         ClusterManager clusterManager = new ClusterManager.Builder( testDirectory.directory( "root" ) )
@@ -137,6 +137,8 @@ public class LabelScanStoreHaIT
         cluster.await( allSeesAllAsAvailable() );
         cluster.await( allAvailabilityGuardsReleased() );
     }
+
+    protected abstract KernelExtensionFactory<?> labelScanStoreExtension( LabelScanStore.Monitor monitor );
 
     @After
     public void tearDown()
