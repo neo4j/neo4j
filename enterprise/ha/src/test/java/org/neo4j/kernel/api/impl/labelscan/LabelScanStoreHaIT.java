@@ -19,18 +19,18 @@
  */
 package org.neo4j.kernel.api.impl.labelscan;
 
-import org.apache.lucene.store.LockObtainFailedException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.Arrays;
+import java.util.Collections;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
+import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
@@ -44,7 +44,7 @@ import static org.neo4j.helpers.collection.Iterators.count;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allAvailabilityGuardsReleased;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 
-public class LabelScanStoreHaIT
+public abstract class LabelScanStoreHaIT
 {
     @Test
     public void shouldCopyLabelScanStoreToNewSlaves() throws Exception
@@ -95,7 +95,7 @@ public class LabelScanStoreHaIT
     private enum Labels implements Label
     {
         First,
-        Second;
+        Second
     }
 
     @Rule
@@ -107,9 +107,9 @@ public class LabelScanStoreHaIT
     @Before
     public void setUp()
     {
-        KernelExtensionFactory<?> testExtension = new LuceneLabelScanStoreExtension( 100, monitor );
+        KernelExtensionFactory<?> testExtension = labelScanStoreExtension( monitor );
         TestHighlyAvailableGraphDatabaseFactory factory = new TestHighlyAvailableGraphDatabaseFactory();
-        factory.addKernelExtensions( Arrays.asList( testExtension ) );
+        factory.addKernelExtensions( Collections.singletonList( testExtension ) );
         ClusterManager clusterManager = new ClusterManager.Builder( testDirectory.directory( "root" ) )
                 .withDbFactory( factory )
                 .withStoreDirInitializer( ( serverId, storeDir ) -> {
@@ -138,13 +138,15 @@ public class LabelScanStoreHaIT
         cluster.await( allAvailabilityGuardsReleased() );
     }
 
+    protected abstract KernelExtensionFactory<?> labelScanStoreExtension( LabelScanStore.Monitor monitor );
+
     @After
     public void tearDown()
     {
         life.shutdown();
     }
 
-    private static class TestMonitor implements LuceneLabelScanStore.Monitor
+    private static class TestMonitor implements LabelScanStore.Monitor
     {
         private volatile int callsTo_init;
         private volatile int timesRebuiltWithData;
@@ -161,12 +163,12 @@ public class LabelScanStoreHaIT
         }
 
         @Override
-        public void lockedIndex( LockObtainFailedException e )
+        public void lockedIndex( Exception e )
         {
         }
 
         @Override
-        public void corruptedIndex()
+        public void notValidIndex()
         {
         }
 

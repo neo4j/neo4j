@@ -19,9 +19,6 @@
  */
 package org.neo4j.graphdb;
 
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -29,57 +26,19 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.Collections;
 import java.util.List;
-import java.util.Random;
-import java.util.Set;
 import java.util.stream.Stream;
 
 import org.neo4j.kernel.api.impl.labelscan.LuceneLabelScanIndexBuilder;
 import org.neo4j.test.rule.DatabaseRule;
-import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
 import static java.util.stream.Collectors.toList;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.io.fs.FileUtils.deleteRecursively;
 
-/**
- * Tests functionality around missing or corrupted lucene label scan store index, and that
- * the database should repair (i.e. rebuild) that automatically and just work.
- */
-public class LuceneLabelScanStoreChaosIT
+public class LuceneLabelScanStoreChaosIT extends LabelScanStoreChaosIT
 {
-    @Rule
-    public final DatabaseRule dbRule = new EmbeddedDatabaseRule( getClass() );
-    private final Random random = new Random();
-
-    @Test
-    public void shouldRebuildDeletedLabelScanStoreOnStartup() throws Exception
-    {
-        // GIVEN
-        Node node1 = createLabeledNode( Labels.First );
-        Node node2 = createLabeledNode( Labels.First );
-        Node node3 = createLabeledNode( Labels.First );
-        deleteNode( node2 ); // just to create a hole in the store
-
-        // WHEN
-        dbRule.restartDatabase( deleteTheLabelScanStoreIndex() );
-
-        // THEN
-        assertEquals( asSet( node1, node3 ), getAllNodesWithLabel( Labels.First ) );
-    }
-
-    @Test
-    public void rebuildCorruptedLabelScanStoreToStartup() throws Exception
-    {
-        Node node = createLabeledNode( Labels.First );
-
-        dbRule.restartDatabase( corruptTheLabelScanStoreIndex() );
-
-        assertEquals( asSet( node ), getAllNodesWithLabel( Labels.First ) );
-    }
-
-    private DatabaseRule.RestartAction corruptTheLabelScanStoreIndex()
+    @Override
+    protected DatabaseRule.RestartAction corruptTheLabelScanStoreIndex()
     {
         return ( fs, storeDirectory ) -> {
             try
@@ -103,7 +62,8 @@ public class LuceneLabelScanStoreChaosIT
         };
     }
 
-    private DatabaseRule.RestartAction deleteTheLabelScanStoreIndex()
+    @Override
+    protected DatabaseRule.RestartAction deleteTheLabelScanStoreIndex()
     {
         return ( fs, storeDirectory ) -> {
             try
@@ -132,33 +92,6 @@ public class LuceneLabelScanStoreChaosIT
         return (partitionDirs == null) ? Collections.emptyList() : Stream.of( partitionDirs ).collect( toList() );
     }
 
-    private Node createLabeledNode( Label... labels )
-    {
-        try ( Transaction tx = dbRule.getGraphDatabaseAPI().beginTx() )
-        {
-            Node node = dbRule.getGraphDatabaseAPI().createNode( labels );
-            tx.success();
-            return node;
-        }
-    }
-
-    private Set<Node> getAllNodesWithLabel( Label label )
-    {
-        try ( Transaction tx = dbRule.getGraphDatabaseAPI().beginTx() )
-        {
-            return asSet( dbRule.getGraphDatabaseAPI().findNodes( label ) );
-        }
-    }
-
-    private void deleteNode( Node node )
-    {
-        try ( Transaction tx = dbRule.getGraphDatabaseAPI().beginTx() )
-        {
-            node.delete();
-            tx.success();
-        }
-    }
-
     private void scrambleFile( File file ) throws IOException
     {
         try ( RandomAccessFile fileAccess = new RandomAccessFile( file, "rw" );
@@ -177,12 +110,7 @@ public class LuceneLabelScanStoreChaosIT
     {
         for ( int i = 0; i < bytes.length; i++ )
         {
-            bytes[i] = (byte) random.nextInt();
+            bytes[i] = (byte) randomRule.nextInt();
         }
-    }
-
-    private enum Labels implements Label
-    {
-        First, Second, Third
     }
 }

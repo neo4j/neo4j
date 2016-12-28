@@ -29,8 +29,6 @@ import org.neo4j.kernel.api.impl.labelscan.LuceneLabelScanIndexBuilder;
 import org.neo4j.kernel.api.impl.labelscan.LuceneLabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
-import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.FullStoreChangeStream;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 
@@ -86,7 +84,7 @@ public class LuceneLabelScanStoreBuilder
                     .withOperationalMode( operationalMode )
                     .build();
             labelScanStore = new LuceneLabelScanStore( index, fullStoreLabelUpdateStream( storeViewSupplier ),
-                    logProvider, LuceneLabelScanStore.Monitor.EMPTY );
+                    logProvider, LabelScanStore.Monitor.EMPTY );
 
             try
             {

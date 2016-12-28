@@ -33,6 +33,54 @@ import org.neo4j.storageengine.api.schema.LabelScanReader;
  */
 public interface LabelScanStore extends Lifecycle
 {
+    interface Monitor
+    {
+        Monitor EMPTY = new Monitor()
+        {
+            @Override
+            public void init()
+            {
+            }
+
+            @Override
+            public void noIndex()
+            {
+            }
+
+            @Override
+            public void lockedIndex( Exception e )
+            {
+            }
+
+            @Override
+            public void notValidIndex()
+            {
+            }
+
+            @Override
+            public void rebuilding()
+            {
+            }
+
+            @Override
+            public void rebuilt( long roughNodeCount )
+            {
+            }
+        };
+
+        void init();
+
+        void noIndex();
+
+        void lockedIndex( Exception e );
+
+        void notValidIndex();
+
+        void rebuilding();
+
+        void rebuilt( long roughNodeCount );
+    }
+
     /**
      * From the point a {@link LabelScanReader} is created till it's {@link LabelScanReader#close() closed} the
      * contents it returns cannot change, i.e. it honors repeatable reads.
