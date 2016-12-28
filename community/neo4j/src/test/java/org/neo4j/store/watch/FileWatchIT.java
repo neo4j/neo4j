@@ -61,6 +61,7 @@ import static org.junit.Assert.assertTrue;
 
 public class FileWatchIT
 {
+    private static final long TEST_TIMEOUT = 30_000;
 
     @Rule
     public TestDirectory testDirectory = TestDirectory.testDirectory();
@@ -83,15 +84,17 @@ public class FileWatchIT
         shutdownDatabaseSilently( database );
     }
 
-    @Test
+    @Test(timeout = TEST_TIMEOUT)
     public void notifyAboutStoreFileDeletion() throws Exception
     {
         String fileName = MetaDataStore.DEFAULT_NAME;
-        FileWatcher fileWatcher = getFileWatcher( (GraphDatabaseAPI) database );
+        FileWatcher fileWatcher = getFileWatcher( database );
+        CheckPointer checkpointer = getCheckpointer( database );
         DeletionLatchEventListener deletionListener = new DeletionLatchEventListener( fileName );
         fileWatcher.addFileWatchEventListener( deletionListener );
 
         createNode( database );
+        forceCheckpoint( checkpointer );
         deletionListener.awaitModificationNotification();
 
         deleteFile( storeDir, fileName );
@@ -101,7 +104,7 @@ public class FileWatchIT
                 "Store file '" + fileName + "' was deleted while database was running." );
     }
 
-    @Test
+    @Test(timeout = TEST_TIMEOUT)
     public void notifyWhenFileWatchingFailToStart()
     {
         AssertableLogProvider logProvider = new AssertableLogProvider( true );
@@ -121,16 +124,18 @@ public class FileWatchIT
         }
     }
 
-    @Test
+    @Test(timeout = TEST_TIMEOUT)
     public void notifyAboutLegacyIndexFolderRemoval() throws InterruptedException, IOException
     {
         String monitoredDirectory = getLegacyIndexDirectory( storeDir );
 
-        FileWatcher fileWatcher = getFileWatcher( (GraphDatabaseAPI) database );
+        FileWatcher fileWatcher = getFileWatcher( database );
+        CheckPointer checkPointer = getCheckpointer( database );
         DeletionLatchEventListener deletionListner = new DeletionLatchEventListener( monitoredDirectory );
         fileWatcher.addFileWatchEventListener( deletionListner );
 
         createNode( database );
+        forceCheckpoint( checkPointer );
         deletionListner.awaitModificationNotification();
 
         deleteStoreDirectory( storeDir, monitoredDirectory );
@@ -140,7 +145,7 @@ public class FileWatchIT
                 "Store directory '" + monitoredDirectory + "' was deleted while database was running." );
     }
 
-    @Test
+    @Test(timeout = TEST_TIMEOUT)
     public void doNotNotifyAboutLuceneIndexFilesDeletion() throws InterruptedException, IOException
     {
         DependencyResolver dependencyResolver = ((GraphDatabaseAPI) database).getDependencyResolver();
@@ -173,15 +178,17 @@ public class FileWatchIT
         accumulativeListener.assertDoesNotHaveAnyDeletions();
     }
 
-    @Test
-    public void doNotMonitorTransactionLogFiles() throws InterruptedException
+    @Test(timeout = TEST_TIMEOUT)
+    public void doNotMonitorTransactionLogFiles() throws InterruptedException, IOException
     {
-        FileWatcher fileWatcher = getFileWatcher( (GraphDatabaseAPI) database );
+        FileWatcher fileWatcher = getFileWatcher( database );
+        CheckPointer checkpointer = getCheckpointer( database );
         ModificationEventListener modificationEventListener =
                 new ModificationEventListener( MetaDataStore.DEFAULT_NAME );
         fileWatcher.addFileWatchEventListener( modificationEventListener );
 
         createNode( database );
+        forceCheckpoint( checkpointer );
         modificationEventListener.awaitModificationNotification();
 
         String fileName = PhysicalLogFile.DEFAULT_NAME + ".0";
@@ -196,14 +203,17 @@ public class FileWatchIT
         logProvider.assertNone( logMatcher );
     }
 
-    @Test
+    @Test(timeout = TEST_TIMEOUT)
     public void notifyWhenWholeStoreDirectoryRemoved() throws IOException, InterruptedException
     {
         String fileName = MetaDataStore.DEFAULT_NAME;
-        FileWatcher fileWatcher = getFileWatcher( (GraphDatabaseAPI) database );
+        FileWatcher fileWatcher = getFileWatcher( database );
+        CheckPointer checkpointer = getCheckpointer( database );
+
         ModificationEventListener modificationListener = new ModificationEventListener( fileName );
         fileWatcher.addFileWatchEventListener( modificationListener );
         createNode( database );
+        forceCheckpoint( checkpointer );
 
         modificationListener.awaitModificationNotification();
         fileWatcher.removeFileWatchEventListener( modificationListener );
@@ -281,9 +291,14 @@ public class FileWatchIT
         }
     }
 
-    private FileWatcher getFileWatcher( GraphDatabaseAPI database )
+    private CheckPointer getCheckpointer(GraphDatabaseService database)
     {
-        DependencyResolver dependencyResolver = database.getDependencyResolver();
+        return ((GraphDatabaseAPI) database).getDependencyResolver().resolveDependency( CheckPointer.class );
+    }
+
+    private FileWatcher getFileWatcher( GraphDatabaseService database )
+    {
+        DependencyResolver dependencyResolver = ((GraphDatabaseAPI) database).getDependencyResolver();
         return dependencyResolver.resolveDependency( FileWatcher.class );
     }
 
