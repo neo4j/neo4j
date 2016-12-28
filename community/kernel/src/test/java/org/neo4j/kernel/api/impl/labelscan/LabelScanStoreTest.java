@@ -127,19 +127,10 @@ public abstract class LabelScanStoreTest
     }
 
     @Test
-    public void failToGetWriterOnReadOnlyScanStore() throws Exception
-    {
-        createAndStartReadOnly();
-        expectedException.expect( UnsupportedOperationException.class );
-        store.newWriter();
-    }
-
-    @Test
     public void failToStartIfLabelScanStoreIndexDoesNotExistInReadOnlyMode()
     {
         expectedException.expectCause( Matchers.instanceOf( UnsupportedOperationException.class ) );
         start( false, true );
-//        assertTrue( monitor.noIndexCalled );
     }
 
     @Test
