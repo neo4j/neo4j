@@ -21,6 +21,8 @@ package org.neo4j.kernel.api.txtracking;
 
 import org.junit.Test;
 
+import java.time.Clock;
+
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -45,8 +47,7 @@ public class TransactionIdTrackerTest
         // given
         when( transactionIdStore.getLastClosedTransactionId() ).thenReturn( -1L );
         when( availabilityGuard.isAvailable() ).thenReturn( true );
-        TransactionIdTracker transactionIdTracker =
-                new TransactionIdTracker( transactionIdStore, availabilityGuard );
+        TransactionIdTracker transactionIdTracker = createTracker();
 
         // when
         transactionIdTracker.awaitUpToDate( BASE_TX_ID, ofSeconds( 5 ) );
@@ -61,8 +62,7 @@ public class TransactionIdTrackerTest
         long version = 5L;
         when( transactionIdStore.getLastClosedTransactionId() ).thenReturn( version );
         when( availabilityGuard.isAvailable() ).thenReturn( true );
-        TransactionIdTracker transactionIdTracker =
-                new TransactionIdTracker( transactionIdStore, availabilityGuard );
+        TransactionIdTracker transactionIdTracker = createTracker();
 
         // when
         transactionIdTracker.awaitUpToDate( version, ofSeconds( 5 ) );
@@ -77,8 +77,7 @@ public class TransactionIdTrackerTest
         long version = 5L;
         when( transactionIdStore.getLastClosedTransactionId() ).thenReturn( version );
         when( availabilityGuard.isAvailable() ).thenReturn( true );
-        TransactionIdTracker transactionIdTracker =
-                new TransactionIdTracker( transactionIdStore, availabilityGuard );
+        TransactionIdTracker transactionIdTracker = createTracker();
 
         // when
         try
@@ -100,7 +99,7 @@ public class TransactionIdTrackerTest
         long version = 5L;
         when( transactionIdStore.getLastClosedTransactionId() ).thenReturn( version );
         when( availabilityGuard.isAvailable() ).thenReturn( false );
-        TransactionIdTracker transactionIdTracker =  new TransactionIdTracker( transactionIdStore, availabilityGuard );
+        TransactionIdTracker transactionIdTracker = createTracker();
 
         // when
         try
@@ -113,5 +112,10 @@ public class TransactionIdTrackerTest
             // then all good!
             assertEquals( Status.General.DatabaseUnavailable, ex.status() );
         }
+    }
+
+    private TransactionIdTracker createTracker()
+    {
+        return new TransactionIdTracker( transactionIdStore, availabilityGuard, Clock.systemUTC() );
     }
 }

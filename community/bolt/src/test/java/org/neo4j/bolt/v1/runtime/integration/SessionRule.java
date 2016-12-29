@@ -41,6 +41,7 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.security.AuthManager;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
@@ -74,7 +75,8 @@ class SessionRule implements TestRule
                                         NullLogService.getInstance(),
                                         resolver.resolveDependency( ThreadToStatementContextBridge.class ),
                                         authentication,
-                                        BoltConnectionTracker.NOOP
+                                        BoltConnectionTracker.NOOP,
+                                        Config.defaults()
                                     );
                 boltFactory.start();
                 try

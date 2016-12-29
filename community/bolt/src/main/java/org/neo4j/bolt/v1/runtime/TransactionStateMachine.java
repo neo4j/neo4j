@@ -20,7 +20,6 @@
 package org.neo4j.bolt.v1.runtime;
 
 import java.time.Clock;
-import java.time.Duration;
 import java.util.Map;
 
 import org.neo4j.bolt.security.auth.AuthenticationResult;
@@ -150,7 +149,7 @@ public class TransactionStateMachine implements StatementProcessor
                             if ( params.containsKey( "bookmark" ) )
                             {
                                 final Bookmark bookmark = Bookmark.fromString( params.get( "bookmark" ).toString() );
-                                spi.awaitUpToDate( bookmark.txId(), Duration.ofSeconds( 30 ) );
+                                spi.awaitUpToDate( bookmark.txId() );
                                 ctx.currentResult = new BookmarkResult( bookmark );
                             }
                             else
@@ -386,7 +385,7 @@ public class TransactionStateMachine implements StatementProcessor
 
     interface SPI
     {
-        void awaitUpToDate( long oldestAcceptableTxId, Duration timeout ) throws TransactionFailureException;
+        void awaitUpToDate( long oldestAcceptableTxId ) throws TransactionFailureException;
 
         long newestEncounteredTxId();
 

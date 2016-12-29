@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.txtracking;
 
+import java.time.Clock;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
@@ -41,11 +42,14 @@ public class TransactionIdTracker
 
     private final TransactionIdStore transactionIdStore;
     private final AvailabilityGuard availabilityGuard;
+    private final Clock clock;
 
-    public TransactionIdTracker( TransactionIdStore transactionIdStore, AvailabilityGuard availabilityGuard )
+    public TransactionIdTracker( TransactionIdStore transactionIdStore, AvailabilityGuard availabilityGuard,
+            Clock clock )
     {
         this.availabilityGuard = availabilityGuard;
         this.transactionIdStore = transactionIdStore;
+        this.clock = clock;
     }
 
     /**
@@ -68,7 +72,7 @@ public class TransactionIdTracker
      * @param oldestAcceptableTxId id of the Oldest Acceptable Transaction (OAT) that must have been applied before
      *                             continuing work.
      * @param timeout maximum duration to wait for OAT to be applied
-     * @throws TransactionFailureException
+     * @throws TransactionFailureException when OAT did not get applied within the given duration
      */
     public void awaitUpToDate( long oldestAcceptableTxId, Duration timeout ) throws TransactionFailureException
     {
@@ -78,7 +82,7 @@ public class TransactionIdTracker
         }
 
         if ( !tryAwaitEx( () -> isReady( oldestAcceptableTxId ), timeout.toMillis(), TimeUnit.MILLISECONDS,
-                POLL_INTERVAL, POLL_UNIT ) )
+                POLL_INTERVAL, POLL_UNIT, clock ) )
         {
             throw new TransactionFailureException( Status.Transaction.InstanceStateChanged,
                     "Database not up to the requested version: %d. Latest database version is %d", oldestAcceptableTxId,
