@@ -1344,4 +1344,5 @@ public class PageListTest
 
     // todo evict
     // todo flush
+    // todo freelist? (entries chained via file page ids in a linked list? should work as free pages are always exclusively locked, and thus don't really need an isLoaded check)
 }
