@@ -232,6 +232,7 @@ public class FileWatchIT
         DeletionLatchEventListener eventListener = new DeletionLatchEventListener( storeDirectoryName );
         fileWatcher.addFileWatchEventListener( eventListener );
         FileUtils.deleteRecursively( storeDir );
+
         eventListener.awaitDeletionNotification();
 
         logProvider.assertContainsMessageContaining(
@@ -395,8 +396,10 @@ public class FileWatchIT
         @Override
         public void fileDeleted( String fileName )
         {
-            assertTrue( fileName.endsWith( expectedFileName ) );
-            deletionLatch.countDown();
+            if ( fileName.endsWith( expectedFileName ) )
+            {
+                deletionLatch.countDown();
+            }
         }
 
         void awaitDeletionNotification() throws InterruptedException
