@@ -69,8 +69,6 @@ public class SeekCursorTest
 
     private final MutableLong insertKey = layout.newKey();
     private final MutableLong insertValue = layout.newValue();
-    private final MutableLong readKey = layout.newKey();
-    private final MutableLong readValue = layout.newValue();
 
     private final MutableLong from = layout.newKey();
     private final MutableLong to = layout.newKey();
@@ -619,7 +617,7 @@ public class SeekCursorTest
         to.setValue( keyCount + 1 ); // +1 because we're adding one more down below
 
         // WHEN
-        try ( SeekCursor<MutableLong,MutableLong> cursor = new SeekCursor<>( this.cursor, insertKey, insertValue,
+        try ( SeekCursor<MutableLong,MutableLong> cursor = new SeekCursor<>( this.cursor,
                 node, from, to, layout, stableGen, unstableGen, () -> 0L, failingRootCatchup, unstableGen ) )
         {
             // reading a couple of keys
@@ -999,8 +997,8 @@ public class SeekCursorTest
         };
 
         // when
-        try ( SeekCursor<MutableLong,MutableLong> seek = new SeekCursor<>( cursor, readKey, readValue, node, from, to,
-                layout, stableGen, unstableGen, generationSupplier, rootCatchup, gen - 1 ) )
+        try ( SeekCursor<MutableLong,MutableLong> seek = new SeekCursor<>( cursor, node, from, to, layout,
+                stableGen, unstableGen, generationSupplier, rootCatchup, gen - 1 ) )
         {
             // do nothing
         }
@@ -1055,8 +1053,8 @@ public class SeekCursorTest
         // when
         from.setValue( 1L );
         to.setValue( 2L );
-        try ( SeekCursor<MutableLong,MutableLong> seek = new SeekCursor<>( cursor, readKey, readValue, node, from, to,
-                layout, stableGen, unstableGen, generationSupplier, rootCatchup, unstableGen ) )
+        try ( SeekCursor<MutableLong,MutableLong> seek = new SeekCursor<>( cursor, node, from, to, layout,
+                stableGen, unstableGen, generationSupplier, rootCatchup, unstableGen ) )
         {
             // do nothing
         }
@@ -1110,8 +1108,8 @@ public class SeekCursorTest
         // when
         from.setValue( 1L );
         to.setValue( 20L );
-        try ( SeekCursor<MutableLong,MutableLong> seek = new SeekCursor<>( cursor, readKey, readValue, node, from, to,
-                layout, stableGen - 1, unstableGen - 1, generationSupplier, rootCatchup, unstableGen ) )
+        try ( SeekCursor<MutableLong,MutableLong> seek = new SeekCursor<>( cursor, node, from, to, layout,
+                stableGen - 1, unstableGen - 1, generationSupplier, rootCatchup, unstableGen ) )
         {
             while ( seek.next() )
             {
@@ -1193,8 +1191,8 @@ public class SeekCursorTest
     {
         from.setValue( fromInclusive );
         to.setValue( toExclusive );
-        return new SeekCursor<>( pageCursor, readKey, readValue, node, from,
-                to, layout, stableGen, unstableGen, generationSupplier, failingRootCatchup, unstableGen );
+        return new SeekCursor<>( pageCursor, node, from, to, layout, stableGen, unstableGen, generationSupplier,
+                failingRootCatchup, unstableGen );
     }
 
     /**

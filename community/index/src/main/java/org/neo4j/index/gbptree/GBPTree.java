@@ -512,8 +512,6 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>
     @Override
     public RawCursor<Hit<KEY,VALUE>,IOException> seek( KEY fromInclusive, KEY toExclusive ) throws IOException
     {
-        KEY key = layout.newKey();
-        VALUE value = layout.newValue();
         long generation = this.generation;
         long stableGeneration = stableGeneration( generation );
         long unstableGeneration = unstableGeneration( generation );
@@ -522,7 +520,7 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>
         long rootGen = root.goTo( cursor );
 
         // Returns cursor which is now initiated with left-most leaf node for the specified range
-        return new SeekCursor<>( cursor, key, value, bTreeNode, fromInclusive, toExclusive, layout,
+        return new SeekCursor<>( cursor, bTreeNode, fromInclusive, toExclusive, layout,
                 stableGeneration, unstableGeneration, generationSupplier, rootCatchup, rootGen );
     }
 
