@@ -26,7 +26,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Supplier;
 
 import org.neo4j.collection.pool.Pool;
@@ -116,7 +116,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private SecurityContext securityContext;
     private volatile StatementLocks statementLocks;
     private boolean beforeHookInvoked;
-    private TransactionStatus transactionStatus = new TransactionStatus();
+    private final TransactionStatus transactionStatus = new TransactionStatus();
     private boolean failure;
     private boolean success;
     private long startTimeMillis;
@@ -351,7 +351,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     private void markAsClosed( long txId )
     {
-        assertTransactionOpen();
         closeCurrentStatementIfAny();
         for ( CloseListener closeListener : closeListeners )
         {
@@ -749,7 +748,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         storageStatement.close();
     }
 
-    void markAsShutdown()
+    private void markAsShutdown()
     {
         if ( transactionStatus.shutdown() )
         {
@@ -814,12 +813,14 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         private static final int NON_STATE_BITS_MASK = 0xFFFF_FFFC;
         private static final int TERMINATED = 1 << 3;
 
-        private AtomicInteger status = new AtomicInteger( CLOSED );
+        private static final AtomicIntegerFieldUpdater<TransactionStatus> statusUpdater =
+                AtomicIntegerFieldUpdater.newUpdater( TransactionStatus.class, "status" );
+        private volatile int status = CLOSED;
         private Status terminationReason;
 
         public void init()
         {
-            status.set( OPEN );
+            statusUpdater.set( this, OPEN );
             reset();
         }
 
@@ -845,7 +846,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
         public boolean isTerminated()
         {
-            return (status.get() & TERMINATED) > 0;
+            return (statusUpdater.get( this ) & TERMINATED) != 0;
         }
 
         public boolean terminate( Status reason )
@@ -853,14 +854,14 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             int currentStatus;
             do
             {
-                currentStatus = status.get();
+                currentStatus = statusUpdater.get( this );
                 if ( (currentStatus != OPEN) && (currentStatus != CLOSING) )
                 {
                     return false;
                 }
                 terminationReason = reason;
             }
-            while ( !status.compareAndSet( currentStatus, currentStatus | TERMINATED ) );
+            while ( !statusUpdater.compareAndSet( this, currentStatus, currentStatus | TERMINATED ) );
             return true;
         }
 
@@ -869,13 +870,13 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             int currentStatus;
             do
             {
-                currentStatus = status.get();
+                currentStatus = statusUpdater.get( this );
                 if ( (currentStatus & STATE_BITS_MASK) != OPEN )
                 {
                     return false;
                 }
             }
-            while ( !status.compareAndSet( currentStatus, (currentStatus & NON_STATE_BITS_MASK) | CLOSING ) );
+            while ( !statusUpdater.compareAndSet( this, currentStatus, (currentStatus & NON_STATE_BITS_MASK) | CLOSING ) );
             return true;
         }
 
@@ -884,30 +885,30 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             int currentStatus;
             do
             {
-                currentStatus = status.get();
+                currentStatus = statusUpdater.get( this );
                 if ( (currentStatus & STATE_BITS_MASK) != OPEN )
                 {
                     return false;
                 }
             }
-            while ( !status.compareAndSet( currentStatus, (currentStatus & NON_STATE_BITS_MASK) | SHUTDOWN ) );
+            while ( !statusUpdater.compareAndSet( this, currentStatus, (currentStatus & NON_STATE_BITS_MASK) | SHUTDOWN ) );
             return true;
         }
 
         public void close()
         {
-            status.set( CLOSED );
+            statusUpdater.set( this, CLOSED );
             reset();
         }
 
         Optional<Status> getTerminationReason()
         {
-            return isTerminated() ? Optional.ofNullable( terminationReason ) : Optional.empty();
+            return Optional.ofNullable( terminationReason );
         }
 
         private boolean is( int statusCode )
         {
-            return is( status.get(), statusCode );
+            return is( statusUpdater.get( this ), statusCode );
         }
 
         private boolean is( int currentStatus, int statusCode )
