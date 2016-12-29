@@ -23,12 +23,8 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
 
-import org.neo4j.index.IndexWriter;
 import org.neo4j.index.ValueMerger;
 import org.neo4j.io.pagecache.PageCursor;
-
-import static java.lang.Integer.max;
-import static java.lang.Integer.min;
 
 import static org.neo4j.index.gbptree.KeySearch.isHit;
 import static org.neo4j.index.gbptree.KeySearch.positionOf;
@@ -94,7 +90,7 @@ class InternalTreeLogic<KEY,VALUE>
      * - level: 1 is at first level below root
      * ... a.s.o
      *
-     * Calling {@link #insert(PageCursor, StructurePropagation, Object, Object, ValueMerger, org.neo4j.index.IndexWriter.Options, long, long)}
+     * Calling {@link #insert(PageCursor, StructurePropagation, Object, Object, ValueMerger, long, long)}
      * or {@link #remove(PageCursor, StructurePropagation, Object, Object, long, long)} leaves the cursor
      * at the last updated page (tree node id) and remembers the path down the tree to where it is.
      * Further inserts/removals will move the cursor from its current position to where the next change will
@@ -342,20 +338,17 @@ class InternalTreeLogic<KEY,VALUE>
      * @param key key to be inserted
      * @param value value to be associated with key
      * @param valueMerger {@link ValueMerger} for deciding what to do with existing keys
-     * @param options options for this insert
      * @param stableGeneration stable generation, i.e. generations <= this generation are considered stable.
      * @param unstableGeneration unstable generation, i.e. generation which is under development right now.
      * @throws IOException on cursor failure
      */
     void insert( PageCursor cursor, StructurePropagation<KEY> structurePropagation, KEY key, VALUE value,
-            ValueMerger<VALUE> valueMerger, IndexWriter.Options options,
-            long stableGeneration, long unstableGeneration ) throws IOException
+            ValueMerger<VALUE> valueMerger, long stableGeneration, long unstableGeneration ) throws IOException
     {
         assert cursorIsAtExpectedLocation( cursor );
         moveToCorrectLeaf( cursor, key, stableGeneration, unstableGeneration );
 
-        insertInLeaf( cursor, structurePropagation, key, value, valueMerger, options,
-                stableGeneration, unstableGeneration );
+        insertInLeaf( cursor, structurePropagation, key, value, valueMerger, stableGeneration, unstableGeneration );
 
         while ( structurePropagation.hasNewGen || structurePropagation.hasSplit )
         {
@@ -375,7 +368,7 @@ class InternalTreeLogic<KEY,VALUE>
             {
                 structurePropagation.hasSplit = false;
                 insertInInternal( cursor, structurePropagation, bTreeNode.keyCount( cursor ), structurePropagation.primKey,
-                        structurePropagation.right, options, stableGeneration, unstableGeneration );
+                        structurePropagation.right, stableGeneration, unstableGeneration );
             }
         }
     }
@@ -409,7 +402,7 @@ class InternalTreeLogic<KEY,VALUE>
      * @throws IOException on cursor failure
      */
     private void insertInInternal( PageCursor cursor, StructurePropagation<KEY> structurePropagation, int keyCount,
-            KEY primKey, long rightChild, IndexWriter.Options options, long stableGeneration, long unstableGeneration )
+            KEY primKey, long rightChild, long stableGeneration, long unstableGeneration )
             throws IOException
     {
         createUnstableVersionIfNeeded( cursor, structurePropagation, stableGeneration, unstableGeneration );
@@ -432,7 +425,7 @@ class InternalTreeLogic<KEY,VALUE>
         // Overflow
         // We will overwrite primKey in structurePropagation, so copy it over to a place holder
         layout.copyKey( structurePropagation.primKey, primKeyPlaceHolder );
-        splitInternal( cursor, structurePropagation, primKeyPlaceHolder, rightChild, keyCount, options,
+        splitInternal( cursor, structurePropagation, primKeyPlaceHolder, rightChild, keyCount,
                 stableGeneration, unstableGeneration );
     }
 
@@ -449,8 +442,7 @@ class InternalTreeLogic<KEY,VALUE>
      * @throws IOException on cursor failure
      */
     private void splitInternal( PageCursor cursor, StructurePropagation<KEY> structurePropagation, KEY primKey,
-            long newRightChild, int keyCount, IndexWriter.Options options,
-            long stableGeneration, long unstableGeneration ) throws IOException
+            long newRightChild, int keyCount, long stableGeneration, long unstableGeneration ) throws IOException
     {
         long current = cursor.getCurrentPageId();
         long oldRight = bTreeNode.rightSibling( cursor, stableGeneration, unstableGeneration );
@@ -461,7 +453,7 @@ class InternalTreeLogic<KEY,VALUE>
         int pos = positionOf( search( cursor, bTreeNode, primKey, readKey, keyCount ) );
 
         int keyCountAfterInsert = keyCount + 1;
-        int middlePos = middle( keyCountAfterInsert, options.splitRetentionFactor() );
+        int middlePos = middle( keyCountAfterInsert );
 
         // Update structurePropagation
         structurePropagation.hasSplit = true;
@@ -584,12 +576,9 @@ class InternalTreeLogic<KEY,VALUE>
         bTreeNode.setRightSibling( cursor, newRight, stableGeneration, unstableGeneration );
     }
 
-    private static int middle( int keyCountAfterInsert, float splitLeftChildSize )
+    private static int middle( int keyCountAfterInsert )
     {
-        int middle = (int) (keyCountAfterInsert * splitLeftChildSize); // Floor division
-        middle = max( 1, middle );
-        middle = min( keyCountAfterInsert - 1, middle );
-        return middle;
+        return keyCountAfterInsert / 2;
     }
 
     /**
@@ -602,12 +591,11 @@ class InternalTreeLogic<KEY,VALUE>
      * @param key key to be inserted
      * @param value value to be associated with key
      * @param valueMerger {@link ValueMerger} for deciding what to do with existing keys
-     * @param options options for this insert
      * @throws IOException on cursor failure
      */
     private void insertInLeaf( PageCursor cursor, StructurePropagation<KEY> structurePropagation,
             KEY key, VALUE value, ValueMerger<VALUE> valueMerger,
-            IndexWriter.Options options, long stableGeneration, long unstableGeneration ) throws IOException
+            long stableGeneration, long unstableGeneration ) throws IOException
     {
         int keyCount = bTreeNode.keyCount( cursor );
         int search = search( cursor, bTreeNode, key, readKey, keyCount );
@@ -638,7 +626,7 @@ class InternalTreeLogic<KEY,VALUE>
             return; // No split has occurred
         }
         // Overflow, split leaf
-        splitLeaf( cursor, structurePropagation, key, value, keyCount, options, stableGeneration, unstableGeneration );
+        splitLeaf( cursor, structurePropagation, key, value, keyCount, stableGeneration, unstableGeneration );
     }
 
     /**
@@ -650,12 +638,11 @@ class InternalTreeLogic<KEY,VALUE>
      * @param newKey key to be inserted
      * @param newValue value to be inserted (in association with key)
      * @param keyCount number of keys in this leaf (it was already read anyway)
-     * @param options options for this insert
      * @throws IOException on cursor failure
      */
     private void splitLeaf( PageCursor cursor, StructurePropagation<KEY> structurePropagation,
-            KEY newKey, VALUE newValue, int keyCount, IndexWriter.Options options,
-            long stableGeneration, long unstableGeneration ) throws IOException
+            KEY newKey, VALUE newValue, int keyCount, long stableGeneration, long unstableGeneration )
+                    throws IOException
     {
         // To avoid moving cursor between pages we do all operations on left node first.
         // Save data that needs transferring and then add it to right node.
@@ -719,7 +706,7 @@ class InternalTreeLogic<KEY,VALUE>
         // Position where newKey / newValue is to be inserted
         int pos = positionOf( search( cursor, bTreeNode, newKey, readKey, keyCount ) );
         int keyCountAfterInsert = keyCount + 1;
-        int middlePos = middle( keyCountAfterInsert, options.splitRetentionFactor() );
+        int middlePos = middle( keyCountAfterInsert );
 
         // allKeysIncludingNewKey should now contain all keys in sorted order and
         // allValuesIncludingNewValue should now contain all values in same order as corresponding keys

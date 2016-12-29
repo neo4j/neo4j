@@ -25,7 +25,7 @@ import org.neo4j.cursor.RawCursor;
 import org.neo4j.io.pagecache.IOLimiter;
 
 /**
- * An index which can have data {@link #writer(IndexWriter.Options) added/removed} and
+ * An index which can have data {@link #writer() added/removed} and
  * {@link #seek(Object, Object) looked up} using key range.
  *
  * @param <KEY> type of keys in the index
@@ -51,11 +51,10 @@ public interface Index<KEY,VALUE> extends Closeable
      * Returns a {@link IndexWriter} able to modify the index, i.e. insert and remove keys/values.
      * After usage the returned writer must be closed, typically by using try-with-resource clause.
      *
-     * @param options {@link IndexWriter.Options} which will apply to all modifications by the returned {@link IndexWriter}.
      * @return {@link IndexWriter} able to modify the index.
      * @throws IOException on error accessing the index.
      */
-    IndexWriter<KEY,VALUE> writer( IndexWriter.Options options ) throws IOException;
+    IndexWriter<KEY,VALUE> writer() throws IOException;
 
     /**
      * Checkpoints and flushes any pending changes to storage.
