@@ -68,6 +68,7 @@ do_ulimit()
 
 case "$1" in
   start)
+    do_ulimit
     do_start
     ;;
   stop)
