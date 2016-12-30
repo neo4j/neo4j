@@ -23,13 +23,14 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Map;
 import java.util.function.BiFunction;
+
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 import static io.netty.buffer.Unpooled.wrappedBuffer;
 
@@ -76,28 +77,36 @@ public class SocketTransportHandler extends ChannelInboundHandlerAdapter
     @Override
     public void channelInactive( ChannelHandlerContext ctx ) throws Exception
     {
-        close();
+        close( ctx );
     }
 
     @Override
     public void handlerRemoved( ChannelHandlerContext ctx ) throws Exception
     {
-        close();
+        close( ctx );
     }
 
     @Override
     public void exceptionCaught( ChannelHandlerContext ctx, Throwable cause ) throws Exception
     {
         log.error( "Fatal error occurred when handling a client connection: " + cause.getMessage(), cause );
-        close();
+        close( ctx );
     }
 
-    private void close()
+    private void close( ChannelHandlerContext ctx )
     {
-        if(protocol != null)
+        if ( protocol != null )
         {
+            // handshake was successful and protocol was initialized, so it needs to be closed now
+            // channel will be closed as part of the protocol's close procedure
             protocol.close();
             protocol = null;
+        }
+        else
+        {
+            // handshake did not happen or failed, protocol was not initialized, so we need to close the channel
+            // channel will be closed as part of the context's close procedure
+            ctx.close();
         }
     }
 

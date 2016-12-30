@@ -24,39 +24,39 @@ import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import org.junit.Test;
-import org.neo4j.bolt.transport.BoltProtocol;
-import org.neo4j.bolt.transport.SocketTransportHandler;
-import org.neo4j.bolt.v1.runtime.SynchronousBoltWorker;
-import org.neo4j.bolt.v1.runtime.BoltStateMachine;
-import org.neo4j.bolt.v1.transport.BoltProtocolV1;
-import org.neo4j.kernel.impl.logging.NullLogService;
-import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.logging.NullLogProvider;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiFunction;
 
+import org.neo4j.bolt.transport.BoltProtocol;
+import org.neo4j.bolt.transport.SocketTransportHandler;
+import org.neo4j.bolt.v1.runtime.BoltStateMachine;
+import org.neo4j.bolt.v1.runtime.SynchronousBoltWorker;
+import org.neo4j.bolt.v1.transport.BoltProtocolV1;
+import org.neo4j.kernel.impl.logging.NullLogService;
+import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.NullLogProvider;
+
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
-import static org.mockito.Mockito.*;
+import static org.junit.Assert.assertSame;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.neo4j.bolt.transport.SocketTransportHandler.ProtocolChooser;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class SocketTransportHandlerTest
 {
     @Test
-    public void shouldCloseSessionOnChannelClose() throws Throwable
+    public void shouldCloseProtocolOnChannelInactive() throws Throwable
     {
         // Given
-        BoltStateMachine machine = mock(BoltStateMachine.class);
-        Channel ch = mock( Channel.class );
-        ChannelHandlerContext ctx = mock( ChannelHandlerContext.class );
-        when(ctx.channel()).thenReturn( ch );
+        BoltStateMachine machine = mock( BoltStateMachine.class );
+        ChannelHandlerContext ctx = channelHandlerContextMock();
 
-        when( ch.alloc() ).thenReturn( UnpooledByteBufAllocator.DEFAULT );
-        when( ctx.alloc() ).thenReturn( UnpooledByteBufAllocator.DEFAULT );
-
-        SocketTransportHandler handler = new SocketTransportHandler( protocolChooser( machine ), NullLogProvider.getInstance() );
+        SocketTransportHandler handler = newSocketTransportHandler( protocolChooser( machine ) );
 
         // And Given a session has been established
         handler.channelRead( ctx, handshake() );
@@ -69,17 +69,58 @@ public class SocketTransportHandlerTest
     }
 
     @Test
-    public void logsAndClosesConnectionOnUnexpectedExceptions() throws Throwable
+    public void shouldCloseContextWhenProtocolNotInitializedOnChannelInactive() throws Throwable
     {
         // Given
-        BoltStateMachine machine = mock(BoltStateMachine.class);
-        Channel ch = mock( Channel.class );
-        ChannelHandlerContext ctx = mock( ChannelHandlerContext.class );
-        when(ctx.channel()).thenReturn( ch );
+        ChannelHandlerContext context = mock( ChannelHandlerContext.class );
+        SocketTransportHandler handler = newSocketTransportHandler( mock( ProtocolChooser.class ) );
 
-        when( ch.alloc() ).thenReturn( UnpooledByteBufAllocator.DEFAULT );
-        when( ctx.alloc() ).thenReturn( UnpooledByteBufAllocator.DEFAULT );
+        // When
+        handler.channelInactive( context );
 
+        // Then
+        verify( context ).close();
+    }
+
+    @Test
+    public void shouldCloseProtocolOnHandlerRemoved() throws Throwable
+    {
+        // Given
+        BoltStateMachine machine = mock( BoltStateMachine.class );
+        ChannelHandlerContext ctx = channelHandlerContextMock();
+
+        SocketTransportHandler handler = newSocketTransportHandler( protocolChooser( machine ) );
+
+        // And Given a session has been established
+        handler.channelRead( ctx, handshake() );
+
+        // When
+        handler.handlerRemoved( ctx );
+
+        // Then
+        verify( machine ).close();
+    }
+
+    @Test
+    public void shouldCloseContextWhenProtocolNotInitializedOnHandlerRemoved() throws Throwable
+    {
+        // Given
+        ChannelHandlerContext context = mock( ChannelHandlerContext.class );
+        SocketTransportHandler handler = newSocketTransportHandler( mock( ProtocolChooser.class ) );
+
+        // When
+        handler.handlerRemoved( context );
+
+        // Then
+        verify( context ).close();
+    }
+
+    @Test
+    public void logsAndClosesProtocolOnUnexpectedExceptions() throws Throwable
+    {
+        // Given
+        BoltStateMachine machine = mock( BoltStateMachine.class );
+        ChannelHandlerContext ctx = channelHandlerContextMock();
         AssertableLogProvider logging = new AssertableLogProvider();
 
         SocketTransportHandler handler = new SocketTransportHandler( protocolChooser( machine ), logging );
@@ -94,17 +135,72 @@ public class SocketTransportHandlerTest
         // Then
         verify( machine ).close();
         logging.assertExactly( inLog( SocketTransportHandler.class )
-            .error( equalTo("Fatal error occurred when handling a client connection: Oh no!"), is(cause) ) );
+                .error( equalTo( "Fatal error occurred when handling a client connection: Oh no!" ), is( cause ) ) );
     }
 
-    private SocketTransportHandler.ProtocolChooser protocolChooser( final BoltStateMachine machine )
+    @Test
+    public void logsAndClosesContextWhenProtocolNotInitializedOnUnexpectedExceptions() throws Throwable
     {
-        Map<Long, BiFunction<Channel, Boolean, BoltProtocol>> availableVersions = new HashMap<>();
+        // Given
+        ChannelHandlerContext context = mock( ChannelHandlerContext.class );
+        AssertableLogProvider logging = new AssertableLogProvider();
+        SocketTransportHandler handler = new SocketTransportHandler( mock( ProtocolChooser.class ), logging );
+
+        // When
+        Throwable cause = new Throwable( "Oh no!" );
+        handler.exceptionCaught( context, cause );
+
+        // Then
+        verify( context ).close();
+        logging.assertExactly( inLog( SocketTransportHandler.class )
+                .error( equalTo( "Fatal error occurred when handling a client connection: Oh no!" ),
+                        is( cause ) ) );
+    }
+
+    @Test
+    public void shouldInitializeProtocolOnFirstMessage() throws Exception
+    {
+        BoltStateMachine machine = mock( BoltStateMachine.class );
+        ProtocolChooser chooser = protocolChooser( machine );
+        ChannelHandlerContext context = channelHandlerContextMock();
+
+        SocketTransportHandler handler = new SocketTransportHandler( chooser, NullLogProvider.getInstance() );
+
+        handler.channelRead( context, handshake() );
+        BoltProtocol protocol1 = chooser.chosenProtocol();
+
+        handler.channelRead( context, handshake() );
+        BoltProtocol protocol2 = chooser.chosenProtocol();
+
+        assertSame( protocol1, protocol2 );
+    }
+
+    private static SocketTransportHandler newSocketTransportHandler( ProtocolChooser protocolChooser )
+    {
+        return new SocketTransportHandler( protocolChooser, NullLogProvider.getInstance() );
+    }
+
+    private static ChannelHandlerContext channelHandlerContextMock()
+    {
+        Channel channel = mock( Channel.class );
+        ChannelHandlerContext context = mock( ChannelHandlerContext.class );
+        when( context.channel() ).thenReturn( channel );
+
+        when( channel.alloc() ).thenReturn( UnpooledByteBufAllocator.DEFAULT );
+        when( context.alloc() ).thenReturn( UnpooledByteBufAllocator.DEFAULT );
+
+        return context;
+    }
+
+    private ProtocolChooser protocolChooser( final BoltStateMachine machine )
+    {
+        Map<Long,BiFunction<Channel,Boolean,BoltProtocol>> availableVersions = new HashMap<>();
         availableVersions.put( (long) BoltProtocolV1.VERSION,
-                ( channel, isSecure ) -> new BoltProtocolV1( new SynchronousBoltWorker( machine ), channel, NullLogService.getInstance() )
+                ( channel, isSecure ) -> new BoltProtocolV1( new SynchronousBoltWorker( machine ), channel,
+                        NullLogService.getInstance() )
         );
 
-        return new SocketTransportHandler.ProtocolChooser( availableVersions, false, true );
+        return new ProtocolChooser( availableVersions, false, true );
     }
 
     private ByteBuf handshake()
