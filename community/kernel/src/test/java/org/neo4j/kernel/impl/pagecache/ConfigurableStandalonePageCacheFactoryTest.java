@@ -38,7 +38,7 @@ import org.neo4j.io.pagecache.PagedFile;
 
 import static org.junit.Assert.assertTrue;
 
-public class StandalonePageCacheFactoryTest
+public class ConfigurableStandalonePageCacheFactoryTest
 {
     @Test( timeout = 10000 )
     public void mustAutomaticallyStartEvictionThread() throws IOException

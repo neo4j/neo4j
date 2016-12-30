@@ -63,9 +63,9 @@ import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_I
 
 public class CountsComputerTest
 {
-    private EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-    private PageCacheRule pcRule = new PageCacheRule();
-    private TestDirectory testDir = TestDirectory.testDirectory( fsRule.get() );
+    private final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+    private final PageCacheRule pcRule = new PageCacheRule();
+    private final TestDirectory testDir = TestDirectory.testDirectory( fsRule.get() );
 
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( pcRule ).around( fsRule ).around( testDir );

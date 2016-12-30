@@ -80,13 +80,13 @@ import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.ConfigurablePageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.System.currentTimeMillis;
 import static org.neo4j.consistency.ConsistencyCheckService.defaultConsistencyCheckThreadsNumber;
 
-public abstract class GraphStoreFixture extends PageCacheRule implements TestRule
+public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implements TestRule
 {
     private DirectStoreAccess directStoreAccess;
     private Statistics statistics;

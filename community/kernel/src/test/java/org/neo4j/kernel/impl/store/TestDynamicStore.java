@@ -50,7 +50,7 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 public class TestDynamicStore
 {
     @Rule
-    public PageCacheRule pageCacheRule = new PageCacheRule();
+    public final PageCacheRule pageCacheRule = new PageCacheRule();
     @Rule
     public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 

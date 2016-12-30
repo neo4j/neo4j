@@ -37,7 +37,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.ConfigurablePageCacheRule;
 import org.neo4j.test.rule.ResourceRule;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
@@ -54,7 +54,7 @@ public class KeyValueStoreFileFormatTest
     @Rule
     public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     @Rule
-    public final PageCacheRule pages = new PageCacheRule();
+    public final ConfigurablePageCacheRule pages = new ConfigurablePageCacheRule();
     @Rule
     public final ResourceRule<File> storeFile = testPath();
 

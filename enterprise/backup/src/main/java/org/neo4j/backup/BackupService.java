@@ -76,7 +76,7 @@ import org.neo4j.logging.NullLogProvider;
 import static org.neo4j.com.RequestContext.anonymous;
 import static org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker.DEFAULT_BATCH_SIZE;
 import static org.neo4j.helpers.Exceptions.rootCause;
-import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
+import static org.neo4j.kernel.impl.pagecache.ConfigurableStandalonePageCacheFactory.createPageCache;
 
 /**
  * Client-side convenience service for doing backups from a running database instance.

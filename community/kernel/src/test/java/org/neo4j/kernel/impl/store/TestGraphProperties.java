@@ -60,7 +60,7 @@ import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 public class TestGraphProperties
 {
     @ClassRule
-    public static PageCacheRule pageCacheRule = new PageCacheRule();
+    public static final PageCacheRule pageCacheRule = new PageCacheRule();
 
     @Rule
     public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();

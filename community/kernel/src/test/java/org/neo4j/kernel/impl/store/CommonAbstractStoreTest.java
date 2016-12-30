@@ -60,7 +60,7 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.ConfigurablePageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
@@ -108,7 +108,7 @@ public class CommonAbstractStoreTest
 
     private static final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
     private static final TestDirectory dir = testDirectory( fileSystemRule.get() );
-    private static final PageCacheRule pageCacheRule = new PageCacheRule();
+    private static final ConfigurablePageCacheRule pageCacheRule = new ConfigurablePageCacheRule();
 
     @ClassRule
     public static final RuleChain ruleChain = RuleChain.outerRule( fileSystemRule ).around( dir ).around( pageCacheRule );

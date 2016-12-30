@@ -494,7 +494,7 @@ public class NodeLabelsFieldTest
     }
 
     @ClassRule
-    public static PageCacheRule pageCacheRule = new PageCacheRule();
+    public static final PageCacheRule pageCacheRule = new PageCacheRule();
     @Rule
     public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private NodeStore nodeStore;

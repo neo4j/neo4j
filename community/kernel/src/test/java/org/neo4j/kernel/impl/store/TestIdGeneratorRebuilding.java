@@ -50,7 +50,7 @@ import static org.mockito.Mockito.mock;
 public class TestIdGeneratorRebuilding
 {
     @ClassRule
-    public static PageCacheRule pageCacheRule = new PageCacheRule();
+    public static final PageCacheRule pageCacheRule = new PageCacheRule();
     @Rule
     public EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
     private EphemeralFileSystemAbstraction fs;

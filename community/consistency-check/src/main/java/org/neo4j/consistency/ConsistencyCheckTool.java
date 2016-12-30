@@ -35,7 +35,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
+import org.neo4j.kernel.impl.pagecache.ConfigurableStandalonePageCacheFactory;
 import org.neo4j.kernel.impl.recovery.RecoveryRequiredChecker;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.LogProvider;
@@ -127,7 +127,7 @@ public class ConsistencyCheckTool
 
     private void checkDbState( File storeDir, Config tuningConfiguration ) throws ToolFailureException
     {
-        try ( PageCache pageCache = StandalonePageCacheFactory.createPageCache( fs, tuningConfiguration ) )
+        try ( PageCache pageCache = ConfigurableStandalonePageCacheFactory.createPageCache( fs, tuningConfiguration ) )
         {
             if ( new RecoveryRequiredChecker( fs, pageCache ).isRecoveryRequiredAt( storeDir ) )
             {

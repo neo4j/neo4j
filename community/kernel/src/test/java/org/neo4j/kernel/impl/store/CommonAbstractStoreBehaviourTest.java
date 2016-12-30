@@ -42,7 +42,7 @@ import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.ConfigurablePageCacheRule;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertTrue;
@@ -66,7 +66,7 @@ public class CommonAbstractStoreBehaviourTest
             GraphDatabaseSettings.pagecache_memory.name(), "8M" ) );
 
     private final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    private final PageCacheRule pageCacheRule = new PageCacheRule();
+    private final ConfigurablePageCacheRule pageCacheRule = new ConfigurablePageCacheRule();
 
     @Rule
     public final TestRule rules = RuleChain.outerRule( fs ).around( pageCacheRule );
