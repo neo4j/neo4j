@@ -46,7 +46,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.Token;
 
-import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
+import static org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory.createPageCache;
 
 /**
  * Tool that will dump content of count store content into a simple string representation for further analysis.

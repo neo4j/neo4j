@@ -17,20 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.pagecache;
+package org.neo4j.io.pagecache.impl.muninn;
 
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
-import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 
-public final class StandalonePageCacheFactory
+/*
+ * This class is an helper to allow to construct properly a page cache in the few places we need it without all
+ * the graph database stuff, e.g., various store dump programs.
+ *
+ * All other places where a "proper" page cache is available, e.g. in store migration, should have that one injected.
+ * And tests should use the PageCacheRule.
+ */
+public class StandalonePageCacheFactory
 {
-    private StandalonePageCacheFactory()
-    {
-    }
 
     public static PageCache createPageCache( FileSystemAbstraction fileSystem )
     {

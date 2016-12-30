@@ -26,9 +26,8 @@ import org.neo4j.adversaries.Adversary;
 import org.neo4j.adversaries.pagecache.AdversarialPageCache;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
-
 
 public class PageCacheRule extends ExternalResource
 {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -23,6 +23,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.FormattedLogProvider;
@@ -32,18 +33,13 @@ import org.neo4j.logging.FormattedLogProvider;
  * the graph database stuff, e.g., various store dump programs.
  *
  * All other places where a "proper" page cache is available, e.g. in store migration, should have that one injected.
- * And tests should use the PageCacheRule.
+ * And tests should use the ConfigurablePageCacheRule.
  */
-public final class ConfigurableStandalonePageCacheFactory
+public final class ConfigurableStandalonePageCacheFactory extends StandalonePageCacheFactory
 {
 
     private ConfigurableStandalonePageCacheFactory()
     {
-    }
-
-    public static PageCache createPageCache( FileSystemAbstraction fileSystem )
-    {
-        return createPageCache( fileSystem, Config.defaults() );
     }
 
     public static PageCache createPageCache( FileSystemAbstraction fileSystem, Config config )

@@ -50,7 +50,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
-import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
+import static org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory.createPageCache;
 import static org.neo4j.tools.console.input.ConsoleUtil.NULL_PRINT_STREAM;
 
 public class DatabaseRebuildToolTest

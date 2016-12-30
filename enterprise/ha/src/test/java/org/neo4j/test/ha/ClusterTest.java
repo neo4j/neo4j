@@ -59,11 +59,11 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.Exceptions.rootCause;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory.createPageCache;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterSeesSlavesAsAvailable;
-import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_COMMIT_TIMESTAMP;
 
 public class ClusterTest
