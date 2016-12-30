@@ -19,6 +19,7 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.function.IntConsumer;
 
@@ -29,19 +30,11 @@ import org.neo4j.io.pagecache.PageSwapper;
 
 final class SwapperSet
 {
-    private volatile Allocation[] allocations = new Allocation[0];
+    // The sentinel is used to reserve swapper id 0 as a special value.
+    private static final Allocation SENTINEL = new Allocation( 0, 0, null );
+    private volatile Allocation[] allocations = new Allocation[] { SENTINEL };
     private final PrimitiveIntSet free = Primitive.intSet();
     private final Object vacuumLock = new Object();
-
-    public PageSwapper getSwapper( int id )
-    {
-        return allocations[id].swapper;
-    }
-
-    public int getFilePageSize( int id )
-    {
-        return allocations[id].filePageSize;
-    }
 
     private static final class Allocation
     {
@@ -54,6 +47,38 @@ final class SwapperSet
             this.id = id;
             this.filePageSize = filePageSize;
             this.swapper = swapper;
+        }
+    }
+
+    public interface ApplyCall
+    {
+        void apply( PageSwapper swapper, int filePageSize ) throws IOException;
+    }
+
+    public PageSwapper getSwapper( int id )
+    {
+        checkId( id );
+        return allocations[id].swapper;
+    }
+
+    public int getFilePageSize( int id )
+    {
+        checkId( id );
+        return allocations[id].filePageSize;
+    }
+
+    public void apply( int id, ApplyCall call ) throws IOException
+    {
+        checkId( id );
+        Allocation allocation = allocations[id];
+        call.apply( allocation.swapper, allocation.filePageSize );
+    }
+
+    private void checkId( int id )
+    {
+        if ( id == 0 )
+        {
+            throw new IllegalArgumentException( "0 is an invalid swapper id" );
         }
     }
 
@@ -90,6 +115,7 @@ final class SwapperSet
 
     public synchronized void free( int id )
     {
+        checkId( id );
         Allocation[] allocations = this.allocations;
         if ( allocations[id] == null )
         {

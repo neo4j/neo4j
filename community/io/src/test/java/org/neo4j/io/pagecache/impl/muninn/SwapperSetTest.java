@@ -19,10 +19,14 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
+import org.hamcrest.Matcher;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
@@ -31,6 +35,8 @@ import org.neo4j.io.pagecache.tracing.DummyPageSwapper;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
@@ -156,5 +162,56 @@ public class SwapperSetTest
         set.vacuum( id -> {
             throw new AssertionError( "Vacuum found id " + id + " when it should have found nothing" );
         } );
+    }
+
+    @Test
+    public void mustNotUseZeroAsSwapperId() throws Exception
+    {
+        PageSwapper swapper = new DummyPageSwapper( "a" );
+        Matcher<Integer> isNotZero = is( not( 0 ) );
+        for ( int i = 0; i < 10_000; i++ )
+        {
+            assertThat( set.allocate( swapper, 42 ), isNotZero );
+        }
+    }
+
+    @Test
+    public void freeOfIdZeroMustThrow() throws Exception
+    {
+        exception.expect( IllegalArgumentException.class );
+        set.free( 0 );
+    }
+
+    @Test
+    public void gettingSwapperOfIdZeroMustThrow() throws Exception
+    {
+        exception.expect( IllegalArgumentException.class );
+        set.getSwapper( 0 );
+    }
+
+    @Test
+    public void gettingFilePageSizeOfIdZeroMustThrow() throws Exception
+    {
+        exception.expect( IllegalArgumentException.class );
+        set.getFilePageSize( 0 );
+    }
+
+    @Test
+    public void applyMustThrowForIdZero() throws Exception
+    {
+        exception.expect( IllegalArgumentException.class );
+        set.apply( 0, (swapper,size) -> fail( "should not have been called" ) );
+    }
+
+    @Test
+    public void applyMustReceiveArguments() throws Exception
+    {
+        AtomicReference<PageSwapper> gotSwapper = new AtomicReference<>();
+        AtomicInteger gotFilePageSize = new AtomicInteger();
+        PageSwapper swapper = new DummyPageSwapper( "a" );
+        int id = set.allocate( swapper, 3113 );
+        set.apply( id, (s,size) -> { gotSwapper.set( s ); gotFilePageSize.set( size ); } );
+        assertThat( gotSwapper.get(), is( sameInstance( swapper ) ) );
+        assertThat( gotFilePageSize.get(), is( 3113 ) );
     }
 }
