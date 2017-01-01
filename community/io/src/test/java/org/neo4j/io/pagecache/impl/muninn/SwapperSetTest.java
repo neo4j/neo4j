@@ -25,9 +25,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
-
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.io.pagecache.PageSwapper;
@@ -36,7 +33,6 @@ import org.neo4j.io.pagecache.tracing.DummyPageSwapper;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
@@ -54,34 +50,27 @@ public class SwapperSetTest
     }
 
     @Test
-    public void mustReturnAllocatedSwapperAndFilePageSize() throws Exception
+    public void mustReturnAllocationWithSwapperAndFilePageSize() throws Exception
     {
         DummyPageSwapper a = new DummyPageSwapper( "a" );
         DummyPageSwapper b = new DummyPageSwapper( "b" );
         int idA = set.allocate( a, 42 );
         int idB = set.allocate( b, 43 );
-        assertThat( set.getSwapper( idA ), is( a ) );
-        assertThat( set.getFilePageSize( idA ), is( 42 ) );
-        assertThat( set.getSwapper( idB ), is( b ) );
-        assertThat( set.getFilePageSize( idB ), is( 43 ) );
+        SwapperSet.Allocation allocA = set.getAllocation( idA );
+        SwapperSet.Allocation allocB = set.getAllocation( idB );
+        assertThat( allocA.swapper, is( a ) );
+        assertThat( allocA.filePageSize, is( 42 ) );
+        assertThat( allocB.swapper, is( b ) );
+        assertThat( allocB.filePageSize, is( 43 ) );
     }
 
     @Test
-    public void accessingPageSwapperOfFreedAllocationMustThrow() throws Exception
+    public void accessingFreedAllocationMustThrow() throws Exception
     {
         int id = set.allocate( new DummyPageSwapper( "a" ), 42 );
         set.free( id );
         exception.expect( NullPointerException.class );
-        set.getSwapper( id );
-    }
-
-    @Test
-    public void accessingFilePageSizeOfFreedAllocationMustThrow() throws Exception
-    {
-        int id = set.allocate( new DummyPageSwapper( "a" ), 42 );
-        set.free( id );
-        exception.expect( NullPointerException.class );
-        set.getSwapper( id );
+        set.getAllocation( id );
     }
 
     @Test
@@ -176,42 +165,16 @@ public class SwapperSetTest
     }
 
     @Test
+    public void gettingAllocationZeroMustThrow() throws Exception
+    {
+        exception.expect( IllegalArgumentException.class );
+        set.getAllocation( 0 );
+    }
+
+    @Test
     public void freeOfIdZeroMustThrow() throws Exception
     {
         exception.expect( IllegalArgumentException.class );
         set.free( 0 );
-    }
-
-    @Test
-    public void gettingSwapperOfIdZeroMustThrow() throws Exception
-    {
-        exception.expect( IllegalArgumentException.class );
-        set.getSwapper( 0 );
-    }
-
-    @Test
-    public void gettingFilePageSizeOfIdZeroMustThrow() throws Exception
-    {
-        exception.expect( IllegalArgumentException.class );
-        set.getFilePageSize( 0 );
-    }
-
-    @Test
-    public void applyMustThrowForIdZero() throws Exception
-    {
-        exception.expect( IllegalArgumentException.class );
-        set.apply( 0, (swapper,size) -> fail( "should not have been called" ) );
-    }
-
-    @Test
-    public void applyMustReceiveArguments() throws Exception
-    {
-        AtomicReference<PageSwapper> gotSwapper = new AtomicReference<>();
-        AtomicInteger gotFilePageSize = new AtomicInteger();
-        PageSwapper swapper = new DummyPageSwapper( "a" );
-        int id = set.allocate( swapper, 3113 );
-        set.apply( id, (s,size) -> { gotSwapper.set( s ); gotFilePageSize.set( size ); } );
-        assertThat( gotSwapper.get(), is( sameInstance( swapper ) ) );
-        assertThat( gotFilePageSize.get(), is( 3113 ) );
     }
 }

@@ -19,7 +19,6 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.function.IntConsumer;
 
@@ -36,7 +35,7 @@ final class SwapperSet
     private final PrimitiveIntSet free = Primitive.intSet();
     private final Object vacuumLock = new Object();
 
-    private static final class Allocation
+    public static final class Allocation
     {
         public final int id;
         public final int filePageSize;
@@ -50,28 +49,15 @@ final class SwapperSet
         }
     }
 
-    public interface ApplyCall
-    {
-        void apply( PageSwapper swapper, int filePageSize ) throws IOException;
-    }
-
-    public PageSwapper getSwapper( int id )
-    {
-        checkId( id );
-        return allocations[id].swapper;
-    }
-
-    public int getFilePageSize( int id )
-    {
-        checkId( id );
-        return allocations[id].filePageSize;
-    }
-
-    public void apply( int id, ApplyCall call ) throws IOException
+    public Allocation getAllocation( int id )
     {
         checkId( id );
         Allocation allocation = allocations[id];
-        call.apply( allocation.swapper, allocation.filePageSize );
+        if ( allocation == null )
+        {
+            throw noSuchId( id );
+        }
+        return allocation;
     }
 
     private void checkId( int id )
@@ -80,6 +66,11 @@ final class SwapperSet
         {
             throw new IllegalArgumentException( "0 is an invalid swapper id" );
         }
+    }
+
+    private NullPointerException noSuchId( int id )
+    {
+        return new NullPointerException( "Swapper allocation by id " + id + " does not exist; it might have been freed" );
     }
 
     public synchronized int allocate( PageSwapper swapper, int filePageSize )
