@@ -62,14 +62,16 @@ class PageList
     private final long pageCount;
     private final int cachePageSize;
     private final MemoryManager memoryManager;
+    private final SwapperSet swappers;
     private final long victimPageAddress;
     private final long baseAddress;
 
-    PageList( long pageCount, int cachePageSize, MemoryManager memoryManager, long victimPageAddress )
+    PageList( long pageCount, int cachePageSize, MemoryManager memoryManager, SwapperSet swappers, long victimPageAddress )
     {
         this.pageCount = pageCount;
         this.cachePageSize = cachePageSize;
         this.memoryManager = memoryManager;
+        this.swappers = swappers;
         this.victimPageAddress = victimPageAddress;
         long bytes = pageCount * META_DATA_BYTES_PER_PAGE;
         this.baseAddress = memoryManager.allocateAligned( bytes );
@@ -88,6 +90,7 @@ class PageList
         this.pageCount = pageList.pageCount;
         this.cachePageSize = pageList.cachePageSize;
         this.memoryManager = pageList.memoryManager;
+        this.swappers = pageList.swappers;
         this.victimPageAddress = pageList.victimPageAddress;
         this.baseAddress = pageList.baseAddress;
     }
@@ -207,14 +210,14 @@ class PageList
         return cachePageSize;
     }
 
-    public long address( long pageRef )
+    public long getAddress( long pageRef )
     {
         return UnsafeUtil.getLong( offAddress( pageRef ) );
     }
 
     public void initBuffer( long pageRef )
     {
-        if ( address( pageRef ) == 0L )
+        if ( getAddress( pageRef ) == 0L )
         {
             long addr = memoryManager.allocateAligned( getCachePageSize() );
             UnsafeUtil.putLong( offAddress( pageRef ), addr );
@@ -312,7 +315,7 @@ class PageList
         // the file page, so any subsequent thread that finds the page in their
         // translation table will re-do the page fault.
         setFilePageId( pageRef, filePageId ); // Page now considered isLoaded()
-        long bytesRead = swapper.read( filePageId, address( pageRef ), cachePageSize );
+        long bytesRead = swapper.read( filePageId, getAddress( pageRef ), cachePageSize );
         event.addBytesRead( bytesRead );
         event.setCachePageId( (int) pageRef );
         setSwapperId( pageRef, swapperId ); // Page now considered isBoundTo( swapper, filePageId )
@@ -334,21 +337,24 @@ class PageList
         return new IllegalStateException( msg );
     }
 
-    public boolean tryEvict( long pageRef, PageSwapper swapper )
+    public boolean tryEvict( long pageRef ) throws IOException
     {
-        if ( swapper == null )
-        {
-            throw swapperCannotBeNull();
-        }
         if ( tryExclusiveLock( pageRef ) )
         {
             if ( isLoaded( pageRef ) )
             {
-                clearBinding( pageRef );
+                int swapperId = getSwapperId( pageRef );
+                SwapperSet.Allocation allocation = swappers.getAllocation( swapperId );
+                PageSwapper swapper = allocation.swapper;
+                long filePageId = getFilePageId( pageRef );
                 if ( isModified( pageRef ) )
                 {
+                    long address = getAddress( pageRef );
+                    swapper.write( filePageId, address, allocation.filePageSize );
                     explicitlyMarkPageUnmodifiedUnderExclusiveLock( pageRef );
                 }
+                swapper.evicted( filePageId, null );
+                clearBinding( pageRef );
                 return true;
             }
             else

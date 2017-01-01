@@ -42,6 +42,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongFunction;
 
 import org.neo4j.io.ByteUnit;
+import org.neo4j.io.pagecache.Page;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.tracing.DummyPageSwapper;
@@ -104,6 +105,7 @@ public class PageListTest
     private long prevPageRef;
     private long nextPageRef;
     private final int pageSize;
+    private SwapperSet swappers;
     private PageList pageList;
 
     public PageListTest( long pageId )
@@ -117,7 +119,8 @@ public class PageListTest
     @Before
     public void setUp()
     {
-        pageList = new PageList( pageIds.length, pageSize, mman, VictimPageReference.getVictimPage( pageSize ) );
+        swappers = new SwapperSet();
+        pageList = new PageList( pageIds.length, pageSize, mman, swappers, VictimPageReference.getVictimPage( pageSize ) );
         pageRef = pageList.deref( pageId );
         prevPageRef = pageList.deref( prevPageId );
         nextPageRef = pageList.deref( nextPageId );
@@ -864,14 +867,14 @@ public class PageListTest
     @Test
     public void mustExposeCachePageSize() throws Exception
     {
-        PageList list = new PageList( 0, 42, mman, VictimPageReference.getVictimPage( 42 ) );
+        PageList list = new PageList( 0, 42, mman, swappers, VictimPageReference.getVictimPage( 42 ) );
         assertThat( list.getCachePageSize(), is( 42 ) );
     }
 
     @Test
     public void addressesMustBeZeroBeforeInitialisation() throws Exception
     {
-        assertThat( pageList.address( pageRef ), is( 0L ) );
+        assertThat( pageList.getAddress( pageRef ), is( 0L ) );
     }
 
     @Test
@@ -889,19 +892,19 @@ public class PageListTest
     public void addressMustNotBeZeroAfterInitialisation() throws Exception
     {
         pageList.initBuffer( pageRef );
-        assertThat( pageList.address( pageRef ), is( not( equalTo( 0L ) ) ) );
+        assertThat( pageList.getAddress( pageRef ), is( not( equalTo( 0L ) ) ) );
     }
 
     @Test
     public void pageListMustBeCopyableViaConstructor() throws Exception
     {
-        assertThat( pageList.address( pageRef ), is( equalTo( 0L ) ) );
+        assertThat( pageList.getAddress( pageRef ), is( equalTo( 0L ) ) );
         PageList pl = new PageList( pageList );
-        assertThat( pl.address( pageRef ), is( equalTo( 0L ) ) );
+        assertThat( pl.getAddress( pageRef ), is( equalTo( 0L ) ) );
 
         pageList.initBuffer( pageRef );
-        assertThat( pageList.address( pageRef ), is( not( equalTo( 0L ) ) ) );
-        assertThat( pl.address( pageRef ), is( not( equalTo( 0L ) ) ) );
+        assertThat( pageList.getAddress( pageRef ), is( not( equalTo( 0L ) ) ) );
+        assertThat( pl.getAddress( pageRef ), is( not( equalTo( 0L ) ) ) );
     }
 
     @Test
@@ -1021,7 +1024,7 @@ public class PageListTest
         pageList.initBuffer( pageRef );
         pageList.fault( pageRef, swapper, swapperId, filePageId, PageFaultEvent.NULL );
 
-        long address = pageList.address( pageRef );
+        long address = pageList.getAddress( pageRef );
         assertThat( address, is( not( 0L ) ) );
         for ( int i = 0; i < pageSize; i++ )
         {
@@ -1227,67 +1230,66 @@ public class PageListTest
     @Test
     public void tryEvictMustFailIfPageIsAlreadyExclusivelyLocked() throws Exception
     {
-        doFault( 1, 42 ); // page is now loaded
+        int swapperId = swappers.allocate( DUMMY_SWAPPER, pageSize );
+        doFault( swapperId, 42 ); // page is now loaded
         // pages are delivered from the fault routine with the exclusive lock already held!
-        assertFalse( pageList.tryEvict( pageRef, DUMMY_SWAPPER ) );
+        assertFalse( pageList.tryEvict( pageRef ) );
     }
 
     @Test
     public void tryEvictThatFailsOnExclusiveLockMustNotUndoSaidLock() throws Exception
     {
-        doFault( 1, 42 ); // page is now loaded
+        int swapperId = swappers.allocate( DUMMY_SWAPPER, pageSize );
+        doFault( swapperId, 42 ); // page is now loaded
         // pages are delivered from the fault routine with the exclusive lock already held!
-        pageList.tryEvict( pageRef, DUMMY_SWAPPER ); // This attempt will fail
+        pageList.tryEvict( pageRef ); // This attempt will fail
         assertTrue( pageList.isExclusivelyLocked( pageRef ) ); // page should still have its lock
     }
 
     @Test
     public void tryEvictMustFailIfPageIsNotLoaded() throws Exception
     {
-        assertFalse( pageList.tryEvict( pageRef, DUMMY_SWAPPER ) );
+        assertFalse( pageList.tryEvict( pageRef ) );
     }
 
     @Test
     public void tryEvictMustWhenPageIsNotLoadedMustNotLeavePageLocked() throws Exception
     {
-        pageList.tryEvict( pageRef, DUMMY_SWAPPER ); // This attempt fails
+        pageList.tryEvict( pageRef ); // This attempt fails
         assertFalse( pageList.isExclusivelyLocked( pageRef ) ); // Page should not be left in locked state
-    }
-
-    @Test( expected = IllegalArgumentException.class )
-    public void tryEvictMustThrowIfSwapperIsNull() throws Exception
-    {
-        pageList.tryEvict( pageRef, null );
     }
 
     @Test
     public void tryEvictMustLeavePageExclusivelyLockedOnSuccess() throws Exception
     {
-        doFault( 1, 42 ); // page now bound & exclusively locked
+        int swapperId = swappers.allocate( DUMMY_SWAPPER, pageSize );
+        doFault( swapperId, 42 ); // page now bound & exclusively locked
         pageList.unlockExclusive( pageRef ); // no longer exclusively locked; can now be evicted
-        assertTrue( pageList.tryEvict( pageRef, DUMMY_SWAPPER ) );
+        assertTrue( pageList.tryEvict( pageRef ) );
         pageList.unlockExclusive( pageRef ); // will throw if lock is not held
     }
 
     @Test
     public void pageMustNotBeLoadedAfterSuccessfulEviction() throws Exception
     {
-        doFault( 1, 42 ); // page now bound & exclusively locked
+        int swapperId = swappers.allocate( DUMMY_SWAPPER, pageSize );
+        doFault( swapperId, 42 ); // page now bound & exclusively locked
         pageList.unlockExclusive( pageRef ); // no longer exclusively locked; can now be evicted
         assertTrue( pageList.isLoaded( pageRef ) );
-        pageList.tryEvict( pageRef, DUMMY_SWAPPER );
+        pageList.tryEvict( pageRef );
         assertFalse( pageList.isLoaded( pageRef ) );
     }
 
     @Test
     public void pageMustNotBeBoundAfterSuccessfulEviction() throws Exception
     {
-        doFault( 1, 42 ); // page now bound & exclusively locked
+        int swapperId = swappers.allocate( DUMMY_SWAPPER, pageSize );
+        doFault( swapperId, 42 ); // page now bound & exclusively locked
         pageList.unlockExclusive( pageRef ); // no longer exclusively locked; can now be evicted
         assertTrue( pageList.isBoundTo( pageRef, 1, 42 ) );
         assertTrue( pageList.isLoaded( pageRef ) );
         assertThat( pageList.getSwapperId( pageRef ), is( 1 ) );
-        pageList.tryEvict( pageRef, DUMMY_SWAPPER );
+        pageList.tryEvict( pageRef );
         assertFalse( pageList.isBoundTo( pageRef, 1, 42 ) );
         assertFalse( pageList.isLoaded( pageRef ) );
         assertThat( pageList.getSwapperId( pageRef ), is( 0 ) );
@@ -1296,11 +1298,12 @@ public class PageListTest
     @Test
     public void pageMustNotBeModifiedAfterSuccessfulEviction() throws Exception
     {
-        doFault( 1, 42 );
+        int swapperId = swappers.allocate( DUMMY_SWAPPER, pageSize );
+        doFault( swapperId, 42 );
         pageList.unlockExclusiveAndTakeWriteLock( pageRef );
         pageList.unlockWrite( pageRef ); // page is now modified
         assertTrue( pageList.isModified( pageRef ) );
-        assertTrue( pageList.tryEvict( pageRef, DUMMY_SWAPPER ) );
+        assertTrue( pageList.tryEvict( pageRef ) );
         assertFalse( pageList.isModified( pageRef ) );
     }
 
@@ -1321,26 +1324,89 @@ public class PageListTest
                 return super.write( filePageId, bufferAddress, bufferSize );
             }
         };
-        doFault( 1, 42 );
+        int swapperId = swappers.allocate( swapper, 313 );
+        doFault( swapperId, 42 );
         pageList.unlockExclusiveAndTakeWriteLock( pageRef );
         pageList.unlockWrite( pageRef ); // page is now modified
         assertTrue( pageList.isModified( pageRef ) );
-        assertTrue( pageList.tryEvict( pageRef, swapper ) );
+        assertTrue( pageList.tryEvict( pageRef ) );
         assertThat( writtenFilePageId.get(), is( 42L ) );
-        assertThat( writtenBufferAddress.get(), is( pageList.address( pageRef ) ) );
-//        assertThat( writtenBufferSize.get(), is( /* ... */ ) ); // todo
+        assertThat( writtenBufferAddress.get(), is( pageList.getAddress( pageRef ) ) );
+        assertThat( writtenBufferSize.get(), is( 313 ) );
     }
-    // todo try evict must flush page if modified
-    // todo try evict must not flush page if not modified
-    // todo try evict must notify swapper on success
+
+    @Test
+    public void tryEvictMustNotFlushPageIfNotModified() throws Exception
+    {
+        AtomicInteger writes = new AtomicInteger();
+        PageSwapper swapper = new DummyPageSwapper( "a" )
+        {
+            @Override
+            public long write( long filePageId, long bufferAddress, int bufferSize ) throws IOException
+            {
+                writes.getAndIncrement();
+                return super.write( filePageId, bufferAddress, bufferSize );
+            }
+        };
+        int swapperId = swappers.allocate( swapper, 313 );
+        doFault( swapperId, 42 );
+        pageList.unlockExclusive( pageRef ); // we take no write lock, so page is not modified
+        assertFalse( pageList.isModified( pageRef ) );
+        assertTrue( pageList.tryEvict( pageRef ) );
+        assertThat( writes.get(), is( 0 ) );
+    }
+
+    @Test
+    public void tryEvictMustNotifySwapperOnSuccess() throws Exception
+    {
+        AtomicBoolean evictionNotified = new AtomicBoolean();
+        PageSwapper swapper = new DummyPageSwapper( "a" )
+        {
+            @Override
+            public void evicted( long pageId, Page page )
+            {
+                evictionNotified.set( true );
+                assertThat( pageId, is( 42L ) );
+            }
+        };
+        int swapperId = swappers.allocate( swapper, 313 );
+        doFault( swapperId, 42 );
+        pageList.unlockExclusive( pageRef );
+        assertTrue( pageList.tryEvict( pageRef ) );
+        assertTrue( evictionNotified.get() );
+    }
+
+    @Test
+    public void tryEvictMustNotifySwapperOnSuccessEvenWhenFlushing() throws Exception
+    {
+        AtomicBoolean evictionNotified = new AtomicBoolean();
+        PageSwapper swapper = new DummyPageSwapper( "a" )
+        {
+            @Override
+            public void evicted( long pageId, Page page )
+            {
+                evictionNotified.set( true );
+                assertThat( pageId, is( 42L ) );
+            }
+        };
+        int swapperId = swappers.allocate( swapper, 313 );
+        doFault( swapperId, 42 );
+        pageList.unlockExclusiveAndTakeWriteLock( pageRef );
+        pageList.unlockWrite( pageRef ); // page is now modified
+        assertTrue( pageList.isModified( pageRef ) );
+        assertTrue( pageList.tryEvict( pageRef ) );
+        assertTrue( evictionNotified.get() );
+        assertFalse( pageList.isModified( pageRef ) );
+    }
     // todo try evict must leave page unlocked if flush throws
     // todo try evict must leave page loaded if flush throws
     // todo try evict must leave page bound if flush throws
     // todo try evict must leave page modified if flush throws
+    // todo try evict must not notify swapper of eviction if flush throws
     // todo try evict must report to eviction event
     // todo try evict that flushes must report to flush event
-    // todo try evict that fails must not interfere with adjacent pages
     // todo try evict that succeeds must not interfere with adjacent pages
+    // todo try evict that fails must not interfere with adjacent pages
 
     // todo evict
     // todo flush
