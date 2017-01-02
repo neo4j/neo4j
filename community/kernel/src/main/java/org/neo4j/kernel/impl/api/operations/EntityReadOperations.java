@@ -148,10 +148,6 @@ public interface EntityReadOperations
 
     Cursor<NodeItem> nodeCursorGetForLabel( KernelStatement statement, int labelId );
 
-    Cursor<NodeItem> nodeCursorGetFromIndexSeek( KernelStatement statement,
-            IndexDescriptor index,
-            Object value ) throws IndexNotFoundKernelException;
-
     Cursor<NodeItem> nodeCursorGetFromIndexRangeSeekByNumber( KernelStatement statement,
             IndexDescriptor index,
             Number lower,

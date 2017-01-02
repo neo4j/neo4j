@@ -338,14 +338,6 @@ public class GuardingStatementOperations implements
     }
 
     @Override
-    public Cursor<NodeItem> nodeCursorGetFromIndexSeek( KernelStatement statement, IndexDescriptor index, Object value )
-            throws IndexNotFoundKernelException
-    {
-        guard.check( statement );
-        return entityReadDelegate.nodeCursorGetFromIndexSeek( statement, index, value );
-    }
-
-    @Override
     public Cursor<NodeItem> nodeCursorGetFromIndexScan( KernelStatement statement, IndexDescriptor index )
             throws IndexNotFoundKernelException
     {
