@@ -425,16 +425,10 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
         return entityReadOperations.nodeCursorById( statement, nodeId );
     }
 
-        @Override
+    @Override
     public Cursor<RelationshipItem> relationshipCursorById( KernelStatement statement, long relId ) throws EntityNotFoundException
     {
         return entityReadOperations.relationshipCursorById( statement, relId );
-    }
-
-    @Override
-    public Cursor<RelationshipItem> relationshipCursor( KernelStatement statement, long relId )
-    {
-        return entityReadOperations.relationshipCursor( statement, relId );
     }
 
     @Override

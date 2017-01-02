@@ -250,18 +250,16 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
 
         try ( Statement statement = actions.statement() )
         {
-            try ( Cursor<RelationshipItem> relationship = statement.readOperations().relationshipCursor( getId() ) )
+            try ( Cursor<RelationshipItem> relationship = statement.readOperations().relationshipCursorById( getId() ) )
             {
-                if ( !relationship.next() )
-                {
-                    throw new NotFoundException( "Relationship not found",
-                            new EntityNotFoundException( EntityType.RELATIONSHIP, getId() ) );
-                }
-
                 try ( Cursor<PropertyItem> propertyCursor = relationship.get().properties() )
                 {
                     return PropertyContainerProxyHelper.getProperties( statement, propertyCursor, keys );
                 }
+            }
+            catch ( EntityNotFoundException e )
+            {
+                throw new NotFoundException( "Relationship not found", e );
             }
         }
     }
@@ -271,14 +269,8 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
     {
         try ( Statement statement = actions.statement() )
         {
-            try ( Cursor<RelationshipItem> relationship = statement.readOperations().relationshipCursor( getId() ) )
+            try ( Cursor<RelationshipItem> relationship = statement.readOperations().relationshipCursorById( getId() ) )
             {
-                if ( !relationship.next() )
-                {
-                    throw new NotFoundException( "Relationship not found",
-                            new EntityNotFoundException( EntityType.RELATIONSHIP, getId() ) );
-                }
-
                 try ( Cursor<PropertyItem> propertyCursor = relationship.get().properties() )
                 {
                     Map<String, Object> properties = new HashMap<>();
@@ -293,6 +285,10 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
 
                     return properties;
                 }
+            }
+            catch ( EntityNotFoundException e )
+            {
+                throw new NotFoundException( "Relationship not found", e );
             }
         }
         catch ( PropertyKeyIdNotFoundKernelException e )

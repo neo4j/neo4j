@@ -310,13 +310,6 @@ public class GuardingStatementOperations implements
     }
 
     @Override
-    public Cursor<RelationshipItem> relationshipCursor( KernelStatement statement, long relId )
-    {
-        guard.check( statement );
-        return entityReadDelegate.relationshipCursor( statement, relId );
-    }
-
-    @Override
     public Cursor<RelationshipItem> relationshipCursorGetAll( KernelStatement statement )
     {
         guard.check( statement );

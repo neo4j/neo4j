@@ -140,8 +140,6 @@ public interface EntityReadOperations
     Cursor<RelationshipItem> relationshipCursorById( KernelStatement statement, long relId )
             throws EntityNotFoundException;
 
-    Cursor<RelationshipItem> relationshipCursor( KernelStatement statement, long relId );
-
     Cursor<RelationshipItem> relationshipCursorGetAll( KernelStatement statement );
 
     Cursor<NodeItem> nodeCursorGetForLabel( KernelStatement statement, int labelId );

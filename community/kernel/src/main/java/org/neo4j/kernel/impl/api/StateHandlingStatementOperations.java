@@ -165,8 +165,7 @@ public class StateHandlingStatementOperations implements
         return relationship;
     }
 
-    @Override
-    public Cursor<RelationshipItem> relationshipCursor( KernelStatement statement, long relationshipId )
+    private Cursor<RelationshipItem> relationshipCursor( KernelStatement statement, long relationshipId )
     {
         Cursor<RelationshipItem> cursor = statement.getStoreStatement().acquireSingleRelationshipCursor(
                 relationshipId );

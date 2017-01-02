@@ -206,8 +206,6 @@ public interface ReadOperations
 
     boolean nodeExists( long nodeId );
 
-    boolean relationshipExists( long relId );
-
     /**
      * Checks if a node is labeled with a certain label or not. Returns
      * {@code true} if the node is labeled with the label, otherwise {@code false.}
@@ -259,7 +257,7 @@ public interface ReadOperations
 
     Cursor<NodeItem> nodeCursorById( long nodeId ) throws EntityNotFoundException;
 
-    Cursor<RelationshipItem> relationshipCursor( long relId );
+    Cursor<RelationshipItem> relationshipCursorById( long relId ) throws EntityNotFoundException;
 
     //===========================================
     //== SCHEMA OPERATIONS ======================

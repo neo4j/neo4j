@@ -298,16 +298,6 @@ public class OperationsFacade
     }
 
     @Override
-    public boolean relationshipExists( long relId )
-    {
-        statement.assertOpen();
-        try ( Cursor<RelationshipItem> cursor = relationshipCursor( relId ) )
-        {
-            return cursor.next();
-        }
-    }
-
-    @Override
     public boolean nodeHasLabel( long nodeId, int labelId ) throws EntityNotFoundException
     {
         statement.assertOpen();
@@ -605,10 +595,10 @@ public class OperationsFacade
     }
 
     @Override
-    public Cursor<RelationshipItem> relationshipCursor( long relId )
+    public Cursor<RelationshipItem> relationshipCursorById( long relId ) throws EntityNotFoundException
     {
         statement.assertOpen();
-        return dataRead().relationshipCursor( statement, relId );
+        return dataRead().relationshipCursorById( statement, relId );
     }
     // </DataReadCursors>
 
