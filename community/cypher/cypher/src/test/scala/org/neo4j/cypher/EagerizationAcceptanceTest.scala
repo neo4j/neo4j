@@ -44,7 +44,7 @@ class EagerizationAcceptanceTest
 
   val EagerRegEx: Regex = "Eager(?!(Aggregation))".r
 
-  test("should be eager between property writes in QG head and reads in horizon") {
+  test("should be eager between node property writes in QG head and reads in horizon") {
     val n1 = createNode("val" -> 1)
     val n2 = createNode("val" -> 1)
     relate(n1, n2)
@@ -61,7 +61,7 @@ class EagerizationAcceptanceTest
     assertStats(result, propertiesWritten = 2)
   }
 
-  test("should be eager between property writes in QG tail and reads in horizon") {
+  test("should be eager between node property writes in QG tail and reads in horizon") {
     val n1 = createNode("val" -> 1)
     val n2 = createNode("val" -> 1)
     relate(n1, n2)
@@ -76,6 +76,39 @@ class EagerizationAcceptanceTest
 
     result.toList should equal(List(Map("nv" -> 2, "mv" -> 2),
                                     Map("nv" -> 2, "mv" -> 2)))
+    assertStats(result, propertiesWritten = 2)
+  }
+
+  test("should be eager between relationship property writes in QG head and reads in horizon") {
+    val n1 = createNode()
+    val n2 = createNode()
+    relate(n1, n2, ("val" -> 1))
+
+    val query = """MATCH (n)-[r]-(m)
+                  |SET r.val = r.val + 1
+                  |RETURN r.val AS rv
+                """.stripMargin
+
+    val result = updateWithBothPlanners(query)
+
+    result.toList should equal(List(Map("rv" -> 3), Map("rv" -> 3)))
+    assertStats(result, propertiesWritten = 2)
+  }
+
+  test("should be eager between relationship property writes in QG tail and reads in horizon") {
+    val n1 = createNode()
+    val n2 = createNode()
+    relate(n1, n2, ("val" -> 1))
+
+    val query = """UNWIND [1] as i WITH *
+                  |MATCH (n)-[r]-(m)
+                  |SET r.val = r.val + 1
+                  |RETURN r.val AS rv
+                """.stripMargin
+
+    val result = updateWithBothPlanners(query)
+
+    result.toList should equal(List(Map("rv" -> 3), Map("rv" -> 3)))
     assertStats(result, propertiesWritten = 2)
   }
 

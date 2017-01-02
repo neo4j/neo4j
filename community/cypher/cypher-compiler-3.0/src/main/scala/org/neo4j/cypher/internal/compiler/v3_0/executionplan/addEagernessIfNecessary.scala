@@ -206,6 +206,14 @@ object addEagernessIfNecessary extends (Pipe => Pipe) {
   }
 
   private def relationshipPropertiesConflict(from: Effects, to: Effects): Boolean = {
+    relationshipReadWriteProps(from, to) || relationshipWriteReadProps(from, to)
+  }
+
+  private def relationshipWriteReadProps(from: Effects, to: Effects) = {
+    relationshipReadWriteProps(to, from)
+  }
+
+  private def relationshipReadWriteProps(from: Effects, to: Effects): Boolean = {
     val propertyReads = from.effectsSet.collect {
       case property: ReadsRelationshipProperty => property
     }
