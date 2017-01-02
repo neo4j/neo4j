@@ -308,4 +308,10 @@ class AdversarialWritePageCursor extends PageCursor
     {
         delegate.zapPage();
     }
+
+    @Override
+    public boolean isWriteLocked()
+    {
+        return true;
+    }
 }

@@ -463,6 +463,12 @@ class AdversarialReadPageCursor extends PageCursor
     }
 
     @Override
+    public boolean isWriteLocked()
+    {
+        return delegate.isWriteLocked();
+    }
+
+    @Override
     public String toString()
     {
         State s = this.state;

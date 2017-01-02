@@ -275,10 +275,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         {
             while ( cursor.getCurrentPageId() < endPageId && cursor.next() )
             {
-                do
-                {
-                    writeRecords( cursor );
-                } while ( cursor.shouldRetry() );
+                writeRecords( cursor );
             }
         }
 
@@ -445,10 +442,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         {
             while ( cursor.getCurrentPageId() < endPageId && cursor.next() )
             {
-                do
-                {
-                    writeRecords( cursor );
-                } while ( cursor.shouldRetry() );
+                writeRecords( cursor );
             }
         } // closing the PagedFile implies flushing because it was the last reference
 
@@ -726,10 +720,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         {
             while ( cursor.getCurrentPageId() < endPageId && cursor.next() )
             {
-                do
-                {
-                    writeRecords( cursor );
-                } while ( cursor.shouldRetry() );
+                writeRecords( cursor );
             }
         }
         finally
@@ -953,39 +944,29 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         try ( PageCursor cursor = pagedFile.io( 0L, PF_SHARED_WRITE_LOCK ) )
         {
             assertTrue( cursor.next() );
-            do
-            {
-                cursor.setOffset( 0 );
-                cursor.putByte( (byte) 1 );
-                cursor.putByte( (byte) 2 );
-                cursor.putByte( (byte) 3 );
-                cursor.putByte( (byte) 4 );
-            } while ( cursor.shouldRetry() );
+            cursor.setOffset( 0 );
+            cursor.putByte( (byte) 1 );
+            cursor.putByte( (byte) 2 );
+            cursor.putByte( (byte) 3 );
+            cursor.putByte( (byte) 4 );
+
             assertTrue( cursor.next() );
-            do
-            {
-                cursor.setOffset( 0 );
-                cursor.putByte( (byte) 5 );
-                cursor.putByte( (byte) 6 );
-                cursor.putByte( (byte) 7 );
-                cursor.putByte( (byte) 8 );
-            } while ( cursor.shouldRetry() );
+            cursor.setOffset( 0 );
+            cursor.putByte( (byte) 5 );
+            cursor.putByte( (byte) 6 );
+            cursor.putByte( (byte) 7 );
+            cursor.putByte( (byte) 8 );
         }
 
         try ( PageCursor cursor = pagedFile.io( 0L, PF_SHARED_WRITE_LOCK ) )
         {
             byte[] bytes = new byte[4];
             assertTrue( cursor.next() );
-            do
-            {
-                cursor.getBytes( bytes );
-            } while ( cursor.shouldRetry() );
+            cursor.getBytes( bytes );
             assertThat( bytes, byteArray( new byte[]{1, 2, 3, 4} ) );
+
             assertTrue( cursor.next() );
-            do
-            {
-                cursor.getBytes( bytes );
-            } while ( cursor.shouldRetry() );
+            cursor.getBytes( bytes );
             assertThat( bytes, byteArray( new byte[]{5, 6, 7, 8} ) );
         }
         pagedFile.close();
@@ -1521,10 +1502,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             for ( int i = 0; i < pagesToAdd; i++ )
             {
                 assertTrue( cursor.next() );
-                do
-                {
-                    writeRecords( cursor );
-                } while ( cursor.shouldRetry() );
+                writeRecords( cursor );
             }
         }
 
@@ -1596,12 +1574,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         {
             if ( cursor.next() )
             {
-                do
-                {
-                    cursor.putByte( expectedByte );
-                    // Give some hint to scheduler to give some CPU cycles to the read thread below
-                    Thread.yield();
-                } while ( cursor.shouldRetry() );
+                cursor.putByte( expectedByte );
             }
         }
 
@@ -1613,11 +1586,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 {
                     if ( cursor.next() )
                     {
-                        do
-                        {
-                            cursor.setOffset( recordSize );
-                            cursor.putByte( (byte) 14 );
-                        } while ( cursor.shouldRetry() );
+                        cursor.setOffset( recordSize );
+                        cursor.putByte( (byte) 14 );
                     }
                     startLatch.countDown();
                 }
@@ -1705,20 +1675,11 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
         {
             assertTrue( cursor.next( 2 ) );
-            do
-            {
-                writeRecords( cursor );
-            } while ( cursor.shouldRetry() );
+            writeRecords( cursor );
             assertTrue( cursor.next( 0 ) );
-            do
-            {
-                writeRecords( cursor );
-            } while ( cursor.shouldRetry() );
+            writeRecords( cursor );
             assertTrue( cursor.next( 1 ) );
-            do
-            {
-                writeRecords( cursor );
-            } while ( cursor.shouldRetry() );
+            writeRecords( cursor );
         }
 
         try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK | PF_NO_GROW ) )
@@ -2102,13 +2063,11 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 cursorReady2 = cursor.next();
                 if ( cursorReady2 )
                 {
-                    do {
-                        for ( int i = 0; i < filePageSize2; i++ )
-                        {
-                            cursor.putByte( (byte) 'b' );
-                        }
+                    for ( int i = 0; i < filePageSize2; i++ )
+                    {
+                        cursor.putByte( (byte) 'b' );
                     }
-                    while ( cursor.shouldRetry() );
+                    assertFalse( cursor.shouldRetry() );
                 }
                 pageId2++;
             }
@@ -4615,7 +4574,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 // all good
             }
 
-            PageCursor reader = pf.io( 0, PF_SHARED_WRITE_LOCK );
+            PageCursor reader = pf.io( 0, PF_SHARED_READ_LOCK );
             assertTrue( reader.next() );
             reader.close();
             try
@@ -5418,6 +5377,28 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 assertFalse( cursor.checkAndClearBoundsFlag() );
                 assertArrayEquals( allZeros, read );
             }
+        }
+    }
+
+    @Test
+    public void isWriteLockingMustBeTrueForCursorOpenedWithSharedWriteLock() throws Exception
+    {
+        configureStandardPageCache();
+        try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
+              PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
+        {
+            assertTrue( cursor.isWriteLocked() );
+        }
+    }
+
+    @Test
+    public void isWriteLockingMustBeFalseForCursorOpenedWithSharedReadLock() throws Exception
+    {
+        configureStandardPageCache();
+        try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
+              PageCursor cursor = pf.io( 0, PF_SHARED_READ_LOCK ) )
+        {
+            assertFalse( cursor.isWriteLocked() );
         }
     }
 }

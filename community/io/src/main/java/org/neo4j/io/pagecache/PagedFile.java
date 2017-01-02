@@ -48,6 +48,11 @@ public interface PagedFile extends AutoCloseable
      * Note that write locks are <em>not</em> exclusive. You must use other means to coordinate access to the data on
      * the pages. The write lock only means that the page will not be concurrently evicted.
      * <p>
+     * Note also that write locks exclude eviction. So since we can assume that write locks never make conflicting
+     * modifications (higher level locks should ensure this), it is safe to perform page writes without a
+     * {@link PageCursor#shouldRetry() shouldRetry} loop. The {@code shouldRetry} method on write locking cursors
+     * always returns {@code false}.
+     * <p>
      * This cannot be combined with {@link #PF_SHARED_READ_LOCK}.
      */
     int PF_SHARED_WRITE_LOCK = 1 << 1;
