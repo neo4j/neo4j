@@ -78,7 +78,6 @@ import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.index.LegacyIndexStore;
-import org.neo4j.kernel.impl.util.Cursors;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.storageengine.api.EntityType;
@@ -197,18 +196,6 @@ public class StateHandlingStatementOperations implements
         StorageStatement storeStatement = statement.getStoreStatement();
         return storeStatement.acquireIteratorNodeCursor(
                 storeLayer.nodesGetForLabel( storeStatement, labelId ) );
-    }
-
-    @Override
-    public Cursor<NodeItem> nodeCursorGetFromUniqueIndexSeek( KernelStatement statement,
-            IndexDescriptor index,
-            Object value ) throws IndexBrokenKernelException, IndexNotFoundKernelException
-    {
-        // TODO Filter this properly
-        StorageStatement storeStatement = statement.getStoreStatement();
-        IndexReader reader = storeStatement.getFreshIndexReader( index );
-        PrimitiveLongIterator seekResult = PrimitiveLongCollections.resourceIterator( reader.seek( value ), reader );
-        return storeStatement.acquireIteratorNodeCursor( seekResult );
     }
 
     // </Cursors>

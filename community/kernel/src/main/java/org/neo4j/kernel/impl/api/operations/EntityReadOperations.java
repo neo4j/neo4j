@@ -148,10 +148,6 @@ public interface EntityReadOperations
 
     Cursor<NodeItem> nodeCursorGetForLabel( KernelStatement statement, int labelId );
 
-    Cursor<NodeItem> nodeCursorGetFromUniqueIndexSeek( KernelStatement statement,
-            IndexDescriptor index,
-            Object value ) throws IndexBrokenKernelException, IndexNotFoundKernelException;
-
     long nodesGetCount( KernelStatement statement );
 
     long relationshipsGetCount( KernelStatement statement );

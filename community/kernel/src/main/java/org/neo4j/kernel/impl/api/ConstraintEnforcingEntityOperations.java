@@ -456,14 +456,6 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
-    public Cursor<NodeItem> nodeCursorGetFromUniqueIndexSeek( KernelStatement statement,
-            IndexDescriptor index,
-            Object value ) throws IndexNotFoundKernelException, IndexBrokenKernelException
-    {
-        return entityReadOperations.nodeCursorGetFromUniqueIndexSeek( statement, index, value );
-    }
-
-    @Override
     public IndexDescriptor indexCreate( KernelStatement state, int labelId, int propertyKeyId )
             throws AlreadyIndexedException, AlreadyConstrainedException
     {
