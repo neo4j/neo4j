@@ -261,30 +261,6 @@ public interface ReadOperations
 
     Cursor<RelationshipItem> relationshipCursor( long relId );
 
-    Cursor<NodeItem> nodeCursorGetAll();
-
-    Cursor<RelationshipItem> relationshipCursorGetAll();
-
-    Cursor<NodeItem> nodeCursorGetForLabel( int labelId );
-
-    Cursor<NodeItem> nodeCursorGetFromIndexSeek( IndexDescriptor index, Object value )
-            throws IndexNotFoundKernelException;
-
-    Cursor<NodeItem> nodeCursorGetFromIndexRangeSeekByNumber( IndexDescriptor index, Number lower, boolean includeLower, Number upper, boolean includeUpper )
-            throws IndexNotFoundKernelException;
-
-    Cursor<NodeItem> nodeCursorGetFromIndexRangeSeekByString( IndexDescriptor index, String lower, boolean includeLower, String upper, boolean includeUpper )
-            throws IndexNotFoundKernelException;
-
-    Cursor<NodeItem> nodeCursorGetFromIndexRangeSeekByPrefix( IndexDescriptor index, String prefix )
-            throws IndexNotFoundKernelException;
-
-    Cursor<NodeItem> nodeCursorGetFromIndexScan( IndexDescriptor index )
-            throws IndexNotFoundKernelException;
-
-    Cursor<NodeItem> nodeCursorGetFromUniqueIndexSeek( IndexDescriptor index, Object value )
-            throws IndexNotFoundKernelException, IndexBrokenKernelException;
-
     //===========================================
     //== SCHEMA OPERATIONS ======================
     //===========================================

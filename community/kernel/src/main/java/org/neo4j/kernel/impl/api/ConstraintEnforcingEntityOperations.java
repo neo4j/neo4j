@@ -444,12 +444,6 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
-    public Cursor<NodeItem> nodeCursorGetAll( KernelStatement statement )
-    {
-        return entityReadOperations.nodeCursorGetAll( statement );
-    }
-
-    @Override
     public Cursor<RelationshipItem> relationshipCursorGetAll( KernelStatement statement )
     {
         return entityReadOperations.relationshipCursorGetAll( statement );

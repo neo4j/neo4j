@@ -144,8 +144,6 @@ public interface EntityReadOperations
 
     Cursor<RelationshipItem> relationshipCursor( KernelStatement statement, long relId );
 
-    Cursor<NodeItem> nodeCursorGetAll( KernelStatement statement );
-
     Cursor<RelationshipItem> relationshipCursorGetAll( KernelStatement statement );
 
     Cursor<NodeItem> nodeCursorGetForLabel( KernelStatement statement, int labelId );

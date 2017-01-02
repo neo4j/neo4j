@@ -180,17 +180,6 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public Cursor<NodeItem> nodeCursorGetAll( KernelStatement statement )
-    {
-        Cursor<NodeItem> cursor = statement.getStoreStatement().nodesGetAllCursor();
-        if ( statement.hasTxStateWithChanges() )
-        {
-            return statement.txState().augmentNodesGetAllCursor( cursor );
-        }
-        return cursor;
-    }
-
-    @Override
     public Cursor<RelationshipItem> relationshipCursorGetAll( KernelStatement statement )
     {
         Cursor<RelationshipItem> cursor = statement.getStoreStatement().relationshipsGetAllCursor();

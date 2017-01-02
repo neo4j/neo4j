@@ -160,19 +160,14 @@ public interface ReadableTransactionState
 
     Cursor<LabelItem> augmentLabelCursor( Cursor<LabelItem> cursor, NodeState nodeState );
 
-    public Cursor<LabelItem> augmentSingleLabelCursor( Cursor<LabelItem> cursor, NodeState nodeState, int labelId );
+    Cursor<LabelItem> augmentSingleLabelCursor( Cursor<LabelItem> cursor, NodeState nodeState, int labelId );
 
     Cursor<RelationshipItem> augmentSingleRelationshipCursor( Cursor<RelationshipItem> cursor, long relationshipId );
-
-    Cursor<RelationshipItem> augmentIteratorRelationshipCursor( Cursor<RelationshipItem> cursor,
-            RelationshipIterator iterator );
 
     Cursor<RelationshipItem> augmentNodeRelationshipCursor( Cursor<RelationshipItem> cursor,
             NodeState nodeState,
             Direction direction,
             int[] relTypes );
-
-    Cursor<NodeItem> augmentNodesGetAllCursor( Cursor<NodeItem> cursor );
 
     Cursor<RelationshipItem> augmentRelationshipsGetAllCursor( Cursor<RelationshipItem> cursor );
 

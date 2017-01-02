@@ -324,13 +324,6 @@ public class GuardingStatementOperations implements
     }
 
     @Override
-    public Cursor<NodeItem> nodeCursorGetAll( KernelStatement statement )
-    {
-        guard.check( statement );
-        return entityReadDelegate.nodeCursorGetAll( statement );
-    }
-
-    @Override
     public Cursor<RelationshipItem> relationshipCursorGetAll( KernelStatement statement )
     {
         guard.check( statement );
