@@ -79,8 +79,8 @@ public class PageListTest
     public static Iterable<Object[]> parameters()
     {
         LongFunction<Object[]> toArray = x -> new Object[]{x};
-//        return () -> Arrays.stream( pageIds ).mapToObj( toArray ).iterator();
-        return () -> Arrays.stream( new long[]{0} ).mapToObj( toArray ).iterator();
+        return () -> Arrays.stream( pageIds ).mapToObj( toArray ).iterator();
+//        return () -> Arrays.stream( new long[]{0} ).mapToObj( toArray ).iterator();
     }
 
     private static ExecutorService executor;
@@ -1705,6 +1705,5 @@ public class PageListTest
         assertTrue( pageList.validateReadLock( nextPageRef, nextStamp ) );
     }
 
-    // todo flush
     // todo freelist? (entries chained via file page ids in a linked list? should work as free pages are always exclusively locked, and thus don't really need an isLoaded check)
 }
