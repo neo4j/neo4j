@@ -44,12 +44,30 @@ class EagerizationAcceptanceTest
 
   val EagerRegEx: Regex = "Eager(?!(Aggregation))".r
 
-  test("should be eager between property writes in QG and reads in horizon") {
+  test("should be eager between property writes in QG head and reads in horizon") {
     val n1 = createNode("val" -> 1)
     val n2 = createNode("val" -> 1)
     relate(n1, n2)
 
     val query = """MATCH (n)--(m)
+                  |SET n.val = n.val + 1
+                  |RETURN n.val AS nv, m.val AS mv
+                """.stripMargin
+
+    val result = updateWithBothPlanners(query)
+
+    result.toList should equal(List(Map("nv" -> 2, "mv" -> 2),
+                                    Map("nv" -> 2, "mv" -> 2)))
+    assertStats(result, propertiesWritten = 2)
+  }
+
+  test("should be eager between property writes in QG tail and reads in horizon") {
+    val n1 = createNode("val" -> 1)
+    val n2 = createNode("val" -> 1)
+    relate(n1, n2)
+
+    val query = """UNWIND [1] as i WITH *
+                  |MATCH (n)--(m)
                   |SET n.val = n.val + 1
                   |RETURN n.val AS nv, m.val AS mv
                 """.stripMargin
