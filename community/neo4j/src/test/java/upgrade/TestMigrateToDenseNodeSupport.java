@@ -39,6 +39,7 @@ import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.api.security.SecurityContext;
@@ -195,11 +196,10 @@ public class TestMigrateToDenseNodeSupport
         try ( KernelTransaction tx = kernelAPI.newTransaction( KernelTransaction.Type.implicit, AnonymousContext.read() );
               Statement statement = tx.acquireStatement() )
         {
-            Cursor<NodeItem> nodeCursor = statement.readOperations().nodeCursor( node.getId() );
-            assertTrue( nodeCursor.next() );
+            Cursor<NodeItem> nodeCursor = statement.readOperations().nodeCursorById( node.getId() );
             assertEquals( dense, nodeCursor.get().isDense() );
         }
-        catch ( TransactionFailureException | IllegalArgumentException e )
+        catch ( TransactionFailureException | IllegalArgumentException | EntityNotFoundException e )
         {
             throw new RuntimeException( e );
         }

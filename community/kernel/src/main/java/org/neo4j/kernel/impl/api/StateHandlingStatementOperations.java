@@ -142,8 +142,7 @@ public class StateHandlingStatementOperations implements
         return node;
     }
 
-    @Override
-    public Cursor<NodeItem> nodeCursor( KernelStatement statement, long nodeId )
+    private Cursor<NodeItem> nodeCursor( KernelStatement statement, long nodeId )
     {
         Cursor<NodeItem> cursor = statement.getStoreStatement().acquireSingleNodeCursor( nodeId );
         if ( statement.hasTxStateWithChanges() )

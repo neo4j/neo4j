@@ -38,6 +38,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
@@ -552,7 +553,7 @@ public class LabelsAcceptanceTest
     }
 
     @Test
-    public void shouldAllowManyLabelsAndPropertyCursor()
+    public void shouldAllowManyLabelsAndPropertyCursor() throws Exception
     {
         int propertyCount = 10;
         int labelCount = 15;
@@ -581,21 +582,18 @@ public class LabelsAcceptanceTest
             ThreadToStatementContextBridge bridge = resolver.resolveDependency( ThreadToStatementContextBridge.class );
             try ( Statement statement = bridge.getTopLevelTransactionBoundToThisThread( true ).acquireStatement() )
             {
-                try ( Cursor<NodeItem> nodeCursor = statement.readOperations().nodeCursor( node.getId() ) )
+                try ( Cursor<NodeItem> nodeCursor = statement.readOperations().nodeCursorById( node.getId() ) )
                 {
-                    if ( nodeCursor.next() )
+                    try ( Cursor<PropertyItem> properties = nodeCursor.get().properties() )
                     {
-                        try ( Cursor<PropertyItem> properties = nodeCursor.get().properties() )
+                        while ( properties.next() )
                         {
-                            while ( properties.next() )
+                            seenProperties.add( properties.get().propertyKeyId() );
+                            try ( Cursor<LabelItem> labels = nodeCursor.get().labels() )
                             {
-                                seenProperties.add( properties.get().propertyKeyId() );
-                                try ( Cursor<LabelItem> labels = nodeCursor.get().labels() )
+                                while ( labels.next() )
                                 {
-                                    while ( labels.next() )
-                                    {
-                                        seenLabels.add( labels.get().getAsInt() );
-                                    }
+                                    seenLabels.add( labels.get().getAsInt() );
                                 }
                             }
                         }

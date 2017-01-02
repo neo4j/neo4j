@@ -179,15 +179,13 @@ class EagerizationAcceptanceTest
           try {
             val idX = input(0).asInstanceOf[Node].getId
             val idY = input(1).asInstanceOf[Node].getId
-            val nodeCursor = statement.readOperations().nodeCursor(idX)
+            val nodeCursor = statement.readOperations().nodeCursorById(idX)
             val result = Array.newBuilder[Array[AnyRef]]
-            while (nodeCursor.next()) {
-              val relCursor = nodeCursor.get().relationships( Direction.OUTGOING )
-              while (relCursor.next()) {
-                val item: RelationshipItem = relCursor.get()
-                if (item.endNode() == idY)
-                  result += Array(new java.lang.Long(item.id()))
-              }
+            val relCursor = nodeCursor.get().relationships( Direction.OUTGOING )
+            while (relCursor.next()) {
+              val item: RelationshipItem = relCursor.get()
+              if (item.endNode() == idY)
+                result += Array(new java.lang.Long(item.id()))
             }
             RawIterator.of(result.result(): _*)
           } finally {
@@ -227,14 +225,12 @@ class EagerizationAcceptanceTest
           try {
             val idX = input(0).asInstanceOf[Node].getId
             val idY = input(1).asInstanceOf[Node].getId
-            val nodeCursor = statement.readOperations().nodeCursor(idX)
-            while (nodeCursor.next()) {
-              val relCursor = nodeCursor.get().relationships( Direction.OUTGOING )
-              while (relCursor.next()) {
-                val item: RelationshipItem = relCursor.get()
-                if (item.endNode() == idY)
-                  counter += 1
-              }
+            val nodeCursor = statement.readOperations().nodeCursorById(idX)
+            val relCursor = nodeCursor.get().relationships(Direction.OUTGOING)
+            while (relCursor.next()) {
+              val item: RelationshipItem = relCursor.get()
+              if (item.endNode() == idY)
+                counter += 1
             }
             RawIterator.empty()
           } finally {

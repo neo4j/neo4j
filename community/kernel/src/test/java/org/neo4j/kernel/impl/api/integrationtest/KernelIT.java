@@ -599,10 +599,8 @@ public class KernelIT extends KernelIntegrationTest
 
         KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
         try ( Statement statement = tx.acquireStatement();
-              Cursor<NodeItem> cursor = statement.readOperations().nodeCursor( 1 ) )
+              Cursor<NodeItem> cursor = statement.readOperations().nodeCursorById( 1 ) )
         {
-            assertTrue( cursor.next() );
-            cursor.close();
         }
         tx.success();
 

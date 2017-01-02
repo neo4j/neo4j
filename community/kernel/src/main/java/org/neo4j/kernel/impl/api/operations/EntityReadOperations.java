@@ -137,8 +137,6 @@ public interface EntityReadOperations
 
     Cursor<NodeItem> nodeCursorById( KernelStatement statement, long nodeId ) throws EntityNotFoundException;
 
-    Cursor<NodeItem> nodeCursor( KernelStatement statement, long nodeId );
-
     Cursor<RelationshipItem> relationshipCursorById( KernelStatement statement, long relId )
             throws EntityNotFoundException;
 
