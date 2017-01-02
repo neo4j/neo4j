@@ -23,6 +23,9 @@ import java.io.IOException;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageSwapper;
+import org.neo4j.io.pagecache.tracing.EvictionEvent;
+import org.neo4j.io.pagecache.tracing.EvictionEventOpportunity;
+import org.neo4j.io.pagecache.tracing.FlushEvent;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 import org.neo4j.unsafe.impl.internal.dragons.MemoryManager;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
@@ -117,7 +120,7 @@ class PageList
      */
     public long deref( long pageId )
     {
-        return baseAddress + pageId * META_DATA_BYTES_PER_PAGE;
+        return baseAddress + (pageId * META_DATA_BYTES_PER_PAGE);
     }
 
     private long offLock( long pageRef )
@@ -337,32 +340,54 @@ class PageList
         return new IllegalStateException( msg );
     }
 
-    public boolean tryEvict( long pageRef ) throws IOException
+    public boolean tryEvict( long pageRef, EvictionEventOpportunity evictionOpportunity ) throws IOException
     {
         if ( tryExclusiveLock( pageRef ) )
         {
             if ( isLoaded( pageRef ) )
             {
-                int swapperId = getSwapperId( pageRef );
-                SwapperSet.Allocation allocation = swappers.getAllocation( swapperId );
-                PageSwapper swapper = allocation.swapper;
-                long filePageId = getFilePageId( pageRef );
-                if ( isModified( pageRef ) )
+                try ( EvictionEvent evictionEvent = evictionOpportunity.beginEviction() )
                 {
-                    long address = getAddress( pageRef );
-                    swapper.write( filePageId, address, allocation.filePageSize );
-                    explicitlyMarkPageUnmodifiedUnderExclusiveLock( pageRef );
+                    evict( pageRef, evictionEvent );
+                    return true;
                 }
-                swapper.evicted( filePageId, null );
-                clearBinding( pageRef );
-                return true;
             }
-            else
-            {
-                unlockExclusive( pageRef );
-            }
+            unlockExclusive( pageRef );
         }
         return false;
+    }
+
+    private void evict( long pageRef, EvictionEvent evictionEvent ) throws IOException
+    {
+        int swapperId = getSwapperId( pageRef );
+        SwapperSet.Allocation allocation = swappers.getAllocation( swapperId );
+        PageSwapper swapper = allocation.swapper;
+        long filePageId = getFilePageId( pageRef );
+        evictionEvent.setFilePageId( filePageId );
+        evictionEvent.setCachePageId( pageRef );
+        evictionEvent.setSwapper( swapper );
+        if ( isModified( pageRef ) )
+        {
+            FlushEvent flushEvent = evictionEvent.flushEventOpportunity().beginFlush( filePageId, pageRef, swapper );
+            try
+            {
+                long address = getAddress( pageRef );
+                long bytesWritten = swapper.write( filePageId, address, allocation.filePageSize );
+                explicitlyMarkPageUnmodifiedUnderExclusiveLock( pageRef );
+                flushEvent.addBytesWritten( bytesWritten );
+                flushEvent.addPagesFlushed( 1 );
+                flushEvent.done();
+            }
+            catch ( IOException e )
+            {
+                unlockExclusive( pageRef );
+                flushEvent.done( e );
+                evictionEvent.threwException( e );
+                throw e;
+            }
+        }
+        swapper.evicted( filePageId, null );
+        clearBinding( pageRef );
     }
 
     private void clearBinding( long pageRef )

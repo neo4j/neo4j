@@ -25,7 +25,7 @@ import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 class StubPageFaultEvent implements PageFaultEvent
 {
     long bytesRead;
-    int cachePageId;
+    long cachePageId;
 
     @Override
     public void addBytesRead( long bytes )
@@ -34,7 +34,7 @@ class StubPageFaultEvent implements PageFaultEvent
     }
 
     @Override
-    public void setCachePageId( int cachePageId )
+    public void setCachePageId( long cachePageId )
     {
         this.cachePageId = cachePageId;
     }

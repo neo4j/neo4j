@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,22 +19,13 @@
  */
 package org.neo4j.io.pagecache.tracing;
 
-import org.neo4j.io.pagecache.PageSwapper;
-
 /**
- * Represents the opportunity to flush a page.
- *
- * The flushing might not happen, though, because only dirty pages are flushed.
+ * Interface for any event that in turn presents the opportunity to evict a page.
  */
-public interface FlushEventOpportunity
+public interface EvictionEventOpportunity
 {
     /**
-     * A FlushEventOpportunity that only returns the FlushEvent.NULL.
+     * Begin an eviction event.
      */
-    FlushEventOpportunity NULL = ( filePageId, cachePageId, swapper ) -> FlushEvent.NULL;
-
-    /**
-     * Begin flushing the given page.
-     */
-    FlushEvent beginFlush( long filePageId, long cachePageId, PageSwapper swapper );
+    EvictionEvent beginEviction();
 }

@@ -240,7 +240,7 @@ public class RecordingPageCacheTracer extends RecordingTracer implements PageCac
         }
 
         @Override
-        public void setCachePageId( int cachePageId )
+        public void setCachePageId( long cachePageId )
         {
         }
 

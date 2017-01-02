@@ -191,7 +191,7 @@ public class DefaultPageCursorTracer implements PageCursorTracer
         }
 
         @Override
-        public void setCachePageId( int cachePageId )
+        public void setCachePageId( long cachePageId )
         {
         }
 
@@ -229,7 +229,7 @@ public class DefaultPageCursorTracer implements PageCursorTracer
         }
 
         @Override
-        public void setCachePageId( int cachePageId )
+        public void setCachePageId( long cachePageId )
         {
         }
     };
@@ -237,7 +237,7 @@ public class DefaultPageCursorTracer implements PageCursorTracer
     private final FlushEventOpportunity flushEventOpportunity = new FlushEventOpportunity()
     {
         @Override
-        public FlushEvent beginFlush( long filePageId, int cachePageId, PageSwapper swapper )
+        public FlushEvent beginFlush( long filePageId, long cachePageId, PageSwapper swapper )
         {
             return flushEvent;
         }
@@ -274,7 +274,7 @@ public class DefaultPageCursorTracer implements PageCursorTracer
         int eventHits = 1;
 
         @Override
-        public void setCachePageId( int cachePageId )
+        public void setCachePageId( long cachePageId )
         {
         }
 

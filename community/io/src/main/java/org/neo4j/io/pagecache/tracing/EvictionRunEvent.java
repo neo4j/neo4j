@@ -24,14 +24,13 @@ package org.neo4j.io.pagecache.tracing;
  * needs to evict a batch of pages. The dedicated eviction thread is
  * mostly sleeping when it is not performing an eviction run.
  */
-public interface EvictionRunEvent extends AutoCloseablePageCacheTracerEvent
+public interface EvictionRunEvent extends AutoCloseablePageCacheTracerEvent, EvictionEventOpportunity
 {
     /**
      * An EvictionRunEvent that does nothing other than return the EvictionEvent.NULL.
      */
     EvictionRunEvent NULL = new EvictionRunEvent()
     {
-
         @Override
         public EvictionEvent beginEviction()
         {
@@ -43,9 +42,4 @@ public interface EvictionRunEvent extends AutoCloseablePageCacheTracerEvent
         {
         }
     };
-
-    /**
-     * An eviction is started as part of this eviction run.
-     */
-    EvictionEvent beginEviction();
 }

@@ -22,7 +22,7 @@ package org.neo4j.io.pagecache.tracing;
 /**
  * Begin a page fault as part of a pin event.
  */
-public interface PageFaultEvent
+public interface PageFaultEvent extends EvictionEventOpportunity
 {
     /**
      * A PageFaultEvent that does nothing.
@@ -51,7 +51,7 @@ public interface PageFaultEvent
         }
 
         @Override
-        public void setCachePageId( int cachePageId )
+        public void setCachePageId( long cachePageId )
         {
         }
     };
@@ -64,7 +64,7 @@ public interface PageFaultEvent
     /**
      * The id of the cache page that is being faulted into.
      */
-    void setCachePageId( int cachePageId );
+    void setCachePageId( long cachePageId );
 
     /**
      * The page fault completed successfully.
@@ -75,9 +75,4 @@ public interface PageFaultEvent
      * The page fault did not complete successfully, but instead caused the given Throwable to be thrown.
      */
     void done( Throwable throwable );
-
-    /**
-     * Begin an eviction event caused by this page fault event.
-     */
-    EvictionEvent beginEviction();
 }

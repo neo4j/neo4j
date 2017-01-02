@@ -139,13 +139,13 @@ class HEvents
     public static class FlushHEvent extends IntervalHEvent implements FlushEvent
     {
         private long filePageId;
-        private int cachePageId;
+        private long cachePageId;
         private int pageCount;
         private File file;
         private int bytesWritten;
         private IOException exception;
 
-        FlushHEvent( LinearHistoryTracer tracer, long filePageId, int cachePageId, PageSwapper swapper )
+        FlushHEvent( LinearHistoryTracer tracer, long filePageId, long cachePageId, PageSwapper swapper )
         {
             super( tracer );
             this.filePageId = filePageId;
@@ -212,7 +212,7 @@ class HEvents
         }
 
         @Override
-        public FlushEvent beginFlush( long filePageId, int cachePageId, PageSwapper swapper )
+        public FlushEvent beginFlush( long filePageId, long cachePageId, PageSwapper swapper )
         {
             return tracer.add( new FlushHEvent( tracer, filePageId, cachePageId, swapper ) );
         }
@@ -229,7 +229,7 @@ class HEvents
         private boolean exclusiveLock;
         private long filePageId;
         private File file;
-        private int cachePageId;
+        private long cachePageId;
         private boolean hit;
 
         PinHEvent( LinearHistoryTracer tracer, boolean exclusiveLock, long filePageId, PageSwapper swapper )
@@ -242,7 +242,7 @@ class HEvents
         }
 
         @Override
-        public void setCachePageId( int cachePageId )
+        public void setCachePageId( long cachePageId )
         {
             this.cachePageId = cachePageId;
         }
@@ -283,7 +283,7 @@ class HEvents
     public static class PageFaultHEvent extends IntervalHEvent implements PageFaultEvent
     {
         private int bytesRead;
-        private int cachePageId;
+        private long cachePageId;
         private boolean pageEvictedByFaulter;
         private Throwable exception;
 
@@ -299,7 +299,7 @@ class HEvents
         }
 
         @Override
-        public void setCachePageId( int cachePageId )
+        public void setCachePageId( long cachePageId )
         {
             this.cachePageId = cachePageId;
         }
@@ -342,7 +342,7 @@ class HEvents
         private long filePageId;
         private File file;
         private IOException exception;
-        private int cachePageId;
+        private long cachePageId;
 
         EvictionHEvent( LinearHistoryTracer linearHistoryTracer )
         {
@@ -374,13 +374,13 @@ class HEvents
         }
 
         @Override
-        public void setCachePageId( int cachePageId )
+        public void setCachePageId( long cachePageId )
         {
             this.cachePageId = cachePageId;
         }
 
         @Override
-        public FlushEvent beginFlush( long filePageId, int cachePageId, PageSwapper swapper )
+        public FlushEvent beginFlush( long filePageId, long cachePageId, PageSwapper swapper )
         {
             return tracer.add( new FlushHEvent( tracer, filePageId, cachePageId, swapper ) );
         }

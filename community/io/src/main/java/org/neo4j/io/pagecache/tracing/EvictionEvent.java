@@ -55,7 +55,7 @@ public interface EvictionEvent extends AutoCloseablePageCacheTracerEvent
         }
 
         @Override
-        public void setCachePageId( int cachePageId )
+        public void setCachePageId( long cachePageId )
         {
         }
 
@@ -89,5 +89,5 @@ public interface EvictionEvent extends AutoCloseablePageCacheTracerEvent
     /**
      * The cache page id of the evicted page.
      */
-    void setCachePageId( int cachePageId );
+    void setCachePageId( long cachePageId );
 }
