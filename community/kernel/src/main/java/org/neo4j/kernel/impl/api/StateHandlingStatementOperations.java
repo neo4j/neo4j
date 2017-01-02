@@ -221,22 +221,6 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public Cursor<NodeItem> nodeCursorGetFromIndexRangeSeekByNumber( KernelStatement statement,
-            IndexDescriptor index,
-            Number lower, boolean includeLower,
-            Number upper, boolean includeUpper )
-            throws IndexNotFoundKernelException
-
-    {
-        // TODO Filter this properly
-        StorageStatement storeStatement = statement.getStoreStatement();
-        IndexReader reader = storeStatement.getIndexReader( index );
-        return COMPARE_NUMBERS.isEmptyRange( lower, includeLower, upper, includeUpper ) ? Cursors.<NodeItem>empty() :
-               storeStatement.acquireIteratorNodeCursor(
-                       reader.rangeSeekByNumberInclusive( lower, upper ) );
-    }
-
-    @Override
     public Cursor<NodeItem> nodeCursorGetFromIndexRangeSeekByString( KernelStatement statement,
             IndexDescriptor index,
             String lower, boolean includeLower,
