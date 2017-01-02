@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -21,48 +21,99 @@ package org.neo4j.server;
 
 import org.junit.Test;
 
+import java.io.File;
 import java.io.IOException;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.server.helpers.CommunityServerBuilder;
+import org.neo4j.io.pagecache.PageEvictionCallback;
+import org.neo4j.io.pagecache.PageSwapper;
+import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.test.ThreadTestUtils;
+
+import static org.junit.Assert.fail;
 
 public abstract class NeoServerRestartTest
 {
+    public static final String CUSTOM_SWAPPER = "CustomSwapper";
+    private static Semaphore semaphore;
+
+    static
+    {
+        semaphore = new Semaphore( 0 );
+    }
+
+    /**
+     * This test makes sure that the database is able to start after having been stopped during initialization.
+     *
+     * In order to make sure that the server is stopped during startup we create a separate thread that calls stop.
+     * In order to make sure that this thread does not call stop before the startup procedure has started we use a
+     * custom implementation of a PageSwapperFactory, which communicates with the thread that calls stop. We do this
+     * via a static semaphore.
+     * @throws IOException
+     * @throws InterruptedException
+     */
 
     @Test
-    public void shouldNotCorruptWhenImmediatelyStopped() throws IOException, InterruptedException
+    public void shouldBeAbleToRestartWhenStoppedDuringStartup() throws IOException, InterruptedException
     {
-        NeoServer server = getNeoServer();
+        // Make sure that the semaphore is in a clean state.
+        semaphore.drainPermits();
+        // Get a server that uses our custom swapper.
+        NeoServer server = getNeoServer( CUSTOM_SWAPPER );
 
-        CountDownLatch latch = new CountDownLatch( 1 );
-        ThreadTestUtils.fork( $waitThenStopServer( server, latch ) );
+        AtomicBoolean failure = new AtomicBoolean();
+        Thread serverStoppingThread = ThreadTestUtils.fork( stopServerAfterStartingHasStarted( server, failure ) );
         server.start();
-        //Wait for the server to stop.
-        latch.await();
-
-        server = getNeoServer();
+        // Wait for the server to stop.
+        serverStoppingThread.join();
+        // Check if the server stopped successfully.
+        if ( failure.get() )
+        {
+            fail( "Server failed to stop." );
+        }
+        // Verify that we can start the server again.
+        server = getNeoServer( CUSTOM_SWAPPER );
         server.start();
         server.stop();
     }
 
-    protected abstract NeoServer getNeoServer() throws IOException;
+    protected abstract NeoServer getNeoServer( String customPageSwapperName ) throws IOException;
 
-    private Runnable $waitThenStopServer( NeoServer server, CountDownLatch latch )
+    private Runnable stopServerAfterStartingHasStarted( NeoServer server, AtomicBoolean failure )
     {
-        return () -> {
+        return () ->
+        {
             try
             {
-                //Make sure that we have started starting the database. This value is empirically chosen and may need
-                // to be revisited in the future.
-                Thread.sleep( 200 );
+                // Make sure that we have started the startup procedure before calling stop.
+                semaphore.acquire();
                 server.stop();
-                latch.countDown();
             }
             catch ( Exception e )
             {
-                //This is ok, it is not what we are testing for.
+                failure.set( true );
+                e.printStackTrace();
             }
         };
+    }
+
+    // This class is used to notify the test that the server has started its startup procedure.
+    public static class CustomSwapper extends SingleFilePageSwapperFactory
+    {
+        @Override
+        public String implementationName()
+        {
+            return CUSTOM_SWAPPER;
+        }
+
+        @Override
+        public PageSwapper createPageSwapper( File file, int filePageSize, PageEvictionCallback onEviction,
+                boolean createIfNotExist ) throws IOException
+        {
+            // This will be called early in the startup sequence. Notifies that we can call stop on the server.
+            semaphore.release();
+            return super.createPageSwapper( file, filePageSize, onEviction, createIfNotExist );
+        }
     }
 }

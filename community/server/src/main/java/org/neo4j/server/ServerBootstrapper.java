@@ -49,7 +49,7 @@ public abstract class ServerBootstrapper implements Bootstrapper
     public static final int WEB_SERVER_STARTUP_ERROR_CODE = 1;
     public static final int GRAPH_DATABASE_STARTUP_ERROR_CODE = 2;
 
-    private NeoServer server;
+    private volatile NeoServer server;
     private Thread shutdownHook;
     private GraphDatabaseDependencies dependencies = GraphDatabaseDependencies.newDependencies();
     // in case we have errors loading/validating the configuration log to stdout

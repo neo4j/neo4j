@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -21,13 +21,15 @@ package org.neo4j.server;
 
 import java.io.IOException;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.server.helpers.CommunityServerBuilder;
 
 public class NeoServerRestartTestCommunity extends NeoServerRestartTest
 {
-    protected NeoServer getNeoServer() throws IOException
+    protected NeoServer getNeoServer( String customPageSwapperName ) throws IOException
     {
-        CommunityServerBuilder builder = CommunityServerBuilder.server();
+        CommunityServerBuilder builder = CommunityServerBuilder.server().withProperty( GraphDatabaseSettings
+                .pagecache_swapper.name(), customPageSwapperName );
         return builder.build();
     }
 }
