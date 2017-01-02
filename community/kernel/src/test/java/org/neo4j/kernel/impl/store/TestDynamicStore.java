@@ -40,6 +40,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.test.rule.ConfigurablePageCacheRule;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
@@ -50,7 +51,7 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 public class TestDynamicStore
 {
     @Rule
-    public final PageCacheRule pageCacheRule = new PageCacheRule();
+    public final PageCacheRule pageCacheRule = new ConfigurablePageCacheRule();
     @Rule
     public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 
