@@ -32,7 +32,7 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
  * All other places where a "proper" page cache is available, e.g. in store migration, should have that one injected.
  * And tests should use the PageCacheRule.
  */
-public class StandalonePageCacheFactory
+public final class StandalonePageCacheFactory
 {
 
     public static PageCache createPageCache( FileSystemAbstraction fileSystem )

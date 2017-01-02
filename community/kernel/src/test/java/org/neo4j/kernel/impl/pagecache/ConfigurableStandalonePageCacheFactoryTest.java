@@ -35,7 +35,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
 
 import static org.junit.Assert.assertTrue;
 
@@ -49,7 +48,7 @@ public class ConfigurableStandalonePageCacheFactoryTest
             File file = new File( "/a" ).getCanonicalFile();
             fs.create( file ).close();
 
-            try ( PageCache cache = StandalonePageCacheFactory.createPageCache( fs );
+            try ( PageCache cache = ConfigurableStandalonePageCacheFactory.createPageCache( fs );
                     PagedFile pf = cache.map( file, 4096 );
                     PageCursor cursor = pf.io( 0, PagedFile.PF_SHARED_WRITE_LOCK ) )
             {

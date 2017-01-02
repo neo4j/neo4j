@@ -23,7 +23,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.FormattedLogProvider;
@@ -35,11 +34,16 @@ import org.neo4j.logging.FormattedLogProvider;
  * All other places where a "proper" page cache is available, e.g. in store migration, should have that one injected.
  * And tests should use the ConfigurablePageCacheRule.
  */
-public final class ConfigurableStandalonePageCacheFactory extends StandalonePageCacheFactory
+public final class ConfigurableStandalonePageCacheFactory
 {
 
     private ConfigurableStandalonePageCacheFactory()
     {
+    }
+
+    public static PageCache createPageCache( FileSystemAbstraction fileSystem )
+    {
+        return createPageCache( fileSystem, PageCacheTracer.NULL, Config.defaults() );
     }
 
     public static PageCache createPageCache( FileSystemAbstraction fileSystem, Config config )
