@@ -200,17 +200,6 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public Cursor<NodeItem> nodeCursorGetFromIndexSeekByPrefix( KernelStatement statement,
-            IndexDescriptor index,
-            String prefix ) throws IndexNotFoundKernelException
-    {
-        // TODO Filter this properly
-        StorageStatement storeStatement = statement.getStoreStatement();
-        IndexReader reader = storeStatement.getIndexReader( index );
-        return storeStatement.acquireIteratorNodeCursor( reader.rangeSeekByPrefix( prefix ) );
-    }
-
-    @Override
     public Cursor<NodeItem> nodeCursorGetFromUniqueIndexSeek( KernelStatement statement,
             IndexDescriptor index,
             Object value ) throws IndexBrokenKernelException, IndexNotFoundKernelException
