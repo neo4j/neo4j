@@ -35,6 +35,10 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 public final class StandalonePageCacheFactory
 {
 
+    private StandalonePageCacheFactory()
+    {
+    }
+
     public static PageCache createPageCache( FileSystemAbstraction fileSystem )
     {
         return createPageCache( fileSystem, PageCacheTracer.NULL );

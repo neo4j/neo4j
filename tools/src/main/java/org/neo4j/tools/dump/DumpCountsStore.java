@@ -96,8 +96,7 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
 
     DumpCountsStore( PrintStream out )
     {
-        this( out, Collections.emptyList(), Collections.emptyList(),
-                Collections.emptyList() );
+        this( out, Collections.emptyList(), Collections.emptyList(), Collections.emptyList() );
     }
 
     DumpCountsStore( PrintStream out, NeoStores neoStores )
