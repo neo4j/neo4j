@@ -95,7 +95,8 @@ public class VersionCommand implements AdminCommand
 
         Validators.CONTAINS_EXISTING_DATABASE.validate( storeDir.toFile() );
 
-        try ( PageCache pageCache = StandalonePageCacheFactory.createPageCache( new DefaultFileSystemAbstraction() ) )
+        try ( DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+                PageCache pageCache = StandalonePageCacheFactory.createPageCache( fileSystem ) )
         {
             final String storeVersion = new StoreVersionCheck( pageCache )
                     .getVersion( storeDir.resolve( MetaDataStore.DEFAULT_NAME ).toFile() )
