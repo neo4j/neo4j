@@ -24,7 +24,6 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 import org.neo4j.kernel.api.ExecutingQuery;
-import org.neo4j.kernel.impl.locking.Locks;
 
 abstract class ExecutingQueryList
 {
@@ -33,6 +32,8 @@ abstract class ExecutingQueryList
     abstract ExecutingQueryList push( ExecutingQuery newExecutingQuery );
 
     abstract ExecutingQueryList remove( ExecutingQuery executingQuery );
+
+    abstract <T> T reduce( T defaultValue, Function<ExecutingQuery,T> accessor, BiFunction<T,T,T> combinator );
 
     static ExecutingQueryList EMPTY = new ExecutingQueryList()
     {
@@ -60,8 +61,6 @@ abstract class ExecutingQueryList
             return defaultValue;
         }
     };
-
-    abstract <T> T reduce( T defaultValue, Function<ExecutingQuery,T> accessor, BiFunction<T,T,T> combinator );
 
     private static class Entry extends ExecutingQueryList
     {

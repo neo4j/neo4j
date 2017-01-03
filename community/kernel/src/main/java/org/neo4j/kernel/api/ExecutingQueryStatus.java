@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.api;
 
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -28,12 +26,23 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.time.SystemNanoClock;
 
+import static java.util.Collections.singletonMap;
+import static java.util.Collections.unmodifiableMap;
+
+/**
+ * Internal representation of the status of an executing query.
+ *
+ * This is used for inspecting the state of a query.
+ *
+ * @see ExecutingQuery#status
+ */
 abstract class ExecutingQueryStatus
 {
     abstract long waitTimeNanos( SystemNanoClock clock );
 
     abstract Map<String,Object> toMap( SystemNanoClock clock );
 
+    private static final Map<String,Object> RUNNING_STATE = unmodifiableMap( singletonMap( "state", "RUNNING" ) );
     static final ExecutingQueryStatus RUNNING = new ExecutingQueryStatus()
     {
         @Override
@@ -45,7 +54,7 @@ abstract class ExecutingQueryStatus
         @Override
         Map<String,Object> toMap( SystemNanoClock clock )
         {
-            return Collections.singletonMap( "state", "RUNNING" );
+            return RUNNING_STATE;
         }
     };
 

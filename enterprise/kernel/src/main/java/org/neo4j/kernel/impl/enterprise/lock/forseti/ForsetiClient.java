@@ -288,7 +288,6 @@ public class ForsetiClient implements Locks.Client
                     continue;
                 }
 
-
                 Locks.WaitEvent waitEvent = null;
                 try
                 {
@@ -667,7 +666,6 @@ public class ForsetiClient implements Locks.Client
         ForsetiClient that = (ForsetiClient) o;
 
         return clientId == that.clientId;
-
     }
 
     @Override

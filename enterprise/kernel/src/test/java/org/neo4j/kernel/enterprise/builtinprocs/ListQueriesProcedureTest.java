@@ -63,14 +63,6 @@ public class ListQueriesProcedureTest
         // then
         Map<String,Object> row = result.next();
         assertFalse( result.hasNext() );
-        //        Object queryId = row1.get( "queryId" );
-        //        Object username = row1.get( "username" );
-        //        Object query = row1.get( "query" );
-        //        Object parameters = row1.get( "parameters" );
-        //        Object startTime = row1.get( "startTime" );
-        //        Object elapsedTime = row1.get( "elapsedTime" );
-        //        Object connectionDetails = row1.get( "connectionDetails" );
-        //        Object metaData = row1.get( "metaData" );
         assertEquals( query, row.get( "query" ) );
     }
 

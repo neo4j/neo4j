@@ -54,6 +54,8 @@ public class ExecutingQuery
     private final long cpuTimeNanosWhenQueryStarted;
     private Map<String,Object> metaData;
     private volatile ExecutingQueryStatus status = ExecutingQueryStatus.RUNNING;
+    /** Updated through {@link #WAIT_TIME} */
+    @SuppressWarnings( "unused" )
     private volatile long waitTimeNanos;
 
     public ExecutingQuery(

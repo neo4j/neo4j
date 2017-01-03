@@ -23,11 +23,18 @@ import java.util.Arrays;
 
 import org.neo4j.storageengine.api.lock.ResourceType;
 
+/**
+ * A {@link Locks.Tracer} that combines multiple {@linkplain Locks.Tracer tracers} into one, invoking each of them for
+ * the {@linkplain #waitForLock(ResourceType, long...) wait events} received.
+ * <p>
+ * This is used for when there is a stack of queries in a transaction, or when a system-configured tracer combines with
+ * the query specific tracers.
+ */
 final class CombinedTracer implements Locks.Tracer
 {
     private final Locks.Tracer[] tracers;
 
-    public CombinedTracer( Locks.Tracer... tracers )
+    CombinedTracer( Locks.Tracer... tracers )
     {
         this.tracers = tracers;
     }
@@ -55,10 +62,7 @@ final class CombinedTracer implements Locks.Tracer
         {
             Locks.Tracer[] those = ((CombinedTracer) tracer).tracers;
             tracers = Arrays.copyOf( this.tracers, this.tracers.length + those.length );
-            for ( int i = 0; i < those.length; i++ )
-            {
-                tracers[this.tracers.length + i] = those[i];
-            }
+            System.arraycopy( those, 0, tracers, this.tracers.length, those.length );
         }
         else
         {
