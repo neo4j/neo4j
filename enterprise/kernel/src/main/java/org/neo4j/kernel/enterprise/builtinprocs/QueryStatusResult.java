@@ -44,7 +44,7 @@ public class QueryStatusResult
     public final String startTime;
     public final String elapsedTime;
     public final String connectionDetails;
-    public final long cpuTimeMicros;
+    public final long cpuTimeMillis;
     public final Map<String,Object> status;
     public final long waitTimeMillis;
     public final Map<String,Object> metaData;
@@ -60,7 +60,7 @@ public class QueryStatusResult
                 q.elapsedTimeMillis(),
                 q.querySource(),
                 q.metaData(),
-                q.cpuTimeMicros(),
+                q.cpuTimeMillis(),
                 q.status(),
                 q.waitTimeMillis() );
     }
@@ -74,7 +74,7 @@ public class QueryStatusResult
             long elapsedTime,
             QuerySource querySource,
             Map<String,Object> txMetaData,
-            long cpuTimeMicros,
+            long cpuTimeMillis,
             Map<String,Object> status,
             long waitTimeMillis
     ) {
@@ -86,7 +86,7 @@ public class QueryStatusResult
         this.elapsedTime = formatInterval( elapsedTime );
         this.connectionDetails = querySource.toString();
         this.metaData = txMetaData;
-        this.cpuTimeMicros = cpuTimeMicros;
+        this.cpuTimeMillis = cpuTimeMillis;
         this.status = status;
         this.waitTimeMillis = waitTimeMillis;
     }

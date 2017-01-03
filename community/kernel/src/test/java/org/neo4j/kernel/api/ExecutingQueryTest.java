@@ -119,10 +119,10 @@ public class ExecutingQueryTest
         cpuClock.add( 60, TimeUnit.MILLISECONDS );
 
         // when
-        long cpuTime = query.cpuTimeMicros();
+        long cpuTime = query.cpuTimeMillis();
 
         // then
-        assertEquals( 60_000, cpuTime );
+        assertEquals( 60, cpuTime );
     }
 
     private LockWaitEvent lock( String resourceType, long resourceId )

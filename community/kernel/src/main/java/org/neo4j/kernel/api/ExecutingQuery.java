@@ -143,9 +143,9 @@ public class ExecutingQuery
     /**
      * @return the CPU time used by the query, in nanoseconds.
      */
-    public long cpuTimeMicros()
+    public long cpuTimeMillis()
     {
-        return NANOSECONDS.toMicros( cpuClock.cpuTimeNanos( threadExecutingTheQuery ) - cpuTimeNanosWhenQueryStarted );
+        return NANOSECONDS.toMillis( cpuClock.cpuTimeNanos( threadExecutingTheQuery ) - cpuTimeNanosWhenQueryStarted );
     }
 
     public long waitTimeMillis()

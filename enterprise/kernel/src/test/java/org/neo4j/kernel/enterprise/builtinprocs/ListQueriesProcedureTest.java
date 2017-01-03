@@ -37,6 +37,7 @@ import org.neo4j.test.rule.concurrent.ThreadingRule;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -102,8 +103,8 @@ public class ListQueriesProcedureTest
             Map<String,Object> data = getQueryListing( "MATCH (n) SET n.v = n.v + 1" );
 
             // then
-            assertTrue( "should contain a 'cpuTimeMicros' field", data.containsKey( "cpuTimeMicros" ) );
-            Object cpuTime1 = data.get( "cpuTimeMicros" );
+            assertTrue( "should contain a 'cpuTimeMillis' field", data.containsKey( "cpuTimeMillis" ) );
+            Object cpuTime1 = data.get( "cpuTimeMillis" );
             assertThat( cpuTime1, instanceOf( Long.class ) );
             assertTrue( "should contain a 'status' field", data.containsKey( "status" ) );
             Object status = data.get( "status" );
@@ -121,8 +122,8 @@ public class ListQueriesProcedureTest
             data = getQueryListing( "MATCH (n) SET n.v = n.v + 1" );
 
             // then
-            Long cpuTime2 = (Long) data.get( "cpuTimeMicros" );
-            assertThat( cpuTime2, greaterThan( (Long) cpuTime1 ) );
+            Long cpuTime2 = (Long) data.get( "cpuTimeMillis" );
+            assertThat( cpuTime2, greaterThanOrEqualTo( (Long) cpuTime1 ) );
             Long waitTime2 = (Long) data.get( "waitTimeMillis" );
             assertThat( waitTime2, greaterThan( (Long) waitTime1 ) );
         }
