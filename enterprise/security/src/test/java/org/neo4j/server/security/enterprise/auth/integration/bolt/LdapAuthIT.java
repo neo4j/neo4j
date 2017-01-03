@@ -55,8 +55,11 @@ import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.server.security.enterprise.auth.EnterpriseAuthAndUserManager;
 import org.neo4j.server.security.enterprise.auth.ProcedureInteractionTestBase;
 import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
 import org.neo4j.test.DoubleLatch;
@@ -73,9 +76,9 @@ import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
 import static org.neo4j.bolt.v1.runtime.spi.StreamMatchers.eqRecord;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyDisconnects;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
+import static org.neo4j.server.security.enterprise.auth.LdapRealm.LDAP_AUTHORIZATION_FAILURE_CLIENT_MESSAGE;
 import static org.neo4j.server.security.enterprise.auth.LdapRealm.LDAP_CONNECTION_TIMEOUT_CLIENT_MESSAGE;
 import static org.neo4j.server.security.enterprise.auth.LdapRealm.LDAP_READ_TIMEOUT_CLIENT_MESSAGE;
-import static org.neo4j.server.security.enterprise.auth.LdapRealm.LDAP_AUTHORIZATION_FAILURE_CLIENT_MESSAGE;
 
 interface TimeoutTests { /* Category marker */ };
 
@@ -112,7 +115,7 @@ interface TimeoutTests { /* Category marker */ };
         certificatePassword = "secret"
 )
 @ApplyLdifFiles( "ldap_test_data.ldif" )
-public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
+public class LdapAuthIT extends EnterpriseAuthenticationTestBase
 {
     private final String MD5_HASHED_abc123 = "{MD5}6ZoYxCjLONXyYIU2eJIuAw=="; // Hashed 'abc123' (see ldap_test_data.ldif)
 
@@ -255,7 +258,7 @@ public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
     @Test
     public void shouldBeAbleToLoginAndAuthorizeNoPermissionUserWithLdapOnly() throws Throwable
     {
-        testAuthWithNoPermissionUser( "smith" );
+        testAuthWithNoPermissionUser( "smith", "abc123" );
     }
 
     @Test
@@ -286,7 +289,7 @@ public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
         // Then
         // User 'neo' has reader role by default, but since we are not passing a group-to-role mapping
         // he should get no permissions
-        testAuthWithNoPermissionUser( "neo" );
+        testAuthWithNoPermissionUser( "neo", "abc123" );
     }
 
     @Test
@@ -303,7 +306,7 @@ public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
         reconnect();
         testAuthWithPublisherUser();
         reconnect();
-        testAuthWithNoPermissionUser( "smith" );
+        testAuthWithNoPermissionUser( "smith", "abc123" );
     }
 
     @Test
@@ -378,7 +381,7 @@ public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
         } );
 
         // Then
-        testAuthWithNoPermissionUser( "smith" );
+        testAuthWithNoPermissionUser( "smith", "abc123" );
     }
 
     @Test
@@ -392,7 +395,7 @@ public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
         // Then
         // User 'neo' has reader role by default, but since we are not passing a group-to-role mapping
         // he should get no permissions
-        testAuthWithNoPermissionUser( "neo" );
+        testAuthWithNoPermissionUser( "neo", "abc123" );
     }
 
     @Test
@@ -416,6 +419,36 @@ public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
         reconnect();
 
         testAuthWithReaderUser();
+    }
+
+    @Test
+    public void shouldBeAbleToLoginNativelyAndAuthorizeWithLdap() throws Throwable
+    {
+        // Given
+        restartNeo4jServerWithOverriddenSettings( settings -> {
+            settings.put( SecuritySettings.auth_providers,
+                    SecuritySettings.NATIVE_REALM_NAME + "," + SecuritySettings.LDAP_REALM_NAME );
+            settings.put( SecuritySettings.native_authentication_enabled, "true" );
+            settings.put( SecuritySettings.native_authorization_enabled, "false" );
+            settings.put( SecuritySettings.ldap_authentication_enabled, "false" );
+            settings.put( SecuritySettings.ldap_authorization_enabled, "true" );
+        } );
+
+        // When
+        String ldapReaderUser = "neo";
+        String nativePassword = "nativePassword";
+
+            // this is ugly, but cannot be resolved until embedded gets security
+        GraphDatabaseFacade gds = (GraphDatabaseFacade)server.graphDatabaseService();
+        EnterpriseAuthAndUserManager authManager =
+                gds.getDependencyResolver().resolveDependency( EnterpriseAuthAndUserManager.class );
+
+        authManager.getUserManager( EnterpriseSecurityContext.AUTH_DISABLED )
+                    .newUser( ldapReaderUser, nativePassword, false );
+
+        // Then
+        // login user 'neo' with native auth provider and test that LDAP authorization gives correct permission
+        testAuthWithReaderUser( ldapReaderUser, nativePassword, null );
     }
 
     @Test
@@ -832,19 +865,20 @@ public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
             settings.put( SecuritySettings.ldap_authorization_enabled, "true" );
         } );
 
-        //--------------------------
-        // When we have a native 'tank' that is read only, and ldap 'tank' that is publisher
-        testCreateReaderUser("tank");
+        // Given
+        // we have a native 'tank' that is read only, and ldap 'tank' that is publisher
+        testCreateReaderUser( "tank" );
 
-        //--------------------------
-        // Then native "tank" is reader
+        // Then
+        // the created "tank" can log in and gets roles from both providers
         reconnect();
-        testAuthWithReaderUser("tank", "native");
+        assertAuth( "tank", createdUserPassword, "native" );
+//        assertRoles( PredefinedRoles.READER, PredefinedRoles.PUBLISHER );
 
-        //--------------------------
-        // And ldap "tank" is publisher
+        // the ldap "tank" can also log in and gets roles from both providers
         reconnect();
-        testAuthWithPublisherUser("tank", "ldap");
+        assertAuth( "tank", "abc123", "ldap" );
+//        assertRoles( PredefinedRoles.READER, PredefinedRoles.PUBLISHER );
     }
 
     @Test

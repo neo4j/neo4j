@@ -39,12 +39,13 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.lang.String.format;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.anything;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.neo4j.bolt.v1.messaging.message.InitMessage.init;
@@ -64,6 +65,8 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
     @Rule
     public Neo4jWithSocket server = new Neo4jWithSocket( getClass(), getTestGraphDatabaseFactory(),
             asSettings( getSettingsFunction() ) );
+
+    protected static String createdUserPassword = "nativePassword";
 
     protected void restartNeo4jServerWithOverriddenSettings( Consumer<Map<Setting<?>,String>> overrideSettingsFunction )
             throws IOException
@@ -124,11 +127,6 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
         this.client = cf.newInstance();
     }
 
-    protected static Consumer<Map<Setting<?>,String>> ldapOnlyAuthSettings = settings ->
-    {
-        settings.put( SecuritySettings.auth_provider, SecuritySettings.LDAP_REALM_NAME );
-    };
-
     protected void testCreateReaderUser() throws Exception
     {
         testCreateReaderUser( "neo" );
@@ -136,12 +134,12 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
 
     protected void testAuthWithReaderUser() throws Exception
     {
-        testAuthWithReaderUser( "neo", null );
+        testAuthWithReaderUser( "neo", "abc123", null );
     }
 
     protected void testAuthWithPublisherUser() throws Exception
     {
-        testAuthWithPublisherUser( "tank", null );
+        testAuthWithPublisherUser( "tank", "abc123", null );
     }
 
     protected void testCreateReaderUser( String username ) throws Exception
@@ -150,29 +148,29 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
         assertAuthAndChangePassword( "neo4j", "abc123", "123" );
 
         client.send( chunk(
-                run( "CALL dbms.security.createUser( '" + username + "', 'abc123', false ) " +
+                run( "CALL dbms.security.createUser( '" + username + "', '" + createdUserPassword + "', false ) " +
                      "CALL dbms.security.addRoleToUser( 'reader', '" + username + "' ) RETURN 0" ),
                 pullAll() ) );
 
         assertThat( client, eventuallyReceives( msgSuccess(), msgRecord( eqRecord( equalTo( 0L ) ) ) ) );
     }
 
-    protected void testAuthWithReaderUser( String username, String realm ) throws Exception
+    protected void testAuthWithReaderUser( String username, String password, String realm ) throws Exception
     {
-        assertAuth( username, "abc123", realm );
+        assertAuth( username, password, realm );
         assertReadSucceeds();
         assertWriteFails( username, "reader" );
     }
 
-    protected void testAuthWithPublisherUser( String username, String realm ) throws Exception
+    protected void testAuthWithPublisherUser( String username, String password, String realm ) throws Exception
     {
-        assertAuth( username, "abc123", realm );
+        assertAuth( username, password, realm );
         assertWriteSucceeds();
     }
 
-    protected void testAuthWithNoPermissionUser( String username ) throws Exception
+    protected void testAuthWithNoPermissionUser( String username, String password ) throws Exception
     {
-        assertAuth( username, "abc123" );
+        assertAuth( username, password );
         assertReadFails( username, "" );
     }
 
@@ -197,6 +195,17 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
     protected void assertAuthFail( String username, String password ) throws Exception
     {
         assertConnectionFails( map( "principal", username, "credentials", password, "scheme", "basic" ) );
+    }
+
+    protected void assertRoles( String... roles ) throws Exception
+    {
+        client.send( TransportTestUtil.chunk( run( "CALL dbms.security.showCurrentUser" ), pullAll() ) );
+
+        // Then
+        assertThat( client, eventuallyReceives(
+                msgSuccess(),
+                msgRecord( eqRecord( equalTo( "tank"), containsInAnyOrder( roles ), anything() ) ),
+                msgSuccess() ) );
     }
 
     protected void assertConnectionSucceeds( Map<String,Object> authToken ) throws Exception

@@ -246,43 +246,44 @@ public class LdapRealm extends JndiLdapRealm implements RealmLifecycle, ShiroAut
     {
         if ( authorizationEnabled )
         {
-            Collection realmPrincipals = principals.fromRealm( getName() );
-            if (!CollectionUtils.isEmpty(realmPrincipals))
+            String username = (String) getAvailablePrincipal( principals );
+            if ( username == null )
             {
-                String username = (String) realmPrincipals.iterator().next();
-                if ( useSystemAccountForAuthorization )
-                {
-                    // Perform context search using the system context
-                    LdapContext ldapContext = useStartTls ? getSystemLdapContextUsingStartTls( ldapContextFactory ) :
-                                              ldapContextFactory.getSystemLdapContext();
+                return null;
+            }
 
-                    Set<String> roleNames;
-                    try
-                    {
-                        roleNames = findRoleNamesForUser( username, ldapContext );
-                    }
-                    finally
-                    {
-                        LdapUtils.closeContext( ldapContext );
-                    }
+            if ( useSystemAccountForAuthorization )
+            {
+                // Perform context search using the system context
+                LdapContext ldapContext = useStartTls ? getSystemLdapContextUsingStartTls( ldapContextFactory ) :
+                                          ldapContextFactory.getSystemLdapContext();
 
-                    return new SimpleAuthorizationInfo( roleNames );
-                }
-                else
+                Set<String> roleNames;
+                try
                 {
-                    // Authorization info is cached during authentication
-                    Cache<Object,AuthorizationInfo> authorizationCache = getAuthorizationCache();
-                    AuthorizationInfo authorizationInfo = authorizationCache.get( username );
-                    if ( authorizationInfo == null )
-                    {
-                        // The cached authorization info has expired.
-                        // Since we do not have the subject's credentials we cannot perform a new LDAP search
-                        // for authorization info. Instead we need to fail with a special status,
-                        // so that the client can react by re-authenticating.
-                        throw new AuthorizationExpiredException( "LDAP authorization info expired." );
-                    }
-                    return authorizationInfo;
+                    roleNames = findRoleNamesForUser( username, ldapContext );
                 }
+                finally
+                {
+                    LdapUtils.closeContext( ldapContext );
+                }
+
+                return new SimpleAuthorizationInfo( roleNames );
+            }
+            else
+            {
+                // Authorization info is cached during authentication
+                Cache<Object,AuthorizationInfo> authorizationCache = getAuthorizationCache();
+                AuthorizationInfo authorizationInfo = authorizationCache.get( username );
+                if ( authorizationInfo == null )
+                {
+                    // The cached authorization info has expired.
+                    // Since we do not have the subject's credentials we cannot perform a new LDAP search
+                    // for authorization info. Instead we need to fail with a special status,
+                    // so that the client can react by re-authenticating.
+                    throw new AuthorizationExpiredException( "LDAP authorization info expired." );
+                }
+                return authorizationInfo;
             }
         }
         return null;
