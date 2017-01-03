@@ -112,12 +112,27 @@ public class AuthProceduresBase
         }
     }
 
-    protected UserResult userResultForName( String username )
+    protected UserResult userResultForSubject()
     {
+        String username = securityContext.subject().username();
         User user = userManager.silentlyGetUser( username );
         Iterable<String> flags = user == null ? emptyList() : user.getFlags();
-        Set<String> roles = userManager.silentlyGetRoleNamesForUser( username );
-        return new UserResult( username, roles, flags );
+        return new UserResult( username, securityContext.roles(), flags );
+    }
+
+    protected UserResult userResultForName( String username )
+    {
+        if ( username.equals( securityContext.subject().username() ) )
+        {
+            return userResultForSubject();
+        }
+        else
+        {
+            User user = userManager.silentlyGetUser( username );
+            Iterable<String> flags = user == null ? emptyList() : user.getFlags();
+            Set<String> roles = userManager.silentlyGetRoleNamesForUser( username );
+            return new UserResult( username, roles, flags );
+        }
     }
 
     public static class UserResult

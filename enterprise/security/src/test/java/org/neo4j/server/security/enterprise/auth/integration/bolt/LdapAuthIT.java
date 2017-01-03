@@ -61,6 +61,7 @@ import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.server.security.enterprise.auth.EnterpriseAuthAndUserManager;
 import org.neo4j.server.security.enterprise.auth.ProcedureInteractionTestBase;
+import org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles;
 import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
 import org.neo4j.test.DoubleLatch;
 
@@ -873,12 +874,12 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
         // the created "tank" can log in and gets roles from both providers
         reconnect();
         assertAuth( "tank", createdUserPassword, "native" );
-//        assertRoles( PredefinedRoles.READER, PredefinedRoles.PUBLISHER );
+        assertRoles( PredefinedRoles.READER, PredefinedRoles.PUBLISHER );
 
         // the ldap "tank" can also log in and gets roles from both providers
         reconnect();
         assertAuth( "tank", "abc123", "ldap" );
-//        assertRoles( PredefinedRoles.READER, PredefinedRoles.PUBLISHER );
+        assertRoles( PredefinedRoles.READER, PredefinedRoles.PUBLISHER );
     }
 
     @Test
