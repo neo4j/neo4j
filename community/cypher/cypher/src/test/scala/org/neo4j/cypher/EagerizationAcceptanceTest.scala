@@ -2689,6 +2689,23 @@ class EagerizationAcceptanceTest
     assertNumberOfEagerness(query, 1)
   }
 
+  test("should be eager with labels function before remove label") {
+    val n1 = createLabeledNode("Foo")
+    val n2 = createLabeledNode("Foo")
+    relate(n1, n2)
+
+    val query = """MATCH (n)--(m)
+                  |WITH labels(n) AS labels, m
+                  |REMOVE m:Foo
+                  |RETURN labels
+                """.stripMargin
+
+    val result = updateWithBothPlanners(query)
+    result.toList should equal(List(Map("labels" -> List("Foo")), Map("labels" -> List("Foo"))))
+    assertStats(result, labelsRemoved = 2)
+    assertNumberOfEagerness(query, 1)
+  }
+
   test("should be eager with labels function after set label") {
     val n1 = createNode()
     val n2 = createNode()
@@ -2703,6 +2720,41 @@ class EagerizationAcceptanceTest
     result.toList should equal(List(Map("labels(n)" -> List("Foo"), "labels(m)" -> List("Foo")),
                                     Map("labels(n)" -> List("Foo"), "labels(m)" -> List("Foo"))))
     assertStats(result, labelsAdded = 2)
+    assertNumberOfEagerness(query, 1)
+  }
+
+  test("should be eager with labels function after merge on match set label") {
+    val n1 = createNode()
+    val n2 = createNode()
+    relate(n1, n2, "T")
+    relate(n2, n1, "T")
+
+    val query = """MERGE (n)-[:T]->(m)
+                  |ON MATCH SET n:Foo
+                  |RETURN labels(n), labels(m)
+                """.stripMargin
+
+    val result = updateWithBothPlanners(query)
+    result.toList should equal(List(Map("labels(n)" -> List("Foo"), "labels(m)" -> List("Foo")),
+                                    Map("labels(n)" -> List("Foo"), "labels(m)" -> List("Foo"))))
+    assertStats(result, labelsAdded = 2)
+    assertNumberOfEagerness(query, 1)
+  }
+
+  test("should be eager with labels function after remove label") {
+    val n1 = createLabeledNode("Foo")
+    val n2 = createLabeledNode("Foo")
+    relate(n1, n2)
+
+    val query = """MATCH (n)--(m)
+                  |REMOVE n:Foo
+                  |RETURN labels(n), labels(m)
+                """.stripMargin
+
+    val result = updateWithBothPlanners(query)
+    result.toList should equal(List(Map("labels(n)" -> List(), "labels(m)" -> List()),
+                                    Map("labels(n)" -> List(), "labels(m)" -> List())))
+    assertStats(result, labelsRemoved = 2)
     assertNumberOfEagerness(query, 1)
   }
 

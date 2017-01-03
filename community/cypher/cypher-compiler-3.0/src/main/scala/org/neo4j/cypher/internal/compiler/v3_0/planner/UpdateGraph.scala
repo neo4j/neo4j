@@ -159,7 +159,7 @@ trait UpdateGraph {
 
       setNodePropertyOverlap(propertiesReadInHorizon) || setRelPropertyOverlap(propertiesReadInHorizon)
     } || {
-      labelsToSet.nonEmpty &&
+      (labelsToSet.nonEmpty || removeLabelPatterns.nonEmpty) &&
         horizon.dependingExpressions.exists {
           case f: FunctionInvocation if f.function.get == Labels => true
           case _ => false
