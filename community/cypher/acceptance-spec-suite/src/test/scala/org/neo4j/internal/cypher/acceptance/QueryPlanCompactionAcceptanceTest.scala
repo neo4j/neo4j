@@ -805,7 +805,7 @@ class QueryPlanCompactionAcceptanceTest extends ExecutionEngineFunSuite with Que
     relate(d,e)
     relate(c,b)
     relate(d,b)
-    val query = "PROFILE MATCH (n:Actor {name:'Keanu Reeves'})-->()-->(b) RETURN b"
+    val query = "CYPHER runtime=interpreted PROFILE MATCH (n:Actor {name:'Keanu Reeves'})-->()-->(b) RETURN b"
     val result = executeWithCostPlannerOnly(query)
     result should havePlanLike(
       """

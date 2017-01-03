@@ -32,7 +32,7 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
   test("interpreted should be default runtime in 3.2") {
     given("match (n) return n")
       .withCypherVersion(CypherVersion.v3_2)
-      .shouldHaveRuntime(InterpretedRuntimeName)
+      .shouldHaveRuntime(CompiledRuntimeName)
   }
 
   test("should use cost for varlength in 3.2") {
