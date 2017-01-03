@@ -43,6 +43,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.DoubleLatch;
+import org.neo4j.test.rule.SuppressOutput;
 
 import static java.lang.String.format;
 import static java.util.Collections.emptyMap;
@@ -64,6 +65,8 @@ public class TransactionIT
 
     @Rule
     public SessionRule env = new SessionRule();
+    @Rule
+    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
     @Test
     public void shouldHandleBeginCommit() throws Throwable

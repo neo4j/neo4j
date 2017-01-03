@@ -31,6 +31,7 @@ import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.bolt.v1.transport.socket.client.WebSocketConnection;
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.test.rule.SuppressOutput;
 
 import static java.util.Collections.emptyMap;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -53,6 +54,8 @@ public class BoltConfigIT
                 settings.put( boltConnector("1").address.name(), "localhost:7687" );
                 settings.put( boltConnector("1").encryption_level.name(), REQUIRED.name() );
             } );
+    @Rule
+    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
     @Test
     public void shouldSupportMultipleConnectors() throws Throwable

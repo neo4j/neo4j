@@ -26,6 +26,8 @@ import org.junit.rules.ExpectedException;
 
 import java.io.IOException;
 
+import org.neo4j.test.rule.SuppressOutput;
+
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -34,6 +36,8 @@ public class WebSocketConnectionTest
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
+    @Rule
+    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
     @Test
     public void shouldNotThrowAnyExceptionWhenDataReceivedBeforeClose() throws Throwable
