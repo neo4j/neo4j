@@ -45,21 +45,23 @@ import static org.neo4j.kernel.impl.util.JobScheduler.Groups.sessionWorker;
  */
 public class ThreadedWorkerFactory implements WorkerFactory
 {
-    private BoltFactory connector;
-    private JobScheduler scheduler;
-    private LogService logging;
+    private final BoltFactory connector;
+    private final JobScheduler scheduler;
+    private final LogService logging;
+    private final Clock clock;
 
-    public ThreadedWorkerFactory( BoltFactory connector, JobScheduler scheduler, LogService logging )
+    public ThreadedWorkerFactory( BoltFactory connector, JobScheduler scheduler, LogService logging, Clock clock )
     {
         this.connector = connector;
         this.scheduler = scheduler;
         this.logging = logging;
+        this.clock = clock;
     }
 
     @Override
     public BoltWorker newWorker( String connectionDescriptor, Runnable onClose )
     {
-        BoltStateMachine machine = connector.newMachine( connectionDescriptor, onClose, Clock.systemUTC() );
+        BoltStateMachine machine = connector.newMachine( connectionDescriptor, onClose, clock );
         RunnableBoltWorker worker = new RunnableBoltWorker( machine, logging );
 
         scheduler.schedule( sessionWorker, worker, stringMap( THREAD_ID, machine.key() ) );

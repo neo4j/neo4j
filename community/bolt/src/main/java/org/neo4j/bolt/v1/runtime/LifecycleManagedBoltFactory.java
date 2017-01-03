@@ -99,6 +99,6 @@ public class LifecycleManagedBoltFactory extends LifecycleAdapter implements Bol
                         availabilityGuard, queryService, clock );
         BoltStateMachine.SPI boltSPI = new BoltStateMachineSPI( connectionDescriptor, usageData,
                 logging, authentication, connectionTracker, transactionSPI );
-        return new BoltStateMachine( boltSPI, onClose, Clock.systemUTC() );
+        return new BoltStateMachine( boltSPI, onClose, clock );
     }
 }

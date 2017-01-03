@@ -28,6 +28,7 @@ import org.bouncycastle.operator.OperatorCreationException;
 import java.io.File;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
+import java.time.Clock;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -59,7 +60,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings.BoltConnector;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.configuration.Config;
@@ -74,7 +74,6 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
-import org.neo4j.time.Clocks;
 import org.neo4j.udc.UsageData;
 
 import static java.lang.String.format;
@@ -128,7 +127,7 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
 
         BoltConnectionTracker sessionTracker();
 
-        NeoStoreDataSource dataSource();
+        Clock clock();
 
         AuthManager authManager();
     }
@@ -145,6 +144,7 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
         final GraphDatabaseService gdb = dependencies.db();
         final GraphDatabaseAPI api = (GraphDatabaseAPI) gdb;
         final LogService logService = dependencies.logService();
+        Clock clock = dependencies.clock();
         final Log log = logService.getInternalLog( WorkerFactory.class );
 
         final LifeSupport life = new LifeSupport();
@@ -157,8 +157,7 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
 
         BoltFactory boltFactory = life.add( new LifecycleManagedBoltFactory( api, dependencies.usageData(),
                 logService, dependencies.txBridge(), authentication, dependencies.sessionTracker() ) );
-
-        WorkerFactory workerFactory = createWorkerFactory( boltFactory, scheduler, dependencies, logService );
+        WorkerFactory workerFactory = createWorkerFactory( boltFactory, scheduler, dependencies, logService, clock );
 
         List<ProtocolInitializer> connectors = boltConnectors( config ).stream()
                 .map( ( connConfig ) -> {
@@ -215,10 +214,10 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
     }
 
     protected WorkerFactory createWorkerFactory( BoltFactory boltFactory, JobScheduler scheduler,
-            Dependencies dependencies, LogService logService )
+            Dependencies dependencies, LogService logService, Clock clock )
     {
-        WorkerFactory threadedWorkerFactory = new ThreadedWorkerFactory( boltFactory, scheduler, logService );
-        return new MonitoredWorkerFactory( dependencies.monitors(), threadedWorkerFactory, Clocks.systemClock() );
+        WorkerFactory threadedWorkerFactory = new ThreadedWorkerFactory( boltFactory, scheduler, logService, clock );
+        return new MonitoredWorkerFactory( dependencies.monitors(), threadedWorkerFactory, clock );
     }
 
     private SslContext createSslContext( Config config, Log log, AdvertisedSocketAddress address )

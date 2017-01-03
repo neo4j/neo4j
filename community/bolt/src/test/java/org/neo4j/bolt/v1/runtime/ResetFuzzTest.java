@@ -72,9 +72,10 @@ public class ResetFuzzTest
     /** We track the number of un-closed transactions, and fail if we ever leak one */
     private final AtomicLong liveTransactions = new AtomicLong();
     private final Neo4jJobScheduler scheduler = life.add(new Neo4jJobScheduler());
-    private final BoltStateMachine machine = new BoltStateMachine( new FuzzStubSPI(), null, Clock.systemUTC() );
+    private final Clock clock = Clock.systemUTC();
+    private final BoltStateMachine machine = new BoltStateMachine( new FuzzStubSPI(), null, clock );
     private final ThreadedWorkerFactory sessions =
-            new ThreadedWorkerFactory( ( enc, closer, clock ) -> machine, scheduler, NullLogService.getInstance() );
+            new ThreadedWorkerFactory( ( enc, closer, clock ) -> machine, scheduler, NullLogService.getInstance(), clock );
 
     private final List<List<RequestMessage>> sequences = asList(
             asList( run( "test", map() ), discardAll() ),
