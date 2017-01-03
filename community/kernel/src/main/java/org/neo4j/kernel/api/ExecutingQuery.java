@@ -177,13 +177,29 @@ public class ExecutingQuery
 
     private Locks.WaitEvent waitForLock( ResourceType resourceType, long[] resourceIds )
     {
-        ExecutingQueryStatus previous = status;
-        long startTimeNanos = clock.nanos();
-        status = new ExecutingQueryStatus.WaitingOnLock( resourceType, resourceIds, startTimeNanos );
-        return () ->
+        WaitingOnLockEvent event = new WaitingOnLockEvent( resourceType, resourceIds );
+        status = event;
+        return event;
+    }
+
+    private class WaitingOnLockEvent extends ExecutingQueryStatus.WaitingOnLock implements Locks.WaitEvent
+    {
+        private final ExecutingQueryStatus previous = status;
+
+        WaitingOnLockEvent( ResourceType resourceType, long[] resourceIds )
         {
-            WAIT_TIME.addAndGet( ExecutingQuery.this, clock.nanos() - startTimeNanos );
+            super( resourceType, resourceIds, clock.nanos() );
+        }
+
+        @Override
+        public void close()
+        {
+            if ( status != this )
+            {
+                return; // already closed
+            }
+            WAIT_TIME.addAndGet( ExecutingQuery.this, waitTimeNanos( clock ) );
             status = previous;
-        };
+        }
     }
 }
