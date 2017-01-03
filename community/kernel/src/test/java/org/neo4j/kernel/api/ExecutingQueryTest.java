@@ -31,7 +31,7 @@ import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 import org.junit.Test;
 
-import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.LockWaitEvent;
 import org.neo4j.kernel.impl.query.QuerySource;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.lock.WaitStrategy;
@@ -79,7 +79,7 @@ public class ExecutingQueryTest
 
         // when
         clock.forward( 10, TimeUnit.SECONDS );
-        try ( Locks.WaitEvent event = lock( "NODE", 17 ) )
+        try ( LockWaitEvent event = lock( "NODE", 17 ) )
         {
             clock.forward( 5, TimeUnit.SECONDS );
 
@@ -96,7 +96,7 @@ public class ExecutingQueryTest
 
         // when
         clock.forward( 2, TimeUnit.SECONDS );
-        try ( Locks.WaitEvent event = lock( "RELATIONSHIP", 612 ) )
+        try ( LockWaitEvent event = lock( "RELATIONSHIP", 612 ) )
         {
             clock.forward( 1, TimeUnit.SECONDS );
 
@@ -125,7 +125,7 @@ public class ExecutingQueryTest
         assertEquals( 60_000, cpuTime );
     }
 
-    private Locks.WaitEvent lock( String resourceType, long resourceId )
+    private LockWaitEvent lock( String resourceType, long resourceId )
     {
         return query.lockTracer().waitForLock( resourceType( resourceType ), resourceId );
     }

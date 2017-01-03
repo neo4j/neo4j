@@ -82,10 +82,10 @@ public interface Locks
          * @param resourceType type or resource(s) to lock.
          * @param resourceIds id(s) of resources to lock. Multiple ids should be ordered consistently by all callers
          */
-        void acquireShared( Tracer tracer, ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException;
+        void acquireShared( LockTracer tracer, ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException;
 
         @Override
-        void acquireExclusive( Tracer tracer, ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException;
+        void acquireExclusive( LockTracer tracer, ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException;
 
         /** Try grabbing exclusive lock, not waiting and returning a boolean indicating if we got the lock. */
         boolean tryExclusiveLock( ResourceType resourceType, long resourceId );
@@ -126,43 +126,4 @@ public interface Locks
     void accept(Visitor visitor);
 
     void close();
-
-    interface Tracer
-    {
-        WaitEvent waitForLock( ResourceType resourceType, long... resourceIds );
-
-        default Tracer combine( Tracer tracer )
-        {
-            if ( tracer == NONE )
-            {
-                return this;
-            }
-            return new CombinedTracer( this, tracer );
-        }
-
-        Tracer NONE = new Tracer()
-        {
-            @Override
-            public WaitEvent waitForLock( ResourceType resourceType, long... resourceIds )
-            {
-                return WaitEvent.NONE;
-            }
-
-            @Override
-            public Tracer combine( Tracer tracer )
-            {
-                return tracer;
-            }
-        };
-    }
-
-    interface WaitEvent extends AutoCloseable
-    {
-        @Override
-        void close();
-
-        WaitEvent NONE = () ->
-        {
-        };
-    }
 }

@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -89,7 +89,7 @@ public class RelationshipCreator
             RelationshipRecord rel = relChange.forReadingLinkage();
             if ( relCount( node.getId(), rel ) >= denseNodeThreshold )
             {
-                locks.acquireExclusive( Locks.Tracer.NONE, ResourceTypes.RELATIONSHIP, relId );
+                locks.acquireExclusive( LockTracer.NONE, ResourceTypes.RELATIONSHIP, relId );
                 // Re-read the record after we've locked it since another transaction might have
                 // changed in the meantime.
                 relChange = relRecords.getOrLoad( relId, null );
@@ -188,7 +188,7 @@ public class RelationshipCreator
             connectRelationshipToDenseNode( node, relRecord, relRecords, relGroupRecords, locks );
             if ( relId != Record.NO_NEXT_RELATIONSHIP.intValue() )
             {   // Lock and load the next relationship in the chain
-                locks.acquireExclusive( Locks.Tracer.NONE, ResourceTypes.RELATIONSHIP, relId );
+                locks.acquireExclusive( LockTracer.NONE, ResourceTypes.RELATIONSHIP, relId );
                 relRecord = relRecords.getOrLoad( relId, null ).forChangingLinkage();
             }
         }
@@ -200,7 +200,7 @@ public class RelationshipCreator
         long newCount = 1;
         if ( firstRelId != Record.NO_NEXT_RELATIONSHIP.intValue() )
         {
-            locks.acquireExclusive( Locks.Tracer.NONE, ResourceTypes.RELATIONSHIP, firstRelId );
+            locks.acquireExclusive( LockTracer.NONE, ResourceTypes.RELATIONSHIP, firstRelId );
             RelationshipRecord firstRel = relRecords.getOrLoad( firstRelId, null ).forChangingLinkage();
             boolean changed = false;
             if ( firstRel.getFirstNode() == nodeId )

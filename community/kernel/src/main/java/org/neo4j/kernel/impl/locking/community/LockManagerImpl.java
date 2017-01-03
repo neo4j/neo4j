@@ -27,7 +27,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.transaction.IllegalResourceException;
 import org.neo4j.logging.Logger;
 
@@ -50,7 +50,7 @@ public class LockManagerImpl
         this.lockAcquisitionTimeoutMillis = config.get( GraphDatabaseSettings.lock_acquisition_timeout );
     }
 
-    public boolean getReadLock( Locks.Tracer tracer, LockResource resource, Object tx )
+    public boolean getReadLock( LockTracer tracer, LockResource resource, Object tx )
             throws DeadlockDetectedException, IllegalResourceException
     {
         return unusedResourceGuard( resource, tx, getRWLockForAcquiring( resource, tx ).acquireReadLock( tracer, tx ) );
@@ -62,7 +62,7 @@ public class LockManagerImpl
         return unusedResourceGuard( resource, tx, getRWLockForAcquiring( resource, tx ).tryAcquireReadLock( tx ) );
     }
 
-    public boolean getWriteLock( Locks.Tracer tracer, LockResource resource, Object tx )
+    public boolean getWriteLock( LockTracer tracer, LockResource resource, Object tx )
             throws DeadlockDetectedException, IllegalResourceException
     {
         return unusedResourceGuard( resource, tx, getRWLockForAcquiring( resource, tx ).acquireWriteLock( tracer, tx ) );

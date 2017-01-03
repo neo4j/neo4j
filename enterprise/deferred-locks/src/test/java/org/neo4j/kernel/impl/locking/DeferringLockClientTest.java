@@ -106,11 +106,11 @@ public class DeferringLockClientTest
 
             if ( exclusive )
             {
-                client.acquireExclusive( Locks.Tracer.NONE, lockUnit.resourceType(), lockUnit.resourceId() );
+                client.acquireExclusive( LockTracer.NONE, lockUnit.resourceType(), lockUnit.resourceId() );
             }
             else
             {
-                client.acquireShared( Locks.Tracer.NONE, lockUnit.resourceType(), lockUnit.resourceId() );
+                client.acquireShared( LockTracer.NONE, lockUnit.resourceType(), lockUnit.resourceId() );
             }
             expected.add( lockUnit );
         }
@@ -161,7 +161,7 @@ public class DeferringLockClientTest
         try
         {
             // WHEN
-            client.acquireExclusive( Locks.Tracer.NONE, ResourceTypes.NODE, 1 );
+            client.acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 1 );
             fail( "Expected exception" );
         }
         catch ( LockClientStoppedException e )
@@ -182,7 +182,7 @@ public class DeferringLockClientTest
         try
         {
             // WHEN
-            client.acquireExclusive( Locks.Tracer.NONE, ResourceTypes.NODE, 1 );
+            client.acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 1 );
             fail( "Expected exception" );
         }
         catch ( LockClientStoppedException e )
@@ -236,7 +236,7 @@ public class DeferringLockClientTest
         Locks.Client actualClient = mock( Locks.Client.class );
         DeferringLockClient client = new DeferringLockClient( actualClient );
 
-        client.acquireExclusive( Locks.Tracer.NONE, ResourceTypes.NODE, 1 );
+        client.acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 1 );
 
         try
         {
@@ -257,7 +257,7 @@ public class DeferringLockClientTest
         Locks.Client actualClient = mock( Locks.Client.class );
         DeferringLockClient client = new DeferringLockClient( actualClient );
 
-        client.acquireExclusive( Locks.Tracer.NONE, ResourceTypes.NODE, 1 );
+        client.acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 1 );
         client.releaseExclusive( ResourceTypes.NODE, 1 );
 
         try
@@ -280,8 +280,8 @@ public class DeferringLockClientTest
         TestLocksClient actualClient = actualLocks.newClient();
         DeferringLockClient client = new DeferringLockClient( actualClient );
 
-        client.acquireExclusive( Locks.Tracer.NONE, ResourceTypes.NODE, 1 );
-        client.acquireExclusive( Locks.Tracer.NONE, ResourceTypes.NODE, 1 );
+        client.acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 1 );
+        client.acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 1 );
         client.releaseExclusive( ResourceTypes.NODE, 1 );
 
         // WHEN
@@ -299,8 +299,8 @@ public class DeferringLockClientTest
         TestLocksClient actualClient = actualLocks.newClient();
         DeferringLockClient client = new DeferringLockClient( actualClient );
 
-        client.acquireShared( Locks.Tracer.NONE, ResourceTypes.NODE, 1 );
-        client.acquireShared( Locks.Tracer.NONE, ResourceTypes.NODE, 1 );
+        client.acquireShared( LockTracer.NONE, ResourceTypes.NODE, 1 );
+        client.acquireShared( LockTracer.NONE, ResourceTypes.NODE, 1 );
         client.releaseShared( ResourceTypes.NODE, 1 );
 
         // WHEN
@@ -318,8 +318,8 @@ public class DeferringLockClientTest
         TestLocksClient actualClient = actualLocks.newClient();
         DeferringLockClient client = new DeferringLockClient( actualClient );
 
-        client.acquireShared( Locks.Tracer.NONE, ResourceTypes.NODE, 1 );
-        client.acquireExclusive( Locks.Tracer.NONE, ResourceTypes.NODE, 1 );
+        client.acquireShared( LockTracer.NONE, ResourceTypes.NODE, 1 );
+        client.acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 1 );
         client.releaseShared( ResourceTypes.NODE, 1 );
 
         // WHEN
@@ -337,13 +337,13 @@ public class DeferringLockClientTest
         TestLocksClient actualClient = actualLocks.newClient();
         DeferringLockClient client = new DeferringLockClient( actualClient );
 
-        client.acquireShared( Locks.Tracer.NONE, ResourceTypes.NODE, 1 );
-        client.acquireExclusive( Locks.Tracer.NONE, ResourceTypes.NODE, 2 );
-        client.acquireExclusive( Locks.Tracer.NONE, ResourceTypes.NODE, 3 );
-        client.acquireExclusive( Locks.Tracer.NONE, ResourceTypes.RELATIONSHIP, 1 );
-        client.acquireShared( Locks.Tracer.NONE, ResourceTypes.RELATIONSHIP, 2 );
-        client.acquireShared( Locks.Tracer.NONE, ResourceTypes.SCHEMA, 1 );
-        client.acquireExclusive( Locks.Tracer.NONE, ResourceTypes.NODE, 42 );
+        client.acquireShared( LockTracer.NONE, ResourceTypes.NODE, 1 );
+        client.acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 2 );
+        client.acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 3 );
+        client.acquireExclusive( LockTracer.NONE, ResourceTypes.RELATIONSHIP, 1 );
+        client.acquireShared( LockTracer.NONE, ResourceTypes.RELATIONSHIP, 2 );
+        client.acquireShared( LockTracer.NONE, ResourceTypes.SCHEMA, 1 );
+        client.acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 42 );
 
         // WHEN
         client.acquireDeferredLocks();
@@ -370,8 +370,8 @@ public class DeferringLockClientTest
         TestLocksClient actualClient = actualLocks.newClient();
         DeferringLockClient client = new DeferringLockClient( actualClient );
 
-        client.acquireShared( Locks.Tracer.NONE, ResourceTypes.NODE, 1 );
-        client.acquireExclusive( Locks.Tracer.NONE, ResourceTypes.NODE, 1 );
+        client.acquireShared( LockTracer.NONE, ResourceTypes.NODE, 1 );
+        client.acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 1 );
         client.releaseExclusive( ResourceTypes.NODE, 1 );
 
         // WHEN
@@ -405,7 +405,7 @@ public class DeferringLockClientTest
         private final Set<LockUnit> actualLockUnits = new LinkedHashSet<>();
 
         @Override
-        public void acquireShared( Locks.Tracer tracer, ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException
+        public void acquireShared( LockTracer tracer, ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException
         {
             register( resourceType, false, resourceIds );
         }
@@ -425,7 +425,7 @@ public class DeferringLockClientTest
         }
 
         @Override
-        public void acquireExclusive( Locks.Tracer tracer, ResourceType resourceType, long... resourceIds )
+        public void acquireExclusive( LockTracer tracer, ResourceType resourceType, long... resourceIds )
                 throws AcquireLockTimeoutException
         {
             register( resourceType, true, resourceIds );

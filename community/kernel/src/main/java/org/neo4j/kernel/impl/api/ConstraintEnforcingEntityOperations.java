@@ -57,6 +57,7 @@ import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
+import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.storageengine.api.LabelItem;
 import org.neo4j.storageengine.api.NodeItem;
@@ -331,7 +332,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
         // If we find the node - hold a shared lock. If we don't find a node - hold an exclusive lock.
         // If locks are deferred than both shared and exclusive locks will be taken only at commit time.
         Locks.Client locks = state.locks().optimistic();
-        Locks.Tracer lockTracer = state.lockTracer();
+        LockTracer lockTracer = state.lockTracer();
         long indexEntryId = indexEntryResourceId( labelId, propertyKeyId, stringVal );
 
         locks.acquireShared( lockTracer, INDEX_ENTRY, indexEntryId );

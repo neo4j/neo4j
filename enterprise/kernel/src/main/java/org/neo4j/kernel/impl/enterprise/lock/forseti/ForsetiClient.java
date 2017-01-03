@@ -34,6 +34,8 @@ import org.neo4j.kernel.impl.enterprise.lock.forseti.ForsetiLockManager.Deadlock
 import org.neo4j.kernel.impl.locking.LockAcquisitionTimeoutException;
 import org.neo4j.kernel.impl.locking.LockClientStateHolder;
 import org.neo4j.kernel.impl.locking.LockClientStoppedException;
+import org.neo4j.kernel.impl.locking.LockTracer;
+import org.neo4j.kernel.impl.locking.LockWaitEvent;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.util.collection.SimpleBitSet;
 import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
@@ -145,7 +147,7 @@ public class ForsetiClient implements Locks.Client
     }
 
     @Override
-    public void acquireShared( Locks.Tracer tracer, ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException
+    public void acquireShared( LockTracer tracer, ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException
     {
         hasLocks = true;
         stateHolder.incrementActiveClients( this );
@@ -185,7 +187,7 @@ public class ForsetiClient implements Locks.Client
                 SharedLock mySharedLock = null;
                 long waitStartMillis = clock.millis();
 
-                Locks.WaitEvent waitEvent = null;
+                LockWaitEvent waitEvent = null;
                 try
                 {
                     // Retry loop
@@ -268,7 +270,7 @@ public class ForsetiClient implements Locks.Client
     }
 
     @Override
-    public void acquireExclusive( Locks.Tracer tracer, ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException
+    public void acquireExclusive( LockTracer tracer, ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException
     {
         hasLocks = true;
         stateHolder.incrementActiveClients( this );
@@ -288,7 +290,7 @@ public class ForsetiClient implements Locks.Client
                     continue;
                 }
 
-                Locks.WaitEvent waitEvent = null;
+                LockWaitEvent waitEvent = null;
                 try
                 {
                     // Grab the global lock
@@ -719,8 +721,8 @@ public class ForsetiClient implements Locks.Client
      * Attempt to upgrade a share lock to an exclusive lock, grabbing the share lock if we don't hold it.
      **/
     private boolean tryUpgradeSharedToExclusive(
-            Locks.Tracer tracer,
-            Locks.WaitEvent waitEvent,
+            LockTracer tracer,
+            LockWaitEvent waitEvent,
             ResourceType resourceType,
             ConcurrentMap<Long,ForsetiLockManager.Lock> lockMap,
             long resourceId,
@@ -767,12 +769,12 @@ public class ForsetiClient implements Locks.Client
 
     /** Attempt to upgrade a share lock that we hold to an exclusive lock. */
     private boolean tryUpgradeToExclusiveWithShareLockHeld(
-            Locks.Tracer tracer, Locks.WaitEvent priorEvent, ResourceType resourceType, long resourceId,
+            LockTracer tracer, LockWaitEvent priorEvent, ResourceType resourceType, long resourceId,
             SharedLock sharedLock, int tries, long waitStartMillis ) throws AcquireLockTimeoutException
     {
         if ( sharedLock.tryAcquireUpdateLock( this ) )
         {
-            Locks.WaitEvent waitEvent = null;
+            LockWaitEvent waitEvent = null;
             try
             {
                 // Now we just wait for all clients to release the the share lock

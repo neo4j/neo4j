@@ -56,24 +56,24 @@ public class DeadlockCompatibility extends LockingCompatibilityTestSuite.Compati
     public void shouldDetectTwoClientExclusiveDeadlock() throws Exception
     {
         assertDetectsDeadlock(
-                acquireExclusive( clientA, Locks.Tracer.NONE, NODE, 1L ),
-                acquireExclusive( clientB, Locks.Tracer.NONE, NODE, 2L ),
+                acquireExclusive( clientA, LockTracer.NONE, NODE, 1L ),
+                acquireExclusive( clientB, LockTracer.NONE, NODE, 2L ),
 
-                acquireExclusive( clientB, Locks.Tracer.NONE, NODE, 1L ),
-                acquireExclusive( clientA, Locks.Tracer.NONE, NODE, 2L ) );
+                acquireExclusive( clientB, LockTracer.NONE, NODE, 1L ),
+                acquireExclusive( clientA, LockTracer.NONE, NODE, 2L ) );
     }
 
     @Test
     public void shouldDetectThreeClientExclusiveDeadlock() throws Exception
     {
         assertDetectsDeadlock(
-                acquireExclusive( clientA, Locks.Tracer.NONE, NODE, 1L ),
-                acquireExclusive( clientB, Locks.Tracer.NONE, NODE, 2L ),
-                acquireExclusive( clientC, Locks.Tracer.NONE, NODE, 3L ),
+                acquireExclusive( clientA, LockTracer.NONE, NODE, 1L ),
+                acquireExclusive( clientB, LockTracer.NONE, NODE, 2L ),
+                acquireExclusive( clientC, LockTracer.NONE, NODE, 3L ),
 
-                acquireExclusive( clientB, Locks.Tracer.NONE, NODE, 1L ),
-                acquireExclusive( clientC, Locks.Tracer.NONE, NODE, 2L ),
-                acquireExclusive( clientA, Locks.Tracer.NONE, NODE, 3L ) );
+                acquireExclusive( clientB, LockTracer.NONE, NODE, 1L ),
+                acquireExclusive( clientC, LockTracer.NONE, NODE, 2L ),
+                acquireExclusive( clientA, LockTracer.NONE, NODE, 3L ) );
     }
 
     @Test
@@ -81,11 +81,11 @@ public class DeadlockCompatibility extends LockingCompatibilityTestSuite.Compati
     {
         assertDetectsDeadlock(
 
-                acquireShared( clientA, Locks.Tracer.NONE, NODE, 1L ),
-                acquireExclusive( clientB, Locks.Tracer.NONE, NODE, 2L ),
+                acquireShared( clientA, LockTracer.NONE, NODE, 1L ),
+                acquireExclusive( clientB, LockTracer.NONE, NODE, 2L ),
 
-                acquireExclusive( clientB, Locks.Tracer.NONE, NODE, 1L ),
-                acquireShared( clientA, Locks.Tracer.NONE, NODE, 2L ) );
+                acquireExclusive( clientB, LockTracer.NONE, NODE, 1L ),
+                acquireShared( clientA, LockTracer.NONE, NODE, 2L ) );
     }
 
     private void assertDetectsDeadlock( LockCommand... commands )

@@ -29,6 +29,7 @@ import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongObjectVisitor;
 import org.neo4j.kernel.impl.locking.LockClientStateHolder;
 import org.neo4j.kernel.impl.locking.LockClientStoppedException;
+import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.storageengine.api.lock.ResourceType;
 
@@ -88,7 +89,7 @@ public class CommunityLockClient implements Locks.Client
     }
 
     @Override
-    public void acquireShared( Locks.Tracer tracer, ResourceType resourceType, long... resourceIds )
+    public void acquireShared( LockTracer tracer, ResourceType resourceType, long... resourceIds )
     {
         stateHolder.incrementActiveClients( this );
         try
@@ -122,7 +123,7 @@ public class CommunityLockClient implements Locks.Client
     }
 
     @Override
-    public void acquireExclusive( Locks.Tracer tracer, ResourceType resourceType, long... resourceIds )
+    public void acquireExclusive( LockTracer tracer, ResourceType resourceType, long... resourceIds )
     {
         stateHolder.incrementActiveClients( this );
         try

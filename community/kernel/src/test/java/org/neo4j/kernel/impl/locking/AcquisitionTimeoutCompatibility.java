@@ -78,10 +78,10 @@ public class AcquisitionTimeoutCompatibility extends LockingCompatibilityTestSui
     @Test( timeout = TEST_TIMEOUT )
     public void terminateSharedLockAcquisition() throws ExecutionException, InterruptedException
     {
-        client.acquireExclusive( Locks.Tracer.NONE, ResourceTypes.NODE, 1 );
+        client.acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 1 );
         Future<Boolean> sharedLockAcquisition = threadB.execute( state ->
         {
-            client2.acquireShared( Locks.Tracer.NONE, ResourceTypes.NODE, 1 );
+            client2.acquireShared( LockTracer.NONE, ResourceTypes.NODE, 1 );
             return true;
         } );
 
@@ -94,10 +94,10 @@ public class AcquisitionTimeoutCompatibility extends LockingCompatibilityTestSui
     @Test( timeout = TEST_TIMEOUT )
     public void terminateExclusiveLockAcquisitionForExclusivelyLockedResource() throws InterruptedException
     {
-        client.acquireExclusive( Locks.Tracer.NONE, ResourceTypes.NODE, 1 );
+        client.acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 1 );
         Future<Boolean> exclusiveLockAcquisition = threadB.execute( state ->
         {
-            client2.acquireExclusive( Locks.Tracer.NONE, ResourceTypes.NODE, 1 );
+            client2.acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 1 );
             return true;
         } );
 
@@ -110,10 +110,10 @@ public class AcquisitionTimeoutCompatibility extends LockingCompatibilityTestSui
     @Test (timeout = TEST_TIMEOUT)
     public void terminateExclusiveLockAcquisitionForSharedLockedResource() throws InterruptedException
     {
-        client.acquireShared( Locks.Tracer.NONE, ResourceTypes.NODE, 1 );
+        client.acquireShared( LockTracer.NONE, ResourceTypes.NODE, 1 );
         Future<Boolean> exclusiveLockAcquisition = threadB.execute( state ->
         {
-            client2.acquireExclusive( Locks.Tracer.NONE, ResourceTypes.NODE, 1 );
+            client2.acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 1 );
             return true;
         } );
 
@@ -126,11 +126,11 @@ public class AcquisitionTimeoutCompatibility extends LockingCompatibilityTestSui
     @Test( timeout = TEST_TIMEOUT )
     public void terminateExclusiveLockAcquisitionForSharedLockedResourceWithSharedLockHeld() throws InterruptedException
     {
-        client.acquireShared( Locks.Tracer.NONE, ResourceTypes.NODE, 1 );
-        client2.acquireShared( Locks.Tracer.NONE, ResourceTypes.NODE, 1 );
+        client.acquireShared( LockTracer.NONE, ResourceTypes.NODE, 1 );
+        client2.acquireShared( LockTracer.NONE, ResourceTypes.NODE, 1 );
         Future<Boolean> exclusiveLockAcquisition = threadB.execute( state ->
         {
-            client2.acquireExclusive( Locks.Tracer.NONE, ResourceTypes.NODE, 1 );
+            client2.acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 1 );
             return true;
         } );
 

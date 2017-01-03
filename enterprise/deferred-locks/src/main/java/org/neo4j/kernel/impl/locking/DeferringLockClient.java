@@ -40,7 +40,7 @@ public class DeferringLockClient implements Locks.Client
     }
 
     @Override
-    public void acquireShared( Locks.Tracer tracer, ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException
+    public void acquireShared( LockTracer tracer, ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException
     {
         assertNotStopped();
 
@@ -51,7 +51,7 @@ public class DeferringLockClient implements Locks.Client
     }
 
     @Override
-    public void acquireExclusive( Locks.Tracer tracer, ResourceType resourceType, long... resourceIds )
+    public void acquireExclusive( LockTracer tracer, ResourceType resourceType, long... resourceIds )
             throws AcquireLockTimeoutException
     {
         assertNotStopped();
@@ -129,11 +129,11 @@ public class DeferringLockClient implements Locks.Client
             long[] resourceIds = Arrays.copyOf( current, cursor );
             if ( exclusive )
             {
-                clientDelegate.acquireExclusive( Locks.Tracer.NONE, currentType, resourceIds );
+                clientDelegate.acquireExclusive( LockTracer.NONE, currentType, resourceIds );
             }
             else
             {
-                clientDelegate.acquireShared( Locks.Tracer.NONE, currentType, resourceIds );
+                clientDelegate.acquireShared( LockTracer.NONE, currentType, resourceIds );
             }
         }
     }

@@ -179,7 +179,7 @@ public abstract class LockingCompatibilityTestSuite
 
         protected LockCommand acquireExclusive(
                 final Locks.Client client,
-                final Locks.Tracer tracer,
+                final LockTracer tracer,
                 final ResourceType resourceType,
                 final long key )
         {
@@ -195,7 +195,7 @@ public abstract class LockingCompatibilityTestSuite
 
         protected LockCommand acquireShared(
                 Locks.Client client,
-                final Locks.Tracer tracer,
+                final LockTracer tracer,
                 final ResourceType resourceType,
                 final long key )
         {

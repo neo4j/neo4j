@@ -21,7 +21,7 @@ package org.neo4j.storageengine.api.lock;
 
 import java.util.Arrays;
 
-import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.LockTracer;
 
 public interface ResourceLocker
 {
@@ -34,7 +34,7 @@ public interface ResourceLocker
      * @param resourceType type or resource(s) to lock.
      * @param resourceIds id(s) of resources to lock. Multiple ids should be ordered consistently by all callers
      */
-    void acquireExclusive( Locks.Tracer tracer, ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException;
+    void acquireExclusive( LockTracer tracer, ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException;
 
     ResourceLocker NONE = ( tracer, resourceType, resourceIds ) ->
     {

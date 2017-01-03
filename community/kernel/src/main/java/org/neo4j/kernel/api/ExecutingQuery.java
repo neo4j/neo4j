@@ -24,7 +24,8 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
-import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.LockTracer;
+import org.neo4j.kernel.impl.locking.LockWaitEvent;
 import org.neo4j.kernel.impl.query.QuerySource;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.time.CpuClock;
@@ -41,7 +42,7 @@ public class ExecutingQuery
     private static final AtomicLongFieldUpdater<ExecutingQuery> WAIT_TIME =
             newUpdater( ExecutingQuery.class, "waitTimeNanos" );
     private final long queryId;
-    private final Locks.Tracer lockTracer = ExecutingQuery.this::waitForLock;
+    private final LockTracer lockTracer = ExecutingQuery.this::waitForLock;
     private final String username;
     private final QuerySource querySource;
     private final String queryText;
@@ -163,7 +164,7 @@ public class ExecutingQuery
         return metaData;
     }
 
-    public Locks.Tracer lockTracer()
+    public LockTracer lockTracer()
     {
         return lockTracer;
     }
@@ -173,14 +174,14 @@ public class ExecutingQuery
         return status.toMap( clock );
     }
 
-    private Locks.WaitEvent waitForLock( ResourceType resourceType, long[] resourceIds )
+    private LockWaitEvent waitForLock( ResourceType resourceType, long[] resourceIds )
     {
         WaitingOnLockEvent event = new WaitingOnLockEvent( resourceType, resourceIds );
         status = event;
         return event;
     }
 
-    private class WaitingOnLockEvent extends ExecutingQueryStatus.WaitingOnLock implements Locks.WaitEvent
+    private class WaitingOnLockEvent extends ExecutingQueryStatus.WaitingOnLock implements LockWaitEvent
     {
         private final ExecutingQueryStatus previous = status;
 

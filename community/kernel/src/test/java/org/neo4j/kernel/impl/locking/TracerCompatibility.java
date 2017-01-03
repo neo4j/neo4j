@@ -90,13 +90,13 @@ public class TracerCompatibility extends LockingCompatibilityTestSuite.Compatibi
         tracerB.assertCalls( 1 );
     }
 
-    static class Tracer implements Locks.Tracer, Locks.WaitEvent
+    static class Tracer implements LockTracer, LockWaitEvent
     {
         int done;
         final List<StackTraceElement[]> waitCalls = new ArrayList<>();
 
         @Override
-        public Locks.WaitEvent waitForLock( ResourceType resourceType, long... resourceIds )
+        public LockWaitEvent waitForLock( ResourceType resourceType, long... resourceIds )
         {
             waitCalls.add( Thread.currentThread().getStackTrace() );
             return this;

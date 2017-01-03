@@ -27,8 +27,9 @@ import java.util.ListIterator;
 import org.neo4j.helpers.MathUtil;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.locking.LockAcquisitionTimeoutException;
+import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.LockType;
-import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.LockWaitEvent;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.logging.Logger;
 
@@ -187,12 +188,12 @@ class RWLock
      * @return true is lock was acquired, false otherwise
      * @throws DeadlockDetectedException if a deadlock is detected
      */
-    synchronized boolean acquireReadLock( Locks.Tracer tracer, Object tx ) throws DeadlockDetectedException
+    synchronized boolean acquireReadLock( LockTracer tracer, Object tx ) throws DeadlockDetectedException
     {
         TxLockElement tle = getOrCreateLockElement( tx );
 
         LockRequest lockRequest = null;
-        Locks.WaitEvent waitEvent = null;
+        LockWaitEvent waitEvent = null;
         // used to track do we need to add lock request to a waiting queue or we still have it there
         boolean addLockRequest = true;
         try
@@ -375,12 +376,12 @@ class RWLock
      * @return true is lock was acquired, false otherwise
      * @throws DeadlockDetectedException if a deadlock is detected
      */
-    synchronized boolean acquireWriteLock( Locks.Tracer tracer, Object tx ) throws DeadlockDetectedException
+    synchronized boolean acquireWriteLock( LockTracer tracer, Object tx ) throws DeadlockDetectedException
     {
         TxLockElement tle = getOrCreateLockElement( tx );
 
         LockRequest lockRequest = null;
-        Locks.WaitEvent waitEvent = null;
+        LockWaitEvent waitEvent = null;
         // used to track do we need to add lock request to a waiting queue or we still have it there
         boolean addLockRequest = true;
         try

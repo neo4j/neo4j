@@ -24,25 +24,25 @@ import java.util.Arrays;
 import org.neo4j.storageengine.api.lock.ResourceType;
 
 /**
- * A {@link Locks.Tracer} that combines multiple {@linkplain Locks.Tracer tracers} into one, invoking each of them for
+ * A {@link LockTracer} that combines multiple {@linkplain LockTracer tracers} into one, invoking each of them for
  * the {@linkplain #waitForLock(ResourceType, long...) wait events} received.
  * <p>
  * This is used for when there is a stack of queries in a transaction, or when a system-configured tracer combines with
  * the query specific tracers.
  */
-final class CombinedTracer implements Locks.Tracer
+final class CombinedTracer implements LockTracer
 {
-    private final Locks.Tracer[] tracers;
+    private final LockTracer[] tracers;
 
-    CombinedTracer( Locks.Tracer... tracers )
+    CombinedTracer( LockTracer... tracers )
     {
         this.tracers = tracers;
     }
 
     @Override
-    public Locks.WaitEvent waitForLock( ResourceType resourceType, long... resourceIds )
+    public LockWaitEvent waitForLock( ResourceType resourceType, long... resourceIds )
     {
-        Locks.WaitEvent[] events = new Locks.WaitEvent[tracers.length];
+        LockWaitEvent[] events = new LockWaitEvent[tracers.length];
         for ( int i = 0; i < events.length; i++ )
         {
             events[i] = tracers[i].waitForLock( resourceType, resourceIds );
@@ -51,16 +51,16 @@ final class CombinedTracer implements Locks.Tracer
     }
 
     @Override
-    public Locks.Tracer combine( Locks.Tracer tracer )
+    public LockTracer combine( LockTracer tracer )
     {
         if ( tracer == NONE )
         {
             return this;
         }
-        Locks.Tracer[] tracers;
+        LockTracer[] tracers;
         if ( tracer instanceof CombinedTracer )
         {
-            Locks.Tracer[] those = ((CombinedTracer) tracer).tracers;
+            LockTracer[] those = ((CombinedTracer) tracer).tracers;
             tracers = Arrays.copyOf( this.tracers, this.tracers.length + those.length );
             System.arraycopy( those, 0, tracers, this.tracers.length, those.length );
         }
@@ -72,11 +72,11 @@ final class CombinedTracer implements Locks.Tracer
         return new CombinedTracer( tracers );
     }
 
-    private static class CombinedEvent implements Locks.WaitEvent
+    private static class CombinedEvent implements LockWaitEvent
     {
-        private final Locks.WaitEvent[] events;
+        private final LockWaitEvent[] events;
 
-        CombinedEvent( Locks.WaitEvent[] events )
+        CombinedEvent( LockWaitEvent[] events )
         {
             this.events = events;
         }
@@ -84,7 +84,7 @@ final class CombinedTracer implements Locks.Tracer
         @Override
         public void close()
         {
-            for ( Locks.WaitEvent event : events )
+            for ( LockWaitEvent event : events )
             {
                 event.close();
             }

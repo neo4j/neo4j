@@ -32,6 +32,7 @@ import org.neo4j.com.Response;
 import org.neo4j.com.TransactionNotPresentOnMasterException;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.kernel.DeadlockDetectedException;
+import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -324,7 +325,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
         {
             for ( long resourceId : resourceIds )
             {
-                session.acquireExclusive( Locks.Tracer.NONE, type, resourceId );
+                session.acquireExclusive( LockTracer.NONE, type, resourceId );
             }
             return spi.packTransactionObligationResponse( context, new LockResult( LockStatus.OK_LOCKED ) );
         }
@@ -366,7 +367,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
         {
             for ( long resourceId : resourceIds )
             {
-                session.acquireShared( Locks.Tracer.NONE, type, resourceId );
+                session.acquireShared( LockTracer.NONE, type, resourceId );
             }
 
             return spi.packTransactionObligationResponse( context, new LockResult( LockStatus.OK_LOCKED ) );

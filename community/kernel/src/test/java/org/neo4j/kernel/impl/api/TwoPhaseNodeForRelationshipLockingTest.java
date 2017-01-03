@@ -35,6 +35,7 @@ import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
+import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
@@ -62,7 +63,7 @@ public class TwoPhaseNodeForRelationshipLockingTest
 
     {
         when( state.locks() ).thenReturn( new SimpleStatementLocks( locks ) );
-        when( state.lockTracer() ).thenReturn( Locks.Tracer.NONE );
+        when( state.lockTracer() ).thenReturn( LockTracer.NONE );
     }
 
     @Test
@@ -83,10 +84,10 @@ public class TwoPhaseNodeForRelationshipLockingTest
         locking.lockAllNodesAndConsumeRelationships( nodeId, state );
 
         // then
-        inOrder.verify( locks ).acquireExclusive( Locks.Tracer.NONE, ResourceTypes.NODE, 40L );
-        inOrder.verify( locks ).acquireExclusive( Locks.Tracer.NONE, ResourceTypes.NODE, 41L );
-        inOrder.verify( locks ).acquireExclusive( Locks.Tracer.NONE, ResourceTypes.NODE, nodeId );
-        inOrder.verify( locks ).acquireExclusive( Locks.Tracer.NONE, ResourceTypes.NODE, 43L );
+        inOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 40L );
+        inOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 41L );
+        inOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, nodeId );
+        inOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 43L );
         assertEquals( set( 21L, 22L, 23L ), collector.set );
     }
 
@@ -108,18 +109,18 @@ public class TwoPhaseNodeForRelationshipLockingTest
         locking.lockAllNodesAndConsumeRelationships( nodeId, state );
 
         // then
-        inOrder.verify( locks ).acquireExclusive( Locks.Tracer.NONE, ResourceTypes.NODE, 40L );
-        inOrder.verify( locks ).acquireExclusive( Locks.Tracer.NONE, ResourceTypes.NODE, 41L );
-        inOrder.verify( locks ).acquireExclusive( Locks.Tracer.NONE, ResourceTypes.NODE, nodeId );
+        inOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 40L );
+        inOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 41L );
+        inOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, nodeId );
 
         inOrder.verify( locks ).releaseExclusive( ResourceTypes.NODE, 40L );
         inOrder.verify( locks ).releaseExclusive( ResourceTypes.NODE, 41L );
         inOrder.verify( locks ).releaseExclusive( ResourceTypes.NODE, nodeId );
 
-        inOrder.verify( locks ).acquireExclusive( Locks.Tracer.NONE, ResourceTypes.NODE, 40L );
-        inOrder.verify( locks ).acquireExclusive( Locks.Tracer.NONE, ResourceTypes.NODE, 41L );
-        inOrder.verify( locks ).acquireExclusive( Locks.Tracer.NONE, ResourceTypes.NODE, nodeId );
-        inOrder.verify( locks ).acquireExclusive( Locks.Tracer.NONE, ResourceTypes.NODE, 43L );
+        inOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 40L );
+        inOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 41L );
+        inOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, nodeId );
+        inOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 43L );
         assertEquals( set( 21L, 22L, 23L ), collector.set );
     }
 
@@ -132,7 +133,7 @@ public class TwoPhaseNodeForRelationshipLockingTest
 
         locking.lockAllNodesAndConsumeRelationships( nodeId, state );
 
-        verify( locks ).acquireExclusive( Locks.Tracer.NONE, ResourceTypes.NODE, nodeId );
+        verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, nodeId );
         verifyNoMoreInteractions( locks );
     }
 

@@ -81,11 +81,11 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
     public void releaseWriteLockWaitersOnStop()
     {
         // given
-        clientA.acquireShared( Locks.Tracer.NONE, NODE, 1L );
-        clientB.acquireShared( Locks.Tracer.NONE, NODE, 2L );
-        clientC.acquireShared( Locks.Tracer.NONE, NODE, 3L );
-        acquireExclusive( clientB, Locks.Tracer.NONE, NODE, 1L ).callAndAssertWaiting();
-        acquireExclusive( clientC, Locks.Tracer.NONE, NODE, 1L ).callAndAssertWaiting();
+        clientA.acquireShared( LockTracer.NONE, NODE, 1L );
+        clientB.acquireShared( LockTracer.NONE, NODE, 2L );
+        clientC.acquireShared( LockTracer.NONE, NODE, 3L );
+        acquireExclusive( clientB, LockTracer.NONE, NODE, 1L ).callAndAssertWaiting();
+        acquireExclusive( clientC, LockTracer.NONE, NODE, 1L ).callAndAssertWaiting();
 
         // when
         clientC.stop();
@@ -101,9 +101,9 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
     @Test
     public void releaseReadLockWaitersOnStop()
     {  // given
-        clientA.acquireExclusive( Locks.Tracer.NONE, NODE, 1L );
-        clientB.acquireExclusive( Locks.Tracer.NONE, NODE, 2L );
-        acquireShared( clientB, Locks.Tracer.NONE, NODE, 1L ).callAndAssertWaiting();
+        clientA.acquireExclusive( LockTracer.NONE, NODE, 1L );
+        clientB.acquireExclusive( LockTracer.NONE, NODE, 2L );
+        acquireShared( clientB, LockTracer.NONE, NODE, 1L ).callAndAssertWaiting();
 
         // when
         clientB.stop();
@@ -118,13 +118,13 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
     @Test( expected = LockClientStoppedException.class )
     public void acquireSharedThrowsWhenClientStopped()
     {
-        stoppedClient().acquireShared( Locks.Tracer.NONE, ResourceTypes.NODE, 1 );
+        stoppedClient().acquireShared( LockTracer.NONE, ResourceTypes.NODE, 1 );
     }
 
     @Test( expected = LockClientStoppedException.class )
     public void acquireExclusiveThrowsWhenClientStopped()
     {
-        stoppedClient().acquireExclusive( Locks.Tracer.NONE, ResourceTypes.NODE, 1 );
+        stoppedClient().acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 1 );
     }
 
     @Test( expected = LockClientStoppedException.class )
@@ -356,14 +356,14 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
 
     private AcquiredLock acquireSharedLockInThisThread()
     {
-        client.acquireShared( Locks.Tracer.NONE, RESOURCE_TYPE, RESOURCE_ID );
+        client.acquireShared( LockTracer.NONE, RESOURCE_TYPE, RESOURCE_ID );
         assertLocksHeld( RESOURCE_ID );
         return AcquiredLock.shared( client, RESOURCE_TYPE, RESOURCE_ID );
     }
 
     private AcquiredLock acquireExclusiveLockInThisThread()
     {
-        client.acquireExclusive( Locks.Tracer.NONE, RESOURCE_TYPE, RESOURCE_ID );
+        client.acquireExclusive( LockTracer.NONE, RESOURCE_TYPE, RESOURCE_ID );
         assertLocksHeld( RESOURCE_ID );
         return AcquiredLock.exclusive( client, RESOURCE_TYPE, RESOURCE_ID );
     }
@@ -387,11 +387,11 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
             Locks.Client client = newLockClient( lockAcquisition );
             if ( shared )
             {
-                client.acquireShared( Locks.Tracer.NONE, RESOURCE_TYPE, RESOURCE_ID );
+                client.acquireShared( LockTracer.NONE, RESOURCE_TYPE, RESOURCE_ID );
             }
             else
             {
-                client.acquireExclusive( Locks.Tracer.NONE, RESOURCE_TYPE, RESOURCE_ID );
+                client.acquireExclusive( LockTracer.NONE, RESOURCE_TYPE, RESOURCE_ID );
             }
             return null;
         } );
@@ -413,11 +413,11 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
                 {
                     if ( firstShared )
                     {
-                        client.acquireShared( Locks.Tracer.NONE, RESOURCE_TYPE, RESOURCE_ID );
+                        client.acquireShared( LockTracer.NONE, RESOURCE_TYPE, RESOURCE_ID );
                     }
                     else
                     {
-                        client.acquireExclusive( Locks.Tracer.NONE, RESOURCE_TYPE, RESOURCE_ID );
+                        client.acquireExclusive( LockTracer.NONE, RESOURCE_TYPE, RESOURCE_ID );
                     }
                     fail( "Transaction termination expected" );
                 }
@@ -435,11 +435,11 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
             {
                 if ( secondShared )
                 {
-                    client.acquireShared( Locks.Tracer.NONE, RESOURCE_TYPE, RESOURCE_ID );
+                    client.acquireShared( LockTracer.NONE, RESOURCE_TYPE, RESOURCE_ID );
                 }
                 else
                 {
-                    client.acquireExclusive( Locks.Tracer.NONE, RESOURCE_TYPE, RESOURCE_ID );
+                    client.acquireExclusive( LockTracer.NONE, RESOURCE_TYPE, RESOURCE_ID );
                 }
             }
             return null;
@@ -458,12 +458,12 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
         {
             try ( Locks.Client client = newLockClient( lockAcquisition ) )
             {
-                client.acquireShared( Locks.Tracer.NONE, RESOURCE_TYPE, RESOURCE_ID );
+                client.acquireShared( LockTracer.NONE, RESOURCE_TYPE, RESOURCE_ID );
 
                 sharedLockAcquired.countDown();
                 await( startExclusiveLock );
 
-                client.acquireExclusive( Locks.Tracer.NONE, RESOURCE_TYPE, RESOURCE_ID );
+                client.acquireExclusive( LockTracer.NONE, RESOURCE_TYPE, RESOURCE_ID );
             }
             return null;
         } );
@@ -483,22 +483,22 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
             {
                 if ( shared )
                 {
-                    client.acquireShared( Locks.Tracer.NONE, RESOURCE_TYPE, OTHER_RESOURCE_ID );
+                    client.acquireShared( LockTracer.NONE, RESOURCE_TYPE, OTHER_RESOURCE_ID );
                 }
                 else
                 {
-                    client.acquireExclusive( Locks.Tracer.NONE, RESOURCE_TYPE, OTHER_RESOURCE_ID );
+                    client.acquireExclusive( LockTracer.NONE, RESOURCE_TYPE, OTHER_RESOURCE_ID );
                 }
 
                 firstLockAcquired.countDown();
 
                 if ( shared )
                 {
-                    client.acquireShared( Locks.Tracer.NONE, RESOURCE_TYPE, RESOURCE_ID );
+                    client.acquireShared( LockTracer.NONE, RESOURCE_TYPE, RESOURCE_ID );
                 }
                 else
                 {
-                    client.acquireExclusive( Locks.Tracer.NONE, RESOURCE_TYPE, RESOURCE_ID );
+                    client.acquireExclusive( LockTracer.NONE, RESOURCE_TYPE, RESOURCE_ID );
                 }
             }
             return null;
