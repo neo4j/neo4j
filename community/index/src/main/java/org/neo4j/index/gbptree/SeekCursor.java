@@ -289,6 +289,20 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
         traverseDownToFirstLeaf();
     }
 
+    /**
+     * Traverses from the root down to the leaf containing the next key that we're looking for, or the first
+     * one provided in the constructor if this no result have yet been returned.
+     * <p>
+     * This method is called when constructing the cursor, but also if this traversal itself or leaf scan
+     * later on ends up on an unexpected tree node (typically due to concurrent changes,
+     * checkpoint and tree node reuse).
+     * <p>
+     * Before calling this method the caller is expected to place the {@link PageCursor} at the root, by using
+     * {@link #rootCatchup}. After this method returns the {@link PageCursor} is placed on the leaf containing
+     * the next result and {@link #pos} is also initialized correctly.
+     *
+     * @throws IOException on {@link PageCursor} error.
+     */
     private void traverseDownToFirstLeaf() throws IOException
     {
         do
@@ -307,22 +321,16 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
                 if ( isInternal )
                 {
                     pointerId = bTreeNode.childAt( cursor, pos, stableGeneration, unstableGeneration );
-                    readPointerGenOnSuccess();
+                    pointerGen = readPointerGenOnSuccess( pointerId );
                 }
             }
             while ( cursor.shouldRetry() );
             checkOutOfBounds( cursor );
 
             // Act
-            if ( nodeType != NODE_TYPE_TREE_NODE || !saneKeyCountRead( keyCount ) || !verifyNodeGenInvariants() )
+            if ( saneRead() )
             {
-                // This node has been reused. Restart seek from root.
-                generationCatchup();
-                lastFollowedPointerGen = rootCatchup.get().goTo( cursor );
-
-                // Force true in loop
-                isInternal = true;
-                keyCount = 1;
+                restartSeekFromRoot();
                 continue;
             }
 
@@ -333,10 +341,10 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
 
             if ( isInternal )
             {
-                goToNext( "child" );
+                goTo( pointerId, pointerGen, "child", false );
             }
         }
-        while ( isInternal && keyCount > 0 );
+        while ( isInternal );
 
         // We've now come to the first relevant leaf, initialize the state for the coming leaf scan
         pos -= stride;
@@ -357,7 +365,6 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
             // Read
             do
             {
-
                 // Where we are
                 if ( !readHeader() )
                 {
@@ -379,7 +386,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
                     {
                         // We may need to go to previous sibling to find correct place to start seeking from
                         prevSiblingId = readPrevSibling();
-                        readPrevSiblingPointerGenOnSuccess();
+                        prevSiblingGen = readPointerGenOnSuccess( prevSiblingId );
                     }
                 }
 
@@ -388,7 +395,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
                 {
                     // Read right sibling
                     pointerId = readNextSibling();
-                    readPointerGenOnSuccess();
+                    pointerGen = readPointerGenOnSuccess( pointerId );
                 }
                 if ( 0 <= pos && pos < keyCount )
                 {
@@ -401,7 +408,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
             checkOutOfBounds( cursor );
 
             // Act
-            if ( nodeType != TreeNode.NODE_TYPE_TREE_NODE || !saneKeyCountRead( keyCount ) )
+            if ( saneRead() )
             {
                 // This node has been reused for something else than a tree node. Restart seek from root.
                 restartSeekFromRoot();
@@ -413,14 +420,6 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
                 continue;
             }
 
-            if ( !verifyNodeGenInvariants() )
-            {
-                // The node generation is newer than expected. This node has probably been reused during
-                // seekers lifetime. Restart seek from root.
-                restartSeekFromRoot();
-                continue;
-            }
-
             if ( goToNewGen() )
             {
                 continue;
@@ -428,7 +427,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
 
             if ( !seekForward && pos >= keyCount )
             {
-                if ( goToPrevSibling() )
+                if ( goTo( prevSiblingId, prevSiblingGen, "prev sibling", true ) )
                 {
                     continue; // in the read loop above so that we can continue reading from previous sibling
                 }
@@ -456,65 +455,97 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
         }
     }
 
+    /**
+     * @return whether or not the read key ({@link #mutableKey}) is "before" the end of the key range
+     * ({@link #toExclusive}) of this seek.
+     */
     private boolean insideEndRange()
     {
         return seekForward ? layout.compare( mutableKey, toExclusive ) < 0
                            : layout.compare( mutableKey, toExclusive ) > 0;
     }
 
+    /**
+     * @return whether or not the read key ({@link #mutableKey}) is "after" the start of the key range
+     * ({@link #fromInclusive}) of this seek.
+     */
     private boolean insideStartRange()
     {
         return seekForward ? layout.compare( mutableKey, fromInclusive ) >= 0
                            : layout.compare( mutableKey, fromInclusive ) <= 0;
     }
 
+    /**
+     * @return whether or not the read key ({@link #mutableKey}) is "after" the last returned key of this seek
+     * ({@link #prevKey}), or if no result has been returned the start of the key range ({@link #fromInclusive}).
+     */
     private boolean insidePrevKey()
     {
         if ( first )
         {
             return insideStartRange();
         }
-        else
-        {
-            return seekForward ? layout.compare( mutableKey, prevKey ) > 0
-                               : layout.compare( mutableKey, prevKey ) < 0;
-        }
+        return seekForward ? layout.compare( mutableKey, prevKey ) > 0
+                           : layout.compare( mutableKey, prevKey ) < 0;
     }
 
-    private void goToNext( String type ) throws IOException
+    /**
+     * Tries to move the {@link PageCursor} to the tree node specified inside {@code pointerId},
+     * also setting the pointer generation expectation on the next read on that new tree node.
+     * <p>
+     * As with all pointers, the generation is checked for sanity and if generation looks to be in the future,
+     * there's a generation catch-up made and the read will have to be re-attempted.
+     *
+     * @param pointerId read result containing pointer id to go to.
+     * @param pointerGen generation of {@code pointerId}.
+     * @param type type of pointer, e.g. "child" or "sibling" or so.
+     * @return {@code true} if context was updated or {@link PageCursor} was moved, both cases meaning that
+     * caller should retry its most recent read, otherwise {@code false} meaning that nothing happened.
+     * @throws IOException on {@link PageCursor} error.
+     * @throws TreeInconsistencyException if {@code allowNoNode} is {@code true} and {@code pointerId}
+     * contains a "null" tree node id.
+     */
+    private boolean goTo( long pointerId, long pointerGen, String type, boolean allowNoNode ) throws IOException
     {
-        if ( !pointerCheckingWithGenerationCatchup( pointerId, false ) )
-        {
-            bTreeNode.goTo( cursor, type, pointerId );
-            lastFollowedPointerGen = pointerGen;
-        }
-    }
-
-    private boolean goToNewGen() throws IOException
-    {
-        if ( pointerCheckingWithGenerationCatchup( newGen, true ) )
+        if ( pointerCheckingWithGenerationCatchup( pointerId, allowNoNode ) )
         {
             concurrentWriteHappened = true;
             return true;
         }
-        else if ( TreeNode.isNode( newGen ) )
+        else if ( !allowNoNode || TreeNode.isNode( pointerId ) )
         {
-            bTreeNode.goTo( cursor, "new gen", newGen );
-            lastFollowedPointerGen = newGenGen;
+            bTreeNode.goTo( cursor, type, pointerId );
+            lastFollowedPointerGen = pointerGen;
             concurrentWriteHappened = true;
             return true;
         }
         return false;
     }
 
-    private void readPointerGenOnSuccess()
+    /**
+     * Calls {@link #goTo(long, long, String, boolean)} with newGen fields.
+     */
+    private boolean goToNewGen() throws IOException
+    {
+        return goTo( newGen, newGenGen, "new gen", true );
+    }
+
+    /**
+     * @return generation of {@code pointerId}, if the pointer id was successfully read.
+     */
+    private long readPointerGenOnSuccess( long pointerId )
     {
         if ( GenSafePointerPair.isSuccess( pointerId ) )
         {
-            pointerGen = bTreeNode.pointerGen( cursor, pointerId );
+            return bTreeNode.pointerGen( cursor, pointerId );
         }
+        return -1; // this value doesn't matter
     }
 
+    /**
+     * @return {@code false} if there was a set expectancy on first key in tree node which weren't met,
+     * otherwise {@code true}. Caller should
+     */
     private boolean verifyFirstKeyInNodeIsExpectedAfterGoTo()
     {
         if ( verifyExpectedFirstAfterGoToNext && layout.compare( firstKeyInNode, expectedFirstAfterGoToNext ) != 0 )
@@ -527,14 +558,9 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
         return true;
     }
 
-    private void readPrevSiblingPointerGenOnSuccess()
-    {
-        if ( GenSafePointerPair.isSuccess( prevSiblingId ) )
-        {
-            prevSiblingGen = bTreeNode.pointerGen( cursor, prevSiblingId );
-        }
-    }
-
+    /**
+     * @return the read previous sibling, depending on the direction this seek is going.
+     */
     private long readPrevSibling()
     {
         return seekForward ?
@@ -542,6 +568,9 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
                bTreeNode.rightSibling( cursor, stableGeneration, unstableGeneration );
     }
 
+    /**
+     * @return the read next sibling, depending on the direction this seek is going.
+     */
     private long readNextSibling()
     {
         return seekForward ?
@@ -549,6 +578,11 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
                bTreeNode.leftSibling( cursor, stableGeneration, unstableGeneration );
     }
 
+    /**
+     * Does a binary search for the given {@code key} in the current tree node and returns its position.
+     *
+     * @return position of the {@code key} in the current tree node, or position of the closest key.
+     */
     private int searchKey( KEY key )
     {
         int search = KeySearch.search( cursor, bTreeNode, key, mutableKey, keyCount );
@@ -608,36 +642,29 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
         return keyCount <= maxKeyCount;
     }
 
+    /**
+     * @return the key/value found from the most recent call to {@link #next()} returning {@code true}.
+     * @throws IllegalStateException if no {@link #next()} call which returned {@code true} has been made yet.
+     */
     @Override
     public Hit<KEY,VALUE> get()
     {
+        if ( first )
+        {
+            throw new IllegalStateException( "There has been no successful call to next() yet" );
+        }
+
         return this;
     }
 
-    private boolean goToPrevSibling() throws IOException
-    {
-        if ( pointerCheckingWithGenerationCatchup( prevSiblingId, true ) )
-        {
-            concurrentWriteHappened = true;
-            return true;
-        }
-        else if ( TreeNode.isNode( prevSiblingId ) )
-        {
-            bTreeNode.goTo( cursor, "sibling", prevSiblingId );
-            lastFollowedPointerGen = prevSiblingGen;
-
-            // We go back to previous sibling because we potentially missed some keys that was moved
-            // in opposite direction to which we seek. So when we continue to search for continuation
-            // point in our previous sibling we use binary search.
-            concurrentWriteHappened = true;
-            return true;
-        }
-
-        // There is no prev sibling to go to.
-        return false;
-    }
-
     /**
+     * Moves {@link PageCursor} to next sibling (read before this call into {@link #pointerId}).
+     * Also, on backwards seek, calls {@link #scoutNextSibling()} to be able to verify consistent read on
+     * new sibling even on concurrent writes.
+     * <p>
+     * As with all pointers, the generation is checked for sanity and if generation looks to be in the future,
+     * there's a generation catch-up made and the read will have to be re-attempted.
+     *
      * @return {@code true} if we should read more after this call, otherwise {@code false} to mark the end.
      * @throws IOException on {@link PageCursor} error.
      */
@@ -645,7 +672,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
     {
         if ( pointerCheckingWithGenerationCatchup( pointerId, true ) )
         {
-            // Reading rightSibling pointer resulted in a bad read, but generation had changed
+            // Reading sibling pointer resulted in a bad read, but generation had changed
             // (a checkpoint has occurred since we started this cursor) so the generation fields in this
             // cursor are now updated with the latest, so let's try that read again.
             concurrentWriteHappened = true;
@@ -695,6 +722,18 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
         return false;
     }
 
+    /**
+     * Reads first key on next sibling, without moving the main {@link PageCursor} to that sibling.
+     * This to be able to guard for, and retry read if, concurrent writes moving keys in the "wrong" direction.
+     * The first key read here will be matched after actually moving the main {@link PageCursor} to
+     * the next sibling.
+     * <p>
+     * May only be called if {@link #pointerId} points to next sibling.
+     *
+     * @return {@code true} if first key in next sibling was read successfully, otherwise {@code false},
+     * which means that caller should retry most recent read.
+     * @throws IOException on {@link PageCursor} error.
+     */
     private boolean scoutNextSibling() throws IOException
     {
         // Read header but to local variables and not global once
@@ -725,19 +764,18 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
             }
             checkOutOfBounds( this.cursor );
         }
-        if ( nodeType != TreeNode.NODE_TYPE_TREE_NODE )
-        {
-            // If this node doesn't even look like a tree node then anything we read from it
-            // will be just random data when looking at it as if it were a tree node.
-            return false;
-        }
-        if ( !keyCountIsSane( keyCount ) )
+        if ( nodeType != TreeNode.NODE_TYPE_TREE_NODE || !keyCountIsSane( keyCount ) )
         {
             return false;
         }
         return true;
     }
 
+    /**
+     * @return whether or not the read {@link #mutableKey} is one that should be included in the result.
+     * If this method returns {@code true} then {@link #next()} will return {@code true}.
+     * Returns {@code false} if this happened to be a bad read in the middle of a split or merge or so.
+     */
     private boolean isResultKey()
     {
         if ( !insideStartRange() )
@@ -765,6 +803,10 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
         return true;
     }
 
+    /**
+     * @param keyCount key count of a tree node.
+     * @return {@code true} if key count is sane, i.e. positive and within max expected key count on a tree node.
+     */
     private boolean keyCountIsSane( int keyCount )
     {
         // if keyCount is out of bounds of what a tree node can hold, it must be that we're
@@ -772,6 +814,14 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
         return keyCount >= 0 && keyCount <= maxKeyCount;
     }
 
+    /**
+     * Restarts seek from root, i.e. updates current root (and its generation) and traverses down to
+     * leaf containing the key containing the last returned, or first, key.
+     * <p>
+     * Caller should retry most recent read after calling this method.
+     *
+     * @throws IOException on {@link PageCursor}.
+     */
     private void restartSeekFromRoot() throws IOException
     {
         generationCatchup();
@@ -780,9 +830,18 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
         {
             layout.copyKey( prevKey, fromInclusive );
         }
+        isInternal = true;
         traverseDownToFirstLeaf();
     }
 
+    /**
+     * Verifies that the generation of the tree node arrived at matches the generation of the pointer
+     * pointing to the tree node. Generation of the node cannot be higher than the generation of the pointer -
+     * if it is then it means that the tree node has been removed (or made obsolete) and reused since we read the
+     * pointer pointing to it and that the seek is now in an invalid location and needs to be restarted from the root.
+     *
+     * @return {@code true} if generation matches, otherwise {@code false} if seek needs to be restarted from root.
+     */
     private boolean verifyNodeGenInvariants()
     {
         if ( lastFollowedPointerGen != 0 )
@@ -807,6 +866,15 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
         return true;
     }
 
+    /**
+     * Checks the provided pointer read and if not successful performs a generation catch-up with
+     * {@link #generationSupplier} to allow reading that same pointer again given the updated generation context.
+     *
+     * @param pointer read result to check for success.
+     * @param allowNoNode whether or not pointer is allowed to be "null".
+     * @return {@code true} if there was a generation catch-up called and generation was actually updated,
+     * this means that caller should retry its most recent read.
+     */
     private boolean pointerCheckingWithGenerationCatchup( long pointer, boolean allowNoNode )
     {
         if ( !GenSafePointerPair.isSuccess( pointer ) )
@@ -823,6 +891,13 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
         return false;
     }
 
+    /**
+     * Updates generation using the {@link #generationSupplier}. If there has been a generation change
+     * since construction of this seeker or since last calling this method the generation context in this
+     * seeker is updated.
+     *
+     * @return {@code true} if generation was updated, which means that caller should retry its most recent read.
+     */
     private boolean generationCatchup()
     {
         long newGeneration = generationSupplier.getAsLong();
@@ -835,6 +910,15 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
             return true;
         }
         return false;
+    }
+
+    /**
+     * @return {@code true} if read is sane and can be trusted, otherwise {@code false} meaning that
+     * seek should be restarted from root.
+     */
+    private boolean saneRead()
+    {
+        return nodeType != NODE_TYPE_TREE_NODE || !saneKeyCountRead( keyCount ) || !verifyNodeGenInvariants();
     }
 
     @Override
