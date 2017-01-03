@@ -20,6 +20,7 @@
 package org.neo4j.test;
 
 import java.io.File;
+import java.util.Map;
 
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -68,7 +69,8 @@ public class NeoStoresRule extends ExternalResource
     public NeoStores open( RecordFormats format, String... config )
     {
         efs = new EphemeralFileSystemAbstraction();
-        Config conf = new Config( stringMap( config ) );
+        Map<String,String> defaults = ConfigForTesting.TEST_DEFAULTS.getParams();
+        Config conf = new Config( stringMap( defaults, config ) );
         pageCache = getOrCreatePageCache( conf, efs );
         return open( efs, pageCache, format, config );
     }

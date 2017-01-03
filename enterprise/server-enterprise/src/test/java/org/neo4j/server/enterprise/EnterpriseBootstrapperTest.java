@@ -66,18 +66,6 @@ public class EnterpriseBootstrapperTest extends BaseBootstrapperTest
         return new EnterpriseBootstrapper();
     }
 
-    @Override
-    protected void start(String[] args)
-    {
-        EnterpriseEntryPoint.start( args );
-    }
-
-    @Override
-    protected void stop(String[] args)
-    {
-        EnterpriseEntryPoint.stop( args );
-    }
-
     @Test
     public void shouldBeAbleToStartInSingleMode() throws Exception
     {

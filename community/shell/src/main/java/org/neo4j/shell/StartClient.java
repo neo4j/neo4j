@@ -126,7 +126,12 @@ public class StartClient
     // Visible for testing
     StartClient( PrintStream out, PrintStream err )
     {
-        this.factory = loadEditionDatabaseFactory();
+        this( out, err, loadEditionDatabaseFactory() );
+    }
+
+    StartClient( PrintStream out, PrintStream err, GraphDatabaseFactory factory )
+    {
+        this.factory = factory;
         this.out = out;
         this.err = err;
     }

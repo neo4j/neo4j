@@ -125,13 +125,12 @@ public class LegacyIndexesUpgradeTest
         GraphDatabaseFactory factory = new TestGraphDatabaseFactory();
         GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( testDir.graphDbDir() );
         builder.setConfig( GraphDatabaseSettings.allow_store_upgrade, Boolean.toString( allowUpgread ));
-        builder.setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
         return builder.newGraphDatabase();
     }
 
     private void checkIndexData()
     {
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( testDir.graphDbDir() );
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDir.graphDbDir() );
         try
         {
             IntFunction<String> keyFactory = basicKeyFactory();

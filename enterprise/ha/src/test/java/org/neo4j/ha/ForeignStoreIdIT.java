@@ -28,9 +28,9 @@ import java.io.File;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.EnterpriseGraphDatabaseFactory;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -145,7 +145,7 @@ public class ForeignStoreIdIT
 
     private File createAnotherStore( File directory, int transactions )
     {
-        GraphDatabaseService db = new EnterpriseGraphDatabaseFactory().newEmbeddedDatabase( directory );
+        GraphDatabaseService db = new TestEnterpriseGraphDatabaseFactory().newEmbeddedDatabase( directory );
         createNodes( db, transactions, "node" );
         db.shutdown();
         return directory;

@@ -24,7 +24,6 @@ import org.junit.Test;
 
 import java.io.File;
 
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -38,15 +37,15 @@ import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck.Result;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.logging.NullLog;
+import org.neo4j.test.ConfigForTesting;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.api.index.SchemaIndexProvider.NO_INDEX_PROVIDER;
 import static org.neo4j.kernel.impl.storemigration.StoreFile.NEO_STORE;
@@ -62,13 +61,13 @@ public class StoreMigratorTest
     {
         // GIVEN a store in vE.H.0 format
         File storeDir = directory.directory();
-        new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir )
+        new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir )
                 // The format should be vE.H.0, HighLimit.NAME may point to a different version in future versions
                 .setConfig( GraphDatabaseSettings.record_format, HighLimitV3_0_0.NAME )
                 .newGraphDatabase()
                 .shutdown();
         FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-        Config config = new Config( stringMap( pagecache_memory.name(), "8m" ) );
+        Config config = ConfigForTesting.TEST_DEFAULTS;
 
         try ( PageCache pageCache = new ConfiguringPageCacheFactory( fs, config,
                 NULL, NullLog.getInstance() ).getOrCreatePageCache() )

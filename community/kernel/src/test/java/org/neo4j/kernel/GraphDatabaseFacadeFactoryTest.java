@@ -27,7 +27,6 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import java.io.File;
-import java.util.Collections;
 import java.util.Map;
 
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
@@ -41,6 +40,7 @@ import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.test.ConfigForTesting;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
@@ -78,7 +78,7 @@ public class GraphDatabaseFacadeFactoryTest
         try
         {
             // When
-            db.newFacade( dir.graphDbDir(), Collections.<String,String>emptyMap(), deps, mockFacade );
+            db.newFacade( dir.graphDbDir(), ConfigForTesting.TEST_DEFAULTS.getParams(), deps, mockFacade );
             fail( "Should have thrown " + RuntimeException.class );
         }
         catch ( RuntimeException exception )
@@ -100,7 +100,7 @@ public class GraphDatabaseFacadeFactoryTest
         try
         {
             // When
-            db.newFacade( dir.graphDbDir(), Collections.<String,String>emptyMap(), deps, mockFacade );
+            db.newFacade( dir.graphDbDir(), ConfigForTesting.TEST_DEFAULTS.getParams(), deps, mockFacade );
             fail( "Should have thrown " + RuntimeException.class );
         }
         catch ( RuntimeException exception )

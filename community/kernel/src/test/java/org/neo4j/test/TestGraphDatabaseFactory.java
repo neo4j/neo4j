@@ -85,7 +85,7 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
     {
         super.configure( builder );
         // Reduce the default page cache memory size to 8 mega-bytes for test databases.
-        builder.setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
+        builder.setConfig( ConfigForTesting.TEST_DEFAULTS.getParams() );
         builder.setConfig( GraphDatabaseSettings.auth_store, tempFile( "auth" ).toString() );
     }
 
@@ -112,6 +112,7 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
         return this;
     }
 
+    @Override
     public TestGraphDatabaseFactory setMonitors( Monitors monitors )
     {
         getCurrentState().setMonitors( monitors );

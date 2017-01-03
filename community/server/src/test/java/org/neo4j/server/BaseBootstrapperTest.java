@@ -21,6 +21,9 @@ package org.neo4j.server;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -32,6 +35,7 @@ import org.junit.rules.TemporaryFolder;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.server.configuration.ConfigLoader;
+import org.neo4j.test.ConfigForTesting;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
 import static org.hamcrest.Matchers.equalTo;
@@ -72,15 +76,30 @@ public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
 
     protected abstract ServerBootstrapper newBootstrapper() throws IOException;
 
-    protected abstract void start( String[] args );
+    protected int start( String... config )
+    {
+        return ServerBootstrapper.start( bootstrapper, addTestConfig( config ) );
+    }
 
-    protected abstract void stop( String[] args );
+    private String[] addTestConfig( String[] config )
+    {
+        Map<String,String> testParams = ConfigForTesting.TEST_DEFAULTS.getParams();
+        String[] result = new String[config.length + testParams.size() * 2];
+        System.arraycopy( config, 0, result, 0, config.length );
+        int cursor = config.length;
+        for ( Map.Entry<String,String> testConfig : testParams.entrySet() )
+        {
+            result[cursor++] = "-c";
+            result[cursor++] = configOption( testConfig.getKey(), testConfig.getValue() );
+        }
+        return result;
+    }
 
     @Test
     public void shouldStartStopNeoServerWithoutAnyConfigFiles() throws IOException
     {
         // When
-        int resultCode = ServerBootstrapper.start( bootstrapper,
+        int resultCode = start(
                 "--home-dir", tempDir.newFolder( "home-dir" ).getAbsolutePath(),
                 "-c", configOption( data_directory, tempDir.getRoot().getAbsolutePath() ),
                 "-c", configOption( logs_directory, tempDir.getRoot().getAbsolutePath() ),
@@ -109,9 +128,8 @@ public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
         store( properties, configFile );
 
         // When
-        ServerBootstrapper.start( bootstrapper,
-                "--home-dir", tempDir.newFolder( "home-dir" ).getAbsolutePath(),
-                "--config-dir", configFile.getParentFile().getAbsolutePath() );
+        start( "--home-dir", tempDir.newFolder( "home-dir" ).getAbsolutePath(),
+               "--config-dir", configFile.getParentFile().getAbsolutePath() );
 
         // Then
         assertThat( bootstrapper.getServer().getConfig().get( forced_kernel_id ), equalTo( "ourcustomvalue" ) );
@@ -130,10 +148,9 @@ public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
         store( properties, configFile );
 
         // When
-        ServerBootstrapper.start( bootstrapper,
-                "--home-dir", tempDir.newFolder( "home-dir" ).getAbsolutePath(),
-                "--config-dir", configFile.getParentFile().getAbsolutePath(),
-                "-c", configOption( forced_kernel_id, "mycustomvalue" ) );
+        start( "--home-dir", tempDir.newFolder( "home-dir" ).getAbsolutePath(),
+               "--config-dir", configFile.getParentFile().getAbsolutePath(),
+               "-c", configOption( forced_kernel_id, "mycustomvalue" ) );
 
         // Then
         assertThat( bootstrapper.getServer().getConfig().get( forced_kernel_id ), equalTo( "mycustomvalue" ) );
@@ -141,6 +158,11 @@ public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
 
     protected String configOption( Setting<?> setting, String value )
     {
-        return setting.name() + "=" + value;
+        return configOption( setting.name(), value );
+    }
+
+    protected String configOption( String name, String value )
+    {
+        return name + "=" + value;
     }
 }

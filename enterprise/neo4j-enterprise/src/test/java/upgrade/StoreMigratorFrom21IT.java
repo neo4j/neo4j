@@ -35,7 +35,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Pair;
@@ -44,11 +43,12 @@ import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.security.AccessMode;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.test.ConfigForTesting;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -97,14 +97,14 @@ public class StoreMigratorFrom21IT
 
         File dir = MigrationTestUtils.find21FormatStoreDirectoryWithDuplicateProperties( storeDir.directory() );
 
-        GraphDatabaseBuilder builder = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( dir )
+        GraphDatabaseBuilder builder = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( dir )
                         .setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" );
         GraphDatabaseService database = builder.newGraphDatabase();
         database.shutdown();
         ConsistencyCheckService service = new ConsistencyCheckService();
 
         ConsistencyCheckService.Result result = service.runFullConsistencyCheck( dir.getAbsoluteFile(),
-                Config.empty(), ProgressMonitorFactory.NONE, NullLogProvider.getInstance(), false );
+                ConfigForTesting.TEST_DEFAULTS, ProgressMonitorFactory.NONE, NullLogProvider.getInstance(), false );
         assertTrue( result.isSuccessful() );
 
         database = builder.newGraphDatabase();

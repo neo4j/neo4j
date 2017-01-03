@@ -35,18 +35,19 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.neo4j.test.ConfigForTesting.TEST_DEFAULTS;
 
 public class DynamicIndexStoreViewIT
 {
 
-    private SuppressOutput suppressOutput = SuppressOutput.suppressAll();
-    private TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+    private final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+    private final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
 
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( testDirectory ).around( suppressOutput );
@@ -55,7 +56,7 @@ public class DynamicIndexStoreViewIT
     public void populateDbWithConcurrentUpdates() throws Exception
     {
         GraphDatabaseService database =
-                new GraphDatabaseFactory().newEmbeddedDatabase( testDirectory.graphDbDir() );
+                new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.graphDbDir() );
         try
         {
             int counter = 1;
@@ -99,7 +100,7 @@ public class DynamicIndexStoreViewIT
         {
             database.shutdown();
             ConsistencyCheckService consistencyCheckService = new ConsistencyCheckService();
-            consistencyCheckService.runFullConsistencyCheck( testDirectory.graphDbDir(), Config.empty(),
+            consistencyCheckService.runFullConsistencyCheck( testDirectory.graphDbDir(), TEST_DEFAULTS,
                     ProgressMonitorFactory.NONE, FormattedLogProvider.toOutputStream( System.out ), false );
         }
     }
@@ -107,8 +108,8 @@ public class DynamicIndexStoreViewIT
     private class Populator extends Thread
     {
 
-        private GraphDatabaseService databaseService;
-        private long totalNodes;
+        private final GraphDatabaseService databaseService;
+        private final long totalNodes;
         private volatile boolean terminate;
 
         Populator( GraphDatabaseService databaseService, long totalNodes )
