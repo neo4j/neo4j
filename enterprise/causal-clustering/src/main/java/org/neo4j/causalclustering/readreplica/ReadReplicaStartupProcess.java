@@ -24,6 +24,7 @@ import java.io.IOException;
 import org.neo4j.causalclustering.catchup.storecopy.CopiedStoreRecovery;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFailedException;
+import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
 import org.neo4j.causalclustering.catchup.storecopy.StoreFetcher;
 import org.neo4j.causalclustering.catchup.storecopy.StoreIdDownloadFailedException;
 import org.neo4j.causalclustering.catchup.storecopy.StreamingTransactionsFailedException;
@@ -41,7 +42,6 @@ import static java.lang.String.format;
 
 class ReadReplicaStartupProcess implements Lifecycle
 {
-    private final FileSystemAbstraction fs;
     private final StoreFetcher storeFetcher;
     private final LocalDatabase localDatabase;
     private final Lifecycle txPulling;
@@ -50,22 +50,21 @@ class ReadReplicaStartupProcess implements Lifecycle
     private final Log userLog;
 
     private final RetryStrategy retryStrategy;
-    private final CopiedStoreRecovery copiedStoreRecovery;
     private String lastIssue;
+    private final StoreCopyProcess storeCopyProcess;
 
     ReadReplicaStartupProcess( FileSystemAbstraction fs, StoreFetcher storeFetcher, LocalDatabase localDatabase,
             Lifecycle txPulling, CoreMemberSelectionStrategy connectionStrategy, RetryStrategy retryStrategy,
             LogProvider debugLogProvider, LogProvider userLogProvider, CopiedStoreRecovery copiedStoreRecovery )
     {
-        this.fs = fs;
         this.storeFetcher = storeFetcher;
         this.localDatabase = localDatabase;
         this.txPulling = txPulling;
         this.connectionStrategy = connectionStrategy;
         this.retryStrategy = retryStrategy;
-        this.copiedStoreRecovery = copiedStoreRecovery;
         this.debugLog = debugLogProvider.getLog( getClass() );
         this.userLog = userLogProvider.getLog( getClass() );
+        this.storeCopyProcess = new StoreCopyProcess( fs, localDatabase, copiedStoreRecovery, debugLog );
     }
 
     @Override
@@ -160,8 +159,7 @@ class ReadReplicaStartupProcess implements Lifecycle
 
             debugLog.info( "Copying store from core server %s", source );
             localDatabase.delete();
-            new CopyStoreSafely( fs, localDatabase, copiedStoreRecovery, debugLog )
-                    .copyWholeStoreFrom( source, storeId, storeFetcher );
+            storeCopyProcess.copyWholeStoreFrom( source, storeId, storeFetcher );
 
             debugLog.info( "Restarting local database after copy.", source );
         }

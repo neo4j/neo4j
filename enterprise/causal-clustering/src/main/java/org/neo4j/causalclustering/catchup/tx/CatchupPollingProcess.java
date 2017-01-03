@@ -40,7 +40,7 @@ import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.causalclustering.messaging.routing.CoreMemberSelectionException;
 import org.neo4j.causalclustering.messaging.routing.CoreMemberSelectionStrategy;
-import org.neo4j.causalclustering.readreplica.CopyStoreSafely;
+import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.internal.DatabaseHealth;
@@ -322,7 +322,7 @@ public class CatchupPollingProcess extends LifecycleAdapter
 
         try
         {
-            new CopyStoreSafely( fs, localDatabase, copiedStoreRecovery, log ).
+            new StoreCopyProcess( fs, localDatabase, copiedStoreRecovery, log ).
                     copyWholeStoreFrom( core, localStoreId, storeFetcher );
         }
         catch ( IOException | StoreCopyFailedException | StreamingTransactionsFailedException e )

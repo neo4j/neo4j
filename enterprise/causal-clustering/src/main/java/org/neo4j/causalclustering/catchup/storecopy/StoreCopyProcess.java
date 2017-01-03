@@ -17,29 +17,23 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.readreplica;
+package org.neo4j.causalclustering.catchup.storecopy;
 
 import java.io.IOException;
 
-import org.neo4j.causalclustering.catchup.storecopy.CopiedStoreRecovery;
-import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
-import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFailedException;
-import org.neo4j.causalclustering.catchup.storecopy.StoreFetcher;
-import org.neo4j.causalclustering.catchup.storecopy.StreamingTransactionsFailedException;
-import org.neo4j.causalclustering.catchup.storecopy.TemporaryStoreDirectory;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.Log;
 
-public class CopyStoreSafely
+public class StoreCopyProcess
 {
     private final FileSystemAbstraction fs;
     private final LocalDatabase localDatabase;
     private final CopiedStoreRecovery copiedStoreRecovery;
     private final Log log;
 
-    public CopyStoreSafely( FileSystemAbstraction fs, LocalDatabase localDatabase, CopiedStoreRecovery copiedStoreRecovery, Log log )
+    public StoreCopyProcess( FileSystemAbstraction fs, LocalDatabase localDatabase, CopiedStoreRecovery copiedStoreRecovery, Log log )
     {
         this.fs = fs;
         this.localDatabase = localDatabase;

@@ -29,7 +29,7 @@ import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFailedException;
 import org.neo4j.causalclustering.catchup.storecopy.StoreFetcher;
 import org.neo4j.causalclustering.core.state.CoreState;
-import org.neo4j.causalclustering.readreplica.CopyStoreSafely;
+import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -66,6 +66,8 @@ public class CoreStateDownloader
     public synchronized void downloadSnapshot( MemberId source, CoreState coreState ) throws StoreCopyFailedException
     {
         // TODO: Think about recovery scenarios.
+        StoreCopyProcess storeCopyProcess = new StoreCopyProcess( fs, localDatabase, copiedStoreRecovery, log );
+
         try
         {
             /* Extract some key properties before shutting it down. */
@@ -101,8 +103,7 @@ public class CoreStateDownloader
 
             if ( isEmptyStore )
             {
-                new CopyStoreSafely( fs, localDatabase, copiedStoreRecovery, log ).
-                        copyWholeStoreFrom( source, remoteStoreId, storeFetcher );
+                storeCopyProcess.copyWholeStoreFrom( source, remoteStoreId, storeFetcher );
             }
             else
             {
@@ -114,8 +115,8 @@ public class CoreStateDownloader
                 {
                     log.info( "Failed to pull transactions from " + source + ". They may have been pruned away." );
                     localDatabase.delete();
-                    new CopyStoreSafely( fs, localDatabase, copiedStoreRecovery, log ).
-                            copyWholeStoreFrom( source, localStoreId, storeFetcher );
+
+                    storeCopyProcess.copyWholeStoreFrom( source, localStoreId, storeFetcher );
                 }
                 else if ( catchupResult != SUCCESS_END_OF_STREAM )
                 {
