@@ -28,7 +28,6 @@ import org.neo4j.index.Hit;
 import org.neo4j.io.pagecache.PageCursor;
 
 import static java.lang.Integer.max;
-
 import static org.neo4j.index.gbptree.PageCursorUtil.checkOutOfBounds;
 import static org.neo4j.index.gbptree.TreeNode.NODE_TYPE_TREE_NODE;
 
@@ -427,10 +426,10 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
 
             if ( !seekForward && pos >= keyCount )
             {
-                if ( goTo( prevSiblingId, prevSiblingGen, "prev sibling", true ) )
-                {
-                    continue; // in the read loop above so that we can continue reading from previous sibling
-                }
+                goTo( prevSiblingId, prevSiblingGen, "prev sibling", true );
+                // Continue in the read loop above so that we can continue reading from previous sibling
+                // or on next position
+                continue;
             }
 
             if ( (seekForward && pos >= keyCount) || (!seekForward && pos <= 0 && !insidePrevKey()) )

@@ -363,6 +363,94 @@ public class SeekCursorTest
         assertFalse( "Cursor continued to next leaf even though end of range is within first leaf", nextCalled.get() );
     }
 
+    @Test
+    public void mustFindKeysWhenGivenRangeStartingOutsideStartOfData() throws Exception
+    {
+        // Given
+        // [ 0 1... maxKeyCount-1]
+        for ( int i = 0; i < maxKeyCount; i++ )
+        {
+            insert( i );
+        }
+
+        long expectedkey = 0;
+        try ( SeekCursor<MutableLong, MutableLong> seekCursor = seekCursor( -1, maxKeyCount - 1 ) )
+        {
+            while ( seekCursor.next() )
+            {
+                assertKeyAndValue( seekCursor, expectedkey );
+                expectedkey++;
+            }
+        }
+        assertEquals( expectedkey, maxKeyCount - 1 );
+    }
+
+    @Test
+    public void mustFindKeysWhenGivenRangeStartingOutsideStartOfDataBackwards() throws Exception
+    {
+        // Given
+        // [ 0 1... maxKeyCount-1]
+        for ( int i = 0; i < maxKeyCount; i++ )
+        {
+            insert( i );
+        }
+
+        long expectedkey = maxKeyCount - 1;
+        try ( SeekCursor<MutableLong, MutableLong> seekCursor = seekCursor( maxKeyCount, 0 ) )
+        {
+            while ( seekCursor.next() )
+            {
+                assertKeyAndValue( seekCursor, expectedkey );
+                expectedkey--;
+            }
+        }
+        assertEquals( expectedkey, 0 );
+    }
+
+    @Test
+    public void mustFindKeysWhenGivenRangeEndingOutsideEndOfData() throws Exception
+    {
+        // Given
+        // [ 0 1... maxKeyCount-1]
+        for ( int i = 0; i < maxKeyCount; i++ )
+        {
+            insert( i );
+        }
+
+        long expectedkey = 0;
+        try ( SeekCursor<MutableLong, MutableLong> seekCursor = seekCursor( 0, maxKeyCount + 1 ) )
+        {
+            while ( seekCursor.next() )
+            {
+                assertKeyAndValue( seekCursor, expectedkey );
+                expectedkey++;
+            }
+        }
+        assertEquals( expectedkey, maxKeyCount );
+    }
+
+    @Test
+    public void mustFindKeysWhenGivenRangeEndingOutsideEndOfDataBackwards() throws Exception
+    {
+        // Given
+        // [ 0 1... maxKeyCount-1]
+        for ( int i = 0; i < maxKeyCount; i++ )
+        {
+            insert( i );
+        }
+
+        long expectedkey = maxKeyCount - 1;
+        try ( SeekCursor<MutableLong, MutableLong> seekCursor = seekCursor( maxKeyCount - 1 , -2 ) )
+        {
+            while ( seekCursor.next() )
+            {
+                assertKeyAndValue( seekCursor, expectedkey );
+                expectedkey--;
+            }
+        }
+        assertEquals( expectedkey, -1 );
+    }
+
     /* INSERT */
 
     @Test
