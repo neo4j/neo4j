@@ -142,22 +142,10 @@ public class StoreStatement implements StorageStatement
     }
 
     @Override
-    public Cursor<RelationshipItem> acquireIteratorRelationshipCursor( PrimitiveLongIterator iterator )
-    {
-        neoStores.assertOpen();
-        return iteratorRelationshipCursor.get().init( iterator );
-    }
-
-    @Override
-    public Cursor<NodeItem> nodesGetAllCursor()
-    {
-        return acquireIteratorNodeCursor( new AllIdIterator( nodeStore ) );
-    }
-
-    @Override
     public Cursor<RelationshipItem> relationshipsGetAllCursor()
     {
-        return acquireIteratorRelationshipCursor( new AllIdIterator( relationshipStore ) );
+        neoStores.assertOpen();
+        return iteratorRelationshipCursor.get().init( new AllIdIterator( relationshipStore ) );
     }
 
     @Override
