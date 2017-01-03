@@ -107,7 +107,7 @@ trait GraphIcing {
       val javaParams = javaValues.asDeepJavaMap(params).asInstanceOf[util.Map[String, AnyRef]]
       val contextFactory = Neo4jTransactionalContextFactory.create(graphService,
         locker)
-      val transactionalContext = contextFactory.newContext(QuerySource.UNKNOWN, tx, queryText, javaParams)
+      val transactionalContext = contextFactory.newContext(QuerySource.EMBEDDED_SESSION, tx, queryText, javaParams)
       (tx, transactionalContext)
     }
 

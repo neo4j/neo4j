@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.impl.query;
 
-import org.junit.Test;
-
 import java.time.Clock;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+
+import org.junit.Test;
 
 import org.neo4j.kernel.api.ExecutingQuery;
 import org.neo4j.kernel.impl.query.QueryLoggerKernelExtension.QueryLogger;
@@ -281,12 +281,30 @@ public class QueryLoggerTest
     )
     {
         ExecutingQuery query = mock( ExecutingQuery.class );
-        when( query.querySource() ).thenReturn( new QuerySource( source + " [" + username + "]" ) );
+        when( query.querySource() ).thenReturn( new CustomQuerySource( source, username ) );
         when( query.queryText() ).thenReturn( queryText );
         when( query.queryParameters() ).thenReturn( params );
         when( query.startTime() ).thenReturn( startTime );
         when( query.username() ).thenReturn( username );
         when( query.metaData() ).thenReturn( metaData );
         return query;
+    }
+
+    private static class CustomQuerySource extends QuerySource
+    {
+        private final String source;
+        private final String username;
+
+        private CustomQuerySource( String source, String username )
+        {
+            this.source = source;
+            this.username = username;
+        }
+
+        @Override
+        public String asConnectionDetails()
+        {
+            return String.format( source + " [" + username + "]" );
+        }
     }
 }

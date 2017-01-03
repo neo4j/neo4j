@@ -496,7 +496,7 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
   }
 
   private def runQueryWith(query: String, compiler: CypherCompiler, db: GraphDatabaseQueryService): (List[Map[String, Any]], InternalExecutionResult) = {
-    val querySource = new QuerySource("<--!oO!-->")
+    val querySource = QuerySource.EMBEDDED_SESSION
     val locker = new PropertyContainerLocker()
 
     val contextFactory = Neo4jTransactionalContextFactory.create(db, locker)

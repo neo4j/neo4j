@@ -36,7 +36,7 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
 
   private def createTransactionContext(graphDatabaseCypherService: GraphDatabaseCypherService, transaction: InternalTransaction) = {
     val contextFactory = Neo4jTransactionalContextFactory.create(graphDatabaseCypherService, new PropertyContainerLocker)
-    contextFactory.newContext(QuerySource.UNKNOWN, transaction, "no query", Collections.emptyMap())
+    contextFactory.newContext(QuerySource.EMBEDDED_SESSION, transaction, "no query", Collections.emptyMap())
   }
 
   test("statistics should default to single cardinality on empty db") {

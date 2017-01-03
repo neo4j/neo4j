@@ -51,7 +51,7 @@ public class ExecutingQueryTest
     private final FakeCpuClock cpuClock = new FakeCpuClock();
     private ExecutingQuery query = new ExecutingQuery(
             1,
-            new QuerySource(),
+            QuerySource.EMBEDDED_SESSION,
             "neo4j",
             "hello world",
             Collections.emptyMap(),

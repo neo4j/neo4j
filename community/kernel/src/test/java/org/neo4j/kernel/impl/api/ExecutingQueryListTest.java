@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.api;
 
 import org.junit.Test;
 
-import java.time.Clock;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -116,7 +115,7 @@ public class ExecutingQueryListTest
 
     private ExecutingQuery createExecutingQuery( int queryId, String query )
     {
-        return new ExecutingQuery( queryId, QuerySource.UNKNOWN, "me", query,
+        return new ExecutingQuery( queryId, QuerySource.EMBEDDED_SESSION, "me", query,
                 Collections.emptyMap(), Collections.emptyMap(), Thread.currentThread(),
                 Clocks.nanoClock(),
                 CpuClock.CPU_CLOCK

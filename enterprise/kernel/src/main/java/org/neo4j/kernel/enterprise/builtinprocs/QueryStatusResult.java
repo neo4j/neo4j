@@ -43,10 +43,17 @@ public class QueryStatusResult
     public final Map<String,Object> parameters;
     public final String startTime;
     public final String elapsedTime;
+    @Deprecated
     public final String connectionDetails;
-    public final long cpuTimeMillis;
+//    public final String requestKey;
+//    public final String remoteAddress;
+//    public final String requestUri;
+    /** EXPERIMENTAL: added in Neo4j 3.2 */
+    public final long cpuTimeMillis; // TODO: we want this field to be of a Duration type (when Cypher supports that)
+    /** EXPERIMENTAL: added in Neo4j 3.2 */
     public final Map<String,Object> status;
-    public final long waitTimeMillis;
+    /** EXPERIMENTAL: added in Neo4j 3.2 */
+    public final long waitTimeMillis; // TODO: we want this field to be of a Duration type (when Cypher supports that)
     public final Map<String,Object> metaData;
 
     QueryStatusResult( ExecutingQuery q ) throws InvalidArgumentsException
@@ -84,7 +91,7 @@ public class QueryStatusResult
         this.parameters = parameters;
         this.startTime = formatTime( startTime );
         this.elapsedTime = formatInterval( elapsedTime );
-        this.connectionDetails = querySource.toString();
+        this.connectionDetails = querySource.asConnectionDetails();
         this.metaData = txMetaData;
         this.cpuTimeMillis = cpuTimeMillis;
         this.status = status;

@@ -225,7 +225,7 @@ public class QueryLoggerIT
 
     private QuerySource querySource()
     {
-        return QueryEngineProvider.describe().append( AUTH_DISABLED.username() );
+        return QueryEngineProvider.describe().withUsername( AUTH_DISABLED.username() );
     }
 
     @Test

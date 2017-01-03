@@ -118,13 +118,16 @@ class TransactionStateMachineSPI implements TransactionStateMachine.SPI
     }
 
     @Override
-    public BoltResultHandle executeQuery( String querySource,
+    public BoltResultHandle executeQuery( BoltQuerySource querySource,
             SecurityContext securityContext,
             String statement,
             Map<String,Object> params, ThrowingAction<KernelException> onFail ) throws QueryExecutionKernelException
     {
         InternalTransaction internalTransaction = queryService.beginTransaction( implicit, securityContext );
-        QuerySource sourceDetails = new QuerySource( "bolt-session", querySource );
+        QuerySource sourceDetails = new QuerySource.BoltSession( querySource.principalName,
+                querySource.clientName,
+                querySource.connectionDescriptor.clientAddress,
+                querySource.connectionDescriptor.serverAddress );
         TransactionalContext transactionalContext =
                 contextFactory.newContext( sourceDetails, internalTransaction, statement, params );
 

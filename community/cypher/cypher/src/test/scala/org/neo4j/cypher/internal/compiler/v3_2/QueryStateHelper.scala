@@ -44,7 +44,7 @@ object QueryStateHelper {
   def queryStateFrom(db: GraphDatabaseQueryService, tx: InternalTransaction, params: Map[String, Any] = Map.empty): QueryState = {
     val searchMonitor = new KernelMonitors().newMonitor(classOf[IndexSearchMonitor])
     val contextFactory = Neo4jTransactionalContextFactory.create(db, locker)
-    val transactionalContext = TransactionalContextWrapper(contextFactory.newContext(QuerySource.UNKNOWN, tx, "X", Collections.emptyMap()))
+    val transactionalContext = TransactionalContextWrapper(contextFactory.newContext(QuerySource.EMBEDDED_SESSION, tx, "X", Collections.emptyMap()))
     val queryContext = new TransactionBoundQueryContext(transactionalContext)(searchMonitor)
     newWith(db = db, query = queryContext, params = params)
   }

@@ -235,7 +235,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
 
   private def transactionContext(graph: GraphDatabaseQueryService, tx: InternalTransaction) = {
     val contextFactory = Neo4jTransactionalContextFactory.create(graph, new PropertyContainerLocker)
-    contextFactory.newContext(QuerySource.UNKNOWN, tx, "X", Collections.emptyMap())
+    contextFactory.newContext(QuerySource.EMBEDDED_SESSION, tx, "X", Collections.emptyMap())
   }
 
   //executes the provided pipes and returns execution times

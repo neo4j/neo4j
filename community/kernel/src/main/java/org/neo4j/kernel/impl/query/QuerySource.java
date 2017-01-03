@@ -19,33 +19,118 @@
  */
 package org.neo4j.kernel.impl.query;
 
-public class QuerySource
+import java.io.Serializable;
+import java.net.SocketAddress;
+
+import static java.util.Objects.requireNonNull;
+
+public abstract class QuerySource
 {
-    private final String[] parts;
+    public abstract String asConnectionDetails();
 
-    public static final QuerySource UNKNOWN = new QuerySource( "<unknown>");
-
-    public QuerySource( String ... parts )
+    public QuerySource withUsername( String username )
     {
-        this.parts = parts;
+        return new SessionWithUsername( this, username );
     }
 
-    public QuerySource append( String newPart )
+    public static final QuerySource EMBEDDED_SESSION = new QuerySource()
     {
-        String[] newParts = new String[parts.length + 1];
-        System.arraycopy( parts, 0, newParts, 0, parts.length );
-        newParts[parts.length] = newPart;
-        return new QuerySource( newParts );
+        @Override
+        public String asConnectionDetails()
+        {
+            return "embedded-session\t";
+        }
+    };
+
+    public static class BoltSession extends QuerySource
+    {
+        private final String principalName;
+        private final String clientName;
+        private final SocketAddress clientAddress;
+        private final SocketAddress serverAddress;
+
+        public BoltSession(
+                String principalName,
+                String clientName,
+                SocketAddress clientAddress,
+                SocketAddress serverAddress )
+        {
+            this.principalName = principalName;
+            this.clientName = clientName;
+            this.clientAddress = clientAddress;
+            this.serverAddress = serverAddress;
+        }
+
+        @Override
+        public String asConnectionDetails()
+        {
+            return String.format( "bolt-session\tbolt\t%s\t%s\t\tclient%s\tserver%s>",
+                    principalName,
+                    clientName,
+                    clientAddress,
+                    serverAddress );
+        }
     }
 
-    @Override
-    public String toString()
+    public static class ServerSession extends QuerySource
     {
-        return toString( "\t" );
+        private final String scheme;
+        private final String remoteAddr;
+        private final String requestURI;
+
+        public ServerSession()
+        {
+            this.scheme = null;
+            this.remoteAddr = null;
+            this.requestURI = null;
+        }
+
+        public ServerSession( String scheme, String remoteAddr, String requestURI )
+        {
+            this.scheme = requireNonNull( scheme, "scheme" );
+            this.remoteAddr = requireNonNull( remoteAddr, "remoteAddr" );
+            this.requestURI = requireNonNull( requestURI, "requestURI" );
+        }
+
+        @Override
+        public String asConnectionDetails()
+        {
+            return scheme == null ? "server-session" : String.join( "\t",
+                "server-session", scheme, remoteAddr, requestURI );
+        }
     }
 
-    public String toString( String sep )
+    public static class ShellSession extends QuerySource
     {
-        return String.join( sep, parts );
+        private final Serializable id;
+
+        public ShellSession( Serializable id )
+        {
+            this.id = id;
+        }
+
+        @Override
+        public String asConnectionDetails()
+        {
+            return "shell-session\tshell\t" + id;
+        }
+    }
+
+    private static class SessionWithUsername extends QuerySource
+    {
+        private final QuerySource source;
+        private final String username;
+
+        private SessionWithUsername( QuerySource source, String username )
+        {
+            this.source = source;
+            this.username = username;
+        }
+
+        @Override
+        public String asConnectionDetails()
+        {
+            return source.asConnectionDetails() + '\t' + username;
+        }
     }
 }

@@ -62,6 +62,6 @@ public abstract class QueryEngineProvider extends Service
 
     public static QuerySource describe()
     {
-        return new QuerySource( "embedded-session" );
+        return QuerySource.EMBEDDED_SESSION;
     }
 }

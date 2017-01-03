@@ -210,7 +210,7 @@ public class Start extends TransactionProvidingApp
     {
         public static QuerySource describe( Session session )
         {
-            return new QuerySource( "shell-session", "shell", session.getId().toString() );
+            return new QuerySource.ShellSession( session.getId() );
         }
     }
 }

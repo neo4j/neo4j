@@ -19,16 +19,17 @@
  */
 package org.neo4j.bolt.v1.runtime;
 
-import org.junit.After;
-import org.junit.Test;
-
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.time.Clock;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
+
+import org.junit.After;
+import org.junit.Test;
 
 import org.neo4j.bolt.security.auth.AuthenticationException;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
@@ -59,6 +60,9 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class ResetFuzzTest
 {
+    private static final BoltConnectionDescriptor CONNECTION_DESCRIPTOR = new BoltConnectionDescriptor(
+            new InetSocketAddress( "<testClient>", 56789 ),
+            new InetSocketAddress( "<testServer>", 7468 ) );
     // Because RESET has a "call ahead" mechanism where it will interrupt
     // the session before RESET arrives in order to purge any statements
     // ahead in the message queue, we use this test to convince ourselves
@@ -90,7 +94,7 @@ public class ResetFuzzTest
     {
         // given
         life.start();
-        BoltWorker boltWorker = sessions.newWorker( "<test>" );
+        BoltWorker boltWorker = sessions.newWorker( CONNECTION_DESCRIPTOR );
         boltWorker.enqueue( session -> session.init( "ResetFuzzTest/0.0", map(), nullResponseHandler() ) );
 
         BoltMessageRouter router = new BoltMessageRouter(
@@ -174,9 +178,9 @@ public class ResetFuzzTest
     private class FuzzStubSPI implements BoltStateMachine.SPI
     {
         @Override
-        public String connectionDescriptor()
+        public BoltConnectionDescriptor connectionDescriptor()
         {
-            return "<test>";
+            return CONNECTION_DESCRIPTOR;
         }
 
         @Override

@@ -19,6 +19,7 @@
  */
 package org.neo4j.bolt.v1.runtime.cypher;
 
+import org.neo4j.bolt.v1.runtime.BoltQuerySource;
 import org.neo4j.bolt.v1.runtime.spi.BoltResult;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.kernel.api.exceptions.KernelException;
@@ -38,5 +39,8 @@ public interface StatementProcessor
 
     boolean hasTransaction();
 
-    void setQuerySource( String querySource );
+    // NOTE: if this interface moved to the parent package, BoltQuerySource could be package-private
+    // in fact, this entire `cypher` package does not really seem to server a special purpose, and could be merged
+    // with its parent package.
+    void setQuerySource( BoltQuerySource querySource );
 }

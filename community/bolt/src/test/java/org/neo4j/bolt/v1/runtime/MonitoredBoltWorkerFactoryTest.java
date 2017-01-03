@@ -21,6 +21,7 @@ package org.neo4j.bolt.v1.runtime;
 
 import org.junit.Test;
 
+import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.bolt.v1.runtime.MonitoredWorkerFactory.MonitoredBoltWorker;
@@ -33,7 +34,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyObject;
-import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
@@ -41,6 +41,11 @@ import static org.neo4j.time.Clocks.systemClock;
 
 public class MonitoredBoltWorkerFactoryTest
 {
+    private static final BoltConnectionDescriptor CONNECTION_DESCRIPTOR =
+            new BoltConnectionDescriptor(
+                    new InetSocketAddress( "<testClient>", 56789 ),
+                    new InetSocketAddress( "<testServer>", 7468 ) );
+
     @Test
     public void shouldSignalReceivedStartAndComplete() throws Throwable
     {
@@ -49,7 +54,7 @@ public class MonitoredBoltWorkerFactoryTest
 
         WorkerFactory delegate = mock( WorkerFactory.class );
         BoltStateMachine machine = mock( BoltStateMachine.class );
-        when( delegate.newWorker( anyString(), anyObject() ) )
+        when( delegate.newWorker( anyObject(), anyObject() ) )
                 .thenReturn( new BoltWorker()
                 {
                     @Override
@@ -85,7 +90,7 @@ public class MonitoredBoltWorkerFactoryTest
         monitors.addMonitorListener( monitor );
 
         MonitoredWorkerFactory workerFactory = new MonitoredWorkerFactory( monitors, delegate, clock );
-        BoltWorker worker = workerFactory.newWorker( "<test>" );
+        BoltWorker worker = workerFactory.newWorker( CONNECTION_DESCRIPTOR );
 
         // when
         worker.enqueue( ( stateMachine ) -> {
@@ -109,13 +114,13 @@ public class MonitoredBoltWorkerFactoryTest
         monitors.addMonitorListener( monitor );
 
         WorkerFactory mockWorkers = mock( WorkerFactory.class );
-        when( mockWorkers.newWorker( anyString(), any() ) ).thenReturn( mock( BoltWorker.class ) );
+        when( mockWorkers.newWorker( anyObject(), any() ) ).thenReturn( mock( BoltWorker.class ) );
 
         MonitoredWorkerFactory workerFactory = new MonitoredWorkerFactory( monitors, mockWorkers, systemClock() );
 
         for ( int i = 0; i < workersCount; i++ )
         {
-            workerFactory.newWorker( "<test>" );
+            workerFactory.newWorker( CONNECTION_DESCRIPTOR );
         }
 
         assertEquals( workersCount, monitor.sessionsStarted );
@@ -131,14 +136,15 @@ public class MonitoredBoltWorkerFactoryTest
         // after monitor listeners are added
         WorkerFactory workerFactory = mock( WorkerFactory.class );
         BoltWorker innerSession = mock( BoltWorker.class );
-        when( workerFactory.newWorker( anyString(), anyObject() ) )
+        when( workerFactory.newWorker( anyObject(), anyObject() ) )
                 .thenReturn( innerSession );
 
         Monitors monitors = new Monitors();
         MonitoredWorkerFactory monitoredWorkerFactory = new MonitoredWorkerFactory( monitors, workerFactory, Clocks.fakeClock() );
 
         // When
-        BoltWorker worker = monitoredWorkerFactory.newWorker( "<test>" );
+
+        BoltWorker worker = monitoredWorkerFactory.newWorker( CONNECTION_DESCRIPTOR );
 
         // Then
         assertEquals( innerSession, worker );
@@ -147,7 +153,7 @@ public class MonitoredBoltWorkerFactoryTest
         monitors.addMonitorListener( new CountingSessionMonitor() );
 
         // Then new sessions should be monitored
-        assertThat( monitoredWorkerFactory.newWorker( "<test>" ), instanceOf( MonitoredBoltWorker.class ) );
+        assertThat( monitoredWorkerFactory.newWorker( CONNECTION_DESCRIPTOR ), instanceOf( MonitoredBoltWorker.class ) );
     }
 
     private static class CountingSessionMonitor implements MonitoredWorkerFactory.SessionMonitor
