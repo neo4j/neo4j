@@ -47,11 +47,98 @@ import static org.neo4j.index.gbptree.TreeNode.NODE_TYPE_TREE_NODE;
  * (as defined by {@link Layout#compare(Object, Object)}). Direction is decided on relation between
  * {@link #fromInclusive} and {@link #toExclusive}. Backwards seek is expected to be slower than forwards seek
  * because extra care needs to be taken to make sure no keys are skipped when keys are move to the right in the tree.
+ * See detailed documentation about difficult cases below.
  * <pre>
  * If fromInclusive <= toExclusive, then seek forwards, otherwise seek backwards
  * </pre>
  * <p>
  * Implementation note: there are assumptions that keys are unique in the tree.
+ * <p>
+ * <strong>Note on backwards seek</strong>
+ * <p>
+ * To allow for lock free concurrency control the GBPTree agree to only move keys between nodes in 'forward' direction,
+ * from left to right. This means when we do normal forward seek we never risk having keys moved 'passed' us and
+ * therefore we can always be sure that we never miss any keys when traversing the leaf nodes or end up in the middle
+ * of the range when traversing down the internal nodes. This assumption, of course, does not hold when seeking
+ * backwards.
+ * There are two complicated cases where we risk missing keys.
+ * Case 1 - Split in current node
+ * Case 2 - Split in next node while seeker is moving to that node
+ * <p>
+ * <strong>Case 1 - Split in current node</strong>
+ * <p>
+ * <em>Forward seek</em>
+ * <p>
+ * Here, the seeker is seeking forward and has read K0, K1, K2 and is about to read K3.
+ * Then K4 is suddenly inserted and a split happens.
+ * Seeker will now wake up and find that he is now outside the range of (previously returned key, end of range).
+ * But he knows that he can continue to read forward until he hits the previously returned key, which is K2 and
+ * then continue to return the next key, K3.
+ * <pre>
+ *     Seeker->
+ *        v
+ * [K0 K1 K2 K3]
+ *
+ *     Seeker->
+ *        v
+ * [K0 K1 __ __]<->[K2 K3 K4 __]
+ * </pre>
+ * <em>Backward seek</em>
+ * <p>
+ * Here, the seeking is seeking backwards and has only read K3 and is about to read K2.
+ * Again, K4 is inserted, causing the same split as above.
+ * Seeker now wakes up and find that the next key he can return is K1. What he do not see is that K2 has been
+ * moved to the previous sibling and so, because he can not find the previously returned key, K3, in the current
+ * node and because the next to return, K1, is located to the far right in the current node he need to jump back to
+ * the previous sibling to find where to start again.
+ * <pre>
+ *      <-Seeker
+ *           v
+ * [K0 K1 K2 K3]
+ *
+ *      <-Seeker (WRONG)
+ *           v
+ * [K0 K1 __ __]<->[K2 K3 K4 __]
+ *
+ *                <-Seeker (RIGHT)
+ *                     v
+ * [K0 K1 __ __]<->[K2 K3 K4 __]
+ * </pre>
+ * <p>
+ * <strong>Case 2 - Split in next node while seeker is moving to that node</strong>
+ * <p>
+ * <em>Forward seek</em>
+ * <p>
+ * Seeker has read K0, K1 on node 1  and has just moved to right sibling, node 2.
+ * Now, K6 is inserted and a split  happens in node 2, right sibling of node 1.
+ * Seeker wakes up and continues to read on node 2. Everything is fine.
+ * <pre>
+ *                   Seeker->
+ *                      v
+ * 1:[K0 K1 __ __]<->2:[K2 K3 K4 K5]
+ *
+ *                   Seeker->
+ *                      v
+ * 1:[K0 K1 __ __]<->2:[K2 K3 __ __]<->3:[K4 K5 K6 __]
+ * </pre>
+ * <em>Backward seek</em>
+ * <p>
+ * Seeker has read K4, K5 and has just moved to left sibling, node 1.
+ * Insert K6, split in node 2. Note that keys are move to node 3, passed our seeker.
+ * Seeker wakes up and see K1 as next key but misses K3 and K2.
+ * <pre>
+ *       <--Seeker
+ *             v
+ * 1:[K0 K1 K2 K3]<->2:[K4 K5 __ __]
+ *
+ *        <-Seeker
+ *             v
+ * 1:[K0 K1 __ __]<->3:[K2 K3 K4 __]<->2:[K5 K6 __ __]
+ * </pre>
+ * To guard for this, seeker 'scout' next sibling before moving there and read first key that he expect to see, K3
+ * in this case. By using a linked cursor to 'scout' we create a consistent read over the node gap. If there us
+ * suddenly another key when he goes there he knows that he could have missed some keys and he needs to go back until
+ * he find the place where he left off, K4.
  */
 class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hit<KEY,VALUE>
 {
