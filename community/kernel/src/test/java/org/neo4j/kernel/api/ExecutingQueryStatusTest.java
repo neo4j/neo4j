@@ -62,7 +62,7 @@ public class ExecutingQueryStatusTest
         // then
         Map<String,Object> expected = new HashMap<>();
         expected.put( "state", "WAITING" );
-        expected.put( "time", 17L );
+        expected.put( "waitTimeMillis", 17L );
         expected.put( "resourceType", "NODE" );
         expected.put( "resourceIds", resourceIds );
         assertEquals( expected, statusMap );

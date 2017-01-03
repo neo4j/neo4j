@@ -20,7 +20,6 @@
 package org.neo4j.kernel.api;
 
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
@@ -31,6 +30,7 @@ import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.time.CpuClock;
 import org.neo4j.time.SystemNanoClock;
 
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.atomic.AtomicLongFieldUpdater.newUpdater;
 
 /**
@@ -42,7 +42,6 @@ public class ExecutingQuery
             newUpdater( ExecutingQuery.class, "waitTimeNanos" );
     private final long queryId;
     private final Locks.Tracer lockTracer = ExecutingQuery.this::waitForLock;
-
     private final String username;
     private final QuerySource querySource;
     private final String queryText;
@@ -97,7 +96,6 @@ public class ExecutingQuery
         ExecutingQuery that = (ExecutingQuery) o;
 
         return queryId == that.queryId;
-
     }
 
     @Override
@@ -136,7 +134,7 @@ public class ExecutingQuery
         return startTime;
     }
 
-    public long elapsedTime()
+    public long elapsedTimeMillis()
     {
         return clock.millis() - startTime;
     }
@@ -144,14 +142,14 @@ public class ExecutingQuery
     /**
      * @return the CPU time used by the query, in nanoseconds.
      */
-    public long cpuTime()
+    public long cpuTimeMicros()
     {
-        return cpuClock.cpuTimeNanos( threadExecutingTheQuery ) - cpuTimeNanosWhenQueryStarted;
+        return NANOSECONDS.toMicros( cpuClock.cpuTimeNanos( threadExecutingTheQuery ) - cpuTimeNanosWhenQueryStarted );
     }
 
-    public long waitTime()
+    public long waitTimeMillis()
     {
-        return TimeUnit.NANOSECONDS.toMillis( waitTimeNanos + status.waitTimeNanos( clock ) );
+        return NANOSECONDS.toMillis( waitTimeNanos + status.waitTimeNanos( clock ) );
     }
 
     @Override

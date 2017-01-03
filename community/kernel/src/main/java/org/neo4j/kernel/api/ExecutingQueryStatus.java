@@ -82,7 +82,7 @@ abstract class ExecutingQueryStatus
         {
             Map<String,Object> map = new HashMap<>();
             map.put( "state", "WAITING" );
-            map.put( "time", TimeUnit.NANOSECONDS.toMillis( waitTimeNanos( clock ) ) );
+            map.put( "waitTimeMillis", TimeUnit.NANOSECONDS.toMillis( waitTimeNanos( clock ) ) );
             map.put( "resourceType", resourceType.toString() );
             map.put( "resourceIds", resourceIds );
             return map;

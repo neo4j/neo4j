@@ -44,9 +44,9 @@ public class QueryStatusResult
     public final String startTime;
     public final String elapsedTime;
     public final String connectionDetails;
-    public final long cpuTime;
+    public final long cpuTimeMicros;
     public final Map<String,Object> status;
-    public final long waitTime;
+    public final long waitTimeMillis;
     public final Map<String,Object> metaData;
 
     QueryStatusResult( ExecutingQuery q ) throws InvalidArgumentsException
@@ -57,12 +57,12 @@ public class QueryStatusResult
                 q.queryText(),
                 q.queryParameters(),
                 q.startTime(),
-                q.elapsedTime(),
+                q.elapsedTimeMillis(),
                 q.querySource(),
                 q.metaData(),
-                q.cpuTime(),
+                q.cpuTimeMicros(),
                 q.status(),
-                q.waitTime() );
+                q.waitTimeMillis() );
     }
 
     private QueryStatusResult(
@@ -74,9 +74,9 @@ public class QueryStatusResult
             long elapsedTime,
             QuerySource querySource,
             Map<String,Object> txMetaData,
-            long cpuTime,
+            long cpuTimeMicros,
             Map<String,Object> status,
-            long waitTime
+            long waitTimeMillis
     ) {
         this.queryId = queryId.toString();
         this.username = username;
@@ -86,9 +86,9 @@ public class QueryStatusResult
         this.elapsedTime = formatInterval( elapsedTime );
         this.connectionDetails = querySource.toString();
         this.metaData = txMetaData;
-        this.cpuTime = cpuTime;
+        this.cpuTimeMicros = cpuTimeMicros;
         this.status = status;
-        this.waitTime = waitTime;
+        this.waitTimeMillis = waitTimeMillis;
     }
 
     private static String formatTime( final long startTime )

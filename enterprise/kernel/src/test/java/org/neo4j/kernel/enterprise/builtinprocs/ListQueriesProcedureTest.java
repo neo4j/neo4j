@@ -102,8 +102,8 @@ public class ListQueriesProcedureTest
             Map<String,Object> data = getQueryListing( "MATCH (n) SET n.v = n.v + 1" );
 
             // then
-            assertTrue( "should contain a 'cpuTime' field", data.containsKey( "cpuTime" ) );
-            Object cpuTime1 = data.get( "cpuTime" );
+            assertTrue( "should contain a 'cpuTimeMicros' field", data.containsKey( "cpuTimeMicros" ) );
+            Object cpuTime1 = data.get( "cpuTimeMicros" );
             assertThat( cpuTime1, instanceOf( Long.class ) );
             assertTrue( "should contain a 'status' field", data.containsKey( "status" ) );
             Object status = data.get( "status" );
@@ -113,17 +113,17 @@ public class ListQueriesProcedureTest
             assertEquals( "WAITING", statusMap.get( "state" ) );
             assertEquals( "NODE", statusMap.get( "resourceType" ) );
             assertArrayEquals( new long[]{node.getId()}, (long[]) statusMap.get( "resourceIds" ) );
-            assertTrue( "should contain a 'waitTime' field", data.containsKey( "waitTime" ) );
-            Object waitTime1 = data.get( "waitTime" );
+            assertTrue( "should contain a 'waitTimeMillis' field", data.containsKey( "waitTimeMillis" ) );
+            Object waitTime1 = data.get( "waitTimeMillis" );
             assertThat( waitTime1, instanceOf( Long.class ) );
 
             // when
             data = getQueryListing( "MATCH (n) SET n.v = n.v + 1" );
 
             // then
-            Long cpuTime2 = (Long) data.get( "cpuTime" );
+            Long cpuTime2 = (Long) data.get( "cpuTimeMicros" );
             assertThat( cpuTime2, greaterThan( (Long) cpuTime1 ) );
-            Long waitTime2 = (Long) data.get( "waitTime" );
+            Long waitTime2 = (Long) data.get( "waitTimeMillis" );
             assertThat( waitTime2, greaterThan( (Long) waitTime1 ) );
         }
         finally

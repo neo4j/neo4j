@@ -65,7 +65,7 @@ public class ExecutingQueryTest
     {
         // when
         clock.forward( 10, TimeUnit.SECONDS );
-        long elapsedTime = query.elapsedTime();
+        long elapsedTime = query.elapsedTimeMillis();
 
         // then
         assertEquals( 10_000, elapsedTime );
@@ -86,13 +86,13 @@ public class ExecutingQueryTest
             // then
             assertThat( query.status(), CoreMatchers.<Map<String,Object>>allOf(
                     hasEntry( "state", "WAITING" ),
-                    hasEntry( "time", 5_000L ),
+                    hasEntry( "waitTimeMillis", 5_000L ),
                     hasEntry( "resourceType", "NODE" ),
                     hasEntry( equalTo( "resourceIds" ), longArray( 17 ) ) ) );
-            assertEquals( 5_000, query.waitTime() );
+            assertEquals( 5_000, query.waitTimeMillis() );
         }
         assertEquals( singletonMap( "state", "RUNNING" ), query.status() );
-        assertEquals( 5_000, query.waitTime() );
+        assertEquals( 5_000, query.waitTimeMillis() );
 
         // when
         clock.forward( 2, TimeUnit.SECONDS );
@@ -103,13 +103,13 @@ public class ExecutingQueryTest
             // then
             assertThat( query.status(), CoreMatchers.<Map<String,Object>>allOf(
                     hasEntry( "state", "WAITING" ),
-                    hasEntry( "time", 1_000L ),
+                    hasEntry( "waitTimeMillis", 1_000L ),
                     hasEntry( "resourceType", "RELATIONSHIP" ),
                     hasEntry( equalTo( "resourceIds" ), longArray( 612 ) ) ) );
-            assertEquals( 6_000, query.waitTime() );
+            assertEquals( 6_000, query.waitTimeMillis() );
         }
         assertEquals( singletonMap( "state", "RUNNING" ), query.status() );
-        assertEquals( 6_000, query.waitTime() );
+        assertEquals( 6_000, query.waitTimeMillis() );
     }
 
     @Test
@@ -119,10 +119,10 @@ public class ExecutingQueryTest
         cpuClock.add( 60, TimeUnit.MILLISECONDS );
 
         // when
-        long cpuTime = query.cpuTime();
+        long cpuTime = query.cpuTimeMicros();
 
         // then
-        assertEquals( 60_000_000, cpuTime );
+        assertEquals( 60_000, cpuTime );
     }
 
     private Locks.WaitEvent lock( String resourceType, long resourceId )
