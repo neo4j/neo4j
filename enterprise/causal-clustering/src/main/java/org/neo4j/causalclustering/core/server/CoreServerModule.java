@@ -32,7 +32,7 @@ import org.neo4j.causalclustering.catchup.storecopy.CopiedStoreRecovery;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyClient;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
-import org.neo4j.causalclustering.catchup.storecopy.StoreFetcher;
+import org.neo4j.causalclustering.catchup.storecopy.RemoteStore;
 import org.neo4j.causalclustering.catchup.tx.TransactionLogCatchUpFactory;
 import org.neo4j.causalclustering.catchup.tx.TxPullClient;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
@@ -117,7 +117,7 @@ public class CoreServerModule
         CatchUpClient catchUpClient = life.add( new CatchUpClient( clusteringModule.topologyService(), logProvider,
                 Clocks.systemClock(), inactivityTimeoutMillis, monitors ) );
 
-        StoreFetcher storeFetcher = new StoreFetcher( logProvider, fileSystem, platformModule.pageCache,
+        RemoteStore remoteStore = new RemoteStore( logProvider, fileSystem, platformModule.pageCache,
                 new StoreCopyClient( catchUpClient, logProvider ), new TxPullClient( catchUpClient, platformModule.monitors ),
                 new TransactionLogCatchUpFactory(), platformModule.monitors );
 
@@ -127,11 +127,11 @@ public class CoreServerModule
                 platformModule.kernelExtensions.listFactories(), platformModule.pageCache );
         life.add( copiedStoreRecovery );
 
-        StoreCopyProcess storeCopyProcess = new StoreCopyProcess( fileSystem, localDatabase, copiedStoreRecovery, storeFetcher, logProvider );
+        StoreCopyProcess storeCopyProcess = new StoreCopyProcess( fileSystem, localDatabase, copiedStoreRecovery, remoteStore, logProvider );
 
         LifeSupport servicesToStopOnStoreCopy = new LifeSupport();
         CoreStateDownloader downloader = new CoreStateDownloader( localDatabase, servicesToStopOnStoreCopy,
-                storeFetcher, catchUpClient, logProvider, storeCopyProcess );
+                remoteStore, catchUpClient, logProvider, storeCopyProcess );
 
         if ( config.get( OnlineBackupSettings.online_backup_enabled ) )
         {

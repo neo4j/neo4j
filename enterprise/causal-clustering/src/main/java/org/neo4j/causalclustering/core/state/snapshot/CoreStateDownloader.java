@@ -26,7 +26,7 @@ import org.neo4j.causalclustering.catchup.CatchUpResponseAdaptor;
 import org.neo4j.causalclustering.catchup.CatchupResult;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFailedException;
-import org.neo4j.causalclustering.catchup.storecopy.StoreFetcher;
+import org.neo4j.causalclustering.catchup.storecopy.RemoteStore;
 import org.neo4j.causalclustering.core.state.CoreState;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
 import org.neo4j.causalclustering.identity.MemberId;
@@ -42,18 +42,18 @@ public class CoreStateDownloader
 {
     private final LocalDatabase localDatabase;
     private final Lifecycle startStopOnStoreCopy;
-    private final StoreFetcher storeFetcher;
+    private final RemoteStore remoteStore;
     private final CatchUpClient catchUpClient;
     private final Log log;
     private final StoreCopyProcess storeCopyProcess;
 
     public CoreStateDownloader( LocalDatabase localDatabase, Lifecycle startStopOnStoreCopy,
-            StoreFetcher storeFetcher, CatchUpClient catchUpClient, LogProvider logProvider,
+            RemoteStore remoteStore, CatchUpClient catchUpClient, LogProvider logProvider,
             StoreCopyProcess storeCopyProcess )
     {
         this.localDatabase = localDatabase;
         this.startStopOnStoreCopy = startStopOnStoreCopy;
-        this.storeFetcher = storeFetcher;
+        this.remoteStore = remoteStore;
         this.catchUpClient = catchUpClient;
         this.log = logProvider.getLog( getClass() );
         this.storeCopyProcess = storeCopyProcess;
@@ -68,7 +68,7 @@ public class CoreStateDownloader
             /* Extract some key properties before shutting it down. */
             boolean isEmptyStore = localDatabase.isEmpty();
 
-            StoreId remoteStoreId = storeFetcher.getStoreIdOf( source );
+            StoreId remoteStoreId = remoteStore.getStoreId( source );
             if ( !isEmptyStore && !remoteStoreId.equals( localDatabase.storeId() ) )
             {
                 throw new StoreCopyFailedException( "StoreId mismatch and not empty" );
@@ -104,7 +104,7 @@ public class CoreStateDownloader
             {
                 StoreId localStoreId = localDatabase.storeId();
                 CatchupResult catchupResult =
-                        storeFetcher.tryCatchingUp( source, localStoreId, localDatabase.storeDir() );
+                        remoteStore.tryCatchingUp( source, localStoreId, localDatabase.storeDir() );
 
                 if ( catchupResult == E_TRANSACTION_PRUNED )
                 {

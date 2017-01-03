@@ -46,7 +46,10 @@ import static org.neo4j.causalclustering.catchup.CatchupResult.SUCCESS_END_OF_BA
 import static org.neo4j.causalclustering.catchup.CatchupResult.SUCCESS_END_OF_STREAM;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
-public class StoreFetcher
+/**
+ * Entry point for remote store related RPC.
+ */
+public class RemoteStore
 {
     private final Log log;
     private final Monitors monitors;
@@ -57,7 +60,7 @@ public class StoreFetcher
     private final TxPullClient txPullClient;
     private final TransactionLogCatchUpFactory transactionLogFactory;
 
-    public StoreFetcher( LogProvider logProvider,
+    public RemoteStore( LogProvider logProvider,
             FileSystemAbstraction fs, PageCache pageCache,
             StoreCopyClient storeCopyClient, TxPullClient txPullClient,
             TransactionLogCatchUpFactory transactionLogFactory,
@@ -133,7 +136,7 @@ public class StoreFetcher
         return pullTransactions( from, expectedStoreId, storeDir, pullIndex, false );
     }
 
-    public void copyStore( MemberId from, StoreId expectedStoreId, File destDir )
+    public void copy( MemberId from, StoreId expectedStoreId, File destDir )
             throws StoreCopyFailedException, StreamingTransactionsFailedException
     {
         try
@@ -180,7 +183,7 @@ public class StoreFetcher
         }
     }
 
-    public StoreId getStoreIdOf( MemberId from ) throws StoreIdDownloadFailedException
+    public StoreId getStoreId( MemberId from ) throws StoreIdDownloadFailedException
     {
         return storeCopyClient.fetchStoreId( from );
     }

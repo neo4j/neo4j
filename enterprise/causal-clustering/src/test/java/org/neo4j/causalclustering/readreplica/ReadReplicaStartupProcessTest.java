@@ -27,7 +27,7 @@ import java.util.UUID;
 
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
-import org.neo4j.causalclustering.catchup.storecopy.StoreFetcher;
+import org.neo4j.causalclustering.catchup.storecopy.RemoteStore;
 import org.neo4j.causalclustering.catchup.storecopy.StoreIdDownloadFailedException;
 import org.neo4j.causalclustering.helper.ConstantTimeRetryStrategy;
 import org.neo4j.causalclustering.discovery.CoreTopology;
@@ -53,7 +53,7 @@ public class ReadReplicaStartupProcessTest
 {
     private ConstantTimeRetryStrategy retryStrategy = new ConstantTimeRetryStrategy( 1, MILLISECONDS );
     private StoreCopyProcess storeCopyProcess = mock( StoreCopyProcess.class );
-    private StoreFetcher storeFetcher = mock( StoreFetcher.class );
+    private RemoteStore remoteStore = mock( RemoteStore.class );
     private LocalDatabase localDatabase = mock( LocalDatabase.class );
     private TopologyService hazelcastTopology = mock( TopologyService.class );
     private CoreTopology clusterTopology = mock( CoreTopology.class );
@@ -78,10 +78,10 @@ public class ReadReplicaStartupProcessTest
     {
         // given
         when( localDatabase.isEmpty() ).thenReturn( true );
-        when( storeFetcher.getStoreIdOf( any() ) ).thenReturn( otherStoreId );
+        when( remoteStore.getStoreId( any() ) ).thenReturn( otherStoreId );
 
         ReadReplicaStartupProcess readReplicaStartupProcess =
-                new ReadReplicaStartupProcess( storeFetcher, localDatabase, txPulling,
+                new ReadReplicaStartupProcess( remoteStore, localDatabase, txPulling,
                         new AlwaysChooseFirstMember( hazelcastTopology ), retryStrategy,
                 NullLogProvider.getInstance(), NullLogProvider.getInstance(), storeCopyProcess );
 
@@ -99,12 +99,12 @@ public class ReadReplicaStartupProcessTest
     {
         // given
         when( localDatabase.isEmpty() ).thenReturn( false );
-        when( storeFetcher.getStoreIdOf( any() ) ).thenReturn( otherStoreId );
+        when( remoteStore.getStoreId( any() ) ).thenReturn( otherStoreId );
 
         ReadReplicaStartupProcess readReplicaStartupProcess =
-                new ReadReplicaStartupProcess( storeFetcher, localDatabase, txPulling,
-                new AlwaysChooseFirstMember( hazelcastTopology ), retryStrategy,
-                NullLogProvider.getInstance(), NullLogProvider.getInstance(), storeCopyProcess );
+                new ReadReplicaStartupProcess( remoteStore, localDatabase, txPulling,
+                        new AlwaysChooseFirstMember( hazelcastTopology ), retryStrategy,
+                        NullLogProvider.getInstance(), NullLogProvider.getInstance(), storeCopyProcess );
 
         // when
         try
@@ -128,11 +128,11 @@ public class ReadReplicaStartupProcessTest
     public void shouldStartWithMatchingDatabase() throws Throwable
     {
         // given
-        when( storeFetcher.getStoreIdOf( any() ) ).thenReturn( localStoreId );
+        when( remoteStore.getStoreId( any() ) ).thenReturn( localStoreId );
         when( localDatabase.isEmpty() ).thenReturn( false );
 
         ReadReplicaStartupProcess readReplicaStartupProcess =
-                new ReadReplicaStartupProcess( storeFetcher, localDatabase, txPulling,
+                new ReadReplicaStartupProcess( remoteStore, localDatabase, txPulling,
                         new AlwaysChooseFirstMember( hazelcastTopology ), retryStrategy,
                         NullLogProvider.getInstance(), NullLogProvider.getInstance(), storeCopyProcess );
 
@@ -148,11 +148,11 @@ public class ReadReplicaStartupProcessTest
     public void stopShouldStopTheDatabaseAndStopPolling() throws Throwable
     {
         // given
-        when( storeFetcher.getStoreIdOf( any() ) ).thenReturn( localStoreId );
+        when( remoteStore.getStoreId( any() ) ).thenReturn( localStoreId );
         when( localDatabase.isEmpty() ).thenReturn( false );
 
         ReadReplicaStartupProcess readReplicaStartupProcess =
-                new ReadReplicaStartupProcess( storeFetcher, localDatabase, txPulling,
+                new ReadReplicaStartupProcess( remoteStore, localDatabase, txPulling,
                         new AlwaysChooseFirstMember( hazelcastTopology ), retryStrategy,
                         NullLogProvider.getInstance(), NullLogProvider.getInstance(), storeCopyProcess );
 

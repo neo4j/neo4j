@@ -33,15 +33,15 @@ public class StoreCopyProcess
     private final LocalDatabase localDatabase;
     private final CopiedStoreRecovery copiedStoreRecovery;
     private final Log log;
-    private final StoreFetcher storeFetcher;
+    private final RemoteStore remoteStore;
 
     public StoreCopyProcess( FileSystemAbstraction fs, LocalDatabase localDatabase,
-            CopiedStoreRecovery copiedStoreRecovery, StoreFetcher storeFetcher, LogProvider logProvider )
+            CopiedStoreRecovery copiedStoreRecovery, RemoteStore remoteStore, LogProvider logProvider )
     {
         this.fs = fs;
         this.localDatabase = localDatabase;
         this.copiedStoreRecovery = copiedStoreRecovery;
-        this.storeFetcher = storeFetcher;
+        this.remoteStore = remoteStore;
         this.log = logProvider.getLog( getClass() );
     }
 
@@ -50,7 +50,7 @@ public class StoreCopyProcess
     {
         try ( TemporaryStoreDirectory tempStore = new TemporaryStoreDirectory( fs, localDatabase.storeDir() ) )
         {
-            storeFetcher.copyStore( source, expectedStoreId, tempStore.storeDir() );
+            remoteStore.copy( source, expectedStoreId, tempStore.storeDir() );
             copiedStoreRecovery.recoverCopiedStore( tempStore.storeDir() );
             localDatabase.replaceWith( tempStore.storeDir() );
         }

@@ -24,7 +24,7 @@ import java.io.IOException;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFailedException;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
-import org.neo4j.causalclustering.catchup.storecopy.StoreFetcher;
+import org.neo4j.causalclustering.catchup.storecopy.RemoteStore;
 import org.neo4j.causalclustering.catchup.storecopy.StoreIdDownloadFailedException;
 import org.neo4j.causalclustering.catchup.storecopy.StreamingTransactionsFailedException;
 import org.neo4j.causalclustering.helper.RetryStrategy;
@@ -40,7 +40,7 @@ import static java.lang.String.format;
 
 class ReadReplicaStartupProcess implements Lifecycle
 {
-    private final StoreFetcher storeFetcher;
+    private final RemoteStore remoteStore;
     private final LocalDatabase localDatabase;
     private final Lifecycle txPulling;
     private final CoreMemberSelectionStrategy connectionStrategy;
@@ -51,11 +51,11 @@ class ReadReplicaStartupProcess implements Lifecycle
     private String lastIssue;
     private final StoreCopyProcess storeCopyProcess;
 
-    ReadReplicaStartupProcess( StoreFetcher storeFetcher, LocalDatabase localDatabase,
+    ReadReplicaStartupProcess( RemoteStore remoteStore, LocalDatabase localDatabase,
             Lifecycle txPulling, CoreMemberSelectionStrategy connectionStrategy, RetryStrategy retryStrategy,
             LogProvider debugLogProvider, LogProvider userLogProvider, StoreCopyProcess storeCopyProcess )
     {
-        this.storeFetcher = storeFetcher;
+        this.remoteStore = remoteStore;
         this.localDatabase = localDatabase;
         this.txPulling = txPulling;
         this.connectionStrategy = connectionStrategy;
@@ -153,7 +153,7 @@ class ReadReplicaStartupProcess implements Lifecycle
             debugLog.info( "Local database is empty, attempting to replace with copy from core server %s", source );
 
             debugLog.info( "Finding store id of core server %s", source );
-            StoreId storeId = storeFetcher.getStoreIdOf( source );
+            StoreId storeId = remoteStore.getStoreId( source );
 
             debugLog.info( "Copying store from core server %s", source );
             localDatabase.delete();
@@ -170,7 +170,7 @@ class ReadReplicaStartupProcess implements Lifecycle
     private void ensureSameStoreIdAs( MemberId remoteCore ) throws StoreIdDownloadFailedException
     {
         StoreId localStoreId = localDatabase.storeId();
-        StoreId remoteStoreId = storeFetcher.getStoreIdOf( remoteCore );
+        StoreId remoteStoreId = remoteStore.getStoreId( remoteCore );
         if ( !localStoreId.equals( remoteStoreId ) )
         {
             throw new IllegalStateException( format( "This read replica cannot join the cluster. " +

@@ -22,7 +22,6 @@ package org.neo4j.causalclustering.catchup.tx;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.File;
 import java.util.concurrent.CompletableFuture;
 
 import java.util.concurrent.Future;
@@ -32,7 +31,6 @@ import org.neo4j.causalclustering.catchup.CatchUpResponseCallback;
 import org.neo4j.causalclustering.catchup.CatchupResult;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
-import org.neo4j.causalclustering.catchup.storecopy.StoreFetcher;
 import org.neo4j.causalclustering.core.consensus.schedule.ControlledRenewableTimeoutService;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;

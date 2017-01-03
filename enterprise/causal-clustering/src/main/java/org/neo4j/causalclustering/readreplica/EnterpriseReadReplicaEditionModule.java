@@ -30,7 +30,7 @@ import org.neo4j.causalclustering.catchup.storecopy.CopiedStoreRecovery;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyClient;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
-import org.neo4j.causalclustering.catchup.storecopy.StoreFetcher;
+import org.neo4j.causalclustering.catchup.storecopy.RemoteStore;
 import org.neo4j.causalclustering.catchup.storecopy.StoreFiles;
 import org.neo4j.causalclustering.catchup.tx.BatchingTxApplier;
 import org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess;
@@ -202,7 +202,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
                 databaseHealthSupplier,
                 logProvider );
 
-        StoreFetcher storeFetcher = new StoreFetcher( platformModule.logging.getInternalLogProvider(),
+        RemoteStore remoteStore = new RemoteStore( platformModule.logging.getInternalLogProvider(),
                 fileSystem, platformModule.pageCache,
                 new StoreCopyClient( catchUpClient, logProvider ),
                 new TxPullClient( catchUpClient, platformModule.monitors ),
@@ -238,7 +238,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         }
 
         StoreCopyProcess storeCopyProcess = new StoreCopyProcess( fileSystem, localDatabase,
-                copiedStoreRecovery, storeFetcher, logProvider );
+                copiedStoreRecovery, remoteStore, logProvider );
 
         CatchupPollingProcess catchupProcess =
                 new CatchupPollingProcess( logProvider, localDatabase, servicesToStopOnStoreCopy,
@@ -254,7 +254,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         txPulling.add( new WaitForUpToDateStore( catchupProcess, logProvider ) );
 
         ExponentialBackoffStrategy retryStrategy = new ExponentialBackoffStrategy( 1, 30, TimeUnit.SECONDS );
-        life.add( new ReadReplicaStartupProcess( storeFetcher, localDatabase, txPulling,
+        life.add( new ReadReplicaStartupProcess( remoteStore, localDatabase, txPulling,
                 new ConnectToRandomCoreMember( discoveryService ),
                 retryStrategy, logProvider,
                 platformModule.logging.getUserLogProvider(), storeCopyProcess ) );
