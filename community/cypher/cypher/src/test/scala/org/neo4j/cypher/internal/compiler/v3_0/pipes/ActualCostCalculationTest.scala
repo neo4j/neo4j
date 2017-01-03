@@ -33,13 +33,13 @@ import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundQueryContext.IndexSear
 import org.neo4j.cypher.internal.spi.v3_0.{TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb._
-import org.neo4j.graphdb.factory.GraphDatabaseFactory
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.security.AccessMode
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
-import org.neo4j.kernel.impl.coreapi.{PropertyContainerLocker, InternalTransaction}
+import org.neo4j.kernel.impl.coreapi.{InternalTransaction, PropertyContainerLocker}
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContext
+import org.neo4j.test.TestGraphDatabaseFactory
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -64,7 +64,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
 
   ignore("do the test") {
     val path = Files.createTempDirectory("apa").toFile.getAbsolutePath
-    val graph: GraphDatabaseQueryService = new GraphDatabaseCypherService(new GraphDatabaseFactory().newEmbeddedDatabase(new File(path)))
+    val graph: GraphDatabaseQueryService = new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newEmbeddedDatabase(new File(path)))
     try {
       graph.createIndex(LABEL, PROPERTY)
       val results = ResultTable.empty
@@ -90,7 +90,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
 
   ignore("cost for eagerness") {
     val path = Files.createTempDirectory("apa").toFile.getAbsolutePath
-    val graph: GraphDatabaseQueryService = new GraphDatabaseCypherService(new GraphDatabaseFactory().newEmbeddedDatabase(new File(path)))
+    val graph: GraphDatabaseQueryService = new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newEmbeddedDatabase(new File(path)))
     try {
       graph.createIndex(LABEL, PROPERTY)
       val results = ResultTable.empty
@@ -116,7 +116,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
 
   ignore("hash joins") {
     val path = Files.createTempDirectory("apa").toFile.getAbsolutePath
-    val graph: GraphDatabaseQueryService = new GraphDatabaseCypherService(new GraphDatabaseFactory().newEmbeddedDatabase(new File(path)))
+    val graph: GraphDatabaseQueryService = new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newEmbeddedDatabase(new File(path)))
     val labels = Seq("A", "B", "C", "D", "E", "F", "G", "H", "I", "J")
     val x = ListBuffer.empty[Array[Double]]
     val y = ListBuffer.empty[Double]

@@ -35,12 +35,12 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 public class DynamicIndexStoreViewIT
 {
@@ -55,7 +55,7 @@ public class DynamicIndexStoreViewIT
     public void populateDbWithConcurrentUpdates() throws Exception
     {
         GraphDatabaseService database =
-                new GraphDatabaseFactory().newEmbeddedDatabase( testDirectory.graphDbDir() );
+                new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.graphDbDir() );
         try
         {
             int counter = 1;

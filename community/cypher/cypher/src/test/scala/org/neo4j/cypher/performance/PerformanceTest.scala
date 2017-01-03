@@ -23,8 +23,8 @@ import java.io.File
 import java.util.Collections
 
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.factory.GraphDatabaseFactory
 import org.neo4j.graphdb.{GraphDatabaseService, Node, RelationshipType}
+import org.neo4j.test.TestGraphDatabaseFactory
 
 import scala.util.Random
 
@@ -35,7 +35,7 @@ class PerformanceTest extends CypherFunSuite {
 
   override def beforeEach() {
     super.beforeEach()
-    db = new GraphDatabaseFactory().newEmbeddedDatabase(new File("target/db"))
+    db = new TestGraphDatabaseFactory().newEmbeddedDatabase(new File("target/db"))
   }
 
   override def afterEach() {

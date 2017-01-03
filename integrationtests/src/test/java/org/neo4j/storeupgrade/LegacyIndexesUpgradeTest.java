@@ -131,7 +131,7 @@ public class LegacyIndexesUpgradeTest
 
     private void checkIndexData()
     {
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( testDir.graphDbDir() );
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDir.graphDbDir() );
         try
         {
             IntFunction<String> keyFactory = basicKeyFactory();
