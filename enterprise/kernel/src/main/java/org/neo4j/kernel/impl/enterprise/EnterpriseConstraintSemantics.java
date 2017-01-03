@@ -71,17 +71,19 @@ public class EnterpriseConstraintSemantics extends StandardConstraintSemantics
     }
 
     @Override
-    public void validateNodePropertyExistenceConstraint( Cursor<NodeItem> allNodes, int label, int propertyKey )
-            throws CreateConstraintFailureException
+    public void validateNodePropertyExistenceConstraint( Iterator<Cursor<NodeItem>> allNodes, int label,
+            int propertyKey ) throws CreateConstraintFailureException
     {
-        while ( allNodes.next() )
+        while ( allNodes.hasNext() )
         {
-            NodeItem node = allNodes.get();
-            if ( !node.hasProperty( propertyKey ) )
+            try ( Cursor<NodeItem> cursor = allNodes.next() )
             {
-                throw createConstraintFailure(
-                        new NodePropertyExistenceConstraintVerificationFailedKernelException(
-                                new NodePropertyExistenceConstraint( label,propertyKey ), node.id() ) );
+                NodeItem node = cursor.get();
+                if ( !node.hasProperty( propertyKey ) )
+                {
+                    throw createConstraintFailure( new NodePropertyExistenceConstraintVerificationFailedKernelException(
+                            new NodePropertyExistenceConstraint( label, propertyKey ), node.id() ) );
+                }
             }
         }
     }

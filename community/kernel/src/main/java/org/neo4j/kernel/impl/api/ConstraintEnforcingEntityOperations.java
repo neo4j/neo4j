@@ -56,6 +56,7 @@ import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
+import org.neo4j.kernel.impl.api.store.EntityLoadingIterator;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.Locks;
@@ -438,12 +439,6 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
-    public Cursor<NodeItem> nodeCursorGetForLabel( KernelStatement statement, int labelId )
-    {
-        return entityReadOperations.nodeCursorGetForLabel( statement, labelId );
-    }
-
-    @Override
     public IndexDescriptor indexCreate( KernelStatement state, int labelId, int propertyKeyId )
             throws AlreadyIndexedException, AlreadyConstrainedException
     {
@@ -473,10 +468,9 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     public NodePropertyExistenceConstraint nodePropertyExistenceConstraintCreate( KernelStatement state, int labelId,
             int propertyKeyId ) throws AlreadyConstrainedException, CreateConstraintFailureException
     {
-        try ( Cursor<NodeItem> cursor = nodeCursorGetForLabel( state, labelId ) )
-        {
-            constraintSemantics.validateNodePropertyExistenceConstraint( cursor, labelId, propertyKeyId );
-        }
+        Iterator<Cursor<NodeItem>> nodes = new EntityLoadingIterator<>( nodesGetForLabel( state, labelId ),
+                ( id ) -> nodeCursorById( state, id ) );
+        constraintSemantics.validateNodePropertyExistenceConstraint( nodes, labelId, propertyKeyId );
         return schemaWriteOperations.nodePropertyExistenceConstraintCreate( state, labelId, propertyKeyId );
     }
 

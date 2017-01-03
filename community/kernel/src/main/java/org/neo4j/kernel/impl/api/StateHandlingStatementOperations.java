@@ -167,8 +167,8 @@ public class StateHandlingStatementOperations implements
 
     private Cursor<RelationshipItem> relationshipCursor( KernelStatement statement, long relationshipId )
     {
-        Cursor<RelationshipItem> cursor = statement.getStoreStatement().acquireSingleRelationshipCursor(
-                relationshipId );
+        Cursor<RelationshipItem> cursor =
+                statement.getStoreStatement().acquireSingleRelationshipCursor( relationshipId );
         if ( statement.hasTxStateWithChanges() )
         {
             return statement.txState().augmentSingleRelationshipCursor( cursor, relationshipId );
@@ -185,15 +185,6 @@ public class StateHandlingStatementOperations implements
             return statement.txState().augmentRelationshipsGetAllCursor( cursor );
         }
         return cursor;
-    }
-
-    @Override
-    public Cursor<NodeItem> nodeCursorGetForLabel( KernelStatement statement, int labelId )
-    {
-        // TODO Filter this properly
-        StorageStatement storeStatement = statement.getStoreStatement();
-        return storeStatement.acquireIteratorNodeCursor(
-                storeLayer.nodesGetForLabel( storeStatement, labelId ) );
     }
 
     // </Cursors>

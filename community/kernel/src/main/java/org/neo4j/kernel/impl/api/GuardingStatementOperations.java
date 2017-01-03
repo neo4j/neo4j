@@ -317,13 +317,6 @@ public class GuardingStatementOperations implements
     }
 
     @Override
-    public Cursor<NodeItem> nodeCursorGetForLabel( KernelStatement statement, int labelId )
-    {
-        guard.check( statement );
-        return entityReadDelegate.nodeCursorGetForLabel( statement, labelId );
-    }
-
-    @Override
     public long nodesGetCount( KernelStatement statement )
     {
         guard.check( statement );

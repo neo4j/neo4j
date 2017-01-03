@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.constraints;
 
+import java.util.Iterator;
+
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
@@ -34,7 +36,7 @@ import org.neo4j.storageengine.api.txstate.TxStateVisitor;
  */
 public interface ConstraintSemantics
 {
-    void validateNodePropertyExistenceConstraint( Cursor<NodeItem> allNodes, int label, int propertyKey )
+    void validateNodePropertyExistenceConstraint( Iterator<Cursor<NodeItem>> allNodes, int label, int propertyKey )
             throws CreateConstraintFailureException;
 
     void validateRelationshipPropertyExistenceConstraint( Cursor<RelationshipItem> allRels, int type, int propertyKey )
