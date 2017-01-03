@@ -52,6 +52,6 @@ public final class StandalonePageCacheFactory
         int cachePageSize = factory.getCachePageSizeHint();
         long pageCacheMemory = ByteUnit.mebiBytes( 8 );
         long pageCount = pageCacheMemory / cachePageSize;
-        return new MuninnPageCache( factory, (int) pageCount, (int) pageCacheMemory, tracer );
+        return new MuninnPageCache( factory, (int) pageCount, cachePageSize, tracer );
     }
 }
