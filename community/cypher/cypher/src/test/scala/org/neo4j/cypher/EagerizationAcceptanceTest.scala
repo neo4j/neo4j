@@ -51,6 +51,8 @@ class EagerizationAcceptanceTest
 
     val query = """MATCH (n)--(m)
                   |SET n.val = n.val + 1
+                  |WITH *
+                  |UNWIND [1] as i WITH *
                   |RETURN n.val AS nv, m.val AS mv
                 """.stripMargin
 
@@ -59,6 +61,7 @@ class EagerizationAcceptanceTest
     result.toList should equal(List(Map("nv" -> 2, "mv" -> 2),
                                     Map("nv" -> 2, "mv" -> 2)))
     assertStats(result, propertiesWritten = 2)
+    assertNumberOfEagerness(query, 1)
   }
 
   test("should be eager between node property writes in QG tail and reads in horizon") {
@@ -77,6 +80,28 @@ class EagerizationAcceptanceTest
     result.toList should equal(List(Map("nv" -> 2, "mv" -> 2),
                                     Map("nv" -> 2, "mv" -> 2)))
     assertStats(result, propertiesWritten = 2)
+    assertNumberOfEagerness(query, 1)
+  }
+
+  test("should be eager between node property writes in QG tail and reads in horizon of another tail") {
+    val n1 = createNode("val" -> 1)
+    val n2 = createNode("val" -> 1)
+    relate(n1, n2)
+
+    val query = """UNWIND [1] as i WITH *
+                  |MATCH (n)--(m)
+                  |SET n.val = n.val + 1
+                  |WITH *
+                  |UNWIND [1] as j WITH *
+                  |RETURN n.val AS nv, m.val AS mv
+                """.stripMargin
+
+    val result = updateWithBothPlanners(query)
+
+    result.toList should equal(List(Map("nv" -> 2, "mv" -> 2),
+                                    Map("nv" -> 2, "mv" -> 2)))
+    assertStats(result, propertiesWritten = 2)
+    assertNumberOfEagerness(query, 1)
   }
 
   test("should be eager between relationship property writes in QG head and reads in horizon") {
@@ -93,6 +118,7 @@ class EagerizationAcceptanceTest
 
     result.toList should equal(List(Map("rv" -> 3), Map("rv" -> 3)))
     assertStats(result, propertiesWritten = 2)
+    assertNumberOfEagerness(query, 1)
   }
 
   test("should be eager between relationship property writes in QG tail and reads in horizon") {
@@ -110,6 +136,7 @@ class EagerizationAcceptanceTest
 
     result.toList should equal(List(Map("rv" -> 3), Map("rv" -> 3)))
     assertStats(result, propertiesWritten = 2)
+    assertNumberOfEagerness(query, 1)
   }
 
   test("should handle detach deleting the same node twice") {
@@ -2642,6 +2669,40 @@ class EagerizationAcceptanceTest
 
     result.columnAs[Int]("count").next should equal(0)
     assertStats(result, nodesDeleted = 2)
+    assertNumberOfEagerness(query, 1)
+  }
+
+  test("should be eager with labels function before set label") {
+    val n1 = createNode()
+    val n2 = createNode()
+    relate(n1, n2)
+
+    val query = """MATCH (n)--(m)
+                  |WITH labels(n) AS labels, m
+                  |SET m:Foo
+                  |RETURN labels
+                """.stripMargin
+
+    val result = updateWithBothPlanners(query)
+    result.toList should equal(List(Map("labels" -> List()), Map("labels" -> List())))
+    assertStats(result, labelsAdded = 2)
+    assertNumberOfEagerness(query, 1)
+  }
+
+  test("should be eager with labels function after set label") {
+    val n1 = createNode()
+    val n2 = createNode()
+    relate(n1, n2)
+
+    val query = """MATCH (n)--(m)
+                  |SET n:Foo
+                  |RETURN labels(n), labels(m)
+                """.stripMargin
+
+    val result = updateWithBothPlanners(query)
+    result.toList should equal(List(Map("labels(n)" -> List("Foo"), "labels(m)" -> List("Foo")),
+                                    Map("labels(n)" -> List("Foo"), "labels(m)" -> List("Foo"))))
+    assertStats(result, labelsAdded = 2)
     assertNumberOfEagerness(query, 1)
   }
 

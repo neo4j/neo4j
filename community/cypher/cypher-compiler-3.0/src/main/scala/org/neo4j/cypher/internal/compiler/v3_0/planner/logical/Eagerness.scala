@@ -124,6 +124,15 @@ object Eagerness {
       inputPlan
   }
 
+  def horizonReadWriteEagerize(inputPlan: LogicalPlan, query: PlannerQuery)
+                              (implicit context: LogicalPlanningContext): LogicalPlan = {
+    val alwaysEager = context.config.updateStrategy.alwaysEager
+    if (alwaysEager || (query.tail.nonEmpty && horizonReadWriteConflict(query, query.tail.get)))
+      context.logicalPlanProducer.planEager(inputPlan)
+    else
+      inputPlan
+  }
+
   /**
     * Determines whether there is a conflict between the two PlannerQuery objects.
     * This function assumes that none of the argument PlannerQuery objects is
@@ -153,14 +162,28 @@ object Eagerness {
   @tailrec
   def writeReadConflictInTail(head: PlannerQuery, tail: PlannerQuery)
                              (implicit context: LogicalPlanningContext): Boolean = {
-    val conflict = if (tail.queryGraph.writeOnly) false
-    else (head.queryGraph overlaps tail.queryGraph) || deleteReadOverlap(head.queryGraph, tail.queryGraph)
+    val conflict =
+      if (tail.queryGraph.writeOnly) false
+      else (head.queryGraph overlaps tail.queryGraph) ||
+        (head.queryGraph overlapsHorizon tail.horizon) ||
+        deleteReadOverlap(head.queryGraph, tail.queryGraph)
     if (conflict)
       true
     else if (tail.tail.isEmpty)
       false
     else
       writeReadConflictInTail(head, tail.tail.get)
+  }
+
+  @tailrec
+  def horizonReadWriteConflict(head: PlannerQuery, tail: PlannerQuery): Boolean = {
+    val conflict = tail.queryGraph.overlapsHorizon(head.horizon)
+    if (conflict)
+      true
+    else if (tail.tail.isEmpty)
+      false
+    else
+      horizonReadWriteConflict(head, tail.tail.get)
   }
 
   private def deleteReadOverlap(from: QueryGraph, to: QueryGraph)(implicit context: LogicalPlanningContext): Boolean = {
@@ -195,8 +218,13 @@ object Eagerness {
   @tailrec
   def writeReadConflictInHeadRecursive(head: PlannerQuery, tail: PlannerQuery): Boolean = {
     // TODO:H Refactor: This is same as writeReadConflictInTail, but with different overlaps method. Pass as a parameter
-    val conflict = if (tail.queryGraph.writeOnly) false
-    else head.queryGraph writeOnlyHeadOverlaps tail.queryGraph
+    val conflict =
+      if (tail.queryGraph.writeOnly) false
+      else
+        // NOTE: Here we do not check writeOnlyHeadOverlapsHorizon, because we do not know of any case where a
+        // write-only head could cause problems with reads in future horizons
+        head.queryGraph writeOnlyHeadOverlaps tail.queryGraph
+
     if (conflict)
       true
     else if (tail.tail.isEmpty)

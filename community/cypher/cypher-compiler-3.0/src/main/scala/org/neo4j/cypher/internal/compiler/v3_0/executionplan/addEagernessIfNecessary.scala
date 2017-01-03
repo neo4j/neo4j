@@ -55,7 +55,9 @@ object addEagernessIfNecessary extends (Pipe => Pipe) {
         relsReadDeleteNodeConflict(fromWithoutLeafInfo, toWithoutLeafInfo) ||
         relsCreateReadConflict(from, toWithoutLeafInfo) ||
         relsDeleteReadConflict(fromWithoutLeafInfo, toWithoutLeafInfo) ||
-        relationshipPropertiesConflict(fromWithoutLeafInfo, toWithoutLeafInfo)
+        relationshipPropertiesConflict(fromWithoutLeafInfo, toWithoutLeafInfo) ||
+        readsWritesLabels(fromWithoutLeafInfo, toWithoutLeafInfo) ||
+        writesReadsLabels(fromWithoutLeafInfo, toWithoutLeafInfo)
     }
   }
 
@@ -79,6 +81,8 @@ object addEagernessIfNecessary extends (Pipe => Pipe) {
     val relCreateReadConflict = relsCreateReadConflict(from, toWithoutLeafInfo)
     val relDeleteReadConflict = relsDeleteReadConflict(fromWithoutLeafInfo, toWithoutLeafInfo)
     val relPropConflict = relationshipPropertiesConflict(fromWithoutLeafInfo, toWithoutLeafInfo)
+    val readsWritesLabelConflict = readsWritesLabels(fromWithoutLeafInfo, toWithoutLeafInfo)
+    val writesReadsLabelsConflict = writesReadsLabels(fromWithoutLeafInfo, toWithoutLeafInfo)
 
     nodeNonLeafReadWriteConflict ||
       nodeCreateReadConflict ||
@@ -89,7 +93,9 @@ object addEagernessIfNecessary extends (Pipe => Pipe) {
       relReadDeleteNodeConflict ||
       relCreateReadConflict ||
       relDeleteReadConflict ||
-      relPropConflict
+      relPropConflict ||
+      readsWritesLabelConflict ||
+      writesReadsLabelsConflict
   }
 
   private def relsReadCreateConflict(from: Effects, to: Effects) = {
@@ -230,5 +236,23 @@ object addEagernessIfNecessary extends (Pipe => Pipe) {
         case WriteAnyRelationshipProperty => propertyReads.nonEmpty
         case SetGivenRelationshipProperty(prop) => propertyReads(ReadsGivenRelationshipProperty(prop))
       }
+  }
+
+  private def readsWritesLabels(from: Effects, to: Effects): Boolean = {
+    // Flip the order to reuse this code
+    writesReadsLabels(to, from)
+  }
+
+  private def writesReadsLabels(from: Effects, to: Effects): Boolean = {
+    val fromLabels = from.effectsSet.collect {
+      case SetLabel(label) => Set(label)
+    }.flatten
+
+    fromLabels.nonEmpty &&
+    to.effectsSet.exists {
+      case ReadsAnyLabel => true
+      case ReadsNodesWithLabels(toLabels) => (fromLabels intersect toLabels).nonEmpty
+      case _ => false
+    }
   }
 }

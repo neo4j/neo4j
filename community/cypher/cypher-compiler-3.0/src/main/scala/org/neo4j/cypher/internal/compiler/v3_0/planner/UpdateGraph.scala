@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.planner
 
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
+import org.neo4j.cypher.internal.frontend.v3_0.ast.functions.Labels
 
 import scala.annotation.tailrec
 
@@ -149,16 +150,21 @@ trait UpdateGraph {
 
   /*
    * Determines whether there's an overlap in writes being done here, and reads being done in the given horizon.
-   * TODO: Extend this to also include labels
    */
   def overlapsHorizon(horizon: QueryHorizon) = {
-    containsUpdates && {
+    containsUpdates && ({
       val propertiesReadInHorizon = horizon.dependingExpressions.collect {
         case p: Property => p.propertyKey
       }.toSet
 
       setNodePropertyOverlap(propertiesReadInHorizon) || setRelPropertyOverlap(propertiesReadInHorizon)
-    }
+    } || {
+      labelsToSet.nonEmpty &&
+        horizon.dependingExpressions.exists {
+          case f: FunctionInvocation if f.function.get == Labels => true
+          case _ => false
+        }
+    })
   }
 
   def writeOnlyHeadOverlaps(qg: QueryGraph): Boolean = {
