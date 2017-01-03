@@ -169,7 +169,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     private PrimitiveIntObjectMap<Map<DefinedProperty, DiffSets<Long>>> indexUpdates;
     private PrimitiveIntObjectMap<DiffSets<RelationshipPropertyConstraint>> relationshipConstraintChanges;
 
-    private InstanceCache<TxIteratorNodeCursor> iteratorNodeCursor;
     private InstanceCache<TxSingleNodeCursor> singleNodeCursor;
     private InstanceCache<TxIteratorRelationshipCursor> iteratorRelationshipCursor;
     private InstanceCache<TxSingleRelationshipCursor> singleRelationshipCursor;
@@ -188,14 +187,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
             protected TxSingleNodeCursor create()
             {
                 return new TxSingleNodeCursor( TxState.this, this );
-            }
-        };
-        iteratorNodeCursor = new InstanceCache<TxIteratorNodeCursor>()
-        {
-            @Override
-            protected TxIteratorNodeCursor create()
-            {
-                return new TxIteratorNodeCursor( TxState.this, this );
             }
         };
         propertyCursor = new InstanceCache<TxAllPropertyCursor>()
@@ -653,14 +644,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     @Override
     public void relationshipDoDeleteAddedInThisTx( long relationshipId )
     {
-        RELATIONSHIP_STATE.get( this, relationshipId ).accept( new RelationshipVisitor<RuntimeException>()
-        {
-            @Override
-            public void visit( long relId, int type, long startNode, long endNode )
-            {
-                relationshipDoDelete( relId, type, startNode, endNode );
-            }
-        } );
+        RELATIONSHIP_STATE.get( this, relationshipId ).accept( this::relationshipDoDelete );
     }
 
     @Override
