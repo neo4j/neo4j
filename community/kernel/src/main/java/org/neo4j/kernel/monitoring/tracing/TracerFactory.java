@@ -20,6 +20,7 @@
 package org.neo4j.kernel.monitoring.tracing;
 
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.transaction.tracing.CheckPointTracer;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -64,4 +65,16 @@ public interface TracerFactory
      * @return The created instance.
      */
     CheckPointTracer createCheckPointTracer( Monitors monitors, JobScheduler jobScheduler );
+
+    /**
+     * Create a new LockTracer instance.
+     *
+     * @param monitors the monitoring manager
+     * @param jobScheduler a scheduler for async jobs
+     * @return The created instance.
+     */
+    default LockTracer createLockTracer( Monitors monitors, JobScheduler jobScheduler )
+    {
+        return LockTracer.NONE;
+    }
 }

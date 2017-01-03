@@ -73,12 +73,14 @@ public class KernelStatement implements TxStateHolder, Statement
     private StatementLocks statementLocks;
     private int referenceCount;
     private volatile ExecutingQueryList executingQueryList;
+    private final LockTracer systemLockTracer;
 
     public KernelStatement( KernelTransactionImplementation transaction,
                             TxStateHolder txStateHolder,
                             StorageStatement storeStatement,
                             Procedures procedures,
-                            AccessCapability accessCapability )
+                            AccessCapability accessCapability,
+                            LockTracer systemLockTracer )
     {
         this.transaction = transaction;
         this.txStateHolder = txStateHolder;
@@ -86,6 +88,7 @@ public class KernelStatement implements TxStateHolder, Statement
         this.accessCapability = accessCapability;
         this.facade = new OperationsFacade( transaction, this, procedures );
         this.executingQueryList = ExecutingQueryList.EMPTY;
+        this.systemLockTracer = systemLockTracer;
     }
 
     @Override
@@ -194,7 +197,7 @@ public class KernelStatement implements TxStateHolder, Statement
 
     public LockTracer lockTracer()
     {
-        return executingQueryList.reduce( LockTracer.NONE, ExecutingQuery::lockTracer, LockTracer::combine );
+        return executingQueryList.reduce( systemLockTracer, ExecutingQuery::lockTracer, LockTracer::combine );
     }
 
     public final void acquire()

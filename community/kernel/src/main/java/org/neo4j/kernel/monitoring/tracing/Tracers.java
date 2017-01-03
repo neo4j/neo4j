@@ -21,6 +21,7 @@ package org.neo4j.kernel.monitoring.tracing;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.transaction.tracing.CheckPointTracer;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -99,6 +100,7 @@ public class Tracers
     public final PageCacheTracer pageCacheTracer;
     public final TransactionTracer transactionTracer;
     public final CheckPointTracer checkPointTracer;
+    public final LockTracer lockTracer;
 
     /**
      * Create a Tracers subsystem with the desired implementation, if it can be found and created.
@@ -117,6 +119,7 @@ public class Tracers
             pageCacheTracer = PageCacheTracer.NULL;
             transactionTracer = TransactionTracer.NULL;
             checkPointTracer = CheckPointTracer.NULL;
+            lockTracer = LockTracer.NONE;
         }
         else
         {
@@ -148,6 +151,7 @@ public class Tracers
             pageCacheTracer = foundFactory.createPageCacheTracer( monitors, jobScheduler );
             transactionTracer = foundFactory.createTransactionTracer( monitors, jobScheduler );
             checkPointTracer = foundFactory.createCheckPointTracer( monitors, jobScheduler );
+            lockTracer = foundFactory.createLockTracer( monitors, jobScheduler );
         }
     }
 }
