@@ -26,23 +26,26 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
-import java.util.HashMap;
+import java.util.Map;
 import java.util.function.IntFunction;
 
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.discovery.Cluster;
+import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.causalclustering.discovery.SharedDiscoveryService;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.rule.TestDirectory;
 
+import static java.util.Collections.emptyMap;
+import static java.util.Collections.singletonMap;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.backup.OnlineBackupCommandIT.runBackupToolFromOtherJvmToGetExitCode;
 import static org.neo4j.causalclustering.backup.BackupCoreIT.backupAddress;
 import static org.neo4j.causalclustering.discovery.Cluster.dataMatchesEventually;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.causalclustering.helpers.DataCreator.createNodes;
 
 public class ClusterSeedingIT
 {
@@ -52,21 +55,25 @@ public class ClusterSeedingIT
 
     @Rule
     public TestDirectory testDir = TestDirectory.testDirectory();
+    private File baseBackupDir;
 
     @Before
     public void setup() throws Exception
     {
-        HashMap<String,IntFunction<String>> instanceCoreParams = new HashMap<>();
-        instanceCoreParams.put(
+        backupCluster = new Cluster( testDir.directory( "cluster-for-backup" ), 3, 0,
+                new SharedDiscoveryService(), emptyMap(), backupParams(), emptyMap(), emptyMap(), StandardV3_0.NAME );
+
+        cluster = new Cluster( testDir.directory( "cluster-b" ), 3, 0,
+                new SharedDiscoveryService(), emptyMap(), emptyMap(), emptyMap(), emptyMap(), StandardV3_0.NAME );
+
+        baseBackupDir = testDir.directory( "backups" );
+    }
+
+    private Map<String,IntFunction<String>> backupParams()
+    {
+        return singletonMap(
                 OnlineBackupSettings.online_backup_server.name(),
                 serverId -> (":" + (8000 + serverId)) );
-
-        backupCluster =
-                new Cluster( testDir.directory( "cluster-for-backup" ), 3, 0, new SharedDiscoveryService(), stringMap(),
-                        instanceCoreParams, stringMap(), new HashMap<>(), StandardV3_0.NAME );
-
-        cluster = new Cluster( testDir.directory( "cluster-b" ), 3, 0, new SharedDiscoveryService(), stringMap(),
-                new HashMap<>(), stringMap(), new HashMap<>(), StandardV3_0.NAME );
     }
 
     @After
@@ -82,25 +89,29 @@ public class ClusterSeedingIT
         }
     }
 
-    private File createBackupUsingCoreCluster() throws Exception
+    private File createBackupUsingAnotherCluster() throws Exception
     {
-        File backupDir = testDir.directory( "backups" );
-
         backupCluster.start();
         CoreGraphDatabase db = BackupCoreIT.createSomeData( backupCluster );
 
-        String[] args = BackupCoreIT.backupArguments( backupAddress( db ), backupDir, "core" );
-        assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( args ) );
+        File backup = createBackup( db, "some-backup" );
         backupCluster.shutdown();
 
-        return new File( backupDir, "core" );
+        return backup;
+    }
+
+    private File createBackup( CoreGraphDatabase db, String backupName ) throws Exception
+    {
+        String[] args = BackupCoreIT.backupArguments( backupAddress( db ), baseBackupDir, backupName );
+        assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( args ) );
+        return new File( baseBackupDir, backupName );
     }
 
     @Test
     public void shouldRestoreBySeedingAllMembers() throws Throwable
     {
         // given
-        File backupDir = createBackupUsingCoreCluster();
+        File backupDir = createBackupUsingAnotherCluster();
         DbRepresentation before = DbRepresentation.of( backupDir );
 
         // when
@@ -114,11 +125,52 @@ public class ClusterSeedingIT
     }
 
     @Test
+    public void shouldSeedNewMemberFromEmptyIdleCluster() throws Throwable
+    {
+        // given
+        cluster = new Cluster( testDir.directory( "cluster-b" ), 3, 0,
+                new SharedDiscoveryService(), emptyMap(), backupParams(), emptyMap(), emptyMap(), StandardV3_0.NAME );
+        cluster.start();
+
+        // when: creating a backup
+        File backupDir = createBackup( cluster.getCoreMemberById( 0 ).database(), "the-backup" );
+
+        // and: seeding new member with said backup
+        CoreClusterMember newMember = cluster.addCoreMemberWithId( 3 );
+        fsa.copyRecursively( backupDir, newMember.storeDir() );
+        newMember.start();
+
+        // then
+        dataMatchesEventually( DbRepresentation.of( newMember.database() ), cluster.coreMembers() );
+    }
+
+    @Test
+    public void shouldSeedNewMemberFromNonEmptyIdleCluster() throws Throwable
+    {
+        // given
+        cluster = new Cluster( testDir.directory( "cluster-b" ), 3, 0,
+                new SharedDiscoveryService(), emptyMap(), backupParams(), emptyMap(), emptyMap(), StandardV3_0.NAME );
+        cluster.start();
+        createNodes( cluster, 100 );
+
+        // when: creating a backup
+        File backupDir = createBackup( cluster.getCoreMemberById( 0 ).database(), "the-backup" );
+
+        // and: seeding new member with said backup
+        CoreClusterMember newMember = cluster.addCoreMemberWithId( 3 );
+        fsa.copyRecursively( backupDir, newMember.storeDir() );
+        newMember.start();
+
+        // then
+        dataMatchesEventually( DbRepresentation.of( newMember.database() ), cluster.coreMembers() );
+    }
+
+    @Test
     @Ignore( "need to seed all members for now" )
     public void shouldRestoreBySeedingSingleMember() throws Throwable
     {
         // given
-        File backupDir = createBackupUsingCoreCluster();
+        File backupDir = createBackupUsingAnotherCluster();
         DbRepresentation before = DbRepresentation.of( backupDir );
 
         // when
