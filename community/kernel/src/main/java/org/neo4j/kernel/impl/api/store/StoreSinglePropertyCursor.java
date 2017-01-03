@@ -30,7 +30,7 @@ import org.neo4j.kernel.impl.store.RecordCursors;
  */
 public class StoreSinglePropertyCursor extends StorePropertyCursor
 {
-    private int propertyKeyId;
+    private int propertyKeyId = StatementConstants.NO_SUCH_PROPERTY_KEY;
 
     public StoreSinglePropertyCursor( RecordCursors cursors, Consumer<StoreSinglePropertyCursor> instanceCache )
     {

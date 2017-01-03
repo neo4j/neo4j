@@ -34,7 +34,7 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
  */
 public class StoreSingleNodeCursor extends StoreAbstractNodeCursor
 {
-    private long nodeId;
+    private long nodeId = StatementConstants.NO_SUCH_NODE;
     private final Consumer<StoreSingleNodeCursor> instanceCache;
 
     StoreSingleNodeCursor( NodeRecord nodeRecord,

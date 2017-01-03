@@ -43,16 +43,14 @@ import org.neo4j.storageengine.api.txstate.NodeState;
 /**
  * Overlays transaction state on a {@link NodeItem} cursor.
  */
-public abstract class TxAbstractNodeCursor
-        extends NodeItemHelper
-        implements Cursor<NodeItem>, NodeItem
+public abstract class TxAbstractNodeCursor extends NodeItemHelper implements Cursor<NodeItem>
 {
     protected final TransactionState state;
     private final Consumer<TxAbstractNodeCursor> cache;
 
     protected Cursor<NodeItem> cursor;
 
-    protected long id;
+    protected long id = StatementConstants.NO_SUCH_NODE;
 
     protected NodeState nodeState;
     protected boolean nodeIsAddedInThisTx;

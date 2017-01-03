@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.store;
 
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.cursor.EntityItemHelper;
+import org.neo4j.kernel.api.cursor.RelationshipItemHelper;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.RecordCursor;
@@ -37,8 +38,7 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 /**
  * Base cursor for relationships.
  */
-public abstract class StoreAbstractRelationshipCursor extends EntityItemHelper
-        implements Cursor<RelationshipItem>, RelationshipItem
+public abstract class StoreAbstractRelationshipCursor extends RelationshipItemHelper implements Cursor<RelationshipItem>
 {
     protected final RelationshipRecord relationshipRecord;
     final RecordCursor<RelationshipRecord> relationshipRecordCursor;

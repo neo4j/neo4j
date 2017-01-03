@@ -29,8 +29,7 @@ import org.neo4j.storageengine.api.NodeItem;
 /**
  * Overlays transaction state on a {@link NodeItem} cursor.
  */
-public class TxSingleNodeCursor
-        extends TxAbstractNodeCursor
+public class TxSingleNodeCursor extends TxAbstractNodeCursor
 {
     public TxSingleNodeCursor( TransactionState state, Consumer<TxSingleNodeCursor> cache )
     {

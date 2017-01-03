@@ -29,10 +29,9 @@ import org.neo4j.storageengine.api.RelationshipItem;
 /**
  * Overlays transaction state on a {@link RelationshipItem} item.
  */
-public class TxSingleRelationshipCursor
-        extends TxAbstractRelationshipCursor
+public class TxSingleRelationshipCursor extends TxAbstractRelationshipCursor
 {
-    private long nextId;
+    private long nextId = StatementConstants.NO_SUCH_RELATIONSHIP;
 
     public TxSingleRelationshipCursor( TransactionState state, Consumer<TxSingleRelationshipCursor> instanceCache )
     {
@@ -53,6 +52,7 @@ public class TxSingleRelationshipCursor
         {
             visit( StatementConstants.NO_SUCH_RELATIONSHIP, StatementConstants.NO_SUCH_RELATIONSHIP_TYPE,
                     StatementConstants.NO_SUCH_NODE, StatementConstants.NO_SUCH_NODE );
+            nextId = StatementConstants.NO_SUCH_RELATIONSHIP;
             return false;
         }
 
@@ -77,7 +77,8 @@ public class TxSingleRelationshipCursor
         {
             visit( StatementConstants.NO_SUCH_RELATIONSHIP, StatementConstants.NO_SUCH_RELATIONSHIP_TYPE,
                     StatementConstants.NO_SUCH_NODE, StatementConstants.NO_SUCH_NODE );
-            this.relationshipState = null;
+            relationshipState = null;
+            nextId = StatementConstants.NO_SUCH_RELATIONSHIP;
             return false;
         }
     }

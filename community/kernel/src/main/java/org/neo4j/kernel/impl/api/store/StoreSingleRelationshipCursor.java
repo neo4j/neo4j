@@ -33,7 +33,7 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 public class StoreSingleRelationshipCursor extends StoreAbstractRelationshipCursor
 {
     private final InstanceCache<StoreSingleRelationshipCursor> instanceCache;
-    private long relationshipId = -1;
+    private long relationshipId = StatementConstants.NO_SUCH_RELATIONSHIP;
 
     public StoreSingleRelationshipCursor( RelationshipRecord relationshipRecord,
             InstanceCache<StoreSingleRelationshipCursor> instanceCache, RecordCursors cursors, LockService lockService )

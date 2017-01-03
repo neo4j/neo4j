@@ -55,7 +55,7 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 /**
  * Base cursor for nodes.
  */
-public abstract class StoreAbstractNodeCursor extends NodeItemHelper implements Cursor<NodeItem>, NodeItem
+public abstract class StoreAbstractNodeCursor extends NodeItemHelper implements Cursor<NodeItem>
 {
     protected final NodeRecord nodeRecord;
     protected final NodeStore nodeStore;
