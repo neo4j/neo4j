@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.planDescription
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{Literal, NestedPlanExpression}
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.PlanDescriptionArgumentSerializer.serialize
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{Argument, LogicalPlan}
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{Argument => LPArgument, LogicalPlan}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
@@ -51,7 +51,7 @@ class PlanDescriptionArgumentSerializerTests extends CypherFunSuite {
   }
 
   test("serialize nested plan expression") {
-    val argument: LogicalPlan = Argument(Set.empty)(solved)(Map.empty)
+    val argument: LogicalPlan = LPArgument(Set.empty)(solved)(Map.empty)
     val nested = NestedPlanExpression(argument)
 
     serialize(LegacyExpression(nested)) should equal("NestedPlanExpression(Argument)")

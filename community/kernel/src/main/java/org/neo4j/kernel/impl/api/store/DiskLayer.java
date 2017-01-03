@@ -25,7 +25,6 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
-import org.neo4j.collection.primitive.PrimitiveLongCollections.PrimitiveLongBaseIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.TransactionFailureException;
@@ -61,7 +60,6 @@ import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodePropertyConstraintRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyConstraintRule;
-import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipPropertyConstraintRule;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
@@ -76,7 +74,6 @@ import org.neo4j.storageengine.api.schema.IndexSchemaRule;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
-import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 
@@ -85,7 +82,7 @@ import static org.neo4j.register.Registers.newDoubleLongRegister;
  */
 public class DiskLayer implements StoreReadLayer
 {
-    private static final Function<PropertyConstraintRule, PropertyConstraint> RULE_TO_CONSTRAINT =
+    private static final Function<PropertyConstraintRule,PropertyConstraint> RULE_TO_CONSTRAINT =
             // We can use propertyKeyId straight up here, without reading from the record, since we have
             // verified that it has that propertyKeyId in the predicate. And since we currently only support
             // uniqueness on single properties, there is nothing else to pass in to UniquenessConstraint.
@@ -94,8 +91,8 @@ public class DiskLayer implements StoreReadLayer
     private static final Function<NodePropertyConstraintRule,NodePropertyConstraint> NODE_RULE_TO_CONSTRAINT =
             NodePropertyConstraintRule::toConstraint;
 
-    private static final Function<RelationshipPropertyConstraintRule,RelationshipPropertyConstraint> REL_RULE_TO_CONSTRAINT =
-            RelationshipPropertyConstraintRule::toConstraint;
+    private static final Function<RelationshipPropertyConstraintRule,RelationshipPropertyConstraint>
+            REL_RULE_TO_CONSTRAINT = RelationshipPropertyConstraintRule::toConstraint;
 
     // These token holders should perhaps move to the cache layer.. not really any reason to have them here?
     private final PropertyKeyTokenHolder propertyKeyTokenHolder;
@@ -233,20 +230,11 @@ public class DiskLayer implements StoreReadLayer
     {
         Iterator<SchemaRule> filtered = Iterators.filter( filter, neoStores.getSchemaStore().loadAllSchemaRules() );
 
-        return Iterators.map( new Function<SchemaRule, IndexDescriptor>()
-        {
-
-            @Override
-            public IndexDescriptor apply( SchemaRule from )
-            {
-                return descriptor( (IndexRule) from );
-            }
-        }, filtered );
+        return Iterators.map( from -> descriptor( (IndexRule) from ), filtered );
     }
 
     @Override
-    public Long indexGetOwningUniquenessConstraintId( IndexDescriptor index )
-            throws SchemaRuleNotFoundException
+    public Long indexGetOwningUniquenessConstraintId( IndexDescriptor index ) throws SchemaRuleNotFoundException
     {
         return schemaStorage.indexRule( index.getLabelId(), index.getPropertyKeyId() ).getOwningConstraint();
     }
@@ -265,8 +253,7 @@ public class DiskLayer implements StoreReadLayer
     }
 
     @Override
-    public InternalIndexState indexGetState( IndexDescriptor descriptor )
-            throws IndexNotFoundKernelException
+    public InternalIndexState indexGetState( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         return indexService.getIndexProxy( descriptor ).getState();
     }
@@ -281,7 +268,7 @@ public class DiskLayer implements StoreReadLayer
     @Override
     public long indexSize( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
-        Register.DoubleLongRegister result = indexService.indexUpdatesAndSize(descriptor);
+        Register.DoubleLongRegister result = indexService.indexUpdatesAndSize( descriptor );
         return result.readSecond();
     }
 
@@ -300,31 +287,32 @@ public class DiskLayer implements StoreReadLayer
     @Override
     public Iterator<NodePropertyConstraint> constraintsGetForLabelAndPropertyKey( int labelId, final int propertyKeyId )
     {
-        return schemaStorage.schemaRulesForNodes( NODE_RULE_TO_CONSTRAINT, NodePropertyConstraintRule.class,
-                labelId, rule -> rule.containsPropertyKeyId( propertyKeyId ) );
+        return schemaStorage.schemaRulesForNodes( NODE_RULE_TO_CONSTRAINT, NodePropertyConstraintRule.class, labelId,
+                rule -> rule.containsPropertyKeyId( propertyKeyId ) );
     }
 
     @Override
     public Iterator<NodePropertyConstraint> constraintsGetForLabel( int labelId )
     {
-        return schemaStorage.schemaRulesForNodes( NODE_RULE_TO_CONSTRAINT, NodePropertyConstraintRule.class,
-                labelId, Predicates.<NodePropertyConstraintRule>alwaysTrue() );
+        return schemaStorage.schemaRulesForNodes( NODE_RULE_TO_CONSTRAINT, NodePropertyConstraintRule.class, labelId,
+                Predicates.<NodePropertyConstraintRule>alwaysTrue() );
     }
 
     @Override
     public Iterator<RelationshipPropertyConstraint> constraintsGetForRelationshipTypeAndPropertyKey( int typeId,
             final int propertyKeyId )
     {
-        return schemaStorage.schemaRulesForRelationships( REL_RULE_TO_CONSTRAINT,
-                RelationshipPropertyConstraintRule.class, typeId, rule -> rule.containsPropertyKeyId( propertyKeyId ) );
+        return schemaStorage
+                .schemaRulesForRelationships( REL_RULE_TO_CONSTRAINT, RelationshipPropertyConstraintRule.class, typeId,
+                        rule -> rule.containsPropertyKeyId( propertyKeyId ) );
     }
 
     @Override
     public Iterator<RelationshipPropertyConstraint> constraintsGetForRelationshipType( int typeId )
     {
-        return schemaStorage.schemaRulesForRelationships( REL_RULE_TO_CONSTRAINT,
-                RelationshipPropertyConstraintRule.class, typeId,
-                Predicates.<RelationshipPropertyConstraintRule>alwaysTrue() );
+        return schemaStorage
+                .schemaRulesForRelationships( REL_RULE_TO_CONSTRAINT, RelationshipPropertyConstraintRule.class, typeId,
+                        Predicates.<RelationshipPropertyConstraintRule>alwaysTrue() );
     }
 
     @Override
@@ -346,8 +334,7 @@ public class DiskLayer implements StoreReadLayer
     }
 
     @Override
-    public String propertyKeyGetName( int propertyKeyId )
-            throws PropertyKeyIdNotFoundKernelException
+    public String propertyKeyGetName( int propertyKeyId ) throws PropertyKeyIdNotFoundKernelException
     {
         try
         {
@@ -362,7 +349,7 @@ public class DiskLayer implements StoreReadLayer
     @Override
     public PrimitiveIntIterator graphGetPropertyKeys()
     {
-        return new PropertyKeyIdIterator( propertyLoader.graphLoadProperties( new IteratingPropertyReceiver() ) );
+        return new PropertyKeyIdIterator( propertyLoader.graphLoadProperties( new IteratingPropertyReceiver<>() ) );
     }
 
     @Override
@@ -374,7 +361,7 @@ public class DiskLayer implements StoreReadLayer
     @Override
     public Iterator<StorageProperty> graphGetAllProperties()
     {
-        return propertyLoader.graphLoadProperties( new IteratingPropertyReceiver() );
+        return propertyLoader.graphLoadProperties( new IteratingPropertyReceiver<>() );
     }
 
     @Override
@@ -393,7 +380,7 @@ public class DiskLayer implements StoreReadLayer
     @Override
     public Iterator<Token> relationshipTypeGetAllTokens()
     {
-        return (Iterator)relationshipTokenHolder.getAllTokens().iterator();
+        return (Iterator) relationshipTokenHolder.getAllTokens().iterator();
     }
 
     @Override
@@ -437,99 +424,13 @@ public class DiskLayer implements StoreReadLayer
     @Override
     public PrimitiveLongIterator nodesGetAll()
     {
-        return new PrimitiveLongBaseIterator()
-        {
-            private long highId = nodeStore.getHighestPossibleIdInUse();
-            private long currentId;
-            private final NodeRecord record = new NodeRecord( -1 ); // reused
-
-            @Override
-            protected boolean fetchNext()
-            {
-                while ( true )
-                {   // This outer loop is for checking if highId has changed since we started.
-                    while ( currentId <= highId )
-                    {
-                        try
-                        {
-                            nodeStore.getRecord( currentId, record, RecordLoad.CHECK );
-                            if ( record.inUse() )
-                            {
-                                return next( record.getId() );
-                            }
-                        }
-                        finally
-                        {
-                            currentId++;
-                        }
-                    }
-
-                    long newHighId = nodeStore.getHighestPossibleIdInUse();
-                    if ( newHighId > highId )
-                    {
-                        highId = newHighId;
-                    }
-                    else
-                    {
-                        break;
-                    }
-                }
-                return false;
-            }
-        };
+        return new AllRecordIdIterator<>( new NodeRecord( -1 ), nodeStore );
     }
 
     @Override
     public RelationshipIterator relationshipsGetAll()
     {
-        return new RelationshipIterator.BaseIterator()
-        {
-            private long highId = relationshipStore.getHighestPossibleIdInUse();
-            private long currentId;
-            private final RelationshipRecord reusableRecord = new RelationshipRecord( -1 ); // reused
-
-            @Override
-            protected boolean fetchNext()
-            {
-                while ( true )
-                {   // This outer loop is for checking if highId has changed since we started.
-                    while ( currentId <= highId )
-                    {
-                        try
-                        {
-                            if ( relationshipStore.getRecord( currentId, reusableRecord, CHECK ).inUse() )
-                            {
-                                return next( reusableRecord.getId() );
-                            }
-                        }
-                        finally
-                        {
-                            currentId++;
-                        }
-                    }
-
-                    long newHighId = relationshipStore.getHighestPossibleIdInUse();
-                    if ( newHighId > highId )
-                    {
-                        highId = newHighId;
-                    }
-                    else
-                    {
-                        break;
-                    }
-                }
-                return false;
-            }
-
-            @Override
-            public <EXCEPTION extends Exception> boolean relationshipVisit( long relationshipId,
-                    RelationshipVisitor<EXCEPTION> visitor ) throws EXCEPTION
-            {
-                visitor.visit( relationshipId, reusableRecord.getType(),
-                        reusableRecord.getFirstNode(), reusableRecord.getSecondNode() );
-                return false;
-            }
-        };
+        return new AllRelationshipIterator( new RelationshipRecord( -1 ), relationshipStore );
     }
 
     @Override
