@@ -102,14 +102,14 @@ public enum ProposerState
                                             acceptor, new AcceptorMessage.PrepareState( ballot ) ),
                                             org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId.INSTANCE ) );
                                 }
-                                
+
                                 assert instance.value_1 == null : "value_1 should have been null at this point";
                                 Object payload = context.getBookedInstance( instanceId ).getPayload();
                                 assert payload != null : "Should have a booked instance payload for " + instanceId;
                                 // This will reset the phase1Timeout if existing
                                 context.setTimeout( instanceId, message.copyHeadersTo( Message.timeout(
                                         ProposerMessage.phase1Timeout, message, payload ), org.neo4j.cluster.protocol
-                                  .atomicbroadcast.multipaxos.InstanceId.INSTANCE ) );
+                                        .atomicbroadcast.multipaxos.InstanceId.INSTANCE ) );
                             }
                             break;
                         }
@@ -167,7 +167,12 @@ public enum ProposerState
                         {
                             // P
                             ProposerMessage.PromiseState promiseState = message.getPayload();
-                            PaxosInstance instance = context.getPaxosInstance( new org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId( message ) );
+                            PaxosInstance instance = context.getPaxosInstance(
+                                    new org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId( message ) );
+
+                            context.getLog( getClass() ).debug( "Received promise: " + message +
+                                    " with corresponding state " + instance + ". The whole state is "
+                                    + context );
 
                             if ( instance.isState( PaxosInstance.State.p1_pending ) && instance.ballot ==
                                     promiseState.getBallot() )
@@ -190,25 +195,9 @@ public enum ProposerState
                                     else
                                     {
                                         // R1
-                                        if ( instance.value_2 == null )
-                                        {
-                                            // Another value was already associated with this instance. Push value
-                                            // back onto pending list
-                                            context.pendingValue( context.unbookInstance( instance.id ) );
-
-                                            instance.ready( instance.value_1, false );
-                                        }
-                                        else if ( instance.value_1.equals( readyValue ) )
+                                        if ( instance.value_2 != null && instance.value_1.equals( readyValue ) )
                                         {
                                             instance.ready( instance.value_2, instance.clientValue );
-                                        }
-                                        else if ( instance.clientValue )
-                                        {
-                                            // Another value was already associated with this instance. Push value
-                                            // back onto pending list
-                                            context.pendingValue( context.unbookInstance( instance.id ) );
-
-                                            instance.ready( instance.value_1, false );
                                         }
                                         else
                                         {
@@ -336,13 +325,13 @@ public enum ProposerState
                                             if ( learner.equals( context.boundAt() ) )
                                             {
                                                 outgoing.offer( message.copyHeadersTo( Message.internal( LearnerMessage
-                                                        .learn, new LearnerMessage.LearnState( instance.value_2 ) ),
+                                                                .learn, new LearnerMessage.LearnState( instance.value_2 ) ),
                                                         org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId.INSTANCE ) );
                                             }
                                             else
                                             {
                                                 outgoing.offer( message.copyHeadersTo( Message.to( LearnerMessage
-                                                        .learn, learner,
+                                                                .learn, learner,
                                                         new LearnerMessage.LearnState( instance.value_2 ) ),
                                                         org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId.INSTANCE ) );
                                             }
@@ -352,7 +341,7 @@ public enum ProposerState
                                         if ( state.getJoin() != null )
                                         {
                                             outgoing.offer( message.copyHeadersTo( Message.to( LearnerMessage
-                                                    .learn, state.getJoinUri(),
+                                                            .learn, state.getJoinUri(),
                                                     new LearnerMessage.LearnState( instance.value_2 ) ),
                                                     org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId.INSTANCE ) );
                                         }
@@ -363,7 +352,7 @@ public enum ProposerState
                                         for ( URI learner : context.getMemberURIs() )
                                         {
                                             outgoing.offer( message.copyHeadersTo( Message.to( LearnerMessage
-                                                    .learn, learner,
+                                                            .learn, learner,
                                                     new LearnerMessage.LearnState( instance.value_2 ) ),
                                                     org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId.INSTANCE ) );
                                         }
@@ -397,7 +386,7 @@ public enum ProposerState
 
                     return this;
                 }
-    };
+            };
 
     private static void propose( ProposerContext context, Message message, MessageHolder outgoing,
                                  List<URI> acceptors )
@@ -412,6 +401,11 @@ public enum ProposerState
             instanceId = context.newInstanceId();
 
             message.setHeader( org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId.INSTANCE, instanceId.toString() );
+            if ( context.getBookedInstance( instanceId ) != null )
+            {
+                context.getLog( ProposerState.class ).warn( "Booking instance with id " + instanceId + " while there is" +
+                        " already a booked one: " +context.getBookedInstance( instanceId ) );
+            }
             context.bookInstance( instanceId, message );
         }
 

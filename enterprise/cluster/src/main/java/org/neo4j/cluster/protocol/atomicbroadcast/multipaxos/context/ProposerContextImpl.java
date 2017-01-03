@@ -276,4 +276,13 @@ class ProposerContextImpl
         result = 31 * result + (paxosInstances != null ? paxosInstances.hashCode() : 0);
         return result;
     }
+
+    @Override
+    public String toString()
+    {
+        return "ProposerContextImpl{" +
+                "pendingValues=" + pendingValues +
+                ", bookedInstances=" + bookedInstances +
+                "} " + super.toString();
+    }
 }
