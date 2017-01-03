@@ -64,7 +64,6 @@ terms of the relevant Commercial Agreement.
       </activation>
       <modules>
         <module>neo4j-desktop</module>
-        <module>installer-linux</module>
       </modules>
     </profile>
     <profile>
