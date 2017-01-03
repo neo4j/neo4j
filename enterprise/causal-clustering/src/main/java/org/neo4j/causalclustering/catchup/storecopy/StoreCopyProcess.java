@@ -25,6 +25,7 @@ import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 public class StoreCopyProcess
 {
@@ -32,16 +33,19 @@ public class StoreCopyProcess
     private final LocalDatabase localDatabase;
     private final CopiedStoreRecovery copiedStoreRecovery;
     private final Log log;
+    private final StoreFetcher storeFetcher;
 
-    public StoreCopyProcess( FileSystemAbstraction fs, LocalDatabase localDatabase, CopiedStoreRecovery copiedStoreRecovery, Log log )
+    public StoreCopyProcess( FileSystemAbstraction fs, LocalDatabase localDatabase,
+            CopiedStoreRecovery copiedStoreRecovery, StoreFetcher storeFetcher, LogProvider logProvider )
     {
         this.fs = fs;
         this.localDatabase = localDatabase;
         this.copiedStoreRecovery = copiedStoreRecovery;
-        this.log = log;
+        this.storeFetcher = storeFetcher;
+        this.log = logProvider.getLog( getClass() );
     }
 
-    public void copyWholeStoreFrom( MemberId source, StoreId expectedStoreId, StoreFetcher storeFetcher )
+    public void replaceWithStoreFrom( MemberId source, StoreId expectedStoreId )
             throws IOException, StoreCopyFailedException, StreamingTransactionsFailedException
     {
         try ( TemporaryStoreDirectory tempStore = new TemporaryStoreDirectory( fs, localDatabase.storeDir() ) )

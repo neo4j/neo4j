@@ -58,10 +58,10 @@ public class StoreFetcher
     private final TransactionLogCatchUpFactory transactionLogFactory;
 
     public StoreFetcher( LogProvider logProvider,
-                         FileSystemAbstraction fs, PageCache pageCache,
-                         StoreCopyClient storeCopyClient, TxPullClient txPullClient,
-                         TransactionLogCatchUpFactory transactionLogFactory,
-                         Monitors monitors )
+            FileSystemAbstraction fs, PageCache pageCache,
+            StoreCopyClient storeCopyClient, TxPullClient txPullClient,
+            TransactionLogCatchUpFactory transactionLogFactory,
+            Monitors monitors )
     {
         this.logProvider = logProvider;
         this.storeCopyClient = storeCopyClient;

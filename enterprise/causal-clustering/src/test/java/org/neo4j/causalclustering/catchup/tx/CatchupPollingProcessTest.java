@@ -30,14 +30,13 @@ import java.util.concurrent.Future;
 import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.CatchUpResponseCallback;
 import org.neo4j.causalclustering.catchup.CatchupResult;
-import org.neo4j.causalclustering.catchup.storecopy.CopiedStoreRecovery;
+import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.StoreFetcher;
 import org.neo4j.causalclustering.core.consensus.schedule.ControlledRenewableTimeoutService;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.causalclustering.messaging.routing.CoreMemberSelectionStrategy;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -72,9 +71,7 @@ public class CatchupPollingProcessTest
     private final ControlledRenewableTimeoutService timeoutService = new ControlledRenewableTimeoutService();
 
     private final long txPullIntervalMillis = 100;
-    private final FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
-    private final StoreFetcher storeFetcher = mock( StoreFetcher.class );
-    private final CopiedStoreRecovery copiedStoreRecovery = mock( CopiedStoreRecovery.class );
+    private final StoreCopyProcess storeCopyProcess = mock( StoreCopyProcess.class );
     private final StoreId storeId = new StoreId( 1, 2, 3, 4 );
     private final LocalDatabase localDatabase = mock( LocalDatabase.class );
     {
@@ -83,9 +80,9 @@ public class CatchupPollingProcessTest
     private final Lifecycle startStopOnStoreCopy = mock( Lifecycle.class );
 
     private final CatchupPollingProcess txPuller =
-            new CatchupPollingProcess( NullLogProvider.getInstance(), fs, localDatabase, startStopOnStoreCopy, storeFetcher,
+            new CatchupPollingProcess( NullLogProvider.getInstance(), localDatabase, startStopOnStoreCopy,
                     catchUpClient, serverSelection, timeoutService, txPullIntervalMillis, txApplier, new Monitors(),
-                    copiedStoreRecovery, () -> mock( DatabaseHealth.class) );
+                    storeCopyProcess, () -> mock( DatabaseHealth.class) );
 
     @Before
     public void before() throws Throwable
@@ -177,7 +174,7 @@ public class CatchupPollingProcessTest
         // then
         verify( localDatabase ).stop();
         verify( startStopOnStoreCopy ).stop();
-        verify( storeFetcher ).copyStore( any( MemberId.class ), eq( storeId ), any( File.class ) );
+        verify( storeCopyProcess ).replaceWithStoreFrom( any( MemberId.class ), eq( storeId ) );
         verify( localDatabase ).start();
         verify( startStopOnStoreCopy ).start();
         verify( txApplier ).refreshFromNewStore();

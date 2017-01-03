@@ -24,7 +24,6 @@ import java.util.concurrent.CompletableFuture;
 import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.CatchUpResponseAdaptor;
 import org.neo4j.causalclustering.catchup.CatchupResult;
-import org.neo4j.causalclustering.catchup.storecopy.CopiedStoreRecovery;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFailedException;
 import org.neo4j.causalclustering.catchup.storecopy.StoreFetcher;
@@ -32,7 +31,6 @@ import org.neo4j.causalclustering.core.state.CoreState;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -42,31 +40,28 @@ import static org.neo4j.causalclustering.catchup.CatchupResult.SUCCESS_END_OF_ST
 
 public class CoreStateDownloader
 {
-    private final FileSystemAbstraction fs;
     private final LocalDatabase localDatabase;
     private final Lifecycle startStopOnStoreCopy;
     private final StoreFetcher storeFetcher;
     private final CatchUpClient catchUpClient;
     private final Log log;
-    private final CopiedStoreRecovery copiedStoreRecovery;
+    private final StoreCopyProcess storeCopyProcess;
 
-    public CoreStateDownloader( FileSystemAbstraction fs, LocalDatabase localDatabase, Lifecycle startStopOnStoreCopy,
+    public CoreStateDownloader( LocalDatabase localDatabase, Lifecycle startStopOnStoreCopy,
             StoreFetcher storeFetcher, CatchUpClient catchUpClient, LogProvider logProvider,
-            CopiedStoreRecovery copiedStoreRecovery )
+            StoreCopyProcess storeCopyProcess )
     {
-        this.fs = fs;
         this.localDatabase = localDatabase;
         this.startStopOnStoreCopy = startStopOnStoreCopy;
         this.storeFetcher = storeFetcher;
         this.catchUpClient = catchUpClient;
         this.log = logProvider.getLog( getClass() );
-        this.copiedStoreRecovery = copiedStoreRecovery;
+        this.storeCopyProcess = storeCopyProcess;
     }
 
     public synchronized void downloadSnapshot( MemberId source, CoreState coreState ) throws StoreCopyFailedException
     {
         // TODO: Think about recovery scenarios.
-        StoreCopyProcess storeCopyProcess = new StoreCopyProcess( fs, localDatabase, copiedStoreRecovery, log );
 
         try
         {
@@ -103,7 +98,7 @@ public class CoreStateDownloader
 
             if ( isEmptyStore )
             {
-                storeCopyProcess.copyWholeStoreFrom( source, remoteStoreId, storeFetcher );
+                storeCopyProcess.replaceWithStoreFrom( source, remoteStoreId );
             }
             else
             {
@@ -116,7 +111,7 @@ public class CoreStateDownloader
                     log.info( "Failed to pull transactions from " + source + ". They may have been pruned away." );
                     localDatabase.delete();
 
-                    storeCopyProcess.copyWholeStoreFrom( source, localStoreId, storeFetcher );
+                    storeCopyProcess.replaceWithStoreFrom( source, localStoreId );
                 }
                 else if ( catchupResult != SUCCESS_END_OF_STREAM )
                 {

@@ -26,14 +26,13 @@ import java.io.File;
 import java.util.UUID;
 
 import org.neo4j.causalclustering.catchup.CatchUpClient;
-import org.neo4j.causalclustering.catchup.storecopy.CopiedStoreRecovery;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFailedException;
+import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
 import org.neo4j.causalclustering.catchup.storecopy.StoreFetcher;
 import org.neo4j.causalclustering.core.state.CoreState;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.NullLogProvider;
 
@@ -48,12 +47,11 @@ import static org.neo4j.causalclustering.catchup.CatchupResult.SUCCESS_END_OF_ST
 
 public class CoreStateDownloaderTest
 {
-    private final FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
     private final LocalDatabase localDatabase = mock( LocalDatabase.class );
     private final Lifecycle startStopLife = mock( Lifecycle.class );
     private final StoreFetcher storeFetcher = mock( StoreFetcher.class );
     private final CatchUpClient catchUpClient = mock( CatchUpClient.class );
-    private final CopiedStoreRecovery recovery = mock( CopiedStoreRecovery.class );
+    private final StoreCopyProcess storeCopyProcess = mock( StoreCopyProcess.class );
     private final CoreState coreState = mock( CoreState.class );
 
     private final NullLogProvider logProvider = NullLogProvider.getInstance();
@@ -61,11 +59,10 @@ public class CoreStateDownloaderTest
     private final MemberId remoteMember = new MemberId( UUID.randomUUID() );
     private final StoreId storeId = new StoreId( 1, 2, 3, 4 );
     private final File storeDir = new File( "graph.db" );
-    private final File tempDir = new File( "graph.db/temp-copy" );
 
     private final CoreStateDownloader downloader =
-            new CoreStateDownloader( fs, localDatabase, startStopLife, storeFetcher, catchUpClient, logProvider,
-                    recovery );
+            new CoreStateDownloader( localDatabase, startStopLife, storeFetcher, catchUpClient, logProvider,
+                    storeCopyProcess );
 
     @Before
     public void commonMocking()
@@ -87,8 +84,7 @@ public class CoreStateDownloaderTest
 
         // then
         verify( storeFetcher, never() ).tryCatchingUp( any(), any(), any() );
-        verify( storeFetcher ).copyStore( remoteMember, remoteStoreId, tempDir );
-        verify( localDatabase ).replaceWith( tempDir );
+        verify( storeCopyProcess ).replaceWithStoreFrom( remoteMember, remoteStoreId );
     }
 
     @Test
@@ -160,7 +156,6 @@ public class CoreStateDownloaderTest
 
         // then
         verify( storeFetcher ).tryCatchingUp( remoteMember, storeId, storeDir );
-        verify( storeFetcher ).copyStore( remoteMember, storeId, tempDir );
-        verify( localDatabase ).replaceWith( tempDir );
+        verify( storeCopyProcess ).replaceWithStoreFrom( remoteMember, storeId );
     }
 }

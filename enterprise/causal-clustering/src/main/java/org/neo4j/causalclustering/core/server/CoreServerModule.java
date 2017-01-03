@@ -31,6 +31,7 @@ import org.neo4j.causalclustering.catchup.CheckpointerSupplier;
 import org.neo4j.causalclustering.catchup.storecopy.CopiedStoreRecovery;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyClient;
+import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
 import org.neo4j.causalclustering.catchup.storecopy.StoreFetcher;
 import org.neo4j.causalclustering.catchup.tx.TransactionLogCatchUpFactory;
 import org.neo4j.causalclustering.catchup.tx.TxPullClient;
@@ -126,10 +127,11 @@ public class CoreServerModule
                 platformModule.kernelExtensions.listFactories(), platformModule.pageCache );
         life.add( copiedStoreRecovery );
 
+        StoreCopyProcess storeCopyProcess = new StoreCopyProcess( fileSystem, localDatabase, copiedStoreRecovery, storeFetcher, logProvider );
+
         LifeSupport servicesToStopOnStoreCopy = new LifeSupport();
-        CoreStateDownloader downloader =
-                new CoreStateDownloader( platformModule.fileSystem, localDatabase, servicesToStopOnStoreCopy,
-                        storeFetcher, catchUpClient, logProvider, copiedStoreRecovery );
+        CoreStateDownloader downloader = new CoreStateDownloader( localDatabase, servicesToStopOnStoreCopy,
+                storeFetcher, catchUpClient, logProvider, storeCopyProcess );
 
         if ( config.get( OnlineBackupSettings.online_backup_enabled ) )
         {
