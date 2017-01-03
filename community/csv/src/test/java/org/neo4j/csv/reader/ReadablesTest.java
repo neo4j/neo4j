@@ -43,7 +43,7 @@ import java.util.zip.GZIPOutputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import org.neo4j.test.TestDirectory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.Arrays.copyOfRange;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -72,6 +72,9 @@ public class ReadablesTest
                     return result;
                 } );
     }
+
+    @Rule
+    public final TestDirectory directory = TestDirectory.testDirectory();
 
     interface ReadMethod
     {
@@ -341,6 +344,4 @@ public class ReadablesTest
         assertArrayEquals( readText, text.toCharArray() );
     }
 
-    @Rule
-    public final TestDirectory directory = new TestDirectory();
 }
