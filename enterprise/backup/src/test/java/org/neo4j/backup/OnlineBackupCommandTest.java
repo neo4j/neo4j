@@ -100,7 +100,7 @@ public class OnlineBackupCommandTest
     @Test
     public void shouldNotRequestForensics() throws CommandFailed, IncorrectUsage, BackupTool.ToolFailureException
     {
-        execute( "--backup-dir=/", "--name=mybackup" );
+        execute( backupDir(), "--name=mybackup" );
 
         verify( backupService ).doFullBackup( any(), anyInt(), any(), any(), any(), anyLong(), eq( false ) );
     }
@@ -109,7 +109,7 @@ public class OnlineBackupCommandTest
     public void shouldDefaultFromToDefaultBackupAddress()
             throws CommandFailed, IncorrectUsage, BackupTool.ToolFailureException
     {
-        execute( "--backup-dir=/", "--name=mybackup" );
+        execute( backupDir(), "--name=mybackup" );
 
         verify( backupService ).doFullBackup( eq( "localhost" ), eq( 6362 ), any(), any(), any(), anyLong(),
                 anyBoolean() );
@@ -118,7 +118,7 @@ public class OnlineBackupCommandTest
     @Test
     public void shouldDefaultPortAndPassHost() throws CommandFailed, IncorrectUsage, BackupTool.ToolFailureException
     {
-        execute( "--from=foo.bar.server", "--backup-dir=/", "--name=mybackup" );
+        execute( "--from=foo.bar.server", backupDir(), "--name=mybackup" );
 
         verify( backupService ).doFullBackup( eq( "foo.bar.server" ), eq( 6362 ), any(), any(), any(), anyLong(),
                 anyBoolean() );
@@ -128,7 +128,7 @@ public class OnlineBackupCommandTest
     public void shouldAcceptAHostWithATrailingColon()
             throws CommandFailed, IncorrectUsage, BackupTool.ToolFailureException
     {
-        execute( "--from=foo.bar.server:", "--backup-dir=/", "--name=mybackup" );
+        execute( "--from=foo.bar.server:", backupDir(), "--name=mybackup" );
 
         verify( backupService ).doFullBackup( eq( "foo.bar.server" ), eq( 6362 ), any(), any(), any(), anyLong(),
                 anyBoolean() );
@@ -137,7 +137,7 @@ public class OnlineBackupCommandTest
     @Test
     public void shouldDefaultHostAndPassPort() throws CommandFailed, IncorrectUsage, BackupTool.ToolFailureException
     {
-        execute( "--from=:1234", "--backup-dir=/", "--name=mybackup" );
+        execute( "--from=:1234", backupDir(), "--name=mybackup" );
 
         verify( backupService ).doFullBackup( eq( "localhost" ), eq( 1234 ), any(), any(), any(), anyLong(),
                 anyBoolean() );
@@ -146,7 +146,7 @@ public class OnlineBackupCommandTest
     @Test
     public void shouldPassHostAndPort() throws CommandFailed, IncorrectUsage, BackupTool.ToolFailureException
     {
-        execute( "--from=foo.bar.server:1234", "--backup-dir=/", "--name=mybackup" );
+        execute( "--from=foo.bar.server:1234", backupDir(), "--name=mybackup" );
 
         verify( backupService ).doFullBackup( eq( "foo.bar.server" ), eq( 1234 ), any(), any(), any(), anyLong(),
                 anyBoolean() );
@@ -155,18 +155,21 @@ public class OnlineBackupCommandTest
     @Test
     public void shouldPassDestination() throws CommandFailed, IncorrectUsage, BackupTool.ToolFailureException
     {
-        execute( "--backup-dir=/", "--name=mybackup" );
+        final Path dest = Paths.get( "/" );
+        execute( backupDir( path( dest.toString() ) ), "--name=mybackup" );
 
         verify( backupService ).doFullBackup(
-                any(), anyInt(), eq( new File( "/mybackup" ) ), any(), any(), anyLong(), anyBoolean() );
+                any(), anyInt(), eq( new File( path( dest.resolve( "mybackup" ).toString() ) ) ), any(), any(),
+                anyLong(), anyBoolean() );
     }
 
     @Test
     public void nonExistingBackupDirThrows() throws CommandFailed, IncorrectUsage, BackupTool.ToolFailureException
     {
+        final String path = path( "/Idontexist/sasdfasdfa" );
         expected.expect( CommandFailed.class );
-        expected.expectMessage( "Directory '/Idontexist/sasdfasdfa' does not exist." );
-        execute( "--backup-dir=/Idontexist/sasdfasdfa", "--name=mybackup" );
+        expected.expectMessage( "Directory '" + path + "' does not exist." );
+        execute( backupDir( path ), "--name=mybackup" );
     }
 
     @Test
@@ -182,14 +185,14 @@ public class OnlineBackupCommandTest
     {
         expected.expect( IncorrectUsage.class );
         expected.expectMessage( "Missing argument 'name'" );
-        execute( "--backup-dir=/" );
+        execute( backupDir() );
     }
 
     @Test
     public void shouldNotAskForConsistencyCheckIfNotSpecified()
             throws CommandFailed, IncorrectUsage, BackupTool.ToolFailureException
     {
-        execute( "--check-consistency=false", "--backup-dir=/", "--name=mybackup" );
+        execute( "--check-consistency=false", backupDir(), "--name=mybackup" );
 
         verify( backupService ).doFullBackup( any(), anyInt(), any(), any(), any(), anyLong(), anyBoolean() );
         verifyNoMoreInteractions( consistencyCheckService );
@@ -199,7 +202,7 @@ public class OnlineBackupCommandTest
     public void shouldAskForConsistencyCheckIfSpecified() throws Exception
 
     {
-        execute( "--check-consistency=true", "--backup-dir=/", "--name=mybackup" );
+        execute( "--check-consistency=true", backupDir(), "--name=mybackup" );
 
         verify( backupService ).doFullBackup( any(), anyInt(), any(), any(), any(), anyLong(), anyBoolean() );
         verify( consistencyCheckService ).runFullConsistencyCheck( any(), any(), any(), any(), any(),
@@ -213,7 +216,7 @@ public class OnlineBackupCommandTest
         File dir = testDirectory.directory( "ccInc" );
         assertTrue( new File( dir, "afile" ).createNewFile() );
 
-        execute( "--check-consistency=true", "--backup-dir=" + dir.getParent(), "--name=" + dir.getName() );
+        execute( "--check-consistency=true", backupDir( dir.getParent() ), "--name=" + dir.getName() );
 
         verify( backupService ).doIncrementalBackup( any(), anyInt(), any(), anyLong(), any() );
         verifyNoMoreInteractions( backupService );
@@ -228,7 +231,7 @@ public class OnlineBackupCommandTest
         File dir = testDirectory.directory( "ccInc" );
         assertTrue( new File( dir, "afile" ).createNewFile() );
 
-        execute( "--check-consistency=false", "--backup-dir=" + dir.getParent(), "--name=" + dir.getName() );
+        execute( "--check-consistency=false", backupDir( dir.getParent() ), "--name=" + dir.getName() );
 
         verify( backupService ).doIncrementalBackup( any(), anyInt(), any(), anyLong(), any() );
         verifyNoMoreInteractions( backupService );
@@ -239,13 +242,15 @@ public class OnlineBackupCommandTest
     public void failedCCIsReported() throws Exception
 
     {
+        final Path path = Paths.get( "/foo/bar" );
+
         when( consistencyCheckService.runFullConsistencyCheck( any(), any(), any(), any(), any(),
                 anyBoolean(), eq( new File( "." ).getCanonicalFile() ) ) ).thenReturn(
-                ConsistencyCheckService.Result.failure( new File( "/foo/bar" ) ) );
+                ConsistencyCheckService.Result.failure( path.toFile() ) );
 
         expected.expect( CommandFailed.class );
-        expected.expectMessage( "Inconsistencies found. See '/foo/bar' for details." );
-        execute( "--check-consistency=true", "--backup-dir=/", "--name=mybackup" );
+        expected.expectMessage( "Inconsistencies found. See '" + path + "' for details." );
+        execute( "--check-consistency=true", backupDir(), "--name=mybackup" );
     }
 
     @Test
@@ -255,7 +260,7 @@ public class OnlineBackupCommandTest
         File dir = testDirectory.directory( "ccFull" );
         assertTrue( dir.delete() );
 
-        execute( "--backup-dir=" + dir.getParent(), "--name=" + dir.getName() );
+        execute( backupDir( dir.getParent() ), "--name=" + dir.getName() );
 
         verify( backupService ).doFullBackup( any(), anyInt(), any(), any(), any(), anyLong(), anyBoolean() );
         verify( outsideWorld ).stdOutLine( "Doing full backup..." );
@@ -269,7 +274,7 @@ public class OnlineBackupCommandTest
     {
         File dir = testDirectory.directory( "ccFull" );
 
-        execute( "--backup-dir=" + dir.getParent(), "--name=" + dir.getName() );
+        execute( backupDir( dir.getParent() ), "--name=" + dir.getName() );
 
         verify( backupService ).doFullBackup( any(), anyInt(), any(), any(), any(), anyLong(), anyBoolean() );
         verify( outsideWorld ).stdOutLine( "Doing full backup..." );
@@ -283,7 +288,7 @@ public class OnlineBackupCommandTest
         File dir = testDirectory.directory( "ccInc" );
         assertTrue( new File( dir, "afile" ).createNewFile() );
 
-        execute( "--backup-dir=" + dir.getParent(), "--name=" + dir.getName() );
+        execute( backupDir( dir.getParent() ), "--name=" + dir.getName() );
 
         verify( backupService ).doIncrementalBackup( any(), anyInt(), any(), anyLong(), any() );
         verify( outsideWorld ).stdOutLine( "Destination is not empty, doing incremental backup..." );
@@ -301,7 +306,7 @@ public class OnlineBackupCommandTest
         when( backupService.doIncrementalBackup( any(), anyInt(), any(), anyLong(), any() ) )
                 .thenThrow( new RuntimeException( "nah-ah" ) );
 
-        execute( "--cc-report-dir=" + dir.getParent(), "--backup-dir=" + dir.getParent(),
+        execute( "--cc-report-dir=" + dir.getParent(), backupDir( dir.getParent() ),
                 "--name=" + dir.getName() );
 
         verify( backupService ).doIncrementalBackup( any(), anyInt(), any(), anyLong(), any() );
@@ -329,7 +334,7 @@ public class OnlineBackupCommandTest
         expected.expectMessage( "Failed to move old backup out of the way: kaboom" );
         expected.expect( CommandFailed.class );
 
-        execute( "--cc-report-dir=" + dir.getParent(), "--backup-dir=" + dir.getParent(),
+        execute( "--cc-report-dir=" + dir.getParent(), backupDir( dir.getParent() ),
                 "--name=" + dir.getName() );
     }
 
@@ -345,7 +350,7 @@ public class OnlineBackupCommandTest
         expected.expectMessage( "Backup failed: nah-ah" );
         expected.expect( CommandFailed.class );
 
-        execute( "--fallback-to-full=false", "--backup-dir=" + dir.getParent(), "--name=" + dir.getName() );
+        execute( "--fallback-to-full=false", backupDir( dir.getParent() ), "--name=" + dir.getName() );
     }
 
     @Test
@@ -363,7 +368,7 @@ public class OnlineBackupCommandTest
         when( backupService.doIncrementalBackup( any(), anyInt(), any(), anyLong(), any() ) )
                 .thenThrow( new RuntimeException( "nah-ah" ) );
 
-        execute( "--cc-report-dir=" + dir.getParent(), "--backup-dir=" + dir.getParent(),
+        execute( "--cc-report-dir=" + dir.getParent(), backupDir( dir.getParent() ),
                 "--name=" + dir.getName() );
 
         verify( backupService ).doIncrementalBackup( any(), anyInt(), any(), anyLong(), any() );
@@ -392,7 +397,7 @@ public class OnlineBackupCommandTest
 
         expected.expect( CommandFailed.class );
         expected.expectMessage( "ailed to move old backup out of the way: too many old backups." );
-        execute( "--cc-report-dir=" + dir.getParent(), "--backup-dir=" + dir.getParent(), "--name=" + dir.getName() );
+        execute( "--cc-report-dir=" + dir.getParent(), backupDir( dir.getParent() ), "--name=" + dir.getName() );
     }
 
     @Test
@@ -402,7 +407,7 @@ public class OnlineBackupCommandTest
         when( consistencyCheckService.runFullConsistencyCheck( any(), any(), any(), any(), any(), anyBoolean(),
                 any() ) ).thenReturn( ConsistencyCheckService.Result.success( null ) );
 
-        execute( "--check-consistency", "--backup-dir=/", "--name=mybackup",
+        execute( "--check-consistency", backupDir(), "--name=mybackup",
                 "--cc-report-dir=" + reportDir );
 
         verify( backupService ).doFullBackup( any(), anyInt(), any(), any(), any(), anyLong(), anyBoolean() );
@@ -421,7 +426,7 @@ public class OnlineBackupCommandTest
 
         expected.expect( CommandFailed.class );
         expected.expectMessage( "Backup failed: nope" );
-        execute( "--backup-dir=" + dir.getParent(), "--name=" + dir.getName() );
+        execute( backupDir( dir.getParent() ), "--name=" + dir.getName() );
     }
 
     @Test
@@ -429,17 +434,18 @@ public class OnlineBackupCommandTest
     {
         expected.expect( IncorrectUsage.class );
         expected.expectMessage( "cc-report-dir must be a path" );
-        execute( "--check-consistency", "--backup-dir=/", "--name=mybackup",
+        execute( "--check-consistency", backupDir(), "--name=mybackup",
                 "--cc-report-dir" );
     }
 
     @Test
     public void reportDirMustExist() throws Exception
     {
+        final String path = path( "/aalivnmoimzlckmvPDK" );
         expected.expect( CommandFailed.class );
-        expected.expectMessage( "Directory '/aalivnmoimzlckmvPDK' does not exist." );
-        execute( "--check-consistency", "--backup-dir=/", "--name=mybackup",
-                "--cc-report-dir=/aalivnmoimzlckmvPDK" );
+        expected.expectMessage( "Directory '" + path + "' does not exist." );
+        execute( "--check-consistency", backupDir(), "--name=mybackup",
+                "--cc-report-dir=" + path );
     }
 
     @Test
@@ -448,7 +454,7 @@ public class OnlineBackupCommandTest
     {
         ArgumentCaptor<Config> config = ArgumentCaptor.forClass( Config.class );
 
-        execute( "--backup-dir=/", "--name=mybackup" );
+        execute( backupDir(), "--name=mybackup" );
 
         verify( backupService ).doFullBackup( any(), anyInt(), any(), any(), config.capture(), anyLong(),
                 anyBoolean() );
@@ -461,7 +467,7 @@ public class OnlineBackupCommandTest
     {
         ArgumentCaptor<Config> config = ArgumentCaptor.forClass( Config.class );
 
-        execute( "--backup-dir=/", "--name=mybackup" );
+        execute( backupDir(), "--name=mybackup" );
 
         verify( backupService ).doFullBackup( any(), anyInt(), any(), any(), config.capture(), anyLong(),
                 anyBoolean() );
@@ -476,7 +482,7 @@ public class OnlineBackupCommandTest
         Files.write( configDir.resolve( "neo4j.conf" ), singletonList( cypher_planner.name() + "=RULE" ) );
         ArgumentCaptor<Config> config = ArgumentCaptor.forClass( Config.class );
 
-        execute( "--backup-dir=/", "--name=mybackup" );
+        execute( backupDir(), "--name=mybackup" );
 
         verify( backupService ).doFullBackup( any(), anyInt(), any(), any(), config.capture(), anyLong(),
                 anyBoolean() );
@@ -491,7 +497,7 @@ public class OnlineBackupCommandTest
         Files.write( extraConf, singletonList( cypher_planner.name() + "=RULE" ) );
         ArgumentCaptor<Config> config = ArgumentCaptor.forClass( Config.class );
 
-        execute( "--additional-config=" + extraConf, "--backup-dir=/", "--name=mybackup" );
+        execute( "--additional-config=" + extraConf, backupDir(), "--name=mybackup" );
 
         verify( backupService ).doFullBackup( any(), anyInt(), any(), any(), config.capture(), anyLong(),
                 anyBoolean() );
@@ -502,7 +508,7 @@ public class OnlineBackupCommandTest
     public void shouldDefaultTimeoutToTwentyMinutes()
             throws BackupTool.ToolFailureException, CommandFailed, IncorrectUsage
     {
-        execute( "--backup-dir=/", "--name=mybackup" );
+        execute( backupDir(), "--name=mybackup" );
 
         verify( backupService ).doFullBackup( any(), anyInt(), any(), any(), any(),
                 eq( MINUTES.toMillis( 20 ) ),
@@ -513,7 +519,7 @@ public class OnlineBackupCommandTest
     public void shouldInterpretAUnitlessTimeoutAsSeconds()
             throws BackupTool.ToolFailureException, CommandFailed, IncorrectUsage
     {
-        execute( "--timeout=10", "--backup-dir=/", "--name=mybackup" );
+        execute( "--timeout=10", backupDir(), "--name=mybackup" );
 
         verify( backupService ).doFullBackup( any(), anyInt(), any(), any(), any(),
                 eq( SECONDS.toMillis( 10 ) ),
@@ -524,7 +530,7 @@ public class OnlineBackupCommandTest
     public void shouldParseATimeoutWithUnits()
             throws BackupTool.ToolFailureException, CommandFailed, IncorrectUsage
     {
-        execute( "--timeout=10h", "--backup-dir=/", "--name=mybackup" );
+        execute( "--timeout=10h", backupDir(), "--name=mybackup" );
 
         verify( backupService ).doFullBackup( any(), anyInt(), any(), any(), any(),
                 eq( HOURS.toMillis( 10 ) ),
@@ -582,5 +588,30 @@ public class OnlineBackupCommandTest
     {
         new OnlineBackupCommand( backupService, Paths.get( "/some/path" ), configDir, consistencyCheckService,
                 outsideWorld ).execute( args );
+    }
+
+    /**
+     * @param path to transform to platform independent absolute path
+     * @return platform independent absolute path
+     */
+    static String path( String path )
+    {
+        return Paths.get( path ).toFile().getAbsolutePath();
+    }
+
+    /**
+     * @return a backup-dir argument with a path suitable for each platform
+     */
+    static String backupDir()
+    {
+        return backupDir( "/" );
+    }
+
+    /**
+     * @return the backup-dir argument with a path suitable for each platform
+     */
+    static String backupDir( String path )
+    {
+        return "--backup-dir=" + path( path );
     }
 }
