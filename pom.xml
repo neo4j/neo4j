@@ -291,6 +291,52 @@
 
     <!-- Build configuration profiles -->
     <profile>
+      <id>neo-full-build</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+        <property>
+          <name>fullBuild</name>
+        </property>
+      </activation>
+      <modules>
+        <module>packaging</module>
+      </modules>
+      <properties>
+        <attach-docs-phase>verify</attach-docs-phase>
+      </properties>
+    </profile>
+    <profile>
+      <id>neodev</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+      </activation>
+      <properties>
+        <attach-test-jar-phase>package</attach-test-jar-phase>
+      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.neo4j.build.plugins</groupId>
+            <artifactId>license-maven-plugin</artifactId>
+            <!-- inserting licenses is better than checking for them -->
+            <executions>
+              <execution>
+                <id>check-licenses</id>
+                <phase>none</phase>
+              </execution>
+              <execution>
+                <id>insert-licenses</id>
+                <phase>initialize</phase>
+                <goals>
+                  <goal>format</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
       <id>neo-minimal-build</id>
       <activation>
         <activeByDefault>false</activeByDefault>
