@@ -115,10 +115,10 @@ public class PlatformModule
             GraphDatabaseFacadeFactory.Dependencies externalDependencies, GraphDatabaseFacade graphDatabaseFacade )
     {
         this.databaseInfo = databaseInfo;
-        clock = createClock();
         this.dataSourceManager = new DataSourceManager();
         dependencies = new org.neo4j.kernel.impl.util.Dependencies(
                 new DataSourceManager.DependencyResolverSupplier( dataSourceManager ) );
+        clock = dependencies.satisfyDependency( createClock() );
 
         life = dependencies.satisfyDependency( createLife() );
         this.graphDatabaseFacade = dependencies.satisfyDependency( graphDatabaseFacade );

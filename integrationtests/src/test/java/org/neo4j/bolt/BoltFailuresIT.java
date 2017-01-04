@@ -23,6 +23,7 @@ import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.time.Clock;
 import java.util.function.Consumer;
 
 import org.neo4j.bolt.v1.runtime.BoltFactory;
@@ -243,7 +244,7 @@ public class BoltFailuresIT
 
         @Override
         protected WorkerFactory createWorkerFactory( BoltFactory boltFactory, JobScheduler scheduler,
-                Dependencies dependencies, LogService logService )
+                Dependencies dependencies, LogService logService, Clock clock )
         {
             return workerFactory;
         }
