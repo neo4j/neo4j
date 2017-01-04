@@ -19,33 +19,22 @@
  */
 package org.neo4j.io.pagecache.tracing;
 
-/**
- * An eviction run is started when the page cache has determined that it
- * needs to evict a batch of pages. The dedicated eviction thread is
- * mostly sleeping when it is not performing an eviction run.
- */
-public interface EvictionRunEvent extends AutoCloseablePageCacheTracerEvent
+import org.neo4j.io.pagecache.PageSwapper;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+
+public class DelegatingPageCursorTracer implements PageCursorTracer
 {
-    /**
-     * An EvictionRunEvent that does nothing other than return the EvictionEvent.NULL.
-     */
-    EvictionRunEvent NULL = new EvictionRunEvent()
+
+    private final PageCursorTracer delegate;
+
+    public DelegatingPageCursorTracer( PageCursorTracer delegate )
     {
+        this.delegate = delegate;
+    }
 
-        @Override
-        public EvictionEvent beginEviction()
-        {
-            return EvictionEvent.NULL;
-        }
-
-        @Override
-        public void close()
-        {
-        }
-    };
-
-    /**
-     * An eviction is started as part of this eviction run.
-     */
-    EvictionEvent beginEviction();
+    @Override
+    public PinEvent beginPin( boolean writeLock, long filePageId, PageSwapper swapper )
+    {
+        return null;
+    }
 }

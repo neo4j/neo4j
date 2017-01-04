@@ -49,15 +49,15 @@ public interface PinEvent
     /**
      * The id of the cache page that holds the file page we pinned.
      */
-    public void setCachePageId( int cachePageId );
+    void setCachePageId( int cachePageId );
 
     /**
      * The page we want to pin is not in memory, so being a page fault to load it in.
      */
-    public PageFaultEvent beginPageFault();
+    PageFaultEvent beginPageFault();
 
     /**
      * The pinning has completed and the page is now unpinned.
      */
-    public void done();
+    void done();
 }

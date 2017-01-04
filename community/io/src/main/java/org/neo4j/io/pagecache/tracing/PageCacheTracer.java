@@ -53,12 +53,6 @@ public interface PageCacheTracer extends PageCacheCounters
         }
 
         @Override
-        public PinEvent beginPin( boolean writeLock, long filePageId, PageSwapper swapper )
-        {
-            return PinEvent.NULL;
-        }
-
-        @Override
         public MajorFlushEvent beginFileFlush( PageSwapper swapper )
         {
             return MajorFlushEvent.NULL;
@@ -131,6 +125,26 @@ public interface PageCacheTracer extends PageCacheCounters
         }
 
         @Override
+        public void pins( long pins )
+        {
+        }
+
+        @Override
+        public void unpins( long unpins )
+        {
+        }
+
+        @Override
+        public void faults( long faults )
+        {
+        }
+
+        @Override
+        public void bytesRead( long bytesRead )
+        {
+        }
+
+        @Override
         public String toString()
         {
             return PageCacheTracer.class.getName() + ".NULL";
@@ -157,11 +171,6 @@ public interface PageCacheTracer extends PageCacheCounters
     EvictionRunEvent beginPageEvictions( int pageCountToEvict );
 
     /**
-     * A page is to be pinned.
-     */
-    PinEvent beginPin( boolean writeLock, long filePageId, PageSwapper swapper );
-
-    /**
      * A PagedFile wants to flush all its bound pages.
      */
     MajorFlushEvent beginFileFlush( PageSwapper swapper );
@@ -170,4 +179,12 @@ public interface PageCacheTracer extends PageCacheCounters
      * The PageCache wants to flush all its bound pages.
      */
     MajorFlushEvent beginCacheFlush();
+
+    void pins( long pins );
+
+    void unpins( long unpins );
+
+    void faults( long faults );
+
+    void bytesRead( long bytesRead );
 }

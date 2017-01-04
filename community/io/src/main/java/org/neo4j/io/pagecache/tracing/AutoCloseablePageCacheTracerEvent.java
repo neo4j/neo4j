@@ -27,5 +27,5 @@ package org.neo4j.io.pagecache.tracing;
 public interface AutoCloseablePageCacheTracerEvent extends AutoCloseable
 {
     @Override
-    public void close();
+    void close();
 }

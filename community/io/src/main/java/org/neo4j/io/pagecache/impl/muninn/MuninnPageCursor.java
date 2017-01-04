@@ -27,9 +27,9 @@ import org.neo4j.concurrent.BinaryLatch;
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageSwapper;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 import org.neo4j.io.pagecache.tracing.PinEvent;
+import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
@@ -54,7 +54,6 @@ abstract class MuninnPageCursor extends PageCursor
     private final long victimPage;
     protected MuninnPagedFile pagedFile;
     protected PageSwapper swapper;
-    protected PageCacheTracer tracer;
     protected MuninnPage page;
     protected PinEvent pinEvent;
     protected long pageId;
@@ -72,6 +71,8 @@ abstract class MuninnPageCursor extends PageCursor
     // offending code.
     private Object cursorException;
 
+    private DefaultPageCursorTracer pageCursorTracer = new DefaultPageCursorTracer();
+
     MuninnPageCursor( long victimPage )
     {
         this.victimPage = victimPage;
@@ -81,7 +82,7 @@ abstract class MuninnPageCursor extends PageCursor
     final void initialiseFile( MuninnPagedFile pagedFile )
     {
         this.swapper = pagedFile.swapper;
-        this.tracer = pagedFile.tracer;
+        this.pageCursorTracer.init( pagedFile.tracer );
     }
 
     final void initialiseFlags( MuninnPagedFile pagedFile, long pageId, int pf_flags )
@@ -131,6 +132,7 @@ abstract class MuninnPageCursor extends PageCursor
             if ( cursor.pagedFile != null )
             {
                 cursor.unpinCurrentPage();
+                cursor.pageCursorTracer.reportEvents();
                 cursor.releaseCursor();
                 // We null out the pagedFile field to allow it and its (potentially big) translation table to be garbage
                 // collected when the file is unmapped, since the cursors can stick around in thread local caches, etc.
@@ -209,7 +211,7 @@ abstract class MuninnPageCursor extends PageCursor
      */
     protected void pin( long filePageId, boolean writeLock ) throws IOException
     {
-        pinEvent = tracer.beginPin( writeLock, filePageId, swapper );
+        pinEvent = pageCursorTracer.beginPin( writeLock, filePageId, swapper );
         int chunkId = MuninnPagedFile.computeChunkId( filePageId );
         // The chunkOffset is the addressing offset into the chunk array object for the relevant array slot. Using
         // this, we can access the array slot with Unsafe.

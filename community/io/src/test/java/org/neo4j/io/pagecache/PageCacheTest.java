@@ -73,6 +73,7 @@ import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PinEvent;
 import org.neo4j.test.rule.RepeatRule;
+import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 
 import static java.lang.Long.toHexString;
 import static java.lang.System.currentTimeMillis;
@@ -111,7 +112,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @BeforeClass
     public static void enablePinUnpinMonitoring()
     {
-        DefaultPageCacheTracer.enablePinUnpinTracing();
+        DefaultPageCursorTracer.enablePinUnpinTracing();
     }
 
     @Test
@@ -2230,12 +2231,13 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
 
         DefaultPageCacheTracer tracer = new DefaultPageCacheTracer()
         {
-            @Override
-            public PinEvent beginPin( boolean writeLock, long filePageId, PageSwapper swapper )
-            {
-                (writeLock? writeCount : readCount).getAndIncrement();
-                return super.beginPin( writeLock, filePageId, swapper );
-            }
+            //TODO::
+//            @Override
+//            public PinEvent beginPin( boolean writeLock, long filePageId, PageSwapper swapper )
+//            {
+//                (writeLock? writeCount : readCount).getAndIncrement();
+//                return super.beginPin( writeLock, filePageId, swapper );
+//            }
         };
         generateFileWithRecords( file( "a" ), recordCount, recordSize );
 

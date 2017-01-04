@@ -56,19 +56,9 @@ public class RecordingPageCacheTracer implements PageCacheTracer
         Collections.addAll( this.eventTypesToTrace, eventTypesToTrace );
     }
 
-    private void pageFaulted( long filePageId, PageSwapper swapper )
-    {
-        record( new Fault( swapper, filePageId ) );
-    }
-
     private void evicted( long filePageId, PageSwapper swapper )
     {
         record( new Evict( swapper, filePageId ) );
-    }
-
-    private void pinned( long filePageId, PageSwapper swapper )
-    {
-        record( new Pin( swapper, filePageId ) );
     }
 
     private void record( Event event )
@@ -106,58 +96,6 @@ public class RecordingPageCacheTracer implements PageCacheTracer
             @Override
             public void close()
             {
-            }
-        };
-    }
-
-    @Override
-    public PinEvent beginPin( boolean writeLock, final long filePageId, final PageSwapper swapper )
-    {
-        return new PinEvent()
-        {
-            @Override
-            public void setCachePageId( int cachePageId )
-            {
-            }
-
-            @Override
-            public PageFaultEvent beginPageFault()
-            {
-                return new PageFaultEvent()
-                {
-                    @Override
-                    public void addBytesRead( long bytes )
-                    {
-                    }
-
-                    @Override
-                    public void done()
-                    {
-                        pageFaulted( filePageId, swapper );
-                    }
-
-                    @Override
-                    public void done( Throwable throwable )
-                    {
-                    }
-
-                    @Override
-                    public EvictionEvent beginEviction()
-                    {
-                        return new RecordingEvictionEvent();
-                    }
-
-                    @Override
-                    public void setCachePageId( int cachePageId )
-                    {
-                    }
-                };
-            }
-
-            @Override
-            public void done()
-            {
-                pinned( filePageId, swapper );
             }
         };
     }
@@ -232,6 +170,26 @@ public class RecordingPageCacheTracer implements PageCacheTracer
     public long evictionExceptions()
     {
         return 0;
+    }
+
+    @Override
+    public void pins( long pins )
+    {
+    }
+
+    @Override
+    public void unpins( long unpins )
+    {
+    }
+
+    @Override
+    public void faults( long faults )
+    {
+    }
+
+    @Override
+    public void bytesRead( long bytesRead )
+    {
     }
 
     public <T extends Event> T observe( Class<T> type ) throws InterruptedException

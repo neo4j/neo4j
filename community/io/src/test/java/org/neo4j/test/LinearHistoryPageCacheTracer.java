@@ -547,12 +547,6 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
     }
 
     @Override
-    public PinEvent beginPin( boolean writeLock, long filePageId, PageSwapper swapper )
-    {
-        return add( new PinHEvent( writeLock, filePageId, swapper ));
-    }
-
-    @Override
     public MajorFlushEvent beginFileFlush( PageSwapper swapper )
     {
         return add( new MajorFlushHEvent( swapper.file() ) );
@@ -622,6 +616,29 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
     public long evictionExceptions()
     {
         return 0;
+    }
+
+    @Override
+    public void pins( long pins )
+    {
+    }
+
+    @Override
+    public void unpins( long unpins )
+    {
+
+    }
+
+    @Override
+    public void faults( long faults )
+    {
+
+    }
+
+    @Override
+    public void bytesRead( long bytesRead )
+    {
+
     }
 
     private class HistoryPrinter implements Consumer<HEvent>

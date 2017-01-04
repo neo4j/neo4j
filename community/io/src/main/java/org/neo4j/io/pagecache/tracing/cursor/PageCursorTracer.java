@@ -17,35 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.pagecache.tracing;
+package org.neo4j.io.pagecache.tracing.cursor;
 
-/**
- * An eviction run is started when the page cache has determined that it
- * needs to evict a batch of pages. The dedicated eviction thread is
- * mostly sleeping when it is not performing an eviction run.
- */
-public interface EvictionRunEvent extends AutoCloseablePageCacheTracerEvent
+import org.neo4j.io.pagecache.PageSwapper;
+import org.neo4j.io.pagecache.tracing.PinEvent;
+
+public interface PageCursorTracer
 {
-    /**
-     * An EvictionRunEvent that does nothing other than return the EvictionEvent.NULL.
-     */
-    EvictionRunEvent NULL = new EvictionRunEvent()
-    {
 
-        @Override
-        public EvictionEvent beginEviction()
-        {
-            return EvictionEvent.NULL;
-        }
+    PageCursorTracer NULL = ( writeLock, filePageId, swapper ) -> PinEvent.NULL;
 
-        @Override
-        public void close()
-        {
-        }
-    };
+    PinEvent beginPin( boolean writeLock, long filePageId, PageSwapper swapper );
 
-    /**
-     * An eviction is started as part of this eviction run.
-     */
-    EvictionEvent beginEviction();
 }

@@ -68,26 +68,26 @@ public interface EvictionEvent extends AutoCloseablePageCacheTracerEvent
     /**
      * The file page id the evicted page was bound to.
      */
-    public void setFilePageId( long filePageId );
+    void setFilePageId( long filePageId );
 
     /**
      * The swapper the evicted page was bound to.
      */
-    public void setSwapper( PageSwapper swapper );
+    void setSwapper( PageSwapper swapper );
 
     /**
      * Eviction implies an opportunity to flush.
      */
-    public FlushEventOpportunity flushEventOpportunity();
+    FlushEventOpportunity flushEventOpportunity();
 
     /**
      * Indicates that the eviction caused an exception to be thrown.
      * This can happen if some kind of IO error occurs.
      */
-    public void threwException( IOException exception );
+    void threwException( IOException exception );
 
     /**
      * The cache page id of the evicted page.
      */
-    public void setCachePageId( int cachePageId );
+    void setCachePageId( int cachePageId );
 }
