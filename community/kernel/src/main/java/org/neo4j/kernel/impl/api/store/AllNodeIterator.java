@@ -19,20 +19,15 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import org.neo4j.kernel.impl.store.CommonAbstractStore;
-import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
-import org.neo4j.kernel.impl.store.record.RecordLoad;
+import org.neo4j.kernel.impl.store.NodeStore;
 
-public class AllRecordIdIterator<RECORD extends PrimitiveRecord, STORE extends CommonAbstractStore<RECORD,?>>
-        extends HighIdAwareIterator<STORE>
+public class AllNodeIterator extends HighIdAwareIterator<NodeStore>
 {
-    protected final RECORD record;
     private long currentId;
 
-    AllRecordIdIterator( RECORD record, STORE store )
+    AllNodeIterator( NodeStore nodeStore )
     {
-        super( store );
-        this.record = record;
+        super( nodeStore );
     }
 
     @Override
@@ -42,10 +37,9 @@ public class AllRecordIdIterator<RECORD extends PrimitiveRecord, STORE extends C
         {
             try
             {
-                store.getRecord( currentId, record, RecordLoad.CHECK );
-                if ( record.inUse() )
+                if ( store.isInUse( currentId ) )
                 {
-                    return next( record.getId() );
+                    return next( currentId );
                 }
             }
             finally
