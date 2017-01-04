@@ -73,7 +73,7 @@ import org.neo4j.storageengine.api.schema.IndexSchemaRule;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
-import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 
 /**
@@ -412,8 +412,8 @@ public class DiskLayer implements StoreReadLayer
             RelationshipVisitor<EXCEPTION> relationshipVisitor ) throws EntityNotFoundException, EXCEPTION
     {
         // TODO Please don't create a record for this, it's ridiculous
-        RelationshipRecord record = relationshipStore.newRecord();
-        if ( !relationshipStore.getRecord( relationshipId, record, FORCE ).inUse() )
+        RelationshipRecord record = relationshipStore.getRecord( relationshipId, relationshipStore.newRecord(), CHECK );
+        if ( !record.inUse() )
         {
             throw new EntityNotFoundException( EntityType.RELATIONSHIP, relationshipId );
         }
