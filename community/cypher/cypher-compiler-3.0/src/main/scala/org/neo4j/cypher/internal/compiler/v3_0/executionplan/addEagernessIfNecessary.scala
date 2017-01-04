@@ -56,7 +56,7 @@ object addEagernessIfNecessary extends (Pipe => Pipe) {
         relsCreateReadConflict(from, toWithoutLeafInfo) ||
         relsDeleteReadConflict(fromWithoutLeafInfo, toWithoutLeafInfo) ||
         relationshipPropertiesConflict(fromWithoutLeafInfo, toWithoutLeafInfo) ||
-        readsWritesLabels(fromWithoutLeafInfo, toWithoutLeafInfo) ||
+        readsWritesLabels(from, toWithoutLeafInfo) ||
         writesReadsLabels(fromWithoutLeafInfo, toWithoutLeafInfo)
     }
   }
@@ -81,7 +81,7 @@ object addEagernessIfNecessary extends (Pipe => Pipe) {
     val relCreateReadConflict = relsCreateReadConflict(from, toWithoutLeafInfo)
     val relDeleteReadConflict = relsDeleteReadConflict(fromWithoutLeafInfo, toWithoutLeafInfo)
     val relPropConflict = relationshipPropertiesConflict(fromWithoutLeafInfo, toWithoutLeafInfo)
-    val readsWritesLabelConflict = readsWritesLabels(fromWithoutLeafInfo, toWithoutLeafInfo)
+    val readsWritesLabelConflict = readsWritesLabels(from, toWithoutLeafInfo)
     val writesReadsLabelsConflict = writesReadsLabels(fromWithoutLeafInfo, toWithoutLeafInfo)
 
     nodeNonLeafReadWriteConflict ||
