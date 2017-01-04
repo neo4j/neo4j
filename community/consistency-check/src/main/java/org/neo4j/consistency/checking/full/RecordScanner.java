@@ -39,7 +39,10 @@ abstract class RecordScanner<RECORD> extends ConsistencyCheckerTask
         super( name, statistics, threads );
         this.store = store;
         this.processor = processor;
-        this.progress = builder.progressForPart( name, store.maxCount() );
+        long maxCount = store.maxCount();
+        this.progress = maxCount == -1
+                ? builder.progressForUnknownPart( name )
+                : builder.progressForPart( name, maxCount );
         this.warmUpStores = warmUpStores;
     }
 

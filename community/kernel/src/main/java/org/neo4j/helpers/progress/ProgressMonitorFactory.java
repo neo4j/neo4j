@@ -94,7 +94,7 @@ public abstract class ProgressMonitorFactory
     public static class MultiPartBuilder
     {
         private Aggregator aggregator;
-        private Set<String> parts = new HashSet<String>();
+        private Set<String> parts = new HashSet<>();
         private Completion completion = null;
 
         private MultiPartBuilder( ProgressMonitorFactory factory, String process )
@@ -104,17 +104,37 @@ public abstract class ProgressMonitorFactory
 
         public ProgressListener progressForPart( String part, long totalCount )
         {
-            if ( aggregator == null )
-            {
-                throw new IllegalStateException( "Builder has been completed." );
-            }
+            assertNotBuilt();
+            assertUniquePart( part );
+            ProgressListener.MultiPartProgressListener progress =
+                    new ProgressListener.MultiPartProgressListener( aggregator, part, totalCount );
+            aggregator.add( progress, totalCount );
+            return progress;
+        }
+
+        public ProgressListener progressForUnknownPart( String part )
+        {
+            assertNotBuilt();
+            assertUniquePart( part );
+            ProgressListener progress = ProgressListener.NONE;
+            aggregator.add( progress, 0 );
+            return progress;
+        }
+
+        private void assertUniquePart( String part )
+        {
             if ( !parts.add( part ) )
             {
                 throw new IllegalArgumentException( String.format( "Part '%s' has already been defined.", part ) );
             }
-            ProgressListener.MultiPartProgressListener progress = new ProgressListener.MultiPartProgressListener( aggregator, part, totalCount );
-            aggregator.add( progress );
-            return progress;
+        }
+
+        private void assertNotBuilt()
+        {
+            if ( aggregator == null )
+            {
+                throw new IllegalStateException( "Builder has been completed." );
+            }
         }
 
         public Completion build()
