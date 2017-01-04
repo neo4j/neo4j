@@ -39,8 +39,9 @@ import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.security.AnonymousContext
 import org.neo4j.kernel.api.{KernelTransaction, Statement}
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker
-import org.neo4j.kernel.impl.query.{Neo4jTransactionalContextFactory, QuerySource}
 import org.neo4j.time.Clocks
+import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
+import org.neo4j.kernel.impl.query.clientsession.ClientSessionInfo
 import org.scalatest.mock.MockitoSugar
 
 import scala.collection.JavaConversions
@@ -69,7 +70,7 @@ trait CodeGenSugar extends MockitoSugar {
     try {
       val locker: PropertyContainerLocker = new PropertyContainerLocker
       val contextFactory = Neo4jTransactionalContextFactory.create(graphDb, locker)
-      val transactionalContext = TransactionalContextWrapper(contextFactory.newContext(QuerySource.EMBEDDED_SESSION, tx,
+      val transactionalContext = TransactionalContextWrapper(contextFactory.newContext(ClientSessionInfo.EMBEDDED_SESSION, tx,
         "no query text exists for this test", Collections.emptyMap()))
       val queryContext = new TransactionBoundQueryContext(transactionalContext)(mock[IndexSearchMonitor])
       val result = plan.executionResultBuilder(queryContext, mode, tracer(mode), Map.empty, new TaskCloser)

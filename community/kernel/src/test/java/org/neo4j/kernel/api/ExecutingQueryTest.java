@@ -32,7 +32,7 @@ import org.hamcrest.TypeSafeMatcher;
 import org.junit.Test;
 
 import org.neo4j.kernel.impl.locking.LockWaitEvent;
-import org.neo4j.kernel.impl.query.QuerySource;
+import org.neo4j.kernel.impl.query.clientsession.ClientSessionInfo;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.lock.WaitStrategy;
 import org.neo4j.test.FakeCpuClock;
@@ -51,7 +51,7 @@ public class ExecutingQueryTest
     private final FakeCpuClock cpuClock = new FakeCpuClock();
     private ExecutingQuery query = new ExecutingQuery(
             1,
-            QuerySource.EMBEDDED_SESSION,
+            ClientSessionInfo.EMBEDDED_SESSION,
             "neo4j",
             "hello world",
             Collections.emptyMap(),

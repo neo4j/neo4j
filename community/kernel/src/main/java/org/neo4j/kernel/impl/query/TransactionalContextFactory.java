@@ -22,10 +22,11 @@ package org.neo4j.kernel.impl.query;
 import java.util.Map;
 
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.impl.query.clientsession.ClientSessionInfo;
 
 public interface TransactionalContextFactory
 {
-    TransactionalContext newContext( QuerySource descriptor,
+    TransactionalContext newContext( ClientSessionInfo descriptor,
                   InternalTransaction tx,
                   String queryText,
                   Map<String,Object> queryParameters

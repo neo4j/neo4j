@@ -29,14 +29,15 @@ import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.kernel.api.KernelTransaction.Type._
 import org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED
 import org.neo4j.kernel.impl.coreapi.{InternalTransaction, PropertyContainerLocker}
-import org.neo4j.kernel.impl.query.{Neo4jTransactionalContextFactory, QuerySource}
+import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
+import org.neo4j.kernel.impl.query.clientsession.ClientSessionInfo
 import org.neo4j.test.TestGraphDatabaseFactory
 
 class TransactionBoundPlanContextTest extends CypherFunSuite {
 
   private def createTransactionContext(graphDatabaseCypherService: GraphDatabaseCypherService, transaction: InternalTransaction) = {
     val contextFactory = Neo4jTransactionalContextFactory.create(graphDatabaseCypherService, new PropertyContainerLocker)
-    contextFactory.newContext(QuerySource.EMBEDDED_SESSION, transaction, "no query", Collections.emptyMap())
+    contextFactory.newContext(ClientSessionInfo.EMBEDDED_SESSION, transaction, "no query", Collections.emptyMap())
   }
 
   test("statistics should default to single cardinality on empty db") {

@@ -26,7 +26,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 
 import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.LockWaitEvent;
-import org.neo4j.kernel.impl.query.QuerySource;
+import org.neo4j.kernel.impl.query.clientsession.ClientSessionInfo;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.time.CpuClock;
 import org.neo4j.time.SystemNanoClock;
@@ -44,7 +44,7 @@ public class ExecutingQuery
     private final long queryId;
     private final LockTracer lockTracer = ExecutingQuery.this::waitForLock;
     private final String username;
-    private final QuerySource querySource;
+    private final ClientSessionInfo clientSession;
     private final String queryText;
     private final Map<String, Object> queryParameters;
     private final long startTime; // timestamp in milliseconds
@@ -60,7 +60,7 @@ public class ExecutingQuery
 
     public ExecutingQuery(
             long queryId,
-            QuerySource querySource,
+            ClientSessionInfo clientSession,
             String username,
             String queryText,
             Map<String,Object> queryParameters,
@@ -70,7 +70,7 @@ public class ExecutingQuery
             CpuClock cpuClock
     ) {
         this.queryId = queryId;
-        this.querySource = querySource;
+        this.clientSession = clientSession;
         this.username = username;
         this.queryText = queryText;
         this.queryParameters = queryParameters;
@@ -115,9 +115,9 @@ public class ExecutingQuery
         return username;
     }
 
-    public QuerySource querySource()
+    public ClientSessionInfo clientSession()
     {
-        return querySource;
+        return clientSession;
     }
 
     public String queryText()
@@ -172,6 +172,11 @@ public class ExecutingQuery
     public Map<String,Object> status()
     {
         return status.toMap( clock );
+    }
+
+    public String connectionDetailsForLogging()
+    {
+        return clientSession.asConnectionDetails();
     }
 
     private LockWaitEvent waitForLock( ResourceType resourceType, long[] resourceIds )

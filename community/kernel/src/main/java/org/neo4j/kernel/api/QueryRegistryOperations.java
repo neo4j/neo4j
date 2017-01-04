@@ -22,7 +22,7 @@ package org.neo4j.kernel.api;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import org.neo4j.kernel.impl.query.QuerySource;
+import org.neo4j.kernel.impl.query.clientsession.ClientSessionInfo;
 
 
 /**
@@ -50,7 +50,7 @@ public interface QueryRegistryOperations
      * Registers a query, and creates the ExecutingQuery object for it.
      */
     ExecutingQuery startQueryExecution(
-        QuerySource descriptor, String queryText, Map<String, Object> queryParameters
+        ClientSessionInfo descriptor, String queryText, Map<String, Object> queryParameters
     );
 
     /**

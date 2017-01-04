@@ -100,8 +100,8 @@ import org.neo4j.kernel.impl.api.security.RestrictedAccessMode;
 import org.neo4j.kernel.impl.api.store.CursorRelationshipIterator;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.proc.Procedures;
-import org.neo4j.kernel.impl.query.QuerySource;
 import org.neo4j.kernel.impl.util.Cursors;
+import org.neo4j.kernel.impl.query.clientsession.ClientSessionInfo;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.storageengine.api.LabelItem;
 import org.neo4j.storageengine.api.NodeItem;
@@ -1422,7 +1422,7 @@ public class OperationsFacade
 
     @Override
     public ExecutingQuery startQueryExecution(
-        QuerySource descriptor,
+        ClientSessionInfo descriptor,
         String queryText,
         Map<String,Object> queryParameters )
     {

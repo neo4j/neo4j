@@ -17,25 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.rest.web;
+package org.neo4j.kernel.impl.query.clientsession;
 
-import java.net.InetSocketAddress;
-import javax.servlet.http.HttpServletRequest;
+import java.io.Serializable;
 
-import org.neo4j.kernel.impl.query.clientsession.ClientSessionInfo;
-import org.neo4j.kernel.impl.query.clientsession.HttpSessionInfo;
-
-import static javax.ws.rs.core.HttpHeaders.USER_AGENT;
-
-public class ServerQuerySession
+public class ShellSessionInfo extends ClientSessionInfo
 {
-    public static ClientSessionInfo describe( HttpServletRequest request )
+    private final Serializable id;
+
+    public ShellSessionInfo( Serializable id )
     {
-        return new HttpSessionInfo(
-                request.getScheme(),
-                request.getHeader( USER_AGENT ),
-                new InetSocketAddress( request.getRemoteAddr(), request.getRemotePort() ),
-                new InetSocketAddress( request.getServerName(), request.getServerPort() ),
-                request.getRequestURI() );
+        this.id = id;
+    }
+
+    @Override
+    public String asConnectionDetails()
+    {
+        return "shell-session\tshell\t" + id;
     }
 }

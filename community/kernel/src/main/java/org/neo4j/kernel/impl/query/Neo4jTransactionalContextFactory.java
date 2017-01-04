@@ -31,6 +31,7 @@ import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.query.clientsession.ClientSessionInfo;
 
 import static org.neo4j.function.Suppliers.lazySingleton;
 
@@ -97,16 +98,16 @@ public class Neo4jTransactionalContextFactory implements TransactionalContextFac
 
     @Override
     public final Neo4jTransactionalContext newContext(
-        QuerySource querySource,
+        ClientSessionInfo clientSession,
         InternalTransaction tx,
         String queryText,
         Map<String,Object> queryParameters
     )
     {
         Statement initialStatement = statementSupplier.get();
-        QuerySource querySourceWithUserName = querySource.withUsername( tx.securityContext().subject().username() );
+        ClientSessionInfo sessionWithUserName = clientSession.withUsername( tx.securityContext().subject().username() );
         ExecutingQuery executingQuery = initialStatement.queryRegistration().startQueryExecution(
-            querySourceWithUserName, queryText, queryParameters
+                sessionWithUserName, queryText, queryParameters
         );
         return contextCreator.create( statementSupplier, tx, initialStatement, executingQuery );
     }

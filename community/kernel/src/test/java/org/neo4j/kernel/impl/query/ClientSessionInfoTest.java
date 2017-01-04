@@ -23,15 +23,20 @@ import java.net.InetSocketAddress;
 
 import org.junit.Test;
 
+import org.neo4j.kernel.impl.query.clientsession.BoltSessionInfo;
+import org.neo4j.kernel.impl.query.clientsession.ClientSessionInfo;
+import org.neo4j.kernel.impl.query.clientsession.HttpSessionInfo;
+import org.neo4j.kernel.impl.query.clientsession.ShellSessionInfo;
+
 import static org.junit.Assert.assertEquals;
 
-public class QuerySourceTest
+public class ClientSessionInfoTest
 {
     @Test
     public void connectionDetailsForBoltQuerySource() throws Exception
     {
         // given
-        QuerySource querySource = new QuerySource.BoltSession(
+        ClientSessionInfo clientSession = new BoltSessionInfo(
                 "username",
                 "neo4j-java-bolt-driver",
                 new InetSocketAddress( "127.0.0.1", 56789 ),
@@ -39,7 +44,7 @@ public class QuerySourceTest
                 .withUsername( "username" );
 
         // when
-        String connectionDetails = querySource.asConnectionDetails();
+        String connectionDetails = clientSession.asConnectionDetails();
 
         // then
         assertEquals(
@@ -52,13 +57,13 @@ public class QuerySourceTest
     public void connectionDetailsForHttpQuerySource() throws Exception
     {
         // given
-        QuerySource querySource =
-                new QuerySource.ServerSession( "http", null,
+        ClientSessionInfo clientSession =
+                new HttpSessionInfo( "http", null,
                         new InetSocketAddress( "127.0.0.1", 1337 ), null, "/db/data/transaction/45/commit" )
                         .withUsername( "username" );
 
         // when
-        String connectionDetails = querySource.asConnectionDetails();
+        String connectionDetails = clientSession.asConnectionDetails();
 
         // then
         assertEquals(
@@ -70,7 +75,7 @@ public class QuerySourceTest
     public void connectionDetailsForEmbeddedQuerySource() throws Exception
     {
         // when
-        String connectionDetails = QuerySource.EMBEDDED_SESSION.asConnectionDetails();
+        String connectionDetails = ClientSessionInfo.EMBEDDED_SESSION.asConnectionDetails();
 
         // then
         assertEquals( "embedded-session\t", connectionDetails );
@@ -80,10 +85,10 @@ public class QuerySourceTest
     public void connectionDetailsForShellSession() throws Exception
     {
         // given
-        QuerySource querySource = new QuerySource.ShellSession( 1 ).withUsername( "FULL" );
+        ClientSessionInfo clientSession = new ShellSessionInfo( 1 ).withUsername( "FULL" );
 
         // when
-        String connectionDetails = querySource.asConnectionDetails();
+        String connectionDetails = clientSession.asConnectionDetails();
 
         // then
         assertEquals( "shell-session\tshell\t1\tFULL", connectionDetails );

@@ -35,6 +35,7 @@ import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.impl.coreapi.{InternalTransaction, PropertyContainerLocker}
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade
 import org.neo4j.kernel.impl.query._
+import org.neo4j.kernel.impl.query.clientsession.ClientSessionInfo
 import org.neo4j.kernel.impl.transaction.TransactionStats
 
 import scala.collection.JavaConverters._
@@ -107,7 +108,7 @@ trait GraphIcing {
       val javaParams = javaValues.asDeepJavaMap(params).asInstanceOf[util.Map[String, AnyRef]]
       val contextFactory = Neo4jTransactionalContextFactory.create(graphService,
         locker)
-      val transactionalContext = contextFactory.newContext(QuerySource.EMBEDDED_SESSION, tx, queryText, javaParams)
+      val transactionalContext = contextFactory.newContext(ClientSessionInfo.EMBEDDED_SESSION, tx, queryText, javaParams)
       (tx, transactionalContext)
     }
 

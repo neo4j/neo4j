@@ -26,7 +26,7 @@ import java.util.Map;
 
 import org.neo4j.kernel.api.ExecutingQuery;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
-import org.neo4j.kernel.impl.query.QuerySource;
+import org.neo4j.kernel.impl.query.clientsession.ClientSessionInfo;
 
 import static java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 import static java.util.concurrent.TimeUnit.HOURS;
@@ -70,7 +70,7 @@ public class QueryStatusResult
                 q.queryParameters(),
                 q.startTime(),
                 q.elapsedTimeMillis(),
-                q.querySource(),
+                q.clientSession(),
                 q.metaData(),
                 q.cpuTimeMillis(),
                 q.status(),
@@ -84,7 +84,7 @@ public class QueryStatusResult
             Map<String,Object> parameters,
             long startTime,
             long elapsedTime,
-            QuerySource querySource,
+            ClientSessionInfo clientSession,
             Map<String,Object> txMetaData,
             long cpuTimeMillis,
             Map<String,Object> status,
@@ -97,10 +97,10 @@ public class QueryStatusResult
         this.startTime = formatTime( startTime );
         this.elapsedTime = formatInterval( elapsedTime );
         this.elapsedTimeMillis = elapsedTime;
-        this.connectionDetails = querySource.asConnectionDetails();
-        this.requestScheme = querySource.requestScheme();
-        this.clientAddress = querySource.clientAddress();
-        this.requestURI = querySource.requestURI();
+        this.connectionDetails = clientSession.asConnectionDetails();
+        this.requestScheme = clientSession.requestScheme();
+        this.clientAddress = clientSession.clientAddress();
+        this.requestURI = clientSession.requestURI();
         this.metaData = txMetaData;
         this.cpuTimeMillis = cpuTimeMillis;
         this.status = status;

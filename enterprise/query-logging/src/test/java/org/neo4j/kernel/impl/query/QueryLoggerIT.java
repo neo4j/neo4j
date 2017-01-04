@@ -49,6 +49,7 @@ import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.query.clientsession.ClientSessionInfo;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.server.security.enterprise.auth.EmbeddedInteraction;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
@@ -216,14 +217,15 @@ public class QueryLoggerIT
 
         List<String> logLines = readAllLines( logFilename );
         assertEquals( 1, logLines.size() );
-        QuerySource querySource = querySource();
+        ClientSessionInfo clientSession = querySource();
         assertThat( logLines.get( 0 ), endsWith( String.format(
                 " ms: %s - %s - {props: {name: 'Roland', position: 'Gunslinger', followers: [Jake, Eddie, Susannah]}} - {}",
-                querySource, query) ) );
+
+                clientSession, query) ) );
         assertThat( logLines.get( 0 ), containsString( AUTH_DISABLED.username() ) );
     }
 
-    private QuerySource querySource()
+    private ClientSessionInfo querySource()
     {
         return QueryEngineProvider.describe().withUsername( AUTH_DISABLED.username() );
     }
