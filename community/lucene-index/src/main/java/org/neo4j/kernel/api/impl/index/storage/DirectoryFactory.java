@@ -160,7 +160,7 @@ public interface DirectoryFactory extends FileSystemAbstraction.ThirdPartyFileSy
 
         public UncloseableDirectory(Directory delegate)
         {
-            super(delegate);
+            super( delegate );
         }
 
         @Override
