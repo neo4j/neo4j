@@ -110,7 +110,10 @@ public class Neo4jWithSocket extends ExternalResource
     {
         try
         {
-            gdb.shutdown();
+            if ( gdb != null)
+            {
+                gdb.shutdown();
+            }
         }
         finally
         {

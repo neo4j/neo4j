@@ -98,6 +98,6 @@ public class LdapExamplePluginAuthenticationIT extends EnterpriseAuthenticationT
         reconnect();
         testAuthWithPublisherUser();
         reconnect();
-        testAuthWithNoPermissionUser( "smith" );
+        testAuthWithNoPermissionUser( "smith", "abc123" );
     }
 }

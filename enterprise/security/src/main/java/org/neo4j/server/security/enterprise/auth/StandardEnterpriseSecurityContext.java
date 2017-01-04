@@ -70,7 +70,7 @@ class StandardEnterpriseSecurityContext implements EnterpriseSecurityContext
     }
 
     @Override
-    public AccessMode mode()
+    public StandardAccessMode mode()
     {
         boolean isAuthenticated = shiroSubject.isAuthenticated();
         return new StandardAccessMode(
@@ -78,7 +78,7 @@ class StandardEnterpriseSecurityContext implements EnterpriseSecurityContext
                 isAuthenticated && shiroSubject.isPermitted( READ_WRITE ),
                 isAuthenticated && shiroSubject.isPermitted( SCHEMA_READ_WRITE ),
                 shiroSubject.getAuthenticationResult() == AuthenticationResult.PASSWORD_CHANGE_REQUIRED,
-                authManager.getAuthorizationInfo( shiroSubject.getPrincipals() )
+                queryForRoleNames()
             );
     }
 
@@ -91,13 +91,32 @@ class StandardEnterpriseSecurityContext implements EnterpriseSecurityContext
     @Override
     public EnterpriseSecurityContext freeze()
     {
-        return new Frozen( neoShiroSubject, mode(), isAdmin() );
+        StandardAccessMode mode = mode();
+        return new Frozen( neoShiroSubject, mode, mode.roles, isAdmin() );
     }
 
     @Override
     public EnterpriseSecurityContext withMode( AccessMode mode )
     {
-        return new Frozen( neoShiroSubject, mode, isAdmin() );
+        return new Frozen( neoShiroSubject, mode, queryForRoleNames(), isAdmin() );
+    }
+
+    @Override
+    public Set<String> roles()
+    {
+        return queryForRoleNames();
+    }
+
+    private Set<String> queryForRoleNames()
+    {
+        Collection<AuthorizationInfo> authorizationInfo =
+                authManager.getAuthorizationInfo( shiroSubject.getPrincipals() );
+        return authorizationInfo.stream()
+                .flatMap( authInfo -> {
+                    Collection<String> roles = authInfo.getRoles();
+                    return roles == null ? Stream.empty() : roles.stream();
+                } )
+                .collect( Collectors.toSet() );
     }
 
     private static class StandardAccessMode implements AccessMode
@@ -106,16 +125,16 @@ class StandardEnterpriseSecurityContext implements EnterpriseSecurityContext
         private final boolean allowsWrites;
         private final boolean allowsSchemaWrites;
         private final boolean passwordChangeRequired;
-        private Collection<AuthorizationInfo> authorizationInfoSnapshot;
+        private final Set<String> roles;
 
         StandardAccessMode( boolean allowsReads, boolean allowsWrites, boolean allowsSchemaWrites,
-                boolean passwordChangeRequired, Collection<AuthorizationInfo> authorizationInfo )
+                boolean passwordChangeRequired, Set<String> roles )
         {
             this.allowsReads = allowsReads;
             this.allowsWrites = allowsWrites;
             this.allowsSchemaWrites = allowsSchemaWrites;
             this.passwordChangeRequired = passwordChangeRequired;
-            authorizationInfoSnapshot = authorizationInfo;
+            this.roles = roles;
         }
 
         @Override
@@ -139,7 +158,6 @@ class StandardEnterpriseSecurityContext implements EnterpriseSecurityContext
         @Override
         public boolean allowsProcedureWith( String[] roleNames ) throws InvalidArgumentsException
         {
-            Set<String> roles = roleNames();
             for ( int i = 0; i < roleNames.length; i++ )
             {
                 if ( roles.contains( roleNames[i] ) )
@@ -166,18 +184,8 @@ class StandardEnterpriseSecurityContext implements EnterpriseSecurityContext
         @Override
         public String name()
         {
-            Set<String> roles = new TreeSet<>( roleNames() );
-            return roles.isEmpty() ? "no roles" : "roles [" + String.join( ",", roles ) + "]";
-        }
-
-        private Set<String> roleNames()
-        {
-            return authorizationInfoSnapshot.stream()
-                    .flatMap( authInfo -> {
-                        Collection<String> roles = authInfo.getRoles();
-                        return roles == null ? Stream.empty() : roles.stream();
-                    } )
-                    .collect( Collectors.toSet() );
+            Set<String> sortedRoles = new TreeSet<>( roles );
+            return roles.isEmpty() ? "no roles" : "roles [" + String.join( ",", sortedRoles ) + "]";
         }
     }
 

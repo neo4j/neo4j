@@ -60,7 +60,7 @@ import static org.neo4j.helpers.collection.MapUtil.map;
  * the main build should not be of serious concern.
  *
  * Note also that most of the security code related to Active Directory is identical to the LDAP code,
- * and so the tests in LdapAuthenticationIT, which are run during normal build, do in fact test that
+ * and so the tests in LdapAuthIT, which are run during normal build, do in fact test that
  * code. Testing against a real Active Directory is not possible during a build phase, and therefor
  * we keep this disabled by default.
  */

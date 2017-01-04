@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Result;
@@ -104,7 +105,13 @@ public class EmbeddedBuiltInProceduresInteractionTest extends BuiltInProceduresI
             @Override
             public EnterpriseSecurityContext withMode( AccessMode mode )
             {
-                return new EnterpriseSecurityContext.Frozen( subject(), mode, isAdmin() );
+                return new EnterpriseSecurityContext.Frozen( subject(), mode, roles(), isAdmin() );
+            }
+
+            @Override
+            public Set<String> roles()
+            {
+                return Collections.emptySet();
             }
 
             AnonymousContext inner = AnonymousContext.none();
