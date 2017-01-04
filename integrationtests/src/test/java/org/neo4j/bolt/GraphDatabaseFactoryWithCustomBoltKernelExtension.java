@@ -26,6 +26,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.impl.enterprise.EnterpriseEditionModule;
@@ -52,10 +53,16 @@ public class GraphDatabaseFactoryWithCustomBoltKernelExtension extends GraphData
     }
 
     @Override
-    protected GraphDatabaseService newDatabase( File storeDir, Map<String,String> config, Dependencies dependencies )
+    protected GraphDatabaseService newDatabase( File storeDir, Config config, Dependencies dependencies )
     {
         GraphDatabaseFacadeFactory factory = new CustomBoltKernelExtensionFacadeFactory( customExtension );
         return factory.newFacade( storeDir, config, dependencies );
+    }
+
+    @Override
+    protected GraphDatabaseService newDatabase( File storeDir, Map<String,String> config, Dependencies dependencies )
+    {
+        return newDatabase( storeDir, Config.embeddedDefaults( config ), dependencies );
     }
 
     private static class CustomBoltKernelExtensionFacadeFactory extends GraphDatabaseFacadeFactory
@@ -69,11 +76,11 @@ public class GraphDatabaseFactoryWithCustomBoltKernelExtension extends GraphData
         }
 
         @Override
-        protected PlatformModule createPlatform( File storeDir, Map<String,String> params,
+        protected PlatformModule createPlatform( File storeDir, Config config,
                 Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
         {
             Dependencies newDependencies = new CustomBoltKernelExtensionDependencies( customExtension, dependencies );
-            return new PlatformModule( storeDir, params, databaseInfo, newDependencies, graphDatabaseFacade );
+            return new PlatformModule( storeDir, config, databaseInfo, newDependencies, graphDatabaseFacade );
         }
     }
 
