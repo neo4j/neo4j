@@ -20,15 +20,23 @@
 package org.neo4j.kernel.configuration;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 
 import org.neo4j.graphdb.config.InvalidSettingException;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.config.SettingGroup;
+
+import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
+import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
+import static org.neo4j.kernel.configuration.Settings.options;
+import static org.neo4j.kernel.configuration.Settings.setting;
 
 public abstract class ConnectorValidator implements SettingGroup<Object>
 {
@@ -44,13 +52,6 @@ public abstract class ConnectorValidator implements SettingGroup<Object>
     }
 
     /**
-     * @return a list of the internal settings of this connector. For example, if this connector is
-     * "dbms.connector.bolt.*" then this method returns all strings which can replace the final '*'.
-     */
-    @Nonnull
-    public abstract List<String> subSettings();
-
-    /**
      * Determine if this instance is responsible for validating a setting.
      *
      * @param key the key of the setting
@@ -62,7 +63,7 @@ public abstract class ConnectorValidator implements SettingGroup<Object>
     public boolean owns( @Nonnull String key, @Nonnull Map<String,String> rawConfig ) throws InvalidSettingException
     {
         String[] parts = key.split( "\\." );
-        if ( parts.length != 4 )
+        if ( parts.length < 2 )
         {
             return false;
         }
@@ -71,10 +72,16 @@ public abstract class ConnectorValidator implements SettingGroup<Object>
             return false;
         }
 
-        if ( !subSettings().contains( parts[3] ) )
+        // Do not allow invalid settings under 'dbms.connector.**'
+        if ( parts.length != 4 )
+        {
+            throw new InvalidSettingException( String.format( "Invalid connector setting: %s", key ) );
+        }
+
+        /*if ( !subSettings().contains( parts[3] ) )
         {
             return false;
-        }
+        }*/
 
         // A type must be specified, or it is not possible to know who owns this setting
         String groupKey = parts[2];
@@ -117,5 +124,54 @@ public abstract class ConnectorValidator implements SettingGroup<Object>
     {
         return params.entrySet().stream()
                 .filter( it -> owns( it.getKey(), params ) );
+    }
+
+    @Override
+    @Nonnull
+    public Map<String,String> validate( @Nonnull Map<String,String> rawConfig )
+            throws InvalidSettingException
+    {
+        final HashMap<String,String> result = new HashMap<>();
+
+        ownedEntries( rawConfig ).forEach( s ->
+                result.putAll( getSettingFor( s.getKey(), rawConfig )
+                        .orElseThrow( () -> new InvalidSettingException(
+                                String.format( "Invalid connector setting: %s", s.getKey() ) ) )
+                        .validate( rawConfig ) ) );
+
+        return result;
+    }
+
+    @Override
+    @Nonnull
+    public Map<String,Object> values( @Nonnull Map<String,String> params )
+    {
+        final HashMap<String,Object> result = new HashMap<>();
+
+        ownedEntries( params ).forEach( s ->
+                result.putAll( getSettingFor( s.getKey(), params )
+                        .orElseThrow( () -> new InvalidSettingException(
+                                String.format( "Invalid connector setting: %s", s.getKey() ) ) )
+                        .values( params ) ) );
+
+        return result;
+    }
+
+    @Nonnull
+    protected Optional<Setting> getSettingFor( @Nonnull String settingName, @Nonnull Map<String,String> params )
+    {
+        // owns has already verified that 'type' is correct and that this split is possible
+        String[] parts = settingName.split( "\\." );
+        final String subsetting = parts[3];
+
+        switch ( subsetting )
+        {
+        case "enabled":
+            return Optional.of( setting( settingName, BOOLEAN, "false" ) );
+        case "type":
+            return Optional.of( setting( settingName, options( Connector.ConnectorType.class ), NO_DEFAULT ) );
+        default:
+            return Optional.empty();
+        }
     }
 }

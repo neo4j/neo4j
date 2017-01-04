@@ -19,24 +19,19 @@
  */
 package org.neo4j.kernel.configuration;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-
+import java.util.function.Function;
 import javax.annotation.Nonnull;
 
+import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.kernel.configuration.HttpConnector.Encryption;
 
 import static org.neo4j.kernel.configuration.Connector.ConnectorType.HTTP;
 import static org.neo4j.kernel.configuration.HttpConnector.Encryption.NONE;
 import static org.neo4j.kernel.configuration.HttpConnector.Encryption.TLS;
-import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
-import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
 import static org.neo4j.kernel.configuration.Settings.advertisedAddress;
 import static org.neo4j.kernel.configuration.Settings.listenAddress;
 import static org.neo4j.kernel.configuration.Settings.options;
@@ -51,46 +46,26 @@ public class HttpConnectorValidator extends ConnectorValidator
 
     @Override
     @Nonnull
-    public Map<String,String> validate( @Nonnull Map<String,String> rawConfig )
-            throws InvalidSettingException
+    protected Optional<Setting> getSettingFor( @Nonnull String settingName, @Nonnull Map<String,String> params )
     {
-        final HashMap<String,String> result = new HashMap<>();
+        // owns has already verified that 'type' is correct and that this split is possible
+        String[] parts = settingName.split( "\\." );
+        final String name = parts[2];
+        final String subsetting = parts[3];
 
-        ownedEntries( rawConfig ).forEach( s ->
+        switch ( subsetting )
         {
-            // owns has already verified that 'type' is correct and that this split is possible
-            String[] parts = s.getKey().split( "\\." );
-            final String name = parts[2];
-            final String subsetting = parts[3];
-
-            Setting<ListenSocketAddress> las = listenAddress( s.getKey(), defaultPort( name, rawConfig ) );
-            switch ( subsetting )
-            {
-            case "enabled":
-                result.putAll( setting( s.getKey(), BOOLEAN, "false" ).validate( rawConfig ) );
-                break;
-            case "encryption":
-                result.putAll( assertEncryption( name, encryptionSetting( name ), rawConfig ) );
-                break;
-            case "address":
-            case "listen_address":
-                result.putAll( las.validate( rawConfig ) );
-                break;
-            case "advertised_address":
-                result.putAll( advertisedAddress( s.getKey(), las ).validate( rawConfig ) );
-                break;
-            case "type":
-                result.putAll( assertTypeIsHttp(
-                        setting( s.getKey(), options( Connector.ConnectorType.class ),
-                                NO_DEFAULT ), rawConfig ) );
-                break;
-            default:
-                throw new InvalidSettingException( String.format( "Unknown configuration passed to %s: %s",
-                        getClass().getName(), s.getKey() ) );
-            }
-        } );
-
-        return result;
+        case "encryption":
+            return Optional.of( encryptionSetting( name ) );
+        case "address":
+        case "listen_address":
+            return Optional.of( listenAddress( settingName, defaultPort( name, params ) ) );
+        case "advertised_address":
+            return Optional.of( advertisedAddress( settingName,
+                    listenAddress( settingName, defaultPort( name, params ) ) ) );
+        default:
+            return super.getSettingFor( settingName, params );
+        }
     }
 
     /**
@@ -113,7 +88,7 @@ public class HttpConnectorValidator extends ConnectorValidator
     }
 
     @Nonnull
-    private Map<String,String> assertEncryption( @Nonnull String name,
+    private static Map<String,String> assertEncryption( @Nonnull String name,
             @Nonnull Setting<?> setting,
             @Nonnull Map<String,String> rawConfig )
     {
@@ -144,71 +119,6 @@ public class HttpConnectorValidator extends ConnectorValidator
     }
 
     @Nonnull
-    private Map<String,String> assertTypeIsHttp( @Nonnull Setting<?> setting, @Nonnull Map<String,String> rawConfig )
-    {
-        Map<String,String> result = setting.validate( rawConfig );
-
-        Optional<?> typeValue = Optional.ofNullable( setting.apply( rawConfig::get ) );
-
-        if ( typeValue.isPresent() && !HTTP.equals( typeValue.get() ) )
-        {
-            throw new InvalidSettingException(
-                    String.format( "'%s' is only allowed to be '%s'; not '%s'",
-                            setting.name(), HTTP, typeValue.get() ) );
-        }
-        return result;
-    }
-
-    @Override
-    @Nonnull
-    public List<String> subSettings()
-    {
-        return Arrays.asList( "type", "enabled", "encryption", "address", "listen_address", "advertised_address" );
-    }
-
-    @Override
-    @Nonnull
-    public Map<String,Object> values( @Nonnull Map<String,String> params )
-    {
-        final HashMap<String,Object> result = new HashMap<>();
-
-        ownedEntries( params ).forEach( s ->
-        {
-            // owns has already verified that 'type' is correct and that this split is possible
-            String[] parts = s.getKey().split( "\\." );
-            final String name = parts[2];
-            final String subsetting = parts[3];
-
-            Setting<ListenSocketAddress> las = listenAddress( s.getKey(), defaultPort( name, params ) );
-            switch ( subsetting )
-            {
-            case "enabled":
-                result.putAll( setting( s.getKey(), BOOLEAN, "false" ).values( params ) );
-                break;
-            case "encryption":
-                result.putAll( encryptionSetting( name ).values( params ) );
-                break;
-            case "address":
-            case "listen_address":
-                result.putAll( las.values( params ) );
-                break;
-            case "advertised_address":
-                result.putAll( advertisedAddress( s.getKey(), las ).values( params ) );
-                break;
-            case "type":
-                result.putAll( setting( s.getKey(), options( Connector.ConnectorType.class ),
-                        NO_DEFAULT ).values( params ) );
-                break;
-            default:
-                throw new InvalidSettingException( String.format( "Unknown configuration passed to %s: %s",
-                        getClass().getName(), s.getKey() ) );
-            }
-        } );
-
-        return result;
-    }
-
-    @Nonnull
     public static Setting<HttpConnector.Encryption> encryptionSetting( @Nonnull String name )
     {
         return encryptionSetting( name, Encryption.NONE );
@@ -217,7 +127,48 @@ public class HttpConnectorValidator extends ConnectorValidator
     @Nonnull
     public static Setting<HttpConnector.Encryption> encryptionSetting( @Nonnull String name, Encryption defaultValue )
     {
-        return setting( "dbms.connector." + name + ".encryption",
-                options( HttpConnector.Encryption.class ), defaultValue.name() );
+        Setting<Encryption> s = setting( "dbms.connector." + name + ".encryption",
+                options( Encryption.class ), defaultValue.name() );
+
+        return new Setting<Encryption>()
+        {
+            @Override
+            public String name()
+            {
+                return s.name();
+            }
+
+            @Override
+            public void withScope( Function<String,String> scopingRule )
+            {
+                s.withScope( scopingRule );
+            }
+
+            @Override
+            public String getDefaultValue()
+            {
+                return s.getDefaultValue();
+            }
+
+            @Override
+            public Encryption from( Configuration config )
+            {
+                return s.from( config );
+            }
+
+            @Override
+            public Encryption apply( Function<String,String> stringStringFunction )
+            {
+                return s.apply( stringStringFunction );
+            }
+
+            @Override
+            public Map<String,String> validate( Map<String,String> rawConfig ) throws InvalidSettingException
+            {
+                Map<String,String> result = s.validate( rawConfig );
+                assertEncryption( name, s, rawConfig );
+                return result;
+            }
+        };
     }
 }

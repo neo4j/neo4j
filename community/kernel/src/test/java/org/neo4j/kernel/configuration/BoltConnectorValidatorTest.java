@@ -71,6 +71,40 @@ public class BoltConnectorValidatorTest
     }
 
     @Test
+    public void requiresCorrectTypeWhenNameIsNotBolt() throws Exception
+    {
+        String randomEnabled = "dbms.connector.bla.enabled";
+        String randomType = "dbms.connector.bla.type";
+
+        expected.expect( InvalidSettingException.class );
+        expected.expectMessage( "dbms.connector.bla.type' must be one of BOLT, HTTP; not 'woo'" );
+
+        cv.validate( stringMap( randomEnabled, "true", randomType, "woo" ) );
+    }
+
+    @Test
+    public void errorsOnInvalidConnectorSetting1() throws Exception
+    {
+        String invalidSetting = "dbms.connector.bla.0.enabled";
+
+        expected.expect( InvalidSettingException.class );
+        expected.expectMessage( "Invalid connector setting: dbms.connector.bla.0.enabled" );
+
+        cv.validate( stringMap( invalidSetting, "true" ) );
+    }
+
+    @Test
+    public void errorsOnInvalidConnectorSetting2() throws Exception
+    {
+        String invalidSetting = "dbms.connector.bolt.foobar";
+
+        expected.expect( InvalidSettingException.class );
+        expected.expectMessage( "Invalid connector setting: dbms.connector.bolt.foobar" );
+
+        cv.validate( stringMap( invalidSetting, "true" ) );
+    }
+
+    @Test
     public void validatesTlsLevel() throws Exception
     {
         String key = "dbms.connector.bolt.tls_level";
@@ -78,10 +112,10 @@ public class BoltConnectorValidatorTest
         assertEquals( stringMap( key, EncryptionLevel.DISABLED.name() ),
                 cv.validate( stringMap( key, EncryptionLevel.DISABLED.name() ) ) );
 
-        assertEquals( stringMap( key,EncryptionLevel.OPTIONAL.name() ),
+        assertEquals( stringMap( key, EncryptionLevel.OPTIONAL.name() ),
                 cv.validate( stringMap( key, EncryptionLevel.OPTIONAL.name() ) ) );
 
-        assertEquals( stringMap( key,EncryptionLevel.REQUIRED.name() ),
+        assertEquals( stringMap( key, EncryptionLevel.REQUIRED.name() ),
                 cv.validate( stringMap( key, EncryptionLevel.REQUIRED.name() ) ) );
 
         key = "dbms.connector.bla.tls_level";
@@ -90,14 +124,16 @@ public class BoltConnectorValidatorTest
         assertEquals( stringMap( key, EncryptionLevel.DISABLED.name(), type, BOLT.name() ),
                 cv.validate( stringMap( key, EncryptionLevel.DISABLED.name(), type, BOLT.name() ) ) );
 
-        assertEquals( stringMap( key,EncryptionLevel.OPTIONAL.name(), type, BOLT.name() ),
+        assertEquals( stringMap( key, EncryptionLevel.OPTIONAL.name(), type, BOLT.name() ),
                 cv.validate( stringMap( key, EncryptionLevel.OPTIONAL.name(), type, BOLT.name() ) ) );
 
-        assertEquals( stringMap( key,EncryptionLevel.REQUIRED.name(), type, BOLT.name() ),
+        assertEquals( stringMap( key, EncryptionLevel.REQUIRED.name(), type, BOLT.name() ),
                 cv.validate( stringMap( key, EncryptionLevel.REQUIRED.name(), type, BOLT.name() ) ) );
 
         expected.expect( InvalidSettingException.class );
-        expected.expectMessage( "Bad value 'BOBO' for setting 'dbms.connector.bla.tls_level': must be one of [REQUIRED, OPTIONAL, DISABLED] case sensitive" );
+        expected.expectMessage(
+                "Bad value 'BOBO' for setting 'dbms.connector.bla.tls_level': must be one of [REQUIRED, OPTIONAL, " +
+                        "DISABLED] case sensitive" );
 
         cv.validate( stringMap( key, "BOBO", type, BOLT.name() ) );
     }
@@ -189,13 +225,5 @@ public class BoltConnectorValidatorTest
         expected.expectMessage( "'dbms.connector.bla.type' must be one of BOLT, HTTP; not 'BOBO'" );
 
         cv.validate( stringMap( type, "BOBO" ) );
-    }
-
-    @Test
-    public void unknownSubSettingsAreNotValidated() throws Exception
-    {
-        String madeup = "dbms.connector.bolt.imadethisup";
-
-        assertEquals( emptyMap(), cv.validate( stringMap( madeup, "anything" ) ) );
     }
 }

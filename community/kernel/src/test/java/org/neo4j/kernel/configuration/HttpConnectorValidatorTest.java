@@ -74,6 +74,28 @@ public class HttpConnectorValidatorTest
     }
 
     @Test
+    public void errorsOnInvalidConnectorSetting1() throws Exception
+    {
+        String invalidSetting = "dbms.connector.bla.0.enabled";
+
+        expected.expect( InvalidSettingException.class );
+        expected.expectMessage( "Invalid connector setting: dbms.connector.bla.0.enabled" );
+
+        cv.validate( stringMap( invalidSetting, "true" ) );
+    }
+
+    @Test
+    public void errorsOnInvalidConnectorSetting2() throws Exception
+    {
+        String invalidSetting = "dbms.connector.http.foobar";
+
+        expected.expect( InvalidSettingException.class );
+        expected.expectMessage( "Invalid connector setting: dbms.connector.http.foobar" );
+
+        cv.validate( stringMap( invalidSetting, "true" ) );
+    }
+
+    @Test
     public void validatesEncryption() throws Exception
     {
         String key = "dbms.connector.bla.encryption";
@@ -210,13 +232,5 @@ public class HttpConnectorValidatorTest
         expected.expectMessage( "'dbms.connector.bla.type' must be one of BOLT, HTTP; not 'BOBO'" );
 
         cv.validate( stringMap( type, "BOBO" ) );
-    }
-
-    @Test
-    public void unknownSubSettingsAreNotValidated() throws Exception
-    {
-        String madeup = "dbms.connector.http.imadethisup";
-
-        assertEquals( emptyMap(), cv.validate( stringMap( madeup, "anything" ) ) );
     }
 }
