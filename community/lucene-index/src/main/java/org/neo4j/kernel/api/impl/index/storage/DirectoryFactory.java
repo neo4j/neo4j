@@ -21,17 +21,15 @@ package org.neo4j.kernel.api.impl.index.storage;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.NRTCachingDirectory;
 import org.apache.lucene.store.RAMDirectory;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.zip.ZipEntry;
@@ -157,74 +155,18 @@ public interface DirectoryFactory extends FileSystemAbstraction.ThirdPartyFileSy
         }
     }
 
-    final class UncloseableDirectory extends Directory
+    final class UncloseableDirectory extends FilterDirectory
     {
-
-        private final Directory delegate;
 
         public UncloseableDirectory(Directory delegate)
         {
-            this.delegate = delegate;
+            super(delegate);
         }
 
         @Override
         public void close() throws IOException
         {
             // No-op
-        }
-
-        @Override
-        public String[] listAll() throws IOException
-        {
-            return delegate.listAll();
-        }
-
-        @Override
-        public void renameFile( String source, String dest ) throws IOException
-        {
-            delegate.renameFile( source, dest );
-        }
-
-        @Override
-        public void deleteFile( String s ) throws IOException
-        {
-            delegate.deleteFile( s );
-        }
-
-        @Override
-        public long fileLength( String s ) throws IOException
-        {
-            return delegate.fileLength( s );
-        }
-
-        @Override
-        public IndexOutput createOutput( String name, IOContext context ) throws IOException
-        {
-            return delegate.createOutput( name, context );
-        }
-
-        @Override
-        public void sync( Collection<String> names ) throws IOException
-        {
-            delegate.sync( names );
-        }
-
-        @Override
-        public IndexInput openInput( String name, IOContext context ) throws IOException
-        {
-            return delegate.openInput( name, context );
-        }
-
-        @Override
-        public Lock obtainLock( String name ) throws IOException
-        {
-            return delegate.obtainLock( name );
-        }
-
-        @Override
-        public String toString()
-        {
-            return delegate.toString();
         }
     }
 }
