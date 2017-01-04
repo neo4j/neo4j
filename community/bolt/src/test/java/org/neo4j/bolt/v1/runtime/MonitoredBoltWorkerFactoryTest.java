@@ -23,7 +23,6 @@ import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.bolt.testing.NullResponseHandler;
 import org.neo4j.bolt.v1.runtime.MonitoredWorkerFactory.MonitoredBoltWorker;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.time.Clocks;
@@ -32,11 +31,13 @@ import org.neo4j.time.FakeClock;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyObject;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
+import static org.neo4j.time.Clocks.systemClock;
 
 public class MonitoredBoltWorkerFactoryTest
 {
@@ -99,6 +100,28 @@ public class MonitoredBoltWorkerFactoryTest
     }
 
     @Test
+    public void shouldReportStartedSessions()
+    {
+        int workersCount = 42;
+
+        Monitors monitors = new Monitors();
+        CountingSessionMonitor monitor = new CountingSessionMonitor();
+        monitors.addMonitorListener( monitor );
+
+        WorkerFactory mockWorkers = mock( WorkerFactory.class );
+        when( mockWorkers.newWorker( anyString(), any() ) ).thenReturn( mock( BoltWorker.class ) );
+
+        MonitoredWorkerFactory workerFactory = new MonitoredWorkerFactory( monitors, mockWorkers, systemClock() );
+
+        for ( int i = 0; i < workersCount; i++ )
+        {
+            workerFactory.newWorker( "<test>" );
+        }
+
+        assertEquals( workersCount, monitor.sessionsStarted );
+    }
+
+    @Test
     public void shouldNotWrapWithMonitoredSessionIfNobodyIsListening() throws Throwable
     {
         // Given
@@ -129,9 +152,16 @@ public class MonitoredBoltWorkerFactoryTest
 
     private static class CountingSessionMonitor implements MonitoredWorkerFactory.SessionMonitor
     {
+       long sessionsStarted = 0;
        long messagesReceived = 0;
        long queueTime = 0;
        long processingTime = 0;
+
+        @Override
+        public void sessionStarted()
+        {
+            sessionsStarted++;
+        }
 
         @Override
         public void messageReceived()

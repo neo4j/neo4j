@@ -36,6 +36,9 @@ public class BoltMetrics extends LifecycleAdapter
 {
     private static final String NAME_PREFIX = "neo4j.bolt";
 
+    @Documented( "The total number of Bolt sessions started since this instance started. This includes both " +
+                 "succeeded and failed sessions." )
+    public static final String SESSIONS_STARTED = name( NAME_PREFIX, "sessions_started" );
     @Documented( "The total number of messages received via Bolt since this instance started." )
     public static final String MESSAGES_RECIEVED = name( NAME_PREFIX, "messages_received" );
     @Documented( "The total number of messages work has started on since this instance started. This is different " +
@@ -65,9 +68,10 @@ public class BoltMetrics extends LifecycleAdapter
     public void start()
     {
         monitors.addMonitorListener( boltMonitor );
-        registry.register( MESSAGES_RECIEVED, (Gauge<Long>) boltMonitor.recieved::get );
-        registry.register( MESSAGES_STARTED, (Gauge<Long>) boltMonitor.started::get );
-        registry.register( MESSAGES_DONE, (Gauge<Long>) boltMonitor.done::get );
+        registry.register( SESSIONS_STARTED, (Gauge<Long>) boltMonitor.sessionsStarted::get );
+        registry.register( MESSAGES_RECIEVED, (Gauge<Long>) boltMonitor.messagesReceived::get );
+        registry.register( MESSAGES_STARTED, (Gauge<Long>) boltMonitor.messagesStarted::get );
+        registry.register( MESSAGES_DONE, (Gauge<Long>) boltMonitor.messagesDone::get );
         registry.register( TOTAL_QUEUE_TIME, (Gauge<Long>) boltMonitor.queueTime::get );
         registry.register( TOTAL_PROCESSING_TIME, (Gauge<Long>) boltMonitor.processingTime::get );
     }
@@ -85,34 +89,42 @@ public class BoltMetrics extends LifecycleAdapter
 
     private class BoltMetricsMonitor implements MonitoredWorkerFactory.SessionMonitor
     {
-        public final AtomicLong recieved = new AtomicLong();
-        public final AtomicLong started = new AtomicLong();
-        public final AtomicLong done = new AtomicLong();
+        final AtomicLong sessionsStarted = new AtomicLong();
+
+        final AtomicLong messagesReceived = new AtomicLong();
+        final AtomicLong messagesStarted = new AtomicLong();
+        final AtomicLong messagesDone = new AtomicLong();
 
         // It will take about 300 million years of queue/processing time to overflow these
         // Even if we run a million processors concurrently, the instance would need to
         // run uninterrupted for three hundred years before the monitoring had a hiccup.
-        public final AtomicLong queueTime = new AtomicLong();
-        public final AtomicLong processingTime = new AtomicLong();
+        final AtomicLong queueTime = new AtomicLong();
+        final AtomicLong processingTime = new AtomicLong();
+
+        @Override
+        public void sessionStarted()
+        {
+            sessionsStarted.incrementAndGet();
+        }
 
         @Override
         public void messageReceived()
         {
-            recieved.incrementAndGet();
+            messagesReceived.incrementAndGet();
         }
 
         @Override
         public void processingStarted( long queueTime )
         {
             this.queueTime.addAndGet( queueTime );
-            started.incrementAndGet();
+            messagesStarted.incrementAndGet();
         }
 
         @Override
         public void processingDone( long processingTime )
         {
             this.processingTime.addAndGet( processingTime );
-            done.incrementAndGet();
+            messagesDone.incrementAndGet();
         }
     }
 }

@@ -155,12 +155,10 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
 
         Authentication authentication = authentication( dependencies.authManager() );
 
-        BoltFactory boltConnectionManagerFactory = life.add(
-                new LifecycleManagedBoltFactory( api, dependencies.usageData(), logService, dependencies.txBridge(),
-                        authentication, dependencies.sessionTracker() ) );
-        ThreadedWorkerFactory threadedSessions = new ThreadedWorkerFactory( boltConnectionManagerFactory, scheduler, logService );
-        WorkerFactory workerFactory = new MonitoredWorkerFactory( dependencies.monitors(), threadedSessions,
-                Clocks.systemClock() );
+        BoltFactory boltFactory = life.add( new LifecycleManagedBoltFactory( api, dependencies.usageData(),
+                logService, dependencies.txBridge(), authentication, dependencies.sessionTracker() ) );
+
+        WorkerFactory workerFactory = createWorkerFactory( boltFactory, scheduler, dependencies, logService );
 
         List<ProtocolInitializer> connectors = boltConnectors( config ).stream()
                 .map( ( connConfig ) -> {
@@ -214,6 +212,13 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
         }
 
         return life;
+    }
+
+    protected WorkerFactory createWorkerFactory( BoltFactory boltFactory, JobScheduler scheduler,
+            Dependencies dependencies, LogService logService )
+    {
+        WorkerFactory threadedWorkerFactory = new ThreadedWorkerFactory( boltFactory, scheduler, logService );
+        return new MonitoredWorkerFactory( dependencies.monitors(), threadedWorkerFactory, Clocks.systemClock() );
     }
 
     private SslContext createSslContext( Config config, Log log, AdvertisedSocketAddress address )
