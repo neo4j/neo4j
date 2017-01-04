@@ -19,16 +19,22 @@
  */
 package org.neo4j.server.rest.web;
 
+import java.net.InetSocketAddress;
 import javax.servlet.http.HttpServletRequest;
 
 import org.neo4j.kernel.impl.query.QuerySource;
+
+import static javax.ws.rs.core.HttpHeaders.USER_AGENT;
 
 public class ServerQuerySession
 {
     public static QuerySource describe( HttpServletRequest request )
     {
-        return request == null ?
-            new QuerySource.ServerSession() :
-            new QuerySource.ServerSession( request.getScheme(), request.getRemoteAddr(), request.getRequestURI() );
+        return new QuerySource.ServerSession(
+                request.getScheme(),
+                request.getHeader( USER_AGENT ),
+                new InetSocketAddress( request.getRemoteAddr(), request.getRemotePort() ),
+                new InetSocketAddress( request.getServerName(), request.getServerPort() ),
+                request.getRequestURI() );
     }
 }

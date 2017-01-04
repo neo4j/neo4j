@@ -43,11 +43,16 @@ public class QueryStatusResult
     public final Map<String,Object> parameters;
     public final String startTime;
     public final String elapsedTime;
+    /** EXPERIMENTAL: added in Neo4j 3.2 */
+    public final long elapsedTimeMillis; // TODO: this field should be of a Duration type (when Cypher supports that)
     @Deprecated
     public final String connectionDetails;
-//    public final String requestKey;
-//    public final String remoteAddress;
-//    public final String requestUri;
+    /** EXPERIMENTAL: added in Neo4j 3.2 */
+    public final String requestScheme;
+    /** EXPERIMENTAL: added in Neo4j 3.2 */
+    public final String clientAddress;
+    /** EXPERIMENTAL: added in Neo4j 3.2 */
+    public final String requestURI;
     /** EXPERIMENTAL: added in Neo4j 3.2 */
     public final long cpuTimeMillis; // TODO: we want this field to be of a Duration type (when Cypher supports that)
     /** EXPERIMENTAL: added in Neo4j 3.2 */
@@ -91,7 +96,11 @@ public class QueryStatusResult
         this.parameters = parameters;
         this.startTime = formatTime( startTime );
         this.elapsedTime = formatInterval( elapsedTime );
+        this.elapsedTimeMillis = elapsedTime;
         this.connectionDetails = querySource.asConnectionDetails();
+        this.requestScheme = querySource.requestScheme();
+        this.clientAddress = querySource.clientAddress();
+        this.requestURI = querySource.requestURI();
         this.metaData = txMetaData;
         this.cpuTimeMillis = cpuTimeMillis;
         this.status = status;

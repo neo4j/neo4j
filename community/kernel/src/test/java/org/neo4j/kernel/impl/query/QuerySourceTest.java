@@ -53,7 +53,8 @@ public class QuerySourceTest
     {
         // given
         QuerySource querySource =
-                new QuerySource.ServerSession( "http", "127.0.0.1", "/db/data/transaction/45/commit" )
+                new QuerySource.ServerSession( "http", null,
+                        new InetSocketAddress( "127.0.0.1", 1337 ), null, "/db/data/transaction/45/commit" )
                         .withUsername( "username" );
 
         // when

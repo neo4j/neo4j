@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.enterprise.builtinprocs;
 
-import java.io.PrintWriter;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
@@ -38,11 +37,11 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.hasKey;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.neo4j.test.rule.concurrent.ThreadingRule.waitingWhileIn;
 
 public class ListQueriesProcedureTest
@@ -103,10 +102,13 @@ public class ListQueriesProcedureTest
             Map<String,Object> data = getQueryListing( "MATCH (n) SET n.v = n.v + 1" );
 
             // then
-            assertTrue( "should contain a 'cpuTimeMillis' field", data.containsKey( "cpuTimeMillis" ) );
+            assertThat( data, hasKey( "elapsedTimeMillis" ) );
+            Object elapsedTime = data.get( "elapsedTimeMillis" );
+            assertThat( elapsedTime, instanceOf( Long.class ) );
+            assertThat( data, hasKey( "cpuTimeMillis" ) );
             Object cpuTime1 = data.get( "cpuTimeMillis" );
             assertThat( cpuTime1, instanceOf( Long.class ) );
-            assertTrue( "should contain a 'status' field", data.containsKey( "status" ) );
+            assertThat( data, hasKey( "status" ) );
             Object status = data.get( "status" );
             assertThat( status, instanceOf( Map.class ) );
             @SuppressWarnings( "unchecked" )
@@ -114,7 +116,7 @@ public class ListQueriesProcedureTest
             assertEquals( "WAITING", statusMap.get( "state" ) );
             assertEquals( "NODE", statusMap.get( "resourceType" ) );
             assertArrayEquals( new long[]{node.getId()}, (long[]) statusMap.get( "resourceIds" ) );
-            assertTrue( "should contain a 'waitTimeMillis' field", data.containsKey( "waitTimeMillis" ) );
+            assertThat( data, hasKey( "waitTimeMillis" ) );
             Object waitTime1 = data.get( "waitTimeMillis" );
             assertThat( waitTime1, instanceOf( Long.class ) );
 
@@ -131,6 +133,18 @@ public class ListQueriesProcedureTest
         {
             listQueriesLatch.countDown();
         }
+    }
+
+    @Test
+    public void shouldContainSpecificConnectionDetails() throws Exception
+    {
+        // when
+        Map<String,Object> data = getQueryListing( "CALL dbms.listQueries" );
+
+        // then
+        assertThat( data, hasKey( "requestScheme" ) );
+        assertThat( data, hasKey( "clientAddress" ) );
+        assertThat( data, hasKey( "requestURI" ) );
     }
 
     private Map<String,Object> getQueryListing( String query )

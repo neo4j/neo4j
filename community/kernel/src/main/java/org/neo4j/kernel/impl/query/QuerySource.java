@@ -20,9 +20,8 @@
 package org.neo4j.kernel.impl.query;
 
 import java.io.Serializable;
+import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-
-import static java.util.Objects.requireNonNull;
 
 public abstract class QuerySource
 {
@@ -41,6 +40,21 @@ public abstract class QuerySource
             return "embedded-session\t";
         }
     };
+
+    public String requestScheme()
+    {
+        return null;
+    }
+
+    public String clientAddress()
+    {
+        return null;
+    }
+
+    public String requestURI()
+    {
+        return null;
+    }
 
     public static class BoltSession extends QuerySource
     {
@@ -64,39 +78,90 @@ public abstract class QuerySource
         @Override
         public String asConnectionDetails()
         {
-            return String.format( "bolt-session\tbolt\t%s\t%s\t\tclient%s\tserver%s>",
+            return String.format(
+                    "bolt-session\tbolt\t%s\t%s\t\tclient%s\tserver%s>",
                     principalName,
                     clientName,
                     clientAddress,
                     serverAddress );
+        }
+
+        @Override
+        public String requestScheme()
+        {
+            return "bolt";
+        }
+
+        @Override
+        public String clientAddress()
+        {
+            return addressString( clientAddress );
+        }
+
+        @Override
+        public String requestURI()
+        {
+            return addressString( serverAddress );
+        }
+
+        private String addressString( SocketAddress address )
+        {
+            if ( address instanceof InetSocketAddress )
+            {
+                InetSocketAddress inet = (InetSocketAddress) address;
+                return String.format( "%s:%s", inet.getHostString(), inet.getPort() );
+            }
+            return address.toString();
         }
     }
 
     public static class ServerSession extends QuerySource
     {
         private final String scheme;
-        private final String remoteAddr;
-        private final String requestURI;
+        private final InetSocketAddress clientAddress;
+        private final InetSocketAddress serverAddress;
+        private final String requestPath;
 
-        public ServerSession()
+        public ServerSession(
+                String scheme,
+                @SuppressWarnings( "unused" ) String userAgent, // useful for achieving parity with BoltSession
+                InetSocketAddress clientAddress,
+                InetSocketAddress serverAddress,
+                String requestPath )
         {
-            this.scheme = null;
-            this.remoteAddr = null;
-            this.requestURI = null;
-        }
-
-        public ServerSession( String scheme, String remoteAddr, String requestURI )
-        {
-            this.scheme = requireNonNull( scheme, "scheme" );
-            this.remoteAddr = requireNonNull( remoteAddr, "remoteAddr" );
-            this.requestURI = requireNonNull( requestURI, "requestURI" );
+            this.scheme = scheme;
+            this.clientAddress = clientAddress;
+            this.serverAddress = serverAddress;
+            this.requestPath = requestPath;
         }
 
         @Override
         public String asConnectionDetails()
         {
-            return scheme == null ? "server-session" : String.join( "\t",
-                "server-session", scheme, remoteAddr, requestURI );
+            return String.join( "\t", "server-session", scheme, clientAddress.getHostString(), requestPath );
+        }
+
+        @Override
+        public String requestScheme()
+        {
+            return scheme;
+        }
+
+        @Override
+        public String clientAddress()
+        {
+            return String.format( "%s:%s", clientAddress.getHostString(), clientAddress.getPort() );
+        }
+
+        @Override
+        public String requestURI()
+        {
+            return serverAddress == null ? requestPath : String.format(
+                    "%s://%s:%d%s",
+                    scheme,
+                    serverAddress.getHostString(),
+                    serverAddress.getPort(),
+                    requestPath );
         }
     }
 
@@ -131,6 +196,24 @@ public abstract class QuerySource
         public String asConnectionDetails()
         {
             return source.asConnectionDetails() + '\t' + username;
+        }
+
+        @Override
+        public String requestScheme()
+        {
+            return source.requestScheme();
+        }
+
+        @Override
+        public String clientAddress()
+        {
+            return source.clientAddress();
+        }
+
+        @Override
+        public String requestURI()
+        {
+            return source.requestURI();
         }
     }
 }
