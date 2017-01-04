@@ -19,15 +19,15 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import java.util.HashSet;
+import java.util.NoSuchElementException;
+import java.util.Set;
+
 import org.apache.commons.lang3.NotImplementedException;
 import org.junit.Test;
 import org.mockito.InOrder;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
-
-import java.util.HashSet;
-import java.util.NoSuchElementException;
-import java.util.Set;
 
 import org.neo4j.cursor.Cursor;
 import org.neo4j.function.ThrowingConsumer;
@@ -35,6 +35,7 @@ import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
+import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
@@ -62,6 +63,7 @@ public class TwoPhaseNodeForRelationshipLockingTest
 
     {
         when( state.locks() ).thenReturn( new SimpleStatementLocks( locks ) );
+        when( state.lockTracer() ).thenReturn( LockTracer.NONE );
     }
 
     @Test
@@ -82,10 +84,10 @@ public class TwoPhaseNodeForRelationshipLockingTest
         locking.lockAllNodesAndConsumeRelationships( nodeId, state );
 
         // then
-        inOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, 40L );
-        inOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, 41L );
-        inOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, nodeId );
-        inOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, 43L );
+        inOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 40L );
+        inOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 41L );
+        inOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, nodeId );
+        inOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 43L );
         assertEquals( set( 21L, 22L, 23L ), collector.set );
     }
 
@@ -107,18 +109,18 @@ public class TwoPhaseNodeForRelationshipLockingTest
         locking.lockAllNodesAndConsumeRelationships( nodeId, state );
 
         // then
-        inOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, 40L );
-        inOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, 41L );
-        inOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, nodeId );
+        inOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 40L );
+        inOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 41L );
+        inOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, nodeId );
 
         inOrder.verify( locks ).releaseExclusive( ResourceTypes.NODE, 40L );
         inOrder.verify( locks ).releaseExclusive( ResourceTypes.NODE, 41L );
         inOrder.verify( locks ).releaseExclusive( ResourceTypes.NODE, nodeId );
 
-        inOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, 40L );
-        inOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, 41L );
-        inOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, nodeId );
-        inOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, 43L );
+        inOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 40L );
+        inOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 41L );
+        inOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, nodeId );
+        inOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 43L );
         assertEquals( set( 21L, 22L, 23L ), collector.set );
     }
 
@@ -131,7 +133,7 @@ public class TwoPhaseNodeForRelationshipLockingTest
 
         locking.lockAllNodesAndConsumeRelationships( nodeId, state );
 
-        verify( locks ).acquireExclusive( ResourceTypes.NODE, nodeId );
+        verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, nodeId );
         verifyNoMoreInteractions( locks );
     }
 

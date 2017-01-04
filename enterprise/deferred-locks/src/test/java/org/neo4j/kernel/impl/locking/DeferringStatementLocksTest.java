@@ -28,6 +28,7 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -69,14 +70,14 @@ public class DeferringStatementLocksTest
         final DeferringStatementLocks statementLocks = new DeferringStatementLocks( client );
 
         // WHEN
-        statementLocks.optimistic().acquireExclusive( ResourceTypes.NODE, 1 );
-        statementLocks.optimistic().acquireExclusive( ResourceTypes.RELATIONSHIP, 42 );
-        verify( client, never() ).acquireExclusive( any( ResourceType.class ), anyLong() );
+        statementLocks.optimistic().acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 1 );
+        statementLocks.optimistic().acquireExclusive( LockTracer.NONE, ResourceTypes.RELATIONSHIP, 42 );
+        verify( client, never() ).acquireExclusive( eq( LockTracer.NONE ), any( ResourceType.class ), anyLong() );
         statementLocks.prepareForCommit();
 
         // THEN
-        verify( client ).acquireExclusive( ResourceTypes.NODE, 1 );
-        verify( client ).acquireExclusive( ResourceTypes.RELATIONSHIP, 42 );
+        verify( client ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 1 );
+        verify( client ).acquireExclusive( LockTracer.NONE, ResourceTypes.RELATIONSHIP, 42 );
         verifyNoMoreInteractions( client );
     }
 

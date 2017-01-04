@@ -29,6 +29,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.factory.CanWrite;
+import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.storageengine.api.StorageStatement;
 
@@ -46,7 +47,8 @@ public class KernelStatementTest
         when( transaction.getReasonIfTerminated() ).thenReturn( Optional.of( Status.Transaction.Terminated ) );
         when( transaction.securityContext() ).thenReturn( AUTH_DISABLED );
 
-        KernelStatement statement = new KernelStatement( transaction, null, mock( StorageStatement.class ), null, new CanWrite() );
+        KernelStatement statement = new KernelStatement( transaction, null, mock( StorageStatement.class ), null, new CanWrite(),
+                LockTracer.NONE );
         statement.acquire();
 
         statement.readOperations().nodeExists( 0 );
@@ -58,7 +60,7 @@ public class KernelStatementTest
         // given
         StorageStatement storeStatement = mock( StorageStatement.class );
         KernelStatement statement = new KernelStatement( mock( KernelTransactionImplementation.class ),
-                null, storeStatement, new Procedures(), new CanWrite() );
+                null, storeStatement, new Procedures(), new CanWrite(), LockTracer.NONE );
         statement.acquire();
 
         // when
@@ -77,7 +79,7 @@ public class KernelStatementTest
         AccessCapability accessCapability = mock( AccessCapability.class );
         Procedures procedures = mock( Procedures.class );
         KernelStatement statement = new KernelStatement( transaction, txStateHolder,
-                storeStatement, procedures, accessCapability );
+                storeStatement, procedures, accessCapability, LockTracer.NONE );
 
         statement.assertOpen();
     }

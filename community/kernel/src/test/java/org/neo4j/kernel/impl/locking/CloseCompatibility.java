@@ -43,7 +43,7 @@ public class CloseCompatibility extends LockingCompatibilityTestSuite.Compatibil
         // GIVEN a lock manager and working clients
         try ( Client client = locks.newClient() )
         {
-            client.acquireExclusive( ResourceTypes.NODE, 0 );
+            client.acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 0 );
         }
 
         // WHEN
@@ -65,12 +65,12 @@ public class CloseCompatibility extends LockingCompatibilityTestSuite.Compatibil
     public void closeShouldWaitAllOperationToFinish()
     {
         // given
-        clientA.acquireShared( NODE, 1L );
-        clientA.acquireShared( NODE, 3L );
-        clientB.acquireShared( NODE, 1L );
-        acquireShared( clientC, NODE, 2L );
-        acquireExclusive( clientB, NODE, 1L ).callAndAssertWaiting();
-        acquireExclusive( clientC, NODE, 1L ).callAndAssertWaiting();
+        clientA.acquireShared( LockTracer.NONE, NODE, 1L );
+        clientA.acquireShared( LockTracer.NONE, NODE, 3L );
+        clientB.acquireShared( LockTracer.NONE, NODE, 1L );
+        acquireShared( clientC, LockTracer.NONE, NODE, 2L );
+        acquireExclusive( clientB, LockTracer.NONE, NODE, 1L ).callAndAssertWaiting();
+        acquireExclusive( clientC, LockTracer.NONE, NODE, 1L ).callAndAssertWaiting();
 
         // when
         clientB.close();
@@ -91,14 +91,14 @@ public class CloseCompatibility extends LockingCompatibilityTestSuite.Compatibil
     public void shouldNotBeAbleToAcquireSharedLockFromClosedClient()
     {
         clientA.close();
-        clientA.acquireShared( NODE, 1L );
+        clientA.acquireShared( LockTracer.NONE, NODE, 1L );
     }
 
     @Test( expected = LockClientStoppedException.class )
     public void shouldNotBeAbleToAcquireExclusiveLockFromClosedClient()
     {
         clientA.close();
-        clientA.acquireExclusive( NODE, 1L );
+        clientA.acquireExclusive( LockTracer.NONE, NODE, 1L );
     }
 
     @Test( expected = LockClientStoppedException.class )

@@ -63,6 +63,7 @@ import org.neo4j.logging.Level;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.time.Clocks;
+import org.neo4j.time.SystemNanoClock;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
 
@@ -108,7 +109,7 @@ public class PlatformModule
 
     public final TransactionStats transactionMonitor;
 
-    public final Clock clock;
+    public final SystemNanoClock clock;
 
     public PlatformModule( File providedStoreDir, Map<String, String> params, DatabaseInfo databaseInfo,
             GraphDatabaseFacadeFactory.Dependencies externalDependencies, GraphDatabaseFacade graphDatabaseFacade )
@@ -192,9 +193,9 @@ public class PlatformModule
         publishPlatformInfo( dependencies.resolveDependency( UsageData.class ) );
     }
 
-    protected Clock createClock()
+    protected SystemNanoClock createClock()
     {
-        return Clocks.systemClock();
+        return Clocks.nanoClock();
     }
 
     @SuppressWarnings( "unchecked" )

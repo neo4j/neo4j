@@ -53,7 +53,7 @@ public class LockWorker extends OtherThreadExecutor<LockWorkerState>
             protected void acquireLock( LockWorkerState state ) throws AcquireLockTimeoutException
             {
                 state.doing( "+R " + resource + ", wait:" + wait );
-                state.client.acquireShared( NODE, resource );
+                state.client.acquireShared( LockTracer.NONE, NODE, resource );
                 state.done();
             }
         }, wait );
@@ -67,7 +67,7 @@ public class LockWorker extends OtherThreadExecutor<LockWorkerState>
             protected void acquireLock( LockWorkerState state ) throws AcquireLockTimeoutException
             {
                 state.doing( "+W " + resource + ", wait:" + wait );
-                state.client.acquireExclusive( NODE, resource );
+                state.client.acquireExclusive( LockTracer.NONE, NODE, resource );
                 state.done();
             }
         }, wait );
@@ -114,7 +114,7 @@ public class LockWorker extends OtherThreadExecutor<LockWorkerState>
         for ( String op : state.completedOperations )
             logger.log( op );
         logger.log( "Doing right now:" );
-        logger.log( state.doing );
+        logger.log( state.doing == null ? "???" : state.doing );
     }
 
     private abstract static class AcquireLockCommand implements WorkerCommand<LockWorkerState, Void>

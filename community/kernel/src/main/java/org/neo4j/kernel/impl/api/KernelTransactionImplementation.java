@@ -50,6 +50,7 @@ import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.factory.AccessCapability;
+import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.proc.Procedures;
@@ -91,7 +92,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final ConstraintIndexCreator constraintIndexCreator;
     private final StatementOperationContainer operationContainer;
     private final StorageEngine storageEngine;
-    private final TransactionTracer tracer;
+    private final TransactionTracer transactionTracer;
     private final Pool<KernelTransactionImplementation> pool;
     private final Supplier<LegacyIndexTransactionState> legacyIndexTxStateSupplier;
 
@@ -151,7 +152,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                                             Supplier<LegacyIndexTransactionState> legacyIndexTxStateSupplier,
                                             Pool<KernelTransactionImplementation> pool,
                                             Clock clock,
-                                            TransactionTracer tracer,
+                                            TransactionTracer transactionTracer,
+                                            LockTracer lockTracer,
                                             StorageEngine storageEngine,
                                             AccessCapability accessCapability )
     {
@@ -167,9 +169,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.legacyIndexTxStateSupplier = legacyIndexTxStateSupplier;
         this.pool = pool;
         this.clock = clock;
-        this.tracer = tracer;
+        this.transactionTracer = transactionTracer;
         this.storageStatement = storeLayer.newStatement();
-        this.currentStatement = new KernelStatement( this, this, storageStatement, procedures, accessCapability );
+        this.currentStatement =
+                new KernelStatement( this, this, storageStatement, procedures, accessCapability, lockTracer );
         this.userMetaData = Collections.emptyMap();
     }
 
@@ -194,7 +197,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.timeoutMillis = transactionTimeout;
         this.lastTransactionIdWhenStarted = lastCommittedTx;
         this.lastTransactionTimestampWhenStarted = lastTimeStamp;
-        this.transactionEvent = tracer.beginTransaction();
+        this.transactionEvent = transactionTracer.beginTransaction();
         assert transactionEvent != null : "transactionEvent was null!";
         this.securityContext = frozenSecurityContext;
         this.transactionId = NOT_COMMITTED_TRANSACTION_ID;

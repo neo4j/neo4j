@@ -39,6 +39,7 @@ import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.LegacyIndexTransactionStateImpl;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
+import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.proc.Procedures;
@@ -310,7 +311,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
                     new KernelTransactionImplementation( statementOperations, schemaWriteGuard, hooks,
                             constraintIndexCreator, procedures, transactionHeaderInformationFactory,
                             transactionCommitProcess, transactionMonitor, legacyIndexTxStateSupplier, localTxPool,
-                            clock, tracers.transactionTracer, storageEngine, accessCapability );
+                            clock, tracers.transactionTracer, tracers.lockTracer, storageEngine, accessCapability );
 
             this.transactions.add( tx );
             return tx;

@@ -27,6 +27,7 @@ import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.NodeItem;
@@ -101,7 +102,7 @@ class TwoPhaseNodeForRelationshipLocking
             PrimitiveLongIterator nodeIdIterator = nodeIds.iterator();
             while ( nodeIdIterator.hasNext() )
             {
-                state.locks().optimistic().acquireExclusive( ResourceTypes.NODE, nodeIdIterator.next() );
+                state.locks().optimistic().acquireExclusive( state.lockTracer(), ResourceTypes.NODE, nodeIdIterator.next() );
             }
 
             // perform the action on each relationship, we will retry if the the relationship iterator contains new relationships

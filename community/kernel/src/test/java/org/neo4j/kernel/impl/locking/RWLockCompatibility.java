@@ -69,7 +69,7 @@ public class RWLockCompatibility extends LockingCompatibilityTestSuite.Compatibi
             // good
         }
 
-        clientA.acquireShared( NODE, 1L );
+        clientA.acquireShared( LockTracer.NONE, NODE, 1L );
         try
         {
             clientA.releaseExclusive( NODE, 1L );
@@ -81,7 +81,7 @@ public class RWLockCompatibility extends LockingCompatibilityTestSuite.Compatibi
         }
 
         clientA.releaseShared( NODE, 1L );
-        clientA.acquireExclusive( NODE, 1L );
+        clientA.acquireExclusive( LockTracer.NONE, NODE, 1L );
         try
         {
             clientA.releaseShared( NODE, 1L );
@@ -93,13 +93,13 @@ public class RWLockCompatibility extends LockingCompatibilityTestSuite.Compatibi
         }
         clientA.releaseExclusive( NODE, 1L );
 
-        clientA.acquireShared( NODE, 1L );
-        clientA.acquireExclusive( NODE, 1L );
+        clientA.acquireShared( LockTracer.NONE, NODE, 1L );
+        clientA.acquireExclusive( LockTracer.NONE, NODE, 1L );
         clientA.releaseExclusive( NODE, 1L );
         clientA.releaseShared( NODE, 1L );
 
-        clientA.acquireExclusive( NODE, 1L );
-        clientA.acquireShared( NODE, 1L );
+        clientA.acquireExclusive( LockTracer.NONE, NODE, 1L );
+        clientA.acquireShared( LockTracer.NONE, NODE, 1L );
         clientA.releaseShared( NODE, 1L );
         clientA.releaseExclusive( NODE, 1L );
 
@@ -107,11 +107,11 @@ public class RWLockCompatibility extends LockingCompatibilityTestSuite.Compatibi
         {
             if ( (i % 2) == 0 )
             {
-                clientA.acquireExclusive( NODE, 1L );
+                clientA.acquireExclusive( LockTracer.NONE, NODE, 1L );
             }
             else
             {
-                clientA.acquireShared( NODE, 1L );
+                clientA.acquireShared( LockTracer.NONE, NODE, 1L );
             }
         }
         for ( int i = 9; i >= 0; i-- )
@@ -195,7 +195,7 @@ public class RWLockCompatibility extends LockingCompatibilityTestSuite.Compatibi
         }
         catch ( Exception e )
         {
-            LockWorkFailureDump dumper = new LockWorkFailureDump( testDir.directory( getClass().getSimpleName() ) );
+            LockWorkFailureDump dumper = new LockWorkFailureDump( testDir.file( getClass().getSimpleName() ) );
             File file = dumper.dumpState( locks, t1, t2, t3, t4 );
             throw new RuntimeException( "Failed, forensics information dumped to " + file.getAbsolutePath(), e );
         }
@@ -253,12 +253,12 @@ public class RWLockCompatibility extends LockingCompatibilityTestSuite.Compatibi
                             float f = rand.nextFloat();
                             if ( f < readWriteRatio )
                             {
-                                client.acquireShared( NODE, nodeId );
+                                client.acquireShared( LockTracer.NONE, NODE, nodeId );
                                 lockStack.push( READ );
                             }
                             else
                             {
-                                client.acquireExclusive( NODE, nodeId );
+                                client.acquireExclusive( LockTracer.NONE, NODE, nodeId );
                                 lockStack.push( WRITE );
                             }
                         }

@@ -40,6 +40,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.enterprise.lock.forseti.ForsetiLockManager;
+import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLogProvider;
@@ -166,7 +167,7 @@ public class SlaveLocksClientConcurrentTest
         @Override
         public void run()
         {
-            locksClient.acquireExclusive( resourceType, id );
+            locksClient.acquireExclusive( LockTracer.NONE, resourceType, id );
             locksClient.close();
         }
     }
@@ -190,7 +191,7 @@ public class SlaveLocksClientConcurrentTest
             try
             {
                 resourceLatch.await();
-                locksClient.acquireShared( resourceType, id );
+                locksClient.acquireShared( LockTracer.NONE, resourceType, id );
                 resourceReleaseLatch.countDown();
                 locksClient.close();
             }

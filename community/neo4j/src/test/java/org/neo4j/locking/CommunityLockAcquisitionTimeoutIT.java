@@ -56,6 +56,7 @@ import org.neo4j.test.mockito.matcher.RootCauseMatcher;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
+import org.neo4j.time.SystemNanoClock;
 
 import static org.junit.Assert.fail;
 
@@ -226,7 +227,7 @@ public class CommunityLockAcquisitionTimeoutIT
         {
             return new PlatformModule( storeDir, params, databaseInfo, dependencies, graphDatabaseFacade ) {
                 @Override
-                protected Clock createClock()
+                protected SystemNanoClock createClock()
                 {
                     return fakeClock;
                 }

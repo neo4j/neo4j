@@ -32,6 +32,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.MyRelTypes;
+import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
@@ -135,7 +136,7 @@ public class RelationshipCreatorTest
         }
 
         @Override
-        public void acquireExclusive( ResourceType resourceType, long... resourceIds )
+        public void acquireExclusive( LockTracer tracer, ResourceType resourceType, long... resourceIds )
                 throws AcquireLockTimeoutException
         {
             assertEquals( ResourceTypes.RELATIONSHIP, resourceType );

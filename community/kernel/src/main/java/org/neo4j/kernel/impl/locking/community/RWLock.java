@@ -27,7 +27,9 @@ import java.util.ListIterator;
 import org.neo4j.helpers.MathUtil;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.locking.LockAcquisitionTimeoutException;
+import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.LockType;
+import org.neo4j.kernel.impl.locking.LockWaitEvent;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.logging.Logger;
 
@@ -186,11 +188,12 @@ class RWLock
      * @return true is lock was acquired, false otherwise
      * @throws DeadlockDetectedException if a deadlock is detected
      */
-    synchronized boolean acquireReadLock( Object tx ) throws DeadlockDetectedException
+    synchronized boolean acquireReadLock( LockTracer tracer, Object tx ) throws DeadlockDetectedException
     {
         TxLockElement tle = getOrCreateLockElement( tx );
 
         LockRequest lockRequest = null;
+        LockWaitEvent waitEvent = null;
         // used to track do we need to add lock request to a waiting queue or we still have it there
         boolean addLockRequest = true;
         try
@@ -210,6 +213,10 @@ class RWLock
                     waitingThreadList.addFirst( lockRequest );
                 }
 
+                if ( waitEvent == null )
+                {
+                    waitEvent = tracer.waitForLock( resource.type(), resource.resourceId() );
+                }
                 addLockRequest = waitUninterruptedly( lockAcquisitionTimeBoundary );
                 ragManager.stopWaitOn( this, tx );
             }
@@ -233,6 +240,10 @@ class RWLock
         }
         finally
         {
+            if ( waitEvent != null )
+            {
+                waitEvent.close();
+            }
             cleanupWaitingListRequests( lockRequest, tle, addLockRequest );
             // for cases when spurious wake up was the reason why we waked up, but also there
             // was an interruption as described at 17.2 just clearing interruption flag
@@ -365,11 +376,12 @@ class RWLock
      * @return true is lock was acquired, false otherwise
      * @throws DeadlockDetectedException if a deadlock is detected
      */
-    synchronized boolean acquireWriteLock( Object tx ) throws DeadlockDetectedException
+    synchronized boolean acquireWriteLock( LockTracer tracer, Object tx ) throws DeadlockDetectedException
     {
         TxLockElement tle = getOrCreateLockElement( tx );
 
         LockRequest lockRequest = null;
+        LockWaitEvent waitEvent = null;
         // used to track do we need to add lock request to a waiting queue or we still have it there
         boolean addLockRequest = true;
         try
@@ -389,6 +401,10 @@ class RWLock
                     waitingThreadList.addFirst( lockRequest );
                 }
 
+                if ( waitEvent == null )
+                {
+                    waitEvent = tracer.waitForLock( resource.type(), resource.resourceId() );
+                }
                 addLockRequest = waitUninterruptedly( lockAcquisitionTimeBoundary );
                 ragManager.stopWaitOn( this, tx );
             }
@@ -412,6 +428,10 @@ class RWLock
         }
         finally
         {
+            if ( waitEvent != null )
+            {
+                waitEvent.close();
+            }
             cleanupWaitingListRequests( lockRequest, tle, addLockRequest );
             // for cases when spurious wake up was the reason why we waked up, but also there
             // was an interruption as described at 17.2 just clearing interruption flag

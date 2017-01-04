@@ -39,6 +39,7 @@ import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.factory.AccessCapability;
+import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.storageengine.api.StorageStatement;
@@ -72,12 +73,14 @@ public class KernelStatement implements TxStateHolder, Statement
     private StatementLocks statementLocks;
     private int referenceCount;
     private volatile ExecutingQueryList executingQueryList;
+    private final LockTracer systemLockTracer;
 
     public KernelStatement( KernelTransactionImplementation transaction,
                             TxStateHolder txStateHolder,
                             StorageStatement storeStatement,
                             Procedures procedures,
-                            AccessCapability accessCapability )
+                            AccessCapability accessCapability,
+                            LockTracer systemLockTracer )
     {
         this.transaction = transaction;
         this.txStateHolder = txStateHolder;
@@ -85,6 +88,7 @@ public class KernelStatement implements TxStateHolder, Statement
         this.accessCapability = accessCapability;
         this.facade = new OperationsFacade( transaction, this, procedures );
         this.executingQueryList = ExecutingQueryList.EMPTY;
+        this.systemLockTracer = systemLockTracer;
     }
 
     @Override
@@ -189,6 +193,11 @@ public class KernelStatement implements TxStateHolder, Statement
     public StatementLocks locks()
     {
         return statementLocks;
+    }
+
+    public LockTracer lockTracer()
+    {
+        return executingQueryList.reduce( systemLockTracer, ExecutingQuery::lockTracer, LockTracer::combine );
     }
 
     public final void acquire()

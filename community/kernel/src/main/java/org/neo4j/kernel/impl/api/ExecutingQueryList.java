@@ -19,21 +19,50 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import org.neo4j.kernel.api.ExecutingQuery;
 
-interface ExecutingQueryList
+abstract class ExecutingQueryList
 {
-    Stream<ExecutingQuery> queries();
+    abstract Stream<ExecutingQuery> queries();
 
-    ExecutingQueryList push( ExecutingQuery newExecutingQuery );
+    abstract ExecutingQueryList push( ExecutingQuery newExecutingQuery );
 
-    ExecutingQueryList remove( ExecutingQuery executingQuery );
+    abstract ExecutingQueryList remove( ExecutingQuery executingQuery );
 
-    ExecutingQueryList EMPTY = new Empty();
+    abstract <T> T reduce( T defaultValue, Function<ExecutingQuery,T> accessor, BiFunction<T,T,T> combinator );
 
-    class Entry implements ExecutingQueryList
+    static ExecutingQueryList EMPTY = new ExecutingQueryList()
+    {
+        @Override
+        public Stream<ExecutingQuery> queries()
+        {
+            return Stream.empty();
+        }
+
+        @Override
+        public ExecutingQueryList push( ExecutingQuery newExecutingQuery )
+        {
+            return new Entry( newExecutingQuery, this );
+        }
+
+        @Override
+        public ExecutingQueryList remove( ExecutingQuery executingQuery )
+        {
+            return this;
+        }
+
+        @Override
+        <T> T reduce( T defaultValue, Function<ExecutingQuery,T> accessor, BiFunction<T,T,T> combinator )
+        {
+            return defaultValue;
+        }
+    };
+
+    private static class Entry extends ExecutingQueryList
     {
         final ExecutingQuery query;
         final ExecutingQueryList next;
@@ -61,7 +90,7 @@ interface ExecutingQueryList
         @Override
         public ExecutingQueryList push( ExecutingQuery newExecutingQuery )
         {
-            assert( newExecutingQuery.internalQueryId() > query.internalQueryId() );
+            assert (newExecutingQuery.internalQueryId() > query.internalQueryId());
             return new Entry( newExecutingQuery, this );
         }
 
@@ -74,29 +103,22 @@ interface ExecutingQueryList
             }
             else
             {
-                return next == EMPTY ? EMPTY : new Entry( query, next.remove( executingQuery ) );
+                ExecutingQueryList removed = next.remove( executingQuery );
+                if ( removed == next )
+                {
+                    return this;
+                }
+                else
+                {
+                    return new Entry( query, removed );
+                }
             }
         }
-    }
-
-    class Empty implements ExecutingQueryList
-    {
-        @Override
-        public Stream<ExecutingQuery> queries()
-        {
-            return Stream.empty();
-        }
 
         @Override
-        public ExecutingQueryList push( ExecutingQuery newExecutingQuery )
+        <T> T reduce( T defaultValue, Function<ExecutingQuery,T> accessor, BiFunction<T,T,T> combinator )
         {
-            return new Entry(newExecutingQuery, this);
-        }
-
-        @Override
-        public ExecutingQueryList remove( ExecutingQuery executingQuery )
-        {
-            return this;
+            return next.reduce( combinator.apply( defaultValue, accessor.apply( query ) ), accessor, combinator );
         }
     }
 }

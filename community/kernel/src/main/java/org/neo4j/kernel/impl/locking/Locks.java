@@ -78,14 +78,14 @@ public interface Locks
          * Can be grabbed when there are no locks or only share locks on a resource. If the lock cannot be acquired,
          * behavior is specified by the {@link WaitStrategy} for the given {@link ResourceType}.
          *
+         * @param tracer a tracer for listening on lock events.
          * @param resourceType type or resource(s) to lock.
          * @param resourceIds id(s) of resources to lock. Multiple ids should be ordered consistently by all callers
-         * of this method.
          */
-        void acquireShared( ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException;
+        void acquireShared( LockTracer tracer, ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException;
 
         @Override
-        void acquireExclusive( ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException;
+        void acquireExclusive( LockTracer tracer, ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException;
 
         /** Try grabbing exclusive lock, not waiting and returning a boolean indicating if we got the lock. */
         boolean tryExclusiveLock( ResourceType resourceType, long resourceId );

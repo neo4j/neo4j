@@ -42,6 +42,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.locking.LockClientStoppedException;
+import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.locking.community.CommunityLockManger;
@@ -129,8 +130,8 @@ public class SlaveLocksClientTest
     public void shouldNotTakeSharedLockOnMasterIfWeAreAlreadyHoldingSaidLock()
     {
         // When taking a lock twice
-        client.acquireShared( NODE, 1 );
-        client.acquireShared( NODE, 1 );
+        client.acquireShared( LockTracer.NONE, NODE, 1 );
+        client.acquireShared( LockTracer.NONE, NODE, 1 );
 
         // Then only a single network round-trip should be observed
         verify( master ).acquireSharedLock( null, NODE, 1 );
@@ -140,8 +141,8 @@ public class SlaveLocksClientTest
     public void shouldNotTakeExclusiveLockOnMasterIfWeAreAlreadyHoldingSaidLock()
     {
         // When taking a lock twice
-        client.acquireExclusive( NODE, 1 );
-        client.acquireExclusive( NODE, 1 );
+        client.acquireExclusive( LockTracer.NONE, NODE, 1 );
+        client.acquireExclusive( LockTracer.NONE, NODE, 1 );
 
         // Then only a single network roundtrip should be observed
         verify( master ).acquireExclusiveLock( null, NODE, 1 );
@@ -151,11 +152,11 @@ public class SlaveLocksClientTest
     public void shouldAllowAcquiringReleasingAndReacquiringExclusive() throws Exception
     {
         // Given we have grabbed and released a lock
-        client.acquireExclusive( NODE, 1L );
+        client.acquireExclusive( LockTracer.NONE, NODE, 1L );
         client.releaseExclusive( NODE, 1L );
 
         // When we grab and release that lock again
-        client.acquireExclusive( NODE, 1L );
+        client.acquireExclusive( LockTracer.NONE, NODE, 1L );
         client.releaseExclusive( NODE, 1L );
 
         // Then this should cause the local lock manager to hold the lock
@@ -167,11 +168,11 @@ public class SlaveLocksClientTest
     public void shouldAllowAcquiringReleasingAndReacquiringShared() throws Exception
     {
         // Given we have grabbed and released a lock
-        client.acquireShared( NODE, 1L );
+        client.acquireShared( LockTracer.NONE, NODE, 1L );
         client.releaseShared( NODE, 1L );
 
         // When we grab and release that lock again
-        client.acquireShared( NODE, 1L );
+        client.acquireShared( LockTracer.NONE, NODE, 1L );
         client.releaseShared( NODE, 1L );
 
         // Then this should cause the local lock manager to hold the lock
@@ -183,10 +184,10 @@ public class SlaveLocksClientTest
     public void shouldNotTalkToLocalLocksOnReentrancyExclusive() throws Exception
     {
         // Given we have grabbed and released a lock
-        client.acquireExclusive( NODE, 1L );
+        client.acquireExclusive( LockTracer.NONE, NODE, 1L );
 
         // When we grab and release that lock again
-        client.acquireExclusive( NODE, 1L );
+        client.acquireExclusive( LockTracer.NONE, NODE, 1L );
         client.releaseExclusive( NODE, 1L );
 
         // Then this should cause the local lock manager to hold the lock
@@ -198,10 +199,10 @@ public class SlaveLocksClientTest
     public void shouldNotTalkToLocalLocksOnReentrancyShared() throws Exception
     {
         // Given we have grabbed and released a lock
-        client.acquireShared( NODE, 1L );
+        client.acquireShared( LockTracer.NONE, NODE, 1L );
 
         // When we grab and release that lock again
-        client.acquireShared( NODE, 1L );
+        client.acquireShared( LockTracer.NONE, NODE, 1L );
         client.releaseShared( NODE, 1L );
 
         // Then this should cause the local lock manager to hold the lock
@@ -223,7 +224,7 @@ public class SlaveLocksClientTest
     public void shouldReturnDelegateIdIfInitialized() throws Exception
     {
         // Given
-        client.acquireExclusive( ResourceTypes.NODE, 1L );
+        client.acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 1L );
 
         // When
         int lockSessionId = client.getLockSessionId();
@@ -237,7 +238,7 @@ public class SlaveLocksClientTest
     {
         when( master.newLockSession( any( RequestContext.class ) ) ).thenThrow( new ComException() );
 
-        client.acquireShared( NODE, 1 );
+        client.acquireShared( LockTracer.NONE, NODE, 1 );
     }
 
     @Test( expected = DistributedLockFailureException.class )
@@ -246,7 +247,7 @@ public class SlaveLocksClientTest
         when( master.newLockSession( any( RequestContext.class ) ) ).thenThrow(
                 new TransactionFailureException( Status.General.DatabaseUnavailable, "Not now" ) );
 
-        client.acquireShared( NODE, 1 );
+        client.acquireShared( LockTracer.NONE, NODE, 1 );
     }
 
     @Test( expected = DistributedLockFailureException.class )
@@ -254,7 +255,7 @@ public class SlaveLocksClientTest
     {
         whenMasterAcquireShared().thenThrow( new ComException() );
 
-        client.acquireShared( NODE, 1 );
+        client.acquireShared( LockTracer.NONE, NODE, 1 );
     }
 
     @Test( expected = DistributedLockFailureException.class )
@@ -262,7 +263,7 @@ public class SlaveLocksClientTest
     {
         whenMasterAcquireExclusive().thenThrow( new ComException() );
 
-        client.acquireExclusive( NODE, 1 );
+        client.acquireExclusive( LockTracer.NONE, NODE, 1 );
     }
 
     @Test( expected = UnsupportedOperationException.class )
@@ -282,7 +283,7 @@ public class SlaveLocksClientTest
     {
         when( master.endLockSession( any( RequestContext.class ), anyBoolean() ) ).thenThrow( new ComException() );
 
-        client.acquireExclusive( NODE, 1 ); // initialise
+        client.acquireExclusive( LockTracer.NONE, NODE, 1 ); // initialise
         client.close();
     }
 
@@ -293,7 +294,7 @@ public class SlaveLocksClientTest
 
         try
         {
-            client.acquireExclusive( NODE, 1 ); // initialise
+            client.acquireExclusive( LockTracer.NONE, NODE, 1 ); // initialise
             client.close();
             fail( "Expected client.close to throw" );
         }
@@ -308,7 +309,7 @@ public class SlaveLocksClientTest
     {
         availabilityGuard.shutdown();
 
-        client.acquireExclusive( NODE, 1 );
+        client.acquireExclusive( LockTracer.NONE, NODE, 1 );
     }
 
     @Test
@@ -320,7 +321,7 @@ public class SlaveLocksClientTest
         // WHEN
         try
         {
-            client.acquireExclusive( NODE, 0 );
+            client.acquireExclusive( LockTracer.NONE, NODE, 0 );
             fail( "Should fail" );
         }
         catch ( TransientFailureException e )
@@ -335,7 +336,7 @@ public class SlaveLocksClientTest
         SlaveLocksClient client = stoppedClient();
         try
         {
-            client.acquireShared( NODE, 1 );
+            client.acquireShared( LockTracer.NONE, NODE, 1 );
         }
         catch ( Exception e )
         {
@@ -363,7 +364,7 @@ public class SlaveLocksClientTest
         SlaveLocksClient client = stoppedClient();
         try
         {
-            client.acquireExclusive( NODE, 1 );
+            client.acquireExclusive( LockTracer.NONE, NODE, 1 );
         }
         catch ( Exception e )
         {
@@ -405,7 +406,7 @@ public class SlaveLocksClientTest
         SlaveLocksClient client = closedClient();
         try
         {
-            client.acquireShared( NODE, 1 );
+            client.acquireShared( LockTracer.NONE, NODE, 1 );
         }
         catch ( Exception e )
         {
@@ -433,7 +434,7 @@ public class SlaveLocksClientTest
         SlaveLocksClient client = closedClient();
         try
         {
-            client.acquireExclusive( NODE, 1 );
+            client.acquireExclusive( LockTracer.NONE, NODE, 1 );
         }
         catch ( Exception e )
         {
@@ -472,7 +473,7 @@ public class SlaveLocksClientTest
     @Test
     public void stopLocalLocksAndEndLockSessionOnMasterWhenStopped()
     {
-        client.acquireShared( NODE, 1 );
+        client.acquireShared( LockTracer.NONE, NODE, 1 );
 
         client.stop();
 
@@ -483,7 +484,7 @@ public class SlaveLocksClientTest
     @Test
     public void closeLocalLocksAndEndLockSessionOnMasterWhenClosed()
     {
-        client.acquireShared( NODE, 1 );
+        client.acquireShared( LockTracer.NONE, NODE, 1 );
 
         client.close();
 
@@ -494,7 +495,7 @@ public class SlaveLocksClientTest
     @Test
     public void closeAfterStopped()
     {
-        client.acquireShared( NODE, 1 );
+        client.acquireShared( LockTracer.NONE, NODE, 1 );
 
         client.stop();
         client.close();
@@ -554,7 +555,7 @@ public class SlaveLocksClientTest
         // WHEN
         try
         {
-            client.acquireExclusive( resourceType, nodeId );
+            client.acquireExclusive( LockTracer.NONE, resourceType, nodeId );
             fail( "Should have failed" );
         }
         catch ( UnsupportedOperationException e )
@@ -579,7 +580,7 @@ public class SlaveLocksClientTest
 
     private SlaveLocksClient closedClient()
     {
-        client.acquireShared( NODE, 1 ); // trigger new lock session initialization
+        client.acquireShared( LockTracer.NONE, NODE, 1 ); // trigger new lock session initialization
         client.close();
         return client;
     }

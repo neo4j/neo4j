@@ -27,6 +27,7 @@ import org.neo4j.causalclustering.core.consensus.NoLeaderFoundException;
 import org.neo4j.causalclustering.core.replication.Replicator;
 import org.neo4j.causalclustering.core.state.machines.tx.ReplicatedTransactionStateMachine;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
 import org.neo4j.storageengine.api.lock.ResourceType;
@@ -202,16 +203,16 @@ public class LeaderOnlyLockManager implements Locks
         }
 
         @Override
-        public void acquireShared( ResourceType resourceType, long... resourceId ) throws AcquireLockTimeoutException
+        public void acquireShared( LockTracer tracer, ResourceType resourceType, long... resourceId ) throws AcquireLockTimeoutException
         {
-            localClient.acquireShared( resourceType, resourceId );
+            localClient.acquireShared( tracer, resourceType, resourceId );
         }
 
         @Override
-        public void acquireExclusive( ResourceType resourceType, long... resourceId ) throws AcquireLockTimeoutException
+        public void acquireExclusive( LockTracer tracer, ResourceType resourceType, long... resourceId ) throws AcquireLockTimeoutException
         {
             ensureHoldingToken();
-            localClient.acquireExclusive( resourceType, resourceId );
+            localClient.acquireExclusive( tracer, resourceType, resourceId );
         }
 
         @Override

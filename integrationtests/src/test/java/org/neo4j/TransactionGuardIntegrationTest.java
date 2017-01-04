@@ -83,6 +83,7 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.server.HTTP;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
+import org.neo4j.time.SystemNanoClock;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.startsWith;
@@ -587,7 +588,7 @@ public class TransactionGuardIntegrationTest
         {
             return new PlatformModule( storeDir, params, databaseInfo, dependencies, graphDatabaseFacade ) {
                 @Override
-                protected Clock createClock()
+                protected SystemNanoClock createClock()
                 {
                     return fakeClock;
                 }

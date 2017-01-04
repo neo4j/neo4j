@@ -19,16 +19,16 @@
  */
 package org.neo4j.kernel.ha.com.master;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.mockito.ArgumentCaptor;
-import org.mockito.InOrder;
-
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
+
+import org.junit.Rule;
+import org.junit.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.com.RequestContext;
@@ -43,6 +43,7 @@ import org.neo4j.kernel.ha.cluster.DefaultConversationSPI;
 import org.neo4j.kernel.ha.com.master.MasterImpl.Monitor;
 import org.neo4j.kernel.ha.com.master.MasterImpl.SPI;
 import org.neo4j.kernel.ha.lock.LockResult;
+import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.Locks.Client;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.store.StoreId;
@@ -54,9 +55,9 @@ import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.test.rule.concurrent.OtherThreadRule;
 
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -64,6 +65,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.argThat;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
@@ -259,7 +261,7 @@ public class MasterImplTest
         {
             latch.await();
             return null;
-        } ).when( client ).acquireExclusive( any( ResourceType.class ), anyLong() );
+        } ).when( client ).acquireExclusive( eq( LockTracer.NONE), any( ResourceType.class ), anyLong() );
 
         return client;
     }
@@ -423,7 +425,7 @@ public class MasterImplTest
         RequestContext context = createRequestContext( master );
         when( conversationSpi.acquireClient() ).thenReturn( locks );
         ResourceTypes type = ResourceTypes.NODE;
-        doThrow( new DeadlockDetectedException( "" ) ).when( locks ).acquireExclusive( type, 1 );
+        doThrow( new DeadlockDetectedException( "" ) ).when( locks ).acquireExclusive( LockTracer.NONE, type, 1 );
         master.acquireExclusiveLock( context, type, 1 );
 
         ArgumentCaptor<LockResult> captor = ArgumentCaptor.forClass( LockResult.class );
@@ -445,7 +447,7 @@ public class MasterImplTest
         RequestContext context = createRequestContext( master );
         when( conversationSpi.acquireClient() ).thenReturn( locks );
         ResourceTypes type = ResourceTypes.NODE;
-        doThrow( new DeadlockDetectedException( "" ) ).when( locks ).acquireExclusive( type, 1 );
+        doThrow( new DeadlockDetectedException( "" ) ).when( locks ).acquireExclusive( LockTracer.NONE, type, 1 );
         master.acquireSharedLock( context, type, 1 );
 
         ArgumentCaptor<LockResult> captor = ArgumentCaptor.forClass( LockResult.class );
@@ -467,7 +469,7 @@ public class MasterImplTest
         RequestContext context = createRequestContext( master );
         when( conversationSpi.acquireClient() ).thenReturn( locks );
         ResourceTypes type = ResourceTypes.NODE;
-        doThrow( new IllegalResourceException( "" ) ).when( locks ).acquireExclusive( type, 1 );
+        doThrow( new IllegalResourceException( "" ) ).when( locks ).acquireExclusive( LockTracer.NONE, type, 1 );
         master.acquireExclusiveLock( context, type, 1 );
 
         ArgumentCaptor<LockResult> captor = ArgumentCaptor.forClass( LockResult.class );
@@ -489,7 +491,7 @@ public class MasterImplTest
         RequestContext context = createRequestContext( master );
         when( conversationSpi.acquireClient() ).thenReturn( locks );
         ResourceTypes type = ResourceTypes.NODE;
-        doThrow( new IllegalResourceException( "" ) ).when( locks ).acquireExclusive( type, 1 );
+        doThrow( new IllegalResourceException( "" ) ).when( locks ).acquireExclusive( LockTracer.NONE, type, 1 );
         master.acquireSharedLock( context, type, 1 );
 
         ArgumentCaptor<LockResult> captor = ArgumentCaptor.forClass( LockResult.class );

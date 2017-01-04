@@ -20,24 +20,43 @@
 package org.neo4j.kernel.api;
 
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
+import org.apache.commons.lang3.builder.ToStringBuilder;
+
+import org.neo4j.kernel.impl.locking.LockTracer;
+import org.neo4j.kernel.impl.locking.LockWaitEvent;
 import org.neo4j.kernel.impl.query.QuerySource;
+import org.neo4j.storageengine.api.lock.ResourceType;
+import org.neo4j.time.CpuClock;
+import org.neo4j.time.SystemNanoClock;
 
-import static java.lang.String.format;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static java.util.concurrent.atomic.AtomicLongFieldUpdater.newUpdater;
 
 /**
  * Represents a currently running query.
  */
 public class ExecutingQuery
 {
+    private static final AtomicLongFieldUpdater<ExecutingQuery> WAIT_TIME =
+            newUpdater( ExecutingQuery.class, "waitTimeNanos" );
     private final long queryId;
-
+    private final LockTracer lockTracer = ExecutingQuery.this::waitForLock;
     private final String username;
     private final QuerySource querySource;
     private final String queryText;
     private final Map<String, Object> queryParameters;
-    private final long startTime;
+    private final long startTime; // timestamp in milliseconds
+    private final Thread threadExecutingTheQuery;
+    private final SystemNanoClock clock;
+    private final CpuClock cpuClock;
+    private final long cpuTimeNanosWhenQueryStarted;
     private Map<String,Object> metaData;
+    private volatile ExecutingQueryStatus status = ExecutingQueryStatus.RUNNING;
+    /** Updated through {@link #WAIT_TIME} */
+    @SuppressWarnings( "unused" )
+    private volatile long waitTimeNanos;
 
     public ExecutingQuery(
             long queryId,
@@ -45,16 +64,22 @@ public class ExecutingQuery
             String username,
             String queryText,
             Map<String,Object> queryParameters,
-            long startTime,
-            Map<String,Object> metaData
+            Map<String,Object> metaData,
+            Thread threadExecutingTheQuery,
+            SystemNanoClock clock,
+            CpuClock cpuClock
     ) {
         this.queryId = queryId;
         this.querySource = querySource;
         this.username = username;
         this.queryText = queryText;
         this.queryParameters = queryParameters;
-        this.startTime = startTime;
+        this.clock = clock;
+        this.startTime = clock.millis();
         this.metaData = metaData;
+        this.threadExecutingTheQuery = threadExecutingTheQuery;
+        this.cpuClock = cpuClock;
+        this.cpuTimeNanosWhenQueryStarted = cpuClock.cpuTimeNanos( threadExecutingTheQuery );
     }
 
     @Override
@@ -72,7 +97,6 @@ public class ExecutingQuery
         ExecutingQuery that = (ExecutingQuery) o;
 
         return queryId == that.queryId;
-
     }
 
     @Override
@@ -111,17 +135,70 @@ public class ExecutingQuery
         return startTime;
     }
 
+    public long elapsedTimeMillis()
+    {
+        return clock.millis() - startTime;
+    }
+
+    /**
+     * @return the CPU time used by the query, in nanoseconds.
+     */
+    public long cpuTimeMillis()
+    {
+        return NANOSECONDS.toMillis( cpuClock.cpuTimeNanos( threadExecutingTheQuery ) - cpuTimeNanosWhenQueryStarted );
+    }
+
+    public long waitTimeMillis()
+    {
+        return NANOSECONDS.toMillis( waitTimeNanos + status.waitTimeNanos( clock ) );
+    }
+
     @Override
     public String toString()
     {
-        return format(
-            "ExecutingQuery{queryId=%d, querySource='%s', username='%s', queryText='%s', queryParameters=%s, " +
-            "startTime=%d}",
-            queryId, querySource.toString( ":" ), username, queryText, queryParameters, startTime );
+        return ToStringBuilder.reflectionToString( this );
     }
 
     public Map<String,Object> metaData()
     {
         return metaData;
+    }
+
+    public LockTracer lockTracer()
+    {
+        return lockTracer;
+    }
+
+    public Map<String,Object> status()
+    {
+        return status.toMap( clock );
+    }
+
+    private LockWaitEvent waitForLock( ResourceType resourceType, long[] resourceIds )
+    {
+        WaitingOnLockEvent event = new WaitingOnLockEvent( resourceType, resourceIds );
+        status = event;
+        return event;
+    }
+
+    private class WaitingOnLockEvent extends ExecutingQueryStatus.WaitingOnLock implements LockWaitEvent
+    {
+        private final ExecutingQueryStatus previous = status;
+
+        WaitingOnLockEvent( ResourceType resourceType, long[] resourceIds )
+        {
+            super( resourceType, resourceIds, clock.nanos() );
+        }
+
+        @Override
+        public void close()
+        {
+            if ( status != this )
+            {
+                return; // already closed
+            }
+            WAIT_TIME.addAndGet( ExecutingQuery.this, waitTimeNanos( clock ) );
+            status = previous;
+        }
     }
 }

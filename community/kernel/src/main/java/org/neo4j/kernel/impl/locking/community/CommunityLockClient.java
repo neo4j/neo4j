@@ -29,6 +29,7 @@ import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongObjectVisitor;
 import org.neo4j.kernel.impl.locking.LockClientStateHolder;
 import org.neo4j.kernel.impl.locking.LockClientStoppedException;
+import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.storageengine.api.lock.ResourceType;
 
@@ -88,7 +89,7 @@ public class CommunityLockClient implements Locks.Client
     }
 
     @Override
-    public void acquireShared( ResourceType resourceType, long...resourceIds )
+    public void acquireShared( LockTracer tracer, ResourceType resourceType, long... resourceIds )
     {
         stateHolder.incrementActiveClients( this );
         try
@@ -104,7 +105,7 @@ public class CommunityLockClient implements Locks.Client
                 else
                 {
                     resource = new LockResource( resourceType, resourceId );
-                    if ( manager.getReadLock( resource, lockTransaction ) )
+                    if ( manager.getReadLock( tracer, resource, lockTransaction ) )
                     {
                         localLocks.put( resourceId, resource );
                     }
@@ -122,7 +123,7 @@ public class CommunityLockClient implements Locks.Client
     }
 
     @Override
-    public void acquireExclusive( ResourceType resourceType, long...resourceIds )
+    public void acquireExclusive( LockTracer tracer, ResourceType resourceType, long... resourceIds )
     {
         stateHolder.incrementActiveClients( this );
         try
@@ -138,7 +139,7 @@ public class CommunityLockClient implements Locks.Client
                 else
                 {
                     resource = new LockResource( resourceType, resourceId );
-                    if ( manager.getWriteLock( resource, lockTransaction ) )
+                    if ( manager.getWriteLock( tracer, resource, lockTransaction ) )
                     {
                         localLocks.put( resourceId, resource );
                     }

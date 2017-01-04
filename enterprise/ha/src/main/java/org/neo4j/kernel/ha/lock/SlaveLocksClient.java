@@ -35,6 +35,8 @@ import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.locking.LockClientStoppedException;
+import org.neo4j.kernel.impl.locking.LockTracer;
+import org.neo4j.kernel.impl.locking.LockWaitEvent;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.logging.Log;
@@ -100,7 +102,7 @@ class SlaveLocksClient implements Locks.Client
     }
 
     @Override
-    public void acquireShared( ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException
+    public void acquireShared( LockTracer tracer, ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException
     {
         assertNotStopped();
 
@@ -108,7 +110,10 @@ class SlaveLocksClient implements Locks.Client
         long[] newResourceIds = onlyFirstTimeLocks( lockMap, resourceIds );
         if ( newResourceIds.length > 0 )
         {
-            acquireSharedOnMaster( resourceType, newResourceIds );
+            try ( LockWaitEvent event = tracer.waitForLock( resourceType, resourceIds ) )
+            {
+                acquireSharedOnMaster( resourceType, newResourceIds );
+            }
             for ( long resourceId : newResourceIds )
             {
                 if ( client.trySharedLock( resourceType, resourceId ) )
@@ -125,7 +130,7 @@ class SlaveLocksClient implements Locks.Client
     }
 
     @Override
-    public void acquireExclusive( ResourceType resourceType, long... resourceIds ) throws
+    public void acquireExclusive( LockTracer tracer, ResourceType resourceType, long... resourceIds ) throws
             AcquireLockTimeoutException
     {
         assertNotStopped();
@@ -134,7 +139,10 @@ class SlaveLocksClient implements Locks.Client
         long[] newResourceIds = onlyFirstTimeLocks( lockMap, resourceIds );
         if ( newResourceIds.length > 0 )
         {
-            acquireExclusiveOnMaster( resourceType, newResourceIds );
+            try ( LockWaitEvent event = tracer.waitForLock( resourceType, resourceIds ) )
+            {
+                acquireExclusiveOnMaster( resourceType, newResourceIds );
+            }
             for ( long resourceId : newResourceIds )
             {
                 if ( client.tryExclusiveLock( resourceType, resourceId ) )

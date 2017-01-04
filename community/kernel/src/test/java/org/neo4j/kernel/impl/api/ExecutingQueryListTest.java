@@ -21,12 +21,15 @@ package org.neo4j.kernel.impl.api;
 
 import org.junit.Test;
 
+import java.time.Clock;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import org.neo4j.kernel.api.ExecutingQuery;
 import org.neo4j.kernel.impl.query.QuerySource;
+import org.neo4j.time.Clocks;
+import org.neo4j.time.CpuClock;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.equalTo;
@@ -46,6 +49,21 @@ public class ExecutingQueryListTest
 
         // Then
         assertThat( result, equalTo( ExecutingQueryList.EMPTY ) );
+    }
+
+    @Test
+    public void shouldNotChangeAListWhenRemovingAQueryThatIsNotInTheList() throws Exception
+    {
+        // given
+        ExecutingQuery query1 = createExecutingQuery( 1, "query1" );
+        ExecutingQuery query2 = createExecutingQuery( 2, "query2" );
+        ExecutingQueryList list = ExecutingQueryList.EMPTY.push( query1 );
+
+        // when
+        ExecutingQueryList result = list.remove( query2 );
+
+        // then
+        assertThat( result, equalTo( list ) );
     }
 
     @Test
@@ -99,6 +117,9 @@ public class ExecutingQueryListTest
     private ExecutingQuery createExecutingQuery( int queryId, String query )
     {
         return new ExecutingQuery( queryId, QuerySource.UNKNOWN, "me", query,
-                Collections.emptyMap(), 10, Collections.emptyMap() );
+                Collections.emptyMap(), Collections.emptyMap(), Thread.currentThread(),
+                Clocks.nanoClock(),
+                CpuClock.CPU_CLOCK
+        );
     }
 }
