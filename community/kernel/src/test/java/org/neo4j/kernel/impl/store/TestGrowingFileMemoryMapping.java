@@ -34,7 +34,7 @@ import org.neo4j.kernel.impl.store.format.standard.NodeRecordFormat;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.ConfigurablePageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
@@ -49,7 +49,7 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 public class TestGrowingFileMemoryMapping
 {
 
-    private final PageCacheRule pageCacheRule = new PageCacheRule();
+    private final ConfigurablePageCacheRule pageCacheRule = new ConfigurablePageCacheRule();
     private final TestDirectory testDirectory = TestDirectory.testDirectory();
     private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 

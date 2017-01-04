@@ -71,7 +71,7 @@ import static org.neo4j.io.fs.FileUtils.deleteRecursively;
 public class IdGeneratorTest
 {
     @ClassRule
-    public static PageCacheRule pageCacheRule = new PageCacheRule();
+    public static final PageCacheRule pageCacheRule = new PageCacheRule();
     @Rule
     public EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
     private EphemeralFileSystemAbstraction fs;

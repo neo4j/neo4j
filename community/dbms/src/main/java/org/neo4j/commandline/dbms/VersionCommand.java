@@ -31,7 +31,7 @@ import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.commandline.arguments.common.MandatoryCanonicalPath;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
+import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;

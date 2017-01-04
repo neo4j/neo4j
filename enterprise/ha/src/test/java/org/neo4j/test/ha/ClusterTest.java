@@ -59,11 +59,11 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.Exceptions.rootCause;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory.createPageCache;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterSeesSlavesAsAvailable;
-import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_COMMIT_TIMESTAMP;
 
 public class ClusterTest
@@ -83,33 +83,7 @@ public class ClusterTest
                             HaSettings.tx_push_factor.name(), "2" ) )
                 .withCluster( clusterOfSize( 3 ) )
                 .build();
-        try
-        {
-            clusterManager.start();
-
-            clusterManager.getCluster().await( allSeesAllAsAvailable() );
-
-            long nodeId;
-            HighlyAvailableGraphDatabase master = clusterManager.getCluster().getMaster();
-            try ( Transaction tx = master.beginTx() )
-            {
-                Node node = master.createNode();
-                nodeId = node.getId();
-                node.setProperty( "foo", "bar" );
-                tx.success();
-            }
-
-            HighlyAvailableGraphDatabase slave = clusterManager.getCluster().getAnySlave();
-            try ( Transaction transaction = slave.beginTx() )
-            {
-                Node node = slave.getNodeById( nodeId );
-                assertThat( node.getProperty( "foo" ).toString(), CoreMatchers.equalTo( "bar" ) );
-            }
-        }
-        finally
-        {
-            clusterManager.safeShutdown();
-        }
+        createClusterWithNode( clusterManager );
     }
 
     @Test
@@ -120,33 +94,7 @@ public class ClusterTest
                 .withSharedConfig( stringMap(
                         HaSettings.ha_server.name(), "localhost:6001-9999",
                         HaSettings.tx_push_factor.name(), "2" ) ).build();
-        try
-        {
-            clusterManager.start();
-
-            clusterManager.getCluster().await( allSeesAllAsAvailable() );
-
-            long nodeId;
-            HighlyAvailableGraphDatabase master = clusterManager.getCluster().getMaster();
-            try ( Transaction tx = master.beginTx() )
-            {
-                Node node = master.createNode();
-                nodeId = node.getId();
-                node.setProperty( "foo", "bar" );
-                tx.success();
-            }
-
-            HighlyAvailableGraphDatabase anySlave = clusterManager.getCluster().getAnySlave();
-            try ( Transaction ignore = anySlave.beginTx() )
-            {
-                Node node = anySlave.getNodeById( nodeId );
-                assertThat( node.getProperty( "foo" ).toString(), CoreMatchers.equalTo( "bar" ) );
-            }
-        }
-        finally
-        {
-            clusterManager.safeShutdown();
-        }
+        createClusterWithNode( clusterManager );
     }
 
     @Test
@@ -157,33 +105,7 @@ public class ClusterTest
                 .withSharedConfig( stringMap(
                         HaSettings.ha_server.name(), "0.0.0.0:6001-9999",
                         HaSettings.tx_push_factor.name(), "2" ) ).build();
-        try
-        {
-            clusterManager.start();
-
-            clusterManager.getCluster().await( allSeesAllAsAvailable() );
-
-            long nodeId;
-            HighlyAvailableGraphDatabase master = clusterManager.getCluster().getMaster();
-            try ( Transaction tx = master.beginTx() )
-            {
-                Node node = master.createNode();
-                nodeId = node.getId();
-                node.setProperty( "foo", "bar" );
-                tx.success();
-            }
-
-            HighlyAvailableGraphDatabase anySlave = clusterManager.getCluster().getAnySlave();
-            try ( Transaction ignore = anySlave.beginTx() )
-            {
-                Node node = anySlave.getNodeById( nodeId );
-                assertThat( node.getProperty( "foo" ).toString(), CoreMatchers.equalTo( "bar" ) );
-            }
-        }
-        finally
-        {
-            clusterManager.safeShutdown();
-        }
+        createClusterWithNode( clusterManager );
     }
 
     @Test
@@ -434,6 +356,37 @@ public class ClusterTest
         finally
         {
             clusterManager.stop();
+        }
+    }
+
+    private void createClusterWithNode( ClusterManager clusterManager ) throws Throwable
+    {
+        try
+        {
+            clusterManager.start();
+
+            clusterManager.getCluster().await( allSeesAllAsAvailable() );
+
+            long nodeId;
+            HighlyAvailableGraphDatabase master = clusterManager.getCluster().getMaster();
+            try ( Transaction tx = master.beginTx() )
+            {
+                Node node = master.createNode();
+                nodeId = node.getId();
+                node.setProperty( "foo", "bar" );
+                tx.success();
+            }
+
+            HighlyAvailableGraphDatabase slave = clusterManager.getCluster().getAnySlave();
+            try ( Transaction ignored = slave.beginTx() )
+            {
+                Node node = slave.getNodeById( nodeId );
+                assertThat( node.getProperty( "foo" ).toString(), CoreMatchers.equalTo( "bar" ) );
+            }
+        }
+        finally
+        {
+            clusterManager.safeShutdown();
         }
     }
 

@@ -28,7 +28,7 @@ import java.util.Set;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
+import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 
 import static org.junit.Assert.assertEquals;

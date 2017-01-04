@@ -41,7 +41,7 @@ import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.graphdb.Node;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
+import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.logging.NullLogProvider;

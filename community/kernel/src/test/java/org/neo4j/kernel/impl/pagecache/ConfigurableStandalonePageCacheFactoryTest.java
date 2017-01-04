@@ -38,7 +38,7 @@ import org.neo4j.io.pagecache.PagedFile;
 
 import static org.junit.Assert.assertTrue;
 
-public class StandalonePageCacheFactoryTest
+public class ConfigurableStandalonePageCacheFactoryTest
 {
     @Test( timeout = 10000 )
     public void mustAutomaticallyStartEvictionThread() throws IOException
@@ -48,7 +48,7 @@ public class StandalonePageCacheFactoryTest
             File file = new File( "/a" ).getCanonicalFile();
             fs.create( file ).close();
 
-            try ( PageCache cache = StandalonePageCacheFactory.createPageCache( fs );
+            try ( PageCache cache = ConfigurableStandalonePageCacheFactory.createPageCache( fs );
                     PagedFile pf = cache.map( file, 4096 );
                     PageCursor cursor = pf.io( 0, PagedFile.PF_SHARED_WRITE_LOCK ) )
             {

@@ -86,6 +86,7 @@ import org.neo4j.storageengine.api.Token;
 import org.neo4j.string.UTF8;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.ThreadTestUtils;
+import org.neo4j.test.rule.ConfigurablePageCacheRule;
 import org.neo4j.test.rule.NeoStoreDataSourceRule;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
@@ -111,7 +112,7 @@ import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_C
 public class NeoStoresTest
 {
 
-    private final PageCacheRule pageCacheRule = new PageCacheRule();
+    private final PageCacheRule pageCacheRule = new ConfigurablePageCacheRule();
     private final ExpectedException exception = ExpectedException.none();
     private final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private final TestDirectory dir = TestDirectory.testDirectory( fs.get() );

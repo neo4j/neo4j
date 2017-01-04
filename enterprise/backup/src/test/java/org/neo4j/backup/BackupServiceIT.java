@@ -30,7 +30,6 @@ import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
 import java.net.ConnectException;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -93,7 +92,6 @@ import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -107,7 +105,6 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.function.Suppliers.untilTimeExpired;
 import static org.neo4j.kernel.impl.storemigration.StoreFile.COUNTS_STORE_LEFT;
 import static org.neo4j.kernel.impl.storemigration.StoreFile.COUNTS_STORE_RIGHT;
 

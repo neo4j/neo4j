@@ -49,7 +49,7 @@ import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.
 public class SchemaStoreTest
 {
     @ClassRule
-    public static PageCacheRule pageCacheRule = new PageCacheRule();
+    public static final PageCacheRule pageCacheRule = new PageCacheRule();
     @Rule
     public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private Config config;

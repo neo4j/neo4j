@@ -45,7 +45,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
+import org.neo4j.kernel.impl.pagecache.ConfigurableStandalonePageCacheFactory;
 import org.neo4j.kernel.impl.recovery.RecoveryRequiredChecker;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.server.configuration.ConfigLoader;
@@ -179,7 +179,8 @@ public class CheckConsistencyCommand implements AdminCommand
     private void checkDbState( File storeDir, Config additionalConfiguration ) throws CommandFailed
     {
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-              PageCache pageCache = StandalonePageCacheFactory.createPageCache( fileSystem, additionalConfiguration ) )
+              PageCache pageCache = ConfigurableStandalonePageCacheFactory
+                      .createPageCache( fileSystem, additionalConfiguration ) )
         {
             if ( new RecoveryRequiredChecker( fileSystem, pageCache ).isRecoveryRequiredAt( storeDir ) )
             {

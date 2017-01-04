@@ -36,7 +36,7 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
-import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
+import org.neo4j.kernel.impl.pagecache.ConfigurableStandalonePageCacheFactory;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
@@ -154,7 +154,7 @@ public class RecordFormatsMigrationIT
     private void assertStoreFormat( RecordFormats expected ) throws IOException
     {
         Config config = new Config( stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m" ) );
-        try ( PageCache pageCache = StandalonePageCacheFactory.createPageCache( fileSystemRule.get(), config ) )
+        try ( PageCache pageCache = ConfigurableStandalonePageCacheFactory.createPageCache( fileSystemRule.get(), config ) )
         {
             RecordFormats actual = RecordFormatSelector.selectForStoreOrConfig( config, testDirectory.graphDbDir(),
                     fileSystemRule.get(), pageCache, NullLogProvider.getInstance() );

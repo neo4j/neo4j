@@ -30,9 +30,9 @@ import org.neo4j.causalclustering.discovery.ClusterMember;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensions;
-import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
 
 import static org.neo4j.consistency.ConsistencyCheckTool.runConsistencyCheckTool;
 

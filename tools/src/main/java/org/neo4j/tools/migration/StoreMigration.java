@@ -56,7 +56,7 @@ import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
 import static org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies.ignore;
-import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
+import static org.neo4j.kernel.impl.pagecache.ConfigurableStandalonePageCacheFactory.createPageCache;
 
 /**
  * Stand alone tool for migrating/upgrading a neo4j database from one version to the next.

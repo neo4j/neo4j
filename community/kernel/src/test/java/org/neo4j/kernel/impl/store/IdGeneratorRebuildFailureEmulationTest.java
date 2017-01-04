@@ -110,7 +110,7 @@ public class IdGeneratorRebuildFailureEmulationTest
     private final File storeDir = new File( "dir" ).getAbsoluteFile();
 
     @Rule
-    public PageCacheRule pageCacheRule = new PageCacheRule();
+    public final PageCacheRule pageCacheRule = new PageCacheRule();
 
     @Before
     public void initialize()

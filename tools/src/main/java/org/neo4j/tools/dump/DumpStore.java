@@ -48,7 +48,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.PrintStreamLogger;
 import org.neo4j.storageengine.api.Token;
 
-import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
+import static org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory.createPageCache;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
 /**

@@ -80,7 +80,7 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 public class NodeStoreTest
 {
     @ClassRule
-    public static PageCacheRule pageCacheRule = new PageCacheRule();
+    public static final PageCacheRule pageCacheRule = new PageCacheRule();
     @Rule
     public final EphemeralFileSystemRule efs = new EphemeralFileSystemRule();
 

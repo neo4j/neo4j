@@ -32,18 +32,18 @@ import org.neo4j.logging.FormattedLogProvider;
  * the graph database stuff, e.g., various store dump programs.
  *
  * All other places where a "proper" page cache is available, e.g. in store migration, should have that one injected.
- * And tests should use the PageCacheRule.
+ * And tests should use the ConfigurablePageCacheRule.
  */
-public final class StandalonePageCacheFactory
+public final class ConfigurableStandalonePageCacheFactory
 {
-    private StandalonePageCacheFactory()
+
+    private ConfigurableStandalonePageCacheFactory()
     {
-        // Not constructable.
     }
 
     public static PageCache createPageCache( FileSystemAbstraction fileSystem )
     {
-        return createPageCache( fileSystem, Config.defaults() );
+        return createPageCache( fileSystem, PageCacheTracer.NULL, Config.defaults() );
     }
 
     public static PageCache createPageCache( FileSystemAbstraction fileSystem, Config config )

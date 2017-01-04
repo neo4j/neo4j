@@ -19,87 +19,29 @@
  */
 package org.neo4j.test.rule;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.adversaries.Adversary;
 import org.neo4j.adversaries.pagecache.AdversarialPageCache;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
 
 public class PageCacheRule extends ExternalResource
 {
-    private PageCache pageCache;
-    private final boolean automaticallyProduceInconsistentReads;
+    protected PageCache pageCache;
+    final boolean automaticallyProduceInconsistentReads;
 
     public PageCacheRule()
     {
-        automaticallyProduceInconsistentReads = true;
+        this( true );
     }
 
     public PageCacheRule( boolean automaticallyProduceInconsistentReads )
     {
         this.automaticallyProduceInconsistentReads = automaticallyProduceInconsistentReads;
-    }
-
-    public PageCache getPageCache( FileSystemAbstraction fs )
-    {
-        Map<String,String> settings = new HashMap<>();
-        settings.put( GraphDatabaseSettings.pagecache_memory.name(), "8M" );
-        return getPageCache( fs, new Config( settings ) );
-    }
-
-    public PageCache getPageCache( FileSystemAbstraction fs, Config config )
-    {
-        return getPageCache( fs, PageCacheTracer.NULL, config );
-    }
-
-    public PageCache getPageCache( FileSystemAbstraction fs, PageCacheTracer tracer, Config config )
-    {
-        if ( pageCache != null )
-        {
-            try
-            {
-                pageCache.close();
-            }
-            catch ( Exception e )
-            {
-                throw new AssertionError(
-                        "Failed to stop existing PageCache prior to creating a new one", e );
-            }
-        }
-
-        pageCache = StandalonePageCacheFactory.createPageCache( fs, tracer, config );
-
-        if ( automaticallyProduceInconsistentReads )
-        {
-            return withInconsistentReads( pageCache );
-        }
-        return pageCache;
-    }
-
-    @Override
-    protected void after( boolean success )
-    {
-        if ( pageCache != null )
-        {
-            try
-            {
-                pageCache.close();
-            }
-            catch ( Exception e )
-            {
-                throw new AssertionError( "Failed to stop PageCache after test", e );
-            }
-            pageCache = null;
-        }
     }
 
     /**
@@ -122,6 +64,60 @@ public class PageCacheRule extends ExternalResource
     {
         Adversary adversary = new RandomInconsistentReadAdversary();
         return new AdversarialPageCache( pageCache, adversary );
+    }
+
+    public PageCache getPageCache( FileSystemAbstraction fs )
+    {
+        return getPageCache( fs, PageCacheTracer.NULL );
+    }
+
+    public PageCache getPageCache( FileSystemAbstraction fs, PageCacheTracer tracer )
+    {
+        closeExistingPageCache();
+        pageCache = StandalonePageCacheFactory.createPageCache( fs, tracer );
+        pageCachePostConstruct();
+        return pageCache;
+    }
+
+    protected void pageCachePostConstruct()
+    {
+        if ( automaticallyProduceInconsistentReads )
+        {
+            pageCache = withInconsistentReads( pageCache );
+        }
+    }
+
+    protected void closeExistingPageCache()
+    {
+        if ( pageCache != null )
+        {
+            try
+            {
+                pageCache.close();
+            }
+            catch ( Exception e )
+            {
+                throw new AssertionError(
+                        "Failed to stop existing PageCache prior to creating a new one", e );
+            }
+        }
+    }
+
+    @Override
+    protected void after( boolean success )
+    {
+        if ( pageCache != null )
+        {
+            try
+            {
+                pageCache.close();
+            }
+            catch ( Exception e )
+            {
+                throw new AssertionError( "Failed to stop PageCache after test", e );
+            }
+            pageCache = null;
+        }
     }
 
     private static class AtomicBooleanInconsistentReadAdversary implements Adversary

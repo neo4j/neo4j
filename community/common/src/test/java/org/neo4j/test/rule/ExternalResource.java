@@ -24,7 +24,8 @@ import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
 /**
- * A better version of {@link org.junit.rules.ExternalResource} that properly handles exceptions in {@link #after()}.
+ * A better version of {@link org.junit.rules.ExternalResource} that properly handles exceptions in {@link
+ * #after(boolean)}.
  */
 public abstract class ExternalResource implements TestRule
 {

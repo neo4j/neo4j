@@ -51,7 +51,7 @@ import static org.junit.Assert.assertTrue;
 public class TestArrayStore
 {
     @ClassRule
-    public static PageCacheRule pageCacheRule = new PageCacheRule();
+    public static final PageCacheRule pageCacheRule = new PageCacheRule();
     @Rule
     public TestDirectory testDirectory = TestDirectory.testDirectory();
     @Rule

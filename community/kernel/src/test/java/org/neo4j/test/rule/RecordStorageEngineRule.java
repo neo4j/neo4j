@@ -73,7 +73,7 @@ import static org.mockito.Mockito.when;
  * when {@link #getWith(FileSystemAbstraction, PageCache) getting (constructing)} the engine. Further
  * dependencies can be overridden in that returned builder as well.
  * <p>
- * Keep in mind that this rule must be created BEFORE {@link PageCacheRule} and any file system rule so that
+ * Keep in mind that this rule must be created BEFORE {@link ConfigurablePageCacheRule} and any file system rule so that
  * shutdown order gets correct.
  */
 public class RecordStorageEngineRule extends ExternalResource
