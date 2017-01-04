@@ -32,7 +32,7 @@ case class ReverseFunction(argument: Expression) extends NullInNullOutExpression
       case string: String => new java.lang.StringBuilder(string).reverse.toString
       case seq: Seq[_] => seq.reverse
       case a => throw new CypherTypeException(
-        "Expected a string value or a list; perhaps you'd like to cast to a string it with str() or create a list."
+        "Expected a string or a list; consider converting it to a string with toString() or creating a list."
           .format(toString(), a.toString))
     }
   }

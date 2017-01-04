@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
+ * Copyright (c) 2002-201 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -24,7 +24,7 @@ import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QuerySt
 
 class ReverseAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport{
 
-  test("reverse function should work as reverse strings") {
+  test("reverse function should work on strings") {
     // When
     val result = executeScalarWithAllPlannersAndCompatibilityMode[String]("RETURN reverse('raksO')")
 
@@ -62,7 +62,7 @@ class ReverseAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
     results should equal ("[]")
   }
 
-  test("reverse function should work with mixed collections") {
+  test("reverse function should work with collections of mixed types") {
     // When
     val result = graph.execute("with [4923,'abc',521,487] as ids RETURN reverse(ids)")
 

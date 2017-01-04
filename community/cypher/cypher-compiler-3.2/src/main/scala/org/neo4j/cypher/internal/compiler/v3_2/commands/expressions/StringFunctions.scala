@@ -40,7 +40,7 @@ case object asString extends (Any => String) {
     case null => null
     case x: String => x
     case _ => throw new CypherTypeException(
-      "Expected a string value for %s, but got: %s; perhaps you'd like to cast to a string it with str()."
+      "Expected a string value for %s, but got: %s; consider converting it to a string with toString()."
         .format(toString(), a.toString))
   }
 }
