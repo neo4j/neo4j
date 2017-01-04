@@ -44,6 +44,7 @@ import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 
 /**
  * The RandomPageCacheTestHarness can plan and run random page cache tests, repeatably if necessary, and verify that
@@ -67,6 +68,7 @@ public class RandomPageCacheTestHarness implements Closeable
     private int filePageCount;
     private int filePageSize;
     private PageCacheTracer tracer;
+    private PageCursorTracerSupplier cursorTracerSupplier;
     private int commandCount;
     private double[] commandProbabilityFactors;
     private long randomSeed;
@@ -90,6 +92,7 @@ public class RandomPageCacheTestHarness implements Closeable
         filePageCount = cachePageCount * 10;
         filePageSize = cachePageSize;
         tracer = PageCacheTracer.NULL;
+        cursorTracerSupplier = PageCursorTracerSupplier.NULL;
         commandCount = 1000;
 
         Command[] commands = Command.values();
@@ -369,7 +372,8 @@ public class RandomPageCacheTestHarness implements Closeable
 
         PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory();
         swapperFactory.setFileSystemAbstraction( fs );
-        MuninnPageCache cache = new MuninnPageCache( swapperFactory, cachePageCount, cachePageSize, tracer );
+        MuninnPageCache cache = new MuninnPageCache( swapperFactory, cachePageCount, cachePageSize, tracer,
+                cursorTracerSupplier );
         cache.setPrintExceptionsOnClose( false );
         Map<File,PagedFile> fileMap = new HashMap<>( files.length );
         for ( int i = 0; i < Math.min( files.length, initialMappedFiles ); i++ )

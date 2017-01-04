@@ -26,7 +26,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 import org.mockito.InOrder;
-import org.mockito.Mockito;
 
 import java.io.File;
 import java.io.IOException;
@@ -60,6 +59,7 @@ import org.neo4j.kernel.impl.storemigration.StoreFileType;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.ConfigurablePageCacheRule;
+import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
@@ -87,7 +87,6 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.io.pagecache.RecordingPageCacheTracer.Event;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
-import static org.neo4j.test.rule.PageCacheRule.config;
 import static org.neo4j.test.rule.TestDirectory.testDirectory;
 
 public class CommonAbstractStoreTest
@@ -194,7 +193,7 @@ public class CommonAbstractStoreTest
         File storeFile = dir.file( "a" );
         RecordingPageCacheTracer tracer = new RecordingPageCacheTracer( Pin.class );
         PageCache pageCache = pageCacheRule.getPageCache( fileSystemRule.get(),
-                config().withTracer( tracer ), Config.empty() );
+                PageCacheRule.config().withTracer( tracer ), Config.empty() );
 
         try ( NodeStore store = new NodeStore( storeFile, Config.empty(), new DefaultIdGeneratorFactory( fileSystemRule.get() ),
                 pageCache, NullLogProvider.getInstance(), null, Standard.LATEST_RECORD_FORMATS ) )

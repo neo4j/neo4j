@@ -19,6 +19,8 @@
  */
 package org.neo4j.test.rule;
 
+import org.apache.commons.lang3.ObjectUtils;
+
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -29,6 +31,8 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.checking.AccessCheckingPageCache;
 import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 
 public class PageCacheRule extends ExternalResource
 {
@@ -41,6 +45,7 @@ public class PageCacheRule extends ExternalResource
         protected Integer pageSize;
         protected AtomicBoolean nextReadIsInconsistent;
         protected PageCacheTracer tracer;
+        protected PageCursorTracerSupplier pageCursorTracerSupplier;
         private boolean accessChecks;
 
         private PageCacheConfig()
@@ -102,6 +107,17 @@ public class PageCacheRule extends ExternalResource
         }
 
         /**
+         * {@link PageCursorTracerSupplier} to use for this page cache.
+         * @param tracerSupplier supplier of page cursors tracers
+         * @return this instance
+         */
+        public PageCacheConfig withCursorTracerSupplier( PageCursorTracerSupplier tracerSupplier )
+        {
+            this.pageCursorTracerSupplier = tracerSupplier;
+            return this;
+        }
+
+        /**
          * Decorates PageCache with access checking wrapper to add some amount of verifications that
          * reads happen inside shouldRetry-loops.
          *
@@ -154,22 +170,15 @@ public class PageCacheRule extends ExternalResource
         closeExistingPageCache();
         pageCache = StandalonePageCacheFactory.createPageCache( fs,
                 selectConfig( baseConfig.pageSize, overriddenConfig.pageSize, null ),
-                selectConfig( baseConfig.tracer, overriddenConfig.tracer, PageCacheTracer.NULL ) );
+                selectConfig( baseConfig.tracer, overriddenConfig.tracer, PageCacheTracer.NULL ),
+                selectConfig( baseConfig.pageCursorTracerSupplier, overriddenConfig.pageCursorTracerSupplier, DefaultPageCursorTracerSupplier.INSTANCE ));
         pageCachePostConstruct( overriddenConfig );
         return pageCache;
     }
 
     protected static <T> T selectConfig( T base, T overridden, T defaultValue )
     {
-        if ( base != null )
-        {
-            return base;
-        }
-        if ( overridden != null )
-        {
-            return overridden;
-        }
-        return defaultValue;
+        return ObjectUtils.firstNonNull( base, overridden, defaultValue );
     }
 
     protected void pageCachePostConstruct( PageCacheConfig overriddenConfig )

@@ -40,6 +40,11 @@ public class DefaultPageCursorTracer implements PageCursorTracer
     private long faults = 0L;
     private long bytesRead = 0L;
 
+    private long cyclePinsStart;
+    private long cycleUnpinsStart;
+    private long cycleFaultsStart;
+    private long cycleBytesReadStart;
+
     private PageCacheTracer pageCacheTracer;
 
     private static final MethodHandle beginPinMH;
@@ -91,24 +96,43 @@ public class DefaultPageCursorTracer implements PageCursorTracer
     public void init( PageCacheTracer pageCacheTracer )
     {
         this.pageCacheTracer = pageCacheTracer;
-        reset();
-    }
-
-    private void reset()
-    {
-        pins = 0;
-        unpins = 0;
-        faults = 0;
-        bytesRead = 0;
+        this.cyclePinsStart = pins;
+        this.cycleUnpinsStart = unpins;
+        this.cycleFaultsStart = faults;
+        this.cycleBytesReadStart = bytesRead;
     }
 
     public void reportEvents()
     {
         Objects.nonNull( pageCacheTracer );
-        pageCacheTracer.pins( pins );
-        pageCacheTracer.unpins( unpins );
-        pageCacheTracer.faults( faults );
-        pageCacheTracer.bytesRead( bytesRead );
+        pageCacheTracer.pins( Math.abs( pins - cyclePinsStart ) );
+        pageCacheTracer.unpins( Math.abs( pins - cycleUnpinsStart ) );
+        pageCacheTracer.faults( Math.abs( faults - cycleFaultsStart ) );
+        pageCacheTracer.bytesRead( Math.abs( bytesRead - cycleBytesReadStart ) );
+    }
+
+    @Override
+    public long faults()
+    {
+        return faults;
+    }
+
+    @Override
+    public long pins()
+    {
+        return pins;
+    }
+
+    @Override
+    public long unpins()
+    {
+        return unpins;
+    }
+
+    @Override
+    public long bytesRead()
+    {
+        return bytesRead;
     }
 
     @Override

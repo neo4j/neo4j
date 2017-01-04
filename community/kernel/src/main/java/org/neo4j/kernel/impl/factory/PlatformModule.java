@@ -32,6 +32,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemLifecycleAdapter;
 import org.neo4j.io.fs.watcher.FileWatcher;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -309,7 +310,7 @@ public class PlatformModule
     {
         Log pageCacheLog = logging.getInternalLog( PageCache.class );
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
-                fileSystem, config, tracers.pageCacheTracer, pageCacheLog );
+                fileSystem, config, tracers.pageCacheTracer, DefaultPageCursorTracerSupplier.INSTANCE, pageCacheLog );
         PageCache pageCache = pageCacheFactory.getOrCreatePageCache();
 
         if ( config.get( GraphDatabaseSettings.dump_configuration ) )

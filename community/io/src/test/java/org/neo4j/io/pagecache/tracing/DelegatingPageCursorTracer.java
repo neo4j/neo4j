@@ -33,8 +33,44 @@ public class DelegatingPageCursorTracer implements PageCursorTracer
     }
 
     @Override
+    public long faults()
+    {
+        return 0;
+    }
+
+    @Override
+    public long pins()
+    {
+        return 0;
+    }
+
+    @Override
+    public long unpins()
+    {
+        return 0;
+    }
+
+    @Override
+    public long bytesRead()
+    {
+        return 0;
+    }
+
+    @Override
     public PinEvent beginPin( boolean writeLock, long filePageId, PageSwapper swapper )
     {
         return null;
+    }
+
+    @Override
+    public void init( PageCacheTracer tracer )
+    {
+
+    }
+
+    @Override
+    public void reportEvents()
+    {
+
     }
 }

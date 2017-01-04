@@ -47,6 +47,7 @@ import org.neo4j.io.pagecache.tracing.FlushEventOpportunity;
 import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.unsafe.impl.internal.dragons.MemoryManager;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
@@ -194,12 +195,10 @@ public class MuninnPageCache implements PageCache
 
     // 'true' (the default) if we should print any exceptions we get when unmapping a file.
     private boolean printExceptionsOnClose;
+    private PageCursorTracerSupplier cursorTracerSupplier;
 
-    public MuninnPageCache(
-            PageSwapperFactory swapperFactory,
-            int maxPages,
-            int cachePageSize,
-            PageCacheTracer tracer )
+    public MuninnPageCache( PageSwapperFactory swapperFactory, int maxPages, int cachePageSize, PageCacheTracer tracer,
+            PageCursorTracerSupplier cursorTracerSupplier )
     {
         verifyHacks();
         verifyCachePageSizeIsPowerOfTwo( cachePageSize );
@@ -210,6 +209,7 @@ public class MuninnPageCache implements PageCache
         this.cachePageSize = cachePageSize;
         this.keepFree = Math.min( pagesToKeepFree, maxPages / 2 );
         this.tracer = tracer;
+        this.cursorTracerSupplier = cursorTracerSupplier;
         this.pages = new MuninnPage[maxPages];
         this.printExceptionsOnClose = true;
 
@@ -356,6 +356,7 @@ public class MuninnPageCache implements PageCache
                 filePageSize,
                 swapperFactory,
                 tracer,
+                cursorTracerSupplier,
                 createIfNotExists,
                 truncateExisting );
         pagedFile.incrementRefCount();

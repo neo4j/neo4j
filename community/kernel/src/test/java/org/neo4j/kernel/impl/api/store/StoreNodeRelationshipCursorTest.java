@@ -33,6 +33,7 @@ import java.util.function.Consumer;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -101,7 +102,8 @@ public class StoreNodeRelationshipCursorTest
         File storeDir = directory.absolutePath();
         fs = new DefaultFileSystemAbstraction();
         pageCache = new ConfiguringPageCacheFactory( fs,
-                Config.defaults().augment( stringMap( pagecache_memory.name(), "8m" ) ), NULL, NullLog.getInstance() )
+                Config.defaults().augment( stringMap( pagecache_memory.name(), "8m" ) ), NULL,
+                PageCursorTracerSupplier.NULL, NullLog.getInstance() )
                 .getOrCreatePageCache();
         StoreFactory storeFactory = new StoreFactory( storeDir, pageCache, fs, NullLogProvider.getInstance() );
         neoStores = storeFactory.openAllNeoStores( true );

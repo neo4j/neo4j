@@ -24,6 +24,8 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 
 /*
  * This class is an helper to allow to construct properly a page cache in the few places we need it without all
@@ -40,16 +42,16 @@ public final class StandalonePageCacheFactory
 
     public static PageCache createPageCache( FileSystemAbstraction fileSystem )
     {
-        return createPageCache( fileSystem, null, PageCacheTracer.NULL );
+        return createPageCache( fileSystem, null, PageCacheTracer.NULL, DefaultPageCursorTracerSupplier.INSTANCE );
     }
 
     public static PageCache createPageCache( FileSystemAbstraction fileSystem, Integer pageSize )
     {
-        return createPageCache( fileSystem, pageSize, PageCacheTracer.NULL );
+        return createPageCache( fileSystem, pageSize, PageCacheTracer.NULL, DefaultPageCursorTracerSupplier.INSTANCE );
     }
 
     public static PageCache createPageCache( FileSystemAbstraction fileSystem, Integer pageSize,
-            PageCacheTracer tracer )
+            PageCacheTracer tracer, PageCursorTracerSupplier cursorTracerSupplier )
     {
         SingleFilePageSwapperFactory factory = new SingleFilePageSwapperFactory();
         factory.setFileSystemAbstraction( fileSystem );
@@ -57,6 +59,6 @@ public final class StandalonePageCacheFactory
         int cachePageSize = pageSize != null ? pageSize : factory.getCachePageSizeHint();
         long pageCacheMemory = ByteUnit.mebiBytes( 8 );
         long pageCount = pageCacheMemory / cachePageSize;
-        return new MuninnPageCache( factory, (int) pageCount, cachePageSize, tracer );
+        return new MuninnPageCache( factory, (int) pageCount, cachePageSize, tracer, cursorTracerSupplier );
     }
 }

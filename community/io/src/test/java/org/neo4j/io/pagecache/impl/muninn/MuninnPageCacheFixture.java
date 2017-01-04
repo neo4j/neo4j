@@ -25,6 +25,7 @@ import java.util.concurrent.CountDownLatch;
 import org.neo4j.io.pagecache.PageCacheTestSupport;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier;
 
 public class MuninnPageCacheFixture extends PageCacheTestSupport.Fixture<MuninnPageCache>
 {
@@ -34,7 +35,7 @@ public class MuninnPageCacheFixture extends PageCacheTestSupport.Fixture<MuninnP
     public MuninnPageCache createPageCache( PageSwapperFactory swapperFactory, int maxPages, int pageSize,
                                             PageCacheTracer tracer )
     {
-        return new MuninnPageCache( swapperFactory, maxPages, pageSize, tracer );
+        return new MuninnPageCache( swapperFactory, maxPages, pageSize, tracer, DefaultPageCursorTracerSupplier.INSTANCE );
     }
 
     @Override

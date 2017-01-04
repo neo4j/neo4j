@@ -17,57 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.test;
+package org.neo4j.io.pagecache.tracing.cursor;
 
-import org.neo4j.io.pagecache.PageSwapper;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.PinEvent;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
-
-public class LinearHistoryPageCursorTracer implements PageCursorTracer
+public class DefaultPageCursorTracerSupplier implements PageCursorTracerSupplier
 {
+    private ThreadLocal<DefaultPageCursorTracer> tracer = ThreadLocal.withInitial( DefaultPageCursorTracer::new );
 
-    @Override
-    public long faults()
+    public static final DefaultPageCursorTracerSupplier INSTANCE = new DefaultPageCursorTracerSupplier();
+
+    private DefaultPageCursorTracerSupplier()
     {
-        return 0;
     }
 
     @Override
-    public long pins()
+    public PageCursorTracer get()
     {
-        return 0;
+        return tracer.get();
     }
-
-    @Override
-    public long unpins()
-    {
-        return 0;
-    }
-
-    @Override
-    public long bytesRead()
-    {
-        return 0;
-    }
-
-    //TODO:
-    @Override
-    public PinEvent beginPin( boolean writeLock, long filePageId, PageSwapper swapper )
-    {
-        return PinEvent.NULL;
-    }
-
-    @Override
-    public void init( PageCacheTracer tracer )
-    {
-
-    }
-
-    @Override
-    public void reportEvents()
-    {
-
-    }
-
 }

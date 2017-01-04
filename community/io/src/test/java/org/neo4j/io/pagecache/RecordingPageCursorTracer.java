@@ -20,12 +20,38 @@
 package org.neo4j.io.pagecache;
 
 import org.neo4j.io.pagecache.tracing.EvictionEvent;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 import org.neo4j.io.pagecache.tracing.PinEvent;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
+//TODO:
 public class RecordingPageCursorTracer implements PageCursorTracer
 {
+    @Override
+    public long faults()
+    {
+        return 0;
+    }
+
+    @Override
+    public long pins()
+    {
+        return 0;
+    }
+
+    @Override
+    public long unpins()
+    {
+        return 0;
+    }
+
+    @Override
+    public long bytesRead()
+    {
+        return 0;
+    }
+
     @Override
     public PinEvent beginPin( boolean writeLock, final long filePageId, final PageSwapper swapper )
     {
@@ -78,7 +104,18 @@ public class RecordingPageCursorTracer implements PageCursorTracer
         };
     }
 
-    //TODO:
+    @Override
+    public void init( PageCacheTracer tracer )
+    {
+
+    }
+
+    @Override
+    public void reportEvents()
+    {
+
+    }
+
     private void pageFaulted( long filePageId, PageSwapper swapper )
     {
 //        record( new Fault( swapper, filePageId ) );

@@ -27,6 +27,7 @@ import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.OsBeanUtil;
 import org.neo4j.logging.Log;
@@ -45,14 +46,16 @@ public class ConfiguringPageCacheFactory
     private final PageCacheTracer tracer;
     private final Log log;
     private PageCache pageCache;
+    private PageCursorTracerSupplier cursorTracerSupplier;
 
-    public ConfiguringPageCacheFactory(
-            FileSystemAbstraction fs, Config config, PageCacheTracer tracer, Log log )
+    public ConfiguringPageCacheFactory( FileSystemAbstraction fs, Config config, PageCacheTracer tracer,
+            PageCursorTracerSupplier cursorTracerSupplier, Log log )
     {
         this.swapperFactory = createAndConfigureSwapperFactory( fs, config, log );
         this.config = config;
         this.tracer = tracer;
         this.log = log;
+        this.cursorTracerSupplier = cursorTracerSupplier;
     }
 
     private PageSwapperFactory createAndConfigureSwapperFactory( FileSystemAbstraction fs, Config config, Log log )
@@ -100,7 +103,8 @@ public class ConfiguringPageCacheFactory
                 swapperFactory,
                 maxPages,
                 cachePageSize,
-                tracer );
+                tracer,
+                cursorTracerSupplier );
     }
 
     public int calculateMaxPages( Config config, int cachePageSize )

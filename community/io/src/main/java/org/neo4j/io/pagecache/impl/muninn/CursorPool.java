@@ -19,15 +19,19 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+
 final class CursorPool extends ThreadLocal<CursorPool.CursorSets>
 {
     private final MuninnPagedFile pagedFile;
     private final long victimPage;
+    private final PageCursorTracerSupplier cursorTracerSupplier;
 
-    CursorPool( MuninnPagedFile pagedFile )
+    CursorPool( MuninnPagedFile pagedFile, PageCursorTracerSupplier cursorTracerSupplier )
     {
         this.pagedFile = pagedFile;
         this.victimPage = pagedFile.pageCache.victimPage;
+        this.cursorTracerSupplier = cursorTracerSupplier;
     }
 
     @Override
@@ -54,7 +58,7 @@ final class CursorPool extends ThreadLocal<CursorPool.CursorSets>
 
     private MuninnReadPageCursor createReadCursor( CursorSets cursorSets )
     {
-        MuninnReadPageCursor cursor = new MuninnReadPageCursor( cursorSets, victimPage );
+        MuninnReadPageCursor cursor = new MuninnReadPageCursor( cursorSets, victimPage, cursorTracerSupplier.get() );
         cursor.initialiseFile( pagedFile );
         return cursor;
     }
@@ -77,7 +81,7 @@ final class CursorPool extends ThreadLocal<CursorPool.CursorSets>
 
     private MuninnWritePageCursor createWriteCursor( CursorSets cursorSets )
     {
-        MuninnWritePageCursor cursor = new MuninnWritePageCursor( cursorSets, victimPage );
+        MuninnWritePageCursor cursor = new MuninnWritePageCursor( cursorSets, victimPage, cursorTracerSupplier.get() );
         cursor.initialiseFile( pagedFile );
         return cursor;
     }

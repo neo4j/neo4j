@@ -28,6 +28,8 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.KernelExtensions;
@@ -167,7 +169,8 @@ public class BatchingNeoStores implements AutoCloseable
     {
         Config neo4jConfig = getNeo4jConfig( config, dbConfig );
         final PageCacheTracer tracer = new DefaultPageCacheTracer();
-        PageCache pageCache = createPageCache( fileSystem, neo4jConfig, logService.getInternalLogProvider(), tracer );
+        PageCache pageCache = createPageCache( fileSystem, neo4jConfig, logService.getInternalLogProvider(), tracer,
+                DefaultPageCursorTracerSupplier.INSTANCE );
 
         BatchingNeoStores batchingNeoStores =
                 new BatchingNeoStores( fileSystem, pageCache, storeDir, recordFormats, neo4jConfig, logService,
@@ -195,9 +198,9 @@ public class BatchingNeoStores implements AutoCloseable
     }
 
     private static PageCache createPageCache( FileSystemAbstraction fileSystem, Config config, LogProvider log,
-            PageCacheTracer tracer )
+            PageCacheTracer tracer, PageCursorTracerSupplier cursorTracerSupplier )
     {
-        return new ConfiguringPageCacheFactory( fileSystem, config, tracer,
+        return new ConfiguringPageCacheFactory( fileSystem, config, tracer, cursorTracerSupplier,
                 log.getLog( BatchingNeoStores.class ) ).getOrCreatePageCache();
     }
 
@@ -206,7 +209,7 @@ public class BatchingNeoStores implements AutoCloseable
         return neoStores.getNodeStore().getHighId() > 0 || neoStores.getRelationshipStore().getHighId() > 0;
     }
 
-    private StoreFactory newStoreFactory( String name, OpenOption... openOptions )
+        private StoreFactory newStoreFactory( String name, OpenOption... openOptions )
     {
         return new StoreFactory( storeDir, name, neo4jConfig,
                 new BatchingIdGeneratorFactory( fileSystem ), pageCache, fileSystem, recordFormats, logProvider,

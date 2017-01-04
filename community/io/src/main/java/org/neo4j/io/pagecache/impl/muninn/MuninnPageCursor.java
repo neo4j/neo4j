@@ -29,7 +29,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 import org.neo4j.io.pagecache.tracing.PinEvent;
-import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
@@ -71,17 +71,19 @@ abstract class MuninnPageCursor extends PageCursor
     // offending code.
     private Object cursorException;
 
-    private DefaultPageCursorTracer pageCursorTracer = new DefaultPageCursorTracer();
+    private final PageCursorTracer pageCursorTracer;
 
-    MuninnPageCursor( long victimPage )
+    MuninnPageCursor( long victimPage, PageCursorTracer pageCursorTracer )
     {
         this.victimPage = victimPage;
-        pointer = victimPage;
+        this.pointer = victimPage;
+        this.pageCursorTracer = pageCursorTracer;
     }
 
     final void initialiseFile( MuninnPagedFile pagedFile )
     {
         this.swapper = pagedFile.swapper;
+        // TODO: can we avoid this binding?
         this.pageCursorTracer.init( pagedFile.tracer );
     }
 
