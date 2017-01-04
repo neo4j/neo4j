@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.enterprise.api.security;
 
+import java.util.Collections;
+import java.util.Set;
+
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.SecurityContext;
@@ -33,6 +36,8 @@ public interface EnterpriseSecurityContext extends SecurityContext
 
     @Override
     EnterpriseSecurityContext withMode( AccessMode mode );
+
+    Set<String> roles();
 
     EnterpriseSecurityContext AUTH_DISABLED = new AuthDisabled( AccessMode.Static.FULL );
 
@@ -56,6 +61,12 @@ public interface EnterpriseSecurityContext extends SecurityContext
         public EnterpriseSecurityContext withMode( AccessMode mode )
         {
             return new EnterpriseSecurityContext.AuthDisabled( mode );
+        }
+
+        @Override
+        public Set<String> roles()
+        {
+            return Collections.emptySet();
         }
 
         @Override
@@ -93,12 +104,14 @@ public interface EnterpriseSecurityContext extends SecurityContext
     {
         private final AuthSubject subject;
         private final AccessMode mode;
+        private final Set<String> roles;
         private final boolean isAdmin;
 
-        public Frozen( AuthSubject subject, AccessMode mode, boolean isAdmin )
+        public Frozen( AuthSubject subject, AccessMode mode, Set<String> roles, boolean isAdmin )
         {
             this.subject = subject;
             this.mode = mode;
+            this.roles = roles;
             this.isAdmin = isAdmin;
         }
 
@@ -129,7 +142,13 @@ public interface EnterpriseSecurityContext extends SecurityContext
         @Override
         public EnterpriseSecurityContext withMode( AccessMode mode )
         {
-            return new EnterpriseSecurityContext.Frozen( subject, mode, isAdmin );
+            return new EnterpriseSecurityContext.Frozen( subject, mode, roles, isAdmin );
+        }
+
+        @Override
+        public Set<String> roles()
+        {
+            return roles;
         }
     }
 }

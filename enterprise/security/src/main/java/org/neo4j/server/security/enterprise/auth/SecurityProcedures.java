@@ -42,7 +42,7 @@ public class SecurityProcedures extends AuthProceduresBase
     @Procedure( name = "dbms.security.showCurrentUser", mode = DBMS )
     public Stream<UserManagementProcedures.UserResult> showCurrentUser() throws InvalidArgumentsException, IOException
     {
-        return Stream.of( userResultForName( securityContext.subject().username() ) );
+        return Stream.of( userResultForSubject() );
     }
 
     @Description( "Clears authentication and authorization cache." )

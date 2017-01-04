@@ -124,7 +124,7 @@ public class UserManagementProcedures extends AuthProceduresBase
         Set<String> users = userManager.getAllUsernames();
         if ( users.isEmpty() )
         {
-            return Stream.of( userResultForName( securityContext.subject().username() ) );
+            return Stream.of( userResultForSubject() );
         }
         else
         {
