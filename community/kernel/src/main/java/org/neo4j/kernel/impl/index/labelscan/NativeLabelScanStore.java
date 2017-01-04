@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.index.labelscan;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.function.IntFunction;
 
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.graphdb.ResourceIterator;
@@ -200,7 +201,35 @@ public class NativeLabelScanStore implements LabelScanStore
     @Override
     public AllEntriesLabelScanReader allNodeLabelRanges()
     {
-        throw new UnsupportedOperationException( "Not supported by " + getClass() );
+        IntFunction<RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException>> seekProvider = labelId ->
+        {
+            try
+            {
+                return index.seek(
+                        new LabelScanKey().set( labelId, 0 ),
+                        new LabelScanKey().set( labelId, Long.MAX_VALUE ) );
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( e );
+            }
+        };
+
+        int highestLabelId = -1;
+        try ( RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> cursor = index.seek(
+                new LabelScanKey().set( Integer.MAX_VALUE, Long.MAX_VALUE ),
+                new LabelScanKey().set( 0, 0 ) ) )
+        {
+            if ( cursor.next() )
+            {
+                highestLabelId = cursor.get().key().labelId;
+            }
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+        return new NativeAllEntriesLabelScanReader( seekProvider, highestLabelId );
     }
 
     /**

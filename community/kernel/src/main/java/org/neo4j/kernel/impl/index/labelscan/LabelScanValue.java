@@ -32,6 +32,16 @@ class LabelScanValue
      */
     long bits;
 
+    LabelScanValue( long bits )
+    {
+        this.bits = bits;
+    }
+
+    LabelScanValue()
+    {
+        this( 0 );
+    }
+
     /**
      * Sets bit at given {@code index}, where {@code index=0} is the lowest index, {@code index=63} the highest.
      *

@@ -24,5 +24,6 @@ public interface NodeLabelRange
     int id();
 
     long[] nodes();
+
     long[] labels( long nodeId );
 }
