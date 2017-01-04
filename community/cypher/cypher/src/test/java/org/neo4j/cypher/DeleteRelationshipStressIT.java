@@ -138,22 +138,17 @@ public class DeleteRelationshipStressIT
 
     private void executeInThread( final String query )
     {
-        executorService.execute( new Runnable()
+        executorService.execute( () ->
         {
-            @Override
-            public void run()
+            Result execute = db.execute( query );
+            try
             {
-                Result execute = db.execute( query );
-                try
-                {
-                    //resultAsString is good test case since it serializes labels, types, properties etc
-                    execute.resultAsString();
-                }
-                catch ( Exception e )
-                {
-                    e.printStackTrace();
-                    hasFailed.set( true );
-                }
+                //resultAsString is good test case since it serializes labels, types, properties etc
+                execute.resultAsString();
+            }
+            catch ( Exception e )
+            {
+                hasFailed.set( true );
             }
         } );
     }
