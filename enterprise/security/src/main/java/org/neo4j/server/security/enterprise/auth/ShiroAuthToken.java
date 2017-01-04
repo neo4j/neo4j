@@ -31,7 +31,7 @@ import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 
 public class ShiroAuthToken implements AuthenticationToken
 {
-    private static final String VALUE_QOUTE = "'";
+    private static final String VALUE_DELIMITER = "'";
     private static final String PAIR_DELIMITER = ", ";
     private static final String KEY_VALUE_DELIMITER = "=";
 
@@ -106,6 +106,6 @@ public class ShiroAuthToken implements AuthenticationToken
     private String keyValueString( String key )
     {
         String valueString = ( key.equals( AuthToken.CREDENTIALS ) ? "******" : authToken.get( key ).toString() );
-        return key + KEY_VALUE_DELIMITER + VALUE_QOUTE + valueString + VALUE_QOUTE;
+        return key + KEY_VALUE_DELIMITER + VALUE_DELIMITER + valueString + VALUE_DELIMITER;
     }
 }
