@@ -72,7 +72,7 @@ public abstract class StoreAbstractNodeCursor extends NodeItemHelper implements 
     private final InstanceCache<StorePropertyCursor> allPropertyCursor;
     protected final RecordCursors cursors;
 
-    public StoreAbstractNodeCursor( NodeRecord nodeRecord,
+    StoreAbstractNodeCursor( NodeRecord nodeRecord,
             final NeoStores neoStores,
             final StoreStatement storeStatement,
             final RecordCursors cursors,

@@ -48,7 +48,6 @@ import org.neo4j.storageengine.api.schema.LabelScanReader;
 public class StoreStatement implements StorageStatement
 {
     private final InstanceCache<StoreSingleNodeCursor> singleNodeCursor;
-    private final InstanceCache<StoreIteratorNodeCursor> iteratorNodeCursor;
     private final InstanceCache<StoreSingleRelationshipCursor> singleRelationshipCursor;
     private final InstanceCache<StoreIteratorRelationshipCursor> iteratorRelationshipCursor;
     private final NeoStores neoStores;
@@ -80,15 +79,6 @@ public class StoreStatement implements StorageStatement
             protected StoreSingleNodeCursor create()
             {
                 return new StoreSingleNodeCursor( nodeStore.newRecord(), neoStores, StoreStatement.this, this,
-                        recordCursors, lockService );
-            }
-        };
-        iteratorNodeCursor = new InstanceCache<StoreIteratorNodeCursor>()
-        {
-            @Override
-            protected StoreIteratorNodeCursor create()
-            {
-                return new StoreIteratorNodeCursor( nodeStore.newRecord(), neoStores, StoreStatement.this, this,
                         recordCursors, lockService );
             }
         };
@@ -125,13 +115,6 @@ public class StoreStatement implements StorageStatement
     {
         neoStores.assertOpen();
         return singleNodeCursor.get().init( nodeId );
-    }
-
-    @Override
-    public Cursor<NodeItem> acquireIteratorNodeCursor( PrimitiveLongIterator nodeIdIterator )
-    {
-        neoStores.assertOpen();
-        return iteratorNodeCursor.get().init( nodeIdIterator );
     }
 
     @Override

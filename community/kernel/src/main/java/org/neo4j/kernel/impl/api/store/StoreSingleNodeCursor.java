@@ -37,7 +37,7 @@ public class StoreSingleNodeCursor extends StoreAbstractNodeCursor
     private long nodeId;
     private final Consumer<StoreSingleNodeCursor> instanceCache;
 
-    public StoreSingleNodeCursor( NodeRecord nodeRecord,
+    StoreSingleNodeCursor( NodeRecord nodeRecord,
             NeoStores neoStores,
             StoreStatement storeStatement,
             Consumer<StoreSingleNodeCursor> instanceCache,

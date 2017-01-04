@@ -41,13 +41,13 @@ public abstract class StoreAbstractRelationshipCursor extends EntityItemHelper
         implements Cursor<RelationshipItem>, RelationshipItem
 {
     protected final RelationshipRecord relationshipRecord;
-    protected final RecordCursor<RelationshipRecord> relationshipRecordCursor;
+    final RecordCursor<RelationshipRecord> relationshipRecordCursor;
     private final LockService lockService;
 
     private final InstanceCache<StoreSinglePropertyCursor> singlePropertyCursor;
     private final InstanceCache<StorePropertyCursor> allPropertyCursor;
 
-    public StoreAbstractRelationshipCursor( RelationshipRecord relationshipRecord, RecordCursors cursors,
+    StoreAbstractRelationshipCursor( RelationshipRecord relationshipRecord, RecordCursors cursors,
             LockService lockService )
     {
         this.relationshipRecordCursor = cursors.relationship();

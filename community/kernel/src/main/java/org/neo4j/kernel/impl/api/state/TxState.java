@@ -48,7 +48,6 @@ import org.neo4j.kernel.api.txstate.RelationshipChangeVisitorAdapter;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.cursor.TxAllPropertyCursor;
-import org.neo4j.kernel.impl.api.cursor.TxIteratorNodeCursor;
 import org.neo4j.kernel.impl.api.cursor.TxIteratorRelationshipCursor;
 import org.neo4j.kernel.impl.api.cursor.TxLabelCursor;
 import org.neo4j.kernel.impl.api.cursor.TxSingleLabelCursor;
