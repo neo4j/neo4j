@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -25,7 +25,7 @@ import org.neo4j.server.security.enterprise.auth.plugin.api.AuthToken;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthenticationPlugin;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.CustomCacheableAuthenticationInfo;
 
-public class TestKerberosPlugin extends AuthenticationPlugin.Adapter
+public class TestCredentialsOnlyPlugin extends AuthenticationPlugin.Adapter
 {
     @Override
     public String name()
@@ -36,19 +36,16 @@ public class TestKerberosPlugin extends AuthenticationPlugin.Adapter
     @Override
     public AuthenticationInfo authenticate( AuthToken authToken )
     {
-        byte[] serviceTicket = decodeServiceTicket( authToken.credentials() );
-        String username = validateServiceTicket( serviceTicket );
+        String username = validateCredentials( authToken.credentials() );
         return new AuthenticationInfo( username, authToken.credentials() );
     }
 
-    private String validateServiceTicket( byte[] serviceTicket )
+    /**
+     * Performs decryptions of the credentials and returns the decrypted username if successful
+     */
+    private String validateCredentials( char[] credentials )
     {
         return "trinity@MATRIX.NET";
-    }
-
-    private byte[] decodeServiceTicket( char[] credentials )
-    {
-        return new byte[1];
     }
 
     class AuthenticationInfo implements CustomCacheableAuthenticationInfo, CustomCacheableAuthenticationInfo.CredentialsMatcher

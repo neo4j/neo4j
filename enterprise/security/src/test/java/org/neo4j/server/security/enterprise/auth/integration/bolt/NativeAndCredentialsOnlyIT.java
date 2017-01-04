@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -27,19 +27,19 @@ import java.util.function.Consumer;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
 
-public class KerbNativeIT extends EnterpriseAuthenticationTestBase
+public class NativeAndCredentialsOnlyIT extends EnterpriseAuthenticationTestBase
 {
     @Override
     protected Consumer<Map<Setting<?>, String>> getSettingsFunction()
     {
         return super.getSettingsFunction().andThen( settings -> {
-            settings.put( SecuritySettings.auth_providers, "native,plugin-TestKerberosPlugin" );
+            settings.put( SecuritySettings.auth_providers, "native,plugin-TestCredentialsOnlyPlugin" );
         });
     }
 
     @Test
-    public void shouldAuthenticateWithTestKerberosPlugin() throws Throwable
+    public void shouldAuthenticateWithCredentialsOnlyPlugin() throws Throwable
     {
-        assertAuth( "", "BASE64-ENC-PASSWORD", "plugin-TestKerberosPlugin" );
+        assertAuth( "", "BASE64-ENC-PASSWORD", "plugin-TestCredentialsOnlyPlugin" );
     }
 }
