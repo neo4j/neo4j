@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -24,7 +24,7 @@ import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QuerySt
 
 class ReverseAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport{
 
-  test("reverse function should work as expected") {
+  test("reverse function should work as reverse strings") {
     // When
     val result = executeScalarWithAllPlannersAndCompatibilityMode[String]("RETURN reverse('raksO')")
 
@@ -32,7 +32,7 @@ class ReverseAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
     result should equal("Oskar")
   }
 
-  test("reverse function should work with collections as well") {
+  test("reverse function should work with collections of integers") {
     // When
     val result = graph.execute("with [4923,489,521,487] as ids RETURN reverse(ids)")
 
@@ -42,7 +42,7 @@ class ReverseAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
     results should equal ("[487, 521, 489, 4923]")
   }
 
-  test("reverse function should work with collections that contains null as well") {
+  test("reverse function should work with collections that contains null") {
     // When
     val result = graph.execute("with [4923,null,521,487] as ids RETURN reverse(ids)")
 
@@ -52,7 +52,7 @@ class ReverseAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
     results should equal ("[487, 521, null, 4923]")
   }
 
-  test("reverse function should work with empty collections of as well") {
+  test("reverse function should work with empty collections") {
     // When
     val result = graph.execute("with [] as ids RETURN reverse(ids)")
 
@@ -60,5 +60,15 @@ class ReverseAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
 
     // Then
     results should equal ("[]")
+  }
+
+  test("reverse function should work with mixed collections") {
+    // When
+    val result = graph.execute("with [4923,'abc',521,487] as ids RETURN reverse(ids)")
+
+    val results= result.columnAs("reverse(ids)").next().toString
+
+    // Then
+    results should equal ("[487, 521, abc, 4923]")
   }
 }
