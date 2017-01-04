@@ -44,12 +44,6 @@ public abstract class NodeItemHelper
     }
 
     @Override
-    public PrimitiveIntIterator getLabels()
-    {
-        return Cursors.intIterator( labels(), GET_LABEL );
-    }
-
-    @Override
     public RelationshipIterator getRelationships( Direction direction, int[] relTypes )
     {
         relTypes = deduplicate( relTypes );
@@ -61,12 +55,6 @@ public abstract class NodeItemHelper
     public RelationshipIterator getRelationships( Direction direction )
     {
         return new CursorRelationshipIterator( relationships( direction ) );
-    }
-
-    @Override
-    public PrimitiveIntIterator getRelationshipTypes()
-    {
-        return Cursors.intIterator( relationshipTypes(), GET_RELATIONSHIP_TYPE );
     }
 
     private static int[] deduplicate( int[] types )

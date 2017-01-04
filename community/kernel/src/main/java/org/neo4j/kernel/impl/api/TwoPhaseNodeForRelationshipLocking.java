@@ -26,11 +26,10 @@ import org.neo4j.cursor.Cursor;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
-import org.neo4j.kernel.impl.api.store.RelationshipIterator;
-import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.NodeItem;
+import org.neo4j.storageengine.api.RelationshipItem;
 
 class TwoPhaseNodeForRelationshipLocking
 {
@@ -38,43 +37,10 @@ class TwoPhaseNodeForRelationshipLocking
     private final EntityReadOperations entityReadOperations;
     private final ThrowingConsumer<Long,KernelException> relIdAction;
 
-    private boolean retry = true;
     private long firstRelId;
-    private boolean first;
 
-    private final RelationshipVisitor<RuntimeException> collectNodeIdVisitor =
-            (relId, type, startNode, endNode) -> {
-                if ( firstRelId == -1 )
-                {
-                    firstRelId = relId;
-                }
-                nodeIds.add( startNode );
-                nodeIds.add( endNode );
-            };
-
-    private final RelationshipVisitor<KernelException> relationshipConsumingVisitor =
-            new RelationshipVisitor<KernelException>()
-            {
-                @Override
-                public void visit( long relId, int type, long startNode, long endNode ) throws KernelException
-                {
-                    if ( first )
-                    {
-                        first = false;
-                        if ( relId != firstRelId )
-                        {
-                            // if the first relationship is not the same someone added some new rels, so we need to
-                            // lock them all again
-                            retry = true;
-                            return;
-                        }
-                    }
-
-                    relIdAction.accept( relId );
-                }
-            };
-
-    TwoPhaseNodeForRelationshipLocking( EntityReadOperations entityReadOperations, ThrowingConsumer<Long,KernelException> relIdAction )
+    TwoPhaseNodeForRelationshipLocking( EntityReadOperations entityReadOperations,
+            ThrowingConsumer<Long,KernelException> relIdAction )
     {
         this.entityReadOperations = entityReadOperations;
         this.relIdAction = relIdAction;
@@ -82,48 +48,82 @@ class TwoPhaseNodeForRelationshipLocking
 
     void lockAllNodesAndConsumeRelationships( long nodeId, final KernelStatement state ) throws KernelException
     {
+        boolean retry = true;
         nodeIds.add( nodeId );
         while ( retry )
         {
             retry = false;
-            first = true;
             firstRelId = -1;
 
             // lock all the nodes involved by following the node id ordering
-            try ( Cursor<NodeItem> cursor = entityReadOperations.nodeCursorById( state, nodeId ) )
+            try( Cursor<NodeItem> node = entityReadOperations.nodeCursorById( state, nodeId ) )
             {
-                RelationshipIterator relationships = cursor.get().getRelationships( Direction.BOTH );
-                while ( relationships.hasNext() )
-                {
-                    entityReadOperations.relationshipVisit( state, relationships.next(), collectNodeIdVisitor );
-                }
+                node.get().relationships( Direction.BOTH ).forAll( this::collectNodeId );
             }
 
-            PrimitiveLongIterator nodeIdIterator = nodeIds.iterator();
-            while ( nodeIdIterator.hasNext() )
-            {
-                state.locks().optimistic().acquireExclusive( state.lockTracer(), ResourceTypes.NODE, nodeIdIterator.next() );
-            }
+            lockAllNodes( state );
 
             // perform the action on each relationship, we will retry if the the relationship iterator contains new relationships
-            try ( Cursor<NodeItem> cursor = entityReadOperations.nodeCursorById( state, nodeId ) )
+            try ( Cursor<NodeItem> node = entityReadOperations.nodeCursorById( state, nodeId ) )
             {
-                RelationshipIterator relationships = cursor.get().getRelationships( Direction.BOTH );
-                while ( relationships.hasNext() )
+                try ( Cursor<RelationshipItem> relationships = node.get().relationships( Direction.BOTH ) )
                 {
-                    entityReadOperations.relationshipVisit( state, relationships.next(), relationshipConsumingVisitor );
-                    if ( retry )
+                    boolean first = true;
+                    while ( relationships.next() && !retry )
                     {
-                        PrimitiveLongIterator iterator = nodeIds.iterator();
-                        while ( iterator.hasNext() )
-                        {
-                            state.locks().optimistic().releaseExclusive( ResourceTypes.NODE, iterator.next() );
-                        }
-                        nodeIds.clear();
-                        break;
+                        retry = performAction( state, relationships.get(), first );
+                        first = false;
                     }
                 }
             }
         }
+    }
+
+    private void lockAllNodes( KernelStatement state )
+    {
+        PrimitiveLongIterator nodeIdIterator = nodeIds.iterator();
+        while ( nodeIdIterator.hasNext() )
+        {
+            state.locks().optimistic()
+                    .acquireExclusive( state.lockTracer(), ResourceTypes.NODE, nodeIdIterator.next() );
+        }
+    }
+
+    private void unlockAllNodes( KernelStatement state )
+    {
+        PrimitiveLongIterator iterator = nodeIds.iterator();
+        while ( iterator.hasNext() )
+        {
+            state.locks().optimistic().releaseExclusive( ResourceTypes.NODE, iterator.next() );
+        }
+        nodeIds.clear();
+    }
+
+    private boolean performAction( KernelStatement state, RelationshipItem rel, boolean first ) throws KernelException
+    {
+        if ( first )
+        {
+            if ( rel.id() != firstRelId )
+            {
+                // if the first relationship is not the same someone added some new rels, so we need to
+                // lock them all again
+                unlockAllNodes( state );
+                return true;
+            }
+        }
+
+        relIdAction.accept( rel.id() );
+        return false;
+    }
+
+    private void collectNodeId( RelationshipItem rel )
+    {
+        if ( firstRelId == -1 )
+        {
+            firstRelId = rel.id();
+        }
+
+        nodeIds.add( rel.startNode() );
+        nodeIds.add( rel.endNode() );
     }
 }

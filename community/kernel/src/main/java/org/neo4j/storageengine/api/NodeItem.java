@@ -33,11 +33,6 @@ public interface NodeItem
         extends EntityItem
 {
     /**
-     * Convenience function for extracting a label id from a {@link LabelItem}.
-     */
-    ToIntFunction<LabelItem> GET_LABEL = IntSupplier::getAsInt;
-
-    /**
      * Convenience function for extracting a relationship type id from a {@link IntSupplier}.
      */
     ToIntFunction<IntSupplier> GET_RELATIONSHIP_TYPE = IntSupplier::getAsInt;
@@ -111,11 +106,6 @@ public interface NodeItem
     boolean hasLabel( int labelId );
 
     /**
-     * @return label ids attached to this node.
-     */
-    PrimitiveIntIterator getLabels();
-
-    /**
      * @param direction {@link Direction} to filter on.
      * @param typeIds relationship type ids to filter on.
      * @return relationship ids for the given direction and relationship types.
@@ -127,9 +117,4 @@ public interface NodeItem
      * @return relationship ids for the given direction.
      */
     RelationshipIterator getRelationships( Direction direction );
-
-    /**
-     * @return relationship type ids for all relationships attached to this node.
-     */
-    PrimitiveIntIterator getRelationshipTypes();
 }

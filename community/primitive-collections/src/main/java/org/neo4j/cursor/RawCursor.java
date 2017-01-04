@@ -19,7 +19,9 @@
  */
 package org.neo4j.cursor;
 
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
@@ -50,11 +52,33 @@ public interface RawCursor<T, EXCEPTION extends Exception> extends Supplier<T>, 
 
     default void forAll( Consumer<T> consumer ) throws EXCEPTION
     {
+        mapForAll( Function.identity(), consumer );
+    }
+
+    default <R, E> E mapReduce( E initialValue, Function<T,R> map, BiFunction<R,E,E> reduce ) throws EXCEPTION
+    {
+        try
+        {
+            E current = initialValue;
+            while ( next() )
+            {
+                current = reduce.apply( map.apply( get() ), current );
+            }
+            return current;
+        }
+        finally
+        {
+            close();
+        }
+    }
+
+    default <E> void mapForAll( Function<T,E> function, Consumer<E> consumer ) throws EXCEPTION
+    {
         try
         {
             while ( next() )
             {
-                consumer.accept( get() );
+                consumer.accept( function.apply( get() ) );
             }
         }
         finally

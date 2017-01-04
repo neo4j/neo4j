@@ -26,11 +26,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.function.IntSupplier;
 
-import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.txstate.TransactionState;
@@ -40,7 +40,6 @@ import org.neo4j.kernel.impl.api.StatementOperationsTestHelper;
 import org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexing;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.index.LegacyIndexStore;
-import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.StoreReadLayer;
 
 import static org.junit.Assert.assertEquals;
@@ -333,12 +332,7 @@ public class LabelTransactionStateTest
 
             for ( int label : nodeLabels.labelIds )
             {
-                Collection<Long> nodes = allLabels.get( label );
-                if ( nodes == null )
-                {
-                    nodes = new ArrayList<>();
-                    allLabels.put( label, nodes );
-                }
+                Collection<Long> nodes = allLabels.computeIfAbsent( label, k -> new ArrayList<>() );
                 nodes.add( nodeLabels.nodeId );
             }
         }
@@ -362,23 +356,21 @@ public class LabelTransactionStateTest
 
     private void assertLabels( Integer... labels ) throws EntityNotFoundException
     {
-        try ( Cursor<NodeItem> cursor = txContext.nodeCursorById( state, nodeId ) )
-        {
-            if ( cursor.next() )
-            {
-                assertEquals( asSet( labels ), PrimitiveIntCollections.toSet( cursor.get().getLabels() ) );
-            }
-        }
+        txContext.nodeCursorById( state, nodeId ).forAll( node -> assertEquals( asSet( labels ),
+                node.labels().mapReduce( new HashSet<>(), IntSupplier::getAsInt, this::addToCollection ) ) );
 
-        for ( int label : labels )
+        txContext.nodeCursorById( state, nodeId ).forAll( node ->
         {
-            try ( Cursor<NodeItem> cursor = txContext.nodeCursorById( state, nodeId ) )
+            for ( int label : labels )
             {
-                if ( cursor.next() )
-                {
-                    assertTrue( "Expected labels not found on node", cursor.get().hasLabel( label ) );
-                }
+                assertTrue( "Expected labels not found on node", node.hasLabel( label ) );
             }
-        }
+        } );
+    }
+
+    private <T, C extends Collection<T>> C addToCollection( T value, C collection)
+    {
+        collection.add( value );
+        return collection;
     }
 }
