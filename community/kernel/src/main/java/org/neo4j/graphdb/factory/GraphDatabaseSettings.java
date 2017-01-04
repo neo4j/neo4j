@@ -20,7 +20,6 @@
 package org.neo4j.graphdb.factory;
 
 import java.io.File;
-import java.util.Collections;
 import java.util.List;
 
 import org.neo4j.configuration.Description;
@@ -29,9 +28,7 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.io.ByteUnit;
-import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.BoltConnectorValidator;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigurationMigrator;
 import org.neo4j.kernel.configuration.GraphDatabaseConfigurationMigrator;
 import org.neo4j.kernel.configuration.Group;
@@ -109,6 +106,11 @@ public class GraphDatabaseSettings implements LoadableConfig
     @Description("Print out the effective Neo4j configuration after startup.")
     @Internal
     public static final Setting<Boolean> dump_configuration = setting("unsupported.dbms.report_configuration", BOOLEAN, FALSE );
+
+    @Description( "A strict configuration validation will prevent the database from starting up if unknown " +
+            "configuration options are specified in the neo4j settings namespace (such as dbms., ha., cypher., etc)." )
+    public static final Setting<Boolean> strict_config_validation =
+            setting("dbms.config.strict_validation", BOOLEAN, FALSE );
 
     @Description("Whether to allow a store upgrade in case the current version of the database starts against an " +
             "older store version. " +

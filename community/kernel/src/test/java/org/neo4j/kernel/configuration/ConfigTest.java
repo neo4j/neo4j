@@ -19,26 +19,30 @@
  */
 package org.neo4j.kernel.configuration;
 
-import org.junit.Test;
-
+import java.io.File;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
-
 import javax.annotation.Nonnull;
+
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.config.SettingValidator;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.logging.Log;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
@@ -55,7 +59,7 @@ public class ConfigTest
 {
     public static class MyMigratingSettings implements LoadableConfig
     {
-        @SuppressWarnings("unused") // accessed by reflection
+        @SuppressWarnings( "unused" ) // accessed by reflection
         @Migrator
         public static ConfigurationMigrator migrator = new BaseConfigurationMigrator()
         {
@@ -63,7 +67,7 @@ public class ConfigTest
                 add( new SpecificPropertyMigration( "old", "Old has been replaced by newer!" )
                 {
                     @Override
-                    public void setValueWithOldSetting( String value, Map<String, String> rawConfiguration )
+                    public void setValueWithOldSetting( String value, Map<String,String> rawConfiguration )
                     {
                         rawConfiguration.put( newer.name(), value );
                     }
@@ -90,10 +94,16 @@ public class ConfigTest
         return Config( Collections.emptyMap() );
     }
 
-    static Config Config( Map<String,String> params ) {
-        return new Config( Optional.empty(), params, s -> {}, Collections.emptyList(), Optional.empty(),
-                Arrays.asList(mySettingsWithDefaults, myMigratingSettings ) );
+    static Config Config( Map<String,String> params )
+    {
+        return new Config( Optional.empty(), params, s ->
+        {
+        }, Collections.emptyList(), Optional.empty(),
+                Arrays.asList( mySettingsWithDefaults, myMigratingSettings ) );
     }
+
+    @Rule
+    public TestDirectory testDirectory = TestDirectory.testDirectory();
 
     @Test
     public void shouldApplyDefaults()
@@ -113,7 +123,7 @@ public class ConfigTest
         assertThat( config.get( MyMigratingSettings.newer ), is( "hello!" ) );
     }
 
-    @Test(expected = InvalidSettingException.class)
+    @Test( expected = InvalidSettingException.class )
     public void shouldNotAllowSettingInvalidValues()
     {
         Config( stringMap( MySettingsWithDefaults.boolSetting.name(), "asd" ) );
@@ -139,7 +149,7 @@ public class ConfigTest
     public void shouldRetainCustomConfigOutsideNamespaceAndPassOnBufferedLogInWithMethods() throws Exception
     {
         // Given
-        Log log = mock(Log.class);
+        Log log = mock( Log.class );
         Config first = Config.embeddedDefaults( stringMap( "first.jibberish", "bah" ) );
 
         // When
@@ -150,27 +160,31 @@ public class ConfigTest
         // Then
         verifyNoMoreInteractions( log );
         assertEquals( Optional.of( "bah" ), third.getRaw( "first.jibberish" ) );
-        assertEquals( Optional.of( "baah" ), third.getRaw( "second.jibberish" ));
+        assertEquals( Optional.of( "baah" ), third.getRaw( "second.jibberish" ) );
         assertEquals( Optional.of( "baaah" ), third.getRaw( "third.jibberish" ) );
     }
 
     @Test
-    public void shouldWarnAndDiscardUnknownOptionsInReserverdNamespaceAndPassOnBufferedLogInWithMethods()
+    public void shouldWarnAndDiscardUnknownOptionsInReservedNamespaceAndPassOnBufferedLogInWithMethods()
             throws Exception
     {
         // Given
-        Log log = mock(Log.class);
-        Config first = Config.embeddedDefaults( stringMap( "dbms.jibberish", "bah" ) );
+        Log log = mock( Log.class );
+        File confFile = testDirectory.file( "test.conf" );
+        assertTrue( confFile.createNewFile() );
+
+        Config first = Config.embeddedDefaults( Optional.of( confFile ),
+                stringMap( GraphDatabaseSettings.strict_config_validation.name(), "false",
+                        "ha.jibberish", "baah",
+                        "dbms.jibberish", "booh" ) );
 
         // When
         first.setLogger( log );
-        Config second = first.with( stringMap( "ha.jibberish", "baah" ) );
-        second.withDefaults( stringMap( "causal_clustering.jibberish", "baah" ) );
+        first.with( stringMap( "causal_clustering.jibberish", "baah" ) );
 
         // Then
-        verify( log ).warn( "Ignored unknown config option: %s", "dbms.jibberish" );
-        verify( log ).warn( "Ignored unknown config option: %s", "ha.jibberish" );
-        verify( log ).warn( "Ignored unknown config option: %s", "causal_clustering.jibberish" );
+        verify( log ).warn( "Unknown config option: %s", "dbms.jibberish" );
+        verify( log ).warn( "Unknown config option: %s", "ha.jibberish" );
         verifyNoMoreInteractions( log );
     }
 

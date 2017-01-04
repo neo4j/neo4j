@@ -29,7 +29,10 @@ import javax.annotation.Nonnull;
 
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.SettingValidator;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.logging.Log;
+
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.strict_config_validation;
 
 /**
  * Validates individual settings by delegating to the settings themselves without taking other aspects into
@@ -38,7 +41,17 @@ import org.neo4j.logging.Log;
 public class IndividualSettingsValidator implements ConfigurationValidator
 {
     private static final List<String> reservedPrefixes =
-            Arrays.asList( "dbms.", "metrics.", "ha.", "causal_clustering.", "browser.", "tools." );
+            Arrays.asList( "dbms.", "metrics.", "ha.", "causal_clustering.", "browser.", "tools.", "unsupported." );
+    private final boolean warnOnUnknownSettings;
+
+    /**
+     *
+     * @param warnOnUnknownSettings if unknown options should be logged when strict validation is disabled
+     */
+    public IndividualSettingsValidator( boolean warnOnUnknownSettings )
+    {
+        this.warnOnUnknownSettings = warnOnUnknownSettings;
+    }
 
     @Override
     @Nonnull
@@ -51,6 +64,8 @@ public class IndividualSettingsValidator implements ConfigurationValidator
                 .flatMap( map -> map.entrySet().stream() )
                 .collect( Collectors.toMap( Entry::getKey, Entry::getValue ) );
 
+        final boolean strictValidation = strict_config_validation.apply( validConfig::get );
+
         rawConfig.forEach( ( key, value ) ->
         {
             if ( !validConfig.containsKey( key ) )
@@ -59,7 +74,21 @@ public class IndividualSettingsValidator implements ConfigurationValidator
                 // As a compromise, we only warn (and discard) for settings in our own "namespace"
                 if ( reservedPrefixes.stream().anyMatch( key::startsWith ) )
                 {
-                    log.warn( "Ignored unknown config option: %s", key );
+                    if ( warnOnUnknownSettings )
+                    {
+                        log.warn( "Unknown config option: %s", key );
+                    }
+
+                    if ( strictValidation )
+                    {
+                        throw new InvalidSettingException( String.format(
+                                "Unknown config option '%s'. To resolve either remove it from your configuration " +
+                                        "or set '%s' to false.", key, strict_config_validation.name() ) );
+                    }
+                    else
+                    {
+                        validConfig.put( key, value );
+                    }
                 }
                 else
                 {

@@ -34,8 +34,8 @@ import org.neo4j.logging.Log;
 public interface ConfigurationValidator
 {
     /**
-     * Validate a config and return its subset of valid keys and values. Unknown settings should be discarded and
-     * have a warning logged. Invalid settings should cause an error.
+     * Validate a config and return its subset of valid keys and values. Unknown settings should be discarded. Invalid
+     * settings should cause an error.
      *
      * @param settingValidators which are available
      * @param rawConfig to validate

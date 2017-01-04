@@ -224,7 +224,7 @@ public class Config implements DiagnosticsProvider, Configuration
         migrator = new AnnotationBasedConfigurationMigrator( settingsClasses );
 
         Map<String,String> settings = initSettings( configFile, settingsPostProcessor, overriddenSettings, this.log );
-        replaceSettings( settings );
+        replaceSettings( settings, configFile.isPresent() );
     }
 
     /**
@@ -275,7 +275,7 @@ public class Config implements DiagnosticsProvider, Configuration
     {
         Map<String,String> params = new HashMap<>( this.params );
         params.putAll( changes );
-        replaceSettings( params );
+        replaceSettings( params, false );
         return this;
     }
 
@@ -392,13 +392,14 @@ public class Config implements DiagnosticsProvider, Configuration
         return output.toString();
     }
 
-    private synchronized void replaceSettings( Map<String,String> newSettings )
+    private synchronized void replaceSettings( Map<String,String> newSettings, boolean warnOnUnknownSettings )
     {
         Map<String,String> validSettings = migrator.apply( newSettings, log );
         List<SettingValidator> settingValidators = configOptions.stream()
                 .map( ConfigOptions::settingGroup )
                 .collect( Collectors.toList() );
-        validSettings = new IndividualSettingsValidator().validate( settingValidators, validSettings, log );
+        validSettings = new IndividualSettingsValidator( warnOnUnknownSettings )
+                .validate( settingValidators, validSettings, log );
         for ( ConfigurationValidator validator : validators )
         {
             validSettings = validator.validate( settingValidators, validSettings, log );
