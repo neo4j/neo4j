@@ -36,7 +36,6 @@ import org.neo4j.logging.FormattedLogProvider;
  */
 public final class ConfigurableStandalonePageCacheFactory
 {
-
     private ConfigurableStandalonePageCacheFactory()
     {
     }

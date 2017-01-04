@@ -61,11 +61,12 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.kernel.impl.store.RecordStore.getRecord;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
+import static org.neo4j.test.rule.PageCacheRule.config;
 
 public class RelationshipGroupStoreTest
 {
     @Rule
-    public PageCacheRule pageCacheRule = new PageCacheRule( false );
+    public PageCacheRule pageCacheRule = new PageCacheRule( config().withInconsistentReads( false ) );
     @Rule
     public TestDirectory testDir = TestDirectory.testDirectory();
     private File directory;
@@ -303,8 +304,8 @@ public class RelationshipGroupStoreTest
     public void checkingIfRecordIsInUseMustHappenAfterConsistentRead()
     {
         AtomicBoolean nextReadIsInconsistent = new AtomicBoolean( false );
-        PageCache pageCache = pageCacheRule.getPageCache( fs );
-        pageCache = pageCacheRule.withInconsistentReads( pageCache, nextReadIsInconsistent );
+        PageCache pageCache = pageCacheRule.getPageCache( fs,
+                config().withInconsistentReads( nextReadIsInconsistent ) );
         StoreFactory factory = factory( null, pageCache );
 
         try ( NeoStores neoStores = factory.openAllNeoStores( true ) )
