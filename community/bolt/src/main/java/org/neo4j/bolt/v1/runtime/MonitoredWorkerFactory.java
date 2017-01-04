@@ -19,9 +19,9 @@
  */
 package org.neo4j.bolt.v1.runtime;
 
-import org.neo4j.kernel.monitoring.Monitors;
-
 import java.time.Clock;
+
+import org.neo4j.kernel.monitoring.Monitors;
 
 /**
  * Thin wrapper around {@link WorkerFactory} that adds monitoring capabilities, which
@@ -65,6 +65,8 @@ public class MonitoredWorkerFactory implements WorkerFactory
             this.monitor = monitor;
             this.delegate = delegate;
             this.clock = clock;
+
+            this.monitor.sessionStarted();
         }
 
         @Override
@@ -100,6 +102,11 @@ public class MonitoredWorkerFactory implements WorkerFactory
      */
     public interface SessionMonitor
     {
+        /**
+         * Called when a new Bolt session (backed by a {@link BoltWorker}) is started.
+         */
+        void sessionStarted();
+
         /**
          * Called whenever a request is received. This happens after a request is
          * deserialized, but before it is queued pending processing.
