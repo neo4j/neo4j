@@ -22,7 +22,6 @@ package org.neo4j.test.rule;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.adversaries.Adversary;
@@ -122,44 +121,5 @@ public class PageCacheRule extends ExternalResource
     {
         Adversary adversary = new RandomInconsistentReadAdversary();
         return new AdversarialPageCache( pageCache, adversary );
-    }
-
-    private static class AtomicBooleanInconsistentReadAdversary implements Adversary
-    {
-        final AtomicBoolean nextReadIsInconsistent;
-
-        AtomicBooleanInconsistentReadAdversary( AtomicBoolean nextReadIsInconsistent )
-        {
-            this.nextReadIsInconsistent = nextReadIsInconsistent;
-        }
-
-        @Override
-        @SafeVarargs
-        public final void injectFailure( Class<? extends Throwable>... failureTypes )
-        {
-        }
-
-        @Override
-        @SafeVarargs
-        public final boolean injectFailureOrMischief( Class<? extends Throwable>... failureTypes )
-        {
-            return nextReadIsInconsistent.getAndSet( false );
-        }
-    }
-
-    private static class RandomInconsistentReadAdversary implements Adversary
-    {
-        @Override
-        @SafeVarargs
-        public final void injectFailure( Class<? extends Throwable>... failureTypes )
-        {
-        }
-
-        @Override
-        @SafeVarargs
-        public final boolean injectFailureOrMischief( Class<? extends Throwable>... failureTypes )
-        {
-            return ThreadLocalRandom.current().nextBoolean();
-        }
     }
 }

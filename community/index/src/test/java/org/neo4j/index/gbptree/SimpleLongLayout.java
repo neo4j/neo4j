@@ -27,18 +27,6 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 class SimpleLongLayout extends Layout.Adapter<MutableLong,MutableLong>
 {
-    private String customNameAsMetaData;
-
-    SimpleLongLayout( String customNameAsMetaData )
-    {
-        this.customNameAsMetaData = customNameAsMetaData;
-    }
-
-    SimpleLongLayout()
-    {
-        this( "test" );
-    }
-
     @Override
     public int compare( MutableLong o1, MutableLong o2 )
     {
@@ -116,41 +104,5 @@ class SimpleLongLayout extends Layout.Adapter<MutableLong,MutableLong>
     public int minorVersion()
     {
         return 0;
-    }
-
-    @Override
-    public void writeMetaData( PageCursor cursor )
-    {
-        writeString( cursor, customNameAsMetaData );
-    }
-
-    private static void writeString( PageCursor cursor, String string )
-    {
-        byte[] bytes = string.getBytes( UTF_8 );
-        cursor.putInt( string.length() );
-        cursor.putBytes( bytes );
-    }
-
-    @Override
-    public void readMetaData( PageCursor cursor )
-    {
-        String name = readString( cursor );
-        if ( customNameAsMetaData != null )
-        {
-            if ( !name.equals( customNameAsMetaData ) )
-            {
-                throw new MetadataMismatchException( "Name '" + name +
-                        "' doesn't match expected '" + customNameAsMetaData + "'" );
-            }
-        }
-        customNameAsMetaData = name;
-    }
-
-    private String readString( PageCursor cursor )
-    {
-        int length = cursor.getInt();
-        byte[] bytes = new byte[length];
-        cursor.getBytes( bytes );
-        return new String( bytes, UTF_8 );
     }
 }

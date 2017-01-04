@@ -261,9 +261,7 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>
      * If the index doesn't exist it will be created and the {@link Layout} and {@code pageSize} will
      * be written in index header.
      * If the index exists it will be opened and the {@link Layout} will be matched with the information
-     * in the header. At the very least {@link Layout#identifier()} will be matched, but also if the
-     * index has {@link Layout#writeMetaData(PageCursor)} additional meta data it will be
-     * {@link Layout#readMetaData(PageCursor)}.
+     * in the header. At the very least {@link Layout#identifier()} will be matched.
      *
      * @param pageCache {@link PageCache} to use to map index file
      * @param indexFile {@link File} containing the actual index
@@ -400,13 +398,8 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>
         Pair<TreeState,TreeState> states;
         try ( PageCursor cursor = pagedFile.io( 0L /*ignored*/, PagedFile.PF_SHARED_READ_LOCK ) )
         {
-            do
-            {
-                states = TreeStatePair.readStatePages(
-                        cursor, IdSpace.STATE_PAGE_A, IdSpace.STATE_PAGE_B );
-            }
-            while ( cursor.shouldRetry() );
-            checkOutOfBounds( cursor );
+            states = TreeStatePair.readStatePages(
+                    cursor, IdSpace.STATE_PAGE_A, IdSpace.STATE_PAGE_B );
         }
         return states;
     }
@@ -435,7 +428,6 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>
                 layoutIdentifier = metaCursor.getLong();
                 majorVersion = metaCursor.getInt();
                 minorVersion = metaCursor.getInt();
-                layout.readMetaData( metaCursor );
             }
             while ( metaCursor.shouldRetry() );
             checkOutOfBounds( metaCursor );
@@ -469,7 +461,6 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>
             metaCursor.putLong( layout.identifier() );
             metaCursor.putInt( layout.majorVersion() );
             metaCursor.putInt( layout.minorVersion() );
-            layout.writeMetaData( metaCursor );
             checkOutOfBounds( metaCursor );
         }
     }
@@ -643,8 +634,8 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>
     {
         try ( PageCursor cursor = openRootCursor( PagedFile.PF_SHARED_READ_LOCK ) )
         {
-            TreePrinter.printTree( cursor, bTreeNode, layout,
-                    stableGeneration( generation ), unstableGeneration( generation ), System.out, printValues );
+            new TreePrinter<>( bTreeNode, layout, stableGeneration( generation ), unstableGeneration( generation ) )
+                .printTree( cursor, System.out, printValues );
         }
     }
 
