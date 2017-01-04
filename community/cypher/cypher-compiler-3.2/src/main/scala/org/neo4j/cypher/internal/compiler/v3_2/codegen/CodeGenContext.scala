@@ -42,6 +42,8 @@ class CodeGenContext(val semanticTable: SemanticTable, idMap: Map[LogicalPlan, I
 
   def getVariable(queryVariable: String): Variable = variables(queryVariable)
 
+  def hasVariable(queryVariable: String): Boolean = variables.isDefinedAt(queryVariable)
+
   def variableQueryVariables(): Set[String] = variables.keySet.toSet
 
   def addProbeTable(plan: CodeGenPlan, codeThunk: JoinData) {

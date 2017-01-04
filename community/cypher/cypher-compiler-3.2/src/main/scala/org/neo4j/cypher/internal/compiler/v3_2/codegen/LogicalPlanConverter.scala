@@ -83,8 +83,10 @@ object LogicalPlanConverter {
       val projectionOpName = context.registerOperator(projection)
       val columns = immutableMapValues(projection.expressions,
                                        (e: ast.Expression) => ExpressionConverter.createExpression(e)(context))
-      val vars = columns.map {
-        case (name, expr) =>
+      // We assume that variables that are already defined in the context already have the correct type
+      // and do not need to be projected
+      val vars = columns.collect {
+        case (name, expr) if !context.hasVariable(name) =>
           val variable = Variable(context.namer.newVarName(), expr.codeGenType(context), expr.nullable(context))
           context.addVariable(name, variable)
           variable -> expr
