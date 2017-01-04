@@ -49,20 +49,18 @@ import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class DynamicIndexStoreViewTest
 {
-
-    private LabelScanStore labelScanStore = mock( LabelScanStore.class );
-    private NeoStores neoStores = mock( NeoStores.class );
-    private NodeStore nodeStore = mock( NodeStore.class );
-    private CountsTracker countStore = mock( CountsTracker.class );
-    private Visitor<NodePropertyUpdates,Exception> propertyUpdateVisitor = mock( Visitor.class );
-    private Visitor<NodeLabelUpdate,Exception> labelUpdateVisitor = mock( Visitor.class );
-    private IntPredicate propertyKeyIdFilter = mock( IntPredicate.class );
-    private AllEntriesLabelScanReader nodeLabelRanges = mock( AllEntriesLabelScanReader.class );
+    private final LabelScanStore labelScanStore = mock( LabelScanStore.class );
+    private final NeoStores neoStores = mock( NeoStores.class );
+    private final NodeStore nodeStore = mock( NodeStore.class );
+    private final CountsTracker countStore = mock( CountsTracker.class );
+    private final Visitor<NodePropertyUpdates,Exception> propertyUpdateVisitor = mock( Visitor.class );
+    private final Visitor<NodeLabelUpdate,Exception> labelUpdateVisitor = mock( Visitor.class );
+    private final IntPredicate propertyKeyIdFilter = mock( IntPredicate.class );
+    private final AllEntriesLabelScanReader nodeLabelRanges = mock( AllEntriesLabelScanReader.class );
 
     @Before
     public void setUp()
@@ -95,17 +93,6 @@ public class DynamicIndexStoreViewTest
 
         Mockito.verify( nodeStore, times( 10 ) )
                 .getRecord( anyLong(), any( NodeRecord.class ), any( RecordLoad.class ) );
-    }
-
-    @Test
-    public void closeAllEntriesScanReaderWhenCheckingLabelScanStore() throws Exception
-    {
-        DynamicIndexStoreView storeView = new DynamicIndexStoreView( labelScanStore, LockService.NO_LOCK_SERVICE,
-                neoStores, NullLogProvider.getInstance() );
-
-        storeView.visitNodes( new int[]{1, 2, 3}, propertyKeyIdFilter, propertyUpdateVisitor, labelUpdateVisitor );
-
-        verify( nodeLabelRanges ).close();
     }
 
     @Test

@@ -269,7 +269,8 @@ public class NativeLabelScanStore implements LabelScanStore
         started = true;
     }
 
-    private boolean isEmpty() throws IOException
+    @Override
+    public boolean isEmpty() throws IOException
     {
         try ( RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> cursor = index.seek(
                 new LabelScanKey( 0, 0 ),

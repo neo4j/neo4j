@@ -25,7 +25,6 @@ import java.util.function.IntPredicate;
 import java.util.stream.IntStream;
 
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.api.labelscan.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.index.NodePropertyUpdates;
@@ -91,10 +90,7 @@ public class DynamicIndexStoreView extends NeoStoreIndexStoreView
 
     private boolean isEmptyLabelScanStore() throws Exception
     {
-        try ( AllEntriesLabelScanReader nodeLabelRanges = labelScanStore.allNodeLabelRanges() )
-        {
-            return nodeLabelRanges.maxCount() == 0;
-        }
+        return labelScanStore.isEmpty();
     }
 
     private boolean isNumberOfLabeledNodesExceedThreshold( int[] labelIds )

@@ -1503,6 +1503,12 @@ public class BatchInsertTest
         }
 
         @Override
+        public boolean isEmpty() throws IOException
+        {
+            return allUpdates.isEmpty();
+        }
+
+        @Override
         public LabelScanWriter newWriter()
         {
             writersCreated++;

@@ -183,6 +183,12 @@ public class InMemoryLabelScanStore implements LabelScanStore
     }
 
     @Override
+    public boolean isEmpty() throws IOException
+    {
+        return data.isEmpty();
+    }
+
+    @Override
     public AllEntriesLabelScanReader allNodeLabelRanges()
     {
 

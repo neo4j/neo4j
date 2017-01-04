@@ -116,6 +116,12 @@ public interface LabelScanStore extends Lifecycle
     ResourceIterator<File> snapshotStoreFiles() throws IOException;
 
     /**
+     * @return {@code true} if there's no data at all in this label scan store, otherwise {@code false}.
+     * @throws IOException on I/O error.
+     */
+    boolean isEmpty() throws IOException;
+
+    /**
      * Initializes the store. After this has been called recovery updates can be processed.
      */
     @Override
