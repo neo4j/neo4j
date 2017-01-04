@@ -675,7 +675,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
         int pos = KeySearch.positionOf( search );
 
         // Assuming unique keys
-        if ( seekForward && isInternal && KeySearch.isHit( search ) )
+        if ( isInternal && KeySearch.isHit( search ) )
         {
             pos++;
         }

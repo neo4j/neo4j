@@ -451,6 +451,62 @@ public class SeekCursorTest
         assertEquals( expectedkey, -1 );
     }
 
+    @Test
+    public void mustStartReadingFromCorrectLeafWhenRangeStartWithKeyEqualToPrimKey() throws Exception
+    {
+        // given
+        for ( int i = 0; i < maxKeyCount + 1; i++ )
+        {
+            insert( i );
+        }
+        MutableLong primKey = layout.newKey();
+        node.keyAt( cursor, primKey, 0 );
+        long expectedNext = primKey.longValue();
+        long rightChild = GenSafePointerPair.pointer( node.childAt( cursor, 1, stableGen, unstableGen ) );
+
+        // when
+        try ( SeekCursor<MutableLong, MutableLong> seek = seekCursor( expectedNext, maxKeyCount + 1 ) )
+        {
+            assertEquals( rightChild, cursor.getCurrentPageId() );
+            while ( seek.next() )
+            {
+                assertKeyAndValue( seek, expectedNext );
+                expectedNext++;
+            }
+        }
+
+        // then
+        assertEquals( maxKeyCount + 1, expectedNext );
+    }
+
+    @Test
+    public void mustStartReadingFromCorrectLeafWhenRangeStartWithKeyEqualToPrimKeyBackwards() throws Exception
+    {
+        // given
+        for ( int i = 0; i < maxKeyCount + 1; i++ )
+        {
+            insert( i );
+        }
+        MutableLong primKey = layout.newKey();
+        node.keyAt( cursor, primKey, 0 );
+        long expectedNext = primKey.longValue();
+        long rightChild = GenSafePointerPair.pointer( node.childAt( cursor, 1, stableGen, unstableGen ) );
+
+        // when
+        try ( SeekCursor<MutableLong, MutableLong> seek = seekCursor( expectedNext, -1 ) )
+        {
+            assertEquals( rightChild, cursor.getCurrentPageId() );
+            while ( seek.next() )
+            {
+                assertKeyAndValue( seek, expectedNext );
+                expectedNext--;
+            }
+        }
+
+        // then
+        assertEquals( -1, expectedNext );
+    }
+
     /* INSERT */
 
     @Test
