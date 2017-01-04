@@ -1018,15 +1018,10 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     @Override
     public RECORD getRecord( long id, RECORD record, RecordLoad mode )
     {
-        // Mark the record with this id regardless of whether or not we load the contents of it.
-        // This is done in this method since there are multiple call sites and they all want the id
-        // on that record, so it's to ensure it isn't forgotten.
-        record.setId( id );
         long pageId = pageIdForRecord( id );
-        int offset = offsetForId( id );
         try ( PageCursor cursor = storeFile.io( pageId, PF_SHARED_READ_LOCK ) )
         {
-            readIntoRecord( id, record, mode, pageId, offset, cursor );
+            readIntoRecord( id, record, mode, pageId, cursor );
             return record;
         }
         catch ( IOException e )
@@ -1035,11 +1030,16 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         }
     }
 
-    private void readIntoRecord( long id, RECORD record, RecordLoad mode, long pageId, int offset, PageCursor cursor )
+    private void readIntoRecord( long id, RECORD record, RecordLoad mode, long pageId, PageCursor cursor )
             throws IOException
     {
+        // Mark the record with this id regardless of whether or not we load the contents of it.
+        // This is done in this method since there are multiple call sites and they all want the id
+        // on that record, so it's to ensure it isn't forgotten.
+        record.setId( id );
         if ( cursor.next( pageId ) )
         {
+            int offset = offsetForId( id );
             // There is a page in the store that covers this record, go read it
             do
             {
@@ -1171,10 +1171,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
 
                 try
                 {
-                    record.setId( id );
-                    long pageId = pageIdForRecord( id );
-                    int offset = offsetForId( id );
-                    readIntoRecord( currentId, record, mode, pageId, offset, pageCursor );
+                    readIntoRecord( id, record, mode, pageIdForRecord( id ), pageCursor );
                     return record.inUse();
                 }
                 catch ( IOException e )
