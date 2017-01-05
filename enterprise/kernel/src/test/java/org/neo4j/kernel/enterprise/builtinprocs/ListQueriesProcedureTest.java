@@ -21,6 +21,9 @@ package org.neo4j.kernel.enterprise.builtinprocs;
 
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeoutException;
+import java.util.function.BiConsumer;
+import java.util.function.Supplier;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -70,36 +73,11 @@ public class ListQueriesProcedureTest
     public void shouldProvideElapsedCpuTime() throws Exception
     {
         // given
-        CountDownLatch nodeLocked = new CountDownLatch( 1 ), listQueriesLatch = new CountDownLatch( 1 );
-        Node node;
-        try ( Transaction tx = db.beginTx() )
-        {
-            node = db.createNode();
-            node.setProperty( "v", 1L );
-            tx.success();
-        }
-        threads.execute( parameter ->
-        {
-            try ( Transaction tx = db.beginTx() )
-            {
-                tx.acquireWriteLock( node );
-                nodeLocked.countDown();
-                listQueriesLatch.await();
-            }
-            return null;
-        }, null );
-        nodeLocked.await();
-
-        threads.executeAndAwait( parameter ->
-        {
-            db.execute( "MATCH (n) SET n.v = n.v + 1" ).close();
-            return null;
-        }, null, waitingWhileIn( GraphDatabaseFacade.class, "execute" ), 5, SECONDS );
-
-        try
+        String QUERY = "MATCH (n) SET n.v = n.v + 1";
+        try ( Resource<Node> test = test( db::createNode, Transaction::acquireWriteLock, QUERY ) )
         {
             // when
-            Map<String,Object> data = getQueryListing( "MATCH (n) SET n.v = n.v + 1" );
+            Map<String,Object> data = getQueryListing( QUERY );
 
             // then
             assertThat( data, hasKey( "elapsedTimeMillis" ) );
@@ -115,13 +93,13 @@ public class ListQueriesProcedureTest
             Map<String,Object> statusMap = (Map<String,Object>) status;
             assertEquals( "WAITING", statusMap.get( "state" ) );
             assertEquals( "NODE", statusMap.get( "resourceType" ) );
-            assertArrayEquals( new long[]{node.getId()}, (long[]) statusMap.get( "resourceIds" ) );
+            assertArrayEquals( new long[] {test.resource().getId()}, (long[]) statusMap.get( "resourceIds" ) );
             assertThat( data, hasKey( "waitTimeMillis" ) );
             Object waitTime1 = data.get( "waitTimeMillis" );
             assertThat( waitTime1, instanceOf( Long.class ) );
 
             // when
-            data = getQueryListing( "MATCH (n) SET n.v = n.v + 1" );
+            data = getQueryListing( QUERY );
 
             // then
             Long cpuTime2 = (Long) data.get( "cpuTimeMillis" );
@@ -129,9 +107,23 @@ public class ListQueriesProcedureTest
             Long waitTime2 = (Long) data.get( "waitTimeMillis" );
             assertThat( waitTime2, greaterThan( (Long) waitTime1 ) );
         }
-        finally
+    }
+
+    @Test
+    public void shouldListPlannerAndRuntimeUsed() throws Exception
+    {
+        // given
+        String QUERY = "MATCH (n) SET n.v = n.v - 1";
+        try ( Resource<Node> test = test( db::createNode, Transaction::acquireWriteLock, QUERY ) )
         {
-            listQueriesLatch.countDown();
+            // when
+            Map<String,Object> data = getQueryListing( QUERY );
+
+            // then
+            assertThat( data, hasKey( "planner" ) );
+            assertThat( data, hasKey( "runtime" ) );
+            assertThat( data.get( "planner" ), instanceOf( String.class ) );
+            assertThat( data.get( "runtime" ), instanceOf( String.class ) );
         }
     }
 
@@ -161,5 +153,59 @@ public class ListQueriesProcedureTest
             }
         }
         throw new AssertionError( "query not active: " + query );
+    }
+
+    private static class Resource<T> implements AutoCloseable
+    {
+        private final CountDownLatch latch;
+        private final T resource;
+
+        private Resource( CountDownLatch latch, T resource )
+        {
+            this.latch = latch;
+            this.resource = resource;
+        }
+
+        @Override
+        public void close()
+        {
+            latch.countDown();
+        }
+
+        public T resource()
+        {
+            return resource;
+        }
+    }
+
+    private <T> Resource<T> test( Supplier<T> setup, BiConsumer<Transaction,T> lock, String query )
+            throws TimeoutException, InterruptedException
+    {
+        CountDownLatch resourceLocked = new CountDownLatch( 1 ), listQueriesLatch = new CountDownLatch( 1 );
+        T resource;
+        try ( Transaction tx = db.beginTx() )
+        {
+            resource = setup.get();
+            tx.success();
+        }
+        threads.execute( parameter ->
+        {
+            try ( Transaction tx = db.beginTx() )
+            {
+                lock.accept( tx, resource );
+                resourceLocked.countDown();
+                listQueriesLatch.await();
+            }
+            return null;
+        }, null );
+        resourceLocked.await();
+
+        threads.executeAndAwait( parameter ->
+        {
+            db.execute( query ).close();
+            return null;
+        }, null, waitingWhileIn( GraphDatabaseFacade.class, "execute" ), 5, SECONDS );
+
+        return new Resource<T>( listQueriesLatch, resource );
     }
 }

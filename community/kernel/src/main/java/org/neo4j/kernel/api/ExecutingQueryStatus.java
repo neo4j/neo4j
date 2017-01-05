@@ -31,7 +31,7 @@ import static java.util.Collections.unmodifiableMap;
 
 /**
  * Internal representation of the status of an executing query.
- *
+ * <p>
  * This is used for inspecting the state of a query.
  *
  * @see ExecutingQuery#status
@@ -42,21 +42,17 @@ abstract class ExecutingQueryStatus
 
     abstract Map<String,Object> toMap( SystemNanoClock clock );
 
-    private static final Map<String,Object> RUNNING_STATE = unmodifiableMap( singletonMap( "state", "RUNNING" ) );
-    static final ExecutingQueryStatus RUNNING = new ExecutingQueryStatus()
+    static ExecutingQueryStatus planning()
     {
-        @Override
-        long waitTimeNanos( SystemNanoClock clock )
-        {
-            return 0;
-        }
+        return SimpleState.PLANNING;
+    }
 
-        @Override
-        Map<String,Object> toMap( SystemNanoClock clock )
-        {
-            return RUNNING_STATE;
-        }
-    };
+    static ExecutingQueryStatus running()
+    {
+        return SimpleState.RUNNING;
+    }
+
+    abstract boolean isPlanning();
 
     static class WaitingOnLock extends ExecutingQueryStatus
     {
@@ -86,6 +82,49 @@ abstract class ExecutingQueryStatus
             map.put( "resourceType", resourceType.toString() );
             map.put( "resourceIds", resourceIds );
             return map;
+        }
+
+        @Override
+        boolean isPlanning()
+        {
+            return false;
+        }
+    }
+
+    private static final class SimpleState extends ExecutingQueryStatus
+    {
+        static final ExecutingQueryStatus PLANNING = new SimpleState( "PLANNING", true );
+        static final ExecutingQueryStatus RUNNING = new SimpleState( "RUNNING", false );
+        private final Map<String,Object> state;
+        private final boolean planning;
+
+        private SimpleState( String state, boolean planning )
+        {
+            this( singletonMap( "state", state ), planning );
+        }
+
+        private SimpleState( Map<String,Object> state, boolean planning )
+        {
+            this.state = unmodifiableMap( state );
+            this.planning = planning;
+        }
+
+        @Override
+        long waitTimeNanos( SystemNanoClock clock )
+        {
+            return 0;
+        }
+
+        @Override
+        Map<String,Object> toMap( SystemNanoClock clock )
+        {
+            return state;
+        }
+
+        @Override
+        boolean isPlanning()
+        {
+            return planning;
         }
     }
 }

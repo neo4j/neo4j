@@ -181,6 +181,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService, logProvider: 
           tc.close(success = true)
         } else {
           tc.cleanForReuse()
+          tc.notifyPlanningCompleted(plan)
           return (PreparedPlanExecution(plan, executionMode, extractedParameters), tc)
         }
 

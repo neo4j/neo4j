@@ -39,21 +39,61 @@ import static java.util.concurrent.atomic.AtomicLongFieldUpdater.newUpdater;
  */
 public class ExecutingQuery
 {
+    public static class QueryInfo
+    {
+        public final String text;
+        public final Map<String,Object> parameters;
+        public final String planner;
+        public final String runtime;
+
+        private QueryInfo( String text, Map<String,Object> parameters, PlannerInfo plannerInfo )
+        {
+            this.text = text;
+            this.parameters = parameters;
+            if ( plannerInfo != null )
+            {
+                this.planner = plannerInfo.planner;
+                this.runtime = plannerInfo.runtime;
+            }
+            else
+            {
+                this.planner = null;
+                this.runtime = null;
+            }
+        }
+    }
+
+    public static class PlannerInfo
+    {
+        private final String planner;
+        private final String runtime;
+
+        public PlannerInfo( String planner, String runtime )
+        {
+            this.planner = planner;
+            this.runtime = runtime;
+        }
+    }
+
     private static final AtomicLongFieldUpdater<ExecutingQuery> WAIT_TIME =
             newUpdater( ExecutingQuery.class, "waitTimeNanos" );
     private final long queryId;
-    private final LockTracer lockTracer = ExecutingQuery.this::waitForLock;
+    private final LockTracer lockTracer = this::waitForLock;
     private final String username;
     private final ClientConnectionInfo clientConnection;
     private final String queryText;
     private final Map<String, Object> queryParameters;
     private final long startTime; // timestamp in milliseconds
+    /** Uses write barrier of {@link #status}. */
+    private long planningDone;
     private final Thread threadExecutingTheQuery;
     private final SystemNanoClock clock;
     private final CpuClock cpuClock;
     private final long cpuTimeNanosWhenQueryStarted;
-    private Map<String,Object> metaData;
-    private volatile ExecutingQueryStatus status = ExecutingQueryStatus.RUNNING;
+    private final Map<String,Object> metaData;
+    /** Uses write barrier of {@link #status}. */
+    private PlannerInfo plannerInfo;
+    private volatile ExecutingQueryStatus status = ExecutingQueryStatus.planning();
     /** Updated through {@link #WAIT_TIME} */
     @SuppressWarnings( "unused" )
     private volatile long waitTimeNanos;
@@ -67,8 +107,8 @@ public class ExecutingQuery
             Map<String,Object> metaData,
             Thread threadExecutingTheQuery,
             SystemNanoClock clock,
-            CpuClock cpuClock
-    ) {
+            CpuClock cpuClock )
+    {
         this.queryId = queryId;
         this.clientConnection = clientConnection;
         this.username = username;
@@ -80,6 +120,13 @@ public class ExecutingQuery
         this.threadExecutingTheQuery = threadExecutingTheQuery;
         this.cpuClock = cpuClock;
         this.cpuTimeNanosWhenQueryStarted = cpuClock.cpuTimeNanos( threadExecutingTheQuery );
+    }
+
+    public void planningCompleted( PlannerInfo plannerInfo )
+    {
+        this.plannerInfo = plannerInfo;
+        this.planningDone = clock.millis();
+        this.status = ExecutingQueryStatus.running(); // write barrier - must be last
     }
 
     @Override
@@ -120,6 +167,13 @@ public class ExecutingQuery
         return clientConnection;
     }
 
+    public QueryInfo query()
+    {
+        return status.isPlanning() // read barrier - must be first
+                ? new QueryInfo( queryText, queryParameters, null )
+                : new QueryInfo( queryText, queryParameters, plannerInfo );
+    }
+
     public String queryText()
     {
         return queryText;
@@ -133,6 +187,18 @@ public class ExecutingQuery
     public long startTime()
     {
         return startTime;
+    }
+
+    public long planningTimeMillis()
+    {
+        if ( status.isPlanning() ) // read barrier - must be first
+        {
+            return elapsedTimeMillis();
+        }
+        else
+        {
+            return planningDone - startTime;
+        }
     }
 
     public long elapsedTimeMillis()
@@ -204,6 +270,12 @@ public class ExecutingQuery
             }
             WAIT_TIME.addAndGet( ExecutingQuery.this, waitTimeNanos( clock ) );
             status = previous;
+        }
+
+        @Override
+        boolean isPlanning()
+        {
+            return previous.isPlanning();
         }
     }
 }

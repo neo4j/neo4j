@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.spi.v2_3.{TransactionBoundGraphStatistics, Tran
 import org.neo4j.cypher.internal.spi.v3_2.TransactionalContextWrapper
 import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.kernel.GraphDatabaseQueryService
+import org.neo4j.kernel.api.ExecutingQuery.PlannerInfo
 import org.neo4j.kernel.api.KernelAPI
 import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor
@@ -112,6 +113,8 @@ trait Compatibility {
 
     def isStale(lastCommittedTxId: LastCommittedTxIdProvider, ctx: TransactionalContextWrapper): Boolean =
       inner.isStale(lastCommittedTxId, TransactionBoundGraphStatistics(ctx.readOperations))
+
+    override def plannerInfo = new PlannerInfo(inner.plannerUsed.name, inner.runtimeUsed.name)
   }
 
 }

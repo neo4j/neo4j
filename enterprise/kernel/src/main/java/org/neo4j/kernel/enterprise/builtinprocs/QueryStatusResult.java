@@ -41,6 +41,8 @@ public class QueryStatusResult
     public final String username;
     public final String query;
     public final Map<String,Object> parameters;
+    public final String planner;
+    public final String runtime;
     public final String startTime;
     @Deprecated
     public final String elapsedTime;
@@ -67,8 +69,7 @@ public class QueryStatusResult
         this(
                 ofInternalId( q.internalQueryId() ),
                 q.username(),
-                q.queryText(),
-                q.queryParameters(),
+                q.query(),
                 q.startTime(),
                 q.elapsedTimeMillis(),
                 q.clientConnection(),
@@ -81,8 +82,7 @@ public class QueryStatusResult
     private QueryStatusResult(
             QueryId queryId,
             String username,
-            String query,
-            Map<String,Object> parameters,
+            ExecutingQuery.QueryInfo query,
             long startTime,
             long elapsedTime,
             ClientConnectionInfo clientConnection,
@@ -93,8 +93,8 @@ public class QueryStatusResult
     ) {
         this.queryId = queryId.toString();
         this.username = username;
-        this.query = query;
-        this.parameters = parameters;
+        this.query = query.text;
+        this.parameters = query.parameters;
         this.startTime = formatTime( startTime );
         this.elapsedTime = formatInterval( elapsedTime );
         this.elapsedTimeMillis = elapsedTime;
@@ -106,6 +106,8 @@ public class QueryStatusResult
         this.cpuTimeMillis = cpuTimeMillis;
         this.status = status;
         this.waitTimeMillis = waitTimeMillis;
+        this.planner = query.planner;
+        this.runtime = query.runtime;
     }
 
     private static String formatTime( final long startTime )

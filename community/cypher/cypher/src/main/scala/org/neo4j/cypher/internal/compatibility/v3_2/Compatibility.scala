@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSeq
 import org.neo4j.cypher.internal.compiler.v3_2.{InfoLogger, ExplainMode => ExplainModev3_2, NormalMode => NormalModev3_2, ProfileMode => ProfileModev3_2, _}
 import org.neo4j.cypher.internal.spi.v3_2.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.spi.v3_2._
+import org.neo4j.kernel.api.ExecutingQuery.PlannerInfo
 import org.neo4j.kernel.api.KernelAPI
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
@@ -106,6 +107,8 @@ trait Compatibility {
 
     def isStale(lastCommittedTxId: LastCommittedTxIdProvider, ctx: TransactionalContextWrapper): Boolean =
       inner.isStale(lastCommittedTxId, TransactionBoundGraphStatistics(ctx.readOperations))
+
+    override def plannerInfo = new PlannerInfo(inner.plannerUsed.name, inner.runtimeUsed.name)
   }
 }
 

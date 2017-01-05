@@ -32,4 +32,6 @@ trait ExecutionPlan {
   def isPeriodicCommit: Boolean
 
   def isStale(lastCommittedTxId: LastCommittedTxIdProvider, ctx: TransactionalContextWrapper): Boolean
+
+  def plannerInfo: org.neo4j.kernel.api.ExecutingQuery.PlannerInfo
 }
