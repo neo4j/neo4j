@@ -33,6 +33,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.graphdb.TransactionTerminatedException;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KeyReadTokenNameLookup;
 import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
@@ -102,6 +103,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final TransactionHeaderInformationFactory headerInformationFactory;
     private final TransactionCommitProcess commitProcess;
     private final TransactionMonitor transactionMonitor;
+    private final PageCursorTracerSupplier cursorTracerSupplier;
     private final StoreReadLayer storeLayer;
     private final Clock clock;
 
@@ -156,6 +158,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                                             Clock clock,
                                             TransactionTracer transactionTracer,
                                             LockTracer lockTracer,
+                                            PageCursorTracerSupplier cursorTracerSupplier,
                                             StorageEngine storageEngine,
                                             AccessCapability accessCapability )
     {
@@ -172,6 +175,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.pool = pool;
         this.clock = clock;
         this.transactionTracer = transactionTracer;
+        this.cursorTracerSupplier = cursorTracerSupplier;
         this.storageStatement = storeLayer.newStatement();
         this.currentStatement =
                 new KernelStatement( this, this, storageStatement, procedures, accessCapability, lockTracer );
@@ -205,7 +209,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.transactionId = NOT_COMMITTED_TRANSACTION_ID;
         this.commitTime = NOT_COMMITTED_TRANSACTION_COMMIT_TIME;
         this.currentTransactionOperations = timeoutMillis > 0 ? operationContainer.guardedParts() : operationContainer.nonGuarderParts();
-        this.currentStatement.initialize( statementLocks, currentTransactionOperations );
+        this.currentStatement.initialize( statementLocks, currentTransactionOperations, cursorTracerSupplier.get() );
         return this;
     }
 
