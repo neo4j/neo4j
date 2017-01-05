@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
 
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.Hit;
@@ -57,13 +58,7 @@ import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 public class GBPTreeRecoveryTest
 {
     private static final int PAGE_SIZE = 256;
-    private static final Action CHECKPOINT = ( index, forRecovery ) ->
-    {
-        if ( !forRecovery )
-        {
-            index.checkpoint( unlimited() );
-        }
-    };
+    private static final Action CHECKPOINT = new CheckpointAction();
 
     private final RandomRule random = new RandomRule();
     private final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
@@ -158,15 +153,15 @@ public class GBPTreeRecoveryTest
             PageCache pageCache = createPageCache();
             GBPTree<MutableLong,MutableLong> index = createIndex( pageCache, file );
             // Execute all actions up to and including last checkpoint ...
-            execute( load.subList( 0, lastCheckPointIndex + 1 ), index, false );
+            execute( load.subList( 0, lastCheckPointIndex + 1 ), index );
             // ... a random amount of the remaining "unsafe" actions ...
             int numberOfRemainingActions = load.size() - lastCheckPointIndex - 1;
             int crashFlushIndex = lastCheckPointIndex + random.nextInt( numberOfRemainingActions ) + 1;
-            execute( load.subList( lastCheckPointIndex + 1, crashFlushIndex ), index, false );
+            execute( load.subList( lastCheckPointIndex + 1, crashFlushIndex ), index );
             // ... flush ...
             pageCache.flushAndForce();
             // ... execute the remaining actions
-            execute( load.subList( crashFlushIndex, load.size() ), index, false );
+            execute( load.subList( crashFlushIndex, load.size() ), index );
             // ... and finally crash
             fs.snapshot( throwing( () ->
             {
@@ -179,11 +174,11 @@ public class GBPTreeRecoveryTest
         List<Action> recoveryActions;
         if ( replayRecoveryExactlyFromCheckpoint )
         {
-            recoveryActions = load.subList( lastCheckPointIndex + 1, load.size() );
+            recoveryActions = recoveryActions( load, lastCheckPointIndex + 1 );
         }
         else
         {
-            recoveryActions = load.subList( random.nextInt( lastCheckPointIndex ), load.size() );
+            recoveryActions = recoveryActions( load, random.nextInt( lastCheckPointIndex ) );
         }
 
         // first crashing during recovery
@@ -228,25 +223,32 @@ public class GBPTreeRecoveryTest
         }
     }
 
+    private List<Action> recoveryActions( List<Action> load, int fromIndex )
+    {
+        return load.subList( fromIndex, load.size() ).stream()
+                .filter( Action::isRecoverable )
+                .collect( Collectors.toList() );
+    }
+
     private void recover( List<Action> load, GBPTree<MutableLong,MutableLong> index ) throws IOException
     {
         index.prepareForRecovery();
-        execute( load, index, true );
+        execute( load, index );
     }
 
-    private static void execute( List<Action> load, Index<MutableLong,MutableLong> index, boolean forRecovery )
+    private static void execute( List<Action> load, Index<MutableLong,MutableLong> index )
             throws IOException
     {
         for ( Action action : load )
         {
-            action.execute( index, forRecovery );
+            action.execute( index );
         }
     }
 
     private static long[] expectedSortedAggregatedDataFromGeneratedLoad( List<Action> load ) throws IOException
     {
         CapturingIndex index = new CapturingIndex();
-        execute( load, index, false );
+        execute( load, index );
         @SuppressWarnings( "unchecked" )
         Map.Entry<Long,Long>[] entries = index.map.entrySet().toArray( new Map.Entry[index.map.size()] );
         long[] result = new long[entries.length * 2];
@@ -313,35 +315,13 @@ public class GBPTreeRecoveryTest
         {
             // put
             long[] data = modificationData( 30, 200 );
-            return ( index, forRecovery ) ->
-            {
-                try ( IndexWriter<MutableLong,MutableLong> writer = index.writer() )
-                {
-                    for ( int i = 0; i < data.length; )
-                    {
-                        key.setValue( data[i++] );
-                        value.setValue( data[i++] );
-                        writer.put( key, value );
-                    }
-                }
-            };
+            return new InsertAction( data );
         }
         else if ( randomized <= 0.95 || !allowCheckPoint )
         {
             // remove
             long[] data = modificationData( 5, 20 );
-            return ( index, forRecovery ) ->
-            {
-                try ( IndexWriter<MutableLong,MutableLong> writer = index.writer() )
-                {
-                    for ( int i = 0; i < data.length; )
-                    {
-                        key.setValue( data[i++] );
-                        i++; // value
-                        writer.remove( key );
-                    }
-                }
-            };
+            return new RemoveAction( data );
         }
         else
         {
@@ -375,7 +355,84 @@ public class GBPTreeRecoveryTest
 
     interface Action
     {
-        void execute( Index<MutableLong,MutableLong> index, boolean forRecovery ) throws IOException;
+        void execute( Index<MutableLong,MutableLong> index ) throws IOException;
+
+        boolean isRecoverable();
+    }
+
+    abstract class RecoverableAction implements Action
+    {
+        @Override
+        public boolean isRecoverable()
+        {
+            return true;
+        }
+    }
+
+    abstract static class NonRecoverableAction implements Action
+    {
+        @Override
+        public boolean isRecoverable()
+        {
+            return false;
+        }
+    }
+
+    class InsertAction extends RecoverableAction
+    {
+        private final long[] data;
+
+        InsertAction( long[] data )
+        {
+            this.data = data;
+        }
+
+        @Override
+        public void execute( Index<MutableLong,MutableLong> index ) throws IOException
+        {
+            try ( IndexWriter<MutableLong,MutableLong> writer = index.writer() )
+            {
+                for ( int i = 0; i < data.length; )
+                {
+                    key.setValue( data[i++] );
+                    value.setValue( data[i++] );
+                    writer.put( key, value );
+                }
+            }
+        }
+    }
+
+    class RemoveAction extends RecoverableAction
+    {
+        private final long[] data;
+
+        RemoveAction( long[] data )
+        {
+            this.data = data;
+        }
+
+        @Override
+        public void execute( Index<MutableLong,MutableLong> index ) throws IOException
+        {
+            try ( IndexWriter<MutableLong,MutableLong> writer = index.writer() )
+            {
+                for ( int i = 0; i < data.length; )
+                {
+                    key.setValue( data[i++] );
+                    i++; // value
+                    writer.remove( key );
+                }
+            }
+        }
+    }
+
+    static class CheckpointAction extends NonRecoverableAction
+    {
+        @Override
+        public void execute( Index<MutableLong,MutableLong> index ) throws IOException
+        {
+            index.checkpoint( unlimited() );
+        }
     }
 
     private static class CapturingIndex implements Index<MutableLong,MutableLong>, IndexWriter<MutableLong,MutableLong>
