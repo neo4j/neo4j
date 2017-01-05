@@ -43,8 +43,8 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.index.impl.lucene.legacy.LuceneDataSource;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.io.fs.watcher.FileWatchEventListener;
 import org.neo4j.io.fs.watcher.FileWatcher;
-import org.neo4j.io.fs.watcher.event.FileWatchEventListenerAdapter;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
@@ -58,7 +58,6 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 
 public class FileWatchIT
@@ -76,7 +75,7 @@ public class FileWatchIT
     public void setUp()
     {
         storeDir = testDirectory.graphDbDir();
-        logProvider = new AssertableLogProvider( true );
+        logProvider = new AssertableLogProvider();
         database = new TestGraphDatabaseFactory().setInternalLogProvider( logProvider ).newEmbeddedDatabase( storeDir );
     }
 
@@ -105,7 +104,7 @@ public class FileWatchIT
         deletionListener.awaitDeletionNotification();
 
         logProvider.assertContainsMessageContaining(
-                "Store file '" + fileName + "' was deleted while database was running." );
+                "'" + fileName + "' which belongs to the store was deleted while database was running." );
     }
 
     @Test(timeout = TEST_TIMEOUT)
@@ -117,7 +116,7 @@ public class FileWatchIT
         {
             db = new TestGraphDatabaseFactory().setInternalLogProvider( logProvider )
                     .setFileSystem( new NonWatchableFileSystemAbstraction() )
-                    .newEmbeddedDatabase( testDirectory.directory( "faied-start-db" ) );
+                    .newEmbeddedDatabase( testDirectory.directory( "failed-start-db" ) );
 
             logProvider.assertContainsMessageContaining( "Can not create file watcher for current file system. " +
                     "File monitoring capabilities for store files will be disabled." );
@@ -148,7 +147,7 @@ public class FileWatchIT
         deletionListener.awaitDeletionNotification();
 
         logProvider.assertContainsMessageContaining(
-                "Store directory '" + monitoredDirectory + "' was deleted while database was running." );
+                "'" + monitoredDirectory + "' which belongs to the store was deleted while database was running." );
     }
 
     @Test(timeout = TEST_TIMEOUT)
@@ -236,7 +235,7 @@ public class FileWatchIT
         eventListener.awaitDeletionNotification();
 
         logProvider.assertContainsMessageContaining(
-                "Store directory '" + storeDirectoryName + "' was deleted while database was running." );
+                "'" + storeDirectoryName + "' which belongs to the store was deleted while database was running." );
     }
 
     private void shutdownDatabaseSilently( GraphDatabaseService databaseService )
@@ -343,7 +342,7 @@ public class FileWatchIT
         }
     }
 
-    private static class AccumulativeDeletionEventListener extends FileWatchEventListenerAdapter
+    private static class AccumulativeDeletionEventListener implements FileWatchEventListener
     {
         private List<String> deletedFiles = new ArrayList<>();
 
@@ -359,7 +358,7 @@ public class FileWatchIT
         }
     }
 
-    private static class ModificationEventListener extends FileWatchEventListenerAdapter
+    private static class ModificationEventListener implements FileWatchEventListener
     {
         final String expectedFileName;
         private final CountDownLatch modificationLatch = new CountDownLatch( 1 );

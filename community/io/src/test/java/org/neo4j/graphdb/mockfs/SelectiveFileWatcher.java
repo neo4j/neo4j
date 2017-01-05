@@ -22,8 +22,8 @@ package org.neo4j.graphdb.mockfs;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.io.fs.watcher.FileWatchEventListener;
 import org.neo4j.io.fs.watcher.FileWatcher;
-import org.neo4j.io.fs.watcher.event.FileWatchEventListener;
 import org.neo4j.io.fs.watcher.resource.WatchedResource;
 
 /**

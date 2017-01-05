@@ -24,7 +24,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.WatchService;
 
-import org.neo4j.io.fs.watcher.event.FileWatchEventListener;
 import org.neo4j.io.fs.watcher.resource.WatchedResource;
 
 /**

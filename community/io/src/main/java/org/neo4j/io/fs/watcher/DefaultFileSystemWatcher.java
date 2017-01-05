@@ -31,7 +31,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import org.neo4j.io.fs.watcher.event.FileWatchEventListener;
 import org.neo4j.io.fs.watcher.resource.WatchedFile;
 import org.neo4j.io.fs.watcher.resource.WatchedResource;
 

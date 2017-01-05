@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.util.watcher;
 
-import org.neo4j.io.fs.watcher.event.FileWatchEventListenerAdapter;
+import org.neo4j.io.fs.watcher.FileWatchEventListener;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.logging.Log;
@@ -29,7 +29,7 @@ import static java.lang.String.format;
 /**
  * Listener that will print notification about deleted filename into internal log.
  */
-public class DefaultFileDeletionEventListener extends FileWatchEventListenerAdapter
+public class DefaultFileDeletionEventListener implements FileWatchEventListener
 {
 
     private final Log internalLog;

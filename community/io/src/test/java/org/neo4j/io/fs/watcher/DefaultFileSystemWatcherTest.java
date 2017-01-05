@@ -36,7 +36,6 @@ import java.nio.file.Watchable;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.io.fs.watcher.event.FileWatchEventListenerAdapter;
 import org.neo4j.io.fs.watcher.resource.WatchedResource;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -287,7 +286,7 @@ public class DefaultFileSystemWatcherTest
         }
     }
 
-    private static class AssertableFileEventListener extends FileWatchEventListenerAdapter
+    private static class AssertableFileEventListener implements FileWatchEventListener
     {
         private final List<String> deletedFileNames = new ArrayList<>();
         private final List<String> modifiedFileNames = new ArrayList<>();
@@ -295,14 +294,12 @@ public class DefaultFileSystemWatcherTest
         @Override
         public void fileDeleted( String fileName )
         {
-            super.fileDeleted( fileName );
             deletedFileNames.add( fileName );
         }
 
         @Override
         public void fileModified( String fileName )
         {
-            super.fileModified( fileName );
             modifiedFileNames.add( fileName );
         }
 

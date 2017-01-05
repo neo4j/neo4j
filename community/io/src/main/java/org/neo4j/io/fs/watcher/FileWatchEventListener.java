@@ -17,19 +17,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.fs.watcher.event;
+package org.neo4j.io.fs.watcher;
 
-public class FileWatchEventListenerAdapter implements FileWatchEventListener
+import java.util.EventListener;
+
+/**
+ * {@link FileWatcher} listener that allow receive state change updates for registered resources.
+ */
+public interface FileWatchEventListener extends EventListener
 {
-    @Override
-    public void fileDeleted( String fileName )
+    /**
+     * Notification about deletion of file with provided name
+     *
+     * @param fileName deleted file name
+     */
+    default void fileDeleted( String fileName )
     {
-        // empty
+        // no-op
     }
 
-    @Override
-    public void fileModified( String fileName )
+    /**
+     * Notification about update of file with provided name
+     *
+     * @param fileName updated file name
+     */
+    default void fileModified( String fileName )
     {
-        //empty
+        // no-op
     }
 }
