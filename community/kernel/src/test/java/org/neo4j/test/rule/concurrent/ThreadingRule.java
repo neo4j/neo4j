@@ -22,6 +22,7 @@ package org.neo4j.test.rule.concurrent;
 import org.junit.rules.ExternalResource;
 
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -30,11 +31,15 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
+import org.neo4j.function.FailableConsumer;
 import org.neo4j.function.Predicates;
 import org.neo4j.function.ThrowingFunction;
-import org.neo4j.helpers.ConcurrentTransfer;
+import org.neo4j.function.ThrowingPredicate;
+import org.neo4j.helpers.FailableConcurrentTransfer;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.ReflectionUtil;
+
+import static org.neo4j.function.ThrowingPredicate.throwingPredicate;
 
 public class ThreadingRule extends ExternalResource
 {
@@ -66,22 +71,40 @@ public class ThreadingRule extends ExternalResource
 
     public <FROM, TO, EX extends Exception> Future<TO> execute( ThrowingFunction<FROM,TO,EX> function, FROM parameter )
     {
-        return executor.submit( task( Barrier.NONE, function, parameter, (t) -> {} ) );
+        return executor.submit( task( Barrier.NONE, function, parameter, new FailableConsumer<Thread>()
+        {
+            @Override
+            public void fail( Exception failure )
+            {
+            }
+
+            @Override
+            public void accept( Thread thread )
+            {
+            }
+        } ) );
     }
 
     public <FROM, TO, EX extends Exception> Future<TO> executeAndAwait(
             ThrowingFunction<FROM,TO,EX> function, FROM parameter, Predicate<Thread> threadCondition,
-            long timeout, TimeUnit unit ) throws TimeoutException, InterruptedException
+            long timeout, TimeUnit unit ) throws TimeoutException, InterruptedException, ExecutionException
     {
-        ConcurrentTransfer<Thread> threadTransfer = new ConcurrentTransfer<>();
+        FailableConcurrentTransfer<Thread> threadTransfer = new FailableConcurrentTransfer<>();
         Future<TO> future = executor.submit( task( Barrier.NONE, function, parameter, threadTransfer ) );
-        Predicates.await( threadTransfer, threadCondition, timeout, unit );
+        try
+        {
+            Predicates.awaitEx( threadTransfer, throwingPredicate( threadCondition ), timeout, unit );
+        }
+        catch ( Exception e )
+        {
+            throw new ExecutionException( e );
+        }
         return future;
     }
 
     private static <FROM, TO, EX extends Exception> Callable<TO> task(
             final Barrier barrier, final ThrowingFunction<FROM,TO,EX> function, final FROM parameter,
-            final Consumer<Thread> threadConsumer )
+            final FailableConsumer<Thread> threadConsumer )
     {
         return () -> {
             Thread thread = Thread.currentThread();
@@ -92,6 +115,11 @@ public class ThreadingRule extends ExternalResource
             try
             {
                 return function.apply( parameter );
+            }
+            catch ( Exception failure )
+            {
+                threadConsumer.fail( failure );
+                throw failure;
             }
             finally
             {

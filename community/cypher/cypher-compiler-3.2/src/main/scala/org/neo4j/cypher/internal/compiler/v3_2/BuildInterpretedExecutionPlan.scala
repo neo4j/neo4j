@@ -62,6 +62,8 @@ object BuildInterpretedExecutionPlan extends Phase {
       override def runtimeUsed = InterpretedRuntimeName
 
       override def notifications(planContext: PlanContext) = checkForNotifications(pipe, planContext, context.config)
+
+      override def plannedIndexUsage = logicalPlan.indexUsage
     }
 
     from.copy(maybeExecutionPlan = Some(execPlan))

@@ -20,17 +20,19 @@
 package org.neo4j.helpers;
 
 import java.util.concurrent.CountDownLatch;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
+
+import org.neo4j.function.FailableConsumer;
+import org.neo4j.function.ThrowingSupplier;
 
 /**
  * Abstracts a meeting point between two threads, where a reference can change hands. It is essentially
  * a latch where a reference to a value can be set while a thread waits on it.
  */
-public class ConcurrentTransfer<TYPE> implements Consumer<TYPE>, Supplier<TYPE>
+public class FailableConcurrentTransfer<TYPE> implements FailableConsumer<TYPE>, ThrowingSupplier<TYPE, Exception>
 {
     private final CountDownLatch latch = new CountDownLatch( 1 );
     private TYPE value;
+    private Exception failure;
 
     @Override
     public void accept( TYPE value )
@@ -40,7 +42,14 @@ public class ConcurrentTransfer<TYPE> implements Consumer<TYPE>, Supplier<TYPE>
     }
 
     @Override
-    public TYPE get()
+    public void fail( Exception failure )
+    {
+        this.failure = failure;
+        latch.countDown();
+    }
+
+    @Override
+    public TYPE get() throws Exception
     {
         try
         {
@@ -50,6 +59,16 @@ public class ConcurrentTransfer<TYPE> implements Consumer<TYPE>, Supplier<TYPE>
         {
             throw new RuntimeException( "Thread interrupted", e );
         }
+        if ( failure != null )
+        {
+            throw failure;
+        }
         return value;
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format( "ConcurrentTransfer{%s}", latch.getCount() == 1 ? "<waiting>" : value );
     }
 }

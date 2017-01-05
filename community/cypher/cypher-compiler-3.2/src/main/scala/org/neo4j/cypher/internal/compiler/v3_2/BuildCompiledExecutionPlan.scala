@@ -81,6 +81,8 @@ object BuildCompiledExecutionPlan extends Phase {
     override def runtimeUsed = CompiledRuntimeName
 
     override def notifications(planContext: PlanContext): Seq[InternalNotification] = Seq.empty
+
+    override def plannedIndexUsage: Seq[IndexUsage] = compiled.plannedIndexUsage
   }
 
 

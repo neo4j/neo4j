@@ -39,6 +39,7 @@ import org.neo4j.test.FakeCpuClock;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
+import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonMap;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.hasEntry;
@@ -78,7 +79,7 @@ public class ExecutingQueryTest
         assertThat( query.status(), hasEntry( "state", "PLANNING" ) );
 
         // when
-        query.planningCompleted( new ExecutingQuery.PlannerInfo( "the-planner", "the-runtime" ) );
+        query.planningCompleted( new ExecutingQuery.PlannerInfo( "the-planner", "the-runtime", emptyList() ) );
 
         // then
         assertThat( query.status(), hasEntry( "state", "RUNNING" ) );
@@ -104,7 +105,7 @@ public class ExecutingQueryTest
 
         // when
         clock.forward( 16, TimeUnit.MILLISECONDS );
-        query.planningCompleted( new ExecutingQuery.PlannerInfo( "the-planner", "the-runtime" ) );
+        query.planningCompleted( new ExecutingQuery.PlannerInfo( "the-planner", "the-runtime", emptyList() ) );
         clock.forward( 200, TimeUnit.MILLISECONDS );
 
         // then
@@ -116,7 +117,7 @@ public class ExecutingQueryTest
     public void shouldReportWaitTime() throws Exception
     {
         // given
-        query.planningCompleted( new ExecutingQuery.PlannerInfo( "the-planner", "the-runtime" ) );
+        query.planningCompleted( new ExecutingQuery.PlannerInfo( "the-planner", "the-runtime", emptyList() ) );
 
         // then
         assertEquals( singletonMap( "state", "RUNNING" ), query.status() );

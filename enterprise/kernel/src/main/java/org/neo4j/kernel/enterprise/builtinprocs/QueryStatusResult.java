@@ -22,6 +22,7 @@ package org.neo4j.kernel.enterprise.builtinprocs;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.util.List;
 import java.util.Map;
 
 import org.neo4j.kernel.api.ExecutingQuery;
@@ -63,6 +64,7 @@ public class QueryStatusResult
     /** EXPERIMENTAL: added in Neo4j 3.2 */
     public final long waitTimeMillis; // TODO: we want this field to be of a Duration type (when Cypher supports that)
     public final Map<String,Object> metaData;
+    public final List<Map<String,String>> indexes;
 
     QueryStatusResult( ExecutingQuery q ) throws InvalidArgumentsException
     {
@@ -108,6 +110,7 @@ public class QueryStatusResult
         this.waitTimeMillis = waitTimeMillis;
         this.planner = query.planner;
         this.runtime = query.runtime;
+        this.indexes = query.indexes();
     }
 
     private static String formatTime( final long startTime )

@@ -118,8 +118,9 @@ public final class Suppliers
         };
     }
 
-    public static <T, E extends Exception> ThrowingCapturingSupplier<T,E> compose( final ThrowingSupplier<T,E> input,
-            final ThrowingPredicate<T,E> predicate )
+    public static <T, E extends Exception> ThrowingCapturingSupplier<T,E> compose(
+            final ThrowingSupplier<T,? extends E> input,
+            final ThrowingPredicate<T,? extends E> predicate )
     {
         return new ThrowingCapturingSupplier<>( input, predicate );
     }
@@ -132,12 +133,12 @@ public final class Suppliers
 
     static class ThrowingCapturingSupplier<T, E extends Exception> implements ThrowingSupplier<Boolean,E>
     {
-        private final ThrowingSupplier<T,E> input;
-        private final ThrowingPredicate<T,E> predicate;
+        private final ThrowingSupplier<T,? extends E> input;
+        private final ThrowingPredicate<T,? extends E> predicate;
 
         private T current;
 
-        ThrowingCapturingSupplier( ThrowingSupplier<T,E> input, ThrowingPredicate<T,E> predicate )
+        ThrowingCapturingSupplier( ThrowingSupplier<T,? extends E> input, ThrowingPredicate<T,? extends E> predicate )
         {
             this.input = input;
             this.predicate = predicate;
@@ -153,6 +154,12 @@ public final class Suppliers
         {
             current = input.get();
             return predicate.test( current );
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format( "%s on %s", predicate, input );
         }
     }
 }

@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.api;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
@@ -31,6 +34,7 @@ import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.time.CpuClock;
 import org.neo4j.time.SystemNanoClock;
 
+import static java.util.Collections.emptyList;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.atomic.AtomicLongFieldUpdater.newUpdater;
 
@@ -42,11 +46,12 @@ public class ExecutingQuery
     public static class QueryInfo
     {
         public final String text;
-        public final Map<String,Object> parameters;
+        public final Map<String, Object> parameters;
         public final String planner;
         public final String runtime;
+        private final List<IndexUsage> indexes;
 
-        private QueryInfo( String text, Map<String,Object> parameters, PlannerInfo plannerInfo )
+        private QueryInfo( String text, Map<String, Object> parameters, PlannerInfo plannerInfo )
         {
             this.text = text;
             this.parameters = parameters;
@@ -54,24 +59,38 @@ public class ExecutingQuery
             {
                 this.planner = plannerInfo.planner;
                 this.runtime = plannerInfo.runtime;
+                this.indexes = plannerInfo.indexes;
             }
             else
             {
                 this.planner = null;
                 this.runtime = null;
+                this.indexes = emptyList();
             }
+        }
+
+        public List<Map<String, String>> indexes()
+        {
+            List<Map<String,String>> used = new ArrayList<>( this.indexes.size() );
+            for ( IndexUsage index : indexes )
+            {
+                used.add( index.asMap() );
+            }
+            return used;
         }
     }
 
     public static class PlannerInfo
     {
-        private final String planner;
-        private final String runtime;
+        final String planner;
+        final String runtime;
+        final List<IndexUsage> indexes;
 
-        public PlannerInfo( String planner, String runtime )
+        public PlannerInfo( String planner, String runtime, List<IndexUsage> indexes )
         {
             this.planner = planner;
             this.runtime = runtime;
+            this.indexes = indexes;
         }
     }
 
