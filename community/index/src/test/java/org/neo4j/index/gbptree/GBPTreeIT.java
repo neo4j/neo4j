@@ -640,7 +640,7 @@ public class GBPTreeIT
                 }
                 iteration = currentWriteIteration.addAndGet( 2 );
                 // Sleep a little in between update groups (transactions, sort of)
-                MILLISECONDS.sleep( random.nextInt( 10 ) + 3 );
+                MILLISECONDS.sleep( random.nextInt( 3,13 ) );
             }
         }
         finally
