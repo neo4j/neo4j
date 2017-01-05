@@ -34,6 +34,7 @@ import org.neo4j.kernel.impl.query.clientsession.ShellSessionInfo;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.time.Clocks;
+import org.neo4j.time.CpuClock;
 import org.neo4j.time.FakeClock;
 
 import static java.lang.String.format;
@@ -41,8 +42,6 @@ import static java.util.Collections.emptyMap;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.core.Is.is;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
@@ -282,7 +281,7 @@ public class QueryLoggerTest
         return new QueryLogger( clock, logProvider.getLog( getClass() ), 10/*ms*/, true );
     }
 
-    private static ExecutingQuery query(
+    private ExecutingQuery query(
             long startTime,
             ClientSessionInfo sessionInfo,
             String username,
@@ -296,18 +295,22 @@ public class QueryLoggerTest
         return sessionInfo.withUsername( username ).asConnectionDetails();
     }
 
-    private static ExecutingQuery query(
+    private int queryId;
+
+    private ExecutingQuery query(
             long startTime, ClientSessionInfo sessionInfo, String username, String queryText, Map<String,Object> params,
             Map<String,Object> metaData
     )
     {
-        ExecutingQuery query = mock( ExecutingQuery.class );
-        when( query.clientSession() ).thenReturn( sessionInfo.withUsername( username ) );
-        when( query.queryText() ).thenReturn( queryText );
-        when( query.queryParameters() ).thenReturn( params );
-        when( query.startTime() ).thenReturn( startTime );
-        when( query.username() ).thenReturn( username );
-        when( query.metaData() ).thenReturn( metaData );
-        return query;
+        FakeClock clock = Clocks.fakeClock( startTime, TimeUnit.MILLISECONDS );
+        return new ExecutingQuery( queryId++,
+                sessionInfo.withUsername( username ),
+                username,
+                queryText,
+                params,
+                metaData,
+                Thread.currentThread(),
+                clock,
+                CpuClock.CPU_CLOCK );
     }
 }
