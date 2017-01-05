@@ -619,9 +619,9 @@ public class StoreSingleNodeCursorTest
     @SuppressWarnings( "unchecked" )
     private StoreSingleNodeCursor newCursor( long nodeId )
     {
-        StoreSingleNodeCursor cursor = new StoreSingleNodeCursor( new NodeRecord( -1 ), resolveNeoStores(),
-                mock( StoreStatement.class ), mock( Consumer.class ), new RecordCursors( resolveNeoStores() ),
-                NO_LOCK_SERVICE );
+        StoreSingleNodeCursor cursor =
+                new StoreSingleNodeCursor( new NodeRecord( -1 ), resolveNeoStores(), mock( Consumer.class ),
+                        new RecordCursors( resolveNeoStores() ), NO_LOCK_SERVICE );
 
         cursor.init( nodeId );
         assertTrue( cursor.next() );

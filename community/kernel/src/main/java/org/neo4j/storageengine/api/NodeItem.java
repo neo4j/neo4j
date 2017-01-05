@@ -33,11 +33,6 @@ public interface NodeItem
         extends EntityItem
 {
     /**
-     * Convenience function for extracting a relationship type id from a {@link IntSupplier}.
-     */
-    ToIntFunction<IntSupplier> GET_RELATIONSHIP_TYPE = IntSupplier::getAsInt;
-
-    /**
      * @return label cursor for current node
      * @throws IllegalStateException if no current node is selected
      */
@@ -104,17 +99,4 @@ public interface NodeItem
      * @return whether or not this node has the given label.
      */
     boolean hasLabel( int labelId );
-
-    /**
-     * @param direction {@link Direction} to filter on.
-     * @param typeIds relationship type ids to filter on.
-     * @return relationship ids for the given direction and relationship types.
-     */
-    RelationshipIterator getRelationships( Direction direction, int[] typeIds );
-
-    /**
-     * @param direction {@link Direction} to filter on.
-     * @return relationship ids for the given direction.
-     */
-    RelationshipIterator getRelationships( Direction direction );
 }
