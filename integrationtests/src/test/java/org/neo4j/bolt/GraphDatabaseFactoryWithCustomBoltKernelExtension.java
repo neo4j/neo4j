@@ -59,12 +59,6 @@ public class GraphDatabaseFactoryWithCustomBoltKernelExtension extends GraphData
         return factory.newFacade( storeDir, config, dependencies );
     }
 
-    @Override
-    protected GraphDatabaseService newDatabase( File storeDir, Map<String,String> config, Dependencies dependencies )
-    {
-        return newDatabase( storeDir, Config.embeddedDefaults( config ), dependencies );
-    }
-
     private static class CustomBoltKernelExtensionFacadeFactory extends GraphDatabaseFacadeFactory
     {
         final BoltKernelExtension customExtension;

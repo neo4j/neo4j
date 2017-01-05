@@ -41,6 +41,7 @@ import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Dependencies;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
@@ -85,7 +86,7 @@ public class DatabaseShutdownTest
         private NeoStoreDataSource neoStoreDataSource;
 
         @Override
-        protected GraphDatabaseService newDatabase( File storeDir, Map<String,String> config,
+        protected GraphDatabaseService newDatabase( File storeDir, Config config,
                 GraphDatabaseFacadeFactory.Dependencies dependencies )
         {
             return new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
@@ -124,7 +125,7 @@ public class DatabaseShutdownTest
                         }
                     };
                 }
-            }.newFacade( storeDir, Config.embeddedDefaults().with( config ), dependencies );
+            }.newFacade( storeDir, config, dependencies );
         }
 
         LifecycleStatus getNeoStoreDataSourceStatus() throws NoSuchFieldException, IllegalAccessException

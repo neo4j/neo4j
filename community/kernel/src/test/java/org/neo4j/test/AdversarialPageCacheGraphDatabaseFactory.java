@@ -51,10 +51,11 @@ public class AdversarialPageCacheGraphDatabaseFactory
         return new TestGraphDatabaseFactory()
         {
             @Override
-            protected GraphDatabaseService newDatabase( File dir, Map<String,String> config, Dependencies dependencies )
+            protected GraphDatabaseService newDatabase( File dir, Config config, Dependencies dependencies )
             {
                 return new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
                 {
+
                     @Override
                     protected PlatformModule createPlatform( File storeDir, Config config,
                             Dependencies dependencies, GraphDatabaseFacade facade )
@@ -76,7 +77,7 @@ public class AdversarialPageCacheGraphDatabaseFactory
                             }
                         };
                     }
-                }.newFacade( dir, Config.embeddedDefaults().with( config ), dependencies );
+                }.newFacade( dir, config, dependencies );
             }
         };
     }

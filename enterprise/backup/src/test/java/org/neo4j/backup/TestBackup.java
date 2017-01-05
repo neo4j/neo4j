@@ -625,7 +625,7 @@ public class TestBackup
         GraphDatabaseFactory dbFactory = new TestGraphDatabaseFactory()
         {
             @Override
-            protected GraphDatabaseService newDatabase( File storeDir, Map<String,String> config,
+            protected GraphDatabaseService newDatabase( File storeDir, Config config,
                     GraphDatabaseFacadeFactory.Dependencies dependencies )
             {
                 Function<PlatformModule,EditionModule> factory =
@@ -646,7 +646,7 @@ public class TestBackup
                             }
                         };
                 return new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, factory )
-                        .newFacade( storeDir, Config.embeddedDefaults().with( config ), dependencies );
+                        .newFacade( storeDir, config, dependencies );
             }
         };
         return dbFactory.newEmbeddedDatabaseBuilder( storeDir )

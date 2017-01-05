@@ -751,7 +751,7 @@ public class LabelsAcceptanceTest
                             @Override
                             protected void create(
                                     File storeDir,
-                                    Map<String,String> params,
+                                    Config config,
                                     GraphDatabaseFacadeFactory.Dependencies dependencies )
                             {
                                 Function<PlatformModule,EditionModule> factory =
@@ -775,7 +775,7 @@ public class LabelsAcceptanceTest
                                         return new ImpermanentPlatformModule( storeDir, config, databaseInfo,
                                                 dependencies, graphDatabaseFacade );
                                     }
-                                }.initFacade( storeDir, params, dependencies, this );
+                                }.initFacade( storeDir, config, dependencies, this );
                             }
                         };
                     }
