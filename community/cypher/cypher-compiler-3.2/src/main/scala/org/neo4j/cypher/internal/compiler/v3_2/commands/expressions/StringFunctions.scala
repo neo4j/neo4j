@@ -40,7 +40,7 @@ case object asString extends (Any => String) {
     case null => null
     case x: String => x
     case _ => throw new CypherTypeException(
-      "Expected a string value for %s, but got: %s; perhaps you'd like to cast to a string it with str()."
+      "Expected a string value for %s, but got: %s; consider converting it to a string with toString()."
         .format(toString(), a.toString))
   }
 }
@@ -62,15 +62,6 @@ case class ToLowerFunction(argument: Expression) extends StringFunction(argument
   override def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = asString(argument(m)).toLowerCase
 
   override def rewrite(f: (Expression) => Expression) = f(ToLowerFunction(argument.rewrite(f)))
-}
-
-case class ReverseFunction(argument: Expression) extends StringFunction(argument) {
-  override def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = {
-    val string: String = asString(argument(m))
-    if (string == null) null else new java.lang.StringBuilder(string).reverse.toString
-  }
-
-  override def rewrite(f: (Expression) => Expression) = f(ReverseFunction(argument.rewrite(f)))
 }
 
 case class ToUpperFunction(argument: Expression) extends StringFunction(argument) {

@@ -26,6 +26,7 @@ case object Reverse extends Function with SimpleTypedFunction {
   def name = "reverse"
 
   override val signatures = Vector(
-    ExpressionSignature(argumentTypes = Vector(CTString), outputType = CTString)
+    ExpressionSignature(argumentTypes = Vector(CTString), outputType = CTString),
+    ExpressionSignature(argumentTypes = Vector(CTList(CTAny)), outputType = CTList(CTAny))
   )
 }
