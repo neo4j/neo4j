@@ -39,6 +39,7 @@ public class TxSingleNodeCursor extends TxAbstractNodeCursor
     public TxSingleNodeCursor init( Cursor<NodeItem> nodeCursor, long nodeId )
     {
         this.id = nodeId;
+        this.nodeIsAddedInThisTx = state.nodeIsAddedInThisTx( id );
         super.init( nodeCursor );
         return this;
     }
@@ -51,17 +52,16 @@ public class TxSingleNodeCursor extends TxAbstractNodeCursor
             return false;
         }
 
-        boolean exists = cursor.next();
-
         if ( state.nodeIsDeletedInThisTx( id ) )
         {
             this.id = StatementConstants.NO_SUCH_NODE;
             return false;
         }
 
-        this.nodeIsAddedInThisTx = state.nodeIsAddedInThisTx( id );
-        if ( exists || nodeIsAddedInThisTx )
+        if ( cursor.next() || nodeIsAddedInThisTx )
         {
+            // this makes sure we read the node from tx state only once and we do not loop forever
+            nodeIsAddedInThisTx = false;
             this.nodeState = state.getNodeState( id );
             return true;
         }
@@ -72,5 +72,4 @@ public class TxSingleNodeCursor extends TxAbstractNodeCursor
             return false;
         }
     }
-
 }
