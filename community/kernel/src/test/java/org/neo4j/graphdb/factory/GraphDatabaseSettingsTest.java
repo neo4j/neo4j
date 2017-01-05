@@ -224,8 +224,8 @@ public class GraphDatabaseSettingsTest
     public void hasDefaultBookmarkAwaitTimeout()
     {
         Config config = Config.defaults();
-        long bookmarkAwaitTimeoutMs = config.get( GraphDatabaseSettings.bookmark_await_timeout );
-        assertEquals( TimeUnit.SECONDS.toMillis( 30 ), bookmarkAwaitTimeoutMs );
+        long bookmarkReadyTimeoutMs = config.get( GraphDatabaseSettings.bookmark_ready_timeout );
+        assertEquals( TimeUnit.SECONDS.toMillis( 30 ), bookmarkReadyTimeoutMs );
     }
 
     @Test
@@ -236,10 +236,10 @@ public class GraphDatabaseSettingsTest
         for ( String value : illegalValues )
         {
             Config config = Config.defaults();
-            config.augment( stringMap( GraphDatabaseSettings.bookmark_await_timeout.name(), value ) );
+            config.augment( stringMap( GraphDatabaseSettings.bookmark_ready_timeout.name(), value ) );
             try
             {
-                config.get( GraphDatabaseSettings.bookmark_await_timeout );
+                config.get( GraphDatabaseSettings.bookmark_ready_timeout );
                 fail( "Exception expected for value '" + value + "'" );
             }
             catch ( Exception e )

@@ -107,8 +107,8 @@ public class LifecycleManagedBoltFactory extends LifecycleAdapter implements Bol
 
     private TransactionStateMachine.SPI createTxSpi( Clock clock )
     {
-        long bookmarkAwaitTimeout = config.get( GraphDatabaseSettings.bookmark_await_timeout );
-        Duration txAwaitDuration = Duration.ofMillis( bookmarkAwaitTimeout );
+        long bookmarkReadyTimeout = config.get( GraphDatabaseSettings.bookmark_ready_timeout );
+        Duration txAwaitDuration = Duration.ofMillis( bookmarkReadyTimeout );
 
         return new TransactionStateMachineSPI( gds, txBridge, queryExecutionEngine, transactionIdStore,
                 availabilityGuard, queryService, txAwaitDuration, clock );

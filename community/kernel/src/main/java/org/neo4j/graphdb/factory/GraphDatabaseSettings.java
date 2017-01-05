@@ -498,8 +498,8 @@ public abstract class GraphDatabaseSettings
             setting( "dbms.connectors.default_advertised_address", STRING, "localhost" );
 
     @Description( "The maximum amount of time to wait for the database state represented by the bookmark." )
-    public static final Setting<Long> bookmark_await_timeout = setting(
-            "dbms.transaction.bookmark_await_timeout", DURATION, "30s",
+    public static final Setting<Long> bookmark_ready_timeout = setting(
+            "dbms.transaction.bookmark_ready_timeout", DURATION, "30s",
             min( TimeUnit.SECONDS.toMillis( 1 ) ) );
 
     @Group("dbms.connector")
