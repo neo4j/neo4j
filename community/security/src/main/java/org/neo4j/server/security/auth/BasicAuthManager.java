@@ -34,6 +34,8 @@ import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 
+import static org.neo4j.kernel.api.security.AuthToken.invalidToken;
+
 /**
  * Manages server authentication and authorization.
  * <p>
@@ -109,11 +111,7 @@ public class BasicAuthManager implements AuthManager, UserManager, UserManagerSu
     @Override
     public BasicSecurityContext login( Map<String,Object> authToken ) throws InvalidAuthTokenException
     {
-        String scheme = AuthToken.safeCast( AuthToken.SCHEME_KEY, authToken );
-        if ( !scheme.equals( AuthToken.BASIC_SCHEME ) )
-        {
-            throw new InvalidAuthTokenException( "Unsupported authentication scheme '" + scheme + "'." );
-        }
+        assertValidScheme( authToken );
 
         String username = AuthToken.safeCast( AuthToken.PRINCIPAL, authToken );
         String password = AuthToken.safeCast( AuthToken.CREDENTIALS, authToken );
@@ -227,5 +225,18 @@ public class BasicAuthManager implements AuthManager, UserManager, UserManagerSu
     public UserManager getUserManager()
     {
         return this;
+    }
+
+    private void assertValidScheme( Map<String,Object> token ) throws InvalidAuthTokenException
+    {
+        String scheme = AuthToken.safeCast( AuthToken.SCHEME_KEY, token );
+        if ( scheme.equals( "none" ) )
+        {
+            throw invalidToken( ", scheme 'none' is only allowed when auth is disabled." );
+        }
+        if ( !scheme.equals( AuthToken.BASIC_SCHEME ) )
+        {
+            throw invalidToken( ", scheme '" + scheme + "' is not supported." );
+        }
     }
 }

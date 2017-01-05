@@ -44,7 +44,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.graphdb.security.AuthProviderTimeoutException;
-import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
@@ -52,6 +51,7 @@ import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
 import org.neo4j.server.security.enterprise.log.SecurityLog;
 
 import static org.neo4j.helpers.Strings.escape;
+import static org.neo4j.kernel.api.security.AuthToken.invalidToken;
 
 class MultiRealmAuthManager implements EnterpriseAuthAndUserManager
 {
@@ -93,8 +93,8 @@ class MultiRealmAuthManager implements EnterpriseAuthAndUserManager
     {
         EnterpriseSecurityContext securityContext;
 
-        AuthToken.safeCast( AuthToken.SCHEME_KEY, authToken ); // Scheme must be set
         ShiroAuthToken token = new ShiroAuthToken( authToken );
+        assertValidScheme( token );
 
         try
         {
@@ -108,7 +108,12 @@ class MultiRealmAuthManager implements EnterpriseAuthAndUserManager
         catch ( UnsupportedTokenException e )
         {
             securityLog.error( "Unknown user failed to log in: %s", e.getMessage() );
-            throw new InvalidAuthTokenException( e.getMessage() );
+            Throwable cause = e.getCause();
+            if ( cause != null && cause instanceof InvalidAuthTokenException )
+            {
+                throw new InvalidAuthTokenException( cause.getMessage() + ": " + token );
+            }
+            throw invalidToken( ": " + token );
         }
         catch ( ExcessiveAttemptsException e )
         {
@@ -133,6 +138,19 @@ class MultiRealmAuthManager implements EnterpriseAuthAndUserManager
         }
 
         return securityContext;
+    }
+
+    private void assertValidScheme( ShiroAuthToken token ) throws InvalidAuthTokenException
+    {
+        String scheme = token.getSchemeSilently();
+        if ( scheme == null )
+        {
+            throw invalidToken( "missing key `scheme`: " + token );
+        }
+        else if ( scheme.equals( "none" ) )
+        {
+            throw invalidToken( "scheme='none' only allowed when auth is disabled: " + token );
+        }
     }
 
     @Override
