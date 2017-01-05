@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
 
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.Hit;
@@ -57,7 +58,7 @@ import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 public class GBPTreeRecoveryTest
 {
     private static final int PAGE_SIZE = 256;
-    private static final Action CHECKPOINT = index -> index.checkpoint( unlimited() );
+    private static final Action CHECKPOINT = new CheckpointAction();
 
     private final RandomRule random = new RandomRule();
     private final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
@@ -121,7 +122,20 @@ public class GBPTreeRecoveryTest
     }
 
     @Test
-    public void shouldRecoverFromAnything() throws Exception
+    public void shouldRecoverFromAnythingReplayExactFromCheckpoint() throws Exception
+    {
+        doShouldRecoverFromAnything( true );
+
+    }
+
+    @Test
+    public void shouldRecoverFromAnythingReplayFromBeforeLastCheckpoint() throws Exception
+    {
+        doShouldRecoverFromAnything( false );
+
+    }
+
+    private void doShouldRecoverFromAnything( boolean replayRecoveryExactlyFromCheckpoint ) throws Exception
     {
         // GIVEN
         // a tree which has had random updates and checkpoints in it, load generated with specific seed
@@ -157,7 +171,15 @@ public class GBPTreeRecoveryTest
         }
 
         // WHEN doing recovery
-        List<Action> recoveryActions = load.subList( lastCheckPointIndex + 1, load.size() );
+        List<Action> recoveryActions;
+        if ( replayRecoveryExactlyFromCheckpoint )
+        {
+            recoveryActions = recoveryActions( load, lastCheckPointIndex + 1 );
+        }
+        else
+        {
+            recoveryActions = recoveryActions( load, random.nextInt( lastCheckPointIndex ) );
+        }
 
         // first crashing during recovery
         int numberOfCrashesDuringRecovery = random.intBetween( 0, 3 );
@@ -199,6 +221,13 @@ public class GBPTreeRecoveryTest
                 assertFalse( cursor.next() );
             }
         }
+    }
+
+    private List<Action> recoveryActions( List<Action> load, int fromIndex )
+    {
+        return load.subList( fromIndex, load.size() ).stream()
+                .filter( Action::isRecoverable )
+                .collect( Collectors.toList() );
     }
 
     private void recover( List<Action> load, GBPTree<MutableLong,MutableLong> index ) throws IOException
@@ -286,35 +315,13 @@ public class GBPTreeRecoveryTest
         {
             // put
             long[] data = modificationData( 30, 200 );
-            return index ->
-            {
-                try ( IndexWriter<MutableLong,MutableLong> writer = index.writer() )
-                {
-                    for ( int i = 0; i < data.length; )
-                    {
-                        key.setValue( data[i++] );
-                        value.setValue( data[i++] );
-                        writer.put( key, value );
-                    }
-                }
-            };
+            return new InsertAction( data );
         }
         else if ( randomized <= 0.95 || !allowCheckPoint )
         {
             // remove
             long[] data = modificationData( 5, 20 );
-            return index ->
-            {
-                try ( IndexWriter<MutableLong,MutableLong> writer = index.writer() )
-                {
-                    for ( int i = 0; i < data.length; )
-                    {
-                        key.setValue( data[i++] );
-                        i++; // value
-                        writer.remove( key );
-                    }
-                }
-            };
+            return new RemoveAction( data );
         }
         else
         {
@@ -349,6 +356,83 @@ public class GBPTreeRecoveryTest
     interface Action
     {
         void execute( Index<MutableLong,MutableLong> index ) throws IOException;
+
+        boolean isRecoverable();
+    }
+
+    abstract class RecoverableAction implements Action
+    {
+        @Override
+        public boolean isRecoverable()
+        {
+            return true;
+        }
+    }
+
+    abstract static class NonRecoverableAction implements Action
+    {
+        @Override
+        public boolean isRecoverable()
+        {
+            return false;
+        }
+    }
+
+    class InsertAction extends RecoverableAction
+    {
+        private final long[] data;
+
+        InsertAction( long[] data )
+        {
+            this.data = data;
+        }
+
+        @Override
+        public void execute( Index<MutableLong,MutableLong> index ) throws IOException
+        {
+            try ( IndexWriter<MutableLong,MutableLong> writer = index.writer() )
+            {
+                for ( int i = 0; i < data.length; )
+                {
+                    key.setValue( data[i++] );
+                    value.setValue( data[i++] );
+                    writer.put( key, value );
+                }
+            }
+        }
+    }
+
+    class RemoveAction extends RecoverableAction
+    {
+        private final long[] data;
+
+        RemoveAction( long[] data )
+        {
+            this.data = data;
+        }
+
+        @Override
+        public void execute( Index<MutableLong,MutableLong> index ) throws IOException
+        {
+            try ( IndexWriter<MutableLong,MutableLong> writer = index.writer() )
+            {
+                for ( int i = 0; i < data.length; )
+                {
+                    key.setValue( data[i++] );
+                    i++; // value
+                    writer.remove( key );
+                }
+            }
+        }
+    }
+
+    static class CheckpointAction extends NonRecoverableAction
+    {
+        @Override
+        public void execute( Index<MutableLong,MutableLong> index ) throws IOException
+        {
+            index.checkpoint( unlimited() );
+        }
     }
 
     private static class CapturingIndex implements Index<MutableLong,MutableLong>, IndexWriter<MutableLong,MutableLong>
