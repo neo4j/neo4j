@@ -20,18 +20,21 @@
 package org.neo4j.causalclustering.helpers;
 
 import org.neo4j.causalclustering.discovery.Cluster;
+import org.neo4j.causalclustering.discovery.CoreClusterMember;
 
 public class DataCreator
 {
-    public static void createNodes( Cluster cluster, int numberOfNodes ) throws Exception
+    public static CoreClusterMember createNodes( Cluster cluster, int numberOfNodes ) throws Exception
     {
+        CoreClusterMember last = null;
         for ( int i = 0; i < numberOfNodes; i++ )
         {
-            cluster.coreTx( ( db, tx ) ->
+            last = cluster.coreTx( ( db, tx ) ->
             {
                 db.createNode();
                 tx.success();
             } );
         }
+        return last;
     }
 }
