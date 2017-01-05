@@ -29,11 +29,16 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.EnterpriseGraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.schema.ConstraintDefinition;
+import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -710,8 +715,7 @@ public class StoreMigrationIT
     {
         GraphDatabaseService database = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir )
                 .setConfig( GraphDatabaseSettings.allow_store_upgrade, Settings.TRUE )
-                .setConfig( GraphDatabaseSettings.record_format, recordFormat.storeVersion() )
-                .newGraphDatabase();
+                .setConfig( GraphDatabaseSettings.record_format, recordFormat.storeVersion() ).newGraphDatabase();
         database.shutdown();
     }
 
@@ -727,39 +731,74 @@ public class StoreMigrationIT
         File db = new File( from.toString() + to.toString() );
         FileSystemAbstraction fs = fileSystemRule.get();
         fs.deleteRecursively( db );
-
         GraphDatabaseService database = getGraphDatabaseService( db, from.storeVersion() );
+
+        database.execute( "CREATE INDEX ON :Person(name)" );
+        database.execute( "CREATE INDEX ON :Person(born)" );
+        database.execute( "CREATE CONSTRAINT ON (person:Person) ASSERT exists(person.name)" );
         database.execute( CREATE_QUERY );
         int beforeNodes;
+        int beforeLabels;
+        int beforeKeys;
         int beforeRels;
+        int beforeRelTypes;
+        int beforeIndexes;
+        int beforeConstraints;
+        String[] beforeIndexNames;
         try ( Transaction tx = database.beginTx() )
         {
             beforeNodes = database.getAllNodes().stream().mapToInt( ( n ) -> 1 ).sum();
+            beforeLabels = database.getAllLabels().stream().mapToInt( ( n ) -> 1 ).sum();
+            beforeKeys = database.getAllPropertyKeys().stream().mapToInt( ( n ) -> 1 ).sum();
             beforeRels = database.getAllRelationships().stream().mapToInt( ( n ) -> 1 ).sum();
+            beforeRelTypes = database.getAllRelationshipTypes().stream().mapToInt( ( n ) -> 1 ).sum();
+            Stream<IndexDefinition> indexDefinitionStream = StreamSupport
+                    .stream( database.schema().getIndexes().spliterator(), false );
+            beforeIndexes = indexDefinitionStream.mapToInt( ( n ) -> 1 ).sum();
+            Stream<ConstraintDefinition> constraintStream = StreamSupport
+                    .stream( database.schema().getConstraints().spliterator(), false );
+            beforeConstraints = constraintStream.mapToInt( ( n ) -> 1 ).sum();
         }
         database.shutdown();
 
         database = getGraphDatabaseService( db, to.storeVersion() );
         int afterNodes;
+        int afterLabels;
+        int afterKeys;
         int afterRels;
+        int afterRelTypes;
+        int afterIndexes;
+        int afterConstraints;
         try ( Transaction tx = database.beginTx() )
         {
             afterNodes = database.getAllNodes().stream().mapToInt( ( n ) -> 1 ).sum();
+            afterLabels = database.getAllLabels().stream().mapToInt( ( n ) -> 1 ).sum();
+            afterKeys = database.getAllPropertyKeys().stream().mapToInt( ( n ) -> 1 ).sum();
             afterRels = database.getAllRelationships().stream().mapToInt( ( n ) -> 1 ).sum();
+            afterRelTypes = database.getAllRelationshipTypes().stream().mapToInt( ( n ) -> 1 ).sum();
+            Stream<IndexDefinition> indexDefinitionStream = StreamSupport
+                    .stream( database.schema().getIndexes().spliterator(), false );
+            afterIndexes = indexDefinitionStream.mapToInt( ( n ) -> 1 ).sum();
+            Stream<ConstraintDefinition> constraintStream = StreamSupport
+                    .stream( database.schema().getConstraints().spliterator(), false );
+            afterConstraints = constraintStream.mapToInt( ( n ) -> 1 ).sum();
         }
         database.shutdown();
 
-        assertEquals( beforeNodes, afterNodes );
-        assertEquals( beforeRels, afterRels );
+        assertEquals( beforeNodes, afterNodes ); //171
+        assertEquals( beforeLabels, afterLabels ); //2
+        assertEquals( beforeKeys, afterKeys ); //8
+        assertEquals( beforeRels, afterRels ); //253
+        assertEquals( beforeRelTypes, afterRelTypes ); //6
+        assertEquals( beforeIndexes, afterIndexes ); //2
+        assertEquals( beforeConstraints, afterConstraints ); //2
     }
 
     //This method is overridden by a blockdevice test.
-
     protected GraphDatabaseService getGraphDatabaseService( File db, String storeVersion )
     {
-        return new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( db )
+        return new EnterpriseGraphDatabaseFactory().newEmbeddedDatabaseBuilder( db )
                 .setConfig( GraphDatabaseSettings.allow_store_upgrade, Settings.TRUE )
-                .setConfig( GraphDatabaseSettings.record_format, storeVersion )
-                .newGraphDatabase();
+                .setConfig( GraphDatabaseSettings.record_format, storeVersion ).newGraphDatabase();
     }
 }

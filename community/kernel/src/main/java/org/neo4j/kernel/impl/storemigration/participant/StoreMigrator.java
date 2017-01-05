@@ -87,6 +87,7 @@ import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMo
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.util.CustomIOConfigValidator;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds;
@@ -138,6 +139,8 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     // complete upgrades in a reasonable time period.
 
     private static final char TX_LOG_COUNTERS_SEPARATOR = 'A';
+    public static final String CUSTOM_IO_EXCEPTION_MESSAGE =
+            "Migrating this version is not supported for custom IO configurations.";
 
     private final Config config;
     private final LogService logService;
@@ -363,6 +366,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
             SchemaIndexProvider schemaIndexProvider, RecordFormats oldFormat )
             throws IOException
     {
+        CustomIOConfigValidator.assertCustomIOConfigNotUsed( config, CUSTOM_IO_EXCEPTION_MESSAGE );
         StoreFile.fileOperation( COPY, fileSystem, storeDir, migrationDir, Iterables.iterable(
                 StoreFile.PROPERTY_STORE,
                 StoreFile.PROPERTY_KEY_TOKEN_NAMES_STORE,
@@ -492,7 +496,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
             }
             catch ( IOException e )
             {
-                //TODO This might not be the entire thruth
+                //TODO This might not be the entire truth
                 // This means that we had no files only present in the page cache, this is fine.
             }
         }
@@ -536,9 +540,9 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                       PageCursor fromCursor = fromFile.io( 0L, PagedFile.PF_SHARED_READ_LOCK );
                       PageCursor toCursor = toFile.io( 0L, PagedFile.PF_SHARED_WRITE_LOCK ); )
                 {
-                    toCursor.next();
                     while ( fromCursor.next() )
                     {
+                        toCursor.next();
                         do
                         {
                             fromCursor.copyTo( 0, toCursor, 0, pageSize );
@@ -746,6 +750,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         if ( StandardV2_1.STORE_VERSION.equals( versionToMigrateFrom ) ||
              StandardV2_2.STORE_VERSION.equals( versionToMigrateFrom ) )
         {
+            CustomIOConfigValidator.assertCustomIOConfigNotUsed( config, CUSTOM_IO_EXCEPTION_MESSAGE );
             // create counters from scratch
             Iterable<StoreFile> countsStoreFiles =
                     Iterables.iterable( StoreFile.COUNTS_STORE_LEFT, StoreFile.COUNTS_STORE_RIGHT );

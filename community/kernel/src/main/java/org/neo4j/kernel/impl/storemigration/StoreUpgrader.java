@@ -24,11 +24,15 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.regex.Pattern;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.FileHandle;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor.Section;
@@ -66,22 +70,23 @@ public class StoreUpgrader
     public static final String MIGRATION_DIRECTORY = "upgrade";
     public static final String MIGRATION_LEFT_OVERS_DIRECTORY = "upgrade_backup";
     private static final String MIGRATION_STATUS_FILE = "_status";
-    public static final String CUSTOM_IO_EXCEPTION_MESSAGE = "Store upgrade not allowed with custom IO integrations";
 
     private final UpgradableDatabase upgradableDatabase;
     private final MigrationProgressMonitor progressMonitor;
     private final List<StoreMigrationParticipant> participants = new ArrayList<>();
     private final Config config;
     private final FileSystemAbstraction fileSystem;
+    private final PageCache pageCache;
     private final Log log;
 
     public StoreUpgrader( UpgradableDatabase upgradableDatabase, MigrationProgressMonitor progressMonitor, Config
-            config, FileSystemAbstraction fileSystem, LogProvider logProvider )
+            config, FileSystemAbstraction fileSystem, PageCache pageCache, LogProvider logProvider )
     {
         this.upgradableDatabase = upgradableDatabase;
         this.progressMonitor = progressMonitor;
         this.fileSystem = fileSystem;
         this.config = config;
+        this.pageCache = pageCache;
         this.log = logProvider.getLog( getClass() );
     }
 
@@ -114,7 +119,6 @@ public class StoreUpgrader
         {
             throw new UpgradeNotAllowedByConfigurationException();
         }
-
 
         // One or more participants would like to do migration
         progressMonitor.started();
@@ -254,6 +258,18 @@ public class StoreUpgrader
 
     private void cleanMigrationDirectory( File migrationDirectory )
     {
+        try
+        {
+            Iterable<FileHandle> fileHandles = pageCache.streamFilesRecursive( migrationDirectory )::iterator;
+            for ( FileHandle fh : fileHandles )
+            {
+                fh.delete();
+            }
+        }
+        catch ( IOException e )
+        {
+            // This means that we had no files to clean, this is fine.
+        }
         if ( migrationDirectory.exists() )
         {
             try

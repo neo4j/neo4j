@@ -32,6 +32,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_2;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
+import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -68,7 +69,7 @@ public class PlatformConstraintStoreUpgradeTest
         }
         catch ( RuntimeException ex )
         {
-            assertEquals( StoreUpgrader.CUSTOM_IO_EXCEPTION_MESSAGE, ex.getCause().getCause().getMessage() );
+            assertEquals( StoreMigrator.CUSTOM_IO_EXCEPTION_MESSAGE, ex.getCause().getCause().getMessage() );
         }
     }
 
