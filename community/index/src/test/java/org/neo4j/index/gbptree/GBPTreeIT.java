@@ -33,7 +33,10 @@ import java.util.Map;
 import java.util.Random;
 import java.util.TreeMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -69,6 +72,7 @@ public class GBPTreeIT
 
     private final Layout<MutableLong,MutableLong> layout = new SimpleLongLayout();
     private GBPTree<MutableLong,MutableLong> index;
+    private ExecutorService threadPool = Executors.newFixedThreadPool( Runtime.getRuntime().availableProcessors() );
 
     private GBPTree<MutableLong,MutableLong> createIndex( int pageSize )
             throws IOException
@@ -94,6 +98,7 @@ public class GBPTreeIT
     @After
     public void consistencyCheck() throws IOException
     {
+        threadPool.shutdownNow();
         index.consistencyCheck();
     }
 
@@ -255,16 +260,13 @@ public class GBPTreeIT
         };
 
         // WHEN starting the readers
-        Thread[] readerThreads = new Thread[readers];
         for ( int i = 0; i < readers; i++ )
         {
-            readerThreads[i] = new Thread( reader );
-            readerThreads[i].start();
+            threadPool.submit( reader );
         }
 
         // and starting the checkpointer
-        Thread checkpointer = checkpointerThread( minCheckpointInterval, maxCheckpointInterval, endSignal );
-        checkpointer.start();
+        threadPool.submit( checkpointerThread( minCheckpointInterval, maxCheckpointInterval, endSignal ) );
 
         // and then starting the writer
         try
@@ -295,15 +297,12 @@ public class GBPTreeIT
             // number of successful reads. A successful read means that all results were ordered,
             // no holes and we saw all values that was inserted at the point of making the seek call.
             endSignal.set( true );
-            for ( Thread readerThread : readerThreads )
-            {
-                readerThread.join( SECONDS.toMillis( 10 ) );
-            }
+            threadPool.shutdown();
+            threadPool.awaitTermination( 10, TimeUnit.SECONDS );
             if ( readerError.get() != null )
             {
                 throw readerError.get();
             }
-            checkpointer.join();
         }
     }
 
@@ -342,17 +341,13 @@ public class GBPTreeIT
                 endSignal, failHalt, numberOfReads, readerError );
 
         // WHEN starting the readers
-        Thread[] readerThreads = new Thread[readers];
         for ( int i = 0; i < readers; i++ )
         {
-            readerThreads[i] = new Thread( reader );
-            readerThreads[i].start();
+            threadPool.submit( reader );
         }
 
         // and starting the checkpointer
-        Thread checkpointer = checkpointerThread( minCheckpointInterval, maxCheckpointInterval, endSignal );
-        checkpointer.start();
-
+        threadPool.submit( checkpointerThread( minCheckpointInterval, maxCheckpointInterval, endSignal ) );
         // and then starting the writer
         try
         {
@@ -386,11 +381,8 @@ public class GBPTreeIT
             // number of successful reads. A successful read means that all results were ordered,
             // no holes and we saw all values that was inserted at the point of making the seek call.
             endSignal.set( true );
-            for ( Thread readerThread : readerThreads )
-            {
-                readerThread.join( SECONDS.toMillis( 10 ) );
-            }
-            checkpointer.join();
+            threadPool.shutdown();
+            threadPool.awaitTermination( 10, TimeUnit.SECONDS );
             if ( readerError.get() != null )
             {
                 throw readerError.get();
@@ -433,16 +425,13 @@ public class GBPTreeIT
                 endSignal, failHalt, numberOfReads, readerError );
 
         // WHEN starting the readers
-        Thread[] readerThreads = new Thread[readers];
         for ( int i = 0; i < readers; i++ )
         {
-            readerThreads[i] = new Thread( reader );
-            readerThreads[i].start();
+            threadPool.submit( reader );
         }
 
         // and starting the checkpointer
-        Thread checkpointer = checkpointerThread( minCheckpointInterval, maxCheckpointInterval, endSignal );
-        checkpointer.start();
+        threadPool.submit( checkpointerThread( minCheckpointInterval, maxCheckpointInterval, endSignal ) );
 
         // and then starting the writer
         try
@@ -477,11 +466,8 @@ public class GBPTreeIT
             // number of successful reads. A successful read means that all results were ordered,
             // no holes and we saw all values that was inserted at the point of making the seek call.
             endSignal.set( true );
-            for ( Thread readerThread : readerThreads )
-            {
-                readerThread.join( SECONDS.toMillis( 10 ) );
-            }
-            checkpointer.join();
+            threadPool.shutdown();
+            threadPool.awaitTermination( 10, TimeUnit.SECONDS );
             if ( readerError.get() != null )
             {
                 throw readerError.get();
@@ -526,16 +512,13 @@ public class GBPTreeIT
                 endSignal, failHalt, numberOfReads, readerError );
 
         // WHEN starting the readers
-        Thread[] readerThreads = new Thread[readers];
         for ( int i = 0; i < readers; i++ )
         {
-            readerThreads[i] = new Thread( reader );
-            readerThreads[i].start();
+            threadPool.submit( reader );
         }
 
         // and starting the checkpointer
-        Thread checkpointer = checkpointerThread( minCheckpointInterval, maxCheckpointInterval, endSignal );
-        checkpointer.start();
+        threadPool.submit( checkpointerThread( minCheckpointInterval, maxCheckpointInterval, endSignal ) );
 
         // and then starting the writer
         try
@@ -571,11 +554,8 @@ public class GBPTreeIT
             // number of successful reads. A successful read means that all results were ordered,
             // no holes and we saw all values that was inserted at the point of making the seek call.
             endSignal.set( true );
-            for ( Thread readerThread : readerThreads )
-            {
-                readerThread.join( SECONDS.toMillis( 10 ) );
-            }
-            checkpointer.join();
+            threadPool.shutdown();
+            threadPool.awaitTermination( 10, TimeUnit.SECONDS );
             if ( readerError.get() != null )
             {
                 throw readerError.get();
@@ -620,16 +600,13 @@ public class GBPTreeIT
                 endSignal, failHalt, numberOfReads, readerError );
 
         // WHEN starting the readers
-        Thread[] readerThreads = new Thread[readers];
         for ( int i = 0; i < readers; i++ )
         {
-            readerThreads[i] = new Thread( reader );
-            readerThreads[i].start();
+            threadPool.submit( reader );
         }
 
         // and starting the checkpointer
-        Thread checkpointer = checkpointerThread( minCheckpointInterval, maxCheckpointInterval, endSignal );
-        checkpointer.start();
+        threadPool.submit( checkpointerThread( minCheckpointInterval, maxCheckpointInterval, endSignal ) );
 
         // and then starting the writer
         try
@@ -665,11 +642,8 @@ public class GBPTreeIT
             // number of successful reads. A successful read means that all results were ordered,
             // no holes and we saw all values that was inserted at the point of making the seek call.
             endSignal.set( true );
-            for ( Thread readerThread : readerThreads )
-            {
-                readerThread.join( SECONDS.toMillis( 10 ) );
-            }
-            checkpointer.join();
+            threadPool.shutdown();
+            threadPool.awaitTermination( 10, TimeUnit.SECONDS );
             if ( readerError.get() != null )
             {
                 throw readerError.get();
@@ -696,9 +670,9 @@ public class GBPTreeIT
         }
     }
 
-    private Thread checkpointerThread( int minCheckpointInterval, int maxCheckpointInterval, AtomicBoolean endSignal )
+    private Runnable checkpointerThread( int minCheckpointInterval, int maxCheckpointInterval, AtomicBoolean endSignal )
     {
-        return new Thread( () ->
+        return () ->
         {
             while ( !endSignal.get() )
             {
@@ -713,7 +687,7 @@ public class GBPTreeIT
                     throw new RuntimeException( e );
                 }
             }
-        });
+        };
     }
 
     private int maxRange( int nbrOfGroups, int rangeWidth, int iteration )
@@ -832,6 +806,7 @@ public class GBPTreeIT
             catch ( Throwable e )
             {
                 readerError.set( e );
+                failHalt.set( true );
             }
             finally
             {
