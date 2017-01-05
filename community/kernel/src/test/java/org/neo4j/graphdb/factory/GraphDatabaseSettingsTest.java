@@ -23,9 +23,9 @@ import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import org.neo4j.graphdb.config.InvalidSettingException;
@@ -36,15 +36,16 @@ import org.neo4j.io.ByteUnit;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.HttpConnector;
-import org.neo4j.kernel.configuration.HttpConnector.Encryption;
 
 import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.configuration.HttpConnector.Encryption.TLS;
 
@@ -62,8 +63,10 @@ public class GraphDatabaseSettingsTest
     {
         Setting<Long> setting = GraphDatabaseSettings.pagecache_memory;
         String name = setting.name();
-        assertThat( Config.embeddedDefaults( stringMap( name, "245760" ) ).get( setting ), is( ByteUnit.kibiBytes( 240 ) ) );
-        assertThat( Config.embeddedDefaults( stringMap( name, "2244g" ) ).get( setting ), is( ByteUnit.gibiBytes( 2244 ) ) );
+        assertThat( Config.embeddedDefaults( stringMap( name, "245760" ) ).get( setting ),
+                is( ByteUnit.kibiBytes( 240 ) ) );
+        assertThat( Config.embeddedDefaults( stringMap( name, "2244g" ) ).get( setting ),
+                is( ByteUnit.gibiBytes( 2244 ) ) );
     }
 
     @Test( expected = InvalidSettingException.class )
@@ -73,7 +76,7 @@ public class GraphDatabaseSettingsTest
         Setting<Long> setting = GraphDatabaseSettings.pagecache_memory;
         String name = setting.name();
         // We configure the page cache to have one byte less than two pages worth of memory. This must throw:
-        Config.embeddedDefaults( stringMap( name, "" + (pageSize * 2 - 1) ) ).get( setting );
+        Config.embeddedDefaults( stringMap( name, "" + ( pageSize * 2 - 1 ) ) ).get( setting );
     }
 
     @Test
@@ -219,12 +222,15 @@ public class GraphDatabaseSettingsTest
         // then
         assertEquals( 2, addresses.size() );
 
-        if (addresses.get(0).getPort() == 8000) {
-            assertEquals( new ListenSocketAddress( "localhost", 8000 ), addresses.get(0) );
-            assertEquals( new ListenSocketAddress( "localhost", 9000 ), addresses.get(1) );
-        } else {
-            assertEquals( new ListenSocketAddress( "localhost", 8000 ), addresses.get(1) );
-            assertEquals( new ListenSocketAddress( "localhost", 9000 ), addresses.get(0) );
+        if ( addresses.get( 0 ).getPort() == 8000 )
+        {
+            assertEquals( new ListenSocketAddress( "localhost", 8000 ), addresses.get( 0 ) );
+            assertEquals( new ListenSocketAddress( "localhost", 9000 ), addresses.get( 1 ) );
+        }
+        else
+        {
+            assertEquals( new ListenSocketAddress( "localhost", 8000 ), addresses.get( 1 ) );
+            assertEquals( new ListenSocketAddress( "localhost", 9000 ), addresses.get( 0 ) );
         }
     }
 
@@ -260,14 +266,17 @@ public class GraphDatabaseSettingsTest
 
         // then
         assertEquals( 2, connectors.size() );
-        if (connectors.get(0).encryptionLevel().equals( TLS )) {
+        if ( connectors.get( 0 ).encryptionLevel().equals( TLS ) )
+        {
             assertEquals( new ListenSocketAddress( "localhost", 7474 ),
-                    config.get( connectors.get( 1).listen_address ) );
+                    config.get( connectors.get( 1 ).listen_address ) );
             assertEquals( new ListenSocketAddress( "localhost", 7473 ),
                     config.get( connectors.get( 0 ).listen_address ) );
-        } else {
+        }
+        else
+        {
             assertEquals( new ListenSocketAddress( "localhost", 7474 ),
-                    config.get( connectors.get( 0).listen_address ) );
+                    config.get( connectors.get( 0 ).listen_address ) );
             assertEquals( new ListenSocketAddress( "localhost", 7473 ),
                     config.get( connectors.get( 1 ).listen_address ) );
         }
@@ -279,7 +288,7 @@ public class GraphDatabaseSettingsTest
         // given
         Config disableHttpConfig = Config.embeddedDefaults(
                 stringMap( "dbms.connector.http.enabled", "false",
-                        "dbms.connector.https.enabled", "false") );
+                        "dbms.connector.https.enabled", "false" ) );
 
         // then
         assertTrue( disableHttpConfig.enabledHttpConnectors().isEmpty() );
@@ -304,6 +313,14 @@ public class GraphDatabaseSettingsTest
     }
 
     @Test
+    public void hasDefaultBookmarkAwaitTimeout()
+    {
+        Config config = Config.defaults();
+        long bookmarkReadyTimeoutMs = config.get( GraphDatabaseSettings.bookmark_ready_timeout );
+        assertEquals( TimeUnit.SECONDS.toMillis( 30 ), bookmarkReadyTimeoutMs );
+    }
+
+    @Test
     public void shouldBeAbleToOverrideHttpsListenAddressWithJustOneParameter() throws Exception
     {
         // given
@@ -317,6 +334,27 @@ public class GraphDatabaseSettingsTest
 
         assertEquals( new ListenSocketAddress( "localhost", 8000 ),
                 config.get( httpConnector.listen_address ) );
+    }
+
+    @Test
+    public void throwsForIllegalBookmarkAwaitTimeout()
+    {
+        String[] illegalValues = { "0ms", "0s", "10ms", "99ms", "999ms", "42ms" };
+
+        for ( String value : illegalValues )
+        {
+            try
+            {
+                Config config = Config.embeddedDefaults( stringMap(
+                        GraphDatabaseSettings.bookmark_ready_timeout.name(), value ) );
+                config.get( GraphDatabaseSettings.bookmark_ready_timeout );
+                fail( "Exception expected for value '" + value + "'" );
+            }
+            catch ( Exception e )
+            {
+                assertThat( e, instanceOf( InvalidSettingException.class ) );
+            }
+        }
     }
 
     @Test

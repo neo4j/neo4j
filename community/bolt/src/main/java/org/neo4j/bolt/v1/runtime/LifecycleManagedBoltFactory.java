@@ -20,12 +20,15 @@
 package org.neo4j.bolt.v1.runtime;
 
 import java.time.Clock;
+import java.time.Duration;
 
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
@@ -44,6 +47,7 @@ public class LifecycleManagedBoltFactory extends LifecycleAdapter implements Bol
     private final Authentication authentication;
     private final BoltConnectionTracker connectionTracker;
     private final ThreadToStatementContextBridge txBridge;
+    private final Config config;
 
     private QueryExecutionEngine queryExecutionEngine;
     private GraphDatabaseQueryService queryService;
@@ -52,7 +56,7 @@ public class LifecycleManagedBoltFactory extends LifecycleAdapter implements Bol
 
     public LifecycleManagedBoltFactory( GraphDatabaseAPI gds, UsageData usageData, LogService logging,
             ThreadToStatementContextBridge txBridge, Authentication authentication,
-            BoltConnectionTracker connectionTracker )
+            BoltConnectionTracker connectionTracker, Config config )
     {
         this.gds = gds;
         this.usageData = usageData;
@@ -60,6 +64,7 @@ public class LifecycleManagedBoltFactory extends LifecycleAdapter implements Bol
         this.txBridge = txBridge;
         this.authentication = authentication;
         this.connectionTracker = connectionTracker;
+        this.config = config;
     }
 
     @Override
@@ -94,11 +99,18 @@ public class LifecycleManagedBoltFactory extends LifecycleAdapter implements Bol
     @Override
     public BoltStateMachine newMachine( String connectionDescriptor, Runnable onClose, Clock clock )
     {
-        TransactionStateMachine.SPI transactionSPI =
-                new TransactionStateMachineSPI( gds, txBridge, queryExecutionEngine, transactionIdStore,
-                        availabilityGuard, queryService, clock );
+        TransactionStateMachine.SPI transactionSPI = createTxSpi( clock );
         BoltStateMachine.SPI boltSPI = new BoltStateMachineSPI( connectionDescriptor, usageData,
                 logging, authentication, connectionTracker, transactionSPI );
         return new BoltStateMachine( boltSPI, onClose, clock );
+    }
+
+    private TransactionStateMachine.SPI createTxSpi( Clock clock )
+    {
+        long bookmarkReadyTimeout = config.get( GraphDatabaseSettings.bookmark_ready_timeout );
+        Duration txAwaitDuration = Duration.ofMillis( bookmarkReadyTimeout );
+
+        return new TransactionStateMachineSPI( gds, txBridge, queryExecutionEngine, transactionIdStore,
+                availabilityGuard, queryService, txAwaitDuration, clock );
     }
 }

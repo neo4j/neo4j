@@ -21,6 +21,7 @@ package org.neo4j.graphdb.factory;
 
 import java.io.File;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.configuration.Description;
 import org.neo4j.configuration.LoadableConfig;
@@ -510,6 +511,11 @@ public class GraphDatabaseSettings implements LoadableConfig
     // Needed to validate config, accessed via reflection
     @SuppressWarnings( "unused" )
     public static final BoltConnectorValidator boltValidator = new BoltConnectorValidator();
+
+    @Description( "The maximum amount of time to wait for the database state represented by the bookmark." )
+    public static final Setting<Long> bookmark_ready_timeout = setting(
+            "dbms.transaction.bookmark_ready_timeout", DURATION, "30s",
+            min( TimeUnit.SECONDS.toMillis( 1 ) ) );
 
     // Needed to validate config, accessed via reflection
     @SuppressWarnings( "unused" )

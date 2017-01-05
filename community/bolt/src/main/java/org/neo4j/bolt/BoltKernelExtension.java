@@ -140,23 +140,23 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
     @Override
     public Lifecycle newInstance( KernelContext context, Dependencies dependencies ) throws Throwable
     {
-        final Config config = dependencies.config();
-        final GraphDatabaseService gdb = dependencies.db();
-        final GraphDatabaseAPI api = (GraphDatabaseAPI) gdb;
-        final LogService logService = dependencies.logService();
+        Config config = dependencies.config();
+        GraphDatabaseService gdb = dependencies.db();
+        GraphDatabaseAPI api = (GraphDatabaseAPI) gdb;
+        LogService logService = dependencies.logService();
         Clock clock = dependencies.clock();
-        final Log log = logService.getInternalLog( WorkerFactory.class );
+        Log log = logService.getInternalLog( WorkerFactory.class );
 
-        final LifeSupport life = new LifeSupport();
+        LifeSupport life = new LifeSupport();
 
-        final JobScheduler scheduler = dependencies.scheduler();
+        JobScheduler scheduler = dependencies.scheduler();
 
         InternalLoggerFactory.setDefaultFactory( new Netty4LoggerFactory( logService.getInternalLogProvider() ) );
 
         Authentication authentication = authentication( dependencies.authManager() );
 
         BoltFactory boltFactory = life.add( new LifecycleManagedBoltFactory( api, dependencies.usageData(),
-                logService, dependencies.txBridge(), authentication, dependencies.sessionTracker() ) );
+                logService, dependencies.txBridge(), authentication, dependencies.sessionTracker(), config ) );
         WorkerFactory workerFactory = createWorkerFactory( boltFactory, scheduler, dependencies, logService, clock );
 
         List<ProtocolInitializer> connectors =config.enabledBoltConnectors().stream()

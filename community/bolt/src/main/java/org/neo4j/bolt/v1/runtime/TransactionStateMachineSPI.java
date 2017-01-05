@@ -58,6 +58,7 @@ class TransactionStateMachineSPI implements TransactionStateMachine.SPI
     private static final PropertyContainerLocker locker = new PropertyContainerLocker();
     private final TransactionalContextFactory contextFactory;
     private final GraphDatabaseQueryService queryService;
+    private final Duration txAwaitDuration;
     private final Clock clock;
 
     TransactionStateMachineSPI( GraphDatabaseAPI db,
@@ -66,21 +67,23 @@ class TransactionStateMachineSPI implements TransactionStateMachine.SPI
                                 TransactionIdStore transactionIdStoreSupplier,
                                 AvailabilityGuard availabilityGuard,
                                 GraphDatabaseQueryService queryService,
+                                Duration txAwaitDuration,
                                 Clock clock )
     {
         this.db = db;
         this.txBridge = txBridge;
         this.queryExecutionEngine = queryExecutionEngine;
-        this.transactionIdTracker = new TransactionIdTracker( transactionIdStoreSupplier, availabilityGuard );
+        this.transactionIdTracker = new TransactionIdTracker( transactionIdStoreSupplier, availabilityGuard, clock );
         this.contextFactory = Neo4jTransactionalContextFactory.create( queryService, locker );
         this.queryService = queryService;
+        this.txAwaitDuration = txAwaitDuration;
         this.clock = clock;
     }
 
     @Override
-    public void awaitUpToDate( long oldestAcceptableTxId, Duration timeout ) throws TransactionFailureException
+    public void awaitUpToDate( long oldestAcceptableTxId ) throws TransactionFailureException
     {
-        transactionIdTracker.awaitUpToDate( oldestAcceptableTxId, timeout );
+        transactionIdTracker.awaitUpToDate( oldestAcceptableTxId, txAwaitDuration );
     }
 
     @Override
