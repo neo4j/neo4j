@@ -34,7 +34,7 @@ import org.neo4j.kernel.api.impl.schema.WritableDatabaseSchemaIndex;
  * Schema Lucene index writer implementation that supports writing into multiple partitions and creates partitions
  * on-demand if needed.
  * <p>
- * Writer threats partition as writable if partition has number of documents that is less then configured
+ * Writer threats partition as writable if partition has number of live and deleted documents that is less then configured
  * {@link #MAXIMUM_PARTITION_SIZE}.
  * First observable partition that satisfy writer criteria is used for writing.
  */
@@ -42,8 +42,10 @@ public class PartitionedIndexWriter implements LuceneIndexWriter
 {
     private final WritableDatabaseSchemaIndex index;
 
+    // by default we still keep a spare of 10% to the maximum partition size: During concurrent updates
+    // it could happen that 2 threads reserve space in a partition (without claiming it by doing addDocument):
     private final Integer MAXIMUM_PARTITION_SIZE = Integer.getInteger( "luceneSchemaIndex.maxPartitionSize",
-            Integer.MAX_VALUE - (Integer.MAX_VALUE / 10) );
+            IndexWriter.MAX_DOCS - (IndexWriter.MAX_DOCS / 10) );
 
     public PartitionedIndexWriter( WritableDatabaseSchemaIndex index ) throws IOException
     {
@@ -53,20 +55,20 @@ public class PartitionedIndexWriter implements LuceneIndexWriter
     @Override
     public void addDocument( Document doc ) throws IOException
     {
-        getIndexWriter().addDocument( doc );
+        getIndexWriter( 1 ).addDocument( doc );
     }
 
     @Override
-    public void addDocuments( Iterable<Document> documents ) throws IOException
+    public void addDocuments( int numDocs, Iterable<Document> documents ) throws IOException
     {
-        getIndexWriter().addDocuments( documents );
+        getIndexWriter( numDocs ).addDocuments( documents );
     }
 
     @Override
     public void updateDocument( Term term, Document doc ) throws IOException
     {
         List<AbstractIndexPartition> partitions = index.getPartitions();
-        if ( index.hasSinglePartition( partitions ) )
+        if ( index.hasSinglePartition( partitions ) && writablePartition( index.getFirstPartition( partitions ), 1 ) )
         {
             index.getFirstPartition( partitions ).getIndexWriter().updateDocument( term, doc );
         }
@@ -97,27 +99,28 @@ public class PartitionedIndexWriter implements LuceneIndexWriter
         }
     }
 
-    private IndexWriter getIndexWriter() throws IOException
+    private IndexWriter getIndexWriter( int numDocs ) throws IOException
     {
         synchronized ( index )
         {
             // We synchronise on the index to coordinate with all writers about how many partitions we
             // have, and when new ones are created. The discovery that a new partition needs to be added,
             // and the call to index.addNewPartition() must be atomic.
-            return unsafeGetIndexWriter();
+            return unsafeGetIndexWriter( numDocs );
         }
     }
 
-    private IndexWriter unsafeGetIndexWriter() throws IOException
+    private IndexWriter unsafeGetIndexWriter( int numDocs ) throws IOException
     {
         List<AbstractIndexPartition> indexPartitions = index.getPartitions();
         int size = indexPartitions.size();
         //noinspection ForLoopReplaceableByForEach
         for ( int i = 0; i < size; i++ )
         {
-            // We should find the *first* writable partition, so we can fill holes left by index deletes.
+            // We should find the *first* writable partition, so we can fill holes left by index deletes,
+            // after they were merged away:
             AbstractIndexPartition partition = indexPartitions.get( i );
-            if ( writablePartition( partition ) )
+            if ( writablePartition( partition, numDocs ) )
             {
                 return partition.getIndexWriter();
             }
@@ -126,9 +129,9 @@ public class PartitionedIndexWriter implements LuceneIndexWriter
         return indexPartition.getIndexWriter();
     }
 
-    private boolean writablePartition( AbstractIndexPartition partition )
+    private boolean writablePartition( AbstractIndexPartition partition, int numDocs )
     {
-        return partition.getIndexWriter().numDocs() < MAXIMUM_PARTITION_SIZE;
+        return MAXIMUM_PARTITION_SIZE - partition.getIndexWriter().maxDoc() >= numDocs;
     }
 }
 

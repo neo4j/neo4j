@@ -69,7 +69,7 @@ public abstract class LuceneIndexPopulator implements IndexPopulator
                 .map( LuceneIndexPopulator::updateAsDocument )
                 .iterator();
 
-        writer.addDocuments( () -> documents );
+        writer.addDocuments( updates.size(), () -> documents );
     }
 
     @Override
