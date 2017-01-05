@@ -414,9 +414,10 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
             checkOutOfBounds( cursor );
 
             // Act
-            if ( saneRead() )
+            if ( notSaneRead() )
             {
-                restartSeekFromRoot();
+                prepareToStartFromRoot();
+                isInternal = true;
                 continue;
             }
 
@@ -494,10 +495,11 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
             checkOutOfBounds( cursor );
 
             // Act
-            if ( saneRead() )
+            if ( notSaneRead() )
             {
                 // This node has been reused for something else than a tree node. Restart seek from root.
-                restartSeekFromRoot();
+                prepareToStartFromRoot();
+                traverseDownToFirstLeaf();
                 continue;
             }
 
@@ -634,14 +636,14 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
      */
     private boolean verifyFirstKeyInNodeIsExpectedAfterGoTo()
     {
+        boolean result = true;
         if ( verifyExpectedFirstAfterGoToNext && layout.compare( firstKeyInNode, expectedFirstAfterGoToNext ) != 0 )
         {
             concurrentWriteHappened = true;
-            verifyExpectedFirstAfterGoToNext = false;
-            return false;
+            result = false;
         }
         verifyExpectedFirstAfterGoToNext = false;
-        return true;
+        return result;
     }
 
     /**
@@ -706,12 +708,8 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
         isInternal = bTreeNode.isInternal( cursor );
         // Find the left-most key within from-range
         keyCount = bTreeNode.keyCount( cursor );
-        if ( !keyCountIsSane( keyCount ) )
-        {
-            return false;
-        }
 
-        return true;
+        return keyCountIsSane( keyCount );
     }
 
     /**
@@ -901,14 +899,15 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
     }
 
     /**
-     * Restarts seek from root, i.e. updates current root (and its generation) and traverses down to
-     * leaf containing the key containing the last returned, or first, key.
+     * Perform a generation catchup, updates current root and update range to start from
+     * previously returned key. Should be followed by a call to {@link #traverseDownToFirstLeaf()}
+     * or if already in that method just loop again.
      * <p>
      * Caller should retry most recent read after calling this method.
      *
      * @throws IOException on {@link PageCursor}.
      */
-    private void restartSeekFromRoot() throws IOException
+    private void prepareToStartFromRoot() throws IOException
     {
         generationCatchup();
         lastFollowedPointerGen = rootCatchup.get().goTo( cursor );
@@ -916,8 +915,6 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
         {
             layout.copyKey( prevKey, fromInclusive );
         }
-        isInternal = true;
-        traverseDownToFirstLeaf();
     }
 
     /**
@@ -1002,7 +999,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
      * @return {@code true} if read is sane and can be trusted, otherwise {@code false} meaning that
      * seek should be restarted from root.
      */
-    private boolean saneRead()
+    private boolean notSaneRead()
     {
         return nodeType != NODE_TYPE_TREE_NODE || !saneKeyCountRead( keyCount ) || !verifyNodeGenInvariants();
     }
