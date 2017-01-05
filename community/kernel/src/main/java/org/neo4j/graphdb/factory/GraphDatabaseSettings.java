@@ -21,6 +21,7 @@ package org.neo4j.graphdb.factory;
 
 import java.io.File;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.neo4j.graphdb.config.Setting;
@@ -495,6 +496,11 @@ public abstract class GraphDatabaseSettings
             "specify the +advertised_address+ property for the specific connector.")
     public static final Setting<String> default_advertised_address =
             setting( "dbms.connectors.default_advertised_address", STRING, "localhost" );
+
+    @Description( "The maximum amount of time to wait for the database state represented by the bookmark." )
+    public static final Setting<Long> bookmark_ready_timeout = setting(
+            "dbms.transaction.bookmark_ready_timeout", DURATION, "30s",
+            min( TimeUnit.SECONDS.toMillis( 1 ) ) );
 
     @Group("dbms.connector")
     public static class Connector

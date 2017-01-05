@@ -22,6 +22,8 @@ package org.neo4j.causalclustering.scenarios;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.time.Clock;
+
 import org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess;
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.discovery.Cluster;
@@ -102,6 +104,6 @@ public class CausalConsistencyIT
                 database.getDependencyResolver().resolveDependency( TransactionIdStore.class );
         AvailabilityGuard availabilityGuard =
                 database.getDependencyResolver().resolveDependency( AvailabilityGuard.class );
-        return new TransactionIdTracker( transactionIdStore, availabilityGuard );
+        return new TransactionIdTracker( transactionIdStore, availabilityGuard, Clock.systemUTC() );
     }
 }

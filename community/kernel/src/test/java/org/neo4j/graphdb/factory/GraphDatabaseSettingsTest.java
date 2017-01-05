@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import java.lang.reflect.Field;
 import java.util.HashMap;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
@@ -33,11 +34,13 @@ import org.neo4j.io.ByteUnit;
 import org.neo4j.kernel.configuration.Config;
 
 import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnectors;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
@@ -215,5 +218,34 @@ public class GraphDatabaseSettingsTest
         // then
         assertEquals( new ListenSocketAddress( "localhost", 8000 ), config.get( boltConnector1.listen_address ) );
         assertEquals( new ListenSocketAddress( "localhost", 9000 ), config.get( boltConnector2.listen_address ) );
+    }
+
+    @Test
+    public void hasDefaultBookmarkAwaitTimeout()
+    {
+        Config config = Config.defaults();
+        long bookmarkReadyTimeoutMs = config.get( GraphDatabaseSettings.bookmark_ready_timeout );
+        assertEquals( TimeUnit.SECONDS.toMillis( 30 ), bookmarkReadyTimeoutMs );
+    }
+
+    @Test
+    public void throwsForIllegalBookmarkAwaitTimeout()
+    {
+        String[] illegalValues = {"0ms", "0s", "10ms", "99ms", "999ms", "42ms"};
+
+        for ( String value : illegalValues )
+        {
+            Config config = Config.defaults();
+            config.augment( stringMap( GraphDatabaseSettings.bookmark_ready_timeout.name(), value ) );
+            try
+            {
+                config.get( GraphDatabaseSettings.bookmark_ready_timeout );
+                fail( "Exception expected for value '" + value + "'" );
+            }
+            catch ( Exception e )
+            {
+                assertThat( e, instanceOf( InvalidSettingException.class ) );
+            }
+        }
     }
 }

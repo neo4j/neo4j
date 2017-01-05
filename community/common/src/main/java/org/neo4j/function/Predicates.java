@@ -19,6 +19,7 @@
  */
 package org.neo4j.function;
 
+import java.time.Clock;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -194,16 +195,16 @@ public class Predicates
         }
     }
 
-    public static boolean tryAwait( Supplier<Boolean> condition, long timeout, TimeUnit timeoutUnit, long pollInterval,
-            TimeUnit pollUnit )
-    {
-        return tryAwaitEx( condition::get, timeout, timeoutUnit, pollInterval, pollUnit );
-    }
-
     public static <EXCEPTION extends Exception> boolean tryAwaitEx( ThrowingSupplier<Boolean,EXCEPTION> condition,
             long timeout, TimeUnit timeoutUnit, long pollInterval, TimeUnit pollUnit ) throws EXCEPTION
     {
-        long deadlineMillis = System.currentTimeMillis() + timeoutUnit.toMillis( timeout );
+        return tryAwaitEx( condition, timeout, timeoutUnit, pollInterval, pollUnit, Clock.systemUTC() );
+    }
+
+    public static <EXCEPTION extends Exception> boolean tryAwaitEx( ThrowingSupplier<Boolean,EXCEPTION> condition,
+            long timeout, TimeUnit timeoutUnit, long pollInterval, TimeUnit pollUnit, Clock clock ) throws EXCEPTION
+    {
+        long deadlineMillis = clock.millis() + timeoutUnit.toMillis( timeout );
         long pollIntervalNanos = pollUnit.toNanos( pollInterval );
 
         do
@@ -214,7 +215,7 @@ public class Predicates
             }
             LockSupport.parkNanos( pollIntervalNanos );
         }
-        while ( System.currentTimeMillis() < deadlineMillis );
+        while ( clock.millis() < deadlineMillis );
         return false;
     }
 
