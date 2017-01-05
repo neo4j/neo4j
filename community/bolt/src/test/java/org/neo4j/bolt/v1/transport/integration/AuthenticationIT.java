@@ -215,7 +215,8 @@ public class AuthenticationIT
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, eventuallyReceives( msgFailure( Status.Security.Unauthorized,
-                "The value associated with the key `principal` must be a String but was: ArrayList" ) ) );
+                "Unsupported authentication token, the value associated with the key `principal` " +
+                        "must be a String but was: ArrayList" ) ) );
 
         assertThat( client, eventuallyDisconnects() );
     }
@@ -233,7 +234,7 @@ public class AuthenticationIT
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, eventuallyReceives( msgFailure( Status.Security.Unauthorized,
-                "The value associated with the key `credentials` must be a String but was: null" ) ) );
+                "Unsupported authentication token, missing key `credentials`" ) ) );
 
         assertThat( client, eventuallyDisconnects() );
     }
@@ -251,7 +252,7 @@ public class AuthenticationIT
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, eventuallyReceives( msgFailure( Status.Security.Unauthorized,
-                "The value associated with the key `scheme` must be a String but was: null" ) ) );
+                "Unsupported authentication token, missing key `scheme`" ) ) );
 
         assertThat( client, eventuallyDisconnects() );
     }
@@ -270,7 +271,7 @@ public class AuthenticationIT
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, eventuallyReceives( msgFailure( Status.Security.Unauthorized,
-                "Unsupported authentication scheme 'unknown'." ) ) );
+                "Unsupported authentication token, scheme 'unknown' is not supported." ) ) );
 
         assertThat( client, eventuallyDisconnects() );
     }
