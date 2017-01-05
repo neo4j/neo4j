@@ -130,18 +130,11 @@ public class LookupFilter
         @Override
         Property nodeProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException
         {
-            try ( Cursor<NodeItem> node = readOperations.nodeCursor( state, nodeId ) )
+            try ( Cursor<NodeItem> node = readOperations.nodeCursorById( state, nodeId ) )
             {
-                if ( node.next() )
-                {
-                    Object value = node.get().getProperty( propertyKeyId );
-                    return value == null ? Property.noNodeProperty( nodeId, propertyKeyId ) : Property.property(
-                            propertyKeyId, value );
-                }
-                else
-                {
-                    throw new EntityNotFoundException( EntityType.NODE, nodeId );
-                }
+                Object value = node.get().getProperty( propertyKeyId );
+                return value == null ? Property.noNodeProperty( nodeId, propertyKeyId )
+                                     : Property.property( propertyKeyId, value );
             }
         }
     }
@@ -191,9 +184,13 @@ public class LookupFilter
         @Override
         public boolean test( long nodeId )
         {
-            try ( Cursor<NodeItem> node = readOperations.nodeCursor( state, nodeId ) )
+            try ( Cursor<NodeItem> node = readOperations.nodeCursorById( state, nodeId ) )
             {
-                return node.next() && inRange( node.get().getProperty( propertyKeyId ) );
+                return inRange( node.get().getProperty( propertyKeyId ) );
+            }
+            catch ( EntityNotFoundException e )
+            {
+                return false;
             }
         }
 

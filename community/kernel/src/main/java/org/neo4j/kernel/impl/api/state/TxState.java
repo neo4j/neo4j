@@ -48,7 +48,6 @@ import org.neo4j.kernel.api.txstate.RelationshipChangeVisitorAdapter;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.cursor.TxAllPropertyCursor;
-import org.neo4j.kernel.impl.api.cursor.TxIteratorNodeCursor;
 import org.neo4j.kernel.impl.api.cursor.TxIteratorRelationshipCursor;
 import org.neo4j.kernel.impl.api.cursor.TxLabelCursor;
 import org.neo4j.kernel.impl.api.cursor.TxSingleLabelCursor;
@@ -169,7 +168,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     private PrimitiveIntObjectMap<Map<DefinedProperty, DiffSets<Long>>> indexUpdates;
     private PrimitiveIntObjectMap<DiffSets<RelationshipPropertyConstraint>> relationshipConstraintChanges;
 
-    private InstanceCache<TxIteratorNodeCursor> iteratorNodeCursor;
     private InstanceCache<TxSingleNodeCursor> singleNodeCursor;
     private InstanceCache<TxIteratorRelationshipCursor> iteratorRelationshipCursor;
     private InstanceCache<TxSingleRelationshipCursor> singleRelationshipCursor;
@@ -188,14 +186,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
             protected TxSingleNodeCursor create()
             {
                 return new TxSingleNodeCursor( TxState.this, this );
-            }
-        };
-        iteratorNodeCursor = new InstanceCache<TxIteratorNodeCursor>()
-        {
-            @Override
-            protected TxIteratorNodeCursor create()
-            {
-                return new TxIteratorNodeCursor( TxState.this, this );
             }
         };
         propertyCursor = new InstanceCache<TxAllPropertyCursor>()
@@ -653,14 +643,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     @Override
     public void relationshipDoDeleteAddedInThisTx( long relationshipId )
     {
-        RELATIONSHIP_STATE.get( this, relationshipId ).accept( new RelationshipVisitor<RuntimeException>()
-        {
-            @Override
-            public void visit( long relId, int type, long startNode, long endNode )
-            {
-                relationshipDoDelete( relId, type, startNode, endNode );
-            }
-        } );
+        RELATIONSHIP_STATE.get( this, relationshipId ).accept( this::relationshipDoDelete );
     }
 
     @Override
@@ -861,13 +844,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public Cursor<RelationshipItem> augmentIteratorRelationshipCursor( Cursor<RelationshipItem> cursor,
-            RelationshipIterator iterator )
-    {
-        return hasChanges ? iteratorRelationshipCursor.get().init( cursor, iterator ) : cursor;
-    }
-
-    @Override
     public Cursor<RelationshipItem> augmentNodeRelationshipCursor( Cursor<RelationshipItem> cursor,
             NodeState nodeState,
             Direction direction,
@@ -883,14 +859,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
                     nodeState.getAddedRelationships( direction, relTypes ) );
         }
         return cursor;
-    }
-
-    @Override
-    public Cursor<NodeItem> augmentNodesGetAllCursor( Cursor<NodeItem> cursor )
-    {
-        return hasChanges && nodes != null && !nodes.isEmpty()
-               ? iteratorNodeCursor.get().init( cursor, nodes.getAdded().iterator() )
-               : cursor;
     }
 
     @Override

@@ -78,7 +78,6 @@ import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.index.LegacyIndexStore;
-import org.neo4j.kernel.impl.util.Cursors;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.storageengine.api.EntityType;
@@ -143,8 +142,7 @@ public class StateHandlingStatementOperations implements
         return node;
     }
 
-    @Override
-    public Cursor<NodeItem> nodeCursor( KernelStatement statement, long nodeId )
+    private Cursor<NodeItem> nodeCursor( KernelStatement statement, long nodeId )
     {
         Cursor<NodeItem> cursor = statement.getStoreStatement().acquireSingleNodeCursor( nodeId );
         if ( statement.hasTxStateWithChanges() )
@@ -167,25 +165,13 @@ public class StateHandlingStatementOperations implements
         return relationship;
     }
 
-    @Override
-    public Cursor<RelationshipItem> relationshipCursor( KernelStatement statement, long relationshipId )
+    private Cursor<RelationshipItem> relationshipCursor( KernelStatement statement, long relationshipId )
     {
-        Cursor<RelationshipItem> cursor = statement.getStoreStatement().acquireSingleRelationshipCursor(
-                relationshipId );
+        Cursor<RelationshipItem> cursor =
+                statement.getStoreStatement().acquireSingleRelationshipCursor( relationshipId );
         if ( statement.hasTxStateWithChanges() )
         {
             return statement.txState().augmentSingleRelationshipCursor( cursor, relationshipId );
-        }
-        return cursor;
-    }
-
-    @Override
-    public Cursor<NodeItem> nodeCursorGetAll( KernelStatement statement )
-    {
-        Cursor<NodeItem> cursor = statement.getStoreStatement().nodesGetAllCursor();
-        if ( statement.hasTxStateWithChanges() )
-        {
-            return statement.txState().augmentNodesGetAllCursor( cursor );
         }
         return cursor;
     }
@@ -199,100 +185,6 @@ public class StateHandlingStatementOperations implements
             return statement.txState().augmentRelationshipsGetAllCursor( cursor );
         }
         return cursor;
-    }
-
-    @Override
-    public Cursor<NodeItem> nodeCursorGetForLabel( KernelStatement statement, int labelId )
-    {
-        // TODO Filter this properly
-        StorageStatement storeStatement = statement.getStoreStatement();
-        return storeStatement.acquireIteratorNodeCursor(
-                storeLayer.nodesGetForLabel( storeStatement, labelId ) );
-    }
-
-    @Override
-    public Cursor<NodeItem> nodeCursorGetFromIndexSeek( KernelStatement statement, IndexDescriptor index, Object value )
-            throws IndexNotFoundKernelException
-    {
-        // TODO Filter this properly
-        StorageStatement storeStatement = statement.getStoreStatement();
-        IndexReader reader = storeStatement.getIndexReader( index );
-        return storeStatement.acquireIteratorNodeCursor( reader.seek( value ) );
-    }
-
-    @Override
-    public Cursor<NodeItem> nodeCursorGetFromIndexScan( KernelStatement statement, IndexDescriptor index )
-            throws IndexNotFoundKernelException
-    {
-        // TODO Filter this properly
-        StorageStatement storeStatement = statement.getStoreStatement();
-        IndexReader reader = storeStatement.getIndexReader( index );
-        return storeStatement.acquireIteratorNodeCursor( reader.scan() );
-    }
-
-    @Override
-    public Cursor<NodeItem> nodeCursorGetFromIndexSeekByPrefix( KernelStatement statement,
-            IndexDescriptor index,
-            String prefix ) throws IndexNotFoundKernelException
-    {
-        // TODO Filter this properly
-        StorageStatement storeStatement = statement.getStoreStatement();
-        IndexReader reader = storeStatement.getIndexReader( index );
-        return storeStatement.acquireIteratorNodeCursor( reader.rangeSeekByPrefix( prefix ) );
-    }
-
-    @Override
-    public Cursor<NodeItem> nodeCursorGetFromIndexRangeSeekByNumber( KernelStatement statement,
-            IndexDescriptor index,
-            Number lower, boolean includeLower,
-            Number upper, boolean includeUpper )
-            throws IndexNotFoundKernelException
-
-    {
-        // TODO Filter this properly
-        StorageStatement storeStatement = statement.getStoreStatement();
-        IndexReader reader = storeStatement.getIndexReader( index );
-        return COMPARE_NUMBERS.isEmptyRange( lower, includeLower, upper, includeUpper ) ? Cursors.<NodeItem>empty() :
-               storeStatement.acquireIteratorNodeCursor(
-                       reader.rangeSeekByNumberInclusive( lower, upper ) );
-    }
-
-    @Override
-    public Cursor<NodeItem> nodeCursorGetFromIndexRangeSeekByString( KernelStatement statement,
-            IndexDescriptor index,
-            String lower, boolean includeLower,
-            String upper, boolean includeUpper )
-            throws IndexNotFoundKernelException
-
-    {
-        // TODO Filter this properly
-        StorageStatement storeStatement = statement.getStoreStatement();
-        IndexReader reader = storeStatement.getIndexReader( index );
-        return storeStatement.acquireIteratorNodeCursor(
-                reader.rangeSeekByString( lower, includeLower, upper, includeUpper ) );
-    }
-
-    @Override
-    public Cursor<NodeItem> nodeCursorGetFromIndexRangeSeekByPrefix( KernelStatement statement, IndexDescriptor index,
-            String prefix )
-            throws IndexNotFoundKernelException
-    {
-        // TODO Filter this properly
-        StorageStatement storeStatement = statement.getStoreStatement();
-        IndexReader reader = storeStatement.getIndexReader( index );
-        return storeStatement.acquireIteratorNodeCursor( reader.rangeSeekByPrefix( prefix ) );
-    }
-
-    @Override
-    public Cursor<NodeItem> nodeCursorGetFromUniqueIndexSeek( KernelStatement statement,
-            IndexDescriptor index,
-            Object value ) throws IndexBrokenKernelException, IndexNotFoundKernelException
-    {
-        // TODO Filter this properly
-        StorageStatement storeStatement = statement.getStoreStatement();
-        IndexReader reader = storeStatement.getFreshIndexReader( index );
-        PrimitiveLongIterator seekResult = PrimitiveLongCollections.resourceIterator( reader.seek( value ), reader );
-        return storeStatement.acquireIteratorNodeCursor( seekResult );
     }
 
     // </Cursors>

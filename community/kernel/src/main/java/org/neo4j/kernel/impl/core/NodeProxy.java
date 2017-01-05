@@ -392,18 +392,16 @@ public class NodeProxy implements Node
 
         try ( Statement statement = actions.statement() )
         {
-            try ( Cursor<NodeItem> node = statement.readOperations().nodeCursor( nodeId ) )
+            try ( Cursor<NodeItem> node = statement.readOperations().nodeCursorById( nodeId ) )
             {
-                if ( !node.next() )
-                {
-                    throw new NotFoundException( "Node not found",
-                            new EntityNotFoundException( EntityType.NODE, getId() ) );
-                }
-
                 try ( Cursor<PropertyItem> propertyCursor = node.get().properties() )
                 {
                     return PropertyContainerProxyHelper.getProperties( statement, propertyCursor, keys );
                 }
+            }
+            catch ( EntityNotFoundException e )
+            {
+                throw new NotFoundException( "Node not found", e );
             }
         }
     }
@@ -413,14 +411,8 @@ public class NodeProxy implements Node
     {
         try ( Statement statement = actions.statement() )
         {
-            try ( Cursor<NodeItem> node = statement.readOperations().nodeCursor( nodeId ) )
+            try ( Cursor<NodeItem> node = statement.readOperations().nodeCursorById( nodeId ) )
             {
-                if ( !node.next() )
-                {
-                    throw new NotFoundException( "Node not found",
-                            new EntityNotFoundException( EntityType.NODE, getId() ) );
-                }
-
                 try ( Cursor<PropertyItem> propertyCursor = node.get().properties() )
                 {
                     Map<String, Object> properties = new HashMap<>();
@@ -435,6 +427,10 @@ public class NodeProxy implements Node
 
                     return properties;
                 }
+            }
+            catch ( EntityNotFoundException e )
+            {
+                throw new NotFoundException( "Node not found", e );
             }
         }
         catch ( PropertyKeyIdNotFoundKernelException e )

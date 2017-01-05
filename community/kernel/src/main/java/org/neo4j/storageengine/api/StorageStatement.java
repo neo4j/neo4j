@@ -19,7 +19,6 @@
  */
 package org.neo4j.storageengine.api;
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
@@ -73,16 +72,6 @@ public interface StorageStatement extends AutoCloseable
     Cursor<NodeItem> acquireSingleNodeCursor( long nodeId );
 
     /**
-     * Acquires {@link Cursor} capable of {@link Cursor#get() serving} {@link NodeItem} for selected nodes.
-     * No node is selected when this method returns, a call to {@link Cursor#next()} will have to be made
-     * to place the cursor over the first item and then more calls to move the cursor through the selection.
-     *
-     * @param nodeIds ids of nodes to get cursor for.
-     * @return a {@link Cursor} over {@link NodeItem} for the given node ids.
-     */
-    Cursor<NodeItem> acquireIteratorNodeCursor( PrimitiveLongIterator nodeIds );
-
-    /**
      * Acquires {@link Cursor} capable of {@link Cursor#get() serving} {@link RelationshipItem} for selected
      * relationships. No relationship is selected when this method returns, a call to {@link Cursor#next()}
      * will have to be made to place the cursor over the first item and then more calls to move the cursor
@@ -94,33 +83,13 @@ public interface StorageStatement extends AutoCloseable
     Cursor<RelationshipItem> acquireSingleRelationshipCursor( long relationshipId );
 
     /**
-     * Acquires {@link Cursor} capable of {@link Cursor#get() serving} {@link RelationshipItem} for selected
-     * relationships. No relationship is selected when this method returns, a call to {@link Cursor#next()}
-     * will have to be made to place the cursor over the first item and then more calls to move the cursor
-     * through the selection.
-     *
-     * @param relationshipIds ids of relationships to get cursor for.
-     * @return a {@link Cursor} over {@link RelationshipItem} for the given relationship ids.
-     */
-    Cursor<RelationshipItem> acquireIteratorRelationshipCursor( PrimitiveLongIterator relationshipIds );
-
-    /**
-     * Acquires {@link Cursor} capable of {@link Cursor#get() serving} {@link NodeItem} for selected nodes.
-     * No node is selected when this method returns, a call to {@link Cursor#next()} will have to be made
-     * to place the cursor over the first item and then more calls to move the cursor through the selection.
-     *
-     * @return {@link Cursor} over all stored nodes.
-     */
-    Cursor<NodeItem> nodesGetAllCursor();
-
-    /**
-     * Acquires {@link Cursor} capable of {@link Cursor#get() serving} {@link RelationshipItem} for selected
-     * relationships. No relationship is selected when this method returns, a call to {@link Cursor#next()}
-     * will have to be made to place the cursor over the first item and then more calls to move the cursor
-     * through the selection.
-     *
-     * @return a {@link Cursor} over all stored relationships.
-     */
+     -     * Acquires {@link Cursor} capable of {@link Cursor#get() serving} {@link RelationshipItem} for selected
+     -     * relationships. No relationship is selected when this method returns, a call to {@link Cursor#next()}
+     -     * will have to be made to place the cursor over the first item and then more calls to move the cursor
+     -     * through the selection.
+     -     *
+     -     * @return a {@link Cursor} over all stored relationships.
+     -     */
     Cursor<RelationshipItem> relationshipsGetAllCursor();
 
     /**

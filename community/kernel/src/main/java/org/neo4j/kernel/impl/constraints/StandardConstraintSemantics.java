@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.constraints;
 
+import java.util.Iterator;
+
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
@@ -37,8 +39,8 @@ public class StandardConstraintSemantics implements ConstraintSemantics
     public static final String ERROR_MESSAGE = "Property existence constraint requires Neo4j Enterprise Edition";
 
     @Override
-    public void validateNodePropertyExistenceConstraint( Cursor<NodeItem> allNodes, int label, int propertyKey )
-            throws CreateConstraintFailureException
+    public void validateNodePropertyExistenceConstraint( Iterator<Cursor<NodeItem>> allNodes, int label,
+            int propertyKey ) throws CreateConstraintFailureException
     {
         throw propertyExistenceConstraintsNotAllowed( new NodePropertyExistenceConstraint( label, propertyKey ) );
     }

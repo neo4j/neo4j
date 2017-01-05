@@ -24,6 +24,7 @@ import java.util.function.Consumer;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.cursor.EntityItemHelper;
+import org.neo4j.kernel.api.cursor.RelationshipItemHelper;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.util.Cursors;
@@ -34,15 +35,15 @@ import org.neo4j.storageengine.api.txstate.RelationshipState;
 /**
  * Overlays transaction state on a {@link RelationshipItem} cursor.
  */
-public abstract class TxAbstractRelationshipCursor extends EntityItemHelper
-        implements Cursor<RelationshipItem>, RelationshipItem, RelationshipVisitor<RuntimeException>
+public abstract class TxAbstractRelationshipCursor extends RelationshipItemHelper
+        implements Cursor<RelationshipItem>, RelationshipVisitor<RuntimeException>
 {
     protected final TransactionState state;
     private final Consumer<TxAbstractRelationshipCursor> instanceCache;
 
     protected Cursor<RelationshipItem> cursor;
 
-    private long id;
+    private long id = StatementConstants.NO_SUCH_RELATIONSHIP;
     private int type;
     private long startNodeId;
     private long endNodeId;

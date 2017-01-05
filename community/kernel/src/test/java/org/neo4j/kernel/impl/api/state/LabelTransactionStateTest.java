@@ -362,7 +362,7 @@ public class LabelTransactionStateTest
 
     private void assertLabels( Integer... labels ) throws EntityNotFoundException
     {
-        try ( Cursor<NodeItem> cursor = txContext.nodeCursor( state, nodeId ) )
+        try ( Cursor<NodeItem> cursor = txContext.nodeCursorById( state, nodeId ) )
         {
             if ( cursor.next() )
             {
@@ -372,7 +372,7 @@ public class LabelTransactionStateTest
 
         for ( int label : labels )
         {
-            try ( Cursor<NodeItem> cursor = txContext.nodeCursor( state, nodeId ) )
+            try ( Cursor<NodeItem> cursor = txContext.nodeCursorById( state, nodeId ) )
             {
                 if ( cursor.next() )
                 {

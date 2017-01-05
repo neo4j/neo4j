@@ -137,53 +137,10 @@ public interface EntityReadOperations
 
     Cursor<NodeItem> nodeCursorById( KernelStatement statement, long nodeId ) throws EntityNotFoundException;
 
-    Cursor<NodeItem> nodeCursor( KernelStatement statement, long nodeId );
-
     Cursor<RelationshipItem> relationshipCursorById( KernelStatement statement, long relId )
             throws EntityNotFoundException;
 
-    Cursor<RelationshipItem> relationshipCursor( KernelStatement statement, long relId );
-
-    Cursor<NodeItem> nodeCursorGetAll( KernelStatement statement );
-
     Cursor<RelationshipItem> relationshipCursorGetAll( KernelStatement statement );
-
-    Cursor<NodeItem> nodeCursorGetForLabel( KernelStatement statement, int labelId );
-
-    Cursor<NodeItem> nodeCursorGetFromIndexSeek( KernelStatement statement,
-            IndexDescriptor index,
-            Object value ) throws IndexNotFoundKernelException;
-
-    Cursor<NodeItem> nodeCursorGetFromIndexRangeSeekByNumber( KernelStatement statement,
-            IndexDescriptor index,
-            Number lower,
-            boolean includeLower,
-            Number upper,
-            boolean includeUpper )
-            throws IndexNotFoundKernelException;
-
-    Cursor<NodeItem> nodeCursorGetFromIndexRangeSeekByString( KernelStatement statement,
-            IndexDescriptor index,
-            String lower,
-            boolean includeLower,
-            String upper,
-            boolean includeUpper )
-            throws IndexNotFoundKernelException;
-
-    Cursor<NodeItem> nodeCursorGetFromIndexRangeSeekByPrefix( KernelStatement statement,
-            IndexDescriptor index,
-            String prefix ) throws IndexNotFoundKernelException;
-
-    Cursor<NodeItem> nodeCursorGetFromIndexScan( KernelStatement statement,
-            IndexDescriptor index ) throws IndexNotFoundKernelException;
-
-    Cursor<NodeItem> nodeCursorGetFromIndexSeekByPrefix( KernelStatement statement,
-            IndexDescriptor index,
-            String prefix ) throws IndexNotFoundKernelException;
-
-    Cursor<NodeItem> nodeCursorGetFromUniqueIndexSeek( KernelStatement statement,
-            IndexDescriptor index,
-            Object value ) throws IndexBrokenKernelException, IndexNotFoundKernelException;
 
     long nodesGetCount( KernelStatement statement );
 

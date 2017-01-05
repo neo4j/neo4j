@@ -56,6 +56,7 @@ import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
+import org.neo4j.kernel.impl.api.store.EntityLoadingIterator;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.Locks;
@@ -426,102 +427,15 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
-    public Cursor<NodeItem> nodeCursor( KernelStatement statement, long nodeId )
-    {
-        return entityReadOperations.nodeCursor( statement, nodeId );
-    }
-
-    @Override
     public Cursor<RelationshipItem> relationshipCursorById( KernelStatement statement, long relId ) throws EntityNotFoundException
     {
         return entityReadOperations.relationshipCursorById( statement, relId );
     }
 
     @Override
-    public Cursor<RelationshipItem> relationshipCursor( KernelStatement statement, long relId )
-    {
-        return entityReadOperations.relationshipCursor( statement, relId );
-    }
-
-    @Override
-    public Cursor<NodeItem> nodeCursorGetAll( KernelStatement statement )
-    {
-        return entityReadOperations.nodeCursorGetAll( statement );
-    }
-
-    @Override
     public Cursor<RelationshipItem> relationshipCursorGetAll( KernelStatement statement )
     {
         return entityReadOperations.relationshipCursorGetAll( statement );
-    }
-
-    @Override
-    public Cursor<NodeItem> nodeCursorGetForLabel( KernelStatement statement, int labelId )
-    {
-        return entityReadOperations.nodeCursorGetForLabel( statement, labelId );
-    }
-
-    @Override
-    public Cursor<NodeItem> nodeCursorGetFromIndexSeek( KernelStatement statement, IndexDescriptor index, Object value )
-            throws IndexNotFoundKernelException
-    {
-        return entityReadOperations.nodeCursorGetFromIndexSeek( statement, index, value );
-    }
-
-    @Override
-    public Cursor<NodeItem> nodeCursorGetFromIndexScan( KernelStatement statement, IndexDescriptor index )
-            throws IndexNotFoundKernelException
-    {
-        return entityReadOperations.nodeCursorGetFromIndexScan( statement, index );
-    }
-
-    @Override
-    public Cursor<NodeItem> nodeCursorGetFromIndexSeekByPrefix( KernelStatement statement,
-            IndexDescriptor index,
-            String prefix )
-            throws IndexNotFoundKernelException
-    {
-        return entityReadOperations.nodeCursorGetFromIndexSeekByPrefix( statement, index, prefix );
-    }
-
-    @Override
-    public Cursor<NodeItem> nodeCursorGetFromIndexRangeSeekByNumber( KernelStatement statement,
-            IndexDescriptor index,
-            Number lower, boolean includeLower,
-            Number upper, boolean includeUpper )
-            throws IndexNotFoundKernelException
-
-    {
-        return entityReadOperations.nodeCursorGetFromIndexRangeSeekByNumber( statement, index, lower, includeLower,
-                upper, includeUpper );
-    }
-
-    @Override
-    public Cursor<NodeItem> nodeCursorGetFromIndexRangeSeekByString( KernelStatement statement,
-            IndexDescriptor index,
-            String lower, boolean includeLower,
-            String upper, boolean includeUpper )
-            throws IndexNotFoundKernelException
-
-    {
-        return entityReadOperations.nodeCursorGetFromIndexRangeSeekByString( statement, index, lower, includeLower,
-                upper, includeUpper );
-    }
-
-    @Override
-    public Cursor<NodeItem> nodeCursorGetFromIndexRangeSeekByPrefix( KernelStatement statement,
-            IndexDescriptor index,
-            String prefix ) throws IndexNotFoundKernelException
-    {
-        return entityReadOperations.nodeCursorGetFromIndexRangeSeekByPrefix( statement, index, prefix );
-    }
-
-    @Override
-    public Cursor<NodeItem> nodeCursorGetFromUniqueIndexSeek( KernelStatement statement,
-            IndexDescriptor index,
-            Object value ) throws IndexNotFoundKernelException, IndexBrokenKernelException
-    {
-        return entityReadOperations.nodeCursorGetFromUniqueIndexSeek( statement, index, value );
     }
 
     @Override
@@ -554,10 +468,9 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     public NodePropertyExistenceConstraint nodePropertyExistenceConstraintCreate( KernelStatement state, int labelId,
             int propertyKeyId ) throws AlreadyConstrainedException, CreateConstraintFailureException
     {
-        try ( Cursor<NodeItem> cursor = nodeCursorGetForLabel( state, labelId ) )
-        {
-            constraintSemantics.validateNodePropertyExistenceConstraint( cursor, labelId, propertyKeyId );
-        }
+        Iterator<Cursor<NodeItem>> nodes = new EntityLoadingIterator<>( nodesGetForLabel( state, labelId ),
+                ( id ) -> nodeCursorById( state, id ) );
+        constraintSemantics.validateNodePropertyExistenceConstraint( nodes, labelId, propertyKeyId );
         return schemaWriteOperations.nodePropertyExistenceConstraintCreate( state, labelId, propertyKeyId );
     }
 

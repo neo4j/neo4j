@@ -206,8 +206,6 @@ public interface ReadOperations
 
     boolean nodeExists( long nodeId );
 
-    boolean relationshipExists( long relId );
-
     /**
      * Checks if a node is labeled with a certain label or not. Returns
      * {@code true} if the node is labeled with the label, otherwise {@code false.}
@@ -257,33 +255,9 @@ public interface ReadOperations
     //== CURSOR ACCESS OPERATIONS ===============
     //===========================================
 
-    Cursor<NodeItem> nodeCursor( long nodeId );
+    Cursor<NodeItem> nodeCursorById( long nodeId ) throws EntityNotFoundException;
 
-    Cursor<RelationshipItem> relationshipCursor( long relId );
-
-    Cursor<NodeItem> nodeCursorGetAll();
-
-    Cursor<RelationshipItem> relationshipCursorGetAll();
-
-    Cursor<NodeItem> nodeCursorGetForLabel( int labelId );
-
-    Cursor<NodeItem> nodeCursorGetFromIndexSeek( IndexDescriptor index, Object value )
-            throws IndexNotFoundKernelException;
-
-    Cursor<NodeItem> nodeCursorGetFromIndexRangeSeekByNumber( IndexDescriptor index, Number lower, boolean includeLower, Number upper, boolean includeUpper )
-            throws IndexNotFoundKernelException;
-
-    Cursor<NodeItem> nodeCursorGetFromIndexRangeSeekByString( IndexDescriptor index, String lower, boolean includeLower, String upper, boolean includeUpper )
-            throws IndexNotFoundKernelException;
-
-    Cursor<NodeItem> nodeCursorGetFromIndexRangeSeekByPrefix( IndexDescriptor index, String prefix )
-            throws IndexNotFoundKernelException;
-
-    Cursor<NodeItem> nodeCursorGetFromIndexScan( IndexDescriptor index )
-            throws IndexNotFoundKernelException;
-
-    Cursor<NodeItem> nodeCursorGetFromUniqueIndexSeek( IndexDescriptor index, Object value )
-            throws IndexNotFoundKernelException, IndexBrokenKernelException;
+    Cursor<RelationshipItem> relationshipCursorById( long relId ) throws EntityNotFoundException;
 
     //===========================================
     //== SCHEMA OPERATIONS ======================

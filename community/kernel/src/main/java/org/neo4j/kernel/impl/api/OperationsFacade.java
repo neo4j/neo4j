@@ -298,16 +298,6 @@ public class OperationsFacade
     }
 
     @Override
-    public boolean relationshipExists( long relId )
-    {
-        statement.assertOpen();
-        try ( Cursor<RelationshipItem> cursor = relationshipCursor( relId ) )
-        {
-            return cursor.next();
-        }
-    }
-
-    @Override
     public boolean nodeHasLabel( long nodeId, int labelId ) throws EntityNotFoundException
     {
         statement.assertOpen();
@@ -586,96 +576,6 @@ public class OperationsFacade
         statement.assertOpen();
         return procedures.getAllProcedures();
     }
-    // </DataRead>
-
-    // <DataReadCursors>
-    @Override
-    public Cursor<NodeItem> nodeCursor( long nodeId )
-    {
-        statement.assertOpen();
-        return dataRead().nodeCursor( statement, nodeId );
-    }
-
-    @Override
-    public Cursor<RelationshipItem> relationshipCursor( long relId )
-    {
-        statement.assertOpen();
-        return dataRead().relationshipCursor( statement, relId );
-    }
-
-    @Override
-    public Cursor<NodeItem> nodeCursorGetAll()
-    {
-        statement.assertOpen();
-        return dataRead().nodeCursorGetAll( statement );
-    }
-
-    @Override
-    public Cursor<RelationshipItem> relationshipCursorGetAll()
-    {
-        statement.assertOpen();
-        return dataRead().relationshipCursorGetAll( statement );
-    }
-
-    @Override
-    public Cursor<NodeItem> nodeCursorGetForLabel( int labelId )
-    {
-        statement.assertOpen();
-        return dataRead().nodeCursorGetForLabel( statement, labelId );
-    }
-
-    @Override
-    public Cursor<NodeItem> nodeCursorGetFromIndexSeek( IndexDescriptor index,
-            Object value ) throws IndexNotFoundKernelException
-    {
-        statement.assertOpen();
-        return dataRead().nodeCursorGetFromIndexSeek( statement, index, value );
-    }
-
-    @Override
-    public Cursor<NodeItem> nodeCursorGetFromIndexScan( IndexDescriptor index ) throws IndexNotFoundKernelException
-    {
-        statement.assertOpen();
-        return dataRead().nodeCursorGetFromIndexScan( statement, index );
-    }
-
-    @Override
-    public Cursor<NodeItem> nodeCursorGetFromIndexRangeSeekByNumber( IndexDescriptor index,
-            Number lower, boolean includeLower,
-            Number upper, boolean includeUpper )
-            throws IndexNotFoundKernelException
-    {
-        statement.assertOpen();
-        return dataRead().nodeCursorGetFromIndexRangeSeekByNumber( statement, index, lower, includeLower, upper,
-                includeUpper );
-    }
-
-    @Override
-    public Cursor<NodeItem> nodeCursorGetFromIndexRangeSeekByString( IndexDescriptor index,
-            String lower, boolean includeLower,
-            String upper, boolean includeUpper )
-            throws IndexNotFoundKernelException
-    {
-        statement.assertOpen();
-        return dataRead().nodeCursorGetFromIndexRangeSeekByString( statement, index, lower, includeLower, upper,
-                includeUpper );
-    }
-
-    @Override
-    public Cursor<NodeItem> nodeCursorGetFromIndexRangeSeekByPrefix( IndexDescriptor index, String prefix )
-            throws IndexNotFoundKernelException
-    {
-        statement.assertOpen();
-        return dataRead().nodeCursorGetFromIndexRangeSeekByPrefix( statement, index, prefix );
-    }
-
-    @Override
-    public Cursor<NodeItem> nodeCursorGetFromUniqueIndexSeek( IndexDescriptor index, Object value )
-            throws IndexNotFoundKernelException, IndexBrokenKernelException
-    {
-        statement.assertOpen();
-        return dataRead().nodeCursorGetFromUniqueIndexSeek( statement, index, value );
-    }
 
     @Override
     public long nodesCountIndexed( IndexDescriptor index, long nodeId, Object value )
@@ -684,7 +584,22 @@ public class OperationsFacade
         statement.assertOpen();
         return dataRead().nodesCountIndexed( statement, index, nodeId, value );
     }
+    // </DataRead>
 
+    // <DataReadCursors>
+    @Override
+    public Cursor<NodeItem> nodeCursorById( long nodeId ) throws EntityNotFoundException
+    {
+        statement.assertOpen();
+        return dataRead().nodeCursorById( statement, nodeId );
+    }
+
+    @Override
+    public Cursor<RelationshipItem> relationshipCursorById( long relId ) throws EntityNotFoundException
+    {
+        statement.assertOpen();
+        return dataRead().relationshipCursorById( statement, relId );
+    }
     // </DataReadCursors>
 
     // <SchemaRead>

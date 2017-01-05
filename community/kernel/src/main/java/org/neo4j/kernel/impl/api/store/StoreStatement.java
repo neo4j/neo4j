@@ -48,7 +48,6 @@ import org.neo4j.storageengine.api.schema.LabelScanReader;
 public class StoreStatement implements StorageStatement
 {
     private final InstanceCache<StoreSingleNodeCursor> singleNodeCursor;
-    private final InstanceCache<StoreIteratorNodeCursor> iteratorNodeCursor;
     private final InstanceCache<StoreSingleRelationshipCursor> singleRelationshipCursor;
     private final InstanceCache<StoreIteratorRelationshipCursor> iteratorRelationshipCursor;
     private final NeoStores neoStores;
@@ -80,15 +79,6 @@ public class StoreStatement implements StorageStatement
             protected StoreSingleNodeCursor create()
             {
                 return new StoreSingleNodeCursor( nodeStore.newRecord(), neoStores, StoreStatement.this, this,
-                        recordCursors, lockService );
-            }
-        };
-        iteratorNodeCursor = new InstanceCache<StoreIteratorNodeCursor>()
-        {
-            @Override
-            protected StoreIteratorNodeCursor create()
-            {
-                return new StoreIteratorNodeCursor( nodeStore.newRecord(), neoStores, StoreStatement.this, this,
                         recordCursors, lockService );
             }
         };
@@ -128,13 +118,6 @@ public class StoreStatement implements StorageStatement
     }
 
     @Override
-    public Cursor<NodeItem> acquireIteratorNodeCursor( PrimitiveLongIterator nodeIdIterator )
-    {
-        neoStores.assertOpen();
-        return iteratorNodeCursor.get().init( nodeIdIterator );
-    }
-
-    @Override
     public Cursor<RelationshipItem> acquireSingleRelationshipCursor( long relId )
     {
         neoStores.assertOpen();
@@ -142,22 +125,10 @@ public class StoreStatement implements StorageStatement
     }
 
     @Override
-    public Cursor<RelationshipItem> acquireIteratorRelationshipCursor( PrimitiveLongIterator iterator )
-    {
-        neoStores.assertOpen();
-        return iteratorRelationshipCursor.get().init( iterator );
-    }
-
-    @Override
-    public Cursor<NodeItem> nodesGetAllCursor()
-    {
-        return acquireIteratorNodeCursor( new AllIdIterator( nodeStore ) );
-    }
-
-    @Override
     public Cursor<RelationshipItem> relationshipsGetAllCursor()
     {
-        return acquireIteratorRelationshipCursor( new AllIdIterator( relationshipStore ) );
+        neoStores.assertOpen();
+        return iteratorRelationshipCursor.get().init( new AllIdIterator( relationshipStore ) );
     }
 
     @Override

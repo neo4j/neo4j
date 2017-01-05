@@ -302,13 +302,6 @@ public class GuardingStatementOperations implements
     }
 
     @Override
-    public Cursor<NodeItem> nodeCursor( KernelStatement statement, long nodeId )
-    {
-        guard.check( statement );
-        return entityReadDelegate.nodeCursor( statement, nodeId );
-    }
-
-    @Override
     public Cursor<RelationshipItem> relationshipCursorById( KernelStatement statement, long relId )
             throws EntityNotFoundException
     {
@@ -317,98 +310,10 @@ public class GuardingStatementOperations implements
     }
 
     @Override
-    public Cursor<RelationshipItem> relationshipCursor( KernelStatement statement, long relId )
-    {
-        guard.check( statement );
-        return entityReadDelegate.relationshipCursor( statement, relId );
-    }
-
-    @Override
-    public Cursor<NodeItem> nodeCursorGetAll( KernelStatement statement )
-    {
-        guard.check( statement );
-        return entityReadDelegate.nodeCursorGetAll( statement );
-    }
-
-    @Override
     public Cursor<RelationshipItem> relationshipCursorGetAll( KernelStatement statement )
     {
         guard.check( statement );
         return entityReadDelegate.relationshipCursorGetAll( statement );
-    }
-
-    @Override
-    public Cursor<NodeItem> nodeCursorGetForLabel( KernelStatement statement, int labelId )
-    {
-        guard.check( statement );
-        return entityReadDelegate.nodeCursorGetForLabel( statement, labelId );
-    }
-
-    @Override
-    public Cursor<NodeItem> nodeCursorGetFromIndexSeek( KernelStatement statement, IndexDescriptor index, Object value )
-            throws IndexNotFoundKernelException
-    {
-        guard.check( statement );
-        return entityReadDelegate.nodeCursorGetFromIndexSeek( statement, index, value );
-    }
-
-    @Override
-    public Cursor<NodeItem> nodeCursorGetFromIndexScan( KernelStatement statement, IndexDescriptor index )
-            throws IndexNotFoundKernelException
-    {
-        guard.check( statement );
-        return entityReadDelegate.nodeCursorGetFromIndexScan( statement, index );
-    }
-
-    @Override
-    public Cursor<NodeItem> nodeCursorGetFromIndexRangeSeekByNumber( KernelStatement statement,
-            IndexDescriptor index,
-            Number lower, boolean includeLower,
-            Number upper, boolean includeUpper )
-            throws IndexNotFoundKernelException
-    {
-        guard.check( statement );
-        return entityReadDelegate.nodeCursorGetFromIndexRangeSeekByNumber( statement, index, lower, includeLower, upper,
-                includeUpper );
-    }
-
-    @Override
-    public Cursor<NodeItem> nodeCursorGetFromIndexRangeSeekByString( KernelStatement statement,
-            IndexDescriptor index,
-            String lower, boolean includeLower,
-            String upper, boolean includeUpper )
-            throws IndexNotFoundKernelException
-    {
-        guard.check( statement );
-        return entityReadDelegate.nodeCursorGetFromIndexRangeSeekByString( statement, index, lower, includeLower, upper,
-                includeUpper );
-    }
-
-    @Override
-    public Cursor<NodeItem> nodeCursorGetFromIndexSeekByPrefix( KernelStatement statement,
-            IndexDescriptor index,
-            String prefix ) throws IndexNotFoundKernelException
-    {
-        guard.check( statement );
-        return entityReadDelegate.nodeCursorGetFromIndexSeekByPrefix( statement, index, prefix );
-    }
-
-    @Override
-    public Cursor<NodeItem> nodeCursorGetFromIndexRangeSeekByPrefix( KernelStatement statement,
-            IndexDescriptor index,
-            String prefix ) throws IndexNotFoundKernelException
-    {
-        guard.check( statement );
-        return entityReadDelegate.nodeCursorGetFromIndexRangeSeekByPrefix( statement, index, prefix );
-    }
-
-    @Override
-    public Cursor<NodeItem> nodeCursorGetFromUniqueIndexSeek( KernelStatement statement,
-            IndexDescriptor index,
-            Object value ) throws IndexNotFoundKernelException, IndexBrokenKernelException
-    {
-        guard.check( statement );
-        return entityReadDelegate.nodeCursorGetFromUniqueIndexSeek( statement, index, value );
     }
 
     @Override

@@ -54,7 +54,6 @@ import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
@@ -399,29 +398,6 @@ public class StateHandlingStatementOperationsTest
         verify( indexReader ).close();
     }
 
-    @Test
-    public void nodeCursorGetFromUniqueIndexSeekClosesIndexReader() throws Exception
-    {
-        KernelStatement kernelStatement = mock( KernelStatement.class );
-        IndexReader indexReader = mock( IndexReader.class );
-        StoreStatement storeStatement = new StoreStatementWithSingleFreshIndexReader( indexReader );
-
-        when( indexReader.seek( any() ) ).thenReturn( PrimitiveLongCollections.emptyIterator() );
-        when( kernelStatement.getStoreStatement() ).thenReturn( storeStatement );
-
-        StateHandlingStatementOperations operations = newTxStateOps( mock( StoreReadLayer.class ) );
-
-        try ( Cursor<NodeItem> cursor = operations.nodeCursorGetFromUniqueIndexSeek( kernelStatement,
-                new IndexDescriptor( 1, 1 ), "foo" ) )
-        {
-            while ( cursor.next() )
-            {
-                fail( "Cursor should be empty" );
-            }
-        }
-        verify( indexReader ).close();
-    }
-
     private StateHandlingStatementOperations newTxStateOps( StoreReadLayer delegate )
     {
         return new StateHandlingStatementOperations( delegate,
@@ -442,23 +418,5 @@ public class StateHandlingStatementOperationsTest
         IndexReader indexReader = mock( IndexReader.class );
         when( storeStatement.getIndexReader( any( IndexDescriptor.class ) ) ).thenReturn( indexReader );
         return indexReader;
-    }
-
-    private static class StoreStatementWithSingleFreshIndexReader extends StoreStatement
-    {
-        final IndexReader reader;
-
-        StoreStatementWithSingleFreshIndexReader( IndexReader reader )
-        {
-            super( basicMockedNeoStores(), () -> mock( IndexReaderFactory.class ),
-                    () -> mock( LabelScanReader.class ),  new ReentrantLockService() );
-            this.reader = reader;
-        }
-
-        @Override
-        public IndexReader getFreshIndexReader( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
-        {
-            return reader;
-        }
     }
 }
