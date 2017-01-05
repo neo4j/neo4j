@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.util.watcher;
 
 import org.neo4j.io.fs.watcher.event.FileWatchEventListenerAdapter;
 import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.logging.Log;
 
@@ -33,7 +32,6 @@ import static java.lang.String.format;
 public class DefaultFileDeletionEventListener extends FileWatchEventListenerAdapter
 {
 
-    private static final String EXTENSION_SEPARATOR = ".";
     private final Log internalLog;
 
     public DefaultFileDeletionEventListener( LogService logService )
@@ -46,7 +44,7 @@ public class DefaultFileDeletionEventListener extends FileWatchEventListenerAdap
     {
         if ( isMonitoredFile( fileName ) )
         {
-            internalLog.info( format( "Store %s '%s' was deleted while database was running.", getFileType( fileName ),
+            internalLog.error( format( "'%s' which belongs to the store was deleted while database was running.",
                     fileName ) );
         }
     }
@@ -55,15 +53,4 @@ public class DefaultFileDeletionEventListener extends FileWatchEventListenerAdap
     {
         return !fileName.startsWith( PhysicalLogFile.DEFAULT_NAME );
     }
-
-    private static String getFileType( String fileName )
-    {
-        return isFile( fileName ) ? "file" : "directory";
-    }
-
-    private static boolean isFile( String fileName )
-    {
-        return fileName.startsWith( MetaDataStore.DEFAULT_NAME ) || fileName.contains( EXTENSION_SEPARATOR );
-    }
-
 }

@@ -155,5 +155,4 @@ public class GraphDatabaseFactory
     {
         return Edition.community.toString();
     }
-
 }

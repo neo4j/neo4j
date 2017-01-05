@@ -68,9 +68,12 @@ public interface FileWatcher extends Closeable
     void stopWatching();
 
     /**
-     * Start monitoring of registered directories
+     * Start monitoring of registered directories.
+     * This method we will wait for notification about registered resources, meaning that it will block thread where
+     * it was called. If it is desired to start file watching as background task - watcher should be started in
+     * separate thread.
+     * Watching can be stopped by calling {@link #stopWatching()}.
      * @throws InterruptedException when interrupted while waiting for update notification to come
-     *
      */
     void startWatching() throws InterruptedException;
 }

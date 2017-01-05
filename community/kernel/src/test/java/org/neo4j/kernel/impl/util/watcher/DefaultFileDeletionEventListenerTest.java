@@ -28,7 +28,6 @@ import org.neo4j.logging.NullLogProvider;
 
 public class DefaultFileDeletionEventListenerTest
 {
-
     @Test
     public void notificationInLogAboutFileDeletion() throws Exception
     {
@@ -37,10 +36,8 @@ public class DefaultFileDeletionEventListenerTest
         listener.fileDeleted( "testFile.db" );
         listener.fileDeleted( "anotherDirectory" );
 
-        internalLogProvider.assertContainsMessageContaining( "Store file 'testFile.db' was " +
-                "deleted while database was running." );
-        internalLogProvider.assertContainsMessageContaining( "Store directory 'anotherDirectory' was " +
-                "deleted while database was running." );
+        internalLogProvider.assertContainsMessageContaining( "'testFile.db' which belongs to the store was deleted while database was running." );
+        internalLogProvider.assertContainsMessageContaining( "'anotherDirectory' which belongs to the store was deleted while database was running." );
     }
 
     @Test

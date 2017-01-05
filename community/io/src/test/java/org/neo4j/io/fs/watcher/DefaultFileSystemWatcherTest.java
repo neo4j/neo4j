@@ -54,7 +54,6 @@ import static org.mockito.Mockito.when;
 
 public class DefaultFileSystemWatcherTest
 {
-
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
     @Rule
@@ -69,7 +68,7 @@ public class DefaultFileSystemWatcherTest
         expectedException.expect( IllegalArgumentException.class );
         expectedException.expectMessage( "Only directories can be registered to be monitored." );
 
-        watcher.watch( new File("notADirectory") );
+        watcher.watch( new File( "notADirectory" ) );
     }
 
     @Test
@@ -98,7 +97,7 @@ public class DefaultFileSystemWatcherTest
 
         TestWatchEvent<Path> watchEvent = new TestWatchEvent<>( ENTRY_DELETE, Paths.get( "file1" ) );
         TestWatchEvent<Path> watchEvent2 = new TestWatchEvent<>( ENTRY_DELETE, Paths.get( "file2" ) );
-        TestWatchKey watchKey = new TestWatchKey( asList(watchEvent, watchEvent2) );
+        TestWatchKey watchKey = new TestWatchKey( asList( watchEvent, watchEvent2 ) );
 
         prepareWatcher( watchKey );
 
@@ -123,7 +122,7 @@ public class DefaultFileSystemWatcherTest
         TestWatchEvent<Path> watchEvent = new TestWatchEvent<>( ENTRY_MODIFY, Paths.get( "a" ) );
         TestWatchEvent<Path> watchEvent2 = new TestWatchEvent<>( ENTRY_MODIFY, Paths.get( "b" ) );
         TestWatchEvent<Path> watchEvent3 = new TestWatchEvent<>( ENTRY_MODIFY, Paths.get( "c" ) );
-        TestWatchKey watchKey = new TestWatchKey( asList(watchEvent, watchEvent2, watchEvent3) );
+        TestWatchKey watchKey = new TestWatchKey( asList( watchEvent, watchEvent2, watchEvent3 ) );
 
         prepareWatcher( watchKey );
 
@@ -288,8 +287,8 @@ public class DefaultFileSystemWatcherTest
         }
     }
 
-    private static class AssertableFileEventListener extends FileWatchEventListenerAdapter {
-
+    private static class AssertableFileEventListener extends FileWatchEventListenerAdapter
+    {
         private final List<String> deletedFileNames = new ArrayList<>();
         private final List<String> modifiedFileNames = new ArrayList<>();
 
@@ -324,5 +323,4 @@ public class DefaultFileSystemWatcherTest
                     hasItem( fileName ) );
         }
     }
-
 }
