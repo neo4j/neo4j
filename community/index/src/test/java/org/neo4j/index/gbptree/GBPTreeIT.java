@@ -182,6 +182,7 @@ public class GBPTreeIT
         AtomicInteger highestId = new AtomicInteger( -1 );
         AtomicReference<Throwable> readerError = new AtomicReference<>();
         AtomicInteger numberOfReads = new AtomicInteger();
+        AtomicBoolean failHalt = new AtomicBoolean();
         Runnable reader = () -> {
             int numberOfLocalReads = 0;
             try
@@ -252,6 +253,7 @@ public class GBPTreeIT
             catch ( Throwable e )
             {
                 readerError.set( e );
+                failHalt.set( true );
             }
             finally
             {
@@ -266,7 +268,8 @@ public class GBPTreeIT
         }
 
         // and starting the checkpointer
-        threadPool.submit( checkpointerThread( minCheckpointInterval, maxCheckpointInterval, endSignal ) );
+        threadPool.submit(
+                checkpointerThread( minCheckpointInterval, maxCheckpointInterval, endSignal, readerError, failHalt ) );
 
         // and then starting the writer
         try
@@ -275,7 +278,7 @@ public class GBPTreeIT
             startSignal.countDown();
             Random random1 = ThreadLocalRandom.current();
             int inserted = 0;
-            while ( (inserted < 100_000 || numberOfReads.get() < 100) && readerError.get() == null )
+            while ( (inserted < 100_000 || numberOfReads.get() < 100) && !failHalt.get() )
             {
                 try ( IndexWriter<MutableLong,MutableLong> writer = index.writer() )
                 {
@@ -336,7 +339,7 @@ public class GBPTreeIT
         index = createIndex( 256 );
 
         ReadAction readAction = () -> doOneReadForwardForConcurrentInsert( nbrOfGroups, rangeWidth,
-                currentWriteIteration, lastWrittenKey,failHalt );
+                currentWriteIteration, lastWrittenKey );
         RunnableReader reader = new RunnableReader( readAction, currentWriteIteration, readerReadySignal, startSignal,
                 endSignal, failHalt, numberOfReads, readerError );
 
@@ -347,14 +350,15 @@ public class GBPTreeIT
         }
 
         // and starting the checkpointer
-        threadPool.submit( checkpointerThread( minCheckpointInterval, maxCheckpointInterval, endSignal ) );
+        threadPool.submit(
+                checkpointerThread( minCheckpointInterval, maxCheckpointInterval, endSignal, readerError, failHalt ) );
         // and then starting the writer
         try
         {
             assertTrue( readerReadySignal.await( 10, SECONDS ) );
             startSignal.countDown();
             int iteration = currentWriteIteration.get();
-            while ( !failHalt.get() && numberOfReads.get() < wantedNbrOfReads && readerError.get() == null )
+            while ( !failHalt.get() && numberOfReads.get() < wantedNbrOfReads )
             {
                 try ( IndexWriter<MutableLong,MutableLong> writer = index.writer() )
                 {
@@ -420,7 +424,7 @@ public class GBPTreeIT
         index = createIndex( 256 );
 
         ReadAction readAction = () -> doOneReadBackwardsForConcurrentInsert( nbrOfGroups, rangeWidth,
-                currentWriteIteration, lastWrittenKey, failHalt );
+                currentWriteIteration, lastWrittenKey );
         RunnableReader reader = new RunnableReader( readAction, currentWriteIteration, readerReadySignal, startSignal,
                 endSignal, failHalt, numberOfReads, readerError );
 
@@ -431,7 +435,8 @@ public class GBPTreeIT
         }
 
         // and starting the checkpointer
-        threadPool.submit( checkpointerThread( minCheckpointInterval, maxCheckpointInterval, endSignal ) );
+        threadPool.submit(
+                checkpointerThread( minCheckpointInterval, maxCheckpointInterval, endSignal, readerError, failHalt ) );
 
         // and then starting the writer
         try
@@ -439,7 +444,7 @@ public class GBPTreeIT
             assertTrue( readerReadySignal.await( 10, SECONDS ) );
             startSignal.countDown();
             int iteration = currentWriteIteration.get();
-            while ( !failHalt.get() && numberOfReads.get() < wantedNbrOfReads && readerError.get() == null )
+            while ( !failHalt.get() && numberOfReads.get() < wantedNbrOfReads )
             {
                 try ( IndexWriter<MutableLong,MutableLong> writer = index.writer() )
                 {
@@ -507,7 +512,7 @@ public class GBPTreeIT
         insertEverythingInRange( index, minValue, maxValue );
 
         ReadAction readAction = () ->
-                doOneReadForwardForConcurrentRemove( nbrOfGroups, rangeWidth, currentWriteIteration, failHalt );
+                doOneReadForwardForConcurrentRemove( nbrOfGroups, rangeWidth, currentWriteIteration );
         RunnableReader reader = new RunnableReader( readAction, currentWriteIteration, readerReadySignal, startSignal,
                 endSignal, failHalt, numberOfReads, readerError );
 
@@ -518,7 +523,8 @@ public class GBPTreeIT
         }
 
         // and starting the checkpointer
-        threadPool.submit( checkpointerThread( minCheckpointInterval, maxCheckpointInterval, endSignal ) );
+        threadPool.submit(
+                checkpointerThread( minCheckpointInterval, maxCheckpointInterval, endSignal, readerError, failHalt ) );
 
         // and then starting the writer
         try
@@ -526,7 +532,7 @@ public class GBPTreeIT
             assertTrue( readerReadySignal.await( 10, SECONDS ) );
             startSignal.countDown();
             int iteration = currentWriteIteration.get();
-            while ( !failHalt.get() && readerError.get() == null && lastRemovedKey.get() < maxValue - 2)
+            while ( !failHalt.get() && lastRemovedKey.get() < maxValue - 2)
             {
                 try ( IndexWriter<MutableLong,MutableLong> writer = index.writer() )
                 {
@@ -595,7 +601,7 @@ public class GBPTreeIT
         insertEverythingInRange( index, minValue, maxValue );
 
         ReadAction readAction = () ->
-                doOneReadBackwardsForConcurrentRemove( nbrOfGroups, rangeWidth, currentWriteIteration, failHalt );
+                doOneReadBackwardsForConcurrentRemove( nbrOfGroups, rangeWidth, currentWriteIteration );
         RunnableReader reader = new RunnableReader( readAction, currentWriteIteration, readerReadySignal, startSignal,
                 endSignal, failHalt, numberOfReads, readerError );
 
@@ -606,7 +612,8 @@ public class GBPTreeIT
         }
 
         // and starting the checkpointer
-        threadPool.submit( checkpointerThread( minCheckpointInterval, maxCheckpointInterval, endSignal ) );
+        threadPool.submit(
+                checkpointerThread( minCheckpointInterval, maxCheckpointInterval, endSignal, readerError, failHalt ) );
 
         // and then starting the writer
         try
@@ -614,7 +621,7 @@ public class GBPTreeIT
             assertTrue( readerReadySignal.await( 10, SECONDS ) );
             startSignal.countDown();
             int iteration = currentWriteIteration.get();
-            while ( !failHalt.get() && readerError.get() == null && lastRemovedKey.get() < maxValue + 1)
+            while ( !failHalt.get() && lastRemovedKey.get() < maxValue + 1)
             {
                 try ( IndexWriter<MutableLong,MutableLong> writer = index.writer() )
                 {
@@ -670,7 +677,8 @@ public class GBPTreeIT
         }
     }
 
-    private Runnable checkpointerThread( int minCheckpointInterval, int maxCheckpointInterval, AtomicBoolean endSignal )
+    private Runnable checkpointerThread( int minCheckpointInterval, int maxCheckpointInterval, AtomicBoolean endSignal,
+            AtomicReference<Throwable> readerError, AtomicBoolean failHalt )
     {
         return () ->
         {
@@ -682,9 +690,10 @@ public class GBPTreeIT
                     // Sleep a little in between update groups (transactions, sort of)
                     MILLISECONDS.sleep( random.nextInt( minCheckpointInterval, maxCheckpointInterval ) );
                 }
-                catch ( Exception e )
+                catch ( Throwable e )
                 {
-                    throw new RuntimeException( e );
+                    readerError.set( e );
+                    failHalt.set( true );
                 }
             }
         };
@@ -821,7 +830,7 @@ public class GBPTreeIT
     }
 
     private void doOneReadForwardForConcurrentInsert( int nbrOfGroups, int rangeWidth,
-            AtomicInteger currentWriteIteration, AtomicLong lastWrittenKey, AtomicBoolean failHalt ) throws IOException
+            AtomicInteger currentWriteIteration, AtomicLong lastWrittenKey ) throws IOException
     {
         int iterationExpectedToSee = currentWriteIteration.get() - 1;
         int rangeModulus = iterationExpectedToSee % nbrOfGroups;
@@ -850,7 +859,6 @@ public class GBPTreeIT
                 long lastSeenValue = cursor.get().value().longValue();
                 if ( lastSeenKey != lastSeenValue )
                 {
-                    failHalt.set( true );
                     fail( String.format( "Read mismatching key value pair, key=%d, value=%d%n",
                             lastSeenKey, lastSeenValue ) );
                 }
@@ -870,7 +878,6 @@ public class GBPTreeIT
                 }
                 else if ( lastSeenKey > nextToSee )
                 {
-                    failHalt.set( true );
                     fail( String.format( "Expected to see %d+%d=%d but went straight to %d, " +
                                     "lastWrittenBeforeTraversingTree=%d, " +
                                     "lastWrittenBeforeNext=%d, " +
@@ -885,7 +892,6 @@ public class GBPTreeIT
             boolean condition = difference <= nbrOfGroups;
             if ( !condition )
             {
-                failHalt.set( true );
                 fail( String.format( "Expected distance between end and nextToSee to be less " +
                                 "than %d but was %d. lastSeenKey=%d, nextToSee=%d, end=%d%n",
                         nbrOfGroups, difference, lastSeenKey, nextToSee, end ) );
@@ -894,7 +900,7 @@ public class GBPTreeIT
     }
 
     private void doOneReadBackwardsForConcurrentInsert( int nbrOfGroups, int rangeWidth,
-            AtomicInteger currentWriteIteration, AtomicLong lastWrittenKey, AtomicBoolean failHalt ) throws IOException
+            AtomicInteger currentWriteIteration, AtomicLong lastWrittenKey ) throws IOException
     {
         int iterationExpectedToSee = currentWriteIteration.get() - 1;
         int rangeModulus = iterationExpectedToSee % nbrOfGroups;
@@ -923,7 +929,6 @@ public class GBPTreeIT
                 long lastSeenValue = cursor.get().value().longValue();
                 if ( lastSeenKey != lastSeenValue )
                 {
-                    failHalt.set( true );
                     fail( String.format( "Read mismatching key value pair, key=%d, value=%d%n",
                             lastSeenKey, lastSeenValue ) );
                 }
@@ -943,7 +948,6 @@ public class GBPTreeIT
                 }
                 else if ( lastSeenKey < nextToSee )
                 {
-                    failHalt.set( true );
                     fail( String.format( "Expected to see %d+%d=%d but went straight to %d, " +
                                     "lastWrittenBeforeTraversingTree=%d, " +
                                     "lastWrittenBeforeNext=%d, " +
@@ -958,7 +962,6 @@ public class GBPTreeIT
             boolean condition = difference <= nbrOfGroups;
             if ( !condition )
             {
-                failHalt.set( true );
                 fail( String.format( "Expected distance between end and nextToSee to be less " +
                                 "than %d but was %d. lastSeenKey=%d, nextToSee=%d, start=%d%n",
                         nbrOfGroups, difference, lastSeenKey, nextToSee, start ) );
@@ -967,7 +970,7 @@ public class GBPTreeIT
     }
 
     private void doOneReadForwardForConcurrentRemove( int nbrOfGroups, int rangeWidth,
-            AtomicInteger currentWriteIteration, AtomicBoolean failHalt ) throws IOException
+            AtomicInteger currentWriteIteration ) throws IOException
     {
         int iterationExpectedToSee = currentWriteIteration.get();
         long start = minRange( nbrOfGroups, rangeWidth, iterationExpectedToSee );
@@ -986,7 +989,6 @@ public class GBPTreeIT
                 long thisValue = cursor.get().value().longValue();
                 if ( thisKey != thisValue )
                 {
-                    failHalt.set( true );
                     fail( String.format( "Read mismatching key value pair, key=%d, value=%d%n",
                             thisKey, thisValue ) );
                 }
@@ -997,7 +999,6 @@ public class GBPTreeIT
                 }
                 else if ( thisKey > nextToSee )
                 {
-                    failHalt.set( true );
                     fail( String.format( "Expected to see %d but went straight to %d%n",
                             nextToSee, thisKey ) );
                 }
@@ -1006,7 +1007,7 @@ public class GBPTreeIT
     }
 
     private void doOneReadBackwardsForConcurrentRemove( int nbrOfGroups, int rangeWidth,
-            AtomicInteger currentWriteIteration, AtomicBoolean failHalt ) throws IOException
+            AtomicInteger currentWriteIteration ) throws IOException
     {
         int iterationExpectedToSee = currentWriteIteration.get();
         long start = maxRange( nbrOfGroups, rangeWidth, iterationExpectedToSee );
@@ -1026,7 +1027,6 @@ public class GBPTreeIT
                 long thisValue = hit.value().longValue();
                 if ( thisKey != thisValue )
                 {
-                    failHalt.set( true );
                     fail( String.format( "Read mismatching key value pair, key=%d, value=%d%n",
                             thisKey, thisValue ) );
                 }
@@ -1037,7 +1037,6 @@ public class GBPTreeIT
                 }
                 else if ( thisKey < nextToSee )
                 {
-                    failHalt.set( true );
                     fail( String.format( "Expected to see %d but went straight to %d%n",
                             nextToSee, thisKey ) );
                 }
