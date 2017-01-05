@@ -60,6 +60,7 @@ import static org.neo4j.test.rule.concurrent.OtherThreadRule.isWaiting;
         CloseCompatibility.class,
         AcquisitionTimeoutCompatibility.class,
         TracerCompatibility.class,
+        ActiveLocksListingCompatibility.class,
 })
 public abstract class LockingCompatibilityTestSuite
 {

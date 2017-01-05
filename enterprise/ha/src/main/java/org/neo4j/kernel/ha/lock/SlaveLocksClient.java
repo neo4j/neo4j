@@ -20,6 +20,7 @@
 package org.neo4j.kernel.ha.lock;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -238,6 +239,12 @@ class SlaveLocksClient implements Locks.Client
     {
         assertNotStopped();
         return initialized ? client.getLockSessionId() : -1;
+    }
+
+    @Override
+    public Collection<Locks.ActiveLock> activeLocks()
+    {
+        throw new UnsupportedOperationException( "not implemented" );
     }
 
     private void stopLockSessionOnMaster()

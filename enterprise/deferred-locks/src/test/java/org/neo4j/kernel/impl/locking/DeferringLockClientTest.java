@@ -19,14 +19,16 @@
  */
 package org.neo4j.kernel.impl.locking;
 
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
+
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
@@ -467,6 +469,15 @@ public class DeferringLockClientTest
         public int getLockSessionId()
         {
             return 0;
+        }
+
+        @Override
+        public Collection<Locks.ActiveLock> activeLocks()
+        {
+            return actualLockUnits.stream().map( lu -> lu.isExclusive()
+                    ? new Locks.ActiveExclusiveLock( lu.resourceType(), lu.resourceId() )
+                    : new Locks.ActiveSharedLock( lu.resourceType(), lu.resourceId() ) )
+                    .collect( Collectors.toList() );
         }
     }
 }

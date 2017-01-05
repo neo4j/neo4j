@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.impl.locking;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
 /**
  * A {@link StatementLocks} implementation that defers {@link #optimistic() optimistic}
  * locks using {@link DeferringLockClient}.
@@ -62,5 +66,31 @@ public class DeferringStatementLocks implements StatementLocks
     public void close()
     {
         implicit.close();
+    }
+
+    @Override
+    public Collection<Locks.ActiveLock> activeLocks()
+    {
+        Collection<Locks.ActiveLock> explicit = this.explicit.activeLocks(), implicit = this.implicit.activeLocks();
+        // minimize (re-)allocation
+        if ( explicit instanceof ArrayList<?> && explicit.size() > implicit.size() )
+        {
+            List<Locks.ActiveLock> locks = (List<Locks.ActiveLock>) explicit;
+            locks.addAll( implicit );
+            return locks;
+        }
+        else if ( implicit instanceof ArrayList<?> && implicit.size() > explicit.size() )
+        {
+            List<Locks.ActiveLock> locks = (List<Locks.ActiveLock>) implicit;
+            locks.addAll( explicit );
+            return locks;
+        }
+        else
+        {
+            List<Locks.ActiveLock> locks = new ArrayList<>( explicit.size() + implicit.size() );
+            locks.addAll( explicit );
+            locks.addAll( implicit );
+            return locks;
+        }
     }
 }

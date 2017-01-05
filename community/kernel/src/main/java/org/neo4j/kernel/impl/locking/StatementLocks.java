@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.locking;
 
+import java.util.Collection;
+
 import org.neo4j.kernel.impl.api.KernelStatement;
 
 /**
@@ -58,4 +60,11 @@ public interface StatementLocks extends AutoCloseable
      */
     @Override
     void close();
+
+    /**
+     * List the locks held by this transaction.
+     *
+     * @return the locks held by this transaction.
+     */
+    Collection<Locks.ActiveLock> activeLocks();
 }

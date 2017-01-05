@@ -20,6 +20,8 @@
 package org.neo4j.kernel.impl.locking;
 
 import java.time.Clock;
+import java.util.Collection;
+import java.util.Objects;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.configuration.Config;
@@ -112,6 +114,8 @@ public interface Locks
 
         /** For slave transactions, this tracks an identifier for the lock session running on the master */
         int getLockSessionId();
+
+        Collection<ActiveLock> activeLocks();
     }
 
     /**
@@ -126,4 +130,67 @@ public interface Locks
     void accept(Visitor visitor);
 
     void close();
+
+    abstract class ActiveLock
+    {
+        public final ResourceType resourceType;
+        public final long resourceId;
+
+        private ActiveLock( ResourceType resourceType, long resourceId )
+        {
+            this.resourceType = resourceType;
+            this.resourceId = resourceId;
+        }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( o.getClass() != this.getClass() )
+            {
+                return false;
+            }
+            ActiveLock activeLock = (ActiveLock) o;
+            return resourceId == activeLock.resourceId &&
+                    Objects.equals( resourceType, activeLock.resourceType );
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return Objects.hash( resourceType, resourceId );
+        }
+
+        public abstract String mode();
+    }
+
+    final class ActiveExclusiveLock extends ActiveLock
+    {
+        public ActiveExclusiveLock( ResourceType resourceType, long resourceId )
+        {
+            super( resourceType, resourceId );
+        }
+
+        @Override
+        public String mode()
+        {
+            return "EXCLUSIVE";
+        }
+    }
+    final class ActiveSharedLock extends ActiveLock
+    {
+        public ActiveSharedLock( ResourceType resourceType, long resourceId )
+        {
+            super( resourceType, resourceId );
+        }
+
+        @Override
+        public String mode()
+        {
+            return "SHARED";
+        }
+    }
 }

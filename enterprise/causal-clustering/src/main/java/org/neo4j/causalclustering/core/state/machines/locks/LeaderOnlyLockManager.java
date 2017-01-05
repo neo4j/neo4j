@@ -19,6 +19,7 @@
  */
 package org.neo4j.causalclustering.core.state.machines.locks;
 
+import java.util.Collection;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
@@ -256,6 +257,12 @@ public class LeaderOnlyLockManager implements Locks
         public int getLockSessionId()
         {
             return lockTokenId;
+        }
+
+        @Override
+        public Collection<ActiveLock> activeLocks()
+        {
+            throw new UnsupportedOperationException( "not implemented" );
         }
     }
 }

@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.locking;
 
+import java.util.Collection;
+import java.util.Collections;
+
 import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
 import org.neo4j.storageengine.api.lock.ResourceType;
 
@@ -70,5 +73,11 @@ public class NoOpClient implements Locks.Client
     public int getLockSessionId()
     {
         return -1;
+    }
+
+    @Override
+    public Collection<Locks.ActiveLock> activeLocks()
+    {
+        return Collections.emptyList();
     }
 }

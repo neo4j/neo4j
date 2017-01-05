@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.locking;
 
+import java.util.Collection;
+
 /**
  * A {@link StatementLocks} implementation that uses given {@link Locks.Client} for both
  * {@link #optimistic() optimistic} and {@link #pessimistic() pessimistic} locks.
@@ -60,5 +62,11 @@ public class SimpleStatementLocks implements StatementLocks
     public void close()
     {
         client.close();
+    }
+
+    @Override
+    public Collection<Locks.ActiveLock> activeLocks()
+    {
+        return client.activeLocks();
     }
 }

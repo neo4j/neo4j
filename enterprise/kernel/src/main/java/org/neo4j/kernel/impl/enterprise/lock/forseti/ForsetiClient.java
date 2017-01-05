@@ -20,6 +20,9 @@
 package org.neo4j.kernel.impl.enterprise.lock.forseti;
 
 import java.time.Clock;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.IntFunction;
 
@@ -37,6 +40,7 @@ import org.neo4j.kernel.impl.locking.LockClientStoppedException;
 import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.LockWaitEvent;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.util.collection.SimpleBitSet;
 import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
 import org.neo4j.storageengine.api.lock.ResourceType;
@@ -633,6 +637,37 @@ public class ForsetiClient implements Locks.Client
     public int getLockSessionId()
     {
         return clientId;
+    }
+
+    @Override
+    public Collection<Locks.ActiveLock> activeLocks()
+    {
+        List<Locks.ActiveLock> locks = new ArrayList<>();
+        for ( int typeId = 0; typeId < exclusiveLockCounts.length; typeId++ )
+        {
+            PrimitiveLongIntMap lockCounts = exclusiveLockCounts[typeId];
+            if (lockCounts != null)
+            {
+                ResourceType resourceType = ResourceTypes.fromId( typeId );
+                lockCounts.visitEntries( (resourceId, count) -> {
+                    locks.add( new Locks.ActiveExclusiveLock( resourceType, resourceId ) );
+                    return false;
+                } );
+            }
+        }
+        for ( int typeId = 0; typeId < sharedLockCounts.length; typeId++ )
+        {
+            PrimitiveLongIntMap lockCounts = sharedLockCounts[typeId];
+            if (lockCounts != null)
+            {
+                ResourceType resourceType = ResourceTypes.fromId( typeId );
+                lockCounts.visitEntries( (resourceId, count) -> {
+                    locks.add( new Locks.ActiveSharedLock( resourceType, resourceId ) );
+                    return false;
+                } );
+            }
+        }
+        return locks;
     }
 
     public int waitListSize()

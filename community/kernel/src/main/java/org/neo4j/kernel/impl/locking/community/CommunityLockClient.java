@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.locking.community;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
@@ -31,6 +34,7 @@ import org.neo4j.kernel.impl.locking.LockClientStateHolder;
 import org.neo4j.kernel.impl.locking.LockClientStoppedException;
 import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.storageengine.api.lock.ResourceType;
 
 import static java.lang.String.format;
@@ -312,6 +316,33 @@ public class CommunityLockClient implements Locks.Client
     public int getLockSessionId()
     {
         return lockTransaction.getId();
+    }
+
+    @Override
+    public Collection<Locks.ActiveLock> activeLocks()
+    {
+        List<Locks.ActiveLock> locks = new ArrayList<>();
+        exclusiveLocks.visitEntries( ( typeId, exclusive ) ->
+        {
+            ResourceType resourceType = ResourceTypes.fromId( typeId );
+            exclusive.visitEntries( ( resourceId, lock ) ->
+            {
+                locks.add( new Locks.ActiveExclusiveLock( resourceType, resourceId ) );
+                return false;
+            } );
+            return false;
+        } );
+        sharedLocks.visitEntries( ( typeId, shared ) ->
+        {
+            ResourceType resourceType = ResourceTypes.fromId( typeId );
+            shared.visitEntries( ( resourceId, lock ) ->
+            {
+                locks.add( new Locks.ActiveSharedLock( resourceType, resourceId ) );
+                return false;
+            } );
+            return false;
+        } );
+        return locks;
     }
 
     private PrimitiveLongObjectMap<LockResource> localShared( ResourceType resourceType )

@@ -31,7 +31,6 @@ import org.neo4j.time.SystemNanoClock;
 
 public class StackingQueryRegistrationOperations implements QueryRegistrationOperations
 {
-
     private final MonotonicCounter lastQueryId = MonotonicCounter.newAtomicMonotonicCounter();
     private final SystemNanoClock clock;
 
@@ -74,6 +73,5 @@ public class StackingQueryRegistrationOperations implements QueryRegistrationOpe
     {
         statement.stopQueryExecution( executingQuery );
     }
-
 }
 

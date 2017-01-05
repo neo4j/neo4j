@@ -19,11 +19,13 @@
  */
 package org.neo4j.kernel.impl.locking;
 
-import org.apache.commons.lang3.mutable.MutableInt;
-
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
+
+import org.apache.commons.lang3.mutable.MutableInt;
 
 import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
 import org.neo4j.storageengine.api.lock.ResourceType;
@@ -156,6 +158,15 @@ public class DeferringLockClient implements Locks.Client
     public int getLockSessionId()
     {
         return clientDelegate.getLockSessionId();
+    }
+
+    @Override
+    public Collection<Locks.ActiveLock> activeLocks()
+    {
+        return locks.keySet().stream().map( ( unit ) -> unit.isExclusive()
+                ? new Locks.ActiveExclusiveLock( unit.resourceType(), unit.resourceId() )
+                : new Locks.ActiveSharedLock( unit.resourceType(), unit.resourceId() ) )
+                .collect( Collectors.toList() );
     }
 
     private void assertNotStopped()

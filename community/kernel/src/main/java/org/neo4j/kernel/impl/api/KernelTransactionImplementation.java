@@ -793,6 +793,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         storageStatement.close();
     }
 
+    public Collection<Locks.ActiveLock> activeLocks()
+    {
+        StatementLocks locks = this.statementLocks;
+        return locks == null ? Collections.emptyList() : locks.activeLocks();
+    }
+
     /**
      * It is not allowed for the same transaction to perform database writes as well as schema writes.
      * This enum tracks the current write transactionStatus of the transaction, allowing it to transition from

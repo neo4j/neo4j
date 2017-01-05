@@ -19,8 +19,10 @@
  */
 package org.neo4j.kernel.enterprise.builtinprocs;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
@@ -39,6 +41,7 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
 
+import static java.util.Collections.singletonMap;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.Matchers.equalTo;
@@ -138,6 +141,50 @@ public class ListQueriesProcedureTest
             assertThat( data, hasKey( "runtime" ) );
             assertThat( data.get( "planner" ), instanceOf( String.class ) );
             assertThat( data.get( "runtime" ), instanceOf( String.class ) );
+        }
+    }
+
+    @Test
+    public void shouldListActiveLocks() throws Exception
+    {
+        // given
+        String QUERY = "MATCH (x:X) SET x.v = 5 WITH count(x) AS num MATCH (y:Y) SET y.c = num";
+        Set<Long> locked = new HashSet<>();
+        try ( Resource<Node> test = test( () ->
+        {
+            for ( int i = 0; i < 5; i++ )
+            {
+                locked.add( db.createNode( label( "X" ) ).getId() );
+            }
+            return db.createNode( label( "Y" ) );
+        }, Transaction::acquireWriteLock, QUERY ) )
+        {
+            // when
+            try ( Result rows = db.execute( "CALL dbms.listQueries() YIELD query AS queryText, queryId "
+                    + "WHERE queryText = $queryText "
+                    + "CALL dbms.listActiveLocks(queryId) YIELD mode, resourceType, resourceId "
+                    + "RETURN *", singletonMap( "queryText", QUERY ) ) )
+            {
+                // then
+                Set<Long> ids = new HashSet<>();
+                while ( rows.hasNext() )
+                {
+                    Map<String,Object> row = rows.next();
+                    Object resourceType = row.get( "resourceType" );
+                    if ( "SCHEMA".equals( resourceType ) )
+                    {
+                        assertEquals( "SHARED", row.get( "mode" ) );
+                        assertEquals( 0L, row.get( "resourceId" ) );
+                    }
+                    else
+                    {
+                        assertEquals( "NODE", resourceType );
+                        assertEquals( "EXCLUSIVE", row.get( "mode" ) );
+                        ids.add( (Long) row.get( "resourceId" ) );
+                    }
+                }
+                assertEquals( locked, ids );
+            }
         }
     }
 
