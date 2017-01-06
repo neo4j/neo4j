@@ -33,7 +33,10 @@ import java.util.Map;
 import java.util.Random;
 import java.util.TreeMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -69,6 +72,7 @@ public class GBPTreeIT
 
     private final Layout<MutableLong,MutableLong> layout = new SimpleLongLayout();
     private GBPTree<MutableLong,MutableLong> index;
+    private ExecutorService threadPool = Executors.newFixedThreadPool( Runtime.getRuntime().availableProcessors() );
 
     private GBPTree<MutableLong,MutableLong> createIndex( int pageSize )
             throws IOException
@@ -94,6 +98,7 @@ public class GBPTreeIT
     @After
     public void consistencyCheck() throws IOException
     {
+        threadPool.shutdownNow();
         index.consistencyCheck();
     }
 
@@ -177,6 +182,7 @@ public class GBPTreeIT
         AtomicInteger highestId = new AtomicInteger( -1 );
         AtomicReference<Throwable> readerError = new AtomicReference<>();
         AtomicInteger numberOfReads = new AtomicInteger();
+        AtomicBoolean failHalt = new AtomicBoolean();
         Runnable reader = () -> {
             int numberOfLocalReads = 0;
             try
@@ -247,6 +253,7 @@ public class GBPTreeIT
             catch ( Throwable e )
             {
                 readerError.set( e );
+                failHalt.set( true );
             }
             finally
             {
@@ -255,16 +262,14 @@ public class GBPTreeIT
         };
 
         // WHEN starting the readers
-        Thread[] readerThreads = new Thread[readers];
         for ( int i = 0; i < readers; i++ )
         {
-            readerThreads[i] = new Thread( reader );
-            readerThreads[i].start();
+            threadPool.submit( reader );
         }
 
         // and starting the checkpointer
-        Thread checkpointer = checkpointerThread( minCheckpointInterval, maxCheckpointInterval, endSignal );
-        checkpointer.start();
+        threadPool.submit(
+                checkpointerThread( minCheckpointInterval, maxCheckpointInterval, endSignal, readerError, failHalt ) );
 
         // and then starting the writer
         try
@@ -273,7 +278,7 @@ public class GBPTreeIT
             startSignal.countDown();
             Random random1 = ThreadLocalRandom.current();
             int inserted = 0;
-            while ( (inserted < 100_000 || numberOfReads.get() < 100) && readerError.get() == null )
+            while ( (inserted < 100_000 || numberOfReads.get() < 100) && !failHalt.get() )
             {
                 try ( IndexWriter<MutableLong,MutableLong> writer = index.writer() )
                 {
@@ -295,15 +300,12 @@ public class GBPTreeIT
             // number of successful reads. A successful read means that all results were ordered,
             // no holes and we saw all values that was inserted at the point of making the seek call.
             endSignal.set( true );
-            for ( Thread readerThread : readerThreads )
-            {
-                readerThread.join( SECONDS.toMillis( 10 ) );
-            }
+            threadPool.shutdown();
+            threadPool.awaitTermination( 10, TimeUnit.SECONDS );
             if ( readerError.get() != null )
             {
                 throw readerError.get();
             }
-            checkpointer.join();
         }
     }
 
@@ -336,129 +338,27 @@ public class GBPTreeIT
         // given
         index = createIndex( 256 );
 
-        Runnable reader = () -> {
-            int numberOfLocalReads = 0;
-            try
-            {
-                readerReadySignal.countDown();
-                while ( currentWriteIteration.get() < 1 )
-                {
-                    startSignal.await( 5, SECONDS );
-                }
-
-                while ( !endSignal.get() && !failHalt.get() )
-                {
-                    // Read one go, we should see up to highId
-
-                    // Kept for SeekCursor life
-                    int iterationExpectedToSee = currentWriteIteration.get() - 1;
-                    int rangeModulus = iterationExpectedToSee % nbrOfGroups;
-                    long start = minRange( nbrOfGroups, rangeWidth, iterationExpectedToSee );
-                    long end = maxRange( nbrOfGroups, rangeWidth, iterationExpectedToSee );
-
-                    // Updated during SeekCursor life
-                    long lastSeenKey = -1;
-                    long nextToSeeBase = start;
-                    long nextToSeeDelta = 0;
-                    long nextToSee = nextToSeeBase + nextToSeeDelta;
-                    long lastWrittenBeforeStart;
-                    long lastWrittenWhenFinished;
-                    long lastWrittenBeforeTraversingTree;
-
-                    lastWrittenBeforeTraversingTree = lastWrittenKey.get();
-                    try ( RawCursor<Hit<MutableLong,MutableLong>,IOException> cursor =
-                                  index.seek( new MutableLong( start ), new MutableLong( end ) ) )
-                    {
-                        lastWrittenWhenFinished = lastWrittenKey.get();
-                        while ( cursor.next() )
-                        {
-                            lastWrittenBeforeStart = lastWrittenWhenFinished;
-                            lastWrittenWhenFinished = lastWrittenKey.get();
-
-                            lastSeenKey = cursor.get().key().longValue();
-                            long lastSeenValue = cursor.get().value().longValue();
-                            if ( lastSeenKey != lastSeenValue )
-                            {
-                                failHalt.set( true );
-                                fail( String.format( "Read mismatching key value pair, key=%d, value=%d%n",
-                                        lastSeenKey, lastSeenValue ) );
-                            }
-
-                            nextToSee = nextToSeeBase + nextToSeeDelta;
-                            if ( nextToSee == lastSeenKey )
-                            {
-                                if ( nextToSeeDelta < rangeModulus )
-                                {
-                                    nextToSeeDelta++;
-                                }
-                                else
-                                {
-                                    nextToSeeDelta = 0;
-                                    nextToSeeBase += nbrOfGroups;
-                                }
-                            }
-                            else if ( lastSeenKey > nextToSee )
-                            {
-                                failHalt.set( true );
-                                fail( String.format( "Expected to see %d+%d=%d but went straight to %d, " +
-                                                "lastWrittenBeforeTraversingTree=%d, " +
-                                                "lastWrittenBeforeNext=%d, " +
-                                                "lastWrittenAfterNext=%d%n",
-                                        nextToSeeBase, nextToSeeDelta, nextToSee, lastSeenKey,
-                                        lastWrittenBeforeTraversingTree,
-                                        lastWrittenBeforeStart,
-                                        lastWrittenWhenFinished ) );
-                            }
-                        }
-                        long difference = Math.abs( end - nextToSee );
-                        boolean condition = difference <= nbrOfGroups;
-                        if ( !condition )
-                        {
-                            failHalt.set( true );
-                            fail( String.format( "Expected distance between end and nextToSee to be less " +
-                                            "than %d but was %d. lastSeenKey=%d, nextToSee=%d, end=%d%n",
-                                    nbrOfGroups, difference, lastSeenKey, nextToSee, end ) );
-                        }
-                    }
-
-                    // Keep a local counter and update the global one now and then, we don't want
-                    // out little statistic here to affect concurrency
-                    if ( ++numberOfLocalReads == 30 )
-                    {
-                        numberOfReads.addAndGet( numberOfLocalReads );
-                        numberOfLocalReads = 0;
-                    }
-                }
-            }
-            catch ( Throwable e )
-            {
-                readerError.set( e );
-            }
-            finally
-            {
-                numberOfReads.addAndGet( numberOfLocalReads );
-            }
-        };
+        ReadAction readAction = () -> doOneReadForwardForConcurrentInsert( nbrOfGroups, rangeWidth,
+                currentWriteIteration, lastWrittenKey );
+        RunnableReader reader = new RunnableReader( readAction, currentWriteIteration, readerReadySignal, startSignal,
+                endSignal, failHalt, numberOfReads, readerError );
 
         // WHEN starting the readers
-        Thread[] readerThreads = new Thread[readers];
         for ( int i = 0; i < readers; i++ )
         {
-            readerThreads[i] = new Thread( reader );
-            readerThreads[i].start();
+            threadPool.submit( reader );
         }
 
         // and starting the checkpointer
-        Thread checkpointer = checkpointerThread( minCheckpointInterval, maxCheckpointInterval, endSignal );
-        checkpointer.start();
-
+        threadPool.submit(
+                checkpointerThread( minCheckpointInterval, maxCheckpointInterval, endSignal, readerError, failHalt ) );
         // and then starting the writer
         try
         {
             assertTrue( readerReadySignal.await( 10, SECONDS ) );
             startSignal.countDown();
             int iteration = currentWriteIteration.get();
-            while ( !failHalt.get() && numberOfReads.get() < wantedNbrOfReads && readerError.get() == null )
+            while ( !failHalt.get() && numberOfReads.get() < wantedNbrOfReads )
             {
                 try ( IndexWriter<MutableLong,MutableLong> writer = index.writer() )
                 {
@@ -485,11 +385,94 @@ public class GBPTreeIT
             // number of successful reads. A successful read means that all results were ordered,
             // no holes and we saw all values that was inserted at the point of making the seek call.
             endSignal.set( true );
-            for ( Thread readerThread : readerThreads )
+            threadPool.shutdown();
+            threadPool.awaitTermination( 10, TimeUnit.SECONDS );
+            if ( readerError.get() != null )
             {
-                readerThread.join( SECONDS.toMillis( 10 ) );
+                throw readerError.get();
             }
-            checkpointer.join();
+        }
+    }
+
+    @Test
+    public void shouldReadCorrectlyWhenConcurrentlyInsertingOutOfOrderAndSeekingBackwards() throws Throwable
+    {
+        // Checkpoint config
+        int minCheckpointInterval = 10;
+        int maxCheckpointInterval = 20;
+
+        // Write group config
+        int nbrOfGroups = 10;
+        int wantedRangeWidth = 1_000;
+        int rangeWidth = wantedRangeWidth - wantedRangeWidth % nbrOfGroups;
+        int wantedNbrOfReads = 10_000;
+
+        // Readers config
+        int readers = max( 1, Runtime.getRuntime().availableProcessors() - 1 );
+
+        // Thread communication
+        AtomicInteger currentWriteIteration = new AtomicInteger( 0 );
+        AtomicLong lastWrittenKey = new AtomicLong( -1 );
+        CountDownLatch readerReadySignal = new CountDownLatch( readers );
+        CountDownLatch startSignal = new CountDownLatch( 1 );
+        AtomicBoolean endSignal = new AtomicBoolean();
+        AtomicBoolean failHalt = new AtomicBoolean(); // Readers signal to writer that there is a failure
+        AtomicReference<Throwable> readerError = new AtomicReference<>();
+        AtomicInteger numberOfReads = new AtomicInteger();
+
+        // given
+        index = createIndex( 256 );
+
+        ReadAction readAction = () -> doOneReadBackwardsForConcurrentInsert( nbrOfGroups, rangeWidth,
+                currentWriteIteration, lastWrittenKey );
+        RunnableReader reader = new RunnableReader( readAction, currentWriteIteration, readerReadySignal, startSignal,
+                endSignal, failHalt, numberOfReads, readerError );
+
+        // WHEN starting the readers
+        for ( int i = 0; i < readers; i++ )
+        {
+            threadPool.submit( reader );
+        }
+
+        // and starting the checkpointer
+        threadPool.submit(
+                checkpointerThread( minCheckpointInterval, maxCheckpointInterval, endSignal, readerError, failHalt ) );
+
+        // and then starting the writer
+        try
+        {
+            assertTrue( readerReadySignal.await( 10, SECONDS ) );
+            startSignal.countDown();
+            int iteration = currentWriteIteration.get();
+            while ( !failHalt.get() && numberOfReads.get() < wantedNbrOfReads )
+            {
+                try ( IndexWriter<MutableLong,MutableLong> writer = index.writer() )
+                {
+                    for ( long i = maxRange( nbrOfGroups, rangeWidth, iteration ) - iteration % nbrOfGroups;
+                          i > minRange( nbrOfGroups, rangeWidth, iteration ); i -= nbrOfGroups )
+                    {
+                        MutableLong thing = new MutableLong( i );
+                        writer.put( thing, thing );
+                        lastWrittenKey.set( i );
+                        if ( failHalt.get() )
+                        {
+                            break;
+                        }
+                    }
+                }
+                iteration = currentWriteIteration.incrementAndGet();
+                // Sleep a little in between update groups (transactions, sort of)
+                MILLISECONDS.sleep( random.nextInt( 10 ) + 3 );
+            }
+        }
+        finally
+        {
+            // THEN no reader should have failed and by this time there have been a certain
+            // number of successful reads. A successful read means that all results were ordered,
+            // no holes and we saw all values that was inserted at the point of making the seek call.
+            endSignal.set( true );
+            threadPool.shutdown();
+            threadPool.awaitTermination( 10, TimeUnit.SECONDS );
             if ( readerError.get() != null )
             {
                 throw readerError.get();
@@ -528,87 +511,20 @@ public class GBPTreeIT
         index = createIndex( 256 );
         insertEverythingInRange( index, minValue, maxValue );
 
-        Runnable reader = () -> {
-            int numberOfLocalReads = 0;
-            try
-            {
-                readerReadySignal.countDown();
-                while ( currentWriteIteration.get() < 1 )
-                {
-                    startSignal.await( 5, SECONDS );
-                }
-
-                while ( !endSignal.get() && !failHalt.get() )
-                {
-                    // Read one go, we should see up to highId
-
-                    // Kept for SeekCursor life
-                    int iterationExpectedToSee = currentWriteIteration.get();
-                    long start = minRange( nbrOfGroups, rangeWidth, iterationExpectedToSee );
-                    long end = maxRange( nbrOfGroups, rangeWidth, iterationExpectedToSee );
-
-                    // Updated during SeekCursor life
-                    long nextToSee = start + 1; // First odd key in range
-
-                    try ( RawCursor<Hit<MutableLong,MutableLong>,IOException> cursor =
-                                  index.seek( new MutableLong( start ), new MutableLong( end ) ) )
-                    {
-                        while ( cursor.next() )
-                        {
-                            long thisKey = cursor.get().key().longValue();
-
-                            // Verify value
-                            long thisValue = cursor.get().value().longValue();
-                            if ( thisKey != thisValue )
-                            {
-                                failHalt.set( true );
-                                fail( String.format( "Read mismatching key value pair, key=%d, value=%d%n",
-                                        thisKey, thisValue ) );
-                            }
-
-                            if ( nextToSee == thisKey )
-                            {
-                                nextToSee += 2; // Next odd key in range
-                            }
-                            else if ( thisKey > nextToSee )
-                            {
-                                failHalt.set( true );
-                                fail( String.format( "Expected to see %d but went straight to %d%n",
-                                        nextToSee, thisKey) );
-                            }
-                        }
-                    }
-
-                    // Keep a local counter and update the global one now and then, we don't want
-                    // out little statistic here to affect concurrency
-                    if ( ++numberOfLocalReads == 30 )
-                    {
-                        numberOfReads.addAndGet( numberOfLocalReads );
-                        numberOfLocalReads = 0;
-                    }
-                }
-            }
-            catch ( Throwable e )
-            {
-                readerError.set( e );
-            }
-            finally
-            {
-                numberOfReads.addAndGet( numberOfLocalReads );
-            }
-        };
+        ReadAction readAction = () ->
+                doOneReadForwardForConcurrentRemove( nbrOfGroups, rangeWidth, currentWriteIteration );
+        RunnableReader reader = new RunnableReader( readAction, currentWriteIteration, readerReadySignal, startSignal,
+                endSignal, failHalt, numberOfReads, readerError );
 
         // WHEN starting the readers
-        Thread[] readerThreads = new Thread[readers];
         for ( int i = 0; i < readers; i++ )
         {
-            readerThreads[i] = new Thread( reader );
-            readerThreads[i].start();
+            threadPool.submit( reader );
         }
 
         // and starting the checkpointer
-        Thread checkpointer = checkpointerThread( minCheckpointInterval, maxCheckpointInterval, endSignal );
-        checkpointer.start();
+        threadPool.submit(
+                checkpointerThread( minCheckpointInterval, maxCheckpointInterval, endSignal, readerError, failHalt ) );
 
         // and then starting the writer
         try
@@ -616,7 +532,7 @@ public class GBPTreeIT
             assertTrue( readerReadySignal.await( 10, SECONDS ) );
             startSignal.countDown();
             int iteration = currentWriteIteration.get();
-            while ( !failHalt.get() && readerError.get() == null && lastRemovedKey.get() < maxValue - 2)
+            while ( !failHalt.get() && lastRemovedKey.get() < maxValue - 2)
             {
                 try ( IndexWriter<MutableLong,MutableLong> writer = index.writer() )
                 {
@@ -644,11 +560,97 @@ public class GBPTreeIT
             // number of successful reads. A successful read means that all results were ordered,
             // no holes and we saw all values that was inserted at the point of making the seek call.
             endSignal.set( true );
-            for ( Thread readerThread : readerThreads )
+            threadPool.shutdown();
+            threadPool.awaitTermination( 10, TimeUnit.SECONDS );
+            if ( readerError.get() != null )
             {
-                readerThread.join( SECONDS.toMillis( 10 ) );
+                throw readerError.get();
             }
-            checkpointer.join();
+        }
+    }
+
+    @Test
+    public void shouldReadCorrectlyWhenConcurrentlyRemovingOutOfOrderBackwards() throws Throwable
+    {
+        // Checkpoint config
+        int minCheckpointInterval = 10;
+        int maxCheckpointInterval = 20;
+
+        // Write group config
+        int nbrOfGroups = 10;
+        int wantedRangeWidth = 1_00;
+        int rangeWidth = wantedRangeWidth - wantedRangeWidth % nbrOfGroups;
+        long minValue = 0L;
+        long maxValue = 1_000L;
+
+        // Readers config
+        int readers = max( 1, Runtime.getRuntime().availableProcessors() - 1 );
+
+        // Thread communication
+        AtomicInteger currentWriteIteration = new AtomicInteger( 0 );
+        AtomicLong lastRemovedKey = new AtomicLong( -1 );
+        CountDownLatch readerReadySignal = new CountDownLatch( readers );
+        CountDownLatch startSignal = new CountDownLatch( 1 );
+        AtomicBoolean endSignal = new AtomicBoolean();
+        AtomicBoolean failHalt = new AtomicBoolean(); // Readers signal to writer that there is a failure
+        AtomicReference<Throwable> readerError = new AtomicReference<>();
+        AtomicInteger numberOfReads = new AtomicInteger();
+
+        // given
+        index = createIndex( 256 );
+        insertEverythingInRange( index, minValue, maxValue );
+
+        ReadAction readAction = () ->
+                doOneReadBackwardsForConcurrentRemove( nbrOfGroups, rangeWidth, currentWriteIteration );
+        RunnableReader reader = new RunnableReader( readAction, currentWriteIteration, readerReadySignal, startSignal,
+                endSignal, failHalt, numberOfReads, readerError );
+
+        // WHEN starting the readers
+        for ( int i = 0; i < readers; i++ )
+        {
+            threadPool.submit( reader );
+        }
+
+        // and starting the checkpointer
+        threadPool.submit(
+                checkpointerThread( minCheckpointInterval, maxCheckpointInterval, endSignal, readerError, failHalt ) );
+
+        // and then starting the writer
+        try
+        {
+            assertTrue( readerReadySignal.await( 10, SECONDS ) );
+            startSignal.countDown();
+            int iteration = currentWriteIteration.get();
+            while ( !failHalt.get() && lastRemovedKey.get() < maxValue + 1)
+            {
+                try ( IndexWriter<MutableLong,MutableLong> writer = index.writer() )
+                {
+                    int minRange = minRange( nbrOfGroups, rangeWidth, iteration );
+                    int maxRange = maxRange( nbrOfGroups, rangeWidth, iteration );
+                    for ( long i = maxRange - (iteration % nbrOfGroups); i > minRange; i -= nbrOfGroups )
+                    {
+                        MutableLong thing = new MutableLong( i );
+                        writer.remove( thing );
+                        lastRemovedKey.set( i );
+                        if ( failHalt.get() )
+                        {
+                            break;
+                        }
+                    }
+                }
+                iteration = currentWriteIteration.addAndGet( 2 );
+                // Sleep a little in between update groups (transactions, sort of)
+                MILLISECONDS.sleep( random.nextInt( 3,13 ) );
+            }
+        }
+        finally
+        {
+            // THEN no reader should have failed and by this time there have been a certain
+            // number of successful reads. A successful read means that all results were ordered,
+            // no holes and we saw all values that was inserted at the point of making the seek call.
+            endSignal.set( true );
+            threadPool.shutdown();
+            threadPool.awaitTermination( 10, TimeUnit.SECONDS );
             if ( readerError.get() != null )
             {
                 throw readerError.get();
@@ -675,9 +677,10 @@ public class GBPTreeIT
         }
     }
 
-    private Thread checkpointerThread( int minCheckpointInterval, int maxCheckpointInterval, AtomicBoolean endSignal )
+    private Runnable checkpointerThread( int minCheckpointInterval, int maxCheckpointInterval, AtomicBoolean endSignal,
+            AtomicReference<Throwable> readerError, AtomicBoolean failHalt )
     {
-        return new Thread( () ->
+        return () ->
         {
             while ( !endSignal.get() )
             {
@@ -687,12 +690,13 @@ public class GBPTreeIT
                     // Sleep a little in between update groups (transactions, sort of)
                     MILLISECONDS.sleep( random.nextInt( minCheckpointInterval, maxCheckpointInterval ) );
                 }
-                catch ( Exception e )
+                catch ( Throwable e )
                 {
-                    throw new RuntimeException( e );
+                    readerError.set( e );
+                    failHalt.set( true );
                 }
             }
-        });
+        };
     }
 
     private int maxRange( int nbrOfGroups, int rangeWidth, int iteration )
@@ -755,5 +759,288 @@ public class GBPTreeIT
     private static MutableLong randomKey( Random random )
     {
         return new MutableLong( random.nextInt( 1_000 ) );
+    }
+
+    private class RunnableReader implements Runnable
+    {
+        private final ReadAction readAction;
+        private final AtomicInteger currentWriteIteration;
+        private final CountDownLatch readerReadySignal;
+        private final CountDownLatch startSignal;
+        private final AtomicBoolean endSignal;
+        private final AtomicBoolean failHalt;
+        private final AtomicInteger numberOfReads;
+        private final AtomicReference<Throwable> readerError;
+
+        RunnableReader( ReadAction readAction, AtomicInteger currentWriteIteration, CountDownLatch readerReadySignal,
+                CountDownLatch startSignal, AtomicBoolean endSignal, AtomicBoolean failHalt,
+                AtomicInteger numberOfReads, AtomicReference<Throwable> readerError )
+        {
+
+            this.readAction = readAction;
+            this.currentWriteIteration = currentWriteIteration;
+            this.readerReadySignal = readerReadySignal;
+            this.startSignal = startSignal;
+            this.endSignal = endSignal;
+            this.failHalt = failHalt;
+            this.numberOfReads = numberOfReads;
+            this.readerError = readerError;
+        }
+        @Override
+        public void run()
+        {
+            int numberOfLocalReads = 0;
+            try
+            {
+                readerReadySignal.countDown();
+                while ( currentWriteIteration.get() < 1 )
+                {
+                    startSignal.await( 5, SECONDS );
+                }
+
+                while ( !endSignal.get() && !failHalt.get() )
+                {
+                    // Read one go, we should see up to highId
+                    readAction.performOneRead();
+
+                    // Keep a local counter and update the global one now and then, we don't want
+                    // out little statistic here to affect concurrency
+                    if ( ++numberOfLocalReads == 30 )
+                    {
+                        numberOfReads.addAndGet( numberOfLocalReads );
+                        numberOfLocalReads = 0;
+                    }
+                }
+            }
+            catch ( Throwable e )
+            {
+                readerError.set( e );
+                failHalt.set( true );
+            }
+            finally
+            {
+                numberOfReads.addAndGet( numberOfLocalReads );
+            }
+        }
+    }
+
+    private interface ReadAction
+    {
+        void performOneRead() throws IOException;
+    }
+
+    private void doOneReadForwardForConcurrentInsert( int nbrOfGroups, int rangeWidth,
+            AtomicInteger currentWriteIteration, AtomicLong lastWrittenKey ) throws IOException
+    {
+        int iterationExpectedToSee = currentWriteIteration.get() - 1;
+        int rangeModulus = iterationExpectedToSee % nbrOfGroups;
+        long start = minRange( nbrOfGroups, rangeWidth, iterationExpectedToSee );
+        long end = maxRange( nbrOfGroups, rangeWidth, iterationExpectedToSee );
+
+        long lastSeenKey = -1;
+        long nextToSeeBase = start;
+        long nextToSeeDelta = 0;
+        long nextToSee = nextToSeeBase + nextToSeeDelta;
+        long lastWrittenBeforeStart;
+        long lastWrittenWhenFinished;
+        long lastWrittenBeforeTraversingTree;
+
+        lastWrittenBeforeTraversingTree = lastWrittenKey.get();
+        try ( RawCursor<Hit<MutableLong,MutableLong>,IOException> cursor =
+                      index.seek( new MutableLong( start ), new MutableLong( end ) ) )
+        {
+            lastWrittenWhenFinished = lastWrittenKey.get();
+            while ( cursor.next() )
+            {
+                lastWrittenBeforeStart = lastWrittenWhenFinished;
+                lastWrittenWhenFinished = lastWrittenKey.get();
+
+                lastSeenKey = cursor.get().key().longValue();
+                long lastSeenValue = cursor.get().value().longValue();
+                if ( lastSeenKey != lastSeenValue )
+                {
+                    fail( String.format( "Read mismatching key value pair, key=%d, value=%d%n",
+                            lastSeenKey, lastSeenValue ) );
+                }
+
+                nextToSee = nextToSeeBase + nextToSeeDelta;
+                if ( nextToSee == lastSeenKey )
+                {
+                    if ( nextToSeeDelta < rangeModulus )
+                    {
+                        nextToSeeDelta++;
+                    }
+                    else
+                    {
+                        nextToSeeDelta = 0;
+                        nextToSeeBase += nbrOfGroups;
+                    }
+                }
+                else if ( lastSeenKey > nextToSee )
+                {
+                    fail( String.format( "Expected to see %d+%d=%d but went straight to %d, " +
+                                    "lastWrittenBeforeTraversingTree=%d, " +
+                                    "lastWrittenBeforeNext=%d, " +
+                                    "lastWrittenAfterNext=%d%n",
+                            nextToSeeBase, nextToSeeDelta, nextToSee, lastSeenKey,
+                            lastWrittenBeforeTraversingTree,
+                            lastWrittenBeforeStart,
+                            lastWrittenWhenFinished ) );
+                }
+            }
+            long difference = Math.abs( end - nextToSee );
+            boolean condition = difference <= nbrOfGroups;
+            if ( !condition )
+            {
+                fail( String.format( "Expected distance between end and nextToSee to be less " +
+                                "than %d but was %d. lastSeenKey=%d, nextToSee=%d, end=%d%n",
+                        nbrOfGroups, difference, lastSeenKey, nextToSee, end ) );
+            }
+        }
+    }
+
+    private void doOneReadBackwardsForConcurrentInsert( int nbrOfGroups, int rangeWidth,
+            AtomicInteger currentWriteIteration, AtomicLong lastWrittenKey ) throws IOException
+    {
+        int iterationExpectedToSee = currentWriteIteration.get() - 1;
+        int rangeModulus = iterationExpectedToSee % nbrOfGroups;
+        long start = maxRange( nbrOfGroups, rangeWidth, iterationExpectedToSee );
+        long end = minRange( nbrOfGroups, rangeWidth, iterationExpectedToSee );
+
+        long lastSeenKey = -1;
+        long nextToSeeBase = start;
+        long nextToSeeDelta = 0;
+        long nextToSee = nextToSeeBase - nextToSeeDelta;
+        long lastWrittenBeforeStart;
+        long lastWrittenWhenFinished;
+        long lastWrittenBeforeTraversingTree;
+
+        lastWrittenBeforeTraversingTree = lastWrittenKey.get();
+        try ( RawCursor<Hit<MutableLong,MutableLong>,IOException> cursor =
+                      index.seek( new MutableLong( start ), new MutableLong( end ) ) )
+        {
+            lastWrittenWhenFinished = lastWrittenKey.get();
+            while ( cursor.next() )
+            {
+                lastWrittenBeforeStart = lastWrittenWhenFinished;
+                lastWrittenWhenFinished = lastWrittenKey.get();
+
+                lastSeenKey = cursor.get().key().longValue();
+                long lastSeenValue = cursor.get().value().longValue();
+                if ( lastSeenKey != lastSeenValue )
+                {
+                    fail( String.format( "Read mismatching key value pair, key=%d, value=%d%n",
+                            lastSeenKey, lastSeenValue ) );
+                }
+
+                nextToSee = nextToSeeBase - nextToSeeDelta;
+                if ( nextToSee == lastSeenKey )
+                {
+                    if ( nextToSeeDelta < rangeModulus )
+                    {
+                        nextToSeeDelta++;
+                    }
+                    else
+                    {
+                        nextToSeeDelta = 0;
+                        nextToSeeBase -= nbrOfGroups;
+                    }
+                }
+                else if ( lastSeenKey < nextToSee )
+                {
+                    fail( String.format( "Expected to see %d+%d=%d but went straight to %d, " +
+                                    "lastWrittenBeforeTraversingTree=%d, " +
+                                    "lastWrittenBeforeNext=%d, " +
+                                    "lastWrittenAfterNext=%d%n",
+                            nextToSeeBase, nextToSeeDelta, nextToSee, lastSeenKey,
+                            lastWrittenBeforeTraversingTree,
+                            lastWrittenBeforeStart,
+                            lastWrittenWhenFinished ) );
+                }
+            }
+            long difference = Math.abs( end - nextToSee );
+            boolean condition = difference <= nbrOfGroups;
+            if ( !condition )
+            {
+                fail( String.format( "Expected distance between end and nextToSee to be less " +
+                                "than %d but was %d. lastSeenKey=%d, nextToSee=%d, start=%d%n",
+                        nbrOfGroups, difference, lastSeenKey, nextToSee, start ) );
+            }
+        }
+    }
+
+    private void doOneReadForwardForConcurrentRemove( int nbrOfGroups, int rangeWidth,
+            AtomicInteger currentWriteIteration ) throws IOException
+    {
+        int iterationExpectedToSee = currentWriteIteration.get();
+        long start = minRange( nbrOfGroups, rangeWidth, iterationExpectedToSee );
+        long end = maxRange( nbrOfGroups, rangeWidth, iterationExpectedToSee );
+
+        long nextToSee = start + 1; // First odd key in range
+
+        try ( RawCursor<Hit<MutableLong,MutableLong>,IOException> cursor =
+                      index.seek( new MutableLong( start ), new MutableLong( end ) ) )
+        {
+            while ( cursor.next() )
+            {
+                long thisKey = cursor.get().key().longValue();
+
+                // Verify value
+                long thisValue = cursor.get().value().longValue();
+                if ( thisKey != thisValue )
+                {
+                    fail( String.format( "Read mismatching key value pair, key=%d, value=%d%n",
+                            thisKey, thisValue ) );
+                }
+
+                if ( nextToSee == thisKey )
+                {
+                    nextToSee += 2; // Next odd key in range
+                }
+                else if ( thisKey > nextToSee )
+                {
+                    fail( String.format( "Expected to see %d but went straight to %d%n",
+                            nextToSee, thisKey ) );
+                }
+            }
+        }
+    }
+
+    private void doOneReadBackwardsForConcurrentRemove( int nbrOfGroups, int rangeWidth,
+            AtomicInteger currentWriteIteration ) throws IOException
+    {
+        int iterationExpectedToSee = currentWriteIteration.get();
+        long start = maxRange( nbrOfGroups, rangeWidth, iterationExpectedToSee );
+        long end = minRange( nbrOfGroups, rangeWidth, iterationExpectedToSee );
+
+        long nextToSee = start - 1; // First odd key in range
+
+        try ( RawCursor<Hit<MutableLong,MutableLong>,IOException> cursor =
+                      index.seek( new MutableLong( start ), new MutableLong( end ) ) )
+        {
+            while ( cursor.next() )
+            {
+                Hit<MutableLong,MutableLong> hit = cursor.get();
+                long thisKey = hit.key().longValue();
+
+                // Verify value
+                long thisValue = hit.value().longValue();
+                if ( thisKey != thisValue )
+                {
+                    fail( String.format( "Read mismatching key value pair, key=%d, value=%d%n",
+                            thisKey, thisValue ) );
+                }
+
+                if ( nextToSee == thisKey )
+                {
+                    nextToSee -= 2; // Next odd key in range
+                }
+                else if ( thisKey < nextToSee )
+                {
+                    fail( String.format( "Expected to see %d but went straight to %d%n",
+                            nextToSee, thisKey ) );
+                }
+            }
+        }
     }
 }

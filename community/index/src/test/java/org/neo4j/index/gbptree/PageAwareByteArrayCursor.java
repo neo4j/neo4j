@@ -66,7 +66,7 @@ class PageAwareByteArrayCursor extends PageCursor
 
     PageAwareByteArrayCursor duplicate()
     {
-        return new PageAwareByteArrayCursor( pages, pageSize, nextPageId );
+        return new PageAwareByteArrayCursor( pages, pageSize, currentPageId );
     }
 
     PageAwareByteArrayCursor duplicate( long nextPageId )
