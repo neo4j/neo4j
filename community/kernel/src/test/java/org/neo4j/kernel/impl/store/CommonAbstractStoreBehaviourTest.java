@@ -27,6 +27,7 @@ import org.junit.rules.TestRule;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.StandardOpenOption;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -35,6 +36,7 @@ import org.neo4j.function.ThrowingAction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.BaseRecordFormat;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
@@ -280,6 +282,26 @@ public class CommonAbstractStoreBehaviourTest
         store.updateRecord( record );
         intsPerRecord = 8192;
         assertThrowsUnderlyingStorageException( () -> store.makeStoreOk() );
+    }
+
+    @Test
+    public void mustFinishInitialisationOfIncompleteStoreHeader() throws IOException
+    {
+        createStore();
+        int headerSizeInRecords = store.getNumberOfReservedLowIds();
+        int headerSizeInBytes = headerSizeInRecords * store.getRecordSize();
+        try ( PageCursor cursor = store.storeFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK ) )
+        {
+            assertTrue( cursor.next() );
+            for ( int i = 0; i < headerSizeInBytes; i++ )
+            {
+                cursor.putByte( (byte) 0 );
+            }
+        }
+        int pageSize = store.storeFile.pageSize();
+        store.close();
+        store.pageCache.map( store.getStorageFileName(), pageSize, StandardOpenOption.TRUNCATE_EXISTING ).close();
+        createStore();
     }
 
     private static class IntRecord extends AbstractBaseRecord

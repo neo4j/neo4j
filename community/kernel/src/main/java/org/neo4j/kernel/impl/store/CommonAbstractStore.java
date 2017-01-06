@@ -130,26 +130,30 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     {
         try
         {
-            checkStorage( createIfNotExists );
-            loadStorage();
+            checkAndLoadStorage( createIfNotExists );
         }
         catch ( Exception e )
         {
-            if ( storeFile != null )
-            {
-                try
-                {
-                    closeStoreFile();
-                }
-                catch ( IOException failureToClose )
-                {
-                    // Not really a suppressed exception, but we still want to throw the real exception, e,
-                    // but perhaps also throw this in there or convenience.
-                    e.addSuppressed( failureToClose );
-                }
-            }
-            throw launderedException( e );
+            closeAndThrow( e );
         }
+    }
+
+    private void closeAndThrow( Exception e )
+    {
+        if ( storeFile != null )
+        {
+            try
+            {
+                closeStoreFile();
+            }
+            catch ( IOException failureToClose )
+            {
+                // Not really a suppressed exception, but we still want to throw the real exception, e,
+                // but perhaps also throw this in there or convenience.
+                e.addSuppressed( failureToClose );
+            }
+        }
+        throw launderedException( e );
     }
 
     /**
@@ -163,24 +167,30 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     }
 
     /**
-     * This method is called by constructors.
+     * This method is called by constructors. Checks the header record and loads the store.
+     * <p>
+     * Note: This method will map the file with the page cache. The store file must not
+     * be accessed directly until it has been unmapped - the store file must only be
+     * accessed through the page cache.
      * @param createIfNotExists If true, creates and initialises the store file if it does not exist already. If false,
      * this method will instead throw an exception in that situation.
      */
-    protected void checkStorage( boolean createIfNotExists )
+    protected void checkAndLoadStorage( boolean createIfNotExists )
     {
         int pageSize = pageCache.pageSize();
-        //noinspection EmptyTryBlock
-        try ( PagedFile ignore = pageCache.map( storageFileName, pageSize, ANY_PAGE_SIZE ) )
+        int filePageSize;
+        try ( PagedFile pagedFile = pageCache.map( storageFileName, pageSize, ANY_PAGE_SIZE ) )
         {
+            extractHeaderRecord( pagedFile );
+            filePageSize = pageCache.pageSize() - pageCache.pageSize() % getRecordSize();
         }
-        catch ( NoSuchFileException e )
+        catch ( NoSuchFileException | StoreNotFoundException e )
         {
             if ( createIfNotExists )
             {
-                try ( PagedFile file = pageCache.map( storageFileName, pageSize, StandardOpenOption.CREATE ) )
+                try
                 {
-                    initialiseNewStoreFile( file );
+                    createStore( pageSize );
                     return;
                 }
                 catch ( IOException e1 )
@@ -188,7 +198,34 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
                     e.addSuppressed( e1 );
                 }
             }
+            if ( e instanceof StoreNotFoundException )
+            {
+                throw (StoreNotFoundException) e;
+            }
             throw new StoreNotFoundException( "Store file not found: " + storageFileName, e );
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( "Unable to open store file: " + storageFileName, e );
+        }
+        loadStorage( filePageSize );
+    }
+
+    private void createStore( int pageSize ) throws IOException
+    {
+        try ( PagedFile file = pageCache.map( storageFileName, pageSize, StandardOpenOption.CREATE ) )
+        {
+            initialiseNewStoreFile( file );
+        }
+        checkAndLoadStorage( false );
+    }
+
+    private void loadStorage( int filePageSize )
+    {
+        try
+        {
+            storeFile = pageCache.map( getStorageFileName(), filePageSize, openOptions );
+            loadIdGenerator();
         }
         catch ( IOException e )
         {
@@ -221,7 +258,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         recordSize = determineRecordSize();
 
         File idFileName = new File( storageFileName.getPath() + ".id" );
-        idGeneratorFactory.create( idFileName, getNumberOfReservedLowIds(), true );
+        idGeneratorFactory.create( idFileName, getNumberOfReservedLowIds(), false );
     }
 
     protected void createHeaderRecord( PageCursor cursor ) throws IOException
@@ -232,57 +269,32 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         readHeaderAndInitializeRecordFormat( cursor );
     }
 
-    /**
-     * Should do first validation on store validating stuff like version and id
-     * generator. This method is called by constructors.
-     * <p>
-     * Note: This method will map the file with the page cache. The store file must not
-     * be accessed directly until it has been unmapped - the store file must only be
-     * accessed through the page cache.
-     */
-    protected void loadStorage()
-    {
-        try
-        {
-            extractHeaderRecord();
-            int filePageSize = pageCache.pageSize() - pageCache.pageSize() % getRecordSize();
-            storeFile = pageCache.map( getStorageFileName(), filePageSize, openOptions );
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( e );
-        }
-        loadIdGenerator();
-    }
-
-    private void extractHeaderRecord() throws IOException
+    private void extractHeaderRecord( PagedFile pagedFile ) throws IOException
     {
         if ( getNumberOfReservedLowIds() > 0 )
         {
-            try ( PagedFile pagedFile = pageCache.map( getStorageFileName(), pageCache.pageSize(), ANY_PAGE_SIZE ) )
+            try ( PageCursor pageCursor = pagedFile.io( 0, PF_SHARED_READ_LOCK ) )
             {
-                try ( PageCursor pageCursor = pagedFile.io( 0, PF_SHARED_READ_LOCK ) )
+
+                if ( pageCursor.next() )
                 {
-                    if ( pageCursor.next() )
+                    do
                     {
-                        do
-                        {
-                            pageCursor.setOffset( 0 );
-                            readHeaderAndInitializeRecordFormat( pageCursor );
-                        }
-                        while ( pageCursor.shouldRetry() );
-                        if ( pageCursor.checkAndClearBoundsFlag() )
-                        {
-                            throw new UnderlyingStorageException(
-                                    "Out of page bounds when reading header; page size too small: " +
-                                    pageCache.pageSize() + " bytes.");
-                        }
+                        pageCursor.setOffset( 0 );
+                        readHeaderAndInitializeRecordFormat( pageCursor );
                     }
-                    else
+                    while ( pageCursor.shouldRetry() );
+                    if ( pageCursor.checkAndClearBoundsFlag() )
                     {
-                        throw new StoreNotFoundException( "Fail to read header record of store file: " +
-                                storageFileName);
+                        throw new UnderlyingStorageException(
+                                "Out of page bounds when reading header; page size too small: " +
+                                pageCache.pageSize() + " bytes." );
                     }
+                }
+                else
+                {
+                    throw new StoreNotFoundException( "Fail to read header record of store file: " +
+                                                      storageFileName );
                 }
             }
         }
