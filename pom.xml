@@ -61,6 +61,9 @@
         <artifactId>maven-failsafe-plugin</artifactId>
         <configuration>
           <argLine>${test.runner.jvm.settings}</argLine>
+          <systemPropertyVariables>
+            <dbms.pagecache.memory.default.override>8m</dbms.pagecache.memory.default.override>
+          </systemPropertyVariables>
         </configuration>
       </plugin>
       <plugin>

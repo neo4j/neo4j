@@ -37,11 +37,11 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -51,8 +51,8 @@ import static org.junit.Assert.fail;
 public class ConcurrentChangesOnEntitiesTest
 {
 
-    private SuppressOutput suppressOutput = SuppressOutput.suppressAll();
-    private TestDirectory testDirectory = TestDirectory.testDirectory();
+    private final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+    private final TestDirectory testDirectory = TestDirectory.testDirectory();
 
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( suppressOutput ).around( testDirectory );
@@ -64,7 +64,7 @@ public class ConcurrentChangesOnEntitiesTest
     @Before
     public void setup()
     {
-        db = new GraphDatabaseFactory()
+        db = new TestGraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( testDirectory.graphDbDir() )
                 .newGraphDatabase();
     }

@@ -29,7 +29,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -45,6 +44,7 @@ import org.neo4j.kernel.impl.store.format.highlimit.v300.HighLimitV3_0_0;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UnexpectedUpgradingStoreFormatException;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.Matchers.instanceOf;
@@ -52,6 +52,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class RecordFormatsMigrationIT
@@ -134,10 +135,10 @@ public class RecordFormatsMigrationIT
 
     private GraphDatabaseService startDb( String recordFormatName )
     {
-        return new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDir.graphDbDir() )
-                .setConfig( GraphDatabaseSettings.allow_store_upgrade, Settings.TRUE )
-                .setConfig( GraphDatabaseSettings.record_format, recordFormatName )
-                .newGraphDatabase();
+        return new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDir.graphDbDir() )
+                                             .setConfig( GraphDatabaseSettings.allow_store_upgrade, Settings.TRUE )
+                                             .setConfig( GraphDatabaseSettings.record_format, recordFormatName )
+                                             .newGraphDatabase();
     }
 
     private void assertLatestStandardStore() throws IOException
