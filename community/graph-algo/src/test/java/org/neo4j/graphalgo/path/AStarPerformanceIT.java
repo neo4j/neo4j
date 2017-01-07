@@ -31,10 +31,11 @@ import org.neo4j.graphalgo.WeightedPath;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.System.currentTimeMillis;
+
 import static org.neo4j.graphalgo.CommonEvaluators.doubleCostEvaluator;
 import static org.neo4j.graphalgo.GraphAlgoFactory.aStar;
 import static org.neo4j.graphdb.PathExpanders.allTypesAndDirections;
@@ -74,7 +75,7 @@ public class AStarPerformanceIT
                 new long[]{291, 86707},
                 new long[]{188345, 158468}
         };
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( directory.getAbsoluteFile() );
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( directory.getAbsoluteFile() );
         PathFinder<WeightedPath> algo = aStar( allTypesAndDirections(),
                 doubleCostEvaluator( "weight", 0 ), GeoDataGenerator.estimateEvaluator() );
         for ( int i = 0; i < 10; i++ )

@@ -19,14 +19,14 @@
  */
 package org.neo4j.test.rule;
 
-import org.neo4j.graphdb.factory.EnterpriseGraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 
 public class EnterpriseDatabaseRule extends EmbeddedDatabaseRule
 {
     @Override
     protected GraphDatabaseFactory newFactory()
     {
-        return new EnterpriseGraphDatabaseFactory();
+        return new TestEnterpriseGraphDatabaseFactory();
     }
 }
