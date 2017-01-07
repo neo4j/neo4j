@@ -39,11 +39,10 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.spi.SimpleKernelContext;
@@ -53,9 +52,11 @@ import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.util.DebugUtil;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.DependenciesProxy;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.lang.System.currentTimeMillis;
 import static org.junit.Assert.fail;
@@ -164,9 +165,11 @@ public class BackupServiceStressTestingBuilder
         @Override
         public Integer call() throws Exception
         {
-            final GraphDatabaseAPI db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(
-                    storeDir.getAbsoluteFile() ).setConfig( OnlineBackupSettings.online_backup_server,
-                    backupHostname + ":" + backupPort ).setConfig( GraphDatabaseSettings.keep_logical_logs, "true" )
+            GraphDatabaseBuilder graphDatabaseBuilder =
+                    new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir.getAbsoluteFile() );
+            final GraphDatabaseAPI db = (GraphDatabaseAPI) graphDatabaseBuilder
+                    .setConfig( OnlineBackupSettings.online_backup_server, backupHostname + ":" + backupPort )
+                    .setConfig( GraphDatabaseSettings.keep_logical_logs, "true" )
                     .newGraphDatabase();
 
             try

@@ -35,12 +35,15 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class DynamicIndexStoreViewIT
 {
@@ -55,7 +58,7 @@ public class DynamicIndexStoreViewIT
     public void populateDbWithConcurrentUpdates() throws Exception
     {
         GraphDatabaseService database =
-                new GraphDatabaseFactory().newEmbeddedDatabase( testDirectory.graphDbDir() );
+                new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.graphDbDir() );
         try
         {
             int counter = 1;
@@ -99,7 +102,9 @@ public class DynamicIndexStoreViewIT
         {
             database.shutdown();
             ConsistencyCheckService consistencyCheckService = new ConsistencyCheckService();
-            consistencyCheckService.runFullConsistencyCheck( testDirectory.graphDbDir(), Config.empty(),
+            Config config = Config.defaults();
+            config = config.with( stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m" ) );
+            consistencyCheckService.runFullConsistencyCheck( testDirectory.graphDbDir(), config,
                     ProgressMonitorFactory.NONE, FormattedLogProvider.toOutputStream( System.out ), false );
         }
     }

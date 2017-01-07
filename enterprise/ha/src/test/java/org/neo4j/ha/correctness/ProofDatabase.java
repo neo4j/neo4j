@@ -29,9 +29,9 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.neo4j.graphdb.Label.label;
 
@@ -44,7 +44,7 @@ public class ProofDatabase
     {
         File dbDir = new File( location );
         cleanDbDir( dbDir );
-        this.gds = new GraphDatabaseFactory().newEmbeddedDatabase( dbDir );
+        this.gds = new TestGraphDatabaseFactory().newEmbeddedDatabase( dbDir );
     }
 
     public Node newState( ClusterState state )

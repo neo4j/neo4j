@@ -27,12 +27,12 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.CleanupRule;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.Iterables.count;
@@ -48,7 +48,7 @@ public class RelationshipGroupStoreIT
     @Test
     public void shouldCreateAllTheseRelationshipTypes() throws Exception
     {
-        GraphDatabaseService db = new GraphDatabaseFactory()
+        GraphDatabaseService db = new TestGraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( directory.graphDbDir() )
                 .setConfig( GraphDatabaseSettings.dense_node_threshold, "1" )
                 .newGraphDatabase();
