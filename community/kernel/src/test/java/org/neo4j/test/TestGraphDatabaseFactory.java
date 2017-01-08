@@ -238,7 +238,6 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
             this.impermanent = impermanent;
         }
 
-
         TestGraphDatabaseFacadeFactory( TestGraphDatabaseFactoryState state )
         {
             this(state, false);
