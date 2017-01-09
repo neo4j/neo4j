@@ -52,7 +52,7 @@ public class QueryStatusResult
     /** EXPERIMENTAL: added in Neo4j 3.2 */
     public final String clientAddress;
     /** EXPERIMENTAL: added in Neo4j 3.2 */
-    public final String requestURI;
+    public final String requestUri;
     /** EXPERIMENTAL: added in Neo4j 3.2 */
     public final long cpuTimeMillis; // TODO: we want this field to be of a Duration type (when Cypher supports that)
     /** EXPERIMENTAL: added in Neo4j 3.2 */
@@ -100,7 +100,7 @@ public class QueryStatusResult
         this.connectionDetails = clientConnection.asConnectionDetails();
         this.requestScheme = clientConnection.requestScheme();
         this.clientAddress = clientConnection.clientAddress();
-        this.requestURI = clientConnection.requestURI();
+        this.requestUri = clientConnection.requestURI();
         this.metaData = txMetaData;
         this.cpuTimeMillis = cpuTimeMillis;
         this.status = status;
