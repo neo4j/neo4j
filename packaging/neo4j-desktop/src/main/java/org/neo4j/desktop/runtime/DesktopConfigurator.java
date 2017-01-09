@@ -88,7 +88,7 @@ public class DesktopConfigurator
         return config.httpConnectors().stream()
                 .findFirst()
                 .orElse( new HttpConnector( "http" ) )
-                .address.from( config );
+                .listen_address.from( config );
     }
 
     private Pair<String,String>[] pairs( Pair<String,String>... pairs ) {

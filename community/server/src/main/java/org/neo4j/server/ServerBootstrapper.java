@@ -86,7 +86,7 @@ public abstract class ServerBootstrapper implements Bootstrapper
             serverAddress =  config.httpConnectors().stream()
                     .filter( c -> Encryption.NONE.equals( c.encryptionLevel() ) )
                     .findFirst()
-                    .map( ( connector ) -> config.get( connector.address ).toString() )
+                    .map( ( connector ) -> config.get( connector.listen_address ).toString() )
                     .orElse( serverAddress );
 
             checkCompatibility();
