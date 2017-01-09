@@ -29,6 +29,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.ReadableByteChannel;
@@ -2420,31 +2422,55 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         }
     }
 
-    @Test( timeout = SHORT_TIMEOUT_MILLIS, expected = IllegalStateException.class )
+    @Test( timeout = SHORT_TIMEOUT_MILLIS )
     public void pagedFileIoMustThrowIfFileIsUnmapped() throws IOException
     {
         getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
 
         PagedFile pagedFile = pageCache.map( file( "a" ), filePageSize );
-        pagedFile.close();
+        closeThisPagedFile( pagedFile );
 
         try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
         {
-            cursor.next(); // This should throw
-            fail( "cursor.next() on unmapped file did not throw" );
+            try
+            {
+                cursor.next();
+                fail( "cursor.next() on unmapped file did not throw" );
+            }
+            catch ( IllegalStateException e )
+            {
+                StringWriter out = new StringWriter();
+                e.printStackTrace( new PrintWriter( out ) );
+                assertThat( out.toString(), containsString( "closeThisPagedFile" ) );
+            }
         }
     }
 
-    @Test( timeout = SHORT_TIMEOUT_MILLIS, expected = IllegalStateException.class )
+    protected void closeThisPagedFile( PagedFile pagedFile ) throws IOException
+    {
+        pagedFile.close();
+    }
+
+    @Test( timeout = SHORT_TIMEOUT_MILLIS )
     public void writeLockedPageCursorNextMustThrowIfFileIsUnmapped() throws IOException
     {
         getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
 
         PagedFile pagedFile = pageCache.map( file( "a" ), filePageSize );
         PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK );
-        pagedFile.close();
+        closeThisPagedFile( pagedFile );
 
-        cursor.next();
+        try
+        {
+            cursor.next();
+            fail( "cursor.next() on unmapped file did not throw" );
+        }
+        catch ( IllegalStateException e )
+        {
+            StringWriter out = new StringWriter();
+            e.printStackTrace( new PrintWriter( out ) );
+            assertThat( out.toString(), containsString( "closeThisPagedFile" ) );
+        }
     }
 
     @Test( timeout = SHORT_TIMEOUT_MILLIS, expected = IllegalStateException.class )
