@@ -85,7 +85,7 @@ public class BatchingNeoStoresTest
     {
         // GIVEN
         int size = 10;
-        Config config = new Config( stringMap(
+        Config config = Config.embeddedDefaults( stringMap(
                 GraphDatabaseSettings.array_block_size.name(), String.valueOf( size ),
                 GraphDatabaseSettings.string_block_size.name(), String.valueOf( size ) ) );
 

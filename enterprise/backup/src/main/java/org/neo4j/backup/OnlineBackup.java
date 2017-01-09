@@ -22,12 +22,8 @@ package org.neo4j.backup;
 import java.io.File;
 
 import org.neo4j.backup.BackupService.BackupOutcome;
-import org.neo4j.consistency.ConsistencyCheckSettings;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 /**
  * This class encapsulates the information needed to perform an online backup against a running Neo4j instance
@@ -384,7 +380,7 @@ public class OnlineBackup
 
     private Config defaultConfig()
     {
-        return new Config( stringMap(), GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
+        return Config.embeddedDefaults();
     }
 
     /**

@@ -72,6 +72,7 @@ import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.ha.HaSettings;
@@ -83,7 +84,6 @@ import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.ha.cluster.member.ObservedClusterMembers;
 import org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.ha.com.master.Slaves;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.util.Dependencies;
@@ -98,8 +98,6 @@ import org.neo4j.storageengine.api.StorageEngine;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableMap;
-
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
 import static org.neo4j.helpers.ArrayUtil.contains;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -142,8 +140,8 @@ public class ClusterManager
     public static final Map<String,String> CONFIG_FOR_SINGLE_JVM_CLUSTER = unmodifiableMap( stringMap(
             GraphDatabaseSettings.pagecache_memory.name(), "8m",
             GraphDatabaseSettings.shutdown_transaction_end_timeout.name(), "1s",
-            boltConnector( "0" ).type.name(), "BOLT",
-            boltConnector( "0" ).enabled.name(), "false"
+            new BoltConnector( "bolt" ).type.name(), "BOLT",
+            new BoltConnector( "bolt" ).enabled.name(), "false"
     ) );
 
     public interface StoreDirInitializer
@@ -1378,18 +1376,16 @@ public class ClusterManager
             }
             else
             {
-                Map<String,String> config = MapUtil.stringMap(
+                Config config = Config.embeddedDefaults( MapUtil.stringMap(
                         ClusterSettings.cluster_name.name(), name,
                         ClusterSettings.initial_hosts.name(), initialHosts.toString(),
                         ClusterSettings.server_id.name(), serverId + "",
-                        ClusterSettings.cluster_server.name(), "0.0.0.0:" + clusterUri.getPort() );
-                Config config1 = new Config( config, GraphDatabaseFacadeFactory.Configuration.class,
-                        GraphDatabaseSettings.class );
+                        ClusterSettings.cluster_server.name(), "0.0.0.0:" + clusterUri.getPort() ) );
 
                 LifeSupport clusterClientLife = new LifeSupport();
                 NullLogService logService = NullLogService.getInstance();
                 ClusterClientModule clusterClientModule = new ClusterClientModule( clusterClientLife,
-                        new Dependencies(), new Monitors(), config1, logService,
+                        new Dependencies(), new Monitors(), config, logService,
                         new NotElectableElectionCredentialsProvider() );
 
                 arbiters.add( new ObservedClusterMembers(  logService.getInternalLogProvider(),

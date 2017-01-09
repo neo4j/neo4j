@@ -21,6 +21,7 @@ package org.neo4j.logging;
 
 import java.util.function.Consumer;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 /**
  * A {@link Log} implementation that discards all messages
@@ -65,7 +66,7 @@ public final class NullLog implements Log
     }
 
     @Override
-    public void debug( @Nonnull String format, @Nonnull Object... arguments )
+    public void debug( @Nonnull String format, @Nullable Object... arguments )
     {
     }
 
@@ -87,7 +88,7 @@ public final class NullLog implements Log
     }
 
     @Override
-    public void info( @Nonnull String format, @Nonnull Object... arguments )
+    public void info( @Nonnull String format, @Nullable Object... arguments )
     {
     }
 
@@ -109,7 +110,7 @@ public final class NullLog implements Log
     }
 
     @Override
-    public void warn( @Nonnull String format, @Nonnull Object... arguments )
+    public void warn( @Nonnull String format, @Nullable Object... arguments )
     {
     }
 
@@ -131,7 +132,7 @@ public final class NullLog implements Log
     }
 
     @Override
-    public void error( @Nonnull String format, @Nonnull Object... arguments )
+    public void error( @Nonnull String format, @Nullable Object... arguments )
     {
     }
 

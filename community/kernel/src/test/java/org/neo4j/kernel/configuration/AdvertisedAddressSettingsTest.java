@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.configuration;
 
+import java.util.Map;
+
 import org.junit.Test;
 
 import org.neo4j.graphdb.config.Setting;
@@ -42,12 +44,12 @@ public class AdvertisedAddressSettingsTest
     public void shouldParseExplicitSettingValueWhenProvided() throws Exception
     {
         // given
-        Config config = Config.defaults();
-        config.augment( stringMap( GraphDatabaseSettings.default_advertised_address.name(), "server1.example.com" ) );
-        config.augment( stringMap( advertised_address_setting.name(), "server1.internal:4000" ) );
+        Map<String,String> config = stringMap(
+                GraphDatabaseSettings.default_advertised_address.name(), "server1.example.com",
+                advertised_address_setting.name(), "server1.internal:4000" );
 
         // when
-        AdvertisedSocketAddress advertisedSocketAddress = config.get( advertised_address_setting );
+        AdvertisedSocketAddress advertisedSocketAddress = advertised_address_setting.apply( config::get );
 
         // then
         assertEquals( "server1.internal", advertisedSocketAddress.getHostname() );
@@ -58,11 +60,11 @@ public class AdvertisedAddressSettingsTest
     public void shouldCombineDefaultHostnameWithPortFromListenAddressSettingWhenNoValueProvided() throws Exception
     {
         // given
-        Config config = Config.defaults();
-        config.augment( stringMap( GraphDatabaseSettings.default_advertised_address.name(), "server1.example.com" ) );
+        Map<String,String> config = stringMap(
+                GraphDatabaseSettings.default_advertised_address.name(), "server1.example.com" );
 
         // when
-        AdvertisedSocketAddress advertisedSocketAddress = config.get( advertised_address_setting );
+        AdvertisedSocketAddress advertisedSocketAddress = advertised_address_setting.apply( config::get );
 
         // then
         assertEquals( "server1.example.com", advertisedSocketAddress.getHostname() );
@@ -73,12 +75,12 @@ public class AdvertisedAddressSettingsTest
     public void shouldCombineDefaultHostnameWithExplicitPortWhenOnlyAPortProvided() throws Exception
     {
         // given
-        Config config = Config.defaults();
-        config.augment( stringMap( GraphDatabaseSettings.default_advertised_address.name(), "server1.example.com" ) );
-        config.augment( stringMap( advertised_address_setting.name(), ":4000" ) );
+        Map<String,String> config = stringMap(
+                GraphDatabaseSettings.default_advertised_address.name(), "server1.example.com",
+                advertised_address_setting.name(), ":4000" );
 
         // when
-        AdvertisedSocketAddress advertisedSocketAddress = config.get( advertised_address_setting );
+        AdvertisedSocketAddress advertisedSocketAddress = advertised_address_setting.apply( config::get );
 
         // then
         assertEquals( "server1.example.com", advertisedSocketAddress.getHostname() );

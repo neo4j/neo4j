@@ -24,7 +24,6 @@ import java.time.Clock;
 import java.util.Map;
 
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
@@ -94,12 +93,20 @@ public class NeoStoreDataSourceRule extends ExternalResource
             PageCache pageCache, Map<String, String> additionalConfig, DatabaseHealth databaseHealth,
             LogService logService )
     {
+        return getDataSource( storeDir, fs, idGeneratorFactory, idConfigurationProvider, pageCache,
+                Config.embeddedDefaults( additionalConfig ), databaseHealth, logService );
+    }
+
+    public NeoStoreDataSource getDataSource( File storeDir, FileSystemAbstraction fs,
+            IdGeneratorFactory idGeneratorFactory, IdTypeConfigurationProvider idConfigurationProvider,
+            PageCache pageCache, Config config, DatabaseHealth databaseHealth,
+            LogService logService )
+    {
         if ( dataSource != null )
         {
             dataSource.stop();
             dataSource.shutdown();
         }
-        final Config config = new Config( stringMap( additionalConfig ), GraphDatabaseSettings.class );
 
         StatementLocksFactory locksFactory = mock( StatementLocksFactory.class );
         StatementLocks statementLocks = mock( StatementLocks.class );

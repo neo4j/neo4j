@@ -54,7 +54,7 @@ public class ConfigurableIOLimiterTest
     {
         Map<String, String> settings = stringMap(
                 GraphDatabaseSettings.check_point_iops_limit.name(), "" + limit );
-        createIOLimiter( new Config( settings ) );
+        createIOLimiter( Config.embeddedDefaults( settings ) );
     }
 
     @Test

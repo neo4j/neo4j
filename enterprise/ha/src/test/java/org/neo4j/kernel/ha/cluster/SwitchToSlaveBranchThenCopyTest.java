@@ -344,7 +344,7 @@ public class SwitchToSlaveBranchThenCopyTest
 
     private Config configMock()
     {
-        return new Config( stringMap( ClusterSettings.server_id.name(), "1" ) );
+        return Config.embeddedDefaults( stringMap( ClusterSettings.server_id.name(), "1" ) );
     }
 
     private <T> T mockWithLifecycle( Class<T> clazz )

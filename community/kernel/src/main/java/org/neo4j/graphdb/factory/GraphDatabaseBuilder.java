@@ -27,9 +27,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import javax.annotation.Nonnull;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.kernel.configuration.Config;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
@@ -41,11 +43,20 @@ public class GraphDatabaseBuilder
 {
     public interface DatabaseCreator
     {
-        GraphDatabaseService newDatabase( Map<String, String> config );
+        /**
+         * This method will go away in 4.0. See {@link #newDatabase(Config)} instead.
+         */
+        @Deprecated
+        GraphDatabaseService newDatabase( Map<String,String> config );
+
+        default GraphDatabaseService newDatabase( @Nonnull Config config )
+        {
+            return newDatabase( config.getRaw() );
+        }
     }
 
     protected DatabaseCreator creator;
-    protected Map<String, String> config = new HashMap<>();
+    protected Map<String,String> config = new HashMap<>();
 
     public GraphDatabaseBuilder( DatabaseCreator creator )
     {
@@ -68,7 +79,7 @@ public class GraphDatabaseBuilder
         else
         {
             // Test if we can get this setting with an updated config
-            Map<String, String> testValue = stringMap( setting.name(), value );
+            Map<String,String> testValue = stringMap( setting.name(), value );
             setting.apply( key -> testValue.containsKey( key ) ? testValue.get( key ) : config.get( key ) );
 
             // No exception thrown, add it to existing config
@@ -79,11 +90,11 @@ public class GraphDatabaseBuilder
 
     /**
      * Set an unvalidated configuration option.
-     * @deprecated Use setConfig with explicit {@link Setting} instead.
      *
      * @param name Name of the setting
      * @param value New value of the setting
      * @return the builder
+     * @deprecated Use setConfig with explicit {@link Setting} instead.
      */
     @Deprecated
     public GraphDatabaseBuilder setConfig( String name, String value )
@@ -107,10 +118,10 @@ public class GraphDatabaseBuilder
      * @deprecated Use setConfig with explicit {@link Setting} instead
      */
     @Deprecated
-    @SuppressWarnings("deprecation")
-    public GraphDatabaseBuilder setConfig( Map<String, String> config )
+    @SuppressWarnings( "deprecation" )
+    public GraphDatabaseBuilder setConfig( Map<String,String> config )
     {
-        for ( Map.Entry<String, String> stringStringEntry : config.entrySet() )
+        for ( Map.Entry<String,String> stringStringEntry : config.entrySet() )
         {
             setConfig( stringStringEntry.getKey(), stringStringEntry.getValue() );
         }
@@ -125,7 +136,6 @@ public class GraphDatabaseBuilder
      * @return the builder
      * @throws IllegalArgumentException if the builder was unable to load from the given filename
      */
-
     public GraphDatabaseBuilder loadPropertiesFromFile( String fileName )
             throws IllegalArgumentException
     {
@@ -161,8 +171,8 @@ public class GraphDatabaseBuilder
         {
             throw new IllegalArgumentException( "Unable to load " + url, e );
         }
-        Set<Map.Entry<Object, Object>> entries = props.entrySet();
-        for ( Map.Entry<Object, Object> entry : entries )
+        Set<Map.Entry<Object,Object>> entries = props.entrySet();
+        for ( Map.Entry<Object,Object> entry : entries )
         {
             String key = (String) entry.getKey();
             String value = (String) entry.getValue();
@@ -180,13 +190,13 @@ public class GraphDatabaseBuilder
      */
     public GraphDatabaseService newGraphDatabase()
     {
-        return creator.newDatabase( config );
+        return creator.newDatabase( Config.embeddedDefaults( config ) );
     }
 
     /**
      * Used by tests via GraphDatabaseBuilderTestTools.
      */
-    Map<String, String> getRawConfig()
+    Map<String,String> getRawConfig()
     {
         return config;
     }
@@ -209,7 +219,7 @@ public class GraphDatabaseBuilder
         }
 
         @Override
-        @SuppressWarnings("deprecation")
+        @SuppressWarnings( "deprecation" )
         public GraphDatabaseBuilder setConfig( String name, String value )
         {
             actual.setConfig( name, value );
@@ -217,7 +227,7 @@ public class GraphDatabaseBuilder
         }
 
         @Override
-        public GraphDatabaseBuilder setConfig( Map<String, String> config )
+        public GraphDatabaseBuilder setConfig( Map<String,String> config )
         {
             actual.setConfig( config );
             return this;

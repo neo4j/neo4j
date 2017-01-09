@@ -65,7 +65,8 @@ public class NeoServerPortConflictIT extends ExclusiveServerTestBase
                     AssertableLogProvider.inLog( containsString( "CommunityNeoServer" ) ).error(
                             "Failed to start Neo4j on %s: %s",
                             contestedAddress,
-                            format( "Address %s is already in use, cannot bind to it.", contestedAddress )
+                            format( "At least one of the addresses %s or localhost:7473 is already in use, cannot " +
+                                    "bind to it.", contestedAddress )
                     )
             );
             server.stop();

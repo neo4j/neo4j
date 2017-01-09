@@ -65,8 +65,6 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.LoggerRule;
 
-import static org.junit.Assert.assertEquals;
-
 @RunWith(value = Parameterized.class)
 public class ClusterNetworkTest
 {
@@ -176,7 +174,7 @@ public class ClusterNetworkTest
 
             ServerIdElectionCredentialsProvider electionCredentialsProvider = new ServerIdElectionCredentialsProvider();
             ProtocolServer server = factory.newNetworkedServer(
-                    new Config( MapUtil.stringMap( ClusterSettings.cluster_server.name(),
+                    Config.embeddedDefaults( MapUtil.stringMap( ClusterSettings.cluster_server.name(),
                             uri.getHost() + ":" + uri.getPort(),
                             ClusterSettings.server_id.name(), "" + i ) ),
                     new InMemoryAcceptorInstanceStore(),

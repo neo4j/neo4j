@@ -19,6 +19,8 @@
  */
 package org.neo4j.server.integration;
 
+import java.io.File;
+
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
@@ -63,7 +65,8 @@ public class ServerConfigIT extends ExclusiveServerTestBase
 
         // Then
         ObjectName name = getObjectName( server.getDatabase().getGraph(), ConfigurationBean.CONFIGURATION_MBEAN_NAME );
-        assertThat( getAttribute( name, ServerSettings.run_directory.name() ), equalTo( (Object)configValue ) );
+        File attr = getAttribute( name, ServerSettings.run_directory.name() );
+        assertThat( attr.toString(), equalTo( configValue ) );
     }
 
     @Test

@@ -1151,7 +1151,7 @@ public class TestApps extends AbstractShellTest
     @Test
     public void canListAllConfiguration() throws Exception
     {
-        executeCommand( "dbinfo -g Configuration", "\"unsupported.dbms.ephemeral\": \"true\"" );
+        executeCommand( "dbinfo -g Configuration", "\"dbms.record_format\": \"\"" );
     }
 
     @Test

@@ -39,6 +39,7 @@ import java.util.function.Supplier;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Session;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
@@ -48,6 +49,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.guard.GuardTimeoutException;
 import org.neo4j.kernel.guard.TimeoutGuard;
@@ -90,7 +92,6 @@ import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionNotFound;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
@@ -249,7 +250,8 @@ public class TransactionGuardIntegrationTest
             SameJvmClient client = getShellClient( shellServer );
             CollectingOutput commandOutput = new CollectingOutput();
             URL url = prepareTestImportFile( 8 );
-            execute( shellServer, commandOutput, client.getId(), "USING PERIODIC COMMIT 5 LOAD CSV FROM '" + url + "' AS line CREATE ();" );
+            execute( shellServer, commandOutput, client.getId(),
+                    "USING PERIODIC COMMIT 5 LOAD CSV FROM '" + url + "' AS line CREATE ();" );
             fail( "Transaction should be already terminated." );
         }
         catch ( ShellException e )
@@ -265,18 +267,19 @@ public class TransactionGuardIntegrationTest
     {
         GraphDatabaseAPI database = startDatabaseWithTimeout();
         CommunityNeoServer neoServer = startNeoServer( (GraphDatabaseFacade) database );
-        String transactionEndPoint = HTTP.POST( transactionUri(neoServer) ).location();
+        String transactionEndPoint = HTTP.POST( transactionUri( neoServer ) ).location();
 
         fakeClock.forward( 3, TimeUnit.SECONDS );
 
-        HTTP.Response response = HTTP.POST( transactionEndPoint, quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n)' } ] }" ) );
+        HTTP.Response response =
+                HTTP.POST( transactionEndPoint, quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n)' } ] }" ) );
         assertEquals( "Response should be successful.", 200, response.status() );
 
         HTTP.Response commitResponse = HTTP.POST( transactionEndPoint + "/commit" );
         assertEquals( "Transaction should be already closed and not found.", 404, commitResponse.status() );
 
         assertEquals( "Transaction should be forcefully closed.", TransactionNotFound.code().serialize(),
-                commitResponse.get( "errors" ).findValue( "code" ).asText());
+                commitResponse.get( "errors" ).findValue( "code" ).asText() );
         assertDatabaseDoesNotHaveNodes( database );
     }
 
@@ -288,25 +291,28 @@ public class TransactionGuardIntegrationTest
         long customTimeout = TimeUnit.SECONDS.toMillis( 10 );
         HTTP.Response beginResponse = HTTP
                 .withHeaders( HttpHeaderUtils.MAX_EXECUTION_TIME_HEADER, String.valueOf( customTimeout ) )
-                .POST( transactionUri( neoServer ), quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n)' } ] }" ) );
+                .POST( transactionUri( neoServer ),
+                        quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n)' } ] }" ) );
         assertEquals( "Response should be successful.", 201, beginResponse.status() );
 
         String transactionEndPoint = beginResponse.location();
         fakeClock.forward( 3, TimeUnit.SECONDS );
 
-        HTTP.Response response = HTTP.POST( transactionEndPoint, quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n)' } ] }" ) );
+        HTTP.Response response =
+                HTTP.POST( transactionEndPoint, quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n)' } ] }" ) );
         assertEquals( "Response should be successful.", 200, response.status() );
 
         fakeClock.forward( 11, TimeUnit.SECONDS );
 
-        response = HTTP.POST( transactionEndPoint, quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n)' } ] }" ) );
+        response =
+                HTTP.POST( transactionEndPoint, quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n)' } ] }" ) );
         assertEquals( "Response should be successful.", 200, response.status() );
 
         HTTP.Response commitResponse = HTTP.POST( transactionEndPoint + "/commit" );
         assertEquals( "Transaction should be already closed and not found.", 404, commitResponse.status() );
 
         assertEquals( "Transaction should be forcefully closed.", TransactionNotFound.code().serialize(),
-                commitResponse.get( "errors" ).findValue( "code" ).asText());
+                commitResponse.get( "errors" ).findValue( "code" ).asText() );
         assertDatabaseDoesNotHaveNodes( database );
     }
 
@@ -319,7 +325,7 @@ public class TransactionGuardIntegrationTest
         org.neo4j.driver.v1.Config driverConfig = getDriverConfig();
 
         try ( Driver driver = GraphDatabase.driver( "bolt://localhost:" + boltPortDatabaseWithTimeout, driverConfig );
-              Session session = driver.session() )
+                Session session = driver.session() )
         {
             org.neo4j.driver.v1.Transaction transaction = session.beginTransaction();
             transaction.run( "create (n)" ).consume();
@@ -328,7 +334,7 @@ public class TransactionGuardIntegrationTest
             try
             {
                 transaction.run( "create (n)" ).consume();
-                fail("Transaction should be already terminated by execution guard.");
+                fail( "Transaction should be already terminated by execution guard." );
             }
             catch ( Exception expected )
             {
@@ -347,11 +353,11 @@ public class TransactionGuardIntegrationTest
         org.neo4j.driver.v1.Config driverConfig = getDriverConfig();
 
         try ( Driver driver = GraphDatabase.driver( "bolt://localhost:" + boltPortCustomGuard, driverConfig );
-              Session session = driver.session() )
+                Session session = driver.session() )
         {
             URL url = prepareTestImportFile( 8 );
             session.run( "USING PERIODIC COMMIT 5 LOAD CSV FROM '" + url + "' AS line CREATE ();" ).consume();
-            fail("Transaction should be already terminated by execution guard.");
+            fail( "Transaction should be already terminated by execution guard." );
         }
         catch ( Exception expected )
         {
@@ -366,7 +372,8 @@ public class TransactionGuardIntegrationTest
         {
             boltPortCustomGuard = findFreePort();
             Map<Setting<?>,String> configMap = getSettingsWithTimeoutAndBolt( boltPortCustomGuard );
-            databaseWithTimeoutAndGuard = startCustomGuardedDatabase( testDirectory.directory( "dbWithoutTimeoutAndGuard" ), configMap );
+            databaseWithTimeoutAndGuard =
+                    startCustomGuardedDatabase( testDirectory.directory( "dbWithoutTimeoutAndGuard" ), configMap );
         }
         return databaseWithTimeoutAndGuard;
     }
@@ -384,7 +391,7 @@ public class TransactionGuardIntegrationTest
 
     private GraphDatabaseAPI startDatabaseWithoutTimeout()
     {
-        if (databaseWithoutTimeout == null)
+        if ( databaseWithoutTimeout == null )
         {
             Map<Setting<?>,String> configMap = getSettingsWithoutTransactionTimeout();
             databaseWithoutTimeout = startCustomDatabase( testDirectory.directory( "dbWithoutTimeout" ),
@@ -405,11 +412,11 @@ public class TransactionGuardIntegrationTest
         if ( neoServer == null )
         {
             GuardingServerBuilder serverBuilder = new GuardingServerBuilder( database );
-            GraphDatabaseSettings.BoltConnector boltConnector = boltConnector( "0" );
+            BoltConnector boltConnector = new BoltConnector( "bolt" );
             serverBuilder.withProperty( boltConnector.type.name(), "BOLT" )
                     .withProperty( boltConnector.enabled.name(), "true" )
                     .withProperty( boltConnector.encryption_level.name(),
-                            GraphDatabaseSettings.BoltConnector.EncryptionLevel.DISABLED.name() )
+                            BoltConnector.EncryptionLevel.DISABLED.name() )
                     .withProperty( GraphDatabaseSettings.auth_enabled.name(), "false" );
             neoServer = serverBuilder.build();
             cleanupRule.add( neoServer );
@@ -420,13 +427,13 @@ public class TransactionGuardIntegrationTest
 
     private Map<Setting<?>,String> getSettingsWithTimeoutAndBolt( int boltPort )
     {
-        GraphDatabaseSettings.BoltConnector boltConnector = boltConnector( "0" );
+        BoltConnector boltConnector = new BoltConnector( "bolt" );
         return MapUtil.genericMap(
                 GraphDatabaseSettings.transaction_timeout, "2s",
                 boltConnector.address, "localhost:" + boltPort,
                 boltConnector.type, "BOLT",
                 boltConnector.enabled, "true",
-                boltConnector.encryption_level, GraphDatabaseSettings.BoltConnector.EncryptionLevel.DISABLED.name(),
+                boltConnector.encryption_level, BoltConnector.EncryptionLevel.DISABLED.name(),
                 GraphDatabaseSettings.auth_enabled, "false" );
     }
 
@@ -435,7 +442,7 @@ public class TransactionGuardIntegrationTest
         return MapUtil.genericMap();
     }
 
-    private String transactionUri(CommunityNeoServer neoServer)
+    private String transactionUri( CommunityNeoServer neoServer )
     {
         return neoServer.baseUri().toString() + "db/data/transaction";
     }
@@ -458,7 +465,7 @@ public class TransactionGuardIntegrationTest
         return freePort( 8000, 8100 );
     }
 
-    private int freePort(int startRange, int endRange)
+    private int freePort( int startRange, int endRange )
     {
         try
         {
@@ -503,8 +510,9 @@ public class TransactionGuardIntegrationTest
             String> configMap )
     {
         CustomClockCommunityFacadeFactory guardCommunityFacadeFactory = new CustomClockGuardedCommunityFacadeFactory();
-        GraphDatabaseBuilder databaseBuilder = new CustomGuardTestTestGraphDatabaseFactory( guardCommunityFacadeFactory )
-                .newImpermanentDatabaseBuilder( storeDir );
+        GraphDatabaseBuilder databaseBuilder =
+                new CustomGuardTestTestGraphDatabaseFactory( guardCommunityFacadeFactory )
+                        .newImpermanentDatabaseBuilder( storeDir );
         configMap.forEach( databaseBuilder::setConfig );
 
         GraphDatabaseAPI database = (GraphDatabaseAPI) databaseBuilder.newGraphDatabase();
@@ -569,8 +577,21 @@ public class TransactionGuardIntegrationTest
         protected GraphDatabaseBuilder.DatabaseCreator createImpermanentDatabaseCreator( File storeDir,
                 TestGraphDatabaseFactoryState state )
         {
-            return config -> customFacadeFactory.newFacade( storeDir, config,
-                    GraphDatabaseDependencies.newDependencies( state.databaseDependencies() ) );
+            return new GraphDatabaseBuilder.DatabaseCreator()
+            {
+                @Override
+                public GraphDatabaseService newDatabase( Map<String,String> config )
+                {
+                    return newDatabase( Config.embeddedDefaults( config ) );
+                }
+
+                @Override
+                public GraphDatabaseService newDatabase( Config config )
+                {
+                    return customFacadeFactory.newFacade( storeDir, config,
+                            GraphDatabaseDependencies.newDependencies( state.databaseDependencies() ) );
+                }
+            };
         }
     }
 
@@ -579,14 +600,15 @@ public class TransactionGuardIntegrationTest
 
         CustomClockCommunityFacadeFactory()
         {
-            super( DatabaseInfo.COMMUNITY, CommunityEditionModule::new);
+            super( DatabaseInfo.COMMUNITY, CommunityEditionModule::new );
         }
 
         @Override
-        protected PlatformModule createPlatform( File storeDir, Map<String,String> params, Dependencies dependencies,
+        protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies,
                 GraphDatabaseFacade graphDatabaseFacade )
         {
-            return new PlatformModule( storeDir, params, databaseInfo, dependencies, graphDatabaseFacade ) {
+            return new PlatformModule( storeDir, config, databaseInfo, dependencies, graphDatabaseFacade )
+            {
                 @Override
                 protected SystemNanoClock createClock()
                 {
@@ -607,7 +629,7 @@ public class TransactionGuardIntegrationTest
     {
 
         CustomClockDataSourceModule( PlatformModule platformModule, EditionModule editionModule,
-                Supplier<QueryExecutionEngine> queryEngine  )
+                Supplier<QueryExecutionEngine> queryEngine )
         {
             super( platformModule, editionModule, queryEngine );
         }

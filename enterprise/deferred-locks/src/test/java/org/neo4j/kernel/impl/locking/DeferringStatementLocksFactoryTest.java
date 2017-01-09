@@ -87,7 +87,7 @@ public class DeferringStatementLocksFactoryTest
         Locks.Client client = mock( Locks.Client.class );
         when( locks.newClient() ).thenReturn( client );
 
-        Config config = new Config( stringMap( deferred_locks_enabled.name(), Settings.FALSE ) );
+        Config config = Config.embeddedDefaults( stringMap( deferred_locks_enabled.name(), Settings.FALSE ) );
 
         DeferringStatementLocksFactory factory = new DeferringStatementLocksFactory();
         factory.initialize( locks, config );
@@ -106,7 +106,7 @@ public class DeferringStatementLocksFactoryTest
         Locks.Client client = mock( Locks.Client.class );
         when( locks.newClient() ).thenReturn( client );
 
-        Config config = new Config( stringMap( deferred_locks_enabled.name(), Settings.TRUE ) );
+        Config config = Config.embeddedDefaults( stringMap( deferred_locks_enabled.name(), Settings.TRUE ) );
 
         DeferringStatementLocksFactory factory = new DeferringStatementLocksFactory();
         factory.initialize( locks, config );

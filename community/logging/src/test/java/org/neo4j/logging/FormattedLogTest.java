@@ -48,7 +48,8 @@ public class FormattedLogTest
         log.info( "Terminator 2" );
 
         // Then
-        assertThat( writer.toString(), equalTo( format( "1984-10-26 04:23:24.343+0000 INFO  [test] Terminator 2%n" ) ) );
+        assertThat( writer.toString(),
+                equalTo( format( "1984-10-26 04:23:24.343+0000 INFO  [test] Terminator 2%n" ) ) );
     }
 
     @Test
@@ -62,8 +63,9 @@ public class FormattedLogTest
         {
             // When
             log.info( null );
-            fail( "Should have thrown " + NullPointerException.class );
-        } catch ( NullPointerException npe )
+            fail( "Should have thrown " + RuntimeException.class );
+        }
+        catch ( RuntimeException npe )
         {
             // Then
             assertThat( writer.toString(), equalTo( "" ) );
@@ -83,7 +85,9 @@ public class FormattedLogTest
         // Then
         assertThat(
                 writer.toString(),
-                equalTo( format( "1984-10-26 04:23:24.343+0000 INFO  [test] Hasta la vista, baby <message>%n<stacktrace>" ) )
+                equalTo(
+                        format( "1984-10-26 04:23:24.343+0000 INFO  [test] Hasta la vista, baby " +
+                                "<message>%n<stacktrace>" ) )
         );
     }
 
@@ -98,8 +102,9 @@ public class FormattedLogTest
         {
             // When
             log.info( null, newThrowable( "<message>", "<stacktrace>" ) );
-            fail( "Should have thrown " + NullPointerException.class );
-        } catch ( NullPointerException npe )
+            fail( "Should have thrown " + RuntimeException.class );
+        }
+        catch ( RuntimeException npe )
         {
             // Then
             assertThat( writer.toString(), equalTo( "" ) );
@@ -107,20 +112,22 @@ public class FormattedLogTest
     }
 
     @Test
-    public void logShouldWriteMessageForNotNullMessageAndNullThrowable()
+    public void logShouldThrowExceptionForNotNullMessageAndNullThrowable()
     {
         // Given
         StringWriter writer = new StringWriter();
         Log log = newFormattedLog( writer );
 
-        // When
-        log.info( "I'll take care of the police", (Throwable) null );
-
-        // Then
-        assertThat(
-                writer.toString(),
-                equalTo( format( "1984-10-26 04:23:24.343+0000 INFO  [test] I'll take care of the police%n" ) )
-        );
+        try
+        {
+            // When
+            log.info( "I'll take care of the police", (Throwable) null );
+        }
+        catch ( RuntimeException npe )
+        {
+            // Then
+            assertThat( writer.toString(), equalTo( "" ) );
+        }
     }
 
     @Test
@@ -153,7 +160,9 @@ public class FormattedLogTest
         // Then
         assertThat(
                 writer.toString(),
-                equalTo( format( "1984-10-26 04:23:24.343+0000 INFO  [test] I need your clothes, your boots and your motorcycle%n" ) )
+                equalTo(
+                        format( "1984-10-26 04:23:24.343+0000 INFO  [test] I need your clothes, your boots and your " +
+                                "motorcycle%n" ) )
         );
     }
 
@@ -168,8 +177,9 @@ public class FormattedLogTest
         {
             // When
             log.info( null, "foo", "bar", "baz" );
-            fail( "Should have thrown " + NullPointerException.class );
-        } catch ( NullPointerException npe )
+            fail( "Should have thrown " + RuntimeException.class );
+        }
+        catch ( RuntimeException npe )
         {
             // Then
             assertThat( writer.toString(), equalTo( "" ) );
@@ -222,7 +232,8 @@ public class FormattedLogTest
             // When
             log.info( "%s like me. A T-%d, advanced prototype.", "Not", "1000", 1000 );
             fail( "Should have thrown " + IllegalFormatException.class );
-        } catch ( IllegalFormatException ife )
+        }
+        catch ( IllegalFormatException ife )
         {
             // Then
             assertThat( writer.toString(), equalTo( "" ) );
@@ -261,7 +272,8 @@ public class FormattedLogTest
         assertThat(
                 writer.toString(),
                 equalTo( format( "%s%n%s%n",
-                        "1984-10-26 04:23:24.343+0000 INFO  [test] No, it's when there's nothing wrong with you, but you hurt anyway. You get it?",
+                        "1984-10-26 04:23:24.343+0000 INFO  [test] No, it's when there's nothing wrong with you, but " +
+                                "you hurt anyway. You get it?",
                         "1984-10-26 04:23:24.343+0000 INFO  [test] There's 215 bones in the human body. That's one."
                 ) )
         );
@@ -275,7 +287,7 @@ public class FormattedLogTest
     private static FormattedLog newFormattedLog( StringWriter writer, Level level )
     {
         return new FormattedLog(
-                Suppliers.singleton( FIXED_DATE ),Suppliers.singleton( new PrintWriter( writer ) ),
+                Suppliers.singleton( FIXED_DATE ), Suppliers.singleton( new PrintWriter( writer ) ),
                 FormattedLog.UTC, null, "test", level, true );
     }
 

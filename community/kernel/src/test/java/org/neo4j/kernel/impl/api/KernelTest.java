@@ -28,6 +28,7 @@ import java.util.function.Function;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
@@ -93,9 +94,11 @@ public class KernelTest
             new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY,  factory )
             {
                 @Override
-                protected PlatformModule createPlatform( File storeDir, Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
+                protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies,
+                        GraphDatabaseFacade graphDatabaseFacade )
                 {
-                    return new ImpermanentPlatformModule( storeDir, params, databaseInfo, dependencies, graphDatabaseFacade );
+                    return new ImpermanentPlatformModule( storeDir, config, databaseInfo, dependencies,
+                            graphDatabaseFacade );
                 }
             }.initFacade( storeDir, params, dependencies, this );
         }

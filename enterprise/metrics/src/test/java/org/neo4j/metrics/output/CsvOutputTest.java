@@ -103,7 +103,7 @@ public class CsvOutputTest
 
     private Config config( String... keysValues )
     {
-        return new Config( stringMap( keysValues ) );
+        return Config.embeddedDefaults( stringMap( keysValues ) );
     }
 
     private void waitForFileToAppear( File file ) throws InterruptedException

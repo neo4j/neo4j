@@ -29,8 +29,6 @@ import java.util.NoSuchElementException;
 
 import org.neo4j.backup.BackupService.BackupOutcome;
 import org.neo4j.com.ComException;
-import org.neo4j.consistency.ConsistencyCheckSettings;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.Service;
@@ -236,7 +234,7 @@ public class BackupTool
                         configFilePath ), e );
             }
         }
-        return new Config( specifiedConfig, GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
+        return Config.embeddedDefaults( specifiedConfig );
     }
 
     private static URI resolveBackupUri( String from, Args arguments ) throws ToolFailureException

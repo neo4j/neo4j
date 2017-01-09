@@ -133,7 +133,7 @@ public class StoreUpgraderTest
     private final LabelScanStoreProvider labelScanStoreProvider = new LabelScanStoreProvider( new
             InMemoryLabelScanStore(), 2 );
 
-    private final Config allowMigrateConfig = new Config( MapUtil.stringMap( GraphDatabaseSettings
+    private final Config allowMigrateConfig = Config.embeddedDefaults( MapUtil.stringMap( GraphDatabaseSettings
             .allow_store_upgrade.name(), "true" ) );
 
     public StoreUpgraderTest( String version )
@@ -245,7 +245,7 @@ public class StoreUpgraderTest
     public void shouldHaltUpgradeIfUpgradeConfigurationVetoesTheProcess()
     {
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
-        Config deniedMigrationConfig = new Config( MapUtil.stringMap( GraphDatabaseSettings
+        Config deniedMigrationConfig = Config.embeddedDefaults( MapUtil.stringMap( GraphDatabaseSettings
                 .allow_store_upgrade.name(), "false" ) );
 
         UpgradableDatabase upgradableDatabase = new UpgradableDatabase( fileSystem,
@@ -558,7 +558,7 @@ public class StoreUpgraderTest
 
     private Config getTuningConfig()
     {
-        return new Config( MapUtil.stringMap( GraphDatabaseSettings.record_format.name(), getRecordFormatsName() ) );
+        return Config.embeddedDefaults( MapUtil.stringMap( GraphDatabaseSettings.record_format.name(), getRecordFormatsName() ) );
     }
 
     protected RecordFormats getRecordFormats()

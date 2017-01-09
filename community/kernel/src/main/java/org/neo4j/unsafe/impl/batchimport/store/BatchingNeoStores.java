@@ -23,7 +23,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.OpenOption;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -110,11 +109,10 @@ public class BatchingNeoStores implements AutoCloseable
         // Having less than that might result in an evicted page will reading, which would mean
         // unnecessary re-reading. Having slightly more leaves some leg room.
         int pageSize = config.pageSize();
-        this.neo4jConfig = new Config( stringMap( dbConfig.getParams(),
+        this.neo4jConfig = dbConfig.with( stringMap(
                 dense_node_threshold.name(), valueOf( config.denseNodeThreshold() ),
                 pagecache_memory.name(), valueOf( mappedMemory ),
-                mapped_memory_page_size.name(), valueOf( pageSize ) ),
-                GraphDatabaseSettings.class );
+                mapped_memory_page_size.name(), valueOf( pageSize ) ) );
         final PageCacheTracer tracer = new DefaultPageCacheTracer();
         this.pageCache = createPageCache( fileSystem, neo4jConfig, logProvider, tracer );
         this.ioTracer = tracer::bytesWritten;

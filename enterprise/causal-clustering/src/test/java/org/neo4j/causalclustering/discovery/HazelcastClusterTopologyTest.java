@@ -35,8 +35,8 @@ import org.junit.Test;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Pair;
+import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.NullLog;
 
@@ -59,12 +59,12 @@ public class HazelcastClusterTopologyTest
         HashMap<String, String> settings = new HashMap<>();
         settings.put( CausalClusteringSettings.transaction_advertised_address.name(), "tx:1001" );
         settings.put( CausalClusteringSettings.raft_advertised_address.name(), "raft:2001" );
-        settings.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).type.name(), "BOLT" );
-        settings.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).enabled.name(), "true" );
-        settings.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).advertised_address.name(), "bolt:3001" );
-        settings.put( new GraphDatabaseSettings.BoltConnector( "http" ).type.name(), "HTTP" );
-        settings.put( new GraphDatabaseSettings.BoltConnector( "http" ).enabled.name(), "true" );
-        settings.put( new GraphDatabaseSettings.BoltConnector( "http" ).advertised_address.name(), "http:3001" );
+        settings.put( new BoltConnector( "bolt" ).type.name(), "BOLT" );
+        settings.put( new BoltConnector( "bolt" ).enabled.name(), "true" );
+        settings.put( new BoltConnector( "bolt" ).advertised_address.name(), "bolt:3001" );
+        settings.put( new BoltConnector( "http" ).type.name(), "HTTP" );
+        settings.put( new BoltConnector( "http" ).enabled.name(), "true" );
+        settings.put( new BoltConnector( "http" ).advertised_address.name(), "http:3001" );
         config.augment( settings );
 
         // when
@@ -94,12 +94,12 @@ public class HazelcastClusterTopologyTest
             HashMap<String, String> settings = new HashMap<>();
             settings.put( CausalClusteringSettings.transaction_advertised_address.name(), "tx:" + (i + 1) );
             settings.put( CausalClusteringSettings.raft_advertised_address.name(), "raft:" + (i + 1) );
-            settings.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).type.name(), "BOLT" );
-            settings.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).enabled.name(), "true" );
-            settings.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).advertised_address.name(), "bolt:" + (i + 1) );
-            settings.put( new GraphDatabaseSettings.BoltConnector( "http" ).type.name(), "HTTP" );
-            settings.put( new GraphDatabaseSettings.BoltConnector( "http" ).enabled.name(), "true" );
-            settings.put( new GraphDatabaseSettings.BoltConnector( "http" ).advertised_address.name(), "http:" + (i + 1) );
+            settings.put( new BoltConnector( "bolt" ).type.name(), "BOLT" );
+            settings.put( new BoltConnector( "bolt" ).enabled.name(), "true" );
+            settings.put( new BoltConnector( "bolt" ).advertised_address.name(), "bolt:" + (i + 1) );
+            settings.put( new BoltConnector( "http" ).type.name(), "HTTP" );
+            settings.put( new BoltConnector( "http" ).enabled.name(), "true" );
+            settings.put( new BoltConnector( "http" ).advertised_address.name(), "http:" + (i + 1) );
 
             config.augment( settings );
             Map<String, Object> attributes = buildMemberAttributes( memberId, config ).getAttributes();
@@ -133,12 +133,12 @@ public class HazelcastClusterTopologyTest
             coreMembers.add( memberId );
             Config config = Config.defaults();
             HashMap<String, String> settings = new HashMap<>();
-            settings.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).type.name(), "BOLT" );
-            settings.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).enabled.name(), "true" );
-            settings.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).advertised_address.name(), "bolt:" + (i + 1) );
-            settings.put( new GraphDatabaseSettings.BoltConnector( "http" ).type.name(), "HTTP" );
-            settings.put( new GraphDatabaseSettings.BoltConnector( "http" ).enabled.name(), "true" );
-            settings.put( new GraphDatabaseSettings.BoltConnector( "http" ).advertised_address.name(), "http:" + (i + 1) );
+            settings.put( new BoltConnector( "bolt" ).type.name(), "BOLT" );
+            settings.put( new BoltConnector( "bolt" ).enabled.name(), "true" );
+            settings.put( new BoltConnector( "bolt" ).advertised_address.name(), "bolt:" + (i + 1) );
+            settings.put( new BoltConnector( "http" ).type.name(), "HTTP" );
+            settings.put( new BoltConnector( "http" ).enabled.name(), "true" );
+            settings.put( new BoltConnector( "http" ).advertised_address.name(), "http:" + (i + 1) );
 
             config.augment( settings );
             Map<String, Object> attributes = buildMemberAttributes( memberId, config ).getAttributes();

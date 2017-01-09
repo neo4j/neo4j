@@ -28,6 +28,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseDependencies;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.enterprise.EnterpriseEditionModule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.Edition;
@@ -60,17 +61,21 @@ public class TestEnterpriseGraphDatabaseFactory extends TestGraphDatabaseFactory
         return new GraphDatabaseBuilder.DatabaseCreator()
         {
             @Override
-            @SuppressWarnings( "deprecation" )
             public GraphDatabaseService newDatabase( Map<String,String> config )
+            {
+                return newDatabase( Config.embeddedDefaults( config ) );
+            }
+
+            @Override
+            public GraphDatabaseService newDatabase( Config config )
             {
                 return new GraphDatabaseFacadeFactory( DatabaseInfo.ENTERPRISE, EnterpriseEditionModule::new )
                 {
                     @Override
-                    protected PlatformModule createPlatform( File storeDir, Map<String,String> params,
-                                                             Dependencies dependencies,
-                                                             GraphDatabaseFacade graphDatabaseFacade )
+                    protected PlatformModule createPlatform( File storeDir, Config config,
+                            Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
                     {
-                        return new ImpermanentGraphDatabase.ImpermanentPlatformModule( storeDir, params, databaseInfo,
+                        return new ImpermanentGraphDatabase.ImpermanentPlatformModule( storeDir, config, databaseInfo,
                                 dependencies, graphDatabaseFacade )
                         {
                             @Override

@@ -48,6 +48,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.StoreLockException;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
@@ -624,7 +625,7 @@ public class TestBackup
         GraphDatabaseFactory dbFactory = new TestGraphDatabaseFactory()
         {
             @Override
-            protected GraphDatabaseService newDatabase( File storeDir, Map<String,String> config,
+            protected GraphDatabaseService newDatabase( File storeDir, Config config,
                     GraphDatabaseFacadeFactory.Dependencies dependencies )
             {
                 Function<PlatformModule,EditionModule> factory =

@@ -25,10 +25,9 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Used to add description of settings in {@link GraphDatabaseSettings}.
- *
- * This is deprecated, it will be moved out of the public API in 1.11.
+ * DEPRECATED: Please use {@link org.neo4j.configuration.Description} instead. This will be removed in 4.0.
  */
+@Deprecated
 @Retention( RetentionPolicy.RUNTIME )
 @Target( {ElementType.TYPE, ElementType.FIELD} )
 public @interface Description

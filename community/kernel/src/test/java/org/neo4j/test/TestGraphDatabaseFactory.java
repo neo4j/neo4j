@@ -22,6 +22,7 @@ package org.neo4j.test;
 import java.io.File;
 import java.util.Collections;
 import java.util.Map;
+import javax.annotation.Nonnull;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
@@ -32,6 +33,8 @@ import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseDependencies;
+import org.neo4j.kernel.configuration.BoltConnector;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
@@ -44,9 +47,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.Connector.ConnectorType.BOLT;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
-
+import static org.neo4j.kernel.configuration.Connector.ConnectorType.BOLT;
 
 /**
  * Test factory for graph databases.
@@ -78,7 +79,7 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
         {
             Setting<?> key = entry.getKey();
             String value = entry.getValue();
-            builder.setConfig(key, value);
+            builder.setConfig( key, value );
         }
         return builder.newGraphDatabase();
     }
@@ -94,8 +95,8 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
         // Reduce the default page cache memory size to 8 mega-bytes for test databases.
         builder.setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
         builder.setConfig( GraphDatabaseSettings.shutdown_transaction_end_timeout, "1s" );
-        builder.setConfig( boltConnector("bolt").type, BOLT.name() );
-        builder.setConfig( boltConnector("bolt").enabled, "false" );
+        builder.setConfig( new BoltConnector( "bolt" ).type, BOLT.name() );
+        builder.setConfig( new BoltConnector( "bolt" ).enabled, "false" );
     }
 
     private void configure( GraphDatabaseBuilder builder, File storeDir )
@@ -190,16 +191,21 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
         return new GraphDatabaseBuilder.DatabaseCreator()
         {
             @Override
-            @SuppressWarnings( "deprecation" )
             public GraphDatabaseService newDatabase( Map<String,String> config )
+            {
+                return newDatabase( Config.embeddedDefaults( config ) );
+            }
+
+            @Override
+            public GraphDatabaseService newDatabase( @Nonnull Config config )
             {
                 return new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
                 {
                     @Override
-                    protected PlatformModule createPlatform( File storeDir, Map<String,String> params,
+                    protected PlatformModule createPlatform( File storeDir, Config config,
                             Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
                     {
-                        return new ImpermanentGraphDatabase.ImpermanentPlatformModule( storeDir, params, databaseInfo,
+                        return new ImpermanentGraphDatabase.ImpermanentPlatformModule( storeDir, config, databaseInfo,
                                 dependencies, graphDatabaseFacade )
                         {
                             @Override

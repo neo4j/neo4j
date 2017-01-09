@@ -32,7 +32,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
@@ -179,7 +178,7 @@ public class TestGraphProperties
         tx.close();
         db.shutdown();
 
-        Config config = new Config( Collections.<String, String>emptyMap(), GraphDatabaseSettings.class );
+        Config config = Config.embeddedDefaults( Collections.emptyMap() );
         StoreFactory storeFactory = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fs.get() ),
                 pageCacheRule.getPageCache( fs.get() ), fs.get(), NullLogProvider.getInstance() );
         NeoStores neoStores = storeFactory.openAllNeoStores();

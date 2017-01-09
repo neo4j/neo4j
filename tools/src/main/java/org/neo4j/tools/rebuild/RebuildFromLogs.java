@@ -24,18 +24,15 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Map;
 
 import org.neo4j.com.storecopy.ExternallyManagedPageCache;
 import org.neo4j.consistency.ConsistencyCheckService;
-import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.FullCheck;
 import org.neo4j.consistency.statistics.Statistics;
 import org.neo4j.cursor.IOCursor;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -68,7 +65,6 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLog;
 
 import static java.lang.String.format;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.openForVersion;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
@@ -170,13 +166,16 @@ class RebuildFromLogs
                 progress = ProgressMonitorFactory.textual( System.err );
             }
             progress.singlePart( format( "Rebuilding store from %s transactions ", txCount ), txCount );
+
+            long lastTxId;
             try ( TransactionApplier applier = new TransactionApplier( fs, target, pageCache ) )
             {
-                long lastTxId = applier.applyTransactionsFrom( source, txId );
-                // set last tx id in neostore otherwise the db is not usable
-                MetaDataStore.setRecord( pageCache, new File( target, MetaDataStore.DEFAULT_NAME ),
-                        MetaDataStore.Position.LAST_TRANSACTION_ID, lastTxId );
+                lastTxId = applier.applyTransactionsFrom( source, txId );
             }
+
+            // set last tx id in neostore otherwise the db is not usable
+            MetaDataStore.setRecord( pageCache, new File( target, MetaDataStore.DEFAULT_NAME ),
+                    MetaDataStore.Position.LAST_TRANSACTION_ID, lastTxId );
 
             try ( ConsistencyChecker checker = new ConsistencyChecker( target, pageCache ) )
             {
@@ -226,7 +225,7 @@ class RebuildFromLogs
         TransactionApplier( FileSystemAbstraction fs, File dbDirectory, PageCache pageCache )
         {
             this.fs = fs;
-            this.graphdb = startTemporaryDb( dbDirectory.getAbsoluteFile(), pageCache, stringMap() );
+            this.graphdb = startTemporaryDb( dbDirectory.getAbsoluteFile(), pageCache );
             this.commitProcess = graphdb.getDependencyResolver().resolveDependency( TransactionCommitProcess.class );
         }
 
@@ -270,13 +269,12 @@ class RebuildFromLogs
     {
         private final GraphDatabaseAPI graphdb;
         private final LabelScanStore labelScanStore;
-        private final Config tuningConfiguration =
-                new Config( stringMap(), GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
+        private final Config tuningConfiguration = Config.embeddedDefaults();
         private final SchemaIndexProvider indexes;
 
         ConsistencyChecker( File dbDirectory, PageCache pageCache )
         {
-            this.graphdb = startTemporaryDb( dbDirectory.getAbsoluteFile(), pageCache, stringMap() );
+            this.graphdb = startTemporaryDb( dbDirectory.getAbsoluteFile(), pageCache );
             DependencyResolver resolver = graphdb.getDependencyResolver();
             this.labelScanStore = resolver.resolveDependency( LabelScanStore.class );
             this.indexes = resolver.resolveDependency( SchemaIndexProvider.class );
@@ -300,10 +298,9 @@ class RebuildFromLogs
         }
     }
 
-    static GraphDatabaseAPI startTemporaryDb( File targetDirectory, PageCache pageCache, Map<String,String> config )
+    static GraphDatabaseAPI startTemporaryDb( File targetDirectory, PageCache pageCache )
     {
         GraphDatabaseFactory factory = ExternallyManagedPageCache.graphDatabaseFactoryWithPageCache( pageCache );
-        return (GraphDatabaseAPI) factory.newEmbeddedDatabaseBuilder( targetDirectory ).setConfig( config )
-                .newGraphDatabase();
+        return (GraphDatabaseAPI) factory.newEmbeddedDatabaseBuilder( targetDirectory ).newGraphDatabase();
     }
 }

@@ -39,6 +39,7 @@ import org.neo4j.kernel.impl.enterprise.EnterpriseEditionModule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Dependencies;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
@@ -124,15 +125,16 @@ public class ExternallyManagedPageCache implements PageCache
         }
 
         @Override
-        protected GraphDatabaseService newDatabase( File storeDir, Map<String,String> config,
+        protected GraphDatabaseService newDatabase( File storeDir, Config config,
                 GraphDatabaseFacadeFactory.Dependencies dependencies )
         {
             return new GraphDatabaseFacadeFactory( DatabaseInfo.ENTERPRISE, EnterpriseEditionModule::new )
             {
                 @Override
-                protected PlatformModule createPlatform( File storeDir, Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
+                protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies,
+                        GraphDatabaseFacade graphDatabaseFacade )
                 {
-                    return new PlatformModule( storeDir, params, databaseInfo, dependencies, graphDatabaseFacade )
+                    return new PlatformModule( storeDir, config, databaseInfo, dependencies, graphDatabaseFacade )
                     {
 
                         @Override

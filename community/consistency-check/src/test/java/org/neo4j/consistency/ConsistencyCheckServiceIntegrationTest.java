@@ -96,7 +96,7 @@ public class ConsistencyCheckServiceIntegrationTest
 
         Date timestamp = new Date();
         ConsistencyCheckService service = new ConsistencyCheckService( timestamp );
-        Config configuration = new Config( settings(), GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
+        Config configuration = Config.embeddedDefaults( settings() );
 
         ConsistencyCheckService.Result result = runFullConsistencyCheck( service, configuration );
 
@@ -115,7 +115,7 @@ public class ConsistencyCheckServiceIntegrationTest
         // given
         Date timestamp = new Date();
         ConsistencyCheckService service = new ConsistencyCheckService( timestamp );
-        Config configuration = new Config( settings(), GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
+        Config configuration = Config.embeddedDefaults( settings() );
 
         // when
         ConsistencyCheckService.Result result = runFullConsistencyCheck( service, configuration );
@@ -134,9 +134,8 @@ public class ConsistencyCheckServiceIntegrationTest
         Date timestamp = new Date();
         ConsistencyCheckService service = new ConsistencyCheckService( timestamp );
         String logsDir = testDirectory.directory().getPath();
-        Config configuration = new Config(
-                settings( GraphDatabaseSettings.logs_directory.name(), logsDir ),
-                GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
+        Config configuration = Config.embeddedDefaults(
+                settings( GraphDatabaseSettings.logs_directory.name(), logsDir ) );
 
         // when
         ConsistencyCheckService.Result result = runFullConsistencyCheck( service, configuration );
@@ -154,7 +153,7 @@ public class ConsistencyCheckServiceIntegrationTest
     {
         // given
         ConsistencyCheckService service = new ConsistencyCheckService();
-        Config configuration = new Config( settings(), GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
+        Config configuration = Config.embeddedDefaults( settings() );
         GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.graphDbDir() )
                 .setConfig( GraphDatabaseSettings.record_format, getRecordFormatName() )
                 .newGraphDatabase();
@@ -195,9 +194,8 @@ public class ConsistencyCheckServiceIntegrationTest
         gds.shutdown();
 
         ConsistencyCheckService service = new ConsistencyCheckService();
-        Config configuration = new Config(
-                settings( ConsistencyCheckSettings.consistency_check_graph.name(), Settings.FALSE ),
-                GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
+        Config configuration = Config.embeddedDefaults(
+                settings( ConsistencyCheckSettings.consistency_check_graph.name(), Settings.FALSE ) );
 
         // when
         Result result = runFullConsistencyCheck( service, configuration );

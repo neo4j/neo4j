@@ -22,8 +22,12 @@ package org.neo4j.kernel.impl.index;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
@@ -50,7 +54,7 @@ public class LegacyIndexStore
     private final Function<String,IndexImplementation> indexProviders;
     private final Supplier<KernelAPI> kernel;
 
-    public LegacyIndexStore( Config config, IndexConfigStore indexStore, Supplier<KernelAPI> kernel,
+    public LegacyIndexStore( @Nonnull Config config, IndexConfigStore indexStore, Supplier<KernelAPI> kernel,
             Function<String,IndexImplementation> indexProviders )
     {
         this.config = config;
@@ -72,7 +76,7 @@ public class LegacyIndexStore
 
     private Map<String, String> findIndexConfig(
             Class<? extends PropertyContainer> cls, String indexName,
-            Map<String, String> suppliedConfig, Map<?, ?> dbConfig )
+            Map<String, String> suppliedConfig, @Nonnull Config dbConfig )
     {
         // Check stored config (has this index been created previously?)
         Map<String, String> storedConfig = indexStore.get( cls, indexName );
@@ -133,8 +137,9 @@ public class LegacyIndexStore
         }
     }
 
-    private Map<String, String> injectDefaultProviderIfMissing( String indexName, Map<?, ?> dbConfig,
-            Map<String, String> config )
+    @Nonnull
+    private Map<String, String> injectDefaultProviderIfMissing( @Nullable String indexName, @Nonnull Config dbConfig,
+            @Nonnull Map<String, String> config )
     {
         String provider = config.get( PROVIDER );
         if ( provider == null )
@@ -145,31 +150,18 @@ public class LegacyIndexStore
         return config;
     }
 
-    private String getDefaultProvider( String indexName, Map<?, ?> dbConfig )
+    @Nonnull
+    private String getDefaultProvider( @Nullable String indexName, @Nonnull Config dbConfig )
     {
-        String provider = null;
-        if ( dbConfig != null )
-        {
-            provider = (String) dbConfig.get( "index." + indexName );
-            if ( provider == null )
-            {
-                provider = (String) dbConfig.get( "index" );
-            }
-        }
-
-        // 4. Default to lucene
-        if ( provider == null )
-        {
-            provider = "lucene";
-        }
-        return provider;
+        return dbConfig.getRaw( "index." + indexName )
+                .orElse( dbConfig.getRaw( "index" ).orElse( "lucene" ) );
     }
 
     private Map<String, String> getOrCreateIndexConfig(
             IndexEntityType entityType, String indexName, Map<String, String> suppliedConfig )
     {
         Map<String,String> config = findIndexConfig(
-                entityType.entityClass(), indexName, suppliedConfig, this.config.getParams() );
+                entityType.entityClass(), indexName, suppliedConfig, this.config );
         if ( !indexStore.has( entityType.entityClass(), indexName ) )
         {   // Ok, we need to create this config
             synchronized ( this )

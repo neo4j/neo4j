@@ -157,6 +157,7 @@ import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.time.SystemNanoClock;
 
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory.fromConfigValue;
 
 public class NeoStoreDataSource implements Lifecycle, IndexProviders
@@ -605,12 +606,15 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             return -1;
         };
         final LogFileInformation logFileInformation =
-                new PhysicalLogFileInformation( logFiles, logHeaderCache, transactionIdStore::getLastCommittedTransactionId, logInformation );
+                new PhysicalLogFileInformation( logFiles, logHeaderCache,
+                        transactionIdStore::getLastCommittedTransactionId, logInformation );
 
-        String pruningConf = config.get(
-                config.get( GraphDatabaseFacadeFactory.Configuration.ephemeral )
-                ? GraphDatabaseFacadeFactory.Configuration.ephemeral_keep_logical_logs
-                : GraphDatabaseSettings.keep_logical_logs );
+        if ( config.get( GraphDatabaseFacadeFactory.Configuration.ephemeral ) )
+        {
+            config = config.withDefaults(
+                    stringMap( GraphDatabaseSettings.keep_logical_logs.name(), "1 files" ) );
+        }
+        String pruningConf = config.get( GraphDatabaseSettings.keep_logical_logs );
 
         LogPruneStrategy logPruneStrategy = fromConfigValue( fs, logFileInformation, logFiles, pruningConf );
 

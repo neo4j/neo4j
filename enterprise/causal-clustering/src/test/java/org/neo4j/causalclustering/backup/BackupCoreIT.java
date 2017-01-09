@@ -115,6 +115,6 @@ public class BackupCoreIT
 
     static Config getConfig()
     {
-        return new Config( MapUtil.stringMap( GraphDatabaseSettings.record_format.name(), Standard.LATEST_NAME ) );
+        return Config.embeddedDefaults( MapUtil.stringMap( GraphDatabaseSettings.record_format.name(), Standard.LATEST_NAME ) );
     }
 }

@@ -23,8 +23,9 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 
+import org.neo4j.configuration.Description;
+import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.Description;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Internal;
 import org.neo4j.logging.Level;
@@ -49,7 +50,7 @@ import static org.neo4j.kernel.impl.proc.ProcedureAllowedConfig.PROC_ALLOWED_SET
  * Settings for security module
  */
 @Description( "Security configuration settings" )
-public class SecuritySettings
+public class SecuritySettings implements LoadableConfig
 {
     public static final String NATIVE_REALM_NAME = "native";
     public static final String LDAP_REALM_NAME = "ldap";

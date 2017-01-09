@@ -19,10 +19,6 @@
  */
 package org.neo4j.server.configuration;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -30,11 +26,15 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
-import org.neo4j.server.CommunityBootstrapper;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.test.rule.SuppressOutput;
 
@@ -42,9 +42,6 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
-import static org.neo4j.kernel.configuration.Settings.STRING;
-import static org.neo4j.kernel.configuration.Settings.setting;
 import static org.neo4j.test.rule.SuppressOutput.suppressAll;
 
 public class ConfigLoaderTest
@@ -54,8 +51,6 @@ public class ConfigLoaderTest
     @Rule
     public final TemporaryFolder folder = new TemporaryFolder();
 
-    private final ConfigLoader configLoader = new ConfigLoader( CommunityBootstrapper.settingsClasses );
-
     @Test
     public void shouldProvideAConfiguration() throws IOException
     {
@@ -64,7 +59,7 @@ public class ConfigLoaderTest
                 .build();
 
         // when
-        Config config = configLoader.loadConfig( Optional.of( folder.getRoot() ), configFile );
+        Config config = ConfigLoader.loadConfig( Optional.of( folder.getRoot() ), configFile );
 
         // then
         assertNotNull( config );
@@ -75,15 +70,15 @@ public class ConfigLoaderTest
     {
         // given
         Optional<File> configFile = ConfigFileBuilder.builder( folder.getRoot() )
-                .withNameValue( "foo", "bar" )
+                .withNameValue( GraphDatabaseSettings.default_advertised_address.name(), "bar" )
                 .build();
 
         // when
-        Config testConf = configLoader.loadConfig( Optional.of( folder.getRoot() ), configFile );
+        Config testConf = ConfigLoader.loadConfig( Optional.of( folder.getRoot() ), configFile );
 
         // then
         final String EXPECTED_VALUE = "bar";
-        assertEquals( EXPECTED_VALUE, testConf.get( setting( "foo", STRING, NO_DEFAULT ) ) );
+        assertEquals( EXPECTED_VALUE, testConf.get( GraphDatabaseSettings.default_advertised_address ) );
     }
 
     @Test
@@ -94,7 +89,7 @@ public class ConfigLoaderTest
                 .build();
 
         // when
-        Config testConf = configLoader.loadConfig( Optional.of( folder.getRoot() ), configFile );
+        Config testConf = ConfigLoader.loadConfig( Optional.of( folder.getRoot() ), configFile );
 
         // then
         assertEquals( folder.getRoot(), testConf.get( GraphDatabaseSettings.neo4j_home ) );
@@ -108,7 +103,7 @@ public class ConfigLoaderTest
                 .build();
 
         // when
-        Config testConf = configLoader.loadConfig( Optional.empty(), configFile );
+        Config testConf = ConfigLoader.loadConfig( Optional.empty(), configFile );
 
         // then
         assertEquals( new File( System.getProperty("user.dir") ),
@@ -120,35 +115,35 @@ public class ConfigLoaderTest
     {
         // given
         Optional<File> configFile = ConfigFileBuilder.builder( folder.getRoot() )
-                .withNameValue( "foo", "bar" )
-                .withNameValue( "foo", "bar" )
+                .withNameValue( GraphDatabaseSettings.default_advertised_address.name(), "bar" )
+                .withNameValue( GraphDatabaseSettings.default_advertised_address.name(), "bar" )
                 .build();
 
         // when
-        Config testConf = configLoader.loadConfig( Optional.of( folder.getRoot() ), configFile );
+        Config testConf = ConfigLoader.loadConfig( Optional.of( folder.getRoot() ), configFile );
 
         // then
         assertNotNull( testConf );
         final String EXPECTED_VALUE = "bar";
-        assertEquals( EXPECTED_VALUE, testConf.get( setting( "foo", STRING, NO_DEFAULT ) ) );
+        assertEquals( EXPECTED_VALUE, testConf.get( GraphDatabaseSettings.default_advertised_address ) );
     }
 
     @Test
     public void loadOfflineConfigShouldDisableBolt() throws IOException
     {
         // given
-        GraphDatabaseSettings.BoltConnector defaultBoltConf = GraphDatabaseSettings.boltConnector( "bolt" );
+        BoltConnector defaultBoltConf = new BoltConnector( "bolt" );
         Optional<File> configFile = ConfigFileBuilder.builder( folder.getRoot() )
                 .withNameValue( defaultBoltConf.enabled.name(), Settings.TRUE )
                 .build();
 
         // when
-        Config testConf = configLoader.loadOfflineConfig( Optional.of( folder.getRoot() ), configFile );
+        Config testConf = ConfigLoader.loadConfigWithConnectorsDisabled( Optional.of( folder.getRoot() ), configFile );
 
         // then
         assertNotNull( testConf );
         assertEquals( false, testConf.get( defaultBoltConf.enabled ) );
-        assertEquals( false, testConf.get( new GraphDatabaseSettings.BoltConnector().enabled ) );
+        assertEquals( false, testConf.get( new BoltConnector().enabled ) );
     }
 
     @Test
@@ -158,11 +153,11 @@ public class ConfigLoaderTest
         Optional<File> configFile = ConfigFileBuilder.builder( folder.getRoot() ).build();
 
         // when
-        Config testConf = configLoader.loadOfflineConfig( Optional.of( folder.getRoot() ), configFile );
+        Config testConf = ConfigLoader.loadConfigWithConnectorsDisabled( Optional.of( folder.getRoot() ), configFile );
 
         // then
         assertNotNull( testConf );
-        assertEquals( false, testConf.get( new GraphDatabaseSettings.BoltConnector().enabled ) );
+        assertEquals( false, testConf.get( new BoltConnector().enabled ) );
     }
 
     @Test
@@ -182,7 +177,7 @@ public class ConfigLoaderTest
         }
 
         // when
-        Config config = configLoader.loadConfig( Optional.of( folder.getRoot() ), Optional.of( file ) );
+        Config config = ConfigLoader.loadConfig( Optional.of( folder.getRoot() ), Optional.of( file ) );
 
         // then
         List<ThirdPartyJaxRsPackage> thirdpartyJaxRsPackages = config.get( ServerSettings.third_party_packages );
@@ -201,7 +196,7 @@ public class ConfigLoaderTest
                 .build();
 
         // when
-        Config config = configLoader.loadConfig( Optional.of( folder.getRoot() ), configFile );
+        Config config = ConfigLoader.loadConfig( Optional.of( folder.getRoot() ), configFile );
 
         // then
         List<ThirdPartyJaxRsPackage> thirdpartyJaxRsPackages = config.get( ServerSettings.third_party_packages );
@@ -220,7 +215,7 @@ public class ConfigLoaderTest
         Optional<File> nonExistentConfigFile = Optional.of( new File( "/tmp/" + System.currentTimeMillis() ) );
 
         // When
-        Config config = configLoader.loadConfig( Optional.of( folder.getRoot() ), nonExistentConfigFile );
+        Config config = ConfigLoader.loadConfig( Optional.of( folder.getRoot() ), nonExistentConfigFile );
 
         // Then
         assertNotNull( config );
@@ -233,7 +228,7 @@ public class ConfigLoaderTest
                 .builder( folder.getRoot() )
                 .withoutSetting( DatabaseManagementSystemSettings.data_directory )
                 .build();
-        Config config = configLoader.loadConfig( Optional.of( folder.getRoot() ), configFile );
+        Config config = ConfigLoader.loadConfig( Optional.of( folder.getRoot() ), configFile );
 
         assertThat( config.get( DatabaseManagementSystemSettings.auth_store_directory ),
                 is( new File( folder.getRoot(), "data/dbms" ).getAbsoluteFile() ) );
@@ -245,7 +240,7 @@ public class ConfigLoaderTest
         Optional<File> configFile = ConfigFileBuilder.builder( folder.getRoot() )
                 .withSetting( DatabaseManagementSystemSettings.data_directory, "the-data-dir" )
                 .build();
-        Config config = configLoader.loadConfig( Optional.of( folder.getRoot() ), configFile );
+        Config config = ConfigLoader.loadConfig( Optional.of( folder.getRoot() ), configFile );
 
         assertThat( config.get( DatabaseManagementSystemSettings.auth_store_directory ),
                 is( new File( folder.getRoot(), "the-data-dir/dbms" ).getAbsoluteFile() ) );
@@ -258,7 +253,7 @@ public class ConfigLoaderTest
                 .withSetting( DatabaseManagementSystemSettings.data_directory, "the-data-dir" )
                 .withSetting( GraphDatabaseSettings.auth_store, "foo/bar/auth" )
                 .build();
-        Config config = configLoader.loadConfig( Optional.of( folder.getRoot() ), configFile );
+        Config config = ConfigLoader.loadConfig( Optional.of( folder.getRoot() ), configFile );
 
         assertThat( config.get( GraphDatabaseSettings.auth_store ),
                 is( new File( folder.getRoot(), "foo/bar/auth" ).getAbsoluteFile() ) );

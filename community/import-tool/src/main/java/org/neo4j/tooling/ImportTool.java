@@ -528,7 +528,7 @@ public class ImportTool
 
     private static Config loadDbConfig( File file ) throws IOException
     {
-        return file != null && file.exists() ? new Config( MapUtil.load( file ) ) : Config.defaults();
+        return file != null && file.exists() ? Config.embeddedDefaults( MapUtil.load( file ) ) : Config.defaults();
     }
 
     private static void printOverview( File storeDir, Collection<Option<File[]>> nodesFiles,

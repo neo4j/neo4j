@@ -21,11 +21,12 @@ package org.neo4j.ext.udc;
 
 import java.util.function.Function;
 
+import org.neo4j.configuration.Description;
+import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.Description;
 import org.neo4j.helpers.HostnamePort;
-import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.configuration.Internal;
+import org.neo4j.kernel.configuration.Settings;
 
 import static org.neo4j.kernel.configuration.Settings.ANY;
 import static org.neo4j.kernel.configuration.Settings.FALSE;
@@ -39,7 +40,7 @@ import static org.neo4j.kernel.configuration.Settings.min;
 import static org.neo4j.kernel.configuration.Settings.setting;
 
 @Description( "Usage Data Collector configuration settings" )
-public class UdcSettings
+public class UdcSettings implements LoadableConfig
 {
     /** Configuration key for enabling the UDC extension. */
     @Description( "Enable the UDC extension." )

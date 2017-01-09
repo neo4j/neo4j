@@ -121,7 +121,7 @@ public class IdGeneratorRebuildFailureEmulationTest
         graphdb.shutdown();
         Map<String, String> params = new HashMap<>();
         params.put( GraphDatabaseSettings.rebuild_idgenerators_fast.name(), Settings.FALSE );
-        Config config = new Config( params, GraphDatabaseSettings.class );
+        Config config = Config.embeddedDefaults( params );
         factory = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fs ),
                 pageCacheRule.getPageCache( fs ), fs, NullLogProvider.getInstance() );
     }
@@ -236,9 +236,9 @@ public class IdGeneratorRebuildFailureEmulationTest
             new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
             {
                 @Override
-                protected PlatformModule createPlatform( File storeDir, Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade facade )
+                protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies, GraphDatabaseFacade facade )
                 {
-                    return new ImpermanentPlatformModule( storeDir, params, databaseInfo, dependencies, facade )
+                    return new ImpermanentPlatformModule( storeDir, config, databaseInfo, dependencies, facade )
                     {
                         @Override
                         protected FileSystemAbstraction createFileSystemAbstraction()

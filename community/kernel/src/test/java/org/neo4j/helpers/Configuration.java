@@ -35,7 +35,7 @@ public class Configuration extends ExternalResource
 
     public Config config( Class<?>... settingsClasses )
     {
-        return new Config( configuration, settingsClasses );
+        return Config.embeddedDefaults( configuration );
     }
 
     public Configuration with( Setting<?> setting, String value )

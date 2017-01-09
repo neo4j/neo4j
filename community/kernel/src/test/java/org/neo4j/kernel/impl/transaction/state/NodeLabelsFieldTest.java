@@ -504,7 +504,7 @@ public class NodeLabelsFieldTest
     {
         File storeDir = new File( "dir" );
         fs.get().mkdirs( storeDir );
-        Config config = new Config( stringMap( GraphDatabaseSettings.label_block_size.name(), "60" ) );
+        Config config = Config.embeddedDefaults( stringMap( GraphDatabaseSettings.label_block_size.name(), "60" ) );
         StoreFactory storeFactory = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fs.get() ),
                 pageCacheRule.getPageCache( fs.get() ), fs.get(), NullLogProvider.getInstance() );
         neoStores = storeFactory.openAllNeoStores( true );

@@ -51,15 +51,16 @@ public class AdversarialPageCacheGraphDatabaseFactory
         return new TestGraphDatabaseFactory()
         {
             @Override
-            protected GraphDatabaseService newDatabase( File dir, Map<String,String> config, Dependencies dependencies )
+            protected GraphDatabaseService newDatabase( File dir, Config config, Dependencies dependencies )
             {
                 return new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
                 {
+
                     @Override
-                    protected PlatformModule createPlatform( File storeDir, Map<String,String> params,
+                    protected PlatformModule createPlatform( File storeDir, Config config,
                             Dependencies dependencies, GraphDatabaseFacade facade )
                     {
-                        return new PlatformModule( storeDir, params, databaseInfo, dependencies, facade )
+                        return new PlatformModule( storeDir, config, databaseInfo, dependencies, facade )
                         {
                             @Override
                             protected FileSystemAbstraction createFileSystemAbstraction()

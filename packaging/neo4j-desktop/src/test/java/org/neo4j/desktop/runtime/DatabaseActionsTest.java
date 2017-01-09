@@ -31,13 +31,12 @@ import java.util.Properties;
 import org.neo4j.desktop.Parameters;
 import org.neo4j.desktop.config.Installation;
 import org.neo4j.desktop.model.DesktopModel;
-import org.neo4j.server.configuration.ClientConnectorSettings;
+import org.neo4j.kernel.configuration.HttpConnector;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.server.configuration.ClientConnectorSettings.httpConnector;
 
 public class DatabaseActionsTest
 {
@@ -82,9 +81,9 @@ public class DatabaseActionsTest
 
         configFile = new File( testDirectory.directory(), "neo4j.conf" );
         Properties props = new Properties();
-        props.setProperty( ClientConnectorSettings.httpConnector( "1" ).type.name(), "HTTP" );
-        props.setProperty( ClientConnectorSettings.httpConnector( "1" ).encryption.name(), "NONE" );
-        props.setProperty( ClientConnectorSettings.httpConnector( "1" ).enabled.name(), "true" );
+        props.setProperty( new HttpConnector( "http" ).type.name(), "HTTP" );
+        props.setProperty( new HttpConnector( "http" ).encryption.name(), "NONE" );
+        props.setProperty( new HttpConnector( "http" ).enabled.name(), "true" );
         try ( FileWriter writer = new FileWriter( configFile ) )
         {
             props.store( writer, "" );

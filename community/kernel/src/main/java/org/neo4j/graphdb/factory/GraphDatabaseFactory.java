@@ -21,15 +21,19 @@ package org.neo4j.graphdb.factory;
 
 import java.io.File;
 import java.util.Map;
+import javax.annotation.Nonnull;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.security.URLAccessRule;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.Edition;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
+
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 /**
  * Creates a {@link org.neo4j.graphdb.GraphDatabaseService}.
@@ -83,10 +87,21 @@ public class GraphDatabaseFactory
     protected GraphDatabaseBuilder.DatabaseCreator createDatabaseCreator(
             final File storeDir, final GraphDatabaseFactoryState state )
     {
-        return config -> {
-            config.put( "unsupported.dbms.ephemeral", "false" );
-            GraphDatabaseFacadeFactory.Dependencies dependencies = state.databaseDependencies();
-            return GraphDatabaseFactory.this.newDatabase( storeDir, config, dependencies );
+        return new GraphDatabaseBuilder.DatabaseCreator()
+        {
+            @Override
+            public GraphDatabaseService newDatabase( Map<String,String> config )
+            {
+                return newDatabase( Config.embeddedDefaults( config ) );
+            }
+
+            @Override
+            public GraphDatabaseService newDatabase( @Nonnull Config config )
+            {
+                return GraphDatabaseFactory.this.newDatabase( storeDir,
+                        config.with( stringMap( "unsupported.dbms.ephemeral", "false" ) ),
+                        state.databaseDependencies() );
+            }
         };
     }
 
@@ -95,7 +110,18 @@ public class GraphDatabaseFactory
         // Let the default configuration pass through.
     }
 
-    protected GraphDatabaseService newDatabase( File storeDir, Map<String,String> config, GraphDatabaseFacadeFactory.Dependencies dependencies )
+    /**
+     * See {@link #newDatabase(File, Config, GraphDatabaseFacadeFactory.Dependencies)} instead.
+     */
+    @Deprecated
+    protected GraphDatabaseService newDatabase( File storeDir, Map<String,String> settings,
+            GraphDatabaseFacadeFactory.Dependencies dependencies )
+    {
+        return newDatabase( storeDir, Config.embeddedDefaults( settings ), dependencies );
+    }
+
+    protected GraphDatabaseService newDatabase( File storeDir, Config config,
+            GraphDatabaseFacadeFactory.Dependencies dependencies )
     {
         return new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
                 .newFacade( storeDir, config, dependencies );

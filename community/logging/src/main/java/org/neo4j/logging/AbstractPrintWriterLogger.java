@@ -23,6 +23,7 @@ import java.io.PrintWriter;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import static java.util.Objects.requireNonNull;
 
@@ -80,7 +81,7 @@ public abstract class AbstractPrintWriterLogger implements Logger
     }
 
     @Override
-    public void log( @Nonnull String format, @Nonnull Object... arguments )
+    public void log( @Nonnull String format, @Nullable Object... arguments )
     {
         requireNonNull( format, "format must not be null" );
         if ( arguments == null || arguments.length == 0 )

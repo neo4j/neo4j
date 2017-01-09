@@ -22,17 +22,19 @@ package org.neo4j.graphdb.factory;
 import java.io.File;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
+import org.neo4j.configuration.Description;
+import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.io.ByteUnit;
-import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.BoltConnectorValidator;
 import org.neo4j.kernel.configuration.ConfigurationMigrator;
 import org.neo4j.kernel.configuration.GraphDatabaseConfigurationMigrator;
 import org.neo4j.kernel.configuration.Group;
 import org.neo4j.kernel.configuration.GroupSettingSupport;
+import org.neo4j.kernel.configuration.HttpConnectorValidator;
 import org.neo4j.kernel.configuration.Internal;
 import org.neo4j.kernel.configuration.Migrator;
 import org.neo4j.kernel.configuration.Settings;
@@ -40,9 +42,6 @@ import org.neo4j.kernel.configuration.Title;
 import org.neo4j.kernel.impl.cache.MonitorGc;
 import org.neo4j.logging.Level;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.BoltConnector.EncryptionLevel.OPTIONAL;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.Connector.ConnectorType.BOLT;
-import static org.neo4j.kernel.configuration.GroupSettingSupport.enumerate;
 import static org.neo4j.kernel.configuration.Settings.ANY;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.BYTES;
@@ -71,9 +70,9 @@ import static org.neo4j.kernel.configuration.Settings.pathSetting;
 import static org.neo4j.kernel.configuration.Settings.setting;
 
 /**
- * Settings for Neo4j. Use this with {@link GraphDatabaseBuilder}.
+ * Settings for Neo4j.
  */
-public abstract class GraphDatabaseSettings
+public class GraphDatabaseSettings implements LoadableConfig
 {
     /**
      * Data block sizes for dynamic array stores.
@@ -108,6 +107,11 @@ public abstract class GraphDatabaseSettings
     @Description("Print out the effective Neo4j configuration after startup.")
     @Internal
     public static final Setting<Boolean> dump_configuration = setting("unsupported.dbms.report_configuration", BOOLEAN, FALSE );
+
+    @Description( "A strict configuration validation will prevent the database from starting up if unknown " +
+            "configuration options are specified in the neo4j settings namespace (such as dbms., ha., cypher., etc)." )
+    public static final Setting<Boolean> strict_config_validation =
+            setting("dbms.config.strict_validation", BOOLEAN, FALSE );
 
     @Description("Whether to allow a store upgrade in case the current version of the database starts against an " +
             "older store version. " +
@@ -423,10 +427,12 @@ public abstract class GraphDatabaseSettings
     public static final Setting<String> forced_kernel_id = setting("unsupported.dbms.kernel_id", STRING, NO_DEFAULT,
             illegalValueMessage("has to be a valid kernel identifier", matches("[a-zA-Z0-9]*")));
 
+    @SuppressWarnings( "unused" )
     @Description("Amount of time in ms the GC monitor thread will wait before taking another measurement.")
     @Internal
     public static final Setting<Long> gc_monitor_interval = MonitorGc.Configuration.gc_monitor_wait_time;
 
+    @SuppressWarnings( "unused" )
     @Description("The amount of time in ms the monitor thread has to be blocked before logging a message it was " +
             "blocked.")
     @Internal
@@ -497,11 +503,36 @@ public abstract class GraphDatabaseSettings
     public static final Setting<String> default_advertised_address =
             setting( "dbms.connectors.default_advertised_address", STRING, "localhost" );
 
+    @Description( "Create an archive of an index before re-creating it if failing to load on startup." )
+    @Internal
+    public static final Setting<Boolean> archive_failed_index = setting(
+            "unsupported.dbms.index.archive_failed", BOOLEAN, "false" );
+
+    // Needed to validate config, accessed via reflection
+    @SuppressWarnings( "unused" )
+    public static final BoltConnectorValidator boltValidator = new BoltConnectorValidator();
+
     @Description( "The maximum amount of time to wait for the database state represented by the bookmark." )
     public static final Setting<Long> bookmark_ready_timeout = setting(
             "dbms.transaction.bookmark_ready_timeout", DURATION, "30s",
             min( TimeUnit.SECONDS.toMillis( 1 ) ) );
 
+    // Needed to validate config, accessed via reflection
+    @SuppressWarnings( "unused" )
+    public static final HttpConnectorValidator httpValidator = new HttpConnectorValidator();
+
+    /**
+     * DEPRECATED: Use {@link org.neo4j.kernel.configuration.BoltConnector} instead. This will be removed in 4.0.
+     */
+    @Deprecated
+    public static BoltConnector boltConnector( String key )
+    {
+        return new BoltConnector( key );
+    }
+
+    /**
+     * DEPRECATED: Use {@link org.neo4j.kernel.configuration.Connector} instead. This will be removed in 4.0.
+     */
     @Group("dbms.connector")
     public static class Connector
     {
@@ -520,7 +551,7 @@ public abstract class GraphDatabaseSettings
         // Note: We no longer use the typeDefault parameter because it made for confusing behaviour;
         // connectors with unspecified would override settings of other, unrelated connectors.
         // However, we cannot remove the parameter at this
-        protected Connector( String key, @SuppressWarnings("UnusedParameters") String typeDefault )
+        public Connector( String key, @SuppressWarnings("UnusedParameters") String typeDefault )
         {
             group = new GroupSettingSupport( Connector.class, key );
             enabled = group.scope( setting( "enabled", BOOLEAN, "false" ) );
@@ -531,11 +562,19 @@ public abstract class GraphDatabaseSettings
         {
             BOLT, HTTP
         }
+
+        public String key() {
+            return group.groupKey;
+        }
     }
 
+    /**
+     * DEPRECATED: Use {@link org.neo4j.kernel.configuration.BoltConnector} instead. This will be removed in 4.0.
+     */
+    @Deprecated
     @Description( "Configuration options for Bolt connectors. "+
-                  "\"(bolt-connector-key)\" is a placeholder for a unique name for the connector, for instance " +
-                  "\"bolt-public\" or some other name that describes what the connector is for." )
+            "\"(bolt-connector-key)\" is a placeholder for a unique name for the connector, for instance " +
+            "\"bolt-public\" or some other name that describes what the connector is for." )
     public static class BoltConnector extends Connector
     {
         @Description( "Encryption level to require this connector to use" )
@@ -561,7 +600,7 @@ public abstract class GraphDatabaseSettings
         {
             super(key, null );
             encryption_level = group.scope(
-                    setting( "tls_level", options( EncryptionLevel.class ), OPTIONAL.name() ));
+                    setting( "tls_level", options( EncryptionLevel.class ), EncryptionLevel.OPTIONAL.name() ));
             Setting<ListenSocketAddress> legacyAddressSetting = listenAddress( "address", 7687 );
             Setting<ListenSocketAddress> listenAddressSetting = legacyFallback( legacyAddressSetting,
                     listenAddress( "listen_address", 7687 ) );
@@ -577,35 +616,5 @@ public abstract class GraphDatabaseSettings
             OPTIONAL,
             DISABLED
         }
-    }
-
-    /**
-     * Short-hand for creating a new Bolt connector settings group.
-     * Use this to configure a new or modify an existing Bolt connector.
-     * @param key a unique identifier for this connector
-     * @return an object that can be used to set configuration for the Bolt connector with the given key
-     */
-    public static BoltConnector boltConnector( String key )
-    {
-        return new BoltConnector( key );
-    }
-
-    @Description( "Create an archive of an index before re-creating it if failing to load on startup." )
-    @Internal
-    public static final Setting<Boolean> archive_failed_index = setting(
-            "unsupported.dbms.index.archive_failed", BOOLEAN, "false" );
-
-    public static List<BoltConnector> boltConnectors( Config config )
-    {
-        List<BoltConnector> boltConnectors = config
-                .view( enumerate( Connector.class ) )
-                .map( BoltConnector::new )
-                .filter( connConfig -> connConfig.group.groupKey.equals( "bolt" ) ||
-                        config.get( connConfig.type ) == BOLT )
-                .collect( Collectors.toList() );
-
-        return boltConnectors.stream()
-                .filter( connConfig -> config.get( connConfig.enabled ) )
-                .collect( Collectors.toList() );
     }
 }

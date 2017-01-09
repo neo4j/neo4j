@@ -29,6 +29,6 @@ public class GraphDatabaseBuilderTestTools
      */
     public static Config createConfigCopy( GraphDatabaseBuilder builder )
     {
-        return new Config( builder.getRawConfig() );
+        return Config.embeddedDefaults( builder.getRawConfig() );
     }
 }

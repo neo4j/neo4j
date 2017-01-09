@@ -20,9 +20,6 @@
 package org.neo4j.server.modules;
 
 import org.apache.commons.configuration.Configuration;
-import org.hamcrest.BaseMatcher;
-import org.hamcrest.Description;
-import org.hamcrest.Matchers;
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -38,7 +35,7 @@ import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.plugins.Injectable;
 import org.neo4j.server.plugins.PluginLifecycle;
 
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 
@@ -48,7 +45,7 @@ public class ExtensionInitializerTest
     @Test
     public void testPluginInitialization()
     {
-        Config config = new Config( stringMap( ServerSettings.transaction_idle_timeout.name(), "600" ) );
+        Config config = Config.embeddedDefaults( stringMap( ServerSettings.transaction_idle_timeout.name(), "600" ) );
         NeoServer neoServer = Mockito.mock( NeoServer.class, Mockito.RETURNS_DEEP_STUBS );
         Mockito.when( neoServer.getConfig() ).thenReturn( config );
         ExtensionInitializer extensionInitializer = new ExtensionInitializer( neoServer );
@@ -56,38 +53,10 @@ public class ExtensionInitializerTest
         Collection<Injectable<?>> injectableProperties =
                 extensionInitializer.initializePackages( Arrays.asList( "org.neo4j.server.modules" ) );
 
-        assertThat( injectableProperties, Matchers.hasSize( 1 ) );
-        assertThat( injectableProperties, Matchers.contains( new InjectableMatcher<>( ServerSettings
-                .transaction_idle_timeout.name() ) ) );
-    }
-
-    private class InjectableMatcher<T> extends BaseMatcher<Injectable<?>>
-    {
-        private T value;
-
-        public InjectableMatcher( T value )
-        {
-            this.value = value;
-        }
-
-        @Override
-        public boolean matches( Object o )
-        {
-            return o instanceof Injectable && value.equals( ((Injectable) o).getValue() );
-        }
-
-        @Override
-        public void describeMismatch( Object o, Description description )
-        {
-            description.appendValue( String.format( "Expect Injectable with value: '%s', but actual value was: '%s'",
-                    value, o ) );
-        }
-
-        @Override
-        public void describeTo( Description description )
-        {
-
-        }
+        assertTrue(
+                injectableProperties.stream()
+                        .anyMatch( i -> ServerSettings
+                                .transaction_idle_timeout.name().equals( i.getValue() ) ) );
     }
 
     public static class PropertyCollectorPlugin implements PluginLifecycle

@@ -20,7 +20,6 @@
 package org.neo4j.causalclustering.core;
 
 import java.io.File;
-import java.util.Map;
 import java.util.function.Function;
 
 import org.neo4j.causalclustering.core.consensus.RaftMachine;
@@ -41,19 +40,20 @@ public class CoreGraphDatabase extends GraphDatabaseFacade
     public static final String CUSTOM_IO_EXCEPTION_MESSAGE =
             "Core cluster mode is not allowed with custom IO integrations";
 
-    public CoreGraphDatabase( File storeDir, Map<String,String> params,
+    public CoreGraphDatabase( File storeDir, Config config,
             GraphDatabaseFacadeFactory.Dependencies dependencies )
     {
-        this( storeDir, params, dependencies, new HazelcastDiscoveryServiceFactory() );
+        this( storeDir, config, dependencies, new HazelcastDiscoveryServiceFactory() );
     }
 
-    public CoreGraphDatabase( File storeDir, Map<String,String> params,
+    public CoreGraphDatabase( File storeDir, Config config,
             GraphDatabaseFacadeFactory.Dependencies dependencies, DiscoveryServiceFactory discoveryServiceFactory )
     {
-        CustomIOConfigValidator.assertCustomIOConfigNotUsed( new Config( params ), CUSTOM_IO_EXCEPTION_MESSAGE );
+        CustomIOConfigValidator.assertCustomIOConfigNotUsed( config,
+                CUSTOM_IO_EXCEPTION_MESSAGE );
         Function<PlatformModule,EditionModule> factory =
                 ( platformModule ) -> new EnterpriseCoreEditionModule( platformModule, discoveryServiceFactory );
-        new GraphDatabaseFacadeFactory( DatabaseInfo.CORE, factory ).initFacade( storeDir, params, dependencies, this );
+        new GraphDatabaseFacadeFactory( DatabaseInfo.CORE, factory ).initFacade( storeDir, config, dependencies, this );
     }
 
     public MemberId id()

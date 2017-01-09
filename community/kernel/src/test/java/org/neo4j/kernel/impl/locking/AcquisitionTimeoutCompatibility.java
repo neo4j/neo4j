@@ -59,7 +59,7 @@ public class AcquisitionTimeoutCompatibility extends LockingCompatibilityTestSui
     @Before
     public void setUp()
     {
-        customConfig = new Config( MapUtil.stringMap( GraphDatabaseSettings.lock_acquisition_timeout.name(), "100ms"
+        customConfig = Config.embeddedDefaults( MapUtil.stringMap( GraphDatabaseSettings.lock_acquisition_timeout.name(), "100ms"
         ) );
         clock = Clocks.fakeClock(100000, TimeUnit.MINUTES);
         lockManager = suite.createLockManager( customConfig, clock );

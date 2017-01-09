@@ -36,8 +36,6 @@ import org.neo4j.commandline.arguments.OptionalNamedArg;
 import org.neo4j.commandline.arguments.common.MandatoryCanonicalPath;
 import org.neo4j.commandline.arguments.common.OptionalCanonicalPath;
 import org.neo4j.consistency.ConsistencyCheckService;
-import org.neo4j.consistency.ConsistencyCheckSettings;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.collection.MapUtil;
@@ -46,7 +44,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.server.configuration.ConfigLoader;
 
-import static java.util.Arrays.asList;
 import static org.neo4j.kernel.impl.util.Converters.toHostnamePort;
 
 public class OnlineBackupCommand implements AdminCommand
@@ -271,8 +268,8 @@ public class OnlineBackupCommand implements AdminCommand
     {
         //noinspection unchecked
         return withAdditionalConfig( additionalConfig,
-                new ConfigLoader( asList( GraphDatabaseSettings.class, ConsistencyCheckSettings.class ) )
-                        .loadOfflineConfig(
+                ConfigLoader
+                        .loadConfigWithConnectorsDisabled(
                                 Optional.of( homeDir.toFile() ),
                                 Optional.of( configDir.resolve( "neo4j.conf" ).toFile() ) ) );
     }

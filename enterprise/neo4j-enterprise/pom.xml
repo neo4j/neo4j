@@ -272,6 +272,13 @@
             <phase>${attach-javadoc-phase}</phase>
             <goals><goal>jar</goal></goals>
             <configuration>
+              <additionalDependencies>
+                <additionalDependency>
+                  <groupId>com.google.code.findbugs</groupId>
+                  <artifactId>annotations</artifactId>
+                  <version>${findbugs.version}</version>
+                </additionalDependency>
+              </additionalDependencies>
               <sourcepath>${project.build.directory}/javadoc-sources</sourcepath>
               <detectLinks>false</detectLinks>
               <header>${project.name}</header>

@@ -22,7 +22,6 @@ package org.neo4j.server.plugins;
 import org.junit.Test;
 
 import java.net.URI;
-import java.util.HashMap;
 
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.configuration.ServerSettings;
@@ -37,7 +36,7 @@ public class ConfigAdapterTest
     public void shouldGetDefaultPropertyByKey() throws Exception
     {
         // GIVEN
-        Config config = new Config( new HashMap<>(), ServerSettings.class );
+        Config config = Config.defaults();
         ConfigAdapter wrappingConfiguration = new ConfigAdapter( config );
 
         // WHEN
@@ -51,7 +50,7 @@ public class ConfigAdapterTest
     public void shouldGetPropertyInRightFormat() throws Exception
     {
         // GIVEN
-        Config config = new Config( new HashMap<>(), ServerSettings.class );
+        Config config = Config.defaults();
         ConfigAdapter wrappingConfiguration = new ConfigAdapter( config );
 
         // WHEN
@@ -68,7 +67,7 @@ public class ConfigAdapterTest
     {
         // GIVEN
 
-        Config config = new Config( new HashMap<>(), ServerSettings.class );
+        Config config = Config.embeddedDefaults();
         ConfigAdapter wrappingConfiguration = new ConfigAdapter( config );
 
         // THEN
@@ -78,7 +77,7 @@ public class ConfigAdapterTest
     @Test
     public void shouldAbleToAccessRegisteredPropertyByName()
     {
-        Config config = new Config( new HashMap<>(), ServerSettings.class );
+        Config config = Config.defaults();
         ConfigAdapter wrappingConfiguration = new ConfigAdapter( config );
 
         assertEquals( 60000L, wrappingConfiguration.getProperty( ServerSettings.transaction_idle_timeout.name() ) );
@@ -87,9 +86,10 @@ public class ConfigAdapterTest
     @Test
     public void shouldAbleToAccessNonRegisteredPropertyByName()
     {
-        Config config = new Config( stringMap( ServerSettings.transaction_idle_timeout.name(), "600" ) );
+        Config config = Config.embeddedDefaults( stringMap(
+                ServerSettings.transaction_idle_timeout.name(), "600ms" ) );
         ConfigAdapter wrappingConfiguration = new ConfigAdapter( config );
 
-        assertEquals( "600", wrappingConfiguration.getProperty( ServerSettings.transaction_idle_timeout.name() ) );
+        assertEquals( 600L, wrappingConfiguration.getProperty( ServerSettings.transaction_idle_timeout.name() ) );
     }
 }

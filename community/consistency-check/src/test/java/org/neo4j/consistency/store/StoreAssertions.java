@@ -42,8 +42,7 @@ public class StoreAssertions
 
     public static void assertConsistentStore( File storeDir ) throws ConsistencyCheckIncompleteException, IOException
     {
-        Config configuration = new Config( stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m" ),
-                GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
+        Config configuration = Config.embeddedDefaults( stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m" ) );
         AssertableLogProvider logger = new AssertableLogProvider();
         ConsistencyCheckService.Result result = new ConsistencyCheckService().runFullConsistencyCheck(
                 storeDir, configuration, ProgressMonitorFactory.NONE, NullLogProvider.getInstance(), false );

@@ -51,7 +51,7 @@ public class RESTApiModuleTest
         Map<String, String> params = new HashMap();
         String path = "/db/data";
         params.put( ServerSettings.rest_api_path.name(), path );
-        Config config = new Config( params );
+        Config config = Config.embeddedDefaults( params );
 
         Dependencies deps = new Dependencies();
         deps.satisfyDependency( new UsageData( mock( JobScheduler.class ) ) );

@@ -39,8 +39,6 @@ import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.admin.Usage;
 import org.neo4j.consistency.ConsistencyCheckService;
-import org.neo4j.consistency.ConsistencyCheckSettings;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
@@ -50,7 +48,6 @@ import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -446,32 +443,6 @@ public class OnlineBackupCommandTest
         expected.expectMessage( "Directory '" + path + "' does not exist." );
         execute( "--check-consistency", backupDir(), "--name=mybackup",
                 "--cc-report-dir=" + path );
-    }
-
-    @Test
-    public void shouldIncludeGraphDatabaseSettings()
-            throws IOException, CommandFailed, IncorrectUsage, BackupTool.ToolFailureException
-    {
-        ArgumentCaptor<Config> config = ArgumentCaptor.forClass( Config.class );
-
-        execute( backupDir(), "--name=mybackup" );
-
-        verify( backupService ).doFullBackup( any(), anyInt(), any(), any(), config.capture(), anyLong(),
-                anyBoolean() );
-        assertThat( config.getValue().getSettingsClasses(), hasItem( GraphDatabaseSettings.class ) );
-    }
-
-    @Test
-    public void shouldIncludeConsistencyCheckSettings()
-            throws IOException, CommandFailed, IncorrectUsage, BackupTool.ToolFailureException
-    {
-        ArgumentCaptor<Config> config = ArgumentCaptor.forClass( Config.class );
-
-        execute( backupDir(), "--name=mybackup" );
-
-        verify( backupService ).doFullBackup( any(), anyInt(), any(), any(), config.capture(), anyLong(),
-                anyBoolean() );
-        assertThat( config.getValue().getSettingsClasses(), hasItem( ConsistencyCheckSettings.class ) );
     }
 
     @Test

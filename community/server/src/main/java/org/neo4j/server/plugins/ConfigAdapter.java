@@ -19,20 +19,11 @@
  */
 package org.neo4j.server.plugins;
 
-import java.lang.reflect.Field;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
-
 import org.apache.commons.configuration.AbstractConfiguration;
 
-import org.neo4j.graphdb.config.Setting;
-import org.neo4j.helpers.collection.Pair;
-import org.neo4j.kernel.configuration.AnnotatedFieldHarvester;
+import java.util.Iterator;
+
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.Settings;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
@@ -55,58 +46,24 @@ public class ConfigAdapter extends AbstractConfiguration
     @Override
     public boolean containsKey( String key )
     {
-        return getProperty( key ) != null;
+        return config.getConfiguredSettingKeys().contains( key );
     }
 
     @Override
     public Object getProperty( String key )
     {
-        return config.get( getSettingForKey( key ) );
+        return config.getValue( key ).orElse( null );
     }
 
     @Override
     public Iterator<String> getKeys()
     {
-        Set<String> propertyKeys = new HashSet<>( config.getParams().keySet() );
-        // only keep the properties which have been assigned some values
-        for ( String registeredSettingName : getRegisteredSettings().keySet() )
-        {
-            if ( containsKey( registeredSettingName ) )
-            {
-                propertyKeys.add( registeredSettingName );
-            }
-        }
-        return propertyKeys.iterator();
+        return config.getConfigValues().keySet().iterator();
     }
 
     @Override
     protected void addPropertyDirect( String key, Object value )
     {
         config.augment( stringMap( key, value.toString() ) );
-    }
-
-    private Setting<?> getSettingForKey( String key )
-    {
-        Setting<?> setting = getRegisteredSettings().get( key );
-        if ( setting != null )
-        {
-            return setting;
-        }
-        return Settings.setting( key, Settings.STRING, Settings.NO_DEFAULT );
-    }
-
-    private Map<String,Setting<?>> getRegisteredSettings()
-    {
-        Iterable<Class<?>> settingsClasses = config.getSettingsClasses();
-        AnnotatedFieldHarvester fieldHarvester = new AnnotatedFieldHarvester();
-        Map<String,Setting<?>> settings = new HashMap<>();
-        for ( Class<?> clazz : settingsClasses )
-        {
-            for ( Pair<Field,Setting> field : fieldHarvester.findStatic( clazz, Setting.class ) )
-            {
-                settings.put( field.other().name(), field.other() );
-            }
-        }
-        return settings;
     }
 }

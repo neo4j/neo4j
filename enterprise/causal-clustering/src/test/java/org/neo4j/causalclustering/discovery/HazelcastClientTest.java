@@ -71,7 +71,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import org.neo4j.causalclustering.core.consensus.schedule.ControlledRenewableTimeoutService;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -101,13 +101,13 @@ public class HazelcastClientTest
         Config defaults = Config.defaults();
 
         HashMap<String, String> settings = new HashMap<>();
-        settings.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).type.name(), "BOLT" );
-        settings.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).enabled.name(), "true" );
-        settings.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).advertised_address.name(), "bolt:3001" );
+        settings.put( new BoltConnector( "bolt" ).type.name(), "BOLT" );
+        settings.put( new BoltConnector( "bolt" ).enabled.name(), "true" );
+        settings.put( new BoltConnector( "bolt" ).advertised_address.name(), "bolt:3001" );
 
-        settings.put( new GraphDatabaseSettings.BoltConnector( "http" ).type.name(), "HTTP" );
-        settings.put( new GraphDatabaseSettings.BoltConnector( "http" ).enabled.name(), "true" );
-        settings.put( new GraphDatabaseSettings.BoltConnector( "http" ).advertised_address.name(), "http:3001" );
+        settings.put( new BoltConnector( "http" ).type.name(), "HTTP" );
+        settings.put( new BoltConnector( "http" ).enabled.name(), "true" );
+        settings.put( new BoltConnector( "http" ).advertised_address.name(), "http:3001" );
 
         return defaults.augment( settings );
     }

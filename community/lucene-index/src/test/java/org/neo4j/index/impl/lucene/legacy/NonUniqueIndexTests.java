@@ -59,7 +59,6 @@ import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class NonUniqueIndexTests
 {
@@ -100,9 +99,10 @@ public class NonUniqueIndexTests
         return new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
         {
             @Override
-            protected PlatformModule createPlatform( File storeDir, Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
+            protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies,
+                    GraphDatabaseFacade graphDatabaseFacade )
             {
-                return new PlatformModule( storeDir, params, databaseInfo, dependencies, graphDatabaseFacade )
+                return new PlatformModule( storeDir, config, databaseInfo, dependencies, graphDatabaseFacade )
                 {
                     @Override
                     protected Neo4jJobScheduler createJobScheduler()
@@ -117,7 +117,8 @@ public class NonUniqueIndexTests
                     }
                 };
             }
-        }.newFacade( directory.graphDbDir(), stringMap(), graphDatabaseFactoryState.databaseDependencies() );
+        }.newFacade( directory.graphDbDir(), Config.embeddedDefaults(),
+                graphDatabaseFactoryState.databaseDependencies() );
     }
 
     private static Neo4jJobScheduler newSlowJobScheduler()

@@ -32,6 +32,7 @@
 
   <modules>
     <module>common</module>
+    <module>configuration</module>
     <module>resource</module>
     <module>collections</module>
     <module>primitive-collections</module>

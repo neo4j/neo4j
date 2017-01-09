@@ -168,7 +168,7 @@ public class RelationshipGroupStoreTest
         {
             customConfig.put( GraphDatabaseSettings.dense_node_threshold.name(), "" + customThreshold );
         }
-        return new StoreFactory( directory, new Config( customConfig ), new DefaultIdGeneratorFactory( fs ), pageCache,
+        return new StoreFactory( directory, Config.embeddedDefaults( customConfig ), new DefaultIdGeneratorFactory( fs ), pageCache,
                 fs, NullLogProvider.getInstance() );
     }
 

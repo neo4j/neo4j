@@ -227,7 +227,7 @@ public class StoreUpgraderInterruptionTestIT
             SchemaIndexMigrator indexMigrator,
             StoreMigrator migrator )
     {
-        Config allowUpgrade = new Config( stringMap( GraphDatabaseSettings
+        Config allowUpgrade = Config.embeddedDefaults( stringMap( GraphDatabaseSettings
                 .allow_store_upgrade.name(), "true" ) );
 
         StoreUpgrader upgrader = new StoreUpgrader( upgradableDatabase, progressMonitor, allowUpgrade, fs,

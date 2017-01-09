@@ -21,53 +21,58 @@ package org.neo4j.server.configuration;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.ConfigurationValidator;
+import org.neo4j.kernel.configuration.Connector;
 import org.neo4j.kernel.configuration.Settings;
 
 public class ConfigLoader
 {
     public static final String DEFAULT_CONFIG_FILE_NAME = "neo4j.conf";
 
-    private final Function<Map<String, String> ,Iterable<Class<?>>> settingsClassesSupplier;
-
-    public ConfigLoader( Function<Map<String, String> ,Iterable<Class<?>>> settingsClassesSupplier )
-    {
-        this.settingsClassesSupplier = settingsClassesSupplier;
-    }
-
-    public ConfigLoader( List<Class<?>> settingsClasses )
-    {
-        this( settings -> settingsClasses );
-    }
-
-    public Config loadConfig( Optional<File> configFile, Pair<String,String>... configOverrides ) throws IOException
+    public static Config loadConfig( Optional<File> configFile, Pair<String,String>... configOverrides ) throws
+            IOException
     {
         return loadConfig( Optional.empty(), configFile, configOverrides );
     }
 
-    public Config loadConfig( Optional<File> homeDir, Optional<File> configFile,
+    public static Config loadConfig( Optional<File> homeDir, Optional<File> configFile,
             Pair<String,String>... configOverrides )
     {
         Map<String,String> overriddenSettings = calculateSettings( homeDir, configOverrides );
-        return new Config( configFile, overriddenSettings, ConfigLoader::overrideEmbeddedDefaults,
-                settingsClassesSupplier );
+        return Config.embeddedDefaults(configFile, overriddenSettings );
     }
 
-    public Config loadOfflineConfig( Optional<File> homeDir, Optional<File> configFile )
+    public static Config loadServerConfig( Optional<File> configFile, Pair<String,String>... configOverrides )
+            throws IOException
     {
-        return overrideBoltSettings( loadConfig( homeDir, configFile,
-                Pair.of( GraphDatabaseSettings.auth_enabled.name(), Settings.FALSE ) ) );
+        return loadServerConfig( Optional.empty(), configFile, configOverrides, Collections.emptyList() );
     }
 
-    private Map<String, String> calculateSettings( Optional<File> homeDir,
+    public static Config loadServerConfig( Optional<File> homeDir, Optional<File> configFile,
+            Pair<String,String>[] configOverrides, Collection<ConfigurationValidator> additionalValidators )
+    {
+        Map<String,String> overriddenSettings = calculateSettings( homeDir, configOverrides );
+        return Config.serverDefaults( configFile, overriddenSettings, additionalValidators );
+    }
+
+    public static Config loadConfigWithConnectorsDisabled( Optional<File> homeDir, Optional<File> configFile,
+            Pair<String,String>... configOverrides )
+    {
+        Map<String,String> overriddenSettings = calculateSettings( homeDir, configOverrides );
+        return disableAllConnectors( Config.embeddedDefaults( configFile, overriddenSettings ) );
+    }
+
+    private static Map<String, String> calculateSettings( Optional<File> homeDir,
             Pair<String, String>[] configOverrides )
     {
         HashMap<String, String> settings = new HashMap<>();
@@ -77,7 +82,7 @@ public class ConfigLoader
         return settings;
     }
 
-    private Map<String, String> toMap( Pair<String, String>[] configOverrides )
+    private static Map<String, String> toMap( Pair<String, String>[] configOverrides )
     {
         Map<String, String> overrides = new HashMap<>();
         for ( Pair<String, String> configOverride : configOverrides )
@@ -87,23 +92,11 @@ public class ConfigLoader
         return overrides;
     }
 
-    private static Config overrideBoltSettings( Config config )
+    private static Config disableAllConnectors( Config config )
     {
-        Map<String,String> overrides = new HashMap<>();
-        for ( GraphDatabaseSettings.BoltConnector bolt : GraphDatabaseSettings.boltConnectors( config ) )
-        {
-            overrides.put( bolt.enabled.name(), Settings.FALSE );
-        }
-        overrides.put( new GraphDatabaseSettings.BoltConnector().enabled.name(), Settings.FALSE );
-        return config.with( overrides );
-    }
-
-    /*
-     * TODO: This means docs will say defaults are something other than what they are in the server. Better
-     * make embedded the special case and set the defaults to be what the server will have.
-     */
-    private static void overrideEmbeddedDefaults( Map<String, String> config )
-    {
-        config.putIfAbsent( GraphDatabaseSettings.auth_enabled.name(), "true" );
+        return config.with(
+                config.allConnectorIdentifiers().stream()
+                        .collect( Collectors.toMap( id -> new Connector( id ).enabled.name(),
+                                id -> Settings.FALSE ) ) );
     }
 }

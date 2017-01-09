@@ -19,6 +19,9 @@
  */
 package org.neo4j.bolt.v1.transport.integration;
 
+import java.io.IOException;
+import java.util.Collection;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -27,18 +30,15 @@ import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.io.IOException;
-import java.util.Collection;
-
 import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.SecureWebSocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.function.Factory;
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.kernel.configuration.BoltConnector;
 
 import static java.util.Arrays.asList;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.BoltConnector.EncryptionLevel.DISABLED;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
+import static org.neo4j.kernel.configuration.BoltConnector.EncryptionLevel.DISABLED;
 
 @RunWith( Parameterized.class )
 public class RejectTransportEncryptionIT
@@ -46,8 +46,8 @@ public class RejectTransportEncryptionIT
     @Rule
     public Neo4jWithSocket server = new Neo4jWithSocket( getClass(),
             settings -> {
-                settings.put( boltConnector( "0" ).type.name(), "BOLT" );
-                settings.put( boltConnector( "0" ).encryption_level.name(), DISABLED.name() );
+                settings.put( new BoltConnector( "bolt" ).type.name(), "BOLT" );
+                settings.put( new BoltConnector( "bolt" ).encryption_level.name(), DISABLED.name() );
             } );
     @Rule
     public ExpectedException exception = ExpectedException.none();

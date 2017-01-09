@@ -52,7 +52,7 @@ public class ManagementApiModuleTest
         Map<String, String> params = new HashMap();
         String managementPath = "/db/manage";
         params.put( ServerSettings.management_api_path.name(), managementPath );
-        Config config = new Config( params );
+        Config config = Config.embeddedDefaults( params );
 
         when( neoServer.getConfig() ).thenReturn( config );
 

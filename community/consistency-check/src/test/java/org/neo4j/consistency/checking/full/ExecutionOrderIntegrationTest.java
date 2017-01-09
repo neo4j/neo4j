@@ -126,7 +126,7 @@ public class ExecutionOrderIntegrationTest
 
     private Config getTuningConfiguration()
     {
-        return new Config( stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m",
+        return Config.embeddedDefaults( stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m",
                 GraphDatabaseSettings.record_format.name(), getRecordFormatName() ) );
     }
 

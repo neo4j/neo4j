@@ -19,10 +19,6 @@
  */
 package org.neo4j.causalclustering.scenarios;
 
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -30,27 +26,31 @@ import java.util.UUID;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
+import org.junit.After;
+import org.junit.Rule;
+import org.junit.Test;
+
 import org.neo4j.causalclustering.catchup.CatchupServer;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.state.CoreState;
 import org.neo4j.causalclustering.discovery.CoreTopologyService;
 import org.neo4j.causalclustering.discovery.HazelcastDiscoveryServiceFactory;
 import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.HttpConnector;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.server.configuration.ClientConnectorSettings;
 import org.neo4j.test.causalclustering.ClusterRule;
 
 import static java.util.Collections.singletonMap;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.discovery_listen_address;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.transaction_listen_address;
-import static org.neo4j.kernel.configuration.Config.defaults;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.configuration.Config.embeddedDefaults;
 
 public class ConnectionInfoIT
 {
@@ -117,12 +117,11 @@ public class ConnectionInfoIT
         AssertableLogProvider userLogProvider = new AssertableLogProvider();
 
         HazelcastDiscoveryServiceFactory hzFactory = new HazelcastDiscoveryServiceFactory();
-        Config config =
-                defaults().with( singletonMap( discovery_listen_address.name(), ":" + testSocket.getLocalPort() ) );
-        config.augment( singletonMap( CausalClusteringSettings.initial_discovery_members.name(),
-                "localhost:" + testSocket.getLocalPort() ) );
-        config.augment( singletonMap( GraphDatabaseSettings.boltConnector( "bolt" ).enabled.name(), "true" ) );
-        config.augment( singletonMap( ClientConnectorSettings.httpConnector( "http" ).enabled.name(), "true" ) );
+        Config config = embeddedDefaults( stringMap(
+                discovery_listen_address.name(), ":" + testSocket.getLocalPort(),
+                CausalClusteringSettings.initial_discovery_members.name(), "localhost:" + testSocket.getLocalPort(),
+                new BoltConnector( "bolt" ).enabled.name(), "true",
+                new HttpConnector( "http" ).enabled.name(), "true" ) );
 
         Neo4jJobScheduler jobScheduler = new Neo4jJobScheduler();
         jobScheduler.init();

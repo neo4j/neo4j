@@ -27,15 +27,15 @@ import java.util.function.IntFunction;
 import org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.readreplica.ReadReplicaGraphDatabase;
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.GraphDatabaseDependencies;
+import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.kernel.configuration.HttpConnector;
 import org.neo4j.logging.Level;
-import org.neo4j.server.configuration.ClientConnectorSettings;
-import org.neo4j.server.configuration.ClientConnectorSettings.HttpConnector.Encryption;
+import org.neo4j.kernel.configuration.HttpConnector.Encryption;
 
 import static java.lang.String.format;
 import static java.util.stream.Collectors.joining;
@@ -83,15 +83,15 @@ public class ReadReplica implements ClusterMember
             config.put( entry.getKey(), entry.getValue().apply( memberId ) );
         }
 
-        config.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).type.name(), "BOLT" );
-        config.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).enabled.name(), "true" );
-        config.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).listen_address.name(), "127.0.0.1:" + boltPort );
+        config.put( new BoltConnector( "bolt" ).type.name(), "BOLT" );
+        config.put( new BoltConnector( "bolt" ).enabled.name(), "true" );
+        config.put( new BoltConnector( "bolt" ).listen_address.name(), "127.0.0.1:" + boltPort );
         boltAdvertisedAddress = "127.0.0.1:" + boltPort;
-        config.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).advertised_address.name(), boltAdvertisedAddress );
-        config.put( new ClientConnectorSettings.HttpConnector( "http", Encryption.NONE ).type.name(), "HTTP" );
-        config.put( new ClientConnectorSettings.HttpConnector( "http", Encryption.NONE ).enabled.name(), "true" );
-        config.put( new ClientConnectorSettings.HttpConnector( "http", Encryption.NONE ).listen_address.name(), "127.0.0.1:" + httpPort );
-        config.put( new ClientConnectorSettings.HttpConnector( "http", Encryption.NONE ).advertised_address.name(), "127.0.0.1:" + httpPort );
+        config.put( new BoltConnector( "bolt" ).advertised_address.name(), boltAdvertisedAddress );
+        config.put( new HttpConnector( "http", Encryption.NONE ).type.name(), "HTTP" );
+        config.put( new HttpConnector( "http", Encryption.NONE ).enabled.name(), "true" );
+        config.put( new HttpConnector( "http", Encryption.NONE ).listen_address.name(), "127.0.0.1:" + httpPort );
+        config.put( new HttpConnector( "http", Encryption.NONE ).advertised_address.name(), "127.0.0.1:" + httpPort );
 
         File neo4jHome = new File( parentDir, "read-replica-" + memberId );
         config.put( GraphDatabaseSettings.logs_directory.name(), new File( neo4jHome, "logs" ).getAbsolutePath() );
@@ -117,7 +117,7 @@ public class ReadReplica implements ClusterMember
 
     public void start()
     {
-        database = new ReadReplicaGraphDatabase( storeDir, config,
+        database = new ReadReplicaGraphDatabase( storeDir, Config.embeddedDefaults( config ),
                 GraphDatabaseDependencies.newDependencies().monitors( monitors ), discoveryServiceFactory );
     }
 
@@ -145,7 +145,7 @@ public class ReadReplica implements ClusterMember
     @Override
     public ClientConnectorAddresses clientConnectorAddresses()
     {
-        return ClientConnectorAddresses.extractFromConfig( new Config( this.config ) );
+        return ClientConnectorAddresses.extractFromConfig( Config.embeddedDefaults( this.config ) );
     }
 
     public File storeDir()

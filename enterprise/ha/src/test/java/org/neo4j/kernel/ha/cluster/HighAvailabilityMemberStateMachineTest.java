@@ -493,7 +493,7 @@ public class HighAvailabilityMemberStateMachineTest
             }
         };
 
-        Config config = new Config( Collections.singletonMap( ClusterSettings.server_id.name(), me.toString() ) );
+        Config config = Config.embeddedDefaults( Collections.singletonMap( ClusterSettings.server_id.name(), me.toString() ) );
 
         TransactionStats transactionCounters = mock( TransactionStats.class );
         when( transactionCounters.getNumberOfActiveTransactions() ).thenReturn( 0L );

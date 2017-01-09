@@ -30,6 +30,7 @@ import javax.ws.rs.core.UriInfo;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.AdvertisedSocketAddress;
+import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
@@ -66,9 +67,9 @@ public class DiscoveryServiceTest
 
         HashMap<String,String> settings = new HashMap<>();
         settings.put( GraphDatabaseSettings.auth_enabled.name(), "false" );
-        settings.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).type.name(), "BOLT" );
-        settings.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).enabled.name(), "true" );
-        settings.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).advertised_address.name(),
+        settings.put( new BoltConnector( "bolt" ).type.name(), "BOLT" );
+        settings.put( new BoltConnector( "bolt" ).enabled.name(), "true" );
+        settings.put( new BoltConnector( "bolt" ).advertised_address.name(),
                 boltAddress.toString() );
         settings.put( ServerSettings.management_api_path.name(), managementUri.toString() );
         settings.put( ServerSettings.rest_api_path.name(), dataUri.toString() );

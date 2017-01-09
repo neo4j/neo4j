@@ -37,10 +37,11 @@ import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.kernel.configuration.HttpConnector;
+import org.neo4j.kernel.configuration.HttpConnector.Encryption;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.server.CommunityBootstrapper;
 import org.neo4j.server.ServerTestUtils;
-import org.neo4j.server.configuration.ClientConnectorSettings;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.server.ExclusiveServerTestBase;
@@ -91,8 +92,8 @@ public class StartupLoggingIT extends ExclusiveServerTestBase
             pairs.add( Pair.of( entry.getKey(), entry.getValue() ) );
         }
         pairs.add( Pair.of( GraphDatabaseSettings.allow_store_upgrade.name(), Settings.TRUE) );
-        pairs.add( Pair.of( ClientConnectorSettings.httpConnector("http").type.name(), "HTTP" ) );
-        pairs.add( Pair.of( ClientConnectorSettings.httpConnector("http").enabled.name(), Settings.TRUE ) );
+        pairs.add( Pair.of( new HttpConnector( "http", Encryption.NONE ).type.name(), "HTTP" ) );
+        pairs.add( Pair.of( new HttpConnector( "http", Encryption.NONE ).enabled.name(), Settings.TRUE ) );
         return pairs.toArray( new Pair[pairs.size()] );
     }
 

@@ -164,7 +164,7 @@ public class RecoveryTest
 
         db.shutdown();
 
-        Config config = new Config( MapUtil.stringMap(), GraphDatabaseSettings.class );
+        Config config = Config.embeddedDefaults();
         IndexConfigStore indexStore = new IndexConfigStore( storeDir, fileSystemRule.get() );
         LuceneDataSource ds = new LuceneDataSource( storeDir, config, indexStore, fileSystemRule.get() );
         ds.start();

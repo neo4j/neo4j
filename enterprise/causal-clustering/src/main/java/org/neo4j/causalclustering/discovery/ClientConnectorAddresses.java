@@ -29,14 +29,13 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.helpers.AdvertisedSocketAddress;
+import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.server.configuration.ClientConnectorSettings.HttpConnector.Encryption;
+import org.neo4j.kernel.configuration.HttpConnector.Encryption;
 
 import static org.neo4j.causalclustering.discovery.ClientConnectorAddresses.Scheme.bolt;
 import static org.neo4j.causalclustering.discovery.ClientConnectorAddresses.Scheme.http;
 import static org.neo4j.causalclustering.discovery.ClientConnectorAddresses.Scheme.https;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnectors;
-import static org.neo4j.server.configuration.ClientConnectorSettings.httpConnector;
 
 public class ClientConnectorAddresses implements Iterable<ClientConnectorAddresses.ConnectorUri>
 {
@@ -51,17 +50,18 @@ public class ClientConnectorAddresses implements Iterable<ClientConnectorAddress
     {
         List<ConnectorUri> connectorUris = new ArrayList<>();
 
-        connectorUris.add( new ConnectorUri( bolt, boltConnectors( config ).stream().findFirst()
-                .map( boltConnector -> config.get( boltConnector.advertised_address ) ).orElseThrow( () ->
-                        new IllegalArgumentException( "A Bolt connector must be configured to run a cluster" ) ) ) );
+        List<BoltConnector> boltConnectors = config.enabledBoltConnectors();
 
-        httpConnector( config, Encryption.NONE )
-                .map( ( connector ) -> config.get( connector.advertised_address ) )
-                .ifPresent( httpsAddress -> connectorUris.add( new ConnectorUri( http, httpsAddress ) ) );
+        if (boltConnectors.isEmpty()) {
+            throw new IllegalArgumentException( "A Bolt connector must be configured to run a cluster" );
+        }
 
-        httpConnector( config, Encryption.TLS )
-                .map( ( connector ) -> config.get( connector.advertised_address ) )
-                .ifPresent( httpsAddress -> connectorUris.add( new ConnectorUri( https, httpsAddress ) ) );
+        boltConnectors
+                .forEach( c -> connectorUris.add( new ConnectorUri( bolt, config.get( c.advertised_address ) ) ) );
+
+        config.enabledHttpConnectors()
+                .forEach( c -> connectorUris.add( new ConnectorUri( Encryption.NONE.equals(c.encryptionLevel() ) ?
+                        http : https, config.get( c.advertised_address ) ) ) );
 
         return new ClientConnectorAddresses( connectorUris );
     }

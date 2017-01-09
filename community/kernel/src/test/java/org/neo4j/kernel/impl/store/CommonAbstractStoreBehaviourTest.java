@@ -61,7 +61,7 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 public class CommonAbstractStoreBehaviourTest
 {
     /**
-     * Note that tests MUST use the non-modifying {@link Config#with(Map, Class[])} method, to make alternate copies
+     * Note that tests MUST use the non-modifying {@link #with(Map} method, to make alternate copies
      * of this settings class.
      */
     private static final Config CONFIG = Config.empty().augment( stringMap(

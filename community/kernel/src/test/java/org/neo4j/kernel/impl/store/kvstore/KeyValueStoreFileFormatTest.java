@@ -556,7 +556,7 @@ public class KeyValueStoreFileFormatTest
         KeyValueStoreFile create( Map<String,String> config, Map<String,byte[]> headers, DataProvider data )
                 throws IOException
         {
-            return createStore( fs.get(), pages.getPageCache( fs.get(), new Config( config ) ), storeFile.get(), 16, 16,
+            return createStore( fs.get(), pages.getPageCache( fs.get(), Config.embeddedDefaults( config ) ), storeFile.get(), 16, 16,
                     headers( headers ), data );
         }
 

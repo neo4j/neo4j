@@ -58,7 +58,7 @@ public class LuceneCommandApplierTest
         String indexName = "name", key = "key";
         IndexConfigStore configStore = new IndexConfigStore( dir, fs.get() );
         configStore.set( Node.class, indexName, EXACT_CONFIG );
-        LuceneDataSource dataSource = life.add( spy( new LuceneDataSource( dir, new Config( stringMap(
+        LuceneDataSource dataSource = life.add( spy( new LuceneDataSource( dir, Config.embeddedDefaults( stringMap(
                 LuceneDataSource.Configuration.ephemeral.name(), Settings.TRUE ) ),
                 configStore, fs.get() ) ) );
 

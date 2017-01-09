@@ -55,7 +55,7 @@ public class LuceneSchemaIndexProviderTest extends IndexProviderCompatibilityTes
     @Test
     public void shouldFailToInvokePopulatorInReadOnlyMode() throws Exception
     {
-        Config readOnlyConfig = new Config( stringMap( GraphDatabaseSettings.read_only.name(), Settings.TRUE ) );
+        Config readOnlyConfig = Config.embeddedDefaults( stringMap( GraphDatabaseSettings.read_only.name(), Settings.TRUE ) );
         LuceneSchemaIndexProvider readOnlyIndexProvider = getLuceneSchemaIndexProvider( readOnlyConfig,
                 new DirectoryFactory.InMemoryDirectoryFactory() );
         expectedException.expect( UnsupportedOperationException.class );
@@ -70,7 +70,7 @@ public class LuceneSchemaIndexProviderTest extends IndexProviderCompatibilityTes
         DirectoryFactory directoryFactory = DirectoryFactory.PERSISTENT;
         createEmptySchemaIndex( directoryFactory );
 
-        Config readOnlyConfig = new Config( stringMap( GraphDatabaseSettings.read_only.name(), Settings.TRUE ) );
+        Config readOnlyConfig = Config.embeddedDefaults( stringMap( GraphDatabaseSettings.read_only.name(), Settings.TRUE ) );
         LuceneSchemaIndexProvider readOnlyIndexProvider = getLuceneSchemaIndexProvider( readOnlyConfig,
                 directoryFactory );
         IndexAccessor onlineAccessor = getIndexAccessor( readOnlyConfig, readOnlyIndexProvider );
@@ -82,7 +82,7 @@ public class LuceneSchemaIndexProviderTest extends IndexProviderCompatibilityTes
     @Test
     public void indexUpdateNotAllowedInReadOnlyMode() throws Exception
     {
-        Config readOnlyConfig = new Config( stringMap( GraphDatabaseSettings.read_only.name(), Settings.TRUE ) );
+        Config readOnlyConfig = Config.embeddedDefaults( stringMap( GraphDatabaseSettings.read_only.name(), Settings.TRUE ) );
         LuceneSchemaIndexProvider readOnlyIndexProvider = getLuceneSchemaIndexProvider( readOnlyConfig,
                 new DirectoryFactory.InMemoryDirectoryFactory() );
 

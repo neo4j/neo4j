@@ -219,7 +219,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         rejectAutoUpgrade( stringParams );
         Map<String, String> params = getDefaultParams();
         params.putAll( stringParams );
-        this.config = new Config( params, GraphDatabaseSettings.class );
+        this.config = Config.embeddedDefaults( params );
 
         life = new LifeSupport();
         this.storeDir = storeDir;

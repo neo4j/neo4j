@@ -150,17 +150,8 @@ public class SetDefaultAdminCommand implements AdminCommand
 
     Config loadNeo4jConfig()
     {
-        ConfigLoader configLoader = new ConfigLoader( settings() );
-        return configLoader.loadOfflineConfig(
+        return ConfigLoader.loadConfigWithConnectorsDisabled(
                 Optional.of( homeDir.toFile() ),
                 Optional.of( configDir.resolve( "neo4j.conf" ).toFile() ) );
-    }
-
-    private static List<Class<?>> settings()
-    {
-        List<Class<?>> settings = new ArrayList<>();
-        settings.add( GraphDatabaseSettings.class );
-        settings.add( DatabaseManagementSystemSettings.class );
-        return settings;
     }
 }

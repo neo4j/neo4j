@@ -29,6 +29,8 @@ import java.util.regex.Pattern;
 
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.readreplica.ReadReplicaGraphDatabase;
+import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.cluster.ClusterSettings.Mode;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.EnterpriseGraphDatabase;
 import org.neo4j.helpers.collection.Iterables;
@@ -59,45 +61,25 @@ import static org.neo4j.server.database.LifecycleManagingDatabase.lifecycleManag
 
 public class EnterpriseNeoServer extends CommunityNeoServer
 {
-    public enum Mode
-    {
-        SINGLE,
-        HA,
-        ARBITER,
-        CORE,
-        READ_REPLICA;
-
-        public static Mode fromString( String value )
-        {
-            try
-            {
-                return Mode.valueOf( value );
-            }
-            catch ( IllegalArgumentException ex )
-            {
-                return SINGLE;
-            }
-        }
-    }
 
     private static final GraphFactory HA_FACTORY = ( config, dependencies ) -> {
         File storeDir = config.get( DatabaseManagementSystemSettings.database_path );
-        return new HighlyAvailableGraphDatabase( storeDir, config.getParams(), dependencies );
+        return new HighlyAvailableGraphDatabase( storeDir, config, dependencies );
     };
 
     private static final GraphFactory ENTERPRISE_FACTORY = ( config, dependencies ) -> {
         File storeDir = config.get( DatabaseManagementSystemSettings.database_path );
-        return new EnterpriseGraphDatabase( storeDir, config.getParams(), dependencies );
+        return new EnterpriseGraphDatabase( storeDir, config, dependencies );
     };
 
     private static final GraphFactory CORE_FACTORY = ( config, dependencies ) -> {
         File storeDir = config.get( DatabaseManagementSystemSettings.database_path );
-        return new CoreGraphDatabase( storeDir, config.getParams(), dependencies );
+        return new CoreGraphDatabase( storeDir, config, dependencies );
     };
 
     private static final GraphFactory READ_REPLICA_FACTORY = ( config, dependencies ) -> {
         File storeDir = config.get( DatabaseManagementSystemSettings.database_path );
-        return new ReadReplicaGraphDatabase( storeDir, config.getParams(), dependencies );
+        return new ReadReplicaGraphDatabase( storeDir, config, dependencies );
     };
 
     public EnterpriseNeoServer( Config config, Dependencies dependencies, LogProvider logProvider )
@@ -107,7 +89,7 @@ public class EnterpriseNeoServer extends CommunityNeoServer
 
     protected static Database.Factory createDbFactory( Config config )
     {
-        final Mode mode = Mode.fromString( config.get( EnterpriseServerSettings.mode ).toUpperCase() );
+        final Mode mode =config.get( ClusterSettings.mode );
 
         switch ( mode )
         {

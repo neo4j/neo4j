@@ -33,16 +33,14 @@ import org.neo4j.server.NeoServer;
 import org.neo4j.server.enterprise.helpers.EnterpriseServerBuilder;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
-
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-
 import static org.neo4j.cluster.ClusterSettings.initial_hosts;
+import static org.neo4j.cluster.ClusterSettings.mode;
 import static org.neo4j.cluster.ClusterSettings.server_id;
-import static org.neo4j.server.enterprise.EnterpriseServerSettings.mode;
 
 public class EnterpriseServerIT
 {

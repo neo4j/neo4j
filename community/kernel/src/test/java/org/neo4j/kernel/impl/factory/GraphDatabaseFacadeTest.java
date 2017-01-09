@@ -49,7 +49,6 @@ public class GraphDatabaseFacadeTest
     private GraphDatabaseFacade.SPI spi = Mockito.mock( GraphDatabaseFacade.SPI.class, RETURNS_DEEP_STUBS );
     private GraphDatabaseFacade graphDatabaseFacade = new GraphDatabaseFacade();
     private GraphDatabaseQueryService queryService;
-    private Config defaultConfig;
 
     @Before
     public void setUp()
@@ -64,9 +63,9 @@ public class GraphDatabaseFacadeTest
         when( resolver.resolveDependency( ThreadToStatementContextBridge.class ) ).thenReturn( contextBridge );
         when( resolver.resolveDependency( Guard.class ) ).thenReturn( mock( Guard.class ) );
         when( contextBridge.get() ).thenReturn( statement );
-        defaultConfig = Config.defaults();
+        when( resolver.resolveDependency( Config.class ) ).thenReturn( Config.embeddedDefaults() );
 
-        graphDatabaseFacade.init( spi, defaultConfig );
+        graphDatabaseFacade.init( spi );
     }
 
     @Test
@@ -82,7 +81,7 @@ public class GraphDatabaseFacadeTest
     {
         graphDatabaseFacade.beginTx();
 
-        long timeout = defaultConfig.get( GraphDatabaseSettings.transaction_timeout );
+        long timeout = Config.embeddedDefaults().get( GraphDatabaseSettings.transaction_timeout );
         verify( spi ).beginTransaction( KernelTransaction.Type.explicit, AUTH_DISABLED, timeout );
     }
 
@@ -110,7 +109,7 @@ public class GraphDatabaseFacadeTest
         graphDatabaseFacade.execute( "create (n)" );
         graphDatabaseFacade.execute( "create (n)", new HashMap<>() );
 
-        long timeout = defaultConfig.get( GraphDatabaseSettings.transaction_timeout );
+        long timeout = Config.embeddedDefaults().get( GraphDatabaseSettings.transaction_timeout );
         verify( spi, times( 2 ) ).beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED, timeout );
     }
 }

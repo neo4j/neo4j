@@ -148,7 +148,7 @@ public class ArbiterBootstrapperIT
 
             LifeSupport moduleLife = new LifeSupport();
             ClusterClientModule clusterClientModule = new ClusterClientModule( moduleLife, new Dependencies(),
-                    new Monitors(), new Config( config ), NullLogService.getInstance(),
+                    new Monitors(), Config.embeddedDefaults( config ), NullLogService.getInstance(),
                     new ServerIdElectionCredentialsProvider() );
 
             ClusterClient client = clusterClientModule.clusterClient;

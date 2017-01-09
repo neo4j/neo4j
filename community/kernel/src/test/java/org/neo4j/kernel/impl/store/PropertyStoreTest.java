@@ -74,7 +74,7 @@ public class PropertyStoreTest
         // given
         PageCache pageCache = pageCacheRule.getPageCache( fileSystemAbstraction );
         Config config =
-                new Config( singletonMap( PropertyStore.Configuration.rebuild_idgenerators_fast.name(), "true" ));
+                Config.embeddedDefaults( singletonMap( PropertyStore.Configuration.rebuild_idgenerators_fast.name(), "true" ));
 
         DynamicStringStore stringPropertyStore = mock( DynamicStringStore.class );
 

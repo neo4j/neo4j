@@ -41,6 +41,7 @@ import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Dependencies;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
@@ -85,7 +86,7 @@ public class DatabaseShutdownTest
         private NeoStoreDataSource neoStoreDataSource;
 
         @Override
-        protected GraphDatabaseService newDatabase( File storeDir, Map<String,String> config,
+        protected GraphDatabaseService newDatabase( File storeDir, Config config,
                 GraphDatabaseFacadeFactory.Dependencies dependencies )
         {
             return new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
@@ -102,10 +103,10 @@ public class DatabaseShutdownTest
                 }
 
                 @Override
-                protected PlatformModule createPlatform( File storeDir, Map<String,String> params,
+                protected PlatformModule createPlatform( File storeDir, Config config,
                         Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
                 {
-                    return new PlatformModule( storeDir, params, databaseInfo, dependencies, graphDatabaseFacade )
+                    return new PlatformModule( storeDir, config, databaseInfo, dependencies, graphDatabaseFacade )
                     {
                         @Override
                         protected PageCache createPageCache( FileSystemAbstraction fileSystem, Config config,

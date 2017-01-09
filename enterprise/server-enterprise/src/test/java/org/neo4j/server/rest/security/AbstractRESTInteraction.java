@@ -19,13 +19,6 @@
  */
 package org.neo4j.server.rest.security;
 
-import org.codehaus.jackson.JsonNode;
-import org.codehaus.jackson.node.ArrayNode;
-import org.codehaus.jackson.node.IntNode;
-import org.codehaus.jackson.node.LongNode;
-import org.codehaus.jackson.node.ObjectNode;
-import org.codehaus.jackson.node.TextNode;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -34,14 +27,21 @@ import java.util.TreeMap;
 import java.util.function.Consumer;
 import javax.ws.rs.core.HttpHeaders;
 
+import org.codehaus.jackson.JsonNode;
+import org.codehaus.jackson.node.ArrayNode;
+import org.codehaus.jackson.node.IntNode;
+import org.codehaus.jackson.node.LongNode;
+import org.codehaus.jackson.node.ObjectNode;
+import org.codehaus.jackson.node.TextNode;
+
 import org.neo4j.bolt.BoltKernelExtension;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthManager;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -59,9 +59,8 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.BoltConnector.EncryptionLevel.OPTIONAL;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
 import static org.neo4j.kernel.api.security.AuthToken.newBasicAuthToken;
+import static org.neo4j.kernel.configuration.BoltConnector.EncryptionLevel.OPTIONAL;
 
 abstract class AbstractRESTInteraction extends CommunityServerTestBase implements NeoInteractionLevel<RESTSubject>
 {
@@ -81,9 +80,9 @@ abstract class AbstractRESTInteraction extends CommunityServerTestBase implement
     {
         CommunityServerBuilder builder = EnterpriseServerBuilder.server();
         builder = builder
-                .withProperty( boltConnector( "0" ).type.name(), "BOLT" )
-                .withProperty( boltConnector( "0" ).enabled.name(), "true" )
-                .withProperty( boltConnector( "0" ).encryption_level.name(), OPTIONAL.name() )
+                .withProperty( new BoltConnector( "bolt" ).type.name(), "BOLT" )
+                .withProperty( new BoltConnector( "bolt" ).enabled.name(), "true" )
+                .withProperty( new BoltConnector( "bolt" ).encryption_level.name(), OPTIONAL.name() )
                 .withProperty( BoltKernelExtension.Settings.tls_key_file.name(),
                         NeoInteractionLevel.tempPath( "key", ".key" ) )
                 .withProperty( BoltKernelExtension.Settings.tls_certificate_file.name(),

@@ -57,6 +57,7 @@ import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.HttpConnector;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.ha.ClusterManager;
@@ -72,7 +73,6 @@ import org.neo4j.register.Registers;
 import org.neo4j.server.CommunityBootstrapper;
 import org.neo4j.server.ServerBootstrapper;
 import org.neo4j.server.ServerTestUtils;
-import org.neo4j.server.configuration.ClientConnectorSettings;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.Unzip;
 import org.neo4j.test.rule.SuppressOutput;
@@ -207,7 +207,7 @@ public class StoreUpgradeIntegrationTest
         public void serverDatabaseShouldStartOnOlderStoreWhenUpgradeIsEnabled() throws Throwable
         {
             File rootDir = testDir.directory();
-            File storeDir = new Config( stringMap( DatabaseManagementSystemSettings.data_directory.name(), rootDir.toString() ) )
+            File storeDir = Config.embeddedDefaults( stringMap( DatabaseManagementSystemSettings.data_directory.name(), rootDir.toString() ) )
                     .get( DatabaseManagementSystemSettings.database_path );
 
             store.prepareDirectory( storeDir );
@@ -219,8 +219,8 @@ public class StoreUpgradeIntegrationTest
             props.setProperty( GraphDatabaseSettings.logs_directory.name(), rootDir.getAbsolutePath() );
             props.setProperty( GraphDatabaseSettings.allow_store_upgrade.name(), "true" );
             props.setProperty( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
-            props.setProperty( ClientConnectorSettings.httpConnector( "http" ).type.name(), "HTTP" );
-            props.setProperty( ClientConnectorSettings.httpConnector( "http" ).enabled.name(), "true" );
+            props.setProperty( new HttpConnector( "http" ).type.name(), "HTTP" );
+            props.setProperty( new HttpConnector( "http" ).enabled.name(), "true" );
             try ( FileWriter writer = new FileWriter( configFile ) )
             {
                 props.store( writer, "" );

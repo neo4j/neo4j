@@ -25,13 +25,13 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
-import java.util.Map;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.RemoveOrphanConstraintIndexesOnStartup;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
@@ -40,7 +40,6 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.test.rule.TestDirectory;
 
-import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class CommitContentionTests
@@ -132,9 +131,9 @@ public class CommitContentionTests
         return new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
         {
             @Override
-            protected PlatformModule createPlatform( File storeDir, Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
+            protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
             {
-                return new PlatformModule( storeDir, params, databaseInfo, dependencies, graphDatabaseFacade )
+                return new PlatformModule( storeDir, config, databaseInfo, dependencies, graphDatabaseFacade )
                 {
                     @Override
                     protected TransactionStats createTransactionStats()
@@ -183,7 +182,7 @@ public class CommitContentionTests
                     }
                 };
             }
-        }.newFacade( storeLocation.graphDbDir(), emptyMap(), state.databaseDependencies() );
+        }.newFacade( storeLocation.graphDbDir(), Config.embeddedDefaults(), state.databaseDependencies() );
     }
 
     private void waitForFirstTransactionToStartPushing() throws InterruptedException

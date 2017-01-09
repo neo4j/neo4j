@@ -28,7 +28,6 @@ import java.net.URI;
 import java.util.Collection;
 
 import org.neo4j.cluster.BindingListener;
-import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.MultiPaxosServerFactory;
 import org.neo4j.cluster.NetworkedServerFactory;
@@ -54,7 +53,6 @@ import org.neo4j.cluster.protocol.heartbeat.HeartbeatMessage;
 import org.neo4j.cluster.timeout.FixedTimeoutStrategy;
 import org.neo4j.cluster.timeout.MessageTimeoutStrategy;
 import org.neo4j.helpers.NamedThreadFactory;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -99,7 +97,7 @@ public class MultiPaxosServer
 
             ServerIdElectionCredentialsProvider electionCredentialsProvider = new ServerIdElectionCredentialsProvider();
             server = serverFactory.newNetworkedServer(
-                    new Config( MapUtil.stringMap(), ClusterSettings.class ),
+                    Config.embeddedDefaults(),
                     new InMemoryAcceptorInstanceStore(),
                     electionCredentialsProvider );
             server.addBindingListener( electionCredentialsProvider );

@@ -17,51 +17,34 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.kernel.configuration;
 
-import java.lang.reflect.Field;
-import java.util.HashMap;
+import java.util.Collection;
 import java.util.Map;
+import javax.annotation.Nonnull;
 
-import org.neo4j.graphdb.config.Setting;
-import org.neo4j.helpers.collection.Pair;
+import org.neo4j.graphdb.config.InvalidSettingException;
+import org.neo4j.graphdb.config.SettingValidator;
+import org.neo4j.logging.Log;
 
 /**
- * Given a set of annotated config classes,
- * validates configuration maps using the validators
- * in the setting class fields.
+ * Responsible for validating part of a configuration
  */
-public class ConfigurationValidator
+public interface ConfigurationValidator
 {
-
-    private AnnotatedFieldHarvester fieldHarvester = new AnnotatedFieldHarvester();
-    private Map<String, Setting<?>> settings;
-
-    public ConfigurationValidator( Iterable<Class<?>> settingsClasses )
-    {
-        this.settings = getSettingsFrom( settingsClasses );
-    }
-
-    public void validate( Map<String, String> rawConfig )
-    {
-        for ( Setting<?> setting : settings.values() )
-        {
-            setting.apply( rawConfig::get );
-        }
-    }
-
-    @SuppressWarnings("rawtypes")
-    private Map<String, Setting<?>> getSettingsFrom( Iterable<Class<?>> settingsClasses )
-    {
-        Map<String, Setting<?>> settings = new HashMap<>();
-        for ( Class<?> clazz : settingsClasses )
-        {
-            for ( Pair<Field, Setting> field : fieldHarvester.findStatic( clazz, Setting.class ) )
-            {
-                settings.put( field.other().name(), field.other() );
-            }
-        }
-        return settings;
-    }
-
+    /**
+     * Validate a config and return its subset of valid keys and values. Unknown settings should be discarded. Invalid
+     * settings should cause an error.
+     *
+     * @param settingValidators which are available
+     * @param rawConfig to validate
+     * @param log for logging with
+     * @return a Map of valid keys and values.
+     * @throws InvalidSettingException in case of invalid values
+     */
+    @Nonnull
+    Map<String,String> validate( @Nonnull Collection<SettingValidator> settingValidators,
+            @Nonnull Map<String,String> rawConfig,
+            @Nonnull Log log ) throws InvalidSettingException;
 }

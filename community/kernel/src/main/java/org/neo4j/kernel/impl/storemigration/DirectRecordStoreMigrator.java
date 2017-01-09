@@ -107,7 +107,7 @@ public class DirectRecordStoreMigrator
      */
     private Config withPersistedStoreHeadersAsConfigFrom( NeoStores legacyStores, StoreType[] types )
     {
-        Map<String,String> config = new HashMap<>( this.config.getParams() );
+        Map<String,String> config = new HashMap<>();
         if ( contains( types, StoreType.RELATIONSHIP_GROUP ) )
         {
             config.put( GraphDatabaseSettings.dense_node_threshold.name(),
@@ -125,6 +125,6 @@ public class DirectRecordStoreMigrator
             config.put( GraphDatabaseSettings.label_block_size.name(),
                     String.valueOf( legacyStores.getNodeStore().getDynamicLabelStore().getRecordDataSize() ) );
         }
-        return new Config( config );
+        return this.config.with( config );
     }
 }

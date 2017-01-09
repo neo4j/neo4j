@@ -20,28 +20,29 @@
 package org.neo4j.server;
 
 import java.io.File;
-import java.util.Map;
+import java.util.Collection;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.annotation.Nonnull;
 
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.ConfigurationValidator;
+import org.neo4j.kernel.configuration.HttpConnector.Encryption;
 import org.neo4j.kernel.info.JvmChecker;
 import org.neo4j.kernel.info.JvmMetadataRepository;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.server.configuration.ClientConnectorSettings;
 import org.neo4j.server.configuration.ConfigLoader;
 import org.neo4j.server.logging.JULBridge;
 import org.neo4j.server.logging.JettyLogBridge;
 
 import static java.lang.String.format;
-import static org.neo4j.server.configuration.ClientConnectorSettings.httpConnector;
 
 public abstract class ServerBootstrapper implements Bootstrapper
 {
@@ -82,7 +83,9 @@ public abstract class ServerBootstrapper implements Bootstrapper
             log = userLogProvider.getLog( getClass() );
             config.setLogger( log );
 
-            serverAddress = ClientConnectorSettings.httpConnector( config, ClientConnectorSettings.HttpConnector.Encryption.NONE )
+            serverAddress =  config.httpConnectors().stream()
+                    .filter( c -> Encryption.NONE.equals( c.encryptionLevel() ) )
+                    .findFirst()
                     .map( ( connector ) -> config.get( connector.address ).toString() )
                     .orElse( serverAddress );
 
@@ -147,7 +150,8 @@ public abstract class ServerBootstrapper implements Bootstrapper
     protected abstract NeoServer createNeoServer( Config config, GraphDatabaseDependencies dependencies,
                                                   LogProvider userLogProvider );
 
-    protected abstract Iterable<Class<?>> settingsClasses( Map<String, String> settings );
+    @Nonnull
+    protected abstract Collection<ConfigurationValidator> configurationValidators();
 
     private static LogProvider setupLogging( Config config )
     {
@@ -163,7 +167,8 @@ public abstract class ServerBootstrapper implements Bootstrapper
 
     private Config createConfig( File homeDir, Optional<File> file, Pair<String, String>[] configOverrides )
     {
-        return new ConfigLoader( this::settingsClasses ).loadConfig( Optional.of( homeDir ), file, configOverrides );
+        return ConfigLoader.loadServerConfig( Optional.of( homeDir ), file, configOverrides,
+                configurationValidators() );
     }
 
     private void addShutdownHook()

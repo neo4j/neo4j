@@ -1930,7 +1930,7 @@ public class FullCheckIntegrationTest
                 // Enable property owners check by default in tests:
                 ConsistencyCheckSettings.consistency_check_property_owners.name(), "true",
                 GraphDatabaseSettings.record_format.name(), getRecordFormatName());
-        return new Config( params, GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
+        return Config.embeddedDefaults( params );
     }
 
     protected static RelationshipGroupRecord withRelationships( RelationshipGroupRecord group, long out,

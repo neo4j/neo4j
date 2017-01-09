@@ -52,9 +52,17 @@ class ErrorReporter
                             "See debug.log for more details, reference %s.",
                     error.status(), error.message(), error.reference() );
 
-            debugLog.error( format( "Client triggered an unexpected error [%s]: %s, reference %s.",
-                    error.status(), error.message(), error.reference() ),
-                    error.cause() );
+            if ( error.cause() != null )
+            {
+                debugLog.error( format( "Client triggered an unexpected error [%s]: %s, reference %s.",
+                        error.status(), error.message(), error.reference() ),
+                        error.cause() );
+            }
+            else
+            {
+                debugLog.error( format( "Client triggered an unexpected error [%s]: %s, reference %s.",
+                        error.status(), error.message(), error.reference() ) );
+            }
         }
     }
 }

@@ -93,7 +93,7 @@ public class MasterImplConversationStopFuzzIT
     private final LifeSupport life = new LifeSupport();
     private final ExecutorService executor = Executors.newFixedThreadPool( numberOfWorkers + 1 );
     private final JobScheduler scheduler = life.add( new Neo4jJobScheduler() );
-    private final Config config = new Config( stringMap( server_id.name(), "0", lock_read_timeout.name(), "1" ) );
+    private final Config config = Config.embeddedDefaults( stringMap( server_id.name(), "0", lock_read_timeout.name(), "1" ) );
     private final Locks locks = new ForsetiLockManager( Config.defaults(), Clocks.systemClock(),
             ResourceTypes.NODE, ResourceTypes.SCHEMA );
 

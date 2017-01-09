@@ -19,7 +19,12 @@
  */
 package org.neo4j.graphdb.config;
 
+import java.util.Map;
 import java.util.function.Function;
+
+import static java.util.Collections.emptyMap;
+import static java.util.Collections.singletonMap;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 /**
  * Settings that can be provided in configurations are represented by instances of this interface, and are available
@@ -30,7 +35,7 @@ import java.util.function.Function;
  *
  * @param <T> type of value this setting will parse input string into and return.
  */
-public interface Setting<T> extends Function<Function<String,String>,T>
+public interface Setting<T> extends Function<Function<String,String>,T>, SettingValidator, SettingGroup<T>
 {
     /**
      * Get the name of the setting. This typically corresponds to a key in a properties file, or similar.
@@ -44,7 +49,7 @@ public interface Setting<T> extends Function<Function<String,String>,T>
      *
      * @param scopingRule The scoping rule to be applied to this setting
      */
-    void withScope( Function<String, String> scopingRule );
+    void withScope( Function<String,String> scopingRule );
 
     /**
      * Get the default value of this setting, as a string.
@@ -54,4 +59,33 @@ public interface Setting<T> extends Function<Function<String,String>,T>
     String getDefaultValue();
 
     T from( Configuration config );
+
+    @Override
+    default Map<String,T> values( Map<String,String> validConfig )
+    {
+        return singletonMap( name(), apply( validConfig::get ) );
+    }
+
+    @Override
+    default Map<String,String> validate( Map<String,String> rawConfig ) throws InvalidSettingException
+    {
+        // Validate setting, if present or default value otherwise
+        try
+        {
+            apply( rawConfig::get );
+            // only return if it was present though
+            if ( rawConfig.containsKey( name() ) )
+            {
+                return stringMap( name(), rawConfig.get( name() ) );
+            }
+            else
+            {
+                return emptyMap();
+            }
+        }
+        catch ( RuntimeException e )
+        {
+            throw new InvalidSettingException( e.getMessage(), e );
+        }
+    }
 }

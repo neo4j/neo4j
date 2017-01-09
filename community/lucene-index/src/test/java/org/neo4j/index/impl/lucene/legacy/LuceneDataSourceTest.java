@@ -45,6 +45,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class LuceneDataSourceTest
 {
@@ -74,7 +75,7 @@ public class LuceneDataSourceTest
         prepareIndexesByIdentifiers( indexIdentifier );
         stopDataSource();
 
-        Config readOnlyConfig = new Config( readOnlyConfig(), GraphDatabaseSettings.class );
+        Config readOnlyConfig = Config.embeddedDefaults( readOnlyConfig() );
         LuceneDataSource readOnlyDataSource = life.add( new LuceneDataSource( directory.graphDbDir(), readOnlyConfig,
                 indexStore, fileSystemRule.get() ) );
         assertNotNull( readOnlyDataSource.getIndexSearcher( indexIdentifier ) );
@@ -89,7 +90,7 @@ public class LuceneDataSourceTest
         prepareIndexesByIdentifiers( indexIdentifier );
         stopDataSource();
 
-        Config readOnlyConfig = new Config( readOnlyConfig(), GraphDatabaseSettings.class );
+        Config readOnlyConfig = Config.embeddedDefaults( readOnlyConfig() );
         dataSource = life.add( new LuceneDataSource( directory.graphDbDir(), readOnlyConfig, indexStore,
                 fileSystemRule.get() ) );
         expectedException.expect( IllegalStateException.class );
@@ -104,7 +105,7 @@ public class LuceneDataSourceTest
         prepareIndexesByIdentifiers( indexIdentifier );
         stopDataSource();
 
-        Config readOnlyConfig = new Config( readOnlyConfig(), GraphDatabaseSettings.class );
+        Config readOnlyConfig = Config.embeddedDefaults( readOnlyConfig() );
         dataSource = life.add( new LuceneDataSource( directory.graphDbDir(), readOnlyConfig, indexStore,
                 fileSystemRule.get() ) );
 
@@ -120,7 +121,7 @@ public class LuceneDataSourceTest
         prepareIndexesByIdentifiers( indexIdentifier );
         stopDataSource();
 
-        Config readOnlyConfig = new Config( readOnlyConfig(), GraphDatabaseSettings.class );
+        Config readOnlyConfig = Config.embeddedDefaults( readOnlyConfig() );
         dataSource = life.add( new LuceneDataSource( directory.graphDbDir(), readOnlyConfig, indexStore,
                 fileSystemRule.get() ) );
 
@@ -136,7 +137,7 @@ public class LuceneDataSourceTest
     @Test
     public void testShouldReturnIndexWriterFromLRUCache() throws Throwable
     {
-        Config config = new Config( config(), GraphDatabaseSettings.class );
+        Config config = Config.embeddedDefaults();
         dataSource = life.add( new LuceneDataSource( directory.graphDbDir(), config, indexStore, fileSystemRule.get() ) );
         IndexIdentifier identifier = identifier( "foo" );
         IndexWriter writer = dataSource.getIndexSearcher( identifier ).getWriter();
@@ -146,7 +147,7 @@ public class LuceneDataSourceTest
     @Test
     public void testShouldReturnIndexSearcherFromLRUCache() throws Throwable
     {
-        Config config = new Config( config(), GraphDatabaseSettings.class );
+        Config config = Config.embeddedDefaults();
         dataSource = life.add( new LuceneDataSource( directory.graphDbDir(), config, indexStore, fileSystemRule.get() ) );
         IndexIdentifier identifier = identifier( "foo" );
         IndexReference searcher = dataSource.getIndexSearcher( identifier );
@@ -159,9 +160,7 @@ public class LuceneDataSourceTest
     {
         addIndex( "bar" );
         addIndex( "baz" );
-        Map<String, String> configMap = config();
-        configMap.put( GraphDatabaseSettings.lucene_searcher_cache_size.name(), "2" );
-        Config config = new Config( configMap, GraphDatabaseSettings.class );
+        Config config = Config.embeddedDefaults( cacheSizeConfig() );
         dataSource = life.add( new LuceneDataSource( directory.graphDbDir(), config, indexStore, fileSystemRule.get() ) );
         IndexIdentifier fooIdentifier = identifier( "foo" );
         IndexIdentifier barIdentifier = identifier( "bar" );
@@ -178,9 +177,7 @@ public class LuceneDataSourceTest
     {
         addIndex( "bar" );
         addIndex( "baz" );
-        Map<String, String> configMap = config();
-        configMap.put( GraphDatabaseSettings.lucene_searcher_cache_size.name(), "2" );
-        Config config = new Config( configMap, GraphDatabaseSettings.class );
+        Config config = Config.embeddedDefaults( cacheSizeConfig() );
         dataSource = life.add( new LuceneDataSource( directory.graphDbDir(), config, indexStore, fileSystemRule.get() ) );
         IndexIdentifier fooIdentifier = identifier( "foo" );
         IndexIdentifier barIdentifier = identifier( "bar" );
@@ -199,9 +196,7 @@ public class LuceneDataSourceTest
     {
         addIndex( "bar" );
         addIndex( "baz" );
-        Map<String, String> configMap = config();
-        configMap.put( GraphDatabaseSettings.lucene_searcher_cache_size.name(), "2" );
-        Config config = new Config( configMap, GraphDatabaseSettings.class );
+        Config config = Config.embeddedDefaults( cacheSizeConfig() );
         dataSource = life.add( new LuceneDataSource( directory.graphDbDir(), config, indexStore, fileSystemRule.get() ) );
         IndexIdentifier fooIdentifier = identifier( "foo" );
         IndexIdentifier barIdentifier = identifier( "bar" );
@@ -223,9 +218,7 @@ public class LuceneDataSourceTest
     {
         addIndex( "bar" );
         addIndex( "baz" );
-        Map<String, String> configMap = config();
-        configMap.put( GraphDatabaseSettings.lucene_searcher_cache_size.name(), "2" );
-        Config config = new Config( configMap, GraphDatabaseSettings.class );
+        Config config = Config.embeddedDefaults( cacheSizeConfig() );
         dataSource = life.add( new LuceneDataSource( directory.graphDbDir(), config, indexStore, fileSystemRule.get() ) );
         IndexIdentifier fooIdentifier = identifier( "foo" );
         IndexIdentifier barIdentifier = identifier( "bar" );
@@ -245,12 +238,12 @@ public class LuceneDataSourceTest
 
     private Map<String, String> config()
     {
-        return MapUtil.stringMap();
+        return stringMap();
     }
 
     private void prepareIndexesByIdentifiers( IndexIdentifier indexIdentifier )
     {
-        Config config = new Config( config(), GraphDatabaseSettings.class );
+        Config config = Config.embeddedDefaults();
         dataSource = life.add( new LuceneDataSource( directory.graphDbDir(), config, indexStore, fileSystemRule.get() ) );
         dataSource.getIndexSearcher( indexIdentifier );
         dataSource.force();
@@ -258,14 +251,17 @@ public class LuceneDataSourceTest
 
     private Map<String, String> readOnlyConfig()
     {
-        Map<String,String> config = config();
-        config.put( GraphDatabaseSettings.read_only.name(), "true" );
-        return config;
+        return stringMap( GraphDatabaseSettings.read_only.name(), "true" );
+    }
+
+    private Map<String, String> cacheSizeConfig()
+    {
+        return stringMap( GraphDatabaseSettings.lucene_searcher_cache_size.name(), "2" );
     }
 
     private void addIndex( String name )
     {
-        indexStore.set( Node.class, name, MapUtil.stringMap( IndexManager.PROVIDER, "lucene", "type", "fulltext" ) );
+        indexStore.set( Node.class, name, stringMap( IndexManager.PROVIDER, "lucene", "type", "fulltext" ) );
     }
 
     private IndexIdentifier identifier( String name )
