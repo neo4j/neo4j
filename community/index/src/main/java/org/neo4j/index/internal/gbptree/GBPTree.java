@@ -31,7 +31,6 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
-
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.cursor.RawCursor;
@@ -143,6 +142,10 @@ public class GBPTree<KEY,VALUE> implements Closeable
          * {@link GBPTree#writer() writers} are re-enabled.
          */
         default void checkpointCompleted()
+        {   // no-op by default
+        }
+
+        default void noStoreFile()
         {   // no-op by default
         }
     }
@@ -366,6 +369,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         catch ( NoSuchFileException e )
         {
             // First time
+            monitor.noStoreFile();
             pageSize = pageSizeForCreation == 0 ? pageCache.pageSize() : pageSizeForCreation;
             if ( pageSize > pageCache.pageSize() )
             {

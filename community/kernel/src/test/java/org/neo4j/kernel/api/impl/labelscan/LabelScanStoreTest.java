@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.labelscan;
 
-import org.apache.lucene.index.IndexFileNames;
+import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
@@ -30,12 +30,16 @@ import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -59,8 +63,6 @@ import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toList;
-import static org.hamcrest.Matchers.startsWith;
-import static org.hamcrest.core.IsCollectionContaining.hasItem;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -69,7 +71,6 @@ import static org.junit.Assert.assertTrue;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.helpers.collection.Iterators.iterator;
 import static org.neo4j.helpers.collection.Iterators.single;
-import static org.neo4j.io.fs.FileUtils.deleteRecursively;
 import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
 
 public abstract class LabelScanStoreTest
@@ -93,11 +94,7 @@ public abstract class LabelScanStoreTest
     @Before
     public void clearDir() throws IOException
     {
-        dir = testDirectory.directory( "lucene" );
-        if ( dir.exists() )
-        {
-            deleteRecursively( dir );
-        }
+        dir = testDirectory.directory();
     }
 
     @After
@@ -140,10 +137,11 @@ public abstract class LabelScanStoreTest
         try (ResourceIterator<File> indexFiles = store.snapshotStoreFiles())
         {
             List<String> filesNames = indexFiles.stream().map( File::getName ).collect( toList() );
-            assertThat( "Should have at least index segment file.", filesNames,
-                    hasItem( startsWith( IndexFileNames.SEGMENTS ) ) );
+            assertThat( "Should have at least index segment file.", filesNames, hasBareMinimumFileList() );
         }
     }
+
+    protected abstract Matcher<Iterable<? super String>> hasBareMinimumFileList();
 
     @Test
     public void shouldUpdateIndexOnLabelChange() throws Exception
@@ -536,7 +534,7 @@ public abstract class LabelScanStoreTest
         assertTrue( monitor.initCalled );
     }
 
-    FullStoreChangeStream asStream( final List<NodeLabelUpdate> existingData )
+    protected FullStoreChangeStream asStream( final List<NodeLabelUpdate> existingData )
     {
         return writer ->
         {
@@ -554,11 +552,33 @@ public abstract class LabelScanStoreTest
             boolean usePersistentStore, boolean readOnly ) throws IOException
     {
         shutdown();
-        corruptIndex();
+        corruptIndex( fileSystemRule.get(), dir );
         start( data, usePersistentStore, readOnly );
     }
 
-    protected abstract void corruptIndex() throws IOException;
+    protected abstract void corruptIndex( FileSystemAbstraction fileSystem, File rootFolder ) throws IOException;
+
+    protected void scrambleFile( File file ) throws IOException
+    {
+        try ( RandomAccessFile fileAccess = new RandomAccessFile( file, "rw" );
+              FileChannel channel = fileAccess.getChannel() )
+        {
+            // The files will be small, so OK to allocate a buffer for the full size
+            byte[] bytes = new byte[(int) channel.size()];
+            putRandomBytes( random.random(), bytes );
+            ByteBuffer buffer = ByteBuffer.wrap( bytes );
+            channel.position( 0 );
+            channel.write( buffer );
+        }
+    }
+
+    private void putRandomBytes( Random random, byte[] bytes )
+    {
+        for ( int i = 0; i < bytes.length; i++ )
+        {
+            bytes[i] = (byte) random.nextInt();
+        }
+    }
 
     private static class TrackingMonitor implements LabelScanStore.Monitor
     {
