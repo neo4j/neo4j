@@ -48,15 +48,15 @@ class TwoPhaseNodeForRelationshipLocking
 
     void lockAllNodesAndConsumeRelationships( long nodeId, final KernelStatement state ) throws KernelException
     {
-        boolean retry = true;
-        nodeIds.add( nodeId );
-        while ( retry )
+        boolean retry;
+        do
         {
+            nodeIds.add( nodeId );
             retry = false;
             firstRelId = -1;
 
             // lock all the nodes involved by following the node id ordering
-            try( Cursor<NodeItem> node = entityReadOperations.nodeCursorById( state, nodeId ) )
+            try ( Cursor<NodeItem> node = entityReadOperations.nodeCursorById( state, nodeId ) )
             {
                 node.get().relationships( Direction.BOTH ).forAll( this::collectNodeId );
             }
@@ -77,6 +77,7 @@ class TwoPhaseNodeForRelationshipLocking
                 }
             }
         }
+        while ( retry );
     }
 
     private void lockAllNodes( KernelStatement state )
