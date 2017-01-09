@@ -45,7 +45,7 @@ import static org.junit.rules.RuleChain.outerRule;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.asArray;
 import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
 
-public class NativeLabelScanStoreTest
+public class NativeLabelScanStoreIT
 {
     private final TestDirectory directory = TestDirectory.testDirectory( getClass() );
     private final PageCacheRule pageCacheRule = new PageCacheRule();
