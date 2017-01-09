@@ -29,6 +29,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.ReadableByteChannel;
@@ -80,6 +82,7 @@ import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
@@ -2516,14 +2519,27 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         configureStandardPageCache();
 
         PagedFile pagedFile = pageCache.map( file( "a" ), filePageSize );
-        pagedFile.close();
+        closeThisPagedFile( pagedFile );
 
         try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
         {
-            expectedException.expect( IllegalStateException.class );
-            cursor.next(); // This should throw
-            fail( "cursor.next() on unmapped file did not throw" );
+            try
+            {
+                cursor.next();
+                fail( "cursor.next() on unmapped file did not throw" );
+            }
+            catch ( IllegalStateException e )
+            {
+                StringWriter out = new StringWriter();
+                e.printStackTrace( new PrintWriter( out ) );
+                assertThat( out.toString(), containsString( "closeThisPagedFile" ) );
+            }
         }
+    }
+
+    protected void closeThisPagedFile( PagedFile pagedFile ) throws IOException
+    {
+        pagedFile.close();
     }
 
     @Test( timeout = SHORT_TIMEOUT_MILLIS )
@@ -2533,10 +2549,19 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
 
         PagedFile pagedFile = pageCache.map( file( "a" ), filePageSize );
         PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK );
-        pagedFile.close();
+        closeThisPagedFile( pagedFile );
 
-        expectedException.expect( IllegalStateException.class );
-        cursor.next();
+        try
+        {
+            cursor.next();
+            fail( "cursor.next() on unmapped file did not throw" );
+        }
+        catch ( IllegalStateException e )
+        {
+            StringWriter out = new StringWriter();
+            e.printStackTrace( new PrintWriter( out ) );
+            assertThat( out.toString(), containsString( "closeThisPagedFile" ) );
+        }
     }
 
     @Test( timeout = SHORT_TIMEOUT_MILLIS )
