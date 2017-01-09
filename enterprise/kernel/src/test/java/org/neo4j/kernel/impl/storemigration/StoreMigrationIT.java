@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.storemigration;
 
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -32,6 +33,8 @@ import java.util.List;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import org.neo4j.consistency.ConsistencyCheckService;
+import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.EnterpriseGraphDatabaseFactory;
@@ -40,18 +43,26 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.Service;
+import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStoreVersionCheck;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 @RunWith( Parameterized.class )
 public class StoreMigrationIT
@@ -62,8 +73,9 @@ public class StoreMigrationIT
     @ClassRule
     public static final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
-    //    @ClassRule
-//    public static final TestDirectory testDir = TestDirectory.testDirectory( fileSystemRule.get() );
+    @Rule
+    public final TestDirectory testDir = TestDirectory.testDirectory( fileSystemRule.get() );
+
     public static final String CREATE_QUERY =
             "CREATE (TheMatrix:Movie {title:'The Matrix', released:1999, tagline:'Welcome to the Real " +
             "World'})\n" +
@@ -628,14 +640,15 @@ public class StoreMigrationIT
             "WITH TomH as a\n" +
             "MATCH (a)-[:ACTED_IN]->(m)<-[:DIRECTED]-(d) RETURN a,m,d LIMIT 10\n" +
             ";";
-    private final RecordFormats from;
-    private final RecordFormats to;
+    protected final RecordFormats from;
+    protected final RecordFormats to;
 
     @Parameterized.Parameters( name = "Migrate: {0}->{1}" )
     public static Iterable<Object[]> data() throws IOException
     {
         FileSystemAbstraction fs = fileSystemRule.get();
         PageCache pageCache = pageCacheRule.getPageCache( fs );
+        File dir = TestDirectory.testDirectory( StoreMigrationIT.class ).prepareDirectoryForTest( "migration" );
         StoreVersionCheck storeVersionCheck = new StoreVersionCheck( pageCache );
         LegacyStoreVersionCheck legacyStoreVersionCheck = new LegacyStoreVersionCheck( fs );
         List<Object[]> data = new ArrayList<>();
@@ -647,7 +660,7 @@ public class StoreMigrationIT
                     legacyStoreVersionCheck, toFormat );
             for ( RecordFormats fromFormat : recordFormatses )
             {
-                File db = new File( fromFormat.storeVersion() + toFormat.storeVersion() );
+                File db = new File( dir, fromFormat.storeVersion() + toFormat.storeVersion() );
                 try
                 {
                     createDb( fromFormat, pageCache, fs, db );
@@ -728,7 +741,7 @@ public class StoreMigrationIT
     @Test
     public void shouldMigrate() throws Exception
     {
-        File db = new File( from.toString() + to.toString() );
+        File db = testDir.directory( from.toString() + to.toString() );
         FileSystemAbstraction fs = fileSystemRule.get();
         fs.deleteRecursively( db );
         GraphDatabaseService database = getGraphDatabaseService( db, from.storeVersion() );
@@ -791,7 +804,26 @@ public class StoreMigrationIT
         assertEquals( beforeRels, afterRels ); //253
         assertEquals( beforeRelTypes, afterRelTypes ); //6
         assertEquals( beforeIndexes, afterIndexes ); //2
-        assertEquals( beforeConstraints, afterConstraints ); //2
+        assertEquals( beforeConstraints, afterConstraints ); //1
+        ConsistencyCheckService consistencyCheckService = new ConsistencyCheckService( );
+        ConsistencyCheckService.Result result = runConsistencyChecker( db, fs, consistencyCheckService,
+                to.storeVersion() );
+        if( !result.isSuccessful() )
+        {
+            fail( "Database is inconsistent after migration." );
+        }
+    }
+
+    //This method is overridden by a blockdevice test.
+    protected ConsistencyCheckService.Result runConsistencyChecker( File db, FileSystemAbstraction fs,
+            ConsistencyCheckService consistencyCheckService, String storeVersion )
+            throws ConsistencyCheckIncompleteException, IOException
+    {
+        Config config = Config.defaults();
+        config.augment( MapUtil.stringMap( GraphDatabaseSettings.record_format.name(), storeVersion ) );
+        return consistencyCheckService
+                    .runFullConsistencyCheck( db, config, ProgressMonitorFactory.NONE,
+                            NullLogProvider.getInstance(), fs, false );
     }
 
     //This method is overridden by a blockdevice test.
