@@ -19,11 +19,11 @@
  */
 package org.neo4j.server;
 
+import org.junit.Test;
+
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
-
-import org.junit.Test;
 
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.logging.AssertableLogProvider;
@@ -31,7 +31,6 @@ import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
 import static java.lang.String.format;
-
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
@@ -65,8 +64,7 @@ public class NeoServerPortConflictIT extends ExclusiveServerTestBase
                     AssertableLogProvider.inLog( containsString( "CommunityNeoServer" ) ).error(
                             "Failed to start Neo4j on %s: %s",
                             contestedAddress,
-                            format( "At least one of the addresses %s or localhost:7473 is already in use, cannot " +
-                                    "bind to it.", contestedAddress )
+                            format( "Address %s is already in use, cannot bind to it.", contestedAddress )
                     )
             );
             server.stop();
