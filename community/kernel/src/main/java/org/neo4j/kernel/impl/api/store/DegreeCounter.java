@@ -31,9 +31,13 @@ import org.neo4j.storageengine.api.Direction;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
-public interface DegreeCounter
+class DegreeCounter
 {
-    default long countByFirstPrevPointer( long relationshipId, RecordCursor<RelationshipRecord> cursor,
+    private DegreeCounter()
+    {
+    }
+
+    static long countByFirstPrevPointer( long relationshipId, RecordCursor<RelationshipRecord> cursor,
             NodeRecord nodeRecord, RelationshipRecord relationshipRecord )
     {
         if ( relationshipId == Record.NO_NEXT_RELATIONSHIP.intValue() )
@@ -52,7 +56,7 @@ public interface DegreeCounter
         throw new InvalidRecordException( "Node " + nodeRecord.getId() + " neither start nor end node of " + relationshipRecord );
     }
 
-    default int countRelationshipsInGroup( long groupId, Direction direction, Integer type, NodeRecord nodeRecord,
+    static int countRelationshipsInGroup( long groupId, Direction direction, Integer type, NodeRecord nodeRecord,
             RelationshipRecord relationshipRecord, RelationshipGroupRecord groupRecord, RecordCursors cursors )
     {
         int count = 0;
@@ -73,7 +77,7 @@ public interface DegreeCounter
         return count;
     }
 
-    default long nodeDegreeByDirection( Direction direction, NodeRecord nodeRecord,
+    private static long nodeDegreeByDirection( Direction direction, NodeRecord nodeRecord,
             RelationshipRecord relationshipRecord, RelationshipGroupRecord groupRecord, RecordCursors cursors )
     {
         RecordCursor<RelationshipRecord> cursor = cursors.relationship();

@@ -45,13 +45,14 @@ import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.RelationshipTypeItem;
 
 import static java.util.function.Function.identity;
+import static org.neo4j.kernel.impl.api.store.DegreeCounter.countRelationshipsInGroup;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 
 /**
  * Base cursor for nodes.
  */
-public class StoreSingleNodeCursor extends EntityItemHelper implements Cursor<NodeItem>, NodeItem, DegreeCounter
+public class StoreSingleNodeCursor extends EntityItemHelper implements Cursor<NodeItem>, NodeItem
 {
     private final NodeRecord nodeRecord;
     private final RelationshipStore relationshipStore;

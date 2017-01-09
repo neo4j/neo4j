@@ -28,9 +28,10 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.storageengine.api.DegreeItem;
 
+import static org.neo4j.kernel.impl.api.store.DegreeCounter.countByFirstPrevPointer;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
-class DegreeItemDenseCursor implements Cursor<DegreeItem>, DegreeItem, DegreeCounter
+class DegreeItemDenseCursor implements Cursor<DegreeItem>, DegreeItem
 {
     private final NodeRecord nodeRecord;
     private final RelationshipGroupRecord relationshipGroupRecord;
