@@ -51,7 +51,7 @@ public class BoltConnector extends Connector
     // Used by config doc generator
     public BoltConnector()
     {
-        this("(bolt-connector-key)");
+        this( "(bolt-connector-key)" );
     }
 
     public BoltConnector( String key )

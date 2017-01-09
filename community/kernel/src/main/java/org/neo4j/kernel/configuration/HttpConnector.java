@@ -50,6 +50,12 @@ public class HttpConnector extends Connector
     public final Setting<AdvertisedSocketAddress> advertised_address;
     private final Encryption encryptionLevel;
 
+    // Used by config doc generator
+    public HttpConnector()
+    {
+        this( "(http-connector-key)" );
+    }
+
     public HttpConnector( Encryption encryptionLevel )
     {
         this( "(http-connector-key)", encryptionLevel );
