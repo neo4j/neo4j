@@ -40,8 +40,8 @@ import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
-import org.neo4j.kernel.impl.query.clientsession.BoltSessionInfo;
-import org.neo4j.kernel.impl.query.clientsession.ClientSessionInfo;
+import org.neo4j.kernel.impl.query.clientconnection.BoltConnectionInfo;
+import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
 import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.kernel.impl.query.TransactionalContextFactory;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
@@ -124,7 +124,7 @@ class TransactionStateMachineSPI implements TransactionStateMachine.SPI
             Map<String,Object> params, ThrowingAction<KernelException> onFail ) throws QueryExecutionKernelException
     {
         InternalTransaction internalTransaction = queryService.beginTransaction( implicit, securityContext );
-        ClientSessionInfo sourceDetails = new BoltSessionInfo( querySource.principalName,
+        ClientConnectionInfo sourceDetails = new BoltConnectionInfo( querySource.principalName,
                 querySource.clientName,
                 querySource.connectionDescriptor.clientAddress,
                 querySource.connectionDescriptor.serverAddress );

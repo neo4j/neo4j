@@ -29,8 +29,8 @@ import org.junit.Test;
 
 import org.neo4j.kernel.api.ExecutingQuery;
 import org.neo4j.kernel.impl.query.QueryLoggerKernelExtension.QueryLogger;
-import org.neo4j.kernel.impl.query.clientsession.ClientSessionInfo;
-import org.neo4j.kernel.impl.query.clientsession.ShellSessionInfo;
+import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
+import org.neo4j.kernel.impl.query.clientconnection.ShellConnectionInfo;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.time.Clocks;
@@ -47,9 +47,9 @@ import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class QueryLoggerTest
 {
-    private static final ClientSessionInfo SESSION_1 = new ShellSessionInfo( "{session one}" );
-    private static final ClientSessionInfo SESSION_2 = new ShellSessionInfo( "{session two}" );
-    private static final ClientSessionInfo SESSION_3 = new ShellSessionInfo( "{session three}" );
+    private static final ClientConnectionInfo SESSION_1 = new ShellConnectionInfo( "{session one}" );
+    private static final ClientConnectionInfo SESSION_2 = new ShellConnectionInfo( "{session two}" );
+    private static final ClientConnectionInfo SESSION_3 = new ShellConnectionInfo( "{session three}" );
     private static final String QUERY_1 = "MATCH (n) RETURN n";
     private static final String QUERY_2 = "MATCH (a)--(b) RETURN b.name";
     private static final String QUERY_3 = "MATCH (c)-[:FOO]->(d) RETURN d.size";
@@ -283,14 +283,14 @@ public class QueryLoggerTest
 
     private ExecutingQuery query(
             long startTime,
-            ClientSessionInfo sessionInfo,
+            ClientConnectionInfo sessionInfo,
             String username,
             String queryText )
     {
         return query( startTime, sessionInfo, username, queryText, emptyMap(), emptyMap() );
     }
 
-    private String sessionConnectionDetails( ClientSessionInfo sessionInfo, String username )
+    private String sessionConnectionDetails( ClientConnectionInfo sessionInfo, String username )
     {
         return sessionInfo.withUsername( username ).asConnectionDetails();
     }
@@ -298,7 +298,7 @@ public class QueryLoggerTest
     private int queryId;
 
     private ExecutingQuery query(
-            long startTime, ClientSessionInfo sessionInfo, String username, String queryText, Map<String,Object> params,
+            long startTime, ClientConnectionInfo sessionInfo, String username, String queryText, Map<String,Object> params,
             Map<String,Object> metaData
     )
     {

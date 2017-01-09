@@ -17,15 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.query.clientsession;
+package org.neo4j.kernel.impl.query.clientconnection;
 
 import java.io.Serializable;
 
-public class ShellSessionInfo extends ClientSessionInfo
+public class ShellConnectionInfo extends ClientConnectionInfo
 {
     private final Serializable id;
 
-    public ShellSessionInfo( Serializable id )
+    public ShellConnectionInfo( Serializable id )
     {
         this.id = id;
     }

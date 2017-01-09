@@ -17,18 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.query.clientsession;
+package org.neo4j.kernel.impl.query.clientconnection;
 
-public abstract class ClientSessionInfo
+public abstract class ClientConnectionInfo
 {
     /**
      * Used by {@link #asConnectionDetails()} only. When the {@code connectionDetails} string is no longer needed,
      * this can go away, since the username is provided though other means to the places that need it.
      */
     @Deprecated
-    public ClientSessionInfo withUsername( String username )
+    public ClientConnectionInfo withUsername( String username )
     {
-        return new SessionInfoWithUsername( this, username );
+        return new ConnectionInfoWithUsername( this, username );
     }
 
     @Deprecated
@@ -49,7 +49,7 @@ public abstract class ClientSessionInfo
         return null;
     }
 
-    public static final ClientSessionInfo EMBEDDED_SESSION = new ClientSessionInfo()
+    public static final ClientConnectionInfo EMBEDDED_CONNECTION = new ClientConnectionInfo()
     {
         @Override
         public String asConnectionDetails()
@@ -59,12 +59,12 @@ public abstract class ClientSessionInfo
     };
 
     @Deprecated
-    private static class SessionInfoWithUsername extends ClientSessionInfo
+    private static class ConnectionInfoWithUsername extends ClientConnectionInfo
     {
-        private final ClientSessionInfo source;
+        private final ClientConnectionInfo source;
         private final String username;
 
-        private SessionInfoWithUsername( ClientSessionInfo source, String username )
+        private ConnectionInfoWithUsername( ClientConnectionInfo source, String username )
         {
             this.source = source;
             this.username = username;

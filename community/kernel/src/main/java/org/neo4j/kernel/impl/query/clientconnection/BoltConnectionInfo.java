@@ -17,19 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.query.clientsession;
+package org.neo4j.kernel.impl.query.clientconnection;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 
-public class BoltSessionInfo extends ClientSessionInfo
+public class BoltConnectionInfo extends ClientConnectionInfo
 {
     private final String principalName;
     private final String clientName;
     private final SocketAddress clientAddress;
     private final SocketAddress serverAddress;
 
-    public BoltSessionInfo(
+    public BoltConnectionInfo(
             String principalName,
             String clientName,
             SocketAddress clientAddress,

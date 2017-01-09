@@ -26,7 +26,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 
 import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.LockWaitEvent;
-import org.neo4j.kernel.impl.query.clientsession.ClientSessionInfo;
+import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.time.CpuClock;
 import org.neo4j.time.SystemNanoClock;
@@ -44,7 +44,7 @@ public class ExecutingQuery
     private final long queryId;
     private final LockTracer lockTracer = ExecutingQuery.this::waitForLock;
     private final String username;
-    private final ClientSessionInfo clientSession;
+    private final ClientConnectionInfo clientConnection;
     private final String queryText;
     private final Map<String, Object> queryParameters;
     private final long startTime; // timestamp in milliseconds
@@ -60,7 +60,7 @@ public class ExecutingQuery
 
     public ExecutingQuery(
             long queryId,
-            ClientSessionInfo clientSession,
+            ClientConnectionInfo clientConnection,
             String username,
             String queryText,
             Map<String,Object> queryParameters,
@@ -70,7 +70,7 @@ public class ExecutingQuery
             CpuClock cpuClock
     ) {
         this.queryId = queryId;
-        this.clientSession = clientSession;
+        this.clientConnection = clientConnection;
         this.username = username;
         this.queryText = queryText;
         this.queryParameters = queryParameters;
@@ -115,9 +115,9 @@ public class ExecutingQuery
         return username;
     }
 
-    public ClientSessionInfo clientSession()
+    public ClientConnectionInfo clientConnection()
     {
-        return clientSession;
+        return clientConnection;
     }
 
     public String queryText()
@@ -176,7 +176,7 @@ public class ExecutingQuery
 
     public String connectionDetailsForLogging()
     {
-        return clientSession.asConnectionDetails();
+        return clientConnection.asConnectionDetails();
     }
 
     private LockWaitEvent waitForLock( ResourceType resourceType, long[] resourceIds )

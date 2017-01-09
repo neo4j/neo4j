@@ -22,16 +22,16 @@ package org.neo4j.server.rest.web;
 import java.net.InetSocketAddress;
 import javax.servlet.http.HttpServletRequest;
 
-import org.neo4j.kernel.impl.query.clientsession.ClientSessionInfo;
-import org.neo4j.kernel.impl.query.clientsession.HttpSessionInfo;
+import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
+import org.neo4j.kernel.impl.query.clientconnection.HttpConnectionInfo;
 
 import static javax.ws.rs.core.HttpHeaders.USER_AGENT;
 
 public class ServerQuerySession
 {
-    public static ClientSessionInfo describe( HttpServletRequest request )
+    public static ClientConnectionInfo describe( HttpServletRequest request )
     {
-        return new HttpSessionInfo(
+        return new HttpConnectionInfo(
                 request.getScheme(),
                 request.getHeader( USER_AGENT ),
                 new InetSocketAddress( request.getRemoteAddr(), request.getRemotePort() ),

@@ -21,7 +21,6 @@ package org.neo4j.server.rest.management.console;
 
 import org.apache.commons.lang3.StringUtils;
 
-import java.util.Collections;
 import javax.servlet.http.HttpServletRequest;
 
 import org.neo4j.cypher.SyntaxException;

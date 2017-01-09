@@ -191,7 +191,7 @@ public class QueryLoggerIT
 
         List<String> logLines = readAllLines( logFilename );
         assertEquals( 1, logLines.size() );
-        assertThat( logLines.get( 0 ), endsWith( String.format( " ms: %s - %s - {}", clientSessionInfo(), QUERY ) ) );
+        assertThat( logLines.get( 0 ), endsWith( String.format( " ms: %s - %s - {}", clientConnectionInfo(), QUERY ) ) );
         assertThat( logLines.get( 0 ), containsString( AUTH_DISABLED.username() ) );
     }
 
@@ -219,12 +219,12 @@ public class QueryLoggerIT
         assertThat( logLines.get( 0 ), endsWith( String.format(
                 " ms: %s - %s - {props: {name: 'Roland', position: 'Gunslinger', followers: [Jake, Eddie, Susannah]}}"
                         + " - {}",
-                clientSessionInfo(),
+                clientConnectionInfo(),
                 query ) ) );
         assertThat( logLines.get( 0 ), containsString( AUTH_DISABLED.username() ) );
     }
 
-    private String clientSessionInfo()
+    private String clientConnectionInfo()
     {
         return QueryEngineProvider.describe().withUsername( AUTH_DISABLED.username() ).asConnectionDetails();
     }
@@ -246,7 +246,7 @@ public class QueryLoggerIT
         assertThat( logLines.get( 0 ),
                 endsWith( String.format(
                         " ms: %s - %s - {ids: [0, 1, 2]} - {}",
-                        clientSessionInfo(), query) ) );
+                        clientConnectionInfo(), query) ) );
         assertThat( logLines.get( 0 ), containsString( AUTH_DISABLED.username() ) );
     }
 

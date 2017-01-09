@@ -35,10 +35,10 @@ import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
-import org.neo4j.kernel.impl.query.clientsession.ClientSessionInfo;
+import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
 import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.kernel.impl.query.TransactionalContextFactory;
-import org.neo4j.kernel.impl.query.clientsession.ShellSessionInfo;
+import org.neo4j.kernel.impl.query.clientconnection.ShellConnectionInfo;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.Continuation;
@@ -209,9 +209,9 @@ public class Start extends TransactionProvidingApp
 
     private static class ShellQuerySession
     {
-        public static ClientSessionInfo describe( Session session )
+        public static ClientConnectionInfo describe( Session session )
         {
-            return new ShellSessionInfo( session.getId() );
+            return new ShellConnectionInfo( session.getId() );
         }
     }
 }
