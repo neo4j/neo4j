@@ -49,6 +49,7 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.storageengine.api.DegreeItem;
+import org.neo4j.storageengine.api.RelationshipTypeItem;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 import org.neo4j.test.rule.RandomRule;
@@ -463,7 +464,7 @@ public class StoreSingleNodeCursorTest
     {
         Set<TestRelType> types = new HashSet<>();
 
-        Cursor<IntSupplier> relTypesCursor = cursor.relationshipTypes();
+        Cursor<RelationshipTypeItem> relTypesCursor = cursor.relationshipTypes();
         while ( relTypesCursor.next() )
         {
             int typeId = relTypesCursor.get().getAsInt();

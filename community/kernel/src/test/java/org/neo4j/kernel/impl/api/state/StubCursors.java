@@ -36,6 +36,7 @@ import org.neo4j.storageengine.api.LabelItem;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
+import org.neo4j.storageengine.api.RelationshipTypeItem;
 
 import static org.neo4j.kernel.impl.util.Cursors.empty;
 
@@ -186,7 +187,7 @@ public class StubCursors
         }
 
         @Override
-        public Cursor<IntSupplier> relationshipTypes()
+        public Cursor<RelationshipTypeItem> relationshipTypes()
         {
             throw new UnsupportedOperationException();
         }

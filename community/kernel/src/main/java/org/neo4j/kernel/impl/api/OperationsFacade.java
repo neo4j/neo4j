@@ -106,6 +106,7 @@ import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.storageengine.api.LabelItem;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.RelationshipItem;
+import org.neo4j.storageengine.api.RelationshipTypeItem;
 import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
@@ -456,7 +457,7 @@ public class OperationsFacade
         statement.assertOpen();
         try ( Cursor<NodeItem> node = dataRead().nodeCursorById( statement, nodeId ) )
         {
-            return Cursors.intIterator( node.get().relationshipTypes(), IntSupplier::getAsInt );
+            return Cursors.intIterator( node.get().relationshipTypes(), RelationshipTypeItem::getAsInt );
         }
     }
 

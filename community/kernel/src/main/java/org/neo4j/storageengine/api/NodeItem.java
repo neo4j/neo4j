@@ -58,10 +58,10 @@ public interface NodeItem
     Cursor<RelationshipItem> relationships( Direction direction );
 
     /**
-     * @return relationship types, wrapped in {@link IntSupplier} instances for relationships attached to this node.
+     * @return relationship type cursor for relationships attached to this node.
      * @throws IllegalStateException if no current node is selected
      */
-    Cursor<IntSupplier> relationshipTypes();
+    Cursor<RelationshipTypeItem> relationshipTypes();
 
     /**
      * Returns degree, e.g. number of relationships for this node.

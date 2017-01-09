@@ -20,13 +20,10 @@
 package org.neo4j.kernel.impl.api.store;
 
 import java.util.function.Consumer;
-import java.util.function.IntSupplier;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
-import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.cursor.IntValue;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.cursor.EntityItemHelper;
 import org.neo4j.kernel.impl.locking.Lock;
@@ -45,11 +42,11 @@ import org.neo4j.storageengine.api.LabelItem;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
+import org.neo4j.storageengine.api.RelationshipTypeItem;
 
 import static java.util.function.Function.identity;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
-import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
 /**
  * Base cursor for nodes.
@@ -76,7 +73,8 @@ public class StoreSingleNodeCursor extends EntityItemHelper implements Cursor<No
         this.relationshipGroupStore = neoStores.getRelationshipGroupStore();
         this.lockService = lockService;
         this.instanceCache = instanceCache;
-        this.cursors = new NodeExploringCursors( recordCursors, lockService, relationshipStore, relationshipGroupStore );
+        this.cursors =
+                new NodeExploringCursors( recordCursors, lockService, relationshipStore, relationshipGroupStore );
     }
 
     public StoreSingleNodeCursor init( long nodeId )
@@ -196,79 +194,16 @@ public class StoreSingleNodeCursor extends EntityItemHelper implements Cursor<No
     }
 
     @Override
-    public Cursor<IntSupplier> relationshipTypes()
+    public Cursor<RelationshipTypeItem> relationshipTypes()
     {
         if ( nodeRecord.isDense() )
         {
-            return new Cursor<IntSupplier>()
-            {
-                private long groupId = nodeRecord.getNextRel();
-                private final IntValue value = new IntValue();
-                private final RelationshipGroupRecord group = relationshipGroupStore.newRecord();
-
-                @Override
-                public boolean next()
-                {
-                    while ( groupId != Record.NO_NEXT_RELATIONSHIP.intValue() )
-                    {
-                        boolean groupRecordInUse = recordCursors.relationshipGroup().next( groupId, group, FORCE );
-                        groupId = group.getNext();
-                        if ( groupRecordInUse )
-                        {
-                            value.setValue( group.getType() );
-                            return true;
-                        }
-                    }
-                    return false;
-                }
-
-                @Override
-                public void close()
-                {
-                }
-
-                @Override
-                public IntSupplier get()
-                {
-                    return value;
-                }
-            };
+            long groupId = nodeRecord.getNextRel();
+            return new RelationshipTypeDenseCursor( groupId, relationshipGroupStore.newRecord(), recordCursors );
         }
         else
         {
-            final Cursor<RelationshipItem> relationships = relationships( Direction.BOTH );
-            return new Cursor<IntSupplier>()
-            {
-                private final PrimitiveIntSet foundTypes = Primitive.intSet( 5 );
-                private final IntValue value = new IntValue();
-
-                @Override
-                public boolean next()
-                {
-                    while ( relationships.next() )
-                    {
-                        if ( !foundTypes.contains( relationships.get().type() ) )
-                        {
-                            foundTypes.add( relationships.get().type() );
-                            value.setValue( relationships.get().type() );
-                            return true;
-                        }
-                    }
-
-                    return false;
-                }
-
-                @Override
-                public void close()
-                {
-                }
-
-                @Override
-                public IntSupplier get()
-                {
-                    return value;
-                }
-            };
+            return new RelationshipTypeCursor( relationships( Direction.BOTH ) );
         }
     }
 
@@ -296,7 +231,7 @@ public class StoreSingleNodeCursor extends EntityItemHelper implements Cursor<No
         }
         else
         {
-            return relationships(  direction, relType  ).count();
+            return relationships( direction, relType ).count();
         }
     }
 
@@ -310,16 +245,16 @@ public class StoreSingleNodeCursor extends EntityItemHelper implements Cursor<No
     private PrimitiveIntObjectMap<int[]> buildDegreeMap()
     {
         return relationships( Direction.BOTH )
-                    .mapReduce( Primitive.<int[]>intObjectMap( 5 ), identity(), ( rel, currentDegrees ) ->
+                .mapReduce( Primitive.<int[]>intObjectMap( 5 ), identity(), ( rel, currentDegrees ) ->
+                {
+                    int[] byType = currentDegrees.get( rel.type() );
+                    if ( byType == null )
                     {
-                        int[] byType = currentDegrees.get( rel.type() );
-                        if ( byType == null )
-                        {
-                            currentDegrees.put( rel.type(), byType = new int[3] );
-                        }
-                        byType[directionOf( nodeRecord.getId(), rel.id(), rel.startNode(), rel.endNode() ).ordinal()]++;
-                        return currentDegrees;
-                    } );
+                        currentDegrees.put( rel.type(), byType = new int[3] );
+                    }
+                    byType[directionOf( nodeRecord.getId(), rel.id(), rel.startNode(), rel.endNode() ).ordinal()]++;
+                    return currentDegrees;
+                } );
     }
 
     @Override
@@ -338,7 +273,9 @@ public class StoreSingleNodeCursor extends EntityItemHelper implements Cursor<No
         {
             return Direction.INCOMING;
         }
-        throw new InvalidRecordException( "Node " + nodeId + " neither start nor end node of relationship " +
-                relationshipId + " with startNode:" + startNode + " and endNode:" + endNode );
+        throw new InvalidRecordException(
+                "Node " + nodeId + " neither start nor end node of relationship " + relationshipId +
+                        " with startNode:" + startNode + " and endNode:" + endNode );
     }
+
 }
