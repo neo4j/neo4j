@@ -30,10 +30,11 @@ import org.neo4j.io.pagecache.PageEvictionCallback;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.test.ThreadTestUtils;
+import org.neo4j.test.server.ExclusiveServerTestBase;
 
 import static org.junit.Assert.fail;
 
-public abstract class NeoServerRestartTest
+public abstract class NeoServerRestartTest extends ExclusiveServerTestBase
 {
     public static final String CUSTOM_SWAPPER = "CustomSwapper";
     private static Semaphore semaphore;
@@ -62,20 +63,26 @@ public abstract class NeoServerRestartTest
         // Get a server that uses our custom swapper.
         NeoServer server = getNeoServer( CUSTOM_SWAPPER );
 
-        AtomicBoolean failure = new AtomicBoolean();
-        Thread serverStoppingThread = ThreadTestUtils.fork( stopServerAfterStartingHasStarted( server, failure ) );
-        server.start();
-        // Wait for the server to stop.
-        serverStoppingThread.join();
-        // Check if the server stopped successfully.
-        if ( failure.get() )
+        try
         {
-            fail( "Server failed to stop." );
+            AtomicBoolean failure = new AtomicBoolean();
+            Thread serverStoppingThread = ThreadTestUtils.fork( stopServerAfterStartingHasStarted( server, failure ) );
+            server.start();
+            // Wait for the server to stop.
+            serverStoppingThread.join();
+            // Check if the server stopped successfully.
+            if ( failure.get() )
+            {
+                fail( "Server failed to stop." );
+            }
+            // Verify that we can start the server again.
+            server = getNeoServer( CUSTOM_SWAPPER );
+            server.start();
         }
-        // Verify that we can start the server again.
-        server = getNeoServer( CUSTOM_SWAPPER );
-        server.start();
-        server.stop();
+        finally
+        {
+            server.stop();
+        }
     }
 
     protected abstract NeoServer getNeoServer( String customPageSwapperName ) throws IOException;
