@@ -62,14 +62,7 @@ public class LuceneDocumentStructure
 
     public static final String NODE_ID_KEY = "id";
 
-    private static final ThreadLocal<DocWithId> perThreadDocument = new ThreadLocal<DocWithId>()
-    {
-        @Override
-        protected DocWithId initialValue()
-        {
-            return new DocWithId( NODE_ID_KEY );
-        }
-    };
+    private static final ThreadLocal<DocWithId> perThreadDocument = ThreadLocal.withInitial( DocWithId::new );
 
     private LuceneDocumentStructure()
     {
@@ -129,6 +122,7 @@ public class LuceneDocumentStructure
         if ( (includeLowerBoundary != includeLower) || (includeUpperBoundary != includeUpper) )
         {
             BooleanQuery.Builder builder = new BooleanQuery.Builder();
+            builder.setDisableCoord(true);
             if ( includeLowerBoundary != includeLower )
             {
                 builder.add( new TermQuery( new Term( ValueEncoding.String.key(), lower ) ), BooleanClause.Occur
@@ -139,10 +133,10 @@ public class LuceneDocumentStructure
                 builder.add( new TermQuery( new Term( ValueEncoding.String.key(), upper ) ), BooleanClause.Occur
                         .MUST_NOT );
             }
-            builder.add( termRangeQuery, BooleanClause.Occur.SHOULD );
-            return builder.build();
+            builder.add( termRangeQuery, BooleanClause.Occur.FILTER );
+            return new ConstantScoreQuery( builder.build() );
         }
-        return new ConstantScoreQuery( termRangeQuery );
+        return termRangeQuery;
     }
 
     public static Query newWildCardStringQuery( String searchFor )
@@ -156,9 +150,8 @@ public class LuceneDocumentStructure
     public static Query newRangeSeekByPrefixQuery( String prefix )
     {
         Term term = new Term( ValueEncoding.String.key(), prefix );
-        MultiTermQuery prefixQuery = USE_LUCENE_STANDARD_PREFIX_QUERY ? new PrefixQuery( term ) :
+        return USE_LUCENE_STANDARD_PREFIX_QUERY ? new PrefixQuery( term ) :
                                      new PrefixMultiTermsQuery( term );
-        return new ConstantScoreQuery( prefixQuery );
     }
 
     public static Query newSuffixStringQuery( String suffix )
@@ -253,17 +246,14 @@ public class LuceneDocumentStructure
     {
         private final Document document;
 
-        private final String idFieldName;
         private final Field idField;
         private final Field idValueField;
 
         private final Map<ValueEncoding,Field> valueFields = new EnumMap<>( ValueEncoding.class );
 
-        private DocWithId( String idFieldName )
-        {
-            this.idFieldName = idFieldName;
-            idField = new StringField( idFieldName, "", YES );
-            idValueField = new NumericDocValuesField( idFieldName, 0L );
+        private DocWithId() {
+            idField = new StringField( NODE_ID_KEY, "", YES );
+            idValueField = new NumericDocValuesField( NODE_ID_KEY, 0L );
             document = new Document();
             document.add( idField );
             document.add( idValueField );
@@ -271,7 +261,7 @@ public class LuceneDocumentStructure
 
         private void setId( long id )
         {
-            idField.setStringValue( "" + id );
+            idField.setStringValue( Long.toString( id ) );
             idValueField.setLongValue( id );
         }
 
@@ -289,7 +279,7 @@ public class LuceneDocumentStructure
             {
                 IndexableField field = it.next();
                 String fieldName = field.name();
-                if ( !fieldName.equals( idFieldName ) )
+                if ( !fieldName.equals( NODE_ID_KEY ) )
                 {
                     it.remove();
                 }

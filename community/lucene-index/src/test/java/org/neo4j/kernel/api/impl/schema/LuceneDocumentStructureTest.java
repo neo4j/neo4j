@@ -164,9 +164,7 @@ public class LuceneDocumentStructureTest
     public void shouldBuildRangeSeekByStringQueryForStrings() throws Exception
     {
         // given
-        ConstantScoreQuery constantQuery =
-                (ConstantScoreQuery) LuceneDocumentStructure.newRangeSeekByStringQuery( "foo", false, null, true );
-        TermRangeQuery query = (TermRangeQuery) constantQuery.getQuery();
+        TermRangeQuery query = (TermRangeQuery) LuceneDocumentStructure.newRangeSeekByStringQuery( "foo", false, null, true );
 
         // then
         assertEquals( "string", query.getField() );
@@ -190,8 +188,7 @@ public class LuceneDocumentStructureTest
     public void shouldBuildRangeSeekByPrefixQueryForStrings() throws Exception
     {
         // given
-        ConstantScoreQuery query = (ConstantScoreQuery) LuceneDocumentStructure.newRangeSeekByPrefixQuery( "Prefix" );
-        MultiTermQuery prefixQuery = (MultiTermQuery) query.getQuery();
+        MultiTermQuery prefixQuery = (MultiTermQuery) LuceneDocumentStructure.newRangeSeekByPrefixQuery( "Prefix" );
 
         // then
         assertThat("Should contain term value", prefixQuery.toString(), containsString( "Prefix" ) );
