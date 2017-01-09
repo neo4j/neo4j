@@ -41,6 +41,7 @@ public class HttpConnector extends Connector
 
     @Description( "Address the connector should bind to. " +
             "This setting is deprecated and will be replaced by `+listen_address+`" )
+    @Deprecated
     public final Setting<ListenSocketAddress> address;
 
     @Description( "Address the connector should bind to" )
