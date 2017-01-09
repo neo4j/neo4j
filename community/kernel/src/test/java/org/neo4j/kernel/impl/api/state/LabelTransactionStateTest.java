@@ -30,6 +30,9 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.function.IntSupplier;
 
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveIntCollections;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
@@ -354,10 +357,13 @@ public class LabelTransactionStateTest
         commitLabels( labels( nodeId, labels ) );
     }
 
-    private void assertLabels( Integer... labels ) throws EntityNotFoundException
+    private void assertLabels( int... labels ) throws EntityNotFoundException
     {
-        txContext.nodeCursorById( state, nodeId ).forAll( node -> assertEquals( asSet( labels ),
-                node.labels().mapReduce( new HashSet<>(), IntSupplier::getAsInt, this::addToCollection ) ) );
+        txContext.nodeCursorById( state, nodeId ).forAll( node ->
+        {
+            PrimitiveIntSet collect = node.labels().collect( Primitive.intSet(), IntSupplier::getAsInt );
+            assertEquals( PrimitiveIntCollections.asSet( labels ), collect );
+        } );
 
         txContext.nodeCursorById( state, nodeId ).forAll( node ->
         {
@@ -366,11 +372,5 @@ public class LabelTransactionStateTest
                 assertTrue( "Expected labels not found on node", node.hasLabel( label ) );
             }
         } );
-    }
-
-    private <T, C extends Collection<T>> C addToCollection( T value, C collection)
-    {
-        collection.add( value );
-        return collection;
     }
 }

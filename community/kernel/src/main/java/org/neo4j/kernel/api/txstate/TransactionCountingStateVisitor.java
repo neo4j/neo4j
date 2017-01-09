@@ -23,7 +23,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 
 import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveIntCollections;
+import org.neo4j.collection.primitive.PrimitiveIntCollection;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
@@ -69,28 +69,22 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
     public void visitDeletedNode( long id )
     {
         counts.incrementNodeCount( ANY_LABEL, -1 );
-        statement.acquireSingleNodeCursor( id ).forAll( node ->
-        {
-            PrimitiveIntSet set =
-                    node.labels().mapReduce( Primitive.intSet(), LabelItem::getAsInt, ( labelId, current ) ->
-                    {
-                        current.add( labelId );
-                        counts.incrementNodeCount( labelId, -1 );
-                        return current;
-                    } );
-
-            int[] labelIds = PrimitiveIntCollections.asArray( set.iterator() );
-            node.degrees().forAll( degree ->
-            {
-                for ( int labelId : labelIds )
-                {
-                    updateRelationshipsCountsFromDegrees( degree.type(), labelId, -degree.outgoing(),
-                            -degree.incoming() );
-                }
-            } );
-
-        } );
+        statement.acquireSingleNodeCursor( id ).forAll( this::decrementCountForLabelsAndRelationships );
         super.visitDeletedNode( id );
+    }
+
+    private void decrementCountForLabelsAndRelationships( NodeItem node )
+    {
+        PrimitiveIntSet labelIds = node.labels().collect( Primitive.intSet(), ( label ) ->
+        {
+            int labelId = label.getAsInt();
+            counts.incrementNodeCount( labelId, -1 );
+            return labelId;
+        } );
+
+        node.degrees().forAll(
+                degree -> updateRelationshipsCountsFromDegrees( labelIds, degree.type(), -degree.outgoing(),
+                        -degree.incoming() ) );
     }
 
     @Override
@@ -149,7 +143,12 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
         super.visitNodeLabelChanges( id, added, removed );
     }
 
-    private void updateRelationshipsCountsFromDegrees( int type, int label, long outgoing, long incoming )
+    private void updateRelationshipsCountsFromDegrees( PrimitiveIntCollection labels, int type, long outgoing,
+            long incoming )
+    {
+        labels.visitKeys( (label) -> updateRelationshipsCountsFromDegrees( type, label, outgoing, incoming ) );
+    }
+    private boolean updateRelationshipsCountsFromDegrees( int type, int label, long outgoing, long incoming )
     {
         // untyped
         counts.incrementRelationshipCount( label, ANY_RELATIONSHIP_TYPE, ANY_LABEL, outgoing );
@@ -157,6 +156,7 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
         // typed
         counts.incrementRelationshipCount( label, type, ANY_LABEL, outgoing );
         counts.incrementRelationshipCount( ANY_LABEL, type, label, incoming );
+        return true;
     }
 
     private void updateRelationshipCount( long startNode, int type, long endNode, int delta )
