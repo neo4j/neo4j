@@ -153,7 +153,7 @@ public abstract class AbstractNeoServer implements NeoServer
         this.logProvider = logProvider;
         this.log = logProvider.getLog( getClass() );
 
-        List<HttpConnector> httpConnectors = config.httpConnectors();
+        List<HttpConnector> httpConnectors = config.enabledHttpConnectors();
 
         HttpConnector httpConnector = httpConnectors.stream()
                 .filter( c -> Encryption.NONE.equals( c.encryptionLevel() ) )
@@ -166,8 +166,8 @@ public abstract class AbstractNeoServer implements NeoServer
         Optional<HttpConnector> httpsConnector = httpConnectors.stream()
                 .filter( c -> Encryption.TLS.equals( c.encryptionLevel() ) )
                 .findFirst();
-        httpsListenAddress = httpsConnector.map( (connector) -> config.get( connector.listen_address ) );
-        httpsAdvertisedAddress = httpsConnector.map( (connector) -> config.get( connector.advertised_address ) );
+        httpsListenAddress = httpsConnector.map( ( connector ) -> config.get( connector.listen_address ) );
+        httpsAdvertisedAddress = httpsConnector.map( ( connector ) -> config.get( connector.advertised_address ) );
     }
 
     @Override
