@@ -299,10 +299,17 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>
                 loadState( pagedFile );
             }
         }
-        catch ( Throwable e )
+        catch ( Throwable t )
         {
-            close();
-            throw e;
+            try
+            {
+                close();
+            }
+            catch ( IOException e )
+            {
+                t.addSuppressed( e );
+            }
+            throw t;
         }
     }
 
