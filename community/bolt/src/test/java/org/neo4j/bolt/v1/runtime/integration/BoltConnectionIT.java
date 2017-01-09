@@ -158,13 +158,15 @@ public class BoltConnectionIT
         // Given
         BoltStateMachine machine = env.newMachine( "<test>" );
         machine.init( USER_AGENT, emptyMap(), null );
+        BoltResponseRecorder recorder = new BoltResponseRecorder();
 
         // And Given that I've ran and pulled one stream
-        machine.run( "RETURN 1", EMPTY_PARAMS, nullResponseHandler() );
-        machine.pullAll( nullResponseHandler() );
+        machine.run( "RETURN 1", EMPTY_PARAMS, recorder );
+        assertThat( recorder.nextResponse(), succeeded() );
+        machine.pullAll( recorder );
+        assertThat( recorder.nextResponse(), succeeded() );
 
         // When I run a new statement
-        BoltResponseRecorder recorder = new BoltResponseRecorder();
         machine.run( "RETURN 1", EMPTY_PARAMS, recorder );
 
         // Then
@@ -177,13 +179,15 @@ public class BoltConnectionIT
         // Given
         BoltStateMachine machine = env.newMachine( "<test>" );
         machine.init( USER_AGENT, emptyMap(), null );
+        BoltResponseRecorder recorder = new BoltResponseRecorder();
 
         // And Given that I've ran and pulled one stream
-        machine.run( "RETURN 1", EMPTY_PARAMS, nullResponseHandler() );
-        machine.discardAll( nullResponseHandler() );
+        machine.run( "RETURN 1", EMPTY_PARAMS, recorder );
+        assertThat( recorder.nextResponse(), succeeded() );
+        machine.discardAll( recorder );
+        assertThat( recorder.nextResponse(), succeeded() );
 
         // When I run a new statement
-        BoltResponseRecorder recorder = new BoltResponseRecorder();
         machine.run( "RETURN 1", EMPTY_PARAMS, recorder );
 
         // Then
@@ -240,13 +244,15 @@ public class BoltConnectionIT
         // Given
         BoltStateMachine machine = env.newMachine( "<test>" );
         machine.init( USER_AGENT, emptyMap(), null );
+        BoltResponseRecorder recorder = new BoltResponseRecorder();
 
         // And Given that I've ran and pulled one stream
-        machine.run( "RETURN 1", EMPTY_PARAMS, nullResponseHandler() );
-        machine.pullAll( nullResponseHandler() );
+        machine.run( "RETURN 1", EMPTY_PARAMS, recorder );
+        assertThat( recorder.nextResponse(), succeeded() );
+        machine.pullAll( recorder );
+        assertThat( recorder.nextResponse(), succeeded() );
 
         // Then further attempts to PULL should be treated as protocol violations
-        BoltResponseRecorder recorder = new BoltResponseRecorder();
         verifyKillsConnection( () -> machine.pullAll( recorder ) );
 
         // Then
@@ -259,13 +265,15 @@ public class BoltConnectionIT
         // Given
         BoltStateMachine machine = env.newMachine( "<test>" );
         machine.init( USER_AGENT, emptyMap(), null );
+        BoltResponseRecorder recorder = new BoltResponseRecorder();
 
         // And Given that I've ran and pulled one stream
-        machine.run( "RETURN 1", EMPTY_PARAMS, nullResponseHandler() );
-        machine.pullAll( nullResponseHandler() );
+        machine.run( "RETURN 1", EMPTY_PARAMS, recorder );
+        assertThat( recorder.nextResponse(), succeeded() );
+        machine.pullAll( recorder );
+        assertThat( recorder.nextResponse(), succeeded() );
 
         // When I attempt to pull more items from the stream
-        BoltResponseRecorder recorder = new BoltResponseRecorder();
         verifyKillsConnection( () -> machine.discardAll( recorder ) );
 
         // Then
@@ -278,13 +286,15 @@ public class BoltConnectionIT
         // Given
         BoltStateMachine machine = env.newMachine( "<test>" );
         machine.init( USER_AGENT, emptyMap(), null );
+        BoltResponseRecorder recorder = new BoltResponseRecorder();
 
         // And Given that I've ran and pulled one stream
-        machine.run( "RETURN 1", EMPTY_PARAMS, nullResponseHandler() );
-        machine.discardAll( nullResponseHandler() );
+        machine.run( "RETURN 1", EMPTY_PARAMS, recorder );
+        assertThat( recorder.nextResponse(), succeeded() );
+        machine.discardAll( recorder );
+        assertThat( recorder.nextResponse(), succeeded() );
 
         // When I attempt to pull more items from the stream
-        BoltResponseRecorder recorder = new BoltResponseRecorder();
         verifyKillsConnection( () -> machine.discardAll( recorder ) );
 
         // Then
@@ -297,13 +307,15 @@ public class BoltConnectionIT
         // Given
         BoltStateMachine machine = env.newMachine( "<test>" );
         machine.init( USER_AGENT, emptyMap(), null );
+        BoltResponseRecorder recorder = new BoltResponseRecorder();
 
         // And Given that I've ran and pulled one stream
-        machine.run( "RETURN 1", EMPTY_PARAMS, nullResponseHandler() );
-        machine.discardAll( nullResponseHandler() );
+        machine.run( "RETURN 1", EMPTY_PARAMS, recorder );
+        assertThat( recorder.nextResponse(), succeeded() );
+        machine.discardAll( recorder );
+        assertThat( recorder.nextResponse(), succeeded() );
 
         // When I attempt to pull more items from the stream
-        BoltResponseRecorder recorder = new BoltResponseRecorder();
         verifyKillsConnection( () -> machine.pullAll( recorder ) );
 
         // Then
