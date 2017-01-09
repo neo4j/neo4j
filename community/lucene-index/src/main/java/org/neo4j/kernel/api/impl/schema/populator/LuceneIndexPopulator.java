@@ -23,7 +23,6 @@ import org.apache.lucene.document.Document;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.Iterator;
 
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -65,11 +64,9 @@ public abstract class LuceneIndexPopulator implements IndexPopulator
     {
         // Lucene documents stored in a ThreadLocal and reused so we can't create an eager collection of documents here
         // That is why we create a lazy Iterator and then Iterable
-        Iterator<Document> documents = updates.stream()
+        writer.addDocuments( updates.size(), () -> updates.stream()
                 .map( LuceneIndexPopulator::updateAsDocument )
-                .iterator();
-
-        writer.addDocuments( () -> documents );
+                .iterator() );
     }
 
     @Override
