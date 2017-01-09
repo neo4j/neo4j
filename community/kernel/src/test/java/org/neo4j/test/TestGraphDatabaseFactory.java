@@ -264,8 +264,6 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
                         graphDatabaseFacade );
             }
 
-
-
             @Override
             protected FileSystemAbstraction createFileSystemAbstraction()
             {
