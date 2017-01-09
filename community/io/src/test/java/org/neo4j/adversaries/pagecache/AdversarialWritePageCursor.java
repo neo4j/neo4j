@@ -27,6 +27,7 @@ import java.util.Objects;
 import org.neo4j.adversaries.Adversary;
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.impl.DelegatingPageCursor;
 
 /**
  * A write {@linkplain PageCursor page cursor} that wraps another page cursor and an {@linkplain Adversary adversary}
@@ -39,15 +40,14 @@ import org.neo4j.io.pagecache.PageCursor;
  * See {@link org.neo4j.io.pagecache.PagedFile#PF_SHARED_WRITE_LOCK} flag.
  */
 @SuppressWarnings( "unchecked" )
-class AdversarialWritePageCursor extends PageCursor
+class AdversarialWritePageCursor extends DelegatingPageCursor
 {
-    private final PageCursor delegate;
     private final Adversary adversary;
     private AdversarialWritePageCursor linkedCursor;
 
     AdversarialWritePageCursor( PageCursor delegate, Adversary adversary )
     {
-        this.delegate = Objects.requireNonNull( delegate );
+        super( delegate );
         this.adversary = Objects.requireNonNull( adversary );
     }
 
@@ -264,6 +264,10 @@ class AdversarialWritePageCursor extends PageCursor
     public int copyTo( int sourceOffset, PageCursor targetCursor, int targetOffset, int lengthInBytes )
     {
         adversary.injectFailure( IndexOutOfBoundsException.class );
+        while ( targetCursor instanceof DelegatingPageCursor )
+        {
+            targetCursor = ((DelegatingPageCursor) targetCursor).unwrap();
+        }
         return delegate.copyTo( sourceOffset, targetCursor, targetOffset, lengthInBytes );
     }
 
