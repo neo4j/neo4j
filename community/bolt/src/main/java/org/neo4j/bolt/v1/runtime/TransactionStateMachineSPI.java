@@ -24,7 +24,6 @@ import java.time.Duration;
 import java.util.Map;
 
 import org.neo4j.bolt.v1.runtime.TransactionStateMachine.BoltResultHandle;
-import org.neo4j.bolt.v1.runtime.cypher.CypherAdapterStream;
 import org.neo4j.bolt.v1.runtime.spi.BoltResult;
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.graphdb.Result;

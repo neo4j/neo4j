@@ -42,8 +42,8 @@ import org.neo4j.kernel.api.security.SecurityContext
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.impl.coreapi.{InternalTransaction, PropertyContainerLocker}
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
-import org.neo4j.test.TestGraphDatabaseFactory
 import org.neo4j.kernel.impl.query.clientsession.ClientSessionInfo
+import org.neo4j.test.TestGraphDatabaseFactory
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer

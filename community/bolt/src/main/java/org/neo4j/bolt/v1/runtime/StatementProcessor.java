@@ -17,9 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v1.runtime.cypher;
+package org.neo4j.bolt.v1.runtime;
 
-import org.neo4j.bolt.v1.runtime.BoltQuerySource;
 import org.neo4j.bolt.v1.runtime.spi.BoltResult;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.kernel.api.exceptions.KernelException;
@@ -39,8 +38,5 @@ public interface StatementProcessor
 
     boolean hasTransaction();
 
-    // NOTE: if this interface moved to the parent package, BoltQuerySource could be package-private
-    // in fact, this entire `cypher` package does not really seem to server a special purpose, and could be merged
-    // with its parent package.
     void setQuerySource( BoltQuerySource querySource );
 }

@@ -19,7 +19,7 @@
  */
 package org.neo4j.bolt.v1.runtime;
 
-public class BoltQuerySource
+class BoltQuerySource
 {
     final String principalName;
     final String clientName;
