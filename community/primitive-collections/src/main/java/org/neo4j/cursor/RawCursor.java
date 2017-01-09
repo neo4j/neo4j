@@ -86,4 +86,33 @@ public interface RawCursor<T, EXCEPTION extends Exception> extends Supplier<T>, 
             close();
         }
     }
+
+    default boolean exists() throws EXCEPTION
+    {
+        try
+        {
+            return next();
+        }
+        finally
+        {
+            close();
+        }
+    }
+
+    default int count() throws EXCEPTION
+    {
+        try
+        {
+            int count = 0;
+            while( next() )
+            {
+                count++;
+            }
+            return count;
+        }
+        finally
+        {
+            close();
+        }
+    }
 }

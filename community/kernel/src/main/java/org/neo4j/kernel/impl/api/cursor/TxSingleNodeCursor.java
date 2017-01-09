@@ -139,10 +139,7 @@ public class TxSingleNodeCursor extends EntityItemHelper implements Cursor<NodeI
     @Override
     public boolean hasLabel( int labelId )
     {
-        try ( Cursor<LabelItem> labelCursor = label( labelId ) )
-        {
-            return labelCursor.next();
-        }
+        return label( labelId ).exists();
     }
 
     @Override
