@@ -68,9 +68,8 @@ class DegreeItemCursor implements Cursor<DegreeItem>, DegreeItem
     {
         if ( keys == null )
         {
-            throw new IllegalStateException();
+            throw new IllegalStateException( "No next item found" );
         }
-
         return this;
     }
 
