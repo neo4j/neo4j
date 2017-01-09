@@ -135,20 +135,32 @@ class SimpleLongLayout extends Layout.Adapter<MutableLong,MutableLong>
     public void readMetaData( PageCursor cursor )
     {
         String name = readString( cursor );
+        if ( name == null )
+        {
+            return;
+        }
+
         if ( customNameAsMetaData != null )
         {
             if ( !name.equals( customNameAsMetaData ) )
             {
-                throw new MetadataMismatchException( "Name '" + name +
+                cursor.setCursorException( "Name '" + name +
                         "' doesn't match expected '" + customNameAsMetaData + "'" );
+                return;
             }
         }
         customNameAsMetaData = name;
     }
 
-    private String readString( PageCursor cursor )
+    private static String readString( PageCursor cursor )
     {
         int length = cursor.getInt();
+        if ( length < 0 || length >= cursor.getCurrentPageSize() )
+        {
+            cursor.setCursorException( "Unexpected length of string " + length );
+            return null;
+        }
+
         byte[] bytes = new byte[length];
         cursor.getBytes( bytes );
         return new String( bytes, UTF_8 );

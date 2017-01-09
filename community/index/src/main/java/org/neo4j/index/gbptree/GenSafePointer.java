@@ -97,23 +97,22 @@ class GenSafePointer
         }
     }
 
-    public static long readGeneration( PageCursor cursor )
+    static long readGeneration( PageCursor cursor )
     {
         return getUnsignedInt( cursor );
     }
 
-    public static long readPointer( PageCursor cursor )
+    static long readPointer( PageCursor cursor )
     {
-        long result = get6BLong( cursor );
-        return result;
+        return get6BLong( cursor );
     }
 
-    public static short readChecksum( PageCursor cursor )
+    static short readChecksum( PageCursor cursor )
     {
         return cursor.getShort();
     }
 
-    public static boolean verifyChecksum( PageCursor cursor, long generation, long pointer )
+    static boolean verifyChecksum( PageCursor cursor, long generation, long pointer )
     {
         short checksum = cursor.getShort();
         return checksum == checksumOf( generation, pointer );

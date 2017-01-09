@@ -39,9 +39,7 @@ import org.neo4j.index.IndexWriter;
 import org.neo4j.index.ValueMerger;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.PageSwapperFactory;
-import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
-import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
+import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
@@ -49,23 +47,25 @@ import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.rules.RuleChain.outerRule;
 
 import static org.neo4j.index.gbptree.GBPTree.NO_MONITOR;
 import static org.neo4j.index.gbptree.ThrowingRunnable.throwing;
 import static org.neo4j.io.pagecache.IOLimiter.unlimited;
-import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
+import static org.neo4j.test.rule.PageCacheRule.config;
 
 public class GBPTreeRecoveryTest
 {
     private static final int PAGE_SIZE = 256;
     private static final Action CHECKPOINT = new CheckpointAction();
 
-    private final RandomRule random = new RandomRule();
     private final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private final TestDirectory directory = TestDirectory.testDirectory( getClass(), fs.get() );
+    private final PageCacheRule pageCacheRule = new PageCacheRule( config().withPageSize( PAGE_SIZE ) );
+    private final RandomRule random = new RandomRule();
 
     @Rule
-    public RuleChain ruleChain = RuleChain.outerRule( random ).around( fs ).around( directory );
+    public final RuleChain rules = outerRule( fs ).around( directory ).around( pageCacheRule ).around( random );
 
     private final MutableLong key = new MutableLong();
     private final MutableLong value = new MutableLong();
@@ -348,9 +348,7 @@ public class GBPTreeRecoveryTest
 
     private PageCache createPageCache()
     {
-        PageSwapperFactory swapper = new SingleFilePageSwapperFactory();
-        swapper.setFileSystemAbstraction( fs.get() );
-        return new MuninnPageCache( swapper, 4_000, PAGE_SIZE, NULL );
+        return pageCacheRule.getPageCache( fs.get() );
     }
 
     interface Action

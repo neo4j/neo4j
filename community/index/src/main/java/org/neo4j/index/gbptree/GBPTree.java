@@ -39,6 +39,7 @@ import org.neo4j.index.Index;
 import org.neo4j.index.IndexWriter;
 import org.neo4j.index.ValueMerger;
 import org.neo4j.index.ValueMergers;
+import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
@@ -439,7 +440,15 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>
             }
             while ( metaCursor.shouldRetry() );
             checkOutOfBounds( metaCursor );
+            metaCursor.checkAndClearCursorException();
         }
+        catch ( CursorException e )
+        {
+            throw new MetadataMismatchException( format(
+                    "Tried to open %s, but caught an error while reading meta data. " +
+                            "File is expected to be corrupt, try to rebuild.", indexFile ), e );
+        }
+
         if ( formatVersion != FORMAT_VERSION )
         {
             throw new MetadataMismatchException( "Tried to open %s with a different format version than " +

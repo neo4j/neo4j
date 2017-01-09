@@ -128,9 +128,10 @@ public interface Layout<KEY, VALUE> extends Comparator<KEY>
      * Reads meta data specific to this layout instance from {@code cursor} at its current offset.
      * The read meta data must also be verified against meta data provided in constructor of this Layout.
      * Constructor-provided meta data can be {@code null} to skip this verification.
+     * if read meta data doesn't match with the meta data provided in constructor
+     * {@link PageCursor#setCursorException(String)} should be called with appropriate error message.
      *
      * @param cursor {@link PageCursor} to read from, at its current offset.
-     * @throws MetadataMismatchException if read meta data doesn't match with the meta data provided in constructor.
      */
     void readMetaData( PageCursor cursor );
 

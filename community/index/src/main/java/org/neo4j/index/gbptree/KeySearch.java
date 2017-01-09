@@ -28,8 +28,13 @@ import org.neo4j.io.pagecache.PageCursor;
  */
 class KeySearch
 {
-    private static final int POSITION_MASK = 0x7FFFFFFF;
-    private static final int HIT_MASK = 0x80000000;
+    private static final int POSITION_MASK   = 0x3FFFFFFF;
+    private static final int HIT_FLAG        = 0x80000000;
+    private static final int NO_HIT_FLAG     = 0x00000000;
+    private static final int HIT_MASK        = HIT_FLAG | NO_HIT_FLAG;
+    private static final int SUCCESS_FLAG    = 0x00000000;
+    private static final int NO_SUCCESS_FLAG = 0x40000000;
+    private static final int SUCCESS_MASK    = SUCCESS_FLAG | NO_SUCCESS_FLAG;
 
     /**
      * Search for left most pos such that keyAtPos obeys key <= keyAtPos.
@@ -106,8 +111,7 @@ class KeySearch
             }
             if ( lower != higher )
             {
-                throw new TreeInconsistencyException( "The binary search terminated in an unexpected way. " +
-                        "Expected lower and higher to be equal but was " + "lower=" + lower + ", higher=" + higher );
+                return NO_SUCCESS_FLAG;
             }
             pos = lower;
 
@@ -118,7 +122,7 @@ class KeySearch
 
     private static int searchResult( int pos, boolean hit )
     {
-        return (pos & POSITION_MASK) | ((hit ? 1 : 0) << 31);
+        return (pos & POSITION_MASK) | (hit ? HIT_FLAG : NO_HIT_FLAG);
     }
 
     /**
@@ -141,6 +145,19 @@ class KeySearch
      */
     static boolean isHit( int searchResult )
     {
-        return (searchResult & HIT_MASK) != 0;
+        return (searchResult & HIT_MASK) == HIT_FLAG;
+    }
+
+    static boolean isSuccess( int searchResult )
+    {
+        return (searchResult & SUCCESS_MASK) == SUCCESS_FLAG;
+    }
+
+    static void assertSuccess( int searchResult )
+    {
+        if ( !isSuccess( searchResult ) )
+        {
+            throw new TreeInconsistencyException( "Search terminated in unexpected way" );
+        }
     }
 }
