@@ -23,9 +23,9 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.graphdb.factory.EnterpriseGraphDatabaseFactory;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
+import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.Matchers.instanceOf;
@@ -56,7 +56,7 @@ public class StartupConstraintSemanticsTest
         // when
         try
         {
-            graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( dir.graphDbDir() );
+            graphDb = new TestGraphDatabaseFactory().newEmbeddedDatabase( dir.graphDbDir() );
             fail( "should have failed to start!" );
         }
         // then

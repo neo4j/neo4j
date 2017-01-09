@@ -25,7 +25,7 @@ import java.io.File;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.stresstests.transaction.checkpoint.tracers.TimerTransactionTracer;
 import org.neo4j.kernel.stresstests.transaction.checkpoint.workload.Workload;
+import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
 
@@ -81,7 +82,8 @@ public class CheckPointingLogRotationStressTesting
         }
 
         System.out.println( "2/6\tStarting database..." );
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir )
+        GraphDatabaseBuilder builder = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir );
+        GraphDatabaseService db = builder
                 .setConfig( GraphDatabaseSettings.pagecache_memory, pageCacheMemory )
                 .setConfig( GraphDatabaseSettings.mapped_memory_page_size, pageSize )
                 .setConfig( GraphDatabaseSettings.keep_logical_logs, Settings.FALSE )

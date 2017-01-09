@@ -53,6 +53,7 @@ import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.kernel.configuration.HttpConnector;
@@ -102,7 +103,7 @@ public abstract class AbstractNeoServer implements NeoServer
     private static final long MINIMUM_TIMEOUT = 1000L;
     /**
      * We add a second to the timeout if the user configures a 1-second timeout.
-     *
+     * <p>
      * This ensures the expiry time displayed to the user is always at least 1 second, even after it is rounded down.
      */
     private static final long ROUNDING_SECOND = 1000L;
@@ -137,6 +138,7 @@ public abstract class AbstractNeoServer implements NeoServer
     private TransactionHandleRegistry transactionRegistry;
 
     private boolean initialized = false;
+    private LifecycleAdapter serverComponents;
 
     protected abstract Iterable<ServerModule> createServerModules();
 
@@ -176,7 +178,8 @@ public abstract class AbstractNeoServer implements NeoServer
             return;
         }
 
-        this.database = life.add( dependencyResolver.satisfyDependency(dbFactory.newDatabase( config, dependencies)) );
+        this.database =
+                life.add( dependencyResolver.satisfyDependency( dbFactory.newDatabase( config, dependencies ) ) );
 
         this.authManagerSupplier = dependencyResolver.provideDependency( AuthManager.class );
         this.userManagerSupplier = dependencyResolver.provideDependency( UserManagerSupplier.class );
@@ -190,6 +193,9 @@ public abstract class AbstractNeoServer implements NeoServer
             registerModule( moduleClass );
         }
 
+        serverComponents = new ServerComponentsLifecycleAdapter();
+        life.add( serverComponents );
+
         this.initialized = true;
     }
 
@@ -201,26 +207,6 @@ public abstract class AbstractNeoServer implements NeoServer
         {
             life.start();
 
-            DiagnosticsManager diagnosticsManager = resolveDependency(DiagnosticsManager.class);
-
-            Log diagnosticsLog = diagnosticsManager.getTargetLog();
-            diagnosticsLog.info( "--- SERVER STARTED START ---" );
-
-            databaseActions = createDatabaseActions();
-
-            transactionFacade = createTransactionalActions();
-
-            cypherExecutor = new CypherExecutor( database, logProvider );
-
-            configureWebServer();
-
-            cypherExecutor.start();
-
-            startModules();
-
-            startWebServer();
-
-            diagnosticsLog.info( "--- SERVER STARTED END ---" );
         }
         catch ( Throwable t )
         {
@@ -249,7 +235,7 @@ public abstract class AbstractNeoServer implements NeoServer
         final Clock clock = Clocks.systemClock();
 
         transactionRegistry =
-            new TransactionHandleRegistry( clock, timeoutMillis, logProvider );
+                new TransactionHandleRegistry( clock, timeoutMillis, logProvider );
 
         // ensure that this is > 0
         long runEvery = round( timeoutMillis / 2.0 );
@@ -263,7 +249,8 @@ public abstract class AbstractNeoServer implements NeoServer
         return new TransactionFacade(
                 new TransitionalPeriodTransactionMessContainer( database.getGraph() ),
                 dependencyResolver.resolveDependency( QueryExecutionEngine.class ),
-                dependencyResolver.resolveDependency( GraphDatabaseQueryService.class ), transactionRegistry, logProvider
+                dependencyResolver.resolveDependency( GraphDatabaseQueryService.class ), transactionRegistry,
+                logProvider
         );
     }
 
@@ -336,7 +323,8 @@ public abstract class AbstractNeoServer implements NeoServer
         }
     }
 
-    private void setUpHttpLogging() throws IOException {
+    private void setUpHttpLogging() throws IOException
+    {
         if ( !getConfig().get( http_logging_enabled ) )
         {
             return;
@@ -380,7 +368,8 @@ public abstract class AbstractNeoServer implements NeoServer
                     //noinspection deprecation
                     log.info( "No SSL certificate found, generating a self-signed certificate.." );
                     Certificates certFactory = new Certificates();
-                    certFactory.createSelfSignedCertificate( certificatePath, privateKeyPath, httpListenAddress.getHostname() );
+                    certFactory.createSelfSignedCertificate( certificatePath, privateKeyPath,
+                            httpListenAddress.getHostname() );
                 }
 
                 // Make sure both files were there, or were generated
@@ -388,7 +377,8 @@ public abstract class AbstractNeoServer implements NeoServer
                 {
                     throw new ServerStartupException(
                             String.format(
-                                    "TLS private key found, but missing certificate at '%s'. Cannot start server without certificate.",
+                                    "TLS private key found, but missing certificate at '%s'. Cannot start server " +
+                                    "without certificate.",
 
                                     certificatePath ) );
                 }
@@ -422,12 +412,7 @@ public abstract class AbstractNeoServer implements NeoServer
     @Override
     public void stop()
     {
-        // TODO: All components should be moved over to the LifeSupport instance, life, in here.
-        new RunCarefully(
-                this::stopWebServer,
-                this::stopModules,
-                life::stop
-        ).run();
+        life.stop();
     }
 
     private void stopWebServer()
@@ -526,7 +511,7 @@ public abstract class AbstractNeoServer implements NeoServer
         return false;
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     private <T extends ServerModule> T getModule( Class<T> clazz )
     {
         for ( ServerModule sm : serverModules )
@@ -554,4 +539,38 @@ public abstract class AbstractNeoServer implements NeoServer
             return db.getGraph().getDependencyResolver();
         }
     } );
+
+    private class ServerComponentsLifecycleAdapter extends LifecycleAdapter
+    {
+        @Override
+        public void start() throws Throwable
+        {
+            DiagnosticsManager diagnosticsManager = resolveDependency( DiagnosticsManager.class );
+            Log diagnosticsLog = diagnosticsManager.getTargetLog();
+            diagnosticsLog.info( "--- SERVER STARTED START ---" );
+            databaseActions = createDatabaseActions();
+
+            transactionFacade = createTransactionalActions();
+
+            cypherExecutor = new CypherExecutor( database, logProvider );
+
+            configureWebServer();
+
+            cypherExecutor.start();
+
+            startModules();
+
+            startWebServer();
+
+            diagnosticsLog.info( "--- SERVER STARTED END ---" );
+        }
+
+        @Override
+        public void stop()
+                throws Throwable
+        {
+            stopWebServer();
+            stopModules();
+        }
+    }
 }

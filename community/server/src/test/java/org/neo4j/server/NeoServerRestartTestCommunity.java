@@ -17,27 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.shell;
+package org.neo4j.server;
 
-import java.io.File;
+import java.io.IOException;
 
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.server.helpers.CommunityServerBuilder;
 
-public class StartDbWithShell
+public class NeoServerRestartTestCommunity extends NeoServerRestartTest
 {
-    public static void main( String[] args ) throws Exception
+    protected NeoServer getNeoServer( String customPageSwapperName ) throws IOException
     {
-        File path = args.length > 0 ? new File( args[0] ) : new File( "target/test-data/shell-db" );
-        GraphDatabaseService db = new GraphDatabaseFactory().
-            newEmbeddedDatabaseBuilder( path ).
-            setConfig( ShellSettings.remote_shell_enabled, Settings.TRUE).
-            setConfig( GraphDatabaseSettings.allow_store_upgrade, Settings.TRUE).
-            newGraphDatabase();
-        System.out.println( "db " + path + " started, ENTER to quit" );
-        System.in.read();
-        db.shutdown();
+        CommunityServerBuilder builder = CommunityServerBuilder.server().withProperty( GraphDatabaseSettings
+                .pagecache_swapper.name(), customPageSwapperName );
+        return builder.build();
     }
 }

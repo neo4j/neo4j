@@ -17,16 +17,22 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.test.rule;
+package org.neo4j.server.enterprise;
 
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
+import java.io.IOException;
 
-public class EnterpriseDatabaseRule extends EmbeddedDatabaseRule
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.server.NeoServer;
+import org.neo4j.server.NeoServerRestartTest;
+import org.neo4j.server.enterprise.helpers.EnterpriseServerBuilder;
+import org.neo4j.server.helpers.CommunityServerBuilder;
+
+public class NeoServerRestartTestEnterprise extends NeoServerRestartTest
 {
-    @Override
-    protected GraphDatabaseFactory newFactory()
+    protected NeoServer getNeoServer( String customPageSwapperName) throws IOException
     {
-        return new TestEnterpriseGraphDatabaseFactory();
+        CommunityServerBuilder builder = EnterpriseServerBuilder.server().withProperty( GraphDatabaseSettings
+                .pagecache_swapper.name(), customPageSwapperName );
+        return builder.build();
     }
 }

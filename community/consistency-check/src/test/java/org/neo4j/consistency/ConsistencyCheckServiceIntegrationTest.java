@@ -41,7 +41,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -208,7 +207,7 @@ public class ConsistencyCheckServiceIntegrationTest
     private GraphDatabaseService getGraphDatabaseService()
     {
         GraphDatabaseBuilder builder =
-                new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.absolutePath() );
+                new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.absolutePath() );
         builder.setConfig( settings(  ) );
 
         return builder.newGraphDatabase();

@@ -22,13 +22,16 @@ package org.neo4j.test;
 import java.io.File;
 import java.util.Map;
 
+import org.neo4j.graphdb.EnterpriseGraphDatabase;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
+import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.enterprise.EnterpriseEditionModule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
+import org.neo4j.kernel.impl.factory.Edition;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.PlatformModule;
@@ -41,6 +44,16 @@ import org.neo4j.logging.LogProvider;
  */
 public class TestEnterpriseGraphDatabaseFactory extends TestGraphDatabaseFactory
 {
+    @Override
+    protected GraphDatabaseBuilder.DatabaseCreator createDatabaseCreator( File storeDir,
+                                                                          GraphDatabaseFactoryState state )
+    {
+        return config -> {
+            config.put( "unsupported.dbms.ephemeral", "false" );
+            return new EnterpriseGraphDatabase( storeDir, config, state.databaseDependencies() );
+        };
+    }
+
     @Override
     protected GraphDatabaseBuilder.DatabaseCreator createImpermanentDatabaseCreator( final File storeDir,
             final TestGraphDatabaseFactoryState state )
@@ -111,5 +124,11 @@ public class TestEnterpriseGraphDatabaseFactory extends TestGraphDatabaseFactory
                         GraphDatabaseDependencies.newDependencies( state.databaseDependencies() ) );
             }
         };
+    }
+
+    @Override
+    public String getEdition()
+    {
+        return Edition.enterprise.toString();
     }
 }

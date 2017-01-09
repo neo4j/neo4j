@@ -43,7 +43,6 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
@@ -86,6 +85,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.DbRepresentation;
+import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.SuppressOutput;
@@ -105,6 +105,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.kernel.impl.storemigration.StoreFile.COUNTS_STORE_LEFT;
 import static org.neo4j.kernel.impl.storemigration.StoreFile.COUNTS_STORE_RIGHT;
 
@@ -467,7 +468,7 @@ public class BackupServiceIT
 
         // it should be possible to at this point to start db based on our backup and create couple of properties
         // their ids should not clash with already existing
-        GraphDatabaseService backupBasedDatabase = new GraphDatabaseFactory()
+        GraphDatabaseService backupBasedDatabase = new TestGraphDatabaseFactory()
                 .newEmbeddedDatabase( backupDir.getAbsoluteFile() );
         try
         {

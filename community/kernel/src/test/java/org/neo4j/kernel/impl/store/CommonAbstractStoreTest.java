@@ -166,7 +166,7 @@ public class CommonAbstractStoreTest
     public void failStoreInitializationWhenHeaderRecordCantBeRead() throws IOException
     {
         File storeFile = dir.file( "a" );
-        PageCache pageCache = Mockito.mock( PageCache.class );
+        PageCache pageCache = mock( PageCache.class );
         PagedFile pagedFile = mock( PagedFile.class );
         PageCursor pageCursor = mock( PageCursor.class );
 

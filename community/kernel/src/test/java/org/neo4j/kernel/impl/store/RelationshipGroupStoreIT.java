@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.store;
 
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
@@ -30,7 +31,9 @@ import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngin
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
+
 import static org.junit.Assert.assertEquals;
+
 import static org.neo4j.helpers.collection.Iterables.count;
 
 public class RelationshipGroupStoreIT

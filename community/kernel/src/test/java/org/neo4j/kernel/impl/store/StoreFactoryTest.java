@@ -152,4 +152,26 @@ public class StoreFactoryTest
         neoStores.close();
         assertEquals( 0, fsRule.get().listFiles( storeDir ).length );
     }
+
+    @Test
+    public void shouldHandleStoreConsistingOfOneEmptyFile() throws Exception
+    {
+        StoreFactory storeFactory = storeFactory( Config.empty() );
+        FileSystemAbstraction fs = fsRule.get();
+        fs.create( new File( storeDir, "neostore.nodestore.db.labels" ) );
+        storeFactory.openAllNeoStores( true ).close();
+    }
+
+    @Test
+    public void shouldCompleteInitializationOfStoresWithIncompleteHeaders() throws Exception
+    {
+        StoreFactory storeFactory = storeFactory( Config.empty() );
+        storeFactory.openAllNeoStores( true ).close();
+        FileSystemAbstraction fs = fsRule.get();
+        for ( File f : fs.listFiles( storeDir ) )
+        {
+            fs.truncate( f, 0 );
+        }
+        storeFactory.openAllNeoStores( true ).close();
+    }
 }

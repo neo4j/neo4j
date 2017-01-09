@@ -50,7 +50,7 @@ public abstract class ServerBootstrapper implements Bootstrapper
     public static final int WEB_SERVER_STARTUP_ERROR_CODE = 1;
     public static final int GRAPH_DATABASE_STARTUP_ERROR_CODE = 2;
 
-    private NeoServer server;
+    private volatile NeoServer server;
     private Thread shutdownHook;
     private GraphDatabaseDependencies dependencies = GraphDatabaseDependencies.newDependencies();
     // in case we have errors loading/validating the configuration log to stdout
@@ -73,6 +73,7 @@ public abstract class ServerBootstrapper implements Bootstrapper
     @SafeVarargs
     public final int start( File homeDir, Optional<File> configFile, Pair<String, String>... configOverrides )
     {
+        addShutdownHook();
         try
         {
             Config config = createConfig( homeDir, configFile, configOverrides );
@@ -92,8 +93,6 @@ public abstract class ServerBootstrapper implements Bootstrapper
 
             server = createNeoServer( config, dependencies, userLogProvider );
             server.start();
-
-            addShutdownHook();
 
             return OK;
         }
