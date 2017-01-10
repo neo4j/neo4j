@@ -144,7 +144,7 @@ public class ListQueriesProcedureTest
         // then
         assertThat( data, hasKey( "requestScheme" ) );
         assertThat( data, hasKey( "clientAddress" ) );
-        assertThat( data, hasKey( "requestURI" ) );
+        assertThat( data, hasKey( "requestUri" ) );
     }
 
     private Map<String,Object> getQueryListing( String query )

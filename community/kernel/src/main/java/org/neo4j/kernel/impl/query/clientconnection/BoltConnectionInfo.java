@@ -22,6 +22,9 @@ package org.neo4j.kernel.impl.query.clientconnection;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 
+/**
+ * @see ClientConnectionInfo Parent class for documentation and tests.
+ */
 public class BoltConnectionInfo extends ClientConnectionInfo
 {
     private final String principalName;

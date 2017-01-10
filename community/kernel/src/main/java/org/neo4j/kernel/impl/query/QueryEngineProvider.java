@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.query;
 
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
@@ -59,10 +58,5 @@ public abstract class QueryEngineProvider extends Service
     public static QueryExecutionEngine noEngine()
     {
         return NoQueryEngine.INSTANCE;
-    }
-
-    public static ClientConnectionInfo describe()
-    {
-        return ClientConnectionInfo.EMBEDDED_CONNECTION;
     }
 }

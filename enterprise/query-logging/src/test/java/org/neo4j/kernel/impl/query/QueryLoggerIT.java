@@ -49,6 +49,7 @@ import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.server.security.enterprise.auth.EmbeddedInteraction;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
@@ -226,7 +227,7 @@ public class QueryLoggerIT
 
     private String clientConnectionInfo()
     {
-        return QueryEngineProvider.describe().withUsername( AUTH_DISABLED.username() ).asConnectionDetails();
+        return ClientConnectionInfo.EMBEDDED_CONNECTION.withUsername( AUTH_DISABLED.username() ).asConnectionDetails();
     }
 
     @Test

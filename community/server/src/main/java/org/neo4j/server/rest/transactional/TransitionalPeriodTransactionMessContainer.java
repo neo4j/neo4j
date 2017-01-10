@@ -33,7 +33,7 @@ import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
 import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.kernel.impl.query.TransactionalContextFactory;
-import org.neo4j.server.rest.web.ServerQuerySession;
+import org.neo4j.server.rest.web.HttpConnectionInfoFactory;
 
 public class TransitionalPeriodTransactionMessContainer
 {
@@ -68,7 +68,7 @@ public class TransitionalPeriodTransactionMessContainer
             Map<String, Object> queryParameters)
     {
         TransactionalContextFactory contextFactory = Neo4jTransactionalContextFactory.create( service, locker );
-        ClientConnectionInfo clientConnection = ServerQuerySession.describe( request );
+        ClientConnectionInfo clientConnection = HttpConnectionInfoFactory.create( request );
         InternalTransaction transaction = service.beginTransaction( type, securityContext );
         return contextFactory.newContext( clientConnection, transaction, query, queryParameters );
     }

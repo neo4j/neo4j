@@ -21,6 +21,9 @@ package org.neo4j.kernel.impl.query.clientconnection;
 
 import java.io.Serializable;
 
+/**
+ * @see ClientConnectionInfo Parent class for documentation and tests.
+ */
 public class ShellConnectionInfo extends ClientConnectionInfo
 {
     private final Serializable id;

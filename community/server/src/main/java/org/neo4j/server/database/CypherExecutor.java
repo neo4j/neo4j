@@ -36,7 +36,7 @@ import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.kernel.impl.query.TransactionalContextFactory;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.server.rest.web.ServerQuerySession;
+import org.neo4j.server.rest.web.HttpConnectionInfoFactory;
 
 import org.neo4j.logging.Log;
 
@@ -84,7 +84,7 @@ public class CypherExecutor extends LifecycleAdapter
             HttpServletRequest request )
     {
         InternalTransaction tx = getInternalTransaction( request );
-        return contextFactory.newContext( ServerQuerySession.describe( request ), tx, query, parameters );
+        return contextFactory.newContext( HttpConnectionInfoFactory.create( request ), tx, query, parameters );
     }
 
     private InternalTransaction getInternalTransaction( HttpServletRequest request )

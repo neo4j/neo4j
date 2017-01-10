@@ -19,6 +19,11 @@
  */
 package org.neo4j.kernel.impl.query.clientconnection;
 
+/**
+ * This is implemented as an abstract class in order to support different formatting for {@link #asConnectionDetails()},
+ * when this method is no longer needed, and we move to a standardized format across all types of connections, we can
+ * turn this class into a simpler value type that just holds the fields that are actually used.
+ */
 public abstract class ClientConnectionInfo
 {
     /**
@@ -31,19 +36,42 @@ public abstract class ClientConnectionInfo
         return new ConnectionInfoWithUsername( this, username );
     }
 
+    /**
+     * This method provides the custom format for each type of connection.
+     * <p>
+     * Preferably we would not need to have a custom format for each type of connection, but this is provided for
+     * backwards compatibility reasons.
+     *
+     * @return a custom log-line format describing this type of connection.
+     */
     @Deprecated
     public abstract String asConnectionDetails();
 
+    /**
+     * This method is overridden in the subclasses where this information is available.
+     *
+     * @return the scheme used for connecting to the server, or {@code null} if no scheme is available.
+     */
     public String requestScheme()
     {
         return null;
     }
 
+    /**
+     * This method is overridden in the subclasses where this information is available.
+     *
+     * @return the address of the client. or {@code null} if the address is not available.
+     */
     public String clientAddress()
     {
         return null;
     }
 
+    /**
+     * This method is overridden in the subclasses where this information is available.
+     *
+     * @return the URI of this server that the client connected to, or {@code null} if the URI is not available.
+     */
     public String requestURI()
     {
         return null;
@@ -58,6 +86,9 @@ public abstract class ClientConnectionInfo
         }
     };
 
+    /**
+     * Should be removed along with {@link #withUsername(String)} and {@link #asConnectionDetails()}.
+     */
     @Deprecated
     private static class ConnectionInfoWithUsername extends ClientConnectionInfo
     {

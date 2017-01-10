@@ -21,7 +21,6 @@ package org.neo4j.bolt.v1.runtime;
 
 import org.junit.Test;
 
-import org.neo4j.bolt.v1.runtime.CypherAdapterStream;
 import org.neo4j.bolt.v1.runtime.spi.Record;
 import org.neo4j.bolt.v1.runtime.spi.BoltResult;
 import org.neo4j.graphdb.ExecutionPlanDescription;

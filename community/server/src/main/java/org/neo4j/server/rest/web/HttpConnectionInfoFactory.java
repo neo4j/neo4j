@@ -27,9 +27,9 @@ import org.neo4j.kernel.impl.query.clientconnection.HttpConnectionInfo;
 
 import static javax.ws.rs.core.HttpHeaders.USER_AGENT;
 
-public class ServerQuerySession
+public class HttpConnectionInfoFactory
 {
-    public static ClientConnectionInfo describe( HttpServletRequest request )
+    public static ClientConnectionInfo create( HttpServletRequest request )
     {
         return new HttpConnectionInfo(
                 request.getScheme(),
