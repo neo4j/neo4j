@@ -21,12 +21,6 @@ package org.neo4j.index.internal.gbptree;
 
 import org.junit.Test;
 
-import org.neo4j.index.internal.gbptree.GenSafePointer;
-import org.neo4j.index.internal.gbptree.GenSafePointerPair;
-import org.neo4j.index.internal.gbptree.IdSpace;
-import org.neo4j.index.internal.gbptree.PointerChecking;
-import org.neo4j.index.internal.gbptree.TreeInconsistencyException;
-import org.neo4j.index.internal.gbptree.TreeNode;
 import org.neo4j.io.pagecache.PageCursor;
 
 import static org.junit.Assert.fail;

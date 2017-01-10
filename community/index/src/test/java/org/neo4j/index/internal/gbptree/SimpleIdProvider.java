@@ -24,9 +24,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import java.util.LinkedList;
 import java.util.Queue;
 
-import org.neo4j.index.internal.gbptree.IdProvider;
-import org.neo4j.index.internal.gbptree.IdSpace;
-
 class SimpleIdProvider implements IdProvider
 {
     private final Queue<Pair<Long,Long>> releasedIds = new LinkedList<>();

@@ -21,9 +21,8 @@ package org.neo4j.index.internal.gbptree;
 
 import org.junit.Test;
 
-import org.neo4j.index.internal.gbptree.Layout;
-
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.fail;
 
 public class LayoutTest
 {

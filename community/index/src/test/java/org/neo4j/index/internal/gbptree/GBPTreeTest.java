@@ -36,12 +36,6 @@ import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.cursor.RawCursor;
-import org.neo4j.index.internal.gbptree.GBPTree;
-import org.neo4j.index.internal.gbptree.Hit;
-import org.neo4j.index.internal.gbptree.IdSpace;
-import org.neo4j.index.internal.gbptree.Layout;
-import org.neo4j.index.internal.gbptree.MetadataMismatchException;
-import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.index.internal.gbptree.GBPTree.Monitor;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
@@ -61,8 +55,8 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.rules.RuleChain.outerRule;
 
-import static org.neo4j.index.internal.gbptree.ThrowingRunnable.throwing;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
+import static org.neo4j.index.internal.gbptree.ThrowingRunnable.throwing;
 import static org.neo4j.test.rule.PageCacheRule.config;
 
 public class GBPTreeTest

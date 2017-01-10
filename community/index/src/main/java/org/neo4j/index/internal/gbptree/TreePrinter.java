@@ -21,6 +21,7 @@ package org.neo4j.index.internal.gbptree;
 
 import java.io.IOException;
 import java.io.PrintStream;
+
 import org.neo4j.io.pagecache.PageCursor;
 
 import static org.neo4j.index.internal.gbptree.ConsistencyChecker.assertOnTreeNode;

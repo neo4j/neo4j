@@ -33,9 +33,6 @@ import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 import org.neo4j.cursor.RawCursor;
-import org.neo4j.index.internal.gbptree.GBPTree;
-import org.neo4j.index.internal.gbptree.Hit;
-import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;
@@ -47,8 +44,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.rules.RuleChain.outerRule;
 
-import static org.neo4j.index.internal.gbptree.ThrowingRunnable.throwing;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
+import static org.neo4j.index.internal.gbptree.ThrowingRunnable.throwing;
 import static org.neo4j.io.pagecache.IOLimiter.unlimited;
 import static org.neo4j.test.rule.PageCacheRule.config;
 

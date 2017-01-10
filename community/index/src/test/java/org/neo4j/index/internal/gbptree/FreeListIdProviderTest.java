@@ -30,8 +30,6 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
-import org.neo4j.index.internal.gbptree.FreeListIdProvider;
-import org.neo4j.index.internal.gbptree.GenSafePointer;
 import org.neo4j.index.internal.gbptree.FreeListIdProvider.Monitor;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;

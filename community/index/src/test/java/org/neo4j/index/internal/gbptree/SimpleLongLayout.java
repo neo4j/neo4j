@@ -21,7 +21,6 @@ package org.neo4j.index.internal.gbptree;
 
 import org.apache.commons.lang3.mutable.MutableLong;
 
-import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.pagecache.PageCursor;
 
 import static java.nio.charset.StandardCharsets.UTF_8;

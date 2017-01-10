@@ -19,8 +19,6 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.neo4j.io.pagecache.PageCursor;
-
 /**
  * Methods for ensuring a read {@link GenSafePointer GSP pointer} is valid.
  */

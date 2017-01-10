@@ -23,13 +23,6 @@ import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.Test;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.index.internal.gbptree.ConsistencyChecker;
-import org.neo4j.index.internal.gbptree.GenSafePointer;
-import org.neo4j.index.internal.gbptree.InternalTreeLogic;
-import org.neo4j.index.internal.gbptree.Layout;
-import org.neo4j.index.internal.gbptree.StructurePropagation;
-import org.neo4j.index.internal.gbptree.TreeNode;
-import org.neo4j.index.internal.gbptree.ValueMergers;
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
 

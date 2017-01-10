@@ -21,7 +21,6 @@ package org.neo4j.index.internal.gbptree;
 
 import java.io.IOException;
 import java.util.Comparator;
-import java.util.function.Consumer;
 
 import org.neo4j.io.pagecache.PageCursor;
 

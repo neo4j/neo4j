@@ -28,8 +28,6 @@ import org.junit.runners.Parameterized.Parameters;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import org.neo4j.index.internal.gbptree.GenSafePointer;
-import org.neo4j.index.internal.gbptree.GenSafePointerPair;
 import org.neo4j.io.pagecache.PageCursor;
 
 import static org.hamcrest.CoreMatchers.containsString;

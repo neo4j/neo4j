@@ -23,15 +23,13 @@ import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.index.internal.gbptree.KeySearch;
-import org.neo4j.index.internal.gbptree.Layout;
-import org.neo4j.index.internal.gbptree.TreeNode;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.test.rule.RandomRule;
 
 import static org.apache.commons.lang3.ArrayUtils.contains;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.index.internal.gbptree.ByteArrayPageCursor.wrap;
 import static org.neo4j.index.internal.gbptree.KeySearch.search;
 

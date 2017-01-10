@@ -26,11 +26,6 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-import org.neo4j.index.internal.gbptree.GenSafePointer;
-import org.neo4j.index.internal.gbptree.GenSafePointerPair;
-import org.neo4j.index.internal.gbptree.Layout;
-import org.neo4j.index.internal.gbptree.MetadataMismatchException;
-import org.neo4j.index.internal.gbptree.TreeNode;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.test.rule.RandomRule;
 

@@ -31,20 +31,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.neo4j.index.internal.gbptree.ConsistencyChecker;
-import org.neo4j.index.internal.gbptree.GenSafePointer;
-import org.neo4j.index.internal.gbptree.InternalTreeLogic;
-import org.neo4j.index.internal.gbptree.KeySearch;
-import org.neo4j.index.internal.gbptree.Layout;
-import org.neo4j.index.internal.gbptree.PageCursorUtil;
-import org.neo4j.index.internal.gbptree.RightmostInChain;
-import org.neo4j.index.internal.gbptree.StructurePropagation;
-import org.neo4j.index.internal.gbptree.TreeNode;
-import org.neo4j.index.internal.gbptree.TreePrinter;
-import org.neo4j.index.internal.gbptree.ValueMerger;
-import org.neo4j.index.internal.gbptree.ValueMergers;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.test.rule.RandomRule;
+
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;

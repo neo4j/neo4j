@@ -28,9 +28,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import org.neo4j.index.internal.gbptree.TreeInconsistencyException;
-import org.neo4j.index.internal.gbptree.TreeState;
-import org.neo4j.index.internal.gbptree.TreeStatePair;
 import org.neo4j.io.pagecache.PageCursor;
 
 import static org.junit.Assert.assertSame;

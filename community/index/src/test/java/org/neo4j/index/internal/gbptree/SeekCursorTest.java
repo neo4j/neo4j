@@ -32,18 +32,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
-import org.neo4j.index.internal.gbptree.GenSafePointer;
-import org.neo4j.index.internal.gbptree.GenSafePointerPair;
-import org.neo4j.index.internal.gbptree.Generation;
-import org.neo4j.index.internal.gbptree.Hit;
-import org.neo4j.index.internal.gbptree.InternalTreeLogic;
-import org.neo4j.index.internal.gbptree.Layout;
-import org.neo4j.index.internal.gbptree.PageCursorUtil;
-import org.neo4j.index.internal.gbptree.Root;
-import org.neo4j.index.internal.gbptree.SeekCursor;
-import org.neo4j.index.internal.gbptree.StructurePropagation;
-import org.neo4j.index.internal.gbptree.TreeInconsistencyException;
-import org.neo4j.index.internal.gbptree.TreeNode;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.impl.DelegatingPageCursor;
 
