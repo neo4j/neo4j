@@ -162,10 +162,10 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
 
   override def isLabelSetOnNode(label: Int, node: Long): Boolean = singleDbHit(inner.isLabelSetOnNode(label, node))
 
-  override def nodeCountByCountStore(labelId: Int): Long = inner.nodeCountByCountStore(labelId)
+  override def nodeCountByCountStore(labelId: Int): Long = singleDbHit(inner.nodeCountByCountStore(labelId))
 
   override def relationshipCountByCountStore(startLabelId: Int, typeId: Int, endLabelId: Int): Long =
-    inner.relationshipCountByCountStore(startLabelId, typeId, endLabelId)
+    singleDbHit(inner.relationshipCountByCountStore(startLabelId, typeId, endLabelId))
 
   override def lockNodes(nodeIds: Long*): Unit = inner.lockNodes(nodeIds:_*)
 
