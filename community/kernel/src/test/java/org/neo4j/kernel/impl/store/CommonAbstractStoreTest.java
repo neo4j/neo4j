@@ -89,6 +89,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.io.pagecache.tracing.recording.RecordingPageCursorTracer.Pin;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
+import static org.neo4j.test.rule.PageCacheRule.config;
 import static org.neo4j.test.rule.TestDirectory.testDirectory;
 
 public class CommonAbstractStoreTest
