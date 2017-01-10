@@ -102,7 +102,7 @@ public class StateOperationsAutoIndexingTest
 
         NodeItem node = mock( NodeItem.class );
         when( node.property( property.propertyKeyId() )).thenReturn( Cursors.empty() );
-        when( node.labels() ).thenReturn( Cursors.empty() );
+        when( node.labels() ).thenReturn( Cursors.emptyInt() );
         when( storeStmt.acquireSingleNodeCursor( 1337 ) ).thenReturn( Cursors.cursor( node ) );
 
         // When
@@ -141,7 +141,7 @@ public class StateOperationsAutoIndexingTest
 
         NodeItem node = mock( NodeItem.class );
         when( node.property( property.propertyKeyId() )).thenReturn( Cursors.cursor( existingProperty ) );
-        when( node.labels() ).thenReturn( Cursors.empty() );
+        when( node.labels() ).thenReturn( Cursors.emptyInt() );
         when( storeStmt.acquireSingleNodeCursor( 1337 ) ).thenReturn( Cursors.cursor( node ) );
 
         // When
@@ -183,7 +183,7 @@ public class StateOperationsAutoIndexingTest
 
         NodeItem node = mock( NodeItem.class );
         when( node.property( existingProperty.propertyKeyId() )).thenReturn( Cursors.cursor( existingProperty ) );
-        when( node.labels() ).thenReturn( Cursors.empty() );
+        when( node.labels() ).thenReturn( Cursors.emptyInt() );
         when( storeStmt.acquireSingleNodeCursor( 1337 ) ).thenReturn( Cursors.cursor( node ) );
 
         // When

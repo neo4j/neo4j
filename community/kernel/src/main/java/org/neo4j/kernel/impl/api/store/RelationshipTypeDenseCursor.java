@@ -19,16 +19,15 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import org.neo4j.cursor.Cursor;
+import org.neo4j.cursor.IntCursor;
 import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
-import org.neo4j.storageengine.api.RelationshipTypeItem;
 
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP_TYPE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
-class RelationshipTypeDenseCursor implements Cursor<RelationshipTypeItem>, RelationshipTypeItem
+class RelationshipTypeDenseCursor implements IntCursor
 {
     private final RelationshipGroupRecord groupRecord;
     private RecordCursors recordCursors;
@@ -64,12 +63,6 @@ class RelationshipTypeDenseCursor implements Cursor<RelationshipTypeItem>, Relat
     @Override
     public void close()
     {
-    }
-
-    @Override
-    public RelationshipTypeItem get()
-    {
-        return this;
     }
 
     @Override

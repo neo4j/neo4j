@@ -133,7 +133,7 @@ public class TestRelationshipCount
     @Test
     public void testGetRelationshipTypesOnDiscreteNode() throws Exception
     {
-        testGetRelationshipTypes( getGraphDb().createNode(), new HashSet<String>() );
+        testGetRelationshipTypes( getGraphDb().createNode(), new HashSet<>() );
     }
 
     @Test
@@ -182,7 +182,8 @@ public class TestRelationshipCount
 
     private void assertExpectedRelationshipTypes( Set<String> expectedTypes, Node node, boolean commit )
     {
-        assertEquals( expectedTypes, Iterables.asSet( asStrings( node.getRelationshipTypes() ) ) );
+        Set<String> actual = Iterables.asSet( asStrings( node.getRelationshipTypes() ) );
+        assertEquals( expectedTypes, actual );
         if ( commit )
         {
             newTransaction();

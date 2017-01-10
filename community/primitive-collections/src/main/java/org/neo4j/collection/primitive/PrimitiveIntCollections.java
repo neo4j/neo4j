@@ -775,23 +775,6 @@ public class PrimitiveIntCollections
     }
 
     /**
-     * Adds all the items in {@code iterator} to {@code collection}.
-     * @param <C> the type of {@link Collection} to add to items to.
-     * @param iterator the {@link Iterator} to grab the items from.
-     * @param collection the {@link Collection} to add the items to.
-     * @return the {@code collection} which was passed in, now filled
-     * with the items from {@code iterator}.
-     */
-    public static <C extends Collection<Integer>> C addToCollection( PrimitiveIntIterator iterator, C collection )
-    {
-        while ( iterator.hasNext() )
-        {
-            collection.add( iterator.next() );
-        }
-        return collection;
-    }
-
-    /**
      * Pulls all items from the {@code iterator} and puts them into a {@link List}, boxing each int.
      *
      * @param iterator {@link PrimitiveIntIterator} to pull values from.

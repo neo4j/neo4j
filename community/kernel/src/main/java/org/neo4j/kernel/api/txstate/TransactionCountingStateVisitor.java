@@ -20,7 +20,7 @@
 package org.neo4j.kernel.api.txstate;
 
 import java.util.Set;
-import java.util.function.Consumer;
+import java.util.function.IntConsumer;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntCollection;
@@ -31,7 +31,6 @@ import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.impl.api.CountsRecordState;
 import org.neo4j.kernel.impl.api.RelationshipDataExtractor;
-import org.neo4j.storageengine.api.LabelItem;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
@@ -76,11 +75,11 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
 
     private void decrementCountForLabelsAndRelationships( NodeItem node )
     {
-        PrimitiveIntSet labelIds = node.labels().collect( Primitive.intSet(), ( label ) ->
+        PrimitiveIntSet labelIds = node.labels().collect( Primitive.intSet() );
+        labelIds.visitKeys( labelId ->
         {
-            int labelId = label.getAsInt();
             counts.incrementNodeCount( labelId, -1 );
-            return labelId;
+            return true;
         } );
 
         node.degrees().forAll(
@@ -147,7 +146,7 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
     private void updateRelationshipsCountsFromDegrees( PrimitiveIntCollection labels, int type, long outgoing,
             long incoming )
     {
-        labels.visitKeys( (label) -> updateRelationshipsCountsFromDegrees( type, label, outgoing, incoming ) );
+        labels.visitKeys( ( label ) -> updateRelationshipsCountsFromDegrees( type, label, outgoing, incoming ) );
     }
 
     private boolean updateRelationshipsCountsFromDegrees( int type, int label, long outgoing, long incoming )
@@ -164,11 +163,11 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
     private void updateRelationshipCount( long startNode, int type, long endNode, int delta )
     {
         updateRelationshipsCountsFromDegrees( type, ANY_LABEL, delta, 0 );
-        visitLabels( startNode, ( label ) -> updateRelationshipsCountsFromDegrees( type, label.getAsInt(), delta, 0 ) );
-        visitLabels( endNode, ( label ) -> updateRelationshipsCountsFromDegrees( type, label.getAsInt(), 0, delta ) );
+        visitLabels( startNode, ( labelId ) -> updateRelationshipsCountsFromDegrees( type, labelId, delta, 0 ) );
+        visitLabels( endNode, ( labelId ) -> updateRelationshipsCountsFromDegrees( type, labelId, 0, delta ) );
     }
 
-    private void visitLabels( long nodeId, Consumer<LabelItem> consumer )
+    private void visitLabels( long nodeId, IntConsumer consumer )
     {
         nodeCursor( statement, nodeId ).forAll( node -> node.labels().forAll( consumer ) );
     }

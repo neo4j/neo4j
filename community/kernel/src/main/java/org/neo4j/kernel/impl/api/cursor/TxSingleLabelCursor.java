@@ -21,16 +21,14 @@ package org.neo4j.kernel.impl.api.cursor;
 
 import java.util.function.Consumer;
 
-import org.neo4j.cursor.Cursor;
+import org.neo4j.cursor.IntCursor;
 import org.neo4j.kernel.api.StatementConstants;
-import org.neo4j.storageengine.api.LabelItem;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 
 /**
- * Overlays transaction state on a {@link LabelItem} cursor.
+ * Overlays transaction state on a label cursor.
  */
-public class TxSingleLabelCursor
-        extends TxLabelCursor
+public class TxSingleLabelCursor extends TxLabelCursor
 {
     private int labelId;
 
@@ -39,7 +37,7 @@ public class TxSingleLabelCursor
         super( (Consumer) instanceCache );
     }
 
-    public TxSingleLabelCursor init( Cursor<LabelItem> cursor, ReadableDiffSets<Integer> labelDiffSet, int labelId )
+    public TxSingleLabelCursor init( IntCursor cursor, ReadableDiffSets<Integer> labelDiffSet, int labelId )
     {
         super.init( cursor, labelDiffSet );
         this.labelId = labelId;

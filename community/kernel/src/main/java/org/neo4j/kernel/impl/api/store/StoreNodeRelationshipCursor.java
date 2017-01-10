@@ -19,8 +19,10 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
+import java.util.Arrays;
 import java.util.function.Consumer;
 
+import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.RecordCursors;

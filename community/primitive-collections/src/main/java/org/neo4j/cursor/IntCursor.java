@@ -17,13 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.storageengine.api;
+package org.neo4j.cursor;
 
-import java.util.function.IntSupplier;
-
-/**
- * Represents a single label on a node
- */
-public interface LabelItem extends IntSupplier
+public interface IntCursor extends RawIntCursor<RuntimeException>
 {
+    @Override
+    boolean next();
+
+    @Override
+    void close();
 }

@@ -20,25 +20,24 @@
 package org.neo4j.kernel.impl.api.cursor;
 
 import java.util.function.Consumer;
-import java.util.function.IntSupplier;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
+import org.neo4j.cursor.IntCursor;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.cursor.EntityItemHelper;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.storageengine.api.DegreeItem;
 import org.neo4j.storageengine.api.Direction;
-import org.neo4j.storageengine.api.LabelItem;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
-import org.neo4j.storageengine.api.RelationshipTypeItem;
 import org.neo4j.storageengine.api.txstate.NodeState;
 
 import static org.neo4j.kernel.impl.util.Cursors.empty;
+import static org.neo4j.kernel.impl.util.Cursors.emptyInt;
 
 /**
  * Overlays transaction state on a {@link NodeItem} cursor.
@@ -122,16 +121,16 @@ public class TxSingleNodeCursor extends EntityItemHelper implements Cursor<NodeI
     }
 
     @Override
-    public Cursor<LabelItem> labels()
+    public IntCursor labels()
     {
-        Cursor<LabelItem> cursor = nodeIsAddedInThisTx ? empty() : this.cursor.get().labels();
+        IntCursor cursor = nodeIsAddedInThisTx ? emptyInt() : this.cursor.get().labels();
         return state.augmentLabelCursor( cursor, nodeState );
     }
 
     @Override
-    public Cursor<LabelItem> label( int labelId )
+    public IntCursor label( int labelId )
     {
-        Cursor<LabelItem> cursor = nodeIsAddedInThisTx ? empty() : this.cursor.get().label( labelId );
+        IntCursor cursor = nodeIsAddedInThisTx ? emptyInt() : this.cursor.get().label( labelId );
         return state.augmentSingleLabelCursor( cursor, nodeState, labelId );
     }
 
@@ -170,7 +169,7 @@ public class TxSingleNodeCursor extends EntityItemHelper implements Cursor<NodeI
     }
 
     @Override
-    public Cursor<RelationshipTypeItem> relationshipTypes()
+    public IntCursor relationshipTypes()
     {
         if ( nodeIsAddedInThisTx )
         {
@@ -188,11 +187,11 @@ public class TxSingleNodeCursor extends EntityItemHelper implements Cursor<NodeI
 
         // Augment with types stored on disk, minus any types where all rels of that type are deleted
         // in current tx.
-        try ( Cursor<RelationshipTypeItem> storeTypes = cursor.get().relationshipTypes() )
+        try ( IntCursor storeTypes = cursor.get().relationshipTypes() )
         {
             while ( storeTypes.next() )
             {
-                int current = storeTypes.get().getAsInt();
+                int current = storeTypes.getAsInt();
                 if ( !types.contains( current ) && degree( Direction.BOTH, current ) > 0 )
                 {
                     types.add( current );
@@ -227,7 +226,7 @@ public class TxSingleNodeCursor extends EntityItemHelper implements Cursor<NodeI
         return cursor.get().isDense();
     }
 
-    private class RelationshipTypeCursor implements Cursor<RelationshipTypeItem>, RelationshipTypeItem
+    private class RelationshipTypeCursor implements IntCursor
     {
         private final PrimitiveIntIterator primitiveIntIterator;
         private int current = StatementConstants.NO_SUCH_RELATIONSHIP_TYPE;
@@ -260,22 +259,16 @@ public class TxSingleNodeCursor extends EntityItemHelper implements Cursor<NodeI
         {
             return current;
         }
-
-        @Override
-        public RelationshipTypeItem get()
-        {
-            return this;
-        }
     }
 
     private class DegreeCursor implements Cursor<DegreeItem>, DegreeItem
     {
-        private final Cursor<RelationshipTypeItem> relTypeCursor;
+        private final IntCursor relTypeCursor;
         private int type;
         private long outgoing;
         private long incoming;
 
-        DegreeCursor( Cursor<RelationshipTypeItem> relTypeCursor )
+        DegreeCursor( IntCursor relTypeCursor )
         {
             this.relTypeCursor = relTypeCursor;
         }
@@ -285,7 +278,7 @@ public class TxSingleNodeCursor extends EntityItemHelper implements Cursor<NodeI
         {
             if ( relTypeCursor.next() )
             {
-                type = relTypeCursor.get().getAsInt();
+                type = relTypeCursor.getAsInt();
                 outgoing = degree( Direction.OUTGOING, type );
                 incoming = degree( Direction.INCOMING, type );
 

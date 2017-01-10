@@ -24,6 +24,7 @@ import java.util.function.Consumer;
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.cursor.Cursor;
+import org.neo4j.cursor.IntCursor;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.cursor.EntityItemHelper;
 import org.neo4j.kernel.impl.locking.Lock;
@@ -38,11 +39,9 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.storageengine.api.DegreeItem;
 import org.neo4j.storageengine.api.Direction;
-import org.neo4j.storageengine.api.LabelItem;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
-import org.neo4j.storageengine.api.RelationshipTypeItem;
 
 import static java.util.function.Function.identity;
 import static org.neo4j.kernel.impl.api.store.DegreeCounter.countRelationshipsInGroup;
@@ -121,13 +120,13 @@ public class StoreSingleNodeCursor extends EntityItemHelper implements Cursor<No
     }
 
     @Override
-    public Cursor<LabelItem> labels()
+    public IntCursor labels()
     {
         return cursors.labels( nodeRecord );
     }
 
     @Override
-    public Cursor<LabelItem> label( int labelId )
+    public IntCursor label( int labelId )
     {
         return cursors.label( nodeRecord, labelId );
     }
@@ -195,7 +194,7 @@ public class StoreSingleNodeCursor extends EntityItemHelper implements Cursor<No
     }
 
     @Override
-    public Cursor<RelationshipTypeItem> relationshipTypes()
+    public IntCursor relationshipTypes()
     {
         if ( nodeRecord.isDense() )
         {

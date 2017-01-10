@@ -55,7 +55,6 @@ import org.neo4j.kernel.impl.store.id.configuration.CommunityIdTypeConfiguration
 import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfiguration;
 import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.storageengine.api.LabelItem;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.test.ImpermanentGraphDatabase;
@@ -596,13 +595,7 @@ public class LabelsAcceptanceTest
                         while ( properties.next() )
                         {
                             seenProperties.add( properties.get().propertyKeyId() );
-                            try ( Cursor<LabelItem> labels = nodeCursor.get().labels() )
-                            {
-                                while ( labels.next() )
-                                {
-                                    seenLabels.add( labels.get().getAsInt() );
-                                }
-                            }
+                            nodeCursor.get().labels().forAll( seenLabels::add );
                         }
                     }
                 }

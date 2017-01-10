@@ -52,7 +52,7 @@ public class StoreSingleLabelCursor extends StoreLabelCursor
     {
         while ( super.next() )
         {
-            if ( get().getAsInt() == labelId )
+            if ( getAsInt() == labelId )
             {
                 return true;
             }

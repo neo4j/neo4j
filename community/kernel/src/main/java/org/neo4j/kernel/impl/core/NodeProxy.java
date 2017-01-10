@@ -638,17 +638,19 @@ public class NodeProxy implements Node
         try ( Statement statement = actions.statement() )
         {
             PrimitiveIntIterator labels = statement.readOperations().nodeGetLabels( getId() );
-            List<Label> keys = new ArrayList<>();
-            while ( labels.hasNext() )
-            {
-                int labelId = labels.next();
-                keys.add( label( statement.readOperations().labelGetName( labelId ) ) );
-            }
-            return keys;
+            return asList( map( labelId -> convertToLabel( statement, labelId ), labels ) );
         }
         catch ( EntityNotFoundException e )
         {
             throw new NotFoundException( "Node not found", e );
+        }
+    }
+
+    private Label convertToLabel( Statement statement, int labelId )
+    {
+        try
+        {
+            return label( statement.readOperations().labelGetName( labelId ) );
         }
         catch ( LabelNotFoundKernelException e )
         {
@@ -726,8 +728,8 @@ public class NodeProxy implements Node
     {
         try ( Statement statement = actions.statement() )
         {
-            ReadOperations ops = statement.readOperations();
-            return map2relTypes( statement, ops.nodeGetRelationshipTypes( nodeId ) );
+            PrimitiveIntIterator relTypes = statement.readOperations().nodeGetRelationshipTypes( nodeId );
+            return asList( map( relTypeId -> convertToRelationshipType( statement, relTypeId ), relTypes ) );
         }
         catch ( EntityNotFoundException e )
         {
@@ -756,17 +758,15 @@ public class NodeProxy implements Node
         return ids;
     }
 
-    private Iterable<RelationshipType> map2relTypes( final Statement statement, PrimitiveIntIterator input )
+    private RelationshipType convertToRelationshipType( final Statement statement, int relTypeId )
     {
-        return asList( map( id -> {
-            try
-            {
-                return RelationshipType.withName( statement.readOperations().relationshipTypeGetName( id ) );
-            }
-            catch ( RelationshipTypeIdNotFoundKernelException e )
-            {
-                throw new IllegalStateException( "Kernel API returned non-existent relationship type: " + id );
-            }
-        }, input ) );
+        try
+        {
+            return RelationshipType.withName( statement.readOperations().relationshipTypeGetName( relTypeId ) );
+        }
+        catch ( RelationshipTypeIdNotFoundKernelException e )
+        {
+            throw new IllegalStateException( "Kernel API returned non-existent relationship type: " + relTypeId );
+        }
     }
 }

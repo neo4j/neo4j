@@ -31,6 +31,7 @@ import java.util.function.IntSupplier;
 import java.util.function.LongConsumer;
 
 import org.neo4j.cursor.Cursor;
+import org.neo4j.cursor.IntCursor;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
@@ -49,7 +50,6 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.storageengine.api.DegreeItem;
-import org.neo4j.storageengine.api.RelationshipTypeItem;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 import org.neo4j.test.rule.RandomRule;
@@ -464,10 +464,10 @@ public class StoreSingleNodeCursorTest
     {
         Set<TestRelType> types = new HashSet<>();
 
-        Cursor<RelationshipTypeItem> relTypesCursor = cursor.relationshipTypes();
+        IntCursor relTypesCursor = cursor.relationshipTypes();
         while ( relTypesCursor.next() )
         {
-            int typeId = relTypesCursor.get().getAsInt();
+            int typeId = relTypesCursor.getAsInt();
             types.add( relTypeForId( typeId ) );
         }
 

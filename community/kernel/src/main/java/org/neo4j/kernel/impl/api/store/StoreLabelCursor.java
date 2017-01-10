@@ -21,19 +21,18 @@ package org.neo4j.kernel.impl.api.store;
 
 import java.util.function.Consumer;
 
-import org.neo4j.cursor.Cursor;
+import org.neo4j.cursor.IntCursor;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.storageengine.api.LabelItem;
 
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
 
 /**
  * Cursor over all labels on a node.
  */
-public class StoreLabelCursor implements Cursor<LabelItem>, LabelItem
+public class StoreLabelCursor implements IntCursor
 {
     private long[] labels;
     private int index;
@@ -67,12 +66,6 @@ public class StoreLabelCursor implements Cursor<LabelItem>, LabelItem
         {
             return false;
         }
-    }
-
-    @Override
-    public LabelItem get()
-    {
-        return this;
     }
 
     @Override

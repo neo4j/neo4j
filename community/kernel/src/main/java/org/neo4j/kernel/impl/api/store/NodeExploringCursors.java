@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.store;
 
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.cursor.Cursor;
+import org.neo4j.cursor.IntCursor;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.RecordCursors;
@@ -31,7 +32,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.util.InstanceCache;
 import org.neo4j.storageengine.api.DegreeItem;
 import org.neo4j.storageengine.api.Direction;
-import org.neo4j.storageengine.api.LabelItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 
@@ -105,12 +105,12 @@ class NodeExploringCursors
         return singlePropertyCursorCache.get().init( nextProp, propertyKeyId, lock );
     }
 
-    public Cursor<LabelItem> labels( NodeRecord nodeRecord )
+    public IntCursor labels( NodeRecord nodeRecord )
     {
         return labelCursorCache.get().init( nodeRecord );
     }
 
-    public Cursor<LabelItem> label( NodeRecord nodeRecord, int labelId )
+    public IntCursor label( NodeRecord nodeRecord, int labelId )
     {
         return singleLabelCursorCache.get().init( nodeRecord, labelId );
     }

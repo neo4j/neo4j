@@ -28,12 +28,11 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.Cursor;
+import org.neo4j.cursor.IntCursor;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.LegacyIndex;
 import org.neo4j.kernel.api.LegacyIndexHits;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
-import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
@@ -60,13 +59,15 @@ import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
-import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.legacyindex.AutoIndexing;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
+import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.txstate.TransactionCountingStateVisitor;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.operations.CountsOperations;
@@ -85,7 +86,6 @@ import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.storageengine.api.EntityType;
-import org.neo4j.storageengine.api.LabelItem;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
@@ -95,7 +95,6 @@ import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
-import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.single;
@@ -283,13 +282,10 @@ public class StateHandlingStatementOperations implements
         try ( Cursor<NodeItem> cursor = nodeCursorById( state, nodeId ) )
         {
             NodeItem node = cursor.get();
-            try ( Cursor<LabelItem> labels = node.label( labelId ) )
+            if ( node.label( labelId ).exists() )
             {
-                if ( labels.next() )
-                {
-                    // Label is already in state or in store, no-op
-                    return false;
-                }
+                // Label is already in state or in store, no-op
+                return false;
             }
 
             state.txState().nodeDoAddLabel( labelId, node.id() );
@@ -321,13 +317,10 @@ public class StateHandlingStatementOperations implements
         try ( Cursor<NodeItem> cursor = nodeCursorById( state, nodeId ) )
         {
             NodeItem node = cursor.get();
-            try ( Cursor<LabelItem> labels = node.label( labelId ) )
+            if ( !node.label( labelId ).exists() )
             {
-                if ( !labels.next() )
-                {
-                    // Label does not exist in state or in store, no-op
-                    return false;
-                }
+                // Label does not exist in state or in store, no-op
+                return false;
             }
 
             state.txState().nodeDoRemoveLabel( labelId, node.id() );
@@ -1013,13 +1006,12 @@ public class StateHandlingStatementOperations implements
     private void indexesUpdateProperty( KernelStatement state, NodeItem node, int propertyKey, DefinedProperty before,
             DefinedProperty after )
     {
-        try ( Cursor<LabelItem> labels = node.labels() )
+        try ( IntCursor labels = node.labels() )
         {
             while ( labels.next() )
             {
-                LabelItem label = labels.get();
-                indexUpdateProperty( state, node.id(), new NodePropertyDescriptor( label.getAsInt(), propertyKey ),
-                        before, after );
+                NodePropertyDescriptor descriptor = new NodePropertyDescriptor( labels.getAsInt(), propertyKey );
+                indexUpdateProperty( state, node.id(), descriptor, before, after );
             }
         }
     }

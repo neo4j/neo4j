@@ -47,7 +47,6 @@ import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.index.LegacyIndexStore;
 import org.neo4j.kernel.impl.util.Cursors;
 import org.neo4j.kernel.impl.util.diffsets.DiffSets;
-import org.neo4j.storageengine.api.LabelItem;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
@@ -325,7 +324,7 @@ public class StateHandlingStatementOperationsTest
                     {
                         long nodeId = (long) invocationOnMock.getArguments()[1];
                         return asNodeCursor( nodeId, asPropertyCursor( intProperty( propertyKey, inRange ) ),
-                                Cursors.<LabelItem>empty() );
+                                Cursors.emptyInt() );
                     }
                 } );
 
@@ -342,7 +341,7 @@ public class StateHandlingStatementOperationsTest
                     {
                         long nodeId = (long) invocationOnMock.getArguments()[0];
                         return asNodeCursor( nodeId, asPropertyCursor( intProperty( propertyKey, inRange ) ),
-                                Cursors.<LabelItem>empty() );
+                                Cursors.emptyInt() );
                     }
                 } );
 

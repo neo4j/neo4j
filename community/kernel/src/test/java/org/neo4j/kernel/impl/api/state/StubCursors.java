@@ -22,9 +22,9 @@ package org.neo4j.kernel.impl.api.state;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
-import java.util.function.IntSupplier;
 
 import org.neo4j.cursor.Cursor;
+import org.neo4j.cursor.IntCursor;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.cursor.EntityItemHelper;
 import org.neo4j.kernel.api.cursor.RelationshipItemHelper;
@@ -32,13 +32,13 @@ import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.util.Cursors;
 import org.neo4j.storageengine.api.DegreeItem;
 import org.neo4j.storageengine.api.Direction;
-import org.neo4j.storageengine.api.LabelItem;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
-import org.neo4j.storageengine.api.RelationshipTypeItem;
 
+import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.kernel.impl.util.Cursors.empty;
+import static org.neo4j.kernel.impl.util.Cursors.emptyInt;
 
 /**
  * Stub cursors to be used for testing.
@@ -47,7 +47,7 @@ public class StubCursors
 {
     public static Cursor<NodeItem> asNodeCursor( final long nodeId )
     {
-        return asNodeCursor( nodeId, empty(), empty() );
+        return asNodeCursor( nodeId, empty(), emptyInt() );
     }
 
     public static Cursor<NodeItem> asNodeCursor( final long... nodeIds )
@@ -55,14 +55,14 @@ public class StubCursors
         NodeItem[] nodeItems = new NodeItem[nodeIds.length];
         for (int i = 0; i < nodeIds.length; i++)
         {
-            nodeItems[i] = new StubNodeItem( nodeIds[i], empty(), empty() );
+            nodeItems[i] = new StubNodeItem( nodeIds[i], empty(), emptyInt() );
         }
         return Cursors.cursor( nodeItems );
     }
 
     public static Cursor<NodeItem> asNodeCursor( final long nodeId,
             final Cursor<PropertyItem> propertyCursor,
-            final Cursor<LabelItem> labelCursor )
+            final IntCursor labelCursor )
     {
         return Cursors.cursor( new StubNodeItem( nodeId, propertyCursor, labelCursor ) );
     }
@@ -71,9 +71,9 @@ public class StubCursors
     {
         private final long nodeId;
         private final Cursor<PropertyItem> propertyCursor;
-        private final Cursor<LabelItem> labelCursor;
+        private final IntCursor labelCursor;
 
-        private StubNodeItem( long nodeId, Cursor<PropertyItem> propertyCursor, Cursor<LabelItem> labelCursor )
+        private StubNodeItem( long nodeId, Cursor<PropertyItem> propertyCursor, IntCursor labelCursor )
         {
             this.nodeId = nodeId;
             this.propertyCursor = propertyCursor;
@@ -87,18 +87,18 @@ public class StubCursors
         }
 
         @Override
-        public Cursor<LabelItem> label( final int labelId )
+        public IntCursor label( final int labelId )
         {
-            return new Cursor<LabelItem>()
+            return new IntCursor()
             {
-                Cursor<LabelItem> cursor = labels();
+                IntCursor cursor = labels();
 
                 @Override
                 public boolean next()
                 {
                     while ( cursor.next() )
                     {
-                        if ( cursor.get().getAsInt() == labelId )
+                        if ( cursor.getAsInt() == labelId )
                         {
                             return true;
                         }
@@ -114,9 +114,9 @@ public class StubCursors
                 }
 
                 @Override
-                public LabelItem get()
+                public int getAsInt()
                 {
-                    return cursor.get();
+                    return cursor.getAsInt();
                 }
             };
         }
@@ -128,7 +128,7 @@ public class StubCursors
         }
 
         @Override
-        public Cursor<LabelItem> labels()
+        public IntCursor labels()
         {
             return labelCursor;
         }
@@ -187,7 +187,7 @@ public class StubCursors
         }
 
         @Override
-        public Cursor<RelationshipTypeItem> relationshipTypes()
+        public IntCursor relationshipTypes()
         {
             throw new UnsupportedOperationException();
         }
@@ -373,35 +373,31 @@ public class StubCursors
         } );
     }
 
-    public static Cursor<LabelItem> asLabelCursor( final Integer... labels )
+    public static IntCursor asLabelCursor( final int... labels )
     {
-        return asLabelCursor( Arrays.asList( labels ) );
-    }
-
-    public static Cursor<LabelItem> asLabelCursor( final List<Integer> labels )
-    {
-        return Cursors.cursor( Iterables.map( integer -> {
-            return (LabelItem) () -> integer;
-        }, labels ) );
+        return Cursors.intCursor( labels );
     }
 
     public static Cursor<PropertyItem> asPropertyCursor( final DefinedProperty... properties )
     {
-        return Cursors.cursor( Iterables.map( (Function<DefinedProperty,PropertyItem>) property -> {
-            return new PropertyItem()
-            {
-                @Override
-                public int propertyKeyId()
-                {
-                    return property.propertyKeyId();
-                }
+        return Cursors.cursor( map( StubCursors::asPropertyItem, Arrays.asList( properties ) ) );
+    }
 
-                @Override
-                public Object value()
-                {
-                    return property.value();
-                }
-            };
-        }, Arrays.asList( properties ) ) );
+    private static PropertyItem asPropertyItem( final DefinedProperty property )
+    {
+        return new PropertyItem()
+        {
+            @Override
+            public int propertyKeyId()
+            {
+                return property.propertyKeyId();
+            }
+
+            @Override
+            public Object value()
+            {
+                return property.value();
+            }
+        };
     }
 }

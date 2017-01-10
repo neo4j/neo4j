@@ -24,10 +24,9 @@ import java.util.Iterator;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
+import org.neo4j.cursor.IntCursor;
 import org.neo4j.helpers.Strings;
 import org.neo4j.helpers.collection.CastingIterator;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
-import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
@@ -47,9 +46,11 @@ import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.exceptions.schema.UnableToValidateConstraintKernelException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyConstraintViolationKernelException;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
+import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.impl.api.operations.EntityOperations;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
@@ -59,7 +60,6 @@ import org.neo4j.kernel.impl.api.store.EntityLoadingIterator;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.storageengine.api.LabelItem;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 
@@ -122,11 +122,11 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
 
             NodeItem node = cursor.get();
 
-            try ( Cursor<LabelItem> labels = node.labels() )
+            try ( IntCursor labels = node.labels() )
             {
                 while ( labels.next() )
                 {
-                    int labelId = labels.get().getAsInt();
+                    int labelId = labels.getAsInt();
                     int propertyKeyId = property.propertyKeyId();
                     Iterator<UniquenessConstraint> constraintIterator =
                             uniquePropertyConstraints( schemaReadOperations.constraintsGetForLabelAndPropertyKey( state,

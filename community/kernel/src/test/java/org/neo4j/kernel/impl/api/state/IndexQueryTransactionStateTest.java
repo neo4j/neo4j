@@ -47,7 +47,6 @@ import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.index.LegacyIndexStore;
 import org.neo4j.kernel.impl.util.Cursors;
-import org.neo4j.storageengine.api.LabelItem;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.schema.IndexReader;
 
@@ -192,7 +191,7 @@ public class IndexQueryTransactionStateTest
         when( statement.acquireSingleNodeCursor( nodeId ) ).thenReturn(
                 asNodeCursor( nodeId,
                         asPropertyCursor( stringProperty( propertyKeyId, value ) ),
-                        Cursors.<LabelItem>empty() ) );
+                        Cursors.emptyInt() ) );
 
         List<IndexDescriptor> indexes = Collections.singletonList( indexDescriptor );
         when( store.indexesGetForLabel( labelId ) ).thenReturn( indexes.iterator() );
@@ -216,9 +215,8 @@ public class IndexQueryTransactionStateTest
                 stringProperty( propertyKeyId, value ) );
 
         when( statement.acquireSingleNodeCursor( nodeId ) ).thenReturn(
-                asNodeCursor( nodeId,
-                        asPropertyCursor( stringProperty( propertyKeyId, value ) ),
-                        Cursors.<LabelItem>empty() ) );
+                asNodeCursor( nodeId, asPropertyCursor( stringProperty( propertyKeyId, value ) ),
+                        Cursors.emptyInt() ) );
         List<IndexDescriptor> indexes = Collections.singletonList( indexDescriptor );
         when( store.indexesGetForLabel( labelId ) ).thenReturn( indexes.iterator() );
         txContext.nodeAddLabel( state, nodeId, labelId );

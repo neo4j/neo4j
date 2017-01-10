@@ -32,6 +32,7 @@ import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.cursor.Cursor;
+import org.neo4j.cursor.IntCursor;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
@@ -61,7 +62,6 @@ import org.neo4j.kernel.impl.util.InstanceCache;
 import org.neo4j.kernel.impl.util.diffsets.DiffSets;
 import org.neo4j.kernel.impl.util.diffsets.RelationshipDiffSets;
 import org.neo4j.storageengine.api.Direction;
-import org.neo4j.storageengine.api.LabelItem;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
@@ -809,7 +809,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public Cursor<LabelItem> augmentLabelCursor( Cursor<LabelItem> cursor, NodeState nodeState )
+    public IntCursor augmentLabelCursor( IntCursor cursor, NodeState nodeState )
     {
         ReadableDiffSets<Integer> labelDiffSets = nodeState.labelDiffSets();
 
@@ -824,7 +824,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public Cursor<LabelItem> augmentSingleLabelCursor( Cursor<LabelItem> cursor, NodeState nodeState, int labelId )
+    public IntCursor augmentSingleLabelCursor( IntCursor cursor, NodeState nodeState, int labelId )
     {
         ReadableDiffSets<Integer> labelDiffSets = nodeState.labelDiffSets();
 

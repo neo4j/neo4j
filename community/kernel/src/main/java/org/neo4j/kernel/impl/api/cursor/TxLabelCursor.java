@@ -22,20 +22,18 @@ package org.neo4j.kernel.impl.api.cursor;
 import java.util.Iterator;
 import java.util.function.Consumer;
 
-import org.neo4j.cursor.Cursor;
+import org.neo4j.cursor.IntCursor;
 import org.neo4j.kernel.api.StatementConstants;
-import org.neo4j.storageengine.api.LabelItem;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 
 /**
- * Overlays transaction state on a {@link LabelItem} cursor.
+ * Overlays transaction state on a label cursor.
  */
-public class TxLabelCursor
-        implements Cursor<LabelItem>, LabelItem
+public class TxLabelCursor implements IntCursor
 {
     private final Consumer<TxLabelCursor> instanceCache;
 
-    protected Cursor<LabelItem> cursor;
+    protected IntCursor cursor;
     protected ReadableDiffSets<Integer> labelDiffSet;
 
     protected int label;
@@ -46,7 +44,7 @@ public class TxLabelCursor
         this.instanceCache = instanceCache;
     }
 
-    public TxLabelCursor init( Cursor<LabelItem> cursor, ReadableDiffSets<Integer> labelDiffSet )
+    public TxLabelCursor init( IntCursor cursor, ReadableDiffSets<Integer> labelDiffSet )
     {
         this.cursor = cursor;
         this.labelDiffSet = labelDiffSet;
@@ -61,7 +59,7 @@ public class TxLabelCursor
         {
             while ( cursor != null && cursor.next() )
             {
-                label = cursor.get().getAsInt();
+                label = cursor.getAsInt();
                 if ( labelDiffSet.isRemoved( label ) )
                 {
                     continue;
@@ -82,17 +80,6 @@ public class TxLabelCursor
             label = StatementConstants.NO_SUCH_LABEL;
             return false;
         }
-    }
-
-    @Override
-    public LabelItem get()
-    {
-        if ( label == StatementConstants.NO_SUCH_LABEL )
-        {
-            throw new IllegalStateException();
-        }
-
-        return this;
     }
 
     @Override

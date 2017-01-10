@@ -28,7 +28,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.IntSupplier;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
@@ -315,16 +314,16 @@ public class LabelTransactionStateTest
     private static class Labels
     {
         private final long nodeId;
-        private final Integer[] labelIds;
+        private final int[] labelIds;
 
-        Labels( long nodeId, Integer... labelIds )
+        Labels( long nodeId, int... labelIds )
         {
             this.nodeId = nodeId;
             this.labelIds = labelIds;
         }
     }
 
-    private static Labels labels( long nodeId, Integer... labelIds )
+    private static Labels labels( long nodeId, int... labelIds )
     {
         return new Labels( nodeId, labelIds );
     }
@@ -353,10 +352,10 @@ public class LabelTransactionStateTest
 
     private void commitNoLabels() throws Exception
     {
-        commitLabels( new Integer[0] );
+        commitLabels( new int[0] );
     }
 
-    private void commitLabels( Integer... labels ) throws Exception
+    private void commitLabels( int... labels ) throws Exception
     {
         commitLabels( labels( nodeId, labels ) );
     }
@@ -365,7 +364,7 @@ public class LabelTransactionStateTest
     {
         txContext.nodeCursorById( state, nodeId ).forAll( node ->
         {
-            PrimitiveIntSet collect = node.labels().collect( Primitive.intSet(), IntSupplier::getAsInt );
+            PrimitiveIntSet collect = node.labels().collect( Primitive.intSet() );
             assertEquals( PrimitiveIntCollections.asSet( labels ), collect );
         } );
 

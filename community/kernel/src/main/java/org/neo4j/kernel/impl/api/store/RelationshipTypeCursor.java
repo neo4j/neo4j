@@ -22,12 +22,12 @@ package org.neo4j.kernel.impl.api.store;
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
+import org.neo4j.cursor.IntCursor;
 import org.neo4j.storageengine.api.RelationshipItem;
-import org.neo4j.storageengine.api.RelationshipTypeItem;
 
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP_TYPE;
 
-class RelationshipTypeCursor implements Cursor<RelationshipTypeItem>, RelationshipTypeItem
+class RelationshipTypeCursor implements IntCursor
 {
     private final PrimitiveIntSet foundTypes;
     private final Cursor<RelationshipItem> relationships;
@@ -61,12 +61,6 @@ class RelationshipTypeCursor implements Cursor<RelationshipTypeItem>, Relationsh
     public void close()
     {
         relationships.close();
-    }
-
-    @Override
-    public RelationshipTypeItem get()
-    {
-        return this;
     }
 
     @Override

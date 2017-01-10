@@ -21,13 +21,11 @@ package org.neo4j.kernel.impl.util;
 
 import java.io.IOException;
 import java.util.Iterator;
-import java.util.NoSuchElementException;
-import java.util.function.ToIntFunction;
 
-import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.cursor.IOCursor;
-import org.neo4j.graphdb.Resource;
+import org.neo4j.cursor.IntCursor;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
@@ -45,13 +43,31 @@ public class Cursors
         @Override
         public Object get()
         {
-            return null;
+            throw new IllegalStateException( "no elements" );
         }
 
         @Override
         public void close()
         {
+        }
+    };
+   private static IntCursor EMPTY_INT = new IntCursor()
+    {
+        @Override
+        public boolean next()
+        {
+            return false;
+        }
 
+        @Override
+        public int getAsInt()
+        {
+            throw new IllegalStateException( "no elements" );
+        }
+
+        @Override
+        public void close()
+        {
         }
     };
 
@@ -61,45 +77,15 @@ public class Cursors
         return (Cursor<T>) EMPTY;
     }
 
+    @SuppressWarnings("unchecked")
+    public static IntCursor emptyInt()
+    {
+        return EMPTY_INT;
+    }
+
     public static <T> Cursor<T> cursor( final T... items )
     {
-        return new Cursor<T>()
-        {
-            int idx = 0;
-            T current;
-
-            @Override
-            public boolean next()
-            {
-                if ( idx < items.length )
-                {
-                    current = items[idx++];
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
-            }
-
-            @Override
-            public void close()
-            {
-                idx = 0;
-                current = null;
-            }
-
-            @Override
-            public T get()
-            {
-                if ( current == null )
-                {
-                    throw new IllegalStateException();
-                }
-
-                return current;
-            }
-        };
+        return cursor( Iterables.asIterable( items ) );
     }
 
     public static <T> Cursor<T> cursor( final Iterable<T> items )
@@ -198,76 +184,54 @@ public class Cursors
             }
         };
     }
-    public static <T> PrimitiveIntIterator intIterator( final Cursor<T> resourceCursor, final ToIntFunction<T> map )
+
+    public static IntCursor intCursor( int... integers )
     {
-        return new CursorPrimitiveIntIterator<>( resourceCursor, map );
+        return intCursor( Iterables.asIterable( integers ) );
     }
 
-    private static class CursorPrimitiveIntIterator<T> implements PrimitiveIntIterator, Resource
+    private static IntCursor intCursor( Iterable<Integer> integers )
     {
-        private final ToIntFunction<T> map;
-        private Cursor<T> cursor;
-        private boolean hasNext;
-
-        public CursorPrimitiveIntIterator( Cursor<T> resourceCursor, ToIntFunction<T> map )
+        return new IntCursor()
         {
-            this.map = map;
-            cursor = resourceCursor;
-            hasNext = nextCursor();
-        }
+            Iterator<Integer> iterator = integers.iterator();
 
-        private boolean nextCursor()
-        {
-            if ( cursor != null )
+            boolean valid = false;
+            int current;
+
+            @Override
+            public boolean next()
             {
-                boolean hasNext = cursor.next();
-                if ( !hasNext )
+                if ( iterator.hasNext() )
                 {
-                    close();
+                    valid = true;
+                    current = iterator.next();
+                    return true;
                 }
-                return hasNext;
-            }
-            else
-            {
-                return false;
-            }
-        }
-
-        @Override
-        public boolean hasNext()
-        {
-            return hasNext;
-        }
-
-        @Override
-        public int next()
-        {
-            if ( hasNext )
-            {
-                try
+                else
                 {
-                    return map.applyAsInt( cursor.get() );
-                }
-                finally
-                {
-                    hasNext = nextCursor();
+                    valid = false;
+                    return false;
                 }
             }
-            else
-            {
-                throw new NoSuchElementException();
-            }
-        }
 
-        @Override
-        public void close()
-        {
-            if ( cursor != null )
+            @Override
+            public void close()
             {
-                cursor.close();
-                cursor = null;
+                iterator = integers.iterator();
+                valid = false;
             }
-        }
+
+            @Override
+            public int getAsInt()
+            {
+                if ( valid )
+                {
+                    return current;
+                }
+
+                throw new IllegalStateException();
+            }
+        };
     }
-
 }
