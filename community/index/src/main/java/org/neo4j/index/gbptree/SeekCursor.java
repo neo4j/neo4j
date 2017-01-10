@@ -427,18 +427,18 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
             // Act
             if ( notSaneRead() )
             {
+                if ( !fullRead )
+                {
+                    throw new TreeInconsistencyException( "Read inconsistent tree node %d%n" +
+                            "  nodeType:%d%n  currentNodeGen:%d%n  newGen:%d%n  newGenGen:%d%n  isInternal:%b%n" +
+                            "  keyCount:%d%n  maxKeyCount:%d%n  searchResult:%d%n  pos:%d%n  childId:%d%n  childIdGen:%d",
+                            cursor.getCurrentPageId(), nodeType, currentNodeGen, newGen, newGenGen,
+                            isInternal, keyCount, maxKeyCount, searchResult, pos, pointerId, pointerGen );
+                }
+
                 prepareToStartFromRoot();
                 isInternal = true;
                 continue;
-            }
-
-            if ( !fullRead )
-            {
-                throw new TreeInconsistencyException( "Read inconsistent tree node %d%n" +
-                        "  nodeType:%d%n  currentNodeGen:%d%n  newGen:%d%n  newGenGen:%d%n  isInternal:%b%n" +
-                        "  keyCount:%d%n  maxKeyCount:%d%n  searchResult:%d%n  pos:%d%n  childId:%d%n  childIdGen:%d",
-                        cursor.getCurrentPageId(), nodeType, currentNodeGen, newGen, newGenGen,
-                        isInternal, keyCount, maxKeyCount, searchResult, pos, pointerId, pointerGen );
             }
 
             if ( goToNewGen() )
@@ -529,20 +529,20 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
             // Act
             if ( notSaneRead() )
             {
+                if ( !fullRead )
+                {
+                    throw new TreeInconsistencyException( "Read inconsistent tree node %d%n" +
+                            "  nodeType:%d%n  currentNodeGen:%d%n  newGen:%d%n  newGenGen:%d%n" +
+                            "  keyCount:%d%n  maxKeyCount:%d%n  searchResult:%d%n  pos:%d%n" +
+                            "  rightSibling:%d%n  rightSiblingGen:%d",
+                            cursor.getCurrentPageId(), nodeType, currentNodeGen, newGen, newGenGen,
+                            keyCount, maxKeyCount, searchResult, pos, pointerId, pointerGen );
+                }
+
                 // This node has been reused for something else than a tree node. Restart seek from root.
                 prepareToStartFromRoot();
                 traverseDownToFirstLeaf();
                 continue;
-            }
-
-            if ( !fullRead )
-            {
-                throw new TreeInconsistencyException( "Read inconsistent tree node %d%n" +
-                        "  nodeType:%d%n  currentNodeGen:%d%n  newGen:%d%n  newGenGen:%d%n" +
-                        "  keyCount:%d%n  maxKeyCount:%d%n  searchResult:%d%n  pos:%d%n" +
-                        "  rightSibling:%d%n  rightSiblingGen:%d",
-                        cursor.getCurrentPageId(), nodeType, currentNodeGen, newGen, newGenGen,
-                        keyCount, maxKeyCount, searchResult, pos, pointerId, pointerGen );
             }
 
             if ( !verifyFirstKeyInNodeIsExpectedAfterGoTo() )
