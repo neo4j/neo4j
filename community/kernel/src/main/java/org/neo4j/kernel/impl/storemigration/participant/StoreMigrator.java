@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
@@ -37,6 +38,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiConsumer;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.StreamSupport;
 
@@ -104,7 +106,6 @@ import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.input.Inputs;
 import org.neo4j.unsafe.impl.batchimport.staging.CoarseBoundedProgressExecutionMonitor;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
-import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores;
 
 import static java.util.Arrays.asList;
 import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
@@ -476,14 +477,15 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
             }
             StoreFile.fileOperation( DELETE, fileSystem, migrationDir, null, storesToDeleteFromMigratedDirectory,
                     true, null, StoreFileType.values() );
+            // When migrating on a block device there might be some files only accessible via the page cache.
             try
             {
                 Iterable<FileHandle> fileHandles = pageCache.streamFilesRecursive( migrationDir )::iterator;
                 for ( FileHandle fh : fileHandles )
                 {
-                    if ( storesToDeleteFromMigratedDirectory
-                            .stream().anyMatch( storeFile -> storeFile.fileName( StoreFileType.STORE )
-                                    .equals( fh.getFile().getName() ) ) )
+                    Predicate<StoreFile> predicate =
+                            storeFile -> storeFile.fileName( StoreFileType.STORE ).equals( fh.getFile().getName() );
+                    if ( storesToDeleteFromMigratedDirectory.stream().anyMatch( predicate ) )
                     {
                         final Optional<PagedFile> optionalPagedFile = pageCache.getExistingMapping( fh.getFile() );
                         if ( optionalPagedFile.isPresent() )
@@ -496,7 +498,6 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
             }
             catch ( IOException e )
             {
-                //TODO This might not be the entire truth
                 // This means that we had no files only present in the page cache, this is fine.
             }
         }
@@ -511,7 +512,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     private void prepareBatchImportMigration( File storeDir, File migrationDir, RecordFormats oldFormat,
             RecordFormats newFormat ) throws IOException
     {
-        BatchingNeoStores.createStore( fileSystem, pageCache, migrationDir.getPath(), newFormat );
+        createStore( migrationDir, newFormat );
 
         // We use the batch importer for migrating the data, and we use it in a special way where we only
         // rewrite the stores that have actually changed format. We know that to be node and relationship
@@ -530,6 +531,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                 StoreFile.NODE_LABEL_STORE};
         if ( newFormat.dynamic().equals( oldFormat.dynamic() ) )
         {
+            // We use the page cache for copying the STORE files since these might be on a block device.
             for ( StoreFile file : storesFilesToMigrate )
             {
                 File fromPath = new File( storeDir, file.fileName( StoreFileType.STORE ) );
@@ -549,11 +551,14 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                         }
                         while ( fromCursor.shouldRetry() );
                     }
-
                 }
-
+                catch ( NoSuchFileException e )
+                {
+                    // It is okay for the file to not be there.
+                }
             }
 
+            // The id files are to be kept on the normal file system, hence we use fileOperation to copy them.
             StoreFile.fileOperation( COPY, fileSystem, storeDir, migrationDir, Arrays.asList( storesFilesToMigrate ),
                     true, // OK if it's not there (1.9)
                     ExistingTargetStrategy.FAIL, StoreFileType.ID);
@@ -574,6 +579,23 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
             MigrationProgressMonitor.Section section = SilentMigrationProgressMonitor.NO_OP_SECTION;
 
             migrator.migrate( storeDir, oldFormat, migrationDir, newFormat, section, storesToMigrate, StoreType.NODE );
+        }
+    }
+
+    private void createStore( File migrationDir, RecordFormats newFormat )
+    {
+        StoreFactory storeFactory = new StoreFactory( new File( migrationDir.getPath() ), pageCache, fileSystem,
+                newFormat,
+                NullLogProvider.getInstance() );
+        try ( NeoStores neoStores = storeFactory.openAllNeoStores( true ) )
+        {
+            neoStores.getMetaDataStore();
+            neoStores.getLabelTokenStore();
+            neoStores.getNodeStore();
+            neoStores.getPropertyStore();
+            neoStores.getRelationshipGroupStore();
+            neoStores.getRelationshipStore();
+            neoStores.getSchemaStore();
         }
     }
 
@@ -692,15 +714,16 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                 true, // allow to skip non existent source files
                 ExistingTargetStrategy.OVERWRITE, // allow to overwrite target files
                 StoreFileType.values() );
+        // Since some of the files might only be accessible through the page cache (i.e. block devices), we also try to
+        // move the files with the page cache.
         try
         {
             Iterable<FileHandle> fileHandles = pageCache.streamFilesRecursive( migrationDir )::iterator;
             for ( FileHandle fh : fileHandles )
             {
-                if ( StreamSupport.stream( StoreFile.currentStoreFiles().spliterator(), false )
-                        .anyMatch( storeFile -> storeFile.fileName( StoreFileType.STORE ).equals( fh.getFile()
-                                .getName() )
-                        ) )
+                Predicate<StoreFile> predicate =
+                        storeFile -> storeFile.fileName( StoreFileType.STORE ).equals( fh.getFile().getName() );
+                if ( StreamSupport.stream( StoreFile.currentStoreFiles().spliterator(), false ).anyMatch( predicate ) )
                 {
                     final Optional<PagedFile> optionalPagedFile = pageCache.getExistingMapping( fh.getFile() );
                     if ( optionalPagedFile.isPresent() )
@@ -750,6 +773,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         if ( StandardV2_1.STORE_VERSION.equals( versionToMigrateFrom ) ||
              StandardV2_2.STORE_VERSION.equals( versionToMigrateFrom ) )
         {
+            // These versions are not supported for block devices.
             CustomIOConfigValidator.assertCustomIOConfigNotUsed( config, CUSTOM_IO_EXCEPTION_MESSAGE );
             // create counters from scratch
             Iterable<StoreFile> countsStoreFiles =

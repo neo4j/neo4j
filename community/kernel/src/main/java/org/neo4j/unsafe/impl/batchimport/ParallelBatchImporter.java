@@ -161,7 +161,7 @@ public class ParallelBatchImporter implements BatchImporter
         CountingStoreUpdateMonitor storeUpdateMonitor = new CountingStoreUpdateMonitor();
         try ( BatchingNeoStores neoStore = getBatchingNeoStores();
               CountsAccessor.Updater countsUpdater = neoStore.getCountsStore().reset(
-                      neoStore.getLastCommittedTransactionId() );
+                    neoStore.getLastCommittedTransactionId() );
               InputCache inputCache = new InputCache( fileSystem, storeDir, recordFormats, config ) )
         {
             Collector badCollector = input.badCollector();
@@ -256,11 +256,16 @@ public class ParallelBatchImporter implements BatchImporter
 
     private BatchingNeoStores getBatchingNeoStores()
     {
-        return (pageCache ==  null)
-              ? BatchingNeoStores.batchingNeoStores( fileSystem, storeDir, recordFormats, config, logService,
-                      additionalInitialIds, dbConfig )
-              : BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fileSystem, pageCache, PageCacheTracer.NULL,
-                      storeDir, recordFormats, config, logService, additionalInitialIds, dbConfig );
+        if ( pageCache == null )
+        {
+            return BatchingNeoStores.batchingNeoStores( fileSystem, storeDir, recordFormats, config, logService,
+                    additionalInitialIds, dbConfig );
+        }
+        else
+        {
+            return BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fileSystem, pageCache,
+                    PageCacheTracer.NULL, storeDir, recordFormats, config, logService, additionalInitialIds, dbConfig );
+        }
     }
 
     private long totalMemoryUsageOf( MemoryStatsVisitor.Visitable... users )

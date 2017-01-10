@@ -176,13 +176,10 @@ public class BatchingNeoStores implements AutoCloseable
             RecordFormats recordFormats, Configuration config, LogService logService, AdditionalInitialIds initialIds,
             Config dbConfig )
     {
-        Config neo4jConfig = new Config( stringMap( dbConfig.getParams(),
-                dense_node_threshold.name(), valueOf( config.denseNodeThreshold() ),
-                pagecache_memory.name(), valueOf( config.pageCacheMemory() ),
-                mapped_memory_page_size.name(), valueOf( config.pageSize() ) ),
-                GraphDatabaseSettings.class );
+        Config neo4jConfig = getNeo4jConfig( config, dbConfig );
         final PageCacheTracer tracer = new DefaultPageCacheTracer();
         PageCache pageCache = createPageCache( fileSystem, neo4jConfig, logService.getInternalLogProvider(), tracer );
+
         BatchingNeoStores batchingNeoStores =
                 new BatchingNeoStores( fileSystem, pageCache, storeDir, recordFormats, neo4jConfig, logService,
                         initialIds, false, tracer::bytesWritten );
@@ -190,18 +187,24 @@ public class BatchingNeoStores implements AutoCloseable
     }
 
     public static BatchingNeoStores batchingNeoStoresWithExternalPageCache( FileSystemAbstraction fileSystem,
-            PageCache pageCache, PageCacheTracer tracer, File storeDir, RecordFormats recordFormats, Configuration config,
-            LogService logService, AdditionalInitialIds initialIds, Config dbConfig )
+            PageCache pageCache, PageCacheTracer tracer, File storeDir, RecordFormats recordFormats,
+            Configuration config, LogService logService, AdditionalInitialIds initialIds, Config dbConfig )
     {
-        Config neo4jConfig = new Config( stringMap( dbConfig.getParams(),
-                dense_node_threshold.name(), valueOf( config.denseNodeThreshold() ),
-                pagecache_memory.name(), valueOf( config.pageCacheMemory() ),
-                mapped_memory_page_size.name(), valueOf( config.pageSize() ) ),
-                GraphDatabaseSettings.class );
+        Config neo4jConfig = getNeo4jConfig( config, dbConfig );
+
         BatchingNeoStores batchingNeoStores =
                 new BatchingNeoStores( fileSystem, pageCache, storeDir, recordFormats, neo4jConfig, logService,
                         initialIds, true, tracer::bytesWritten );
         return batchingNeoStores;
+    }
+
+    protected static Config getNeo4jConfig( Configuration config, Config dbConfig )
+    {
+        return new Config( stringMap( dbConfig.getParams(),
+                dense_node_threshold.name(), valueOf( config.denseNodeThreshold() ),
+                pagecache_memory.name(), valueOf( config.pageCacheMemory() ),
+                mapped_memory_page_size.name(), valueOf( config.pageSize() ) ),
+                GraphDatabaseSettings.class );
     }
 
     private static PageCache createPageCache( FileSystemAbstraction fileSystem, Config config, LogProvider log,
@@ -214,30 +217,6 @@ public class BatchingNeoStores implements AutoCloseable
     private boolean alreadyContainsData( NeoStores neoStores )
     {
         return neoStores.getNodeStore().getHighId() > 0 || neoStores.getRelationshipStore().getHighId() > 0;
-    }
-
-    /**
-     * A way to create the underlying {@link NeoStores} files in the {@link FileSystemAbstraction file system}
-     * before instantiating the real one. This allows some store contents to be populated before an import.
-     * Useful for store migration where the {@link ParallelBatchImporter} is used as migrator and some of
-     * its data need to be communicated by copying a store file.
-     */
-    public static void createStore( FileSystemAbstraction fileSystem, PageCache pageCache, String storeDir,
-            RecordFormats newFormat )
-            throws IOException
-    {
-        StoreFactory storeFactory = new StoreFactory( new File( storeDir ), pageCache, fileSystem, newFormat,
-                NullLogProvider.getInstance() );
-        try ( NeoStores neoStores = storeFactory.openAllNeoStores( true ) )
-        {
-            neoStores.getMetaDataStore();
-            neoStores.getLabelTokenStore();
-            neoStores.getNodeStore();
-            neoStores.getPropertyStore();
-            neoStores.getRelationshipGroupStore();
-            neoStores.getRelationshipStore();
-            neoStores.getSchemaStore();
-        }
     }
 
     private StoreFactory newStoreFactory( String name, OpenOption... openOptions )

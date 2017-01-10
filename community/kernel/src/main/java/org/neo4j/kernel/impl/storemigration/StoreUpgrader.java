@@ -24,7 +24,6 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.regex.Pattern;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -32,7 +31,6 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.FileHandle;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor.Section;
@@ -258,6 +256,8 @@ public class StoreUpgrader
 
     private void cleanMigrationDirectory( File migrationDirectory )
     {
+        // We use the page cache here to make sure that the migration directory is clean even if we are using a block
+        // device.
         try
         {
             Iterable<FileHandle> fileHandles = pageCache.streamFilesRecursive( migrationDirectory )::iterator;
