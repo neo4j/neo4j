@@ -864,6 +864,7 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
             settings.put( SecuritySettings.native_authorization_enabled, "true" );
             settings.put( SecuritySettings.ldap_authentication_enabled, "true" );
             settings.put( SecuritySettings.ldap_authorization_enabled, "true" );
+            settings.put( SecuritySettings.ldap_authorization_use_system_account, "true" );
         } );
 
         // Given
@@ -872,6 +873,7 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
 
         // Then
         // the created "tank" can log in and gets roles from both providers
+        // because the system account is used to authorize over the ldap provider
         reconnect();
         assertAuth( "tank", createdUserPassword, "native" );
         assertRoles( PredefinedRoles.READER, PredefinedRoles.PUBLISHER );
@@ -880,6 +882,32 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
         reconnect();
         assertAuth( "tank", "abc123", "ldap" );
         assertRoles( PredefinedRoles.READER, PredefinedRoles.PUBLISHER );
+    }
+
+    @Test
+    public void shouldBeAbleToAuthorizeUsingNativeWithLdapEnabled() throws Throwable
+    {
+        restartNeo4jServerWithOverriddenSettings( settings ->
+        {
+            settings.put( SecuritySettings.auth_providers,
+                    SecuritySettings.LDAP_REALM_NAME + "," + SecuritySettings.NATIVE_REALM_NAME );
+            settings.put( SecuritySettings.native_authentication_enabled, "true" );
+            settings.put( SecuritySettings.native_authorization_enabled, "true" );
+            settings.put( SecuritySettings.ldap_authentication_enabled, "true" );
+            settings.put( SecuritySettings.ldap_authorization_enabled, "true" );
+            settings.put( SecuritySettings.ldap_authorization_use_system_account, "false" );
+        } );
+
+        // Given
+        // we have a native 'simon' that is read only
+        testCreateReaderUser( "simon" );
+
+        // When
+        reconnect();
+        assertAuth( "simon", createdUserPassword, "native" );
+
+        // Then
+        assertReadSucceeds();
     }
 
     @Test

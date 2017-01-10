@@ -246,7 +246,7 @@ public class LdapRealm extends JndiLdapRealm implements RealmLifecycle, ShiroAut
     {
         if ( authorizationEnabled )
         {
-            String username = (String) getAvailablePrincipal( principals );
+            String username = getUsername( principals );
             if ( username == null )
             {
                 return null;
@@ -287,6 +287,21 @@ public class LdapRealm extends JndiLdapRealm implements RealmLifecycle, ShiroAut
             }
         }
         return null;
+    }
+
+    private String getUsername( PrincipalCollection principals )
+    {
+        String username = null;
+        Collection ldapPrincipals = principals.fromRealm( getName() );
+        if ( !ldapPrincipals.isEmpty() )
+        {
+            username = (String) ldapPrincipals.iterator().next();
+        }
+        else if ( useSystemAccountForAuthorization )
+        {
+            username = (String) principals.getPrimaryPrincipal();
+        }
+        return username;
     }
 
     private LdapContext getSystemLdapContextUsingStartTls( LdapContextFactory ldapContextFactory )
