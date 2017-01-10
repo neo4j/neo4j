@@ -21,15 +21,9 @@ package org.neo4j.io.pagecache.tracing;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
-import java.lang.invoke.SwitchPoint;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.io.pagecache.PageSwapper;
-
-import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.packageFlag;
 
 /**
  * The default PageCacheTracer implementation, that just increments counters.
@@ -73,14 +67,7 @@ public class DefaultPageCacheTracer implements PageCacheTracer
         }
     };
 
-    private final FlushEventOpportunity flushEventOpportunity = new FlushEventOpportunity()
-    {
-        @Override
-        public FlushEvent beginFlush( long filePageId, int cachePageId, PageSwapper swapper )
-        {
-            return flushEvent;
-        }
-    };
+    private final FlushEventOpportunity flushEventOpportunity = ( filePageId, cachePageId, swapper ) -> flushEvent;
 
     private final EvictionEvent evictionEvent = new EvictionEvent()
     {
@@ -258,5 +245,23 @@ public class DefaultPageCacheTracer implements PageCacheTracer
     public void bytesRead( long bytesRead )
     {
         this.bytesRead.getAndAdd( bytesRead );
+    }
+
+    @Override
+    public void evictions( long evictions )
+    {
+        this.evictions.getAndAdd( evictions );
+    }
+
+    @Override
+    public void bytesWritten( long bytesWritten )
+    {
+        this.bytesWritten.getAndAdd( bytesWritten );
+    }
+
+    @Override
+    public void flushes( long flushes )
+    {
+        this.flushes.getAndAdd( flushes );
     }
 }

@@ -19,6 +19,7 @@
  */
 package org.neo4j.io.pagecache.tracing.cursor;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
@@ -27,6 +28,8 @@ import java.util.Objects;
 
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.tracing.EvictionEvent;
+import org.neo4j.io.pagecache.tracing.FlushEvent;
+import org.neo4j.io.pagecache.tracing.FlushEventOpportunity;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 import org.neo4j.io.pagecache.tracing.PinEvent;
@@ -39,11 +42,17 @@ public class DefaultPageCursorTracer implements PageCursorTracer
     private long unpins = 0L;
     private long faults = 0L;
     private long bytesRead = 0L;
+    private long bytesWritten = 0L;
+    private long evictions = 0L;
+    private long flushes;
 
     private long cyclePinsStart;
     private long cycleUnpinsStart;
     private long cycleFaultsStart;
     private long cycleBytesReadStart;
+    private long cycleBytesWrittenStart;
+    private long cycleEvictionsStart;
+    private long cycleFlushesStart;
 
     private PageCacheTracer pageCacheTracer;
 
@@ -100,6 +109,9 @@ public class DefaultPageCursorTracer implements PageCursorTracer
         this.cycleUnpinsStart = unpins;
         this.cycleFaultsStart = faults;
         this.cycleBytesReadStart = bytesRead;
+        this.cycleBytesWrittenStart = bytesWritten;
+        this.cycleEvictionsStart = evictions;
+        this.cycleFlushesStart = flushes;
     }
 
     public void reportEvents()
@@ -109,6 +121,9 @@ public class DefaultPageCursorTracer implements PageCursorTracer
         pageCacheTracer.unpins( Math.abs( pins - cycleUnpinsStart ) );
         pageCacheTracer.faults( Math.abs( faults - cycleFaultsStart ) );
         pageCacheTracer.bytesRead( Math.abs( bytesRead - cycleBytesReadStart ) );
+        pageCacheTracer.evictions( Math.abs( evictions - cycleEvictionsStart ) );
+        pageCacheTracer.bytesWritten( Math.abs( bytesWritten - cycleBytesWrittenStart ) );
+        pageCacheTracer.flushes( Math.abs( flushes - cycleFlushesStart ) );
     }
 
     @Override
@@ -206,12 +221,47 @@ public class DefaultPageCursorTracer implements PageCursorTracer
         }
     };
 
+    private final EvictionEvent evictionEvent = new EvictionEvent()
+    {
+        @Override
+        public void setFilePageId( long filePageId )
+        {
+        }
+
+        @Override
+        public void setSwapper( PageSwapper swapper )
+        {
+        }
+
+        @Override
+        public FlushEventOpportunity flushEventOpportunity()
+        {
+            return flushEventOpportunity;
+        }
+
+        @Override
+        public void threwException( IOException exception )
+        {
+        }
+
+        @Override
+        public void setCachePageId( int cachePageId )
+        {
+        }
+
+        @Override
+        public void close()
+        {
+            evictions++;
+        }
+    };
+
     private final PageFaultEvent pageFaultEvent = new PageFaultEvent()
     {
         @Override
         public void addBytesRead( long bytes )
         {
-            bytesRead = +bytes;
+            bytesRead += bytes;
         }
 
         @Override
@@ -229,12 +279,46 @@ public class DefaultPageCursorTracer implements PageCursorTracer
         @Override
         public EvictionEvent beginEviction()
         {
-            //TODO: is that correct to assume that it will never be the case and can be ignored?
-            return EvictionEvent.NULL;
+            return evictionEvent;
         }
 
         @Override
         public void setCachePageId( int cachePageId )
+        {
+        }
+    };
+
+    private final FlushEventOpportunity flushEventOpportunity = new FlushEventOpportunity()
+    {
+        @Override
+        public FlushEvent beginFlush( long filePageId, int cachePageId, PageSwapper swapper )
+        {
+            return flushEvent;
+        }
+    };
+
+    private final FlushEvent flushEvent = new FlushEvent()
+    {
+        @Override
+        public void addBytesWritten( long bytes )
+        {
+            bytesWritten += bytes;
+        }
+
+        @Override
+        public void done()
+        {
+            flushes++;
+        }
+
+        @Override
+        public void done( IOException exception )
+        {
+            done();
+        }
+
+        @Override
+        public void addPagesFlushed( int pageCount )
         {
         }
     };

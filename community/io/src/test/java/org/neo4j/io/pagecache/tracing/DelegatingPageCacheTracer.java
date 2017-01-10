@@ -116,6 +116,24 @@ public class DelegatingPageCacheTracer implements PageCacheTracer
         delegate.bytesRead( bytesRead );
     }
 
+    @Override
+    public void evictions( long evictions )
+    {
+        delegate.evictions( evictions );
+    }
+
+    @Override
+    public void bytesWritten( long bytesWritten )
+    {
+        delegate.bytesWritten( bytesWritten );
+    }
+
+    @Override
+    public void flushes( long flushes )
+    {
+        delegate.flushes( flushes );
+    }
+
     public long filesMapped()
     {
         return delegate.filesMapped();

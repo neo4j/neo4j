@@ -145,6 +145,21 @@ public interface PageCacheTracer extends PageCacheCounters
         }
 
         @Override
+        public void evictions( long evictions )
+        {
+        }
+
+        @Override
+        public void bytesWritten( long bytesWritten )
+        {
+        }
+
+        @Override
+        public void flushes( long flushes )
+        {
+        }
+
+        @Override
         public String toString()
         {
             return PageCacheTracer.class.getName() + ".NULL";
@@ -187,4 +202,10 @@ public interface PageCacheTracer extends PageCacheCounters
     void faults( long faults );
 
     void bytesRead( long bytesRead );
+
+    void evictions( long evictions );
+
+    void bytesWritten( long bytesWritten );
+
+    void flushes( long flushes );
 }

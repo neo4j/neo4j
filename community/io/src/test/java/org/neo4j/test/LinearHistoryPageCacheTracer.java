@@ -641,6 +641,24 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
 
     }
 
+    @Override
+    public void evictions( long evictions )
+    {
+
+    }
+
+    @Override
+    public void bytesWritten( long bytesWritten )
+    {
+
+    }
+
+    @Override
+    public void flushes( long flushes )
+    {
+
+    }
+
     private class HistoryPrinter implements Consumer<HEvent>
     {
         private final List<HEvent> concurrentIntervals;

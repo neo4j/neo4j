@@ -37,8 +37,10 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.io.pagecache.RecordingPageCacheTracer;
-import org.neo4j.io.pagecache.RecordingPageCacheTracer.Pin;
+import org.neo4j.io.pagecache.tracing.ConfigurablePageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.recording.Event;
+import org.neo4j.io.pagecache.tracing.recording.RecordingPageCacheTracer;
+import org.neo4j.io.pagecache.tracing.recording.RecordingPageCursorTracer;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
@@ -84,7 +86,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
-import static org.neo4j.io.pagecache.RecordingPageCacheTracer.Event;
+import static org.neo4j.io.pagecache.tracing.recording.RecordingPageCursorTracer.Pin;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.test.rule.TestDirectory.testDirectory;
@@ -191,7 +193,8 @@ public class CommonAbstractStoreTest
     public void recordCursorPinsEachPageItReads() throws Exception
     {
         File storeFile = dir.file( "a" );
-        RecordingPageCacheTracer tracer = new RecordingPageCacheTracer( Pin.class );
+        RecordingPageCacheTracer tracer = new RecordingPageCacheTracer();
+        RecordingPageCursorTracer pageCursorTracer = new RecordingPageCursorTracer( Pin.class );
         PageCache pageCache = pageCacheRule.getPageCache( fileSystemRule.get(),
                 PageCacheRule.config().withTracer( tracer ), Config.empty() );
 
@@ -347,6 +350,12 @@ public class CommonAbstractStoreTest
         assertNotNull( tracer.tryObserve( Pin.class ) );
         assertNull( tracer.tryObserve( Event.class ) );
         return nodeId;
+    }
+
+    private static ConfigurablePageCursorTracerSupplier pageCursorTracerSupplier(
+            RecordingPageCursorTracer pageCursorTracer )
+    {
+        return new ConfigurablePageCursorTracerSupplier( pageCursorTracer );
     }
 
     private static class TheStore extends CommonAbstractStore<TheRecord,NoStoreHeader>
