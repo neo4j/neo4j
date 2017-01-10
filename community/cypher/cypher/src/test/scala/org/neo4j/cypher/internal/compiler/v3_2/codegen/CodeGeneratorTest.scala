@@ -1181,6 +1181,49 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     result.toList should equal(List(Map("y" -> 1L), Map("y" -> 2L), Map("y" -> 3L)))
   }
 
+  test("unwind parameter list") { // UNWIND {list} as x RETURN x
+    // given
+    val parameter = Parameter("list", CTAny)(pos)
+
+    val unwind = UnwindCollection(SingleRow()(solved), IdName("x"), parameter)(solved)
+    val plan = ProduceResult(List("x"), unwind)
+
+    // when
+    val compiled = compileAndExecute(plan, params = Map("list" -> List(1, 2, 3)))
+
+    // then
+    val result = getResult(compiled, "x")
+    result.toList should equal(List(Map("x" -> 1L), Map("x" -> 2L), Map("x" -> 3L)))
+  }
+
+  test("unwind null") { // UNWIND null as x RETURN x
+    // given
+    val unwind = UnwindCollection(SingleRow()(solved), IdName("x"), Null()(pos))(solved)
+    val plan = ProduceResult(List("x"), unwind)
+
+    // when
+    val compiled = compileAndExecute(plan)
+
+    // then
+    val result = getResult(compiled, "x")
+    result.toList should equal(List())
+  }
+
+  test("unwind null parameter list") { // UNWIND {list} as x RETURN x
+  // given
+  val parameter = Parameter("list", CTAny)(pos)
+
+    val unwind = UnwindCollection(SingleRow()(solved), IdName("x"), parameter)(solved)
+    val plan = ProduceResult(List("x"), unwind)
+
+    // when
+    val compiled = compileAndExecute(plan, params = Map("list" -> null))
+
+    // then
+    val result = getResult(compiled, "x")
+    result.toList should equal(List())
+  }
+
   test("projection of int list") { // WITH [1, 2, 3] as x RETURN x
     // given
     val listLiteral = literalIntList(1, 2, 3)
