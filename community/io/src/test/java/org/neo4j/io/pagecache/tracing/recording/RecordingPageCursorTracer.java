@@ -30,7 +30,8 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 /**
  * Recording tracer of page cursor events.
- * report observed events to supplied page cache tracer.
+ * Records and counts number of {@link Pin} and {@link Fault} events.
+ * Propagate those counters to global page cache tracer during event reporting.
  */
 public class RecordingPageCursorTracer extends RecordingTracer implements PageCursorTracer
 {
