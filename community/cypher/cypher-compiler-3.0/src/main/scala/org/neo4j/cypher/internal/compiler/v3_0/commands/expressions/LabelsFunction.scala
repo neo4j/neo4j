@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_0._
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{Effects, ReadsAnyLabel}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_0.ParameterWrongTypeException
@@ -46,4 +47,6 @@ case class LabelsFunction(nodeExpr: Expression) extends NullInNullOutExpression(
     nodeExpr.evaluateType(CTNode, symbols)
     CTList(CTString)
   }
+
+  override def localEffects(symbols: SymbolTable) = Effects(ReadsAnyLabel)
 }
