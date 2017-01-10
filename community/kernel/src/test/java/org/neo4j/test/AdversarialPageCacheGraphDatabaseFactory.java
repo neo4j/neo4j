@@ -51,7 +51,8 @@ public class AdversarialPageCacheGraphDatabaseFactory
         return new TestGraphDatabaseFactory()
         {
             @Override
-            protected GraphDatabaseService newDatabase( File dir, Config config, Dependencies dependencies )
+            protected GraphDatabaseService newEmbeddedDatabase( File dir, Config config, Dependencies
+                    dependencies )
             {
                 return new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
                 {

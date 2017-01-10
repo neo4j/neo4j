@@ -25,7 +25,6 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
-import java.util.Map;
 import java.util.function.Supplier;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -41,7 +40,6 @@ import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Dependencies;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
@@ -86,7 +84,7 @@ public class DatabaseShutdownTest
         private NeoStoreDataSource neoStoreDataSource;
 
         @Override
-        protected GraphDatabaseService newDatabase( File storeDir, Config config,
+        protected GraphDatabaseService newEmbeddedDatabase( File storeDir, Config config,
                 GraphDatabaseFacadeFactory.Dependencies dependencies )
         {
             return new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )

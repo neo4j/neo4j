@@ -33,6 +33,7 @@ import java.util.function.Function;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.fs.watcher.FileWatcher;
 
 /**
  * Allows you to select different file system behaviour for one file and a different file system behaviour for
@@ -52,6 +53,12 @@ public class SelectiveFileSystemAbstraction implements FileSystemAbstraction
         this.specialFile = specialFile;
         this.specialFileSystem = specialFileSystem;
         this.defaultFileSystem = defaultFileSystem;
+    }
+
+    @Override
+    public FileWatcher fileWatcher() throws IOException
+    {
+        return new SelectiveFileWatcher( specialFile, defaultFileSystem.fileWatcher(), specialFileSystem.fileWatcher() );
     }
 
     @Override

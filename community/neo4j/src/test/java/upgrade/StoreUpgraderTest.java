@@ -242,7 +242,7 @@ public class StoreUpgraderTest
     }
 
     @Test
-    public void shouldHaltUpgradeIfUpgradeConfigurationVetoesTheProcess()
+    public void shouldHaltUpgradeIfUpgradeConfigurationVetoesTheProcess() throws IOException
     {
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         Config deniedMigrationConfig = Config.embeddedDefaults( MapUtil.stringMap( GraphDatabaseSettings
@@ -492,16 +492,18 @@ public class StoreUpgraderTest
     }
 
     private StoreUpgrader newUpgrader( UpgradableDatabase upgradableDatabase, Config config, PageCache pageCache )
+            throws IOException
     {
         return newUpgrader( upgradableDatabase, pageCache, config );
     }
 
-    private StoreUpgrader newUpgrader( UpgradableDatabase upgradableDatabase, PageCache pageCache )
+    private StoreUpgrader newUpgrader( UpgradableDatabase upgradableDatabase, PageCache pageCache ) throws IOException
     {
         return newUpgrader( upgradableDatabase, pageCache, allowMigrateConfig );
     }
 
     private StoreUpgrader newUpgrader( UpgradableDatabase upgradableDatabase, PageCache pageCache, Config config )
+            throws IOException
     {
         check = new StoreVersionCheck( pageCache );
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();

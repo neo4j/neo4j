@@ -34,7 +34,10 @@ import java.util.Set;
 import org.neo4j.graphdb.mockfs.CloseTrackingFileSystem;
 
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 public class DelegateFileSystemAbstractionTest
 {
@@ -53,6 +56,18 @@ public class DelegateFileSystemAbstractionTest
 
         assertFalse( fileSystem.isOpen() );
         assertTrue( closeTrackingFileSystem.isClosed() );
+    }
+
+    @Test
+    public void delegatedFileSystemWatcher() throws IOException
+    {
+        FileSystem fileSystem = mock(FileSystem.class);
+        try ( DelegateFileSystemAbstraction abstraction = new DelegateFileSystemAbstraction( fileSystem ) )
+        {
+            assertNotNull( abstraction.fileWatcher() );
+        }
+
+        verify( fileSystem ).newWatchService();
     }
 
     private class TrackableFileSystem extends FileSystem

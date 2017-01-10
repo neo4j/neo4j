@@ -450,6 +450,7 @@ public class ImportTool
         LogService logService = life.add( StoreLogService.inLogsDirectory( fs, logsDir ) );
 
         life.start();
+        //TODO: add file watcher here?
         BatchImporter importer = new ParallelBatchImporter( storeDir,
                 fs,
                 configuration,

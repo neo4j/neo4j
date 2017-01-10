@@ -32,8 +32,19 @@ import java.nio.file.CopyOption;
 import java.util.function.Function;
 import java.util.zip.ZipOutputStream;
 
+import org.neo4j.io.fs.watcher.FileWatcher;
+
 public interface FileSystemAbstraction extends Closeable
 {
+
+    /**
+     * Create file watcher that provides possibilities to monitor directories on underlying file system
+     * abstraction
+     * @return specific file system abstract watcher
+     * @throws IOException in case exception occur during file watcher creation
+     */
+    FileWatcher fileWatcher() throws IOException;
+
     StoreChannel open( File fileName, String mode ) throws IOException;
 
     OutputStream openAsOutputStream( File fileName, boolean append ) throws IOException;

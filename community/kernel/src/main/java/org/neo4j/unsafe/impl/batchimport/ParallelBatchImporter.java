@@ -260,8 +260,7 @@ public class ParallelBatchImporter implements BatchImporter
         Set<Object> minorityRelationshipTypeSet = asSet( minorityRelationshipTypes );
         PerTypeRelationshipSplitter perTypeIterator = new PerTypeRelationshipSplitter(
                 relationships.iterator(),
-                allRelationshipTypes,
-                type -> minorityRelationshipTypeSet.contains( type ),
+                allRelationshipTypes, minorityRelationshipTypeSet::contains,
                 neoStore.getRelationshipTypeRepository(),
                 inputCache );
 

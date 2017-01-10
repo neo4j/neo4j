@@ -56,6 +56,8 @@ import static java.lang.String.format;
  */
 public class TestDirectory implements TestRule
 {
+    public static final String DATABASE_DIRECTORY = "graph-db";
+
     private final FileSystemAbstraction fileSystem;
     private File testClassBaseFolder;
     private Class<?> owningTest;
@@ -158,12 +160,12 @@ public class TestDirectory implements TestRule
 
     public File graphDbDir()
     {
-        return directory( "graph-db" );
+        return directory( DATABASE_DIRECTORY );
     }
 
     public File makeGraphDbDir() throws IOException
     {
-        return cleanDirectory( "graph-db" );
+        return cleanDirectory( DATABASE_DIRECTORY );
     }
 
     public void cleanup() throws IOException

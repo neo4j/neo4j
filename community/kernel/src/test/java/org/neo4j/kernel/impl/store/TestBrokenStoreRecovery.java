@@ -63,9 +63,10 @@ public class TestBrokenStoreRecovery
     private void trimFileToSize( File theFile, int toSize )
             throws IOException
     {
-        FileChannel theChannel = new RandomAccessFile( theFile, "rw" ).getChannel();
-        theChannel.truncate( toSize );
-        theChannel.force( false );
-        theChannel.close();
+        try ( FileChannel theChannel = new RandomAccessFile( theFile, "rw" ).getChannel() )
+        {
+            theChannel.truncate( toSize );
+            theChannel.force( false );
+        }
     }
 }

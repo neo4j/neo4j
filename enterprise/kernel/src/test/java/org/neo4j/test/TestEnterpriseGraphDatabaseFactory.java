@@ -26,18 +26,11 @@ import org.neo4j.graphdb.EnterpriseGraphDatabase;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.enterprise.EnterpriseEditionModule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.Edition;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
-import org.neo4j.kernel.impl.factory.PlatformModule;
-import org.neo4j.kernel.impl.logging.AbstractLogService;
-import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.logging.LogProvider;
 
 /**
  * Factory for test graph database.
@@ -46,9 +39,10 @@ public class TestEnterpriseGraphDatabaseFactory extends TestGraphDatabaseFactory
 {
     @Override
     protected GraphDatabaseBuilder.DatabaseCreator createDatabaseCreator( File storeDir,
-                                                                          GraphDatabaseFactoryState state )
+            GraphDatabaseFactoryState state )
     {
-        return config -> {
+        return config ->
+        {
             config.put( "unsupported.dbms.ephemeral", "false" );
             return new EnterpriseGraphDatabase( storeDir, config, state.databaseDependencies() );
         };
@@ -69,61 +63,19 @@ public class TestEnterpriseGraphDatabaseFactory extends TestGraphDatabaseFactory
             @Override
             public GraphDatabaseService newDatabase( Config config )
             {
-                return new GraphDatabaseFacadeFactory( DatabaseInfo.ENTERPRISE, EnterpriseEditionModule::new )
-                {
-                    @Override
-                    protected PlatformModule createPlatform( File storeDir, Config config,
-                            Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
-                    {
-                        return new ImpermanentGraphDatabase.ImpermanentPlatformModule( storeDir, config, databaseInfo,
-                                dependencies, graphDatabaseFacade )
-                        {
-                            @Override
-                            protected FileSystemAbstraction createFileSystemAbstraction()
-                            {
-                                FileSystemAbstraction fs = state.getFileSystem();
-                                if ( fs != null )
-                                {
-                                    return fs;
-                                }
-                                else
-                                {
-                                    return super.createFileSystemAbstraction();
-                                }
-                            }
-
-                            @Override
-                            protected LogService createLogService( LogProvider logProvider )
-                            {
-                                final LogProvider internalLogProvider = state.getInternalLogProvider();
-                                if ( internalLogProvider == null )
-                                {
-                                    return super.createLogService( logProvider );
-                                }
-
-                                final LogProvider userLogProvider = state.databaseDependencies().userLogProvider();
-                                return new AbstractLogService()
-                                {
-                                    @Override
-                                    public LogProvider getUserLogProvider()
-                                    {
-                                        return userLogProvider;
-                                    }
-
-                                    @Override
-                                    public LogProvider getInternalLogProvider()
-                                    {
-                                        return internalLogProvider;
-                                    }
-                                };
-                            }
-
-                        };
-                    }
-                }.newFacade( storeDir, config,
+                return new TestEnterpriseGraphDatabaseFacadeFactory( state, true ).newFacade( storeDir, config,
                         GraphDatabaseDependencies.newDependencies( state.databaseDependencies() ) );
             }
         };
+    }
+
+    static class TestEnterpriseGraphDatabaseFacadeFactory extends TestGraphDatabaseFacadeFactory
+    {
+
+        TestEnterpriseGraphDatabaseFacadeFactory( TestGraphDatabaseFactoryState state, boolean impermanent )
+        {
+            super( state, impermanent, DatabaseInfo.ENTERPRISE, EnterpriseEditionModule::new );
+        }
     }
 
     @Override
