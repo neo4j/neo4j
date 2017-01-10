@@ -34,22 +34,27 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
  */
 public final class StandalonePageCacheFactory
 {
-
     private StandalonePageCacheFactory()
     {
     }
 
     public static PageCache createPageCache( FileSystemAbstraction fileSystem )
     {
-        return createPageCache( fileSystem, PageCacheTracer.NULL );
+        return createPageCache( fileSystem, null, PageCacheTracer.NULL );
     }
 
-    public static PageCache createPageCache( FileSystemAbstraction fileSystem, PageCacheTracer tracer )
+    public static PageCache createPageCache( FileSystemAbstraction fileSystem, Integer pageSize )
+    {
+        return createPageCache( fileSystem, pageSize, PageCacheTracer.NULL );
+    }
+
+    public static PageCache createPageCache( FileSystemAbstraction fileSystem, Integer pageSize,
+            PageCacheTracer tracer )
     {
         SingleFilePageSwapperFactory factory = new SingleFilePageSwapperFactory();
         factory.setFileSystemAbstraction( fileSystem );
 
-        int cachePageSize = factory.getCachePageSizeHint();
+        int cachePageSize = pageSize != null ? pageSize : factory.getCachePageSizeHint();
         long pageCacheMemory = ByteUnit.mebiBytes( 8 );
         long pageCount = pageCacheMemory / cachePageSize;
         return new MuninnPageCache( factory, (int) pageCount, cachePageSize, tracer );

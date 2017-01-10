@@ -62,6 +62,7 @@ import static org.junit.Assert.fail;
 import static org.neo4j.kernel.impl.store.MetaDataStore.versionStringToLong;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 import static org.neo4j.test.Race.throwing;
+import static org.neo4j.test.rule.PageCacheRule.config;
 
 public class MetaDataStoreTest
 {
@@ -71,7 +72,7 @@ public class MetaDataStoreTest
     public final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
 
     @Rule
-    public final PageCacheRule pageCacheRule = new PageCacheRule( false );
+    public final PageCacheRule pageCacheRule = new PageCacheRule( config().withInconsistentReads( false ) );
 
     private EphemeralFileSystemAbstraction fs;
     private PageCache pageCache;

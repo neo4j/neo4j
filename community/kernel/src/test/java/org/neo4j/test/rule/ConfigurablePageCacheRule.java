@@ -27,18 +27,17 @@ import org.neo4j.kernel.impl.pagecache.ConfigurableStandalonePageCacheFactory;
 
 public class ConfigurablePageCacheRule extends PageCacheRule
 {
-
     public PageCache getPageCache( FileSystemAbstraction fs, Config config )
     {
-        return getPageCache( fs, PageCacheTracer.NULL, config );
+        return getPageCache( fs, config(), config );
     }
 
-    public PageCache getPageCache( FileSystemAbstraction fs, PageCacheTracer tracer, Config config )
+    public PageCache getPageCache( FileSystemAbstraction fs, PageCacheConfig pageCacheConfig, Config config )
     {
         closeExistingPageCache();
+        PageCacheTracer tracer = selectConfig( baseConfig.tracer, pageCacheConfig.tracer, PageCacheTracer.NULL );
         pageCache = ConfigurableStandalonePageCacheFactory.createPageCache( fs, tracer, config );
-        pageCachePostConstruct();
+        pageCachePostConstruct( pageCacheConfig );
         return pageCache;
     }
-
 }

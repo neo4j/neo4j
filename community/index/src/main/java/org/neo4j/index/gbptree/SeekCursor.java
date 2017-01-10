@@ -228,9 +228,9 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
     private int pos;
 
     /**
-     * Number of keys in the current leaf, this value is cached and only re-read every time there's
-     * a {@link PageCursor#shouldRetry() retry due to concurrent write}.
-     */
+    * Number of keys in the current leaf, this value is cached and only re-read every time there's
+    * a {@link PageCursor#shouldRetry() retry due to concurrent write}.
+    */
     private int keyCount;
 
     /**
@@ -394,21 +394,32 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
         do
         {
             // Read
+            boolean fullRead;
+            int searchResult = 0;
             do
             {
+                fullRead = false;
+
                 // Where we are
                 if ( !readHeader() )
                 {
                     continue;
                 }
 
-                // Where we're going
-                pos = searchKey( fromInclusive );
+                searchResult = searchKey( fromInclusive );
+                if ( !KeySearch.isSuccess( searchResult ) )
+                {
+                    continue;
+                }
+                pos = positionOf( searchResult );
+
                 if ( isInternal )
                 {
                     pointerId = bTreeNode.childAt( cursor, pos, stableGeneration, unstableGeneration );
                     pointerGen = readPointerGenOnSuccess( pointerId );
                 }
+
+                fullRead = true;
             }
             while ( cursor.shouldRetry() );
             checkOutOfBounds( cursor );
@@ -416,6 +427,15 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
             // Act
             if ( notSaneRead() )
             {
+                if ( !fullRead )
+                {
+                    throw new TreeInconsistencyException( "Read inconsistent tree node %d%n" +
+                            "  nodeType:%d%n  currentNodeGen:%d%n  newGen:%d%n  newGenGen:%d%n  isInternal:%b%n" +
+                            "  keyCount:%d%n  maxKeyCount:%d%n  searchResult:%d%n  pos:%d%n  childId:%d%n  childIdGen:%d",
+                            cursor.getCurrentPageId(), nodeType, currentNodeGen, newGen, newGenGen,
+                            isInternal, keyCount, maxKeyCount, searchResult, pos, pointerId, pointerGen );
+                }
+
                 prepareToStartFromRoot();
                 isInternal = true;
                 continue;
@@ -449,9 +469,13 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
         while ( true )
         {
             pos += stride;
+            boolean fullRead;
+            int searchResult = 0;
             // Read
             do
             {
+                fullRead = false;
+
                 // Where we are
                 if ( !readHeader() )
                 {
@@ -468,7 +492,13 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
                 {
                     // Keys could have been moved so we need to make sure we are not missing any keys by
                     // moving position back until we find previously returned key
-                    pos = searchKey( first ? fromInclusive : prevKey );
+                    searchResult = searchKey( first ? fromInclusive : prevKey );
+                    if ( !KeySearch.isSuccess( searchResult ) )
+                    {
+                        continue;
+                    }
+                    pos = positionOf( searchResult );
+
                     if ( !seekForward && pos >= keyCount )
                     {
                         // We may need to go to previous sibling to find correct place to start seeking from
@@ -490,6 +520,8 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
                     bTreeNode.keyAt( cursor, mutableKey, pos );
                     bTreeNode.valueAt( cursor, mutableValue, pos );
                 }
+
+                fullRead = true;
             }
             while ( concurrentWriteHappened = cursor.shouldRetry() );
             checkOutOfBounds( cursor );
@@ -497,6 +529,16 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
             // Act
             if ( notSaneRead() )
             {
+                if ( !fullRead )
+                {
+                    throw new TreeInconsistencyException( "Read inconsistent tree node %d%n" +
+                            "  nodeType:%d%n  currentNodeGen:%d%n  newGen:%d%n  newGenGen:%d%n" +
+                            "  keyCount:%d%n  maxKeyCount:%d%n  searchResult:%d%n  pos:%d%n" +
+                            "  rightSibling:%d%n  rightSiblingGen:%d",
+                            cursor.getCurrentPageId(), nodeType, currentNodeGen, newGen, newGenGen,
+                            keyCount, maxKeyCount, searchResult, pos, pointerId, pointerGen );
+                }
+
                 // This node has been reused for something else than a tree node. Restart seek from root.
                 prepareToStartFromRoot();
                 traverseDownToFirstLeaf();
@@ -673,11 +715,15 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
      */
     private int searchKey( KEY key )
     {
-        int search = KeySearch.search( cursor, bTreeNode, key, mutableKey, keyCount );
-        int pos = KeySearch.positionOf( search );
+        return KeySearch.search( cursor, bTreeNode, key, mutableKey, keyCount );
+    }
+
+    private int positionOf( int searchResult )
+    {
+        int pos = KeySearch.positionOf( searchResult );
 
         // Assuming unique keys
-        if ( isInternal && KeySearch.isHit( search ) )
+        if ( isInternal && KeySearch.isHit( searchResult ) )
         {
             pos++;
         }

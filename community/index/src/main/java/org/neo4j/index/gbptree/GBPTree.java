@@ -39,6 +39,7 @@ import org.neo4j.index.Index;
 import org.neo4j.index.IndexWriter;
 import org.neo4j.index.ValueMerger;
 import org.neo4j.index.ValueMergers;
+import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
@@ -261,9 +262,7 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>
      * If the index doesn't exist it will be created and the {@link Layout} and {@code pageSize} will
      * be written in index header.
      * If the index exists it will be opened and the {@link Layout} will be matched with the information
-     * in the header. At the very least {@link Layout#identifier()} will be matched, but also if the
-     * index has {@link Layout#writeMetaData(PageCursor)} additional meta data it will be
-     * {@link Layout#readMetaData(PageCursor)}.
+     * in the header. At the very least {@link Layout#identifier()} will be matched.
      *
      * @param pageCache {@link PageCache} to use to map index file
      * @param indexFile {@link File} containing the actual index
@@ -400,13 +399,8 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>
         Pair<TreeState,TreeState> states;
         try ( PageCursor cursor = pagedFile.io( 0L /*ignored*/, PagedFile.PF_SHARED_READ_LOCK ) )
         {
-            do
-            {
-                states = TreeStatePair.readStatePages(
-                        cursor, IdSpace.STATE_PAGE_A, IdSpace.STATE_PAGE_B );
-            }
-            while ( cursor.shouldRetry() );
-            checkOutOfBounds( cursor );
+            states = TreeStatePair.readStatePages(
+                    cursor, IdSpace.STATE_PAGE_A, IdSpace.STATE_PAGE_B );
         }
         return states;
     }
@@ -439,7 +433,15 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>
             }
             while ( metaCursor.shouldRetry() );
             checkOutOfBounds( metaCursor );
+            metaCursor.checkAndClearCursorException();
         }
+        catch ( CursorException e )
+        {
+            throw new MetadataMismatchException( format(
+                    "Tried to open %s, but caught an error while reading meta data. " +
+                            "File is expected to be corrupt, try to rebuild.", indexFile ), e );
+        }
+
         if ( formatVersion != FORMAT_VERSION )
         {
             throw new MetadataMismatchException( "Tried to open %s with a different format version than " +
@@ -641,8 +643,8 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>
     {
         try ( PageCursor cursor = openRootCursor( PagedFile.PF_SHARED_READ_LOCK ) )
         {
-            TreePrinter.printTree( cursor, bTreeNode, layout,
-                    stableGeneration( generation ), unstableGeneration( generation ), System.out, printValues );
+            new TreePrinter<>( bTreeNode, layout, stableGeneration( generation ), unstableGeneration( generation ) )
+                .printTree( cursor, System.out, printValues );
         }
     }
 

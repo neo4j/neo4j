@@ -28,7 +28,6 @@ import org.neo4j.io.pagecache.PageCursor;
 
 import static org.neo4j.index.gbptree.KeySearch.isHit;
 import static org.neo4j.index.gbptree.KeySearch.positionOf;
-import static org.neo4j.index.gbptree.KeySearch.search;
 import static org.neo4j.index.gbptree.PageCursorUtil.goTo;
 
 /**
@@ -258,7 +257,7 @@ class InternalTreeLogic<KEY,VALUE>
         {
             // We still need to go down further, but we're on the right path
             int keyCount = bTreeNode.keyCount( cursor );
-            int searchResult = search( cursor, bTreeNode, key, readKey, keyCount );
+            int searchResult = search( cursor, key, readKey, keyCount );
             int childPos = positionOf( searchResult );
             if ( isHit( searchResult ) )
             {
@@ -373,6 +372,13 @@ class InternalTreeLogic<KEY,VALUE>
         }
     }
 
+    private int search( PageCursor cursor, KEY key, KEY readKey, int keyCount )
+    {
+        int searchResult = KeySearch.search( cursor, bTreeNode, key, readKey, keyCount );
+        KeySearch.assertSuccess( searchResult );
+        return searchResult;
+    }
+
     /**
      * Asserts that cursor is where it's expected to be at, compared to current level.
      *
@@ -409,7 +415,7 @@ class InternalTreeLogic<KEY,VALUE>
         if ( keyCount < bTreeNode.internalMaxKeyCount() )
         {
             // No overflow
-            int pos = positionOf( search( cursor, bTreeNode, primKey, readKey, keyCount ) );
+            int pos = positionOf( search( cursor, primKey, readKey, keyCount ) );
 
             bTreeNode.insertKeyAt( cursor, primKey, pos, keyCount );
             // NOTE pos+1 since we never insert a new child before child(0) because its key is really
@@ -450,7 +456,7 @@ class InternalTreeLogic<KEY,VALUE>
         long newRight = idProvider.acquireNewId( stableGeneration, unstableGeneration );
 
         // Find position to insert new key
-        int pos = positionOf( search( cursor, bTreeNode, primKey, readKey, keyCount ) );
+        int pos = positionOf( search( cursor, primKey, readKey, keyCount ) );
 
         int keyCountAfterInsert = keyCount + 1;
         int middlePos = middle( keyCountAfterInsert );
@@ -598,7 +604,7 @@ class InternalTreeLogic<KEY,VALUE>
             long stableGeneration, long unstableGeneration ) throws IOException
     {
         int keyCount = bTreeNode.keyCount( cursor );
-        int search = search( cursor, bTreeNode, key, readKey, keyCount );
+        int search = search( cursor, key, readKey, keyCount );
         int pos = positionOf( search );
         if ( isHit( search ) )
         {
@@ -704,7 +710,7 @@ class InternalTreeLogic<KEY,VALUE>
         // 5. Write new key/values into L
 
         // Position where newKey / newValue is to be inserted
-        int pos = positionOf( search( cursor, bTreeNode, newKey, readKey, keyCount ) );
+        int pos = positionOf( search( cursor, newKey, readKey, keyCount ) );
         int keyCountAfterInsert = keyCount + 1;
         int middlePos = middle( keyCountAfterInsert );
 
@@ -876,7 +882,7 @@ class InternalTreeLogic<KEY,VALUE>
         int keyCount = bTreeNode.keyCount( cursor );
 
         // No overflow, insert key and value
-        int search = search( cursor, bTreeNode, key, readKey, keyCount );
+        int search = search( cursor, key, readKey, keyCount );
         int pos = positionOf( search );
         boolean hit = isHit( search );
         if ( !hit )

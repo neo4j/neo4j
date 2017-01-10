@@ -48,11 +48,12 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
+import static org.neo4j.test.rule.PageCacheRule.config;
 
 public class PropertyStoreTest
 {
     @ClassRule
-    public static PageCacheRule pageCacheRule = new PageCacheRule( false );
+    public static PageCacheRule pageCacheRule = new PageCacheRule( config().withInconsistentReads( false ) );
 
     @Rule
     public final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();

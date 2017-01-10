@@ -40,7 +40,6 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.RecordingPageCacheTracer;
 import org.neo4j.io.pagecache.RecordingPageCacheTracer.Pin;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
@@ -88,6 +87,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.io.pagecache.RecordingPageCacheTracer.Event;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
+import static org.neo4j.test.rule.PageCacheRule.config;
 import static org.neo4j.test.rule.TestDirectory.testDirectory;
 
 public class CommonAbstractStoreTest
@@ -193,7 +193,8 @@ public class CommonAbstractStoreTest
     {
         File storeFile = dir.file( "a" );
         RecordingPageCacheTracer tracer = new RecordingPageCacheTracer( Pin.class );
-        PageCache pageCache = pageCacheRule.getPageCache( fileSystemRule.get(), tracer, Config.empty() );
+        PageCache pageCache = pageCacheRule.getPageCache( fileSystemRule.get(),
+                config().withTracer( tracer ), Config.empty() );
 
         try ( NodeStore store = new NodeStore( storeFile, Config.empty(), new DefaultIdGeneratorFactory( fileSystemRule.get() ),
                 pageCache, NullLogProvider.getInstance(), null, Standard.LATEST_RECORD_FORMATS ) )
@@ -307,7 +308,7 @@ public class CommonAbstractStoreTest
         File file = dir.file( "store" ).getAbsoluteFile();
         File idFile = new File( file.getParentFile(), StoreFileType.ID.augment( file.getName() ) );
         FileSystemAbstraction fs = fileSystemRule.get();
-        PageCache pageCache = pageCacheRule.getPageCache( fs, PageCacheTracer.NULL, Config.empty() );
+        PageCache pageCache = pageCacheRule.getPageCache( fs, Config.empty() );
         TheStore store = new TheStore( file, config, idType, new DefaultIdGeneratorFactory( fs ), pageCache,
                 NullLogProvider.getInstance(), recordFormat, DELETE_ON_CLOSE );
         store.initialise( true );

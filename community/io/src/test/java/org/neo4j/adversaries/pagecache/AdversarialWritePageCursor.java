@@ -264,7 +264,11 @@ class AdversarialWritePageCursor extends PageCursor
     public int copyTo( int sourceOffset, PageCursor targetCursor, int targetOffset, int lengthInBytes )
     {
         adversary.injectFailure( IndexOutOfBoundsException.class );
-        return delegate.copyTo( sourceOffset, targetCursor, targetOffset, lengthInBytes );
+
+        PageCursor targetCursorDelegate = targetCursor instanceof AdversarialWritePageCursor ?
+                ((AdversarialWritePageCursor) targetCursor).delegate : targetCursor;
+
+        return delegate.copyTo( sourceOffset, targetCursorDelegate, targetOffset, lengthInBytes );
     }
 
     @Override

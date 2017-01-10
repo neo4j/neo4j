@@ -1040,7 +1040,7 @@ public class InternalTreeLogicTest
     // KEEP even if unused
     private void printTree() throws IOException
     {
-        TreePrinter.printTree( cursor, node, layout, stableGen, unstableGen, System.out, true );
+        new TreePrinter<>( node, layout, stableGen, unstableGen ).printTree( cursor, System.out, true );
     }
 
     private static MutableLong key( long key )
@@ -1065,12 +1065,18 @@ public class InternalTreeLogicTest
     private void assertSiblingOrderAndPointers( long... children ) throws IOException
     {
         long currentPageId = cursor.getCurrentPageId();
-        RightmostInChain<MutableLong> rightmost =
-                new RightmostInChain<>( node, stableGen, unstableGen );
+        RightmostInChain rightmost = new RightmostInChain();
         for ( long child : children )
         {
             goTo( cursor, child );
-            rightmost.assertNext( cursor );
+            long leftSibling = node.leftSibling( cursor, stableGen, unstableGen );
+            long rightSibling = node.rightSibling( cursor, stableGen, unstableGen );
+            rightmost.assertNext( cursor,
+                    node.gen( cursor ),
+                    pointer( leftSibling ),
+                    node.pointerGen( cursor, leftSibling ),
+                    pointer( rightSibling ),
+                    node.pointerGen( cursor, rightSibling ) );
         }
         rightmost.assertLast();
         goTo( cursor, currentPageId );

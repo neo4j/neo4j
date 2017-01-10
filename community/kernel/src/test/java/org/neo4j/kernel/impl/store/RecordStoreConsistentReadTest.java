@@ -51,6 +51,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
+import static org.neo4j.test.rule.PageCacheRule.config;
 
 public abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord, S extends RecordStore<R>>
 {
@@ -58,7 +59,7 @@ public abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord
     protected static final int ID = 1;
 
     @ClassRule
-    public static final PageCacheRule pageCacheRule = new PageCacheRule( false );
+    public static final PageCacheRule pageCacheRule = new PageCacheRule( config().withInconsistentReads( false ) );
 
     private FileSystemAbstraction fs;
     private AtomicBoolean nextReadIsInconsistent;
@@ -78,8 +79,8 @@ public abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord
 
     private NeoStores storeFixture()
     {
-        PageCache pageCache = pageCacheRule.getPageCache( fs );
-        pageCache = pageCacheRule.withInconsistentReads( pageCache, nextReadIsInconsistent );
+        PageCache pageCache = pageCacheRule.getPageCache( fs,
+                config().withInconsistentReads( nextReadIsInconsistent ) );
         File storeDir = new File( "stores" );
         StoreFactory factory = new StoreFactory( storeDir, pageCache, fs, NullLogProvider.getInstance() );
         NeoStores neoStores = factory.openAllNeoStores( true );

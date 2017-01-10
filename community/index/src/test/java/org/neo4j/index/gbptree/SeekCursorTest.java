@@ -36,10 +36,13 @@ import org.neo4j.index.Hit;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.impl.DelegatingPageCursor;
 
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.index.ValueMergers.overwrite;
 import static org.neo4j.index.gbptree.GenSafePointerPair.pointer;
 
@@ -1686,6 +1689,62 @@ public class SeekCursorTest
 
         // then
         assertTrue( triggered.getValue() );
+    }
+
+    @Test
+    public void shouldThrowTreeInconsistencyExceptionOnBadReadWithoutShouldRetryWhileTraversingTree() throws Exception
+    {
+        // GIVEN
+        int keyCount = 10000;
+
+        // WHEN
+        cursor.setOffset( TreeNode.BYTE_POS_KEYCOUNT );
+        cursor.putInt( keyCount ); // Bad key count
+
+        // THEN
+        try ( SeekCursor<MutableLong,MutableLong> seek = seekCursor( 0L, Long.MAX_VALUE ) )
+        {
+            // Do nothing
+        }
+        catch ( TreeInconsistencyException e )
+        {
+            assertThat( e.getMessage(), containsString( "keyCount:" + keyCount ) );
+        }
+    }
+
+    @Test
+    public void shouldThrowTreeInconsistencyExceptionOnBadReadWithoutShouldRetryWhileTraversingLeaves() throws Exception
+    {
+        // GIVEN
+        // a root with two leaves in old generation
+        int keyCount = 10000;
+        long i = 0L;
+        while ( numberOfRootSplits == 0 )
+        {
+            insert( i, i * 10 );
+            i++;
+        }
+        long rootId = cursor.getCurrentPageId();
+        long leftChild = node.childAt( cursor, 0, stableGen, unstableGen );
+
+        // WHEN
+        PageCursorUtil.goTo( cursor, "test", GenSafePointerPair.pointer( leftChild ) );
+        cursor.setOffset( node.BYTE_POS_KEYCOUNT );
+        cursor.putInt( keyCount ); // Bad key count
+        PageCursorUtil.goTo( cursor, "test", rootId );
+
+        // THEN
+        try ( SeekCursor<MutableLong,MutableLong> seek = seekCursor( 0L, Long.MAX_VALUE ) )
+        {
+            while ( seek.next() )
+            {
+                // Do nothing
+            }
+        }
+        catch ( TreeInconsistencyException e )
+        {
+            assertThat( e.getMessage(), containsString( "keyCount:" + keyCount ) );
+        }
     }
 
     private void checkpoint()

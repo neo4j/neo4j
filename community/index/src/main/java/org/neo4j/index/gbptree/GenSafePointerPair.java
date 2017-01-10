@@ -354,8 +354,7 @@ class GenSafePointerPair
         }
         if ( generation < MIN_GENERATION )
         {
-            throw new TreeInconsistencyException( "Generation was less than MIN_GENERATION " + MIN_GENERATION +
-                    " but checksum was correct. Pointer was " + generation + "," + pointer );
+            return BROKEN;
         }
         if ( generation <= stableGeneration )
         {

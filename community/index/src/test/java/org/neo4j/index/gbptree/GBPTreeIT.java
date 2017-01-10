@@ -24,9 +24,6 @@ import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
-import org.junit.rules.TemporaryFolder;
-
-import java.io.File;
 import java.io.IOException;
 import java.util.Comparator;
 import java.util.Map;
@@ -46,13 +43,12 @@ import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.Hit;
 import org.neo4j.index.Index;
 import org.neo4j.index.IndexWriter;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.PageSwapperFactory;
-import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
-import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
+import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.lang.Integer.max;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -60,19 +56,25 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.rules.RuleChain.outerRule;
+
 import static org.neo4j.index.gbptree.GBPTree.NO_MONITOR;
-import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
+import static org.neo4j.test.rule.PageCacheRule.config;
 
 public class GBPTreeIT
 {
-    private final TemporaryFolder folder = new TemporaryFolder( new File( "target" ) );
+    private final DefaultFileSystemRule fs = new DefaultFileSystemRule();
+    private final TestDirectory directory = TestDirectory.testDirectory( getClass(), fs.get() );
+    private final PageCacheRule pageCacheRule = new PageCacheRule();
     private final RandomRule random = new RandomRule();
+
     @Rule
-    public RuleChain ruleChain = RuleChain.outerRule( random ).around( folder );
+    public final RuleChain rules = outerRule( fs ).around( directory ).around( pageCacheRule ).around( random );
 
     private final Layout<MutableLong,MutableLong> layout = new SimpleLongLayout();
     private GBPTree<MutableLong,MutableLong> index;
-    private ExecutorService threadPool = Executors.newFixedThreadPool( Runtime.getRuntime().availableProcessors() );
+    private final ExecutorService threadPool = Executors.newFixedThreadPool( Runtime.getRuntime().availableProcessors() );
+    private PageCache pageCache;
 
     private GBPTree<MutableLong,MutableLong> createIndex( int pageSize )
             throws IOException
@@ -83,23 +85,17 @@ public class GBPTreeIT
     private GBPTree<MutableLong,MutableLong> createIndex( int pageSize, GBPTree.Monitor monitor )
             throws IOException
     {
-        PageCache pageCache = new MuninnPageCache( swapperFactory(), 10_000, pageSize, NULL );
-        File indexFile = new File( folder.getRoot(), "index" );
-        return index = new GBPTree<>( pageCache, indexFile, layout, 0/*use whatever page cache says*/, monitor );
-    }
-
-    private static PageSwapperFactory swapperFactory()
-    {
-        PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory();
-        swapperFactory.setFileSystemAbstraction( new DefaultFileSystemAbstraction() );
-        return swapperFactory;
+        pageCache = pageCacheRule.getPageCache( fs.get(), config().withPageSize( pageSize ).withAccessChecks( true ) );
+        return index = new GBPTree<>( pageCache, directory.file( "index" ),
+                layout, 0/*use whatever page cache says*/, monitor );
     }
 
     @After
-    public void consistencyCheck() throws IOException
+    public void consistencyCheckAndClose() throws IOException
     {
         threadPool.shutdownNow();
         index.consistencyCheck();
+        index.close();
     }
 
     @Test
@@ -278,7 +274,7 @@ public class GBPTreeIT
             startSignal.countDown();
             Random random1 = ThreadLocalRandom.current();
             int inserted = 0;
-            while ( (inserted < 100_000 || numberOfReads.get() < 100) && !failHalt.get() )
+            while ( (inserted < 100_000 || numberOfReads.get() < 10_000) && !failHalt.get() )
             {
                 try ( IndexWriter<MutableLong,MutableLong> writer = index.writer() )
                 {
@@ -320,7 +316,7 @@ public class GBPTreeIT
         int nbrOfGroups = 10;
         int wantedRangeWidth = 1_000;
         int rangeWidth = wantedRangeWidth - wantedRangeWidth % nbrOfGroups;
-        int wantedNbrOfReads = 10_000;
+        int wantedNbrOfReads = 100_000;
 
         // Readers config
         int readers = max( 1, Runtime.getRuntime().availableProcessors() - 1 );
@@ -444,7 +440,10 @@ public class GBPTreeIT
             assertTrue( readerReadySignal.await( 10, SECONDS ) );
             startSignal.countDown();
             int iteration = currentWriteIteration.get();
-            while ( !failHalt.get() && numberOfReads.get() < wantedNbrOfReads )
+            int writesPerIteration = rangeWidth / nbrOfGroups;
+            int nbrOfLeastWantedIterations = 100_000 / writesPerIteration;
+            while ( !failHalt.get() &&
+                    (numberOfReads.get() < wantedNbrOfReads || iteration < nbrOfLeastWantedIterations) )
             {
                 try ( IndexWriter<MutableLong,MutableLong> writer = index.writer() )
                 {
