@@ -287,13 +287,28 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>
         this.freeList = new FreeListIdProvider( pagedFile, pageSize, rootId, FreeListIdProvider.NO_MONITOR );
         this.writer = new SingleIndexWriter( new InternalTreeLogic<>( freeList, bTreeNode, layout ) );
 
-        if ( created )
+        try
         {
-            initializeAfterCreation( layout );
+            if ( created )
+            {
+                initializeAfterCreation( layout );
+            }
+            else
+            {
+                loadState( pagedFile );
+            }
         }
-        else
+        catch ( Throwable t )
         {
-            loadState( pagedFile );
+            try
+            {
+                close();
+            }
+            catch ( IOException e )
+            {
+                t.addSuppressed( e );
+            }
+            throw t;
         }
     }
 
