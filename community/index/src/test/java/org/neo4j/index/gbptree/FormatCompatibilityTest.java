@@ -54,6 +54,7 @@ import static org.junit.Assert.fail;
 import static java.lang.String.format;
 
 import static org.neo4j.index.gbptree.GBPTree.NO_MONITOR;
+import static org.neo4j.test.rule.PageCacheRule.config;
 
 /**
  * A little trick to automatically tell whether or not index format was changed without
@@ -71,7 +72,7 @@ public class FormatCompatibilityTest
     private static final String CURRENT_FORMAT_ZIP = "current-format.zip";
 
     private final TestDirectory directory = TestDirectory.testDirectory( getClass() );
-    private final PageCacheRule pageCacheRule = new PageCacheRule( false );
+    private final PageCacheRule pageCacheRule = new PageCacheRule( config().withInconsistentReads( false ) );
     private final DefaultFileSystemRule fsRule = new DefaultFileSystemRule();
 
     @Rule
