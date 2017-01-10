@@ -20,7 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v3_2.planner
 
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
-import org.neo4j.cypher.internal.ir.v3_2.{IdName, PatternRelationship}
+import org.neo4j.cypher.internal.frontend.v3_2.ast.functions.Labels
+import org.neo4j.cypher.internal.ir.v3_2.IdName
 
 import scala.annotation.tailrec
 
@@ -149,26 +150,22 @@ trait UpdateGraph {
 
   /*
    * Determines whether there's an overlap in writes being done here, and reads being done in the given horizon.
-   * TODO: Extend this to also include labels
    */
-  def horizonOverlap(horizon: QueryHorizon) = {
-    containsUpdates && {
-      val propertiesReadInHorizon = horizon.dependingExpressions.collect {
-        case p: Property => p.propertyKey
-      }.toSet
+  def overlapsHorizon(horizon: QueryHorizon) = containsUpdates && ({
+    val propertiesReadInHorizon = horizon.dependingExpressions.collect {
+      case p: Property => p.propertyKey
+    }.toSet
 
-      setNodePropertyOverlap(propertiesReadInHorizon)
-    }
-  }
+    setNodePropertyOverlap(propertiesReadInHorizon) || setRelPropertyOverlap(propertiesReadInHorizon)
+  } || ((labelsToSet.nonEmpty || removeLabelPatterns.nonEmpty) && usesLabelsFunction(horizon)))
 
   def writeOnlyHeadOverlaps(qg: QueryGraph): Boolean = {
-    val a = containsUpdates
+    containsUpdates && {
+      val readQg = qg.mergeQueryGraph.getOrElse(qg)
 
-    val readQg = qg.mergeQueryGraph.getOrElse(qg)
-
-    val d = deleteOverlap(readQg)
-    val h = deleteOverlapWithMergeIn(qg)
-    a && (d || h)
+      deleteOverlap(readQg) ||
+        deleteOverlapWithMergeIn(qg)
+    }
   }
 
   def createsNodes: Boolean = mutatingPatterns.exists {
@@ -270,7 +267,8 @@ trait UpdateGraph {
    * and what is updated with SET and MERGE here
    */
   def setPropertyOverlap(qg: QueryGraph) =
-    setNodePropertyOverlap(qg.allKnownNodeProperties.map(_.propertyKey)) || setRelPropertyOverlap(qg)
+    setNodePropertyOverlap(qg.allKnownNodeProperties.map(_.propertyKey)) ||
+      setRelPropertyOverlap(qg.allKnownRelProperties.map(_.propertyKey))
 
   /*
    * Checks for overlap between identifiers being read in query graph
@@ -280,6 +278,13 @@ trait UpdateGraph {
     // TODO:H FIXME qg.argumentIds here is not correct, but there is a unit test that depends on it
     val identifiersToRead = qg.allPatternNodesRead ++ qg.allPatternRelationshipsRead.map(_.name) ++ qg.argumentIds
     (identifiersToRead intersect identifiersToDelete).nonEmpty
+  }
+
+  private def usesLabelsFunction(horizon: QueryHorizon) = {
+    horizon.dependingExpressions.exists {
+      case f: FunctionInvocation => f.function == Labels
+      case _ => false
+    }
   }
 
   private def removeLabelOverlap(qg: QueryGraph) = {
@@ -329,7 +334,7 @@ trait UpdateGraph {
    * Checks for overlap between what relationship props are read in query graph
    * and what is updated with SET her
    */
-  private def setRelPropertyOverlap(qg: QueryGraph): Boolean = {
+  private def setRelPropertyOverlap(propertiesToRead: Set[PropertyKeyName]): Boolean = {
     @tailrec
     def toRelPropertyPattern(patterns: Seq[MutatingPattern], acc: CreatesPropertyKeys): CreatesPropertyKeys = {
 
@@ -352,7 +357,6 @@ trait UpdateGraph {
     }
 
     val propertiesToSet = toRelPropertyPattern(mutatingPatterns, CreatesNoPropertyKeys)
-    val propertiesToRead = qg.allKnownRelProperties.map(_.propertyKey)
 
     propertiesToRead.exists(propertiesToSet.overlaps)
   }
