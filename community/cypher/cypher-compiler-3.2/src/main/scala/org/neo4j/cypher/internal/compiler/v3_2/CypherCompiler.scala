@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_2
 import java.time.Clock
 
 import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters.{CNFNormalizer, Namespacer, rewriteEqualityToInPredicate}
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.CodeGenConfiguration
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi.CodeStructure
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.procs.ProcedureCallOrSchemaCommandPlanBuilder
@@ -66,7 +67,7 @@ case class CypherCompiler(createExecutionPlan: Transformer,
                         planContext: PlanContext,
                         offset: Option[InputPosition] = None,
                         tracer: CompilationPhaseTracer): (ExecutionPlan, Map[String, Any]) = {
-    val context = createContext(tracer, notificationLogger, planContext, input.queryText, input.startPosition)
+    val context = createContext(tracer, notificationLogger, planContext, input.queryText, input.startPosition, config.codeGenConfiguration)
     val preparedCompilationState = prepareForCaching.transform(input, context)
     val cache = provideCache(cacheAccessor, cacheMonitor, planContext)
     val isStale = (plan: ExecutionPlan) => plan.isStale(planContext.txIdProvider, planContext.statistics)
@@ -85,7 +86,8 @@ case class CypherCompiler(createExecutionPlan: Transformer,
                  tracer: CompilationPhaseTracer): CompilationState = {
     val plannerName = PlannerName(plannerNameText)
     val startState = CompilationState(queryText, offset, plannerName)
-    val context = createContext(tracer, notificationLogger, null, rawQueryText, offset) //TODO: these nulls are a short cut
+    //TODO: these nulls are a short cut
+    val context = createContext(tracer, notificationLogger, planContext = null, rawQueryText, offset, codeGenConfiguration = null)
     parsing.transform(startState, context)
   }
 
@@ -124,8 +126,8 @@ case class CypherCompiler(createExecutionPlan: Transformer,
 
   private def provideCache(cacheAccessor: CacheAccessor[Statement, ExecutionPlan],
                            monitor: CypherCacheFlushingMonitor[CacheAccessor[Statement, ExecutionPlan]],
-                           context: PlanContext): QueryCache[Statement, ExecutionPlan] =
-    context.getOrCreateFromSchemaState(cacheAccessor, {
+                           planContext: PlanContext): QueryCache[Statement, ExecutionPlan] =
+    planContext.getOrCreateFromSchemaState(cacheAccessor, {
       monitor.cacheFlushDetected(cacheAccessor)
       val lRUCache = planCacheFactory()
       new QueryCache(cacheAccessor, lRUCache)
@@ -135,7 +137,8 @@ case class CypherCompiler(createExecutionPlan: Transformer,
                             notificationLogger: InternalNotificationLogger,
                             planContext: PlanContext,
                             queryText: String,
-                            offset: Option[InputPosition]): Context = {
+                            offset: Option[InputPosition],
+                            codeGenConfiguration: CodeGenConfiguration): Context = {
     val exceptionCreator = new SyntaxExceptionCreator(queryText, offset)
 
     val metrics: Metrics = if (planContext == null)
@@ -144,7 +147,7 @@ case class CypherCompiler(createExecutionPlan: Transformer,
       metricsFactory.newMetrics(planContext.statistics)
 
     Context(exceptionCreator, tracer, notificationLogger, planContext, typeConverter, createFingerprintReference,
-      monitors, metrics, queryGraphSolver, config, updateStrategy, clock, structure)
+      monitors, metrics, queryGraphSolver, config, updateStrategy, clock, structure, codeGenConfiguration)
   }
 }
 
@@ -156,7 +159,8 @@ case class CypherCompilerConfiguration(queryCacheSize: Int,
                                        idpMaxTableSize: Int,
                                        idpIterationDuration: Long,
                                        errorIfShortestPathFallbackUsedAtRuntime: Boolean,
-                                       nonIndexedLabelWarningThreshold: Long)
+                                       nonIndexedLabelWarningThreshold: Long,
+                                       codeGenConfiguration: CodeGenConfiguration)
 
 trait AstRewritingMonitor {
   def abortedRewriting(obj: AnyRef)

@@ -40,6 +40,7 @@ import org.neo4j.kernel.api.security.AnonymousContext
 import org.neo4j.kernel.api.{KernelTransaction, Statement}
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker
 import org.neo4j.kernel.impl.query.{Neo4jTransactionalContextFactory, QuerySource}
+import org.neo4j.time.Clocks
 import org.scalatest.mock.MockitoSugar
 
 import scala.collection.JavaConversions
@@ -51,7 +52,8 @@ trait CodeGenSugar extends MockitoSugar {
     val statistics: GraphStatistics = mock[GraphStatistics]
     val context = mock[PlanContext]
     doReturn(statistics).when(context).statistics
-    new CodeGenerator(GeneratedQueryStructure).generate(plan, context, semanticTable, CostBasedPlannerName.default)
+    new CodeGenerator(GeneratedQueryStructure, Clocks.systemClock())
+      .generate(plan, context, semanticTable, CostBasedPlannerName.default)
   }
 
   def compileAndExecute(plan: LogicalPlan,

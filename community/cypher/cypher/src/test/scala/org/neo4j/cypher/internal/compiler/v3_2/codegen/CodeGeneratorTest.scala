@@ -42,12 +42,14 @@ import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.impl.api.RelationshipVisitor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.core.{NodeManager, NodeProxy, RelationshipProxy}
+import org.neo4j.time.Clocks
 
 import scala.collection.{JavaConverters, mutable}
 
 class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  private val generator = new CodeGenerator(GeneratedQueryStructure, CodeGenConfiguration(mode = ByteCodeMode))
+  private val generator =
+    new CodeGenerator(GeneratedQueryStructure, Clocks.systemClock(), CodeGenConfiguration(mode = ByteCodeMode))
 
   test("all nodes scan") { // MATCH a RETURN a
     //given

@@ -24,6 +24,7 @@ import java.time.{Clock, Instant, ZoneOffset}
 import org.neo4j.cypher.GraphDatabaseTestSupport
 import org.neo4j.cypher.internal.compatibility.v3_2.{StringInfoLogger, WrappedMonitors}
 import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.NO_TRACING
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.CodeGenConfiguration
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.ExecutionPlan
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.IdentityTypeConverter
 import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSequencer
@@ -50,7 +51,8 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
         idpMaxTableSize = 128,
         idpIterationDuration = 1000,
         errorIfShortestPathFallbackUsedAtRuntime = false,
-        nonIndexedLabelWarningThreshold = 10000L
+        nonIndexedLabelWarningThreshold = 10000L,
+        codeGenConfiguration = CodeGenConfiguration()
       ),
       clock, GeneratedQueryStructure,
       WrappedMonitors(kernelMonitors),

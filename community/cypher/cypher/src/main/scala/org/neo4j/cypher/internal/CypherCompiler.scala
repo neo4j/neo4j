@@ -23,6 +23,7 @@ import java.time.Clock
 
 import org.neo4j.cypher.internal.compatibility.v3_2.exceptionHandler
 import org.neo4j.cypher.internal.compiler.v3_2._
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.CodeGenConfiguration
 import org.neo4j.cypher.internal.frontend.v3_2.InputPosition
 import org.neo4j.cypher.{InvalidArgumentException, SyntaxException, _}
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
@@ -85,7 +86,8 @@ class CypherCompiler(graph: GraphDatabaseQueryService,
     idpMaxTableSize = idpMaxTableSize,
     idpIterationDuration = idpIterationDuration,
     errorIfShortestPathFallbackUsedAtRuntime = errorIfShortestPathFallbackUsedAtRuntime,
-    nonIndexedLabelWarningThreshold = getNonIndexedLabelWarningThreshold
+    nonIndexedLabelWarningThreshold = getNonIndexedLabelWarningThreshold,
+    codeGenConfiguration = CodeGenConfiguration()
   )
 
   private val factory = new PlannerFactory(graph, kernelAPI, kernelMonitors, log, config)

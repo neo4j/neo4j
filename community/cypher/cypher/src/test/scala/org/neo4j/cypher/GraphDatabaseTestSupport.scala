@@ -20,6 +20,7 @@
 package org.neo4j.cypher
 
 import org.mockito.Mockito.when
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.CodeGenConfiguration
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.idp.DefaultIDPSolverConfig
 import org.neo4j.cypher.internal.compiler.v3_2.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v3_2.{CypherCompilerConfiguration, devNullLogger}
@@ -280,6 +281,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
     nonIndexedLabelWarningThreshold = 10000,
     idpMaxTableSize = DefaultIDPSolverConfig.maxTableSize,
     idpIterationDuration = DefaultIDPSolverConfig.iterationDurationLimit,
-    errorIfShortestPathFallbackUsedAtRuntime = false
+    errorIfShortestPathFallbackUsedAtRuntime = false,
+    codeGenConfiguration = CodeGenConfiguration()
   )
 }

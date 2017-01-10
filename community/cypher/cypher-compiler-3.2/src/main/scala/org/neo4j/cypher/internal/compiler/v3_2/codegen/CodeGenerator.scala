@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.codegen
 
+import java.time.Clock
 import java.util
 
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir._
@@ -35,8 +36,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.{ExecutionMode, PlannerName, Task
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticTable
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.Eagerly
 
-
-class CodeGenerator(val structure: CodeStructure[GeneratedQuery], conf: CodeGenConfiguration = CodeGenConfiguration() ) {
+class CodeGenerator(val structure: CodeStructure[GeneratedQuery], clock: Clock, conf: CodeGenConfiguration = CodeGenConfiguration() ) {
 
   import CodeGenerator.generateCode
 
@@ -52,7 +52,7 @@ class CodeGenerator(val structure: CodeStructure[GeneratedQuery], conf: CodeGenC
 
         val fp = planContext.statistics match {
           case igs: InstrumentedGraphStatistics =>
-            Some(PlanFingerprint(conf.clock.millis(), planContext.txIdProvider(), igs.snapshot.freeze))
+            Some(PlanFingerprint(clock.millis(), planContext.txIdProvider(), igs.snapshot.freeze))
           case _ =>
             None
         }

@@ -23,6 +23,7 @@ import org.neo4j.cypher.GraphDatabaseFunSuite
 import org.neo4j.cypher.internal.CypherCompiler.{CLOCK, DEFAULT_QUERY_PLAN_TTL, DEFAULT_STATISTICS_DIVERGENCE_THRESHOLD}
 import org.neo4j.cypher.internal.compatibility.v3_2.WrappedMonitors
 import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.NO_TRACING
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.CodeGenConfiguration
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.IdentityTypeConverter
 import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilationState
 import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSequencer
@@ -193,7 +194,8 @@ class CypherCompilerPerformanceTest extends GraphDatabaseFunSuite {
         idpMaxTableSize = 128,
         idpIterationDuration = 1000,
         errorIfShortestPathFallbackUsedAtRuntime = false,
-        nonIndexedLabelWarningThreshold = 10000L
+        nonIndexedLabelWarningThreshold = 10000L,
+        codeGenConfiguration = CodeGenConfiguration()
       ),
       clock = CLOCK,
       structure = GeneratedQueryStructure,
