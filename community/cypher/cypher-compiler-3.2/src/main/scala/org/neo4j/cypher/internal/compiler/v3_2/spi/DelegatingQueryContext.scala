@@ -160,7 +160,7 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
                                         relTypes: Seq[String]): Iterator[Path] =
     manyDbHits(inner.variableLengthPathExpand(node, realNode, minHops, maxHops, direction, relTypes))
 
-  override def isLabelSetOnNode(label: Int, node: Long): Boolean = getLabelsForNode(node).contains(label)
+  override def isLabelSetOnNode(label: Int, node: Long): Boolean = singleDbHit(inner.isLabelSetOnNode(label, node))
 
   override def nodeCountByCountStore(labelId: Int): Long = inner.nodeCountByCountStore(labelId)
 
@@ -195,7 +195,6 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
 
   override def callFunction(name: QualifiedName, args: Seq[Any], allowed: Array[String]) =
     singleDbHit(inner.callFunction(name, args, allowed))
-
 
   override def aggregateFunction(name: QualifiedName,
                                  allowed: Array[String]): UserDefinedAggregator =
