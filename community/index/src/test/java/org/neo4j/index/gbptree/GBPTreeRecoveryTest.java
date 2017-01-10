@@ -33,7 +33,6 @@ import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 import org.neo4j.cursor.RawCursor;
-import org.neo4j.index.Hit;
 import org.neo4j.index.IndexWriter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.rule.PageCacheRule;

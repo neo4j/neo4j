@@ -36,7 +36,6 @@ import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.cursor.RawCursor;
-import org.neo4j.index.Hit;
 import org.neo4j.index.IndexWriter;
 import org.neo4j.index.gbptree.GBPTree.Monitor;
 import org.neo4j.io.pagecache.IOLimiter;

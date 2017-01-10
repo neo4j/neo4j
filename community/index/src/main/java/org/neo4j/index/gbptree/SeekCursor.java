@@ -24,7 +24,6 @@ import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
 import org.neo4j.cursor.RawCursor;
-import org.neo4j.index.Hit;
 import org.neo4j.io.pagecache.PageCursor;
 
 import static java.lang.Integer.max;
