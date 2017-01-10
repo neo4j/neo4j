@@ -23,8 +23,12 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.Set;
 
+import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
+import org.neo4j.kernel.api.impl.labelscan.LabelScanStoreTest;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.test.rule.RandomRule;
@@ -38,10 +42,19 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
  */
 public abstract class LabelScanStoreChaosIT
 {
-    private final DatabaseRule dbRule = new EmbeddedDatabaseRule( getClass() );
+    private final DatabaseRule dbRule = new EmbeddedDatabaseRule( getClass() )
+    {
+        @Override
+        protected void configure( GraphDatabaseBuilder builder )
+        {
+            addSpecificConfig( builder );
+        }
+    };
     protected final RandomRule randomRule = new RandomRule();
     @Rule
     public final RuleChain ruleChain = RuleChain.outerRule( randomRule ).around( dbRule );
+
+    protected abstract void addSpecificConfig( GraphDatabaseBuilder builder );
 
     @Test
     public void shouldRebuildDeletedLabelScanStoreOnStartup() throws Exception
@@ -89,6 +102,11 @@ public abstract class LabelScanStoreChaosIT
         {
             return asSet( dbRule.getGraphDatabaseAPI().findNodes( label ) );
         }
+    }
+
+    protected void scrambleFile( File file ) throws IOException
+    {
+        LabelScanStoreTest.scrambleFile( randomRule.random(), file );
     }
 
     private void deleteNode( Node node )

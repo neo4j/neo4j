@@ -27,6 +27,8 @@ import org.neo4j.kernel.impl.spi.KernelContext;
 public class InMemoryLabelScanStoreExtension extends
         KernelExtensionFactory<InMemoryLabelScanStoreExtension.NoDependencies>
 {
+    public static final String LABEL_SCAN_STORE_NAME = "in-memory";
+
     public interface NoDependencies
     {   // No dependencies
     }
@@ -39,6 +41,6 @@ public class InMemoryLabelScanStoreExtension extends
     @Override
     public LabelScanStoreProvider newInstance( KernelContext context, NoDependencies dependencies ) throws Throwable
     {
-        return new LabelScanStoreProvider( new InMemoryLabelScanStore(), 2 );
+        return new LabelScanStoreProvider( LABEL_SCAN_STORE_NAME, new InMemoryLabelScanStore(), 2 );
     }
 }

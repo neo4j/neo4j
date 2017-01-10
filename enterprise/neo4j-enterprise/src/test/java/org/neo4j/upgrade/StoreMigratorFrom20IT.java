@@ -123,7 +123,7 @@ public class StoreMigratorFrom20IT
 
         schemaIndexProvider = new LuceneSchemaIndexProvider( fs, DirectoryFactory.PERSISTENT, storeDir.directory(),
                 NullLogProvider.getInstance(), Config.empty(), OperationalMode.single );
-        labelScanStoreProvider = new LabelScanStoreProvider( new InMemoryLabelScanStore(), 1 );
+        labelScanStoreProvider = new LabelScanStoreProvider( "test", new InMemoryLabelScanStore(), 1 );
 
         upgradableDatabase = new UpgradableDatabase( fs, new StoreVersionCheck( pageCache ),
                 new LegacyStoreVersionCheck( fs ), recordFormat );

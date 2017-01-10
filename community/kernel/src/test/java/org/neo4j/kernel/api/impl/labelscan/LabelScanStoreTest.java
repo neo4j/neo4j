@@ -560,19 +560,24 @@ public abstract class LabelScanStoreTest
 
     protected void scrambleFile( File file ) throws IOException
     {
+        scrambleFile( this.random.random(), file );
+    }
+
+    public static void scrambleFile( Random random, File file ) throws IOException
+    {
         try ( RandomAccessFile fileAccess = new RandomAccessFile( file, "rw" );
               FileChannel channel = fileAccess.getChannel() )
         {
             // The files will be small, so OK to allocate a buffer for the full size
             byte[] bytes = new byte[(int) channel.size()];
-            putRandomBytes( random.random(), bytes );
+            putRandomBytes( random, bytes );
             ByteBuffer buffer = ByteBuffer.wrap( bytes );
             channel.position( 0 );
             channel.write( buffer );
         }
     }
 
-    private void putRandomBytes( Random random, byte[] bytes )
+    private static void putRandomBytes( Random random, byte[] bytes )
     {
         for ( int i = 0; i < bytes.length; i++ )
         {

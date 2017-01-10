@@ -34,6 +34,8 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 public class NativeLabelScanStoreExtension extends
         KernelExtensionFactory<NativeLabelScanStoreExtension.Dependencies>
 {
+    public static final String LABEL_SCAN_STORE_NAME = "native";
+
     public interface Dependencies
     {
         Config getConfig();
@@ -45,7 +47,7 @@ public class NativeLabelScanStoreExtension extends
 
     public NativeLabelScanStoreExtension()
     {
-        super( "native" );
+        super( LABEL_SCAN_STORE_NAME );
     }
 
     @Override
@@ -57,6 +59,6 @@ public class NativeLabelScanStoreExtension extends
                 new FullLabelStream( dependencies.indexStoreView() ),
                 dependencies.getConfig().get( GraphDatabaseSettings.read_only ),
                 LabelScanStore.Monitor.EMPTY );
-        return new LabelScanStoreProvider( labelScanStore, 0 );
+        return new LabelScanStoreProvider( LABEL_SCAN_STORE_NAME, labelScanStore, 0 /*disabled by default*/ );
     }
 }

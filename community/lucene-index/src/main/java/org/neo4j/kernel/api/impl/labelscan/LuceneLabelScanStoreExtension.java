@@ -40,6 +40,8 @@ import static org.neo4j.kernel.api.labelscan.LabelScanStore.Monitor;
 @Service.Implementation(KernelExtensionFactory.class)
 public class LuceneLabelScanStoreExtension extends KernelExtensionFactory<LuceneLabelScanStoreExtension.Dependencies>
 {
+    public static final String LABEL_SCAN_STORE_NAME = "lucene";
+
     private final int priority;
     private final Monitor monitor;
 
@@ -65,7 +67,7 @@ public class LuceneLabelScanStoreExtension extends KernelExtensionFactory<Lucene
 
     LuceneLabelScanStoreExtension( int priority, Monitor monitor )
     {
-        super( "lucene-scan-store");
+        super( "lucene-scan-store" );
         this.priority = priority;
         this.monitor = (monitor == null) ? Monitor.EMPTY : monitor;
     }
@@ -81,7 +83,7 @@ public class LuceneLabelScanStoreExtension extends KernelExtensionFactory<Lucene
                 new FullLabelStream( dependencies.indexStoreView() ),
                 dependencies.getLogService().getInternalLogProvider(), monitor );
 
-        return new LabelScanStoreProvider( scanStore, priority );
+        return new LabelScanStoreProvider( LABEL_SCAN_STORE_NAME, scanStore, priority );
     }
 
     private LabelScanIndex getLuceneIndex( KernelContext context, DirectoryFactory directoryFactory )
@@ -92,5 +94,4 @@ public class LuceneLabelScanStoreExtension extends KernelExtensionFactory<Lucene
                 .withIndexRootFolder( LabelScanStoreProvider.getStoreDirectory( context.storeDir() ) )
                 .build();
     }
-
 }

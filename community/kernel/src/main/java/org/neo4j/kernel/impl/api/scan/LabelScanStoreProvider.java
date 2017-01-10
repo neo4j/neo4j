@@ -45,13 +45,20 @@ public class LabelScanStoreProvider extends LifecycleAdapter implements Comparab
 {
     private static final String KEY = "lucene";
 
+    private final String name;
     private final LabelScanStore labelScanStore;
     private final int priority;
 
-    public LabelScanStoreProvider( LabelScanStore labelScanStore, int priority )
+    public LabelScanStoreProvider( String name, LabelScanStore labelScanStore, int priority )
     {
+        this.name = name;
         this.labelScanStore = labelScanStore;
         this.priority = priority;
+    }
+
+    public String getName()
+    {
+        return name;
     }
 
     public static File getStoreDirectory( File storeRootDir )

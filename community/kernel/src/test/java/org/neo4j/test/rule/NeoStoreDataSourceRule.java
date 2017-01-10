@@ -20,7 +20,6 @@
 package org.neo4j.test.rule;
 
 import java.io.File;
-import java.time.Clock;
 import java.util.Map;
 
 import org.neo4j.graphdb.DependencyResolver;
@@ -36,6 +35,7 @@ import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexing;
 import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStore;
+import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStoreExtension;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
@@ -71,7 +71,6 @@ import org.neo4j.time.Clocks;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class NeoStoreDataSourceRule extends ExternalResource
 {
@@ -149,7 +148,8 @@ public class NeoStoreDataSourceRule extends ExternalResource
         return new DependencyResolver.Adapter()
         {
             private final LabelScanStoreProvider labelScanStoreProvider =
-                    new LabelScanStoreProvider( new InMemoryLabelScanStore(), 10 );
+                    new LabelScanStoreProvider( InMemoryLabelScanStoreExtension.LABEL_SCAN_STORE_NAME,
+                            new InMemoryLabelScanStore(), 10 );
 
             @Override
             public <T> T resolveDependency( Class<T> type, SelectionStrategy selector ) throws IllegalArgumentException
