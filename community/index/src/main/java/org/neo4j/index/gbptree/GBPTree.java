@@ -35,9 +35,6 @@ import java.util.function.Supplier;
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.cursor.RawCursor;
-import org.neo4j.index.IndexWriter;
-import org.neo4j.index.ValueMerger;
-import org.neo4j.index.ValueMergers;
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
@@ -72,7 +69,7 @@ import static org.neo4j.index.gbptree.PageCursorUtil.checkOutOfBounds;
  * while at the same time keeping one pointer to the stable version, in case there's a crash or non-clean
  * shutdown, followed by recovery.
  * <p>
- * Currently no leaves will be removed or merged as part of {@link IndexWriter#remove(Object) removals}.
+ * Currently no leaves will be removed or merged as part of {@link Writer#remove(Object) removals}.
  * <p>
  * A single writer w/ multiple concurrent readers is supported. Assuming usage adheres to this
  * constraint neither writer nor readers are blocking. Readers are virtually garbage-free.
@@ -186,9 +183,9 @@ public class GBPTree<KEY,VALUE> implements Closeable
     private final FreeListIdProvider freeList;
 
     /**
-     * A single instance {@link IndexWriter} because tree only supports single writer.
+     * A single instance {@link Writer} because tree only supports single writer.
      */
-    private final SingleIndexWriter writer;
+    private final SingleWriter writer;
 
     /**
      * Check-pointing flushes updates to stable storage.
@@ -284,7 +281,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         this.pagedFile = openOrCreate( pageCache, indexFile, tentativePageSize, layout );
         this.bTreeNode = new TreeNode<>( pageSize, layout );
         this.freeList = new FreeListIdProvider( pagedFile, pageSize, rootId, FreeListIdProvider.NO_MONITOR );
-        this.writer = new SingleIndexWriter( new InternalTreeLogic<>( freeList, bTreeNode, layout ) );
+        this.writer = new SingleWriter( new InternalTreeLogic<>( freeList, bTreeNode, layout ) );
 
         try
         {
@@ -616,16 +613,16 @@ public class GBPTree<KEY,VALUE> implements Closeable
     }
 
     /**
-     * Returns a {@link IndexWriter} able to modify the index, i.e. insert and remove keys/values.
+     * Returns a {@link Writer} able to modify the index, i.e. insert and remove keys/values.
      * After usage the returned writer must be closed, typically by using try-with-resource clause.
      *
-     * @return the single {@link IndexWriter} for this index. The returned writer must be
-     * {@link IndexWriter#close() closed} before another caller can acquire this writer.
+     * @return the single {@link Writer} for this index. The returned writer must be
+     * {@link Writer#close() closed} before another caller can acquire this writer.
      * @throws IOException on error accessing the index.
      * @throws IllegalStateException for calls made between a successful call to this method and closing the
      * returned writer.
      */
-    public IndexWriter<KEY,VALUE> writer() throws IOException
+    public Writer<KEY,VALUE> writer() throws IOException
     {
         if ( !writerTaken.compareAndSet( false, true ) )
         {
@@ -728,7 +725,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
                 stableGeneration( generation ), unstableGeneration( generation ) );
     }
 
-    private class SingleIndexWriter implements IndexWriter<KEY,VALUE>
+    private class SingleWriter implements Writer<KEY,VALUE>
     {
         private final InternalTreeLogic<KEY,VALUE> treeLogic;
         private final StructurePropagation<KEY> structurePropagation;
@@ -739,7 +736,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         private long stableGeneration;
         private long unstableGeneration;
 
-        SingleIndexWriter( InternalTreeLogic<KEY,VALUE> treeLogic )
+        SingleWriter( InternalTreeLogic<KEY,VALUE> treeLogic )
         {
             this.structurePropagation = new StructurePropagation<>( layout.newKey() );
             this.treeLogic = treeLogic;

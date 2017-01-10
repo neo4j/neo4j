@@ -31,8 +31,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.neo4j.index.ValueMerger;
-import org.neo4j.index.ValueMergers;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.test.rule.RandomRule;
 import static org.hamcrest.CoreMatchers.is;
@@ -43,9 +41,10 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
-import static org.neo4j.index.ValueMergers.overwrite;
+
 import static org.neo4j.index.gbptree.ConsistencyChecker.assertNoCrashOrBrokenPointerInGSPP;
 import static org.neo4j.index.gbptree.GenSafePointerPair.pointer;
+import static org.neo4j.index.gbptree.ValueMergers.overwrite;
 
 @RunWith( Parameterized.class )
 public class InternalTreeLogicTest

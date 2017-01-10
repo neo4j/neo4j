@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
 
-import org.neo4j.index.ValueMerger;
 import org.neo4j.io.pagecache.PageCursor;
 
 import static org.neo4j.index.gbptree.KeySearch.isHit;

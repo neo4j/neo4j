@@ -33,7 +33,6 @@ import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 import org.neo4j.cursor.RawCursor;
-import org.neo4j.index.IndexWriter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;
@@ -76,7 +75,7 @@ public class GBPTreeRecoveryTest
         {
             PageCache pageCache = createPageCache();
             GBPTree<MutableLong,MutableLong> index = createIndex( pageCache, file );
-            IndexWriter<MutableLong,MutableLong> writer = index.writer();
+            Writer<MutableLong,MutableLong> writer = index.writer();
 
             key.setValue( 1L );
             value.setValue( 10L );
@@ -97,7 +96,7 @@ public class GBPTreeRecoveryTest
             // this is the mimic:ed recovery
             index.prepareForRecovery();
 
-            try ( IndexWriter<MutableLong,MutableLong> writer = index.writer() )
+            try ( Writer<MutableLong,MutableLong> writer = index.writer() )
             {
                 writer.put( key, value );
             }
@@ -428,7 +427,7 @@ public class GBPTreeRecoveryTest
         @Override
         public void execute( GBPTree<MutableLong,MutableLong> index ) throws IOException
         {
-            try ( IndexWriter<MutableLong,MutableLong> writer = index.writer() )
+            try ( Writer<MutableLong,MutableLong> writer = index.writer() )
             {
                 for ( int i = 0; i < data.length; )
                 {
@@ -450,7 +449,7 @@ public class GBPTreeRecoveryTest
         @Override
         public void execute( GBPTree<MutableLong,MutableLong> index ) throws IOException
         {
-            try ( IndexWriter<MutableLong,MutableLong> writer = index.writer() )
+            try ( Writer<MutableLong,MutableLong> writer = index.writer() )
             {
                 for ( int i = 0; i < data.length; )
                 {

@@ -23,7 +23,6 @@ import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.Test;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.index.ValueMergers;
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
 

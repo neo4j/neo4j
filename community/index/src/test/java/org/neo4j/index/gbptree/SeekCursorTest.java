@@ -42,8 +42,8 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import static org.neo4j.index.ValueMergers.overwrite;
 import static org.neo4j.index.gbptree.GenSafePointerPair.pointer;
+import static org.neo4j.index.gbptree.ValueMergers.overwrite;
 
 public class SeekCursorTest
 {

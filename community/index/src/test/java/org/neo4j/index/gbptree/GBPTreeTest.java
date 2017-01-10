@@ -36,7 +36,6 @@ import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.cursor.RawCursor;
-import org.neo4j.index.IndexWriter;
 import org.neo4j.index.gbptree.GBPTree.Monitor;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
@@ -330,7 +329,7 @@ public class GBPTreeTest
                 new GBPTree<>( pageCache, indexFile, layout, pageSize / 2, NO_MONITOR ) )
         {
             // Insert some data
-            try ( IndexWriter<MutableLong, MutableLong> writer = index.writer() )
+            try ( Writer<MutableLong, MutableLong> writer = index.writer() )
             {
                 MutableLong key = new MutableLong();
                 MutableLong value = new MutableLong();
@@ -406,7 +405,7 @@ public class GBPTreeTest
     {
         // GIVEN
         index = createIndex( 256 );
-        IndexWriter<MutableLong,MutableLong> writer = index.writer();
+        Writer<MutableLong,MutableLong> writer = index.writer();
 
         // WHEN
         try
@@ -423,11 +422,11 @@ public class GBPTreeTest
     }
 
     @Test
-    public void shouldAllowClosingIndexWriterMultipleTimes() throws Exception
+    public void shouldAllowClosingWriterMultipleTimes() throws Exception
     {
         // GIVEN
         index = createIndex( 256 );
-        IndexWriter<MutableLong,MutableLong> writer = index.writer();
+        Writer<MutableLong,MutableLong> writer = index.writer();
         writer.put( new MutableLong( 0 ), new MutableLong( 1 ) );
         writer.close();
 
@@ -446,7 +445,7 @@ public class GBPTreeTest
         CheckpointControlledMonitor monitor = new CheckpointControlledMonitor();
         index = createIndex( 1024, monitor );
         long key = 10;
-        try ( IndexWriter<MutableLong,MutableLong> writer = index.writer() )
+        try ( Writer<MutableLong,MutableLong> writer = index.writer() )
         {
             writer.put( new MutableLong( key ), new MutableLong( key ) );
         }
@@ -477,7 +476,7 @@ public class GBPTreeTest
         Barrier.Control barrier = new Barrier.Control();
         Thread writerThread = new Thread( throwing( () ->
         {
-            try ( IndexWriter<MutableLong,MutableLong> writer = index.writer() )
+            try ( Writer<MutableLong,MutableLong> writer = index.writer() )
             {
                 writer.put( new MutableLong( 1 ), new MutableLong( 1 ) );
                 barrier.reached();
@@ -502,7 +501,7 @@ public class GBPTreeTest
     {
         index = createIndex( 256 );
         int count = 1000;
-        try ( IndexWriter<MutableLong,MutableLong> writer = index.writer() )
+        try ( Writer<MutableLong,MutableLong> writer = index.writer() )
         {
             for ( int i = 0; i < count; i++ )
             {
@@ -533,7 +532,7 @@ public class GBPTreeTest
         // WHEN
         int count = 1_000;
         PrimitiveLongSet seen = Primitive.longSet( count );
-        try ( IndexWriter<MutableLong,MutableLong> writer = index.writer() )
+        try ( Writer<MutableLong,MutableLong> writer = index.writer() )
         {
             for ( int i = 0; i < count; i++ )
             {
