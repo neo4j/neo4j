@@ -45,23 +45,18 @@ public class RecordCursors implements AutoCloseable
 
     public RecordCursors( NeoStores neoStores )
     {
-        this( neoStores, NORMAL );
+        node = newCursor( neoStores.getNodeStore() );
+        relationship = newCursor( neoStores.getRelationshipStore() );
+        relationshipGroup = newCursor( neoStores.getRelationshipGroupStore() );
+        property = newCursor( neoStores.getPropertyStore() );
+        propertyString = newCursor( neoStores.getPropertyStore().getStringStore() );
+        propertyArray = newCursor( neoStores.getPropertyStore().getArrayStore() );
+        label = newCursor( neoStores.getNodeStore().getDynamicLabelStore() );
     }
 
-    public RecordCursors( NeoStores neoStores, RecordLoad mode )
+    private static <R extends AbstractBaseRecord> RecordCursor<R> newCursor( RecordStore<R> store )
     {
-        node = newCursor( neoStores.getNodeStore(), mode );
-        relationship = newCursor( neoStores.getRelationshipStore(), mode );
-        relationshipGroup = newCursor( neoStores.getRelationshipGroupStore(), mode );
-        property = newCursor( neoStores.getPropertyStore(), mode );
-        propertyString = newCursor( neoStores.getPropertyStore().getStringStore(), mode );
-        propertyArray = newCursor( neoStores.getPropertyStore().getArrayStore(), mode );
-        label = newCursor( neoStores.getNodeStore().getDynamicLabelStore(), mode );
-    }
-
-    private static <R extends AbstractBaseRecord> RecordCursor<R> newCursor( RecordStore<R> store, RecordLoad mode )
-    {
-        return store.newRecordCursor( store.newRecord() ).acquire( store.getNumberOfReservedLowIds(), mode );
+        return store.newRecordCursor( store.newRecord() ).acquire( store.getNumberOfReservedLowIds(), NORMAL );
     }
 
     @Override
