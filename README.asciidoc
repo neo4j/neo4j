@@ -31,7 +31,14 @@ Please note that we do not support building Debian packages on OS X.
 
 === With apt-get on Ubuntu ===
 
-  apt install debhelper devscripts dpkg maven openjdk-8-jdk
+  apt install maven openjdk-8-jdk
+
+On top of that, to build Debian packages and Neo4j Desktop:
+
+  apt install debhelper devscripts dos2unix dpkg make xmlstarlet
+  # You will need a license for install4j, which is only needed for Neo4j Desktop
+  curl -O http://download-keycdn.ej-technologies.com/install4j/install4j_linux_6_1_4.deb
+  dpkg -i install4j_linux_6_1_4.deb
 
 == Building Neo4j ==
 
@@ -41,6 +48,7 @@ Please note that we do not support building Debian packages on OS X.
 * In case you just want the jars, without running tests, this is for you: `mvn clean install -DskipTests`.
 * To skip building the browser module, use `-DskipBrowser` (note that you might not be able to build the server without it).
 * To build everything, including running all tests and assembling product packages, use `mvn clean install -DfullBuild`.
+* To build product packages, do `export PATH="bin:$PATH" && make clean all` in the packaging directory after building artifacts with Maven
 * To build the documentation see the link:manual/[Neo4j manual].
 * When building on Windows, use `-Dlicensing.skip` to avoid problems related to line endings.
 * The license header check can be skipped by appending the following to the command line: `-Dlicense.skip=true`.
