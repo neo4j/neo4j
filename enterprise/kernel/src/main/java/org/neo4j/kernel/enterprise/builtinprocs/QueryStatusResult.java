@@ -42,6 +42,7 @@ public class QueryStatusResult
     public final String query;
     public final Map<String,Object> parameters;
     public final String startTime;
+    @Deprecated
     public final String elapsedTime;
     /** EXPERIMENTAL: added in Neo4j 3.2 */
     public final long elapsedTimeMillis; // TODO: this field should be of a Duration type (when Cypher supports that)
