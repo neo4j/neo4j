@@ -566,9 +566,10 @@ object LogicalPlanConverter {
     override def consume(context: CodeGenContext, child: CodeGenPlan) = {
       val collection = ExpressionConverter.createExpression(unwind.expression)(context)
 
-      // TODO: Handle null and range
-      val elementType = collection.codeGenType(context).ct match {
-        case ListType(innerType) => innerType
+      // TODO: Handle range
+      val (elementType, castedCollection) = collection.codeGenType(context).ct match {
+        case ListType(innerType) => (innerType, collection)
+        case symbols.CTAny => (symbols.CTAny, CastToCollection(collection))
         case t => throw new CantCompileQueryException(s"Unwind collection type $t not supported")
       }
       val variable = Variable(unwind.variable.name, CodeGenType(elementType, ReferenceType), nullable = true)
@@ -576,7 +577,7 @@ object LogicalPlanConverter {
 
       val (methodHandle, actions :: tl) = context.popParent().consume(context, this)
 
-      (methodHandle, ForEachExpression(variable, collection, actions) :: tl)
+      (methodHandle, ForEachExpression(variable, castedCollection, actions) :: tl)
     }
   }
 
