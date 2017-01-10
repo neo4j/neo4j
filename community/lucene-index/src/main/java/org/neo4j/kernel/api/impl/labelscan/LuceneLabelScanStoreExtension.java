@@ -24,6 +24,8 @@ import java.util.function.Supplier;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
+import org.neo4j.kernel.api.labelscan.LabelScanStore.Monitor;
+import org.neo4j.kernel.api.labelscan.LoggingMonitor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
@@ -33,9 +35,9 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.kernel.api.impl.index.LuceneKernelExtensions.directoryFactory;
-import static org.neo4j.kernel.api.labelscan.LabelScanStore.Monitor;
 
 @Service.Implementation(KernelExtensionFactory.class)
 public class LuceneLabelScanStoreExtension extends KernelExtensionFactory<LuceneLabelScanStoreExtension.Dependencies>
@@ -79,9 +81,10 @@ public class LuceneLabelScanStoreExtension extends KernelExtensionFactory<Lucene
         DirectoryFactory directoryFactory = directoryFactory( ephemeral, context.fileSystem() );
 
         LabelScanIndex index = getLuceneIndex( context, directoryFactory );
+        LogProvider logger = dependencies.getLogService().getInternalLogProvider();
+        Monitor loggingMonitor = new LoggingMonitor( logger.getLog( LuceneLabelScanStore.class ), monitor );
         LuceneLabelScanStore scanStore = new LuceneLabelScanStore( index,
-                new FullLabelStream( dependencies.indexStoreView() ),
-                dependencies.getLogService().getInternalLogProvider(), monitor );
+                new FullLabelStream( dependencies.indexStoreView() ), loggingMonitor );
 
         return new LabelScanStoreProvider( LABEL_SCAN_STORE_NAME, scanStore, priority );
     }

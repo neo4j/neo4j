@@ -23,13 +23,17 @@ import java.util.function.Supplier;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.api.labelscan.LoggingMonitor;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
+import org.neo4j.kernel.api.labelscan.LabelScanStore.Monitor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
+import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.logging.Log;
 
 public class NativeLabelScanStoreExtension extends
         KernelExtensionFactory<NativeLabelScanStoreExtension.Dependencies>
@@ -45,6 +49,8 @@ public class NativeLabelScanStoreExtension extends
         PageCache pageCache();
 
         Supplier<IndexStoreView> indexStoreView();
+
+        LogService getLogService();
     }
 
     public NativeLabelScanStoreExtension()
@@ -62,6 +68,8 @@ public class NativeLabelScanStoreExtension extends
     @Override
     public Lifecycle newInstance( KernelContext context, Dependencies dependencies ) throws Throwable
     {
+        Log log = dependencies.getLogService().getInternalLog( NativeLabelScanStore.class );
+        Monitor monitor = new LoggingMonitor( log, this.monitor );
         NativeLabelScanStore labelScanStore = new NativeLabelScanStore(
                 dependencies.pageCache(),
                 context.storeDir(),

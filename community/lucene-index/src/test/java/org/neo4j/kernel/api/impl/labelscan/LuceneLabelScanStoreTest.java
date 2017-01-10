@@ -38,8 +38,6 @@ import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.OperationalMode;
-import org.neo4j.logging.NullLogProvider;
-
 import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.core.IsCollectionContaining.hasItem;
@@ -78,7 +76,7 @@ public class LuceneLabelScanStoreTest extends LabelScanStoreTest
                 .withDocumentFormat( documentFormat )
                 .build();
 
-        return new LuceneLabelScanStore( index, asStream( existingData ), NullLogProvider.getInstance(), monitor );
+        return new LuceneLabelScanStore( index, asStream( existingData ), monitor );
     }
 
     @Override

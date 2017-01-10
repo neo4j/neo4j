@@ -37,49 +37,32 @@ public interface LabelScanStore extends Lifecycle
     interface Monitor
     {
         Monitor EMPTY = new Monitor()
-        {
-            @Override
-            public void init()
-            {
-            }
-
-            @Override
-            public void noIndex()
-            {
-            }
-
-            @Override
-            public void lockedIndex( Exception e )
-            {
-            }
-
-            @Override
-            public void notValidIndex()
-            {
-            }
-
-            @Override
-            public void rebuilding()
-            {
-            }
-
-            @Override
-            public void rebuilt( long roughNodeCount )
-            {
-            }
+        {   // empty
         };
 
-        void init();
+        default void init()
+        {   // empty
+        }
 
-        void noIndex();
+        default void noIndex()
+        {   // empty
+        }
 
-        void lockedIndex( Exception e );
+        default void lockedIndex( Exception e )
+        {   // empty
+        }
 
-        void notValidIndex();
+        default void notValidIndex()
+        {   // empty
+        }
 
-        void rebuilding();
+        default void rebuilding()
+        {   // empty
+        }
 
-        void rebuilt( long roughNodeCount );
+        default void rebuilt( long roughNodeCount )
+        {   // empty
+        }
     }
 
     /**

@@ -24,7 +24,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.NoSuchFileException;
 import java.util.function.IntFunction;
-import java.util.stream.Stream;
+import java.util.stream.Collectors;
 
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.graphdb.ResourceIterator;
@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 
+import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
 import static org.neo4j.helpers.collection.Iterators.iterator;
 import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
@@ -73,8 +74,15 @@ public class NativeLabelScanStore implements LabelScanStore
 {
     static final String FILE_NAME = DEFAULT_NAME + ".labelscanstore.db";
 
+    /**
+     * Whether or not this label scan store is read-only.
+     */
     private final boolean readOnly;
-    private final NativeLabelScanStoreMonitor monitor;
+
+    /**
+     * Monitoring internal events.
+     */
+    private final Monitor monitor;
 
     /**
      * {@link PageCache} to {@link PageCache#map(File, int, java.nio.file.OpenOption...)}
@@ -117,6 +125,10 @@ public class NativeLabelScanStore implements LabelScanStore
      */
     private boolean recoveryStarted;
 
+    /**
+     * Set during {@link #init()} if {@link #start()} will need to rebuild the whole label scan store from
+     * {@link FullStoreChangeStream}.
+     */
     private boolean needsRebuild;
 
     private final NativeLabelScanWriter singleWriter;
@@ -139,7 +151,7 @@ public class NativeLabelScanStore implements LabelScanStore
         this.storeFile = new File( storeDir, FILE_NAME );
         this.singleWriter = new NativeLabelScanWriter( 1_000 );
         this.readOnly = readOnly;
-        this.monitor = new NativeLabelScanStoreMonitor( monitor );
+        this.monitor = monitor;
     }
 
     /**
@@ -209,12 +221,6 @@ public class NativeLabelScanStore implements LabelScanStore
         }
     }
 
-    /**
-     * Unsupported by this implementation.
-     *
-     * @return nothing since {@link UnsupportedOperationException} will be thrown.
-     * @throws UnsupportedOperationException since not supported by this implementation.
-     */
     @Override
     public AllEntriesLabelScanReader allNodeLabelRanges()
     {
@@ -278,16 +284,20 @@ public class NativeLabelScanStore implements LabelScanStore
 
         try
         {
-            create( monitor );
             needsRebuild = !storeExists;
+            if ( !storeExists )
+            {
+                monitor.noIndex();
+            }
+
+            instantiateTree();
         }
         catch ( MetadataMismatchException e )
         {
             // GBPTree is corrupt. Try to rebuild.
-            // todo log
             monitor.notValidIndex();
             drop();
-            create( GBPTree.NO_MONITOR );
+            instantiateTree();
             needsRebuild = true;
         }
     }
@@ -296,13 +306,8 @@ public class NativeLabelScanStore implements LabelScanStore
     {
         try
         {
-            Stream<FileHandle> stream = pageCache.streamFilesRecursive( storeFile );
-            long count = stream.count();
-            if ( count > 1 )
-            {
-                throw new IllegalStateException( "Multiple " + storeFile + " existed" );
-            }
-            return count == 1;
+            storeFileHandle();
+            return true;
         }
         catch ( NoSuchFileException e )
         {
@@ -310,14 +315,19 @@ public class NativeLabelScanStore implements LabelScanStore
         }
     }
 
-    private void create( GBPTree.Monitor monitor ) throws IOException
+    private FileHandle storeFileHandle() throws IOException
     {
-        index = new GBPTree<>( pageCache, storeFile, new LabelScanLayout(), pageSize, monitor );
+        return single( pageCache.streamFilesRecursive( storeFile ).collect( Collectors.toList() ) );
+    }
+
+    private void instantiateTree() throws IOException
+    {
+        index = new GBPTree<>( pageCache, storeFile, new LabelScanLayout(), pageSize, GBPTree.NO_MONITOR );
     }
 
     private void drop() throws IOException
     {
-        storeFile.delete();
+        storeFileHandle().delete();
     }
 
     /**
@@ -336,10 +346,8 @@ public class NativeLabelScanStore implements LabelScanStore
                 throw new IOException( "Tried to start label scan store " + storeFile +
                         " as read-only and the index needs rebuild. This makes the label scan store unusable" );
             }
-            // todo log
             monitor.rebuilding();
             long numberOfNodes = LabelScanStoreProvider.rebuild( this, fullStoreChangeStream );
-            // todo log
             monitor.rebuilt( numberOfNodes );
             needsRebuild = false;
         }
@@ -371,58 +379,5 @@ public class NativeLabelScanStore implements LabelScanStore
     public void shutdown() throws IOException
     {
         index.close();
-    }
-
-    // todo make this guy log the stuffs
-    private class NativeLabelScanStoreMonitor implements Monitor, GBPTree.Monitor
-    {
-        private final Monitor delegate;
-
-        NativeLabelScanStoreMonitor( Monitor delegate )
-        {
-            this.delegate = delegate;
-        }
-
-        @Override
-        public void init()
-        {
-            delegate.init();
-        }
-
-        @Override
-        public void noIndex()
-        {
-            delegate.noIndex();
-        }
-
-        @Override
-        public void lockedIndex( Exception e )
-        {
-            delegate.lockedIndex( e );
-        }
-
-        @Override
-        public void notValidIndex()
-        {
-            delegate.notValidIndex();
-        }
-
-        @Override
-        public void rebuilding()
-        {
-            delegate.rebuilding();
-        }
-
-        @Override
-        public void rebuilt( long roughNodeCount )
-        {
-            delegate.rebuilt( roughNodeCount );
-        }
-
-        @Override
-        public void noStoreFile()
-        {
-            noIndex();
-        }
     }
 }

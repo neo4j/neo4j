@@ -28,6 +28,7 @@ import org.neo4j.kernel.api.impl.labelscan.LabelScanIndex;
 import org.neo4j.kernel.api.impl.labelscan.LuceneLabelScanIndexBuilder;
 import org.neo4j.kernel.api.impl.labelscan.LuceneLabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
+import org.neo4j.kernel.api.labelscan.LoggingMonitor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
@@ -76,14 +77,14 @@ public class LuceneLabelScanStoreBuilder
         if ( null == labelScanStore )
         {
             // TODO: Replace with kernel extension based lookup
+            LabelScanStore.Monitor monitor = new LoggingMonitor( logProvider.getLog( LuceneLabelScanStore.class ) );
             LabelScanIndex index = LuceneLabelScanIndexBuilder.create()
                     .withFileSystem( fileSystem )
                     .withIndexRootFolder( getStoreDirectory( storeDir ) )
                     .withConfig( config )
                     .withOperationalMode( operationalMode )
                     .build();
-            labelScanStore = new LuceneLabelScanStore( index, new FullLabelStream( storeViewSupplier ),
-                    logProvider, LabelScanStore.Monitor.EMPTY );
+            labelScanStore = new LuceneLabelScanStore( index, new FullLabelStream( storeViewSupplier ), monitor );
 
             try
             {
