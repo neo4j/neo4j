@@ -269,7 +269,8 @@ public class NativeLabelScanStore implements LabelScanStore
     {
         monitor.init();
 
-        if ( readOnly && !storeExists() )
+        boolean storeExists = storeExists();
+        if ( readOnly && !storeExists )
         {
             throw new UnsupportedOperationException( "Tried to create native label scan store " +
                     storeFile + " in read-only mode, but no such store exists" );
@@ -278,6 +279,7 @@ public class NativeLabelScanStore implements LabelScanStore
         try
         {
             create( monitor );
+            needsRebuild = !storeExists;
         }
         catch ( MetadataMismatchException e )
         {
@@ -327,23 +329,19 @@ public class NativeLabelScanStore implements LabelScanStore
     @Override
     public void start() throws IOException
     {
-        if ( needsRebuild || isEmpty() )
+        if ( needsRebuild )
         {
-            if ( readOnly && needsRebuild )
+            if ( readOnly )
             {
                 throw new IOException( "Tried to start label scan store " + storeFile +
                         " as read-only and the index needs rebuild. This makes the label scan store unusable" );
             }
-
-            if ( !readOnly )
-            {
-                // todo log
-                monitor.rebuilding();
-                long numberOfNodes = LabelScanStoreProvider.rebuild( this, fullStoreChangeStream );
-                // todo log
-                monitor.rebuilt( numberOfNodes );
-                needsRebuild = false;
-            }
+            // todo log
+            monitor.rebuilding();
+            long numberOfNodes = LabelScanStoreProvider.rebuild( this, fullStoreChangeStream );
+            // todo log
+            monitor.rebuilt( numberOfNodes );
+            needsRebuild = false;
         }
         started = true;
     }

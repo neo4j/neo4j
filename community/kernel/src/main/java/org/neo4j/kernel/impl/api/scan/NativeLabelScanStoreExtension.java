@@ -35,6 +35,8 @@ public class NativeLabelScanStoreExtension extends
         KernelExtensionFactory<NativeLabelScanStoreExtension.Dependencies>
 {
     public static final String LABEL_SCAN_STORE_NAME = "native";
+    private final int priority;
+    private final LabelScanStore.Monitor monitor;
 
     public interface Dependencies
     {
@@ -47,7 +49,14 @@ public class NativeLabelScanStoreExtension extends
 
     public NativeLabelScanStoreExtension()
     {
+        this( 0 /*disabled by default*/, LabelScanStore.Monitor.EMPTY );
+    }
+
+    public NativeLabelScanStoreExtension( int priority, LabelScanStore.Monitor monitor )
+    {
         super( LABEL_SCAN_STORE_NAME );
+        this.priority = priority;
+        this.monitor = monitor;
     }
 
     @Override
@@ -58,7 +67,7 @@ public class NativeLabelScanStoreExtension extends
                 context.storeDir(),
                 new FullLabelStream( dependencies.indexStoreView() ),
                 dependencies.getConfig().get( GraphDatabaseSettings.read_only ),
-                LabelScanStore.Monitor.EMPTY );
-        return new LabelScanStoreProvider( LABEL_SCAN_STORE_NAME, labelScanStore, 0 /*disabled by default*/ );
+                monitor );
+        return new LabelScanStoreProvider( LABEL_SCAN_STORE_NAME, labelScanStore, priority );
     }
 }
