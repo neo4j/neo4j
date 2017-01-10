@@ -34,10 +34,7 @@ import java.util.stream.Collectors;
 
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.Hit;
-import org.neo4j.index.Index;
 import org.neo4j.index.IndexWriter;
-import org.neo4j.index.ValueMerger;
-import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;
@@ -237,7 +234,7 @@ public class GBPTreeRecoveryTest
         execute( load, index );
     }
 
-    private static void execute( List<Action> load, Index<MutableLong,MutableLong> index )
+    private static void execute( List<Action> load, GBPTree<MutableLong,MutableLong> index )
             throws IOException
     {
         for ( Action action : load )
@@ -246,12 +243,36 @@ public class GBPTreeRecoveryTest
         }
     }
 
-    private static long[] expectedSortedAggregatedDataFromGeneratedLoad( List<Action> load ) throws IOException
+    private static long[] expectedSortedAggregatedDataFromGeneratedLoad( List<Action> load )
     {
-        CapturingIndex index = new CapturingIndex();
-        execute( load, index );
+        TreeMap<Long,Long> map = new TreeMap<>();
+        for ( Action action : load )
+        {
+            long[] data = action.data();
+            if ( data != null )
+            {
+                for ( int i = 0; i < data.length; )
+                {
+                    long key = data[i++];
+                    long value = data[i++];
+                    if ( action instanceof InsertAction )
+                    {
+                        map.put( key, value );
+                    }
+                    else if ( action instanceof RemoveAction )
+                    {
+                        map.remove( key );
+                    }
+                    else
+                    {
+                        throw new UnsupportedOperationException( action.toString() );
+                    }
+                }
+            }
+        }
+
         @SuppressWarnings( "unchecked" )
-        Map.Entry<Long,Long>[] entries = index.map.entrySet().toArray( new Map.Entry[index.map.size()] );
+        Map.Entry<Long,Long>[] entries = map.entrySet().toArray( new Map.Entry[map.size()] );
         long[] result = new long[entries.length * 2];
         for ( int i = 0, c = 0; i < entries.length; i++ )
         {
@@ -354,13 +375,28 @@ public class GBPTreeRecoveryTest
 
     interface Action
     {
-        void execute( Index<MutableLong,MutableLong> index ) throws IOException;
+        void execute( GBPTree<MutableLong,MutableLong> index ) throws IOException;
+
+        long[] data();
 
         boolean isRecoverable();
     }
 
     abstract class RecoverableAction implements Action
     {
+        final long[] data;
+
+        RecoverableAction( long[] data )
+        {
+            this.data = data;
+        }
+
+        @Override
+        public long[] data()
+        {
+            return data;
+        }
+
         @Override
         public boolean isRecoverable()
         {
@@ -375,19 +411,23 @@ public class GBPTreeRecoveryTest
         {
             return false;
         }
+
+        @Override
+        public long[] data()
+        {
+            return null;
+        }
     }
 
     class InsertAction extends RecoverableAction
     {
-        private final long[] data;
-
         InsertAction( long[] data )
         {
-            this.data = data;
+            super( data );
         }
 
         @Override
-        public void execute( Index<MutableLong,MutableLong> index ) throws IOException
+        public void execute( GBPTree<MutableLong,MutableLong> index ) throws IOException
         {
             try ( IndexWriter<MutableLong,MutableLong> writer = index.writer() )
             {
@@ -403,15 +443,13 @@ public class GBPTreeRecoveryTest
 
     class RemoveAction extends RecoverableAction
     {
-        private final long[] data;
-
         RemoveAction( long[] data )
         {
-            this.data = data;
+            super( data );
         }
 
         @Override
-        public void execute( Index<MutableLong,MutableLong> index ) throws IOException
+        public void execute( GBPTree<MutableLong,MutableLong> index ) throws IOException
         {
             try ( IndexWriter<MutableLong,MutableLong> writer = index.writer() )
             {
@@ -428,56 +466,9 @@ public class GBPTreeRecoveryTest
     static class CheckpointAction extends NonRecoverableAction
     {
         @Override
-        public void execute( Index<MutableLong,MutableLong> index ) throws IOException
+        public void execute( GBPTree<MutableLong,MutableLong> index ) throws IOException
         {
             index.checkpoint( unlimited() );
-        }
-    }
-
-    private static class CapturingIndex implements Index<MutableLong,MutableLong>, IndexWriter<MutableLong,MutableLong>
-    {
-        private final TreeMap<Long,Long> map = new TreeMap<>();
-
-        @Override
-        public void close() throws IOException
-        {   // no
-        }
-
-        @Override
-        public RawCursor<Hit<MutableLong,MutableLong>,IOException> seek( MutableLong fromInclusive,
-                MutableLong toExclusive ) throws IOException
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public IndexWriter<MutableLong,MutableLong> writer() throws IOException
-        {
-            return this;
-        }
-
-        @Override
-        public void checkpoint( IOLimiter ioLimiter ) throws IOException
-        {
-        }
-
-        @Override
-        public void put( MutableLong key, MutableLong value ) throws IOException
-        {
-            map.put( key.getValue(), value.getValue() );
-        }
-
-        @Override
-        public void merge( MutableLong key, MutableLong value, ValueMerger<MutableLong> valueMerger ) throws IOException
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public MutableLong remove( MutableLong key ) throws IOException
-        {
-            Long value = map.remove( key.getValue() );
-            return value == null ? null : new MutableLong( value );
         }
     }
 }

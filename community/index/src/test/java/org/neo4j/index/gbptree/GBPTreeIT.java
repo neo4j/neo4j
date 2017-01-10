@@ -41,7 +41,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.Hit;
-import org.neo4j.index.Index;
 import org.neo4j.index.IndexWriter;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
@@ -102,7 +101,7 @@ public class GBPTreeIT
     public void shouldStayCorrectAfterRandomModifications() throws Exception
     {
         // GIVEN
-        Index<MutableLong,MutableLong> index = createIndex( 1024 );
+        GBPTree<MutableLong,MutableLong> index = createIndex( 1024 );
         Comparator<MutableLong> keyComparator = layout;
         Map<MutableLong,MutableLong> data = new TreeMap<>( keyComparator );
         int count = 1000;
@@ -708,7 +707,7 @@ public class GBPTreeIT
         return iteration / nbrOfGroups * rangeWidth;
     }
 
-    private static void randomlyModifyIndex( Index<MutableLong,MutableLong> index,
+    private static void randomlyModifyIndex( GBPTree<MutableLong,MutableLong> index,
             Map<MutableLong,MutableLong> data, Random random ) throws IOException
     {
         int changeCount = random.nextInt( 10 ) + 10;

@@ -37,7 +37,6 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.Hit;
-import org.neo4j.index.Index;
 import org.neo4j.index.IndexWriter;
 import org.neo4j.index.gbptree.GBPTree.Monitor;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -117,7 +116,7 @@ public class GBPTreeTest
     public void shouldReadWrittenMetaData() throws Exception
     {
         // GIVEN
-        try ( Index<MutableLong,MutableLong> index = createIndex( 1024 ) )
+        try ( GBPTree<MutableLong,MutableLong> index = createIndex( 1024 ) )
         {   // Open/close is enough
         }
 
@@ -132,13 +131,13 @@ public class GBPTreeTest
     public void shouldFailToOpenOnDifferentMetaData() throws Exception
     {
         // GIVEN
-        try ( Index<MutableLong,MutableLong> index = createIndex( 1024 ) )
+        try ( GBPTree<MutableLong,MutableLong> index = createIndex( 1024 ) )
         {   // Open/close is enough
         }
         index = null;
 
         // WHEN
-        try ( Index<MutableLong,MutableLong> index =
+        try ( GBPTree<MutableLong,MutableLong> index =
                 new GBPTree<>( pageCache, indexFile, new SimpleLongLayout( "Something else" ), 0, NO_MONITOR ) )
         {
             fail( "Should not load" );
@@ -156,13 +155,13 @@ public class GBPTreeTest
     public void shouldFailToOpenOnDifferentLayout() throws Exception
     {
         // GIVEN
-        try ( Index<MutableLong,MutableLong> index = createIndex( 1024 ) )
+        try ( GBPTree<MutableLong,MutableLong> index = createIndex( 1024 ) )
         {   // Open/close is enough
         }
         index = null;
 
         // WHEN
-        try ( Index<MutableLong,MutableLong> index =
+        try ( GBPTree<MutableLong,MutableLong> index =
                 new GBPTree<>( pageCache, indexFile, new SimpleLongLayout()
         {
             @Override
@@ -185,13 +184,13 @@ public class GBPTreeTest
     public void shouldFailToOpenOnDifferentMajorVersion() throws Exception
     {
         // GIVEN
-        try ( Index<MutableLong,MutableLong> index = createIndex( 1024 ) )
+        try ( GBPTree<MutableLong,MutableLong> index = createIndex( 1024 ) )
         {   // Open/close is enough
         }
         index = null;
 
         // WHEN
-        try ( Index<MutableLong,MutableLong> index =
+        try ( GBPTree<MutableLong,MutableLong> index =
             new GBPTree<>( pageCache, indexFile, new SimpleLongLayout()
             {
                 @Override
@@ -213,13 +212,13 @@ public class GBPTreeTest
     public void shouldFailToOpenOnDifferentMinorVersion() throws Exception
     {
         // GIVEN
-        try ( Index<MutableLong,MutableLong> index = createIndex( 1024 ) )
+        try ( GBPTree<MutableLong,MutableLong> index = createIndex( 1024 ) )
         {   // Open/close is enough
         }
         index = null;
 
         // WHEN
-        try ( Index<MutableLong,MutableLong> index =
+        try ( GBPTree<MutableLong,MutableLong> index =
             new GBPTree<>( pageCache, indexFile, new SimpleLongLayout()
             {
                 @Override
@@ -242,7 +241,7 @@ public class GBPTreeTest
     {
         // GIVEN
         int pageSize = 1024;
-        try ( Index<MutableLong,MutableLong> index = createIndex( pageSize ) )
+        try ( GBPTree<MutableLong,MutableLong> index = createIndex( pageSize ) )
         {   // Open/close is enough
         }
         index = null;
@@ -250,7 +249,7 @@ public class GBPTreeTest
         // WHEN
         pageCache.close();
         pageCache = createPageCache( pageSize / 2 );
-        try ( Index<MutableLong,MutableLong> index = new GBPTree<>( pageCache, indexFile, layout, 0, NO_MONITOR ) )
+        try ( GBPTree<MutableLong,MutableLong> index = new GBPTree<>( pageCache, indexFile, layout, 0, NO_MONITOR ) )
         {
             fail( "Should not load" );
         }
@@ -267,7 +266,7 @@ public class GBPTreeTest
         // WHEN
         int pageSize = 512;
         pageCache = createPageCache( pageSize );
-        try ( Index<MutableLong,MutableLong> index =
+        try ( GBPTree<MutableLong,MutableLong> index =
                 new GBPTree<>( pageCache, indexFile, layout, pageSize * 2, NO_MONITOR ) )
         {
             fail( "Shouldn't have been created" );
@@ -285,7 +284,7 @@ public class GBPTreeTest
         // WHEN
         int pageSize = 1024;
         pageCache = createPageCache( pageSize );
-        try ( Index<MutableLong,MutableLong> index =
+        try ( GBPTree<MutableLong,MutableLong> index =
                 new GBPTree<>( pageCache, indexFile, layout, pageSize / 2, NO_MONITOR ) )
         {
             // Good
@@ -298,7 +297,7 @@ public class GBPTreeTest
         // WHEN
         int pageSize = 1024;
         pageCache = createPageCache( pageSize );
-        try ( Index<MutableLong,MutableLong> index =
+        try ( GBPTree<MutableLong,MutableLong> index =
                 new GBPTree<>( pageCache, indexFile, layout, pageSize, NO_MONITOR ) )
         {
             // Good
@@ -328,7 +327,7 @@ public class GBPTreeTest
         {
             expectedData.add( i );
         }
-        try ( Index<MutableLong,MutableLong> index =
+        try ( GBPTree<MutableLong,MutableLong> index =
                 new GBPTree<>( pageCache, indexFile, layout, pageSize / 2, NO_MONITOR ) )
         {
             // Insert some data
@@ -348,7 +347,7 @@ public class GBPTreeTest
         }
 
         // THEN
-        try ( Index<MutableLong,MutableLong> index = new GBPTree<>( pageCache, indexFile, layout, 0, NO_MONITOR ) )
+        try ( GBPTree<MutableLong,MutableLong> index = new GBPTree<>( pageCache, indexFile, layout, 0, NO_MONITOR ) )
         {
             MutableLong fromInclusive = new MutableLong( 0L );
             MutableLong toExclusive = new MutableLong( 200L );
@@ -371,7 +370,7 @@ public class GBPTreeTest
     {
         // GIVEN
         int pageSize = 1024;
-        try ( Index<MutableLong,MutableLong> index = createIndex( pageSize ) )
+        try ( GBPTree<MutableLong,MutableLong> index = createIndex( pageSize ) )
         {   // Open/close is enough
         }
         index = null;
@@ -530,7 +529,7 @@ public class GBPTreeTest
     public void shouldSplitCorrectly() throws Exception
     {
         // GIVEN
-        Index<MutableLong,MutableLong> index = createIndex( 256 );
+        GBPTree<MutableLong,MutableLong> index = createIndex( 256 );
 
         // WHEN
         int count = 1_000;

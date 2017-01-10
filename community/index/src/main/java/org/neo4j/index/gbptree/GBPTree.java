@@ -21,6 +21,7 @@ package org.neo4j.index.gbptree;
 
 import org.apache.commons.lang3.tuple.Pair;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
@@ -35,7 +36,6 @@ import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.Hit;
-import org.neo4j.index.Index;
 import org.neo4j.index.IndexWriter;
 import org.neo4j.index.ValueMerger;
 import org.neo4j.index.ValueMergers;
@@ -121,7 +121,7 @@ import static org.neo4j.index.gbptree.PageCursorUtil.checkOutOfBounds;
  * @param <KEY> type of keys
  * @param <VALUE> type of values
  */
-public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>
+public class GBPTree<KEY,VALUE> implements Closeable
 {
     /**
      * Version of the format that makes up the tree. This includes:
@@ -526,7 +526,26 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>
         return cursor;
     }
 
-    @Override
+    /**
+     * Seeks hits in this tree, given a key range. Hits are iterated over using the returned {@link RawCursor}.
+     * There's no guarantee that neither the {@link Hit} nor key/value instances are immutable and so
+     * if caller wants to cache the results it's safest to copy the instances, or rather their contents,
+     * into its own result cache.
+     * <p>
+     * Seeks can go either forwards or backwards depending on the values of the key arguments.
+     * <ul>
+     * <li>
+     * A {@code fromInclusive} that is smaller than the {@code toExclusive} results in results in ascending order.
+     * </li>
+     * <li>
+     * A {@code fromInclusive} that is bigger than the {@code toExclusive} results in results in descending order.
+     * </li>
+     *
+     * @param fromInclusive lower bound of the range to seek (inclusive).
+     * @param toExclusive higher bound of the range to seek (exclusive).
+     * @return a {@link RawCursor} used to iterate over the hits within the specified key range.
+     * @throws IOException on error reading from index.
+     */
     public RawCursor<Hit<KEY,VALUE>,IOException> seek( KEY fromInclusive, KEY toExclusive ) throws IOException
     {
         long generation = this.generation;
@@ -541,7 +560,14 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>
                 stableGeneration, unstableGeneration, generationSupplier, rootCatchup, rootGen );
     }
 
-    @Override
+    /**
+     * Checkpoints and flushes any pending changes to storage. After a successful call to this method
+     * the data is durable and safe. {@link #writer() Changes} made after this call and until crashing or
+     * just {@link #close() closing} this tree will need to be replayed next time this tree is opened.
+     *
+     * @param ioLimiter for controlling I/O usage.
+     * @throws IOException on error flushing to storage.
+     */
     public void checkpoint( IOLimiter ioLimiter ) throws IOException
     {
         // Flush dirty pages of the tree, do this before acquiring the lock so that writers won't be
@@ -578,6 +604,12 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>
         }
     }
 
+    /**
+     * Closes this tree and its associated resources. No {@link #checkpoint(IOLimiter)} is performed
+     * as part of this call.
+     *
+     * @throws IOException on error closing resources.
+     */
     @Override
     public void close() throws IOException
     {
@@ -585,12 +617,15 @@ public class GBPTree<KEY,VALUE> implements Index<KEY,VALUE>
     }
 
     /**
+     * Returns a {@link IndexWriter} able to modify the index, i.e. insert and remove keys/values.
+     * After usage the returned writer must be closed, typically by using try-with-resource clause.
+     *
      * @return the single {@link IndexWriter} for this index. The returned writer must be
      * {@link IndexWriter#close() closed} before another caller can acquire this writer.
+     * @throws IOException on error accessing the index.
      * @throws IllegalStateException for calls made between a successful call to this method and closing the
      * returned writer.
      */
-    @Override
     public IndexWriter<KEY,VALUE> writer() throws IOException
     {
         if ( !writerTaken.compareAndSet( false, true ) )
