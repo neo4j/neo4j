@@ -19,31 +19,23 @@
  */
 package org.neo4j.graphdb;
 
-import org.apache.commons.lang3.ArrayUtils;
 import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
-
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.io.fs.FileUtils;
+import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.io.pagecache.IOLimiter;
-import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.api.impl.labelscan.LabelScanStoreTest;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
-import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
+import org.neo4j.test.rule.RandomRule;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -53,19 +45,28 @@ public abstract class LabelScanStoreStartupIT
     private static final Label LABEL = Label.label( "testLabel" );
 
     @Rule
-    public final DatabaseRule dbRule = new EmbeddedDatabaseRule( getClass() );
+    public final DatabaseRule dbRule = new EmbeddedDatabaseRule( getClass() )
+    {
+        @Override
+        protected void configure( GraphDatabaseBuilder builder )
+        {
+            addSpecificConfig( builder );
+        }
+    };
+    @Rule
+    public final RandomRule random = new RandomRule();
 
     private int labelId;
+
+    protected abstract void addSpecificConfig( GraphDatabaseBuilder builder );
 
     @Test
     public void scanStoreStartWithoutExistentIndex() throws IOException
     {
-        NeoStoreDataSource dataSource = getDataSource();
-        LabelScanStore labelScanStore = getLabelScanStore( dbRule );
+        LabelScanStore labelScanStore = getLabelScanStore();
         labelScanStore.shutdown();
 
-        File labelScanStoreDirectory = getLabelScanStoreDirectory( dataSource );
-        FileUtils.deleteRecursively( labelScanStoreDirectory  );
+        deleteLabelScanStoreFiles( dbRule.getStoreDirFile() );
 
         labelScanStore.init();
         labelScanStore.start();
@@ -76,22 +77,26 @@ public abstract class LabelScanStoreStartupIT
     @Test
     public void scanStoreRecreateCorruptedIndexOnStartup() throws IOException
     {
-        NeoStoreDataSource dataSource = getDataSource();
-        LabelScanStore labelScanStore = getLabelScanStore( dbRule );
+        LabelScanStore labelScanStore = getLabelScanStore();
 
-        Node node = createTestNode();
+        createTestNode();
         long[] labels = readNodesForLabel( labelScanStore );
         assertEquals( "Label scan store see 1 label for node", 1, labels.length );
         labelScanStore.force( IOLimiter.unlimited() );
         labelScanStore.shutdown();
 
-        corruptIndex( dataSource );
+        corruptLabelScanStoreFiles( dbRule.getStoreDirFile() );
 
         labelScanStore.init();
         labelScanStore.start();
 
         long[] rebuildLabels = readNodesForLabel( labelScanStore );
         assertArrayEquals( "Store should rebuild corrupted index", labels, rebuildLabels );
+    }
+
+    private LabelScanStore getLabelScanStore()
+    {
+        return dbRule.getDependencyResolver().resolveDependency( LabelScanStore.class );
     }
 
     private long[] readNodesForLabel( LabelScanStore labelScanStore )
@@ -116,33 +121,14 @@ public abstract class LabelScanStoreStartupIT
         return node;
     }
 
-    private void corruptIndex( NeoStoreDataSource dataSource ) throws IOException
+    protected void scrambleFile( File file ) throws IOException
     {
-        File labelScanStoreDirectory = getLabelScanStoreDirectory( dataSource );
-        Files.walkFileTree( labelScanStoreDirectory.toPath(), new SimpleFileVisitor<Path>()
-        {
-            @Override
-            public FileVisitResult visitFile( Path file, BasicFileAttributes attrs ) throws IOException
-            {
-                Files.write( file, ArrayUtils.add(Files.readAllBytes( file ), (byte) 7 ));
-                return FileVisitResult.CONTINUE;
-            }
-        } );
+        LabelScanStoreTest.scrambleFile( random.random(), file );
     }
 
-    private File getLabelScanStoreDirectory( NeoStoreDataSource dataSource )
-    {
-        return LabelScanStoreProvider.getStoreDirectory( dataSource.getStoreDir() );
-    }
+    protected abstract void corruptLabelScanStoreFiles( File storeDirectory ) throws IOException;
 
-    private NeoStoreDataSource getDataSource()
-    {
-        DependencyResolver dependencyResolver = dbRule.getDependencyResolver();
-        DataSourceManager dataSourceManager = dependencyResolver.resolveDependency( DataSourceManager.class );
-        return dataSourceManager.getDataSource();
-    }
-
-    protected abstract LabelScanStore getLabelScanStore( DatabaseRule dbRule );
+    protected abstract void deleteLabelScanStoreFiles( File storeDirectory ) throws IOException;
 
     private void checkLabelScanStoreAccessible( LabelScanStore labelScanStore ) throws IOException
     {
