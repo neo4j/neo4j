@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.predicates.{CoercedPredicate, Not, True}
 import org.neo4j.cypher.internal.compiler.v3_2.commands.values.TokenType._
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
+import org.neo4j.cypher.internal.frontend.v3_2.Foldable._
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 
@@ -66,10 +67,10 @@ class ExpressionTest extends CypherFunSuite {
     val e = LengthFunction(Collect(Property(Variable("n"), PropertyKey("bar"))))
 
     //WHEN
-    val aggregates = e.filter(e => e.isInstanceOf[AggregationExpression])
+    val aggregates = e.findByAllClass[AggregationExpression]
 
     //THEN
-    aggregates.toList should equal( List(Collect(Property(Variable("n"), PropertyKey("bar")))))
+    aggregates.toList should equal( Seq(Collect(Property(Variable("n"), PropertyKey("bar")))))
   }
 
   test("should_handle_rewriting_to_non_predicates") {

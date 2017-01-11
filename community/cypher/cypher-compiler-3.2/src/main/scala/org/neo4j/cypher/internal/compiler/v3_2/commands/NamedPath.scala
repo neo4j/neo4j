@@ -19,15 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.commands
 
-import expressions.Expression
 import org.neo4j.cypher.internal.compiler.v3_2.AbstractPattern
 
 case class NamedPath(pathName: String, pathPattern: AbstractPattern*) extends Traversable[AbstractPattern]  {
   def foreach[U](f: (AbstractPattern) => U) {
     pathPattern.foreach(f)
   }
-
-  def rewrite(f: Expression => Expression) = NamedPath(pathName, pathPattern.map(_.rewrite(f)): _*)
 
   override def toString() = "NamedPath(%s = %s)".format(pathName, pathPattern.mkString(","))
 }

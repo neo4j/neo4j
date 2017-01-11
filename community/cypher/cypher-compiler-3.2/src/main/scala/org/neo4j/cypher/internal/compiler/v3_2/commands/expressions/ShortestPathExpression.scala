@@ -83,8 +83,6 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath, predicates:
   private def anyStartpointsContainNull(m: Map[String, Any]): Boolean =
     m(shortestPathPattern.left.name) == null || m(shortestPathPattern.right.name) == null
 
-  override def children = Seq(shortestPathPattern)
-
   def arguments = Seq.empty
 
   def rewrite(f: (Expression) => Expression): Expression = f(ShortestPathExpression(shortestPathPattern.rewrite(f)))

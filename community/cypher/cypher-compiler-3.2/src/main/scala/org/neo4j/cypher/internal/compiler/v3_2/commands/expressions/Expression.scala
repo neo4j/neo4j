@@ -20,14 +20,14 @@
 package org.neo4j.cypher.internal.compiler.v3_2.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_2._
-import org.neo4j.cypher.internal.compiler.v3_2.commands._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.predicates.{CoercedPredicate, Predicate}
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.TypeSafeMathSupport
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_2.CypherTypeException
+import org.neo4j.cypher.internal.frontend.v3_2.Foldable._
 import org.neo4j.cypher.internal.frontend.v3_2.symbols.CypherType
 
-abstract class Expression extends AstNode[Expression] {
+abstract class Expression {
   def rewrite(f: Expression => Expression): Expression
 
   def rewriteAsPredicate(f: Expression => Expression): Predicate = rewrite(f) match {
@@ -35,20 +35,12 @@ abstract class Expression extends AstNode[Expression] {
     case e               => CoercedPredicate(e)
   }
 
-  def subExpressions: Seq[Expression] = {
-    def expandAll(e: AstNode[_]): Seq[AstNode[_]] = e.children ++ e.children.flatMap(expandAll)
-    expandAll(this).collect {
-      case e:Expression => e
-    }
-  }
-
   // Expressions that do not get anything in their context from this expression.
   def arguments:Seq[Expression]
 
-  // Any expressions that this expression builds on
-  def children: Seq[AstNode[_]] = arguments
-
-  def containsAggregate = exists(_.isInstanceOf[AggregationExpression])
+  def containsAggregate = this.exists {
+    case _: AggregationExpression => true
+  }
 
   def apply(ctx: ExecutionContext)(implicit state: QueryState):Any
 
@@ -57,7 +49,7 @@ abstract class Expression extends AstNode[Expression] {
     case _          => getClass.getSimpleName
   }
 
-  val isDeterministic = ! exists {
+  val isDeterministic = ! this.exists {
     case RandFunction() => true
     case _              => false
   }
@@ -106,20 +98,16 @@ object Expression {
   def mapExpressionHasPropertyReadDependency(mapEntityName: String, mapExpression: Expression): Boolean =
     mapExpression match {
       case LiteralMap(map) => map.exists {
-        case (k, v) => v.subExpressions.exists {
+        case (k, v) => v.exists {
           case Property(Variable(entityName), propertyKey) =>
             entityName == mapEntityName && propertyKey.name == k
-          case _ => false
         }
       }
-      case _ => false
     }
 
   def hasPropertyReadDependency(entityName: String, expression: Expression, propertyKey: String): Boolean =
-    expression.subExpressions.exists {
+    expression.exists {
       case Property(Variable(name), key) =>
         name == entityName && key.name == propertyKey
-      case _ =>
-        false
     }
 }

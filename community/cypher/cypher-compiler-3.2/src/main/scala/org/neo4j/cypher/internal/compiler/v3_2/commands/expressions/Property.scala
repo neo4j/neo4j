@@ -52,8 +52,6 @@ case class Property(mapExpr: Expression, propertyKey: KeyToken)
 
   def rewrite(f: (Expression) => Expression) = f(Property(mapExpr.rewrite(f), propertyKey.rewrite(f)))
 
-  override def children = Seq(mapExpr, propertyKey)
-
   def arguments = Seq(mapExpr)
 
   override def toString = s"$mapExpr.${propertyKey.name}"

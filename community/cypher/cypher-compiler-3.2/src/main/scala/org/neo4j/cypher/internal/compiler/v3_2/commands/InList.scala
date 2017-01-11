@@ -52,8 +52,6 @@ abstract class InList(collectionExpression: Expression, id: String, predicate: P
 
   def containsIsNull = predicate.containsIsNull
 
-  override def children = Seq(collectionExpression, predicate)
-
   def arguments: scala.Seq[Expression] = Seq(collectionExpression)
 }
 

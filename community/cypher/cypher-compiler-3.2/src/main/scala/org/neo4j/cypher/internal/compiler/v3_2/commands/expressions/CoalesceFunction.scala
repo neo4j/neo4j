@@ -35,7 +35,7 @@ case class CoalesceFunction(arguments: Expression*) extends Expression {
 
   def innerExpectedType: Option[CypherType] = None
 
-  val argumentsString: String = children.mkString(",")
+  val argumentsString: String = arguments.mkString(",")
 
   override def toString = "coalesce(" + argumentsString + ")"
 

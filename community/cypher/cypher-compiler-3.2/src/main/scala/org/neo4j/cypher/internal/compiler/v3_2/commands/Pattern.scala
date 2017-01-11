@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection.{INCOMING, OUTG
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 
 import scala.collection.{Map, Seq}
-trait Pattern extends AstNode[Pattern] {
+trait Pattern {
   def possibleStartPoints: Seq[(String,CypherType)]
   def relTypes:Seq[String]
 
@@ -73,7 +73,7 @@ case class SingleNode(name: String,
 
   def relTypes = Seq.empty
 
-  def rewrite(f: (Expression) => Expression) = SingleNode(name, labels.map(_.typedRewrite[KeyToken](f)), properties.rewrite(f))
+  def rewrite(f: (Expression) => Expression) = SingleNode(name, labels.map(_.rewrite(f)), properties.rewrite(f))
 
   def children = Seq.empty
 

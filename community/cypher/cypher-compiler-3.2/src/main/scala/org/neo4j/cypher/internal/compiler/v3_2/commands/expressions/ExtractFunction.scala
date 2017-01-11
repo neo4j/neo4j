@@ -35,8 +35,5 @@ case class ExtractFunction(collection: Expression, id: String, expression: Expre
 
   def rewrite(f: (Expression) => Expression) = f(ExtractFunction(collection.rewrite(f), id, expression.rewrite(f)))
 
-  override def children = Seq(collection, expression)
-
-
   def arguments: Seq[Expression] = Seq(collection)
 }
