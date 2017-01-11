@@ -19,11 +19,13 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.IntSupplier;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.RawIterator;
@@ -95,12 +97,16 @@ import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.api.security.OverriddenAccessMode;
 import org.neo4j.kernel.impl.api.security.RestrictedAccessMode;
+import org.neo4j.kernel.impl.api.store.CursorRelationshipIterator;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.query.QuerySource;
+import org.neo4j.kernel.impl.util.Cursors;
 import org.neo4j.register.Register.DoubleLongRegister;
+import org.neo4j.storageengine.api.LabelItem;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.RelationshipItem;
+import org.neo4j.storageengine.api.RelationshipTypeItem;
 import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
@@ -319,7 +325,7 @@ public class OperationsFacade
         statement.assertOpen();
         try ( Cursor<NodeItem> node = dataRead().nodeCursorById( statement, nodeId ) )
         {
-            return node.get().getLabels();
+            return Cursors.intIterator( node.get().labels(), LabelItem::getAsInt );
         }
     }
 
@@ -362,7 +368,8 @@ public class OperationsFacade
         statement.assertOpen();
         try ( Cursor<NodeItem> node = dataRead().nodeCursorById( statement, nodeId ) )
         {
-            return node.get().getRelationships( direction( direction ), relTypes );
+            return new CursorRelationshipIterator(
+                    node.get().relationships( direction( direction ), deduplicate( relTypes ) ) );
         }
     }
 
@@ -377,15 +384,40 @@ public class OperationsFacade
         }
     }
 
+    private static int[] deduplicate( int[] types )
+    {
+        int unique = 0;
+        for ( int i = 0; i < types.length; i++ )
+        {
+            int type = types[i];
+            for ( int j = 0; j < unique; j++ )
+            {
+                if ( type == types[j] )
+                {
+                    type = -1; // signal that this relationship is not unique
+                    break; // we will not find more than one conflict
+                }
+            }
+            if ( type != -1 )
+            { // this has to be done outside the inner loop, otherwise we'd never accept a single one...
+                types[unique++] = types[i];
+            }
+        }
+        if ( unique < types.length )
+        {
+            types = Arrays.copyOf( types, unique );
+        }
+        return types;
+    }
+
     @Override
     public RelationshipIterator nodeGetRelationships( long nodeId, Direction direction )
             throws EntityNotFoundException
     {
         statement.assertOpen();
-
         try ( Cursor<NodeItem> node = dataRead().nodeCursorById( statement, nodeId ) )
         {
-            return node.get().getRelationships( direction( direction ) );
+            return new CursorRelationshipIterator( node.get().relationships( direction( direction ) ) );
         }
     }
 
@@ -425,7 +457,7 @@ public class OperationsFacade
         statement.assertOpen();
         try ( Cursor<NodeItem> node = dataRead().nodeCursorById( statement, nodeId ) )
         {
-            return node.get().getRelationshipTypes();
+            return Cursors.intIterator( node.get().relationshipTypes(), RelationshipTypeItem::getAsInt );
         }
     }
 

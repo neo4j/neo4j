@@ -19,8 +19,15 @@
  */
 package org.neo4j.cursor;
 
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.IntFunction;
 import java.util.function.Supplier;
+import java.util.function.ToIntFunction;
+
+import org.neo4j.collection.primitive.PrimitiveIntCollection;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
 
 /**
  * A cursor is an object that moves to point to different locations in a data structure.
@@ -50,12 +57,79 @@ public interface RawCursor<T, EXCEPTION extends Exception> extends Supplier<T>, 
 
     default void forAll( Consumer<T> consumer ) throws EXCEPTION
     {
+        mapForAll( Function.identity(), consumer );
+    }
+
+    default <R extends PrimitiveIntSet> R collect( R set, ToIntFunction<T> map ) throws EXCEPTION
+    {
         try
         {
             while ( next() )
             {
-                consumer.accept( get() );
+                set.add( map.applyAsInt( get() ) );
             }
+            return set;
+        }
+        finally
+        {
+            close();
+        }
+    }
+
+    default <R, E> E mapReduce( E initialValue, Function<T,R> map, BiFunction<R,E,E> reduce ) throws EXCEPTION
+    {
+        try
+        {
+            E current = initialValue;
+            while ( next() )
+            {
+                current = reduce.apply( map.apply( get() ), current );
+            }
+            return current;
+        }
+        finally
+        {
+            close();
+        }
+    }
+
+    default <E> void mapForAll( Function<T,E> function, Consumer<E> consumer ) throws EXCEPTION
+    {
+        try
+        {
+            while ( next() )
+            {
+                consumer.accept( function.apply( get() ) );
+            }
+        }
+        finally
+        {
+            close();
+        }
+    }
+
+    default boolean exists() throws EXCEPTION
+    {
+        try
+        {
+            return next();
+        }
+        finally
+        {
+            close();
+        }
+    }
+
+    default int count() throws EXCEPTION
+    {
+        try
+        {
+            int count = 0;
+            while( next() )
+            {
+                count++;
+            }
+            return count;
         }
         finally
         {
