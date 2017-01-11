@@ -209,7 +209,7 @@ public class CausalClusteringSettings
             "endpoints or return only read replicas. If there are no read replicas in the cluster, followers are " +
             "returned as read end points regardless the value of this setting." )
     public static final Setting<Boolean> cluster_allow_reads_on_followers =
-            setting( "causal_clustering.cluster_allow_reads_on_followers", BOOLEAN, Settings.FALSE );
+            setting( "causal_clustering.cluster_allow_reads_on_followers", BOOLEAN, TRUE );
 
     @Description( "The size of the ID allocation requests Core servers will make when they run out of NODE IDs. " +
             "Larger values mean less frequent requests but also result in more unused IDs (and unused disk space) " +
