@@ -127,7 +127,6 @@ case class True() extends Predicate {
   override def toString: String = "true"
   def containsIsNull = false
   def rewrite(f: (Expression) => Expression) = f(this)
-  def symbolTableDependencies = Set()
 }
 
 case class PropertyExists(variable: Expression, propertyKey: KeyToken) extends Predicate {

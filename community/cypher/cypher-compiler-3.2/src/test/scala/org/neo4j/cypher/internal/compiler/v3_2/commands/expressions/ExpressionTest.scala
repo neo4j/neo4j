@@ -124,7 +124,5 @@ Expected: %s""".format(a, b, result, expected))
 class TestExpression extends Expression {
   def rewrite(f: (Expression) => Expression): Expression = null
 
-  def symbolTableDependencies = Set()
-
   def apply(v1: ExecutionContext)(implicit state: QueryState) = null
 }

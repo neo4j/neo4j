@@ -56,6 +56,4 @@ case class BreakingExpression() extends Expression {
   }
 
   def rewrite(f: (Expression) => Expression) = null
-
-  def symbolTableDependencies = Set()
 }

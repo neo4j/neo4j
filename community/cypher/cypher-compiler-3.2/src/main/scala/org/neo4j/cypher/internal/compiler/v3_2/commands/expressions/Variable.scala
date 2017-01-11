@@ -31,6 +31,4 @@ case class Variable(entityName: String) extends Expression {
   override def toString: String = entityName
 
   def rewrite(f: (Expression) => Expression) = f(this)
-
-  def symbolTableDependencies = Set(entityName)
 }
