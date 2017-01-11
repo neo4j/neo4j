@@ -49,8 +49,6 @@ case class ConstantCachedIn(value: Expression, list: Expression) extends Predica
 
     inChecker.contains(value(ctx))
   }
-
-  override def containsIsNull = false
 }
 
 /*
@@ -80,8 +78,6 @@ case class DynamicCachedIn(value: Expression, list: Expression) extends Predicat
 
     inChecker.contains(value(ctx))
   }
-
-  override def containsIsNull = false
 }
 
 object CachedIn {

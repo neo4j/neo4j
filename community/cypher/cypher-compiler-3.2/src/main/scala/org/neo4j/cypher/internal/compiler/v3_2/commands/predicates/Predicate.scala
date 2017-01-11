@@ -39,7 +39,6 @@ abstract class Predicate extends Expression {
   // This is the un-dividable list of predicates. They can all be ANDed
   // together
   def atoms: Seq[Predicate] = Seq(this)
-  def containsIsNull: Boolean
 
   def andWith(preds: Predicate*): Predicate =
     if (preds.isEmpty) this else preds.fold(this)(_ andWith _)
@@ -54,8 +53,6 @@ abstract class CompositeBooleanPredicate extends Predicate {
   def predicates: NonEmptyList[Predicate]
 
   def shouldExitWhen: Boolean
-
-  def containsIsNull: Boolean = predicates.exists(_.containsIsNull)
 
   /**
    * This algorithm handles the case where we combine multiple AND or multiple OR groups (CNF or DNF).
@@ -95,7 +92,6 @@ case class Not(a: Predicate) extends Predicate {
     case None    => None
   }
   override def toString: String = "NOT(" + a + ")"
-  def containsIsNull = a.containsIsNull
 }
 
 case class Xor(a: Predicate, b: Predicate) extends Predicate {
@@ -106,7 +102,6 @@ case class Xor(a: Predicate, b: Predicate) extends Predicate {
   }
 
   override def toString: String = "(" + a + " XOR " + b + ")"
-  def containsIsNull = a.containsIsNull||b.containsIsNull
 }
 
 case class IsNull(expression: Expression) extends Predicate {
@@ -116,13 +111,11 @@ case class IsNull(expression: Expression) extends Predicate {
   }
 
   override def toString: String = expression + " IS NULL"
-  def containsIsNull = true
 }
 
 case class True() extends Predicate {
   def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = Some(true)
   override def toString: String = "true"
-  def containsIsNull = false
 }
 
 case class PropertyExists(variable: Expression, propertyKey: KeyToken) extends Predicate {
@@ -135,8 +128,6 @@ case class PropertyExists(variable: Expression, propertyKey: KeyToken) extends P
   }
 
   override def toString: String = s"hasProp($variable.${propertyKey.name})"
-
-  def containsIsNull = false
 }
 
 trait StringOperator {
@@ -149,7 +140,6 @@ trait StringOperator {
   def lhs: Expression
   def rhs: Expression
   def compare(a: String, b: String): Boolean
-  override def containsIsNull = false
 }
 
 case class StartsWith(lhs: Expression, rhs: Expression) extends Predicate with StringOperator {
@@ -173,8 +163,6 @@ case class LiteralRegularExpression(lhsExpr: Expression, regexExpr: Literal)(imp
       case _ => None
     }
 
-  def containsIsNull = false
-
   override def toString = s"$lhsExpr =~ $regexExpr"
 }
 
@@ -193,8 +181,6 @@ case class RegularExpression(lhsExpr: Expression, regexExpr: Expression)(implici
   }
 
   override def toString: String = lhsExpr.toString() + " ~= /" + regexExpr.toString() + "/"
-
-  def containsIsNull = false
 }
 
 case class NonEmpty(collection: Expression) extends Predicate with ListSupport {
@@ -207,8 +193,6 @@ case class NonEmpty(collection: Expression) extends Predicate with ListSupport {
   }
 
   override def toString: String = "nonEmpty(" + collection.toString() + ")"
-
-  def containsIsNull = false
 }
 
 case class HasLabel(entity: Expression, label: KeyToken) extends Predicate {
@@ -232,8 +216,6 @@ case class HasLabel(entity: Expression, label: KeyToken) extends Predicate {
   }
 
   override def toString = s"$entity:${label.name}"
-
-  def containsIsNull = false
 }
 
 case class CoercedPredicate(inner:Expression) extends Predicate with ListSupport {
@@ -243,8 +225,6 @@ case class CoercedPredicate(inner:Expression) extends Predicate with ListSupport
     case IsList(coll) => Some(coll.nonEmpty)
     case x            => throw new CypherTypeException(s"Don't know how to treat that as a predicate: $x")
   }
-
-  def containsIsNull = false
 
   override def toString = inner.toString
 }

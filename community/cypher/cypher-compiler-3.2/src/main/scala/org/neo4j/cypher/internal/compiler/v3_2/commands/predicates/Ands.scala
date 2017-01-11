@@ -49,7 +49,6 @@ class And(val a: Predicate, val b: Predicate) extends Predicate {
 
   override def atoms: Seq[Predicate] = a.atoms ++ b.atoms
   override def toString: String = s"($a AND $b)"
-  def containsIsNull = a.containsIsNull || b.containsIsNull
 
   override def hashCode() = a.hashCode + 37 * b.hashCode
 

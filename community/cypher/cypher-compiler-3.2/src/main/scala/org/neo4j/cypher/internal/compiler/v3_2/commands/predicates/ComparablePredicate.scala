@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_2.commands.predicates
 
 import org.neo4j.cypher.internal.compiler.v3_2._
-import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{Expression, Literal, Variable}
+import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
 
 abstract sealed class ComparablePredicate(val left: Expression, val right: Expression) extends Predicate with Comparer {
@@ -40,7 +40,6 @@ abstract sealed class ComparablePredicate(val left: Expression, val right: Expre
 
   def sign: String
   override def toString = left.toString() + " " + sign + " " + right.toString()
-  def containsIsNull = false
 
   def other(e: Expression): Expression = if (e != left) {
     assert(e == right, "This expression is neither LHS nor RHS")
@@ -69,11 +68,6 @@ case class Equals(a: Expression, b: Expression) extends Predicate with Comparer 
   }
 
   override def toString = s"$a == $b"
-
-  def containsIsNull = (a, b) match {
-    case (Variable(_), Literal(null)) => true
-    case _                              => false
-  }
 }
 
 case class LessThan(a: Expression, b: Expression) extends ComparablePredicate(a, b) {
