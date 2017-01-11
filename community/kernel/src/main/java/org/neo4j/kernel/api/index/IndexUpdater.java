@@ -23,6 +23,16 @@ import java.io.IOException;
 
 import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 
+/**
+ *  IndexUpdaters are responsible for updating indexes during the commit process. There is one new instance handling
+ *  each commit, created from {@link org.neo4j.kernel.api.index.IndexAccessor}.
+ *
+ *  First {@link #validate(Iterable)} is called with the tentative changes, in order to allow the index to check if
+ *  there is enough space left (Lucene has a limitation on nr of entries). Then {@link #process(NodePropertyUpdate)} is
+ *  called for each entry, wherein the actual insert is performed.
+ *
+ *  Each IndexUpdater is not thread-safe, and is assumed to be instantiated per transaction.
+ */
 public interface IndexUpdater extends AutoCloseable
 {
     Reservation validate( Iterable<NodePropertyUpdate> updates ) throws IOException, IndexCapacityExceededException;
