@@ -23,9 +23,10 @@ import org.mockito.Mockito._
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{Collection, Identifier, Property}
 import org.neo4j.cypher.internal.compiler.v2_1.commands.values.{UnresolvedLabel, UnresolvedProperty}
-import org.neo4j.cypher.internal.compiler.v2_1.commands.{AnyInCollection, Equals, HasLabel}
+import org.neo4j.cypher.internal.compiler.v2_1.commands._
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_1.symbols._
+import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.index.IndexDescriptor
 
 class NodeFetchStrategyTest extends CypherFunSuite {
@@ -64,7 +65,30 @@ class NodeFetchStrategyTest extends CypherFunSuite {
     val foundStartItem = NodeFetchStrategy.findStartStrategy("a", Seq(equalityPredicate, labelPredicate), planCtx, noSymbols)
 
     // Then
+    foundStartItem.s shouldBe a [SchemaIndex]
+    foundStartItem.s.asInstanceOf[SchemaIndex].kind should equal(AnyIndex)
     foundStartItem.rating should equal(NodeFetchStrategy.IndexEquality)
+  }
+
+  test("should_select_schema_constraint_when_expression_valid") {
+    //Given
+    val noSymbols = new SymbolTable(Map("b"->CTNode))
+    val equalityPredicate = Equals(Property(Identifier("a"), UnresolvedProperty(propertyName)), Identifier("b"))
+    val labelPredicate = HasLabel(Identifier("a"), UnresolvedLabel(labelName))
+    val planCtx = mock[PlanContext]
+    val indexDescriptor = new IndexDescriptor(0, 0)
+    val uniquenessConstraint = mock[UniquenessConstraint]
+
+    when(planCtx.getIndexRule(labelName, propertyName)).thenReturn(Some(indexDescriptor))
+    when(planCtx.getUniquenessConstraint(labelName, propertyName)).thenReturn(Some(uniquenessConstraint))
+
+    // When
+    val foundStartItem = NodeFetchStrategy.findStartStrategy("a", Seq(equalityPredicate, labelPredicate), planCtx, noSymbols)
+
+    // Then
+    foundStartItem.s shouldBe a [SchemaIndex]
+    foundStartItem.s.asInstanceOf[SchemaIndex].kind should equal(UniqueIndex)
+    foundStartItem.rating should equal(NodeFetchStrategy.Single)
   }
 
   test("should_select_schema_index_when_expression_property_check_with_in") {
