@@ -77,7 +77,7 @@ class InternalTreeLogic<KEY,VALUE>
     private final IdProvider idProvider;
     private final TreeNode<KEY,VALUE> bTreeNode;
     private final Layout<KEY,VALUE> layout;
-    private final KEY primKeyPlaceHolder;
+    private final KEY newKeyPlaceHolder;
     private final KEY readKey;
     private final VALUE readValue;
 
@@ -153,7 +153,7 @@ class InternalTreeLogic<KEY,VALUE>
         this.idProvider = idProvider;
         this.bTreeNode = bTreeNode;
         this.layout = layout;
-        this.primKeyPlaceHolder = layout.newKey();
+        this.newKeyPlaceHolder = layout.newKey();
         this.readKey = layout.newKey();
         this.readValue = layout.newValue();
 
@@ -348,7 +348,7 @@ class InternalTreeLogic<KEY,VALUE>
 
         insertInLeaf( cursor, structurePropagation, key, value, valueMerger, stableGeneration, unstableGeneration );
 
-        while ( structurePropagation.hasNewGen || structurePropagation.hasSplit )
+        while ( structurePropagation.hasMidChildUpdate || structurePropagation.hasRightKeyInsert )
         {
             int pos = levels[currentLevel].childPos;
             if ( !popLevel( cursor ) )
@@ -357,16 +357,18 @@ class InternalTreeLogic<KEY,VALUE>
                 break;
             }
 
-            if ( structurePropagation.hasNewGen )
+            if ( structurePropagation.hasMidChildUpdate )
             {
-                structurePropagation.hasNewGen = false;
-                bTreeNode.setChildAt( cursor, structurePropagation.left, pos, stableGeneration, unstableGeneration );
+                structurePropagation.hasMidChildUpdate = false;
+                bTreeNode.setChildAt(
+                        cursor, structurePropagation.midChild, pos, stableGeneration, unstableGeneration );
             }
-            if ( structurePropagation.hasSplit )
+            if ( structurePropagation.hasRightKeyInsert )
             {
-                structurePropagation.hasSplit = false;
-                insertInInternal( cursor, structurePropagation, bTreeNode.keyCount( cursor ), structurePropagation.primKey,
-                        structurePropagation.right, stableGeneration, unstableGeneration );
+                structurePropagation.hasRightKeyInsert = false;
+                insertInInternal( cursor, structurePropagation, bTreeNode.keyCount( cursor ),
+                        structurePropagation.rightKey, structurePropagation.rightChild,
+                        stableGeneration, unstableGeneration );
             }
         }
     }
@@ -428,25 +430,25 @@ class InternalTreeLogic<KEY,VALUE>
         }
 
         // Overflow
-        // We will overwrite primKey in structurePropagation, so copy it over to a place holder
-        layout.copyKey( structurePropagation.primKey, primKeyPlaceHolder );
-        splitInternal( cursor, structurePropagation, primKeyPlaceHolder, rightChild, keyCount,
+        // We will overwrite rightKey in structurePropagation, so copy it over to a place holder
+        layout.copyKey( structurePropagation.rightKey, newKeyPlaceHolder );
+        splitInternal( cursor, structurePropagation, newKeyPlaceHolder, rightChild, keyCount,
                 stableGeneration, unstableGeneration );
     }
 
     /**
      * Leaves cursor at same page as when called. No guarantees on offset.
      * <p>
-     * Split in internal node caused by an insertion of primKey and newRightChild
+     * Split in internal node caused by an insertion of rightKey and newRightChild
      *
      * @param cursor {@link PageCursor} pinned to page containing internal node, full node.
      * @param structurePropagation {@link StructurePropagation} used to report structure changes between tree levels.
-     * @param primKey primary key to be inserted, causing the split
-     * @param newRightChild right child of primKey
+     * @param newKey new key to be inserted together with newRightChild, causing the split
+     * @param newRightChild new child to be inserted to the right of newKey
      * @param keyCount key count for fullNode
      * @throws IOException on cursor failure
      */
-    private void splitInternal( PageCursor cursor, StructurePropagation<KEY> structurePropagation, KEY primKey,
+    private void splitInternal( PageCursor cursor, StructurePropagation<KEY> structurePropagation, KEY newKey,
             long newRightChild, int keyCount, long stableGeneration, long unstableGeneration ) throws IOException
     {
         long current = cursor.getCurrentPageId();
@@ -455,22 +457,22 @@ class InternalTreeLogic<KEY,VALUE>
         long newRight = idProvider.acquireNewId( stableGeneration, unstableGeneration );
 
         // Find position to insert new key
-        int pos = positionOf( search( cursor, primKey, readKey, keyCount ) );
+        int pos = positionOf( search( cursor, newKey, readKey, keyCount ) );
 
         int keyCountAfterInsert = keyCount + 1;
         int middlePos = middle( keyCountAfterInsert );
 
         // Update structurePropagation
-        structurePropagation.hasSplit = true;
-        structurePropagation.left = current;
-        structurePropagation.right = newRight;
+        structurePropagation.hasRightKeyInsert = true;
+        structurePropagation.midChild = current;
+        structurePropagation.rightChild = newRight;
         if ( middlePos == pos )
         {
-            layout.copyKey( primKey, structurePropagation.primKey );
+            layout.copyKey( newKey, structurePropagation.rightKey );
         }
         else
         {
-            bTreeNode.keyAt( cursor, structurePropagation.primKey, pos < middlePos ? middlePos - 1 : middlePos );
+            bTreeNode.keyAt( cursor, structurePropagation.rightKey, pos < middlePos ? middlePos - 1 : middlePos );
         }
 
         // Update new right
@@ -528,7 +530,7 @@ class InternalTreeLogic<KEY,VALUE>
                 // ... insert
                 if ( countBeforePos >= 0 )
                 {
-                    bTreeNode.insertKeyAt( rightCursor, primKey, countBeforePos, countBeforePos );
+                    bTreeNode.insertKeyAt( rightCursor, newKey, countBeforePos, countBeforePos );
                 }
                 // ... second copy
                 int countAfterPos = keyCount - pos;
@@ -573,7 +575,7 @@ class InternalTreeLogic<KEY,VALUE>
         bTreeNode.setKeyCount( cursor, middlePos );
         if ( pos < middlePos )
         {
-            bTreeNode.insertKeyAt( cursor, primKey, pos, middlePos - 1 );
+            bTreeNode.insertKeyAt( cursor, newKey, pos, middlePos - 1 );
             bTreeNode.insertChildAt( cursor, newRightChild, pos + 1, middlePos - 1,
                     stableGeneration, unstableGeneration );
         }
@@ -720,17 +722,17 @@ class InternalTreeLogic<KEY,VALUE>
         // We now have everything we need to start working on newRight
         // and everything that needs to be updated in left has been so.
 
-        structurePropagation.hasSplit = true;
-        structurePropagation.left = current;
-        structurePropagation.right = newRight;
+        structurePropagation.hasRightKeyInsert = true;
+        structurePropagation.midChild = current;
+        structurePropagation.rightChild = newRight;
 
         if ( middlePos == pos )
         {
-            layout.copyKey( newKey, structurePropagation.primKey );
+            layout.copyKey( newKey, structurePropagation.rightKey );
         }
         else
         {
-            bTreeNode.keyAt( cursor, structurePropagation.primKey, pos < middlePos ? middlePos - 1 : middlePos );
+            bTreeNode.keyAt( cursor, structurePropagation.rightKey, pos < middlePos ? middlePos - 1 : middlePos );
         }
 
         // Update new right
@@ -839,7 +841,7 @@ class InternalTreeLogic<KEY,VALUE>
             return null;
         }
 
-        while ( structurePropagation.hasNewGen )
+        while ( structurePropagation.hasMidChildUpdate )
         {
             int pos = levels[currentLevel].childPos;
             if ( !popLevel( cursor ) )
@@ -848,10 +850,11 @@ class InternalTreeLogic<KEY,VALUE>
                 break;
             }
 
-            if ( structurePropagation.hasNewGen )
+            if ( structurePropagation.hasMidChildUpdate )
             {
-                structurePropagation.hasNewGen = false;
-                bTreeNode.setChildAt( cursor, structurePropagation.left, pos, stableGeneration, unstableGeneration );
+                structurePropagation.hasMidChildUpdate = false;
+                bTreeNode.setChildAt( cursor, structurePropagation.midChild, pos,
+                        stableGeneration, unstableGeneration );
             }
         }
 
@@ -974,8 +977,8 @@ class InternalTreeLogic<KEY,VALUE>
         bTreeNode.goTo( cursor, "new gen", newGenId );
 
         // Propagate structure change
-        structurePropagation.hasNewGen = true;
-        structurePropagation.left = newGenId;
+        structurePropagation.hasMidChildUpdate = true;
+        structurePropagation.midChild = newGenId;
 
         idProvider.releaseId( stableGeneration, unstableGeneration, oldGenId );
     }

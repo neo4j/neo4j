@@ -69,7 +69,8 @@ public class InternalTreeLogicTest
     private final MutableLong insertValue = new MutableLong();
     private final MutableLong readKey = new MutableLong();
     private final MutableLong readValue = new MutableLong();
-    private final StructurePropagation<MutableLong> structurePropagation = new StructurePropagation<>( layout.newKey() );
+    private final StructurePropagation<MutableLong> structurePropagation = new StructurePropagation<>(
+            layout.newKey(), layout.newKey() );
 
     private static long stableGen = GenSafePointer.MIN_GENERATION;
     private static long unstableGen = stableGen + 1;
@@ -210,7 +211,7 @@ public class InternalTreeLogicTest
         while ( key < maxKeyCount )
         {
             insert( key, key );
-            assertFalse( structurePropagation.hasSplit );
+            assertFalse( structurePropagation.hasRightKeyInsert );
             key++;
         }
 
@@ -231,7 +232,7 @@ public class InternalTreeLogicTest
         {
             long key = i + 1;
             insert( key, key );
-            assertFalse( structurePropagation.hasSplit );
+            assertFalse( structurePropagation.hasRightKeyInsert );
         }
 
         // when
@@ -384,13 +385,13 @@ public class InternalTreeLogicTest
 
         // when
         generationManager.checkpoint();
-        goTo( cursor, structurePropagation.left );
+        goTo( cursor, structurePropagation.midChild );
         assertThat( keyAt( 0 ), is( 0L ) );
         goTo( cursor, rootId );
         remove( 0, readValue );
 
         // then
-        goTo( cursor, structurePropagation.left );
+        goTo( cursor, structurePropagation.midChild );
         assertThat( keyAt( 0 ), is( 1L ) );
     }
 
@@ -404,11 +405,11 @@ public class InternalTreeLogicTest
         }
 
         // when key to remove exists in internal
-        Long keyToRemove = structurePropagation.primKey.getValue();
+        Long keyToRemove = structurePropagation.rightKey.getValue();
         assertThat( keyAt( 0 ), is( keyToRemove ) );
 
         // and as first key in right child
-        long rightChild = structurePropagation.right;
+        long rightChild = structurePropagation.rightChild;
         goTo( cursor, rightChild );
         int keyCountInRightChild = node.keyCount( cursor );
         assertThat( keyAt( 0 ), is( keyToRemove ) );
@@ -464,11 +465,11 @@ public class InternalTreeLogicTest
         }
 
         // when key to remove exists in internal
-        Long keyToRemove = structurePropagation.primKey.getValue();
+        Long keyToRemove = structurePropagation.rightKey.getValue();
         assertThat( keyAt( 0 ), is( keyToRemove ) );
 
         // and as first key in right child
-        long currentRightChild = structurePropagation.right;
+        long currentRightChild = structurePropagation.rightChild;
         goTo( cursor, currentRightChild );
         int keyCountInRightChild = node.keyCount( cursor );
         assertThat( keyAt( 0 ), is( keyToRemove ) );
@@ -606,7 +607,7 @@ public class InternalTreeLogicTest
         insert( key, toAdd, ADDER );
 
         // THEN
-        goTo( cursor, structurePropagation.left );
+        goTo( cursor, structurePropagation.midChild );
         int searchResult = KeySearch.search( cursor, node, key( key ), new MutableLong(), node.keyCount( cursor ) );
         assertTrue( KeySearch.isHit( searchResult ) );
         int pos = KeySearch.positionOf( searchResult );
@@ -627,7 +628,7 @@ public class InternalTreeLogicTest
 
         // WHEN
         generationManager.checkpoint();
-        long key = structurePropagation.primKey.longValue();
+        long key = structurePropagation.rightKey.longValue();
         long baseValue = key;
         int toAdd = 5;
         insert( key, toAdd, ADDER );
@@ -655,7 +656,7 @@ public class InternalTreeLogicTest
             insert( i, i );
             if ( firstSplitPrimKey == -1 && numberOfRootSplits == 1 )
             {
-                firstSplitPrimKey = structurePropagation.primKey.longValue();
+                firstSplitPrimKey = structurePropagation.rightKey.longValue();
             }
         }
 
@@ -694,7 +695,7 @@ public class InternalTreeLogicTest
 
         // THEN
         assertEquals( 1, numberOfRootNewGens );
-        assertEquals( newGenId, structurePropagation.left );
+        assertEquals( newGenId, structurePropagation.midChild );
         assertNotEquals( oldGenId, newGenId );
         assertEquals( 1, node.keyCount( cursor ) );
 
@@ -722,7 +723,7 @@ public class InternalTreeLogicTest
 
         // THEN
         assertEquals( 1, numberOfRootNewGens );
-        assertEquals( newGenId, structurePropagation.left );
+        assertEquals( newGenId, structurePropagation.midChild );
         assertNotEquals( oldGenId, newGenId );
         assertEquals( 0, node.keyCount( cursor ) );
 
@@ -920,7 +921,7 @@ public class InternalTreeLogicTest
         for ( int i = 0; id.lastId() < targetLastId; i++ )
         {
             insert( firstKeyInLeaf + i, firstKeyInLeaf + i );
-            assertFalse( structurePropagation.hasSplit ); // there should be no root split
+            assertFalse( structurePropagation.hasRightKeyInsert ); // there should be no root split
         }
 
         // THEN
@@ -1050,15 +1051,15 @@ public class InternalTreeLogicTest
 
     private void newRootFromSplit( StructurePropagation<MutableLong> split ) throws IOException
     {
-        assertTrue( split.hasSplit );
+        assertTrue( split.hasRightKeyInsert );
         long rootId = id.acquireNewId( stableGen, unstableGen );
         goTo( cursor, rootId );
         node.initializeInternal( cursor, stableGen, unstableGen );
-        node.insertKeyAt( cursor, split.primKey, 0, 0 );
+        node.insertKeyAt( cursor, split.rightKey, 0, 0 );
         node.setKeyCount( cursor, 1 );
-        node.setChildAt( cursor, split.left, 0, stableGen, unstableGen );
-        node.setChildAt( cursor, split.right, 1, stableGen, unstableGen );
-        split.hasSplit = false;
+        node.setChildAt( cursor, split.midChild, 0, stableGen, unstableGen );
+        node.setChildAt( cursor, split.rightChild, 1, stableGen, unstableGen );
+        split.hasRightKeyInsert = false;
         updateRoot();
     }
 
@@ -1099,8 +1100,8 @@ public class InternalTreeLogicTest
 
     private void insert( long key, long value, ValueMerger<MutableLong> valueMerger ) throws IOException
     {
-        structurePropagation.hasSplit = false;
-        structurePropagation.hasNewGen = false;
+        structurePropagation.hasRightKeyInsert = false;
+        structurePropagation.hasMidChildUpdate = false;
         insertKey.setValue( key );
         insertValue.setValue( value );
         treeLogic.insert( cursor, structurePropagation, insertKey, insertValue, valueMerger, stableGen, unstableGen );
@@ -1109,14 +1110,14 @@ public class InternalTreeLogicTest
 
     private void handleAfterChange() throws IOException
     {
-        if ( structurePropagation.hasSplit )
+        if ( structurePropagation.hasRightKeyInsert )
         {
             newRootFromSplit( structurePropagation );
             numberOfRootSplits++;
         }
-        if ( structurePropagation.hasNewGen )
+        if ( structurePropagation.hasMidChildUpdate )
         {
-            structurePropagation.hasNewGen = false;
+            structurePropagation.hasMidChildUpdate = false;
             updateRoot();
             numberOfRootNewGens++;
         }

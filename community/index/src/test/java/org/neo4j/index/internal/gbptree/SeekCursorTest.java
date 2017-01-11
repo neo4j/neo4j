@@ -65,7 +65,7 @@ public class SeekCursorTest
     private final TreeNode<MutableLong,MutableLong> node = new TreeNode<>( PAGE_SIZE, layout );
     private final InternalTreeLogic<MutableLong,MutableLong> treeLogic = new InternalTreeLogic<>( id, node, layout );
     private final StructurePropagation<MutableLong> structurePropagation =
-            new StructurePropagation<>( layout.newKey() );
+            new StructurePropagation<>( layout.newKey(), layout.newKey() );
     private final PageAwareByteArrayCursor cursor = new PageAwareByteArrayCursor( PAGE_SIZE );
     private final int maxKeyCount = node.leafMaxKeyCount();
 
@@ -1754,15 +1754,15 @@ public class SeekCursorTest
 
     private void newRootFromSplit( StructurePropagation<MutableLong> split ) throws IOException
     {
-        assertTrue( split.hasSplit );
+        assertTrue( split.hasRightKeyInsert );
         long rootId = id.acquireNewId( stableGen, unstableGen );
         cursor.next( rootId );
         node.initializeInternal( cursor, stableGen, unstableGen );
-        node.insertKeyAt( cursor, split.primKey, 0, 0 );
+        node.insertKeyAt( cursor, split.rightKey, 0, 0 );
         node.setKeyCount( cursor, 1 );
-        node.setChildAt( cursor, split.left, 0, stableGen, unstableGen );
-        node.setChildAt( cursor, split.right, 1, stableGen, unstableGen );
-        split.hasSplit = false;
+        node.setChildAt( cursor, split.midChild, 0, stableGen, unstableGen );
+        node.setChildAt( cursor, split.rightChild, 1, stableGen, unstableGen );
+        split.hasRightKeyInsert = false;
         numberOfRootSplits++;
         updateRoot();
     }
@@ -1802,13 +1802,13 @@ public class SeekCursorTest
 
     private void handleAfterChange() throws IOException
     {
-        if ( structurePropagation.hasSplit )
+        if ( structurePropagation.hasRightKeyInsert )
         {
             newRootFromSplit( structurePropagation );
         }
-        if ( structurePropagation.hasNewGen )
+        if ( structurePropagation.hasMidChildUpdate )
         {
-            structurePropagation.hasNewGen = false;
+            structurePropagation.hasMidChildUpdate = false;
             updateRoot();
         }
     }
