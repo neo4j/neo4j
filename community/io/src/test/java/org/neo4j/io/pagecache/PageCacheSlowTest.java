@@ -40,9 +40,9 @@ import org.neo4j.adversaries.fs.AdversarialFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
-import org.neo4j.test.LinearHistoryPageCacheTracer;
+import org.neo4j.io.pagecache.tracing.linear.LinearHistoryTracerFactory;
+import org.neo4j.io.pagecache.tracing.linear.LinearTracers;
 import org.neo4j.test.rule.RepeatRule;
-import org.neo4j.test.LinearHistoryPageCursorTracer;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -454,9 +454,9 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
 
         // Because our test failures are non-deterministic, we use this tracer to capture a full history of the
         // events leading up to any given failure.
-        LinearHistoryPageCacheTracer tracer = new LinearHistoryPageCacheTracer();
-        //TODO:sdfasdf
-        getPageCache( fs, maxPages, pageCachePageSize, tracer, LinearHistoryPageCursorTracer::new );
+        LinearTracers linearTracers = LinearHistoryTracerFactory.pageCacheTracer();
+        getPageCache( fs, maxPages, pageCachePageSize, linearTracers.getPageCacheTracer(),
+                linearTracers.getCursorTracerSupplier() );
 
         PagedFile pfA = pageCache.map( existingFile( "a" ), filePageSize );
         PagedFile pfB = pageCache.map( existingFile( "b" ), filePageSize / 2 + 1 );
@@ -525,7 +525,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
         }
         catch ( Throwable e )
         {
-            tracer.printHistory( System.err );
+            linearTracers.printHistory( System.err );
             throw e;
         }
     }

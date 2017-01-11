@@ -17,15 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.test;
+package org.neo4j.io.pagecache.tracing.linear;
 
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PinEvent;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
+/**
+ * Tracer for page cache cursor events that add all of them to event history tracer that can build proper linear
+ * history across all tracers.
+ * Only use this for debugging internal data race bugs and the like, in the page cache.
+ *
+ * @see HEvents
+ * @see LinearHistoryPageCacheTracer
+ */
 public class LinearHistoryPageCursorTracer implements PageCursorTracer
 {
+    private LinearHistoryTracer tracer;
+
+    LinearHistoryPageCursorTracer( LinearHistoryTracer tracer )
+    {
+        this.tracer = tracer;
+    }
 
     @Override
     public long faults()
@@ -51,23 +65,21 @@ public class LinearHistoryPageCursorTracer implements PageCursorTracer
         return 0;
     }
 
-    //TODO:
     @Override
     public PinEvent beginPin( boolean writeLock, long filePageId, PageSwapper swapper )
     {
-        return PinEvent.NULL;
+        return tracer.add( new HEvents.PinHEvent( tracer, writeLock, filePageId, swapper ) );
     }
 
     @Override
     public void init( PageCacheTracer tracer )
     {
-
+        // nothing to do
     }
 
     @Override
     public void reportEvents()
     {
-
+        // nothing to do
     }
-
 }
