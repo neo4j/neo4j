@@ -29,13 +29,11 @@ import java.util.function.Consumer;
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.cursor.IntCursor;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
-import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
@@ -44,16 +42,16 @@ import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
+import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.txstate.RelationshipChangeVisitorAdapter;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.cursor.TxAllPropertyCursor;
 import org.neo4j.kernel.impl.api.cursor.TxIteratorRelationshipCursor;
-import org.neo4j.kernel.impl.api.cursor.TxLabelCursor;
-import org.neo4j.kernel.impl.api.cursor.TxSingleLabelCursor;
 import org.neo4j.kernel.impl.api.cursor.TxSingleNodeCursor;
 import org.neo4j.kernel.impl.api.cursor.TxSinglePropertyCursor;
 import org.neo4j.kernel.impl.api.cursor.TxSingleRelationshipCursor;
@@ -175,8 +173,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     private InstanceCache<TxSingleRelationshipCursor> singleRelationshipCursor;
     private InstanceCache<TxAllPropertyCursor> propertyCursor;
     private InstanceCache<TxSinglePropertyCursor> singlePropertyCursor;
-    private InstanceCache<TxLabelCursor> labelCursor;
-    private InstanceCache<TxSingleLabelCursor> singleLabelCursor;
 
     private boolean hasChanges, hasDataChanges;
 
@@ -204,22 +200,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
             protected TxSinglePropertyCursor create()
             {
                 return new TxSinglePropertyCursor( (Consumer) this );
-            }
-        };
-        labelCursor = new InstanceCache<TxLabelCursor>()
-        {
-            @Override
-            protected TxLabelCursor create()
-            {
-                return new TxLabelCursor( this );
-            }
-        };
-        singleLabelCursor = new InstanceCache<TxSingleLabelCursor>()
-        {
-            @Override
-            protected TxSingleLabelCursor create()
-            {
-                return new TxSingleLabelCursor( this );
             }
         };
         singleRelationshipCursor = new InstanceCache<TxSingleRelationshipCursor>()
@@ -809,33 +789,15 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public IntCursor augmentLabelCursor( IntCursor cursor, NodeState nodeState )
+    public PrimitiveIntSet augmentLabels( PrimitiveIntSet labels, NodeState nodeState )
     {
         ReadableDiffSets<Integer> labelDiffSets = nodeState.labelDiffSets();
-
-        if ( labelDiffSets.isEmpty() )
+        if ( !labelDiffSets.isEmpty() )
         {
-            return cursor;
+            labelDiffSets.getRemoved().forEach( labels::remove );
+            labelDiffSets.getAdded().forEach( labels::add );
         }
-        else
-        {
-            return labelCursor.get().init( cursor, labelDiffSets );
-        }
-    }
-
-    @Override
-    public IntCursor augmentSingleLabelCursor( IntCursor cursor, NodeState nodeState, int labelId )
-    {
-        ReadableDiffSets<Integer> labelDiffSets = nodeState.labelDiffSets();
-
-        if ( labelDiffSets.isEmpty() )
-        {
-            return cursor;
-        }
-        else
-        {
-            return singleLabelCursor.get().init( cursor, labelDiffSets, labelId );
-        }
+        return labels;
     }
 
     @Override

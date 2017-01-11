@@ -36,8 +36,8 @@ import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.txstate.NodeState;
 
+import static org.neo4j.collection.primitive.PrimitiveIntCollections.emptySet;
 import static org.neo4j.kernel.impl.util.Cursors.empty;
-import static org.neo4j.kernel.impl.util.Cursors.emptyInt;
 
 /**
  * Overlays transaction state on a {@link NodeItem} cursor.
@@ -121,23 +121,23 @@ public class TxSingleNodeCursor extends EntityItemHelper implements Cursor<NodeI
     }
 
     @Override
-    public IntCursor labels()
+    public PrimitiveIntSet labels()
     {
-        IntCursor cursor = nodeIsAddedInThisTx ? emptyInt() : this.cursor.get().labels();
-        return state.augmentLabelCursor( cursor, nodeState );
-    }
-
-    @Override
-    public IntCursor label( int labelId )
-    {
-        IntCursor cursor = nodeIsAddedInThisTx ? emptyInt() : this.cursor.get().label( labelId );
-        return state.augmentSingleLabelCursor( cursor, nodeState, labelId );
+        return state.augmentLabels( nodeIsAddedInThisTx ? emptySet() : this.cursor.get().labels(), nodeState );
     }
 
     @Override
     public boolean hasLabel( int labelId )
     {
-        return label( labelId ).exists();
+        if ( nodeIsAddedInThisTx || nodeState.labelDiffSets().getRemoved().contains( labelId ) )
+        {
+            return false;
+        }
+        if ( nodeState.labelDiffSets().getAdded().contains( labelId ) )
+        {
+            return true;
+        }
+        return this.cursor.get().hasLabel( labelId );
     }
 
     @Override

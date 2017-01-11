@@ -44,7 +44,6 @@ import org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexing;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.index.LegacyIndexStore;
 import org.neo4j.kernel.impl.util.Cursors;
-import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.StoreReadLayer;
 
 import static org.junit.Assert.assertEquals;
@@ -285,7 +284,7 @@ public class SchemaTransactionStateTest
         {
             when( storeStatement.acquireSingleNodeCursor( nodeLabels.nodeId ) ).thenReturn(
                     StubCursors.asNodeCursor( nodeLabels.nodeId,
-                            Cursors.empty(), StubCursors.asLabelCursor( nodeLabels.labelIds ) ) );
+                            Cursors.empty(), StubCursors.labels( nodeLabels.labelIds ) ) );
 
             for ( int label : nodeLabels.labelIds )
             {

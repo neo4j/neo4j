@@ -47,7 +47,6 @@ class PropertyExistenceEnforcer extends TxStateVisitor.Delegator
 {
     private final StoreReadLayer storeLayer;
     private final ReadableTransactionState txState;
-    private final PrimitiveIntSet labelIds = Primitive.intSet();
     private final PrimitiveIntSet propertyKeyIds = Primitive.intSet();
     private StorageStatement storageStatement;
 
@@ -100,9 +99,7 @@ class PropertyExistenceEnforcer extends TxStateVisitor.Delegator
             if ( node.next() )
             {
                 // Get all labels into a set for quick lookup
-                labelIds.clear();
-                node.get().labels().forAll( labelIds::add );
-
+                PrimitiveIntSet labelIds = node.get().labels();
                 // Iterate all constraints and find property existence constraints that matches labels
                 propertyKeyIds.clear();
                 Iterator<PropertyConstraint> constraints = storeLayer.constraintsGetAll();

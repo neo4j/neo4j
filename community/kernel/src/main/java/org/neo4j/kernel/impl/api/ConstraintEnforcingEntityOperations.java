@@ -24,7 +24,6 @@ import java.util.Iterator;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.cursor.IntCursor;
 import org.neo4j.helpers.Strings;
 import org.neo4j.helpers.collection.CastingIterator;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
@@ -119,34 +118,27 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     {
         try ( Cursor<NodeItem> cursor = nodeCursorById( state, nodeId ) )
         {
-
             NodeItem node = cursor.get();
-
-            try ( IntCursor labels = node.labels() )
+            node.labels().visitKeys( labelId ->
             {
-                while ( labels.next() )
+                int propertyKeyId = property.propertyKeyId();
+                Iterator<UniquenessConstraint> constraintIterator = uniquePropertyConstraints( schemaReadOperations
+                        .constraintsGetForLabelAndPropertyKey( state,
+                                new NodePropertyDescriptor( labelId, propertyKeyId ) ) );
+                if ( constraintIterator.hasNext() )
                 {
-                    int labelId = labels.getAsInt();
-                    int propertyKeyId = property.propertyKeyId();
-                    Iterator<UniquenessConstraint> constraintIterator =
-                            uniquePropertyConstraints( schemaReadOperations.constraintsGetForLabelAndPropertyKey( state,
-                                    new NodePropertyDescriptor( labelId, propertyKeyId ) ) );
-                    if ( constraintIterator.hasNext() )
-                    {
-                        UniquenessConstraint constraint = constraintIterator.next();
-                        validateNoExistingNodeWithLabelAndProperty( state, constraint, property.value(), node.id() );
-                    }
+                    UniquenessConstraint constraint = constraintIterator.next();
+                    validateNoExistingNodeWithLabelAndProperty( state, constraint, property.value(), node.id() );
                 }
-            }
-
+                return false;
+            } );
         }
 
         return entityWriteOperations.nodeSetProperty( state, nodeId, property );
     }
 
     private void validateNoExistingNodeWithLabelAndProperty( KernelStatement state,  UniquenessConstraint constraint,
-            Object value, long modifiedNode )
-            throws ConstraintValidationKernelException
+            Object value, long modifiedNode ) throws ConstraintValidationKernelException
     {
         try
         {

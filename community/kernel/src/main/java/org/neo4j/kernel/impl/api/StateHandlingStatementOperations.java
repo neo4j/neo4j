@@ -28,7 +28,6 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.cursor.IntCursor;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.LegacyIndex;
@@ -282,7 +281,7 @@ public class StateHandlingStatementOperations implements
         try ( Cursor<NodeItem> cursor = nodeCursorById( state, nodeId ) )
         {
             NodeItem node = cursor.get();
-            if ( node.label( labelId ).exists() )
+            if ( node.hasLabel( labelId ) )
             {
                 // Label is already in state or in store, no-op
                 return false;
@@ -317,7 +316,7 @@ public class StateHandlingStatementOperations implements
         try ( Cursor<NodeItem> cursor = nodeCursorById( state, nodeId ) )
         {
             NodeItem node = cursor.get();
-            if ( !node.label( labelId ).exists() )
+            if ( !node.hasLabel( labelId ) )
             {
                 // Label does not exist in state or in store, no-op
                 return false;
@@ -1006,14 +1005,11 @@ public class StateHandlingStatementOperations implements
     private void indexesUpdateProperty( KernelStatement state, NodeItem node, int propertyKey, DefinedProperty before,
             DefinedProperty after )
     {
-        try ( IntCursor labels = node.labels() )
+        node.labels().visitKeys( labelId ->
         {
-            while ( labels.next() )
-            {
-                NodePropertyDescriptor descriptor = new NodePropertyDescriptor( labels.getAsInt(), propertyKey );
-                indexUpdateProperty( state, node.id(), descriptor, before, after );
-            }
-        }
+            indexUpdateProperty( state, node.id(), new NodePropertyDescriptor( labelId, propertyKey ), before, after );
+            return false;
+        } );
     }
 
     private void indexUpdateProperty( KernelStatement state, long nodeId, NodePropertyDescriptor descriptor,

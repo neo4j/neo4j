@@ -20,8 +20,6 @@
 package org.neo4j.kernel.impl.api.state;
 
 import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import java.util.Collections;
 import java.util.Iterator;
@@ -45,9 +43,7 @@ import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexing;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.index.LegacyIndexStore;
-import org.neo4j.kernel.impl.util.Cursors;
 import org.neo4j.kernel.impl.util.diffsets.DiffSets;
-import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -316,34 +312,22 @@ public class StateHandlingStatementOperationsTest
         when( txState.addedAndRemovedNodes() ).thenReturn(
                 new DiffSets<>( Collections.singleton( 45L ), Collections.singleton( 46L ) )
         );
-        when( txState.augmentSingleNodeCursor( any( Cursor.class ), anyLong() ) ).thenAnswer(
-                new Answer<Cursor<NodeItem>>()
-                {
-                    @Override
-                    public Cursor<NodeItem> answer( InvocationOnMock invocationOnMock ) throws Throwable
-                    {
-                        long nodeId = (long) invocationOnMock.getArguments()[1];
-                        return asNodeCursor( nodeId, asPropertyCursor( intProperty( propertyKey, inRange ) ),
-                                Cursors.emptyInt() );
-                    }
-                } );
+        when( txState.augmentSingleNodeCursor( any( Cursor.class ), anyLong() ) ).thenAnswer( invocationOnMock ->
+        {
+            long nodeId = (long) invocationOnMock.getArguments()[1];
+            return asNodeCursor( nodeId, asPropertyCursor( intProperty( propertyKey, inRange ) ) );
+        } );
 
         StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
         IndexReader indexReader = addMockedIndexReader( storageStatement );
         when( indexReader.rangeSeekByNumberInclusive( lower, upper ) ).thenReturn(
                 PrimitiveLongCollections.resourceIterator( PrimitiveLongCollections.iterator( 43L, 44L, 46L ), null )
         );
-        when( storageStatement.acquireSingleNodeCursor( anyLong() ) ).thenAnswer(
-                new Answer<Cursor<NodeItem>>()
-                {
-                    @Override
-                    public Cursor<NodeItem> answer( InvocationOnMock invocationOnMock ) throws Throwable
-                    {
-                        long nodeId = (long) invocationOnMock.getArguments()[0];
-                        return asNodeCursor( nodeId, asPropertyCursor( intProperty( propertyKey, inRange ) ),
-                                Cursors.emptyInt() );
-                    }
-                } );
+        when( storageStatement.acquireSingleNodeCursor( anyLong() ) ).thenAnswer( invocationOnMock ->
+        {
+            long nodeId = (long) invocationOnMock.getArguments()[0];
+            return asNodeCursor( nodeId, asPropertyCursor( intProperty( propertyKey, inRange ) ) );
+        } );
 
         StateHandlingStatementOperations context = newTxStateOps( storeReadLayer );
 

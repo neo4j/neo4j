@@ -67,11 +67,8 @@ public class DiskLayerLabelTest extends DiskLayerTest
         }
 
         // THEN
-        disk.newStatement().acquireSingleNodeCursor( nodeId ).forAll( node ->
-        {
-            PrimitiveIntSet actual = node.labels().collect( Primitive.intSet() );
-            assertEquals( PrimitiveIntCollections.asSet( new int[]{labelId1, labelId2} ), actual );
-        } );
+        disk.newStatement().acquireSingleNodeCursor( nodeId ).forAll(
+                node -> assertEquals( PrimitiveIntCollections.asSet( new int[]{labelId1, labelId2} ), node.labels() ) );
     }
 
     @Test

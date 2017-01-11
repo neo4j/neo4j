@@ -51,7 +51,6 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterators.asSet;
-import static org.neo4j.kernel.impl.api.state.StubCursors.asLabelCursor;
 import static org.neo4j.kernel.impl.api.state.StubCursors.asNodeCursor;
 import static org.neo4j.kernel.impl.api.state.StubCursors.asPropertyCursor;
 import static org.neo4j.test.mockito.answer.Neo4jMockitoAnswers.answerAsIteratorFrom;
@@ -263,7 +262,7 @@ public class LabelTransactionStateTest
     {
         // GIVEN
         when( storeStatement.acquireSingleNodeCursor( 1337 ) ).thenReturn( asNodeCursor( 1337, asPropertyCursor(),
-                asLabelCursor( 12 ) ) );
+                StubCursors.labels( 12 ) ) );
 
         // WHEN
         boolean added = txContext.nodeAddLabel( state, 1337, 12 );
@@ -277,7 +276,7 @@ public class LabelTransactionStateTest
     {
         // GIVEN
         when( storeStatement.acquireSingleNodeCursor( 1337 ) ).thenReturn( asNodeCursor( 1337, asPropertyCursor(),
-                asLabelCursor( 12 ) ) );
+                StubCursors.labels( 12 ) ) );
 
         // WHEN
         boolean added = txContext.nodeRemoveLabel( state, 1337, 12 );
@@ -334,7 +333,7 @@ public class LabelTransactionStateTest
         for ( Labels nodeLabels : labels )
         {
             when( storeStatement.acquireSingleNodeCursor( nodeLabels.nodeId ) ).thenReturn( StubCursors.asNodeCursor(
-                    nodeLabels.nodeId, asPropertyCursor(), asLabelCursor( nodeLabels.labelIds ) ) );
+                    nodeLabels.nodeId, asPropertyCursor(), StubCursors.labels( nodeLabels.labelIds ) ) );
 
             for ( int label : nodeLabels.labelIds )
             {
@@ -362,11 +361,8 @@ public class LabelTransactionStateTest
 
     private void assertLabels( int... labels ) throws EntityNotFoundException
     {
-        txContext.nodeCursorById( state, nodeId ).forAll( node ->
-        {
-            PrimitiveIntSet collect = node.labels().collect( Primitive.intSet() );
-            assertEquals( PrimitiveIntCollections.asSet( labels ), collect );
-        } );
+        txContext.nodeCursorById( state, nodeId )
+                .forAll( node -> assertEquals( PrimitiveIntCollections.asSet( labels ), node.labels() ) );
 
         txContext.nodeCursorById( state, nodeId ).forAll( node ->
         {

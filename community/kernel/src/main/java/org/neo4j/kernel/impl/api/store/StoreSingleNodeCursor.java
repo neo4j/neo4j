@@ -19,10 +19,14 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
+import java.util.Objects;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.cursor.IntCursor;
 import org.neo4j.kernel.api.StatementConstants;
@@ -31,12 +35,16 @@ import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.NodeLabelsField;
+import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
+import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
+import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
 import org.neo4j.storageengine.api.DegreeItem;
 import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.NodeItem;
@@ -47,12 +55,59 @@ import static java.util.function.Function.identity;
 import static org.neo4j.kernel.impl.api.store.DegreeCounter.countRelationshipsInGroup;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
+import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
 
 /**
  * Base cursor for nodes.
  */
 public class StoreSingleNodeCursor extends EntityItemHelper implements Cursor<NodeItem>, NodeItem
 {
+    private static class NodeLabelView implements Supplier<PrimitiveIntSet>
+    {
+        private final RecordCursor<DynamicRecord> dynamicLabelRecordCursor;
+        private long[] labels;
+
+        NodeLabelView( RecordCursor<DynamicRecord> dynamicLabelRecordCursor )
+        {
+            this.dynamicLabelRecordCursor = dynamicLabelRecordCursor;
+        }
+
+        NodeLabelView load( NodeRecord nodeRecord )
+        {
+            if ( labels == null )
+            {
+                labels = NodeLabelsField.get( nodeRecord, dynamicLabelRecordCursor );
+            }
+            return this;
+        }
+
+        void clear()
+        {
+            labels = null;
+        }
+
+        boolean hasLabel( int labelId )
+        {
+            Objects.requireNonNull( labels );
+            for ( long label : labels )
+            {
+                if ( safeCastLongToInt( label ) == labelId )
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        @Override
+        public PrimitiveIntSet get()
+        {
+            Objects.requireNonNull( labels );
+            return PrimitiveIntCollections.asSet( labels, IoPrimitiveUtils::safeCastLongToInt );
+        }
+    }
+
+    private final NodeLabelView labelView;
     private final NodeRecord nodeRecord;
     private final RelationshipStore relationshipStore;
     private final RecordStore<RelationshipGroupRecord> relationshipGroupStore;
@@ -75,6 +130,7 @@ public class StoreSingleNodeCursor extends EntityItemHelper implements Cursor<No
         this.instanceCache = instanceCache;
         this.cursors =
                 new NodeExploringCursors( recordCursors, lockService, relationshipStore, relationshipGroupStore );
+        this.labelView = new NodeLabelView( recordCursors.label() );
     }
 
     public StoreSingleNodeCursor init( long nodeId )
@@ -104,12 +160,14 @@ public class StoreSingleNodeCursor extends EntityItemHelper implements Cursor<No
             }
         }
 
+        labelView.clear();
         return false;
     }
 
     @Override
     public void close()
     {
+        labelView.clear();
         instanceCache.accept( this );
     }
 
@@ -120,21 +178,15 @@ public class StoreSingleNodeCursor extends EntityItemHelper implements Cursor<No
     }
 
     @Override
-    public IntCursor labels()
+    public PrimitiveIntSet labels()
     {
-        return cursors.labels( nodeRecord );
-    }
-
-    @Override
-    public IntCursor label( int labelId )
-    {
-        return cursors.label( nodeRecord, labelId );
+        return labelView.load( nodeRecord ).get();
     }
 
     @Override
     public boolean hasLabel( int labelId )
     {
-        return label( labelId ).exists();
+        return labelView.load( nodeRecord ).hasLabel( labelId );
     }
 
     private Lock shortLivedReadLock()

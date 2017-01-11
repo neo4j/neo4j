@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.api.store;
 
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.cursor.IntCursor;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.RecordCursors;
@@ -37,8 +36,6 @@ import org.neo4j.storageengine.api.RelationshipItem;
 
 class NodeExploringCursors
 {
-    private final InstanceCache<StoreLabelCursor> labelCursorCache;
-    private final InstanceCache<StoreSingleLabelCursor> singleLabelCursorCache;
     private final InstanceCache<StoreNodeRelationshipCursor> nodeRelationshipCursorCache;
     private final InstanceCache<StoreSinglePropertyCursor> singlePropertyCursorCache;
     private final InstanceCache<StorePropertyCursor> propertyCursorCache;
@@ -50,22 +47,6 @@ class NodeExploringCursors
             final RelationshipStore relationshipStore,
             final RecordStore<RelationshipGroupRecord> relationshipGroupStore )
     {
-        labelCursorCache = new InstanceCache<StoreLabelCursor>()
-        {
-            @Override
-            protected StoreLabelCursor create()
-            {
-                return new StoreLabelCursor( cursors.label(), labelCursorCache );
-            }
-        };
-        singleLabelCursorCache = new InstanceCache<StoreSingleLabelCursor>()
-        {
-            @Override
-            protected StoreSingleLabelCursor create()
-            {
-                return new StoreSingleLabelCursor( cursors.label(), singleLabelCursorCache );
-            }
-        };
         this.relationshipStore = relationshipStore;
         this.relationshipGroupStore = relationshipGroupStore;
         nodeRelationshipCursorCache = new InstanceCache<StoreNodeRelationshipCursor>()
@@ -103,16 +84,6 @@ class NodeExploringCursors
     public Cursor<PropertyItem> property( long nextProp, int propertyKeyId, Lock lock )
     {
         return singlePropertyCursorCache.get().init( nextProp, propertyKeyId, lock );
-    }
-
-    public IntCursor labels( NodeRecord nodeRecord )
-    {
-        return labelCursorCache.get().init( nodeRecord );
-    }
-
-    public IntCursor label( NodeRecord nodeRecord, int labelId )
-    {
-        return singleLabelCursorCache.get().init( nodeRecord, labelId );
     }
 
     public Cursor<RelationshipItem> relationships( boolean dense, long nextRel, long id, Direction direction )

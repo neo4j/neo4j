@@ -27,8 +27,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.function.IntConsumer;
 import java.util.function.IntFunction;
 import java.util.function.IntPredicate;
+import java.util.function.LongToIntFunction;
 
 import org.neo4j.collection.primitive.base.Empty;
 
@@ -740,6 +742,14 @@ public class PrimitiveIntCollections
         };
     }
 
+    public static void consume( PrimitiveIntIterator source, IntConsumer consumer )
+    {
+        while ( source.hasNext() )
+        {
+            consumer.accept( source.next() );
+        }
+    }
+
     public static PrimitiveIntIterator constant( final int value )
     {
         return new PrimitiveIntBaseIterator()
@@ -758,6 +768,16 @@ public class PrimitiveIntCollections
         for ( int value : values )
         {
             set.add( value );
+        }
+        return set;
+    }
+
+    public static PrimitiveIntSet asSet( long[] values, LongToIntFunction converter )
+    {
+        PrimitiveIntSet set = Primitive.intSet( values.length );
+        for ( long value : values )
+        {
+            set.add( converter.applyAsInt( value ) );
         }
         return set;
     }

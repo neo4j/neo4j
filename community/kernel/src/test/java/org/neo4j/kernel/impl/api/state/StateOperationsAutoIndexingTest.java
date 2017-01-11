@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api.state;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.legacyindex.AutoIndexing;
@@ -102,7 +103,7 @@ public class StateOperationsAutoIndexingTest
 
         NodeItem node = mock( NodeItem.class );
         when( node.property( property.propertyKeyId() )).thenReturn( Cursors.empty() );
-        when( node.labels() ).thenReturn( Cursors.emptyInt() );
+        when( node.labels() ).thenReturn( PrimitiveIntCollections.emptySet() );
         when( storeStmt.acquireSingleNodeCursor( 1337 ) ).thenReturn( Cursors.cursor( node ) );
 
         // When
@@ -141,7 +142,7 @@ public class StateOperationsAutoIndexingTest
 
         NodeItem node = mock( NodeItem.class );
         when( node.property( property.propertyKeyId() )).thenReturn( Cursors.cursor( existingProperty ) );
-        when( node.labels() ).thenReturn( Cursors.emptyInt() );
+        when( node.labels() ).thenReturn( PrimitiveIntCollections.emptySet() );
         when( storeStmt.acquireSingleNodeCursor( 1337 ) ).thenReturn( Cursors.cursor( node ) );
 
         // When
@@ -183,7 +184,7 @@ public class StateOperationsAutoIndexingTest
 
         NodeItem node = mock( NodeItem.class );
         when( node.property( existingProperty.propertyKeyId() )).thenReturn( Cursors.cursor( existingProperty ) );
-        when( node.labels() ).thenReturn( Cursors.emptyInt() );
+        when( node.labels() ).thenReturn( PrimitiveIntCollections.emptySet() );
         when( storeStmt.acquireSingleNodeCursor( 1337 ) ).thenReturn( Cursors.cursor( node ) );
 
         // When

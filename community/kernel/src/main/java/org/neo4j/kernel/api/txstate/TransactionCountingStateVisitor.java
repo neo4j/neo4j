@@ -22,10 +22,10 @@ package org.neo4j.kernel.api.txstate;
 import java.util.Set;
 import java.util.function.IntConsumer;
 
-import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntCollection;
-import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
+import org.neo4j.collection.primitive.PrimitiveIntVisitor;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
@@ -37,6 +37,7 @@ import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
+import static org.neo4j.collection.primitive.PrimitiveIntCollections.consume;
 import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
 import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
 
@@ -75,7 +76,7 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
 
     private void decrementCountForLabelsAndRelationships( NodeItem node )
     {
-        PrimitiveIntSet labelIds = node.labels().collect( Primitive.intSet() );
+        PrimitiveIntSet labelIds = node.labels();
         labelIds.visitKeys( labelId ->
         {
             counts.incrementNodeCount( labelId, -1 );
@@ -167,9 +168,9 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
         visitLabels( endNode, ( labelId ) -> updateRelationshipsCountsFromDegrees( type, labelId, 0, delta ) );
     }
 
-    private void visitLabels( long nodeId, IntConsumer consumer )
+    private void visitLabels( long nodeId, PrimitiveIntVisitor<RuntimeException> visitor )
     {
-        nodeCursor( statement, nodeId ).forAll( node -> node.labels().forAll( consumer ) );
+        nodeCursor( statement, nodeId ).forAll( node -> node.labels().visitKeys( visitor ) );
     }
 
     private Cursor<NodeItem> nodeCursor( StorageStatement statement, long nodeId )

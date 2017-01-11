@@ -23,6 +23,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 
+import org.neo4j.collection.primitive.PrimitiveIntCollection;
+import org.neo4j.collection.primitive.PrimitiveIntCollections;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.cursor.IntCursor;
 import org.neo4j.helpers.collection.Iterables;
@@ -36,6 +39,8 @@ import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 
+import static org.neo4j.collection.primitive.PrimitiveIntCollections.emptyIterator;
+import static org.neo4j.collection.primitive.PrimitiveIntCollections.emptySet;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.kernel.impl.util.Cursors.empty;
 import static org.neo4j.kernel.impl.util.Cursors.emptyInt;
@@ -47,7 +52,7 @@ public class StubCursors
 {
     public static Cursor<NodeItem> asNodeCursor( final long nodeId )
     {
-        return asNodeCursor( nodeId, empty(), emptyInt() );
+        return asNodeCursor( nodeId, empty(), emptySet() );
     }
 
     public static Cursor<NodeItem> asNodeCursor( final long... nodeIds )
@@ -55,25 +60,31 @@ public class StubCursors
         NodeItem[] nodeItems = new NodeItem[nodeIds.length];
         for (int i = 0; i < nodeIds.length; i++)
         {
-            nodeItems[i] = new StubNodeItem( nodeIds[i], empty(), emptyInt() );
+            nodeItems[i] = new StubNodeItem( nodeIds[i], empty(), emptySet() );
         }
         return Cursors.cursor( nodeItems );
     }
 
     public static Cursor<NodeItem> asNodeCursor( final long nodeId,
-            final Cursor<PropertyItem> propertyCursor,
-            final IntCursor labelCursor )
+            final Cursor<PropertyItem> propertyCursor )
     {
-        return Cursors.cursor( new StubNodeItem( nodeId, propertyCursor, labelCursor ) );
+        return Cursors.cursor( new StubNodeItem( nodeId, propertyCursor, emptySet() ) );
+    }
+
+    public static Cursor<NodeItem> asNodeCursor( final long nodeId,
+            final Cursor<PropertyItem> propertyCursor,
+            final PrimitiveIntSet labels )
+    {
+        return Cursors.cursor( new StubNodeItem( nodeId, propertyCursor, labels ) );
     }
 
     private static class StubNodeItem extends EntityItemHelper implements NodeItem
     {
         private final long nodeId;
         private final Cursor<PropertyItem> propertyCursor;
-        private final IntCursor labelCursor;
+        private final PrimitiveIntSet labelCursor;
 
-        private StubNodeItem( long nodeId, Cursor<PropertyItem> propertyCursor, IntCursor labelCursor )
+        private StubNodeItem( long nodeId, Cursor<PropertyItem> propertyCursor, PrimitiveIntSet labelCursor )
         {
             this.nodeId = nodeId;
             this.propertyCursor = propertyCursor;
@@ -87,48 +98,13 @@ public class StubCursors
         }
 
         @Override
-        public IntCursor label( final int labelId )
-        {
-            return new IntCursor()
-            {
-                IntCursor cursor = labels();
-
-                @Override
-                public boolean next()
-                {
-                    while ( cursor.next() )
-                    {
-                        if ( cursor.getAsInt() == labelId )
-                        {
-                            return true;
-                        }
-                    }
-
-                    return false;
-                }
-
-                @Override
-                public void close()
-                {
-                    cursor.close();
-                }
-
-                @Override
-                public int getAsInt()
-                {
-                    return cursor.getAsInt();
-                }
-            };
-        }
-
-        @Override
         public boolean hasLabel( int labelId )
         {
-            return label( labelId ).exists();
+            return labelCursor.contains( labelId );
         }
 
         @Override
-        public IntCursor labels()
+        public PrimitiveIntSet labels()
         {
             return labelCursor;
         }
@@ -373,9 +349,9 @@ public class StubCursors
         } );
     }
 
-    public static IntCursor asLabelCursor( final int... labels )
+    public static PrimitiveIntSet labels( final int... labels )
     {
-        return Cursors.intCursor( labels );
+        return PrimitiveIntCollections.asSet( labels );
     }
 
     public static Cursor<PropertyItem> asPropertyCursor( final DefinedProperty... properties )

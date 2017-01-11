@@ -22,9 +22,9 @@ package org.neo4j.storageengine.api.txstate;
 import java.util.Iterator;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.cursor.IntCursor;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
@@ -160,9 +160,7 @@ public interface ReadableTransactionState
             PropertyContainerState propertyContainerState,
             int propertyKeyId );
 
-    IntCursor augmentLabelCursor( IntCursor cursor, NodeState nodeState );
-
-    IntCursor augmentSingleLabelCursor( IntCursor cursor, NodeState nodeState, int labelId );
+    PrimitiveIntSet augmentLabels( PrimitiveIntSet cursor, NodeState nodeState );
 
     Cursor<RelationshipItem> augmentSingleRelationshipCursor( Cursor<RelationshipItem> cursor, long relationshipId );
 

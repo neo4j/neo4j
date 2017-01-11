@@ -326,7 +326,7 @@ public class OperationsFacade
         statement.assertOpen();
         try ( Cursor<NodeItem> node = dataRead().nodeCursorById( statement, nodeId ) )
         {
-            return node.get().labels().collect( intSet() ).iterator();
+            return node.get().labels().iterator();
         }
     }
 

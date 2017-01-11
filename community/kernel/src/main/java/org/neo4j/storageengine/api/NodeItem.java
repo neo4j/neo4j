@@ -19,6 +19,7 @@
  */
 package org.neo4j.storageengine.api;
 
+import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.cursor.IntCursor;
 
@@ -32,14 +33,7 @@ public interface NodeItem
      * @return label cursor for current node
      * @throws IllegalStateException if no current node is selected
      */
-    IntCursor labels();
-
-    /**
-     * @param labelId for specific label to find
-     * @return label cursor for current node
-     * @throws IllegalStateException if no current node is selected
-     */
-    IntCursor label( int labelId );
+    PrimitiveIntSet labels();
 
     /**
      * @return relationship cursor for current node

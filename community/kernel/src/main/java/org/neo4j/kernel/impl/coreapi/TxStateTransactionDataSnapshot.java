@@ -28,7 +28,6 @@ import java.util.Map;
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.cursor.IntCursor;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -217,14 +216,11 @@ public class TxStateTransactionDataSnapshot implements TransactionData
                             }
                         }
 
-                        try ( IntCursor labels = node.get().labels() )
+                        node.get().labels().visitKeys( labelId ->
                         {
-                            while ( labels.next() )
-                            {
-                                removedLabels.add( new LabelEntryView( nodeId,
-                                        store.labelGetName( labels.getAsInt() ) ) );
-                            }
-                        }
+                            removedLabels.add( new LabelEntryView( nodeId, store.labelGetName( labelId ) ) );
+                            return false;
+                        } );
                     }
                 }
             }
