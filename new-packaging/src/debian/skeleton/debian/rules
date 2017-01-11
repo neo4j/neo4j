@@ -47,6 +47,8 @@ install: build
 	dh_clean -k
 	dh_installdirs
 	dh_install
+	# we want the service to be called neo4j, even if the package is neo4j-enterprise
+	dh_installinit --name=neo4j
 
 
 # Build architecture-independent files here.
