@@ -20,16 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v3_2.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.aggregation.{PercentileContFunction, PercentileDiscFunction}
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 
 case class PercentileCont(anInner: Expression, percentile: Expression) extends AggregationWithInnerExpression(anInner) {
   def createAggregationFunction = new PercentileContFunction(anInner, percentile)
-
-  def expectedInnerType = CTNumber
 }
 
 case class PercentileDisc(anInner: Expression, percentile: Expression) extends AggregationWithInnerExpression(anInner) {
   def createAggregationFunction = new PercentileDiscFunction(anInner, percentile)
-
-  def expectedInnerType = CTNumber
 }

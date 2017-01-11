@@ -36,10 +36,6 @@ abstract class Predicate extends Expression {
   def andWith(other: Predicate): Predicate = Ands(this, other)
   def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean]
 
-  // This is the un-dividable list of predicates. They can all be ANDed
-  // together
-  def atoms: Seq[Predicate] = Seq(this)
-
   def andWith(preds: Predicate*): Predicate =
     if (preds.isEmpty) this else preds.fold(this)(_ andWith _)
 }
@@ -82,8 +78,6 @@ abstract class CompositeBooleanPredicate extends Predicate {
       case Success(option) => option
     }
   }
-
-  override def atoms: Seq[Predicate] = predicates.toIndexedSeq
 }
 
 case class Not(a: Predicate) extends Predicate {

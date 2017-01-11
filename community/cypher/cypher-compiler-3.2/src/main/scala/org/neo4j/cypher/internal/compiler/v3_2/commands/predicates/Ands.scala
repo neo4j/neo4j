@@ -47,7 +47,6 @@ object Ands {
 class And(val a: Predicate, val b: Predicate) extends Predicate {
   def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = Ands(NonEmptyList(a, b)).isMatch(m)
 
-  override def atoms: Seq[Predicate] = a.atoms ++ b.atoms
   override def toString: String = s"($a AND $b)"
 
   override def hashCode() = a.hashCode + 37 * b.hashCode

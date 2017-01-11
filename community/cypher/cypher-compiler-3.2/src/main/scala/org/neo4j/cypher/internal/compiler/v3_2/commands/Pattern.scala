@@ -71,8 +71,6 @@ case class SingleNode(name: String,
 
   def relTypes = Seq.empty
 
-  def children = Seq.empty
-
   override def toString: String = {
     val namePart = if (UnNamedNameGenerator.notNamed(name)) s"${name.drop(9)}" else name
     val labelPart = if (labels.isEmpty) "" else labels.mkString(":", ":", "")
@@ -109,8 +107,6 @@ case class RelatedTo(left: SingleNode,
   val possibleStartPoints: Seq[(String, CypherType)] = left.possibleStartPoints ++ right.possibleStartPoints :+ relName->CTRelationship
 
   def rels = Seq(relName)
-
-  def children = Seq.empty
 
   def changeEnds(left: SingleNode = this.left, right: SingleNode = this.right): RelatedTo =
     copy(left = left, right = right)
@@ -167,8 +163,6 @@ case class VarLengthRelatedTo(pathName: String,
 
   def rels = Seq()
 
-  def children = Seq.empty
-
   def changeEnds(left: SingleNode = this.left, right: SingleNode = this.right): VarLengthRelatedTo =
     copy(left = left, right = right)
 }
@@ -203,8 +197,6 @@ case class ShortestPath(pathName: String,
   lazy val possibleStartPoints: Seq[(String, NodeType)] = left.possibleStartPoints ++ right.possibleStartPoints
 
   def rels = Seq()
-
-  def children = Seq.empty
 
   def changeEnds(left: SingleNode = this.left, right: SingleNode = this.right): ShortestPath =
     copy(left = left, right = right)
