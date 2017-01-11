@@ -1,29 +1,17 @@
-// BuiltInProcedureAcceptance.feature
-Getting all labels
-
 // ProcedureCallAcceptance.feature
-Standalone call to procedure that takes no arguments
   In-query call to procedure that takes no arguments
 Calling the same procedure twice using the same outputs in each call
-Standalone call to VOID procedure that takes no arguments
   In-query call to VOID procedure that takes no arguments
   In-query call to VOID procedure does not consume rows
-Standalone call to VOID procedure that takes no arguments, called with implicit arguments
 Standalone call to procedure that takes no arguments and yields no results
   In-query call to procedure that takes no arguments and yields no results
-Standalone call to procedure that takes no arguments and yields no results, called with implicit arguments
-Standalone call to procedure with explicit arguments
   In-query call to procedure with explicit arguments
 Standalone call to procedure with implicit arguments
-Standalone call to procedure with argument of type NUMBER  accepts value of type INTEGER
   In-query call to procedure with argument of type NUMBER  accepts value of type INTEGER
-Standalone call to procedure with argument of type NUMBER  accepts value of type FLOAT
   In-query call to procedure with argument of type NUMBER  accepts value of type FLOAT
 Standalone call to procedure with argument of type INTEGER accepts value of type FLOAT
   In-query call to procedure with argument of type INTEGER accepts value of type FLOAT
-Standalone call to procedure with argument of type FLOAT   accepts value of type INTEGER
   In-query call to procedure with argument of type FLOAT   accepts value of type INTEGER
-Standalone call to procedure with null argument
   In-query call to procedure with null argument
 Standalone call to procedure should fail if input type is wrong
   In-query call to procedure should fail if input type is wrong
@@ -41,5 +29,4 @@ In-query call to procedure that has outputs fails if no outputs are yielded
 In-query call to procedure that both takes arguments and has outputs fails if the arguments are passed implicitly and no outputs are yielded
 
 //ExplainAcceptance.feature
-Explanation of standalone procedure call
 Explanation of   in-query procedure call
