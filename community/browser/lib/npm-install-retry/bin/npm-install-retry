@@ -1,0 +1,18 @@
+#!/usr/bin/env node
+
+var program = require('commander');
+var run     = require('../');
+
+var npmargs   = process.argv.indexOf('--') === -1 ? '' : process.argv.slice(process.argv.indexOf('--')+1);
+var retryargs = process.argv.indexOf('--') === -1 ? process.argv : process.argv.slice(0, process.argv.indexOf('--'));
+
+program
+  .version(require(__dirname + '/../package.json').version)
+  .option('-a, --attempts [10]', 'Number of attempts before fail [10]', 10)
+  .option('-w, --wait [500]', 'Milliseconds to wait between tries [10]', 10)
+  .parse(retryargs);
+
+run('npm install', npmargs, {wait: program.wait, attempts: program.attempts}, function (err, res) {
+  if (err) return process.exit(1);
+  process.exit(res.exitCode);
+});

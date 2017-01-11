@@ -76,8 +76,8 @@
             <configuration>
               <target name="hipster build">
 
-                <exec executable="npm" dir="${project.basedir}" osfamily="unix" failonerror="true">
-                  <arg line="--color=false install" />
+                <exec executable="lib/npm-install-retry/bin/npm-install-retry" dir="${project.basedir}" osfamily="unix" failonerror="true">
+                  <arg line="--attempts 10" />
                 </exec>
 
                 <exec executable="node_modules/.bin/grunt" dir="${project.basedir}" osfamily="unix" resultproperty="cmdresult">
