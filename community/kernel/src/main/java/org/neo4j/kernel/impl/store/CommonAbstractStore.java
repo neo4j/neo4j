@@ -53,6 +53,7 @@ import static org.neo4j.io.pagecache.PageCacheOpenOptions.ANY_PAGE_SIZE;
 import static org.neo4j.io.pagecache.PagedFile.PF_READ_AHEAD;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
+import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
@@ -62,11 +63,11 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEADER extends StoreHeader>
         implements RecordStore<RECORD>, AutoCloseable
 {
-    static final String UNKNOWN_VERSION = "Unknown";
+    public static final String UNKNOWN_VERSION = "Unknown";
 
     protected final Config configuration;
     protected final PageCache pageCache;
-    final File storageFileName;
+    protected final File storageFileName;
     protected final IdType idType;
     protected final IdGeneratorFactory idGeneratorFactory;
     protected final Log log;
@@ -260,7 +261,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         idGeneratorFactory.create( idFileName, getNumberOfReservedLowIds(), false );
     }
 
-    private void createHeaderRecord( PageCursor cursor ) throws IOException
+    protected void createHeaderRecord( PageCursor cursor ) throws IOException
     {
         int offset = cursor.getOffset();
         storeHeaderFormat.writeHeader( cursor );
@@ -530,7 +531,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     /**
      * Marks this store as "not ok".
      */
-    void setStoreNotOk( Throwable cause )
+    protected void setStoreNotOk( Throwable cause )
     {
         storeOk = false;
         causeOfStoreNotOk = cause;
@@ -542,7 +543,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
      *
      * @return True if this store is ok
      */
-    boolean getStoreOk()
+    protected boolean getStoreOk()
     {
         return storeOk;
     }
@@ -550,7 +551,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     /**
      * Throws cause of not being OK if {@link #getStoreOk()} returns {@code false}.
      */
-    void checkStoreOk()
+    protected void checkStoreOk()
     {
         if ( !storeOk )
         {
@@ -631,7 +632,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
      * To remove all negations from the above statement: Only call this method if store is in need of
      * recovery and recovery has been performed.
      */
-    void makeStoreOk()
+    public void makeStoreOk()
     {
         if ( !storeOk )
         {
@@ -665,7 +666,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
      * map their own temporary PagedFile for the store file, and do their file IO through that,
      * if they need to access the data in the store file.
      */
-    void openIdGenerator()
+    protected void openIdGenerator()
     {
         idGenerator = idGeneratorFactory.open( getIdFileName(), getIdType(), scanForHighId(), recordFormat.getMaxId() );
     }
@@ -809,13 +810,13 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         return false;
     }
 
-    private void createIdGenerator( File fileName )
+    protected void createIdGenerator( File fileName )
     {
         idGeneratorFactory.create( fileName, 0, false );
     }
 
     /** Closed the {@link IdGenerator} used by this store */
-    void closeIdGenerator()
+    protected void closeIdGenerator()
     {
         if ( idGenerator != null )
         {
@@ -841,7 +842,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
      *
      * @throws IllegalStateException if the store is closed
      */
-    void assertNotClosed()
+    protected void assertNotClosed()
     {
         if ( storeFile == null )
         {
@@ -945,12 +946,12 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         return idType;
     }
 
-    void logVersions( Logger logger )
+    public void logVersions( Logger logger )
     {
         logger.log( "  " + getTypeDescriptor() + " " + storeVersion );
     }
 
-    void logIdUsage( Logger logger )
+    public void logIdUsage( Logger logger )
     {
         logger.log( String.format( "  %s: used=%s high=%s",
                 getTypeDescriptor(), getNumberOfIdsInUse(), getHighestPossibleIdInUse() ) );
@@ -966,7 +967,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
      * {@link #logVersions(Logger)}
      * For a good samaritan to pick up later.
      */
-    void visitStore( Visitor<CommonAbstractStore<RECORD,HEADER>,RuntimeException> visitor )
+    public void visitStore( Visitor<CommonAbstractStore<RECORD,HEADER>,RuntimeException> visitor )
     {
         visitor.visit( this );
     }
@@ -1017,9 +1018,15 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     @Override
     public RECORD getRecord( long id, RECORD record, RecordLoad mode )
     {
-        try ( PageCursor cursor = storeFile.io( getNumberOfReservedLowIds(), PF_SHARED_READ_LOCK ) )
+        // Mark the record with this id regardless of whether or not we load the contents of it.
+        // This is done in this method since there are multiple call sites and they all want the id
+        // on that record, so it's to ensure it isn't forgotten.
+        record.setId( id );
+        long pageId = pageIdForRecord( id );
+        int offset = offsetForId( id );
+        try ( PageCursor cursor = storeFile.io( pageId, PF_SHARED_READ_LOCK ) )
         {
-            readIntoRecord( id, record, mode, cursor );
+            readIntoRecord( id, record, mode, pageId, offset, cursor );
             return record;
         }
         catch ( IOException e )
@@ -1028,14 +1035,9 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         }
     }
 
-    void readIntoRecord( long id, RECORD record, RecordLoad mode, PageCursor cursor ) throws IOException
+    private void readIntoRecord( long id, RECORD record, RecordLoad mode, long pageId, int offset, PageCursor cursor )
+            throws IOException
     {
-        // Mark the record with this id regardless of whether or not we load the contents of it.
-        // This is done in this method since there are multiple call sites and they all want the id
-        // on that record, so it's to ensure it isn't forgotten.
-        record.setId( id );
-        long pageId = pageIdForRecord( id );
-        int offset = offsetForId( id );
         if ( cursor.next( pageId ) )
         {
             // There is a page in the store that covers this record, go read it
@@ -1126,17 +1128,109 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     @Override
     public RecordCursor<RECORD> newRecordCursor( final RECORD record )
     {
-        return new StoreRecordCursor<>( record, this );
+        return new RecordCursor<RECORD>()
+        {
+            private long currentId;
+            private RecordLoad mode;
+            private PageCursor pageCursor;
+
+            @Override
+            public boolean next()
+            {
+                try
+                {
+                    return next( currentId, record, mode );
+                }
+                finally
+                {
+                    // This will get the next reference:
+                    // inUse ==> actual next reference
+                    // !inUse && mode == CHECK ==> NULL
+                    // !inUse && mode == NORMAL ==> NULL (+InvalidRecordException thrown in try)
+                    // !inUse && mode == FORCE ==> actual next reference
+                    currentId = getNextRecordReference( record );
+                }
+            }
+
+            @Override
+            public boolean next( long id )
+            {
+                return next( id, record, mode );
+            }
+
+            @Override
+            public boolean next( long id, RECORD record, RecordLoad mode )
+            {
+                assert pageCursor != null : "Not initialized";
+                if ( NULL_REFERENCE.is( id ) )
+                {
+                    record.clear();
+                    record.setId( NULL_REFERENCE.intValue() );
+                    return false;
+                }
+
+                try
+                {
+                    record.setId( id );
+                    long pageId = pageIdForRecord( id );
+                    int offset = offsetForId( id );
+                    readIntoRecord( currentId, record, mode, pageId, offset, pageCursor );
+                    return record.inUse();
+                }
+                catch ( IOException e )
+                {
+                    throw new UnderlyingStorageException( e );
+                }
+            }
+
+            @Override
+            public void placeAt( long id, RecordLoad mode )
+            {
+                this.currentId = id;
+                this.mode = mode;
+            }
+
+            @Override
+            public void close()
+            {
+                assert pageCursor != null;
+                this.pageCursor.close();
+                this.pageCursor = null;
+            }
+
+            @Override
+            public RECORD get()
+            {
+                return record;
+            }
+
+            @Override
+            public RecordCursor<RECORD> acquire( long id, RecordLoad mode )
+            {
+                assert this.pageCursor == null;
+                this.currentId = id;
+                this.mode = mode;
+                try
+                {
+                    this.pageCursor = storeFile.io( pageIdForRecord( id ), PF_SHARED_READ_LOCK );
+                }
+                catch ( IOException e )
+                {
+                    throw new UnderlyingStorageException( e );
+                }
+                return this;
+            }
+        };
     }
 
-    private void verifyAfterNotRead( RECORD record, RecordLoad mode )
+    protected void verifyAfterNotRead( RECORD record, RecordLoad mode )
     {
         record.clear();
         mode.verify( record );
 
     }
 
-    final void checkForDecodingErrors( PageCursor cursor, long recordId, RecordLoad mode )
+    protected final void checkForDecodingErrors( PageCursor cursor, long recordId, RecordLoad mode )
     {
         if ( mode.checkForOutOfBounds( cursor ) )
         {
@@ -1155,8 +1249,8 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
                 record, pageId, offset, recordSize, storeFile.pageSize(), storageFileName.getAbsolutePath() ) );
     }
 
-    static String buildOutOfBoundsExceptionMessage( AbstractBaseRecord record, long pageId, int offset, int recordSize,
-            int pageSize, String filename )
+    protected static String buildOutOfBoundsExceptionMessage( AbstractBaseRecord record, long pageId, int offset,
+                                                              int recordSize, int pageSize, String filename )
     {
         return "Access to record " + record + " went out of bounds of the page. The record size is " +
                recordSize + " bytes, and the access was at offset " + offset + " bytes into page " +
@@ -1164,7 +1258,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
                "The mapped store file in question is " + filename;
     }
 
-    private void verifyAfterReading( RECORD record, RecordLoad mode )
+    protected final void verifyAfterReading( RECORD record, RecordLoad mode )
     {
         if ( !mode.verify( record ) )
         {
@@ -1172,7 +1266,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         }
     }
 
-    private void prepareForReading( PageCursor cursor, int offset, RECORD record )
+    protected final void prepareForReading( PageCursor cursor, int offset, RECORD record )
     {
         // Mark this record as unused. This to simplify implementations of readRecord.
         // readRecord can behave differently depending on RecordLoad argument and so it may be that
@@ -1203,6 +1297,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
 
     public abstract static class Configuration
     {
-        static final Setting<Boolean> rebuild_idgenerators_fast = GraphDatabaseSettings.rebuild_idgenerators_fast;
+        public static final Setting<Boolean> rebuild_idgenerators_fast =
+                GraphDatabaseSettings.rebuild_idgenerators_fast;
     }
 }

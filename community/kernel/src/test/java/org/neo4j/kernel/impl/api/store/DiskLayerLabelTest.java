@@ -21,14 +21,10 @@ package org.neo4j.kernel.impl.api.store;
 
 import org.junit.Test;
 
-import java.util.Collection;
 import java.util.HashSet;
-import java.util.Set;
-import java.util.function.IntSupplier;
 
-import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
-import org.neo4j.collection.primitive.PrimitiveIntSet;
+import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
@@ -67,11 +63,11 @@ public class DiskLayerLabelTest extends DiskLayerTest
         }
 
         // THEN
-        disk.newStatement().acquireSingleNodeCursor( nodeId ).forAll( node ->
-        {
-            PrimitiveIntSet actual = node.labels().collect( Primitive.intSet(), IntSupplier::getAsInt );
-            assertEquals( PrimitiveIntCollections.asSet( new int[]{labelId1, labelId2} ), actual );
-        } );
+        Cursor<NodeItem> node = disk.newStatement().acquireSingleNodeCursor( nodeId );
+        node.next();
+        PrimitiveIntIterator readLabels = node.get().getLabels();
+        assertEquals( new HashSet<>( asList( labelId1, labelId2 ) ),
+                PrimitiveIntCollections.addToCollection( readLabels, new HashSet<Integer>() ) );
     }
 
     @Test

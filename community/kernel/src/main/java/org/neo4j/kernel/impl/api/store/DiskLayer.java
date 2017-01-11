@@ -58,6 +58,7 @@ import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodePropertyConstraintRule;
+import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyConstraintRule;
 import org.neo4j.kernel.impl.store.record.RelationshipPropertyConstraintRule;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -73,7 +74,7 @@ import org.neo4j.storageengine.api.schema.IndexSchemaRule;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
-import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 
 /**
@@ -412,8 +413,8 @@ public class DiskLayer implements StoreReadLayer
             RelationshipVisitor<EXCEPTION> relationshipVisitor ) throws EntityNotFoundException, EXCEPTION
     {
         // TODO Please don't create a record for this, it's ridiculous
-        RelationshipRecord record = relationshipStore.getRecord( relationshipId, relationshipStore.newRecord(), CHECK );
-        if ( !record.inUse() )
+        RelationshipRecord record = relationshipStore.newRecord();
+        if ( !relationshipStore.getRecord( relationshipId, record, FORCE ).inUse() )
         {
             throw new EntityNotFoundException( EntityType.RELATIONSHIP, relationshipId );
         }
@@ -423,13 +424,13 @@ public class DiskLayer implements StoreReadLayer
     @Override
     public PrimitiveLongIterator nodesGetAll()
     {
-        return new AllNodeIterator( nodeStore );
+        return new AllRecordIdIterator<>( new NodeRecord( -1 ), nodeStore );
     }
 
     @Override
     public RelationshipIterator relationshipsGetAll()
     {
-        return new AllRelationshipIterator( relationshipStore );
+        return new AllRelationshipIterator( new RelationshipRecord( -1 ), relationshipStore );
     }
 
     @Override

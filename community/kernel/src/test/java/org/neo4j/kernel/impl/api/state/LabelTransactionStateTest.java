@@ -26,14 +26,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.function.IntSupplier;
 
-import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
-import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.txstate.TransactionState;
@@ -43,6 +40,7 @@ import org.neo4j.kernel.impl.api.StatementOperationsTestHelper;
 import org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexing;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.index.LegacyIndexStore;
+import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.StoreReadLayer;
 
 import static org.junit.Assert.assertEquals;
@@ -335,7 +333,12 @@ public class LabelTransactionStateTest
 
             for ( int label : nodeLabels.labelIds )
             {
-                Collection<Long> nodes = allLabels.computeIfAbsent( label, k -> new ArrayList<>() );
+                Collection<Long> nodes = allLabels.get( label );
+                if ( nodes == null )
+                {
+                    nodes = new ArrayList<>();
+                    allLabels.put( label, nodes );
+                }
                 nodes.add( nodeLabels.nodeId );
             }
         }
@@ -357,20 +360,25 @@ public class LabelTransactionStateTest
         commitLabels( labels( nodeId, labels ) );
     }
 
-    private void assertLabels( int... labels ) throws EntityNotFoundException
+    private void assertLabels( Integer... labels ) throws EntityNotFoundException
     {
-        txContext.nodeCursorById( state, nodeId ).forAll( node ->
+        try ( Cursor<NodeItem> cursor = txContext.nodeCursorById( state, nodeId ) )
         {
-            PrimitiveIntSet collect = node.labels().collect( Primitive.intSet(), IntSupplier::getAsInt );
-            assertEquals( PrimitiveIntCollections.asSet( labels ), collect );
-        } );
-
-        txContext.nodeCursorById( state, nodeId ).forAll( node ->
-        {
-            for ( int label : labels )
+            if ( cursor.next() )
             {
-                assertTrue( "Expected labels not found on node", node.hasLabel( label ) );
+                assertEquals( asSet( labels ), PrimitiveIntCollections.toSet( cursor.get().getLabels() ) );
             }
-        } );
+        }
+
+        for ( int label : labels )
+        {
+            try ( Cursor<NodeItem> cursor = txContext.nodeCursorById( state, nodeId ) )
+            {
+                if ( cursor.next() )
+                {
+                    assertTrue( "Expected labels not found on node", cursor.get().hasLabel( label ) );
+                }
+            }
+        }
     }
 }

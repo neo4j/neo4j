@@ -361,20 +361,19 @@ public class NeoStoresTest
         ds.stop();
     }
 
-    private void relDelete( long id )
+    private void relDelete( long id ) throws Exception
     {
-        RelationshipVisitor<RuntimeException> visitor = ( relId, type, startNode, endNode ) ->
+        RelationshipVisitor<RuntimeException> visitor = new RelationshipVisitor<RuntimeException>()
+        {
+            @Override
+            public void visit( long relId, int type, long startNode, long endNode )
+            {
                 transaction.relationshipDoDelete( relId, type, startNode, endNode );
+            }
+        };
         if ( !transaction.relationshipVisit( id, visitor ) )
         {
-            try
-            {
-                storeLayer.relationshipVisit( id, visitor );
-            }
-            catch ( EntityNotFoundException e )
-            {
-                throw new RuntimeException( e );
-            }
+            storeLayer.relationshipVisit( id, visitor );
         }
     }
 
@@ -1328,14 +1327,13 @@ public class NeoStoresTest
 
     private void assertHasRelationships( long node )
     {
+
         try ( KernelStatement statement = (KernelStatement) tx.acquireStatement();
               Cursor<NodeItem> nodeCursor = statement.getStoreStatement().acquireSingleNodeCursor( node ) )
         {
             nodeCursor.next();
-            try( Cursor<RelationshipItem> rels = nodeCursor.get().relationships( Direction.BOTH ) )
-            {
-                assertTrue( rels.next() );
-            }
+            PrimitiveLongIterator rels = nodeCursor.get().getRelationships( Direction.BOTH );
+            assertTrue( rels.hasNext() );
         }
     }
 
@@ -1452,8 +1450,12 @@ public class NeoStoresTest
         try ( KernelStatement statement = (KernelStatement) tx.acquireStatement();
               Cursor<NodeItem> nodeCursor = statement.getStoreStatement().acquireSingleNodeCursor( nodeId ) )
         {
-            assertTrue( nodeCursor.next() );
-            nodeCursor.get().relationships( Direction.BOTH ).forAll( rel -> relDelete( rel.id() ) );
+            nodeCursor.next();
+            PrimitiveLongIterator relationships = nodeCursor.get().getRelationships( Direction.BOTH );
+            while ( relationships.hasNext() )
+            {
+                relDelete( relationships.next() );
+            }
         }
     }
 

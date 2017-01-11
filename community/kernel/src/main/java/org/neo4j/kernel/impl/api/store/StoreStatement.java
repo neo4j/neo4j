@@ -78,7 +78,7 @@ public class StoreStatement implements StorageStatement
             @Override
             protected StoreSingleNodeCursor create()
             {
-                return new StoreSingleNodeCursor( nodeStore.newRecord(), neoStores, this,
+                return new StoreSingleNodeCursor( nodeStore.newRecord(), neoStores, StoreStatement.this, this,
                         recordCursors, lockService );
             }
         };

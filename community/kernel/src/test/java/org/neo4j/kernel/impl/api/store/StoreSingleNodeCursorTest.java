@@ -49,7 +49,6 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.storageengine.api.DegreeItem;
-import org.neo4j.storageengine.api.RelationshipTypeItem;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 import org.neo4j.test.rule.RandomRule;
@@ -464,7 +463,7 @@ public class StoreSingleNodeCursorTest
     {
         Set<TestRelType> types = new HashSet<>();
 
-        Cursor<RelationshipTypeItem> relTypesCursor = cursor.relationshipTypes();
+        Cursor<IntSupplier> relTypesCursor = cursor.relationshipTypes();
         while ( relTypesCursor.next() )
         {
             int typeId = relTypesCursor.get().getAsInt();
@@ -620,9 +619,9 @@ public class StoreSingleNodeCursorTest
     @SuppressWarnings( "unchecked" )
     private StoreSingleNodeCursor newCursor( long nodeId )
     {
-        StoreSingleNodeCursor cursor =
-                new StoreSingleNodeCursor( new NodeRecord( -1 ), resolveNeoStores(), mock( Consumer.class ),
-                        new RecordCursors( resolveNeoStores() ), NO_LOCK_SERVICE );
+        StoreSingleNodeCursor cursor = new StoreSingleNodeCursor( new NodeRecord( -1 ), resolveNeoStores(),
+                mock( StoreStatement.class ), mock( Consumer.class ), new RecordCursors( resolveNeoStores() ),
+                NO_LOCK_SERVICE );
 
         cursor.init( nodeId );
         assertTrue( cursor.next() );
