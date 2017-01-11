@@ -251,7 +251,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
 
         life.add( new ReadReplicaStartupProcess( platformModule.fileSystem, storeFetcher, localDatabase, txPulling,
                 new ConnectToRandomCoreMember( discoveryService ),
-                new ExponentialBackoffStrategy( 1, TimeUnit.SECONDS ), logProvider,
+                new ExponentialBackoffStrategy( 1, 30, TimeUnit.SECONDS ), logProvider,
                 platformModule.logging.getUserLogProvider(), copiedStoreRecovery ) );
 
         dependencies.satisfyDependency( createSessionTracker() );

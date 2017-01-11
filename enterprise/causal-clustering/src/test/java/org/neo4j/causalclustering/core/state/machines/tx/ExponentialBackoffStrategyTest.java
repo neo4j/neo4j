@@ -22,7 +22,6 @@ package org.neo4j.causalclustering.core.state.machines.tx;
 import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-
 import static org.junit.Assert.assertEquals;
 
 public class ExponentialBackoffStrategyTest
@@ -33,7 +32,7 @@ public class ExponentialBackoffStrategyTest
     public void shouldDoubleEachTime() throws Exception
     {
         // given
-        ExponentialBackoffStrategy strategy = new ExponentialBackoffStrategy( 1, MILLISECONDS );
+        ExponentialBackoffStrategy strategy = new ExponentialBackoffStrategy( 1, 1 << NUMBER_OF_ACCESSES, MILLISECONDS );
         RetryStrategy.Timeout timeout = strategy.newTimeout();
 
         // when
@@ -43,23 +42,48 @@ public class ExponentialBackoffStrategyTest
         }
 
         // then
-        assertEquals( 2 << NUMBER_OF_ACCESSES - 1, timeout.getMillis() );
+        assertEquals( 1 << NUMBER_OF_ACCESSES, timeout.getMillis() );
     }
 
     @Test
     public void shouldProvidePreviousTimeout() throws Exception
     {
         // given
-        ExponentialBackoffStrategy strategy = new ExponentialBackoffStrategy( 1, MILLISECONDS );
+        ExponentialBackoffStrategy strategy = new ExponentialBackoffStrategy( 1, 1 << NUMBER_OF_ACCESSES, MILLISECONDS );
         RetryStrategy.Timeout timeout = strategy.newTimeout();
 
         // when
-        for ( int i = 0; i <= NUMBER_OF_ACCESSES; i++ )
+        for ( int i = 0; i < NUMBER_OF_ACCESSES; i++ )
         {
             timeout.increment();
         }
 
         // then
-        assertEquals( 2 << NUMBER_OF_ACCESSES, timeout.getMillis() );
+        assertEquals( 1 << NUMBER_OF_ACCESSES, timeout.getMillis() );
+    }
+
+    @Test
+    public void shouldRespectUpperBound() throws Exception
+    {
+        // given
+        long upperBound = (1 << NUMBER_OF_ACCESSES) - 5;
+        ExponentialBackoffStrategy strategy = new ExponentialBackoffStrategy( 1, upperBound, MILLISECONDS );
+        RetryStrategy.Timeout timeout = strategy.newTimeout();
+
+        // when
+        for ( int i = 0; i < NUMBER_OF_ACCESSES; i++ )
+        {
+            timeout.increment();
+        }
+
+        assertEquals( upperBound, timeout.getMillis() );
+
+        // additional increments
+        timeout.increment();
+        timeout.increment();
+        timeout.increment();
+
+        // then
+        assertEquals( upperBound, timeout.getMillis() );
     }
 }
