@@ -229,42 +229,57 @@ trait NewPlannerTestSupport extends CypherTestSupport {
   /*
    * Same as executeWithAllPlanners but rolls back all but the final query
    */
-  private def updateWithBothPlannersAndMaybeCompatibilityMode(enableCompatibility: Boolean, queryText: String, params: (String, Any)*): InternalExecutionResult = {
+  private def updateWithBothPlannersAndMaybeCompatibilityMode(enableCompatibility: Boolean, enableRule: Boolean,
+                                                              queryText: String, params: (String, Any)*): InternalExecutionResult = {
     val compatibilityResult =
       if (enableCompatibility) {
         graph.rollback(innerExecute(s"CYPHER $otherReadVersion $queryText", params: _*))
       } else {
         null
       }
-    val ruleResult = graph.rollback(innerExecute(s"CYPHER 3.1 planner=rule $queryText", params: _*))
+    val ruleResult =
+      if (enableRule) {
+        graph.rollback(innerExecute(s"CYPHER 3.1 planner=rule $queryText", params: _*))
+      } else {
+        null
+      }
     val eagerCostResult = graph.rollback(innerExecute(s"CYPHER updateStrategy=eager $queryText", params: _*))
     val costResult = executeWithCostPlannerAndInterpretedRuntimeOnly(queryText, params: _*)
     assertResultsAreSame(eagerCostResult, costResult, queryText,
       "Diverging results between eager and non-eager results")
-    if (enableCompatibility) {
-      assertResultsAreSame(compatibilityResult, costResult, queryText, "Diverging results between compatibility and current")
-    }
-    assertResultsAreSame(ruleResult, costResult, queryText, "Diverging results between rule and cost planners")
 
     withClue("Diverging statistics between eager and non-eager results") {
       eagerCostResult.queryStatistics() should equal(costResult.queryStatistics())
     }
-    withClue("Diverging statistics between rule and cost planners") {
-      ruleResult.queryStatistics() should equal(costResult.queryStatistics())
+
+    if (enableCompatibility) {
+      assertResultsAreSame(compatibilityResult, costResult, queryText, "Diverging results between compatibility and current")
     }
+    if (enableRule) {
+      assertResultsAreSame(ruleResult, costResult, queryText, "Diverging results between rule and cost planners")
+      withClue("Diverging statistics between rule and cost planners") {
+        ruleResult.queryStatistics() should equal(costResult.queryStatistics())
+      }
+    }
+
     if (enableCompatibility) {
       compatibilityResult.close()
     }
-    ruleResult.close()
+    if (enableRule) {
+      ruleResult.close()
+    }
     eagerCostResult.close()
     costResult
   }
 
   def updateWithBothPlannersAndCompatibilityMode(queryText: String, params: (String, Any)*): InternalExecutionResult =
-    updateWithBothPlannersAndMaybeCompatibilityMode(true, queryText, params: _*)
+    updateWithBothPlannersAndMaybeCompatibilityMode(enableCompatibility = true, enableRule = true, queryText, params: _*)
 
   def updateWithBothPlanners(queryText: String, params: (String, Any)*): InternalExecutionResult =
-    updateWithBothPlannersAndMaybeCompatibilityMode(false, queryText, params: _*)
+    updateWithBothPlannersAndMaybeCompatibilityMode(enableCompatibility = false, enableRule = true, queryText, params: _*)
+
+  def updateWithCostPlannerOnly(queryText: String, params: (String, Any)*): InternalExecutionResult =
+    updateWithBothPlannersAndMaybeCompatibilityMode(enableCompatibility = false, enableRule = false, queryText, params: _*)
 
   def executeWithAllPlannersAndCompatibilityModeReplaceNaNs(queryText: String, params: (String, Any)*): InternalExecutionResult = {
     val compatibilityResult = innerExecute(s"CYPHER $otherReadVersion $queryText", params: _*)
