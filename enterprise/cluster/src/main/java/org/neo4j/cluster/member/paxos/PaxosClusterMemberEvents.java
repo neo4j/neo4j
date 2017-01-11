@@ -25,7 +25,6 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -296,17 +295,6 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
 
     private class ClusterListenerImpl extends ClusterListener.Adapter
     {
-        @Override
-        public void enteredCluster( ClusterConfiguration clusterConfiguration )
-        {
-            // Catch up with elections
-            for ( Map.Entry<String, InstanceId> memberRoles : clusterConfiguration.getRoles().entrySet() )
-            {
-                elected( memberRoles.getKey(), memberRoles.getValue(),
-                        clusterConfiguration.getUriForId( memberRoles.getValue() ) );
-            }
-        }
-
         @Override
         public void elected( String role, final InstanceId instanceId, final URI electedMember )
         {
