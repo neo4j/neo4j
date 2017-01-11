@@ -54,8 +54,8 @@ import static org.neo4j.index.internal.gbptree.PageCursorUtil.checkOutOfBounds;
  * this to provide correct reading when concurrently {@link #writer() modifying}
  * the tree.
  * <p>
- * Generation is incremented on {@link Index#checkpoint(IOLimiter) check-pointing}.
- * Generation awareness allows for recovery from last {@link Index#checkpoint(IOLimiter)}, provided the same updates
+ * Generation is incremented on {@link #checkpoint(IOLimiter) check-pointing}.
+ * Generation awareness allows for recovery from last {@link #checkpoint(IOLimiter)}, provided the same updates
  * will be replayed onto the index since that point in time.
  * <p>
  * Changes to tree nodes are made so that stable nodes (i.e. nodes that have survived at least one checkpoint)
@@ -219,9 +219,9 @@ public class GBPTree<KEY,VALUE> implements Closeable
      * Both stable and unstable generation are unsigned ints, i.e. 32 bits each.
      *
      * <ul>
-     * <li>stable generation, generation which has survived the last {@link Index#checkpoint(IOLimiter)}</li>
+     * <li>stable generation, generation which has survived the last {@link #checkpoint(IOLimiter)}</li>
      * <li>unstable generation, current generation under evolution. This generation will be the
-     * {@link Generation#stableGeneration(long)} after the next {@link Index#checkpoint(IOLimiter)}</li>
+     * {@link Generation#stableGeneration(long)} after the next {@link #checkpoint(IOLimiter)}</li>
      * </ul>
      */
     private volatile long generation;

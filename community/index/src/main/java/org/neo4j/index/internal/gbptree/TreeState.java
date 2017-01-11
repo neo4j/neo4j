@@ -21,6 +21,7 @@ package org.neo4j.index.internal.gbptree;
 
 import java.util.Objects;
 
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 
 /**

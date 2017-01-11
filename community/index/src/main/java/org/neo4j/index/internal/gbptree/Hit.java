@@ -20,7 +20,7 @@
 package org.neo4j.index.internal.gbptree;
 
 /**
- * Represents a hit during an {@link Index#seek(Object, Object)}. There's no guarantee about whether or
+ * Represents a hit during an {@link GBPTree#seek(Object, Object)}. There's no guarantee about whether or
  * not the instances returned from {@link #key()} and {@link #value()} are immutable, so if multiple keys/values
  * are stored temporarily during the seek then it's recommended to take copies of them.
  *

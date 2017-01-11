@@ -24,7 +24,7 @@ import java.io.IOException;
 
 /**
  * Able to {@link #merge(Object, Object, ValueMerger)} and {@link #remove(Object)} key/value pairs
- * into an {@link Index}. After all modifications have taken place the writer must be {@link #close() closed},
+ * into a {@link GBPTree}. After all modifications have taken place the writer must be {@link #close() closed},
  * typically using try-with-resource clause.
  *
  * @param <KEY> type of keys

@@ -381,7 +381,7 @@ class InternalTreeLogic<KEY,VALUE>
     /**
      * Asserts that cursor is where it's expected to be at, compared to current level.
      *
-     * @param cursor
+     * @param cursor {@link PageCursor} to check.
      * @return {@code true} so that it can be called in an {@code assert} statement.
      */
     private boolean cursorIsAtExpectedLocation( PageCursor cursor )

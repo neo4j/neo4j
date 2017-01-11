@@ -21,6 +21,8 @@ package org.neo4j.index.internal.gbptree;
 
 import java.io.IOException;
 
+import org.neo4j.io.pagecache.PageCursor;
+
 /**
  * Provide tree node (page) ids which can be used for storing tree node data.
  * Bytes on returned page ids must be empty (all zeros).
