@@ -22,23 +22,28 @@ package org.neo4j.causalclustering.catchup.storecopy;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.FileHandle;
+import org.neo4j.io.pagecache.PageCache;
 
 public class StoreFiles
 {
-    private static final FilenameFilter STORE_FILE_FILTER = ( dir, name ) ->
-    {
+    private static final FilenameFilter STORE_FILE_FILTER = ( dir, name ) -> {
         // Skip log files and tx files from temporary database
         return !name.startsWith( "metrics" ) && !name.startsWith( "temp-copy" ) &&
-                !name.startsWith( "raft-messages." ) && !name.startsWith( "debug." ) &&
-                !name.startsWith( "data" ) && !name.startsWith( "store_lock" );
+               !name.startsWith( "raft-messages." ) && !name.startsWith( "debug." ) &&
+               !name.startsWith( "data" ) && !name.startsWith( "store_lock" );
     };
     private FileSystemAbstraction fs;
+    private PageCache pageCache;
 
-    public StoreFiles( FileSystemAbstraction fs )
+    public StoreFiles( FileSystemAbstraction fs, PageCache pageCache )
     {
         this.fs = fs;
+        this.pageCache = pageCache;
     }
 
     public void delete( File storeDir ) throws IOException
@@ -47,7 +52,23 @@ public class StoreFiles
         {
             fs.deleteRecursively( file );
         }
+        Iterable<FileHandle> fileHandles = pageCache.streamFilesRecursive( storeDir )::iterator;
+        for ( FileHandle fh : fileHandles )
+        {
+            Path storePath = storeDir.toPath();
+            Path filePath = fh.getFile().toPath();
+            Path relative = storePath.relativize( filePath );
+            if ( STORE_FILE_FILTER.accept( storeDir, getRootFileName( relative ) ) )
+            {
+                fh.delete();
+            }
+        }
+    }
 
+    private String getRootFileName( Path path )
+    {
+        Path root = path.getRoot();
+        return (root == null) ? path.toString() : root.toString();
     }
 
     void moveTo( File source, File target ) throws IOException
@@ -55,6 +76,15 @@ public class StoreFiles
         for ( File candidate : fs.listFiles( source, STORE_FILE_FILTER ) )
         {
             fs.moveToDirectory( candidate, target );
+        }
+
+        Iterable<FileHandle> fileHandles = pageCache.streamFilesRecursive( source )::iterator;
+        for ( FileHandle fh : fileHandles )
+        {
+            if ( STORE_FILE_FILTER.accept( source, fh.getFile().getName() ) )
+            {
+                fh.rename( new File( target, fh.getFile().getName() ), StandardCopyOption.REPLACE_EXISTING );
+            }
         }
     }
 }

@@ -198,7 +198,8 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         DelayedRenewableTimeoutService catchupTimeoutService =
                 new DelayedRenewableTimeoutService( Clocks.systemClock(), logProvider );
 
-        LocalDatabase localDatabase = new LocalDatabase( platformModule.storeDir, new StoreFiles( fileSystem ),
+        StoreFiles storeFiles = new StoreFiles( fileSystem, pageCache );
+        LocalDatabase localDatabase = new LocalDatabase( platformModule.storeDir, storeFiles,
                 platformModule.dataSourceManager, pageCache, fileSystem, databaseHealthSupplier, logProvider );
 
         RemoteStore remoteStore =

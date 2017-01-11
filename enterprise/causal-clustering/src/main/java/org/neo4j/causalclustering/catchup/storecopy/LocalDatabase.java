@@ -21,10 +21,12 @@ package org.neo4j.causalclustering.catchup.storecopy;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.StandardCopyOption;
 import java.util.function.Supplier;
 
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.FileHandle;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
@@ -57,8 +59,7 @@ public class LocalDatabase implements Lifecycle
 
     private volatile TransactionCommitProcess localCommit;
 
-    public LocalDatabase( File storeDir, StoreFiles storeFiles,
-            DataSourceManager dataSourceManager,
+    public LocalDatabase( File storeDir, StoreFiles storeFiles, DataSourceManager dataSourceManager,
             PageCache pageCache, FileSystemAbstraction fileSystemAbstraction,
             Supplier<DatabaseHealth> databaseHealthSupplier, LogProvider logProvider )
     {
@@ -172,7 +173,7 @@ public class LocalDatabase implements Lifecycle
         for ( StoreType storeType : StoreType.values() )
         {
             StoreFile storeFile = storeType.getStoreFile();
-            if(storeFile != null)
+            if ( storeFile != null )
             {
                 boolean exists = fileSystemAbstraction.fileExists( new File( storeDir, storeFile.storeFileName() ) );
                 if ( exists )

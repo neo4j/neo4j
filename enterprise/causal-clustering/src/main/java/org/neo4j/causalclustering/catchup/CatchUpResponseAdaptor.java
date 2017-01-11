@@ -47,6 +47,7 @@ public class CatchUpResponseAdaptor<T> implements CatchUpResponseCallback<T>
 
     @Override
     public void onFileStreamingComplete( CompletableFuture<T> signal, StoreCopyFinishedResponse response )
+            throws IOException
     {
         signal.completeExceptionally( new CatchUpProtocolViolationException( "Unexpected response: %s", response ) );
     }

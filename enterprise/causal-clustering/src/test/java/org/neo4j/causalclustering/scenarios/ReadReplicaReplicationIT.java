@@ -25,7 +25,6 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
@@ -34,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.BinaryOperator;
+import java.util.function.Function;
 
 import org.neo4j.causalclustering.catchup.tx.FileCopyMonitor;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
@@ -55,7 +55,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.security.WriteOperationsNotAllowedException;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
@@ -75,7 +74,6 @@ import org.neo4j.test.causalclustering.ClusterRule;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.startsWith;
@@ -95,13 +93,20 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.TIME;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
+/**
+ * Note that this test is extended in the blockdevice repository.
+ */
 public class ReadReplicaReplicationIT
 {
+    // This test is extended in the blockdevice repository, and these constants are required there as well.
+    public static final int NR_CORE_MEMBERS = 3;
+    public static final int NR_READ_REPLICAS = 1;
+
     @Rule
-    public final ClusterRule clusterRule =
-            new ClusterRule( getClass() ).withNumberOfCoreMembers( 3 ).withNumberOfReadReplicas( 1 )
-                    .withSharedCoreParam( CausalClusteringSettings.cluster_topology_refresh, "5s" )
-                    .withDiscoveryServiceFactory( new HazelcastDiscoveryServiceFactory() );
+    public final ClusterRule clusterRule = new ClusterRule( getClass() ).withNumberOfCoreMembers( NR_CORE_MEMBERS )
+            .withNumberOfReadReplicas( NR_READ_REPLICAS )
+            .withSharedCoreParam( CausalClusteringSettings.cluster_topology_refresh, "5s" )
+            .withDiscoveryServiceFactory( new HazelcastDiscoveryServiceFactory() );
 
     @Test
     public void shouldNotBeAbleToWriteToReadReplica() throws Exception
@@ -217,13 +222,16 @@ public class ReadReplicaReplicationIT
 
         cluster.coreTx( createSomeData );
 
-        CoreClusterMember follower = cluster.awaitCoreMemberWithRole( Role.FOLLOWER, 2, TimeUnit.SECONDS );
-        // Shutdown server before copying its data, because Windows can't copy open files.
-        follower.shutdown();
+        cluster.awaitCoreMemberWithRole( Role.FOLLOWER, 2, TimeUnit.SECONDS );
 
+        // Get a read replica and make sure that it is operational
         ReadReplica readReplica = cluster.addReadReplicaWithId( 4 );
-        putSomeDataWithDifferentStoreId( readReplica.storeDir(), follower.storeDir() );
-        follower.start();
+        readReplica.start();
+        readReplica.database().beginTx().close();
+        readReplica.shutdown();
+
+        // Change the store id, so it should fail to join the cluster again
+        changeStoreId( readReplica.storeDir() );
 
         try
         {
@@ -264,15 +272,12 @@ public class ReadReplicaReplicationIT
 
         awaitEx( () -> readReplicasUpToDateAsTheLeader( cluster.awaitLeader(), cluster.readReplicas() ), 1, TimeUnit.MINUTES );
 
-        List<File> coreStoreDirs =
-                cluster.coreMembers().stream().map( CoreClusterMember::storeDir ).collect( toList() );
-        List<File> readReplicaStoreDirs =
-                cluster.readReplicas().stream().map( ReadReplica::storeDir ).collect( toList() );
+        Function<ClusterMember,DbRepresentation> toRep = db -> DbRepresentation.of( db.database() );
+        Set<DbRepresentation> dbs = cluster.coreMembers().stream().map( toRep ).collect( toSet() );
+        dbs.addAll( cluster.readReplicas().stream().map( toRep ).collect( toSet() ) );
 
         cluster.shutdown();
 
-        Set<DbRepresentation> dbs = coreStoreDirs.stream().map( DbRepresentation::of ).collect( toSet() );
-        dbs.addAll( readReplicaStoreDirs.stream().map( DbRepresentation::of ).collect( toSet() ) );
         assertEquals( 1, dbs.size() );
     }
 
@@ -339,6 +344,7 @@ public class ReadReplicaReplicationIT
                 () -> DbRepresentation.of( readReplica.database() ),
                 equalTo( DbRepresentation.of( cluster.awaitLeader().database() ) ), 10, TimeUnit.SECONDS );
     }
+
     @Test
     public void shouldBeAbleToPullTxAfterHavingDownloadedANewStoreAfterPruning() throws Exception
     {
@@ -402,12 +408,6 @@ public class ReadReplicaReplicationIT
         return readReplicas.stream().map( ReadReplica::database )
                 .map( db -> lastClosedTransactionId( false, db ) )
                 .reduce( true, ( acc, txId ) -> acc && txId == leaderTxId, Boolean::logicalAnd );
-    }
-
-    private void putSomeDataWithDifferentStoreId( File storeDir, File coreStoreDir ) throws IOException
-    {
-        FileUtils.copyRecursively( coreStoreDir, storeDir );
-        changeStoreId( storeDir );
     }
 
     private void changeStoreId( File storeDir ) throws IOException
@@ -505,7 +505,7 @@ public class ReadReplicaReplicationIT
                 SECONDS );
 
         // when
-        cluster.addReadReplicaWithIdAndRecordFormat( 42, HighLimit.NAME ).start();
+        cluster.addReadReplicaWithIdAndRecordFormat( 4, HighLimit.NAME ).start();
 
         // then
         for ( final ReadReplica readReplica : cluster.readReplicas() )

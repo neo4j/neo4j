@@ -144,8 +144,12 @@ public class EnterpriseCoreEditionModule extends EditionModule
         logProvider = logging.getInternalLogProvider();
         final Supplier<DatabaseHealth> databaseHealthSupplier = dependencies.provideDependency( DatabaseHealth.class );
 
-        LocalDatabase localDatabase = new LocalDatabase( platformModule.storeDir, new StoreFiles( fileSystem ),
-                platformModule.dataSourceManager, platformModule.pageCache, fileSystem, databaseHealthSupplier,
+        LocalDatabase localDatabase = new LocalDatabase( platformModule.storeDir,
+                new StoreFiles( fileSystem, platformModule.pageCache ),
+                platformModule.dataSourceManager,
+                platformModule.pageCache,
+                fileSystem,
+                databaseHealthSupplier,
                 logProvider );
 
         IdentityModule identityModule = new IdentityModule( platformModule, clusterStateDirectory.get() );
