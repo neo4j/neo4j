@@ -70,4 +70,9 @@ class CypherTypeAcceptanceTest extends ExecutionEngineFunSuite {
 
     result should be(empty)
   }
+
+  test("should be consistent in failing either statically or at runtime when trying to access an array with a non-integer index") {
+    a [SyntaxException] should be thrownBy execute("WITH [1,2,3,4,5] AS array, 3.14 AS idx RETURN array[idx]")
+    a [CypherTypeException] should be thrownBy execute("WITH [1,2,3,4,5] AS array, {idx} AS idx RETURN array[idx]", "idx" -> 3.14d)
+  }
 }

@@ -55,6 +55,22 @@ class CollectionIndexTest extends CypherFunSuite {
     idx(0) should equal(expectedNull)
   }
 
+  test("should fail when not integer values are passed") {
+    implicit val collection = Literal(Seq(1, 2, 3, 4))
+
+    a [CypherTypeException] should be thrownBy idx(1.0f)
+    a [CypherTypeException] should be thrownBy idx(1.0d)
+    a [CypherTypeException] should be thrownBy idx("bad value")
+  }
+
+  test("should fail when too big values are used to access the array") {
+    implicit val collection = Literal(Seq(1, 2, 3, 4))
+
+    val index = Int.MaxValue + 1L
+
+    an [InvalidArgumentException] should be thrownBy idx(index)
+  }
+
   test("typeWhenCollectionIsAnyTypeIsCollectionOfCTAny") {
     val collection = new FakeExpression(CTAny)
     val symbols = new SymbolTable()
@@ -63,6 +79,6 @@ class CollectionIndexTest extends CypherFunSuite {
     result should equal(CTAny)
   }
 
-  private def idx(value: Int)(implicit collection:Expression) =
+  private def idx(value: Any)(implicit collection:Expression) =
     CollectionIndex(collection, Literal(value))(ctx)(state)
 }
