@@ -64,7 +64,7 @@ abstract class GraphArchiveImporter {
 
         while (iterator.hasNext) {
           val statement = iterator.next()
-          val result = executor.execute(statement, java.util.Collections.emptyMap())
+          val result = executor.execute(s"CYPHER runtime=interpreted $statement", java.util.Collections.emptyMap())
           try {
             while (result.hasNext) result.next()
           } finally {

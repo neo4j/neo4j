@@ -61,7 +61,6 @@ Failing when performing property access on a non-map 1
 `min()` should aggregate strings
 
 // other
-Combine MATCH, WITH and CREATE
 `percentileCont()` failing on bad arguments
 `percentileDisc()` failing on bad arguments
 `percentileDisc()` failing in more involved query

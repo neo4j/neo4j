@@ -1,4 +1,3 @@
-Return an integer
 Support multiple divisions in aggregate function
 Support column renaming for aggregates as well
 Aggregates inside normal functions
@@ -80,10 +79,6 @@ IS NOT NULL with literal maps
 `percentileCont()` failing on bad arguments
 `percentileDisc()` failing on bad arguments
 `percentileDisc()` failing in more involved query
-`type()`
-`type()` on two relationships
-`type()` on null relationship
-`type()` on mixed null and non-null relationships
 `type()` handling Any type
 `type()` failing on invalid arguments
 `labels()` should accept type Any
@@ -113,28 +108,13 @@ Create node with label in pattern
 Using `labels()` in return clauses
 Removing a label
 Removing a non-existent label
-Does not lose precision
-Handling inlined equality of large integer
-Handling explicit equality of large integer
-Handling inlined equality of large integer, non-equal values
-Handling explicit equality of large integer, non-equal values
 Returning a list comprehension
 Using a list comprehension in a WITH
 Using a list comprehension in a WHERE
 Path query should return results in written order
 Longer path query should return results in written order
-Use multiple MATCH clauses to do a Cartesian product
-Filter out based on node prop name
 Honour the column name for RETURN items
-Filter based on rel prop name
 Cope with shadowed variables
-Get neighbours
-Get two related nodes
-Get related to related to
-Handle comparison between node properties
-Return two subgraphs with bound undirected relationship
-Return two subgraphs with bound undirected relationship and optional relationship
-Rel type function works as expected
 Walk alternative relationships
 Handle OR in the WHERE clause
 Return a simple path
@@ -158,41 +138,17 @@ Zero-length variable length pattern in the middle of the pattern
 Simple variable length pattern
 Variable length relationship without lower bound
 Variable length relationship without bounds
-Returning bound nodes that are not part of the pattern
-Two bound nodes pointing to the same node
-Three bound nodes pointing to the same node
-Three bound nodes pointing to the same node with extra connections
 MATCH with OPTIONAL MATCH in longer pattern
 Optionally matching named paths
 Optionally matching named paths with single and variable length patterns
 Optionally matching named paths with variable length patterns
 Matching variable length patterns from a bound node
 Excluding connected nodes
-Do not fail when predicates on optionally matched and missed nodes are invalid
-MATCH and OPTIONAL MATCH on same pattern
-Matching using an undirected pattern
-Matching all nodes
-Comparing nodes for equality
-Matching using self-referencing pattern returns no result
 Variable length relationship in OPTIONAL MATCH
-Matching using relationship predicate with multiples of the same type
 ORDER BY with LIMIT
-Simple node property predicate
 Handling direction of named paths
 Simple OPTIONAL MATCH on empty graph
-OPTIONAL MATCH with previously bound nodes
 `collect()` filtering nulls
-Multiple anonymous nodes in a pattern
-Matching a relationship pattern using a label predicate
-Matching a relationship pattern using a label predicate on both sides
-Matching nodes using multiple labels
-Returning label predicate expression
-Returning label predicate expression
-Matching using a simple pattern with label predicate
-Matching disconnected patterns
-Non-optional matches should not return nulls
-Handling cyclic patterns
-Handling cyclic patterns when separated into two parts
 Handling fixed-length variable length pattern
 Matching from null nodes should return no results owing to finding no matches
 Matching from null nodes should return no results owing to matches being filtered out
@@ -226,27 +182,15 @@ Named path with WITH
 Named path with alternating directed/undirected relationships
 Named path with multiple alternating directed/undirected relationships
 Named path with undirected fixed variable length pattern
-Returning a node property value
-Returning a relationship property value
-Projecting nodes and relationships
-Missing node property should become null
-Missing relationship property should become null
-Returning multiple node property values
-Adding a property and a literal in projection
-Adding list properties in projection
 Variable length relationship variables are lists of relationships
 Variable length patterns and nulls
-Projecting a list of nodes and relationships
-Projecting a map of nodes and relationships
 Respecting direction when matching existing path
 Respecting direction when matching non-existent path
 Respecting direction when matching non-existent path with multiple directions
 Matching path with both directions should respect other directions
 Matching path with multiple bidirectional relationships
-Matching nodes with many labels
 Matching longer variable length paths
 Counting rows after MATCH, MERGE, OPTIONAL MATCH
-Matching a self-loop
 Failing on merging relationship with null property
 Failing on merging node with null property
 Failing when setting a list of maps as a property
@@ -263,23 +207,16 @@ Satisfies the open world assumption, single relationship
 Satisfies the open world assumption, relationships between different nodes
 Return null when no matches due to inline label predicate
 Return null when no matches due to label predicate in WHERE
-Respect predicates on the OPTIONAL MATCH
-Returning label predicate on null node
 MATCH after OPTIONAL MATCH
 WITH after OPTIONAL MATCH
 Named paths in optional matches
-OPTIONAL MATCH and bound nodes
-OPTIONAL MATCH with labels on the optional end node
 Named paths inside optional matches with node predicates
 Variable length optional relationships
 Variable length optional relationships with length predicates
-Optionally matching self-loops
-Optionally matching self-loops without matches
 Variable length optional relationships with bound nodes
 Variable length optional relationships with bound nodes, no matches
 Longer pattern with bound nodes
 Longer pattern with bound nodes without matches
-Handling correlated optional matches; first does not match implies second does not match
 Handling optional matches between optionally matched entities
 Handling optional matches between nulls
 OPTIONAL MATCH and `collect()`
@@ -324,15 +261,12 @@ Remove a single relationship property
 Remove a single relationship property
 Remove multiple relationship properties
 Remove a missing property should be a valid operation
-Allow addition
-Limit to two hits
 Start the result from the second row
 Start the result from the second row by param
 Get rows in the middle
 Get rows in the middle by param
 Sort on aggregated function
 Support sort and distinct
-Support column renaming
 Support ordering by a property after being distinct-ified
 Count star should count everything in scope
 Absolute function
@@ -341,7 +275,6 @@ Fail when returning properties of deleted nodes
 Fail when returning labels of deleted nodes
 Fail when returning properties of deleted relationships
 Do not fail when returning type of deleted relationships
-LIMIT 0 should return an empty result
 Fail when sorting on variable removed by DISTINCT
 Fail when ordering nodes
 Ordering with aggregation
@@ -352,8 +285,6 @@ Setting and returning the size of a list property
 `sqrt()` returning float values
 Arithmetic expressions inside aggregation
 Matching and disregarding output, then matching again
-Returning a list property
-Returning a projected map
 Returning an expression
 Concatenating and returning the size of literal lists
 Concatenating and returning the size of literal lists
@@ -364,7 +295,6 @@ Using aliased DISTINCT expression in ORDER BY
 Returned columns do not change from using ORDER BY
 Arithmetic expressions should propagate null values
 Indexing into nested literal lists
-Aliasing expressions
 Projecting an arithmetic expression with aggregation
 Multiple aliasing and backreferencing
 Aggregating by a list property has a correct definition of equality
@@ -379,9 +309,6 @@ Failing when performing property access on a non-map 2
 Bad arguments for `range()`
 SKIP with an expression that does not depend on variables
 LIMIT with an expression that does not depend on variables
-Find all nodes
-Find labelled nodes
-Find nodes by property
 Finding exact matches
 Finding beginning of string
 Finding end of string 1
@@ -410,7 +337,6 @@ Using null in AND
 Using null in OR
 Using null in XOR
 Using null in IN
-Handling triadic friend of a friend
 Handling triadic friend of a friend that is not a friend
 Handling triadic friend of a friend that is not a friend with different relationship type
 Handling triadic friend of a friend that is not a friend with superset of relationship type
@@ -509,9 +435,7 @@ Handling mixed relationship patterns 2
 Handling relationships that are already bound in variable length paths
 NOT and false
 Fail when trying to compare strings and numbers
-Passing on pattern nodes
 ORDER BY and LIMIT can be used
-No dependencies between the query parts
 Aliasing
 Handle dependencies across WITH
 Handle dependencies across WITH with SKIP
@@ -535,19 +459,6 @@ Fail when adding new label predicate on a node that is already bound 2
 Fail when adding new label predicate on a node that is already bound 3
 Fail when adding new label predicate on a node that is already bound 4
 Fail when adding new label predicate on a node that is already bound 5
-Return a float
-Return a float in exponent form
-Return a boolean
-Return a single-quoted string
-Return a double-quoted string
-Return null
-Return an empty list
-Return a nonempty list
-Return an empty map
-Return a nonempty map
-Accept skip zero
-Do not return non-existent nodes
-Do not return non-existent relationships
 Failing on incorrect unicode literal
 Failing on aggregation in WHERE
 Failing on aggregation in ORDER BY after RETURN

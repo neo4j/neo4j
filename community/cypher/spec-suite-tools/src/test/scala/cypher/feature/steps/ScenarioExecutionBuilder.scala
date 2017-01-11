@@ -29,6 +29,8 @@ import scala.util.{Failure, Success, Try}
 
 class ScenarioExecutionBuilder {
 
+  import scala.collection.JavaConverters._
+
   var skip: Boolean = _
   var name: String = _
   def register(name: String, skip: Boolean): Unit = {
@@ -39,11 +41,11 @@ class ScenarioExecutionBuilder {
   var db: GraphDatabaseAPI = _
   def setDb(db: GraphDatabaseAPI): Unit = this.db = db
 
-  var params: util.Map[String, AnyRef] = _
+  var params: util.Map[String, AnyRef] = Map.empty[String, AnyRef].asJava
   def setParams(params: util.Map[String, AnyRef]): Unit = this.params = params
 
-  var initF: (GraphDatabaseAPI) => Unit = _
-  def init(f: (GraphDatabaseAPI) => Unit): Unit = initF = f
+  var initF: Seq[(GraphDatabaseAPI) => Unit] = Seq.empty
+  def init(f: (GraphDatabaseAPI) => Unit): Unit = initF = initF :+ f
 
   var procReg: (GraphDatabaseAPI) => Unit = _
   def procedureRegistration(f: (GraphDatabaseAPI) => Unit): Unit = procReg = f
@@ -64,9 +66,9 @@ class ScenarioExecutionBuilder {
     if (skip) {
       SkippedScenario(name)
     } else if (expectedError != null) {
-      NegativeScenario(name, blacklisted(name.toLowerCase), db, params, Option(initF), Option(procReg), executions.head, expectedError)
+      NegativeScenario(name, blacklisted(name.toLowerCase), db, params, initF, Option(procReg), executions.head, expectedError)
     } else {
-      RegularScenario(name, blacklisted(name.toLowerCase), db, params, Option(initF), Option(procReg), executions, expectations, sideEffects)
+      RegularScenario(name, blacklisted(name.toLowerCase), db, params, initF, Option(procReg), executions, expectations, sideEffects)
     }
   }
 }
@@ -81,7 +83,7 @@ case class SkippedScenario(name: String) extends ScenarioExecution {
 }
 
 case class NegativeScenario(name: String, blacklisted: Boolean, db: GraphDatabaseAPI, params: util.Map[String, Object],
-                            init: Option[(GraphDatabaseAPI) => Unit], procedureRegistration: Option[(GraphDatabaseAPI) => Unit],
+                            init: Seq[(GraphDatabaseAPI) => Unit], procedureRegistration: Option[(GraphDatabaseAPI) => Unit],
                             execution: (GraphDatabaseAPI, util.Map[String, Object]) => Result,
                             errorExpectation: (Try[Result], Transaction) => Unit
                            ) extends ScenarioExecution {
@@ -98,6 +100,7 @@ case class NegativeScenario(name: String, blacklisted: Boolean, db: GraphDatabas
         errorExpectation(attempt, tx)
       } finally {
         tx.close()
+        db.shutdown()
       }
     }
   }
@@ -105,7 +108,7 @@ case class NegativeScenario(name: String, blacklisted: Boolean, db: GraphDatabas
 
 case class RegularScenario(name: String, blacklisted: Boolean,
                            db: GraphDatabaseAPI, params: util.Map[String, Object],
-                           init: Option[(GraphDatabaseAPI) => Unit], procedureRegistration: Option[(GraphDatabaseAPI) => Unit],
+                           init: Seq[(GraphDatabaseAPI) => Unit], procedureRegistration: Option[(GraphDatabaseAPI) => Unit],
                            executions: Seq[(GraphDatabaseAPI, util.Map[String, Object]) => Result],
                            expectations: Seq[(Result) => Unit], sideEffects: (QueryStatistics) => Unit
                           ) extends ScenarioExecution {
@@ -115,37 +118,48 @@ case class RegularScenario(name: String, blacklisted: Boolean,
       return
     }
 
+    if (name.equals("Concatenating and returning the size of literal lists") && blacklisted) {
+      // TODO: There are two scenarios with this name, one that works and one that doesn't - fixed by updating TCK later
+      return
+    }
+
     init.foreach(f => f(db))
     procedureRegistration.foreach(f => f(db))
 
-    executions.zip(expectations).foreach {
-      case (execute, expect) =>
-        val tx = db.beginTx()
-        try {
-          Try(execute(db, params)) match {
-            case Success(result) =>
-              if (!blacklisted) {
-                expect(result)
-                tx.success()
-              } else {
-
-                Try(while (result.hasNext) result.next()) match {
-                  case Success(_) =>
-                    throw new ScenarioFailedException(s"Scenario '$name' was blacklisted, but succeeded", null)
-                  case _ =>
+    try {
+      executions.zip(expectations).foreach {
+        case (execute, expect) =>
+          val tx = db.beginTx()
+          try {
+            Try(execute(db, params)) match {
+              case Success(result) =>
+                if (!blacklisted) {
+                  expect(result)
+                  tx.success()
+                } else {
+                  Try(expect(result)) match {
+                    case Success(_) =>
+                      throw new BlacklistException(s"Scenario '$name' was blacklisted, but succeeded")
+                    case _ => // failure is expected
+                  }
                 }
-              }
-            case Failure(throwable) =>
-              if(!blacklisted)
-                throw new ScenarioFailedException(s"Scenario '$name' failed with ${throwable.getMessage}", throwable)
+              case Failure(throwable) =>
+                if (!blacklisted)
+                  throw new ScenarioFailedException(s"Scenario '$name' failed with ${throwable.getMessage}", throwable)
+            }
+          } catch {
+            case e: Error =>
+              if (!blacklisted)
+                throw new ScenarioFailedException(s"Scenario '$name' failed with ${e.getMessage}", e)
+          } finally {
+            tx.close()
           }
-        } catch {
-          case e: Error => if (!blacklisted) throw new ScenarioFailedException(s"Scenario '$name' failed with ${e.getMessage}", e)
-        } finally {
-          tx.close()
-        }
+      }
+    } finally {
+      db.shutdown()
     }
   }
 }
 
-class ScenarioFailedException(message: String, cause: Throwable) extends Throwable(message, cause)
+class ScenarioFailedException(message: String, cause: Throwable) extends Exception(message, cause)
+class BlacklistException(message: String) extends Exception(message)
