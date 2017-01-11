@@ -46,10 +46,19 @@ import org.neo4j.time.Clocks
 
 import scala.collection.{JavaConverters, mutable}
 
-class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
-
-  private val generator =
+class ByteCodeGeneratorTest extends CodeGeneratorTest {
+  override val generator =
     new CodeGenerator(GeneratedQueryStructure, Clocks.systemClock(), CodeGenConfiguration(mode = ByteCodeMode))
+}
+
+class SourceCodeGeneratorTest extends CodeGeneratorTest {
+  override val generator =
+    new CodeGenerator(GeneratedQueryStructure, Clocks.systemClock(), CodeGenConfiguration(mode = SourceCodeMode))
+}
+
+abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
+
+  protected val generator: CodeGenerator
 
   test("all nodes scan") { // MATCH a RETURN a
     //given
