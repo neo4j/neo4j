@@ -29,7 +29,6 @@ import org.neo4j.io.pagecache.PageCursor;
 
 import static java.lang.Integer.max;
 import static org.neo4j.index.gbptree.PageCursorUtil.checkOutOfBounds;
-import static org.neo4j.index.gbptree.TreeNode.NODE_TYPE_TREE_NODE;
 
 /**
  * {@link RawCursor} over tree leaves, making keys/values accessible to user. Given a starting leaf
@@ -312,6 +311,11 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
      */
     private long pointerGen;
 
+    /**
+     * Result from {@link KeySearch#search(PageCursor, TreeNode, Object, Object, int)}.
+     */
+    private int searchResult;
+
     // ┌── Special variables for backwards seek ──┐
     // v                                          v
 
@@ -394,12 +398,8 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
         do
         {
             // Read
-            boolean fullRead;
-            int searchResult = 0;
             do
             {
-                fullRead = false;
-
                 // Where we are
                 if ( !readHeader() )
                 {
@@ -418,21 +418,18 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
                     pointerId = bTreeNode.childAt( cursor, pos, stableGeneration, unstableGeneration );
                     pointerGen = readPointerGenOnSuccess( pointerId );
                 }
-
-                fullRead = true;
             }
             while ( cursor.shouldRetry() );
             checkOutOfBounds( cursor );
 
             // Act
-            if ( notSaneRead() && fullRead )
+            if ( !endedUpOnExpectedNode() )
             {
                 prepareToStartFromRoot();
                 isInternal = true;
                 continue;
             }
-
-            if ( !fullRead )
+            else if ( !saneRead() )
             {
                 throw new TreeInconsistencyException( "Read inconsistent tree node %d%n" +
                         "  nodeType:%d%n  currentNodeGen:%d%n  newGen:%d%n  newGenGen:%d%n  isInternal:%b%n" +
@@ -469,13 +466,9 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
         while ( true )
         {
             pos += stride;
-            boolean fullRead;
-            int searchResult = 0;
             // Read
             do
             {
-                fullRead = false;
-
                 // Where we are
                 if ( !readHeader() )
                 {
@@ -520,22 +513,19 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
                     bTreeNode.keyAt( cursor, mutableKey, pos );
                     bTreeNode.valueAt( cursor, mutableValue, pos );
                 }
-
-                fullRead = true;
             }
             while ( concurrentWriteHappened = cursor.shouldRetry() );
             checkOutOfBounds( cursor );
 
             // Act
-            if ( notSaneRead() && fullRead )
+            if ( !endedUpOnExpectedNode() )
             {
                 // This node has been reused for something else than a tree node. Restart seek from root.
                 prepareToStartFromRoot();
                 traverseDownToFirstLeaf();
                 continue;
             }
-
-            if ( !fullRead )
+            else if ( !saneRead() )
             {
                 throw new TreeInconsistencyException( "Read inconsistent tree node %d%n" +
                         "  nodeType:%d%n  currentNodeGen:%d%n  newGen:%d%n  newGenGen:%d%n" +
@@ -751,25 +741,16 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
         {
             newGenGen = bTreeNode.pointerGen( cursor, newGen );
         }
-        isInternal = bTreeNode.isInternal( cursor );
+        isInternal = TreeNode.isInternal( cursor );
         // Find the left-most key within from-range
         keyCount = bTreeNode.keyCount( cursor );
 
         return keyCountIsSane( keyCount );
     }
 
-    /**
-     * {@link TreeNode#keyCount(PageCursor) keyCount} is the only value read inside a do-shouldRetry loop
-     * which is used as data fed into another read. Because of that extra assertions are made around
-     * keyCount, both inside do-shouldRetry (requesting one more round in the loop) and outside
-     * (calling this method, which may throw exception).
-     *
-     * @param keyCount key count read from {@link TreeNode#keyCount(PageCursor)} and has "survived"
-     * a do-shouldRetry loop.
-     */
-    private boolean saneKeyCountRead( int keyCount )
+    private boolean endedUpOnExpectedNode()
     {
-        return keyCount <= maxKeyCount;
+        return nodeType == TreeNode.NODE_TYPE_TREE_NODE && verifyNodeGenInvariants();
     }
 
     /**
@@ -934,6 +915,11 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
     }
 
     /**
+     * {@link TreeNode#keyCount(PageCursor) keyCount} is the only value read inside a do-shouldRetry loop
+     * which is used as data fed into another read. Because of that extra assertions are made around
+     * keyCount, both inside do-shouldRetry (requesting one more round in the loop) and outside
+     * (calling this method, which may throw exception).
+     *
      * @param keyCount key count of a tree node.
      * @return {@code true} if key count is sane, i.e. positive and within max expected key count on a tree node.
      */
@@ -942,6 +928,11 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
         // if keyCount is out of bounds of what a tree node can hold, it must be that we're
         // reading from an evicted page that just happened to look like a tree node.
         return keyCount >= 0 && keyCount <= maxKeyCount;
+    }
+
+    private boolean saneRead()
+    {
+        return keyCountIsSane( keyCount ) && KeySearch.isSuccess( searchResult );
     }
 
     /**
@@ -1039,15 +1030,6 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
             return true;
         }
         return false;
-    }
-
-    /**
-     * @return {@code true} if read is sane and can be trusted, otherwise {@code false} meaning that
-     * seek should be restarted from root.
-     */
-    private boolean notSaneRead()
-    {
-        return nodeType != NODE_TYPE_TREE_NODE || !saneKeyCountRead( keyCount ) || !verifyNodeGenInvariants();
     }
 
     @Override
