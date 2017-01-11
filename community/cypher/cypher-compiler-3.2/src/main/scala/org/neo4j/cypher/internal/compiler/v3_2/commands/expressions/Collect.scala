@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.commands.expressions
 
-import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.aggregation.CollectFunction
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 
@@ -27,6 +26,4 @@ case class Collect(anInner: Expression) extends AggregationWithInnerExpression(a
   def createAggregationFunction = new CollectFunction(anInner)
 
   val expectedInnerType = CTAny
-
-  def rewrite(f: (Expression) => Expression) = f(Collect(anInner.rewrite(f)))
 }

@@ -76,8 +76,6 @@ case class ProjectedPath(projector: ProjectedPath.Projector) extends Expression 
   def apply(ctx: ExecutionContext)(implicit state: QueryState) = {
     projector(ctx, state.clearPathValueBuilder).result()
   }
-
-  def rewrite(f: (Expression) => Expression): Expression = f(this)
 }
 
 

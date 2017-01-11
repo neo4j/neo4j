@@ -26,14 +26,10 @@ case class PercentileCont(anInner: Expression, percentile: Expression) extends A
   def createAggregationFunction = new PercentileContFunction(anInner, percentile)
 
   def expectedInnerType = CTNumber
-
-  def rewrite(f: (Expression) => Expression) = f(PercentileCont(anInner.rewrite(f), percentile.rewrite(f)))
 }
 
 case class PercentileDisc(anInner: Expression, percentile: Expression) extends AggregationWithInnerExpression(anInner) {
   def createAggregationFunction = new PercentileDiscFunction(anInner, percentile)
 
   def expectedInnerType = CTNumber
-
-  def rewrite(f: (Expression) => Expression) = f(PercentileDisc(anInner.rewrite(f), percentile.rewrite(f)))
 }

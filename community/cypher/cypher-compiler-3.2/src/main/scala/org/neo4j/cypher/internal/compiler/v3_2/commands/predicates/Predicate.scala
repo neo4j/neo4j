@@ -96,7 +96,6 @@ case class Not(a: Predicate) extends Predicate {
   }
   override def toString: String = "NOT(" + a + ")"
   def containsIsNull = a.containsIsNull
-  def rewrite(f: (Expression) => Expression) = f(Not(a.rewriteAsPredicate(f)))
 }
 
 case class Xor(a: Predicate, b: Predicate) extends Predicate {
@@ -108,7 +107,6 @@ case class Xor(a: Predicate, b: Predicate) extends Predicate {
 
   override def toString: String = "(" + a + " XOR " + b + ")"
   def containsIsNull = a.containsIsNull||b.containsIsNull
-  def rewrite(f: (Expression) => Expression) = f(Xor(a.rewriteAsPredicate(f), b.rewriteAsPredicate(f)))
 }
 
 case class IsNull(expression: Expression) extends Predicate {
@@ -119,14 +117,12 @@ case class IsNull(expression: Expression) extends Predicate {
 
   override def toString: String = expression + " IS NULL"
   def containsIsNull = true
-  def rewrite(f: (Expression) => Expression) = f(IsNull(expression.rewrite(f)))
 }
 
 case class True() extends Predicate {
   def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = Some(true)
   override def toString: String = "true"
   def containsIsNull = false
-  def rewrite(f: (Expression) => Expression) = f(this)
 }
 
 case class PropertyExists(variable: Expression, propertyKey: KeyToken) extends Predicate {
@@ -141,8 +137,6 @@ case class PropertyExists(variable: Expression, propertyKey: KeyToken) extends P
   override def toString: String = s"hasProp($variable.${propertyKey.name})"
 
   def containsIsNull = false
-
-  def rewrite(f: (Expression) => Expression) = f(PropertyExists(variable.rewrite(f), propertyKey.rewrite(f)))
 }
 
 trait StringOperator {
@@ -160,20 +154,14 @@ trait StringOperator {
 
 case class StartsWith(lhs: Expression, rhs: Expression) extends Predicate with StringOperator {
   override def compare(a: String, b: String) = a.startsWith(b)
-
-  override def rewrite(f: (Expression) => Expression) = f(copy(lhs.rewrite(f), rhs.rewrite(f)))
 }
 
 case class EndsWith(lhs: Expression, rhs: Expression) extends Predicate with StringOperator {
   override def compare(a: String, b: String) = a.endsWith(b)
-
-  override def rewrite(f: (Expression) => Expression) = f(copy(lhs.rewrite(f), rhs.rewrite(f)))
 }
 
 case class Contains(lhs: Expression, rhs: Expression) extends Predicate with StringOperator {
   override def compare(a: String, b: String) = a.contains(b)
-
-  override def rewrite(f: (Expression) => Expression) = f(copy(lhs.rewrite(f), rhs.rewrite(f)))
 }
 
 case class LiteralRegularExpression(lhsExpr: Expression, regexExpr: Literal)(implicit converter: String => String = identity) extends Predicate {
@@ -186,11 +174,6 @@ case class LiteralRegularExpression(lhsExpr: Expression, regexExpr: Literal)(imp
     }
 
   def containsIsNull = false
-
-  def rewrite(f: (Expression) => Expression) = f(regexExpr.rewrite(f) match {
-    case lit: Literal => LiteralRegularExpression(lhsExpr.rewrite(f), lit)(converter)
-    case other        => RegularExpression(lhsExpr.rewrite(f), other)(converter)
-  })
 
   override def toString = s"$lhsExpr =~ $regexExpr"
 }
@@ -212,11 +195,6 @@ case class RegularExpression(lhsExpr: Expression, regexExpr: Expression)(implici
   override def toString: String = lhsExpr.toString() + " ~= /" + regexExpr.toString() + "/"
 
   def containsIsNull = false
-
-  def rewrite(f: (Expression) => Expression) = f(regexExpr.rewrite(f) match {
-    case lit:Literal => LiteralRegularExpression(lhsExpr.rewrite(f), lit)(converter)
-    case other => RegularExpression(lhsExpr.rewrite(f), other)(converter)
-  })
 }
 
 case class NonEmpty(collection: Expression) extends Predicate with ListSupport {
@@ -231,8 +209,6 @@ case class NonEmpty(collection: Expression) extends Predicate with ListSupport {
   override def toString: String = "nonEmpty(" + collection.toString() + ")"
 
   def containsIsNull = false
-
-  def rewrite(f: (Expression) => Expression) = f(NonEmpty(collection.rewrite(f)))
 }
 
 case class HasLabel(entity: Expression, label: KeyToken) extends Predicate {
@@ -257,8 +233,6 @@ case class HasLabel(entity: Expression, label: KeyToken) extends Predicate {
 
   override def toString = s"$entity:${label.name}"
 
-  def rewrite(f: (Expression) => Expression) = f(HasLabel(entity.rewrite(f), label.rewrite(f)))
-
   def containsIsNull = false
 }
 
@@ -269,8 +243,6 @@ case class CoercedPredicate(inner:Expression) extends Predicate with ListSupport
     case IsList(coll) => Some(coll.nonEmpty)
     case x            => throw new CypherTypeException(s"Don't know how to treat that as a predicate: $x")
   }
-
-  def rewrite(f: (Expression) => Expression) = f(CoercedPredicate(inner.rewrite(f)))
 
   def containsIsNull = false
 

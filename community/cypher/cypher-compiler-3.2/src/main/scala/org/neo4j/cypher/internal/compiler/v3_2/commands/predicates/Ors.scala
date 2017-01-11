@@ -20,13 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v3_2.commands.predicates
 
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.NonEmptyList
 
 case class Ors(predicates: NonEmptyList[Predicate]) extends CompositeBooleanPredicate {
   def shouldExitWhen = true
-  def rewrite(f: (Expression) => Expression): Expression = f(Ors(predicates.map(_.rewriteAsPredicate(f))))
 }
 
 @deprecated("Use Ors (plural) instead")
@@ -35,5 +33,4 @@ case class Or(a: Predicate, b: Predicate) extends Predicate {
 
   override def toString: String = s"($a OR $b)"
   def containsIsNull = a.containsIsNull || b.containsIsNull
-  def rewrite(f: (Expression) => Expression) = f(Or(a.rewriteAsPredicate(f), b.rewriteAsPredicate(f)))
 }

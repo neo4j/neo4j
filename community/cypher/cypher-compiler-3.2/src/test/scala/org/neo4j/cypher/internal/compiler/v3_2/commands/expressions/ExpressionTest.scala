@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v3_2.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_2._
-import org.neo4j.cypher.internal.compiler.v3_2.commands.predicates.{CoercedPredicate, Not, True}
 import org.neo4j.cypher.internal.compiler.v3_2.commands.values.TokenType._
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_2.Foldable._
@@ -30,16 +29,6 @@ import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 import scala.collection.Map
 
 class ExpressionTest extends CypherFunSuite {
-  test("replacePropWithCache") {
-    val a = Collect(Property(Variable("r"), PropertyKey("age")))
-
-    val b = a.rewrite {
-      case Property(n, p) => Literal(n + "." + p.name)
-      case x              => x
-    }
-
-    b should equal(Collect(Literal("r.age")))
-  }
 
   test("merge_two_different_variables") {
     testMerge(
@@ -71,20 +60,6 @@ class ExpressionTest extends CypherFunSuite {
 
     //THEN
     aggregates.toList should equal( Seq(Collect(Property(Variable("n"), PropertyKey("bar")))))
-  }
-
-  test("should_handle_rewriting_to_non_predicates") {
-    // given
-    val expression = Not(True())
-
-    // when
-    val result = expression.rewrite {
-      case True() => Literal(true)
-      case e      => e
-    }
-
-    // then
-    result should equal(Not(CoercedPredicate(Literal(true))))
   }
 
   private def testMerge(a: Map[String, CypherType], b: Map[String, CypherType], expected: Map[String, CypherType]) {
@@ -122,7 +97,5 @@ Expected: %s""".format(a, b, result, expected))
 }
 
 class TestExpression extends Expression {
-  def rewrite(f: (Expression) => Expression): Expression = null
-
   def apply(v1: ExecutionContext)(implicit state: QueryState) = null
 }

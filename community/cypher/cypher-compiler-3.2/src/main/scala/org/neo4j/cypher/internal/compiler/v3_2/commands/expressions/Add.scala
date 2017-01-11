@@ -44,8 +44,6 @@ case class Add(a: Expression, b: Expression) extends Expression with TypeSafeMat
     }
   }
 
-  def rewrite(f: (Expression) => Expression) = f(Add(a.rewrite(f), b.rewrite(f)))
-
   private def mergeWithCollection(collection: CypherType, singleElement: CypherType):CypherType= {
     val collectionType = collection.asInstanceOf[ListType]
     val mergedInnerType = collectionType.innerType.leastUpperBound(singleElement)

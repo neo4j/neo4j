@@ -33,12 +33,6 @@ import scala.collection.Map
 
 trait GraphElementPropertyFunctions extends ListSupport {
 
-  implicit class RichMap(m: Map[String, Expression]) {
-    def rewrite(f: (Expression) => Expression): Map[String, Expression] = m.map {
-      case (k, v) => k -> v.rewrite(f)
-    }
-  }
-
   def setProperties(pc: PropertyContainer, props: Map[String, Expression], context: ExecutionContext, state: QueryState) {
     props.foreach {
       case ("*", expression) => setAllMapKeyValues(expression, context, pc, state)

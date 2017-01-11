@@ -30,6 +30,4 @@ case class IdFunction(inner: Expression) extends NullInNullOutExpression(inner) 
     case rel: Relationship => rel.getId
     case x => throw new CypherTypeException("Expected `%s` to be a node or relationship, but it was ``".format(inner, x.getClass.getSimpleName))
   }
-
-  def rewrite(f: (Expression) => Expression) = f(IdFunction(inner.rewrite(f)))
 }

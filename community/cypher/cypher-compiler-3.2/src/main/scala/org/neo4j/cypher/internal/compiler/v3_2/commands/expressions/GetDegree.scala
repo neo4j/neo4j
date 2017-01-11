@@ -40,6 +40,4 @@ case class GetDegree(node: Expression, typ: Option[KeyToken], direction: Semanti
     case n: Node => getDegree(state.query, n.getId)
     case other   => throw new CypherTypeException(s"Type mismatch: expected a node but was $other of type ${other.getClass.getSimpleName}")
   }
-
-  def rewrite(f: (Expression) => Expression): Expression = f(GetDegree(node.rewrite(f), typ, direction))
 }

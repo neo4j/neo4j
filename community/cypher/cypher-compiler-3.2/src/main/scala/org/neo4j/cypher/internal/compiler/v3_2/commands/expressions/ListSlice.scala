@@ -86,7 +86,4 @@ case class ListSlice(collection: Expression, from: Option[Expression], to: Optio
     val collectionValue: Iterable[Any] = makeTraversable(value)
     function(collectionValue, ctx, state)
   }
-
-  def rewrite(f: (Expression) => Expression): Expression =
-    f(ListSlice(collection.rewrite(f), from.map(_.rewrite(f)), to.map(_.rewrite(f))))
 }

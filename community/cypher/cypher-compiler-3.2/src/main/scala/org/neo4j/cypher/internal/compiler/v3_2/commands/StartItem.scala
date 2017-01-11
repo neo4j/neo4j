@@ -37,10 +37,7 @@ abstract class StartItem(val variableName: String, val arguments: Seq[Argument])
   def variables: Seq[(String, CypherType)]
 }
 
-trait ReadOnlyStartItem {
-  // AstNode implementations
-  def rewrite(f: (Expression) => Expression): this.type = this
-}
+trait ReadOnlyStartItem
 
 case class RelationshipById(varName: String, expression: Expression)
   extends StartItem(varName, Seq(Arguments.LegacyExpression(expression))) with ReadOnlyStartItem with RelationshipStartItemVariables

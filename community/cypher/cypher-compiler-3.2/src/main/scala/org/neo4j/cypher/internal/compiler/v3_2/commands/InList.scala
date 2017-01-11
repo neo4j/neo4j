@@ -72,12 +72,6 @@ case class AllInList(collection: Expression, symbolName: String, inner: Predicat
 
   def seqMethod[U](value: Seq[U]): CollectionPredicate[U] = forAll(value)
   def name = "all"
-
-  def rewrite(f: (Expression) => Expression) =
-    f(AllInList(
-      collection = collection.rewrite(f),
-      symbolName = symbolName,
-      inner = inner.rewriteAsPredicate(f)))
 }
 
 case class AnyInList(collection: Expression, symbolName: String, inner: Predicate)
@@ -100,12 +94,6 @@ case class AnyInList(collection: Expression, symbolName: String, inner: Predicat
   def seqMethod[U](value: Seq[U]): CollectionPredicate[U] = exists(value)
 
   def name = "any"
-
-  def rewrite(f: (Expression) => Expression) =
-    f(AnyInList(
-      collection = collection.rewrite(f),
-      symbolName = symbolName,
-      inner = inner.rewriteAsPredicate(f)))
 }
 
 case class NoneInList(collection: Expression, symbolName: String, inner: Predicate)
@@ -128,12 +116,6 @@ case class NoneInList(collection: Expression, symbolName: String, inner: Predica
   def seqMethod[U](value: Seq[U]): CollectionPredicate[U] = none(value)
 
   def name = "none"
-
-  def rewrite(f: (Expression) => Expression) =
-    f(NoneInList(
-      collection = collection.rewrite(f),
-      symbolName = symbolName,
-      inner = inner.rewriteAsPredicate(f)))
 }
 
 case class SingleInList(collection: Expression, symbolName: String, inner: Predicate)
@@ -157,10 +139,4 @@ case class SingleInList(collection: Expression, symbolName: String, inner: Predi
   def seqMethod[U](value: Seq[U]): CollectionPredicate[U] = single(value)
 
   def name = "single"
-
-  def rewrite(f: (Expression) => Expression) =
-    f(SingleInList(
-      collection = collection.rewrite(f),
-      symbolName = symbolName,
-      inner = inner.rewriteAsPredicate(f)))
 }

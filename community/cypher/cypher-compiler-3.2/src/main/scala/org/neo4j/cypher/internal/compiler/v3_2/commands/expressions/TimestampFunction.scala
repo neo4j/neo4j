@@ -27,6 +27,4 @@ case class TimestampFunction() extends Expression {
   def apply(ctx: ExecutionContext)(implicit state: QueryState):Any = state.readTimeStamp()
 
   def innerExpectedType = CTString
-
-  def rewrite(f: (Expression) => Expression) = f(this)
 }

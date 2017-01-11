@@ -31,7 +31,5 @@ case class LiteralMap(data: Map[String, Expression]) extends Expression with Gra
       case (k, e) => (k, e(ctx))
     }
 
-  def rewrite(f: (Expression) => Expression) = f(LiteralMap(data.rewrite(f)))
-
   override def toString = "LiteralMap(" + data + ")"
 }

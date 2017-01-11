@@ -24,8 +24,6 @@ import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_2.ParameterWrongTypeException
 
 case class ToBooleanFunction(a: Expression) extends NullInNullOutExpression(a) {
-  def rewrite(f: (Expression) => Expression): Expression = f(ToBooleanFunction(a.rewrite(f)))
-
   def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = value match {
     case b: Boolean => b
     case v: String =>

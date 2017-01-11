@@ -19,13 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.executionplan.builders.prepare
 
-import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v3_2.commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v3_2.spi.TokenContext
+import org.neo4j.cypher.internal.frontend.v3_2.{Rewriter, topDown}
 
-class KeyTokenResolver {
-  def resolveExpressions(expr: Expression, ctx: TokenContext) = expr match {
-    case (keyToken: KeyToken) => keyToken.resolve(ctx)
-    case _                    => expr
+
+case class KeyTokenResolver(ctx: TokenContext) extends Rewriter {
+  override def apply(that: AnyRef): AnyRef = topDown(instance).apply(that)
+
+  private val instance: Rewriter = Rewriter.lift {
+    case keyToken: KeyToken => keyToken.resolve(ctx)
   }
 }

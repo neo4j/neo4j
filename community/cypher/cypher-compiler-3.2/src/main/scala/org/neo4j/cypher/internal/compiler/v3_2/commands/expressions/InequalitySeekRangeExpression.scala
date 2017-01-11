@@ -28,6 +28,4 @@ case class InequalitySeekRangeExpression(range: InequalitySeekRange[Expression])
 
   override def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = throw new
       InternalException("This should never be called")
-
-  override def rewrite(f: (Expression) => Expression): Expression = f(this)
 }

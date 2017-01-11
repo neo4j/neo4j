@@ -34,6 +34,4 @@ case class ReverseFunction(argument: Expression) extends NullInNullOutExpression
           .format(toString(), a.toString))
     }
   }
-
-  override def rewrite(f: (Expression) => Expression) = f(ReverseFunction(argument.rewrite(f)))
 }

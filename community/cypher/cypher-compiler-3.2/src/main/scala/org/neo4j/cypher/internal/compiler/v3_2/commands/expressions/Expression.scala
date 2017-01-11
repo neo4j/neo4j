@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v3_2.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_2._
-import org.neo4j.cypher.internal.compiler.v3_2.commands.predicates.{CoercedPredicate, Predicate}
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.TypeSafeMathSupport
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_2.CypherTypeException
@@ -28,13 +27,6 @@ import org.neo4j.cypher.internal.frontend.v3_2.Foldable._
 import org.neo4j.cypher.internal.frontend.v3_2.symbols.CypherType
 
 abstract class Expression {
-  def rewrite(f: Expression => Expression): Expression
-
-  def rewriteAsPredicate(f: Expression => Expression): Predicate = rewrite(f) match {
-    case pred: Predicate => pred
-    case e               => CoercedPredicate(e)
-  }
-
   def containsAggregate = this.exists {
     case _: AggregationExpression => true
   }
@@ -46,7 +38,7 @@ abstract class Expression {
     case _          => getClass.getSimpleName
   }
 
-  val isDeterministic = ! this.exists {
+  def isDeterministic: Boolean = ! this.exists {
     case RandFunction() => true
     case _              => false
   }
@@ -54,8 +46,6 @@ abstract class Expression {
 
 case class CachedExpression(key:String, typ:CypherType) extends Expression {
   def apply(ctx: ExecutionContext)(implicit state: QueryState) = ctx(key)
-
-  def rewrite(f: (Expression) => Expression) = f(this)
 
   override def toString = "Cached(%s of type %s)".format(key, typ)
 }

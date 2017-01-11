@@ -24,8 +24,6 @@ import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_2.{CypherTypeException, ParameterWrongTypeException}
 
 case class ToIntegerFunction(a: Expression) extends NullInNullOutExpression(a) {
-  def rewrite(f: (Expression) => Expression): Expression = f(ToIntegerFunction(a.rewrite(f)))
-
   def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = value match {
     case v: Number =>
       v.longValue()

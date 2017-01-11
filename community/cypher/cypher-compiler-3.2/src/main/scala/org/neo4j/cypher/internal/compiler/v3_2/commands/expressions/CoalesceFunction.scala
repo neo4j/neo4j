@@ -38,6 +38,4 @@ case class CoalesceFunction(arguments: Expression*) extends Expression {
   val argumentsString: String = arguments.mkString(",")
 
   override def toString = "coalesce(" + argumentsString + ")"
-
-  def rewrite(f: (Expression) => Expression) = f(CoalesceFunction(arguments.map(e => e.rewrite(f)): _*))
 }

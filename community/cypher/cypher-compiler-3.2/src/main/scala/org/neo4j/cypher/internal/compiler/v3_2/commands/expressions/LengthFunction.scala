@@ -34,7 +34,5 @@ case class LengthFunction(inner: Expression)
     case x          => makeTraversable(x).toIndexedSeq.length
   }
 
-  def rewrite(f: (Expression) => Expression) = f(LengthFunction(inner.rewrite(f)))
-
   override def toString = s"length($inner)"
 }

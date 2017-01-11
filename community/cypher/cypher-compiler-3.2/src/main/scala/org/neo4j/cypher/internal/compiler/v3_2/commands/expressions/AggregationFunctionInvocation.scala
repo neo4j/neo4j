@@ -51,7 +51,4 @@ case class AggregationFunctionInvocation(signature: UserFunctionSignature, argum
       inner
     }
   }
-
-  override def rewrite(f: (Expression) => Expression): Expression = f(
-    AggregationFunctionInvocation(signature, arguments.map(a => a.rewrite(f))))
 }

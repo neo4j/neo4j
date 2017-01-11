@@ -32,7 +32,5 @@ case class PointFunction(data: Expression) extends NullInNullOutExpression(data)
     case x => throw new CypherTypeException(s"Expected a map but got $x")
   }
 
-  override def rewrite(f: (Expression) => Expression) = f(PointFunction(data.rewrite(f)))
-
   override def toString = "Point(" + data + ")"
 }

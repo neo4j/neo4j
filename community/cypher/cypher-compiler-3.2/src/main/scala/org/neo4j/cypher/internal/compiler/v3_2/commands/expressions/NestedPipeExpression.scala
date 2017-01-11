@@ -32,7 +32,5 @@ case class NestedPipeExpression(pipe: Pipe, inner: Expression) extends Expressio
     pipe.createResults(innerState).map(ctx => inner(ctx)).toIndexedSeq
   }
 
-  override def rewrite(f: (Expression) => Expression) = f(this)
-
   override def toString: String = s"NestedExpression()"
 }

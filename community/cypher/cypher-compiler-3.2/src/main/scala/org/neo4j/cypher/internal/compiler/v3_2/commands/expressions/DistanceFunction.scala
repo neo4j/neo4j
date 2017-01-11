@@ -64,8 +64,6 @@ case class DistanceFunction(p1: Expression, p2: Expression) extends Expression {
     ).get
   }
 
-  override def rewrite(f: (Expression) => Expression) = f(DistanceFunction(p1.rewrite(f), p2.rewrite(f)))
-
   override def toString = "Distance(" + p1 + ", " + p2 + ")"
 }
 

@@ -50,38 +50,26 @@ case class ToStringFunction(argument: Expression) extends StringFunction(argumen
     case v =>
       throw new ParameterWrongTypeException("Expected a String, Number or Boolean, got: " + v.toString)
   }
-
-  override def rewrite(f: (Expression) => Expression): Expression = f(ToStringFunction(argument.rewrite(f)))
 }
 
 case class ToLowerFunction(argument: Expression) extends StringFunction(argument) {
   override def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = asString(argument(m)).toLowerCase
-
-  override def rewrite(f: (Expression) => Expression) = f(ToLowerFunction(argument.rewrite(f)))
 }
 
 case class ToUpperFunction(argument: Expression) extends StringFunction(argument) {
   override def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = asString(argument(m)).toUpperCase
-
-  override def rewrite(f: (Expression) => Expression) = f(ToUpperFunction(argument.rewrite(f)))
 }
 
 case class LTrimFunction(argument: Expression) extends StringFunction(argument) {
   override def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = asString(argument(m)).replaceAll("^\\s+", "")
-
-  override def rewrite(f: (Expression) => Expression) = f(LTrimFunction(argument.rewrite(f)))
 }
 
 case class RTrimFunction(argument: Expression) extends StringFunction(argument) {
   override def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = asString(argument(m)).replaceAll("\\s+$", "")
-
-  override def rewrite(f: (Expression) => Expression) = f(RTrimFunction(argument.rewrite(f)))
 }
 
 case class TrimFunction(argument: Expression) extends StringFunction(argument) {
   override def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = asString(argument(m)).trim
-
-  override def rewrite(f: (Expression) => Expression) = f(TrimFunction(argument.rewrite(f)))
 }
 
 case class SubstringFunction(orig: Expression, start: Expression, length: Option[Expression])
@@ -107,8 +95,6 @@ case class SubstringFunction(orig: Expression, start: Expression, length: Option
 
     origVal.substring(startVal, startVal + lengthVal)
   }
-
-  override def rewrite(f: (Expression) => Expression) = f(SubstringFunction(orig.rewrite(f), start.rewrite(f), length.map(_.rewrite(f))))
 }
 
 case class ReplaceFunction(orig: Expression, search: Expression, replaceWith: Expression)
@@ -124,8 +110,6 @@ case class ReplaceFunction(orig: Expression, search: Expression, replaceWith: Ex
       origVal.replace(searchVal, replaceWithVal)
     }
   }
-
-  override def rewrite(f: (Expression) => Expression) = f(ReplaceFunction(orig.rewrite(f), search.rewrite(f), replaceWith.rewrite(f)))
 }
 case class SplitFunction(orig: Expression, separator: Expression)
   extends NullInNullOutExpression(orig) {
@@ -154,8 +138,6 @@ case class SplitFunction(orig: Expression, separator: Expression)
     else
       split(parts :+ string.substring(from, index), string, index + separator.length, separator)
   }
-
-  override def rewrite(f: (Expression) => Expression) = f(SplitFunction(orig.rewrite(f), separator.rewrite(f)))
 }
 
 case class LeftFunction(orig: Expression, length: Expression)
@@ -168,8 +150,6 @@ case class LeftFunction(orig: Expression, length: Expression)
     else asInt(length(m))
     origVal.substring(startVal, startVal + lengthVal)
   }
-
-  override def rewrite(f: (Expression) => Expression) = f(LeftFunction(orig.rewrite(f), length.rewrite(f)))
 }
 
 case class RightFunction(orig: Expression, length: Expression)
@@ -182,6 +162,4 @@ case class RightFunction(orig: Expression, length: Expression)
     val startVal = origVal.length - lengthVal
     origVal.substring(startVal, startVal + lengthVal)
   }
-
-  override def rewrite(f: (Expression) => Expression) = f(RightFunction(orig.rewrite(f), length.rewrite(f)))
 }

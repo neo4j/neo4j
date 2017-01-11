@@ -26,9 +26,4 @@ case class Distinct(innerAggregator: AggregationExpression, expression: Expressi
   val expectedInnerType = CTAny
 
   def createAggregationFunction = new DistinctFunction(expression, innerAggregator.createAggregationFunction)
-
-  def rewrite(f: (Expression) => Expression) = innerAggregator.rewrite(f) match {
-    case inner: AggregationExpression => f(Distinct(inner, expression.rewrite(f)))
-    case _                            => f(Distinct(innerAggregator, expression.rewrite(f)))
-  }
 }

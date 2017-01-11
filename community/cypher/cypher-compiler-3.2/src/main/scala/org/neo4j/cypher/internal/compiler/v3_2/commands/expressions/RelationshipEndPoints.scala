@@ -35,6 +35,4 @@ case class RelationshipEndPoints(relExpression: Expression, start: Boolean) exte
       else
         state.query.relationshipEndNode(rel)
   }
-
-  def rewrite(f: (Expression) => Expression): Expression = f(RelationshipEndPoints(relExpression.rewrite(f), start))
 }

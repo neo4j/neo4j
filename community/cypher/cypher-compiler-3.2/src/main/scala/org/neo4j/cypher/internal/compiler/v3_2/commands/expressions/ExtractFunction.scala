@@ -32,6 +32,4 @@ case class ExtractFunction(collection: Expression, id: String, expression: Expre
       val innerMap = m.newWith(id -> iterValue)
       expression(innerMap)
   }.toList
-
-  def rewrite(f: (Expression) => Expression) = f(ExtractFunction(collection.rewrite(f), id, expression.rewrite(f)))
 }

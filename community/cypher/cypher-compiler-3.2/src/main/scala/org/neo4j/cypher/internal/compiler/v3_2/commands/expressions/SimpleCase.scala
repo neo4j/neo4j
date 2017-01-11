@@ -37,16 +37,4 @@ case class SimpleCase(expression: Expression, alternatives: Seq[(Expression, Exp
       case None => default.getOrElse(Null()).apply(ctx)
     }
   }
-
-  private def alternativeComparison = alternatives.map(_._1)
-
-  private def alternativeExpressions = alternatives.map(_._2)
-
-  def rewrite(f: (Expression) => Expression): Expression = {
-    val newAlternatives = alternatives map {
-      case (a, b) => (a.rewrite(f), b.rewrite(f))
-    }
-
-    f(SimpleCase(expression.rewrite(f), newAlternatives, default.map(f)))
-  }
 }
