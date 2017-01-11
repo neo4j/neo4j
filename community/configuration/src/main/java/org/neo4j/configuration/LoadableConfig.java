@@ -62,7 +62,20 @@ public interface LoadableConfig
                         description = Optional.of( documentation.value() );
                     }
 
-                    configOptions.add( new ConfigOptions( (SettingGroup) publicSetting, description ) );
+                    final DocumentedDefaultValue defValue =
+                            f.getAnnotation( DocumentedDefaultValue.class );
+                    final Optional<String> documentedDefaultValue;
+                    if ( defValue == null )
+                    {
+                        documentedDefaultValue = Optional.empty();
+                    }
+                    else
+                    {
+                        documentedDefaultValue = Optional.of( defValue.value() );
+                    }
+
+                    configOptions.add( new ConfigOptions( (SettingGroup) publicSetting, description,
+                            documentedDefaultValue ) );
                 }
             }
             catch ( IllegalAccessException ignored )

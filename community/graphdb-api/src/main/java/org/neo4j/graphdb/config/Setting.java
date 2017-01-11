@@ -19,6 +19,8 @@
  */
 package org.neo4j.graphdb.config;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -87,5 +89,11 @@ public interface Setting<T> extends Function<Function<String,String>,T>, Setting
         {
             throw new InvalidSettingException( e.getMessage(), e );
         }
+    }
+
+    @Override
+    default List<Setting> settings( Map<String,String> params )
+    {
+        return Collections.singletonList( this );
     }
 }

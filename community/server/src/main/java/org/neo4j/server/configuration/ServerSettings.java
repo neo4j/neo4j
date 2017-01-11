@@ -27,6 +27,7 @@ import java.util.function.Function;
 
 import org.neo4j.bolt.BoltKernelExtension;
 import org.neo4j.configuration.Description;
+import org.neo4j.configuration.DocumentedDefaultValue;
 import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.configuration.Internal;
@@ -68,6 +69,7 @@ public class ServerSettings implements LoadableConfig
 
     @Description( "Number of Neo4j worker threads, your OS might enforce a lower limit than the maximum value " +
             "specified here." )
+    @DocumentedDefaultValue( "Number of available processors (max 500)." )
     public static final Setting<Integer> webserver_max_threads = setting( "dbms.threads.worker_count", INTEGER,
             "" + Math.min( Runtime.getRuntime().availableProcessors(), 500 ),
             range( 1, JettyThreadCalculator.MAX_THREADS ) );

@@ -20,6 +20,7 @@
 package org.neo4j.kernel.configuration;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +34,7 @@ import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.config.SettingGroup;
 
+import static java.util.stream.Collectors.toList;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
 import static org.neo4j.kernel.configuration.Settings.options;
@@ -43,7 +45,7 @@ public abstract class ConnectorValidator implements SettingGroup<Object>
     public static final List<String> validTypes =
             Arrays.stream( Connector.ConnectorType.values() )
                     .map( Enum::name )
-                    .collect( Collectors.toList() );
+                    .collect( toList() );
     protected final Connector.ConnectorType type;
 
     public ConnectorValidator( @Nonnull Connector.ConnectorType type )
@@ -173,5 +175,15 @@ public abstract class ConnectorValidator implements SettingGroup<Object>
         default:
             return Optional.empty();
         }
+    }
+
+    @Override
+    public List<Setting> settings( @Nonnull Map<String,String> params )
+    {
+        return ownedEntries( params )
+                .map( e -> getSettingFor( e.getKey(), params ) )
+                .filter( Optional::isPresent )
+                .map( Optional::get )
+                .collect( toList() );
     }
 }

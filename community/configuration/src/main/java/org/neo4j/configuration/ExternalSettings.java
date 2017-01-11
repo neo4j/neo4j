@@ -19,6 +19,9 @@
  */
 package org.neo4j.configuration;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 import org.neo4j.graphdb.config.Configuration;
@@ -96,6 +99,12 @@ public class ExternalSettings implements LoadableConfig
         public String apply( Function<String,String> provider )
         {
             return provider.apply( name );
+        }
+
+        @Override
+        public List<Setting> settings( Map<String,String> params )
+        {
+            return Collections.singletonList( this );
         }
     }
 }
