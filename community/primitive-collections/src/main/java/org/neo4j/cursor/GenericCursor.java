@@ -17,10 +17,36 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.storageengine.api;
+package org.neo4j.cursor;
 
-import java.util.function.IntSupplier;
-
-public interface RelationshipTypeItem extends IntSupplier
+/**
+ * Generic base class for cursor where clients
+ * can access the current state through the get method.
+ * <p>
+ * Subclasses must implement the {@link #next()} method and
+ * set the current field to the next item.
+ *
+ * @param <T> the type of instances being iterated
+ */
+public abstract class GenericCursor<T>
+        implements Cursor<T>
 {
+    protected T current;
+
+    @Override
+    public T get()
+    {
+        if ( current == null )
+        {
+            throw new IllegalStateException();
+        }
+
+        return current;
+    }
+
+    @Override
+    public void close()
+    {
+        current = null;
+    }
 }

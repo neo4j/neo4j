@@ -33,6 +33,16 @@ public interface NodeItem
         extends EntityItem
 {
     /**
+     * Convenience function for extracting a label id from a {@link LabelItem}.
+     */
+    ToIntFunction<LabelItem> GET_LABEL = IntSupplier::getAsInt;
+
+    /**
+     * Convenience function for extracting a relationship type id from a {@link IntSupplier}.
+     */
+    ToIntFunction<IntSupplier> GET_RELATIONSHIP_TYPE = IntSupplier::getAsInt;
+
+    /**
      * @return label cursor for current node
      * @throws IllegalStateException if no current node is selected
      */
@@ -58,10 +68,10 @@ public interface NodeItem
     Cursor<RelationshipItem> relationships( Direction direction );
 
     /**
-     * @return relationship type cursor for relationships attached to this node.
+     * @return relationship types, wrapped in {@link IntSupplier} instances for relationships attached to this node.
      * @throws IllegalStateException if no current node is selected
      */
-    Cursor<RelationshipTypeItem> relationshipTypes();
+    Cursor<IntSupplier> relationshipTypes();
 
     /**
      * Returns degree, e.g. number of relationships for this node.
@@ -99,4 +109,27 @@ public interface NodeItem
      * @return whether or not this node has the given label.
      */
     boolean hasLabel( int labelId );
+
+    /**
+     * @return label ids attached to this node.
+     */
+    PrimitiveIntIterator getLabels();
+
+    /**
+     * @param direction {@link Direction} to filter on.
+     * @param typeIds relationship type ids to filter on.
+     * @return relationship ids for the given direction and relationship types.
+     */
+    RelationshipIterator getRelationships( Direction direction, int[] typeIds );
+
+    /**
+     * @param direction {@link Direction} to filter on.
+     * @return relationship ids for the given direction.
+     */
+    RelationshipIterator getRelationships( Direction direction );
+
+    /**
+     * @return relationship type ids for all relationships attached to this node.
+     */
+    PrimitiveIntIterator getRelationshipTypes();
 }

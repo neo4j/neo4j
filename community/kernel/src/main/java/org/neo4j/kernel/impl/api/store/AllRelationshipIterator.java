@@ -21,20 +21,14 @@ package org.neo4j.kernel.impl.api.store;
 
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.store.RelationshipStore;
-import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
-public class AllRelationshipIterator extends HighIdAwareIterator<RelationshipStore>
+public class AllRelationshipIterator extends AllRecordIdIterator<RelationshipRecord,RelationshipStore>
     implements RelationshipIterator
 {
-    private final RelationshipRecord record;
-
-    private long currentId;
-
-    AllRelationshipIterator( RelationshipStore store )
+    AllRelationshipIterator( RelationshipRecord record, RelationshipStore store )
     {
-        super( store );
-        this.record = store.newRecord();
+        super( record, store );
     }
 
     @Override
@@ -42,27 +36,6 @@ public class AllRelationshipIterator extends HighIdAwareIterator<RelationshipSto
             RelationshipVisitor<EXCEPTION> visitor ) throws EXCEPTION
     {
         visitor.visit( relationshipId, record.getType(), record.getFirstNode(), record.getSecondNode() );
-        return false;
-    }
-
-    @Override
-    protected boolean doFetchNext( long highId )
-    {
-        while ( currentId <= highId )
-        {
-            try
-            {
-                store.getRecord( currentId, record, RecordLoad.CHECK );
-                if ( record.inUse() )
-                {
-                    return next( record.getId() );
-                }
-            }
-            finally
-            {
-                currentId++;
-            }
-        }
         return false;
     }
 }

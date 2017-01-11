@@ -19,7 +19,6 @@
  */
 package org.neo4j.collection.primitive;
 
-@FunctionalInterface
 public interface PrimitiveIntVisitor<E extends Exception>
 {
     /**
