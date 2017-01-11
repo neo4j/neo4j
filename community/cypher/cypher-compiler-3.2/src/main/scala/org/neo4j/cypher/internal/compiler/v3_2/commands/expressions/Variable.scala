@@ -32,7 +32,5 @@ case class Variable(entityName: String) extends Expression {
 
   def rewrite(f: (Expression) => Expression) = f(this)
 
-  def arguments = Seq()
-
   def symbolTableDependencies = Set(entityName)
 }

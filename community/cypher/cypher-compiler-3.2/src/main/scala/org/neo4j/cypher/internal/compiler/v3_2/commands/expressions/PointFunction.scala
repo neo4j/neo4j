@@ -34,7 +34,5 @@ case class PointFunction(data: Expression) extends NullInNullOutExpression(data)
 
   override def rewrite(f: (Expression) => Expression) = f(PointFunction(data.rewrite(f)))
 
-  override def arguments = data.arguments
-
   override def toString = "Point(" + data + ")"
 }

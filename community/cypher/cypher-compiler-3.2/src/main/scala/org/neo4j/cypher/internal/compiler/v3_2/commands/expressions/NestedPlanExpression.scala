@@ -25,8 +25,6 @@ import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.LogicalPlan
 case class NestedPlanExpression(logicalPlan: LogicalPlan) extends Expression {
   override def rewrite(f: (Expression) => Expression): Expression = ???
 
-  override def arguments: Seq[Expression] = Seq.empty
-
   override def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = ???
 
   override def toString: String = {

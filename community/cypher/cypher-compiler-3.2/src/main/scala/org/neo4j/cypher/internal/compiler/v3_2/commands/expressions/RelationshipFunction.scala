@@ -34,6 +34,4 @@ case class RelationshipFunction(path: Expression) extends NullInNullOutExpressio
   }
 
   def rewrite(f: (Expression) => Expression) = f(RelationshipFunction(path.rewrite(f)))
-
-  def arguments = Seq(path)
 }

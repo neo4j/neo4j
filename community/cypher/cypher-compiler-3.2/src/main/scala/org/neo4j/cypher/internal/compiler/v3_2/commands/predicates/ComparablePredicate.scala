@@ -42,8 +42,6 @@ abstract sealed class ComparablePredicate(val left: Expression, val right: Expre
   override def toString = left.toString() + " " + sign + " " + right.toString()
   def containsIsNull = false
 
-  def arguments = Seq(left, right)
-
   def other(e: Expression): Expression = if (e != left) {
     assert(e == right, "This expression is neither LHS nor RHS")
     left
@@ -78,8 +76,6 @@ case class Equals(a: Expression, b: Expression) extends Predicate with Comparer 
   }
 
   def rewrite(f: (Expression) => Expression) = f(Equals(a.rewrite(f), b.rewrite(f)))
-
-  def arguments = Seq(a, b)
 }
 
 case class LessThan(a: Expression, b: Expression) extends ComparablePredicate(a, b) {

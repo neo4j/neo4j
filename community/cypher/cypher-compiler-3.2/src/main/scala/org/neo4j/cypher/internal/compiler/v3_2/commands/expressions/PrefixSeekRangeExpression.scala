@@ -29,6 +29,4 @@ case class PrefixSeekRangeExpression(range: PrefixRange[Expression]) extends Exp
       InternalException("This should never be called")
 
   override def rewrite(f: (Expression) => Expression): Expression = f(this)
-
-  override def arguments: Seq[Expression] = Seq.empty
 }

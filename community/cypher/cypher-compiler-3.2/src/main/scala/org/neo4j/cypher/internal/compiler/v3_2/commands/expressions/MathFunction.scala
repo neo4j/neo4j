@@ -27,8 +27,6 @@ import org.neo4j.cypher.internal.frontend.v3_2.{CypherTypeException, InvalidArgu
 abstract class MathFunction(arg: Expression) extends Expression with NumericHelper {
 
   def innerExpectedType = CTNumber
-
-  override def arguments = Seq(arg)
 }
 
 abstract class NullSafeMathFunction(arg: Expression) extends MathFunction(arg) {
@@ -114,8 +112,6 @@ case class Atan2Function(y: Expression, x: Expression) extends Expression with N
       math.atan2(asDouble(yValue), asDouble(xValue))
   }
 
-  override def arguments = Seq(x, y)
-
   override def rewrite(f: (Expression) => Expression) = f(Atan2Function(y.rewrite(f), x.rewrite(f)))
 }
 
@@ -150,8 +146,6 @@ case class DegreesFunction(argument: Expression) extends NullSafeMathFunction(ar
 case class EFunction() extends Expression() {
 
   override def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = math.E
-
-  override def arguments = Seq()
 
   override def rewrite(f: (Expression) => Expression) = f(EFunction())
 }
@@ -188,8 +182,6 @@ case class PiFunction() extends Expression {
 
   override def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = math.Pi
 
-  override def arguments = Seq()
-
   override def rewrite(f: (Expression) => Expression) = f(PiFunction())
 }
 
@@ -225,8 +217,6 @@ case class RandFunction() extends Expression {
 
   override def apply(ctx: ExecutionContext)(implicit state: QueryState): Double = math.random
 
-  override def arguments = Seq()
-
   override def rewrite(f: (Expression) => Expression) = f(RandFunction())
 }
 
@@ -242,8 +232,6 @@ case class RangeFunction(start: Expression, end: Expression, step: Expression) e
 
     IndexedInclusiveLongRange(startVal, inclusiveEndVal, stepVal)
   }
-
-  override def arguments = Seq(start, end, step)
 
   override def rewrite(f: (Expression) => Expression) =
     f(RangeFunction(start.rewrite(f), end.rewrite(f), step.rewrite(f)))

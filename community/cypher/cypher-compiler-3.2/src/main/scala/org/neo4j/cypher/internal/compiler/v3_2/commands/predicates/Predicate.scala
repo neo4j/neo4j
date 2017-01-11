@@ -86,8 +86,6 @@ abstract class CompositeBooleanPredicate extends Predicate {
     }
   }
 
-  def arguments: Seq[Expression] = predicates.toIndexedSeq
-
   override def atoms: Seq[Predicate] = predicates.toIndexedSeq
 }
 
@@ -99,7 +97,6 @@ case class Not(a: Predicate) extends Predicate {
   override def toString: String = "NOT(" + a + ")"
   def containsIsNull = a.containsIsNull
   def rewrite(f: (Expression) => Expression) = f(Not(a.rewriteAsPredicate(f)))
-  def arguments = Seq(a)
 }
 
 case class Xor(a: Predicate, b: Predicate) extends Predicate {
@@ -112,8 +109,6 @@ case class Xor(a: Predicate, b: Predicate) extends Predicate {
   override def toString: String = "(" + a + " XOR " + b + ")"
   def containsIsNull = a.containsIsNull||b.containsIsNull
   def rewrite(f: (Expression) => Expression) = f(Xor(a.rewriteAsPredicate(f), b.rewriteAsPredicate(f)))
-
-  def arguments = Seq(a, b)
 }
 
 case class IsNull(expression: Expression) extends Predicate {
@@ -125,7 +120,6 @@ case class IsNull(expression: Expression) extends Predicate {
   override def toString: String = expression + " IS NULL"
   def containsIsNull = true
   def rewrite(f: (Expression) => Expression) = f(IsNull(expression.rewrite(f)))
-  def arguments = Seq(expression)
 }
 
 case class True() extends Predicate {
@@ -133,7 +127,6 @@ case class True() extends Predicate {
   override def toString: String = "true"
   def containsIsNull = false
   def rewrite(f: (Expression) => Expression) = f(this)
-  def arguments = Nil
   def symbolTableDependencies = Set()
 }
 
@@ -151,8 +144,6 @@ case class PropertyExists(variable: Expression, propertyKey: KeyToken) extends P
   def containsIsNull = false
 
   def rewrite(f: (Expression) => Expression) = f(PropertyExists(variable.rewrite(f), propertyKey.rewrite(f)))
-
-  def arguments = Seq(variable)
 }
 
 trait StringOperator {
@@ -166,7 +157,6 @@ trait StringOperator {
   def rhs: Expression
   def compare(a: String, b: String): Boolean
   override def containsIsNull = false
-  override def arguments = Seq(lhs, rhs)
 }
 
 case class StartsWith(lhs: Expression, rhs: Expression) extends Predicate with StringOperator {
@@ -203,8 +193,6 @@ case class LiteralRegularExpression(lhsExpr: Expression, regexExpr: Literal)(imp
     case other        => RegularExpression(lhsExpr.rewrite(f), other)(converter)
   })
 
-  def arguments = Seq(lhsExpr, regexExpr)
-
   override def toString = s"$lhsExpr =~ $regexExpr"
 }
 
@@ -230,8 +218,6 @@ case class RegularExpression(lhsExpr: Expression, regexExpr: Expression)(implici
     case lit:Literal => LiteralRegularExpression(lhsExpr.rewrite(f), lit)(converter)
     case other => RegularExpression(lhsExpr.rewrite(f), other)(converter)
   })
-
-  def arguments = Seq(lhsExpr, regexExpr)
 }
 
 case class NonEmpty(collection: Expression) extends Predicate with ListSupport {
@@ -248,8 +234,6 @@ case class NonEmpty(collection: Expression) extends Predicate with ListSupport {
   def containsIsNull = false
 
   def rewrite(f: (Expression) => Expression) = f(NonEmpty(collection.rewrite(f)))
-
-  def arguments = Seq(collection)
 }
 
 case class HasLabel(entity: Expression, label: KeyToken) extends Predicate {
@@ -276,14 +260,10 @@ case class HasLabel(entity: Expression, label: KeyToken) extends Predicate {
 
   def rewrite(f: (Expression) => Expression) = f(HasLabel(entity.rewrite(f), label.rewrite(f)))
 
-  def arguments: Seq[Expression] = Seq(entity)
-
   def containsIsNull = false
 }
 
 case class CoercedPredicate(inner:Expression) extends Predicate with ListSupport {
-  def arguments = Seq(inner)
-
   def isMatch(m: ExecutionContext)(implicit state: QueryState) = inner(m) match {
     case x: Boolean   => Some(x)
     case null         => None

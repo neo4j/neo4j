@@ -34,7 +34,5 @@ case class NestedPipeExpression(pipe: Pipe, inner: Expression) extends Expressio
 
   override def rewrite(f: (Expression) => Expression) = f(this)
 
-  override def arguments = Nil
-
   override def toString: String = s"NestedExpression()"
 }

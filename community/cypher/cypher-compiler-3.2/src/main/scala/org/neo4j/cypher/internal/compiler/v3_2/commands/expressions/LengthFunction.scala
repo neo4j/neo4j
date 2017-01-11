@@ -36,7 +36,5 @@ case class LengthFunction(inner: Expression)
 
   def rewrite(f: (Expression) => Expression) = f(LengthFunction(inner.rewrite(f)))
 
-  def arguments = Seq(inner)
-
   override def toString = s"length($inner)"
 }

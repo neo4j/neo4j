@@ -40,6 +40,4 @@ abstract class AggregationWithInnerExpression(inner:Expression) extends Aggregat
     throw new SyntaxException("Can't use non-deterministic (random) functions inside of aggregate functions.")
 
   def expectedInnerType: CypherType
-
-  def arguments = Seq(inner)
 }

@@ -51,8 +51,6 @@ abstract class InList(collectionExpression: Expression, id: String, predicate: P
   override def toString() = name + "(" + id + " in " + collectionExpression + " where " + predicate + ")"
 
   def containsIsNull = predicate.containsIsNull
-
-  def arguments: scala.Seq[Expression] = Seq(collectionExpression)
 }
 
 case class AllInList(collection: Expression, symbolName: String, inner: Predicate)

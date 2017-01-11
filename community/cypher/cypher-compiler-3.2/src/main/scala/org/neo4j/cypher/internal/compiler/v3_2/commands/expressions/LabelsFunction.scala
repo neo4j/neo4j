@@ -35,6 +35,4 @@ case class LabelsFunction(nodeExpr: Expression) extends NullInNullOutExpression(
   }
 
   override def rewrite(f: (Expression) => Expression) = f(LabelsFunction(nodeExpr.rewrite(f)))
-
-  override def arguments = Seq(nodeExpr)
 }

@@ -28,8 +28,6 @@ import scala.annotation.tailrec
 
 abstract class StringFunction(arg: Expression) extends NullInNullOutExpression(arg) {
   def innerExpectedType = CTString
-
-  override def arguments = Seq(arg)
 }
 
 case object asString extends (Any => String) {
@@ -110,9 +108,6 @@ case class SubstringFunction(orig: Expression, start: Expression, length: Option
     origVal.substring(startVal, startVal + lengthVal)
   }
 
-
-  override def arguments = Seq(orig, start) ++ length
-
   override def rewrite(f: (Expression) => Expression) = f(SubstringFunction(orig.rewrite(f), start.rewrite(f), length.map(_.rewrite(f))))
 }
 
@@ -129,8 +124,6 @@ case class ReplaceFunction(orig: Expression, search: Expression, replaceWith: Ex
       origVal.replace(searchVal, replaceWithVal)
     }
   }
-
-  override def arguments = Seq(orig, search, replaceWith)
 
   override def rewrite(f: (Expression) => Expression) = f(ReplaceFunction(orig.rewrite(f), search.rewrite(f), replaceWith.rewrite(f)))
 }
@@ -162,8 +155,6 @@ case class SplitFunction(orig: Expression, separator: Expression)
       split(parts :+ string.substring(from, index), string, index + separator.length, separator)
   }
 
-  override def arguments = Seq(orig, separator)
-
   override def rewrite(f: (Expression) => Expression) = f(SplitFunction(orig.rewrite(f), separator.rewrite(f)))
 }
 
@@ -178,8 +169,6 @@ case class LeftFunction(orig: Expression, length: Expression)
     origVal.substring(startVal, startVal + lengthVal)
   }
 
-  override def arguments = Seq(orig, length)
-
   override def rewrite(f: (Expression) => Expression) = f(LeftFunction(orig.rewrite(f), length.rewrite(f)))
 }
 
@@ -193,8 +182,6 @@ case class RightFunction(orig: Expression, length: Expression)
     val startVal = origVal.length - lengthVal
     origVal.substring(startVal, startVal + lengthVal)
   }
-
-  override def arguments = Seq(orig, length)
 
   override def rewrite(f: (Expression) => Expression) = f(RightFunction(orig.rewrite(f), length.rewrite(f)))
 }

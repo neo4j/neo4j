@@ -53,8 +53,6 @@ class And(val a: Predicate, val b: Predicate) extends Predicate {
   def containsIsNull = a.containsIsNull || b.containsIsNull
   def rewrite(f: (Expression) => Expression) = f(And(a.rewriteAsPredicate(f), b.rewriteAsPredicate(f)))
 
-  def arguments = Seq(a, b)
-
   override def hashCode() = a.hashCode + 37 * b.hashCode
 
   override def equals(p1: Any) = p1 match {

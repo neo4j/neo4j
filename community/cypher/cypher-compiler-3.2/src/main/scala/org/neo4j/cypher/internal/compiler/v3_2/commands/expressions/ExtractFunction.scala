@@ -34,6 +34,4 @@ case class ExtractFunction(collection: Expression, id: String, expression: Expre
   }.toList
 
   def rewrite(f: (Expression) => Expression) = f(ExtractFunction(collection.rewrite(f), id, expression.rewrite(f)))
-
-  def arguments: Seq[Expression] = Seq(collection)
 }

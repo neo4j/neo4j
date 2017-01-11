@@ -28,8 +28,6 @@ case class TimestampFunction() extends Expression {
 
   def innerExpectedType = CTString
 
-  def arguments = Seq()
-
   def rewrite(f: (Expression) => Expression) = f(this)
 
   def symbolTableDependencies = Set.empty

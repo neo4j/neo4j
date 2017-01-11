@@ -36,6 +36,4 @@ case class Or(a: Predicate, b: Predicate) extends Predicate {
   override def toString: String = s"($a OR $b)"
   def containsIsNull = a.containsIsNull || b.containsIsNull
   def rewrite(f: (Expression) => Expression) = f(Or(a.rewriteAsPredicate(f), b.rewriteAsPredicate(f)))
-
-  def arguments = Seq(a, b)
 }

@@ -27,7 +27,5 @@ case class Literal(v: Any) extends Expression {
 
   def rewrite(f: (Expression) => Expression) = f(this)
 
-  def arguments = Nil
-
   override def toString = "Literal(" + v + ")"
 }

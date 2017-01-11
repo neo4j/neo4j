@@ -25,8 +25,6 @@ import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
 
 case class ListSlice(collection: Expression, from: Option[Expression], to: Option[Expression])
   extends NullInNullOutExpression(collection) with ListSupport {
-  def arguments: Seq[Expression] = from.toIndexedSeq ++ to.toIndexedSeq :+ collection
-
   private val function: (Iterable[Any], ExecutionContext, QueryState) => Any =
     (from, to) match {
       case (Some(f), Some(n)) => fullSlice(f, n)

@@ -25,6 +25,4 @@ case class CountStar() extends AggregationExpression {
   def rewrite(f: (Expression) => Expression) = f(CountStar())
 
   def createAggregationFunction = new CountStarFunction
-
-  def arguments = Nil
 }

@@ -30,6 +30,4 @@ case class InequalitySeekRangeExpression(range: InequalitySeekRange[Expression])
       InternalException("This should never be called")
 
   override def rewrite(f: (Expression) => Expression): Expression = f(this)
-
-  override def arguments: Seq[Expression] = Seq.empty
 }

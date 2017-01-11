@@ -26,8 +26,6 @@ import org.neo4j.cypher.internal.frontend.v3_2.{CypherTypeException, InvalidArgu
 
 case class ContainerIndex(expression: Expression, index: Expression) extends NullInNullOutExpression(expression)
 with ListSupport {
-  def arguments = Seq(expression, index)
-
   def compute(value: Any, ctx: ExecutionContext)(implicit state: QueryState): Any = {
     value match {
       case IsMap(m) =>

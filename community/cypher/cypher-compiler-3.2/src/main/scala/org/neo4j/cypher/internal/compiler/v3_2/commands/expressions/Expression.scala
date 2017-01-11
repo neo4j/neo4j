@@ -35,9 +35,6 @@ abstract class Expression {
     case e               => CoercedPredicate(e)
   }
 
-  // Expressions that do not get anything in their context from this expression.
-  def arguments:Seq[Expression]
-
   def containsAggregate = this.exists {
     case _: AggregationExpression => true
   }
@@ -59,8 +56,6 @@ case class CachedExpression(key:String, typ:CypherType) extends Expression {
   def apply(ctx: ExecutionContext)(implicit state: QueryState) = ctx(key)
 
   def rewrite(f: (Expression) => Expression) = f(this)
-
-  def arguments = Seq()
 
   override def toString = "Cached(%s of type %s)".format(key, typ)
 }
@@ -84,8 +79,6 @@ abstract class Arithmetics(left: Expression, right: Expression)
   }
 
   def calc(a: Number, b: Number): Any
-
-  def arguments = Seq(left, right)
 }
 
 trait ExpressionWInnerExpression extends Expression {

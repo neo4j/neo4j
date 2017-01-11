@@ -32,6 +32,4 @@ case class FilterFunction(collection: Expression, id: String, predicate: Predica
 
   def rewrite(f: (Expression) => Expression) =
     f(FilterFunction(collection.rewrite(f), id, predicate.rewriteAsPredicate(f)))
-
-  def arguments: Seq[Expression] = Seq(collection)
 }

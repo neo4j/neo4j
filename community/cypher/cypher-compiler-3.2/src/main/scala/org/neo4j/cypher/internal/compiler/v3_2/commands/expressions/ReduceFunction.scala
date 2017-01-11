@@ -37,6 +37,4 @@ case class ReduceFunction(collection: Expression, id: String, expression: Expres
 
   def rewrite(f: (Expression) => Expression) =
     f(ReduceFunction(collection.rewrite(f), id, expression.rewrite(f), acc, init.rewrite(f)))
-
-  def arguments: Seq[Expression] = Seq(collection, init)
 }

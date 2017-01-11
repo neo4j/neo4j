@@ -34,6 +34,4 @@ case class KeysFunction(expr: Expression) extends NullInNullOutExpression(expr) 
   }
 
   def rewrite(f: (Expression) => Expression) = f(KeysFunction(expr.rewrite(f)))
-
-  def arguments = Seq(expr)
 }

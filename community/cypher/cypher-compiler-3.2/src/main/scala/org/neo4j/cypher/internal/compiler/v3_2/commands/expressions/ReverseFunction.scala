@@ -36,6 +36,4 @@ case class ReverseFunction(argument: Expression) extends NullInNullOutExpression
   }
 
   override def rewrite(f: (Expression) => Expression) = f(ReverseFunction(argument.rewrite(f)))
-
-  def arguments = Seq(argument)
 }

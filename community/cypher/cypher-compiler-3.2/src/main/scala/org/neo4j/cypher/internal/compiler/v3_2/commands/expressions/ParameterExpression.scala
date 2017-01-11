@@ -28,6 +28,4 @@ case class ParameterExpression(parameterName: String) extends Expression {
   override def toString(): String = "{" + parameterName + "}"
 
   def rewrite(f: (Expression) => Expression) = f(this)
-
-  def arguments = Seq()
 }
