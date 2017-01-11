@@ -51,8 +51,8 @@ class ReadReplicaStartupProcess implements Lifecycle
     private final CoreMemberSelectionStrategy connectionStrategy;
     private final Log debugLog;
     private final Log userLog;
-    private final RetryStrategy.Timeout timeout;
 
+    private final RetryStrategy retryStrategy;
     private final CopiedStoreRecovery copiedStoreRecovery;
     private String lastIssue;
 
@@ -65,8 +65,8 @@ class ReadReplicaStartupProcess implements Lifecycle
         this.localDatabase = localDatabase;
         this.txPulling = txPulling;
         this.connectionStrategy = connectionStrategy;
+        this.retryStrategy = retryStrategy;
         this.copiedStoreRecovery = copiedStoreRecovery;
-        this.timeout = retryStrategy.newTimeout();
         this.debugLog = debugLogProvider.getLog( getClass() );
         this.userLog = userLogProvider.getLog( getClass() );
     }
@@ -86,8 +86,8 @@ class ReadReplicaStartupProcess implements Lifecycle
     @Override
     public void start() throws IOException
     {
-        long retryInterval = 5_000;
         boolean syncedWithCore = false;
+        RetryStrategy.Timeout timeout = retryStrategy.newTimeout();
         for ( int attempt = 1; attempt <= MAX_ATTEMPTS && !syncedWithCore; attempt++ )
         {
             MemberId source = findCoreMemberToCopyFrom();
@@ -114,8 +114,8 @@ class ReadReplicaStartupProcess implements Lifecycle
 
             try
             {
-                Thread.sleep( retryInterval );
-                retryInterval = Math.min( 60_000, retryInterval * 2 );
+                Thread.sleep( timeout.getMillis() );
+                timeout.increment();
             }
             catch ( InterruptedException e )
             {
@@ -182,6 +182,7 @@ class ReadReplicaStartupProcess implements Lifecycle
 
     private MemberId findCoreMemberToCopyFrom()
     {
+        RetryStrategy.Timeout timeout = retryStrategy.newTimeout();
         while ( true )
         {
             try
