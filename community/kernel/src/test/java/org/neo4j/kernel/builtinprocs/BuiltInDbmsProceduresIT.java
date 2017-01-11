@@ -45,7 +45,7 @@ public class BuiltInDbmsProceduresIT extends KernelIntegrationTest
     {
         // When
         RawIterator<Object[],ProcedureException> stream =
-                dbmsOperations().procedureCallDbms( procedureName( "dbms", "config" ),
+                dbmsOperations().procedureCallDbms( procedureName( "dbms", "listConfig" ),
                         Collections.singletonList( false ).toArray(),
                         AnonymousContext.none() );
 
@@ -71,7 +71,7 @@ public class BuiltInDbmsProceduresIT extends KernelIntegrationTest
     {
         // When
         RawIterator<Object[],ProcedureException> stream =
-                dbmsOperations().procedureCallDbms( procedureName( "dbms", "config" ),
+                dbmsOperations().procedureCallDbms( procedureName( "dbms", "listConfig" ),
                         Collections.singletonList( true ).toArray(),
                         AnonymousContext.none() );
 
