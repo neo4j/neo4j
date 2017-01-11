@@ -107,8 +107,7 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
         idpMaxTableSize = 128,
         idpIterationDuration = 1000,
         errorIfShortestPathFallbackUsedAtRuntime = false,
-        nonIndexedLabelWarningThreshold = 10000L,
-        codeGenConfiguration = CodeGenConfiguration()
+        nonIndexedLabelWarningThreshold = 10000L
       ),
       Clock.systemUTC(),
       GeneratedQueryStructure,
@@ -116,6 +115,7 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
       new StringInfoLogger(NullLog.getInstance),
       plannerName = Some(IDPPlannerName),
       runtimeName = Some(CompiledRuntimeName),
+      codeGenMode = None,
       updateStrategy = None,
       rewriterSequencer = RewriterStepSequencer.newValidating,
       typeConverter = IdentityTypeConverter

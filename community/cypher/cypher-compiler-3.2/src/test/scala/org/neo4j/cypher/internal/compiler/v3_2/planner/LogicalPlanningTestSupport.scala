@@ -167,8 +167,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     idpMaxTableSize = DefaultIDPSolverConfig.maxTableSize,
     idpIterationDuration = DefaultIDPSolverConfig.iterationDurationLimit,
     errorIfShortestPathFallbackUsedAtRuntime = false,
-    nonIndexedLabelWarningThreshold = 10000,
-    CodeGenConfiguration()
+    nonIndexedLabelWarningThreshold = 10000
   )
 
   def buildPlannerQuery(query: String, lookup: Option[QualifiedName => ProcedureSignature] = None) = {

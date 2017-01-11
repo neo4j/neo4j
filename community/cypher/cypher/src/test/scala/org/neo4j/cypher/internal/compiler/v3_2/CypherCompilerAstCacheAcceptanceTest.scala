@@ -51,8 +51,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
         idpMaxTableSize = 128,
         idpIterationDuration = 1000,
         errorIfShortestPathFallbackUsedAtRuntime = false,
-        nonIndexedLabelWarningThreshold = 10000L,
-        codeGenConfiguration = CodeGenConfiguration()
+        nonIndexedLabelWarningThreshold = 10000L
       ),
       clock, GeneratedQueryStructure,
       WrappedMonitors(kernelMonitors),
@@ -60,6 +59,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
       plannerName = Some(IDPPlannerName),
       runtimeName = Some(CompiledRuntimeName),
       updateStrategy = None,
+      codeGenMode = None,
       rewriterSequencer = RewriterStepSequencer.newValidating,
       typeConverter = IdentityTypeConverter
     )

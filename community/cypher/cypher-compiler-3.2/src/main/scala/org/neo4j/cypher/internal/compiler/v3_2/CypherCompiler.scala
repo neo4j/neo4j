@@ -50,6 +50,7 @@ case class CypherCompiler(createExecutionPlan: Transformer,
                           queryGraphSolver: QueryGraphSolver,
                           config: CypherCompilerConfiguration,
                           updateStrategy: UpdateStrategy,
+                          codeGenConfiguration: CodeGenConfiguration,
                           clock: Clock,
                           structure: CodeStructure[GeneratedQuery]) {
 
@@ -67,7 +68,7 @@ case class CypherCompiler(createExecutionPlan: Transformer,
                         planContext: PlanContext,
                         offset: Option[InputPosition] = None,
                         tracer: CompilationPhaseTracer): (ExecutionPlan, Map[String, Any]) = {
-    val context = createContext(tracer, notificationLogger, planContext, input.queryText, input.startPosition, config.codeGenConfiguration)
+    val context = createContext(tracer, notificationLogger, planContext, input.queryText, input.startPosition, codeGenConfiguration)
     val preparedCompilationState = prepareForCaching.transform(input, context)
     val cache = provideCache(cacheAccessor, cacheMonitor, planContext)
     val isStale = (plan: ExecutionPlan) => plan.isStale(planContext.txIdProvider, planContext.statistics)
@@ -159,8 +160,7 @@ case class CypherCompilerConfiguration(queryCacheSize: Int,
                                        idpMaxTableSize: Int,
                                        idpIterationDuration: Long,
                                        errorIfShortestPathFallbackUsedAtRuntime: Boolean,
-                                       nonIndexedLabelWarningThreshold: Long,
-                                       codeGenConfiguration: CodeGenConfiguration)
+                                       nonIndexedLabelWarningThreshold: Long)
 
 trait AstRewritingMonitor {
   def abortedRewriting(obj: AnyRef)

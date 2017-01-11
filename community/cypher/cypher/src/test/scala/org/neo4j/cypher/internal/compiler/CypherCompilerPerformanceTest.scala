@@ -194,8 +194,7 @@ class CypherCompilerPerformanceTest extends GraphDatabaseFunSuite {
         idpMaxTableSize = 128,
         idpIterationDuration = 1000,
         errorIfShortestPathFallbackUsedAtRuntime = false,
-        nonIndexedLabelWarningThreshold = 10000L,
-        codeGenConfiguration = CodeGenConfiguration()
+        nonIndexedLabelWarningThreshold = 10000L
       ),
       clock = CLOCK,
       structure = GeneratedQueryStructure,
@@ -204,6 +203,7 @@ class CypherCompilerPerformanceTest extends GraphDatabaseFunSuite {
       rewriterSequencer = RewriterStepSequencer.newPlain,
       plannerName = Some(IDPPlannerName),
       runtimeName = Some(CompiledRuntimeName),
+      codeGenMode = None,
       updateStrategy = None,
       typeConverter = IdentityTypeConverter
     )

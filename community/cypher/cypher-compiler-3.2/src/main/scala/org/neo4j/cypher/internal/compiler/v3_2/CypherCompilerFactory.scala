@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_2
 
 import java.time.Clock
 
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.{CodeGenConfiguration, CodeGenMode}
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi.CodeStructure
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.RuntimeTypeConverter
@@ -39,6 +40,7 @@ object CypherCompilerFactory {
                         rewriterSequencer: (String) => RewriterStepSequencer,
                         plannerName: Option[CostBasedPlannerName],
                         runtimeName: Option[RuntimeName],
+                        codeGenMode: Option[CodeGenMode],
                         updateStrategy: Option[UpdateStrategy],
                         typeConverter: RuntimeTypeConverter): CypherCompiler = {
     val rewriter = new ASTRewriter(rewriterSequencer)
@@ -59,8 +61,12 @@ object CypherCompilerFactory {
     val cacheMonitor = monitors.newMonitor[AstCacheMonitor](monitorTag)
     val cache = new MonitoringCacheAccessor[Statement, ExecutionPlan](cacheMonitor)
 
+    val actualCodeGenMode = codeGenMode.getOrElse(CodeGenMode.default)
+    val codeGenConfiguration = CodeGenConfiguration(mode = actualCodeGenMode)
+
     CypherCompiler(runtimePipeline, rewriter, cache, planCacheFactory, cacheMonitor, monitors, rewriterSequencer,
-      createFingerprintReference, typeConverter, metricsFactory, queryGraphSolver, config, actualUpdateStrategy, clock, structure)
+      createFingerprintReference, typeConverter, metricsFactory, queryGraphSolver, config, actualUpdateStrategy,
+      codeGenConfiguration, clock, structure)
   }
 
   def createQueryGraphSolver(n: CostBasedPlannerName, monitors: Monitors, config: CypherCompilerConfiguration): QueryGraphSolver = n match {

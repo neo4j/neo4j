@@ -54,8 +54,7 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
     idpMaxTableSize = 128,
     idpIterationDuration = 1000,
     nonIndexedLabelWarningThreshold = 10000,
-    errorIfShortestPathFallbackUsedAtRuntime = true,
-    codeGenConfiguration = CodeGenConfiguration()
+    errorIfShortestPathFallbackUsedAtRuntime = true
   )
 
   val compilers = Seq[(String, GraphDatabaseQueryService => CypherCompiler)](
@@ -296,7 +295,7 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
     }
 
     CypherCompilerFactory.costBasedCompiler(config, Clock.systemUTC(), GeneratedQueryStructure, monitors, infoLogger,
-      newPlain, None, None, None, typeConversions)
+      newPlain, None, None, None, None, typeConversions)
   }
 
   case class QueryExecutionResult(compiler: String, dbHits: Option[Long], plan: InternalPlanDescription) {
