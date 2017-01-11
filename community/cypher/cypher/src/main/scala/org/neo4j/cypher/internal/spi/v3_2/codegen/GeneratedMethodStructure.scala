@@ -516,8 +516,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     } else {
       val localName = context.namer.newVarName()
       val next = context.namer.newVarName()
-      val variable = generator
-        .declare(typeRef[java.util.Iterator[java.util.HashSet[Object]]], localName)
+      val variable = generator.declare(typeRef[java.util.Iterator[Object]], localName)
       val keyStruct = aux.hashKey(key)
       generator.assign(variable,
                        invoke(generator.load(name),method[util.HashSet[Object], util.Iterator[Object]]("iterator")))
