@@ -31,8 +31,8 @@ import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.Race;
-import org.neo4j.test.RepeatRule;
-import org.neo4j.test.RepeatRule.Repeat;
+import org.neo4j.test.rule.RepeatRule;
+import org.neo4j.test.rule.RepeatRule.Repeat;
 import org.neo4j.unsafe.impl.batchimport.executor.ParkStrategy.Park;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;

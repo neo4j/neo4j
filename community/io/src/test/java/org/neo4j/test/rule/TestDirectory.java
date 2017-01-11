@@ -19,6 +19,7 @@
  */
 package org.neo4j.test.rule;
 
+import org.apache.commons.codec.digest.DigestUtils;
 import org.junit.Rule;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
@@ -32,7 +33,6 @@ import java.net.URISyntaxException;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils.MaybeWindowsMemoryMappedFileReleaseProblem;
-import org.neo4j.test.Digests;
 
 import static java.lang.String.format;
 
@@ -236,7 +236,7 @@ public class TestDirectory implements TestRule
         {
             test = "static";
         }
-        String dir = Digests.md5Hex( test );
+        String dir = DigestUtils.md5Hex( test );
         register( test, dir );
         return cleanDirectory( dir );
     }

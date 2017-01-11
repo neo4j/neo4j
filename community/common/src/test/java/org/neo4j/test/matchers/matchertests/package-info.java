@@ -17,26 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.test;
-
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-
-import org.neo4j.string.HexString;
-
-public class Digests
-{
-    public static String md5Hex( String message )
-    {
-        try
-        {
-            MessageDigest m = MessageDigest.getInstance( "MD5" );
-            m.update( message.getBytes(), 0, message.getBytes().length);
-            return HexString.encodeHexString( m.digest() );
-        }
-        catch ( NoSuchAlgorithmException e )
-        {
-            throw new RuntimeException( "MD5 hash algorithm is not available on this platform: " + e.getMessage(),e );
-        }
-    }
-}
+/**
+ * This separate package introduced to separate actual matchers from tests for those matchers.
+ * That will simplify understanding package content and will make it simpler future refactorings of helper test utils
+ */
+package org.neo4j.test.matchers.matchertests;

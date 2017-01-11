@@ -56,8 +56,8 @@ import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
-import org.neo4j.test.RepeatRule;
 import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.rule.RepeatRule;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;

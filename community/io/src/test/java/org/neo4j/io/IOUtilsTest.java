@@ -28,7 +28,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import java.io.IOException;
 
-import org.neo4j.test.NestedThrowableMatcher;
+import org.neo4j.test.matchers.NestedThrowableMatcher;
 
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;

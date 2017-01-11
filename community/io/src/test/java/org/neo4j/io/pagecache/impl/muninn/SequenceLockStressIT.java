@@ -33,7 +33,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.test.RepeatRule;
+import org.neo4j.test.rule.RepeatRule;
 
 public class SequenceLockStressIT
 {

@@ -17,14 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.test;
+package org.neo4j.test.matchers.matchertests;
 
 import org.junit.Test;
 
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-
-import static org.neo4j.test.ByteArrayMatcher.byteArray;
+import static org.neo4j.test.matchers.ByteArrayMatcher.byteArray;
 
 public class ByteArrayMatcherTest
 {
