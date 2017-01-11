@@ -511,10 +511,15 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
      * Returns the next id for this store's {@link IdGenerator}.
      *
      * @return The next free id
+     * @throws IllegalStateException if {@link IdGenerator} is null
      */
     @Override
     public long nextId()
     {
+        if ( idGenerator == null )
+        {
+            throw new IllegalStateException( "IdGenerator is not initialized" );
+        }
         return idGenerator.nextId();
     }
 
@@ -880,10 +885,10 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
         }
     }
 
-    /** @return The total number of ids in use. */
+    /** @return The total number of ids in use, or -1 if not initialized. */
     public long getNumberOfIdsInUse()
     {
-        return idGenerator.getNumberOfIdsInUse();
+        return idGenerator != null ? idGenerator.getNumberOfIdsInUse() : -1;
     }
 
     /**
