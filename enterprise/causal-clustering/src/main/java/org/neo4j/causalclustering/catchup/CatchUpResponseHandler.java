@@ -39,7 +39,7 @@ public interface CatchUpResponseHandler
      */
     boolean onFileContent( FileChunk fileChunk ) throws IOException;
 
-    void onFileStreamingComplete( StoreCopyFinishedResponse response );
+    void onFileStreamingComplete( StoreCopyFinishedResponse response ) throws IOException;
 
     void onTxPullResponse( TxPullResponse tx );
 

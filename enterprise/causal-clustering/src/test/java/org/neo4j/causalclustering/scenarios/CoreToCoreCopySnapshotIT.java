@@ -48,11 +48,15 @@ import static org.neo4j.causalclustering.discovery.Cluster.dataOnMemberEventuall
 import static org.neo4j.causalclustering.scenarios.SampleData.createData;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
+/**
+ * Note that this test is extended in the blockdevice repository.
+ */
 public class CoreToCoreCopySnapshotIT
 {
+    protected static final int NR_CORE_MEMBERS = 3;
     @Rule
     public final ClusterRule clusterRule = new ClusterRule( getClass() )
-            .withNumberOfCoreMembers( 3 )
+            .withNumberOfCoreMembers( NR_CORE_MEMBERS )
             .withNumberOfReadReplicas( 0 );
 
     @Test

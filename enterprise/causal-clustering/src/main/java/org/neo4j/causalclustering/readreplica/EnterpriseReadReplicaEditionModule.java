@@ -195,7 +195,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
                 new DelayedRenewableTimeoutService( Clocks.systemClock(), logProvider );
 
         LocalDatabase localDatabase = new LocalDatabase( platformModule.storeDir,
-                new StoreFiles( fileSystem ),
+                new StoreFiles( fileSystem, pageCache ),
                 platformModule.dataSourceManager,
                 pageCache,
                 fileSystem,

@@ -192,7 +192,8 @@ public class CoreServerModule
                 platformModule.dependencies.provideDependency( TransactionIdStore.class ),
                 platformModule.dependencies.provideDependency( LogicalTransactionStore.class ),
                 localDatabase::dataSource, localDatabase::isAvailable, coreState, config,
-                platformModule.monitors, new CheckpointerSupplier( platformModule.dependencies ), fileSystem );
+                platformModule.monitors, new CheckpointerSupplier( platformModule.dependencies ), fileSystem,
+                platformModule.pageCache );
 
         servicesToStopOnStoreCopy.add( catchupServer );
 
