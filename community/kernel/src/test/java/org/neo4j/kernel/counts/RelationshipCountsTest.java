@@ -268,6 +268,64 @@ public class RelationshipCountsTest
     }
 
     @Test
+    public void shouldUpdateRelationshipWithLabelCountsWhenDeletingNodesWithRelationships() throws Exception
+    {
+        // given
+        int numberOfNodes = 2;
+        Node[] nodes = new Node[numberOfNodes];
+        try ( Transaction tx = db.beginTx() )
+        {
+            for ( int i = 0; i < numberOfNodes; i++ )
+            {
+                Node foo = db.createNode( label( "Foo" + i ) );
+                foo.addLabel( Label.label( "Common" ) );
+                Node bar = db.createNode( label( "Bar" + i ) );
+                foo.createRelationshipTo( bar, withName( "BAZ" + i ) );
+                nodes[i] = foo;
+            }
+
+            tx.success();
+        }
+
+        long[] beforeCommon = new long[numberOfNodes];
+        long[] before = new long[numberOfNodes];
+        for ( int i = 0; i < numberOfNodes; i++ )
+        {
+            beforeCommon[i] = numberOfRelationshipsMatching( label( "Common" ), withName( "BAZ" + i ), null  );
+            before[i] = numberOfRelationshipsMatching( label( "Foo" + i ), withName( "BAZ" + i ), null );
+        }
+
+        // when
+        try ( Transaction tx = db.beginTx() )
+        {
+            for ( Node node : nodes )
+            {
+                for ( Relationship relationship : node.getRelationships() )
+                {
+                    relationship.delete();
+                }
+                node.delete();
+            }
+
+            tx.success();
+        }
+        long[] afterCommon = new long[numberOfNodes];
+        long[] after = new long[numberOfNodes];
+        for ( int i = 0; i < numberOfNodes; i++ )
+        {
+            afterCommon[i] = numberOfRelationshipsMatching( label( "Common" ), withName( "BAZ" + i ), null  );
+            after[i] = numberOfRelationshipsMatching( label( "Foo" + i ), withName( "BAZ" + i ), null );
+        }
+
+        // then
+        for ( int i = 0; i < numberOfNodes; i++ )
+        {
+            assertEquals( beforeCommon[i] - 1, afterCommon[i] );
+            assertEquals( before[i] - 1, after[i] );
+        }
+    }
+
+    @Test
     public void shouldUpdateRelationshipWithLabelCountsWhenRemovingLabelAndDeletingRelationship() throws Exception
     {
         // given

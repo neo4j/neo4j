@@ -24,6 +24,7 @@ import java.util.function.Consumer;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntCollection;
+import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
@@ -148,6 +149,7 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
     {
         labels.visitKeys( (label) -> updateRelationshipsCountsFromDegrees( type, label, outgoing, incoming ) );
     }
+
     private boolean updateRelationshipsCountsFromDegrees( int type, int label, long outgoing, long incoming )
     {
         // untyped
@@ -156,7 +158,7 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
         // typed
         counts.incrementRelationshipCount( label, type, ANY_LABEL, outgoing );
         counts.incrementRelationshipCount( ANY_LABEL, type, label, incoming );
-        return true;
+        return false;
     }
 
     private void updateRelationshipCount( long startNode, int type, long endNode, int delta )
