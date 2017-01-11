@@ -1,7 +1,9 @@
 {
   "name": "neo4j-browser",
   "version": "2.0.0-SNAPSHOT",
-  "dependencies": {},
+  "dependencies": {
+    "karma-phantomjs-launcher": "^1.0.0"
+  },
   "engines": {
     "node": ">=0.10.2"
   },
