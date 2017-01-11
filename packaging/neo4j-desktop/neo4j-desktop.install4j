@@ -35,6 +35,7 @@
       <fileEntry mountPoint="262" file="./src/main/install4j/install.properties" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" />
       <fileEntry mountPoint="262" file="./target/shell-scripts/neo4j-import" overwriteMode="4" shared="false" fileMode="755" uninstallMode="0" overrideFileMode="true" overrideOverwriteMode="false" overrideUninstallMode="false" />
       <fileEntry mountPoint="262" file="./target/shell-scripts/neo4j-shell" overwriteMode="4" shared="false" fileMode="755" uninstallMode="0" overrideFileMode="true" overrideOverwriteMode="false" overrideUninstallMode="false" />
+      <fileEntry mountPoint="262" file="./target/shell-scripts/tools/config-migrator.jar" overwriteMode="4" shared="false" fileMode="755" uninstallMode="0" overrideFileMode="true" overrideOverwriteMode="false" overrideUninstallMode="false" />
       <fileEntry mountPoint="262" file="./target/shell-scripts/Neo4j-Management.psd1" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" />
       <fileEntry mountPoint="386" file="./target/plugins/README.txt" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" />
       <fileEntry mountPoint="210" file="./target/licenses/LICENSES.txt" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" />
@@ -71,6 +72,7 @@
           <entry location="bin/neo4j-import" fileType="regular" />
           <entry location="bin/neo4j-shell" fileType="regular" />
           <entry location="bin/Neo4j-Management.psd1" fileType="regular" />
+          <entry location="bin/tools/config-migrator.jar" fileType="regular" />
         </include>
         <dependencies />
       </component>
