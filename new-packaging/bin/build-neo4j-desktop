@@ -51,7 +51,7 @@ dos2unix --newfile src/neo4j-desktop/plugins/README.txt ${workspace}/plugins/REA
 # Unix scripts
 cp ${shell_scripts_directory}/neo4j-import ${workspace}/shell-scripts
 cp ${shell_scripts_directory}/neo4j-shell ${workspace}/shell-scripts
-cp ${shell_scripts_directory}/tools/config-migrator.jar ${workspace}/shell-scripts/tools
+cp ${shell_scripts_directory}/tools/2.x-config-migrator.jar ${workspace}/shell-scripts/tools
 
 # Windows scripts
 cp ${shell_scripts_directory}/Neo4j-Management.psd1 ${workspace}/shell-scripts
@@ -65,7 +65,6 @@ cp ${shell_scripts_directory}/Neo4j-Management/Get-Neo4jWindowsServiceName.ps1 $
 cp ${shell_scripts_directory}/Neo4j-Management/Install-Neo4jServer.ps1 ${workspace}/shell-scripts/Neo4j-Management
 cp ${shell_scripts_directory}/Neo4j-Management/Invoke-Neo4j.ps1 ${workspace}/shell-scripts/Neo4j-Management
 cp ${shell_scripts_directory}/Neo4j-Management/Invoke-Neo4jAdmin.ps1 ${workspace}/shell-scripts/Neo4j-Management
-cp ${shell_scripts_directory}/Neo4j-Management/Invoke-Neo4jAdmin_Import.ps1 ${workspace}/shell-scripts/Neo4j-Management
 cp ${shell_scripts_directory}/Neo4j-Management/Invoke-Neo4jBackup.ps1 ${workspace}/shell-scripts/Neo4j-Management
 cp ${shell_scripts_directory}/Neo4j-Management/Invoke-Neo4jImport.ps1 ${workspace}/shell-scripts/Neo4j-Management
 cp ${shell_scripts_directory}/Neo4j-Management/Invoke-Neo4jShell.ps1 ${workspace}/shell-scripts/Neo4j-Management
