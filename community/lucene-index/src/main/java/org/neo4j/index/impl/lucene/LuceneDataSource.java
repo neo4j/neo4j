@@ -627,11 +627,16 @@ public class LuceneDataSource extends LifecycleAdapter
             @Override
             File ensureDirectoryExists( FileSystemAbstraction fileSystem, File dir )
             {
-                if ( !dir.exists() && !dir.mkdirs() )
+                if ( !fileSystem.fileExists( dir ) )
                 {
-                    String message = String.format( "Unable to create directory path[%s] for Neo4j store" + ".",
-                            dir.getAbsolutePath() );
-                    throw new RuntimeException( message );
+                    try
+                    {
+                        fileSystem.mkdirs( dir );
+                    }
+                    catch ( IOException e )
+                    {
+                        throw new RuntimeException( e );
+                    }
                 }
                 return dir;
             }
