@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.index.labelscan;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
@@ -89,7 +90,7 @@ class LabelScanValueIterator extends PrimitiveLongCollections.PrimitiveLongBaseI
             }
             catch ( IOException e )
             {
-                throw new RuntimeException( e );
+                throw new UncheckedIOException( e );
             }
 
             Hit<LabelScanKey,LabelScanValue> hit = cursor.get();

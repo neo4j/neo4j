@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.index.labelscan;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.graphdb.ResourceIterator;
@@ -164,7 +165,7 @@ public class NativeLabelScanStore implements LabelScanStore
         }
         catch ( IOException e )
         {
-            throw new RuntimeException( e );
+            throw new UncheckedIOException( e );
         }
     }
 

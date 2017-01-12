@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.index.labelscan;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -71,7 +72,7 @@ class NativeLabelScanReader implements LabelScanReader
         }
         catch ( IOException e )
         {
-            throw new RuntimeException( e );
+            throw new UncheckedIOException( e );
         }
     }
 
@@ -87,7 +88,7 @@ class NativeLabelScanReader implements LabelScanReader
         }
         catch ( IOException e )
         {
-            throw new RuntimeException( e );
+            throw new UncheckedIOException( e );
         }
 
         return new LabelScanValueIterator( cursor );
@@ -122,7 +123,7 @@ class NativeLabelScanReader implements LabelScanReader
         }
         catch ( IOException e )
         {
-            throw new RuntimeException( e );
+            throw new UncheckedIOException( e );
         }
         return iterators;
     }
