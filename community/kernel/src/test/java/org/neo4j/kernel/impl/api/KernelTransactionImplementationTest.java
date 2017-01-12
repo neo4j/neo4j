@@ -747,7 +747,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         transaction.markAsShutdown();
 
         expectedException.expect( TransactionFailureException.class );
-        expectedException.expectMessage( "Transaction terminated since database is shutting down." );
+        expectedException.expectMessage( "Transaction terminated since marked as shut down." );
         transaction.close();
     }
 

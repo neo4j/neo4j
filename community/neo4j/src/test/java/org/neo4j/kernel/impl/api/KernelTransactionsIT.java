@@ -107,7 +107,7 @@ public class KernelTransactionsIT
     public void shutdownWhileRunningTransaction()
     {
         exception.expect( new RootCauseMatcher<>( TransactionFailureException.class,
-                "Transaction terminated since database is shutting down." ) );
+                "Transaction terminated since marked as shut down." ) );
 
         try ( Transaction ignored = database.beginTx() )
         {
@@ -120,7 +120,7 @@ public class KernelTransactionsIT
     public void shutdownDatabaseWhileHaveActiveTransactionRunning() throws InterruptedException
     {
         exception.expect( new RootCauseMatcher<>( TransactionFailureException.class,
-                "Transaction terminated since database is shutting down." ) );
+                "Transaction terminated since marked as shut down." ) );
 
         CountDownLatch latch = new CountDownLatch( 1 );
         try ( Transaction transaction = database.beginTx() )
@@ -140,7 +140,7 @@ public class KernelTransactionsIT
     public void shutdownWithHaveActiveTerminatedTransactionRunning() throws InterruptedException
     {
         exception.expect( new RootCauseMatcher<>( TransactionFailureException.class,
-                "Transaction terminated since database is shutting down." ) );
+                "Transaction terminated since marked as shut down." ) );
 
         CountDownLatch latch = new CountDownLatch( 1 );
         try ( Transaction transaction = database.beginTx() )
