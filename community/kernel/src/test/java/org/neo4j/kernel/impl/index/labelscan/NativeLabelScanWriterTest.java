@@ -52,9 +52,8 @@ import static org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStoreTest.nod
 public class NativeLabelScanWriterTest
 {
     private static final int LABEL_COUNT = 5;
-    private static final int RANGE_SIZE = 16;
     private static final int NODE_COUNT = 10_000;
-    private static final Comparator<LabelScanKey> KEY_COMPARATOR = new LabelScanLayout( RANGE_SIZE );
+    private static final Comparator<LabelScanKey> KEY_COMPARATOR = new LabelScanLayout();
 
     @Rule
     public final RandomRule random = new RandomRule();
@@ -65,7 +64,7 @@ public class NativeLabelScanWriterTest
         // GIVEN
         ControlledInserter inserter = new ControlledInserter();
         long[] expected = new long[NODE_COUNT];
-        try ( NativeLabelScanWriter writer = new NativeLabelScanWriter( RANGE_SIZE, max( 5, NODE_COUNT/100 ) ) )
+        try ( NativeLabelScanWriter writer = new NativeLabelScanWriter( max( 5, NODE_COUNT/100 ) ) )
         {
             writer.initialize( inserter );
 
@@ -81,7 +80,7 @@ public class NativeLabelScanWriterTest
         for ( int i = 0; i < LABEL_COUNT; i++ )
         {
             long[] expectedNodeIds = nodesWithLabel( expected, i );
-            long[] actualNodeIds = asArray( new LabelScanValueIterator( RANGE_SIZE, inserter.nodesFor( i ) ) );
+            long[] actualNodeIds = asArray( new LabelScanValueIterator( inserter.nodesFor( i ) ) );
             assertArrayEquals( "For label " + i, expectedNodeIds, actualNodeIds );
         }
     }
@@ -92,7 +91,7 @@ public class NativeLabelScanWriterTest
         // GIVEN
         ControlledInserter inserter = new ControlledInserter();
         boolean failed = false;
-        try ( NativeLabelScanWriter writer = new NativeLabelScanWriter( RANGE_SIZE, 1 ) )
+        try ( NativeLabelScanWriter writer = new NativeLabelScanWriter( 1 ) )
         {
             writer.initialize( inserter );
 

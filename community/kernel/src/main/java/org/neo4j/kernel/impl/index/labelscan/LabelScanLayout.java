@@ -23,8 +23,6 @@ import org.neo4j.index.gbptree.GBPTree;
 import org.neo4j.index.gbptree.Layout;
 import org.neo4j.io.pagecache.PageCursor;
 
-import static java.lang.Long.bitCount;
-
 /**
  * {@link Layout} for {@link GBPTree} used by {@link NativeLabelScanStore}.
  *
@@ -34,8 +32,7 @@ import static java.lang.Long.bitCount;
  * </li>
  * <li>
  * Each value is a 64-bit bit set (a primitive {@code long}) where each set bit in it represents
- * a node with that label, such that {@code nodeId = nodeIdRange+bitOffset}. Range size (e.g. 64 bits)
- * is configurable on initial creation of the store, 8, 16, 32 or 64.
+ * a node with that label, such that {@code nodeId = nodeIdRange+bitOffset}. Range size is 64 bits.
  * </li>
  * </ul>
  */
@@ -50,26 +47,6 @@ class LabelScanLayout implements Layout<LabelScanKey,LabelScanValue>
      * Size of each {@link LabelScanKey}.
      */
     private static final int KEY_SIZE = Integer.BYTES/*labelId*/ + 6/*idRange*/;
-
-    /**
-     * Size of each node id range, e.g. 8, 16, 32 or 64. This value is written at creation,
-     * otherwise verified against index meta data on open.
-     */
-    private final int rangeSize;
-
-    /**
-     * {@link #rangeSize}, as number of bytes (instead of number of bits).
-     */
-    private final int rangeSizeBytes;
-
-    LabelScanLayout( int rangeSize )
-    {
-        // asserts values are 8, 16, 32 or 64
-        assert bitCount( rangeSize ) == 1 && (rangeSize & ~0b1111000) == 0;
-
-        this.rangeSize = rangeSize;
-        this.rangeSizeBytes = rangeSize >>> 3;
-    }
 
     /**
      * Compares {@link LabelScanKey}, giving ascending order of {@code labelId} then {@code nodeIdRange}.
@@ -110,7 +87,7 @@ class LabelScanLayout implements Layout<LabelScanKey,LabelScanValue>
     @Override
     public int valueSize()
     {
-        return rangeSizeBytes;
+        return LabelScanValue.RANGE_SIZE_BYTES;
     }
 
     @Override
@@ -129,23 +106,7 @@ class LabelScanLayout implements Layout<LabelScanKey,LabelScanValue>
     @Override
     public void writeValue( PageCursor cursor, LabelScanValue value )
     {
-        switch ( rangeSize )
-        {
-        case 8:
-            cursor.putByte( (byte) value.bits );
-            break;
-        case 16:
-            cursor.putShort( (short) value.bits );
-            break;
-        case 32:
-            cursor.putInt( (int) value.bits );
-            break;
-        case 64:
-            cursor.putLong( value.bits );
-            break;
-        default:
-            throw new IllegalArgumentException( String.valueOf( rangeSize ) );
-        }
+        cursor.putLong( value.bits );
     }
 
     @Override
@@ -165,29 +126,13 @@ class LabelScanLayout implements Layout<LabelScanKey,LabelScanValue>
     @Override
     public void readValue( PageCursor cursor, LabelScanValue into )
     {
-        switch ( rangeSize )
-        {
-        case 8:
-            into.bits = cursor.getByte() & 0xFF;
-            break;
-        case 16:
-            into.bits = cursor.getShort() & 0xFFFF;
-            break;
-        case 32:
-            into.bits = cursor.getInt() & 0xFFFFFFFFL;
-            break;
-        case 64:
-            into.bits = cursor.getLong();
-            break;
-        default:
-            throw new IllegalArgumentException( String.valueOf( rangeSize ) );
-        }
+        into.bits = cursor.getLong();
     }
 
     @Override
     public long identifier()
     {
-        return Layout.namedIdentifier( IDENTIFIER_NAME, rangeSize );
+        return Layout.namedIdentifier( IDENTIFIER_NAME, LabelScanValue.RANGE_SIZE );
     }
 
     @Override
@@ -200,28 +145,5 @@ class LabelScanLayout implements Layout<LabelScanKey,LabelScanValue>
     public int minorVersion()
     {
         return 1;
-    }
-
-    /**
-     * Writes node id range size to the index meta data. The range size cannot change.
-     */
-    @Override
-    public void writeMetaData( PageCursor cursor )
-    {
-        cursor.putInt( rangeSize );
-    }
-
-    /**
-     * Reads node id range size of the index.
-     */
-    @Override
-    public void readMetaData( PageCursor cursor )
-    {
-        int rangeSize = cursor.getInt();
-        if ( this.rangeSize != rangeSize )
-        {
-            throw new IllegalArgumentException( "A different range size " + this.rangeSize +
-                    " was specified when loading an index with actual range size " + rangeSize );
-        }
     }
 }

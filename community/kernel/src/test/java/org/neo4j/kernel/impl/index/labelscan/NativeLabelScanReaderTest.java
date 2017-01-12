@@ -55,16 +55,19 @@ public class NativeLabelScanReaderTest
                 null );
         when( index.seek( any( LabelScanKey.class ), any( LabelScanKey.class ) ) )
                 .thenReturn( cursor );
-        try ( NativeLabelScanReader reader = new NativeLabelScanReader( index, 16 ) )
+        try ( NativeLabelScanReader reader = new NativeLabelScanReader( index ) )
         {
             // WHEN
             PrimitiveLongIterator iterator = reader.nodesWithLabel( LABEL_ID );
 
             // THEN
             assertArrayEquals( new long[] {
+                    // base 0*64 = 0
                     1, 6, 7, 11, 15,
-                    19, 25,
-                    48, 53, 55, 61 },
+                    // base 1*64 = 64
+                    64 + 3, 64 + 9,
+                    // base 3*64 = 192
+                    192 + 0, 192 + 5, 192 + 7, 192 + 13 },
 
                     asArray( iterator ) );
         }

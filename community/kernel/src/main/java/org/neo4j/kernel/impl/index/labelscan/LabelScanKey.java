@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.index.labelscan;
 
 /**
  * Keys in {@link LabelScanLayout}, each key consists of {@code labelId} and {@code nodeIdRange}, i.e.
- * {@code nodeId/rangeSize}, where each range is a small bit set of size {@code rangeSize}.
+ * {@code nodeId/rangeSize}, where each range is a small bit set of size {@link LabelScanValue#RANGE_SIZE}.
  */
 class LabelScanKey
 {

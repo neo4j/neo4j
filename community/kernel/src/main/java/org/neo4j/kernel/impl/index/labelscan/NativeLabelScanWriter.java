@@ -33,6 +33,8 @@ import org.neo4j.storageengine.api.schema.LabelScanReader;
 import static java.lang.Long.min;
 import static java.lang.Math.toIntExact;
 
+import static org.neo4j.kernel.impl.index.labelscan.LabelScanValue.RANGE_SIZE;
+
 /**
  * {@link LabelScanWriter} for {@link NativeLabelScanStore}, or rather an {@link IndexWriter} for its
  * internal {@link GBPTree}.
@@ -85,12 +87,6 @@ class NativeLabelScanWriter implements LabelScanWriter
     private final LabelScanValue value = new LabelScanValue();
 
     /**
-     * Configured range size for this index. Range size is the size of each {@link LabelScanValue},
-     * i.e. how big each bit set range is, e.g. 8, 16, 32 or 64.
-     */
-    private final int rangeSize;
-
-    /**
      * Batch currently building up as {@link #write(NodeLabelUpdate) updates} come in. Cursor for where
      * to place new updates is {@link #pendingUpdatesCursor}. Length of this queue is decided in constructor
      * and defines the maximum batch size.
@@ -120,9 +116,8 @@ class NativeLabelScanWriter implements LabelScanWriter
      */
     private long lowestLabelId;
 
-    NativeLabelScanWriter( int rangeSize, int batchSize )
+    NativeLabelScanWriter( int batchSize )
     {
-        this.rangeSize = rangeSize;
         this.pendingUpdates = new NodeLabelUpdate[batchSize];
     }
 
@@ -241,7 +236,7 @@ class NativeLabelScanWriter implements LabelScanWriter
             addition = add;
         }
 
-        value.set( toIntExact( nodeId % rangeSize ) );
+        value.set( toIntExact( nodeId % RANGE_SIZE ) );
     }
 
     private void flushPendingRange() throws IOException
@@ -256,9 +251,9 @@ class NativeLabelScanWriter implements LabelScanWriter
         }
     }
 
-    private long rangeOf( long nodeId )
+    private static long rangeOf( long nodeId )
     {
-        return nodeId / rangeSize;
+        return nodeId / RANGE_SIZE;
     }
 
     /**

@@ -48,20 +48,14 @@ class NativeLabelScanReader implements LabelScanReader
     private final Index<LabelScanKey,LabelScanValue> index;
 
     /**
-     * Size of each nodeId range, i.e. how many potential node ids each {@link LabelScanValue} contains.
-     */
-    private final int rangeSize;
-
-    /**
      * Currently open {@link RawCursor} from query methods below. Open cursors are closed when calling
      * new query methods or when {@link #close() closing} this reader.
      */
     private final Queue<RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException>> openCursors;
 
-    NativeLabelScanReader( Index<LabelScanKey,LabelScanValue> index, int rangeSize )
+    NativeLabelScanReader( Index<LabelScanKey,LabelScanValue> index )
     {
         this.index = index;
-        this.rangeSize = rangeSize;
         this.openCursors = new LinkedList<>();
     }
 
@@ -96,7 +90,7 @@ class NativeLabelScanReader implements LabelScanReader
             throw new RuntimeException( e );
         }
 
-        return new LabelScanValueIterator( rangeSize, cursor );
+        return new LabelScanValueIterator( cursor );
     }
 
     @Override
@@ -123,7 +117,7 @@ class NativeLabelScanReader implements LabelScanReader
             {
                 RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> cursor = seekerForLabel( labelId );
                 openCursors.offer( cursor );
-                iterators.add( new LabelScanValueIterator( rangeSize, cursor ) );
+                iterators.add( new LabelScanValueIterator( cursor ) );
             }
         }
         catch ( IOException e )

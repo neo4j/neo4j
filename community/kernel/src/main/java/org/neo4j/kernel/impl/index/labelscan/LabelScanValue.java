@@ -24,6 +24,9 @@ package org.neo4j.kernel.impl.index.labelscan;
  */
 class LabelScanValue
 {
+    static final int RANGE_SIZE = Long.SIZE;
+    static final int RANGE_SIZE_BYTES = Long.BYTES;
+
     /**
      * Small bit set.
      */

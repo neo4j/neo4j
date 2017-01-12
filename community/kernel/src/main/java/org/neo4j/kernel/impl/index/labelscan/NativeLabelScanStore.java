@@ -78,12 +78,6 @@ public class NativeLabelScanStore implements LabelScanStore
     private final File storeFile;
 
     /**
-     * Size of each node id range, e.g. 8, 16, 32 or 64. This value is written at creation,
-     * otherwise verified against index meta data on open.
-     */
-    private final int rangeSize;
-
-    /**
      * Used in {@link #start()} if the store is empty, where this will provide all data for fully populating
      * this label scan store. This can be the case when changing label scan store provider on an existing database.
      */
@@ -114,24 +108,23 @@ public class NativeLabelScanStore implements LabelScanStore
 
     private final NativeLabelScanWriter singleWriter;
 
-    public NativeLabelScanStore( PageCache pageCache, File storeDir, int rangeSize,
+    public NativeLabelScanStore( PageCache pageCache, File storeDir,
             FullStoreChangeStream fullStoreChangeStream )
     {
-        this( pageCache, storeDir, rangeSize, fullStoreChangeStream, 0/*means no opinion about page size*/ );
+        this( pageCache, storeDir, fullStoreChangeStream, 0/*means no opinion about page size*/ );
     }
 
     /*
      * Test access to be able to control page size.
      */
-    NativeLabelScanStore( PageCache pageCache, File storeDir, int rangeSize,
+    NativeLabelScanStore( PageCache pageCache, File storeDir,
             FullStoreChangeStream fullStoreChangeStream, int pageSize )
     {
         this.pageCache = pageCache;
         this.pageSize = pageSize;
         this.fullStoreChangeStream = fullStoreChangeStream;
         this.storeFile = new File( storeDir, DEFAULT_NAME + ".labelscanstore.db" );
-        this.rangeSize = rangeSize;
-        this.singleWriter = new NativeLabelScanWriter( rangeSize, 1_000 );
+        this.singleWriter = new NativeLabelScanWriter( 1_000 );
     }
 
     /**
@@ -143,7 +136,7 @@ public class NativeLabelScanStore implements LabelScanStore
     @Override
     public LabelScanReader newReader()
     {
-        return new NativeLabelScanReader( index, rangeSize );
+        return new NativeLabelScanReader( index );
     }
 
     /**
@@ -226,7 +219,7 @@ public class NativeLabelScanStore implements LabelScanStore
     @Override
     public void init() throws IOException
     {
-        index = new GBPTree<>( pageCache, storeFile, new LabelScanLayout( rangeSize ), pageSize, NO_MONITOR );
+        index = new GBPTree<>( pageCache, storeFile, new LabelScanLayout(), pageSize, NO_MONITOR );
     }
 
     /**

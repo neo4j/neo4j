@@ -36,11 +36,6 @@ import org.neo4j.index.Hit;
 class LabelScanValueIterator extends PrimitiveLongCollections.PrimitiveLongBaseIterator
 {
     /**
-     * Size of nodeId ranges, i.e. how many node ids one {@link LabelScanValue} can hold at most.
-     */
-    private final int rangeSize;
-
-    /**
      * {@link RawCursor} to lazily read new {@link LabelScanValue} from.
      */
     private final RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> cursor;
@@ -65,9 +60,8 @@ class LabelScanValueIterator extends PrimitiveLongCollections.PrimitiveLongBaseI
      */
     private long prevRange = -1;
 
-    LabelScanValueIterator( int rangeSize, RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> cursor )
+    LabelScanValueIterator( RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> cursor )
     {
-        this.rangeSize = rangeSize;
         this.cursor = cursor;
     }
 
@@ -99,7 +93,7 @@ class LabelScanValueIterator extends PrimitiveLongCollections.PrimitiveLongBaseI
             }
 
             Hit<LabelScanKey,LabelScanValue> hit = cursor.get();
-            baseNodeId = hit.key().idRange * rangeSize;
+            baseNodeId = hit.key().idRange * LabelScanValue.RANGE_SIZE;
             bits = hit.value().bits;
 
             assert keysInOrder( hit.key() );
