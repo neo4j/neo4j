@@ -114,8 +114,17 @@ public class NativeLabelScanStore implements LabelScanStore
 
     private final NativeLabelScanWriter singleWriter;
 
-    public NativeLabelScanStore( PageCache pageCache, File storeDir, int rangeSize, int pageSize,
+    public NativeLabelScanStore( PageCache pageCache, File storeDir, int rangeSize,
             FullStoreChangeStream fullStoreChangeStream )
+    {
+        this( pageCache, storeDir, rangeSize, fullStoreChangeStream, 0/*means no opinion about page size*/ );
+    }
+
+    /*
+     * Test access to be able to control page size.
+     */
+    NativeLabelScanStore( PageCache pageCache, File storeDir, int rangeSize,
+            FullStoreChangeStream fullStoreChangeStream, int pageSize )
     {
         this.pageCache = pageCache;
         this.pageSize = pageSize;
