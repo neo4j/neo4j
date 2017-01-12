@@ -29,13 +29,23 @@
       <dirEntry mountPoint="505" file="shell-scripts/Neo4j-Management" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" entryMode="direct" subDirectory="" excludeSuffixes="" dirMode="755" overrideDirMode="false">
         <exclude />
       </dirEntry>
-      <fileEntry mountPoint="567" file="shell-scripts/tools/config-migrator.jar" overwriteMode="4" shared="false" fileMode="755" uninstallMode="0" overrideFileMode="true" overrideOverwriteMode="false" overrideUninstallMode="false" />
+      <fileEntry mountPoint="567" file="shell-scripts/tools/2.x-config-migrator.jar" overwriteMode="4" shared="false" fileMode="755" uninstallMode="0" overrideFileMode="true" overrideOverwriteMode="false" overrideUninstallMode="false" />
       <fileEntry mountPoint="262" file="neo4j-desktop-${compiler:neo4j-version}.jar" overwriteMode="4" shared="true" fileMode="644" uninstallMode="0" overrideFileMode="true" overrideOverwriteMode="true" overrideUninstallMode="true" />
       <fileEntry mountPoint="262" file="neo4j-community.vmoptions" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" />
       <fileEntry mountPoint="262" file="install.properties" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" />
       <fileEntry mountPoint="262" file="shell-scripts/neo4j-import" overwriteMode="4" shared="false" fileMode="755" uninstallMode="0" overrideFileMode="true" overrideOverwriteMode="false" overrideUninstallMode="false" />
       <fileEntry mountPoint="262" file="shell-scripts/neo4j-shell" overwriteMode="4" shared="false" fileMode="755" uninstallMode="0" overrideFileMode="true" overrideOverwriteMode="false" overrideUninstallMode="false" />
       <fileEntry mountPoint="262" file="shell-scripts/Neo4j-Management.psd1" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" />
+      <fileEntry mountPoint="262" file="shell-scripts/neo4j-shared.sh" overwriteMode="4" shared="false" fileMode="755" uninstallMode="0" overrideFileMode="true" overrideOverwriteMode="false" overrideUninstallMode="false" />
+      <fileEntry mountPoint="262" file="shell-scripts/neo4j-import.bat" overwriteMode="4" shared="false" fileMode="755" uninstallMode="0" overrideFileMode="true" overrideOverwriteMode="false" overrideUninstallMode="false" />
+      <fileEntry mountPoint="262" file="shell-scripts/neo4j-shell.bat" overwriteMode="4" shared="false" fileMode="755" uninstallMode="0" overrideFileMode="true" overrideOverwriteMode="false" overrideUninstallMode="false" />
+      <fileEntry mountPoint="262" file="shell-scripts/neo4j-admin" overwriteMode="4" shared="false" fileMode="755" uninstallMode="0" overrideFileMode="true" overrideOverwriteMode="false" overrideUninstallMode="false" />
+      <fileEntry mountPoint="262" file="shell-scripts/neo4j-admin.bat" overwriteMode="4" shared="false" fileMode="755" uninstallMode="0" overrideFileMode="true" overrideOverwriteMode="false" overrideUninstallMode="false" />
+      <fileEntry mountPoint="262" file="shell-scripts/neo4j-backup" overwriteMode="4" shared="false" fileMode="755" uninstallMode="0" overrideFileMode="true" overrideOverwriteMode="false" overrideUninstallMode="false" />
+      <fileEntry mountPoint="262" file="shell-scripts/neo4j-backup.bat" overwriteMode="4" shared="false" fileMode="755" uninstallMode="0" overrideFileMode="true" overrideOverwriteMode="false" overrideUninstallMode="false" />
+      <dirEntry mountPoint="262" file="cypher-shell" overwriteMode="1" shared="false" fileMode="755" uninstallMode="0" overrideFileMode="true" overrideOverwriteMode="true" overrideUninstallMode="false" entryMode="direct" subDirectory="cypher-shell" excludeSuffixes="" dirMode="755" overrideDirMode="false">
+        <exclude />
+      </dirEntry>
       <fileEntry mountPoint="386" file="plugins/README.txt" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" />
       <fileEntry mountPoint="210" file="licenses/LICENSES.txt" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" />
       <fileEntry mountPoint="210" file="licenses/NOTICE.txt" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" />
@@ -71,6 +81,13 @@
           <entry location="bin/neo4j-import" fileType="regular" />
           <entry location="bin/neo4j-shell" fileType="regular" />
           <entry location="bin/Neo4j-Management.psd1" fileType="regular" />
+          <entry location="bin/neo4j-shared.sh" fileType="regular" />
+          <entry location="bin/neo4j-import.bat" fileType="regular" />
+          <entry location="bin/neo4j-shell.bat" fileType="regular" />
+          <entry location="bin/neo4j-admin" fileType="regular" />
+          <entry location="bin/neo4j-admin.bat" fileType="regular" />
+          <entry location="bin/neo4j-backup" fileType="regular" />
+          <entry location="bin/neo4j-backup.bat" fileType="regular" />
         </include>
         <dependencies />
       </component>
@@ -78,6 +95,8 @@
         <description />
         <include all="false">
           <entry location="bin/tools" fileType="regular" />
+          <entry location="bin/cypher-shell" fileType="regular" />
+          <entry location="bin/cypher-shell.bat" fileType="regular" />
         </include>
         <dependencies />
       </component>
@@ -699,7 +718,14 @@ return "${APPDATA}" + context.getVariable("sys.fileSeparator") + context.getComp
       <excludedLaunchers />
       <excludedBeans />
       <overriddenPrincipalLanguage id="en" customLocalizationFile="" />
-      <exclude />
+      <exclude>
+        <entry location="bin/neo4j-shared.sh" fileType="regular" />
+        <entry location="bin/neo4j-import" fileType="regular" />
+        <entry location="bin/neo4j-shell" fileType="regular" />
+        <entry location="bin/neo4j-admin" fileType="regular" />
+        <entry location="bin/neo4j-backup" fileType="regular" />
+        <entry location="bin/cypher-shell" fileType="regular" />
+      </exclude>
       <variables />
       <autoUpdate useMinUpdatableVersion="false" minUpdatableVersion="" useMaxUpdatableVersion="false" maxUpdatableVersion="">
         <commentFiles />
@@ -714,7 +740,14 @@ return "${APPDATA}" + context.getVariable("sys.fileSeparator") + context.getComp
       <excludedLaunchers />
       <excludedBeans />
       <overriddenPrincipalLanguage id="en" customLocalizationFile="" />
-      <exclude />
+      <exclude>
+        <entry location="bin/neo4j-shared.sh" fileType="regular" />
+        <entry location="bin/neo4j-import" fileType="regular" />
+        <entry location="bin/neo4j-shell" fileType="regular" />
+        <entry location="bin/neo4j-admin" fileType="regular" />
+        <entry location="bin/neo4j-backup" fileType="regular" />
+        <entry location="bin/cypher-shell" fileType="regular" />
+      </exclude>
       <variables />
       <autoUpdate useMinUpdatableVersion="false" minUpdatableVersion="" useMaxUpdatableVersion="false" maxUpdatableVersion="">
         <commentFiles />
@@ -726,7 +759,15 @@ return "${APPDATA}" + context.getVariable("sys.fileSeparator") + context.getComp
       <includedDownloadableComponents />
       <excludedBeans />
       <overriddenPrincipalLanguage id="en" customLocalizationFile="" />
-      <exclude />
+      <exclude>
+        <entry location="bin/Neo4j-Management" fileType="regular" />
+        <entry location="bin/Neo4j-Management.psd1" fileType="regular" />
+        <entry location="bin/neo4j-import.bat" fileType="regular" />
+        <entry location="bin/neo4j-shell.bat" fileType="regular" />
+        <entry location="bin/neo4j-admin.bat" fileType="regular" />
+        <entry location="bin/neo4j-backup.bat" fileType="regular" />
+        <entry location="bin/cypher-shell.bat" fileType="regular" />
+      </exclude>
       <variables />
       <autoUpdate useMinUpdatableVersion="false" minUpdatableVersion="" useMaxUpdatableVersion="false" maxUpdatableVersion="">
         <commentFiles />

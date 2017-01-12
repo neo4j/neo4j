@@ -3,9 +3,9 @@ set -exu
 # build-neo4j-desktop:
 # Build Neo4j Desktop for either Mac or Windows
 
-if [ $# -lt 6 ]
+if [ $# -lt 7 ]
 then
-  echo "Usage: ${0} <workspace> <uberjar> <license file> <shell scripts directory> <version> <media type> [keystore file] [keystore password]"
+  echo "Usage: ${0} <workspace> <uberjar> <license file> <shell scripts directory> <cypher shell directory> <version> <media type> [keystore file] [keystore password]"
   exit 1
 fi
 
@@ -13,16 +13,18 @@ workspace=${1}
 uberjar=${2}
 license_file=${3}
 shell_scripts_directory=${4}
-version=${5}
-media_type=${6}
-keystore_file=${7-}
-keystore_password=${8-}
+cypher_shell_directory=${5}
+version=${6}
+media_type=${7}
+keystore_file=${8-}
+keystore_password=${9-}
 
 version=$(cat ${version})
 uberjar=$(cat ${uberjar})
 
 ## Prepare workspace
 # Create directory structure
+mkdir -p ${workspace}/cypher-shell/tools
 mkdir -p ${workspace}/images
 mkdir -p ${workspace}/licenses
 mkdir -p ${workspace}/plugins
@@ -48,9 +50,17 @@ dos2unix --newfile src/neo4j-desktop/licenses/NOTICE.txt ${workspace}/licenses/N
 # Plugins documentation
 dos2unix --newfile src/neo4j-desktop/plugins/README.txt ${workspace}/plugins/README.txt
 
+# Cypher shell
+cp ${cypher_shell_directory}/cypher-shell ${workspace}/cypher-shell
+cp ${cypher_shell_directory}/*.jar ${workspace}/cypher-shell/tools
+dos2unix ${cypher_shell_directory}/cypher-shell.bat ${workspace}/cypher-shell.bat
+
 # Unix scripts
+cp ${shell_scripts_directory}/neo4j-admin ${workspace}/shell-scripts
+cp ${shell_scripts_directory}/neo4j-backup ${workspace}/shell-scripts
 cp ${shell_scripts_directory}/neo4j-import ${workspace}/shell-scripts
 cp ${shell_scripts_directory}/neo4j-shell ${workspace}/shell-scripts
+cp ${shell_scripts_directory}/neo4j-shared.sh ${workspace}/shell-scripts
 cp ${shell_scripts_directory}/tools/2.x-config-migrator.jar ${workspace}/shell-scripts/tools
 
 # Windows scripts
@@ -58,6 +68,7 @@ cp ${shell_scripts_directory}/Neo4j-Management.psd1 ${workspace}/shell-scripts
 cp ${shell_scripts_directory}/Neo4j-Management/Get-Java.ps1 ${workspace}/shell-scripts/Neo4j-Management
 cp ${shell_scripts_directory}/Neo4j-Management/Get-KeyValuePairsFromConfFile.ps1 ${workspace}/shell-scripts/Neo4j-Management
 cp ${shell_scripts_directory}/Neo4j-Management/Get-Neo4jEnv.ps1 ${workspace}/shell-scripts/Neo4j-Management
+cp ${shell_scripts_directory}/Neo4j-Management/Set-Neo4jEnv.ps1 ${workspace}/shell-scripts/Neo4j-Management
 cp ${shell_scripts_directory}/Neo4j-Management/Get-Neo4jServer.ps1 ${workspace}/shell-scripts/Neo4j-Management
 cp ${shell_scripts_directory}/Neo4j-Management/Get-Neo4jSetting.ps1 ${workspace}/shell-scripts/Neo4j-Management
 cp ${shell_scripts_directory}/Neo4j-Management/Get-Neo4jStatus.ps1 ${workspace}/shell-scripts/Neo4j-Management
@@ -73,6 +84,9 @@ cp ${shell_scripts_directory}/Neo4j-Management/Neo4j-Management.psm1 ${workspace
 cp ${shell_scripts_directory}/Neo4j-Management/Start-Neo4jServer.ps1 ${workspace}/shell-scripts/Neo4j-Management
 cp ${shell_scripts_directory}/Neo4j-Management/Stop-Neo4jServer.ps1 ${workspace}/shell-scripts/Neo4j-Management
 cp ${shell_scripts_directory}/Neo4j-Management/Uninstall-Neo4jServer.ps1 ${workspace}/shell-scripts/Neo4j-Management
+
+dos2unix --newfile ${shell_scripts_directory}/neo4j-admin.bat ${workspace}/shell-scripts/neo4j-admin.bat
+dos2unix --newfile ${shell_scripts_directory}/neo4j-backup.bat ${workspace}/shell-scripts/neo4j-backup.bat
 dos2unix --newfile ${shell_scripts_directory}/neo4j-import.bat ${workspace}/shell-scripts/neo4j-import.bat
 dos2unix --newfile ${shell_scripts_directory}/neo4j-shell.bat ${workspace}/shell-scripts/neo4j-shell.bat
 
