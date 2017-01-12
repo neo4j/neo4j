@@ -95,19 +95,7 @@ public interface LabelScanStore extends Lifecycle
      *
      * @return {@link LabelScanWriter} which can modify the {@link LabelScanStore}.
      */
-    default LabelScanWriter newWriter()
-    {
-        return newWriter( false );
-    }
-
-    /**
-     * Acquire a writer for updating the store.
-     *
-     * @param batching {@code true} means that the writes to this writer will be in batch-style,
-     * typically a store scan, so sequentially ordered and lots of them.
-     * @return {@link LabelScanWriter} which can modify the {@link LabelScanStore}.
-     */
-    LabelScanWriter newWriter( boolean batching );
+    LabelScanWriter newWriter();
 
     /**
      * Forces all changes to disk. Called at certain points from within Neo4j for example when

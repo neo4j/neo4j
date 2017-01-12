@@ -25,7 +25,6 @@ import java.io.IOException;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.index.Hit;
-import org.neo4j.index.IndexWriter;
 import org.neo4j.index.gbptree.GBPTree;
 import org.neo4j.index.gbptree.Layout;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -113,6 +112,8 @@ public class NativeLabelScanStore implements LabelScanStore
      */
     private boolean recoveryStarted;
 
+    private final NativeLabelScanWriter singleWriter;
+
     public NativeLabelScanStore( PageCache pageCache, File storeDir, int rangeSize, int pageSize,
             FullStoreChangeStream fullStoreChangeStream )
     {
@@ -121,6 +122,7 @@ public class NativeLabelScanStore implements LabelScanStore
         this.fullStoreChangeStream = fullStoreChangeStream;
         this.storeFile = new File( storeDir, DEFAULT_NAME + ".labelscanstore.db" );
         this.rangeSize = rangeSize;
+        this.singleWriter = new NativeLabelScanWriter( rangeSize, 1_000 );
     }
 
     /**
@@ -139,14 +141,12 @@ public class NativeLabelScanStore implements LabelScanStore
      * Returns {@link LabelScanWriter} capable of making changes to this {@link LabelScanStore}.
      * Only a single writer is allowed at any given point in time.
      *
-     * @param batching whether or not the returned writer will be used for batch-insertion where
-     * updates, usually a large amount, will arrive in sorted order.
      * @return {@link LabelScanWriter} capable of making changes to this {@link LabelScanStore}.
      * @throws IllegalStateException if someone else has already acquired a writer and hasn't yet
      * called {@link LabelScanWriter#close()}.
      */
     @Override
-    public LabelScanWriter newWriter( boolean batching )
+    public LabelScanWriter newWriter()
     {
         try
         {
@@ -158,8 +158,7 @@ public class NativeLabelScanStore implements LabelScanStore
                 recoveryStarted = true;
             }
 
-            IndexWriter<LabelScanKey,LabelScanValue> inserter = index.writer();
-            return new NativeLabelScanWriter( inserter, rangeSize, batching ? 10_000 : 1_000 );
+            return singleWriter.initialize( index.writer() );
         }
         catch ( IOException e )
         {

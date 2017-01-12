@@ -65,8 +65,10 @@ public class NativeLabelScanWriterTest
         // GIVEN
         ControlledInserter inserter = new ControlledInserter();
         long[] expected = new long[NODE_COUNT];
-        try ( NativeLabelScanWriter writer = new NativeLabelScanWriter( inserter, RANGE_SIZE, max( 5, NODE_COUNT/100 ) ) )
+        try ( NativeLabelScanWriter writer = new NativeLabelScanWriter( RANGE_SIZE, max( 5, NODE_COUNT/100 ) ) )
         {
+            writer.initialize( inserter );
+
             // WHEN
             for ( int i = 0; i < NODE_COUNT * 3; i++ )
             {
@@ -90,8 +92,10 @@ public class NativeLabelScanWriterTest
         // GIVEN
         ControlledInserter inserter = new ControlledInserter();
         boolean failed = false;
-        try ( NativeLabelScanWriter writer = new NativeLabelScanWriter( inserter, RANGE_SIZE, 1 ) )
+        try ( NativeLabelScanWriter writer = new NativeLabelScanWriter( RANGE_SIZE, 1 ) )
         {
+            writer.initialize( inserter );
+
             // WHEN
             writer.write( NodeLabelUpdate.labelChanges( 0, EMPTY_LONG_ARRAY, new long[] {2, 1} ) );
             // we can't do the usual "fail( blabla )" here since the actual write will happen

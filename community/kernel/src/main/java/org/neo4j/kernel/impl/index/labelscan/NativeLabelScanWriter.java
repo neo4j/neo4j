@@ -69,9 +69,9 @@ class NativeLabelScanWriter implements LabelScanWriter
 
     /**
      * {@link IndexWriter} acquired when acquiring this {@link NativeLabelScanWriter},
-     * acquired from {@link GBPTree#writer(org.neo4j.index.IndexWriter.Options)}.
+     * acquired from {@link GBPTree#writer()}.
      */
-    private final IndexWriter<LabelScanKey,LabelScanValue> inserter;
+    private IndexWriter<LabelScanKey,LabelScanValue> writer;
 
     /**
      * Instance of {@link LabelScanKey} acting as place to read keys into and also to set for each applied update.
@@ -118,13 +118,21 @@ class NativeLabelScanWriter implements LabelScanWriter
      * For each round the current round tries to figure out which is the closest higher labelId to apply
      * in the next round. This variable keeps track of that next labelId.
      */
-    private long lowestLabelId = Long.MAX_VALUE;
+    private long lowestLabelId;
 
-    NativeLabelScanWriter( IndexWriter<LabelScanKey,LabelScanValue> inserter, int rangeSize, int batchSize )
+    NativeLabelScanWriter( int rangeSize, int batchSize )
     {
-        this.inserter = inserter;
         this.rangeSize = rangeSize;
         this.pendingUpdates = new NodeLabelUpdate[batchSize];
+    }
+
+    NativeLabelScanWriter initialize( IndexWriter<LabelScanKey,LabelScanValue> writer )
+    {
+        this.writer = writer;
+        this.pendingUpdatesCursor = 0;
+        this.addition = false;
+        this.lowestLabelId = Long.MAX_VALUE;
+        return this;
     }
 
     /**
@@ -241,7 +249,7 @@ class NativeLabelScanWriter implements LabelScanWriter
         if ( value.bits != 0 )
         {
             // There are changes in the current range, flush them
-            inserter.merge( key, value, addition ? ADD_MERGER : REMOVE_MERGER );
+            writer.merge( key, value, addition ? ADD_MERGER : REMOVE_MERGER );
             // TODO: after a remove we could check if the tree value is empty and if so remove it from the index
             // hmm, or perhaps that could be a feature of ValueAmender?
             value.clear();
@@ -266,7 +274,7 @@ class NativeLabelScanWriter implements LabelScanWriter
         }
         finally
         {
-            inserter.close();
+            writer.close();
         }
     }
 }

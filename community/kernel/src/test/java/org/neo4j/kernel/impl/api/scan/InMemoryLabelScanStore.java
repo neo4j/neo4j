@@ -189,7 +189,7 @@ public class InMemoryLabelScanStore implements LabelScanStore
     }
 
     @Override
-    public LabelScanWriter newWriter( boolean batching )
+    public LabelScanWriter newWriter()
     {
         return new InMemoryLabelScanWriter();
     }
