@@ -97,8 +97,9 @@ public class NativeLabelScanStore implements LabelScanStore
 
     /**
      * Whether or not {@link #start()} has been called.
+     * This is read in {@link #newWriter()} which may be called from threads other than the one setting it.
      */
-    private boolean started;
+    private volatile boolean started;
 
     /**
      * If {@link #index} is {@code null} and {@link #started} is {@code false},
