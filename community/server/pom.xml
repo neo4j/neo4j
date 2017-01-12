@@ -57,19 +57,6 @@
     <!-- Run integration tests against a server that is started elsewhere. -->
     <neo-server.external>false</neo-server.external>
     <neo-server.external.url>http://localhost:7474</neo-server.external.url>
-
-    <webdriver.version>2.42.2</webdriver.version>
-    <webdriver.implementation>Firefox</webdriver.implementation>
-
-    <!-- Default location for chrome controller binary, used by webdriver for running tests in Chrome. Available from (http://code.google.com/p/chromium/downloads/list) see README.txt for details on this. -->
-    <webdriver.chrome.driver>webdriver-binaries/chromedriver</webdriver.chrome.driver>
-    <webdriver.chrome.driver.download.url>http://chromedriver.googlecode.com/files/chromedriver_mac_23.0.1240.0.zip
-    </webdriver.chrome.driver.download.url>
-    <webdriver.sauce.labs.url>**Needs to provided externally by the CI job for security reasons**
-    </webdriver.sauce.labs.url>
-
-    <!-- Don't write new code using this, use neo-server.external instead -->
-    <webdriver.override.neo-server.baseuri/>
   </properties>
 
   <scm>
@@ -465,33 +452,8 @@
         <configuration>
           <systemPropertyVariables>
             <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
-            <webdriver.implementation>${webdriver.implementation}</webdriver.implementation>
-            <webdriver.chrome.driver>${webdriver.chrome.driver}</webdriver.chrome.driver>
-            <webdriver.chrome.driver.download.url>${webdriver.chrome.driver.download.url}
-            </webdriver.chrome.driver.download.url>
-            <webdriver.sauce.labs.url>${webdriver.sauce.labs.url}</webdriver.sauce.labs.url>
-            <webdriver.override.neo-server.baseuri>${webdriver.override.neo-server.baseuri}
-            </webdriver.override.neo-server.baseuri>
           </systemPropertyVariables>
         </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>build-helper-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>add-test-source</id>
-            <phase>generate-test-sources</phase>
-            <goals>
-              <goal>add-test-source</goal>
-            </goals>
-            <configuration>
-              <sources>
-                <source>src/webtest/java</source>
-              </sources>
-            </configuration>
-          </execution>
-        </executions>
       </plugin>
       <plugin>
         <artifactId>maven-source-plugin</artifactId>
@@ -578,30 +540,6 @@
     </profile>
 
     <profile>
-      <id>web-tests</id>
-      <activation>
-        <property>
-          <name>tests</name>
-          <value>web</value>
-        </property>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-surefire-plugin</artifactId>
-            <configuration>
-              <includes>
-                <!-- WebIT for web integration test -->
-                <include>**/*WebIT.java</include>
-              </includes>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-
-    <profile>
       <id>all-tests</id>
       <activation>
         <property>
@@ -627,10 +565,6 @@
     <repository>
       <id>java.net</id>
       <url>http://download.java.net/maven/2/</url>
-    </repository>
-    <repository>
-      <id>selenium-repository</id>
-      <url>http://selenium.googlecode.com/svn/repository</url>
     </repository>
     <repository>
       <id>neo4j-release-repository</id>

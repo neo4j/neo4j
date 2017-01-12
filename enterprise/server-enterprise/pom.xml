@@ -28,10 +28,6 @@
     <!-- Run integration tests against a server that is started elsewhere This is used in ServerIntegrationTestFacade,
       which currently assumes external servers to be running at http://localhost:7474/ -->
     <testWithExternalServer>false</testWithExternalServer>
-
-
-    <webdriver.version>2.42.2</webdriver.version>
-    <webdriver.impl.class>org.openqa.selenium.firefox.FirefoxDriver</webdriver.impl.class>
   </properties>
 
   <packaging>jar</packaging>
@@ -285,71 +281,6 @@
 
   <profiles>
     <profile>
-      <id>web-tests</id>
-      <activation>
-        <property>
-          <name>tests</name>
-          <value>web</value>
-        </property>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.codehaus.mojo</groupId>
-            <artifactId>build-helper-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>add-test-source</id>
-                <phase>generate-test-sources</phase>
-                <goals>
-                  <goal>add-test-source</goal>
-                </goals>
-                <configuration>
-                  <sources>
-                    <source>src/webtest/java</source>
-                    <!-- Required b/c we use utility classes from here -->
-                    <source>src/functionaltest/java</source>
-                  </sources>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-surefire-plugin</artifactId>
-            <configuration>
-              <includes>
-                <include>**/*WebTest.java</include>
-              </includes>
-            </configuration>
-          </plugin>
-
-        </plugins>
-      </build>
-    </profile>
-
-    <!-- Firefox is default implementation, set in properties at the top of this file. -->
-    <profile>
-      <id>htmlunit</id>
-      <properties>
-        <webdriver.impl.class>org.openqa.selenium.htmlunit.HtmlUnitDriver</webdriver.impl.class>
-      </properties>
-    </profile>
-    <profile>
-      <id>chrome</id>
-      <properties>
-        <webdriver.impl.class>org.openqa.selenium.chrome.ChromeDriver</webdriver.impl.class>
-      </properties>
-    </profile>
-    <profile>
-      <id>ie</id>
-      <properties>
-        <webdriver.impl.class>org.openqa.selenium.ie.InternetExplorerDriver</webdriver.impl.class>
-      </properties>
-    </profile>
-
-    <profile>
       <id>initial-build</id>
       <repositories>
         <repository>
@@ -359,14 +290,9 @@
         </repository>
       </repositories>
     </profile>
-
   </profiles>
 
   <repositories>
-    <repository>
-      <id>selenium-repository</id>
-      <url>http://selenium.googlecode.com/svn/repository</url>
-    </repository>
     <repository>
       <id>neo4j-release-repository</id>
       <name>Neo4j Maven 2 release repository</name>
