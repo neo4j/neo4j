@@ -7,10 +7,11 @@
 #
 #     systemctl edit neo4j.service
 #
+# This is automatically done upon upgrade.
 ######################
 #
 # Number of seconds to wait for shutdown before killing the process.
 #NEO4J_SHUTDOWN_TIMEOUT=120
 #
 # Max number of open file descriptors
-NEO4J_ULIMIT_NOFILE=40000
+#NEO4J_ULIMIT_NOFILE=60000
