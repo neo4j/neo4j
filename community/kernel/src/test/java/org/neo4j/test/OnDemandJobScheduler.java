@@ -101,6 +101,16 @@ public class OnDemandJobScheduler extends LifecycleAdapter implements JobSchedul
         }
     }
 
+    public void consumeAndRunJob()
+    {
+        Runnable job = this.job;
+        if ( job != null )
+        {
+            this.job = null;
+            job.run();
+        }
+    }
+
     private class OnDemandJobHandle implements JobHandle
     {
         @Override

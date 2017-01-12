@@ -24,7 +24,6 @@ import org.junit.Test;
 
 import java.io.File;
 import java.util.concurrent.CompletableFuture;
-
 import java.util.concurrent.Future;
 
 import org.neo4j.causalclustering.catchup.CatchUpClient;
@@ -33,7 +32,6 @@ import org.neo4j.causalclustering.catchup.CatchupResult;
 import org.neo4j.causalclustering.catchup.storecopy.CopiedStoreRecovery;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.StoreFetcher;
-import org.neo4j.causalclustering.core.consensus.schedule.ControlledRenewableTimeoutService;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.causalclustering.messaging.routing.CoreMemberSelectionStrategy;
@@ -43,22 +41,23 @@ import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.test.OnDemandJobScheduler;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess.State.PANIC;
 import static org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess.State.STORE_COPYING;
 import static org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess.State.TX_PULLING;
-import static org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess.Timeouts.TX_PULLER_TIMEOUT;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
 public class CatchupPollingProcessTest
@@ -69,7 +68,7 @@ public class CatchupPollingProcessTest
     private final TransactionIdStore idStore = mock( TransactionIdStore.class );
 
     private final BatchingTxApplier txApplier = mock( BatchingTxApplier.class );
-    private final ControlledRenewableTimeoutService timeoutService = new ControlledRenewableTimeoutService();
+    private final OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
 
     private final long txPullIntervalMillis = 100;
     private final FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
@@ -84,7 +83,7 @@ public class CatchupPollingProcessTest
 
     private final CatchupPollingProcess txPuller =
             new CatchupPollingProcess( NullLogProvider.getInstance(), fs, localDatabase, startStopOnStoreCopy, storeFetcher,
-                    catchUpClient, serverSelection, timeoutService, txPullIntervalMillis, txApplier, new Monitors(),
+                    catchUpClient, serverSelection, jobScheduler, txPullIntervalMillis, txApplier, new Monitors(),
                     copiedStoreRecovery, () -> mock( DatabaseHealth.class) );
 
     @Before
@@ -103,7 +102,7 @@ public class CatchupPollingProcessTest
         when( txApplier.lastQueuedTxId() ).thenReturn( lastAppliedTxId );
 
         // when
-        timeoutService.invokeTimeout( TX_PULLER_TIMEOUT );
+        jobScheduler.consumeAndRunJob();
 
         // then
         verify( catchUpClient ).makeBlockingRequest( any( MemberId.class ), any( TxPullRequest.class ),
@@ -123,7 +122,7 @@ public class CatchupPollingProcessTest
                 any( CatchUpResponseCallback.class )  ))
                 .thenReturn( CatchupResult.SUCCESS_END_OF_BATCH, CatchupResult.SUCCESS_END_OF_STREAM );
 
-        timeoutService.invokeTimeout( TX_PULLER_TIMEOUT );
+        jobScheduler.consumeAndRunJob();
 
         // then
         verify( catchUpClient, times( 2 ) ).makeBlockingRequest( any( MemberId.class ), any( TxPullRequest.class ),
@@ -139,10 +138,10 @@ public class CatchupPollingProcessTest
                 any(CatchUpResponseCallback.class)))
                 .thenReturn( CatchupResult.SUCCESS_END_OF_STREAM );
 
-        timeoutService.invokeTimeout( TX_PULLER_TIMEOUT );
+        jobScheduler.consumeAndRunJob();
 
         // then
-        verify( timeoutService.getTimeout( TX_PULLER_TIMEOUT ) ).renew();
+        assertNotNull( jobScheduler.getJob() );
     }
 
     @Test
@@ -154,7 +153,7 @@ public class CatchupPollingProcessTest
                 any( MemberId.class ), any( TxPullRequest.class ), any( CatchUpResponseCallback.class ) ) )
                 .thenReturn( CatchupResult.E_TRANSACTION_PRUNED );
 
-        timeoutService.invokeTimeout( TX_PULLER_TIMEOUT );
+        jobScheduler.consumeAndRunJob();
 
         // then
         assertEquals( STORE_COPYING, txPuller.state() );
@@ -169,10 +168,10 @@ public class CatchupPollingProcessTest
                 any( CatchUpResponseCallback.class ) ) ).thenReturn( CatchupResult.E_TRANSACTION_PRUNED );
 
         // when (tx pull)
-        timeoutService.invokeTimeout( TX_PULLER_TIMEOUT );
+        jobScheduler.consumeAndRunJob();
 
         // when (store copy)
-        timeoutService.invokeTimeout( TX_PULLER_TIMEOUT );
+        jobScheduler.consumeAndRunJob();
 
         // then
         verify( localDatabase ).stop();
@@ -197,11 +196,11 @@ public class CatchupPollingProcessTest
                 .onTxPullResponse( any( CompletableFuture.class ), any( TxPullResponse.class ) );
 
         // when
-        timeoutService.invokeTimeout( TX_PULLER_TIMEOUT );
+        jobScheduler.consumeAndRunJob();
 
         // then
         assertEquals( PANIC, txPuller.state() );
-        verify( timeoutService.getTimeout( TX_PULLER_TIMEOUT ), never() ).renew();
+        assertNull( jobScheduler.getJob() );
     }
 
     @Test
@@ -220,13 +219,13 @@ public class CatchupPollingProcessTest
         Future<Boolean> operationalFuture = txPuller.upToDateFuture();
         assertFalse( operationalFuture.isDone() );
 
-        timeoutService.invokeTimeout( TX_PULLER_TIMEOUT ); // realises we need a store copy
+        jobScheduler.consumeAndRunJob(); // realises we need a store copy
         assertFalse( operationalFuture.isDone() );
 
-        timeoutService.invokeTimeout( TX_PULLER_TIMEOUT ); // does the store copy
+        jobScheduler.consumeAndRunJob(); // does the store copy
         assertFalse( operationalFuture.isDone() );
 
-        timeoutService.invokeTimeout( TX_PULLER_TIMEOUT ); // does a pulling
+        jobScheduler.consumeAndRunJob(); // does a pulling
         assertTrue( operationalFuture.isDone() );
         assertTrue( operationalFuture.get() );
 

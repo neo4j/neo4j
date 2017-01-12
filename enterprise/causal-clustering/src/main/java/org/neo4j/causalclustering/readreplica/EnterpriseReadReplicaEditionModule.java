@@ -32,8 +32,8 @@ import org.neo4j.causalclustering.catchup.storecopy.StoreCopyClient;
 import org.neo4j.causalclustering.catchup.storecopy.StoreFetcher;
 import org.neo4j.causalclustering.catchup.storecopy.StoreFiles;
 import org.neo4j.causalclustering.catchup.tx.BatchingTxApplier;
-import org.neo4j.causalclustering.catchup.tx.TransactionLogCatchUpFactory;
 import org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess;
+import org.neo4j.causalclustering.catchup.tx.TransactionLogCatchUpFactory;
 import org.neo4j.causalclustering.catchup.tx.TxPullClient;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.consensus.schedule.DelayedRenewableTimeoutService;
@@ -237,10 +237,10 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         }
 
         CatchupPollingProcess catchupProcess =
-                new CatchupPollingProcess( logProvider, fileSystem, localDatabase, servicesToStopOnStoreCopy, storeFetcher,
-                        catchUpClient, new ConnectToRandomCoreMember( discoveryService ), catchupTimeoutService,
-                        config.get( CausalClusteringSettings.pull_interval ), batchingTxApplier,
-                        platformModule.monitors, copiedStoreRecovery, databaseHealthSupplier );
+                new CatchupPollingProcess( logProvider, fileSystem, localDatabase, servicesToStopOnStoreCopy,
+                        storeFetcher, catchUpClient, new ConnectToRandomCoreMember( discoveryService ),
+                        platformModule.jobScheduler, config.get( CausalClusteringSettings.pull_interval ),
+                        batchingTxApplier, platformModule.monitors, copiedStoreRecovery, databaseHealthSupplier );
 
         dependencies.satisfyDependencies( catchupProcess );
 

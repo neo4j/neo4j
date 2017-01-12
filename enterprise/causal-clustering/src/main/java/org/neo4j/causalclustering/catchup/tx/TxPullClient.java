@@ -54,7 +54,7 @@ public class TxPullClient
                     public void onTxPullResponse( CompletableFuture<TxPullRequestResult> signal,
                                                   TxPullResponse response )
                     {
-                        this.lastTxIdReceived = response.tx().getCommitEntry().getTxId();
+                        lastTxIdReceived = response.tx().getCommitEntry().getTxId();
                         txPullResponseListener.onTxReceived( response );
                     }
 
