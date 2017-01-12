@@ -748,7 +748,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         storageStatement.close();
     }
 
-    private void markAsShutdown()
+    void markAsShutdown()
     {
         if ( transactionStatus.shutdown() )
         {
@@ -815,6 +815,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
         private static final AtomicIntegerFieldUpdater<TransactionStatus> statusUpdater =
                 AtomicIntegerFieldUpdater.newUpdater( TransactionStatus.class, "status" );
+        // updated by statusUpdater
         private volatile int status = CLOSED;
         private Status terminationReason;
 
@@ -897,8 +898,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
         public void close()
         {
-            statusUpdater.set( this, CLOSED );
             reset();
+            statusUpdater.set( this, CLOSED );
         }
 
         Optional<Status> getTerminationReason()
