@@ -167,7 +167,7 @@ class NativeLabelScanWriter implements LabelScanWriter
 
         long currentLabelId = lowestLabelId;
         value.clear();
-        key.set( -1, -1 );
+        key.clear();
         while ( currentLabelId != Long.MAX_VALUE )
         {
             long nextLabelId = Long.MAX_VALUE;

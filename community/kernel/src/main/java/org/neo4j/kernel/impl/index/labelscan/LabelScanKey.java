@@ -25,8 +25,18 @@ package org.neo4j.kernel.impl.index.labelscan;
  */
 class LabelScanKey
 {
-    int labelId = -1;
-    long idRange = -1;
+    int labelId;
+    long idRange;
+
+    LabelScanKey()
+    {
+        clear();
+    }
+
+    LabelScanKey( int labelId, long idRange )
+    {
+        set( labelId, idRange );
+    }
 
     /**
      * Sets this key.
@@ -42,9 +52,14 @@ class LabelScanKey
         return this;
     }
 
+    void clear()
+    {
+        set( -1, -1 );
+    }
+
     @Override
     public String toString()
     {
-        return "[lbl:" + labelId + ",range:" + idRange + "]";
+        return "[label:" + labelId + ",range:" + idRange + "]";
     }
 }

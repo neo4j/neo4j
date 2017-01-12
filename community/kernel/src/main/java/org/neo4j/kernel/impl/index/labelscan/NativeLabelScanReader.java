@@ -135,8 +135,8 @@ class NativeLabelScanReader implements LabelScanReader
 
     private RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> seekerForLabel( int labelId ) throws IOException
     {
-        LabelScanKey from = new LabelScanKey().set( labelId, 0 );
-        LabelScanKey to = new LabelScanKey().set( labelId, Long.MAX_VALUE );
+        LabelScanKey from = new LabelScanKey( labelId, 0 );
+        LabelScanKey to = new LabelScanKey( labelId, Long.MAX_VALUE );
         return index.seek( from, to );
     }
 

@@ -173,7 +173,7 @@ public class NativeLabelScanWriterTest
 
         private static LabelScanKey clone( LabelScanKey key )
         {
-            return new LabelScanKey().set( key.labelId, key.idRange );
+            return new LabelScanKey( key.labelId, key.idRange );
         }
 
         @Override

@@ -248,8 +248,8 @@ public class NativeLabelScanStore implements LabelScanStore
     private boolean isEmpty() throws IOException
     {
         try ( RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> cursor = index.seek(
-                new LabelScanKey().set( 0, 0 ),
-                new LabelScanKey().set( Integer.MAX_VALUE, Long.MAX_VALUE ) ) )
+                new LabelScanKey( 0, 0 ),
+                new LabelScanKey( Integer.MAX_VALUE, Long.MAX_VALUE ) ) )
         {
             return !cursor.next();
         }

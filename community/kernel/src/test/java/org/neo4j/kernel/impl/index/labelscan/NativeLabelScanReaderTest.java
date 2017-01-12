@@ -72,7 +72,7 @@ public class NativeLabelScanReaderTest
 
     private static Hit<LabelScanKey,LabelScanValue> hit( long baseNodeId, long bits )
     {
-        LabelScanKey key = new LabelScanKey().set( LABEL_ID, baseNodeId );
+        LabelScanKey key = new LabelScanKey( LABEL_ID, baseNodeId );
         LabelScanValue value = new LabelScanValue();
         value.bits = bits;
         return new MutableHit<>( key, value );
