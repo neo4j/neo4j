@@ -31,10 +31,9 @@ import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
-
+import org.neo4j.kernel.impl.api.scan.FullLabelStream;
 import org.neo4j.logging.LogProvider;
 
-import static org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.fullStoreLabelUpdateStream;
 import static org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.getStoreDirectory;
 
 /**
@@ -47,7 +46,7 @@ import static org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.getStoreDire
 public class LuceneLabelScanStoreBuilder
 {
     private final File storeDir;
-    private Supplier<IndexStoreView> storeViewSupplier;
+    private final Supplier<IndexStoreView> storeViewSupplier;
     private final FileSystemAbstraction fileSystem;
     private final Config config;
     private final OperationalMode operationalMode;
@@ -83,7 +82,7 @@ public class LuceneLabelScanStoreBuilder
                     .withConfig( config )
                     .withOperationalMode( operationalMode )
                     .build();
-            labelScanStore = new LuceneLabelScanStore( index, fullStoreLabelUpdateStream( storeViewSupplier ),
+            labelScanStore = new LuceneLabelScanStore( index, new FullLabelStream( storeViewSupplier ),
                     logProvider, LabelScanStore.Monitor.EMPTY );
 
             try

@@ -32,6 +32,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
+import org.neo4j.kernel.impl.api.scan.FullStoreChangeStream;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 import org.neo4j.test.rule.PageCacheRule;
@@ -43,7 +44,6 @@ import static org.junit.rules.RuleChain.outerRule;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.asArray;
 import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
-import static org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.EMPTY;
 
 public class NativeLabelScanStoreTest
 {
@@ -67,7 +67,7 @@ public class NativeLabelScanStoreTest
                 8 << random.nextInt( 4 ),
                 // a bit of random pageSize
                 Math.min( pageCache.pageSize(), 256 << random.nextInt( 5 ) ),
-                EMPTY ) );
+                FullStoreChangeStream.EMPTY ) );
     }
 
     @Test

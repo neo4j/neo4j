@@ -28,8 +28,6 @@ import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
-import static org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.fullStoreLabelUpdateStream;
-
 public class NativeLabelScanStoreExtension extends
         KernelExtensionFactory<NativeLabelScanStoreExtension.Dependencies>
 {
@@ -49,6 +47,6 @@ public class NativeLabelScanStoreExtension extends
     public Lifecycle newInstance( KernelContext context, Dependencies dependencies ) throws Throwable
     {
         return new LabelScanStoreProvider( new NativeLabelScanStore( dependencies.pageCache(),
-                context.storeDir(), Long.SIZE, 0, fullStoreLabelUpdateStream( dependencies.indexStoreView() ) ), 0 );
+                context.storeDir(), Long.SIZE, 0, new FullLabelStream( dependencies.indexStoreView() ) ), 0 );
     }
 }
