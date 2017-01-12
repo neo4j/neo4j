@@ -20,8 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{CardinalityEstimation, PlannerQuery}
-import org.neo4j.cypher.internal.frontend.v3_0.symbols.CypherType
-import org.neo4j.cypher.internal.frontend.v3_0.symbols._
+import org.neo4j.cypher.internal.frontend.v3_0.symbols.{CypherType, _}
 
 // Argument is used inside of an Apply to feed the row from the LHS of the Apply to the leaf of the RHS
 case class Argument(argumentIds: Set[IdName])(val solved: PlannerQuery with CardinalityEstimation)
@@ -29,7 +28,6 @@ case class Argument(argumentIds: Set[IdName])(val solved: PlannerQuery with Card
   extends LogicalLeafPlan {
 
   def availableSymbols = argumentIds
-
 
   override def updateSolved(newSolved: PlannerQuery with CardinalityEstimation) =
     copy(argumentIds)(newSolved)(typeInfo)

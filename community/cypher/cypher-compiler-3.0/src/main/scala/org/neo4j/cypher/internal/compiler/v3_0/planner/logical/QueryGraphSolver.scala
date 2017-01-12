@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.InternalException
 import org.neo4j.cypher.internal.frontend.v3_0.ast.{NodePattern, PatternExpression, RelationshipChain}
 
 trait QueryGraphSolver {
-  def plan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan] = None): LogicalPlan
+  def plan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): LogicalPlan
   def planPatternExpression(planArguments: Set[IdName], expr: PatternExpression)(implicit context: LogicalPlanningContext): (LogicalPlan, PatternExpression)
 }
 
@@ -41,17 +41,16 @@ trait PatternExpressionSolving {
     val (namedExpr, namedMap) = PatternExpressionPatternElementNamer(expr)
     val qg = namedExpr.asQueryGraph.withArgumentIds(qgArguments)
 
-    val argLeafPlan = Some(context.logicalPlanProducer.planQueryArgumentRow(qg))
     val namedNodes = namedMap.collect { case (elem: NodePattern, identifier) => identifier}
     val namedRels = namedMap.collect { case (elem: RelationshipChain, identifier) => identifier}
     val patternPlanningContext = context.forExpressionPlanning(namedNodes, namedRels)
-    val plan = self.plan(qg)(patternPlanningContext, argLeafPlan)
+    val plan = self.plan(qg)(patternPlanningContext)
     (plan, namedExpr)
   }
 }
 
 trait TentativeQueryGraphSolver extends QueryGraphSolver with PatternExpressionSolving {
-  def tryPlan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan] = None): Option[LogicalPlan]
-  def plan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan] = None): LogicalPlan =
+  def tryPlan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): Option[LogicalPlan]
+  def plan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): LogicalPlan =
     tryPlan(queryGraph).getOrElse(throw new InternalException("Failed to create a plan for the given QueryGraph " + queryGraph))
 }

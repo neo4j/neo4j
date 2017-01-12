@@ -170,7 +170,7 @@ case object PlanUpdates
     //       /  optional
     //      /       \
     // source  mergeReadPart
-    val mergeReadPart = innerContext.strategy.plan(matchGraph)(innerContext, None)
+    val mergeReadPart = innerContext.strategy.plan(matchGraph)(innerContext)
     if (mergeReadPart.solved.queryGraph != matchGraph)
       throw new CantHandleQueryException(s"The planner was unable to successfully plan the MERGE read:\n${mergeReadPart.solved.queryGraph}\n not equal to \n$matchGraph")
 
