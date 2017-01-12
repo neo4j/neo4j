@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.phases
 import java.time.Clock
 
 import org.neo4j.cypher.internal.compiler.v3_2._
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.CodeGenConfiguration
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi.CodeStructure
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{GeneratedQuery, PlanFingerprint, PlanFingerprintReference}
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.RuntimeTypeConverter
@@ -41,4 +42,5 @@ case class Context(exceptionCreator: (String, InputPosition) => CypherException,
                    config: CypherCompilerConfiguration,
                    updateStrategy: UpdateStrategy,
                    clock: Clock,
-                   codeStructure: CodeStructure[GeneratedQuery])
+                   codeStructure: CodeStructure[GeneratedQuery],
+                   codeGenConfiguration: CodeGenConfiguration)

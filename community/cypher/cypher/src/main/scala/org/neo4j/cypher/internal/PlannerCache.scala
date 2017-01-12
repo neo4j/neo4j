@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compatibility.v3_1.helpers._
 import org.neo4j.cypher.internal.compatibility.{v2_3, v3_1, _}
 import org.neo4j.cypher.internal.compiler.v3_2.CypherCompilerConfiguration
 import org.neo4j.cypher.internal.frontend.v3_2.InvalidArgumentException
-import org.neo4j.cypher.{CypherPlanner, CypherRuntime, CypherUpdateStrategy}
+import org.neo4j.cypher.{CypherCodeGenMode, CypherPlanner, CypherRuntime, CypherUpdateStrategy}
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelAPI
@@ -37,7 +37,7 @@ sealed trait PlannerSpec
 final case class PlannerSpec_v2_3(planner: CypherPlanner, runtime: CypherRuntime) extends PlannerSpec
 final case class PlannerSpec_v3_1(planner: CypherPlanner, runtime: CypherRuntime, updateStrategy: CypherUpdateStrategy) extends PlannerSpec
 
-final case class PlannerSpec_v3_2(planner: CypherPlanner, runtime: CypherRuntime, updateStrategy: CypherUpdateStrategy) extends PlannerSpec
+final case class PlannerSpec_v3_2(planner: CypherPlanner, runtime: CypherRuntime, updateStrategy: CypherUpdateStrategy, codeGenMode: CypherCodeGenMode) extends PlannerSpec
 
 class PlannerFactory(graph: GraphDatabaseQueryService, kernelAPI: KernelAPI, kernelMonitors: KernelMonitors, log: Log,
                      config: CypherCompilerConfiguration) {
@@ -61,7 +61,7 @@ class PlannerFactory(graph: GraphDatabaseQueryService, kernelAPI: KernelAPI, ker
     case CypherPlanner.rule =>
       throw new InvalidArgumentException("The rule planner is no longer a valid planner option in Neo4j 3.2. If you need to use it, please compatibility mode Cypher 3.1")
     case _ =>
-      v3_2.CostCompatibility(config, CypherCompiler.CLOCK, kernelMonitors, kernelAPI, log, spec.planner, spec.runtime, spec.updateStrategy)
+      v3_2.CostCompatibility(config, CypherCompiler.CLOCK, kernelMonitors, kernelAPI, log, spec.planner, spec.runtime, spec.codeGenMode, spec.updateStrategy)
   }
 }
 

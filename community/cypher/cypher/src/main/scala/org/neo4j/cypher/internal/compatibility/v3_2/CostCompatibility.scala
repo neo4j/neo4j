@@ -22,8 +22,9 @@ package org.neo4j.cypher.internal.compatibility.v3_2
 import java.time.Clock
 
 import org.neo4j.cypher.internal.compiler.v3_2._
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.{ByteCodeMode, SourceCodeMode}
 import org.neo4j.cypher.internal.spi.v3_2.codegen.GeneratedQueryStructure
-import org.neo4j.cypher.{CypherPlanner, CypherRuntime, CypherUpdateStrategy}
+import org.neo4j.cypher.{CypherCodeGenMode, CypherPlanner, CypherRuntime, CypherUpdateStrategy}
 import org.neo4j.kernel.api.KernelAPI
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
@@ -36,22 +37,30 @@ case class CostCompatibility(config: CypherCompilerConfiguration,
                              log: Log,
                              planner: CypherPlanner,
                              runtime: CypherRuntime,
-                             strategy: CypherUpdateStrategy) extends Compatibility {
+                             codeGenMode: CypherCodeGenMode,
+                             updateStrategy: CypherUpdateStrategy) extends Compatibility {
 
   protected val compiler = {
-    val plannerName = planner match {
+    val maybePlannerName = planner match {
       case CypherPlanner.default => None
       case CypherPlanner.cost | CypherPlanner.idp => Some(IDPPlannerName)
       case CypherPlanner.dp => Some(DPPlannerName)
       case _ => throw new IllegalArgumentException(s"unknown cost based planner: ${planner.name}")
     }
 
-    val runtimeName = runtime match {
+    val maybeRuntimeName = runtime match {
       case CypherRuntime.default => None
       case CypherRuntime.interpreted => Some(InterpretedRuntimeName)
       case CypherRuntime.compiled => Some(CompiledRuntimeName)
     }
-    val updateStrategy = strategy match {
+
+    val maybeCodeGenMode = codeGenMode match {
+      case CypherCodeGenMode.default => None
+      case CypherCodeGenMode.byteCode => Some(ByteCodeMode)
+      case CypherCodeGenMode.sourceCode => Some(SourceCodeMode)
+    }
+
+    val maybeUpdateStrategy = updateStrategy match {
       case CypherUpdateStrategy.eager => Some(eagerUpdateStrategy)
       case _ => None
     }
@@ -59,7 +68,7 @@ case class CostCompatibility(config: CypherCompilerConfiguration,
     val logger = new StringInfoLogger(log)
     val monitors = WrappedMonitors(kernelMonitors)
     CypherCompilerFactory.costBasedCompiler(config, clock, GeneratedQueryStructure, monitors, logger, rewriterSequencer,
-      plannerName, runtimeName, updateStrategy, typeConversions)
+      maybePlannerName, maybeRuntimeName, maybeCodeGenMode, maybeUpdateStrategy, typeConversions)
   }
 
   override val queryCacheSize: Int = config.queryCacheSize

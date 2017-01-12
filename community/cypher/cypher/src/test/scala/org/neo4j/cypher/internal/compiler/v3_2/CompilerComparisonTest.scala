@@ -25,6 +25,7 @@ import java.time.Clock
 import java.util.{Collections, Date, Locale}
 
 import org.neo4j.cypher.internal.compatibility.v3_2.{WrappedMonitors, typeConversions}
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.CodeGenConfiguration
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical._
@@ -294,7 +295,7 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
     }
 
     CypherCompilerFactory.costBasedCompiler(config, Clock.systemUTC(), GeneratedQueryStructure, monitors, infoLogger,
-      newPlain, None, None, None, typeConversions)
+      newPlain, None, None, None, None, typeConversions)
   }
 
   case class QueryExecutionResult(compiler: String, dbHits: Option[Long], plan: InternalPlanDescription) {
