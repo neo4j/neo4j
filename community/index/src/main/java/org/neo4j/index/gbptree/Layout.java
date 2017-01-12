@@ -122,7 +122,9 @@ public interface Layout<KEY, VALUE> extends Comparator<KEY>
      *
      * @param cursor {@link PageCursor} to write into, at its current offset.
      */
-    void writeMetaData( PageCursor cursor );
+    default void writeMetaData( PageCursor cursor )
+    {   // no meta-data by default
+    }
 
     /**
      * Reads meta data specific to this layout instance from {@code cursor} at its current offset.
@@ -133,7 +135,9 @@ public interface Layout<KEY, VALUE> extends Comparator<KEY>
      *
      * @param cursor {@link PageCursor} to read from, at its current offset.
      */
-    void readMetaData( PageCursor cursor );
+    default void readMetaData( PageCursor cursor )
+    {   // no meta-data by default
+    }
 
     /**
      * Utility method for generating an {@link #identifier()}.

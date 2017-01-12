@@ -33,6 +33,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
@@ -42,6 +43,7 @@ import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
+
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
@@ -75,7 +77,7 @@ public abstract class LabelScanStoreStartupIT
         Node node = createTestNode();
         long[] labels = readNodeLabels( labelScanStore, node );
         assertEquals( "Label scan store see 1 label for node", 1, labels.length );
-        labelScanStore.force();
+        labelScanStore.force( IOLimiter.unlimited() );
         labelScanStore.shutdown();
 
         corruptIndex( dataSource );

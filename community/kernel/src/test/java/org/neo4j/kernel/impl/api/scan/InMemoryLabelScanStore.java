@@ -37,6 +37,7 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.labelscan.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
@@ -46,6 +47,7 @@ import org.neo4j.storageengine.api.schema.LabelScanReader;
 
 import static java.util.Arrays.binarySearch;
 import static java.util.Collections.singletonList;
+
 import static org.neo4j.helpers.collection.Iterators.emptyIterator;
 
 public class InMemoryLabelScanStore implements LabelScanStore
@@ -193,7 +195,7 @@ public class InMemoryLabelScanStore implements LabelScanStore
     }
 
     @Override
-    public void force()
+    public void force( IOLimiter limiter )
     {   // Nothing to force
     }
 

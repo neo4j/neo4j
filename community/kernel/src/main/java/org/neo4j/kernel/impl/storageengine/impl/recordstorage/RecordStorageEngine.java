@@ -471,7 +471,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     public void flushAndForce( IOLimiter limiter )
     {
         indexingService.forceAll();
-        labelScanStore.force();
+        labelScanStore.force( limiter );
         for ( IndexImplementation index : legacyIndexProviderLookup.all() )
         {
             index.force();
