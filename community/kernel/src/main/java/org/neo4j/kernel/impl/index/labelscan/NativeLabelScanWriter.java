@@ -40,16 +40,17 @@ import static org.neo4j.kernel.impl.index.labelscan.LabelScanValue.RANGE_SIZE;
  * internal {@link GBPTree}.
  * <p>
  * {@link #write(NodeLabelUpdate) updates} are queued up to a maximum batch size and, for performance,
- * applied in sorted order (by label and node id) when reaching batch size and or on {@link #close()}.
+ * applied in sorted order (by label and node id) when reaches batch size or on {@link #close()}.
  * <p>
- * Updates aren't visible to {@link LabelScanReader readers} immediately, rather when queue happens to be applied,
- * and (simples guarantee to reason about) on {@link #close()}.
+ * Updates aren't visible to {@link LabelScanReader readers} immediately, rather when queue happens to be applied.
  * <p>
  * Incoming {@link NodeLabelUpdate updates} are actually modified from representing physical before/after
- * state to represent to-add/to-remove. These changes are done directly inside the provided
+ * state to represent logical to-add/to-remove state. These changes are done directly inside the provided
  * {@link NodeLabelUpdate#getLabelsAfter()} and {@link NodeLabelUpdate#getLabelsBefore()} arrays,
  * relying on the fact that those arrays are returned in its essential form, instead of copies.
- * This conversion is done like so mostly to reduce garbage. See NodeLa
+ * This conversion is done like so mostly to reduce garbage.
+ *
+ * @see PhysicalToLogicalLabelChanges
  */
 class NativeLabelScanWriter implements LabelScanWriter
 {
@@ -62,12 +63,12 @@ class NativeLabelScanWriter implements LabelScanWriter
     /**
      * {@link ValueMerger} used for adding label->node mappings, see {@link LabelScanValue#add(LabelScanValue)}.
      */
-    private static final ValueMerger<LabelScanValue> ADD_MERGER = (value,withValue) -> value.add( withValue );
+    private static final ValueMerger<LabelScanValue> ADD_MERGER = LabelScanValue::add;
 
     /**
      * {@link ValueMerger} used for removing label->node mappings, see {@link LabelScanValue#remove(LabelScanValue)}.
      */
-    private static final ValueMerger<LabelScanValue> REMOVE_MERGER = (value,withValue) -> value.remove( withValue );
+    private static final ValueMerger<LabelScanValue> REMOVE_MERGER = LabelScanValue::remove;
 
     /**
      * {@link IndexWriter} acquired when acquiring this {@link NativeLabelScanWriter},

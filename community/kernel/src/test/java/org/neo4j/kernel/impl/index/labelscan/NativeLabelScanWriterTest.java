@@ -147,11 +147,8 @@ public class NativeLabelScanWriterTest
             key = clone( key );
             value = clone( value );
 
-            Map<LabelScanKey,LabelScanValue> forLabel = data.get( key.labelId );
-            if ( forLabel == null )
-            {
-                data.put( key.labelId, forLabel = new TreeMap<>( KEY_COMPARATOR ) );
-            }
+            Map<LabelScanKey,LabelScanValue> forLabel =
+                    data.computeIfAbsent( key.labelId, labelId -> new TreeMap<>( KEY_COMPARATOR ) );
             LabelScanValue existing = forLabel.get( key );
             if ( existing == null )
             {
