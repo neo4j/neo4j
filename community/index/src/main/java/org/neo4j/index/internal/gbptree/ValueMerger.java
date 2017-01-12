@@ -17,36 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.index.labelscan;
+package org.neo4j.index.internal.gbptree;
 
-import org.neo4j.index.internal.gbptree.Hit;
-
-class MutableHit<KEY,VALUE> implements Hit<KEY,VALUE>
+/**
+ * Decides what to do when inserting key which already exists in index. Different implementations of
+ * {@link ValueMerger} can result in unique/non-unique indexes for example.
+ *
+ * @param <VALUE> type of values to merge.
+ */
+public interface ValueMerger<VALUE>
 {
-    private final KEY key;
-    private final VALUE value;
-
-    MutableHit( KEY key, VALUE value )
-    {
-        this.key = key;
-        this.value = value;
-    }
-
-    @Override
-    public KEY key()
-    {
-        return key;
-    }
-
-    @Override
-    public VALUE value()
-    {
-        return value;
-    }
-
-    @Override
-    public String toString()
-    {
-        return "MutableHit [key=" + key + ", value=" + value + "]";
-    }
+    /**
+     * Merge an existing value with a new value, returning potentially a combination of the two, or {@code null}
+     * if no merge was done effectively meaning that nothing should be written.
+     *
+     * @param existingValue existing value
+     * @param newValue new value
+     * @return {@code value}, now merged with {@code withValue}, or {@code null} if no merge was done.
+     */
+    VALUE merge( VALUE existingValue, VALUE newValue );
 }

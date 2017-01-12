@@ -25,9 +25,9 @@ import java.io.UncheckedIOException;
 
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.index.Hit;
-import org.neo4j.index.gbptree.GBPTree;
-import org.neo4j.index.gbptree.Layout;
+import org.neo4j.index.internal.gbptree.GBPTree;
+import org.neo4j.index.internal.gbptree.Hit;
+import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.labelscan.AllEntriesLabelScanReader;
@@ -40,7 +40,6 @@ import org.neo4j.storageengine.api.schema.LabelScanReader;
 
 import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
 import static org.neo4j.helpers.collection.Iterators.iterator;
-import static org.neo4j.index.gbptree.GBPTree.NO_MONITOR;
 import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
 
 /**
@@ -221,7 +220,7 @@ public class NativeLabelScanStore implements LabelScanStore
     @Override
     public void init() throws IOException
     {
-        index = new GBPTree<>( pageCache, storeFile, new LabelScanLayout(), pageSize, NO_MONITOR );
+        index = new GBPTree<>( pageCache, storeFile, new LabelScanLayout(), pageSize, GBPTree.NO_MONITOR );
     }
 
     /**

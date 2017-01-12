@@ -17,36 +17,33 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.index.labelscan;
+package org.neo4j.index.internal.gbptree;
 
-import org.neo4j.index.internal.gbptree.Hit;
+import java.io.IOException;
 
-class MutableHit<KEY,VALUE> implements Hit<KEY,VALUE>
+import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.impl.DelegatingPageCursor;
+
+class TestPageCursor extends DelegatingPageCursor
 {
-    private final KEY key;
-    private final VALUE value;
+    private boolean shouldRetry;
 
-    MutableHit( KEY key, VALUE value )
+    TestPageCursor( PageCursor delegate )
     {
-        this.key = key;
-        this.value = value;
+        super( delegate );
     }
 
     @Override
-    public KEY key()
+    public boolean shouldRetry() throws IOException
     {
-        return key;
+        // Always call delegate to reset state
+        boolean toReturn = super.shouldRetry() || shouldRetry;
+        shouldRetry = false;
+        return toReturn;
     }
 
-    @Override
-    public VALUE value()
+    void changed()
     {
-        return value;
-    }
-
-    @Override
-    public String toString()
-    {
-        return "MutableHit [key=" + key + ", value=" + value + "]";
+        shouldRetry = true;
     }
 }

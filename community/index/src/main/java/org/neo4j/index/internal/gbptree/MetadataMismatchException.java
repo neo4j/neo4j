@@ -17,36 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.index.labelscan;
+package org.neo4j.index.internal.gbptree;
 
-import org.neo4j.index.internal.gbptree.Hit;
-
-class MutableHit<KEY,VALUE> implements Hit<KEY,VALUE>
+/**
+ * Thrown to signal mismatches between meta data about tree and user-provided configuration.
+ */
+public class MetadataMismatchException extends RuntimeException
 {
-    private final KEY key;
-    private final VALUE value;
-
-    MutableHit( KEY key, VALUE value )
+    MetadataMismatchException( String format, Object... args )
     {
-        this.key = key;
-        this.value = value;
+        super( String.format( format, args ) );
     }
 
-    @Override
-    public KEY key()
+    MetadataMismatchException( String message )
     {
-        return key;
-    }
-
-    @Override
-    public VALUE value()
-    {
-        return value;
-    }
-
-    @Override
-    public String toString()
-    {
-        return "MutableHit [key=" + key + ", value=" + value + "]";
+        super( message );
     }
 }

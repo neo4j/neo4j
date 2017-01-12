@@ -17,36 +17,33 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.index.labelscan;
+package org.neo4j.index.internal.gbptree;
 
-import org.neo4j.index.internal.gbptree.Hit;
-
-class MutableHit<KEY,VALUE> implements Hit<KEY,VALUE>
+/**
+ * Means of communicating information about splits, caused by insertion, from lower levels of the tree up to parent
+ * and potentially all the way up to the root.
+ *
+ * @param <KEY> type of key.
+ */
+class StructurePropagation<KEY>
 {
-    private final KEY key;
-    private final VALUE value;
+    boolean hasNewGen;
+    boolean hasSplit;
+    final KEY primKey;
+    long left;
+    long right;
 
-    MutableHit( KEY key, VALUE value )
+    StructurePropagation( KEY primKey )
     {
-        this.key = key;
-        this.value = value;
+        this.primKey = primKey;
     }
 
-    @Override
-    public KEY key()
+    /**
+     * Clear booleans indicating change has occurred.
+     */
+    void clear()
     {
-        return key;
-    }
-
-    @Override
-    public VALUE value()
-    {
-        return value;
-    }
-
-    @Override
-    public String toString()
-    {
-        return "MutableHit [key=" + key + ", value=" + value + "]";
+        hasNewGen = false;
+        hasSplit = false;
     }
 }

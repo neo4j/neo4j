@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.index.labelscan;
 
-import org.neo4j.index.gbptree.GBPTree;
-import org.neo4j.index.gbptree.Layout;
+import org.neo4j.index.internal.gbptree.GBPTree;
+import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.pagecache.PageCursor;
 
 /**

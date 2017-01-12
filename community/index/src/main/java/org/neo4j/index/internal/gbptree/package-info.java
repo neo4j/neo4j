@@ -17,36 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.index.labelscan;
-
-import org.neo4j.index.internal.gbptree.Hit;
-
-class MutableHit<KEY,VALUE> implements Hit<KEY,VALUE>
-{
-    private final KEY key;
-    private final VALUE value;
-
-    MutableHit( KEY key, VALUE value )
-    {
-        this.key = key;
-        this.value = value;
-    }
-
-    @Override
-    public KEY key()
-    {
-        return key;
-    }
-
-    @Override
-    public VALUE value()
-    {
-        return value;
-    }
-
-    @Override
-    public String toString()
-    {
-        return "MutableHit [key=" + key + ", value=" + value + "]";
-    }
-}
+/**
+ * B+tree implementation with arbitrary key/value. Index implementation is
+ * {@link org.neo4j.index.internal.gbptree.GBPTree}, which works on a {@link org.neo4j.io.pagecache.PageCache}.
+ * Implementation supports single writer together with concurrent lock-free and garbage-free readers.
+ * <p>
+ * To create an index with a custom layout (type of key/value), implement a custom
+ * {@link org.neo4j.index.internal.gbptree.Layout}.
+ * <p>
+ * See https://en.wikipedia.org/wiki/B%2B_tree
+ */
+package org.neo4j.index.internal.gbptree;

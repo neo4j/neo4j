@@ -17,36 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.index.labelscan;
+package org.neo4j.index.internal.gbptree;
 
-import org.neo4j.index.internal.gbptree.Hit;
-
-class MutableHit<KEY,VALUE> implements Hit<KEY,VALUE>
+interface ThrowingRunnable
 {
-    private final KEY key;
-    private final VALUE value;
+    void run() throws Exception;
 
-    MutableHit( KEY key, VALUE value )
+    static Runnable throwing( ThrowingRunnable callable )
     {
-        this.key = key;
-        this.value = value;
-    }
-
-    @Override
-    public KEY key()
-    {
-        return key;
-    }
-
-    @Override
-    public VALUE value()
-    {
-        return value;
-    }
-
-    @Override
-    public String toString()
-    {
-        return "MutableHit [key=" + key + ", value=" + value + "]";
+        return () ->
+        {
+            try
+            {
+                callable.run();
+            }
+            catch ( Exception e )
+            {
+                throw new RuntimeException( e );
+            }
+        };
     }
 }

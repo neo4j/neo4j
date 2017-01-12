@@ -25,8 +25,8 @@ import java.io.IOException;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.RawCursor;
-import org.neo4j.index.Hit;
-import org.neo4j.index.Index;
+import org.neo4j.index.internal.gbptree.GBPTree;
+import org.neo4j.index.internal.gbptree.Hit;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.mockito.Matchers.any;
@@ -44,7 +44,7 @@ public class NativeLabelScanReaderTest
     public void shouldFindMultipleNodesInEachRange() throws Exception
     {
         // GIVEN
-        Index<LabelScanKey,LabelScanValue> index = mock( Index.class );
+        GBPTree<LabelScanKey,LabelScanValue> index = mock( GBPTree.class );
         RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> cursor = mock( RawCursor.class );
         when( cursor.next() ).thenReturn( true, true, true, false );
         when( cursor.get() ).thenReturn(
