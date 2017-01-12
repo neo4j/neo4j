@@ -43,14 +43,13 @@ public class BuiltInDbmsProcedures
 
     @Description( "List the currently active config of Neo4j." )
     @Procedure( name = "dbms.listConfig", mode = DBMS )
-    public Stream<ConfigResult> listConfig( @Name( value = "showHidden", defaultValue = "false" ) boolean showHidden,
-            @Name( value = "name", defaultValue = ".*" ) String namePattern )
+    public Stream<ConfigResult> listConfig( @Name( value = "namePrefix", defaultValue = "" ) String namePrefix )
     {
         Config config = graph.getDependencyResolver().resolveDependency( Config.class );
         return config.getConfigValues().values().stream()
                 .map( ConfigResult::new )
-                .filter( c -> showHidden || !c.name.startsWith( "unsupported" ) )
-                .filter( c -> c.name.matches( namePattern ) )
+                .filter( c -> !c.name.startsWith( "unsupported" ) )
+                .filter( c -> c.name.startsWith( namePrefix ) )
                 .sorted( Comparator.comparing( c -> c.name ) );
     }
 

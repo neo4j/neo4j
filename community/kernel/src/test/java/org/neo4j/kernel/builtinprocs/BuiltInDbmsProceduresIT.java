@@ -47,7 +47,7 @@ public class BuiltInDbmsProceduresIT extends KernelIntegrationTest
         // When
         RawIterator<Object[],ProcedureException> stream =
                 dbmsOperations().procedureCallDbms( procedureName( "dbms", "listConfig" ),
-                        Arrays.asList( false, ".*" ).toArray(),
+                        Arrays.asList( "" ).toArray(),
                         AnonymousContext.none() );
 
         // Then
@@ -68,42 +68,12 @@ public class BuiltInDbmsProceduresIT extends KernelIntegrationTest
     }
 
     @Test
-    public void listConfigWithUnsupported() throws Exception
-    {
-        // When
-        RawIterator<Object[],ProcedureException> stream =
-                dbmsOperations().procedureCallDbms( procedureName( "dbms", "listConfig" ),
-                        Arrays.asList( true, ".*" ).toArray(),
-                        AnonymousContext.none() );
-
-        // Then
-        List<Object[]> config = asList( stream );
-        List<String> names = config.stream()
-                .map( o -> o[0].toString() )
-                .collect( Collectors.toList() );
-
-        // The size of the config is not fixed so just make sure it's the right magnitude
-        assertTrue( names.size() > 10 );
-
-        assertThat( names, hasItem( GraphDatabaseSettings.record_format.name() ) );
-
-        // Should contain "unsupported.*" configs, again the number is not fixed
-        assertTrue( names.stream()
-                .filter( n -> n.startsWith( "unsupported" ) )
-                .count() > 10 );
-
-        // Check a specific unsupported one
-        assertTrue( GraphDatabaseSettings.cypher_runtime.name().startsWith( "unsupported" ) );
-        assertThat( names, hasItem( GraphDatabaseSettings.cypher_runtime.name() ) );
-    }
-
-    @Test
     public void listConfigWithASpecificConfigName() throws Exception
     {
         // When
         RawIterator<Object[],ProcedureException> stream =
                 dbmsOperations().procedureCallDbms( procedureName( "dbms", "listConfig" ),
-                        Arrays.asList( true, GraphDatabaseSettings.strict_config_validation.name() ).toArray(),
+                        Arrays.asList( GraphDatabaseSettings.strict_config_validation.name() ).toArray(),
                         AnonymousContext.none() );
 
         // Then
