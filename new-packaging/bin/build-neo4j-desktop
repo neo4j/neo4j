@@ -51,9 +51,9 @@ dos2unix --newfile src/neo4j-desktop/licenses/NOTICE.txt ${workspace}/licenses/N
 dos2unix --newfile src/neo4j-desktop/plugins/README.txt ${workspace}/plugins/README.txt
 
 # Cypher shell
-cp ${cypher_shell_directory}/cypher-shell ${workspace}/cypher-shell
+cp ${cypher_shell_directory}/cypher-shell ${workspace}/cypher-shell/
 cp ${cypher_shell_directory}/*.jar ${workspace}/cypher-shell/tools
-dos2unix ${cypher_shell_directory}/cypher-shell.bat ${workspace}/cypher-shell.bat
+dos2unix --newfile ${cypher_shell_directory}/cypher-shell.bat ${workspace}/cypher-shell/cypher-shell.bat
 
 # Unix scripts
 cp ${shell_scripts_directory}/neo4j-admin ${workspace}/shell-scripts
