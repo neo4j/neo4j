@@ -76,9 +76,3 @@ Fail when comparing parameters to nodes
 Comparing nodes to properties
 Fail when comparing nodes to relationships
 Fail when comparing relationships to nodes
-
-// bugs, 3.0 dependency not updated
-IN should work with nested list subscripting
-IN should work with nested literal list subscripting
-IN should work with list slices
-IN should work with literal list slices

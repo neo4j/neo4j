@@ -1,7 +1,6 @@
 // misc bugs
 Fail when adding new label predicate on a node that is already bound 5
 Matching relationships into a list and matching variable length using the list
-Null-setting one property with ON CREATE
 Fail when imposing new predicates on a variable that is already bound
 
 // pattern comprehension

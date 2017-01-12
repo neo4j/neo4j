@@ -21,17 +21,15 @@ package cypher.feature.steps
 
 import java.util
 
-import cucumber.api.{PendingException, DataTable}
+import cucumber.api.DataTable
 import cypher.SpecSuiteResources
-import cypher.cucumber.BlacklistPlugin
 import cypher.cucumber.db.DatabaseConfigProvider._
 import cypher.cucumber.db.{GraphArchive, GraphArchiveImporter, GraphArchiveLibrary, GraphFileRepository}
 import cypher.feature.parser._
-import cypher.feature.parser.matchers.ResultWrapper
 import org.neo4j.collection.RawIterator
 import org.neo4j.cypher.internal.frontend.v3_1.symbols.{CypherType, _}
 import org.neo4j.graphdb.factory.{GraphDatabaseFactory, GraphDatabaseSettings}
-import org.neo4j.graphdb.{GraphDatabaseService, Result, Transaction}
+import org.neo4j.graphdb.{GraphDatabaseService, QueryStatistics, Result, Transaction}
 import org.neo4j.kernel.api.KernelAPI
 import org.neo4j.kernel.api.exceptions.ProcedureException
 import org.neo4j.kernel.api.proc.CallableProcedure.BasicProcedure
@@ -44,7 +42,7 @@ import org.scalatest.{FunSuiteLike, Matchers}
 
 import scala.collection.JavaConverters._
 import scala.reflect.io.Path
-import scala.util.{Failure, Success, Try}
+import scala.util.Try
 
 trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate with MatcherMatchingSupport {
 
@@ -55,190 +53,121 @@ trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
   lazy val graphArchiveLibrary = new GraphArchiveLibrary(new GraphFileRepository(Path(SpecSuiteResources.targetDirectory(specSuiteClass, "graphs"))))
   lazy val requiredScenarioName = specSuiteClass.getField( "SCENARIO_NAME_REQUIRED" ).get( null ).toString.trim.toLowerCase
 
-  // Stateful
-
-  var graph: GraphDatabaseAPI = null
-  var result: Try[Result] = null
-  var tx: Transaction = null
-  var params: util.Map[String, AnyRef] = new util.HashMap[String, AnyRef]()
-  var currentScenarioName: String = ""
+  var scenarioBuilder: ScenarioExecutionBuilder = _
 
   // Steps
 
-  After() { _ =>
-    ifEnabled {
-      // TODO: postpone this till the last scenario
-      graph.shutdown()
-    }
+  Before() { scenario =>
+    val currentScenarioName = scenario.getName.toLowerCase
+    val skip = requiredScenarioName.nonEmpty && !currentScenarioName.contains(requiredScenarioName)
+    scenarioBuilder = new ScenarioExecutionBuilder
+    scenarioBuilder.register(scenario.getName, skip)
   }
 
-  Before() { scenario =>
-    currentScenarioName = scenario.getName.toLowerCase
+  After() { _ =>
+    scenarioBuilder.build().run()
   }
 
   Background(BACKGROUND) {
     // do nothing, but necessary for the scala match
   }
 
-  private val PENDING = """^this scenario is pending on: (.+)$"""
-  And(PENDING) { (reason: String) =>
-    ifEnabled {
-      throw new PendingException(s"Scenario '${currentScenarioName.replace("'", "\\'")}' is pending on: $reason")
-    }
-  }
-
   Given(NAMED_GRAPH) { (dbName: String) =>
-    ifEnabled {
-      lendForReadOnlyUse(dbName)
-    }
+    scenarioBuilder.setDb(lendForReadOnlyUse(dbName))
   }
 
   Given(ANY_GRAPH) {
-    ifEnabled {
-      // We could do something fancy here, like randomising a state,
-      // in order to guarantee that we aren't implicitly relying on an empty db.
-      initEmpty()
-    }
+    // We could do something fancy here, like randomising a state,
+    // in order to guarantee that we aren't implicitly relying on an empty db.
+    scenarioBuilder.setDb(DbBuilder.initEmpty(currentDatabaseConfig("8m")))
   }
 
   Given(EMPTY_GRAPH) {
-    ifEnabled {
-      initEmpty()
-    }
+    scenarioBuilder.setDb(DbBuilder.initEmpty(currentDatabaseConfig("8m")))
   }
 
   And(INIT_QUERY) { (query: String) =>
-    ifEnabled {
+    scenarioBuilder.init { g: GraphDatabaseAPI =>
       // side effects are necessary for setting up graph state
-      graph.execute(query)
+      g.execute(s"CYPHER runtime=interpreted $query")
     }
   }
 
   And(PARAMETERS) { (values: DataTable) =>
-    ifEnabled {
-      params = parseParameters(values)
-    }
+    scenarioBuilder.setParams(parseParameters(values))
   }
 
   private val INSTALLED_PROCEDURE = """^there exists a procedure (.+):$"""
   And(INSTALLED_PROCEDURE){ (signatureText: String, values: DataTable) =>
-    ifEnabled {
+    scenarioBuilder.procedureRegistration { g: GraphDatabaseAPI =>
       val parsedSignature = ProcedureSignature.parse(signatureText)
-      val kernelProcedure= buildProcedure(parsedSignature, values)
-      kernelAPI.registerProcedure(kernelProcedure)
+      val kernelProcedure = buildProcedure(parsedSignature, values)
+      g.getDependencyResolver.resolveDependency(classOf[KernelAPI]).registerProcedure(kernelProcedure)
     }
   }
 
   When(EXECUTING_QUERY) { (query: String) =>
-    ifEnabled {
-      tx = graph.beginTx()
-      result = Try {
-        graph.execute(query, params)
-      }
+    scenarioBuilder.exec { (g: GraphDatabaseAPI, params: util.Map[String, Object]) =>
+      g.execute(query, params)
     }
   }
 
   Then(EXPECT_RESULT) { (expectedTable: DataTable) =>
-    ifEnabled {
+    scenarioBuilder.expect { r: Result =>
       val matcher = constructResultMatcher(expectedTable)
 
-      val assertedSuccessful = successful(result)
-      tryAndClose {
-        matcher should accept(assertedSuccessful)
-      }
+      matcher should accept(r)
     }
   }
 
   Then(EXPECT_RESULT_UNORDERED_LISTS) { (expectedTable: DataTable) =>
-    ifEnabled {
+    scenarioBuilder.expect { r: Result =>
       val matcher = constructResultMatcher(expectedTable, unorderedLists = true)
 
-      val assertedSuccessful = successful(result)
-      tryAndClose {
-        matcher should accept(assertedSuccessful)
-      }
+      matcher should accept(r)
     }
   }
 
 
   Then(EXPECT_ERROR) { (typ: String, phase: String, detail: String) =>
-    ifEnabled {
-      try SpecSuiteErrorHandler(typ, phase, detail).check(result, tx)
-      finally tx.close()
+    scenarioBuilder.expectError { (r: Try[Result], tx: Transaction) =>
+      SpecSuiteErrorHandler(typ, phase, detail).check(r, tx)
     }
   }
 
   Then(EXPECT_SORTED_RESULT) { (expectedTable: DataTable) =>
-    ifEnabled {
+    scenarioBuilder.expect { r: Result =>
       val matcher = constructResultMatcher(expectedTable)
 
-      val assertedSuccessful = successful(result)
-      tryAndClose {
-        matcher should acceptOrdered(assertedSuccessful)
-      }
+      matcher should acceptOrdered(r)
     }
   }
 
   Then(EXPECT_EMPTY_RESULT) {
-    ifEnabled {
+    scenarioBuilder.expect { r: Result =>
       withClue("Expected empty result") {
-        successful(result).hasNext shouldBe false
+        r.hasNext shouldBe false
       }
-      tx.success()
-      tx.close()
     }
   }
 
   And(SIDE_EFFECTS) { (expectations: DataTable) =>
-    ifEnabled {
-      statisticsParser(expectations) should accept(successful(result).getQueryStatistics)
+    scenarioBuilder.sideEffects { stats: QueryStatistics =>
+      statisticsParser(expectations) should accept(stats)
     }
   }
 
   And(NO_SIDE_EFFECTS) {
-    ifEnabled {
-      withClue("Expected no side effects") {
-        successful(result).getQueryStatistics.containsUpdates() shouldBe false
-      }
+    scenarioBuilder.sideEffects { stats: QueryStatistics =>
+      stats.containsUpdates() shouldBe false
     }
   }
 
   When(EXECUTING_CONTROL_QUERY) { (query: String) =>
-    ifEnabled {
-      tx = graph.beginTx()
-      result = Try {
-        graph.execute(query, params)
-      }
+    scenarioBuilder.exec { (g: GraphDatabaseAPI, params: util.Map[String, Object]) =>
+      g.execute(query, params)
     }
   }
-
-  private def ifEnabled(f: => Unit): Unit = {
-    if (!BlacklistPlugin.blacklisted(currentScenarioName) && (requiredScenarioName.isEmpty || currentScenarioName.contains(requiredScenarioName))) {
-      f
-    }
-  }
-
-  private def tryAndClose(f: => Unit) = {
-    try {
-      f
-      tx.success()
-    } finally tx.close()
-  }
-
-  private def successful(value: Try[Result]): Result = value match {
-    case Success(r) => new ResultWrapper(r)
-    case Failure(e) =>
-      tx.failure()
-      tx.close()
-      fail(s"Expected successful result, but got error: $e")
-  }
-
-  private def initEmpty() =
-    if (graph == null || !graph.isAvailable(1L)) {
-      val builder = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
-      builder.setConfig(currentDatabaseConfig("8M").asJava)
-      graph = builder.newGraphDatabase().asInstanceOf[GraphDatabaseAPI]
-    }
 
   private def lendForReadOnlyUse(recipeName: String) = {
     val recipe = graphArchiveLibrary.recipe(recipeName)
@@ -249,7 +178,7 @@ trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
     val path = graphArchiveLibrary.lendForReadOnlyUse(archiveUse)(graphImporter)
     val builder = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(path.jfile)
     builder.setConfig(archiveUse.dbConfig.asJava)
-    graph = builder.newGraphDatabase().asInstanceOf[GraphDatabaseAPI]
+    builder.newGraphDatabase().asInstanceOf[GraphDatabaseAPI]
   }
 
   private def MB(v: Int) = v * 1024 * 1024
@@ -257,6 +186,7 @@ trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
   private def currentDatabaseConfig(sizeHint: String) = {
     val builder = Map.newBuilder[String, String]
     builder += GraphDatabaseSettings.pagecache_memory.name() -> sizeHint
+    builder += GraphDatabaseSettings.cypher_hints_error.name() -> "true"
     cypherConfig().foreach { case (s, v) => builder += s.name() -> v }
     builder.result()
   }
@@ -284,8 +214,6 @@ trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
   }
 
   private def formatColumns(columns: List[String]) = columns.map(column => s"'${column.replace("'", "\\'")}'")
-
-  private def kernelAPI = graph.getDependencyResolver.resolveDependency(classOf[KernelAPI])
 
   private def asKernelSignature(parsedSignature: ProcedureSignature): org.neo4j.kernel.api.proc.ProcedureSignature = {
     val builder = org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature(parsedSignature.namespace.toArray, parsedSignature.name)
@@ -317,5 +245,13 @@ trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
       builder.setConfig(archive.dbConfig.asJava)
       builder.newGraphDatabase()
     }
+  }
+}
+
+object DbBuilder {
+  def initEmpty(config: Map[String, String]): GraphDatabaseAPI = {
+      val builder = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
+      builder.setConfig(config.asJava)
+      builder.newGraphDatabase().asInstanceOf[GraphDatabaseAPI]
   }
 }
