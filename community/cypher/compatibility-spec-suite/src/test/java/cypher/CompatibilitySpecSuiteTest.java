@@ -37,7 +37,7 @@ public class CompatibilitySpecSuiteTest
     public static final String FEATURE_TO_RUN = "";
     public static final String SCENARIO_NAME_REQUIRED = "";
 
-    public static final boolean REPLACE_EXISTING = false;
+    public static final boolean REPLACE_EXISTING = true;
 
     @RunWith( Cucumber.class )
     @CucumberOptions(

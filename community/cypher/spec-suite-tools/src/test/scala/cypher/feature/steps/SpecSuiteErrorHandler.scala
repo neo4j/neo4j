@@ -62,7 +62,9 @@ case class SpecSuiteErrorHandler(typ: String, phase: String, detail: String) ext
 
     result match {
       case Failure(e: QueryExecutionException) =>
-        s"Neo.ClientError.$statusType.$statusDetail" should equal(e.getStatusCode)
+        withClue(e.getMessage) {
+          s"Neo.ClientError.$statusType.$statusDetail" should equal(e.getStatusCode)
+        }
 
         if (!msgHandler(e.getMessage)) fail(s"Unknown $phase error: $e", e)
 

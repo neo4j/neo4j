@@ -1,1 +1,133 @@
-
+Case should handle mixed number types
+Case should handle mixed types
+Returning a CASE expression into pattern expression
+Returning a CASE expression into integer
+Returning a CASE expression with label predicates
+Using a CASE expression in a WITH, positive case
+Using a CASE expression in a WITH, negative case
+Using a CASE expression with label predicates in a WITH
+Using a CASE expression in a WHERE, positive case
+Using a CASE expression in a WHERE, negative case
+Using a CASE expression in a WHERE, with relationship predicate
+Using a CASE expression in a WHERE, with label predicate
+Returning a CASE expression with a pattern expression alternative
+Merge node with prop and label and unique index
+Merge node with prop and label and unique index when no match
+Merge using unique constraint should update existing node
+Merge using unique constraint should create missing node
+Should match on merge using multiple unique indexes if only found single node for both indexes
+Should match on merge using multiple unique indexes and labels if only found single node for both indexes
+Should match on merge using multiple unique indexes using same key if only found single node for both indexes
+Should create on merge using multiple unique indexes if found no nodes
+Should create on merge using multiple unique indexes and labels if found no nodes
+Should fail on merge using multiple unique indexes using same key if found different nodes
+Should fail on merge using multiple unique indexes if found different nodes
+Should fail on merge using multiple unique indexes if it found a node matching single property only
+Should fail on merge using multiple unique indexes if it found a node matching single property only flipped order
+Should fail on merge using multiple unique indexes and labels if found different nodes
+Merge with uniqueness constraints must properly handle multiple labels
+Unrelated nodes with same property should not clash
+Works fine with index and constraint
+Works with property repeated in literal map in set
+Works with property in map that gets set
+Failing when creation would violate constraint
+Explanation of in-query procedure call
+Add labels inside FOREACH
+Merging inside a FOREACH using a previously matched node
+Merging inside a FOREACH using a previously matched node and a previously merged node
+Merging inside a FOREACH using two previously merged nodes
+Merging inside a FOREACH using two previously merged nodes that also depend on WITH
+Inside nested FOREACH
+Inside nested FOREACH, nodes inlined
+Should handle running merge inside a foreach loop
+Merge inside foreach should see variables introduced by update actions outside foreach
+Handling numerical literal on the left when using an index
+Handling numerical literal on the right when using an index
+Works fine with index
+Works with indexed and unindexed property
+Works with two indexed properties
+Should be able to merge using property from match with index
+Merge with an index must properly handle multiple labels
+Filter on path nodes
+Using a single bound node
+Using a longer pattern
+Using bound nodes in mid-pattern
+Using bound nodes in mid-pattern when pattern partly matches
+Introduce named paths
+Unbound pattern
+Returning an `extract()` expression
+Using an `extract()` expression in a WITH
+Using an `extract()` expression in a WHERE
+Using a pattern expression and a CASE expression in a WHERE
+Pattern expressions and ORDER BY
+Returning a pattern expression
+Returning a pattern expression with label predicate
+Returning a pattern expression with bound nodes
+Using a pattern expression in a WITH
+Using a variable-length pattern expression in a WITH
+Using pattern expression in RETURN
+Aggregating on pattern expression
+Using `length()` on outgoing pattern expression
+Using `length()` on incoming pattern expression
+Using `length()` on undirected pattern expression
+Using `length()` on pattern expression with complex relationship predicate
+Returning pattern expression in `exists()`
+Pattern expression inside list comprehension
+Get node degree via length of pattern expression
+Get node degree via length of pattern expression that specifies a relationship type
+Get node degree via length of pattern expression that specifies multiple relationship types
+Filter relationships with properties using pattern predicate
+Filter using negated pattern predicate
+Filter using a variable length relationship pattern predicate with properties
+Filter using a pattern predicate that is a logical OR between an expression and a subquery
+Filter using a pattern predicate that is a logical OR between two expressions and a subquery
+Filter using a pattern predicate that is a logical OR between one expression and a negated subquery
+Filter using a pattern predicate that is a logical OR between one subquery and a negated subquery
+Filter using a pattern predicate that is a logical OR between one negated subquery and a subquery
+Filter using a pattern predicate that is a logical OR between two subqueries
+Filter using a pattern predicate that is a logical OR between one negated subquery, a subquery, and an equality expression
+Filter using a pattern predicate that is a logical OR between one negated subquery, two subqueries, and an equality expression
+Filter using a pattern predicate that is a logical OR between one negated subquery, two subqueries, and an equality expression 2
+Using a pattern predicate after aggregation 1
+Using a pattern predicate after aggregation 2
+Returning a relationship from a pattern predicate
+Pattern predicate should uphold the relationship uniqueness constraint
+Using pattern predicate
+Matching using pattern predicate with multiple relationship types
+Matching using pattern predicate
+Pattern predicates on missing optionally matched nodes should simply evaluate to false
+Pattern predicates and parametrised predicate
+Matching with complex composite pattern predicate
+Handling pattern predicates without matches
+Handling pattern predicates
+Matching named path with variable length pattern and pattern predicates
+In-query call to procedure that takes no arguments
+Calling the same procedure twice using the same outputs in each call
+In-query call to VOID procedure that takes no arguments
+In-query call to VOID procedure does not consume rows
+In-query call to procedure with explicit arguments
+In-query call to procedure with argument of type NUMBER accepts value of type INTEGER
+In-query call to procedure with argument of type NUMBER accepts value of type FLOAT
+In-query call to procedure with argument of type FLOAT accepts value of type INTEGER
+In-query call to procedure with null argument
+Filter should work
+Find a shortest path among paths that fulfill a predicate on all nodes
+Find a shortest path among paths that fulfill a predicate on all relationships
+Find a shortest path among paths that fulfill a predicate on all relationships 2
+Find a shortest path among paths that fulfill a predicate
+Find a shortest path without loosing context information at runtime
+Find a shortest path in an expression context
+Find a shortest path among paths that fulfill a predicate on all relationships
+Finds shortest path
+Optionally finds shortest path
+Optionally finds shortest path using previously bound nodes
+Returns null when not finding a shortest path during an OPTIONAL MATCH
+Find relationships of a shortest path
+Find no shortest path when a length limit prunes all candidates
+Find no shortest path when the start node is null
+Find all shortest paths
+Find a shortest path among paths of length 1
+Find a shortest path of length 1 if requested to
+Find a shortest path among paths matched using a non-variable length pattern
+Find a combination of a shortest path and a pattern expression
+Filter with AND/OR
