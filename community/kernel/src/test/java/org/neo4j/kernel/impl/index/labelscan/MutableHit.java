@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.labelscan;
 
-import org.neo4j.index.Hit;
+import org.neo4j.index.internal.gbptree.Hit;
 
 class MutableHit<KEY,VALUE> implements Hit<KEY,VALUE>
 {

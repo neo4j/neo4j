@@ -28,9 +28,9 @@ import java.util.Queue;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.RawCursor;
-import org.neo4j.index.Hit;
-import org.neo4j.index.Index;
-import org.neo4j.index.gbptree.GBPTree;
+import org.neo4j.graphdb.index.Index;
+import org.neo4j.index.internal.gbptree.GBPTree;
+import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 
 /**
@@ -46,7 +46,7 @@ class NativeLabelScanReader implements LabelScanReader
     /**
      * {@link Index} which is queried when calling the methods below.
      */
-    private final Index<LabelScanKey,LabelScanValue> index;
+    private final GBPTree<LabelScanKey,LabelScanValue> index;
 
     /**
      * Currently open {@link RawCursor} from query methods below. Open cursors are closed when calling
@@ -54,7 +54,7 @@ class NativeLabelScanReader implements LabelScanReader
      */
     private final Queue<RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException>> openCursors;
 
-    NativeLabelScanReader( Index<LabelScanKey,LabelScanValue> index )
+    NativeLabelScanReader( GBPTree<LabelScanKey,LabelScanValue> index )
     {
         this.index = index;
         this.openCursors = new LinkedList<>();

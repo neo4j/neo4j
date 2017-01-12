@@ -25,7 +25,7 @@ import java.io.UncheckedIOException;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.RawCursor;
-import org.neo4j.index.Hit;
+import org.neo4j.index.internal.gbptree.Hit;
 
 /**
  * {@link PrimitiveLongIterator} which iterate over multiple {@link LabelScanValue} and for each

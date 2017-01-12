@@ -31,10 +31,10 @@ import java.util.Map.Entry;
 import java.util.TreeMap;
 
 import org.neo4j.cursor.RawCursor;
-import org.neo4j.index.Hit;
-import org.neo4j.index.IndexWriter;
-import org.neo4j.index.ValueMerger;
-import org.neo4j.index.ValueMergers;
+import org.neo4j.index.internal.gbptree.Hit;
+import org.neo4j.index.internal.gbptree.ValueMerger;
+import org.neo4j.index.internal.gbptree.ValueMergers;
+import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.test.rule.RandomRule;
 
@@ -124,7 +124,7 @@ public class NativeLabelScanWriterTest
         return NodeLabelUpdate.labelChanges( nodeId, before, getLabels( labels ) );
     }
 
-    private static class ControlledInserter implements IndexWriter<LabelScanKey,LabelScanValue>
+    private static class ControlledInserter implements Writer<LabelScanKey,LabelScanValue>
     {
         private final Map<Integer,Map<LabelScanKey,LabelScanValue>> data = new HashMap<>();
 

@@ -23,9 +23,9 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
 
-import org.neo4j.index.IndexWriter;
-import org.neo4j.index.ValueMerger;
-import org.neo4j.index.gbptree.GBPTree;
+import org.neo4j.index.internal.gbptree.GBPTree;
+import org.neo4j.index.internal.gbptree.ValueMerger;
+import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
@@ -36,7 +36,7 @@ import static java.lang.Math.toIntExact;
 import static org.neo4j.kernel.impl.index.labelscan.LabelScanValue.RANGE_SIZE;
 
 /**
- * {@link LabelScanWriter} for {@link NativeLabelScanStore}, or rather an {@link IndexWriter} for its
+ * {@link LabelScanWriter} for {@link NativeLabelScanStore}, or rather an {@link Writer} for its
  * internal {@link GBPTree}.
  * <p>
  * {@link #write(NodeLabelUpdate) updates} are queued up to a maximum batch size and, for performance,
@@ -71,10 +71,10 @@ class NativeLabelScanWriter implements LabelScanWriter
     private static final ValueMerger<LabelScanValue> REMOVE_MERGER = LabelScanValue::remove;
 
     /**
-     * {@link IndexWriter} acquired when acquiring this {@link NativeLabelScanWriter},
+     * {@link Writer} acquired when acquiring this {@link NativeLabelScanWriter},
      * acquired from {@link GBPTree#writer()}.
      */
-    private IndexWriter<LabelScanKey,LabelScanValue> writer;
+    private Writer<LabelScanKey,LabelScanValue> writer;
 
     /**
      * Instance of {@link LabelScanKey} acting as place to read keys into and also to set for each applied update.
@@ -122,7 +122,7 @@ class NativeLabelScanWriter implements LabelScanWriter
         this.pendingUpdates = new NodeLabelUpdate[batchSize];
     }
 
-    NativeLabelScanWriter initialize( IndexWriter<LabelScanKey,LabelScanValue> writer )
+    NativeLabelScanWriter initialize( Writer<LabelScanKey,LabelScanValue> writer )
     {
         this.writer = writer;
         this.pendingUpdatesCursor = 0;
