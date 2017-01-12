@@ -51,12 +51,10 @@ import org.neo4j.kernel.impl.factory.Edition;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.proc.TypeMappers;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.kernel.internal.Version;
 import org.neo4j.storageengine.api.Token;
 
 import static java.util.Collections.emptyIterator;
 import static java.util.Collections.singletonList;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -65,9 +63,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.kernel.api.proc.Context.KERNEL_TRANSACTION;
-
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTNode;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTPath;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTRelationship;
@@ -184,8 +180,10 @@ public class BuiltInProceduresTest
     {
         // When/Then
         assertThat( call( "dbms.procedures" ), containsInAnyOrder(
-                record( "dbms.listConfig", "dbms.listConfig(showHidden = false :: BOOLEAN?) :: (name :: STRING?, " +
-                        "description :: STRING?, value :: STRING?)", "List the currently active config of Neo4j." ),
+                record( "dbms.listConfig",
+                        "dbms.listConfig(showHidden = false :: BOOLEAN?, name = .* :: STRING?) :: (name :: STRING?, " +
+                                "description :: STRING?, value :: STRING?)",
+                        "List the currently active config of Neo4j." ),
             record( "db.awaitIndex", "db.awaitIndex(index :: STRING?, timeOutSeconds = 300 :: INTEGER?) :: VOID", "Wait for an index to come online (for example: CALL db.awaitIndex(\":Person(name)\"))." ),
             record( "db.constraints", "db.constraints() :: (description :: STRING?)", "List all constraints in the database." ),
             record( "db.indexes", "db.indexes() :: (description :: STRING?, state :: STRING?, type :: STRING?)", "List all indexes in the database." ),

@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.builtinprocs;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -32,6 +32,7 @@ import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
 
 import static org.hamcrest.Matchers.hasItem;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -46,7 +47,7 @@ public class BuiltInDbmsProceduresIT extends KernelIntegrationTest
         // When
         RawIterator<Object[],ProcedureException> stream =
                 dbmsOperations().procedureCallDbms( procedureName( "dbms", "listConfig" ),
-                        Collections.singletonList( false ).toArray(),
+                        Arrays.asList( false, ".*" ).toArray(),
                         AnonymousContext.none() );
 
         // Then
@@ -72,7 +73,7 @@ public class BuiltInDbmsProceduresIT extends KernelIntegrationTest
         // When
         RawIterator<Object[],ProcedureException> stream =
                 dbmsOperations().procedureCallDbms( procedureName( "dbms", "listConfig" ),
-                        Collections.singletonList( true ).toArray(),
+                        Arrays.asList( true, ".*" ).toArray(),
                         AnonymousContext.none() );
 
         // Then
@@ -94,5 +95,25 @@ public class BuiltInDbmsProceduresIT extends KernelIntegrationTest
         // Check a specific unsupported one
         assertTrue( GraphDatabaseSettings.cypher_runtime.name().startsWith( "unsupported" ) );
         assertThat( names, hasItem( GraphDatabaseSettings.cypher_runtime.name() ) );
+    }
+
+    @Test
+    public void listConfigWithASpecificConfigName() throws Exception
+    {
+        // When
+        RawIterator<Object[],ProcedureException> stream =
+                dbmsOperations().procedureCallDbms( procedureName( "dbms", "listConfig" ),
+                        Arrays.asList( true, GraphDatabaseSettings.strict_config_validation.name() ).toArray(),
+                        AnonymousContext.none() );
+
+        // Then
+        List<Object[]> config = asList( stream );
+
+        assertEquals( 1, config.size() );
+        assertArrayEquals( new Object[]{ "dbms.config.strict_validation",
+                "A strict configuration validation will prevent the database from starting up if unknown " +
+                        "configuration options are specified in the neo4j settings namespace (such as dbms., ha., " +
+                        "cypher., etc).",
+                "false" }, config.get( 0 ) );
     }
 }
