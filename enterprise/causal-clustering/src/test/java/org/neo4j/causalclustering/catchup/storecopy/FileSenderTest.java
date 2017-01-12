@@ -20,29 +20,27 @@
 package org.neo4j.causalclustering.catchup.storecopy;
 
 import io.netty.buffer.ByteBufAllocator;
-import io.netty.buffer.UnpooledByteBufAllocator;
 import org.junit.Rule;
 import org.junit.Test;
-import scala.Byte;
 
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.Random;
 
+import org.neo4j.adversaries.Adversary;
+import org.neo4j.adversaries.RandomAdversary;
+import org.neo4j.adversaries.fs.AdversarialFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.util.Arrays.copyOfRange;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-
 import static org.neo4j.causalclustering.catchup.storecopy.FileChunk.MAX_SIZE;
 
 public class FileSenderTest
@@ -131,6 +129,32 @@ public class FileSenderTest
         }
 
         FileSender fileSender = new FileSender( fs.open( smallFile, "r" ) );
+
+        // when + then
+        assertFalse( fileSender.isEndOfInput() );
+        assertEquals( FileChunk.create( copyOfRange( bytes, 0, MAX_SIZE ), false ), fileSender.readChunk( allocator ) );
+        assertEquals( FileChunk.create( copyOfRange( bytes, MAX_SIZE, MAX_SIZE * 2 ), false ), fileSender.readChunk( allocator ) );
+        assertEquals( FileChunk.create( copyOfRange( bytes, MAX_SIZE * 2, bytes.length ), true ), fileSender.readChunk( allocator ) );
+        assertNull( fileSender.readChunk( allocator ) );
+        assertTrue( fileSender.isEndOfInput() );
+    }
+
+    @Test
+    public void sendLargeFileWithUnreliableReadBufferSize() throws Exception
+    {
+        // given
+        byte[] bytes = new byte[MAX_SIZE * 3];
+        random.nextBytes( bytes );
+
+        File smallFile = testDirectory.file( "smallFile" );
+        try( StoreChannel storeChannel = fs.create( smallFile ) )
+        {
+            storeChannel.write( ByteBuffer.wrap( bytes ) );
+        }
+
+        Adversary adversary = new RandomAdversary( 0.9, 0.0, 0.0 );
+        AdversarialFileSystemAbstraction afs = new AdversarialFileSystemAbstraction( adversary, fs );
+        FileSender fileSender = new FileSender( afs.open( smallFile, "r" ) );
 
         // when + then
         assertFalse( fileSender.isEndOfInput() );
