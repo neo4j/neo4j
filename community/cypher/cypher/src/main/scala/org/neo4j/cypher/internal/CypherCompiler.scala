@@ -142,7 +142,7 @@ class CypherCompiler(graph: GraphDatabaseQueryService,
     val updateStrategy = preParsedQuery.updateStrategy
 
     preParsedQuery.version match {
-      case CypherVersion.v3_2 => planners(PlannerSpec_v3_2(planner, runtime, updateStrategy, /* more important than updateStrategy even though it comes after */ codeGenMode)).produceParsedQuery(preParsedQuery, tracer)
+      case CypherVersion.v3_2 => planners(PlannerSpec_v3_2(planner, runtime, updateStrategy, codeGenMode)).produceParsedQuery(preParsedQuery, tracer)
       case CypherVersion.v3_1 => planners(PlannerSpec_v3_1(planner, runtime, updateStrategy)).produceParsedQuery(preParsedQuery, as3_1(tracer))
       case CypherVersion.v2_3 => planners(PlannerSpec_v2_3(planner, runtime)).produceParsedQuery(preParsedQuery, as2_3(tracer))
     }
