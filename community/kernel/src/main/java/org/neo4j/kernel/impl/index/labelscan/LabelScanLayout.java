@@ -100,7 +100,7 @@ class LabelScanLayout implements Layout<LabelScanKey,LabelScanValue>
     private static void put6ByteLong( PageCursor cursor, long value )
     {
         cursor.putInt( (int) value );
-        cursor.putShort( (short) (value >>> 32) );
+        cursor.putShort( (short) (value >>> Integer.SIZE) );
     }
 
     @Override
@@ -120,7 +120,7 @@ class LabelScanLayout implements Layout<LabelScanKey,LabelScanValue>
     {
         long low4b = cursor.getInt() & 0xFFFFFFFFL;
         long high2b = cursor.getShort();
-        return low4b | (high2b << 32);
+        return low4b | (high2b << Integer.SIZE);
     }
 
     @Override
