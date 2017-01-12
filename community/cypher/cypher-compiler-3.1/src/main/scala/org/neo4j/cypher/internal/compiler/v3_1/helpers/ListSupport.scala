@@ -55,7 +55,7 @@ trait ListSupport {
 
   class NoValidValuesExceptions extends Exception
 
-  def isList(x: Any) = castToIterable.isDefinedAt(x)
+  def isList(x: Any): Boolean = castToIterable.isDefinedAt(x)
 
   def liftAsList[T](test: PartialFunction[Any, T])(input: Any): Option[Iterable[T]] = try {
     input match {
@@ -78,7 +78,7 @@ trait ListSupport {
   def asListOf[T](test: PartialFunction[Any, T])(input: Iterable[Any]): Option[Iterable[T]] =
     Some(input map { (elem: Any) => if (test.isDefinedAt(elem)) test(elem) else return None })
 
-  def makeTraversable(z: Any): Iterable[Any] = if (castToIterable.isDefinedAt(z)) {
+  def makeTraversable(z: Any): Iterable[Any] = if (isList(z)) {
     castToIterable(z)
   } else {
     if (z == null) Iterable() else Iterable(z)
