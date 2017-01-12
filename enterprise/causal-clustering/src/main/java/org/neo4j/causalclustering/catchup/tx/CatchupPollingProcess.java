@@ -177,14 +177,14 @@ public class CatchupPollingProcess extends LifecycleAdapter
 
     private void pullTransactions()
     {
-        MemberId core;
+        MemberId upstream;
         try
         {
-            core = selectionStrategyPipeline.bestUpstreamDatabase();
+            upstream = selectionStrategyPipeline.bestUpstreamDatabase();
         }
         catch ( Exception e )
         {
-            log.warn( "Could not find core member to pull from", e );
+            log.warn( "Could not find upstream database from which to pull.", e );
             return;
         }
 
@@ -194,7 +194,7 @@ public class CatchupPollingProcess extends LifecycleAdapter
         int batchCount = 1;
         while ( moreToPull )
         {
-            moreToPull = pullAndApplyBatchOfTransactions( core, localStoreId, batchCount );
+            moreToPull = pullAndApplyBatchOfTransactions( upstream, localStoreId, batchCount );
             batchCount++;
         }
     }
@@ -233,7 +233,7 @@ public class CatchupPollingProcess extends LifecycleAdapter
         }
     }
 
-    private boolean pullAndApplyBatchOfTransactions( MemberId core, StoreId localStoreId, int batchCount )
+    private boolean pullAndApplyBatchOfTransactions( MemberId upstream, StoreId localStoreId, int batchCount )
     {
         long lastQueuedTxId = applier.lastQueuedTxId();
         pullRequestMonitor.txPullRequest( lastQueuedTxId );
@@ -243,7 +243,7 @@ public class CatchupPollingProcess extends LifecycleAdapter
         CatchupResult catchupResult;
         try
         {
-            catchupResult = catchUpClient.makeBlockingRequest( core, txPullRequest, new CatchUpResponseAdaptor<CatchupResult>()
+            catchupResult = catchUpClient.makeBlockingRequest( upstream, txPullRequest, new CatchUpResponseAdaptor<CatchupResult>()
             {
                 @Override
                 public void onTxPullResponse( CompletableFuture<CatchupResult> signal, TxPullResponse response )

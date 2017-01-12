@@ -47,31 +47,29 @@ import static org.neo4j.helpers.SocketAddressFormat.socketAddress;
 
 class HazelcastClusterTopology
 {
-    static final String READ_REPLICA_BOLT_ADDRESS_MAP_NAME = "read-replicas"; // hz client uuid string -> boltAddress
-    // string
-    static final String CLUSTER_UUID = "cluster_uuid";
+    // hz client uuid string -> boltAddress string
+    static final String READ_REPLICA_BOLT_ADDRESS_MAP_NAME = "read-replicas";
+    private static final String CLUSTER_UUID = "cluster_uuid";
     static final String MEMBER_UUID = "member_uuid";
     static final String TRANSACTION_SERVER = "transaction_server";
-    static final String DISCOVERY_SERVER = "discovery_server";
+    private static final String DISCOVERY_SERVER = "discovery_server";
     static final String RAFT_SERVER = "raft_server";
     static final String CLIENT_CONNECTOR_ADDRESSES = "client_connector_addresses";
 
     static ReadReplicaTopology getReadReplicaTopology( HazelcastInstance hazelcastInstance, Log log )
     {
         Set<ReadReplicaAddresses> readReplicas = emptySet();
-        ClusterId clusterId = null;
 
         if ( hazelcastInstance != null )
         {
             readReplicas = readReplicas( hazelcastInstance );
-            clusterId = getClusterId( hazelcastInstance );
         }
         else
         {
             log.info( "Cannot currently bind to distributed discovery service." );
         }
 
-        return new ReadReplicaTopology( clusterId, readReplicas );
+        return new ReadReplicaTopology( readReplicas );
     }
 
     static CoreTopology getCoreTopology( HazelcastInstance hazelcastInstance, Log log )

@@ -172,14 +172,14 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         long readReplicaTimeToLiveTimeout = config.get( CausalClusteringSettings.read_replica_time_to_live );
         long readReplicaRefreshRate = config.get( CausalClusteringSettings.read_replica_refresh_rate );
 
-        TopologyService discoveryService = discoveryServiceFactory
+        TopologyService topologyService = discoveryServiceFactory
                 .readReplicaDiscoveryService( config, logProvider, refreshReadReplicaTimeoutService,
                         readReplicaTimeToLiveTimeout, readReplicaRefreshRate );
-        life.add( dependencies.satisfyDependency( discoveryService ) );
+        life.add( dependencies.satisfyDependency( topologyService ) );
 
         long inactivityTimeoutMillis = config.get( CausalClusteringSettings.catch_up_client_inactivity_timeout );
         CatchUpClient catchUpClient = life.add(
-                new CatchUpClient( discoveryService, logProvider, Clocks.systemClock(), inactivityTimeoutMillis,
+                new CatchUpClient( topologyService, logProvider, Clocks.systemClock(), inactivityTimeoutMillis,
 
                         monitors ) );
 
@@ -238,13 +238,15 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
             } );
         }
 
-
         StoreCopyProcess storeCopyProcess =
                 new StoreCopyProcess( fileSystem, localDatabase, copiedStoreRecovery, remoteStore, logProvider );
 
+        ConnectToRandomUpstreamCoreServer defaultStrategy = new ConnectToRandomUpstreamCoreServer();
+        defaultStrategy.setDiscoveryService( topologyService );
+
         UpstreamDatabaseStrategySelector selectionStrategyPipeline =
-                new UpstreamDatabaseStrategySelector( new ConnectToRandomUpstreamCoreServer(),
-                        new UpstreamDatabaseStrategiesLoader( discoveryService, config ) );
+                new UpstreamDatabaseStrategySelector( defaultStrategy,
+                        new UpstreamDatabaseStrategiesLoader( topologyService, config ) );
 
 
         CatchupPollingProcess catchupProcess =

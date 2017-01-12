@@ -25,13 +25,10 @@ import org.neo4j.causalclustering.identity.ClusterId;
 
 public class ReadReplicaTopology
 {
-    private final ClusterId clusterId;
     private final Set<ReadReplicaAddresses> readReplicaMembers;
 
-    public ReadReplicaTopology( ClusterId clusterId, Set<ReadReplicaAddresses> readReplicaMembers )
+    public ReadReplicaTopology( Set<ReadReplicaAddresses> readReplicaMembers )
     {
-
-        this.clusterId = clusterId;
         this.readReplicaMembers = readReplicaMembers;
     }
 

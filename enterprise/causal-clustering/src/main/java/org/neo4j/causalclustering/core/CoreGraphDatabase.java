@@ -56,11 +56,6 @@ public class CoreGraphDatabase extends GraphDatabaseFacade
         new GraphDatabaseFacadeFactory( DatabaseInfo.CORE, factory ).initFacade( storeDir, config, dependencies, this );
     }
 
-    public MemberId id()
-    {
-        return getDependencyResolver().resolveDependency( RaftMachine.class ).identity();
-    }
-
     public Role getRole()
     {
         return getDependencyResolver().resolveDependency( RaftMachine.class ).currentRole();

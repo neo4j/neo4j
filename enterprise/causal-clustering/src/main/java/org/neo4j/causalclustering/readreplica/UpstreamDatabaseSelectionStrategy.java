@@ -32,8 +32,9 @@ public abstract class UpstreamDatabaseSelectionStrategy extends Service
         super( key, altKeys );
     }
 
-    void setDiscoveryService( TopologyService topologyService ) {
-
+    // Service loaded can't inject this via the constructor
+    void setDiscoveryService( TopologyService topologyService )
+    {
         this.topologyService = topologyService;
     }
 
