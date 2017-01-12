@@ -448,7 +448,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             }
             else
             {
-                throw new TransactionFailureException( Status.Transaction.TransactionTerminated,
+                throw new IllegalStateException(
                         "Transaction is already closing. Repeated execution of transactions are not allowed." );
             }
         }
@@ -868,20 +868,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
         public boolean closing()
         {
-            int currentStatus;
-            do
-            {
-                currentStatus = statusUpdater.get( this );
-                if ( (currentStatus & STATE_BITS_MASK) != OPEN )
-                {
-                    return false;
-                }
-            }
-            while ( !statusUpdater.compareAndSet( this, currentStatus, (currentStatus & NON_STATE_BITS_MASK) | CLOSING ) );
-            return true;
+            return setOpenTransactionStatus( CLOSING );
         }
 
-        boolean shutdown()
+        private boolean setOpenTransactionStatus( int newStatus )
         {
             int currentStatus;
             do
@@ -892,8 +882,13 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                     return false;
                 }
             }
-            while ( !statusUpdater.compareAndSet( this, currentStatus, (currentStatus & NON_STATE_BITS_MASK) | SHUTDOWN ) );
+            while ( !statusUpdater.compareAndSet( this, currentStatus, (currentStatus & NON_STATE_BITS_MASK) | newStatus ) );
             return true;
+        }
+
+        boolean shutdown()
+        {
+            return setOpenTransactionStatus( SHUTDOWN );
         }
 
         public void close()

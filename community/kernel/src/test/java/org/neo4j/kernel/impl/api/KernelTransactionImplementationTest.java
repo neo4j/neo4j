@@ -770,7 +770,8 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         hooks.register( new ClosingTransactionHook() );
         transaction.success();
 
-        expectedException.expect( new RootCauseMatcher<>( TransactionFailureException.class, "Transaction is already closing. Repeated execution of transactions are not allowed." ) );
+        expectedException.expect( IllegalStateException.class );
+        expectedException.expectMessage("Transaction is already closing. Repeated execution of transactions are not allowed."  );
         transaction.closeTransaction();
     }
 
