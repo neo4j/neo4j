@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+set -eu
+# build-rpm-package:
+# Build RPM package for Neo4j from tarball
+
+if [ $# -ne 6 ]
+then
+  echo "Usage: ${0} <workspace> <package name> <package contents> <distribution> <version> <license>"
+  exit 1
+fi
+
+workspace=${1}
+package_name=${2}
+package_contents=${3}
+distribution=${4}
+version_file=${5}
+license=${6}
+
+# Update changelog, control and files with package name etc
+version=$(cat ${version_file})
+
+# Prepare workspace
+package_directory=${workspace}/${package_name}
+mkdir -p ${package_directory}/{BUILD,RPMS,SOURCES,BUILDROOT,SPECS,SRPMS}/
+sources_directory=${package_directory}/BUILD/neo4j-${version}
+mkdir -p ${sources_directory}
+common_directory=src/common
+spec_directory=src/rpm
+
+# copy service file
+cp ${common_directory}/neo4j.service ${sources_directory}/
+
+# Copy in tarball contents
+mkdir -p ${sources_directory}/server
+cp -r ${package_contents}/* ${sources_directory}/server
+
+DISTRIBUTION=${distribution} DATE=`date -R` PACKAGE_NAME=${package_name} VERSION=${version} LICENSE=${license} envsubst '${DATE} ${DISTRIBUTION} ${PACKAGE_NAME} ${VERSION} ${LICENSE}' < ${spec_directory}/neo4j.spec > ${package_directory}/SPECS/neo4j.spec
+
+# Make the Neo4j wrapper scripts available to debuild
+scripts_directory=${sources_directory}/server/scripts
+mkdir -p ${scripts_directory}
+script=src/common/neo4j-script
+cp ${script} ${scripts_directory}/neo4j
+cp ${script} ${scripts_directory}/neo4j-admin
+cp ${script} ${scripts_directory}/neo4j-import
+cp ${script} ${scripts_directory}/neo4j-shell
+cp ${script} ${scripts_directory}/cypher-shell
+if [ ${package_name} = "neo4j-enterprise" ]
+then
+  cp ${script} ${scripts_directory}/neo4j-backup
+fi
+
+# Make UDC successful
+sed -i 's/unsupported.dbms.udc.source=tarball/unsupported.dbms.udc.source=rpm/' ${sources_directory}/server/conf/neo4j.conf
+
+# Modify directories to match the FHS (https://www.debian.org/doc/packaging-manuals/fhs/fhs-2.3.html)
+# https://docs.fedoraproject.org/en-US/Fedora/14/html/Storage_Administration_Guide/s1-filesystem-fhs.html
+configuration_file=${sources_directory}/server/conf/neo4j.conf
+sed -i 's/#dbms.directories.data=data/dbms.directories.data=\/var\/lib\/neo4j\/data/'             ${configuration_file}
+sed -i 's/#dbms.directories.plugins=plugins/dbms.directories.plugins=\/var\/lib\/neo4j\/plugins/' ${configuration_file}
+sed -i 's/#dbms.directories.import=import/dbms.directories.import=\/var\/lib\/neo4j\/import/'     ${configuration_file}
+cat src/debian/directories.conf >>${configuration_file}
+
+# Make scripts executable
+chmod 700 ${sources_directory}/server/bin/*
+chmod 700 ${scripts_directory}/*
+
+# build package and metadata files
+#(cd ${package_directory} && debuild -B -uc -us --lintian-opts --profile debian)
+echo "%_topdir ${package_directory}" > ~/.rpmmacros
+(cd ${package_directory} && rpmbuild -bb SPECS/neo4j.spec)

@@ -18,6 +18,9 @@ ${OUT}/neo4j-desktop/community-version.txt:
 	mkdir -p ${OUT}/neo4j-desktop
 	extract-version-from-pom ${COMMUNITY_POM} >${OUT}/neo4j-desktop/community-version.txt
 
+rpm-community: tarball-community-extracted ${OUT}/tarballs/community-version-debianized.txt
+	build-rpm-package $(shell pwd)/${OUT}/rpm neo4j ${OUT}/tarballs/extracted/neo4j-community-* ${DISTRIBUTION} ${OUT}/tarballs/community-version-debianized.txt GPLv3
+
 debian-community: tarball-community-extracted ${OUT}/tarballs/community-version-debianized.txt
 	build-debian-package ${OUT}/debian neo4j ${OUT}/tarballs/extracted/neo4j-community-* ${DISTRIBUTION} ${OUT}/tarballs/community-version-debianized.txt
 
