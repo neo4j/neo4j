@@ -21,7 +21,6 @@ package org.neo4j.causalclustering.catchup.storecopy;
 
 import java.io.File;
 
-import org.neo4j.com.storecopy.ExternallyManagedPageCache;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.pagecache.PageCache;
@@ -102,6 +101,7 @@ public class CopiedStoreRecovery extends LifecycleAdapter
                 .setConfig( GraphDatabaseSettings.keep_logical_logs, Settings.TRUE )
                 .setConfig( GraphDatabaseSettings.allow_store_upgrade,
                         config.get( GraphDatabaseSettings.allow_store_upgrade ).toString() )
+                .setConfig( GraphDatabaseSettings.record_format, config.get( GraphDatabaseSettings.record_format ) )
                 .newGraphDatabase();
     }
 }
