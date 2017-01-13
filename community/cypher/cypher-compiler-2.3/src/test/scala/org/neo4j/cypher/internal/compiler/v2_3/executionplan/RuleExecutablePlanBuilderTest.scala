@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.{Monitors, PreparedQuery, devNull
 import org.neo4j.cypher.internal.frontend.v2_3.parser.CypherParser
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v2_3.{Scope, SemanticTable}
-import org.neo4j.kernel.api.index.IndexDescriptor
+import org.neo4j.cypher.internal.compiler.v2_3.IndexDescriptor
 
 class RuleExecutablePlanBuilderTest extends CypherFunSuite {
   val planContext: PlanContext = mock[PlanContext]

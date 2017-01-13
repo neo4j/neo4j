@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.pipes.EntityProducer
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.{TraversalMatcher, ExpanderStep}
 import org.neo4j.graphdb.Node
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
-import org.neo4j.kernel.api.index.IndexDescriptor
+import org.neo4j.cypher.internal.compiler.v2_3.IndexDescriptor
 
 /**
  * PlanContext is an internal access layer to the graph that is solely used during plan building
