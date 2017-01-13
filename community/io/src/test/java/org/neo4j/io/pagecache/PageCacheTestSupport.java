@@ -42,10 +42,10 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.test.RepeatRule;
+import org.neo4j.test.rule.RepeatRule;
 
 import static org.junit.Assert.assertThat;
-import static org.neo4j.test.ByteArrayMatcher.byteArray;
+import static org.neo4j.test.matchers.ByteArrayMatcher.byteArray;
 
 public abstract class PageCacheTestSupport<T extends PageCache>
 {

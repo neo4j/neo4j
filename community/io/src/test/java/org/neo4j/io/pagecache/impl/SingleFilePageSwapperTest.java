@@ -21,9 +21,9 @@ package org.neo4j.io.pagecache.impl;
 
 import org.apache.commons.lang3.SystemUtils;
 import org.junit.After;
+import org.junit.AssumptionViolatedException;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.AssumptionViolatedException;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -56,7 +56,7 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.neo4j.test.ByteArrayMatcher.byteArray;
+import static org.neo4j.test.matchers.ByteArrayMatcher.byteArray;
 
 public class SingleFilePageSwapperTest extends PageSwapperTest
 {

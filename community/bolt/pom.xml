@@ -86,6 +86,10 @@
       <artifactId>jetty-server</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>commons-codec</groupId>
+      <artifactId>commons-codec</artifactId>
+    </dependency>
 
 
     <dependency>

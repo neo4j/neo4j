@@ -34,7 +34,7 @@ import org.neo4j.io.pagecache.randomharness.Phase;
 import org.neo4j.io.pagecache.randomharness.RandomPageCacheTestHarness;
 import org.neo4j.io.pagecache.randomharness.RecordFormat;
 import org.neo4j.io.pagecache.randomharness.StandardRecordFormat;
-import org.neo4j.test.RepeatRule;
+import org.neo4j.test.rule.RepeatRule;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;

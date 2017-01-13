@@ -50,9 +50,9 @@ import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.FormattedLogProvider;
-import org.neo4j.test.RepeatRule;
 import org.neo4j.test.ha.ClusterRule;
 import org.neo4j.test.rule.CleanupRule;
+import org.neo4j.test.rule.RepeatRule;
 import org.neo4j.test.rule.SuppressOutput;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
