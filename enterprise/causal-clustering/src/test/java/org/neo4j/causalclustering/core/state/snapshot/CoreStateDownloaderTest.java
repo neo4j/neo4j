@@ -31,6 +31,7 @@ import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFailedException;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
 import org.neo4j.causalclustering.catchup.storecopy.RemoteStore;
 import org.neo4j.causalclustering.core.state.CoreState;
+import org.neo4j.causalclustering.core.state.machines.CoreStateMachines;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -53,6 +54,7 @@ public class CoreStateDownloaderTest
     private final CatchUpClient catchUpClient = mock( CatchUpClient.class );
     private final StoreCopyProcess storeCopyProcess = mock( StoreCopyProcess.class );
     private final CoreState coreState = mock( CoreState.class );
+    private final CoreStateMachines coreStateMachines = mock( CoreStateMachines.class );
 
     private final NullLogProvider logProvider = NullLogProvider.getInstance();
 
@@ -62,7 +64,7 @@ public class CoreStateDownloaderTest
 
     private final CoreStateDownloader downloader =
             new CoreStateDownloader( localDatabase, startStopLife, remoteStore, catchUpClient, logProvider,
-                    storeCopyProcess );
+                    storeCopyProcess, coreStateMachines );
 
     @Before
     public void commonMocking()

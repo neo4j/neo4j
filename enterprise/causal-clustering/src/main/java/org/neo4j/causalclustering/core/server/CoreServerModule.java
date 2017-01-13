@@ -131,7 +131,7 @@ public class CoreServerModule
 
         LifeSupport servicesToStopOnStoreCopy = new LifeSupport();
         CoreStateDownloader downloader = new CoreStateDownloader( localDatabase, servicesToStopOnStoreCopy,
-                remoteStore, catchUpClient, logProvider, storeCopyProcess );
+                remoteStore, catchUpClient, logProvider, storeCopyProcess, coreStateMachinesModule.coreStateMachines );
 
         if ( config.get( OnlineBackupSettings.online_backup_enabled ) )
         {
@@ -163,9 +163,8 @@ public class CoreServerModule
                         logProvider, replicationModule.getProgressTracker(), lastFlushedStorage,
                         replicationModule.getSessionTracker(), coreStateApplier, consensusModule.inFlightMap(),
                         platformModule.monitors );
-        CoreState coreState =
-                new CoreState( consensusModule.raftMachine(), localDatabase, clusteringModule.clusterIdentity(),
-                        logProvider, downloader, commandApplicationProcess );
+        CoreState coreState = new CoreState( consensusModule.raftMachine(), localDatabase, clusteringModule.clusterIdentity(),
+                        logProvider, downloader, commandApplicationProcess, coreStateMachinesModule.coreStateMachines );
 
         dependencies.satisfyDependency( coreState );
 
