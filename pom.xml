@@ -46,6 +46,7 @@
     <module>integrationtests</module>
     <module>stresstests</module>
     <module>tools</module>
+    <module>packaging</module>
   </modules>
 
   <build>
@@ -237,21 +238,6 @@
     </profile>
 
     <!-- Build configuration profiles -->
-    <profile>
-      <id>neo-full-build</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-        <property>
-          <name>fullBuild</name>
-        </property>
-      </activation>
-      <modules>
-        <module>packaging</module>
-      </modules>
-      <properties>
-        <attach-docs-phase>verify</attach-docs-phase>
-      </properties>
-    </profile>
     <profile>
       <id>neodev</id>
       <activation>
