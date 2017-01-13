@@ -106,13 +106,16 @@ public class DefaultRecoverySPI implements Recovery.SPI
     public void allTransactionsRecovered( CommittedTransactionRepresentation lastRecoveredTransaction,
             LogPosition positionAfterLastRecoveredTransaction ) throws Exception
     {
-        transactionsToApply.empty();
-        transactionIdStore.setLastCommittedAndClosedTransactionId(
-                lastRecoveredTransaction.getCommitEntry().getTxId(),
-                LogEntryStart.checksum( lastRecoveredTransaction.getStartEntry() ),
-                lastRecoveredTransaction.getCommitEntry().getTimeWritten(),
-                positionAfterLastRecoveredTransaction.getByteOffset(),
-                positionAfterLastRecoveredTransaction.getLogVersion() );
+        if ( lastRecoveredTransaction != null )
+        {
+            transactionsToApply.empty();
+            transactionIdStore.setLastCommittedAndClosedTransactionId(
+                    lastRecoveredTransaction.getCommitEntry().getTxId(),
+                    LogEntryStart.checksum( lastRecoveredTransaction.getStartEntry() ),
+                    lastRecoveredTransaction.getCommitEntry().getTimeWritten(),
+                    positionAfterLastRecoveredTransaction.getByteOffset(),
+                    positionAfterLastRecoveredTransaction.getLogVersion() );
+        }
 
         fs.truncate( logFiles.getLogFileForVersion( positionAfterLastRecoveredTransaction.getLogVersion() ),
                 positionAfterLastRecoveredTransaction.getByteOffset() );
