@@ -1,0 +1,18 @@
+# /etc/default/neo4j
+######################
+# DEPRECATED
+# This file is only used for the old SysVinit service (/etc/init.d/neo4j)
+# It is NOT used for the new SystemD service.
+# To change these values with SystemD, please use
+#
+#     systemctl edit neo4j.service
+#
+# Any values that were present in this file have been automatically
+# migrated into SystemD configuration as part of the upgrade.
+######################
+#
+# Number of seconds to wait for shutdown before killing the process.
+#NEO4J_SHUTDOWN_TIMEOUT=120
+#
+# Max number of open file descriptors
+#NEO4J_ULIMIT_NOFILE=40000
