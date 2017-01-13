@@ -146,9 +146,10 @@ public abstract class LabelScanStoreStartupIT
 
     private void checkLabelScanStoreAccessible( LabelScanStore labelScanStore ) throws IOException
     {
+        int labelId = 1;
         try ( LabelScanWriter labelScanWriter = labelScanStore.newWriter() )
         {
-            labelScanWriter.write( NodeLabelUpdate.labelChanges( 1, new long[]{}, new long[]{1} ) );
+            labelScanWriter.write( NodeLabelUpdate.labelChanges( 1, new long[]{}, new long[]{labelId} ) );
         }
         try ( LabelScanReader labelScanReader = labelScanStore.newReader() )
         {
