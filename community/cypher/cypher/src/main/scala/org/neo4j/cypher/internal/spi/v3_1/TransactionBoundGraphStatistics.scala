@@ -23,13 +23,13 @@ import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.{Cardinality, Sel
 import org.neo4j.cypher.internal.compiler.v3_1.spi.{GraphStatistics, StatisticsCompletingGraphStatistics}
 import org.neo4j.cypher.internal.frontend.v3_1.{LabelId, NameId, PropertyKeyId, RelTypeId}
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException
-import org.neo4j.kernel.api.index.IndexDescriptor
+import org.neo4j.cypher.internal.compiler.v3_1.IndexDescriptor
 import org.neo4j.kernel.api.{ReadOperations, Statement => KernelStatement}
 
 object TransactionBoundGraphStatistics {
   def apply(ops: ReadOperations) = new StatisticsCompletingGraphStatistics(new BaseTransactionBoundGraphStatistics(ops))
 
-  private class BaseTransactionBoundGraphStatistics(operations: ReadOperations) extends GraphStatistics {
+  private class BaseTransactionBoundGraphStatistics(operations: ReadOperations) extends GraphStatistics with IndexDescriptorCompatibility {
 
     import NameId._
 

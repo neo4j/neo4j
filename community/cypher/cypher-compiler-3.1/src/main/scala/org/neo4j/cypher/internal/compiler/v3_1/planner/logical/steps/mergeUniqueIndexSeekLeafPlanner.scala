@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.{IdName, LogicalPlan, NodeUniqueIndexSeek}
 import org.neo4j.cypher.internal.frontend.v3_1.ast.{Expression, HasLabels, LabelToken, PropertyKeyToken, UsingIndexHint}
-import org.neo4j.kernel.api.index.IndexDescriptor
+import org.neo4j.cypher.internal.compiler.v3_1.IndexDescriptor
 
 /*
  * Plan the following type of plan

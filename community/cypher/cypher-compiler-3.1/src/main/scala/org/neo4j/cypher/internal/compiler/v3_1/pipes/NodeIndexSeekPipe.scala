@@ -29,7 +29,6 @@ import org.neo4j.cypher.internal.compiler.v3_1.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_1.InternalException
 import org.neo4j.cypher.internal.frontend.v3_1.ast.{LabelToken, PropertyKeyToken}
 import org.neo4j.cypher.internal.frontend.v3_1.symbols.CTNode
-import org.neo4j.kernel.api.index.IndexDescriptor
 
 case class NodeIndexSeekPipe(ident: String,
                              label: LabelToken,

@@ -35,7 +35,7 @@ import org.neo4j.cypher.internal.frontend.v3_1.helpers.NonEmptyList
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 import org.neo4j.cypher.internal.frontend.v3_1.{SemanticDirection, ast}
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
-import org.neo4j.kernel.api.index.IndexDescriptor
+import org.neo4j.cypher.internal.compiler.v3_1.IndexDescriptor
 
 class StartPointChoosingBuilderTest extends BuilderTest {
   def builder = new StartPointChoosingBuilder
