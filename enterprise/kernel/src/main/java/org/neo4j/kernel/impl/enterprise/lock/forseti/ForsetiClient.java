@@ -245,7 +245,7 @@ public class ForsetiClient implements Locks.Client
 
                         if ( waitEvent == null )
                         {
-                            waitEvent = tracer.waitForLock( resourceType, resourceId );
+                            waitEvent = tracer.waitForLock( false, resourceType, resourceId );
                         }
                         applyWaitStrategy( resourceType, tries++ );
 
@@ -322,7 +322,7 @@ public class ForsetiClient implements Locks.Client
 
                         if ( waitEvent == null )
                         {
-                            waitEvent = tracer.waitForLock( resourceType, resourceId );
+                            waitEvent = tracer.waitForLock( true, resourceType, resourceId );
                         }
                         applyWaitStrategy( resourceType, tries++ );
                         markAsWaitingFor( existingLock, resourceType, resourceId );
@@ -817,7 +817,7 @@ public class ForsetiClient implements Locks.Client
                     assertValid( waitStartMillis, resourceType, resourceId );
                     if ( waitEvent == null && priorEvent == null )
                     {
-                        waitEvent = tracer.waitForLock( resourceType, resourceId );
+                        waitEvent = tracer.waitForLock( true, resourceType, resourceId );
                     }
                     applyWaitStrategy( resourceType, tries++ );
                     markAsWaitingFor( sharedLock, resourceType, resourceId );

@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
 
+import org.neo4j.kernel.impl.locking.ActiveLock;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
@@ -63,7 +64,11 @@ public class ExecutingQueryStatusTest
         // given
         long[] resourceIds = {17};
         ExecutingQueryStatus.WaitingOnLock status =
-                new ExecutingQueryStatus.WaitingOnLock( resourceType( "NODE" ), resourceIds, clock.nanos() );
+                new ExecutingQueryStatus.WaitingOnLock(
+                        ActiveLock.EXCLUSIVE_MODE,
+                        resourceType( "NODE" ),
+                        resourceIds,
+                        clock.nanos() );
         clock.forward( 17, TimeUnit.MILLISECONDS );
 
         // when

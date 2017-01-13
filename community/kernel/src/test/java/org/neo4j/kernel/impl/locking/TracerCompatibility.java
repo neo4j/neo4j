@@ -96,7 +96,7 @@ public class TracerCompatibility extends LockingCompatibilityTestSuite.Compatibi
         final List<StackTraceElement[]> waitCalls = new ArrayList<>();
 
         @Override
-        public LockWaitEvent waitForLock( ResourceType resourceType, long... resourceIds )
+        public LockWaitEvent waitForLock( boolean exclusive, ResourceType resourceType, long... resourceIds )
         {
             waitCalls.add( Thread.currentThread().getStackTrace() );
             return this;

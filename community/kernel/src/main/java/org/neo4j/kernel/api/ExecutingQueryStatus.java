@@ -56,12 +56,14 @@ abstract class ExecutingQueryStatus
 
     static class WaitingOnLock extends ExecutingQueryStatus
     {
+        private final String mode;
         private final ResourceType resourceType;
         private final long[] resourceIds;
         private final long startTimeNanos;
 
-        WaitingOnLock( ResourceType resourceType, long[] resourceIds, long startTimeNanos )
+        WaitingOnLock( String mode, ResourceType resourceType, long[] resourceIds, long startTimeNanos )
         {
+            this.mode = mode;
             this.resourceType = resourceType;
             this.resourceIds = resourceIds;
             this.startTimeNanos = startTimeNanos;
@@ -78,6 +80,7 @@ abstract class ExecutingQueryStatus
         {
             Map<String,Object> map = new HashMap<>();
             map.put( "state", "WAITING" );
+            map.put( "lockMode", mode );
             map.put( "waitTimeMillis", TimeUnit.NANOSECONDS.toMillis( waitTimeNanos( clock ) ) );
             map.put( "resourceType", resourceType.toString() );
             map.put( "resourceIds", resourceIds );

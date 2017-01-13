@@ -172,7 +172,7 @@ public class ExecutingQueryTest
 
     private LockWaitEvent lock( String resourceType, long resourceId )
     {
-        return query.lockTracer().waitForLock( resourceType( resourceType ), resourceId );
+        return query.lockTracer().waitForLock( false, resourceType( resourceType ), resourceId );
     }
 
     static ResourceType resourceType( String name )

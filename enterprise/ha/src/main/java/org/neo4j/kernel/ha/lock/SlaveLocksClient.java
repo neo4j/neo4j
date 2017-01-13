@@ -116,7 +116,7 @@ class SlaveLocksClient implements Locks.Client
         long[] newResourceIds = onlyFirstTimeLocks( lockMap, resourceIds );
         if ( newResourceIds.length > 0 )
         {
-            try ( LockWaitEvent event = tracer.waitForLock( resourceType, resourceIds ) )
+            try ( LockWaitEvent event = tracer.waitForLock( false, resourceType, resourceIds ) )
             {
                 acquireSharedOnMaster( resourceType, newResourceIds );
             }
@@ -145,7 +145,7 @@ class SlaveLocksClient implements Locks.Client
         long[] newResourceIds = onlyFirstTimeLocks( lockMap, resourceIds );
         if ( newResourceIds.length > 0 )
         {
-            try ( LockWaitEvent event = tracer.waitForLock( resourceType, resourceIds ) )
+            try ( LockWaitEvent event = tracer.waitForLock( true, resourceType, resourceIds ) )
             {
                 acquireExclusiveOnMaster( resourceType, newResourceIds );
             }

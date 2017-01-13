@@ -109,6 +109,7 @@ public class ListQueriesProcedureTest
             @SuppressWarnings( "unchecked" )
             Map<String,Object> statusMap = (Map<String,Object>) status;
             assertEquals( "WAITING", statusMap.get( "state" ) );
+            assertEquals( "EXCLUSIVE", statusMap.get( "lockMode" ) );
             assertEquals( "NODE", statusMap.get( "resourceType" ) );
             assertArrayEquals( new long[] {test.resource().getId()}, (long[]) statusMap.get( "resourceIds" ) );
             assertThat( data, hasKey( "waitTimeMillis" ) );
