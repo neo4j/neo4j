@@ -46,10 +46,12 @@ public class PredefinedRolesBuilder implements RolesBuilder
         SimpleRole architect = new SimpleRole( ARCHITECT );
         architect.add( new WildcardPermission( "schema:*" ) );
         architect.add( new WildcardPermission( "data:*" ) );
+        architect.add( new WildcardPermission( "token:*" ) );
         roles.put( ARCHITECT, architect );
 
         SimpleRole publisher = new SimpleRole( PUBLISHER );
         publisher.add( new WildcardPermission( "data:*" ) );
+        publisher.add( new WildcardPermission( "token:*" ) );
         roles.put( PUBLISHER, publisher );
 
         SimpleRole reader = new SimpleRole( READER );

@@ -923,6 +923,12 @@ public class OperationsFacade
     public int labelGetOrCreateForName( String labelName ) throws IllegalTokenNameException, TooManyLabelsException
     {
         statement.assertOpen();
+        int id = tokenRead().labelGetForName( statement, labelName );
+        if (id != KeyReadOperations.NO_SUCH_LABEL )
+        {
+            return id;
+        }
+        statement.assertAllows( AccessMode::allowsTokenCreates, "Token create" );
         return tokenWrite().labelGetOrCreateForName( statement, labelName );
     }
 
@@ -930,6 +936,12 @@ public class OperationsFacade
     public int propertyKeyGetOrCreateForName( String propertyKeyName ) throws IllegalTokenNameException
     {
         statement.assertOpen();
+        int id = tokenRead().propertyKeyGetForName( statement, propertyKeyName );
+        if (id != KeyReadOperations.NO_SUCH_PROPERTY_KEY )
+        {
+            return id;
+        }
+        statement.assertAllows( AccessMode::allowsTokenCreates, "Token create" );
         return tokenWrite().propertyKeyGetOrCreateForName( statement,
                 propertyKeyName );
     }
@@ -938,6 +950,12 @@ public class OperationsFacade
     public int relationshipTypeGetOrCreateForName( String relationshipTypeName ) throws IllegalTokenNameException
     {
         statement.assertOpen();
+        int id = tokenRead().relationshipTypeGetForName( statement, relationshipTypeName );
+        if (id != KeyReadOperations.NO_SUCH_RELATIONSHIP_TYPE )
+        {
+            return id;
+        }
+        statement.assertAllows( AccessMode::allowsTokenCreates, "Token create" );
         return tokenWrite().relationshipTypeGetOrCreateForName( statement, relationshipTypeName );
     }
 
@@ -946,6 +964,7 @@ public class OperationsFacade
             IllegalTokenNameException, TooManyLabelsException
     {
         statement.assertOpen();
+        statement.assertAllows( AccessMode::allowsTokenCreates, "Token create" );
         tokenWrite().labelCreateForName( statement, labelName, id );
     }
 
@@ -955,6 +974,7 @@ public class OperationsFacade
             IllegalTokenNameException
     {
         statement.assertOpen();
+        statement.assertAllows( AccessMode::allowsTokenCreates, "Token create" );
         tokenWrite().propertyKeyCreateForName( statement, propertyKeyName, id );
     }
 
@@ -964,6 +984,7 @@ public class OperationsFacade
             IllegalTokenNameException
     {
         statement.assertOpen();
+        statement.assertAllows( AccessMode::allowsTokenCreates, "Token create" );
         tokenWrite().relationshipTypeCreateForName( statement,
                 relationshipTypeName, id );
     }

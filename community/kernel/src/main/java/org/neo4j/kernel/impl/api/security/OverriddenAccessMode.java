@@ -46,6 +46,12 @@ public class OverriddenAccessMode extends WrappedAccessMode
     }
 
     @Override
+    public boolean allowsTokenCreates()
+    {
+        return wrapping.allowsTokenCreates();
+    }
+
+    @Override
     public boolean allowsSchemaWrites()
     {
         return wrapping.allowsSchemaWrites();

@@ -93,6 +93,7 @@ public abstract class ProcedureInteractionTestBase<S>
             "The credentials you provided were valid, but must be changed before you can use this instance.";
     String READ_OPS_NOT_ALLOWED = "Read operations are not allowed";
     String WRITE_OPS_NOT_ALLOWED = "Write operations are not allowed";
+    String TOKEN_CREATE_OPS_NOT_ALLOWED = "Token create operations are not allowed";
     String SCHEMA_OPS_NOT_ALLOWED = "Schema operations are not allowed";
 
     protected boolean IS_EMBEDDED = true;
@@ -168,7 +169,7 @@ public abstract class ProcedureInteractionTestBase<S>
         writeSubject = neo.login( "writeSubject", "abc" );
         schemaSubject = neo.login( "schemaSubject", "abc" );
         adminSubject = neo.login( "adminSubject", "abc" );
-        executeQuery( writeSubject, "UNWIND range(0,2) AS number CREATE (:Node {number:number, name:'node'+number})" );
+        assertEmpty( writeSubject, "UNWIND range(0,2) AS number CREATE (:Node {number:number, name:'node'+number})" );
     }
 
     protected abstract NeoInteractionLevel<S> setUpNeoServer( Map<String, String> config ) throws Throwable;

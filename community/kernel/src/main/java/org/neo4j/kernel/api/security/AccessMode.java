@@ -44,6 +44,12 @@ public interface AccessMode
                     }
 
                     @Override
+                    public boolean allowsTokenCreates()
+                    {
+                        return false;
+                    }
+
+                    @Override
                     public boolean allowsSchemaWrites()
                     {
                         return false;
@@ -73,6 +79,12 @@ public interface AccessMode
 
                     @Override
                     public boolean allowsSchemaWrites()
+                    {
+                        return false;
+                    }
+
+                    @Override
+                    public boolean allowsTokenCreates()
                     {
                         return false;
                     }
@@ -117,6 +129,12 @@ public interface AccessMode
                     }
 
                     @Override
+                    public boolean allowsTokenCreates()
+                    {
+                        return false;
+                    }
+
+                    @Override
                     public boolean allowsSchemaWrites()
                     {
                         return false;
@@ -145,6 +163,12 @@ public interface AccessMode
                     }
 
                     @Override
+                    public boolean allowsTokenCreates()
+                    {
+                        return false;
+                    }
+
+                    @Override
                     public boolean allowsSchemaWrites()
                     {
                         return false;
@@ -168,6 +192,12 @@ public interface AccessMode
 
                     @Override
                     public boolean allowsWrites()
+                    {
+                        return true;
+                    }
+
+                    @Override
+                    public boolean allowsTokenCreates()
                     {
                         return true;
                     }
@@ -201,6 +231,12 @@ public interface AccessMode
                     }
 
                     @Override
+                    public boolean allowsTokenCreates()
+                    {
+                        return true;
+                    }
+
+                    @Override
                     public boolean allowsSchemaWrites()
                     {
                         return true;
@@ -222,6 +258,7 @@ public interface AccessMode
 
     boolean allowsReads();
     boolean allowsWrites();
+    boolean allowsTokenCreates();
     boolean allowsSchemaWrites();
 
     /**
