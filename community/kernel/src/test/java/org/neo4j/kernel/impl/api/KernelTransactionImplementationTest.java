@@ -35,6 +35,7 @@ import java.util.function.Consumer;
 
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.TransactionHook;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AnonymousContext;
@@ -47,8 +48,11 @@ import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageStatement;
+import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
+import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.test.DoubleLatch;
+import org.neo4j.test.mockito.matcher.RootCauseMatcher;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.Matchers.equalTo;
@@ -470,15 +474,6 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     }
 
     @Test
-    public void markForTerminationNotInitializedTransaction()
-    {
-        KernelTransactionImplementation tx = newNotInitializedTransaction();
-        tx.markForTermination( Status.General.UnknownError );
-
-        assertEquals( Status.General.UnknownError, tx.getReasonIfTerminated().get() );
-    }
-
-    @Test
     public void markForTerminationInitializedTransaction()
     {
         Locks.Client locksClient = mock( Locks.Client.class );
@@ -711,6 +706,76 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     }
 
     @Test
+    public void transactionIsOpenAfterInitialization()
+    {
+        KernelTransactionImplementation transaction = newNotInitializedTransaction();
+        assertFalse( transaction.isOpen() );
+
+        transaction.initialize( 100, 100, new SimpleStatementLocks( new NoOpClient() ),
+                KernelTransaction.Type.explicit, securityContext(), 100 );
+        assertTrue( transaction.isOpen() );
+    }
+
+    @Test
+    public void transactionIsClosedAfterCommit() throws TransactionFailureException
+    {
+        KernelTransactionImplementation tx = newTransaction( 1000 );
+        assertTrue( tx.isOpen() );
+
+        tx.success();
+        tx.close();
+
+        assertTrue( tx.isClosed() );
+    }
+
+    @Test
+    public void transactionIsClosedAfterRollback() throws TransactionFailureException
+    {
+        KernelTransactionImplementation tx = newTransaction( 1000 );
+        assertTrue( tx.isOpen() );
+
+        tx.failure();
+        tx.close();
+
+        assertTrue( tx.isClosed() );
+    }
+
+    @Test
+    public void closeShutdownTransactionIsNotAllowed() throws TransactionFailureException
+    {
+        KernelTransactionImplementation transaction = newTransaction( 1000 );
+        transaction.markAsShutdown();
+
+        expectedException.expect( TransactionFailureException.class );
+        expectedException.expectMessage( "Transaction terminated since marked as shut down." );
+        transaction.close();
+    }
+
+    @Test
+    public void closeLocksOnTransactionShutdown()
+    {
+        Locks.Client locksClient = mock( Locks.Client.class );
+        KernelTransactionImplementation transaction = newTransaction( securityContext(), locksClient );
+        transaction.markAsShutdown();
+
+        verify( locksClient ).close();
+    }
+
+    @Test
+    public void closeClosingTransactionNotAllowed() throws TransactionFailureException
+    {
+        Locks.Client locksClient = mock( Locks.Client.class );
+        KernelTransactionImplementation transaction = newTransaction( securityContext(), locksClient );
+        transaction.txState().nodeDoCreate( 42L );
+        hooks.register( new ClosingTransactionHook() );
+        transaction.success();
+
+        expectedException.expect( IllegalStateException.class );
+        expectedException.expectMessage("Transaction is already closing. Repeated execution of transactions are not allowed."  );
+        transaction.closeTransaction();
+    }
+
+    @Test
     public void closeClosedTransactionIsNotAllowed() throws TransactionFailureException
     {
         KernelTransactionImplementation transaction = newTransaction( 1000 );
@@ -733,6 +798,36 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
             SimpleStatementLocks statementLocks = new SimpleStatementLocks( new NoOpClient() );
             tx.initialize( i + 10, i + 10, statementLocks, KernelTransaction.Type.implicit, securityContext(), 0L );
             tx.close();
+        }
+    }
+
+    private static class ClosingTransactionHook implements TransactionHook
+    {
+        @Override
+        public Outcome beforeCommit( ReadableTransactionState state, KernelTransaction transaction,
+                StoreReadLayer storeReadLayer, StorageStatement statement )
+        {
+            try
+            {
+                transaction.closeTransaction();
+            }
+            catch ( TransactionFailureException e )
+            {
+                throw new RuntimeException( e );
+            }
+            return null;
+        }
+
+        @Override
+        public void afterCommit( ReadableTransactionState state, KernelTransaction transaction, Outcome outcome )
+        {
+
+        }
+
+        @Override
+        public void afterRollback( ReadableTransactionState state, KernelTransaction transaction, Outcome outcome )
+        {
+
         }
     }
 }
