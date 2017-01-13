@@ -20,10 +20,9 @@
 package org.neo4j.kernel.impl.locking;
 
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.commons.lang3.mutable.MutableInt;
 
@@ -161,12 +160,9 @@ public class DeferringLockClient implements Locks.Client
     }
 
     @Override
-    public Collection<Locks.ActiveLock> activeLocks()
+    public Stream<? extends ActiveLock> activeLocks()
     {
-        return locks.keySet().stream().map( ( unit ) -> unit.isExclusive()
-                ? new Locks.ActiveExclusiveLock( unit.resourceType(), unit.resourceId() )
-                : new Locks.ActiveSharedLock( unit.resourceType(), unit.resourceId() ) )
-                .collect( Collectors.toList() );
+        return locks.keySet().stream();
     }
 
     private void assertNotStopped()

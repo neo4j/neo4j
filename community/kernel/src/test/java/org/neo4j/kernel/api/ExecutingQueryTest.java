@@ -175,14 +175,14 @@ public class ExecutingQueryTest
         return query.lockTracer().waitForLock( resourceType( resourceType ), resourceId );
     }
 
-    static ResourceType resourceType( String string )
+    static ResourceType resourceType( String name )
     {
         return new ResourceType()
         {
             @Override
             public String toString()
             {
-                return string;
+                return name();
             }
 
             @Override
@@ -195,6 +195,12 @@ public class ExecutingQueryTest
             public WaitStrategy waitStrategy()
             {
                 throw new UnsupportedOperationException( "not used" );
+            }
+
+            @Override
+            public String name()
+            {
+                return name;
             }
         };
     }

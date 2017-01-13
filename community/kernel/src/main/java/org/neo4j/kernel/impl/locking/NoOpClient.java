@@ -19,8 +19,7 @@
  */
 package org.neo4j.kernel.impl.locking;
 
-import java.util.Collection;
-import java.util.Collections;
+import java.util.stream.Stream;
 
 import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
 import org.neo4j.storageengine.api.lock.ResourceType;
@@ -76,8 +75,8 @@ public class NoOpClient implements Locks.Client
     }
 
     @Override
-    public Collection<Locks.ActiveLock> activeLocks()
+    public Stream<? extends ActiveLock> activeLocks()
     {
-        return Collections.emptyList();
+        return Stream.empty();
     }
 }

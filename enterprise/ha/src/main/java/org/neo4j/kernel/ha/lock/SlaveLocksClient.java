@@ -20,10 +20,11 @@
 package org.neo4j.kernel.ha.lock;
 
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
+import java.util.stream.Stream;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.com.ComException;
@@ -35,6 +36,7 @@ import org.neo4j.kernel.AvailabilityGuard.UnavailableException;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
+import org.neo4j.kernel.impl.locking.ActiveLock;
 import org.neo4j.kernel.impl.locking.LockClientStoppedException;
 import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.LockWaitEvent;
@@ -58,6 +60,9 @@ import static org.neo4j.kernel.impl.locking.LockType.WRITE;
  */
 class SlaveLocksClient implements Locks.Client
 {
+    private static final Function<Map.Entry<ResourceType,Map<Long,AtomicInteger>>,Stream<? extends ActiveLock>>
+            EXCLUSIVE_ACTIVE_LOCKS = activeLocks( ActiveLock.Factory.EXCLUSIVE_LOCK ),
+            SHARED_ACTIVE_LOCKS = activeLocks( ActiveLock.Factory.SHARED_LOCK );
     private final Master master;
     private final Locks.Client client;
     private final Locks localLockManager;
@@ -242,9 +247,21 @@ class SlaveLocksClient implements Locks.Client
     }
 
     @Override
-    public Collection<Locks.ActiveLock> activeLocks()
+    public Stream<? extends ActiveLock> activeLocks()
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        return Stream.concat( // TODO: do we need to make these maps of locks ConcurrentHashMaps?
+                exclusiveLocks.entrySet().stream().flatMap( EXCLUSIVE_ACTIVE_LOCKS ),
+                sharedLocks.entrySet().stream().flatMap( SHARED_ACTIVE_LOCKS ) );
+    }
+
+    private static Function<Map.Entry<ResourceType,Map<Long,AtomicInteger>>,Stream<? extends ActiveLock>> activeLocks(
+            ActiveLock.Factory activeLock )
+    {
+        return entry -> entry.getValue().keySet().stream().map( resourceId ->
+        {
+            ResourceType resourceType = entry.getKey();
+            return activeLock.create( resourceType, resourceId );
+        } );
     }
 
     private void stopLockSessionOnMaster()

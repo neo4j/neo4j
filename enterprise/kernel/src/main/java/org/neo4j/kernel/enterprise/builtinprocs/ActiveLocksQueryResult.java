@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.enterprise.builtinprocs;
 
-import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.ActiveLock;
 
 public class ActiveLocksQueryResult
 {
@@ -27,10 +27,10 @@ public class ActiveLocksQueryResult
     public final String resourceType;
     public final long resourceId;
 
-    public ActiveLocksQueryResult( Locks.ActiveLock lock )
+    public ActiveLocksQueryResult( ActiveLock lock )
     {
         this.mode = lock.mode();
-        this.resourceType = lock.resourceType.toString();
-        this.resourceId = lock.resourceId;
+        this.resourceType = lock.resourceType().name();
+        this.resourceId = lock.resourceId();
     }
 }

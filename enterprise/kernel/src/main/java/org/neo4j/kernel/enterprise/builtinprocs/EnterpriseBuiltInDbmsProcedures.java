@@ -254,7 +254,7 @@ public class EnterpriseBuiltInDbmsProcedures
         {
             long id = fromExternalString( queryId ).kernelQueryId();
             return getActiveTransactions( tx -> executingQueriesWithId( id, tx ) )
-                    .flatMap( pair -> pair.first().activeLocks().stream().map( ActiveLocksQueryResult::new ) );
+                    .flatMap( pair -> pair.first().activeLocks().map( ActiveLocksQueryResult::new ) );
         }
         catch ( UncaughtCheckedException uncaught )
         {

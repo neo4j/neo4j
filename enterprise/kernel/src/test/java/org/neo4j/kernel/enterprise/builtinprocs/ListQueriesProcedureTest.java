@@ -90,11 +90,11 @@ public class ListQueriesProcedureTest
     public void shouldProvideElapsedCpuTime() throws Exception
     {
         // given
-        String QUERY = "MATCH (n) SET n.v = n.v + 1";
-        try ( Resource<Node> test = test( db::createNode, Transaction::acquireWriteLock, QUERY ) )
+        String query = "MATCH (n) SET n.v = n.v + 1";
+        try ( Resource<Node> test = test( db::createNode, Transaction::acquireWriteLock, query ) )
         {
             // when
-            Map<String,Object> data = getQueryListing( QUERY );
+            Map<String,Object> data = getQueryListing( query );
 
             // then
             assertThat( data, hasKey( "elapsedTimeMillis" ) );
@@ -116,7 +116,7 @@ public class ListQueriesProcedureTest
             assertThat( waitTime1, instanceOf( Long.class ) );
 
             // when
-            data = getQueryListing( QUERY );
+            data = getQueryListing( query );
 
             // then
             Long cpuTime2 = (Long) data.get( "cpuTimeMillis" );
@@ -148,7 +148,7 @@ public class ListQueriesProcedureTest
     public void shouldListActiveLocks() throws Exception
     {
         // given
-        String QUERY = "MATCH (x:X) SET x.v = 5 WITH count(x) AS num MATCH (y:Y) SET y.c = num";
+        String query = "MATCH (x:X) SET x.v = 5 WITH count(x) AS num MATCH (y:Y) SET y.c = num";
         Set<Long> locked = new HashSet<>();
         try ( Resource<Node> test = test( () ->
         {
@@ -157,13 +157,13 @@ public class ListQueriesProcedureTest
                 locked.add( db.createNode( label( "X" ) ).getId() );
             }
             return db.createNode( label( "Y" ) );
-        }, Transaction::acquireWriteLock, QUERY ) )
+        }, Transaction::acquireWriteLock, query ) )
         {
             // when
             try ( Result rows = db.execute( "CALL dbms.listQueries() YIELD query AS queryText, queryId "
                     + "WHERE queryText = $queryText "
                     + "CALL dbms.listActiveLocks(queryId) YIELD mode, resourceType, resourceId "
-                    + "RETURN *", singletonMap( "queryText", QUERY ) ) )
+                    + "RETURN *", singletonMap( "queryText", query ) ) )
             {
                 // then
                 Set<Long> ids = new HashSet<>();

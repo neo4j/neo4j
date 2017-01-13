@@ -21,10 +21,10 @@ package org.neo4j.kernel.impl.enterprise.lock.forseti;
 
 import java.time.Clock;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.IntFunction;
+import java.util.stream.Stream;
 
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.collection.primitive.Primitive;
@@ -34,6 +34,7 @@ import org.neo4j.collection.primitive.PrimitiveLongVisitor;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.enterprise.lock.forseti.ForsetiLockManager.DeadlockResolutionStrategy;
+import org.neo4j.kernel.impl.locking.ActiveLock;
 import org.neo4j.kernel.impl.locking.LockAcquisitionTimeoutException;
 import org.neo4j.kernel.impl.locking.LockClientStateHolder;
 import org.neo4j.kernel.impl.locking.LockClientStoppedException;
@@ -640,34 +641,32 @@ public class ForsetiClient implements Locks.Client
     }
 
     @Override
-    public Collection<Locks.ActiveLock> activeLocks()
+    public Stream<? extends ActiveLock> activeLocks()
     {
-        List<Locks.ActiveLock> locks = new ArrayList<>();
-        for ( int typeId = 0; typeId < exclusiveLockCounts.length; typeId++ )
+        List<ActiveLock> locks = new ArrayList<>();
+        collectActiveLocks( exclusiveLockCounts, locks, ActiveLock.Factory.EXCLUSIVE_LOCK );
+        collectActiveLocks( sharedLockCounts, locks, ActiveLock.Factory.SHARED_LOCK );
+        return locks.stream();
+    }
+
+    private static void collectActiveLocks(
+            PrimitiveLongIntMap[] counts,
+            List<ActiveLock> locks,
+            ActiveLock.Factory activeLock )
+    {
+        for ( int typeId = 0; typeId < counts.length; typeId++ )
         {
-            PrimitiveLongIntMap lockCounts = exclusiveLockCounts[typeId];
-            if (lockCounts != null)
+            PrimitiveLongIntMap lockCounts = counts[typeId];
+            if ( lockCounts != null )
             {
                 ResourceType resourceType = ResourceTypes.fromId( typeId );
-                lockCounts.visitEntries( (resourceId, count) -> {
-                    locks.add( new Locks.ActiveExclusiveLock( resourceType, resourceId ) );
+                lockCounts.visitEntries( ( resourceId, count ) ->
+                {
+                    locks.add( activeLock.create( resourceType, resourceId ) );
                     return false;
                 } );
             }
         }
-        for ( int typeId = 0; typeId < sharedLockCounts.length; typeId++ )
-        {
-            PrimitiveLongIntMap lockCounts = sharedLockCounts[typeId];
-            if (lockCounts != null)
-            {
-                ResourceType resourceType = ResourceTypes.fromId( typeId );
-                lockCounts.visitEntries( (resourceId, count) -> {
-                    locks.add( new Locks.ActiveSharedLock( resourceType, resourceId ) );
-                    return false;
-                } );
-            }
-        }
-        return locks;
     }
 
     public int waitListSize()

@@ -20,12 +20,11 @@
 package org.neo4j.kernel.impl.locking;
 
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -472,12 +471,9 @@ public class DeferringLockClientTest
         }
 
         @Override
-        public Collection<Locks.ActiveLock> activeLocks()
+        public Stream<? extends ActiveLock> activeLocks()
         {
-            return actualLockUnits.stream().map( lu -> lu.isExclusive()
-                    ? new Locks.ActiveExclusiveLock( lu.resourceType(), lu.resourceId() )
-                    : new Locks.ActiveSharedLock( lu.resourceType(), lu.resourceId() ) )
-                    .collect( Collectors.toList() );
+            return actualLockUnits.stream();
         }
     }
 }

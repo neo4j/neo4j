@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.locking;
 
-import java.util.Collection;
+import java.util.stream.Stream;
 
 /**
  * A {@link StatementLocks} implementation that uses given {@link Locks.Client} for both
@@ -65,7 +65,7 @@ public class SimpleStatementLocks implements StatementLocks
     }
 
     @Override
-    public Collection<Locks.ActiveLock> activeLocks()
+    public Stream<? extends ActiveLock> activeLocks()
     {
         return client.activeLocks();
     }

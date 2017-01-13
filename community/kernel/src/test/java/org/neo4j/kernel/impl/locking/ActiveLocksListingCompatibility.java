@@ -19,13 +19,17 @@
  */
 package org.neo4j.kernel.impl.locking;
 
-import java.util.Collection;
+import java.util.HashSet;
+import java.util.stream.Stream;
 
 import org.junit.Ignore;
 import org.junit.Test;
 
 import static java.util.Arrays.asList;
+import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.kernel.impl.locking.ActiveLock.exclusiveLock;
+import static org.neo4j.kernel.impl.locking.ActiveLock.sharedLock;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.NODE;
 
 @Ignore( "Not a test. This is a compatibility suite, run from LockingCompatibilityTestSuite." )
@@ -44,17 +48,17 @@ public class ActiveLocksListingCompatibility extends LockingCompatibilityTestSui
         clientA.acquireShared( LockTracer.NONE, NODE, 3, 4, 5 );
 
         // when
-        Collection<Locks.ActiveLock> locks = clientA.activeLocks();
+        Stream<? extends ActiveLock> locks = clientA.activeLocks();
 
         // then
         assertEquals(
-                asList(
-                        new Locks.ActiveExclusiveLock( NODE, 1 ),
-                        new Locks.ActiveExclusiveLock( NODE, 2 ),
-                        new Locks.ActiveExclusiveLock( NODE, 3 ),
-                        new Locks.ActiveSharedLock( NODE, 3 ),
-                        new Locks.ActiveSharedLock( NODE, 4 ),
-                        new Locks.ActiveSharedLock( NODE, 5 ) ),
-                locks );
+                new HashSet<>( asList(
+                        exclusiveLock( NODE, 1 ),
+                        exclusiveLock( NODE, 2 ),
+                        exclusiveLock( NODE, 3 ),
+                        sharedLock( NODE, 3 ),
+                        sharedLock( NODE, 4 ),
+                        sharedLock( NODE, 5 ) ) ),
+                locks.collect( toSet() ) );
     }
 }
