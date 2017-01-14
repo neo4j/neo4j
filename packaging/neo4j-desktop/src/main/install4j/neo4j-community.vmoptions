@@ -1,4 +1,0 @@
-# Enter one VM parameter per line, note that some parameters can only be set once.
-# For example, to adjust the maximum memory usage to 512 MB, uncomment the following line
-# -Xmx512m
--include-options ${installer:userVmOptionsFile}
