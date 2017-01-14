@@ -47,7 +47,6 @@ On top of that, to build Debian packages and Neo4j Desktop:
 * To add execution of integration tests, use: `mvn clean install -DrunITs`.
 * In case you just want the jars, without running tests, this is for you: `mvn clean install -DskipTests`.
 * To skip building the browser module, use `-DskipBrowser` (note that you might not be able to build the server without it).
-* To build everything, including running all tests and assembling product packages, use `mvn clean install -DfullBuild`.
 * To build product packages, do `export PATH="bin:$PATH" && make clean all` in the packaging directory after building artifacts with Maven
 * To build the documentation see the link:manual/[Neo4j manual].
 * When building on Windows, use `-Dlicensing.skip` to avoid problems related to line endings.
@@ -57,7 +56,7 @@ On top of that, to build Debian packages and Neo4j Desktop:
 
 == Running Neo4j ==
 
-After running a `mvn clean install -DfullBuild` cd into `packaging/standalone/target` and extract the version you want, then
+After running a `mvn clean install` cd into `packaging/standalone/target` and extract the version you want, then
 
   bin/neo4j start
 
