@@ -92,10 +92,8 @@
                 <licensingRequirementFile>licensing-requirements-installer.xml</licensingRequirementFile>
               </licensingRequirementFiles>
               <thirdPartyLicensingFilename>${project.artifactId}-${neo4j.version}-NOTICE-win.txt</thirdPartyLicensingFilename>
-              <checkExistingNoticeFile>${project.build.directory}/../src/main/distribution/text/community/NOTICE.txt</checkExistingNoticeFile>
               <listPrependText>list-prefix.txt</listPrependText>
               <listReport>${project.artifactId}-${neo4j.version}-LICENSES-win.txt</listReport>
-              <checkExistingLicensesFile>${project.build.directory}/../src/main/distribution/text/community/LICENSES.txt</checkExistingLicensesFile>
             </configuration>
           </execution>
         </executions>
