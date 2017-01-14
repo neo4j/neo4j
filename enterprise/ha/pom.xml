@@ -7,7 +7,7 @@
     <relativePath>../..</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
-  <groupId>org.neo4j</groupId>
+
   <artifactId>neo4j-ha</artifactId>
   <name>Neo4j - High Availability</name>
   <version>3.1.1-SNAPSHOT</version>
@@ -193,6 +193,11 @@
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
       <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-kernel</artifactId>
+      <version>${project.version}</version>
     </dependency>
   </dependencies>
 </project>
