@@ -27,7 +27,6 @@ import org.neo4j.io.pagecache.PageCursor;
 
 import static org.neo4j.index.internal.gbptree.KeySearch.isHit;
 import static org.neo4j.index.internal.gbptree.KeySearch.positionOf;
-import static org.neo4j.index.internal.gbptree.PageCursorUtil.goTo;
 
 /**
  * Implementation of GB+ tree insert/remove algorithms.
@@ -136,15 +135,9 @@ class InternalTreeLogic<KEY,VALUE>
          */
         boolean covers( KEY key )
         {
-            if ( !lowerIsOpenEnded && layout.compare( key, lower ) < 0 )
-            {
-                return false;
-            }
-            if ( !upperIsOpenEnded && layout.compare( key, upper ) >= 0 )
-            {
-                return false;
-            }
-            return true;
+            boolean insideLower = lowerIsOpenEnded || layout.compare( key, lower ) >= 0;
+            boolean insideHigher = upperIsOpenEnded || layout.compare( key, upper ) < 0;
+            return insideLower && insideHigher;
         }
     }
 
@@ -249,10 +242,10 @@ class InternalTreeLogic<KEY,VALUE>
         }
         if ( currentLevel != previousLevel )
         {
-            goTo( cursor, "parent", levels[currentLevel].treeNodeId );
+            bTreeNode.goTo( cursor, "parent", levels[currentLevel].treeNodeId );
         }
 
-        while ( bTreeNode.isInternal( cursor ) )
+        while ( TreeNode.isInternal( cursor ) )
         {
             // We still need to go down further, but we're on the right path
             int keyCount = bTreeNode.keyCount( cursor );
@@ -306,7 +299,7 @@ class InternalTreeLogic<KEY,VALUE>
             level.treeNodeId = cursor.getCurrentPageId();
         }
 
-        assert bTreeNode.isLeaf( cursor ) : "Ended up on a tree node which isn't a leaf after moving cursor towards " +
+        assert TreeNode.isLeaf( cursor ) : "Ended up on a tree node which isn't a leaf after moving cursor towards " +
                 key + ", cursor is at " + cursor.getCurrentPageId();
     }
 
@@ -478,7 +471,7 @@ class InternalTreeLogic<KEY,VALUE>
         // Update new right
         try ( PageCursor rightCursor = cursor.openLinkedCursor( newRight ) )
         {
-            goTo( rightCursor, "new right sibling in split", newRight );
+            bTreeNode.goTo( rightCursor, "new right sibling in split", newRight );
             bTreeNode.initializeInternal( rightCursor, stableGeneration, unstableGeneration );
             bTreeNode.setRightSibling( rightCursor, oldRight, stableGeneration, unstableGeneration );
             bTreeNode.setLeftSibling( rightCursor, current, stableGeneration, unstableGeneration );
@@ -738,7 +731,7 @@ class InternalTreeLogic<KEY,VALUE>
         // Update new right
         try ( PageCursor rightCursor = cursor.openLinkedCursor( newRight ) )
         {
-            goTo( rightCursor, "new right sibling in split", newRight );
+            bTreeNode.goTo( rightCursor, "new right sibling in split", newRight );
             bTreeNode.initializeLeaf( rightCursor, stableGeneration, unstableGeneration );
             bTreeNode.setRightSibling( rightCursor, oldRight, stableGeneration, unstableGeneration );
             bTreeNode.setLeftSibling( rightCursor, current, stableGeneration, unstableGeneration );
@@ -936,7 +929,7 @@ class InternalTreeLogic<KEY,VALUE>
         long newGenId = idProvider.acquireNewId( stableGeneration, unstableGeneration );
         try ( PageCursor newGenCursor = cursor.openLinkedCursor( newGenId ) )
         {
-            goTo( newGenCursor, "new gen", newGenId );
+            bTreeNode.goTo( newGenCursor, "new gen", newGenId );
             cursor.copyTo( 0, newGenCursor, 0, cursor.getCurrentPageSize() );
             bTreeNode.setGen( newGenCursor, unstableGeneration );
             bTreeNode.setNewGen( newGenCursor, TreeNode.NO_NODE_FLAG, stableGeneration, unstableGeneration );
