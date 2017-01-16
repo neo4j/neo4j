@@ -54,14 +54,6 @@ public class ReadReplica implements ClusterMember
 
     public ReadReplica( File parentDir, int memberId, DiscoveryServiceFactory discoveryServiceFactory,
                         List<AdvertisedSocketAddress> coreMemberHazelcastAddresses, Map<String, String> extraParams,
-                        Map<String, IntFunction<String>> instanceExtraParams, String recordFormat )
-    {
-        this( parentDir, memberId, discoveryServiceFactory, coreMemberHazelcastAddresses, extraParams,
-                instanceExtraParams, recordFormat, new Monitors() );
-    }
-
-    public ReadReplica( File parentDir, int memberId, DiscoveryServiceFactory discoveryServiceFactory,
-                        List<AdvertisedSocketAddress> coreMemberHazelcastAddresses, Map<String, String> extraParams,
                         Map<String, IntFunction<String>> instanceExtraParams, String recordFormat, Monitors monitors )
     {
         this.memberId = memberId;

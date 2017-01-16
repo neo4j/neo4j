@@ -32,6 +32,7 @@ import org.neo4j.causalclustering.catchup.tx.FileCopyMonitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.monitoring.Monitors;
 
 class StreamToDisk implements StoreFileStreams
@@ -50,8 +51,8 @@ class StreamToDisk implements StoreFileStreams
         this.pageCache = pageCache;
         fs.mkdirs( storeDir );
         this.fileCopyMonitor = monitors.newMonitor( FileCopyMonitor.class );
-        channels = new HashMap<String,WritableByteChannel>();
-        pagedFiles = new HashMap<String,PagedFile>();
+        channels = new HashMap<>();
+        pagedFiles = new HashMap<>();
 
     }
 
@@ -62,14 +63,7 @@ class StreamToDisk implements StoreFileStreams
         fs.mkdirs( fileName.getParentFile() );
 
         fileCopyMonitor.copyFile( fileName );
-        if ( destination.endsWith( ".id" ) )
-        {
-            try ( OutputStream outputStream = fs.openAsOutputStream( fileName, true ) )
-            {
-                outputStream.write( data );
-            }
-        }
-        else
+        if ( StoreType.typeOf( destination ).map( StoreType::isRecordStore ).orElse( false ) )
         {
             WritableByteChannel channel = channels.get( destination );
             if ( channel == null )
@@ -85,6 +79,13 @@ class StreamToDisk implements StoreFileStreams
             while ( buffer.hasRemaining() )
             {
                 channel.write( buffer );
+            }
+        }
+        else
+        {
+            try ( OutputStream outputStream = fs.openAsOutputStream( fileName, true ) )
+            {
+                outputStream.write( data );
             }
         }
     }
