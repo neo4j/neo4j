@@ -37,6 +37,8 @@ import org.neo4j.cypher.internal.frontend.v3_0.{InternalException, SemanticDirec
  * much testing
  */
 case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListSupport {
+  def planLock(plan: LogicalPlan, nodesToLock: Set[IdName])(implicit context: LogicalPlanningContext): LogicalPlan =
+    LockNodes(plan, nodesToLock)(plan.solved)
 
   def solvePredicate(plan: LogicalPlan, solved: Expression)(implicit context: LogicalPlanningContext) =
     plan.updateSolved(_.amendQueryGraph(_.addPredicates(solved)))

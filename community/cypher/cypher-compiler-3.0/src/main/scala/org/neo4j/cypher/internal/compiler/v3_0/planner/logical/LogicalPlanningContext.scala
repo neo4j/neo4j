@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v3_0.{devNullLogger, InternalNotificationLogger}
-import org.neo4j.cypher.internal.frontend.v3_0.ast.Variable
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{IdName, LogicalPlan, StrictnessMode}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.v3_0.spi.PlanContext
+import org.neo4j.cypher.internal.compiler.v3_0.{InternalNotificationLogger, devNullLogger}
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticTable
+import org.neo4j.cypher.internal.frontend.v3_0.ast.Variable
 
 case class LogicalPlanningContext(planContext: PlanContext,
                                   logicalPlanProducer: LogicalPlanProducer,
@@ -36,7 +36,8 @@ case class LogicalPlanningContext(planContext: PlanContext,
                                   notificationLogger: InternalNotificationLogger = devNullLogger,
                                   useErrorsOverWarnings: Boolean = false,
                                   errorIfShortestPathFallbackUsedAtRuntime: Boolean = false,
-                                  config: QueryPlannerConfiguration = QueryPlannerConfiguration.default) {
+                                  config: QueryPlannerConfiguration = QueryPlannerConfiguration.default,
+                                  leafPlanUpdater: LogicalPlan => LogicalPlan = identity) {
   def withStrictness(strictness: StrictnessMode) = copy(input = input.withPreferredStrictness(strictness))
 
   def recurse(plan: LogicalPlan) = copy(input = input.recurse(plan))
