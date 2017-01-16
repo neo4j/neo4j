@@ -63,20 +63,6 @@ public class KernelTransactionTerminationTest
     private static final int TEST_RUN_TIME_MS = 5_000;
 
     @Test( timeout = TEST_RUN_TIME_MS * 2 )
-    public void transactionCantBeTerminatedAfterItIsClosed() throws Throwable
-    {
-        runTwoThreads(
-                tx -> tx.markForTermination( Status.Transaction.TransactionMarkedAsFailed ),
-                tx ->
-                {
-                    close( tx );
-                    assertFalse( tx.getReasonIfTerminated().isPresent() );
-                    tx.initialize();
-                }
-        );
-    }
-
-    @Test( timeout = TEST_RUN_TIME_MS * 2 )
     public void closeTransaction() throws Throwable
     {
         BlockingQueue<Boolean> committerToTerminator = new LinkedBlockingQueue<>( 1 );
