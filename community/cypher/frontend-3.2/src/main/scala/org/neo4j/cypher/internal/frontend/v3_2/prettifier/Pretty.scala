@@ -455,5 +455,4 @@ case class Pretty(preserveColumnNames: Boolean) extends PrettyPrinter {
     val SEP = if(allowBreaks) line else space
     expr(l) <> SEP <> op <> space <> expr(r)
   }
-
 }
