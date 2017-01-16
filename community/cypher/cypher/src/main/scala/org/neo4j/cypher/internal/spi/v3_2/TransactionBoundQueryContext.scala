@@ -289,10 +289,9 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   override def indexScanByEndsWith(index: CypherIndexDescriptor, value: String) =
     mapToScalaENFXSafe(transactionalContext.statement.readOperations().nodesGetFromIndexEndsWithScan(index, value))(nodeOps.getById)
 
-  override def lockingUniqueIndexSeek(descriptor: CypherIndexDescriptor, value: Any): Option[Node] = {
-    val index = toKernelIndexDescriptor(descriptor)
+  override def lockingUniqueIndexSeek(index: CypherIndexDescriptor, value: Any): Option[Node] = {
     indexSearchMonitor.lockingUniqueIndexSeek(index, value)
-    val nodeId = transactionalContext.statement.readOperations().nodeGetFromUniqueIndexSeek(index, value)
+    val nodeId = transactionalContext.statement.readOperations().nodeGetFromUniqueIndexSeek(toKernelIndexDescriptor(index), value)
     if (StatementConstants.NO_SUCH_NODE == nodeId) None else Some(nodeOps.getById(nodeId))
   }
 
@@ -749,8 +748,8 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
 object TransactionBoundQueryContext {
   trait IndexSearchMonitor {
-    def indexSeek(index: IndexDescriptor, value: Any): Unit
+    def indexSeek(index: CypherIndexDescriptor, value: Any): Unit
 
-    def lockingUniqueIndexSeek(index: IndexDescriptor, value: Any): Unit
+    def lockingUniqueIndexSeek(index: CypherIndexDescriptor, value: Any): Unit
   }
 }
