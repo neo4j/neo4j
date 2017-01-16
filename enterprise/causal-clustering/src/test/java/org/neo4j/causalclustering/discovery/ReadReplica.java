@@ -27,7 +27,6 @@ import java.util.function.IntFunction;
 import org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.readreplica.ReadReplicaGraphDatabase;
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.GraphDatabaseDependencies;
@@ -50,14 +49,6 @@ public class ReadReplica implements ClusterMember
     private final String boltAdvertisedAddress;
     private ReadReplicaGraphDatabase database;
     private Monitors monitors;
-
-    public ReadReplica( File parentDir, int memberId, DiscoveryServiceFactory discoveryServiceFactory,
-                        List<AdvertisedSocketAddress> coreMemberHazelcastAddresses, Map<String, String> extraParams,
-                        Map<String, IntFunction<String>> instanceExtraParams, String recordFormat )
-    {
-        this( parentDir, memberId, discoveryServiceFactory, coreMemberHazelcastAddresses, extraParams,
-                instanceExtraParams, recordFormat, new Monitors() );
-    }
 
     public ReadReplica( File parentDir, int memberId, DiscoveryServiceFactory discoveryServiceFactory,
                         List<AdvertisedSocketAddress> coreMemberHazelcastAddresses, Map<String, String> extraParams,

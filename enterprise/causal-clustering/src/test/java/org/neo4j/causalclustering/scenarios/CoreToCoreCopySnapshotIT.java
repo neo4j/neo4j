@@ -22,6 +22,8 @@ package org.neo4j.causalclustering.scenarios;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.File;
+import java.io.IOException;
 import java.time.Clock;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -75,11 +77,17 @@ public class CoreToCoreCopySnapshotIT
 
         // shutdown the follower, remove the store, restart
         follower.shutdown();
-        FileUtils.deleteRecursively( follower.storeDir() );
+        deleteDirectoryRecursively( follower.storeDir() );
         follower.start();
 
         // then
         assertEquals( DbRepresentation.of( source.database() ), DbRepresentation.of( follower.database() ) );
+    }
+
+    protected void deleteDirectoryRecursively( File directory ) throws IOException
+    {
+        // Extracted to the inheriting test in the block device repository can override it.
+        FileUtils.deleteRecursively( directory );
     }
 
     @Test

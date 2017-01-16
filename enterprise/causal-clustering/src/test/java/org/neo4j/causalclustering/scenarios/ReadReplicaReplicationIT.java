@@ -28,7 +28,6 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
@@ -70,7 +69,6 @@ import org.neo4j.logging.Log;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.causalclustering.ClusterRule;
 
-import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toSet;
@@ -87,6 +85,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.causalclustering.core.EnterpriseCoreEditionModule.CLUSTER_STATE_DIRECTORY_NAME;
 import static org.neo4j.causalclustering.core.consensus.log.RaftLog.PHYSICAL_LOG_DIRECTORY_NAME;
+import static org.neo4j.causalclustering.scenarios.SampleData.createData;
 import static org.neo4j.com.storecopy.StoreUtil.TEMP_COPY_DIRECTORY_NAME;
 import static org.neo4j.function.Predicates.awaitEx;
 import static org.neo4j.helpers.collection.Iterables.count;
@@ -387,7 +386,7 @@ public class ReadReplicaReplicationIT
 
         // when
         cluster.coreTx( (db, tx) -> {
-            createData( db );
+            createData( db, 10 );
             tx.success();
         } );
 
@@ -524,29 +523,7 @@ public class ReadReplicaReplicationIT
 
     private final BiConsumer<CoreGraphDatabase,Transaction> createSomeData = ( db, tx ) ->
     {
-        createData( db );
+        createData( db, 10 );
         tx.success();
     };
-
-    private void createData( GraphDatabaseService db )
-    {
-        createData( db, 10 );
-    }
-
-    private void createData( GraphDatabaseService db, int amount )
-    {
-        for ( int i = 0; i < amount; i++ )
-        {
-            Node node = db.createNode(Label.label( "Foo" ));
-            node.setProperty( "foobar", format( "baz_bat%s", UUID.randomUUID() ) );
-            node.setProperty( "foobar1", format( "baz_bat%s", UUID.randomUUID() ) );
-            node.setProperty( "foobar2", format( "baz_bat%s", UUID.randomUUID() ) );
-            node.setProperty( "foobar3", format( "baz_bat%s", UUID.randomUUID() ) );
-            node.setProperty( "foobar4", format( "baz_bat%s", UUID.randomUUID() ) );
-            node.setProperty( "foobar5", format( "baz_bat%s", UUID.randomUUID() ) );
-            node.setProperty( "foobar6", format( "baz_bat%s", UUID.randomUUID() ) );
-            node.setProperty( "foobar7", format( "baz_bat%s", UUID.randomUUID() ) );
-            node.setProperty( "foobar8", format( "baz_bat%s", UUID.randomUUID() ) );
-        }
-    }
 }

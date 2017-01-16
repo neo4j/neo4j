@@ -21,39 +21,48 @@ package org.neo4j.causalclustering.scenarios;
 
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 
 import static org.neo4j.graphdb.Label.label;
 
-class SampleData
+public class SampleData
 {
-    static void createSomeData( int items, Cluster cluster ) throws Exception
+    private static final Label LABEL = label( "ExampleNode" );
+    private static final String PROPERTY_KEY = "prop";
+
+    public static void createSomeData( int items, Cluster cluster ) throws Exception
     {
         for ( int i = 0; i < items; i++ )
         {
             cluster.coreTx( ( db, tx ) ->
             {
-                Node node = db.createNode( label( "boo" ) );
+                Node node = db.createNode( LABEL );
                 node.setProperty( "foobar", "baz_bat" );
                 tx.success();
             } );
         }
     }
 
-    static void createData( GraphDatabaseService db, int size )
+    public static void createData( GraphDatabaseService db, int size )
     {
         for ( int i = 0; i < size; i++ )
         {
-            Node node1 = db.createNode();
-            Node node2 = db.createNode();
+            Node node1 = db.createNode( LABEL );
+            Node node2 = db.createNode( LABEL );
 
-            node1.setProperty( "hej", "svej" );
+            node1.setProperty( PROPERTY_KEY, "svej" + i );
             node2.setProperty( "tjabba", "tjena" );
 
             Relationship rel = node1.createRelationshipTo( node2, RelationshipType.withName( "halla" ) );
             rel.setProperty( "this", "that" );
         }
+    }
+
+    public static void createSchema( GraphDatabaseService db )
+    {
+        db.schema().constraintFor( LABEL ).assertPropertyIsUnique( PROPERTY_KEY ).create();
     }
 }
