@@ -22,6 +22,7 @@ package org.neo4j.kernel.extension.dependency;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 
@@ -43,6 +44,11 @@ public class HighestPrioritizedLabelScanStore implements DependencyResolver.Sele
     public HighestPrioritizedLabelScanStore( String specificallyConfigured )
     {
         this.specificallyConfigured = specificallyConfigured;
+    }
+
+    public HighestPrioritizedLabelScanStore( Config config )
+    {
+        this( config.get( GraphDatabaseSettings.label_scan_store ) );
     }
 
     @Override

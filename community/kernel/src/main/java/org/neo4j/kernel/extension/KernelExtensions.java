@@ -59,7 +59,6 @@ public class KernelExtensions extends DependencyResolver.Adapter implements Life
     @Override
     public void init() throws Throwable
     {
-
         for ( KernelExtensionFactory kernelExtensionFactory : kernelExtensionFactories )
         {
             Object kernelExtensionDependencies = getKernelExtensionDependencies( kernelExtensionFactory );
