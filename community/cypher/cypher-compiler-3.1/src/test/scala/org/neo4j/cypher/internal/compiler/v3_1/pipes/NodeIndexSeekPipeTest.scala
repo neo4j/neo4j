@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.{Expression,
 import org.neo4j.cypher.internal.compiler.v3_1.commands.{ManyQueryExpression, QueryExpression, RangeQueryExpression, SingleQueryExpression}
 import org.neo4j.cypher.internal.compiler.v3_1.spi.QueryContext
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
-import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.{CypherFunSuite, WindowsStringSafe}
 import org.neo4j.cypher.internal.frontend.v3_1.{CypherTypeException, InternalException, LabelId, PropertyKeyId}
 import org.neo4j.graphdb.Node
 import org.neo4j.kernel.api.index.IndexDescriptor
@@ -34,6 +34,7 @@ import org.neo4j.kernel.api.index.IndexDescriptor
 class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSupport {
 
   implicit val monitor = mock[PipeMonitor]
+  implicit val windowsSafe = WindowsStringSafe
 
   val label = LabelToken(LabelName("LabelName") _, LabelId(11))
   val propertyKey = PropertyKeyToken(PropertyKeyName("PropertyName") _, PropertyKeyId(10))

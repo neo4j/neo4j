@@ -27,10 +27,11 @@ import org.neo4j.cypher.internal.compiler.v3_1.commands.values.{KeyToken, TokenT
 import org.neo4j.cypher.internal.compiler.v3_1.pipes._
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.frontend.v3_1.SemanticDirection
-import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.{CypherFunSuite, WindowsStringSafe}
 import org.scalatest.BeforeAndAfterAll
 
 class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
+  implicit val windowsSafe = WindowsStringSafe
 
   private val defaultLocale = Locale.getDefault
   override def beforeAll() {
@@ -771,25 +772,25 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
 
   test("Variable line compaction with no variables") {
     val line = Line("NODE", Map.empty, Set.empty)
-    val compacted = new CompactedLine(line, Set.empty)
+    val compacted = CompactedLine(line, Set.empty)
     compacted.formattedVariables should be("")
   }
 
   test("Variable line compaction with only new variables") {
     val line = Line("NODE", Map.empty, Set("a", "b"))
-    val compacted = new CompactedLine(line, Set.empty)
+    val compacted = CompactedLine(line, Set.empty)
     compacted.formattedVariables should be("a, b")
   }
 
   test("Variable line compaction with only old variables") {
     val line = Line("NODE", Map.empty, Set("a", "b"))
-    val compacted = new CompactedLine(line, Set("a", "b"))
+    val compacted = CompactedLine(line, Set("a", "b"))
     compacted.formattedVariables should be("a, b")
   }
 
   test("Variable line compaction with old and new variables") {
     val line = Line("NODE", Map.empty, Set("a", "b", "c", "d"))
-    val compacted = new CompactedLine(line, Set("a", "b"))
+    val compacted = CompactedLine(line, Set("a", "b"))
     compacted.formattedVariables should be("c, d -- a, b")
   }
 

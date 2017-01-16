@@ -31,6 +31,8 @@ object StringHelper {
     def cypherEscape: String =
       text.replace("\\", "\\\\")
 
+    def fixNewLines: String = text.replaceAll("\r\n", "\n")
+
     // (line 1, column 8 (offset: 7))
     def fixPosition: String = if (SystemUtils.IS_OS_WINDOWS) {
       positionPattern.replaceAllIn(text, (matcher) => {
