@@ -1545,16 +1545,18 @@ public class OperationsFacade
             throw accessMode.onViolation( format( "Write operations are not allowed for %s.",
                     tx.securityContext().description() ) );
         }
-        return callProcedure( name, input,
-                new RestrictedAccessMode( tx.securityContext().mode(), AccessMode.Static.WRITE ) );
+        AccessMode write =
+                procedures.isAllowWriteTokenCreate() ? AccessMode.Static.TOKEN_WRITE : AccessMode.Static.WRITE;
+        return callProcedure( name, input, new RestrictedAccessMode( tx.securityContext().mode(), write ) );
     }
 
     @Override
     public RawIterator<Object[],ProcedureException> procedureCallWriteOverride( QualifiedName name, Object[] input )
             throws ProcedureException
     {
-        return callProcedure( name, input,
-                new OverriddenAccessMode( tx.securityContext().mode(), AccessMode.Static.WRITE ) );
+        AccessMode write =
+                procedures.isAllowWriteTokenCreate() ? AccessMode.Static.TOKEN_WRITE : AccessMode.Static.WRITE;
+        return callProcedure( name, input, new OverriddenAccessMode( tx.securityContext().mode(), write ) );
     }
 
     @Override

@@ -52,6 +52,7 @@ public class Procedures extends LifecycleAdapter
     private final ThrowingConsumer<Procedures, ProcedureException> builtin;
     private final File pluginDir;
     private final Log log;
+    private boolean allowWriteTokenCreate = false;
 
     public Procedures()
     {
@@ -216,5 +217,15 @@ public class Procedures extends LifecycleAdapter
 
         // And register built-in procedures
         builtin.accept( this );
+    }
+
+    public void setAllowWriteTokenCreate( boolean allowWriteTokenCreate )
+    {
+        this.allowWriteTokenCreate = allowWriteTokenCreate;
+    }
+
+    public boolean isAllowWriteTokenCreate()
+    {
+        return allowWriteTokenCreate;
     }
 }

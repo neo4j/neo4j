@@ -51,7 +51,6 @@ public class PredefinedRolesBuilder implements RolesBuilder
 
         SimpleRole publisher = new SimpleRole( PUBLISHER );
         publisher.add( new WildcardPermission( "data:*" ) );
-        publisher.add( new WildcardPermission( "token:*" ) );
         roles.put( PUBLISHER, publisher );
 
         SimpleRole reader = new SimpleRole( READER );
@@ -59,6 +58,14 @@ public class PredefinedRolesBuilder implements RolesBuilder
         roles.put( READER, reader );
 
         return roles;
+    }
+
+    public static void setAllowPublisherTokenCreate( boolean allowTokenCreate )
+    {
+        if ( allowTokenCreate )
+        {
+            roles.get( PUBLISHER ).add( new WildcardPermission( "token:*" ) );
+        }
     }
 
     public static final RolePermissionResolver rolePermissionResolver = new RolePermissionResolver()

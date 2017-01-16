@@ -199,6 +199,40 @@ public interface AccessMode
                     @Override
                     public boolean allowsTokenCreates()
                     {
+                        return false;
+                    }
+
+                    @Override
+                    public boolean allowsSchemaWrites()
+                    {
+                        return false;
+                    }
+
+                    @Override
+                    public boolean allowsProcedureWith( String[] allowed )
+                    {
+                        return false;
+                    }
+                },
+
+        /** Allows reading and writing data and creating new tokens, but not schema. */
+        TOKEN_WRITE
+                {
+                    @Override
+                    public boolean allowsReads()
+                    {
+                        return true;
+                    }
+
+                    @Override
+                    public boolean allowsWrites()
+                    {
+                        return true;
+                    }
+
+                    @Override
+                    public boolean allowsTokenCreates()
+                    {
                         return true;
                     }
 
