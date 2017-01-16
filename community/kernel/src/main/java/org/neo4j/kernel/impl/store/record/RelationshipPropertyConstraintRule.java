@@ -20,15 +20,13 @@
 package org.neo4j.kernel.impl.store.record;
 
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
+import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 
 public abstract class RelationshipPropertyConstraintRule extends PropertyConstraintRule
 {
-    protected final int relationshipType;
-
-    public RelationshipPropertyConstraintRule( long id, int relationshipType, Kind kind )
+    public RelationshipPropertyConstraintRule( long id, RelationshipPropertyDescriptor descriptor, Kind kind )
     {
-        super( id, kind );
-        this.relationshipType = relationshipType;
+        super( id, kind, descriptor );
     }
 
     @Override
@@ -37,36 +35,17 @@ public abstract class RelationshipPropertyConstraintRule extends PropertyConstra
         throw new IllegalStateException( "Constraint rule is associated with relationships" );
     }
 
+    public final RelationshipPropertyDescriptor descriptor()
+    {
+        return (RelationshipPropertyDescriptor) descriptor;
+    }
+
     @Override
     public final int getRelationshipType()
     {
-        return relationshipType;
+        return descriptor().getRelationshipTypeId();
     }
 
     @Override
     public abstract RelationshipPropertyConstraint toConstraint();
-
-    @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
-            return true;
-        }
-        if ( o == null || getClass() != o.getClass() )
-        {
-            return false;
-        }
-        if ( !super.equals( o ) )
-        {
-            return false;
-        }
-        return relationshipType == ((RelationshipPropertyConstraintRule) o).relationshipType;
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return 31 * super.hashCode() + relationshipType;
-    }
 }

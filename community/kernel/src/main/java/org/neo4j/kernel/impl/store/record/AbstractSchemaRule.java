@@ -22,21 +22,24 @@ package org.neo4j.kernel.impl.store.record;
 import java.nio.ByteBuffer;
 
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
+import org.neo4j.kernel.api.schema.EntityPropertyDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
 public abstract class AbstractSchemaRule implements SchemaRule, RecordSerializable
 {
     protected final Kind kind;
     protected final long id;
+    protected final EntityPropertyDescriptor descriptor;
 
-    public AbstractSchemaRule( long id, Kind kind )
+    public AbstractSchemaRule( long id, Kind kind, EntityPropertyDescriptor descriptor )
     {
         this.id = id;
         this.kind = kind;
+        this.descriptor = descriptor;
     }
 
     @Override
-    public long getId()
+    public final long getId()
     {
         return this.id;
     }
@@ -54,24 +57,24 @@ public abstract class AbstractSchemaRule implements SchemaRule, RecordSerializab
     public abstract void serialize( ByteBuffer target );
 
     @Override
-    public boolean equals( Object o )
+    public final boolean equals( Object o )
     {
         if ( this == o )
         {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
+        if ( o != null && o instanceof AbstractSchemaRule )
         {
-            return false;
+            AbstractSchemaRule that = (AbstractSchemaRule) o;
+            return kind == that.kind && this.descriptor.equals( that.descriptor() );
         }
-        AbstractSchemaRule that = (AbstractSchemaRule) o;
-        return kind == that.kind;
+        return false;
     }
 
     @Override
-    public int hashCode()
+    public final int hashCode()
     {
-        return kind.hashCode();
+        return 31 * kind.hashCode() + descriptor.hashCode();
     }
 
     @Override

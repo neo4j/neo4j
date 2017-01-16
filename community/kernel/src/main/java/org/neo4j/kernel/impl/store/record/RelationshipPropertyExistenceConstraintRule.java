@@ -28,8 +28,6 @@ import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 
 public class RelationshipPropertyExistenceConstraintRule extends RelationshipPropertyConstraintRule
 {
-    private final RelationshipPropertyDescriptor descriptor;
-
     public static RelationshipPropertyExistenceConstraintRule relPropertyExistenceConstraintRule( long id,
             RelationshipPropertyDescriptor descriptor )
     {
@@ -45,20 +43,13 @@ public class RelationshipPropertyExistenceConstraintRule extends RelationshipPro
 
     private RelationshipPropertyExistenceConstraintRule( long id, RelationshipPropertyDescriptor descriptor )
     {
-        super( id, descriptor.getRelationshipTypeId(), Kind.RELATIONSHIP_PROPERTY_EXISTENCE_CONSTRAINT );
-        this.descriptor = descriptor;
-    }
-
-    @Override
-    public final EntityPropertyDescriptor descriptor()
-    {
-        return descriptor;
+        super( id, descriptor, Kind.RELATIONSHIP_PROPERTY_EXISTENCE_CONSTRAINT );
     }
 
     @Override
     public String toString()
     {
-        return "RelationshipPropertyExistenceConstraint" + id + ", relationshipType=" + relationshipType +
+        return "RelationshipPropertyExistenceConstraint" + id + ", relationshipType=" + getRelationshipType() +
                ", kind=" + kind + ", propertyKeyId=" + descriptor.propertyIdText() + "]";
     }
 
@@ -73,7 +64,7 @@ public class RelationshipPropertyExistenceConstraintRule extends RelationshipPro
     @Override
     public void serialize( ByteBuffer target )
     {
-        target.putInt( relationshipType );
+        target.putInt( getRelationshipType() );
         target.put( kind.id() );
         target.putInt( descriptor.getPropertyKeyId() );
     }
@@ -91,36 +82,6 @@ public class RelationshipPropertyExistenceConstraintRule extends RelationshipPro
     @Override
     public RelationshipPropertyConstraint toConstraint()
     {
-        return new RelationshipPropertyExistenceConstraint( descriptor );
-    }
-
-    @Override
-    public boolean containsPropertyKeyId( int propertyKeyId )
-    {
-        return propertyKeyId == descriptor.getPropertyKeyId();
-    }
-
-    @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
-            return true;
-        }
-        if ( o == null || getClass() != o.getClass() )
-        {
-            return false;
-        }
-        if ( !super.equals( o ) )
-        {
-            return false;
-        }
-        return descriptor.equals( ((RelationshipPropertyExistenceConstraintRule) o).descriptor );
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return 31 * super.hashCode() + descriptor.hashCode();
+        return new RelationshipPropertyExistenceConstraint( descriptor() );
     }
 }

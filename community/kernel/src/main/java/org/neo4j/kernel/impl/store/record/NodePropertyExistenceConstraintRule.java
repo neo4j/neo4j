@@ -48,7 +48,7 @@ public class NodePropertyExistenceConstraintRule extends NodePropertyConstraintR
     @Override
     public String toString()
     {
-        return "NodePropertyExistenceConstraintRule[id=" + id + ", label=" + descriptor.getLabelId() + ", kind=" +
+        return "NodePropertyExistenceConstraintRule[id=" + id + ", label=" + descriptor().getLabelId() + ", kind=" +
                kind + ", propertyKeyIds=" + descriptor.propertyIdText() + "]";
     }
 
@@ -65,7 +65,7 @@ public class NodePropertyExistenceConstraintRule extends NodePropertyConstraintR
     public void serialize( ByteBuffer target )
     {
         //TODO: Support composite indexes (requires format update)
-        target.putInt( descriptor.getLabelId() );
+        target.putInt( descriptor().getLabelId() );
         target.put( kind.id() );
         target.putInt( descriptor.getPropertyKeyId() );
     }
@@ -73,6 +73,6 @@ public class NodePropertyExistenceConstraintRule extends NodePropertyConstraintR
     @Override
     public NodePropertyConstraint toConstraint()
     {
-        return new NodePropertyExistenceConstraint( descriptor );
+        return new NodePropertyExistenceConstraint( descriptor() );
     }
 }

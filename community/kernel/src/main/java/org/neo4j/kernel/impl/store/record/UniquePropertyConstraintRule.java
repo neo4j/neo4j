@@ -53,7 +53,7 @@ public class UniquePropertyConstraintRule extends NodePropertyConstraintRule
     @Override
     public String toString()
     {
-        return "UniquePropertyConstraintRule[id=" + id + ", label=" + descriptor.getLabelId() + ", kind=" + kind +
+        return "UniquePropertyConstraintRule[id=" + id + ", label=" + descriptor().getLabelId() + ", kind=" + kind +
                ", propertyKeys=" + descriptor.propertyIdText() + ", ownedIndex=" + ownedIndexRule + "]";
     }
 
@@ -61,7 +61,7 @@ public class UniquePropertyConstraintRule extends NodePropertyConstraintRule
     public int length()
     {
         //TODO: Change format to rather use short/int for length/propertyId, much like count store does
-        int propertyCount = descriptor.isComposite() ? descriptor.getPropertyKeyIds().length : 1;
+        int propertyCount = descriptor().isComposite() ? descriptor.getPropertyKeyIds().length : 1;
         return 4 /* label */ +
                1 /* kind id */ +
                1 +  /* the number of properties that form a unique tuple */
@@ -73,8 +73,8 @@ public class UniquePropertyConstraintRule extends NodePropertyConstraintRule
     public void serialize( ByteBuffer target )
     {
         int[] propertyKeyIds =
-                descriptor.isComposite() ? descriptor.getPropertyKeyIds() : new int[]{descriptor.getPropertyKeyId()};
-        target.putInt( descriptor.getLabelId() );
+                descriptor().isComposite() ? descriptor.getPropertyKeyIds() : new int[]{descriptor.getPropertyKeyId()};
+        target.putInt( descriptor().getLabelId() );
         target.put( kind.id() );
         target.put( (byte) propertyKeyIds.length );
         for ( int propertyKeyId : propertyKeyIds )
@@ -114,7 +114,7 @@ public class UniquePropertyConstraintRule extends NodePropertyConstraintRule
     @Override
     public UniquenessConstraint toConstraint()
     {
-        return new UniquenessConstraint( descriptor );
+        return new UniquenessConstraint( descriptor() );
     }
 
 }

@@ -24,24 +24,21 @@ import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 
 public abstract class NodePropertyConstraintRule extends PropertyConstraintRule
 {
-    protected final NodePropertyDescriptor descriptor;
-
     public NodePropertyConstraintRule( long id, NodePropertyDescriptor descriptor, Kind kind )
     {
-        super( id, kind );
-        this.descriptor = descriptor;
+        super( id, kind, descriptor );
     }
 
     @Override
     public final NodePropertyDescriptor descriptor()
     {
-        return descriptor;
+        return (NodePropertyDescriptor) descriptor;
     }
 
     @Override
     public final int getLabel()
     {
-        return descriptor.getLabelId();
+        return descriptor().getLabelId();
     }
 
     @Override
@@ -63,28 +60,4 @@ public abstract class NodePropertyConstraintRule extends PropertyConstraintRule
 
     @Override
     public abstract NodePropertyConstraint toConstraint();
-
-    @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
-            return true;
-        }
-        if ( o == null || getClass() != o.getClass() )
-        {
-            return false;
-        }
-        if ( !super.equals( o ) )
-        {
-            return false;
-        }
-        return descriptor.equals( ((NodePropertyConstraintRule) o).descriptor );
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return 31 * super.hashCode() + descriptor.hashCode();
-    }
 }
