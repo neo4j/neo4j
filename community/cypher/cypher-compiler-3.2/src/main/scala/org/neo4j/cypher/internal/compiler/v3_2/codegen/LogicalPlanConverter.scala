@@ -27,12 +27,13 @@ import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.{ManyQueryExpression, QueryExpression, RangeQueryExpression, SingleQueryExpression}
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.{One, ZeroOneOrMany}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.CantCompileQueryException
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.{Ascending, Descending, plans}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{UnwindCollection, _}
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Expression
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.Eagerly.immutableMapValues
 import org.neo4j.cypher.internal.frontend.v3_2.symbols.ListType
 import org.neo4j.cypher.internal.frontend.v3_2.{InternalException, ast, symbols}
+import org.neo4j.cypher.internal.ir.v3_2.IdName
 
 object LogicalPlanConverter {
 
@@ -56,6 +57,7 @@ object LogicalPlanConverter {
     case p: plans.NodeCountFromCountStore => nodeCountFromCountStore(p)
     case p: plans.RelationshipCountFromCountStore => relCountFromCountStore(p)
     case p: UnwindCollection => unwindAsCodeGenPlan(p)
+    case p: Sort => sortAsCodeGenPlan(p)
 
     case _ =>
       throw new CantCompileQueryException(s"$logicalPlan is not yet supported")
@@ -83,10 +85,12 @@ object LogicalPlanConverter {
       val projectionOpName = context.registerOperator(projection)
       val columns = immutableMapValues(projection.expressions,
                                        (e: ast.Expression) => ExpressionConverter.createExpression(e)(context))
+      context.clearProjectedVariables()
       val vars = columns.map {
         case (name, expr) =>
           val variable = Variable(context.namer.newVarName(), expr.codeGenType(context), expr.nullable(context))
           context.addVariable(name, variable)
+          context.addProjectedVariable(name, variable)
           variable -> expr
       }
       val (methodHandle, action :: tl) = context.popParent().consume(context, this)
@@ -578,6 +582,43 @@ object LogicalPlanConverter {
       val (methodHandle, actions :: tl) = context.popParent().consume(context, this)
 
       (methodHandle, ForEachExpression(variable, castedCollection, actions) :: tl)
+    }
+  }
+
+  private def sortAsCodeGenPlan(sort: plans.Sort) = new CodeGenPlan with SingleChildPlan {
+
+    override val logicalPlan = sort
+
+    override def consume(context: CodeGenContext, child: CodeGenPlan) = {
+      val variablesToKeep = context.getProjectedVariables // TODO: Intersect/replace with usedVariables(innerBlock)
+
+      val sortVariables = sort.sortItems.map {
+        case Ascending(IdName(name)) => SortVariableInfo(name, context.getVariable(name), ir.Ascending)
+        case Descending(IdName(name)) => SortVariableInfo(name, context.getVariable(name), ir.Descending)
+      }
+      val additionalSortVariables = sortVariables.collect {
+        case SortVariableInfo(name, variable, _) if !variablesToKeep.isDefinedAt(name) => (name, variable)
+      }
+      val tupleVariables = variablesToKeep ++ additionalSortVariables
+
+      val opName = context.registerOperator(logicalPlan)
+
+      val sortTableName = context.namer.newVarName()
+
+      val buildSortTableInstruction = BuildSortTable(opName, sortTableName, tupleVariables)(context)
+
+      // Update the context for parent consumers to use the new outgoing variable names
+      buildSortTableInstruction.sortTableInfo.fieldToVariableInfo.map {
+        case (_, info) =>
+          context.updateVariable(info.queryVariableName, info.outgoingVariable)
+      }
+
+      val (methodHandle, innerBlock :: tl) = context.popParent().consume(context, this)
+
+      val sortInstruction = SortInstruction(opName, sortVariables, buildSortTableInstruction.sortTableInfo)
+      val continuation = GetSortedResult(opName, variablesToKeep, buildSortTableInstruction.sortTableInfo, innerBlock)
+
+      (methodHandle, buildSortTableInstruction :: sortInstruction :: continuation :: tl)
     }
   }
 

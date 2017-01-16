@@ -68,12 +68,17 @@ trait MethodStructure[E] {
   def distinctSetIterate(name: String, key: Map[String, CodeGenType])
                                  (block: (MethodStructure[E]) => Unit)
   def newUniqueAggregationKey(varName: String, structure: Map[String, (CodeGenType,E)]): Unit
-  def newAggregationMap(name: String, keyTypes: IndexedSeq[CodeGenType])
+  def newAggregationMap(name: String, keyTypes: IndexedSeq[CodeGenType]): Unit
   def aggregationMapGet(name: String, varName: String, key: Map[String,(CodeGenType,E)], keyVar: String)
   def aggregationMapPut(name: String, key: Map[String,(CodeGenType,E)], keyVar: String, value: E): Unit
   def aggregationMapIterate(name: String, key: Map[String,CodeGenType], valueVar: String)(block: MethodStructure[E] => Unit): Unit
   def newMapOfSets(name: String, keyTypes: IndexedSeq[CodeGenType], elementType: CodeGenType)
   def checkDistinct(name: String, key: Map[String,(CodeGenType, E)], keyVar: String, value: E, valueType: CodeGenType)(block: MethodStructure[E] => Unit)
+
+  def allocateSortTable(name: String, initialCapacity: Int, valueStructure: Map[String, CodeGenType]): Unit
+  def sortTableAdd(name: String, valueStructure: Map[String, CodeGenType], value: E): Unit
+  def sortTableIterate(name: String, valueStructure: Map[String, CodeGenType], varNameToField: Map[String, String])
+                      (block: (MethodStructure[E]) => Unit): Unit
 
   def castToCollection(value: E): E
 
@@ -109,7 +114,7 @@ trait MethodStructure[E] {
   def expectParameter(key: String, variableName: String): Unit
 
   // tracing
-  def trace[V](planStepId: String)(block: MethodStructure[E] => V): V
+  def trace[V](planStepId: String, maybeSuffix: Option[String] = None)(block: MethodStructure[E] => V): V
   def incrementDbHits(): Unit
   def incrementRows(): Unit
 

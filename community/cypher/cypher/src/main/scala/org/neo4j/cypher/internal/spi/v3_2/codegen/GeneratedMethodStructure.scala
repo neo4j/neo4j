@@ -299,9 +299,10 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   override def materializeAny(variable: String) =
     invoke(materializeAnyResult, nodeManager, generator.load(variable))
 
-  override def trace[V](planStepId: String)(block: MethodStructure[Expression] => V) = if (!tracing) block(this)
+  override def trace[V](planStepId: String, maybeSuffix: Option[String] = None)(block: MethodStructure[Expression] => V) = if (!tracing) block(this)
   else {
-    val eventName = s"event_$planStepId"
+    val suffix = maybeSuffix.map("_" +_ ).getOrElse("")
+    val eventName = s"event_$planStepId${suffix}"
     generator.assign(typeRef[QueryExecutionEvent], eventName, traceEvent(planStepId))
     val result = block(copy(events = eventName :: events, generator = generator))
     generator.expression(invoke(generator.load(eventName), method[QueryExecutionEvent, Unit]("close")))
@@ -587,6 +588,39 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
       val typ =  TypeReference.parameterizedType(typeRef[util.HashMap[_,_]], typeRef[Object], setType)
 
       generator.assign(generator.declare(typ, name ), createNewInstance(typ))
+    }
+  }
+
+  override def allocateSortTable(name: String, initialCapacity: Int, valueStructure: Map[String, CodeGenType]): Unit = {
+    val typ = TypeReference.parameterizedType(classOf[util.ArrayList[_]], aux.typeReference(valueStructure))
+    val localVariable = generator.declare(typ, name)
+    locals += name -> localVariable
+    generator.assign(localVariable, createNewInstance(typ, (typeRef[Integer], constant(initialCapacity))))
+  }
+
+  override def sortTableAdd(name: String, valueStructure: Map[String, CodeGenType], value: Expression): Unit = {
+    generator.expression(pop(invoke(generator.load(name),
+      method[util.ArrayList[_], Object]("add", typeRef[Object]), box(value))))
+  }
+
+  override def sortTableIterate(tableName: String, valueStructure: Map[String, CodeGenType],
+                                varNameToField: Map[String, String])
+                               (block: (MethodStructure[Expression]) => Unit): Unit = {
+    val tupleType = aux.typeReference(valueStructure)
+    val elementName = context.namer.newVarName()
+
+    using(generator.forEach(Parameter.param(tupleType, elementName), generator.load(tableName))) { body =>
+      varNameToField.foreach {
+        case (localName, fieldName) =>
+          val fieldType = lowerType(valueStructure(fieldName))
+
+          val localVariable = body.declare(fieldType, localName)
+          locals += localName -> localVariable
+
+          body.assign(localVariable, get(body.load(elementName),
+            field(valueStructure, valueStructure(fieldName), fieldName)))
+      }
+      block(copy(generator = body))
     }
   }
 

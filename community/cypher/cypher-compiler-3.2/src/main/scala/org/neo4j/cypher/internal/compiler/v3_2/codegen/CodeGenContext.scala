@@ -32,17 +32,34 @@ case class Variable(name: String, codeGenType: CodeGenType, nullable: Boolean = 
 class CodeGenContext(val semanticTable: SemanticTable, idMap: Map[LogicalPlan, Id], val namer: Namer = Namer()) {
 
   private val variables: mutable.Map[String, Variable] = mutable.Map()
+  private val projectedVariables: mutable.Map[String, Variable] = mutable.Map.empty
   private val probeTables: mutable.Map[CodeGenPlan, JoinData] = mutable.Map()
   private val parents: mutable.Stack[CodeGenPlan] = mutable.Stack()
   val operatorIds: mutable.Map[Id, String] = mutable.Map()
 
   def addVariable(queryVariable: String, variable: Variable) {
+    assert(!variables.isDefinedAt(queryVariable))
+    variables.put(queryVariable, variable)
+  }
+
+  def updateVariable(queryVariable: String, variable: Variable) {
+    assert(variables.isDefinedAt(queryVariable))
     variables.put(queryVariable, variable)
   }
 
   def getVariable(queryVariable: String): Variable = variables(queryVariable)
 
   def variableQueryVariables(): Set[String] = variables.keySet.toSet
+
+  def addProjectedVariable(queryVariable: String, variable: Variable) {
+    projectedVariables.put(queryVariable, variable)
+  }
+
+  def clearProjectedVariables(): Unit = {
+    projectedVariables.clear()
+  }
+
+  def getProjectedVariables: Map[String, Variable] = projectedVariables.toMap
 
   def addProbeTable(plan: CodeGenPlan, codeThunk: JoinData) {
     probeTables.put(plan, codeThunk)

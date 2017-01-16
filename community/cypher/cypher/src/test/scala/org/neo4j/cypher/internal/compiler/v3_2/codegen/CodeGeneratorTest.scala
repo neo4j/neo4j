@@ -27,6 +27,7 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.ExecutionPlanBuilder.tracer
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v3_2.planner.LogicalPlanningTestSupport
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.{Descending, Ascending}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_2.spi.{InternalResultRow, InternalResultVisitor, QueryContext}
 import org.neo4j.cypher.internal.compiler.v3_2.{CostBasedPlannerName, NormalMode, TaskCloser}
@@ -1337,6 +1338,79 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
       Map("c" -> 1),
       Map("c" -> 1))
     )
+  }
+
+  test("sort projection with list of integers") {
+    /*
+    UNWIND [3,1,2,4] as x
+    WITH x AS a, x AS b, x AS c, x AS d
+    RETURN b, c
+    ORDER BY a, b
+    */
+    // given
+    val listLiteral = ListLiteral(Seq(
+      SignedDecimalIntegerLiteral("3")(pos),
+      SignedDecimalIntegerLiteral("1")(pos),
+      SignedDecimalIntegerLiteral("2")(pos),
+      SignedDecimalIntegerLiteral("4")(pos)
+    ))(pos)
+
+    val unwind = UnwindCollection(SingleRow()(solved), IdName("x"), listLiteral)(solved)
+    val projection = Projection(unwind,
+      Map("a" -> varFor("x"),
+        "b" -> varFor("x"),
+        "c" -> varFor("x"),
+        "d" -> varFor("x")))(solved)
+    val orderBy = Sort(projection, List(Ascending(IdName("a")), Descending(IdName("b"))))(solved)
+    val plan = ProduceResult(List("b", "c"), orderBy)
+
+    // when
+    val compiled = compileAndExecute(plan)
+
+    // then
+    val result = getResult(compiled, "b", "c")
+    result.toList should equal(List(
+      Map("b" -> 1L,"c" -> 1L),
+      Map("b" -> 2L,"c" -> 2L),
+      Map("b" -> 3L,"c" -> 3L),
+      Map("b" -> 4L,"c" -> 4L)))
+  }
+
+  test("sort projection with list of integer maps") {
+    /*
+    UNWIND [
+            {a:3, b:3, c:3, d:3},
+            {a:1, b:1, c:1, d:1},
+            {a:2, b:2, c:2, d:2},
+            {a:4, b:4, c:4, d:4}
+           ] as x
+    WITH x.a AS a, x.b AS b, x.c AS c, x.d AS d
+    RETURN b, c
+    ORDER BY a, b
+    */
+    // given
+    val listLiteral = ListLiteral(Seq(
+      literalIntMap(("a", 3), ("b", 3), ("c", 3), ("d", 3)),
+      literalIntMap(("a", 1), ("b", 1), ("c", 1), ("d", 1)),
+      literalIntMap(("a", 1), ("b", 2), ("c", 2), ("d", 2)),
+      literalIntMap(("a", 4), ("b", 4), ("c", 4), ("d", 4))
+    ))(pos)
+
+    val unwind = UnwindCollection(SingleRow()(solved), IdName("x"), listLiteral)(solved)
+    val projection = Projection(unwind, Map("a" -> prop("x", "a"), "b" -> prop("x", "b"), "c" -> prop("x", "c"), "d" -> prop("x", "d")))(solved)
+    val orderBy = Sort(projection, List(Ascending(IdName("a")), Descending(IdName("b"))))(solved)
+    val plan = ProduceResult(List("b", "c"), orderBy)
+
+    // when
+    val compiled = compileAndExecute(plan)
+
+    // then
+    val result = getResult(compiled, "b", "c")
+    result.toList should equal(List(
+      Map("b" -> 2L,"c" -> 2L),
+      Map("b" -> 1L,"c" -> 1L),
+      Map("b" -> 3L,"c" -> 3L),
+      Map("b" -> 4L,"c" -> 4L)))
   }
 
   private def compile(plan: LogicalPlan) = {
