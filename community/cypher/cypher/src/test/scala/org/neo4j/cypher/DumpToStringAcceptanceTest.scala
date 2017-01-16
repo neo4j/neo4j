@@ -19,7 +19,11 @@
  */
 package org.neo4j.cypher
 
+import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.WindowsStringSafe
+
 class DumpToStringAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
+
+  implicit val windowsSafe = WindowsStringSafe
 
   test("format node") {
     createNode(Map("prop1" -> "A", "prop2" -> 2))

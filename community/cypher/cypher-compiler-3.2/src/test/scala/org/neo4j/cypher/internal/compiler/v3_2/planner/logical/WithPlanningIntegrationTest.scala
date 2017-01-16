@@ -21,9 +21,8 @@ package org.neo4j.cypher.internal.compiler.v3_2.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_2.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{AllNodesScan, DoNotIncludeTies, Limit, Projection}
-import org.neo4j.cypher.internal.compiler.v3_2.test_helpers.WindowsStringSafe
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{Expression, SignedDecimalIntegerLiteral}
-import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.{CypherFunSuite, WindowsStringSafe}
 
 class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
   implicit val windowsSafe = WindowsStringSafe
