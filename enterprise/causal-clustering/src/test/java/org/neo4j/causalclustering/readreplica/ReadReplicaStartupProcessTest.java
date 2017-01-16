@@ -84,7 +84,7 @@ public class ReadReplicaStartupProcessTest
         ReadReplicaStartupProcess
                 readReplicaStartupProcess = new ReadReplicaStartupProcess( fs, storeFetcher, localDatabase, txPulling,
                 new AlwaysChooseFirstMember( hazelcastTopology ), new ConstantTimeRetryStrategy( 1, MILLISECONDS ),
-                NullLogProvider.getInstance(), copiedStoreRecovery );
+                NullLogProvider.getInstance(), NullLogProvider.getInstance(), copiedStoreRecovery );
 
         // when
         readReplicaStartupProcess.start();
@@ -105,7 +105,7 @@ public class ReadReplicaStartupProcessTest
         ReadReplicaStartupProcess
                 readReplicaStartupProcess = new ReadReplicaStartupProcess( fs, storeFetcher, localDatabase, txPulling,
                 new AlwaysChooseFirstMember( hazelcastTopology ), new ConstantTimeRetryStrategy( 1, MILLISECONDS ),
-                NullLogProvider.getInstance(), copiedStoreRecovery );
+                NullLogProvider.getInstance(), NullLogProvider.getInstance(), copiedStoreRecovery );
 
         // when
         try
@@ -135,7 +135,7 @@ public class ReadReplicaStartupProcessTest
         ReadReplicaStartupProcess
                 readReplicaStartupProcess = new ReadReplicaStartupProcess( fs, storeFetcher, localDatabase, txPulling,
                 new AlwaysChooseFirstMember( hazelcastTopology ), new ConstantTimeRetryStrategy( 1, MILLISECONDS ),
-                NullLogProvider.getInstance(), copiedStoreRecovery );
+                NullLogProvider.getInstance(), NullLogProvider.getInstance(), copiedStoreRecovery );
 
         // when
         readReplicaStartupProcess.start();
@@ -155,7 +155,7 @@ public class ReadReplicaStartupProcessTest
         ReadReplicaStartupProcess
                 readReplicaStartupProcess = new ReadReplicaStartupProcess( fs, storeFetcher, localDatabase, txPulling,
                 new AlwaysChooseFirstMember( hazelcastTopology ), new ConstantTimeRetryStrategy( 1, MILLISECONDS ),
-                NullLogProvider.getInstance(), copiedStoreRecovery );
+                NullLogProvider.getInstance(), NullLogProvider.getInstance(), copiedStoreRecovery );
         readReplicaStartupProcess.start();
 
         // when

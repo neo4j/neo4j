@@ -32,8 +32,8 @@ import org.neo4j.causalclustering.catchup.storecopy.StoreCopyClient;
 import org.neo4j.causalclustering.catchup.storecopy.StoreFetcher;
 import org.neo4j.causalclustering.catchup.storecopy.StoreFiles;
 import org.neo4j.causalclustering.catchup.tx.BatchingTxApplier;
-import org.neo4j.causalclustering.catchup.tx.TransactionLogCatchUpFactory;
 import org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess;
+import org.neo4j.causalclustering.catchup.tx.TransactionLogCatchUpFactory;
 import org.neo4j.causalclustering.catchup.tx.TxPullClient;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.consensus.schedule.DelayedRenewableTimeoutService;
@@ -251,7 +251,8 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
 
         life.add( new ReadReplicaStartupProcess( platformModule.fileSystem, storeFetcher, localDatabase, txPulling,
                 new ConnectToRandomCoreMember( discoveryService ),
-                new ExponentialBackoffStrategy( 1, TimeUnit.SECONDS ), logProvider, copiedStoreRecovery ) );
+                new ExponentialBackoffStrategy( 1, 30, TimeUnit.SECONDS ), logProvider,
+                platformModule.logging.getUserLogProvider(), copiedStoreRecovery ) );
 
         dependencies.satisfyDependency( createSessionTracker() );
     }
