@@ -30,6 +30,8 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.store.format.standard.StandardV2_0;
+import org.neo4j.kernel.impl.store.format.standard.StandardV2_1;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_2;
 import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -58,9 +60,29 @@ public class PlatformConstraintStoreUpgradeTest
     }
 
     @Test
-    public void shouldFailToStartWithCustomIOConfigurationTest() throws IOException
+    public void shouldFailToStartWithCustomIOConfigurationTest20() throws IOException
     {
-        prepareSampleLegacyDatabase( StandardV2_2.STORE_VERSION, fileSystem, workingDir, prepareDir );
+        String storeVersion = StandardV2_0.STORE_VERSION;
+        checkForStoreVersion( storeVersion );
+    }
+
+    @Test
+    public void shouldFailToStartWithCustomIOConfigurationTest21() throws IOException
+    {
+        String storeVersion = StandardV2_1.STORE_VERSION;
+        checkForStoreVersion( storeVersion );
+    }
+
+    @Test
+    public void shouldFailToStartWithCustomIOConfigurationTest22() throws IOException
+    {
+        String storeVersion = StandardV2_2.STORE_VERSION;
+        checkForStoreVersion( storeVersion );
+    }
+
+    protected void checkForStoreVersion( String storeVersion ) throws IOException
+    {
+        prepareSampleLegacyDatabase( storeVersion, fileSystem, workingDir, prepareDir );
         try
         {
             createGraphDatabaseService();

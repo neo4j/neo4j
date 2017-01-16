@@ -22,6 +22,8 @@ package org.neo4j.kernel.impl.storemigration;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -244,7 +246,7 @@ public class StoreUpgrader
                 index++;
             }
         }
-        catch ( IOException e )
+        catch ( IOException | UncheckedIOException e )
         {
             throw new UnableToUpgradeException( "Failure doing migration", e );
         }
@@ -256,30 +258,26 @@ public class StoreUpgrader
 
     private void cleanMigrationDirectory( File migrationDirectory )
     {
-        // We use the page cache here to make sure that the migration directory is clean even if we are using a block
-        // device.
         try
         {
-            Iterable<FileHandle> fileHandles = pageCache.streamFilesRecursive( migrationDirectory )::iterator;
-            for ( FileHandle fh : fileHandles )
-            {
-                fh.delete();
-            }
-        }
-        catch ( IOException e )
-        {
-            // This means that we had no files to clean, this is fine.
-        }
-        if ( migrationDirectory.exists() )
-        {
-            try
+            if ( migrationDirectory.exists() )
             {
                 fileSystem.deleteRecursively( migrationDirectory );
             }
-            catch ( IOException e )
+            // We use the page cache here to make sure that the migration directory is clean even if we are using a
+            // block device.
+            try
             {
-                throw new UnableToUpgradeException( "Failure deleting upgrade directory " + migrationDirectory, e );
+                pageCache.streamFilesRecursive( migrationDirectory ).forEach( FileHandle.HANDLE_DELETE );
             }
+            catch ( NoSuchFileException e )
+            {
+                // This means that we had no files to clean, this is fine.
+            }
+        }
+        catch ( IOException | UncheckedIOException e )
+        {
+            throw new UnableToUpgradeException( "Failure deleting upgrade directory " + migrationDirectory, e );
         }
         fileSystem.mkdir( migrationDirectory );
     }

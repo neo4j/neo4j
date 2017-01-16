@@ -40,6 +40,7 @@ import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import org.neo4j.helpers.collection.Iterables;
@@ -70,6 +71,7 @@ import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.NodeRecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.RelationshipRecordFormat;
+import org.neo4j.kernel.impl.store.format.standard.StandardV2_0;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_1;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_2;
 import org.neo4j.kernel.impl.store.id.ReadOnlyIdGeneratorFactory;
@@ -172,6 +174,13 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     public void migrate( File storeDir, File migrationDir, MigrationProgressMonitor.Section progressMonitor,
             String versionToMigrateFrom, String versionToMigrateTo ) throws IOException
     {
+        if ( versionToMigrateFrom.equals( StandardV2_0.STORE_VERSION ) ||
+             versionToMigrateFrom.equals( StandardV2_1.STORE_VERSION ) ||
+             versionToMigrateFrom.equals( StandardV2_2.STORE_VERSION ) )
+        {
+            // These versions are not supported for block devices.
+            CustomIOConfigValidator.assertCustomIOConfigNotUsed( config, CUSTOM_IO_EXCEPTION_MESSAGE );
+        }
         // Extract information about the last transaction from legacy neostore
         File neoStore = new File( storeDir, MetaDataStore.DEFAULT_NAME );
         long lastTxId = MetaDataStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_ID );
@@ -367,7 +376,6 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
             SchemaIndexProvider schemaIndexProvider, RecordFormats oldFormat )
             throws IOException
     {
-        CustomIOConfigValidator.assertCustomIOConfigNotUsed( config, CUSTOM_IO_EXCEPTION_MESSAGE );
         StoreFile.fileOperation( COPY, fileSystem, storeDir, migrationDir, Iterables.iterable(
                 StoreFile.PROPERTY_STORE,
                 StoreFile.PROPERTY_KEY_TOKEN_NAMES_STORE,
@@ -480,23 +488,13 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
             // When migrating on a block device there might be some files only accessible via the page cache.
             try
             {
-                Iterable<FileHandle> fileHandles = pageCache.streamFilesRecursive( migrationDir )::iterator;
-                for ( FileHandle fh : fileHandles )
-                {
-                    Predicate<StoreFile> predicate =
-                            storeFile -> storeFile.fileName( StoreFileType.STORE ).equals( fh.getFile().getName() );
-                    if ( storesToDeleteFromMigratedDirectory.stream().anyMatch( predicate ) )
-                    {
-                        final Optional<PagedFile> optionalPagedFile = pageCache.getExistingMapping( fh.getFile() );
-                        if ( optionalPagedFile.isPresent() )
-                        {
-                            optionalPagedFile.get().close();
-                        }
-                        fh.delete();
-                    }
-                }
+                Predicate<FileHandle> fileHandlePredicate = fileHandle -> storesToDeleteFromMigratedDirectory.stream()
+                        .anyMatch( storeFile -> storeFile.fileName( StoreFileType.STORE )
+                                .equals( fileHandle.getFile().getName() ) );
+                pageCache.streamFilesRecursive( migrationDir ).filter( fileHandlePredicate )
+                        .forEach( FileHandle.HANDLE_DELETE );
             }
-            catch ( IOException e )
+            catch ( NoSuchFileException e )
             {
                 // This means that we had no files only present in the page cache, this is fine.
             }
@@ -558,7 +556,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                 }
             }
 
-            // The id files are to be kept on the normal file system, hence we use fileOperation to copy them.
+            // The ID files are to be kept on the normal file system, hence we use fileOperation to copy them.
             StoreFile.fileOperation( COPY, fileSystem, storeDir, migrationDir, Arrays.asList( storesFilesToMigrate ),
                     true, // OK if it's not there (1.9)
                     ExistingTargetStrategy.FAIL, StoreFileType.ID);
@@ -585,8 +583,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     private void createStore( File migrationDir, RecordFormats newFormat )
     {
         StoreFactory storeFactory = new StoreFactory( new File( migrationDir.getPath() ), pageCache, fileSystem,
-                newFormat,
-                NullLogProvider.getInstance() );
+                newFormat, NullLogProvider.getInstance() );
         try ( NeoStores neoStores = storeFactory.openAllNeoStores( true ) )
         {
             neoStores.getMetaDataStore();
@@ -734,7 +731,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                 }
             }
         }
-        catch ( IOException e )
+        catch ( NoSuchFileException e )
         {
             //This means that we had no files only present in the page cache, this is fine.
         }
@@ -773,8 +770,6 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         if ( StandardV2_1.STORE_VERSION.equals( versionToMigrateFrom ) ||
              StandardV2_2.STORE_VERSION.equals( versionToMigrateFrom ) )
         {
-            // These versions are not supported for block devices.
-            CustomIOConfigValidator.assertCustomIOConfigNotUsed( config, CUSTOM_IO_EXCEPTION_MESSAGE );
             // create counters from scratch
             Iterable<StoreFile> countsStoreFiles =
                     Iterables.iterable( StoreFile.COUNTS_STORE_LEFT, StoreFile.COUNTS_STORE_RIGHT );
