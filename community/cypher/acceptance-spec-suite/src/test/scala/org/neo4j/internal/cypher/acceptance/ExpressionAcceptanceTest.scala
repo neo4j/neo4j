@@ -23,44 +23,6 @@ import org.neo4j.cypher._
 
 class ExpressionAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
 
-  // TODO: These are TCK'd and should be removed when TCK gets updated
-  test("IN should work with nested list subscripting") {
-    val query = """WITH [[1, 2, 3]] AS list
-                  |RETURN 3 IN list[0] AS r
-                """.stripMargin
-
-    val result = executeWithAllPlanners(query)
-
-    result.toList should equal(List(Map("r" -> true)))
-  }
-
-  test("IN should work with nested literal list subscripting") {
-    val query = "RETURN 3 IN [[1, 2, 3]][0] AS r"
-
-    val result = executeWithAllPlanners(query)
-
-    result.toList should equal(List(Map("r" -> true)))
-  }
-
-  test("IN should work with list slices") {
-    val query = """WITH [1, 2, 3] AS list
-                  |RETURN 3 IN list[0..1] AS r
-                """.stripMargin
-
-    val result = executeWithAllPlanners(query)
-
-    result.toList should equal(List(Map("r" -> false)))
-  }
-
-  test("IN should work with literal list slices") {
-    val query = "RETURN 3 IN [1, 2, 3][0..1] AS r"
-
-    val result = executeWithAllPlanners(query)
-
-    result.toList should equal(List(Map("r" -> false)))
-  }
-  // End of above TODO
-
   test("should handle map projection with property selectors") {
     createNode("foo" -> 1, "bar" -> "apa")
 

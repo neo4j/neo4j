@@ -26,8 +26,6 @@ import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
 import org.neo4j.graphdb.Node
 import org.scalatest.Matchers
 
-// TCK'd
-// All test cases in this class have TCK representations
 class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSuite with Matchers with NewPlannerTestSupport {
 
   // TESTS WITH CASE EXPRESSION
