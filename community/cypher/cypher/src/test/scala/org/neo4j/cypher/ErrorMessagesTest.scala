@@ -19,11 +19,9 @@
  */
 package org.neo4j.cypher
 
-import org.apache.commons.lang3.SystemUtils
 import org.hamcrest.CoreMatchers._
 import org.junit.Assert._
 import org.neo4j.cypher.internal.compiler.v3_0.CypherSerializer
-import org.neo4j.cypher.internal.frontend.v3_0.helpers.StringHelper
 
 class ErrorMessagesTest extends ExecutionEngineFunSuite with CypherSerializer {
 
@@ -439,26 +437,20 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with CypherSerializer {
       "Expected exactly one statement per query but got: 2")
   }
 
-  def expectError(query: String, expectedError: String) {
-    import StringHelper._
+  private def expectError(query: String, expectedError: String) {
     val error = intercept[CypherException](executeQuery(query))
-    assertThat(error.getMessage, containsString(expectedError.fixPosition))
+    assertThat(error.getMessage, containsString(expectedError))
   }
 
   private def expectSyntaxError(query: String, expectedError: String, expectedOffset: Int) {
-    import StringHelper._
     val error = intercept[SyntaxException](executeQuery(query))
-    assertThat(error.getMessage(), containsString(expectedError.fixPosition))
-    assertThat(error.offset, equalTo(Some(fixPosition(query, expectedOffset)): Option[Int]))
+    assertThat(error.getMessage(), containsString(expectedError))
+    assertThat(error.offset, equalTo(Some(expectedOffset): Option[Int]))
   }
 
-  private def fixPosition(q: String, originalOffset: Int): Int = if (SystemUtils.IS_OS_WINDOWS) {
-    val subString = q.replaceAll("\n\r", "\n").substring(0, originalOffset)
-    val numberOfNewLines = subString.filter(_ == '\n').length
-    originalOffset + numberOfNewLines
-  } else originalOffset
+  private def executeQuery(query: String) {
+    import internal.frontend.v3_0.helpers.StringHelper._
 
-  def executeQuery(query: String) {
-    execute(query).toList
+    execute(query.fixNewLines).toList
   }
 }

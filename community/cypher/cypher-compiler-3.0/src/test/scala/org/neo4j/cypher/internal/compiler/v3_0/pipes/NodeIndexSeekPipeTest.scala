@@ -22,11 +22,11 @@ package org.neo4j.cypher.internal.compiler.v3_0.pipes
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_0._
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{ListLiteral, Expression, Variable, Literal}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expression, ListLiteral, Literal, Variable}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.{ManyQueryExpression, QueryExpression, RangeQueryExpression, SingleQueryExpression}
 import org.neo4j.cypher.internal.compiler.v3_0.spi.QueryContext
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
-import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.{CypherFunSuite, WindowsStringSafe}
 import org.neo4j.cypher.internal.frontend.v3_0.{CypherTypeException, InternalException, LabelId, PropertyKeyId}
 import org.neo4j.graphdb.Node
 import org.neo4j.kernel.api.index.IndexDescriptor
@@ -34,6 +34,7 @@ import org.neo4j.kernel.api.index.IndexDescriptor
 class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSupport {
 
   implicit val monitor = mock[PipeMonitor]
+  implicit val windowsSafe = WindowsStringSafe
 
   val label = LabelToken(LabelName("LabelName") _, LabelId(11))
   val propertyKey = PropertyKeyToken(PropertyKeyName("PropertyName") _, PropertyKeyId(10))

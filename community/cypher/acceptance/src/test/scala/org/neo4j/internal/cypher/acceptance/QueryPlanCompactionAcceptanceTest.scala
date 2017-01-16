@@ -19,13 +19,13 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
-import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
-import org.neo4j.cypher.{NewPlannerTestSupport, QueryStatisticsTestSupport, ExecutionEngineFunSuite}
-import org.scalatest.matchers.{MatchResult, Matcher}
+import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.WindowsStringSafe
+import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport}
 
 class QueryPlanCompactionAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport
   with NewPlannerTestSupport with QueryPlanTestSupport {
+
+  implicit val windowsSafe = WindowsStringSafe
 
   test("Compact very long query containing consecutive update operations") {
     val query =
