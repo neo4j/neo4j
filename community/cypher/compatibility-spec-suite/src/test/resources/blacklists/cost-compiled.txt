@@ -607,6 +607,9 @@ Explicit null values in a map remove old values
 Non-existent values in a property map are removed with SET =
 Unwind with merge
 Fail when trying to create using an undirected relationship pattern
+Handling non-string operands for STARTS WITH
+Handling non-string operands for CONTAINS
+Handling non-string operands for ENDS WITH
 
 Many CREATE clauses
 
