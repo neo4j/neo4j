@@ -23,11 +23,15 @@ import java.util.concurrent.TimeUnit;
 
 public class ExponentialBackoffStrategy implements RetryStrategy
 {
-    protected final long initialBackoffTimeMillis;
+    private final long initialBackoffTimeMillis;
+    private final long upperBoundBackoffTimeMillis;
 
-    public ExponentialBackoffStrategy( long initialBackoffTime, TimeUnit timeUnit )
+    public ExponentialBackoffStrategy( long initialBackoffTime, long upperBoundBackoffTime, TimeUnit timeUnit )
     {
-        initialBackoffTimeMillis = timeUnit.toMillis( initialBackoffTime );
+        assert initialBackoffTime <= upperBoundBackoffTime;
+
+        this.initialBackoffTimeMillis = timeUnit.toMillis( initialBackoffTime );
+        this.upperBoundBackoffTimeMillis = timeUnit.toMillis( upperBoundBackoffTime );
     }
 
     @Override
@@ -46,7 +50,7 @@ public class ExponentialBackoffStrategy implements RetryStrategy
             @Override
             public void increment()
             {
-                backoffTimeMillis = backoffTimeMillis * 2;
+                backoffTimeMillis = Math.min( backoffTimeMillis * 2, upperBoundBackoffTimeMillis );
             }
         };
     }
