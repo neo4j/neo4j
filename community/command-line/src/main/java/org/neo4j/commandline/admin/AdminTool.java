@@ -26,6 +26,8 @@ import java.util.Arrays;
 import java.util.NoSuchElementException;
 import java.util.function.Supplier;
 
+import org.neo4j.helpers.Args;
+
 import static java.lang.String.format;
 
 public class AdminTool
@@ -90,19 +92,28 @@ public class AdminTool
                 return;
             }
 
-            AdminCommand command = provider.create( homeDir, configDir, outsideWorld );
-            try
+            if ( Args.parse( commandArgs ).has( "help" ) )
             {
-                command.execute( commandArgs );
-                success();
+                outsideWorld.stdErrLine( "unknown argument: --help" );
+                usage.printUsageForCommand( commandLocator.findProvider( name ), outsideWorld::stdErrLine );
+                failure();
             }
-            catch ( IncorrectUsage e )
+            else
             {
-                badUsage( provider, e );
-            }
-            catch ( CommandFailed e )
-            {
-                commandFailed( e );
+                AdminCommand command = provider.create( homeDir, configDir, outsideWorld );
+                try
+                {
+                    command.execute( commandArgs );
+                    success();
+                }
+                catch ( IncorrectUsage e )
+                {
+                    badUsage( provider, e );
+                }
+                catch ( CommandFailed e )
+                {
+                    commandFailed( e );
+                }
             }
         }
         catch ( RuntimeException e )
