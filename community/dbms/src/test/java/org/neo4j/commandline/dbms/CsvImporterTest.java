@@ -29,11 +29,14 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.commandline.admin.RealOutsideWorld;
+import org.neo4j.dbms.DatabaseManagementSystemSettings;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class CsvImporterTest
 {
@@ -43,6 +46,8 @@ public class CsvImporterTest
     @Test
     public void writesReportToSpecifiedReportFile() throws Exception
     {
+        File dbDir = testDir.directory( "db" );
+        File logDir = testDir.directory( "logs" );
         File reportLocation = testDir.file( "the_report" );
 
         File inputFile = testDir.file( "foobar.csv" );
@@ -51,7 +56,11 @@ public class CsvImporterTest
 
         CsvImporter csvImporter = new CsvImporter(
                 Args.parse( String.format( "--report-file=%s", reportLocation.getAbsolutePath() ),
-                        String.format( "--nodes=%s", inputFile.getAbsolutePath() ) ), Config.defaults(),
+                        String.format( "--nodes=%s", inputFile.getAbsolutePath() ) ),
+                Config.defaults()
+                        .with( stringMap(
+                                DatabaseManagementSystemSettings.database_path.name(), dbDir.getAbsolutePath(),
+                                GraphDatabaseSettings.logs_directory.name(), logDir.getAbsolutePath() ) ),
                 new RealOutsideWorld() );
 
         csvImporter.doImport();
