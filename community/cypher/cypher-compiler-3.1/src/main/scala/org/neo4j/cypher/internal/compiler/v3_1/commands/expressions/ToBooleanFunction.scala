@@ -44,6 +44,6 @@ case class ToBooleanFunction(a: Expression) extends NullInNullOutExpression(a) {
           null
       }
     case v =>
-      throw new ParameterWrongTypeException("Expected a String or Boolean, got: " + v.toString)
+      throw new ParameterWrongTypeException("Expected a Boolean or String, got: " + v.toString)
   }
 }
