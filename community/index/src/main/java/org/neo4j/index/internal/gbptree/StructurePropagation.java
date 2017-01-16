@@ -85,4 +85,19 @@ class StructurePropagation<KEY>
         hasRightKeyInsert = false;
         hasLeftKeyReplace = false;
     }
+
+    interface StructureUpdate
+    {
+        void update( StructurePropagation structurePropagation, long childId );
+    }
+
+    static final StructureUpdate UPDATE_LEFT_CHILD = ( sp, childId ) -> {
+        sp.hasLeftChildUpdate = true;
+        sp.leftChild = childId;
+    };
+
+    static final StructureUpdate UPDATE_MID_CHILD = ( sp, childId ) -> {
+        sp.hasMidChildUpdate = true;
+        sp.midChild = childId;
+    };
 }
