@@ -27,6 +27,14 @@ import org.scalatest.matchers.{MatchResult, Matcher}
 
 class PreParsingAcceptanceTest extends ExecutionEngineFunSuite {
 
+  test("should not use eagerness when option not provided ") {
+    execute("MATCH () CREATE ()") shouldNot use("Eager")
+  }
+
+  test("should use eagerness when option is provided ") {
+    execute("CYPHER updateStrategy=eager MATCH () CREATE ()") should use("Eager")
+  }
+
   test("specifying no planner should provide IDP") {
     val query = "PROFILE RETURN 1"
 
