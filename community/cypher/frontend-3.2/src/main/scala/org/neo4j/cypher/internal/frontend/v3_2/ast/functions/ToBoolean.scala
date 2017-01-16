@@ -43,7 +43,7 @@ case object ToBoolean extends Function {
 
     if (correctType) SemanticCheckResult.success(s)
     else {
-      val message = s"Type mismatch: expected Number or String but was ${specifiedType.mkString(", ")}"
+      val message = s"Type mismatch: expected Boolean or String but was ${specifiedType.mkString(", ")}"
       SemanticCheckResult.error(s, SemanticError(message, argument.position))
     }
   }
