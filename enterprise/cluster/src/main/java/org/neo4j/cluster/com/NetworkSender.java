@@ -65,6 +65,10 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
+import static java.lang.System.currentTimeMillis;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.neo4j.cluster.com.NetworkReceiver.CLUSTER_SCHEME;
 import static org.neo4j.helpers.NamedThreadFactory.daemon;
 
@@ -101,8 +105,8 @@ public class NetworkSender
 
     // Sending
     // One executor for each receiving instance, so that one blocking instance cannot block others receiving messages
-    private final Map<URI, ExecutorService> senderExecutors = new HashMap<URI, ExecutorService>();
-    private final Set<URI> failedInstances = new HashSet<URI>(); // Keeps track of what instances we have failed to open
+    private final Map<URI, ExecutorService> senderExecutors = new HashMap<>();
+    private final Set<URI> failedInstances = new HashSet<>(); // Keeps track of what instances we have failed to open
     // connections to
     private ClientBootstrap clientBootstrap;
 
@@ -112,7 +116,7 @@ public class NetworkSender
     private final Log msgLog;
     private URI me;
 
-    private final Map<URI, Channel> connections = new ConcurrentHashMap<URI, Channel>();
+    private final Map<URI, Channel> connections = new ConcurrentHashMap<>();
     private final Listeners<NetworkChannelsListener> listeners = new Listeners<>();
 
     private volatile boolean paused;
@@ -181,15 +185,20 @@ public class NetworkSender
         {
             executorService.shutdown();
         }
+        long totalWaitTime = 0;
+        long maxWaitTime = SECONDS.toMillis( 5 );
         for ( Map.Entry<URI, ExecutorService> entry : senderExecutors.entrySet() )
         {
             URI targetAddress = entry.getKey();
             ExecutorService executorService = entry.getValue();
 
-            if ( !executorService.awaitTermination( 50, TimeUnit.SECONDS ) )
+            long start = currentTimeMillis();
+            if ( !executorService.awaitTermination( maxWaitTime - totalWaitTime, MILLISECONDS ) )
             {
                 msgLog.warn( "Could not shut down send executor towards: " + targetAddress );
+                break;
             }
+            totalWaitTime += currentTimeMillis() - start;
         }
         senderExecutors.clear();
 
