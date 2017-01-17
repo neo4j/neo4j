@@ -1344,6 +1344,22 @@ public abstract class PageSwapperTest
     }
 
     @Test
+    public void streamFilesRecursiveMustBeAbleToGivePathRelativeToBase() throws Exception
+    {
+        PageSwapperFactory factory = createSwapperFactory();
+        File base = baseDirectory();
+        File sub = new File( base, "sub" );
+        File a = new File( base, "a" );
+        File b = new File( sub, "b" );
+        mkdirs( sub );
+        createSwapperAndFile( factory, a );
+        createSwapperAndFile( factory, b );
+        Set<File> set = factory.streamFilesRecursive( base ).map( FileHandle::getRelativeFile ).collect( toSet() );
+        assertThat( "Files relative to base directory " + base,
+                set, containsInAnyOrder( new File( "a" ), new File( "sub" + File.separator + "b" ) ) );
+    }
+
+    @Test
     public void streamFilesRecursiveMustListSingleFileGivenAsBase() throws Exception
     {
         PageSwapperFactory factory = createSwapperFactory();

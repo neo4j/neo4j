@@ -56,6 +56,7 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 public class CoreToCoreCopySnapshotIT
 {
     protected static final int NR_CORE_MEMBERS = 3;
+
     @Rule
     public final ClusterRule clusterRule = new ClusterRule( getClass() )
             .withNumberOfCoreMembers( NR_CORE_MEMBERS )

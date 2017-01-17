@@ -377,17 +377,24 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public void deleteRecursively( File directory ) throws IOException
+    public void deleteRecursively( File path ) throws IOException
     {
-        List<String> directoryPathItems = splitPath( canonicalFile( directory ) );
-        for ( Map.Entry<File,EphemeralFileData> file : files.entrySet() )
+        if ( isDirectory( path ) )
         {
-            File fileName = file.getKey();
-            List<String> fileNamePathItems = splitPath( fileName );
-            if ( directoryMatches( directoryPathItems, fileNamePathItems ) )
+            List<String> directoryPathItems = splitPath( canonicalFile( path ) );
+            for ( Map.Entry<File,EphemeralFileData> file : files.entrySet() )
             {
-                deleteFile( fileName );
+                File fileName = file.getKey();
+                List<String> fileNamePathItems = splitPath( fileName );
+                if ( directoryMatches( directoryPathItems, fileNamePathItems ) )
+                {
+                    deleteFile( fileName );
+                }
             }
+        }
+        else
+        {
+            deleteFile( path );
         }
     }
 
@@ -497,12 +504,24 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
     @Override
     public void moveToDirectory( File file, File toDirectory ) throws IOException
     {
-        EphemeralFileData fileToMove = files.remove( canonicalFile( file ) );
-        if ( fileToMove == null )
+        if ( isDirectory( file ) )
         {
-            throw new FileNotFoundException( file.getPath() );
+            File inner = new File( toDirectory, file.getName() );
+            mkdir( inner );
+            for ( File f : listFiles( file ) )
+            {
+                moveToDirectory( f, inner );
+            }
         }
-        files.put( canonicalFile( new File( toDirectory, file.getName() ) ), fileToMove );
+        else
+        {
+            EphemeralFileData fileToMove = files.remove( canonicalFile( file ) );
+            if ( fileToMove == null )
+            {
+                throw new FileNotFoundException( file.getPath() );
+            }
+            files.put( canonicalFile( new File( toDirectory, file.getName() ) ), fileToMove );
+        }
     }
 
     @Override
