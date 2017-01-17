@@ -664,7 +664,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      */
     private void release()
     {
-        statementLocks.close();
+        Throwable lockCloseException = closeLocksSilently();
         statementLocks = null;
         transactionStatus.close();
         type = null;
@@ -678,6 +678,24 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         reuseCount++;
         userMetaData = Collections.emptyMap();
         pool.release( this );
+        if ( lockCloseException != null )
+        {
+            throw new RuntimeException( lockCloseException );
+        }
+    }
+
+    private Throwable closeLocksSilently()
+    {
+        Throwable lockClosingThrowable = null;
+        try
+        {
+            statementLocks.close();
+        }
+        catch ( Throwable e )
+        {
+            lockClosingThrowable = e;
+        }
+        return lockClosingThrowable;
     }
 
     private boolean isTerminated()

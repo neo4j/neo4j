@@ -24,6 +24,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.mockito.Mockito;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -67,6 +68,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -783,6 +785,28 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         expectedException.expect( IllegalStateException.class );
         expectedException.expectMessage( "This transaction has already been completed." );
         transaction.close();
+    }
+
+    @Test
+    public void returnTransactionToPoolWhenLocksCloseFailOrRelease() throws TransactionFailureException
+    {
+        Locks.Client client = Mockito.mock( Locks.Client.class );
+        RuntimeException locksCloseException = new RuntimeException( "Locks close exception." );
+        doThrow( locksCloseException ).when( client ).close();
+        KernelTransactionImplementation transaction =
+                newTransaction( 1L, SecurityContext.AUTH_DISABLED, client, 2L );
+
+        try
+        {
+            transaction.close();
+            fail("Locks close are expected to throw exception.");
+        }
+        catch ( Throwable e )
+        {
+            assertSame( "Same as supplier exception for locks close.", locksCloseException, e.getCause() );
+        }
+        verify( txPool ).release( transaction );
+        assertTrue( transaction.isClosed() );
     }
 
     private SecurityContext securityContext()
