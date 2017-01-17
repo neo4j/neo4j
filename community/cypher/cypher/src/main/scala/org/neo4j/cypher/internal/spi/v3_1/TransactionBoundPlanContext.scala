@@ -23,7 +23,7 @@ import java.util.Optional
 
 import org.neo4j.cypher.MissingIndexException
 import org.neo4j.cypher.internal.LastCommittedTxIdProvider
-import org.neo4j.cypher.internal.compiler.v3_1.InternalNotificationLogger
+import org.neo4j.cypher.internal.compiler.v3_1.{IndexDescriptor, InternalNotificationLogger}
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.EntityProducer
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.matching.ExpanderStep
 import org.neo4j.cypher.internal.compiler.v3_1.spi._
@@ -34,7 +34,7 @@ import org.neo4j.graphdb.Node
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.exceptions.KernelException
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException
-import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
+import org.neo4j.kernel.api.index.{InternalIndexState, IndexDescriptor => KernelIndexDescriptor}
 import org.neo4j.kernel.api.proc
 import org.neo4j.kernel.api.proc.Neo4jTypes.AnyType
 import org.neo4j.kernel.api.proc.{Neo4jTypes, QualifiedName => KernelQualifiedName}
@@ -43,7 +43,7 @@ import org.neo4j.kernel.impl.proc.Neo4jValue
 import scala.collection.JavaConverters._
 
 class TransactionBoundPlanContext(tc: TransactionalContextWrapperv3_1, logger: InternalNotificationLogger)
-  extends TransactionBoundTokenContext(tc.statement) with PlanContext {
+  extends TransactionBoundTokenContext(tc.statement) with PlanContext with IndexDescriptorCompatibility {
 
   @Deprecated
   def getIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor] = evalOrNone {
@@ -73,7 +73,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapperv3_1, logger: I
   private def evalOrNone[T](f: => Option[T]): Option[T] =
     try { f } catch { case _: SchemaKernelException => None }
 
-  private def getOnlineIndex(descriptor: IndexDescriptor): Option[IndexDescriptor] =
+  private def getOnlineIndex(descriptor: KernelIndexDescriptor): Option[IndexDescriptor] =
     tc.statement.readOperations().indexGetState(descriptor) match {
       case InternalIndexState.ONLINE => Some(descriptor)
       case _                         => None

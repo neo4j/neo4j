@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.pipes.matching.{ExpanderStep, Tra
 import org.neo4j.cypher.internal.compiler.v3_1.spi._
 import org.neo4j.graphdb.Node
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
-import org.neo4j.kernel.api.index.IndexDescriptor
+import org.neo4j.cypher.internal.compiler.v3_1.IndexDescriptor
 
 class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext with ExceptionTranslationSupport {
 

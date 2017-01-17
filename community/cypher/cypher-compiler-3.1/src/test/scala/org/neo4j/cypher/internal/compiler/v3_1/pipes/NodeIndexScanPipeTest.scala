@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.frontend.v3_1.ast.{LabelToken, PropertyKeyToken
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_1.{LabelId, PropertyKeyId}
 import org.neo4j.graphdb.Node
-import org.neo4j.kernel.api.index.IndexDescriptor
+import org.neo4j.cypher.internal.compiler.v3_1.IndexDescriptor
 
 class NodeIndexScanPipeTest extends CypherFunSuite with AstConstructionTestSupport {
 

@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.tracing.rewriters.RewriterStepSeq
 import org.neo4j.cypher.internal.frontend.v3_1.parser.CypherParser
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_1.{Scope, SemanticTable}
-import org.neo4j.kernel.api.index.IndexDescriptor
+import org.neo4j.cypher.internal.compiler.v3_1.IndexDescriptor
 
 class RuleExecutablePlanBuilderTest extends CypherFunSuite {
   val planContext: PlanContext = mock[PlanContext]

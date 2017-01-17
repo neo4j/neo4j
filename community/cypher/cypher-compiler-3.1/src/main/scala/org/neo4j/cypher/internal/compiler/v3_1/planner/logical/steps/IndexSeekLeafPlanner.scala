@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_1.SemanticTable
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.frontend.v3_1.notification.IndexLookupUnfulfillableNotification
-import org.neo4j.kernel.api.index.IndexDescriptor
+import org.neo4j.cypher.internal.compiler.v3_1.IndexDescriptor
 
 abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner {
 

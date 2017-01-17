@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_1.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_1.commands.{QueryExpression, RangeQueryExpression}
 import org.neo4j.graphdb.Node
-import org.neo4j.kernel.api.index.IndexDescriptor
+import org.neo4j.cypher.internal.compiler.v3_1.IndexDescriptor
 
 case class IndexSeekModeFactory(unique: Boolean, readOnly: Boolean) {
   def fromQueryExpression[T](qexpr: QueryExpression[T]) = qexpr match {
