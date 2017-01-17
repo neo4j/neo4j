@@ -170,7 +170,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
 
   private def createMiniGraph(relTypeName: String): Node = {
     val relType = RelationshipType.withName(relTypeName)
-    val tx = graph.beginTransaction(KernelTransaction.Type.explicit, AnonymousContext.write())
+    val tx = graph.beginTransaction(KernelTransaction.Type.explicit, AnonymousContext.writeToken())
     try {
       val node = graph.createNode()
       val other1 = graph.createNode()

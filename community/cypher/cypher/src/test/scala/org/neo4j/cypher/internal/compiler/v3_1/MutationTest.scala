@@ -43,7 +43,7 @@ class MutationTest extends ExecutionEngineFunSuite {
   }
 
   test("create_node") {
-    val tx = graph.beginTransaction( KernelTransaction.Type.explicit, AnonymousContext.write() )
+    val tx = graph.beginTransaction( KernelTransaction.Type.explicit, AnonymousContext.writeToken() )
     val start = SingleRowPipe()
     val createNode = new ExecuteUpdateCommandsPipe(start, Seq(CreateNode("n", Map("name" -> Literal("Andres")), Seq.empty)))
 
@@ -59,7 +59,7 @@ class MutationTest extends ExecutionEngineFunSuite {
   }
 
   test("join_existing_transaction_and_rollback") {
-    val tx = graph.beginTransaction( KernelTransaction.Type.explicit, AnonymousContext.write() )
+    val tx = graph.beginTransaction( KernelTransaction.Type.explicit, AnonymousContext.writeToken() )
     val start = SingleRowPipe()
     val createNode = new ExecuteUpdateCommandsPipe(start, Seq(CreateNode("n", Map("name" -> Literal("Andres")), Seq.empty)))
 
@@ -72,7 +72,7 @@ class MutationTest extends ExecutionEngineFunSuite {
   }
 
   test("join_existing_transaction_and_commit") {
-    val tx = graph.beginTransaction( KernelTransaction.Type.explicit, AnonymousContext.write() )
+    val tx = graph.beginTransaction( KernelTransaction.Type.explicit, AnonymousContext.writeToken() )
     val start = SingleRowPipe()
     val createNode = new ExecuteUpdateCommandsPipe(start, Seq(CreateNode("n", Map("name" -> Literal("Andres")), Seq.empty)))
 
@@ -91,7 +91,7 @@ class MutationTest extends ExecutionEngineFunSuite {
   test("create_rel") {
     val a = createNode()
     val b = createNode()
-    val tx = graph.beginTransaction( KernelTransaction.Type.explicit, AnonymousContext.write() )
+    val tx = graph.beginTransaction( KernelTransaction.Type.explicit, AnonymousContext.writeToken() )
 
     val createRel = CreateRelationship("r",
       RelationshipEndpoint(getNode("a", a), Map(), Seq.empty),

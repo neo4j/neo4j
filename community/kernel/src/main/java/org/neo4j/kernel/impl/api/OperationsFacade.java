@@ -135,6 +135,7 @@ public class OperationsFacade
 
     final KeyWriteOperations tokenWrite()
     {
+        statement.assertAllows( AccessMode::allowsTokenCreates, "Token create" );
         return operations.keyWriteOperations();
     }
 
@@ -928,7 +929,7 @@ public class OperationsFacade
         {
             return id;
         }
-        statement.assertAllows( AccessMode::allowsTokenCreates, "Token create" );
+
         return tokenWrite().labelGetOrCreateForName( statement, labelName );
     }
 
@@ -941,7 +942,6 @@ public class OperationsFacade
         {
             return id;
         }
-        statement.assertAllows( AccessMode::allowsTokenCreates, "Token create" );
         return tokenWrite().propertyKeyGetOrCreateForName( statement,
                 propertyKeyName );
     }
@@ -955,7 +955,6 @@ public class OperationsFacade
         {
             return id;
         }
-        statement.assertAllows( AccessMode::allowsTokenCreates, "Token create" );
         return tokenWrite().relationshipTypeGetOrCreateForName( statement, relationshipTypeName );
     }
 
@@ -964,7 +963,6 @@ public class OperationsFacade
             IllegalTokenNameException, TooManyLabelsException
     {
         statement.assertOpen();
-        statement.assertAllows( AccessMode::allowsTokenCreates, "Token create" );
         tokenWrite().labelCreateForName( statement, labelName, id );
     }
 
@@ -974,7 +972,6 @@ public class OperationsFacade
             IllegalTokenNameException
     {
         statement.assertOpen();
-        statement.assertAllows( AccessMode::allowsTokenCreates, "Token create" );
         tokenWrite().propertyKeyCreateForName( statement, propertyKeyName, id );
     }
 
@@ -984,7 +981,6 @@ public class OperationsFacade
             IllegalTokenNameException
     {
         statement.assertOpen();
-        statement.assertAllows( AccessMode::allowsTokenCreates, "Token create" );
         tokenWrite().relationshipTypeCreateForName( statement,
                 relationshipTypeName, id );
     }
@@ -1546,7 +1542,7 @@ public class OperationsFacade
                     tx.securityContext().description() ) );
         }
         AccessMode write =
-                procedures.isAllowWriteTokenCreate() ? AccessMode.Static.TOKEN_WRITE : AccessMode.Static.WRITE;
+                    procedures.isAllowWriteTokenCreate() ? AccessMode.Static.TOKEN_WRITE : AccessMode.Static.WRITE;
         return callProcedure( name, input, new RestrictedAccessMode( tx.securityContext().mode(), write ) );
     }
 

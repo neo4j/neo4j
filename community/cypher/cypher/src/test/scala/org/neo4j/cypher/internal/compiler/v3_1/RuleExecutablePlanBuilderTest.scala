@@ -107,7 +107,7 @@ class RuleExecutablePlanBuilderTest
 
   test("should resolve property keys") {
     // given
-    val tx = graph.beginTransaction(KernelTransaction.Type.explicit, AnonymousContext.write() )
+    val tx = graph.beginTransaction(KernelTransaction.Type.explicit, AnonymousContext.writeToken() )
     try {
       val node = graph.createNode()
       node.setProperty("foo", 12l)
@@ -139,7 +139,7 @@ class RuleExecutablePlanBuilderTest
 
   test("should resolve label ids") {
     // given
-    val tx = graph.beginTransaction(KernelTransaction.Type.explicit, AnonymousContext.write() )
+    val tx = graph.beginTransaction(KernelTransaction.Type.explicit, AnonymousContext.writeToken() )
     try {
       val node = graph.createNode(label("Person"))
 
