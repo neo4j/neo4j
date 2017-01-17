@@ -22,7 +22,7 @@ package org.neo4j.causalclustering.helper;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Exponential backoff strategy helper class.
+ * Exponential backoff strategy helper class. Exponent is always 2.
  */
 public class ExponentialBackoffStrategy implements RetryStrategy
 {
