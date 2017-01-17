@@ -20,11 +20,13 @@
 package org.neo4j.kernel.impl.api.store;
 
 import java.util.Iterator;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.function.Predicates;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
@@ -39,8 +41,11 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
-import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorPredicates;
+import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.register.Register.DoubleLongRegister;
@@ -48,9 +53,7 @@ import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.Token;
-import org.neo4j.storageengine.api.schema.IndexSchemaRule;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
-import org.neo4j.storageengine.api.schema.SchemaRule;
 
 /**
  * This is the object-caching layer. It delegates to the legacy object cache system if possible, or delegates to the
@@ -61,6 +64,9 @@ import org.neo4j.storageengine.api.schema.SchemaRule;
  */
 public class CacheLayer implements StoreReadLayer
 {
+    private static final Function<? super IndexRule, IndexDescriptor> TO_INDEX_RULE =
+            rule -> IndexBoundary.map( rule.getIndexDescriptor() );
+
     private final SchemaCache schemaCache;
     private final DiskLayer diskLayer;
 
@@ -79,40 +85,45 @@ public class CacheLayer implements StoreReadLayer
     @Override
     public Iterator<IndexDescriptor> indexesGetForLabel( int labelId )
     {
-        return toIndexDescriptors( schemaCache.schemaRulesForLabel( labelId ), SchemaRule.Kind.INDEX_RULE );
+        return toIndexDescriptors(
+                Iterables.filter(
+                        rule -> SchemaDescriptorPredicates.hasLabel( rule, labelId ) && !rule.canSupportUniqueConstraint(),
+                        schemaCache.indexRules()
+                ) );
     }
 
     @Override
     public Iterator<IndexDescriptor> indexesGetAll()
     {
-        return toIndexDescriptors( schemaCache.schemaRules(), SchemaRule.Kind.INDEX_RULE );
+        return toIndexDescriptors( Iterables.filter( rule -> !rule.canSupportUniqueConstraint(), schemaCache.indexRules() ) );
     }
 
     @Override
     public Iterator<IndexDescriptor> uniquenessIndexesGetForLabel( int labelId )
     {
-        return toIndexDescriptors( schemaCache.schemaRulesForLabel( labelId ),
-                SchemaRule.Kind.CONSTRAINT_INDEX_RULE );
+        return toIndexDescriptors(
+                    Iterables.filter(
+                        rule -> SchemaDescriptorPredicates.hasLabel( rule, labelId ) && rule.canSupportUniqueConstraint(),
+                        schemaCache.indexRules()
+                    ) );
     }
 
     @Override
     public Iterator<IndexDescriptor> uniquenessIndexesGetAll()
     {
-        return toIndexDescriptors( schemaCache.schemaRules(), SchemaRule.Kind.CONSTRAINT_INDEX_RULE );
+        return toIndexDescriptors( Iterables.filter( IndexRule::canSupportUniqueConstraint, schemaCache.indexRules() ) );
     }
 
-    private static Iterator<IndexDescriptor> toIndexDescriptors( Iterable<SchemaRule> rules,
-            final SchemaRule.Kind kind )
+    private static Iterator<IndexDescriptor> toIndexDescriptors( Iterable<IndexRule> rules )
     {
-        Iterator<SchemaRule> filteredRules = Iterators.filter( item -> item.getKind() == kind, rules.iterator() );
-        return Iterators.map( from -> IndexDescriptorFactory.of( (IndexRule) from ), filteredRules );
+        return Iterators.map( TO_INDEX_RULE, rules.iterator() );
     }
 
     @Override
     public Long indexGetOwningUniquenessConstraintId( IndexDescriptor index )
             throws SchemaRuleNotFoundException
     {
-        IndexSchemaRule rule = indexRule( index, Predicates.alwaysTrue() );
+        IndexRule rule = indexRule( index, Predicates.alwaysTrue() );
         if ( rule != null )
         {
             return rule.getOwningConstraint();
@@ -121,10 +132,10 @@ public class CacheLayer implements StoreReadLayer
     }
 
     @Override
-    public long indexGetCommittedId( IndexDescriptor index, Predicate<SchemaRule.Kind> filter )
+    public long indexGetCommittedId( IndexDescriptor index, Predicate<IndexRule> filter )
             throws SchemaRuleNotFoundException
     {
-        IndexSchemaRule rule = indexRule( index, filter );
+        IndexRule rule = indexRule( index, filter );
         if ( rule != null )
         {
             return rule.getId();
@@ -133,17 +144,16 @@ public class CacheLayer implements StoreReadLayer
     }
 
     @Override
-    public IndexSchemaRule indexRule( IndexDescriptor index, Predicate<SchemaRule.Kind> filter )
+    public IndexRule indexRule( IndexDescriptor index, Predicate<IndexRule> filter )
     {
-        for ( SchemaRule rule : schemaCache.schemaRulesForLabel( index.getLabelId() ) )
+        LabelSchemaDescriptor schemaDescription =
+                SchemaDescriptorFactory.forLabel( index.getLabelId(), index.getPropertyKeyId() );
+
+        for ( IndexRule rule : schemaCache.indexRules() )
         {
-            if ( rule instanceof IndexSchemaRule )
+            if ( filter.test( rule ) && rule.getSchemaDescriptor().equals( schemaDescription ) )
             {
-                IndexSchemaRule indexRule = (IndexSchemaRule) rule;
-                if ( filter.test( indexRule.getKind() ) && indexRule.matches( index.descriptor() ))
-                {
-                    return indexRule;
-                }
+                return rule;
             }
         }
         return null;

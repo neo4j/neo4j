@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.storemigration.legacystore.v21.propertydeduplication;
 
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -31,6 +33,7 @@ import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorPredicates;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.store.SchemaStore;
@@ -60,24 +63,18 @@ class IndexLookup implements AutoCloseable
         final PrimitiveIntObjectMap<List<IndexRule>> indexRuleIndex = Primitive.intObjectMap();
         for ( SchemaRule schemaRule : schemaStore )
         {
-            if ( schemaRule.getKind() == SchemaRule.Kind.INDEX_RULE )
+            if ( schemaRule instanceof IndexRule )
             {
                 IndexRule rule = (IndexRule) schemaRule;
-                if ( rule.descriptor().isComposite() )
+                int propertyId = SchemaDescriptorPredicates.getProperty.compute( rule.getSchemaDescriptor() )
+                                    .orElseThrow( NotImplementedException::new ); // assuming 1 property always
+                List<IndexRule> ruleList = indexRuleIndex.get( propertyId );
+                if ( ruleList == null )
                 {
-                    throw new UnsupportedOperationException( "Composite Index not yet supported" );
+                    ruleList = new LinkedList<>();
+                    indexRuleIndex.put( propertyId, ruleList );
                 }
-                else
-                {
-                    int propertyKey = rule.descriptor().getPropertyKeyId();
-                    List<IndexRule> ruleList = indexRuleIndex.get( propertyKey );
-                    if ( ruleList == null )
-                    {
-                        ruleList = new LinkedList<>();
-                        indexRuleIndex.put( propertyKey, ruleList );
-                    }
-                    ruleList.add( rule );
-                }
+                ruleList.add( rule );
             }
         }
         return indexRuleIndex;
@@ -96,25 +93,15 @@ class IndexLookup implements AutoCloseable
         }
     }
 
-    private IndexRule findRelevantIndexRule( List<IndexRule> indexRules, int propertyKeyId, long[] labelIds )
+    private IndexRule findIndexRuleWithOneOfLabels( List<IndexRule> indexRules, long[] labelIds )
     {
         for ( long labelId : labelIds )
         {
             for ( IndexRule indexRule : indexRules )
             {
-                if ( indexRule.getLabel() == labelId )
+                if ( SchemaDescriptorPredicates.hasLabel( indexRule, (int)labelId ) )
                 {
-                    if ( indexRule.descriptor().isComposite() )
-                    {
-                        throw new UnsupportedOperationException( "Composite Index not yet supported" );
-                    }
-                    else
-                    {
-                        if ( indexRule.descriptor().getPropertyKeyId() == propertyKeyId )
-                        {
-                            return indexRule;
-                        }
-                    }
+                    return indexRule;
                 }
             }
         }
@@ -142,7 +129,7 @@ class IndexLookup implements AutoCloseable
         {
             return null;
         }
-        IndexRule rule = findRelevantIndexRule( indexRules, propertyKeyId, labelIds );
+        IndexRule rule = findIndexRuleWithOneOfLabels( indexRules, labelIds );
         if (rule == null)
         {
             return null;

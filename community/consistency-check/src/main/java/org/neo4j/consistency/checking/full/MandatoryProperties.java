@@ -31,20 +31,21 @@ import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReporter;
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaProcessor;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.StoreAccess;
-import org.neo4j.kernel.impl.store.record.NodePropertyExistenceConstraintRule;
+import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
-import org.neo4j.kernel.impl.store.record.PropertyConstraintRule;
-import org.neo4j.kernel.impl.store.record.RelationshipPropertyExistenceConstraintRule;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.unsafe.impl.batchimport.Utils;
 
+import static org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor.Type.EXISTS;
+
 public class MandatoryProperties
 {
-    private static final Class<PropertyConstraintRule> BASE_RULE = PropertyConstraintRule.class;
-
     private final PrimitiveIntObjectMap<int[]> nodes = Primitive.intObjectMap();
     private final PrimitiveIntObjectMap<int[]> relationships = Primitive.intObjectMap();
     private final StoreAccess storeAccess;
@@ -53,26 +54,35 @@ public class MandatoryProperties
     {
         this.storeAccess = storeAccess;
         SchemaStorage schemaStorage = new SchemaStorage( storeAccess.getSchemaStore() );
-
-        for ( PropertyConstraintRule rule : constraintsIgnoringMalformed( schemaStorage ) )
+        for ( ConstraintRule rule : constraintsIgnoringMalformed( schemaStorage ) )
         {
-            switch ( rule.getKind() )
+            if ( rule.getConstraintDescriptor().type() == EXISTS )
             {
-            case NODE_PROPERTY_EXISTENCE_CONSTRAINT:
-                NodePropertyExistenceConstraintRule nodeRule = (NodePropertyExistenceConstraintRule) rule;
-                recordConstraint( nodeRule.getLabel(), nodeRule.descriptor().getPropertyKeyId(), nodes );
-                break;
-
-            case RELATIONSHIP_PROPERTY_EXISTENCE_CONSTRAINT:
-                RelationshipPropertyExistenceConstraintRule relRule = (RelationshipPropertyExistenceConstraintRule) rule;
-                recordConstraint( relRule.getRelationshipType(), relRule.getPropertyKey(), relationships );
-                break;
-
-            default:
-                continue;
+                constraintRecorder.process( rule.getSchemaDescriptor() );
             }
         }
     }
+
+    private SchemaProcessor constraintRecorder = new SchemaProcessor()
+    {
+        @Override
+        public void process( LabelSchemaDescriptor schema )
+        {
+            for ( int propertyId : schema.getPropertyIds() )
+            {
+                recordConstraint( schema.getLabelId(), propertyId, nodes );
+            }
+        }
+
+        @Override
+        public void process( RelationTypeSchemaDescriptor schema )
+        {
+            for ( int propertyId : schema.getPropertyIds() )
+            {
+                recordConstraint( schema.getRelTypeId(), propertyId, relationships );
+            }
+        }
+    };
 
     public Function<NodeRecord,Check<NodeRecord,ConsistencyReport.NodeConsistencyReport>> forNodes(
             final ConsistencyReporter reporter )
@@ -128,10 +138,10 @@ public class MandatoryProperties
      * malformed one. This method will therefore execute `hasNext()` until 1) it reads a complete schema rule, 2) all
      * schema rules are read, or 3) it get's an exception that is not wrapping a `MalformedSchemaRuleException`.
      */
-    private Iterable<PropertyConstraintRule> constraintsIgnoringMalformed( SchemaStorage schemaStorage )
+    private Iterable<ConstraintRule> constraintsIgnoringMalformed( SchemaStorage schemaStorage )
     {
-        final Iterator<PropertyConstraintRule> ruleIterator = schemaStorage.schemaRules( BASE_RULE );
-        return () -> new Iterator<PropertyConstraintRule>()
+        final Iterator<ConstraintRule> ruleIterator = schemaStorage.allConstraintRules();
+        return () -> new Iterator<ConstraintRule>()
             {
                 @Override
                 public boolean hasNext()
@@ -153,7 +163,7 @@ public class MandatoryProperties
                 }
 
                 @Override
-                public PropertyConstraintRule next()
+                public ConstraintRule next()
                 {
                     return ruleIterator.next();
                 }

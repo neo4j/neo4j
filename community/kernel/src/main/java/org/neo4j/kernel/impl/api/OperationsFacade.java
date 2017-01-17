@@ -66,10 +66,9 @@ import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelExceptio
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
-import org.neo4j.kernel.api.exceptions.schema.DuplicateIndexSchemaRuleException;
+import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
-import org.neo4j.kernel.api.exceptions.schema.IndexSchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
@@ -82,6 +81,7 @@ import org.neo4j.kernel.api.proc.QualifiedName;
 import org.neo4j.kernel.api.proc.UserFunctionSignature;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.api.operations.CountsOperations;
@@ -110,6 +110,7 @@ import org.neo4j.storageengine.api.RelationshipTypeItem;
 import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
+import org.neo4j.storageengine.api.schema.SchemaRule;
 
 import static java.lang.String.format;
 
@@ -620,7 +621,8 @@ public class OperationsFacade
         IndexDescriptor indexDescriptor = schemaRead().indexGetForLabelAndPropertyKey( statement, descriptor );
         if ( indexDescriptor == null )
         {
-            throw new IndexSchemaRuleNotFoundException( descriptor );
+            throw new SchemaRuleNotFoundException( SchemaRule.Kind.INDEX_RULE,
+                    SchemaDescriptorFactory.forLabel( descriptor.getLabelId(), descriptor.getPropertyKeyId() ) );
         }
         return indexDescriptor;
     }
@@ -641,7 +643,7 @@ public class OperationsFacade
 
     @Override
     public IndexDescriptor uniqueIndexGetForLabelAndPropertyKey( NodePropertyDescriptor descriptor )
-            throws SchemaRuleNotFoundException, DuplicateIndexSchemaRuleException
+            throws SchemaRuleNotFoundException, DuplicateSchemaRuleException
 
     {
         IndexDescriptor result = null;
@@ -657,14 +659,16 @@ public class OperationsFacade
                 }
                 else
                 {
-                    throw new DuplicateIndexSchemaRuleException( descriptor, true );
+                    throw new DuplicateSchemaRuleException( SchemaRule.Kind.CONSTRAINT_INDEX_RULE,
+                            SchemaDescriptorFactory.forLabel( descriptor.getLabelId(), descriptor.getPropertyKeyId() ) );
                 }
             }
         }
 
         if ( null == result )
         {
-            throw new IndexSchemaRuleNotFoundException( descriptor, true );
+            throw new SchemaRuleNotFoundException( SchemaRule.Kind.CONSTRAINT_INDEX_RULE,
+                    SchemaDescriptorFactory.forLabel( descriptor.getLabelId(), descriptor.getPropertyKeyId() ) );
         }
 
         return result;

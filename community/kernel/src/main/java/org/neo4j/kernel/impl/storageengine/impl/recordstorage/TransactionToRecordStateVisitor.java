@@ -31,14 +31,15 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.properties.DefinedProperty;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.record.IndexRule;
-import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
 import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
 import org.neo4j.storageengine.api.StorageProperty;
-import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
 public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
@@ -180,28 +181,35 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
     @Override
     public void visitAddedIndex( IndexDescriptor element, boolean isConstraintIndex )
     {
-        SchemaIndexProvider.Descriptor providerDescriptor = schemaIndexProviderMap.getDefaultProvider()
-                .getProviderDescriptor();
+        SchemaIndexProvider.Descriptor providerDescriptor =
+                schemaIndexProviderMap.getDefaultProvider().getProviderDescriptor();
         IndexRule rule;
         if ( isConstraintIndex )
         {
-            rule = IndexRule.constraintIndexRule( schemaStorage.newRuleId(), element.descriptor(), providerDescriptor,
-                    null );
+            // was IndexRule.constraintIndexRule, but calling this with null gives the non-constraint version?
+            rule = IndexRule.indexRule(
+                        schemaStorage.newRuleId(),
+                        NewIndexDescriptorFactory.uniqueForLabel( element.getLabelId(), element.getPropertyKeyId() ),
+                        providerDescriptor );
         }
         else
         {
-            rule = IndexRule.indexRule( schemaStorage.newRuleId(), element.descriptor(), providerDescriptor );
+            rule = IndexRule.indexRule(
+                        schemaStorage.newRuleId(),
+                        NewIndexDescriptorFactory.forLabel( element.getLabelId(), element.getPropertyKeyId() ),
+                        providerDescriptor );
         }
         recordState.createSchemaRule( rule );
     }
 
     @Override
-    public void visitRemovedIndex( IndexDescriptor element, boolean isConstraintIndex )
+    public void visitRemovedIndex( IndexDescriptor desc, boolean isConstraintIndex )
     {
         SchemaStorage.IndexRuleKind kind = isConstraintIndex ?
                 SchemaStorage.IndexRuleKind.CONSTRAINT
                 : SchemaStorage.IndexRuleKind.INDEX;
-        IndexRule rule = schemaStorage.indexRule( element.descriptor(), kind );
+        IndexRule rule = schemaStorage.indexRule(
+                SchemaDescriptorFactory.forLabel( desc.getLabelId(), desc.getPropertyKeyId() ), kind );
         recordState.dropSchemaRule( rule );
     }
 
@@ -210,11 +218,14 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
     {
         clearSchemaState = true;
         long constraintId = schemaStorage.newRuleId();
+        int propertyKeyId = element.descriptor().getPropertyKeyId();
+
         IndexRule indexRule = schemaStorage.indexRule(
-                element.descriptor(),
+                SchemaDescriptorFactory.forLabel( element.label(), propertyKeyId ),
                 SchemaStorage.IndexRuleKind.CONSTRAINT );
-        recordState.createSchemaRule( constraintSemantics
-                .writeUniquePropertyConstraint( constraintId, element.descriptor(), indexRule.getId() ) );
+        recordState.createSchemaRule(
+                constraintSemantics.writeUniquePropertyConstraint(
+                        constraintId, element.descriptor(), indexRule.getId() ) );
         recordState.setConstraintIndexOwner( indexRule, constraintId );
     }
 
@@ -224,8 +235,11 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
         try
         {
             clearSchemaState = true;
-            UniquePropertyConstraintRule rule = schemaStorage.uniquenessConstraint( element.descriptor() );
-            recordState.dropSchemaRule( rule );
+            int propertyKeyId = element.descriptor().getPropertyKeyId();
+
+            recordState.dropSchemaRule( schemaStorage.singleConstraintRule(
+                    ConstraintDescriptorFactory.uniqueForLabel( element.label(), propertyKeyId )
+                ) );
         }
         catch ( SchemaRuleNotFoundException e )
         {
@@ -256,7 +270,11 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
         try
         {
             clearSchemaState = true;
-            recordState.dropSchemaRule( schemaStorage.nodePropertyExistenceConstraint( element.descriptor() ) );
+            int propertyKeyId = element.descriptor().getPropertyKeyId();
+
+            recordState.dropSchemaRule( schemaStorage.singleConstraintRule(
+                    ConstraintDescriptorFactory.existsForLabel( element.label(), propertyKeyId )
+                ) );
         }
         catch ( SchemaRuleNotFoundException e )
         {
@@ -287,9 +305,11 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
         {
             //TODO: Support composite indexes
             clearSchemaState = true;
-            SchemaRule rule = schemaStorage.relationshipPropertyExistenceConstraint( element.descriptor().getRelationshipTypeId(),
-                    element.descriptor().getPropertyKeyId() );
-            recordState.dropSchemaRule( rule );
+
+            recordState.dropSchemaRule( schemaStorage.singleConstraintRule(
+                    ConstraintDescriptorFactory.existsForRelType(
+                            element.descriptor().getRelationshipTypeId(), element.descriptor().getPropertyKeyId() )
+                ) );
         }
         catch ( SchemaRuleNotFoundException e )
         {

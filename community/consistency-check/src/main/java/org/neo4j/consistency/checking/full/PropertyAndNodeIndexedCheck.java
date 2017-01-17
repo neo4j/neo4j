@@ -19,8 +19,11 @@
  */
 package org.neo4j.consistency.checking.full;
 
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
+
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import org.neo4j.collection.primitive.Primitive;
@@ -41,6 +44,9 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.storageengine.api.schema.IndexReader;
+
+import static org.neo4j.kernel.api.schema_new.SchemaDescriptorPredicates.getLabel;
+import static org.neo4j.kernel.api.schema_new.SchemaDescriptorPredicates.getProperty;
 
 /**
  * Checks nodes and how they're indexed in one go. Reports any found inconsistencies.
@@ -82,7 +88,8 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
         List<PropertyBlock> properties = null;
         for ( IndexRule indexRule : indexes.rules() )
         {
-            if ( !labels.contains( (long) indexRule.getLabel() ) )
+            Optional<Integer> labelOpt = getLabel.compute( indexRule.getSchemaDescriptor() );
+            if ( !labelOpt.isPresent() || !labels.contains( (long) labelOpt.get() ) )
             {
                 continue;
             }
@@ -91,8 +98,9 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
             {
                 properties = propertyReader.propertyBlocks( propertyRecs );
             }
-            //TODO: Support composite indexes
-            PropertyBlock property = propertyWithKey( properties, indexRule.descriptor().getPropertyKeyId() );
+            Optional<Integer> propertyOpt = getProperty.compute( indexRule.getSchemaDescriptor() );
+            PropertyBlock property = propertyWithKey( properties,
+                                                    propertyOpt.orElseThrow( NotImplementedException::new ) );
 
             if ( property == null )
             {
@@ -104,7 +112,7 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
                 Object propertyValue = propertyReader.propertyValue( property ).value();
                 long nodeId = record.getId();
 
-                if ( indexRule.isConstraintIndex() )
+                if ( indexRule.canSupportUniqueConstraint() )
                 {
                     verifyNodeCorrectlyIndexedUniquely( nodeId, property.getKeyIndexId(), propertyValue, engine,
                             indexRule, reader );

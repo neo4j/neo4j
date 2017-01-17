@@ -17,22 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.record;
+package org.neo4j.kernel.api.schema_new;
 
-import org.neo4j.kernel.api.constraints.PropertyConstraint;
-import org.neo4j.kernel.api.schema.EntityPropertyDescriptor;
-
-public abstract class PropertyConstraintRule extends AbstractSchemaRule
+public class SchemaDescriptorFactory
 {
-    PropertyConstraintRule( long id, Kind kind, EntityPropertyDescriptor descriptor )
+    public static LabelSchemaDescriptor forLabel( int labelId, int... propertyIds )
     {
-        super( id, kind, descriptor );
+        return new LabelSchemaDescriptor( labelId, propertyIds );
     }
 
-    public abstract PropertyConstraint toConstraint();
-
-    public boolean containsPropertyKeyId( int propertyKeyId )
+    public static RelationTypeSchemaDescriptor forRelType( int relTypeId, int... propertyIds )
     {
-        return propertyKeyId == descriptor.getPropertyKeyId();
+        return new RelationTypeSchemaDescriptor( relTypeId, propertyIds );
     }
 }

@@ -25,21 +25,22 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
-import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
+import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorPredicates;
+import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
+import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.IndexRule;
-import org.neo4j.kernel.impl.store.record.NodePropertyConstraintRule;
-import org.neo4j.kernel.impl.store.record.PropertyConstraintRule;
-import org.neo4j.kernel.impl.store.record.RelationshipPropertyConstraintRule;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
 import static org.neo4j.helpers.collection.Iterables.filter;
@@ -59,7 +60,7 @@ public class SchemaCache
 
     private final Collection<NodePropertyConstraint> nodeConstraints = new HashSet<>();
     private final Collection<RelationshipPropertyConstraint> relationshipConstraints = new HashSet<>();
-    private final Set<IndexDescriptor> indexDescriptors = new HashSet<>();
+    private final Map<IndexDescriptor, Long> indexDescriptorCommitIds = new HashMap<>();
     private final ConstraintSemantics constraintSemantics;
 
     public SchemaCache( ConstraintSemantics constraintSemantics, Iterable<SchemaRule> initialRules )
@@ -81,18 +82,32 @@ public class SchemaCache
         return rulesByIdMap.values();
     }
 
-    public Iterable<SchemaRule> schemaRulesForLabel( final int label )
+    public Iterable<IndexRule> indexRules()
     {
-        return filter(
-                schemaRule -> schemaRule.getKind() != SchemaRule.Kind.RELATIONSHIP_PROPERTY_EXISTENCE_CONSTRAINT &&
-                       schemaRule.getLabel() == label, schemaRules() );
+        return Iterables.map( IndexRule.class::cast,
+                    Iterables.filter( IndexRule.class::isInstance, schemaRules() ) );
     }
 
-    public Iterable<SchemaRule> schemaRulesForRelationshipType( final int typeId )
+    public Iterable<ConstraintRule> constraintRules()
     {
-        return filter(
-                schemaRule -> schemaRule.getKind() == SchemaRule.Kind.RELATIONSHIP_PROPERTY_EXISTENCE_CONSTRAINT &&
-                       schemaRule.getRelationshipType() == typeId, schemaRules() );
+        return Iterables.map( ConstraintRule.class::cast,
+                    Iterables.filter( ConstraintRule.class::isInstance, schemaRules() ) );
+    }
+
+    public Iterable<SchemaRule> schemaRulesBySchema( SchemaDescriptor descriptor )
+    {
+        return Iterables.filter( rule -> rule.getSchemaDescriptor().equals( descriptor ), schemaRules() );
+    }
+
+    public Iterable<SchemaRule> schemaRulesForLabel( final int label )
+    {
+        return filter( schemaRule -> SchemaDescriptorPredicates.hasLabel( schemaRule, label ), schemaRules() );
+    }
+
+    public Iterable<SchemaRule> schemaRulesForRelationshipType( final int relTypeId )
+    {
+        // warning: this previously only worked for rel type existence constraints
+        return filter( schemaRule -> SchemaDescriptorPredicates.hasRelType( schemaRule, relTypeId ), schemaRules() );
     }
 
     public Iterator<PropertyConstraint> constraints()
@@ -133,9 +148,9 @@ public class SchemaCache
     {
         rulesByIdMap.put( rule.getId(), rule );
 
-        if ( rule instanceof PropertyConstraintRule )
+        if ( rule instanceof ConstraintRule )
         {
-            PropertyConstraint constraint = constraintSemantics.readConstraint( (PropertyConstraintRule) rule );
+            PropertyConstraint constraint = constraintSemantics.readConstraint( (ConstraintRule) rule );
             if ( constraint instanceof NodePropertyConstraint )
             {
                 nodeConstraints.add( (NodePropertyConstraint) constraint );
@@ -148,11 +163,7 @@ public class SchemaCache
         else if ( rule instanceof IndexRule )
         {
             IndexRule indexRule = (IndexRule) rule;
-            IndexDescriptor index = IndexDescriptorFactory.of( indexRule );
-            if ( !indexDescriptors.contains( index ) )
-            {
-                indexDescriptors.add( index );
-            }
+            indexDescriptorCommitIds.put( IndexBoundary.map( indexRule.getIndexDescriptor() ), indexRule.getId() );
         }
     }
 
@@ -161,7 +172,7 @@ public class SchemaCache
         rulesByIdMap.clear();
         nodeConstraints.clear();
         relationshipConstraints.clear();
-        indexDescriptors.clear();
+        indexDescriptorCommitIds.clear();
     }
 
     public void load( List<SchemaRule> schemaRuleIterator )
@@ -181,24 +192,32 @@ public class SchemaCache
             return;
         }
 
-        if ( rule instanceof NodePropertyConstraintRule )
+        if ( rule instanceof ConstraintRule )
         {
-            nodeConstraints.remove( ((NodePropertyConstraintRule) rule).toConstraint() );
-        }
-        else if ( rule instanceof RelationshipPropertyConstraintRule )
-        {
-            relationshipConstraints.remove( ((RelationshipPropertyConstraintRule) rule).toConstraint() );
+            PropertyConstraint constraint = constraintSemantics.readConstraint( (ConstraintRule) rule );
+            if ( constraint instanceof NodePropertyConstraint )
+            {
+                nodeConstraints.remove( constraint );
+            }
+            else if ( constraint instanceof RelationshipPropertyConstraint )
+            {
+                relationshipConstraints.remove( constraint );
+            }
         }
         else if ( rule instanceof IndexRule )
         {
             IndexRule indexRule = (IndexRule) rule;
-            indexDescriptors.remove( IndexDescriptorFactory.of( indexRule ) );
+            indexDescriptorCommitIds.remove( IndexBoundary.map( indexRule.getIndexDescriptor() ) );
         }
     }
 
     public IndexDescriptor indexDescriptor( NodePropertyDescriptor descriptor )
     {
-        IndexDescriptor indexDescriptor = IndexDescriptorFactory.of( descriptor );
-        return indexDescriptors.contains(indexDescriptor) ? indexDescriptor : null;
+        IndexDescriptor key = IndexDescriptorFactory.of( descriptor );
+        if ( indexDescriptorCommitIds.containsKey( key ) )
+        {
+            return key;
+        }
+        return null;
     }
 }

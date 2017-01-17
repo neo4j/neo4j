@@ -28,13 +28,18 @@ import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
-import org.neo4j.kernel.impl.store.record.PropertyConstraintRule;
-import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintBoundary;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
+
+import static org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor.Type.UNIQUE;
+import static org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory.uniqueForLabel;
 
 public class StandardConstraintSemantics implements ConstraintSemantics
 {
@@ -55,16 +60,17 @@ public class StandardConstraintSemantics implements ConstraintSemantics
     }
 
     @Override
-    public PropertyConstraint readConstraint( PropertyConstraintRule rule )
+    public PropertyConstraint readConstraint( ConstraintRule rule )
     {
-        if ( rule instanceof UniquePropertyConstraintRule )
+        ConstraintDescriptor desc = rule.getConstraintDescriptor();
+        if ( desc.type() == UNIQUE )
         {
-            return ((UniquePropertyConstraintRule) rule).toConstraint();
+            return ConstraintBoundary.map( desc );
         }
         return readNonStandardConstraint( rule );
     }
 
-    protected PropertyConstraint readNonStandardConstraint( PropertyConstraintRule rule )
+    protected PropertyConstraint readNonStandardConstraint( ConstraintRule rule )
     {
         // When opening a store in Community Edition that contains a Property Existence Constraint
         throw new IllegalStateException( ERROR_MESSAGE );
@@ -77,21 +83,22 @@ public class StandardConstraintSemantics implements ConstraintSemantics
     }
 
     @Override
-    public PropertyConstraintRule writeUniquePropertyConstraint( long ruleId, NodePropertyDescriptor descriptor,
+    public ConstraintRule writeUniquePropertyConstraint( long ruleId, NodePropertyDescriptor descriptor,
             long indexId )
     {
-        return UniquePropertyConstraintRule.uniquenessConstraintRule( ruleId, descriptor, indexId );
+        return ConstraintRule.constraintRule(
+                ruleId, uniqueForLabel( descriptor.getLabelId(), descriptor.getPropertyKeyId() ), indexId );
     }
 
     @Override
-    public PropertyConstraintRule writeNodePropertyExistenceConstraint( long ruleId, NodePropertyDescriptor descriptor )
+    public ConstraintRule writeNodePropertyExistenceConstraint( long ruleId, NodePropertyDescriptor descriptor )
             throws CreateConstraintFailureException
     {
         throw propertyExistenceConstraintsNotAllowed( new NodePropertyExistenceConstraint( descriptor ) );
     }
 
     @Override
-    public PropertyConstraintRule writeRelationshipPropertyExistenceConstraint( long ruleId,
+    public ConstraintRule writeRelationshipPropertyExistenceConstraint( long ruleId,
             RelationshipPropertyDescriptor descriptor ) throws CreateConstraintFailureException
     {
         throw propertyExistenceConstraintsNotAllowed( new RelationshipPropertyExistenceConstraint( descriptor ) );

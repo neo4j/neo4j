@@ -19,59 +19,39 @@
  */
 package org.neo4j.storageengine.api.schema;
 
-import org.neo4j.kernel.api.schema.EntityPropertyDescriptor;
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaComputer;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorSupplier;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 
 /**
  * Represents a stored schema rule.
  */
-public interface SchemaRule
+public interface SchemaRule extends SchemaDescriptorSupplier
 {
     /**
      * The persistence id for this rule.
      */
     long getId();
 
-    /**
-     * @return id of label to which this schema rule has been attached
-     * @throws IllegalStateException when this rule has kind {@link Kind#RELATIONSHIP_PROPERTY_EXISTENCE_CONSTRAINT}
-     */
-    int getLabel();
-
-    /**
-     * @return id of relationship type to which this schema rule has been attached
-     * @throws IllegalStateException when this rule has kind different from
-     * {@link Kind#RELATIONSHIP_PROPERTY_EXISTENCE_CONSTRAINT}
-     */
-    int getRelationshipType();
-
-    /**
-     * @return EntityPropertyDescriptor describing the label/type and property/properties this rule covers
-     */
-    EntityPropertyDescriptor descriptor();
-
-    /**
-     * @return the kind of this schema rule
-     */
-    Kind getKind();
-
     enum Kind
     {
-        INDEX_RULE( true, false ),
-        CONSTRAINT_INDEX_RULE( true, true ),
-        UNIQUENESS_CONSTRAINT( false, true ),
-        NODE_PROPERTY_EXISTENCE_CONSTRAINT( false, true ),
-        RELATIONSHIP_PROPERTY_EXISTENCE_CONSTRAINT( false, true );
+        INDEX_RULE( "Index" ),
+        CONSTRAINT_INDEX_RULE( "Constraint index" ),
+        UNIQUENESS_CONSTRAINT( "Uniqueness constraint" ),
+        NODE_PROPERTY_EXISTENCE_CONSTRAINT( "Node property existence constraint" ),
+        RELATIONSHIP_PROPERTY_EXISTENCE_CONSTRAINT( "Relationship property existence constraint" );
 
         private static final Kind[] ALL = values();
 
-        private final boolean isIndex;
-        private final boolean isConstraint;
+        private final String userString;
 
-        Kind( boolean isIndex, boolean isConstraint )
+        Kind( String userString )
         {
-            this.isIndex = isIndex;
-            this.isConstraint = isConstraint;
+            this.userString = userString;
         }
 
         public byte id()
@@ -79,14 +59,9 @@ public interface SchemaRule
             return (byte) (ordinal() + 1);
         }
 
-        public boolean isConstraint()
+        public String userString()
         {
-            return isConstraint;
-        }
-
-        public boolean isIndex()
-        {
-            return isIndex;
+            return userString;
         }
 
         public static Kind forId( byte id ) throws MalformedSchemaRuleException
@@ -97,5 +72,46 @@ public interface SchemaRule
             }
             throw new MalformedSchemaRuleException( null, "Unknown kind id %d", id );
         }
+
+        public static Kind map( NewIndexDescriptor descriptor )
+        {
+            switch ( descriptor.type() )
+            {
+            case GENERAL:
+                return INDEX_RULE;
+            case UNIQUE:
+                return CONSTRAINT_INDEX_RULE;
+            default:
+                throw new IllegalStateException( "Cannot end up here, says johant" );
+            }
+        }
+
+        public static Kind map( ConstraintDescriptor descriptor )
+        {
+            switch ( descriptor.type() )
+            {
+            case UNIQUE:
+                return UNIQUENESS_CONSTRAINT;
+            case EXISTS:
+                return existenceKindMapper.compute( descriptor.schema() );
+            default:
+                throw new IllegalStateException( "Cannot end up here, says johant" );
+            }
+        }
+
+        private static SchemaComputer<Kind> existenceKindMapper = new SchemaComputer<Kind>()
+        {
+            @Override
+            public Kind compute( LabelSchemaDescriptor schema )
+            {
+                return NODE_PROPERTY_EXISTENCE_CONSTRAINT;
+            }
+
+            @Override
+            public Kind compute( RelationTypeSchemaDescriptor schema )
+            {
+                return RELATIONSHIP_PROPERTY_EXISTENCE_CONSTRAINT;
+            }
+        };
     }
 }

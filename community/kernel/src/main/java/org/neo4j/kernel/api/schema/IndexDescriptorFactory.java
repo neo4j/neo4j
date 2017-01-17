@@ -19,13 +19,18 @@
  */
 package org.neo4j.kernel.api.schema;
 
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
+
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 
+import static org.neo4j.kernel.api.schema_new.SchemaDescriptorPredicates.getLabel;
+import static org.neo4j.kernel.api.schema_new.SchemaDescriptorPredicates.getProperty;
 import static org.neo4j.kernel.impl.coreapi.schema.PropertyNameUtils.getOrCreatePropertyKeyIds;
 import static org.neo4j.kernel.impl.coreapi.schema.PropertyNameUtils.getPropertyKeyIds;
 
@@ -59,7 +64,9 @@ public class IndexDescriptorFactory
 
     public static IndexDescriptor of( IndexRule rule )
     {
-        return of( rule.descriptor() );
+        SchemaDescriptor schema = rule.getIndexDescriptor().schema();
+        return of( getLabel.compute( schema ).orElseThrow( NotImplementedException::new ),
+                    getProperty.compute( schema ).orElseThrow( NotImplementedException::new ) );
     }
 
     public static NodePropertyDescriptor getNodePropertyDescriptor( int labelId, int[] propertyKeyIds )

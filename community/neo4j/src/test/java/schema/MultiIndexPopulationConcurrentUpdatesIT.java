@@ -38,7 +38,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
@@ -51,6 +50,7 @@ import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -285,8 +285,9 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     private IndexRule[] createIndexRules( Map<String,Integer> labelNameIdMap, int propertyId )
     {
         return labelNameIdMap.values().stream()
-                .map( index -> new IndexRule( index, new NodePropertyDescriptor( index, propertyId ),
-                        new SchemaIndexProvider.Descriptor( "lucene", "version" ), null ) ).toArray( IndexRule[]::new );
+                .map( index -> IndexRule.indexRule( index, NewIndexDescriptorFactory.forLabel( index, propertyId ),
+                        new SchemaIndexProvider.Descriptor( "lucene", "version" ) ) )
+                .toArray( IndexRule[]::new );
     }
 
     private List<IndexRule> getIndexRules( NeoStores neoStores )

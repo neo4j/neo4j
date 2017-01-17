@@ -32,7 +32,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
-import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -43,18 +42,20 @@ import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.TokenNameLookup;
-import org.neo4j.kernel.api.exceptions.schema.DuplicateEntitySchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
-import org.neo4j.kernel.api.exceptions.schema.EntitySchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorPredicates;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.SchemaStorage.IndexRuleKind;
+import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.IndexRule;
-import org.neo4j.kernel.impl.store.record.NodePropertyConstraintRule;
-import org.neo4j.kernel.impl.store.record.RelationshipPropertyExistenceConstraintRule;
-import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
-import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.test.GraphDatabaseServiceCleaner;
 import org.neo4j.test.mockito.matcher.KernelExceptionUserMessageMatcher;
 import org.neo4j.test.rule.DatabaseRule;
@@ -63,9 +64,9 @@ import org.neo4j.test.rule.ImpermanentDatabaseRule;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR;
-import static org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule.uniquenessConstraintRule;
 
 public class SchemaStorageTest
 {
@@ -105,13 +106,11 @@ public class SchemaStorageTest
                 index( LABEL2, PROP1 ) );
 
         // When
-        IndexRule rule = storage.indexRule( nodeDescriptor( LABEL1, PROP1 ) );
+        IndexRule rule = storage.indexRule( schemaDescriptor( LABEL1, PROP2 ) );
 
         // Then
         assertNotNull( rule );
-        assertEquals( labelId( LABEL1 ), rule.getLabel() );
-        assertEquals( propId( PROP1 ), rule.descriptor().getPropertyKeyId() );
-        assertEquals( SchemaRule.Kind.INDEX_RULE, rule.getKind() );
+        assertRule( rule, LABEL1, PROP2, NewIndexDescriptor.Type.GENERAL );
     }
 
     @Test
@@ -122,7 +121,7 @@ public class SchemaStorageTest
                 index( LABEL1, PROP1 ) );
 
         // When
-        IndexRule rule = storage.indexRule( nodeDescriptor( LABEL1, PROP2 ) );
+        IndexRule rule = storage.indexRule( schemaDescriptor( LABEL1, PROP2 ) );
 
         // Then
         assertNull( rule );
@@ -137,13 +136,11 @@ public class SchemaStorageTest
                 index( LABEL1, PROP2 ) );
 
         // When
-        IndexRule rule = storage.indexRule( nodeDescriptor( LABEL1, PROP1 ), IndexRuleKind.CONSTRAINT );
+        IndexRule rule = storage.indexRule( schemaDescriptor( LABEL1, PROP1 ), IndexRuleKind.CONSTRAINT );
 
         // Then
         assertNotNull( rule );
-        assertEquals( labelId( LABEL1 ), rule.getLabel() );
-        assertEquals( propId( PROP1 ), rule.descriptor().getPropertyKeyId() );
-        assertEquals( SchemaRule.Kind.CONSTRAINT_INDEX_RULE, rule.getKind() );
+        assertRule( rule, LABEL1, PROP1, NewIndexDescriptor.Type.UNIQUE );
     }
 
     @Test
@@ -160,47 +157,9 @@ public class SchemaStorageTest
 
         // Then
         Set<IndexRule> expectedRules = new HashSet<>();
-        expectedRules.add( new IndexRule( 0, nodeDescriptor( LABEL1, PROP1 ), PROVIDER_DESCRIPTOR, null ) );
-        expectedRules.add( new IndexRule( 1, nodeDescriptor( LABEL1, PROP2 ), PROVIDER_DESCRIPTOR, null ) );
-        expectedRules.add( new IndexRule( 2, nodeDescriptor( LABEL2, PROP1 ), PROVIDER_DESCRIPTOR, 0L ) );
-
-        assertEquals( expectedRules, listedRules );
-    }
-
-    @Test
-    public void shouldListAllSchemaRulesForNodes()
-    {
-        // Given
-        createSchema(
-                index( LABEL2, PROP1 ),
-                uniquenessConstraint( LABEL1, PROP1 ) );
-
-        // When
-        Set<NodePropertyConstraintRule> listedRules = asSet( storage.schemaRulesForNodes( value -> value, NodePropertyConstraintRule.class, labelId( LABEL1 ),
-                Predicates.<NodePropertyConstraintRule>alwaysTrue() ) );
-
-        // Then
-        Set<NodePropertyConstraintRule> expectedRules = new HashSet<>();
-        expectedRules.add( uniquenessConstraintRule( 1, nodeDescriptor( LABEL1, PROP1 ), 0 ) );
-
-        assertEquals( expectedRules, listedRules );
-    }
-
-    @Test
-    public void shouldListSchemaRulesByClass()
-    {
-        // Given
-        createSchema(
-                index( LABEL1, PROP1 ),
-                uniquenessConstraint( LABEL2, PROP1 ) );
-
-        // When
-        Set<UniquePropertyConstraintRule> listedRules = asSet(
-                storage.schemaRules( UniquePropertyConstraintRule.class ) );
-
-        // Then
-        Set<UniquePropertyConstraintRule> expectedRules = new HashSet<>();
-        expectedRules.add( uniquenessConstraintRule( 0, nodeDescriptor( LABEL2, PROP1 ), 0 ) );
+        expectedRules.add( makeIndexRule( 0, LABEL1, PROP1 ) );
+        expectedRules.add( makeIndexRule( 1, LABEL1, PROP2 ) );
+        expectedRules.add( makeIndexRuleForConstraint( 2, LABEL2, PROP1, 0L ) );
 
         assertEquals( expectedRules, listedRules );
     }
@@ -215,13 +174,12 @@ public class SchemaStorageTest
                 uniquenessConstraint( LABEL2, PROP1 ) );
 
         // When
-        UniquePropertyConstraintRule rule = storage.uniquenessConstraint( nodeDescriptor( LABEL1, PROP1 ) );
+        ConstraintRule rule = storage.singleConstraintRule(
+                ConstraintDescriptorFactory.uniqueForLabel( labelId( LABEL1 ), propId( PROP1 ) ) );
 
         // Then
         assertNotNull( rule );
-        assertEquals( labelId( LABEL1 ), rule.getLabel() );
-        assertEquals( propId( PROP1 ), rule.descriptor().getPropertyKeyId() );
-        assertEquals( SchemaRule.Kind.UNIQUENESS_CONSTRAINT, rule.getKind() );
+        assertRule( rule, LABEL1, PROP1, ConstraintDescriptor.Type.UNIQUE );
     }
 
     @Test
@@ -232,14 +190,13 @@ public class SchemaStorageTest
         TokenNameLookup tokenNameLookup = getDefaultTokenNameLookup();
 
         // EXPECT
-        expectedException.expect( EntitySchemaRuleNotFoundException.class );
-        expectedException.expect(
-                new KernelExceptionUserMessageMatcher( tokenNameLookup, "Constraint for label 'Label1' and property" +
-                                                                        " 'prop1' not found." ) );
+        expectedException.expect( SchemaRuleNotFoundException.class );
+        expectedException.expect( new KernelExceptionUserMessageMatcher( tokenNameLookup,
+                "No node property existence constraint was found for :Label1(prop1)." ) );
 
         // WHEN
-        storage.nodePropertyExistenceConstraint( nodeDescriptor( LABEL1, PROP1 ) );
-
+        storage.singleConstraintRule(
+                ConstraintDescriptorFactory.existsForLabel( labelId( LABEL1 ), propId( PROP1 ) ) );
     }
 
     @Test
@@ -251,17 +208,18 @@ public class SchemaStorageTest
 
         SchemaStorage schemaStorageSpy = Mockito.spy( storage );
         Mockito.when( schemaStorageSpy.loadAllSchemaRules() ).thenReturn(
-                Iterators.<SchemaRule>iterator(
+                Iterators.iterator(
                         getUniquePropertyConstraintRule( 1L, LABEL1, PROP1 ),
                         getUniquePropertyConstraintRule( 2L, LABEL1, PROP1 ) ) );
 
         //EXPECT
-        expectedException.expect( DuplicateEntitySchemaRuleException.class );
+        expectedException.expect( DuplicateSchemaRuleException.class );
         expectedException.expect( new KernelExceptionUserMessageMatcher( tokenNameLookup,
-                "Multiple constraints found for label 'Label1' and property 'prop1'." ) );
+                "Multiple uniqueness constraints found for :Label1(prop1)." ) );
 
         // WHEN
-        schemaStorageSpy.uniquenessConstraint( nodeDescriptor( LABEL1, PROP1 ) );
+        schemaStorageSpy.singleConstraintRule(
+                ConstraintDescriptorFactory.uniqueForLabel( labelId( LABEL1 ), propId( PROP1 ) ) );
     }
 
     @Test
@@ -271,12 +229,13 @@ public class SchemaStorageTest
         TokenNameLookup tokenNameLookup = getDefaultTokenNameLookup();
 
         // EXPECT
-        expectedException.expect( EntitySchemaRuleNotFoundException.class );
+        expectedException.expect( SchemaRuleNotFoundException.class );
         expectedException.expect( new KernelExceptionUserMessageMatcher<>( tokenNameLookup,
-                "Constraint for relationship type 'Type1' and property 'prop1' not found." ) );
+                "No relationship property existence constraint was found for -[:Type1(prop1)]-." ) );
 
         //WHEN
-        storage.relationshipPropertyExistenceConstraint( typeId( TYPE1 ), propId( PROP1 ) );
+        storage.singleConstraintRule(
+                ConstraintDescriptorFactory.existsForRelType( typeId( TYPE1 ), propId( PROP1 ) ) );
     }
 
     @Test
@@ -288,17 +247,18 @@ public class SchemaStorageTest
 
         SchemaStorage schemaStorageSpy = Mockito.spy( storage );
         Mockito.when( schemaStorageSpy.loadAllSchemaRules() ).thenReturn(
-                Iterators.<SchemaRule>iterator(
+                Iterators.iterator(
                         getRelationshipPropertyExistenceConstraintRule( 1L, TYPE1, PROP1 ),
                         getRelationshipPropertyExistenceConstraintRule( 2L, TYPE1, PROP1 ) ) );
 
         //EXPECT
-        expectedException.expect( DuplicateEntitySchemaRuleException.class );
+        expectedException.expect( DuplicateSchemaRuleException.class );
         expectedException.expect( new KernelExceptionUserMessageMatcher( tokenNameLookup,
-                "Multiple constraints found for relationship type 'Type1' and property 'prop1'." ) );
+                "Multiple relationship property existence constraints found for -[:Type1(prop1)]-." ) );
 
         // WHEN
-        schemaStorageSpy.relationshipPropertyExistenceConstraint( typeId( TYPE1 ), propId( PROP1 ) );
+        schemaStorageSpy.singleConstraintRule(
+                ConstraintDescriptorFactory.existsForRelType( typeId( TYPE1 ), propId( PROP1 ) ) );
     }
 
     private TokenNameLookup getDefaultTokenNameLookup()
@@ -310,19 +270,51 @@ public class SchemaStorageTest
         return tokenNameLookup;
     }
 
-    private UniquePropertyConstraintRule getUniquePropertyConstraintRule( long id, String label,
-            String property )
+    private void assertRule( IndexRule rule, String label, String propertyKey, NewIndexDescriptor.Type type )
     {
-        return UniquePropertyConstraintRule
-                .uniquenessConstraintRule( id, nodeDescriptor( label, property ), 0L );
+        assertTrue( SchemaDescriptorPredicates.hasLabel( rule, labelId( label ) ) );
+        assertTrue( SchemaDescriptorPredicates.hasProperty( rule, propId( propertyKey ) ) );
+        assertEquals( type, rule.getIndexDescriptor().type() );
     }
 
-    private RelationshipPropertyExistenceConstraintRule getRelationshipPropertyExistenceConstraintRule( long id,
-            String type,
-            String property )
+    private void assertRule( ConstraintRule rule, String label, String propertyKey, ConstraintDescriptor.Type type )
     {
-        return RelationshipPropertyExistenceConstraintRule
-                .relPropertyExistenceConstraintRule( id, relDescriptor( type, property ) );
+        assertTrue( SchemaDescriptorPredicates.hasLabel( rule, labelId( label ) ) );
+        assertTrue( SchemaDescriptorPredicates.hasProperty( rule, propId( propertyKey ) ) );
+        assertEquals( type, rule.getConstraintDescriptor().type() );
+    }
+
+    private LabelSchemaDescriptor schemaDescriptor( String label, String property )
+    {
+        return SchemaDescriptorFactory.forLabel( labelId( label ), propId( property ) );
+    }
+
+    private IndexRule makeIndexRule( long ruleId, String label, String propertyKey )
+    {
+        return IndexRule.indexRule(
+                ruleId,
+                NewIndexDescriptorFactory.forLabel( labelId( label ), propId( propertyKey ) ),
+                PROVIDER_DESCRIPTOR );
+    }
+
+    private IndexRule makeIndexRuleForConstraint( long ruleId, String label, String propertyKey, long constaintId )
+    {
+        return IndexRule.constraintIndexRule(
+                ruleId,
+                NewIndexDescriptorFactory.uniqueForLabel( labelId( label ), propId( propertyKey ) ),
+                PROVIDER_DESCRIPTOR, constaintId );
+    }
+
+    private ConstraintRule getUniquePropertyConstraintRule( long id, String label, String property )
+    {
+        return ConstraintRule.constraintRule( id,
+                ConstraintDescriptorFactory.uniqueForLabel( labelId( label ), propId( property ) ), 0L );
+    }
+
+    private ConstraintRule getRelationshipPropertyExistenceConstraintRule( long id, String type, String property )
+    {
+        return ConstraintRule.constraintRule( id,
+                ConstraintDescriptorFactory.existsForRelType( labelId( type ), propId( property ) ) );
     }
 
     private static void awaitIndexes()

@@ -19,6 +19,8 @@
  */
 package org.neo4j.unsafe.batchinsert.internal;
 
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -51,8 +53,6 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
-import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -68,9 +68,13 @@ import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
-import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
-import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorPredicates;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.KernelExtensions;
@@ -120,10 +124,10 @@ import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.validation.IdValidator;
+import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
-import org.neo4j.kernel.impl.store.record.NodePropertyExistenceConstraintRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
@@ -131,10 +135,8 @@ import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
-import org.neo4j.kernel.impl.store.record.RelationshipPropertyExistenceConstraintRule;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
-import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
 import org.neo4j.kernel.impl.transaction.state.DefaultSchemaIndexProviderMap;
 import org.neo4j.kernel.impl.transaction.state.PropertyCreator;
 import org.neo4j.kernel.impl.transaction.state.PropertyDeleter;
@@ -162,6 +164,9 @@ import static java.lang.Boolean.parseBoolean;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.kernel.api.schema.IndexDescriptorFactory.getNodePropertyDescriptor;
+import static org.neo4j.kernel.api.schema_new.SchemaDescriptorPredicates.getLabel;
+import static org.neo4j.kernel.api.schema_new.SchemaDescriptorPredicates.getProperty;
+import static org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor.Type.EXISTS;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 import static org.neo4j.kernel.impl.store.PropertyStore.encodeString;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
@@ -374,52 +379,42 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         propertyCreator.primitiveSetProperty( primitiveRecord, propertyKey, propertyValue, propertyRecords );
     }
 
-    private void validateIndexCanBeCreated( NodePropertyDescriptor descriptor )
+    private void validateIndexCanBeCreated( int labelId, int[] propertyKeyIds )
     {
-        verifyIndexOrUniquenessConstraintCanBeCreated( descriptor,
+        verifyIndexOrUniquenessConstraintCanBeCreated( labelId, propertyKeyIds,
                 "Index for given {label;property} already exists" );
     }
 
-    private void validateUniquenessConstraintCanBeCreated( NodePropertyDescriptor descriptor )
+    private void validateUniquenessConstraintCanBeCreated( int labelId, int[] propertyKeyIds )
     {
-        verifyIndexOrUniquenessConstraintCanBeCreated( descriptor,
+        verifyIndexOrUniquenessConstraintCanBeCreated( labelId, propertyKeyIds,
                 "It is not allowed to create uniqueness constraints and indexes on the same {label;property}" );
     }
 
-    private void verifyIndexOrUniquenessConstraintCanBeCreated( NodePropertyDescriptor descriptor, String errorMessage )
+    private void verifyIndexOrUniquenessConstraintCanBeCreated( int labelId, int[] propertyKeyIds, String errorMessage )
     {
-        for ( SchemaRule rule : schemaCache.schemaRulesForLabel( descriptor.getLabelId() ) )
+        LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds );
+        for ( SchemaRule rule : schemaCache.schemaRulesBySchema( descriptor ) )
         {
-            NodePropertyDescriptor otherDescriptor;
-
-            switch ( rule.getKind() )
-            {
-            case INDEX_RULE:
-            case CONSTRAINT_INDEX_RULE:
-                otherDescriptor = ((IndexRule) rule).descriptor();
-                break;
-            case UNIQUENESS_CONSTRAINT:
-                otherDescriptor = ((UniquePropertyConstraintRule) rule).descriptor();
-                break;
-            case NODE_PROPERTY_EXISTENCE_CONSTRAINT:
-                continue;
-            default:
-                throw new IllegalStateException( "Case not handled for " + rule.getKind() );
-            }
-
-            if ( otherDescriptor.equals( descriptor ) )
+            if ( !isExistenceConstraint( rule ) )
             {
                 throw new ConstraintViolationException( errorMessage );
             }
         }
     }
 
-    private void validateNodePropertyExistenceConstraintCanBeCreated( NodePropertyDescriptor descriptor )
+    private boolean isExistenceConstraint( SchemaRule rule )
     {
-        for ( SchemaRule rule : schemaCache.schemaRulesForLabel( descriptor.getLabelId() ) )
+        return rule instanceof ConstraintRule &&
+                ((ConstraintRule)rule).getConstraintDescriptor().type() == EXISTS;
+    }
+
+    private void validateNodePropertyExistenceConstraintCanBeCreated( int labelId, int[] propertyKeyIds )
+    {
+        LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds );
+        for ( SchemaRule rule : schemaCache.schemaRulesBySchema( descriptor ) )
         {
-            if ( rule.getKind() == SchemaRule.Kind.NODE_PROPERTY_EXISTENCE_CONSTRAINT &&
-                 descriptor.equals( ((NodePropertyExistenceConstraintRule) rule).descriptor() ) )
+            if ( isExistenceConstraint( rule ) )
             {
                 throw new ConstraintViolationException(
                         "Node property existence constraint for given {label;property} already exists" );
@@ -427,12 +422,12 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         }
     }
 
-    private void validateRelationshipConstraintCanBeCreated( int typeId, int propertyKeyId )
+    private void validateRelationshipConstraintCanBeCreated( int relTypeId, int propertyKeyId )
     {
-        for ( SchemaRule rule : schemaCache.schemaRulesForRelationshipType( typeId ) )
+        RelationTypeSchemaDescriptor descriptor = SchemaDescriptorFactory.forRelType( relTypeId, propertyKeyId );
+        for ( SchemaRule rule : schemaCache.schemaRulesBySchema( descriptor ) )
         {
-            if ( rule.getKind() == SchemaRule.Kind.RELATIONSHIP_PROPERTY_EXISTENCE_CONSTRAINT &&
-                 propertyKeyId == ((RelationshipPropertyExistenceConstraintRule) rule).getPropertyKey() )
+            if ( isExistenceConstraint( rule ) )
             {
                 throw new ConstraintViolationException(
                         "Relationship property existence constraint for given {type;property} already exists" );
@@ -440,11 +435,13 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         }
     }
 
-    private void createIndexRule( NodePropertyDescriptor descriptor )
+    private void createIndexRule( int labelId, int[] propertyKeyIds )
     {
-        IndexRule schemaRule = IndexRule.indexRule( schemaStore.nextId(), descriptor,
-                this.schemaIndexProviders.getDefaultProvider()
-                        .getProviderDescriptor() );
+        IndexRule schemaRule = IndexRule.indexRule(
+                schemaStore.nextId(),
+                NewIndexDescriptorFactory.forLabel( labelId, propertyKeyIds ),
+                schemaIndexProviders.getDefaultProvider().getProviderDescriptor() );
+
         for ( DynamicRecord record : schemaStore.allocateFrom( schemaRule ) )
         {
             schemaStore.updateRecord( record );
@@ -471,14 +468,15 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         for ( int i = 0; i < labelIds.length; i++ )
         {
             IndexRule rule = rules[i];
-            int labelId = rule.getLabel();
-            int propertyKeyId = rule.descriptor().getPropertyKeyId();
+            int labelId = getLabel.compute( rule.getSchemaDescriptor() ).orElseThrow( NotImplementedException::new );
+            int propertyKeyId = getProperty.compute( rule.getSchemaDescriptor() ).orElseThrow( NotImplementedException::new );
+
             labelIds[i] = labelId;
             // TODO: Support composite indexes
             propertyKeyIds[i] = propertyKeyId;
 
             IndexDescriptor descriptor =
-                    IndexDescriptorFactory.of( labelId, propertyKeyId );
+                    org.neo4j.kernel.api.schema.IndexDescriptorFactory.of( labelId, propertyKeyId );
             populators[i] = schemaIndexProviders.apply( rule.getProviderDescriptor() )
                                                 .getPopulator( rule.getId(),
                                                         descriptor,
@@ -504,8 +502,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
                             }
                             catch ( IndexEntryConflictException conflict )
                             {
-                                //TODO: Support composite indexes
-                                throw conflict.notAllowed( rules[i].getLabel(), rules[i].descriptor().getPropertyKeyId() );
+                                throw conflict.notAllowed( labelIds[i], propertyKeyIds[i] );
                             }
                         }
                     }
@@ -563,17 +560,12 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     private IndexRule[] getIndexesNeedingPopulation()
     {
         List<IndexRule> indexesNeedingPopulation = new ArrayList<>();
-        for ( SchemaRule rule : schemaCache.schemaRules() )
+        for ( IndexRule rule : schemaCache.indexRules() )
         {
-            if ( rule.getKind().isIndex() )
+            SchemaIndexProvider provider = schemaIndexProviders.apply( rule.getProviderDescriptor() );
+            if ( provider.getInitialState( rule.getId() ) != InternalIndexState.FAILED )
             {
-                IndexRule indexRule = (IndexRule) rule;
-                SchemaIndexProvider provider =
-                        schemaIndexProviders.apply( indexRule.getProviderDescriptor() );
-                if ( provider.getInitialState( indexRule.getId() ) != InternalIndexState.FAILED )
-                {
-                    indexesNeedingPopulation.add( indexRule );
-                }
+                indexesNeedingPopulation.add( rule );
             }
         }
         return indexesNeedingPopulation.toArray( new IndexRule[indexesNeedingPopulation.size()] );
@@ -585,20 +577,27 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         return new BaseNodeConstraintCreator( new BatchSchemaActions(), label );
     }
 
-    private void createConstraintRule( UniquenessConstraint constraint )
+    private void createUniquenessConstraintRule( UniquenessConstraint constraint )
     {
         // TODO: Do not create duplicate index
 
         long indexRuleId = schemaStore.nextId();
         long constraintRuleId = schemaStore.nextId();
+        int propertyKeyId = constraint.indexDescriptor().getPropertyKeyId();
 
-        IndexRule indexRule = IndexRule.constraintIndexRule(
-                indexRuleId, constraint.descriptor(),
-                this.schemaIndexProviders.getDefaultProvider().getProviderDescriptor(),
-                constraintRuleId );
-        UniquePropertyConstraintRule
-                constraintRule = UniquePropertyConstraintRule.uniquenessConstraintRule(
-                constraintRuleId, constraint.descriptor(), indexRuleId );
+        IndexRule indexRule =
+                IndexRule.constraintIndexRule(
+                    indexRuleId,
+                    NewIndexDescriptorFactory.uniqueForLabel( constraint.label(), propertyKeyId ),
+                    this.schemaIndexProviders.getDefaultProvider().getProviderDescriptor(),
+                    constraintRuleId
+                );
+        ConstraintRule constraintRule =
+                ConstraintRule.constraintRule(
+                    constraintRuleId,
+                    ConstraintDescriptorFactory.uniqueForLabel( constraint.label(), propertyKeyId ),
+                    indexRuleId
+                );
 
         for ( DynamicRecord record : schemaStore.allocateFrom( constraintRule ) )
         {
@@ -614,10 +613,10 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         flushStrategy.forceFlush();
     }
 
-    private void createConstraintRule( NodePropertyExistenceConstraint constraint )
+    private void createNodePropertyExistenceConstraintRule( int labelId, int... propertyKeyIds )
     {
-        SchemaRule rule = NodePropertyExistenceConstraintRule.nodePropertyExistenceConstraintRule( schemaStore.nextId(),
-                constraint.descriptor() );
+        SchemaRule rule = ConstraintRule.constraintRule( schemaStore.nextId(),
+                ConstraintDescriptorFactory.existsForLabel( labelId, propertyKeyIds ) );
 
         for ( DynamicRecord record : schemaStore.allocateFrom( rule ) )
         {
@@ -628,10 +627,10 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         flushStrategy.forceFlush();
     }
 
-    private void createConstraintRule( RelationshipPropertyExistenceConstraint constraint )
+    private void createRelTypePropertyExistenceConstraintRule( int relTypeId, int... propertyKeyIds )
     {
-        SchemaRule rule = RelationshipPropertyExistenceConstraintRule.relPropertyExistenceConstraintRule(
-                schemaStore.nextId(), constraint.descriptor() );
+        SchemaRule rule = ConstraintRule.constraintRule( schemaStore.nextId(),
+                ConstraintDescriptorFactory.existsForRelType( relTypeId, propertyKeyIds ) );
 
         for ( DynamicRecord record : schemaStore.allocateFrom( rule ) )
         {
@@ -1131,11 +1130,10 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         {
             int labelId = getOrCreateLabelId( label.name() );
             int[] propertyKeyIds = getOrCreatePropertyKeyIds( propertyKeys );
-            NodePropertyDescriptor descriptor = getNodePropertyDescriptor( labelId, propertyKeyIds);
 
-            validateIndexCanBeCreated( descriptor );
+            validateIndexCanBeCreated( labelId, propertyKeyIds );
 
-            createIndexRule( descriptor );
+            createIndexRule( labelId, propertyKeyIds );
             return new IndexDefinitionImpl( this, label, propertyKeys, false );
         }
 
@@ -1150,11 +1148,11 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         {
             int labelId = getOrCreateLabelId( indexDefinition.getLabel().name() );
             int[] propertyKeyIds = getOrCreatePropertyKeyIds( indexDefinition.getPropertyKeys() );
-            NodePropertyDescriptor descriptor = getNodePropertyDescriptor( labelId, propertyKeyIds);
+            NodePropertyDescriptor descriptor = getNodePropertyDescriptor( labelId, propertyKeyIds );
 
-            validateUniquenessConstraintCanBeCreated( descriptor );
+            validateUniquenessConstraintCanBeCreated( labelId, propertyKeyIds );
 
-            createConstraintRule( new UniquenessConstraint( descriptor ) );
+            createUniquenessConstraintRule( new UniquenessConstraint( descriptor ) );
             return new UniquenessConstraintDefinition( this, indexDefinition );
         }
 
@@ -1163,11 +1161,10 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         {
             int labelId = getOrCreateLabelId( label.name() );
             int[] propertyKeyIds = getOrCreatePropertyKeyIds( propertyKeys );
-            NodePropertyDescriptor descriptor = getNodePropertyDescriptor( labelId, propertyKeyIds );
 
-            validateNodePropertyExistenceConstraintCanBeCreated( descriptor );
+            validateNodePropertyExistenceConstraintCanBeCreated( labelId, propertyKeyIds );
 
-            createConstraintRule( new NodePropertyExistenceConstraint( descriptor ) );
+            createNodePropertyExistenceConstraintRule( labelId, propertyKeyIds );
             return new NodePropertyExistenceConstraintDefinition( this, label, propertyKeys );
         }
 
@@ -1180,8 +1177,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
 
             validateRelationshipConstraintCanBeCreated( relationshipTypeId, propertyKeyId );
 
-            createConstraintRule( new RelationshipPropertyExistenceConstraint(
-                    new RelationshipPropertyDescriptor( relationshipTypeId, propertyKeyId ) ) );
+            createRelTypePropertyExistenceConstraintRule( relationshipTypeId, propertyKeyId );
             return new RelationshipPropertyExistenceConstraintDefinition( this, type, propertyKey );
         }
 
