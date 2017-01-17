@@ -35,8 +35,8 @@ import org.neo4j.causalclustering.core.consensus.ReplicatedInteger;
 import org.neo4j.causalclustering.core.replication.session.GlobalSession;
 import org.neo4j.causalclustering.core.replication.session.LocalSessionPool;
 import org.neo4j.causalclustering.core.state.Result;
-import org.neo4j.causalclustering.core.state.machines.tx.ConstantTimeRetryStrategy;
-import org.neo4j.causalclustering.core.state.machines.tx.RetryStrategy;
+import org.neo4j.causalclustering.helper.ConstantTimeRetryStrategy;
+import org.neo4j.causalclustering.helper.RetryStrategy;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.messaging.Message;
 import org.neo4j.causalclustering.messaging.Outbound;
@@ -46,7 +46,6 @@ import org.neo4j.logging.NullLog;
 import org.neo4j.time.Clocks;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static junit.framework.TestCase.assertEquals;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.not;
@@ -68,7 +67,7 @@ public class RaftReplicatorTest
     private MemberId leader = new MemberId( UUID.randomUUID() );
     private GlobalSession session = new GlobalSession( UUID.randomUUID(), myself );
     private LocalSessionPool sessionPool = new LocalSessionPool( session );
-    private RetryStrategy retryStrategy = new ConstantTimeRetryStrategy( 1, SECONDS );
+    private RetryStrategy retryStrategy = new ConstantTimeRetryStrategy( 0, MILLISECONDS );
     private AvailabilityGuard availabilityGuard = new AvailabilityGuard( Clocks.systemClock(), NullLog.getInstance() );
 
     @Test
@@ -107,7 +106,6 @@ public class RaftReplicatorTest
         CapturingProgressTracker capturedProgress = new CapturingProgressTracker();
         CapturingOutbound outbound = new CapturingOutbound();
 
-        ConstantTimeRetryStrategy retryStrategy = new ConstantTimeRetryStrategy( 100, MILLISECONDS );
         RaftReplicator replicator = new RaftReplicator( leaderLocator, myself, outbound,
                 sessionPool, capturedProgress, retryStrategy, availabilityGuard );
 

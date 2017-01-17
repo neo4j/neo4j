@@ -20,7 +20,6 @@
 package org.neo4j.causalclustering.readreplica;
 
 import java.io.IOException;
-import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.causalclustering.catchup.storecopy.CopiedStoreRecovery;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
@@ -28,7 +27,7 @@ import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFailedException;
 import org.neo4j.causalclustering.catchup.storecopy.StoreFetcher;
 import org.neo4j.causalclustering.catchup.storecopy.StoreIdDownloadFailedException;
 import org.neo4j.causalclustering.catchup.storecopy.StreamingTransactionsFailedException;
-import org.neo4j.causalclustering.core.state.machines.tx.RetryStrategy;
+import org.neo4j.causalclustering.helper.RetryStrategy;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.causalclustering.messaging.routing.CoreMemberSelectionException;
@@ -42,8 +41,6 @@ import static java.lang.String.format;
 
 class ReadReplicaStartupProcess implements Lifecycle
 {
-    private static final int MAX_ATTEMPTS = 5;
-
     private final FileSystemAbstraction fs;
     private final StoreFetcher storeFetcher;
     private final LocalDatabase localDatabase;
@@ -88,13 +85,21 @@ class ReadReplicaStartupProcess implements Lifecycle
     {
         boolean syncedWithCore = false;
         RetryStrategy.Timeout timeout = retryStrategy.newTimeout();
-        for ( int attempt = 1; attempt <= MAX_ATTEMPTS && !syncedWithCore; attempt++ )
+        int attempt = 0;
+        while ( !syncedWithCore )
         {
-            MemberId source = findCoreMemberToCopyFrom();
+            attempt++;
+            MemberId source = null;
             try
             {
+                source = connectionStrategy.coreMember();
                 syncStoreWithCore( source );
                 syncedWithCore = true;
+            }
+            catch ( CoreMemberSelectionException e )
+            {
+                lastIssue = issueOf( "finding core member", attempt );
+                debugLog.warn( lastIssue );
             }
             catch ( StoreCopyFailedException e )
             {
@@ -124,8 +129,6 @@ class ReadReplicaStartupProcess implements Lifecycle
                 debugLog.warn( lastIssue );
                 break;
             }
-
-            attempt++;
         }
 
         if ( !syncedWithCore )
@@ -177,26 +180,6 @@ class ReadReplicaStartupProcess implements Lifecycle
             throw new IllegalStateException( format( "This read replica cannot join the cluster. " +
                             "The local database is not empty and has a mismatching storeId: expected %s actual %s.",
                     remoteStoreId, localStoreId ) );
-        }
-    }
-
-    private MemberId findCoreMemberToCopyFrom()
-    {
-        RetryStrategy.Timeout timeout = retryStrategy.newTimeout();
-        while ( true )
-        {
-            try
-            {
-                MemberId memberId = connectionStrategy.coreMember();
-                debugLog.info( "Server starting, connecting to core server %s", memberId );
-                return memberId;
-            }
-            catch ( CoreMemberSelectionException ex )
-            {
-                debugLog.info( "Failed to connect to core server. Retrying in %d ms.", timeout.getMillis() );
-                LockSupport.parkUntil( timeout.getMillis() + System.currentTimeMillis() );
-                timeout.increment();
-            }
         }
     }
 

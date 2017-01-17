@@ -17,10 +17,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.core.state.machines.tx;
+package org.neo4j.causalclustering.helper;
 
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Exponential backoff strategy helper class.
+ */
 public class ExponentialBackoffStrategy implements RetryStrategy
 {
     private final long initialBackoffTimeMillis;

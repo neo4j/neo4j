@@ -27,7 +27,7 @@ import org.neo4j.causalclustering.core.consensus.NoLeaderFoundException;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.core.replication.session.LocalSessionPool;
 import org.neo4j.causalclustering.core.replication.session.OperationContext;
-import org.neo4j.causalclustering.core.state.machines.tx.RetryStrategy;
+import org.neo4j.causalclustering.helper.RetryStrategy;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.messaging.Outbound;
 import org.neo4j.graphdb.DatabaseShutdownException;
