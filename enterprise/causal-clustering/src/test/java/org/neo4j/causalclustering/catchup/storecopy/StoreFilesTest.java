@@ -174,6 +174,15 @@ public class StoreFilesTest
     }
 
     @Test
+    public void deleteMustSilentlyIgnoreMissingDirectories() throws Exception
+    {
+        File dir = getBaseDir();
+        File sub = new File( dir, "sub" );
+
+        storeFiles.delete( sub );
+    }
+
+    @Test
     public void mustMoveFilesToTargetDirectory() throws Exception
     {
         File base = getBaseDir();
