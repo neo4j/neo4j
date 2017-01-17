@@ -177,6 +177,12 @@ public class SingleFilePageSwapperFactory implements PageSwapperFactory
         }
 
         @Override
+        public File getRelativeFile()
+        {
+            return new File( file.getPath().substring( baseDirectory.getPath().length() + 1 ) );
+        }
+
+        @Override
         public void rename( File to, CopyOption... options ) throws IOException
         {
             File parentFile = file.getParentFile();

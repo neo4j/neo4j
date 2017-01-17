@@ -22,8 +22,9 @@ package org.neo4j.causalclustering.catchup.storecopy;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.FileHandle;
@@ -37,54 +38,54 @@ public class StoreFiles
                !name.startsWith( "raft-messages." ) && !name.startsWith( "debug." ) &&
                !name.startsWith( "data" ) && !name.startsWith( "store_lock" );
     };
+
+    private final FilenameFilter fileFilter;
     private FileSystemAbstraction fs;
     private PageCache pageCache;
 
     public StoreFiles( FileSystemAbstraction fs, PageCache pageCache )
     {
+        this( fs, pageCache, STORE_FILE_FILTER );
+    }
+
+    public StoreFiles( FileSystemAbstraction fs, PageCache pageCache, FilenameFilter fileFilter )
+    {
         this.fs = fs;
         this.pageCache = pageCache;
+        this.fileFilter = fileFilter;
     }
 
     public void delete( File storeDir ) throws IOException
     {
-        for ( File file : fs.listFiles( storeDir, STORE_FILE_FILTER ) )
+        for ( File file : fs.listFiles( storeDir, fileFilter ) )
         {
             fs.deleteRecursively( file );
         }
-        Iterable<FileHandle> fileHandles = pageCache.streamFilesRecursive( storeDir )::iterator;
-        for ( FileHandle fh : fileHandles )
+        Iterable<FileHandle> iterator = acceptedPageCachedFiles( storeDir )::iterator;
+        for ( FileHandle fh : iterator )
         {
-            Path storePath = storeDir.toPath();
-            Path filePath = fh.getFile().toPath();
-            Path relative = storePath.relativize( filePath );
-            if ( STORE_FILE_FILTER.accept( storeDir, getRootFileName( relative ) ) )
-            {
-                fh.delete();
-            }
+            fh.delete();
         }
     }
 
-    private String getRootFileName( Path path )
+    private Stream<FileHandle> acceptedPageCachedFiles( File storeDir ) throws IOException
     {
-        Path root = path.getRoot();
-        return (root == null) ? path.toString() : root.toString();
+        Predicate<FileHandle> acceptableFiles =
+                fh -> fileFilter.accept( storeDir, fh.getRelativeFile().getPath() );
+        return pageCache.streamFilesRecursive( storeDir ).filter( acceptableFiles );
     }
 
-    void moveTo( File source, File target ) throws IOException
+    public void moveTo( File source, File target ) throws IOException
     {
-        for ( File candidate : fs.listFiles( source, STORE_FILE_FILTER ) )
+        for ( File candidate : fs.listFiles( source, fileFilter ) )
         {
             fs.moveToDirectory( candidate, target );
         }
 
-        Iterable<FileHandle> fileHandles = pageCache.streamFilesRecursive( source )::iterator;
+        Iterable<FileHandle> fileHandles = acceptedPageCachedFiles( source )::iterator;
         for ( FileHandle fh : fileHandles )
         {
-            if ( STORE_FILE_FILTER.accept( source, fh.getFile().getName() ) )
-            {
-                fh.rename( new File( target, fh.getFile().getName() ), StandardCopyOption.REPLACE_EXISTING );
-            }
+            fh.rename( new File( target, fh.getRelativeFile().getPath() ), StandardCopyOption.REPLACE_EXISTING );
         }
     }
 }
