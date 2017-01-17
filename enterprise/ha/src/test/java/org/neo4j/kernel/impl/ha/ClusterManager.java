@@ -825,7 +825,8 @@ public class ClusterManager
         {
             // We want this, at least in the ClusterRule case where we fill this Builder instances
             // with all our behavior, but we don't know about the root directory until we evaluate the rule.
-            commonConfig.put( ClusterSettings.heartbeat_interval.name(), constant("1") );
+            commonConfig.put( ClusterSettings.heartbeat_interval.name(), constant( "500ms" ) );
+            commonConfig.put( ClusterSettings.heartbeat_timeout.name(), constant( "2s" ) );
             commonConfig.put( ClusterSettings.leave_timeout.name(), constant( "5" ) );
             commonConfig.put( GraphDatabaseSettings.pagecache_memory.name(), constant( "8m" ) );
         }
