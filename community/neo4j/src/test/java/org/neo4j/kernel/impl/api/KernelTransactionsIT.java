@@ -29,6 +29,7 @@ import org.junit.rules.RuleChain;
 
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -44,12 +45,15 @@ import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.impl.locking.NoOpClient;
+import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
 import org.neo4j.test.mockito.matcher.RootCauseMatcher;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
@@ -101,6 +105,25 @@ public class KernelTransactionsIT
 
         assertThat( "Transactions have been terminated", kernelTransactions.activeTransactions(), empty() );
         database.shutdown();
+    }
+
+    @Test
+    public void resetTerminationReasonOnTransactionInit()
+            throws TransactionFailureException, ExecutionException, InterruptedException
+    {
+        KernelTransactions transactions = database.getDependencyResolver().resolveDependency( KernelTransactions.class );
+        KernelTransactionImplementation transaction = (KernelTransactionImplementation) transactions
+                .newInstance( KernelTransaction.Type.implicit, SecurityContext.AUTH_DISABLED, 10L );
+        transaction.markForTermination( Status.Transaction.Terminated );
+
+        executorService.submit( () ->
+        {
+            assertTrue( transaction.getReasonIfTerminated().isPresent() );
+            transaction.initialize( 1L, 2L, new SimpleStatementLocks( new NoOpClient() ),
+                    KernelTransaction.Type.explicit, SecurityContext.AUTH_DISABLED, 3L );
+            assertFalse( transaction.getReasonIfTerminated().isPresent() );
+            return null;
+        } ).get();
     }
 
     @Test

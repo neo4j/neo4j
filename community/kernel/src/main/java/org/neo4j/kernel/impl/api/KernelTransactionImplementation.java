@@ -286,7 +286,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public KernelStatement acquireStatement()
     {
-        assertTransactionOpen();
+        assertTransactionNotClosed();
         currentStatement.acquire();
         return currentStatement;
     }
@@ -365,7 +365,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         currentStatement.forceClose();
     }
 
-    private void assertTransactionOpen()
+    private void assertTransactionNotClosed()
     {
         if ( isClosed() )
         {
@@ -442,7 +442,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         if ( !transactionStatus.closing() )
         {
-            assertTransactionOpen();
+            assertTransactionNotClosed();
             if ( transactionStatus.isShutdown() )
             {
                 throw new TransactionFailureException( Status.Transaction.TransactionTerminated,
@@ -837,8 +837,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
         public void init()
         {
-            statusUpdater.set( this, OPEN );
             reset();
+            statusUpdater.set( this, OPEN );
         }
 
         public void reset()
