@@ -28,6 +28,8 @@ Third-party licenses
 Apache Software License, Version 2.0
   Caffeine cache
   ConcurrentLinkedHashMap
+  FindBugs-jsr305
+  Guava: Google Core Libraries for Java
   Lucene codecs
   Lucene Common Analyzers
   Lucene Core
@@ -42,5 +44,14 @@ BSD - Scala License
 
 BSD License
   ASM Core
+  JLine
   Scala Compiler
+
+GNU Lesser General Public License v3.0
+  dsinfo
+  dsprofile
+  kiama
+
+MIT License
+  scallop
 

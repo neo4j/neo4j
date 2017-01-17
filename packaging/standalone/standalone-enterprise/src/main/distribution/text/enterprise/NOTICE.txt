@@ -39,7 +39,9 @@ Apache Software License, Version 2.0
   ConcurrentLinkedHashMap
   Data Mapper for Jackson
   ExplorerCanvas
+  FindBugs-jsr305
   Graphite Integration for Metrics
+  Guava: Google Core Libraries for Java
   hazelcast-all
   Jackson
   JAX-RS provider for JSON content type
@@ -112,6 +114,11 @@ GNU General Public License, version 2 with the Classpath Exception
   jsr311-api
   MIME streaming extension
 
+GNU Lesser General Public License v3.0
+  dsinfo
+  dsprofile
+  kiama
+
 GNU Lesser General Public License, Version 2.1
   Java Native Access
   Yet Another Java Service Wrapper
@@ -152,6 +159,7 @@ MIT License
   local-storage-js
   Modernizr
   Pure Feature Detection Library (has.js)
+  scallop
   SLF4J API Module
   SLF4J NOP Binding
   Underscore.js
