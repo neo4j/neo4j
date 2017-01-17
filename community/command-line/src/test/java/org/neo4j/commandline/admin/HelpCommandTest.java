@@ -94,6 +94,50 @@ public class HelpCommandTest
         }
     }
 
+    @Test
+    public void testAdminUsage() throws Exception
+    {
+        CommandLocator commandLocator = mock( CommandLocator.class );
+        ArrayList<AdminCommand.Provider> mockCommands = new ArrayList<AdminCommand.Provider>()
+        {{
+            add( mockCommand( "foo" ) );
+            add( mockCommand( "bar" ) );
+            add( mockCommand( "baz" ) );
+        }};
+        when( commandLocator.getAllProviders() ).thenReturn( mockCommands );
+
+        try ( ByteArrayOutputStream baos = new ByteArrayOutputStream() )
+        {
+            PrintStream ps = new PrintStream( baos );
+
+            Usage usage = new Usage( "neo4j-admin", commandLocator );
+
+            HelpCommand helpCommand = new HelpCommand( usage, ps::println, commandLocator );
+
+            helpCommand.execute();
+
+            assertEquals( String.format( "usage: neo4j-admin <command>%n" +
+                            "%n" +
+                            "Manage your Neo4j instance.%n" +
+                            "%n" +
+                            "environment variables:%n" +
+                            "    NEO4J_DEBUG   Set to anything to enable debug output.%n" +
+                            "    NEO4J_HOME    Neo4j home directory.%n" +
+                            "    NEO4J_CONF    Path to directory which contains neo4j.conf.%n" +
+                            "%n" +
+                            "available commands:%n" +
+                            "    foo%n" +
+                            "        null%n" +
+                            "    bar%n" +
+                            "        null%n" +
+                            "    baz%n" +
+                            "        null%n" +
+                            "%n" +
+                            "Use neo4j-admin help <command> for more details.%n" ),
+                    baos.toString() );
+        }
+    }
+
     private AdminCommand.Provider mockCommand( String name )
     {
         AdminCommand.Provider commandProvider = mock( AdminCommand.Provider.class );
