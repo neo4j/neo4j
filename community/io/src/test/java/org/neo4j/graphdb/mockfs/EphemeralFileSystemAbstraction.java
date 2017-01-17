@@ -444,7 +444,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
             List<String> fileNamePathItems = splitPath( file );
             if ( directoryMatches( directoryPathItems, fileNamePathItems ) )
             {
-                found.add( constructPath( fileNamePathItems, directoryPathItems.size() + 1 ) );
+                found.add( constructPath( fileNamePathItems, directoryPathItems ) );
             }
         }
 
@@ -470,7 +470,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
             List<String> fileNamePathItems = splitPath( file );
             if ( directoryMatches( directoryPathItems, fileNamePathItems ) )
             {
-                File path = constructPath( fileNamePathItems, directoryPathItems.size() + 1 );
+                File path = constructPath( fileNamePathItems, directoryPathItems );
                 if ( filter.accept( path.getParentFile(), path.getName() ) )
                 {
                     found.add( path );
@@ -480,10 +480,15 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         return found.toArray( new File[found.size()] );
     }
 
-    private File constructPath( List<String> pathItems, int count )
+    private File constructPath( List<String> pathItems, List<String> base )
     {
         File file = null;
-        for ( String pathItem : pathItems.subList( 0, count ) )
+        if ( base.size() > 0 )
+        {
+            // We're not directly basing off the root directory
+            pathItems = pathItems.subList( 0, base.size() + 1 );
+        }
+        for ( String pathItem : pathItems )
         {
             file = file == null ? new File( pathItem ) : new File( file, pathItem );
         }

@@ -53,6 +53,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static java.util.stream.Collectors.toSet;
+import static org.apache.commons.lang3.SystemUtils.IS_OS_WINDOWS;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isOneOf;
@@ -61,6 +62,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 
 @SuppressWarnings( "OptionalGetWithoutIsPresent" )
 public abstract class PageSwapperTest
@@ -85,6 +88,8 @@ public abstract class PageSwapperTest
     protected abstract void mkdirs( File dir ) throws IOException;
 
     protected abstract File baseDirectory() throws IOException;
+
+    protected abstract boolean isRootAccessible();
 
     protected final PageSwapperFactory createSwapperFactory() throws Exception
     {
@@ -1348,6 +1353,24 @@ public abstract class PageSwapperTest
     {
         PageSwapperFactory factory = createSwapperFactory();
         File base = baseDirectory();
+        File sub = new File( base, "sub" );
+        File a = new File( base, "a" );
+        File b = new File( sub, "b" );
+        mkdirs( sub );
+        createSwapperAndFile( factory, a );
+        createSwapperAndFile( factory, b );
+        Set<File> set = factory.streamFilesRecursive( base ).map( FileHandle::getRelativeFile ).collect( toSet() );
+        assertThat( "Files relative to base directory " + base,
+                set, containsInAnyOrder( new File( "a" ), new File( "sub" + File.separator + "b" ) ) );
+    }
+
+    @Test
+    public void streamFilesRecursiveMustBeAbleToGivePathRelativeToRoot() throws Exception
+    {
+        assumeTrue( isRootAccessible() );
+        assumeFalse( IS_OS_WINDOWS );
+        PageSwapperFactory factory = createSwapperFactory();
+        File base = new File( "/" );
         File sub = new File( base, "sub" );
         File a = new File( base, "a" );
         File b = new File( sub, "b" );
