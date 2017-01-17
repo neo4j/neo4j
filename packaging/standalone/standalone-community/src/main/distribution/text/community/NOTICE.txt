@@ -39,6 +39,8 @@ Apache Software License, Version 2.0
   ConcurrentLinkedHashMap
   Data Mapper for Jackson
   ExplorerCanvas
+  FindBugs-jsr305
+  Guava: Google Core Libraries for Java
   Jackson
   JAX-RS provider for JSON content type
   Jetty :: Http Utility
@@ -108,6 +110,11 @@ GNU General Public License, version 2 with the Classpath Exception
   jsr311-api
   MIME streaming extension
 
+GNU Lesser General Public License v3.0
+  dsinfo
+  dsprofile
+  kiama
+
 GNU Lesser General Public License, Version 2.1
   Java Native Access
   Yet Another Java Service Wrapper
@@ -148,6 +155,7 @@ MIT License
   local-storage-js
   Modernizr
   Pure Feature Detection Library (has.js)
+  scallop
   Underscore.js
   UUID.js
 

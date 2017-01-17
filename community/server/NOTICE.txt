@@ -37,6 +37,8 @@ Apache Software License, Version 2.0
   Commons Logging
   ConcurrentLinkedHashMap
   Data Mapper for Jackson
+  FindBugs-jsr305
+  Guava: Google Core Libraries for Java
   Jackson
   JAX-RS provider for JSON content type
   Jetty :: Http Utility
@@ -96,6 +98,14 @@ GNU General Public License, version 2 with the Classpath Exception
   jersey-servlet
   jsr311-api
   MIME streaming extension
+
+GNU Lesser General Public License v3.0
+  dsinfo
+  dsprofile
+  kiama
+
+MIT License
+  scallop
 
 Mozilla Public License, Version 2.0
   Mozilla Rhino

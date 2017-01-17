@@ -145,6 +145,9 @@
       <aka>GNU Lesser General Public License (LGPL), Version 2.1</aka>
       <aka>GNU Lesser Public License</aka>
     </license>
+    <license name="GNU Lesser General Public License v3.0">
+      <aka>LGPL 3.0 license</aka>
+    </license>
     <license name="MIT License">
       <aka>MIT</aka>
       <aka>The MIT License</aka>
