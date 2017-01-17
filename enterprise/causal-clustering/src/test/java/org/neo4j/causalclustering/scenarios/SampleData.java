@@ -55,6 +55,8 @@ public class SampleData
 
             node1.setProperty( PROPERTY_KEY, "svej" + i );
             node2.setProperty( "tjabba", "tjena" );
+            node1.setProperty( "foobar", "baz_bat" );
+            node2.setProperty( "foobar", "baz_bat" );
 
             Relationship rel = node1.createRelationshipTo( node2, RelationshipType.withName( "halla" ) );
             rel.setProperty( "this", "that" );
