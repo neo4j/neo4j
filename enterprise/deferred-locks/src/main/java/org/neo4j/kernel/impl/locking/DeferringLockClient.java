@@ -165,6 +165,12 @@ public class DeferringLockClient implements Locks.Client
         return locks.keySet().stream();
     }
 
+    @Override
+    public long activeLockCount()
+    {
+        return locks.size();
+    }
+
     private void assertNotStopped()
     {
         if ( stopped )

@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+import java.util.function.LongSupplier;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
@@ -107,6 +108,7 @@ public class ExecutingQuery
     /** Uses write barrier of {@link #status}. */
     private long planningDone;
     private final Thread threadExecutingTheQuery;
+    private final LongSupplier activeLockCount;
     private final SystemNanoClock clock;
     private final CpuClock cpuClock;
     private final long cpuTimeNanosWhenQueryStarted;
@@ -125,6 +127,7 @@ public class ExecutingQuery
             String queryText,
             Map<String,Object> queryParameters,
             Map<String,Object> metaData,
+            LongSupplier activeLockCount,
             Thread threadExecutingTheQuery,
             SystemNanoClock clock,
             CpuClock cpuClock )
@@ -134,6 +137,7 @@ public class ExecutingQuery
         this.username = username;
         this.queryText = queryText;
         this.queryParameters = queryParameters;
+        this.activeLockCount = activeLockCount;
         this.clock = clock;
         this.startTime = clock.millis();
         this.metaData = metaData;
@@ -253,6 +257,11 @@ public class ExecutingQuery
     public LockTracer lockTracer()
     {
         return lockTracer;
+    }
+
+    public long activeLockCount()
+    {
+        return activeLockCount.getAsLong();
     }
 
     public Map<String,Object> status()

@@ -115,6 +115,8 @@ public interface Locks
         int getLockSessionId();
 
         Stream<? extends ActiveLock> activeLocks();
+
+        long activeLockCount();
     }
 
     /**

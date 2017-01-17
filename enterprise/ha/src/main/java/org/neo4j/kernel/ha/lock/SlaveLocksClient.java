@@ -254,6 +254,21 @@ class SlaveLocksClient implements Locks.Client
                 sharedLocks.entrySet().stream().flatMap( SHARED_ACTIVE_LOCKS ) );
     }
 
+    @Override
+    public long activeLockCount()
+    {
+        long count = 0; // TODO: do we need to make these maps of locks ConcurrentHashMaps?
+        for ( Map<Long,AtomicInteger> locks : exclusiveLocks.values() )
+        {
+            count += locks.size();
+        }
+        for ( Map<Long,AtomicInteger> locks : sharedLocks.values() )
+        {
+            count += locks.size();
+        }
+        return count;
+    }
+
     private static Function<Map.Entry<ResourceType,Map<Long,AtomicInteger>>,Stream<? extends ActiveLock>> activeLocks(
             ActiveLock.Factory activeLock )
     {

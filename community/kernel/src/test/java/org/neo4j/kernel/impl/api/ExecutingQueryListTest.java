@@ -116,7 +116,7 @@ public class ExecutingQueryListTest
     private ExecutingQuery createExecutingQuery( int queryId, String query )
     {
         return new ExecutingQuery( queryId, ClientConnectionInfo.EMBEDDED_CONNECTION, "me", query,
-                Collections.emptyMap(), Collections.emptyMap(), Thread.currentThread(),
+                Collections.emptyMap(), Collections.emptyMap(), () -> 0, Thread.currentThread(),
                 Clocks.nanoClock(),
                 CpuClock.CPU_CLOCK
         );

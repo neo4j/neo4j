@@ -50,6 +50,7 @@ public class ExecutingQueryTest
 {
     private final FakeClock clock = Clocks.fakeClock( ZonedDateTime.parse( "2016-12-03T15:10:00+01:00" ) );
     private final FakeCpuClock cpuClock = new FakeCpuClock();
+    private long lockCount;
     private ExecutingQuery query = new ExecutingQuery(
             1,
             ClientConnectionInfo.EMBEDDED_CONNECTION,
@@ -57,7 +58,7 @@ public class ExecutingQueryTest
             "hello world",
             Collections.emptyMap(),
             Collections.emptyMap(),
-            Thread.currentThread(),
+            () -> lockCount, Thread.currentThread(),
             clock,
             cpuClock );
 
@@ -168,6 +169,22 @@ public class ExecutingQueryTest
 
         // then
         assertEquals( 60, cpuTime );
+    }
+
+    @Test
+    public void shouldReportLockCount() throws Exception
+    {
+        // given
+        lockCount = 11;
+
+        // then
+        assertEquals( 11, query.activeLockCount() );
+
+        // given
+        lockCount = 2;
+
+        // then
+        assertEquals( 2, query.activeLockCount() );
     }
 
     private LockWaitEvent lock( String resourceType, long resourceId )

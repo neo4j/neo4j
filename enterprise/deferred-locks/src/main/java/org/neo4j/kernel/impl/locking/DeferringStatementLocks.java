@@ -71,4 +71,10 @@ public class DeferringStatementLocks implements StatementLocks
     {
         return Stream.concat( explicit.activeLocks(), implicit.activeLocks() );
     }
+
+    @Override
+    public long activeLockCount()
+    {
+        return explicit.activeLockCount() + implicit.activeLockCount();
+    }
 }

@@ -475,5 +475,11 @@ public class DeferringLockClientTest
         {
             return actualLockUnits.stream();
         }
+
+        @Override
+        public long activeLockCount()
+        {
+            return actualLockUnits.size();
+        }
     }
 }

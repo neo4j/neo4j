@@ -265,5 +265,11 @@ public class LeaderOnlyLockManager implements Locks
         {
             return localClient.activeLocks();
         }
+
+        @Override
+        public long activeLockCount()
+        {
+            return localClient.activeLockCount();
+        }
     }
 }

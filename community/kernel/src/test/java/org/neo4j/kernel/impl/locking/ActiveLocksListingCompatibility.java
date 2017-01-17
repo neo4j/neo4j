@@ -31,6 +31,8 @@ import static org.junit.Assert.assertEquals;
 import static org.neo4j.kernel.impl.locking.ActiveLock.exclusiveLock;
 import static org.neo4j.kernel.impl.locking.ActiveLock.sharedLock;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.NODE;
+import static org.neo4j.kernel.impl.locking.ResourceTypes.RELATIONSHIP;
+import static org.neo4j.kernel.impl.locking.ResourceTypes.SCHEMA;
 
 @Ignore( "Not a test. This is a compatibility suite, run from LockingCompatibilityTestSuite." )
 public class ActiveLocksListingCompatibility extends LockingCompatibilityTestSuite.Compatibility
@@ -60,5 +62,20 @@ public class ActiveLocksListingCompatibility extends LockingCompatibilityTestSui
                         sharedLock( NODE, 4 ),
                         sharedLock( NODE, 5 ) ) ),
                 locks.collect( toSet() ) );
+    }
+
+    @Test
+    public void shouldCountNumberOfActiveLocks() throws Exception
+    {
+        // given
+        clientA.acquireShared( LockTracer.NONE, SCHEMA, 0 );
+        clientA.acquireShared( LockTracer.NONE, RELATIONSHIP, 17 );
+        clientA.acquireShared( LockTracer.NONE, NODE, 12 );
+
+        // when
+        long count = clientA.activeLockCount();
+
+        // then
+        assertEquals( 3, count );
     }
 }

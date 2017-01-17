@@ -52,6 +52,7 @@ import static org.hamcrest.Matchers.hasKey;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.cypher_hints_error;
@@ -161,17 +162,30 @@ public class ListQueriesProcedureTest
         }, Transaction::acquireWriteLock, query ) )
         {
             // when
-            try ( Result rows = db.execute( "CALL dbms.listQueries() YIELD query AS queryText, queryId "
+            try ( Result rows = db.execute( "CALL dbms.listQueries() "
+                    + "YIELD query AS queryText, queryId, activeLockCount "
                     + "WHERE queryText = $queryText "
                     + "CALL dbms.listActiveLocks(queryId) YIELD mode, resourceType, resourceId "
                     + "RETURN *", singletonMap( "queryText", query ) ) )
             {
                 // then
                 Set<Long> ids = new HashSet<>();
+                Long lockCount = null;
+                long rowCount = 0;
                 while ( rows.hasNext() )
                 {
                     Map<String,Object> row = rows.next();
                     Object resourceType = row.get( "resourceType" );
+                    Object activeLockCount = row.get( "activeLockCount" );
+                    if ( lockCount == null )
+                    {
+                        assertThat( "activeLockCount", activeLockCount, instanceOf( Long.class ) );
+                        lockCount = (Long) activeLockCount;
+                    }
+                    else
+                    {
+                        assertEquals( "activeLockCount", lockCount, activeLockCount );
+                    }
                     if ( "SCHEMA".equals( resourceType ) )
                     {
                         assertEquals( "SHARED", row.get( "mode" ) );
@@ -183,8 +197,11 @@ public class ListQueriesProcedureTest
                         assertEquals( "EXCLUSIVE", row.get( "mode" ) );
                         ids.add( (Long) row.get( "resourceId" ) );
                     }
+                    rowCount++;
                 }
                 assertEquals( locked, ids );
+                assertNotNull( "activeLockCount", lockCount );
+                assertEquals( lockCount.intValue(), rowCount ); // note: only true because query is blocked
             }
         }
     }

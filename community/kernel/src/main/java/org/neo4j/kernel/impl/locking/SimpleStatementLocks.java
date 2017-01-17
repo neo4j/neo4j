@@ -69,4 +69,10 @@ public class SimpleStatementLocks implements StatementLocks
     {
         return client.activeLocks();
     }
+
+    @Override
+    public long activeLockCount()
+    {
+        return client.activeLockCount();
+    }
 }

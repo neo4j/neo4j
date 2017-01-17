@@ -649,6 +649,12 @@ public class ForsetiClient implements Locks.Client
         return locks.stream();
     }
 
+    @Override
+    public long activeLockCount()
+    {
+        return countLocks( exclusiveLockCounts ) + countLocks( sharedLockCounts );
+    }
+
     private static void collectActiveLocks(
             PrimitiveLongIntMap[] counts,
             List<ActiveLock> locks,
@@ -667,6 +673,19 @@ public class ForsetiClient implements Locks.Client
                 } );
             }
         }
+    }
+
+    private long countLocks( PrimitiveLongIntMap[] lockCounts )
+    {
+        long count = 0;
+        for ( PrimitiveLongIntMap lockCount : lockCounts )
+        {
+            if ( lockCount != null )
+            {
+                count += lockCount.size();
+            }
+        }
+        return count;
     }
 
     public int waitListSize()

@@ -79,4 +79,10 @@ public class NoOpClient implements Locks.Client
     {
         return Stream.empty();
     }
+
+    @Override
+    public long activeLockCount()
+    {
+        return 0;
+    }
 }

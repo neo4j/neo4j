@@ -328,6 +328,28 @@ public class CommunityLockClient implements Locks.Client
         return locks.stream();
     }
 
+    @Override
+    public long activeLockCount()
+    {
+        LockCounter counter = new LockCounter();
+        exclusiveLocks.visitEntries( counter );
+        sharedLocks.visitEntries( counter );
+        return counter.locks;
+    }
+
+    private static class LockCounter
+            implements PrimitiveIntObjectVisitor<PrimitiveLongObjectMap<LockResource>,RuntimeException>
+    {
+        long locks;
+
+        @Override
+        public boolean visited( int key, PrimitiveLongObjectMap<LockResource> value )
+        {
+            locks += value.size();
+            return false;
+        }
+    }
+
     private static PrimitiveIntObjectVisitor<PrimitiveLongObjectMap<LockResource>,RuntimeException> collectActiveLocks(
             List<ActiveLock> locks, ActiveLock.Factory activeLock )
     {
