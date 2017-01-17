@@ -183,6 +183,24 @@ public interface JobScheduler extends Lifecycle
         void cancel( boolean mayInterruptIfRunning );
 
         void waitTermination() throws InterruptedException, ExecutionException;
+
+        default void registerCancelListener( CancelListener listener )
+        {
+            throw new UnsupportedOperationException( "Unsupported in this implementation" );
+        }
+    }
+
+    /**
+     * Gets notified about calls to {@link JobHandle#cancel(boolean)}.
+     */
+    interface CancelListener
+    {
+        /**
+         * Notification that {@link JobHandle#cancel(boolean)} was called.
+         *
+         * @param mayInterruptIfRunning argument from {@link JobHandle#cancel(boolean)} call.
+         */
+        void cancelled( boolean mayInterruptIfRunning );
     }
 
     /** Expose a group scheduler as an {@link Executor} */

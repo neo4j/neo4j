@@ -19,7 +19,12 @@
  */
 package org.neo4j.kernel.impl.util;
 
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
@@ -33,6 +38,7 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static java.util.concurrent.Executors.newCachedThreadPool;
+
 import static org.neo4j.helpers.NamedThreadFactory.daemon;
 import static org.neo4j.kernel.impl.util.DebugUtil.trackTest;
 import static org.neo4j.kernel.impl.util.JobScheduler.Group.NO_METADATA;
@@ -41,6 +47,11 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
 {
     private ExecutorService globalPool;
     private ScheduledThreadPoolExecutor scheduledExecutor;
+
+    // Contains JobHandles which hasn't been cancelled yet, this to be able to cancel those when shutting down
+    // This Set is synchronized, which is fine because there are only a handful of jobs generally and only
+    // added when starting a database.
+    private final Set<JobHandle> jobs = Collections.synchronizedSet( new HashSet<>() );
 
     @Override
     public void init()
@@ -76,7 +87,7 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
         switch( group.strategy() )
         {
         case POOLED:
-            return new PooledJobHandle( this.globalPool.submit( job ) );
+            return register( new PooledJobHandle( this.globalPool.submit( job ) ) );
         case NEW_THREAD:
             Thread thread = createNewThread( group, job, metadata );
             thread.start();
@@ -84,6 +95,35 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
         default:
             throw new IllegalArgumentException( "Unsupported strategy for scheduling job: " + group.strategy() );
         }
+    }
+
+    private JobHandle register( PooledJobHandle pooledJobHandle )
+    {
+        jobs.add( pooledJobHandle );
+
+        // Return a JobHandle which removes itself from this register,
+        // otherwise functions like the supplied handle
+        return new JobHandle()
+        {
+            @Override
+            public void waitTermination() throws InterruptedException, ExecutionException
+            {
+                pooledJobHandle.waitTermination();
+            }
+
+            @Override
+            public void cancel( boolean mayInterruptIfRunning )
+            {
+                pooledJobHandle.cancel( mayInterruptIfRunning );
+                jobs.remove( pooledJobHandle );
+            }
+
+            @Override
+            public void registerCancelListener( CancelListener listener )
+            {
+                pooledJobHandle.registerCancelListener( listener );
+            }
+        };
     }
 
     @Override
@@ -128,6 +168,14 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
         RuntimeException exception = null;
         try
         {
+            // Cancel jobs which hasn't been cancelled already, this to avoid having to wait the full
+            // max wait time and then just leave them.
+            for ( JobHandle handle : jobs )
+            {
+                handle.cancel( true );
+            }
+            jobs.clear();
+
             shutdownPool( globalPool );
         }
         catch ( RuntimeException e )
@@ -188,6 +236,7 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
     private static class PooledJobHandle implements JobHandle
     {
         private final Future<?> job;
+        private final List<CancelListener> cancelListeners = new CopyOnWriteArrayList<>();
 
         public PooledJobHandle( Future<?> job )
         {
@@ -198,12 +247,22 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
         public void cancel( boolean mayInterruptIfRunning )
         {
             job.cancel( mayInterruptIfRunning );
+            for ( CancelListener cancelListener : cancelListeners )
+            {
+                cancelListener.cancelled( mayInterruptIfRunning );
+            }
         }
 
         @Override
         public void waitTermination() throws InterruptedException, ExecutionException
         {
             job.get();
+        }
+
+        @Override
+        public void registerCancelListener( CancelListener listener )
+        {
+            cancelListeners.add( listener );
         }
     }
 
