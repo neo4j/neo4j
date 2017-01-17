@@ -50,6 +50,8 @@ public class CsvImporterTest
     @Test
     public void writesReportToSpecifiedReportFile() throws Exception
     {
+        File dbDir = testDir.directory( "db" );
+        File logDir = testDir.directory( "logs" );
         File reportLocation = testDir.file( "the_report" );
 
         File inputFile = testDir.file( "foobar.csv" );
@@ -58,7 +60,11 @@ public class CsvImporterTest
 
         try ( RealOutsideWorld outsideWorld = new RealOutsideWorld() )
         {
-            Config config = Config.defaults().with( additionalConfig() );
+            Config config = Config.defaults()
+                .with( additionalConfig() )
+                .with( stringMap(
+                                DatabaseManagementSystemSettings.database_path.name(), dbDir.getAbsolutePath(),
+                                GraphDatabaseSettings.logs_directory.name(), logDir.getAbsolutePath() ) );
             CsvImporter csvImporter = new CsvImporter(
                     Args.parse( String.format( "--report-file=%s", reportLocation.getAbsolutePath() ),
                             String.format( "--nodes=%s", inputFile.getAbsolutePath() ) ), config,
