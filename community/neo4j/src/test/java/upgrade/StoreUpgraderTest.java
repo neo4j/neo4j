@@ -69,6 +69,7 @@ import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UnableToUpgradeExcepti
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
+import org.neo4j.kernel.impl.storemigration.legacylogs.LegacyLogFilenames;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
@@ -168,14 +169,11 @@ public class StoreUpgraderTest
             @Override
             public File[] listFiles( File directory, FilenameFilter filter )
             {
-                sneakyThrow( new IOException( "Enforced IO Exception Fail to open file" ) );
+                if ( filter == LegacyLogFilenames.versionedLegacyLogFilesFilter )
+                {
+                    sneakyThrow( new IOException( "Enforced IO Exception Fail to open file" ) );
+                }
                 return super.listFiles( directory, filter );
-            }
-
-            @Override
-            public boolean fileExists( File fileName )
-            {
-                return true;
             }
         };
 

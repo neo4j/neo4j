@@ -260,7 +260,7 @@ public class StoreUpgrader
     {
         try
         {
-            if ( migrationDirectory.exists() )
+            if ( fileSystem.fileExists( migrationDirectory ) )
             {
                 fileSystem.deleteRecursively( migrationDirectory );
             }
