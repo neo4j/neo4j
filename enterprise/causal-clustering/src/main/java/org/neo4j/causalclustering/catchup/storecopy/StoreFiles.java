@@ -22,6 +22,7 @@ package org.neo4j.causalclustering.catchup.storecopy;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.StandardCopyOption;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -57,10 +58,16 @@ public class StoreFiles
 
     public void delete( File storeDir ) throws IOException
     {
-        for ( File file : fs.listFiles( storeDir, fileFilter ) )
+        // 'files' can be null if the directory doesn't exist. This is fine, we just ignore it then.
+        File[] files = fs.listFiles( storeDir, fileFilter );
+        if ( files != null )
         {
-            fs.deleteRecursively( file );
+            for ( File file : files )
+            {
+                fs.deleteRecursively( file );
+            }
         }
+
         Iterable<FileHandle> iterator = acceptedPageCachedFiles( storeDir )::iterator;
         for ( FileHandle fh : iterator )
         {
@@ -70,9 +77,18 @@ public class StoreFiles
 
     private Stream<FileHandle> acceptedPageCachedFiles( File storeDir ) throws IOException
     {
-        Predicate<FileHandle> acceptableFiles =
-                fh -> fileFilter.accept( storeDir, fh.getRelativeFile().getPath() );
-        return pageCache.streamFilesRecursive( storeDir ).filter( acceptableFiles );
+        try
+        {
+            Stream<FileHandle> stream = pageCache.streamFilesRecursive( storeDir );
+            Predicate<FileHandle> acceptableFiles =
+                    fh -> fileFilter.accept( storeDir, fh.getRelativeFile().getPath() );
+            return stream.filter( acceptableFiles );
+        }
+        catch ( NoSuchFileException e )
+        {
+            // This is fine. Just ignore empty or non-existing directories.
+            return Stream.empty();
+        }
     }
 
     public void moveTo( File source, File target ) throws IOException
