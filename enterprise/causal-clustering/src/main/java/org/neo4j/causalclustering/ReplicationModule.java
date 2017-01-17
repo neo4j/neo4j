@@ -30,7 +30,7 @@ import org.neo4j.causalclustering.core.replication.RaftReplicator;
 import org.neo4j.causalclustering.core.replication.session.GlobalSession;
 import org.neo4j.causalclustering.core.replication.session.GlobalSessionTrackerState;
 import org.neo4j.causalclustering.core.replication.session.LocalSessionPool;
-import org.neo4j.causalclustering.core.state.machines.tx.ExponentialBackoffStrategy;
+import org.neo4j.causalclustering.helper.ExponentialBackoffStrategy;
 import org.neo4j.causalclustering.core.state.storage.DurableStateStorage;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.messaging.Outbound;
@@ -67,8 +67,9 @@ public class ReplicationModule
         LocalSessionPool sessionPool = new LocalSessionPool( myGlobalSession );
         progressTracker = new ProgressTrackerImpl( myGlobalSession );
 
+        ExponentialBackoffStrategy retryStrategy = new ExponentialBackoffStrategy( 10, 60, SECONDS );
         replicator = life.add( new RaftReplicator( consensusModule.raftMachine(), myself, outbound, sessionPool,
-            progressTracker, new ExponentialBackoffStrategy( 10, 60, SECONDS ) ) );
+            progressTracker, retryStrategy ) );
     }
 
     public RaftReplicator getReplicator()

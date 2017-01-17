@@ -29,7 +29,7 @@ import org.neo4j.causalclustering.catchup.storecopy.CopiedStoreRecovery;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.StoreFetcher;
 import org.neo4j.causalclustering.catchup.storecopy.StoreIdDownloadFailedException;
-import org.neo4j.causalclustering.core.state.machines.tx.ConstantTimeRetryStrategy;
+import org.neo4j.causalclustering.helper.ConstantTimeRetryStrategy;
 import org.neo4j.causalclustering.discovery.CoreTopology;
 import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.MemberId;
@@ -52,6 +52,7 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class ReadReplicaStartupProcessTest
 {
+    private ConstantTimeRetryStrategy retryStrategy = new ConstantTimeRetryStrategy( 1, MILLISECONDS );
     private CopiedStoreRecovery copiedStoreRecovery = mock( CopiedStoreRecovery.class );
     private FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
     private StoreFetcher storeFetcher = mock( StoreFetcher.class );
@@ -83,7 +84,7 @@ public class ReadReplicaStartupProcessTest
 
         ReadReplicaStartupProcess
                 readReplicaStartupProcess = new ReadReplicaStartupProcess( fs, storeFetcher, localDatabase, txPulling,
-                new AlwaysChooseFirstMember( hazelcastTopology ), new ConstantTimeRetryStrategy( 1, MILLISECONDS ),
+                new AlwaysChooseFirstMember( hazelcastTopology ), retryStrategy,
                 NullLogProvider.getInstance(), NullLogProvider.getInstance(), copiedStoreRecovery );
 
         // when
@@ -104,7 +105,7 @@ public class ReadReplicaStartupProcessTest
 
         ReadReplicaStartupProcess
                 readReplicaStartupProcess = new ReadReplicaStartupProcess( fs, storeFetcher, localDatabase, txPulling,
-                new AlwaysChooseFirstMember( hazelcastTopology ), new ConstantTimeRetryStrategy( 1, MILLISECONDS ),
+                new AlwaysChooseFirstMember( hazelcastTopology ), retryStrategy,
                 NullLogProvider.getInstance(), NullLogProvider.getInstance(), copiedStoreRecovery );
 
         // when
@@ -134,7 +135,7 @@ public class ReadReplicaStartupProcessTest
 
         ReadReplicaStartupProcess
                 readReplicaStartupProcess = new ReadReplicaStartupProcess( fs, storeFetcher, localDatabase, txPulling,
-                new AlwaysChooseFirstMember( hazelcastTopology ), new ConstantTimeRetryStrategy( 1, MILLISECONDS ),
+                new AlwaysChooseFirstMember( hazelcastTopology ), retryStrategy,
                 NullLogProvider.getInstance(), NullLogProvider.getInstance(), copiedStoreRecovery );
 
         // when
@@ -154,7 +155,7 @@ public class ReadReplicaStartupProcessTest
 
         ReadReplicaStartupProcess
                 readReplicaStartupProcess = new ReadReplicaStartupProcess( fs, storeFetcher, localDatabase, txPulling,
-                new AlwaysChooseFirstMember( hazelcastTopology ), new ConstantTimeRetryStrategy( 1, MILLISECONDS ),
+                new AlwaysChooseFirstMember( hazelcastTopology ), retryStrategy,
                 NullLogProvider.getInstance(), NullLogProvider.getInstance(), copiedStoreRecovery );
         readReplicaStartupProcess.start();
 

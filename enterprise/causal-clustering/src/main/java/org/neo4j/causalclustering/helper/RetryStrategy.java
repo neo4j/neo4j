@@ -17,36 +17,15 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.core.state.machines.tx;
+package org.neo4j.causalclustering.helper;
 
-import java.util.concurrent.TimeUnit;
-
-public class ConstantTimeRetryStrategy implements RetryStrategy
+public interface RetryStrategy
 {
-    private final Timeout constantTimeout;
+    Timeout newTimeout();
 
-    public ConstantTimeRetryStrategy( long backoffTime, TimeUnit timeUnit )
+    interface Timeout
     {
-        long backoffTimeMillis = timeUnit.toMillis( backoffTime );
-
-        constantTimeout = new Timeout()
-        {
-            @Override
-            public long getMillis()
-            {
-                return backoffTimeMillis;
-            }
-
-            @Override
-            public void increment()
-            {
-            }
-        };
-    }
-
-    @Override
-    public Timeout newTimeout()
-    {
-        return constantTimeout;
+        long getMillis();
+        void increment();
     }
 }
