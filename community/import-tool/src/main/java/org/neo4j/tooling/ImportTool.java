@@ -859,7 +859,7 @@ public class ImportTool
 
     private enum ManualPage
     {
-        IMPORT_TOOL_FORMAT( "tools/import/import-tool-header-format/" );
+        IMPORT_TOOL_FORMAT( "tools/import/file-header-format/" );
 
         private final String page;
 
