@@ -32,8 +32,8 @@ trait RewriteTest {
   def rewriterUnderTest: Rewriter
 
   protected def assertRewrite(originalQuery: String, expectedQuery: String) {
-    val original = parseForRewriting(originalQuery)
-    val expected = parseForRewriting(expectedQuery)
+    val original = parseForRewriting(originalQuery).endoRewrite(RemoveParens)
+    val expected = parseForRewriting(expectedQuery).endoRewrite(RemoveParens)
     val mkException = new SyntaxExceptionCreator(originalQuery, Some(DummyPosition(0)))
     SemanticChecker.check(original, mkException)
 
