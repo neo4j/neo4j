@@ -47,7 +47,7 @@ public class BiggerThanLogTxIT
 
     protected ClusterManager.ManagedCluster cluster;
 
-    private TransactionTemplate template = new TransactionTemplate().retries( 10 ).backoff( 3, TimeUnit.SECONDS );
+    private final TransactionTemplate template = new TransactionTemplate().retries( 10 ).backoff( 3, TimeUnit.SECONDS );
 
     @Before
     public void setup() throws Exception
@@ -140,14 +140,7 @@ public class BiggerThanLogTxIT
                     if (expectedNodeCount == count)
                         break;
 
-                    try
-                    {
-                        cluster.sync(  );
-                    }
-                    catch ( InterruptedException e )
-                    {
-                        throw new RuntimeException( e );
-                    }
+                    cluster.sync(  );
                 }
             }
 

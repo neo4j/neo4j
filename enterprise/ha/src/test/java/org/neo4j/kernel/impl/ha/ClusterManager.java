@@ -22,9 +22,6 @@ package org.neo4j.kernel.impl.ha;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
@@ -37,22 +34,17 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.cluster.FreePorts;
+import org.neo4j.cluster.FreePorts.Session;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.Cluster;
 import org.neo4j.cluster.client.ClusterClient;
@@ -89,7 +81,6 @@ import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
@@ -98,7 +89,10 @@ import org.neo4j.storageengine.api.StorageEngine;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableMap;
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.neo4j.helpers.ArrayUtil.contains;
+import static org.neo4j.helpers.collection.Iterables.asList;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.fs.FileUtils.copyRecursively;
@@ -136,7 +130,7 @@ public class ClusterManager
         IN;
     }
 
-    public static final long DEFAULT_TIMEOUT_SECONDS = 60L;
+    private static final long DEFAULT_TIMEOUT_SECONDS = 60L;
     public static final Map<String,String> CONFIG_FOR_SINGLE_JVM_CLUSTER = unmodifiableMap( stringMap(
             GraphDatabaseSettings.pagecache_memory.name(), "8m",
             GraphDatabaseSettings.shutdown_transaction_end_timeout.name(), "1s",
@@ -162,7 +156,7 @@ public class ClusterManager
     private final String localAddress;
     private final File root;
     private final Map<String,IntFunction<String>> commonConfig;
-    private final Supplier<Cluster> clustersProvider;
+    private final Function<FreePorts.Session,Cluster> clustersProvider;
     private final HighlyAvailableGraphDatabaseFactory dbFactory;
     private final StoreDirInitializer storeDirInitializer;
     private final Listener<GraphDatabaseService> initialDatasetCreator;
@@ -217,7 +211,7 @@ public class ClusterManager
      *
      * @param memberCount the total number of members in the cluster to start.
      */
-    public static Supplier<Cluster> clusterOfSize( int memberCount )
+    public static Function<FreePorts.Session,Cluster> clusterOfSize( int memberCount )
     {
         return clusterOfSize( getLocalAddress(), memberCount );
     }
@@ -228,18 +222,16 @@ public class ClusterManager
      * @param hostname the hostname/ip-address to bind to
      * @param memberCount the total number of members in the cluster to start.
      */
-    public static Supplier<Cluster> clusterOfSize( String hostname, int memberCount )
+    public static Function<FreePorts.Session,Cluster> clusterOfSize( String hostname, int memberCount )
     {
-        return () -> {
+        return session -> {
             final Cluster cluster = new Cluster();
 
-            HashSet<Integer> takenPorts = new HashSet<>();
             try
             {
                 for ( int i = 0; i < memberCount; i++ )
                 {
-                    int port = findFreePort( CLUSTER_MIN_PORT, CLUSTER_MAX_PORT, takenPorts );
-                    takenPorts.add( port );
+                    int port = session.findFreePort( CLUSTER_MIN_PORT, CLUSTER_MAX_PORT );
                     cluster.getMembers().add( new Cluster.Member( hostname + ":" + port, true ) );
                 }
             }
@@ -252,95 +244,29 @@ public class ClusterManager
         };
     }
 
-    /**
-     * Find an available port number which is also not included in the except list.
-     * @param minPort minimum port number to probe
-     * @param maxPort maximum port number to probe
-     * @param except port numbers which should be considered unavailable and already taken
-     * @return a port number
-     * @throws IOException if no open port could be found
-     */
-    private static int findFreePort( final int minPort, final int maxPort, final Set<Integer> except )
-            throws IOException
-    {
-        int port;
-        for ( port = minPort; port <= maxPort; port++ )
-        {
-            if ( except.contains( port ) )
-            {
-                // This port is already taken but not bound yet, ignore it
-                continue;
-            }
-
-            try
-            {
-                // try binding it at wildcard
-                ServerSocket ss = new ServerSocket();
-                ss.setReuseAddress( false );
-                ss.bind( new InetSocketAddress( port ) );
-                ss.close();
-            }
-            catch ( IOException e )
-            {
-                except.add( port );
-                continue;
-            }
-
-            try
-            {
-                // try binding it at loopback
-                ServerSocket ss = new ServerSocket();
-                ss.setReuseAddress( false );
-                ss.bind( new InetSocketAddress( InetAddress.getLoopbackAddress(), port ) );
-                ss.close();
-            }
-            catch ( IOException e )
-            {
-                except.add( port );
-                continue;
-            }
-
-            try
-            {
-                // try connecting to it at loopback
-                Socket socket = new Socket( InetAddress.getLoopbackAddress(), port );
-                socket.close();
-                except.add( port );
-                continue;
-            }
-            catch ( IOException ex )
-            {
-                // Port very likely free!
-                return port;
-            }
-        }
-
-        throw new IOException( "No open port could be found" );
-    }
+    private static final FreePorts PORTS = new FreePorts();
 
     /**
      * Provides a cluster specification with default values
      *
      * @param haMemberCount the total number of members in the cluster to start.
      */
-    public static Supplier<Cluster> clusterWithAdditionalClients( int haMemberCount, int additionalClientCount )
+    public static Function<FreePorts.Session,Cluster> clusterWithAdditionalClients( int haMemberCount,
+            int additionalClientCount )
     {
-        return () -> {
+        return session -> {
             Cluster cluster = new Cluster();
-            HashSet<Integer> takenPorts = new HashSet<>();
 
             try
             {
                 for ( int i = 0; i < haMemberCount; i++ )
                 {
-                    int port = findFreePort( CLUSTER_MIN_PORT, CLUSTER_MAX_PORT, takenPorts );
-                    takenPorts.add( port );
+                    int port = session.findFreePort( CLUSTER_MIN_PORT, CLUSTER_MAX_PORT );
                     cluster.getMembers().add( new Cluster.Member( port, true ) );
                 }
                 for ( int i = 0; i < additionalClientCount; i++ )
                 {
-                    int port = findFreePort( CLUSTER_MIN_PORT, CLUSTER_MAX_PORT, takenPorts );
-                    takenPorts.add( port );
+                    int port = session.findFreePort( CLUSTER_MIN_PORT, CLUSTER_MAX_PORT );
                     cluster.getMembers().add( new Cluster.Member( port, false ) );
                 }
             }
@@ -359,24 +285,21 @@ public class ClusterManager
      *
      * @param haMemberCount the total number of members in the cluster to start.
      */
-    public static Supplier<Cluster> clusterWithAdditionalArbiters( int haMemberCount, int arbiterCount )
+    public static Function<FreePorts.Session,Cluster> clusterWithAdditionalArbiters( int haMemberCount, int arbiterCount )
     {
-        return () -> {
+        return session -> {
             Cluster cluster = new Cluster();
-            HashSet<Integer> takenPorts = new HashSet<>();
 
             try
             {
                 for ( int i = 0; i < arbiterCount; i++ )
                 {
-                    int port = findFreePort( CLUSTER_MIN_PORT, CLUSTER_MAX_PORT, takenPorts );
-                    takenPorts.add( port );
+                    int port = session.findFreePort( CLUSTER_MIN_PORT, CLUSTER_MAX_PORT );
                     cluster.getMembers().add( new Cluster.Member( port, false ) );
                 }
                 for ( int i = 0; i < haMemberCount; i++ )
                 {
-                    int port = findFreePort( CLUSTER_MIN_PORT, CLUSTER_MAX_PORT, takenPorts );
-                    takenPorts.add( port );
+                    int port = session.findFreePort( CLUSTER_MIN_PORT, CLUSTER_MAX_PORT );
                     cluster.getMembers().add( new Cluster.Member( port, true ) );
                 }
             }
@@ -683,15 +606,24 @@ public class ClusterManager
     @Override
     public void start() throws Throwable
     {
-        Cluster cluster = clustersProvider.get();
+        FreePorts.Session session = PORTS.newSession();
+        Cluster cluster = clustersProvider.apply( session );
 
         life = new LifeSupport();
+        life.add( new LifecycleAdapter()
+        {
+            @Override
+            public void shutdown() throws Throwable
+            {
+                session.close();
+            }
+        } );
 
         // Started so instances added here will be started immediately, and in case of exceptions they can be
         // shutdown() or stop()ped properly
         life.start();
 
-        managedCluster = new ManagedCluster( cluster );
+        managedCluster = new ManagedCluster( cluster, session );
         life.add( managedCluster );
 
         availabilityChecks.forEach( managedCluster::await );
@@ -721,7 +653,8 @@ public class ClusterManager
      *
      * This is intended for unit tests where a failure in cluster shutdown might mask the actual error in the test.
      */
-    public void safeShutdown() {
+    public void safeShutdown()
+    {
         try
         {
             shutdown();
@@ -747,7 +680,7 @@ public class ClusterManager
 
         SELF withDbFactory( HighlyAvailableGraphDatabaseFactory dbFactory );
 
-        SELF withCluster( Supplier<Cluster> provider );
+        SELF withCluster( Function<FreePorts.Session,Cluster> provider );
 
         /**
          * Supplies configuration where config values, as opposed to {@link #withSharedConfig(Map)},
@@ -805,7 +738,7 @@ public class ClusterManager
     public static class Builder implements ClusterBuilder<Builder>
     {
         private File root;
-        private Supplier<Cluster> provider = clusterOfSize( 3 );
+        private Function<FreePorts.Session,Cluster> provider = clusterOfSize( 3 );
         private final Map<String,IntFunction<String>> commonConfig = new HashMap<>();
         private HighlyAvailableGraphDatabaseFactory factory = new HighlyAvailableGraphDatabaseFactory();
         private StoreDirInitializer initializer;
@@ -826,7 +759,7 @@ public class ClusterManager
             // with all our behavior, but we don't know about the root directory until we evaluate the rule.
             commonConfig.put( ClusterSettings.heartbeat_interval.name(), constant( "500ms" ) );
             commonConfig.put( ClusterSettings.heartbeat_timeout.name(), constant( "2s" ) );
-            commonConfig.put( ClusterSettings.leave_timeout.name(), constant( "5" ) );
+            commonConfig.put( ClusterSettings.leave_timeout.name(), constant( "5s" ) );
             commonConfig.put( GraphDatabaseSettings.pagecache_memory.name(), constant( "8m" ) );
         }
 
@@ -858,7 +791,7 @@ public class ClusterManager
         }
 
         @Override
-        public Builder withCluster( Supplier<Cluster> provider )
+        public Builder withCluster( Function<FreePorts.Session,Cluster> provider )
         {
             this.provider = provider;
             return this;
@@ -934,121 +867,6 @@ public class ClusterManager
         }
     }
 
-    private static final class HighlyAvailableGraphDatabaseProxy
-    {
-        private final ExecutorService executor;
-        private GraphDatabaseService result;
-        private final Future<GraphDatabaseService> untilThen;
-
-        public HighlyAvailableGraphDatabaseProxy( final GraphDatabaseBuilder graphDatabaseBuilder )
-        {
-            Callable<GraphDatabaseService> starter = graphDatabaseBuilder::newGraphDatabase;
-            executor = Executors.newFixedThreadPool( 1 );
-            untilThen = executor.submit( starter );
-        }
-
-        public HighlyAvailableGraphDatabase get( long timeoutSeconds )
-        {
-            if ( result == null )
-            {
-                try
-                {
-                    result = untilThen.get( timeoutSeconds, TimeUnit.SECONDS );
-                }
-                catch ( InterruptedException | ExecutionException | TimeoutException e )
-                {
-                    throw new RuntimeException( e );
-                }
-                finally
-                {
-                    executor.shutdownNow();
-                }
-            }
-            return (HighlyAvailableGraphDatabase) result;
-        }
-    }
-
-    private static final class FutureLifecycleAdapter<T extends Lifecycle> extends LifecycleAdapter
-    {
-        private final T wrapped;
-        private final ExecutorService starter;
-        private Future<Void> currentFuture;
-
-        public FutureLifecycleAdapter( T toWrap )
-        {
-            wrapped = toWrap;
-            starter = Executors.newFixedThreadPool( 1 );
-        }
-
-        @Override
-        public void init() throws Throwable
-        {
-            currentFuture = starter.submit( (Callable<Void>) () -> {
-                try
-                {
-                    wrapped.init();
-                }
-                catch ( Throwable throwable )
-                {
-                    throw new RuntimeException( throwable );
-                }
-                return null;
-            } );
-        }
-
-        @Override
-        public void start() throws Throwable
-        {
-            currentFuture.get();
-            currentFuture = starter.submit( (Callable<Void>) () -> {
-                try
-                {
-                    wrapped.start();
-                }
-                catch ( Throwable throwable )
-                {
-                    throw new RuntimeException( throwable );
-                }
-                return null;
-            } );
-        }
-
-        @Override
-        public void stop() throws Throwable
-        {
-            currentFuture.get();
-            currentFuture = starter.submit( (Callable<Void>) () -> {
-                try
-                {
-                    wrapped.stop();
-                }
-                catch ( Throwable throwable )
-                {
-                    throw new RuntimeException( throwable );
-                }
-                return null;
-            } );
-        }
-
-        @Override
-        public void shutdown() throws Throwable
-        {
-            currentFuture = starter.submit( (Callable<Void>) () -> {
-                try
-                {
-                    wrapped.shutdown();
-                }
-                catch ( Throwable throwable )
-                {
-                    throw new RuntimeException( throwable );
-                }
-                return null;
-            } );
-            currentFuture.get();
-            starter.shutdownNow();
-        }
-    }
-
     /**
      * Represent one cluster. It can retrieve the current master, random slave
      * or all members. It can also temporarily fail an instance or shut it down.
@@ -1057,23 +875,24 @@ public class ClusterManager
     {
         private final Cluster spec;
         private final String name;
-        private final Map<InstanceId,HighlyAvailableGraphDatabaseProxy> members = new ConcurrentHashMap<>();
+        private final Map<InstanceId,HighlyAvailableGraphDatabase> members = new ConcurrentHashMap<>();
         private final List<ObservedClusterMembers> arbiters = new ArrayList<>();
         private final Set<RepairKit> pendingRepairs = Collections.synchronizedSet( new HashSet<RepairKit>() );
-        private final HashSet<Integer> takenHaPorts = new HashSet<>();
+        private final ParallelLifecycle parallelLife = new ParallelLifecycle( DEFAULT_TIMEOUT_SECONDS, SECONDS );
+        private final String initialHosts;
+        private final File parent;
+        private final Session ports;
 
-        ManagedCluster( Cluster spec ) throws URISyntaxException, IOException
+        ManagedCluster( Cluster spec, FreePorts.Session ports ) throws URISyntaxException
         {
             this.spec = spec;
+            this.ports = ports;
             this.name = spec.getName();
+            initialHosts = buildInitialHosts();
+            parent = new File( root, name );
             for ( int i = 0; i < spec.getMembers().size(); i++ )
             {
                 startMember( new InstanceId( firstInstanceId + i ) );
-            }
-            for ( HighlyAvailableGraphDatabaseProxy member : members.values() )
-            {
-                HighlyAvailableGraphDatabase graphDatabase = member.get( DEFAULT_TIMEOUT_SECONDS );
-                Config config = graphDatabase.getDependencyResolver().resolveDependency( Config.class );
             }
         }
 
@@ -1091,18 +910,38 @@ public class ClusterManager
         }
 
         @Override
+        public void init() throws Throwable
+        {
+            parallelLife.init();
+        }
+
+        @Override
+        public void start() throws Throwable
+        {
+            parallelLife.start();
+        }
+
+        @Override
         public void stop() throws Throwable
         {
-            for ( HighlyAvailableGraphDatabaseProxy member : members.values() )
+            List<HighlyAvailableGraphDatabase> dbs = asList( getAllMembers() );
+
+            // Shut down the dbs in parallel
+            parallelLife.stop();
+
+            for ( HighlyAvailableGraphDatabase db : dbs )
             {
-                HighlyAvailableGraphDatabase memberDb = member.get( DEFAULT_TIMEOUT_SECONDS );
-                File storeDir = memberDb.getStoreDirectory();
-                memberDb.shutdown();
                 if ( consistencyCheck )
                 {
-                    consistencyCheck( storeDir );
+                    consistencyCheck( db.getStoreDirectory() );
                 }
             }
+        }
+
+        @Override
+        public void shutdown() throws Throwable
+        {
+            parallelLife.shutdown();
         }
 
         private void consistencyCheck( File storeDir ) throws Throwable
@@ -1116,9 +955,7 @@ public class ClusterManager
         public Iterable<HighlyAvailableGraphDatabase> getAllMembers( HighlyAvailableGraphDatabase... except )
         {
             Set<HighlyAvailableGraphDatabase> exceptSet = new HashSet<>( asList( except ) );
-
-            return members.values().stream().map( proxy -> proxy.get( DEFAULT_TIMEOUT_SECONDS ) )
-                    .filter( db -> !exceptSet.contains( db ) ).collect( Collectors.toList());
+            return members.values().stream().filter( db -> !exceptSet.contains( db ) ).collect( Collectors.toList());
         }
 
         public Iterable<ObservedClusterMembers> getArbiters()
@@ -1194,7 +1031,7 @@ public class ClusterManager
          */
         public HighlyAvailableGraphDatabase getMemberByServerId( InstanceId serverId )
         {
-            HighlyAvailableGraphDatabase db = members.get( serverId ).get( DEFAULT_TIMEOUT_SECONDS );
+            HighlyAvailableGraphDatabase db = members.get( serverId );
             if ( db == null )
             {
                 throw new IllegalStateException( "Db " + serverId + " not found at the moment in " + name +
@@ -1217,17 +1054,26 @@ public class ClusterManager
             assertMember( db );
             InstanceId serverId =
                     db.getDependencyResolver().resolveDependency( Config.class ).get( ClusterSettings.server_id );
-            members.remove( serverId );
-            db.shutdown();
+            shutdownMember( serverId );
             await( entireClusterSeesMemberAsNotAvailable( db ) );
             return wrap( new StartDatabaseAgainKit( this, serverId ) );
         }
 
+        private void shutdownMember( InstanceId serverId )
+        {
+            HighlyAvailableGraphDatabase db = members.remove( serverId );
+            Config config = db.getDependencyResolver().resolveDependency( Config.class );
+            int haPort = config.get( HaSettings.ha_server ).getPort();
+            db.shutdown();
+            ports.releasePort( haPort );
+            // don't release cluster port here
+        }
+
         private void assertMember( HighlyAvailableGraphDatabase db )
         {
-            for ( HighlyAvailableGraphDatabaseProxy highlyAvailableGraphDatabaseProxy : members.values() )
+            for ( HighlyAvailableGraphDatabase existingMember : members.values() )
             {
-                if ( highlyAvailableGraphDatabaseProxy.get( DEFAULT_TIMEOUT_SECONDS ).equals( db ) )
+                if ( existingMember.equals( db ) )
                 {
                     return;
                 }
@@ -1316,9 +1162,106 @@ public class ClusterManager
             };
         }
 
-        private void startMember( InstanceId serverId ) throws URISyntaxException, IOException
+        private HighlyAvailableGraphDatabase startMemberNow( InstanceId serverId )
+                throws IOException, URISyntaxException
         {
-            Cluster.Member member = spec.getMembers().get( serverId.toIntegerIndex() - firstInstanceId );
+            Cluster.Member member = memberSpec( serverId );
+            URI clusterUri = clusterUri( member );
+            int clusterPort = clusterUri.getPort();
+            int haPort = ports.findFreePort( HA_MIN_PORT, HA_MAX_PORT );
+            File storeDir = new File( parent, "server" + serverId );
+            if ( storeDirInitializer != null )
+            {
+                storeDirInitializer.initializeStoreDir( serverId.toIntegerIndex(), storeDir );
+            }
+            GraphDatabaseBuilder builder = dbFactory.newEmbeddedDatabaseBuilder( storeDir.getAbsoluteFile() );
+            builder.setConfig( ClusterSettings.cluster_name, name );
+            builder.setConfig( ClusterSettings.initial_hosts, initialHosts );
+            builder.setConfig( ClusterSettings.server_id, serverId + "" );
+            builder.setConfig( ClusterSettings.cluster_server, "0.0.0.0:" + clusterPort );
+            builder.setConfig( HaSettings.ha_server, clusterUri.getHost() + ":" + haPort );
+            builder.setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE );
+            for ( Map.Entry<String,IntFunction<String>> conf : commonConfig.entrySet() )
+            {
+                builder.setConfig( conf.getKey(), conf.getValue().apply( serverId.toIntegerIndex() ) );
+            }
+
+            HighlyAvailableGraphDatabase graphDatabase = (HighlyAvailableGraphDatabase) builder.newGraphDatabase();
+            members.put( serverId, graphDatabase );
+            return graphDatabase;
+        }
+
+        private URI clusterUri( Cluster.Member member ) throws URISyntaxException
+        {
+            return new URI( "cluster://" + member.getHost() );
+        }
+
+        private Cluster.Member memberSpec( InstanceId serverId )
+        {
+            return spec.getMembers().get( serverId.toIntegerIndex() - firstInstanceId );
+        }
+
+        private void startMember( InstanceId serverId ) throws URISyntaxException
+        {
+            Cluster.Member member = memberSpec( serverId );
+            if ( member.isFullHaMember() )
+            {
+                parallelLife.add( new LifecycleAdapter()
+                {
+                    @Override
+                    public void start() throws Throwable
+                    {
+                        startMemberNow( serverId );
+                    }
+
+                    @Override
+                    public void stop() throws Throwable
+                    {
+                        HighlyAvailableGraphDatabase db = members.remove( serverId );
+                        if ( db != null )
+                        {
+                            db.shutdown();
+                        }
+                    }
+                } );
+            }
+            else
+            {
+                URI clusterUri = clusterUri( member );
+                Config config = Config.embeddedDefaults( MapUtil.stringMap(
+                        ClusterSettings.cluster_name.name(), name,
+                        ClusterSettings.initial_hosts.name(), initialHosts,
+                        ClusterSettings.server_id.name(), serverId + "",
+                        ClusterSettings.cluster_server.name(), "0.0.0.0:" + clusterUri.getPort() ) );
+
+                LifeSupport clusterClientLife = new LifeSupport();
+                LogService logService = NullLogService.getInstance();
+                ClusterClientModule clusterClientModule = new ClusterClientModule( clusterClientLife,
+                        new Dependencies(), new Monitors(), config, logService,
+                        new NotElectableElectionCredentialsProvider() );
+
+                arbiters.add( new ObservedClusterMembers( logService.getInternalLogProvider(),
+                        clusterClientModule.clusterClient, clusterClientModule.clusterClient, new ClusterMemberEvents()
+                {
+                    @Override
+                    public void addClusterMemberListener( ClusterMemberListener listener )
+                    {
+                        // noop
+                    }
+
+                    @Override
+                    public void removeClusterMemberListener( ClusterMemberListener listener )
+                    {
+                        // noop
+                    }
+                }, clusterClientModule.clusterClient.getServerId() ) );
+
+                parallelLife.add( clusterClientLife );
+            }
+        }
+
+        private String buildInitialHosts() throws URISyntaxException
+        {
             StringBuilder initialHosts = new StringBuilder();
             for ( int i = 0; i < spec.getMembers().size(); i++ )
             {
@@ -1337,76 +1280,7 @@ public class ClusterManager
                     initialHosts.append( uri.getHost() ).append( ":" ).append( uri.getPort() );
                 }
             }
-            File parent = new File( root, name );
-            URI clusterUri = new URI( "cluster://" + member.getHost() );
-            if ( member.isFullHaMember() )
-            {
-                int clusterPort = clusterUri.getPort();
-                int haPort = findFreePort( HA_MIN_PORT, HA_MAX_PORT, takenHaPorts );
-                takenHaPorts.add( haPort );
-                File storeDir = new File( parent, "server" + serverId );
-                if ( storeDirInitializer != null )
-                {
-                    storeDirInitializer.initializeStoreDir( serverId.toIntegerIndex(), storeDir );
-                }
-                GraphDatabaseBuilder builder = dbFactory.newEmbeddedDatabaseBuilder( storeDir.getAbsoluteFile() );
-                builder.setConfig( ClusterSettings.cluster_name, name );
-                builder.setConfig( ClusterSettings.initial_hosts, initialHosts.toString() );
-                builder.setConfig( ClusterSettings.server_id, serverId + "" );
-                builder.setConfig( ClusterSettings.cluster_server, "0.0.0.0:" + clusterPort );
-                builder.setConfig( HaSettings.ha_server, clusterUri.getHost() + ":" + haPort );
-                builder.setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE );
-                for ( Map.Entry<String,IntFunction<String>> conf : commonConfig.entrySet() )
-                {
-                    builder.setConfig( conf.getKey(), conf.getValue().apply( serverId.toIntegerIndex() ) );
-                }
-
-                final HighlyAvailableGraphDatabaseProxy graphDatabase =
-                        new HighlyAvailableGraphDatabaseProxy( builder );
-
-                members.put( serverId, graphDatabase );
-
-                life.add( new LifecycleAdapter()
-                {
-                    @Override
-                    public void stop() throws Throwable
-                    {
-                        graphDatabase.get( DEFAULT_TIMEOUT_SECONDS ).shutdown();
-                    }
-                } );
-            }
-            else
-            {
-                Config config = Config.embeddedDefaults( MapUtil.stringMap(
-                        ClusterSettings.cluster_name.name(), name,
-                        ClusterSettings.initial_hosts.name(), initialHosts.toString(),
-                        ClusterSettings.server_id.name(), serverId + "",
-                        ClusterSettings.cluster_server.name(), "0.0.0.0:" + clusterUri.getPort() ) );
-
-                LifeSupport clusterClientLife = new LifeSupport();
-                NullLogService logService = NullLogService.getInstance();
-                ClusterClientModule clusterClientModule = new ClusterClientModule( clusterClientLife,
-                        new Dependencies(), new Monitors(), config, logService,
-                        new NotElectableElectionCredentialsProvider() );
-
-                arbiters.add( new ObservedClusterMembers(  logService.getInternalLogProvider(),
-                        clusterClientModule.clusterClient, clusterClientModule.clusterClient, new ClusterMemberEvents()
-                {
-                    @Override
-                    public void addClusterMemberListener( ClusterMemberListener listener )
-                    {
-                        // noop
-                    }
-
-                    @Override
-                    public void removeClusterMemberListener( ClusterMemberListener listener )
-                    {
-                        // noop
-                    }
-                }, clusterClientModule.clusterClient.getServerId() ) );
-
-                life.add( new FutureLifecycleAdapter<>( clusterClientLife ) );
-            }
+            return initialHosts.toString();
         }
 
         /**
@@ -1473,7 +1347,7 @@ public class ClusterManager
             return member.getStoreDirectory();
         }
 
-        public void sync( HighlyAvailableGraphDatabase... except ) throws InterruptedException
+        public void sync( HighlyAvailableGraphDatabase... except )
         {
             Set<HighlyAvailableGraphDatabase> exceptSet = new HashSet<>( asList( except ) );
             for ( HighlyAvailableGraphDatabase db : getAllMembers() )
@@ -1590,8 +1464,7 @@ public class ClusterManager
         @Override
         public HighlyAvailableGraphDatabase repair() throws Throwable
         {
-            cluster.startMember( serverId );
-            return cluster.getMemberByServerId( serverId );
+            return cluster.startMemberNow( serverId );
         }
     }
 }
