@@ -22,7 +22,6 @@ package org.neo4j.kernel.builtinprocs;
 import java.util.Comparator;
 import java.util.stream.Stream;
 
-import org.neo4j.configuration.ConfigValue;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.UserFunctionSignature;
 import org.neo4j.kernel.configuration.Config;
@@ -69,20 +68,6 @@ public class BuiltInDbmsProcedures
         return graph.getDependencyResolver().resolveDependency( Procedures.class ).getAllFunctions().stream()
                 .sorted( ( a, b ) -> a.name().toString().compareTo( b.name().toString() ) )
                 .map( FunctionResult::new );
-    }
-
-    public static class ConfigResult
-    {
-        public final String name;
-        public final String description;
-        public final String value;
-
-        private ConfigResult( ConfigValue configValue )
-        {
-            this.name = configValue.name();
-            this.description = configValue.description().orElse( "" );
-            this.value = configValue.value().map( Object::toString ).orElse( "" );
-        }
     }
 
     public static class FunctionResult
