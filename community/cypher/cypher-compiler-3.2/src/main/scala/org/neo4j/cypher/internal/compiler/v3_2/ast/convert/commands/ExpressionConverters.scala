@@ -300,6 +300,7 @@ object ExpressionConverters {
       else commandexpressions.FunctionInvocation(signature, callArgumentCommands)
     case e: ast.MapProjection => throw new InternalException("should have been rewritten away")
     case e: NestedPlanExpression => commandexpressions.NestedPlanExpression(e.plan)
+    case ast.Parenthesis(inner) => toCommandExpression(inner)
     case _ =>
       throw new InternalException(s"Unknown expression type during transformation (${expression.getClass})")
   }

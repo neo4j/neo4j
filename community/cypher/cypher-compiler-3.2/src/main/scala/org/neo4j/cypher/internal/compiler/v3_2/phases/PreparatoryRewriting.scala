@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_2.phases
 
 import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
-import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters.{expandCallWhere, normalizeReturnClauses, normalizeWithClauses, replaceAliasedFunctionInvocations}
+import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters._
 import org.neo4j.cypher.internal.frontend.v3_2.inSequence
 
 case object PreparatoryRewriting extends Phase {
@@ -31,6 +31,7 @@ case object PreparatoryRewriting extends Phase {
       normalizeReturnClauses(context.exceptionCreator),
       normalizeWithClauses(context.exceptionCreator),
       expandCallWhere,
+      RemoveParens,
       replaceAliasedFunctionInvocations))
 
     from.copy(maybeStatement = Some(rewrittenStatement))
