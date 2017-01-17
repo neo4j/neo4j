@@ -33,7 +33,6 @@ import java.util.TreeMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -101,10 +100,10 @@ public class GBPTreeIT
     public void shouldStayCorrectAfterRandomModifications() throws Exception
     {
         // GIVEN
-        GBPTree<MutableLong,MutableLong> index = createIndex( 1024 );
+        GBPTree<MutableLong,MutableLong> index = createIndex( 256 );
         Comparator<MutableLong> keyComparator = layout;
         Map<MutableLong,MutableLong> data = new TreeMap<>( keyComparator );
-        int count = 1000;
+        int count = 100;
         for ( int i = 0; i < count; i++ )
         {
             data.put( randomKey( random.random() ), randomKey( random.random() ) );
@@ -194,7 +193,7 @@ public class GBPTreeIT
                     }
 
                     // Read one go, we should see up to highId
-                    long start = Long.max( 0, upToId - 1000 );
+                    long start = Long.max( 0, upToId - 100 );
                     long lastSeen = start - 1;
                     long startTime;
                     long startTimeLeaf;
@@ -271,13 +270,14 @@ public class GBPTreeIT
         {
             assertTrue( readerReadySignal.await( 10, SECONDS ) );
             startSignal.countDown();
-            Random random1 = ThreadLocalRandom.current();
+            Random random = this.random.random();
             int inserted = 0;
-            while ( (inserted < 100_000 || numberOfReads.get() < 10_000) && !failHalt.get() )
+            int wantedNbrOfReads = 10_000 * readers;
+            while ( (inserted < 10_000 || numberOfReads.get() < wantedNbrOfReads) && !failHalt.get() )
             {
                 try ( Writer<MutableLong,MutableLong> writer = index.writer() )
                 {
-                    int groupCount = random1.nextInt( 1000 ) + 1;
+                    int groupCount = random.nextInt( 1000 ) + 1;
                     for ( int i = 0; i < groupCount; i++, inserted++ )
                     {
                         MutableLong thing = new MutableLong( inserted );
@@ -286,7 +286,7 @@ public class GBPTreeIT
                     }
                 }
                 // Sleep a little in between update groups (transactions, sort of)
-                MILLISECONDS.sleep( random1.nextInt( 10 ) + 3 );
+                MILLISECONDS.sleep( random.nextInt( 10 ) + 3 );
             }
         }
         finally
@@ -315,10 +315,10 @@ public class GBPTreeIT
         int nbrOfGroups = 10;
         int wantedRangeWidth = 1_000;
         int rangeWidth = wantedRangeWidth - wantedRangeWidth % nbrOfGroups;
-        int wantedNbrOfReads = 100_000;
 
         // Readers config
         int readers = max( 1, Runtime.getRuntime().availableProcessors() - 1 );
+        int wantedNbrOfReads = 10_000 * readers;
 
         // Thread communication
         AtomicInteger currentWriteIteration = new AtomicInteger( 0 );
@@ -400,10 +400,10 @@ public class GBPTreeIT
         int nbrOfGroups = 10;
         int wantedRangeWidth = 1_000;
         int rangeWidth = wantedRangeWidth - wantedRangeWidth % nbrOfGroups;
-        int wantedNbrOfReads = 10_000;
 
         // Readers config
         int readers = max( 1, Runtime.getRuntime().availableProcessors() - 1 );
+        int wantedNbrOfReads = 10_000 * readers;
 
         // Thread communication
         AtomicInteger currentWriteIteration = new AtomicInteger( 0 );
@@ -440,7 +440,7 @@ public class GBPTreeIT
             startSignal.countDown();
             int iteration = currentWriteIteration.get();
             int writesPerIteration = rangeWidth / nbrOfGroups;
-            int nbrOfLeastWantedIterations = 100_000 / writesPerIteration;
+            int nbrOfLeastWantedIterations = 10_000 / writesPerIteration;
             while ( !failHalt.get() &&
                     (numberOfReads.get() < wantedNbrOfReads || iteration < nbrOfLeastWantedIterations) )
             {
@@ -487,10 +487,10 @@ public class GBPTreeIT
 
         // Write group config
         int nbrOfGroups = 10;
-        int wantedRangeWidth = 1_000;
+        int wantedRangeWidth = 100;
         int rangeWidth = wantedRangeWidth - wantedRangeWidth % nbrOfGroups;
         long minValue = 0L;
-        long maxValue = 100_000L;
+        long maxValue = 10_000L;
 
         // Readers config
         int readers = max( 1, Runtime.getRuntime().availableProcessors() - 1 );
@@ -576,10 +576,10 @@ public class GBPTreeIT
 
         // Write group config
         int nbrOfGroups = 10;
-        int wantedRangeWidth = 1_00;
+        int wantedRangeWidth = 100;
         int rangeWidth = wantedRangeWidth - wantedRangeWidth % nbrOfGroups;
         long minValue = 0L;
-        long maxValue = 1_000L;
+        long maxValue = 10_000L;
 
         // Readers config
         int readers = max( 1, Runtime.getRuntime().availableProcessors() - 1 );
@@ -638,7 +638,7 @@ public class GBPTreeIT
                 }
                 iteration = currentWriteIteration.addAndGet( 2 );
                 // Sleep a little in between update groups (transactions, sort of)
-                MILLISECONDS.sleep( random.nextInt( 3,13 ) );
+                MILLISECONDS.sleep( random.nextInt( 3, 13 ) );
             }
         }
         finally
