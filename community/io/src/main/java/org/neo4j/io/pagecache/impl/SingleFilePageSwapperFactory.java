@@ -179,7 +179,12 @@ public class SingleFilePageSwapperFactory implements PageSwapperFactory
         @Override
         public File getRelativeFile()
         {
-            return new File( file.getPath().substring( baseDirectory.getPath().length() + 1 ) );
+            int baseLength = baseDirectory.getPath().length();
+            if ( baseDirectory.getParent() != null )
+            {
+                baseLength++;
+            }
+            return new File( file.getPath().substring( baseLength ) );
         }
 
         @Override
