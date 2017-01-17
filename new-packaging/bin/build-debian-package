@@ -22,7 +22,7 @@ skeleton_directory=src/debian/skeleton
 cp -r ${skeleton_directory}/* ${package_directory}
 
 # Rename service files to match package-name so we still get a service called neo4j
-mv ${package_directory}/debian/neo4j.service ${package_directory}/debian/${package_name}.neo4j.service
+cp src/common/neo4j.service ${package_directory}/debian/${package_name}.neo4j.service
 mv ${package_directory}/debian/neo4j.default ${package_directory}/debian/${package_name}.neo4j.default
 mv ${package_directory}/debian/neo4j.init ${package_directory}/debian/${package_name}.neo4j.init
 
@@ -52,7 +52,7 @@ PACKAGE_NAME=${package_name} VERSION=${version} envsubst '${PACKAGE_NAME} ${VERS
 # Make the Neo4j wrapper scripts available to debuild
 scripts_directory=${package_directory}/server/scripts
 mkdir -p ${scripts_directory}
-script=src/debian/neo4j-script
+script=src/common/neo4j-script
 cp ${script} ${scripts_directory}/neo4j
 cp ${script} ${scripts_directory}/neo4j-admin
 cp ${script} ${scripts_directory}/neo4j-import
