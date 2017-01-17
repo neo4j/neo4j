@@ -426,7 +426,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             try
             {
                 transactionEvent.setSuccess( success );
-                transactionEvent.setFailure( failure );
+                transactionEvent.setFailure( failure || isTerminated() );
                 transactionEvent.setTransactionType( writeState.name() );
                 transactionEvent.setReadOnly( txState == null || !txState.hasChanges() );
                 transactionEvent.close();

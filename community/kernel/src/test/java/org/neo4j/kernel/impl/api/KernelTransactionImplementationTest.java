@@ -47,6 +47,8 @@ import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.command.Command;
+import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
+import org.neo4j.kernel.impl.transaction.tracing.TransactionEvent;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
@@ -809,6 +811,21 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         assertTrue( transaction.isClosed() );
     }
 
+    @Test
+    public void postFailedtransactionEventWhenClosingTerminatedTransaction() throws TransactionFailureException
+    {
+        TrackingTransactionEvent transactionEvent = new TrackingTransactionEvent();
+        KernelTransactionImplementation transaction = newNotInitializedTransaction( () -> transactionEvent );
+        SimpleStatementLocks statementLocks = new SimpleStatementLocks( new NoOpClient() );
+
+        transaction.initialize( 1L, 2L, statementLocks,
+                KernelTransaction.Type.explicit, SecurityContext.AUTH_DISABLED, 3L );
+        transaction.markForTermination( Status.Transaction.Terminated );
+        transaction.close();
+
+        assertTrue( transactionEvent.isFailure() );
+    }
+
     private SecurityContext securityContext()
     {
         return isWriteTx ? AnonymousContext.write() : AnonymousContext.read();
@@ -851,6 +868,52 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         public void afterRollback( ReadableTransactionState state, KernelTransaction transaction, Outcome outcome )
         {
 
+        }
+    }
+
+    private static class TrackingTransactionEvent implements TransactionEvent
+    {
+        private boolean failure;
+
+        @Override
+        public void setSuccess( boolean success )
+        {
+
+        }
+
+        @Override
+        public void setFailure( boolean failure )
+        {
+            this.failure = failure;
+        }
+
+        @Override
+        public CommitEvent beginCommitEvent()
+        {
+            return null;
+        }
+
+        @Override
+        public void close()
+        {
+
+        }
+
+        @Override
+        public void setTransactionType( String transactionTypeName )
+        {
+
+        }
+
+        @Override
+        public void setReadOnly( boolean wasReadOnly )
+        {
+
+        }
+
+        public boolean isFailure()
+        {
+            return failure;
         }
     }
 }
