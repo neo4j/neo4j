@@ -60,7 +60,8 @@ fi
 
 if [ $1 -eq 0 ]; then
   # Uninstalling
-  systemctl disable --now neo4j > /dev/null 2>&1 || :
+  systemctl disable --quiet neo4j > /dev/null 2>&1 || :
+  systemctl stop neo4j > /dev/null 2>&1 || :
 fi
 
 
