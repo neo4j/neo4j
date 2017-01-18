@@ -16,7 +16,6 @@ distribution=${4}
 version_file=${5}
 license=${6}
 
-# Update changelog, control and files with package name etc
 version=$(cat ${version_file})
 
 # Prepare workspace
@@ -36,10 +35,10 @@ cp -r ${package_contents}/* ${sources_directory}/server
 
 DISTRIBUTION=${distribution} DATE=`date -R` PACKAGE_NAME=${package_name} VERSION=${version} LICENSE=${license} envsubst '${DATE} ${DISTRIBUTION} ${PACKAGE_NAME} ${VERSION} ${LICENSE}' < ${spec_directory}/neo4j.spec > ${package_directory}/SPECS/neo4j.spec
 
-# Make the Neo4j wrapper scripts available to debuild
+# Make the Neo4j wrapper scripts available
 scripts_directory=${sources_directory}/server/scripts
 mkdir -p ${scripts_directory}
-script=src/common/neo4j-script
+script=${common_directory}/neo4j-script
 cp ${script} ${scripts_directory}/neo4j
 cp ${script} ${scripts_directory}/neo4j-admin
 cp ${script} ${scripts_directory}/neo4j-import
@@ -49,6 +48,11 @@ if [ ${package_name} = "neo4j-enterprise" ]
 then
   cp ${script} ${scripts_directory}/neo4j-backup
 fi
+
+# Copy manpages
+echo "boo ${package_directory}"
+cp -r ${common_directory}/manpages ${sources_directory}
+gzip ${sources_directory}/manpages/*
 
 # Make UDC successful
 sed -i 's/unsupported.dbms.udc.source=tarball/unsupported.dbms.udc.source=rpm/' ${sources_directory}/server/conf/neo4j.conf

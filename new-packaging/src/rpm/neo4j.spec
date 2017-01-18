@@ -88,6 +88,7 @@ mkdir -p %{buildroot}/%{neo4jhome}/import
 mkdir -p %{buildroot}/%{_sysconfdir}/neo4j
 mkdir -p %{buildroot}/%{_localstatedir}/log/neo4j
 mkdir -p %{buildroot}/lib/systemd/system
+mkdir -p %{buildroot}/%{_mandir}/man1
 
 cd %{name}-%{version}
 
@@ -106,6 +107,8 @@ install -m 0644 server/README.txt %{buildroot}/%{_datadir}/doc/neo4j/README.txt
 install -m 0644 server/UPGRADE.txt %{buildroot}/%{_datadir}/doc/neo4j/UPGRADE.txt
 install -m 0644 server/LICENSES.txt %{buildroot}/%{_datadir}/doc/neo4j/LICENSES.txt
 
+install -m 0644 manpages/* %{buildroot}/%{_mandir}/man1
+
 %files
 %defattr(-,root,root)
 
@@ -117,6 +120,7 @@ install -m 0644 server/LICENSES.txt %{buildroot}/%{_datadir}/doc/neo4j/LICENSES.
 
 %attr(-,neo4j,root) %config(noreplace) %{_sysconfdir}/neo4j
 
+%doc %{_mandir}/man1/*
 %doc %{_datadir}/doc/neo4j/README.txt
 %doc %{_datadir}/doc/neo4j/UPGRADE.txt
 
