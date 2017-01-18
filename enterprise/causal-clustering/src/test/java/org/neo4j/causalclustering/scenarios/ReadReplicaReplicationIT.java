@@ -19,6 +19,9 @@
  */
 package org.neo4j.causalclustering.scenarios;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
@@ -31,9 +34,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.BinaryOperator;
-
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.causalclustering.catchup.tx.FileCopyMonitor;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
@@ -76,7 +76,6 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
-
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -88,7 +87,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
-
 import static org.neo4j.causalclustering.core.EnterpriseCoreEditionModule.CLUSTER_STATE_DIRECTORY_NAME;
 import static org.neo4j.causalclustering.core.consensus.log.RaftLog.PHYSICAL_LOG_DIRECTORY_NAME;
 import static org.neo4j.com.storecopy.StoreUtil.TEMP_COPY_DIRECTORY_NAME;
@@ -454,7 +452,8 @@ public class ReadReplicaReplicationIT
 
         try
         {
-            cluster.addReadReplicaWithIdAndRecordFormat( 0, StandardV3_0.NAME );
+            cluster.addReadReplicaWithIdAndRecordFormat( 0, StandardV3_0.NAME ).start();
+            fail( "starting read replica with '" + StandardV3_0.NAME + "' format should have failed" );
         }
         catch ( Exception e )
         {
