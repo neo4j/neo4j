@@ -44,6 +44,7 @@ import org.neo4j.bolt.transport.Netty4LoggerFactory;
 import org.neo4j.bolt.transport.NettyServer;
 import org.neo4j.bolt.transport.NettyServer.ProtocolInitializer;
 import org.neo4j.bolt.transport.SocketTransport;
+import org.neo4j.bolt.v1.runtime.BoltConnectionDescriptor;
 import org.neo4j.bolt.v1.runtime.BoltFactory;
 import org.neo4j.bolt.v1.runtime.BoltWorker;
 import org.neo4j.bolt.v1.runtime.LifecycleManagedBoltFactory;
@@ -241,7 +242,8 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
         availableVersions.put(
                 (long) BoltProtocolV1.VERSION,
                 ( channel, isEncrypted ) -> {
-                    String descriptor = format( "\tclient%s\tserver%s", channel.remoteAddress(), channel.localAddress() );
+                    BoltConnectionDescriptor descriptor = new BoltConnectionDescriptor(
+                            channel.remoteAddress(), channel.localAddress() );
                     BoltWorker worker = workerFactory.newWorker( descriptor, channel::close );
                     return new BoltProtocolV1( worker, channel, logging );
                 }

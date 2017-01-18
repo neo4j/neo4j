@@ -17,35 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.query;
+package org.neo4j.bolt.v1.runtime;
 
-public class QuerySource
+import java.net.SocketAddress;
+
+public class BoltConnectionDescriptor
 {
-    private final String[] parts;
+    final SocketAddress clientAddress;
+    final SocketAddress serverAddress;
 
-    public static final QuerySource UNKNOWN = new QuerySource( "<unknown>");
-
-    public QuerySource( String ... parts )
+    public BoltConnectionDescriptor( SocketAddress clientAddress, SocketAddress serverAddress )
     {
-        this.parts = parts;
-    }
-
-    public QuerySource append( String newPart )
-    {
-        String[] newParts = new String[parts.length + 1];
-        System.arraycopy( parts, 0, newParts, 0, parts.length );
-        newParts[parts.length] = newPart;
-        return new QuerySource( newParts );
-    }
-
-    @Override
-    public String toString()
-    {
-        return toString( "\t" );
-    }
-
-    public String toString( String sep )
-    {
-        return String.join( sep, parts );
+        this.clientAddress = clientAddress;
+        this.serverAddress = serverAddress;
     }
 }

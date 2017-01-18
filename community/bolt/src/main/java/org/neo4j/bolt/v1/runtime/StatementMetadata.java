@@ -17,13 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v1.runtime.cypher;
+package org.neo4j.bolt.v1.runtime;
 
 /**
  * Metadata that becomes available as soon as a statement is started, and is sent to the client before the result
  * stream is sent.
  */
-public interface StatementMetadata
+interface StatementMetadata
 {
     String[] fieldNames();
 }

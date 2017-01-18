@@ -41,7 +41,8 @@ import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.security.SecurityContext
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.impl.coreapi.{InternalTransaction, PropertyContainerLocker}
-import org.neo4j.kernel.impl.query.{Neo4jTransactionalContextFactory, QuerySource}
+import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
+import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo
 import org.neo4j.test.TestGraphDatabaseFactory
 
 import scala.collection.mutable
@@ -235,7 +236,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
 
   private def transactionContext(graph: GraphDatabaseQueryService, tx: InternalTransaction) = {
     val contextFactory = Neo4jTransactionalContextFactory.create(graph, new PropertyContainerLocker)
-    contextFactory.newContext(QuerySource.UNKNOWN, tx, "X", Collections.emptyMap())
+    contextFactory.newContext(ClientConnectionInfo.EMBEDDED_CONNECTION, tx, "X", Collections.emptyMap())
   }
 
   //executes the provided pipes and returns execution times

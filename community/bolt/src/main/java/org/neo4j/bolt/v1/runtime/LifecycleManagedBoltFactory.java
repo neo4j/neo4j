@@ -97,7 +97,7 @@ public class LifecycleManagedBoltFactory extends LifecycleAdapter implements Bol
     }
 
     @Override
-    public BoltStateMachine newMachine( String connectionDescriptor, Runnable onClose, Clock clock )
+    public BoltStateMachine newMachine( BoltConnectionDescriptor connectionDescriptor, Runnable onClose, Clock clock )
     {
         TransactionStateMachine.SPI transactionSPI = createTxSpi( clock );
         BoltStateMachine.SPI boltSPI = new BoltStateMachineSPI( connectionDescriptor, usageData,

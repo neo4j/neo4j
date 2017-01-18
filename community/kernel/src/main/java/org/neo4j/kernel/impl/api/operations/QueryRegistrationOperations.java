@@ -24,7 +24,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.kernel.api.ExecutingQuery;
 import org.neo4j.kernel.impl.api.KernelStatement;
-import org.neo4j.kernel.impl.query.QuerySource;
+import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
 
 /**
  * Query execution monitoring operations.
@@ -37,7 +37,7 @@ public interface QueryRegistrationOperations
 
     ExecutingQuery startQueryExecution(
         KernelStatement statement,
-        QuerySource descriptor,
+        ClientConnectionInfo descriptor,
         String queryText,
         Map<String, Object> queryParameters
     );

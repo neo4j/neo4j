@@ -27,8 +27,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.bolt.security.auth.AuthenticationException;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
-import org.neo4j.bolt.v1.runtime.cypher.StatementMetadata;
-import org.neo4j.bolt.v1.runtime.cypher.StatementProcessor;
 import org.neo4j.bolt.v1.runtime.spi.BoltResult;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.security.AuthorizationExpiredException;
@@ -721,11 +719,10 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
         }
 
         private void setQuerySourceFromClientNameAndPrincipal( String clientName, String principal,
-                                                               String connectionDescriptor )
+                                                               BoltConnectionDescriptor connectionDescriptor )
         {
             String principalName = principal == null ? "null" : principal;
-            statementProcessor.setQuerySource( format( "bolt\t%s\t%s\t%s>",
-                    principalName, clientName, connectionDescriptor ) );
+            statementProcessor.setQuerySource( new BoltQuerySource( principalName, clientName, connectionDescriptor ) );
         }
 
         @Override
@@ -791,7 +788,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
 
         void udcRegisterClient( String clientName );
 
-        String connectionDescriptor();
+        BoltConnectionDescriptor connectionDescriptor();
 
         void register( BoltStateMachine machine, String owner );
 
@@ -835,7 +832,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
         }
 
         @Override
-        public void setQuerySource( String querySource )
+        public void setQuerySource( BoltQuerySource querySource )
         {
             // nothing to do
         }

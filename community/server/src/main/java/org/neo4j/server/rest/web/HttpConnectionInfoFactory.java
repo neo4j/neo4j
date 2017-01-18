@@ -17,18 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.query;
+package org.neo4j.server.rest.web;
 
-import java.util.Map;
+import java.net.InetSocketAddress;
+import javax.servlet.http.HttpServletRequest;
 
-import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
+import org.neo4j.kernel.impl.query.clientconnection.HttpConnectionInfo;
 
-public interface TransactionalContextFactory
+import static javax.ws.rs.core.HttpHeaders.USER_AGENT;
+
+public class HttpConnectionInfoFactory
 {
-    TransactionalContext newContext( ClientConnectionInfo descriptor,
-                  InternalTransaction tx,
-                  String queryText,
-                  Map<String,Object> queryParameters
-    );
+    public static ClientConnectionInfo create( HttpServletRequest request )
+    {
+        return new HttpConnectionInfo(
+                request.getScheme(),
+                request.getHeader( USER_AGENT ),
+                new InetSocketAddress( request.getRemoteAddr(), request.getRemotePort() ),
+                new InetSocketAddress( request.getServerName(), request.getServerPort() ),
+                request.getRequestURI() );
+    }
 }
