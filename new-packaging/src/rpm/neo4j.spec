@@ -8,13 +8,12 @@ License: ${LICENSE}
 URL: http://neo4j.org/
 #Source: https://github.com/neo4j/neo4j/archive/%{version}.tar.gz
 
-#BuildRequires: systemd
-#Requires: java-headless = 1.8.0, javapackages-tools
-
+Requires: java-1.8.0-headless, javapackages-tools
 Requires(post): systemd
 Requires(preun): systemd
 Requires(postun): systemd
 
+#BuildRequires: systemd
 BuildArch:      noarch
 
 %define neo4jhome %{_localstatedir}/lib/neo4j
