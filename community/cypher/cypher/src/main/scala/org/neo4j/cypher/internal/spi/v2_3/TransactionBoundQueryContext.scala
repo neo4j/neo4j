@@ -45,7 +45,7 @@ import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.constraints.{NodePropertyExistenceConstraint, RelationshipPropertyExistenceConstraint, UniquenessConstraint}
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
-import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
+import org.neo4j.kernel.api.index.{IndexDescriptor => KernelIndexDescriptor, InternalIndexState}
 import org.neo4j.kernel.api.{exceptions, _}
 import org.neo4j.kernel.impl.api.KernelStatement
 import org.neo4j.kernel.impl.core.{NodeManager, ThreadToStatementContextBridge}
@@ -59,7 +59,7 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
                                          private var tx: Transaction,
                                          val isTopLevelTx: Boolean,
                                          initialStatement: Statement)(implicit indexSearchMonitor: IndexSearchMonitor)
-  extends TransactionBoundTokenContext(initialStatement) with QueryContext {
+  extends TransactionBoundTokenContext(initialStatement) with QueryContext with IndexDescriptorCompatibility {
 
   private var open = true
   private val txBridge = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])

@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.spi
 
 import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
 import org.neo4j.graphdb.{PropertyContainer, Relationship, Node}
-import org.neo4j.kernel.api.index.IndexDescriptor
+import org.neo4j.cypher.internal.compiler.v2_3.IndexDescriptor
 
 
 trait Locker {

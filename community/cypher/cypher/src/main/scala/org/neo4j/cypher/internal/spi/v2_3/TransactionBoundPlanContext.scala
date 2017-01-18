@@ -29,13 +29,14 @@ import org.neo4j.kernel.api.Statement
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.exceptions.KernelException
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException
-import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
+import org.neo4j.kernel.api.index.{IndexDescriptor => KernelIndexDescriptor, InternalIndexState}
+import org.neo4j.cypher.internal.compiler.v2_3.IndexDescriptor
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore
 
 import scala.collection.JavaConverters._
 
 class TransactionBoundPlanContext(initialStatement: Statement, val gdb: GraphDatabaseService)
-  extends TransactionBoundTokenContext(initialStatement) with PlanContext {
+  extends TransactionBoundTokenContext(initialStatement) with PlanContext with IndexDescriptorCompatibility {
 
   @Deprecated
   def getIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor] = evalOrNone {
@@ -65,7 +66,7 @@ class TransactionBoundPlanContext(initialStatement: Statement, val gdb: GraphDat
   private def evalOrNone[T](f: => Option[T]): Option[T] =
     try { f } catch { case _: SchemaKernelException => None }
 
-  private def getOnlineIndex(descriptor: IndexDescriptor): Option[IndexDescriptor] =
+  private def getOnlineIndex(descriptor: KernelIndexDescriptor): Option[IndexDescriptor] =
     statement.readOperations().indexGetState(descriptor) match {
       case InternalIndexState.ONLINE => Some(descriptor)
       case _                         => None

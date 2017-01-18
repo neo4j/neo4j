@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.frontend.v2_3.ast._
 import org.neo4j.cypher.internal.frontend.v2_3.notification.{IndexHintUnfulfillableNotification, JoinHintUnfulfillableNotification}
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v2_3.{SemanticDirection, IndexHintException, JoinHintException}
-import org.neo4j.kernel.api.index.IndexDescriptor
+import org.neo4j.cypher.internal.compiler.v2_3.IndexDescriptor
 
 class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport {
 

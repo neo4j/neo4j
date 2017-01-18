@@ -40,7 +40,7 @@ import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.{CypherFunSuite, Cyp
 import org.neo4j.graphdb.Node
 import org.neo4j.helpers.collection.Visitable
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
-import org.neo4j.kernel.api.index.IndexDescriptor
+import org.neo4j.cypher.internal.compiler.v2_3.IndexDescriptor
 import org.neo4j.kernel.impl.util.dbstructure.DbStructureVisitor
 import org.scalatest.matchers.{BeMatcher, MatchResult}
 
