@@ -63,6 +63,9 @@ then
   cp ${script} ${scripts_directory}/neo4j-backup
 fi
 
+# Copy manpages
+cp -r src/common/manpages ${package_directory}
+
 # Make UDC successful
 sed -i 's/unsupported.dbms.udc.source=tarball/unsupported.dbms.udc.source=debian/' ${package_directory}/server/conf/neo4j.conf
 
