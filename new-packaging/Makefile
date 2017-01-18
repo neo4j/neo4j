@@ -9,7 +9,7 @@ DISTRIBUTION=unstable
 OUT=out
 SHELL_SCRIPTS=../packaging/standalone/src/main/distribution/shell-scripts/bin
 
-all: debian-community debian-enterprise neo4j-desktop-mac neo4j-desktop-windows tarball-community tarball-enterprise
+all: rpm-community rpm-enterprise debian-community debian-enterprise neo4j-desktop-mac neo4j-desktop-windows tarball-community tarball-enterprise
 
 clean:
 	rm -rf ${OUT}
