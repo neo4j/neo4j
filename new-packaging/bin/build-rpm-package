@@ -22,7 +22,7 @@ version=$(cat ${version_file})
 # Prepare workspace
 package_directory=${workspace}/${package_name}
 mkdir -p ${package_directory}/{BUILD,RPMS,SOURCES,BUILDROOT,SPECS,SRPMS}/
-sources_directory=${package_directory}/BUILD/neo4j-${version}
+sources_directory=${package_directory}/BUILD/${package_name}-${version}
 mkdir -p ${sources_directory}
 common_directory=src/common
 spec_directory=src/rpm

@@ -1,5 +1,5 @@
 .DEFAULT: all
-.PHONY: all clean debian-community debian-enterprise neo4j-desktop-mac neo4j-desktop-windows tarball-community tarball-community-extracted tarball-enterprise tarball-enterprise-extracted
+.PHONY: all clean debian-community debian-enterprise neo4j-desktop-mac neo4j-desktop-windows tarball-community tarball-community-extracted tarball-enterprise tarball-enterprise-extracted rpm-community rpm-enterprise
 
 ARTIFACTS=../packaging/standalone/target
 COMMUNITY_LICENSE=../community/LICENSE.txt
@@ -20,6 +20,9 @@ ${OUT}/neo4j-desktop/community-version.txt:
 
 rpm-community: tarball-community-extracted ${OUT}/tarballs/community-version-debianized.txt
 	build-rpm-package $(shell pwd)/${OUT}/rpm neo4j ${OUT}/tarballs/extracted/neo4j-community-* ${DISTRIBUTION} ${OUT}/tarballs/community-version-debianized.txt GPLv3
+
+rpm-enterprise: tarball-enterprise-extracted ${OUT}/tarballs/enterprise-version-debianized.txt
+	build-rpm-package $(shell pwd)/${OUT}/rpm neo4j-enterprise ${OUT}/tarballs/extracted/neo4j-enterprise-* ${DISTRIBUTION} ${OUT}/tarballs/enterprise-version-debianized.txt AGPLv3
 
 debian-community: tarball-community-extracted ${OUT}/tarballs/community-version-debianized.txt
 	build-debian-package ${OUT}/debian neo4j ${OUT}/tarballs/extracted/neo4j-community-* ${DISTRIBUTION} ${OUT}/tarballs/community-version-debianized.txt
