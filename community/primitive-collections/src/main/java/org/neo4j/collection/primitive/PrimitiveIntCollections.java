@@ -48,13 +48,19 @@ public class PrimitiveIntCollections
      */
     public abstract static class PrimitiveIntBaseIterator implements PrimitiveIntIterator
     {
+        private boolean hasNextDecided;
         private boolean hasNext;
         private int next;
 
         @Override
         public boolean hasNext()
         {
-            return hasNext ? true : (hasNext = fetchNext());
+            if ( !hasNextDecided )
+            {
+                hasNext = fetchNext();
+                hasNextDecided = true;
+            }
+            return hasNext;
         }
 
         @Override
@@ -64,7 +70,7 @@ public class PrimitiveIntCollections
             {
                 throw new NoSuchElementException( "No more elements in " + this );
             }
-            hasNext = false;
+            hasNextDecided = false;
             return next;
         }
 
