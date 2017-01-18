@@ -73,11 +73,10 @@ import org.neo4j.io.pagecache.tracing.ConfigurablePageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PinEvent;
-import org.neo4j.test.rule.RepeatRule;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
-
+import org.neo4j.test.rule.RepeatRule;
 
 import static java.lang.Long.toHexString;
 import static java.lang.System.currentTimeMillis;
@@ -2790,7 +2789,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     {
         File file = file( "a" );
         generateFileWithRecords( file, recordsPerFilePage * 2, recordSize );
-        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL, DefaultPageCursorTracerSupplier.INSTANCE );
         try ( PagedFile pf = pageCache.map( file, filePageSize ) )
         {
             PageCursor a = pf.io( 0, PF_SHARED_WRITE_LOCK );
@@ -2809,7 +2808,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     {
         File file = file( "a" );
         generateFileWithRecords( file, recordsPerFilePage * 2, recordSize );
-        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL, DefaultPageCursorTracerSupplier.INSTANCE );
         try ( PagedFile pf = pageCache.map( file, filePageSize ) )
         {
             PageCursor a = pf.io( 0, PF_SHARED_WRITE_LOCK );
