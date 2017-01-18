@@ -199,7 +199,7 @@ public class ReadReplicaReplicationIT
             try ( Transaction tx = readReplica.beginTx() )
             {
                 ThrowingSupplier<Long,Exception> nodeCount = () -> count( readReplica.getAllNodes() );
-                assertEventually( "node to appear on read replica", nodeCount, is( 200L ) , 1, MINUTES );
+                assertEventually( "node to appear on read replica", nodeCount, is( 400L ) , 1, MINUTES );
 
                 for ( Node node : readReplica.getAllNodes() )
                 {

@@ -22,7 +22,12 @@ package org.neo4j.causalclustering.catchup.storecopy;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.StandardCopyOption;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -165,24 +170,13 @@ public class LocalDatabase implements Lifecycle
 
     public boolean isEmpty() throws IOException
     {
-        return !hasStoreFiles();
-    }
-
-    private boolean hasStoreFiles()
-    {
-        for ( StoreType storeType : StoreType.values() )
-        {
-            StoreFile storeFile = storeType.getStoreFile();
-            if ( storeFile != null )
-            {
-                boolean exists = fileSystemAbstraction.fileExists( new File( storeDir, storeFile.storeFileName() ) );
-                if ( exists )
-                {
-                    return true;
-                }
-            }
-        }
-        return false;
+        List<File> filesToLookFor = Arrays.stream( StoreType.values() )
+                .map( StoreType::getStoreFile )
+                .filter( Objects::nonNull )
+                .map( StoreFile::storeFileName )
+                .map( name -> new File( storeDir, name ) )
+                .collect( Collectors.toList() );
+        return storeFiles.isEmpty( storeDir, filesToLookFor );
     }
 
     public File storeDir()

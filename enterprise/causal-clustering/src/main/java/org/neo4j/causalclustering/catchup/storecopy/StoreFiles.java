@@ -24,6 +24,7 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.StandardCopyOption;
+import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
@@ -80,8 +81,7 @@ public class StoreFiles
         try
         {
             Stream<FileHandle> stream = pageCache.streamFilesRecursive( storeDir );
-            Predicate<FileHandle> acceptableFiles =
-                    fh -> fileFilter.accept( storeDir, fh.getRelativeFile().getPath() );
+            Predicate<FileHandle> acceptableFiles = fh -> fileFilter.accept( storeDir, fh.getRelativeFile().getPath() );
             return stream.filter( acceptableFiles );
         }
         catch ( NoSuchFileException e )
@@ -103,5 +103,32 @@ public class StoreFiles
         {
             fh.rename( new File( target, fh.getRelativeFile().getPath() ), StandardCopyOption.REPLACE_EXISTING );
         }
+    }
+
+    public boolean isEmpty( File storeDir, List<File> filesToLookFor ) throws IOException
+    {
+        // 'files' can be null if the directory doesn't exist. This is fine, we just ignore it then.
+        File[] files = fs.listFiles( storeDir, fileFilter );
+        if ( files != null )
+        {
+            for ( File file : files )
+            {
+                if ( filesToLookFor.contains( file ) )
+                {
+                    return false;
+                }
+            }
+        }
+
+        Iterable<FileHandle> fileHandles = acceptedPageCachedFiles( storeDir )::iterator;
+        for ( FileHandle fh : fileHandles )
+        {
+            if ( filesToLookFor.contains( fh.getFile() ) )
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 }
