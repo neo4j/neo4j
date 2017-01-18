@@ -92,6 +92,7 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -2805,6 +2806,44 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             {
                 assertFalse( cursor.shouldRetry() );
             }
+        }
+    }
+
+    @Test
+    public void pageCursorCloseShouldNotReturnAlreadyClosedLinkedCursorToPool() throws Exception
+    {
+        File file = file( "a" );
+        generateFileWithRecords( file, recordsPerFilePage * 2, recordSize );
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        try ( PagedFile pf = pageCache.map( file, filePageSize ) )
+        {
+            PageCursor a = pf.io( 0, PF_SHARED_WRITE_LOCK );
+            PageCursor b = a.openLinkedCursor( 0 );
+            b.close();
+            PageCursor c = a.openLinkedCursor( 0 ); // Will close b again, creating a loop in the CursorPool
+            PageCursor d = pf.io( 0, PF_SHARED_WRITE_LOCK ); // Same object as c because of loop in pool
+            assertNotSame( c, d );
+            c.close();
+            d.close();
+        }
+    }
+
+    @Test
+    public void pageCursorCloseShouldNotReturnSameObjectToCursorPoolTwice() throws Exception
+    {
+        File file = file( "a" );
+        generateFileWithRecords( file, recordsPerFilePage * 2, recordSize );
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        try ( PagedFile pf = pageCache.map( file, filePageSize ) )
+        {
+            PageCursor a = pf.io( 0, PF_SHARED_WRITE_LOCK );
+            a.close();
+            a.close(); // Return same object to CursorPool again, creating a Loop
+            PageCursor b = pf.io( 0, PF_SHARED_WRITE_LOCK );
+            PageCursor c = pf.io( 0, PF_SHARED_WRITE_LOCK );
+            assertNotSame( b, c );
+            b.close();
+            c.close();
         }
     }
 
