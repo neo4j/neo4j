@@ -112,7 +112,6 @@ class NativeAllEntriesLabelScanReader implements AllEntriesLabelScanReader
     private class NodeLabelRangeIterator extends PrefetchingIterator<NodeLabelRange>
     {
         private long currentRange;
-        private final ReusableNodeLabelRange current = new ReusableNodeLabelRange();
 
         // nodeId (relative to lowestRange) --> labelId[]
         @SuppressWarnings( "unchecked" )
@@ -163,10 +162,10 @@ class NativeAllEntriesLabelScanReader implements AllEntriesLabelScanReader
                     }
                 }
 
-                current.setdRange( currentRange, convertState(), slots );
+                NativeNodeLabelRange range = new NativeNodeLabelRange( currentRange, convertState(), slots );
                 currentRange = nextLowestRange;
 
-                return current;
+                return range;
             }
             catch ( IOException e )
             {
@@ -207,22 +206,18 @@ class NativeAllEntriesLabelScanReader implements AllEntriesLabelScanReader
         }
     }
 
-    private static class ReusableNodeLabelRange implements NodeLabelRange
+    private static class NativeNodeLabelRange implements NodeLabelRange
     {
-        private long idRange;
-        private long[] nodes;
-        private long[][] labels;
+        private final long idRange;
+        private final long[] nodes;
+        private final long[][] labels;
 
-        ReusableNodeLabelRange()
-        {
-            this.nodes = new long[RANGE_SIZE];
-        }
-
-        void setdRange( long idRange, long[][] labels, int slots )
+        NativeNodeLabelRange( long idRange, long[][] labels, int slots )
         {
             this.idRange = idRange;
             this.labels = labels;
             long baseNodeId = idRange * RANGE_SIZE;
+
             this.nodes = new long[slots];
             int nodeIndex = 0;
             for ( int i = 0; i < RANGE_SIZE; i++ )
