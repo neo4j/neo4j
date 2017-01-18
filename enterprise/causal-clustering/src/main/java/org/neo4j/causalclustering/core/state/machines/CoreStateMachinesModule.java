@@ -39,7 +39,7 @@ import org.neo4j.causalclustering.core.state.machines.token.ReplicatedPropertyKe
 import org.neo4j.causalclustering.core.state.machines.token.ReplicatedRelationshipTypeTokenHolder;
 import org.neo4j.causalclustering.core.state.machines.token.ReplicatedTokenStateMachine;
 import org.neo4j.causalclustering.core.state.machines.token.TokenRegistry;
-import org.neo4j.causalclustering.core.state.machines.tx.RecoverTransactionLogState;
+import org.neo4j.causalclustering.core.state.machines.tx.RecoverConsensusLogIndex;
 import org.neo4j.causalclustering.core.state.machines.tx.ReplicatedTransactionCommitProcess;
 import org.neo4j.causalclustering.core.state.machines.tx.ReplicatedTransactionStateMachine;
 import org.neo4j.causalclustering.core.state.storage.DurableStateStorage;
@@ -48,7 +48,6 @@ import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
-import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
@@ -157,8 +156,6 @@ public class CoreStateMachinesModule
         ReplicatedLockTokenStateMachine replicatedLockTokenStateMachine =
                 new ReplicatedLockTokenStateMachine( lockTokenState );
 
-        RecoverTransactionLogState txLogState = new RecoverTransactionLogState( dependencies, logProvider );
-
         ReplicatedTokenStateMachine<Token> labelTokenStateMachine =
                 new ReplicatedTokenStateMachine<>( labelTokenRegistry, new Token.Factory(), logProvider );
 
@@ -178,14 +175,14 @@ public class CoreStateMachinesModule
         lockManager = createLockManager( config, logging, replicator, myself, leaderLocator,
                 replicatedLockTokenStateMachine );
 
+        RecoverConsensusLogIndex consensusLogIndexRecovery = new RecoverConsensusLogIndex( dependencies, logProvider );
+
         coreStateMachines = new CoreStateMachines( replicatedTxStateMachine, labelTokenStateMachine,
                 relationshipTypeTokenStateMachine, propertyKeyTokenStateMachine, replicatedLockTokenStateMachine,
-                idAllocationStateMachine, txLogState, localDatabase );
+                idAllocationStateMachine, localDatabase, consensusLogIndexRecovery );
 
         commitProcessFactory = ( appender, applier, ignored ) -> {
-            TransactionRepresentationCommitProcess localCommit =
-                    new TransactionRepresentationCommitProcess( appender, applier );
-            coreStateMachines.refresh( localCommit ); // This gets called when a core-to-core download is performed.
+            localDatabase.registerCommitProcessDependencies( appender, applier );
             return new ReplicatedTransactionCommitProcess( replicator );
         };
 

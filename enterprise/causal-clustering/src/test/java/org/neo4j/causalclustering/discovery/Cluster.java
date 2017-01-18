@@ -471,19 +471,6 @@ public class Cluster
     }
 
     /**
-     * Waits for {@link #DEFAULT_TIMEOUT_MS} for the <code>targetDBs</code> to have the same content as the
-     * <code>member</code>. Changes in the <code>member</code> database contents after this method is called do not get
-     * picked up and are not part of the comparison.
-     * @param member The database to check against
-     * @param targetDBs The databases expected to match the contents of <code>member</code>
-     */
-    public static void dataMatchesEventually( CoreClusterMember member, Collection<CoreClusterMember> targetDBs )
-            throws TimeoutException, InterruptedException
-    {
-        dataMatchesEventually( DbRepresentation.of( member.database() ), targetDBs );
-    }
-
-    /**
      * Waits for {@link #DEFAULT_TIMEOUT_MS} for the <code>memberThatChanges</code> to match the contents of
      * <code>memberToLookLike</code>. After calling this method, changes both in <code>memberThatChanges</code> and
      * <code>memberToLookLike</code> are picked up.
@@ -514,14 +501,29 @@ public class Cluster
             DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS );
     }
 
-    public static void dataMatchesEventually( DbRepresentation sourceRepresentation, Collection<CoreClusterMember> targetDBs )
+    public static <T extends ClusterMember> void dataMatchesEventually( ClusterMember source,  Collection<T> targets )
             throws TimeoutException, InterruptedException
     {
-        for ( CoreClusterMember targetDB : targetDBs )
+        dataMatchesEventually( DbRepresentation.of( source.database() ), targets );
+    }
+
+    /**
+     * Waits for {@link #DEFAULT_TIMEOUT_MS} for the <code>targetDBs</code> to have the same content as the
+     * <code>member</code>. Changes in the <code>member</code> database contents after this method is called do not get
+     * picked up and are not part of the comparison.
+     *
+     * @param source    The database to check against
+     * @param targets The databases expected to match the contents of <code>member</code>
+     */
+    public static <T extends ClusterMember> void dataMatchesEventually( DbRepresentation source, Collection<T> targets )
+            throws TimeoutException, InterruptedException
+    {
+        for ( ClusterMember targetDB : targets )
         {
-            await( () -> {
+            await( () ->
+            {
                 DbRepresentation representation = DbRepresentation.of( targetDB.database() );
-                return sourceRepresentation.equals( representation );
+                return source.equals( representation );
             }, DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS );
         }
     }

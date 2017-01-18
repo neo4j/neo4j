@@ -17,42 +17,40 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.readreplica;
+package org.neo4j.causalclustering.catchup.storecopy;
 
 import java.io.IOException;
 
-import org.neo4j.causalclustering.catchup.storecopy.CopiedStoreRecovery;
-import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
-import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFailedException;
-import org.neo4j.causalclustering.catchup.storecopy.StoreFetcher;
-import org.neo4j.causalclustering.catchup.storecopy.StreamingTransactionsFailedException;
-import org.neo4j.causalclustering.catchup.storecopy.TemporaryStoreDirectory;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
-public class CopyStoreSafely
+public class StoreCopyProcess
 {
     private final FileSystemAbstraction fs;
     private final LocalDatabase localDatabase;
     private final CopiedStoreRecovery copiedStoreRecovery;
     private final Log log;
+    private final RemoteStore remoteStore;
 
-    public CopyStoreSafely( FileSystemAbstraction fs, LocalDatabase localDatabase, CopiedStoreRecovery copiedStoreRecovery, Log log )
+    public StoreCopyProcess( FileSystemAbstraction fs, LocalDatabase localDatabase,
+            CopiedStoreRecovery copiedStoreRecovery, RemoteStore remoteStore, LogProvider logProvider )
     {
         this.fs = fs;
         this.localDatabase = localDatabase;
         this.copiedStoreRecovery = copiedStoreRecovery;
-        this.log = log;
+        this.remoteStore = remoteStore;
+        this.log = logProvider.getLog( getClass() );
     }
 
-    public void copyWholeStoreFrom( MemberId source, StoreId expectedStoreId, StoreFetcher storeFetcher )
+    public void replaceWithStoreFrom( MemberId source, StoreId expectedStoreId )
             throws IOException, StoreCopyFailedException, StreamingTransactionsFailedException
     {
         try ( TemporaryStoreDirectory tempStore = new TemporaryStoreDirectory( fs, localDatabase.storeDir() ) )
         {
-            storeFetcher.copyStore( source, expectedStoreId, tempStore.storeDir() );
+            remoteStore.copy( source, expectedStoreId, tempStore.storeDir() );
             copiedStoreRecovery.recoverCopiedStore( tempStore.storeDir() );
             localDatabase.replaceWith( tempStore.storeDir() );
         }

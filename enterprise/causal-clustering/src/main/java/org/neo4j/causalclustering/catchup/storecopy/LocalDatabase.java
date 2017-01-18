@@ -27,14 +27,18 @@ import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.impl.api.TransactionCommitProcess;
+import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
+import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.storageengine.api.StorageEngine;
 
 public class LocalDatabase implements Lifecycle
 {
@@ -50,6 +54,8 @@ public class LocalDatabase implements Lifecycle
     private volatile StoreId storeId;
     private volatile DatabaseHealth databaseHealth;
     private boolean started = false;
+
+    private volatile TransactionCommitProcess localCommit;
 
     public LocalDatabase( File storeDir, StoreFiles storeFiles,
             DataSourceManager dataSourceManager,
@@ -76,7 +82,9 @@ public class LocalDatabase implements Lifecycle
     {
         storeId = readStoreIdFromDisk();
         log.info( "Starting with storeId: " + storeId );
+
         dataSourceManager.start();
+
         started = true;
     }
 
@@ -84,8 +92,10 @@ public class LocalDatabase implements Lifecycle
     public synchronized void stop() throws Throwable
     {
         log.info( "Stopping" );
-        this.databaseHealth = null;
+        databaseHealth = null;
+        localCommit = null;
         dataSourceManager.stop();
+
         started = false;
     }
 
@@ -179,7 +189,7 @@ public class LocalDatabase implements Lifecycle
         return storeDir;
     }
 
-    public void replaceWith( File sourceDir ) throws IOException
+    void replaceWith( File sourceDir ) throws IOException
     {
         storeFiles.delete( storeDir );
         storeFiles.moveTo( sourceDir, storeDir );
@@ -188,5 +198,18 @@ public class LocalDatabase implements Lifecycle
     public NeoStoreDataSource dataSource()
     {
         return dataSourceManager.getDataSource();
+    }
+
+    /**
+     * Called by the DataSourceManager during start.
+     */
+    public void registerCommitProcessDependencies( TransactionAppender appender, StorageEngine applier )
+    {
+        localCommit = new TransactionRepresentationCommitProcess( appender, applier );
+    }
+
+    public TransactionCommitProcess getCommitProcess()
+    {
+        return localCommit;
     }
 }
