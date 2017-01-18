@@ -26,14 +26,10 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
-
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionTerminatedException;
-import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
@@ -45,8 +41,6 @@ import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.test.ha.ClusterRule;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.neo4j.helpers.Exceptions.stringify;
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState.PENDING;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.instanceEvicted;
@@ -72,7 +66,7 @@ public class ClusterLocksIT
                 .startCluster();
     }
 
-    private Label testLabel = Label.label( "testLabel" );
+    private final Label testLabel = Label.label( "testLabel" );
 
     @Test( timeout = TIMEOUT_MILLIS )
     public void lockCleanupOnModeSwitch() throws Throwable
@@ -142,12 +136,21 @@ public class ClusterLocksIT
         assertEquals( PENDING, slave.getInstanceState() );
 
         // when
-        try ( Transaction tx = slave.beginTx() )
+        for ( int i = 0; i < 10; i++ )
         {
-            Node single = Iterables.single( slave.getAllNodes() );
-            Label label = Iterables.single( single.getLabels() );
-            assertEquals( testLabel, label );
-            tx.success();
+            try ( Transaction tx = slave.beginTx() )
+            {
+                Node single = Iterables.single( slave.getAllNodes() );
+                Label label = Iterables.single( single.getLabels() );
+                assertEquals( testLabel, label );
+                tx.success();
+                break;
+            }
+            catch ( TransactionTerminatedException e )
+            {
+                // Race between going to pending and reading, try again in a little while
+                Thread.sleep( 1_000 );
+            }
         }
 
         // then no exceptions thrown
