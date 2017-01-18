@@ -196,8 +196,9 @@ public class CommonAbstractStoreTest
         File storeFile = dir.file( "a" );
         RecordingPageCacheTracer tracer = new RecordingPageCacheTracer();
         RecordingPageCursorTracer pageCursorTracer = new RecordingPageCursorTracer( Pin.class );
-        PageCache pageCache = pageCacheRule.getPageCache( fileSystemRule.get(),
-                PageCacheRule.config().withTracer( tracer ), Config.empty() );
+        PageCacheRule.PageCacheConfig pageCacheConfig = config().withTracer( tracer )
+                                        .withCursorTracerSupplier( pageCursorTracerSupplier( pageCursorTracer ) );
+        PageCache pageCache = pageCacheRule.getPageCache( fileSystemRule.get(), pageCacheConfig, Config.empty() );
 
         try ( NodeStore store = new NodeStore( storeFile, Config.empty(), new DefaultIdGeneratorFactory( fileSystemRule.get() ),
                 pageCache, NullLogProvider.getInstance(), null, Standard.LATEST_RECORD_FORMATS ) )
@@ -205,8 +206,8 @@ public class CommonAbstractStoreTest
             store.initialise( true );
             assertNull( tracer.tryObserve( Event.class ) );
 
-            long nodeId1 = insertNodeRecordAndObservePinEvent( tracer, store );
-            long nodeId2 = insertNodeRecordAndObservePinEvent( tracer, store );
+            long nodeId1 = insertNodeRecordAndObservePinEvent( pageCursorTracer, store );
+            long nodeId2 = insertNodeRecordAndObservePinEvent( pageCursorTracer, store );
 
             try ( RecordCursor<NodeRecord> cursor = store.newRecordCursor( store.newRecord() ) )
             {
@@ -218,8 +219,8 @@ public class CommonAbstractStoreTest
             // event. This pin event will not be observable until after we have closed the cursor. We could
             // alternatively have chosen nodeId2 to be on a different page than nodeId1. In that case, the pin event
             // for nodeId1 would have been visible after our call to cursor.next( nodeId2 ).
-            assertNotNull( tracer.tryObserve( Pin.class ) );
-            assertNull( tracer.tryObserve( Event.class ) );
+            assertNotNull( pageCursorTracer.tryObserve( Pin.class ) );
+            assertNull( pageCursorTracer.tryObserve( Event.class ) );
         }
     }
 
@@ -340,7 +341,7 @@ public class CommonAbstractStoreTest
         return new TheRecord( id );
     }
 
-    private long insertNodeRecordAndObservePinEvent( RecordingPageCacheTracer tracer, NodeStore store )
+    private long insertNodeRecordAndObservePinEvent( RecordingPageCursorTracer tracer, NodeStore store )
     {
         long nodeId = store.nextId();
         NodeRecord record = store.newRecord();
