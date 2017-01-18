@@ -75,10 +75,16 @@ trait MethodStructure[E] {
   def newMapOfSets(name: String, keyTypes: IndexedSeq[CodeGenType], elementType: CodeGenType)
   def checkDistinct(name: String, key: Map[String,(CodeGenType, E)], keyVar: String, value: E, valueType: CodeGenType)(block: MethodStructure[E] => Unit)
 
-  def allocateSortTable(name: String, initialCapacity: Int, valueStructure: Map[String, CodeGenType]): Unit
-  def sortTableAdd(name: String, valueStructure: Map[String, CodeGenType], value: E): Unit
-  def sortTableIterate(name: String, valueStructure: Map[String, CodeGenType], varNameToField: Map[String, String])
+  def allocateSortTable(name: String, initialCapacity: Int, valueStructure: Map[String, CodeGenType],
+                        sortItems: Iterable[SortItem]): Unit
+  def sortTableAdd(name: String, valueStructure: Map[String, CodeGenType], sortItems: Iterable[SortItem], value: E): Unit
+  def sortTableSort(name: String, valueStructure: Map[String, CodeGenType], sortItems: Iterable[SortItem]): Unit
+  def sortTableIterate(name: String, valueStructure: Map[String, CodeGenType], sortItems: Iterable[SortItem],
+                       varNameToField: Map[String, String])
                       (block: (MethodStructure[E]) => Unit): Unit
+  def newSortTableValue(targetVar: String, structure: Map[String, CodeGenType], sortItems: Iterable[SortItem]): E
+  def sortTableValuePutField(structure: Map[String, CodeGenType], sortItems: Iterable[SortItem],
+                             value: E, fieldType: CodeGenType, fieldName: String, localVar: String): Unit
 
   def castToCollection(value: E): E
 
@@ -184,3 +190,9 @@ case object LongToCountTable extends CountingJoinTableType
 case object LongsToCountTable extends CountingJoinTableType
 case class LongToListTable(structure: Map[String, CodeGenType], localMap: Map[String, String]) extends RecordingJoinTableType
 case class LongsToListTable(structure: Map[String, CodeGenType], localMap: Map[String, String]) extends RecordingJoinTableType
+
+sealed trait SortOrder
+case object Ascending extends SortOrder
+case object Descending extends SortOrder
+
+case class SortItem(fieldName: String, sortOrder: SortOrder)

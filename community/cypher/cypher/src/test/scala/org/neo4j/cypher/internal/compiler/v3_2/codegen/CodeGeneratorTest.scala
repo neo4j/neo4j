@@ -1376,7 +1376,8 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
       Map("b" -> 4L,"c" -> 4L)))
   }
 
-  test("sort projection with list of integer maps") {
+  // Expression of Property(Variable(x),PropertyKeyName(a)) not yet supported
+  ignore("sort projection with list of integer maps") {
     /*
     UNWIND [
             {a:3, b:3, c:3, d:3},

@@ -38,7 +38,7 @@ class CodeGenContext(val semanticTable: SemanticTable, idMap: Map[LogicalPlan, I
   val operatorIds: mutable.Map[Id, String] = mutable.Map()
 
   def addVariable(queryVariable: String, variable: Variable) {
-    assert(!variables.isDefinedAt(queryVariable))
+    //assert(!variables.isDefinedAt(queryVariable)) // TODO: Make the cases where overwriting the value is ok explicit (by using updateVariable)
     variables.put(queryVariable, variable)
   }
 

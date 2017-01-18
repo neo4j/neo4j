@@ -23,24 +23,26 @@ import org.neo4j.cypher.internal.compiler.v3_2.codegen._
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions.CodeGenType
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi._
 
-case class BuildSortTable(opName: String, tableName: String, tupleQueryVariables: Map[String, Variable])
+case class BuildSortTable(opName: String, tableName: String, columnVariables: Map[String, Variable],
+                          sortItems: Iterable[SortItem])
                          (implicit context: CodeGenContext)
   extends Instruction
 {
 
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
     val initialCapacity = 128 // TODO: Use value from cardinality estimation if possible
-    generator.allocateSortTable(tableName, initialCapacity, valueStructure)
+    generator.allocateSortTable(tableName, initialCapacity, valueStructure, sortItems)
   }
 
   override def body[E](generator: MethodStructure[E])(implicit ignored: CodeGenContext): Unit = {
     generator.trace(opName, Some(this.getClass.getSimpleName)) { body =>
-      val tuple = body.newTableValue(context.namer.newVarName(), valueStructure)
+      val tuple = body.newSortTableValue(context.namer.newVarName(), valueStructure, sortItems)
       fieldToVariableInfo.foreach {
         case (fieldName: String, info: FieldAndVariableInfo) =>
-          body.putField(valueStructure, tuple, info.incomingVariable.codeGenType, fieldName, info.incomingVariable.name)
+          body.sortTableValuePutField(valueStructure, sortItems,
+            tuple, info.incomingVariable.codeGenType, fieldName, info.incomingVariable.name)
       }
-      body.sortTableAdd(tableName, valueStructure, tuple)
+      body.sortTableAdd(tableName, valueStructure, sortItems, tuple)
     }
   }
 
@@ -48,7 +50,7 @@ case class BuildSortTable(opName: String, tableName: String, tupleQueryVariables
 
   override protected def operatorId = Set(opName)
 
-  private val fieldToVariableInfo: Map[String, FieldAndVariableInfo] = tupleQueryVariables.map {
+  private val fieldToVariableInfo: Map[String, FieldAndVariableInfo] = columnVariables.map {
     case (queryVariableName: String, incoming: Variable) =>
       (queryVariableName, // < Name the field after the query variable
         FieldAndVariableInfo(
@@ -70,13 +72,15 @@ case class BuildSortTable(opName: String, tableName: String, tupleQueryVariables
     tableName,
     fieldToVariableInfo,
     valueStructure,
-    outgoingVariableNameToVariableInfo)
+    outgoingVariableNameToVariableInfo,
+    sortItems)
 }
 
 case class SortTableInfo(tableName: String,
                          fieldToVariableInfo: Map[String, FieldAndVariableInfo],
                          valueStructure: Map[String, CodeGenType],
-                         outgoingVariableNameToVariableInfo: Map[String, FieldAndVariableInfo])
+                         outgoingVariableNameToVariableInfo: Map[String, FieldAndVariableInfo],
+                         sortItems: Iterable[SortItem])
 
 case class FieldAndVariableInfo(fieldName: String,
                                 queryVariableName: String,

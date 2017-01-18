@@ -591,22 +591,34 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     }
   }
 
-  override def allocateSortTable(name: String, initialCapacity: Int, valueStructure: Map[String, CodeGenType]): Unit = {
-    val typ = TypeReference.parameterizedType(classOf[util.ArrayList[_]], aux.typeReference(valueStructure))
+  override def allocateSortTable(name: String, initialCapacity: Int, valueStructure: Map[String, CodeGenType],
+                                 sortItems: Iterable[SortItem]): Unit = {
+    val typ = TypeReference.parameterizedType(classOf[util.ArrayList[_]],
+                                              aux.comparableTypeReference(valueStructure, sortItems))
     val localVariable = generator.declare(typ, name)
     locals += name -> localVariable
-    generator.assign(localVariable, createNewInstance(typ, (typeRef[Integer], constant(initialCapacity))))
+    generator.assign(localVariable, createNewInstance(typ, (typeRef[Int], constant(initialCapacity))))
   }
 
-  override def sortTableAdd(name: String, valueStructure: Map[String, CodeGenType], value: Expression): Unit = {
+  override def sortTableAdd(name: String, valueStructure: Map[String, CodeGenType],
+                            sortItems: Iterable[SortItem], value: Expression): Unit = {
+    val valueType = aux.comparableTypeReference(valueStructure, sortItems)
     generator.expression(pop(invoke(generator.load(name),
-      method[util.ArrayList[_], Object]("add", typeRef[Object]), box(value))))
+      method[util.ArrayList[_], Boolean]("add", typeRef[Object]), box(value))))
+  }
+
+  override def sortTableSort(name: String, valueStructure: Map[String, CodeGenType], sortItems: Iterable[SortItem]): Unit = {
+    val tupleType = aux.comparableTypeReference(valueStructure, sortItems)
+    val tableType = TypeReference.parameterizedType(classOf[util.List[_]], tupleType)
+    generator.expression(invoke(
+      method[java.util.Collections, Unit]("sort", tableType), generator.load(name)))
   }
 
   override def sortTableIterate(tableName: String, valueStructure: Map[String, CodeGenType],
+                                sortItems: Iterable[SortItem],
                                 varNameToField: Map[String, String])
                                (block: (MethodStructure[Expression]) => Unit): Unit = {
-    val tupleType = aux.typeReference(valueStructure)
+    val tupleType = aux.comparableTypeReference(valueStructure, sortItems)
     val elementName = context.namer.newVarName()
 
     using(generator.forEach(Parameter.param(tupleType, elementName), generator.load(tableName))) { body =>
@@ -614,11 +626,13 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
         case (localName, fieldName) =>
           val fieldType = lowerType(valueStructure(fieldName))
 
-          val localVariable = body.declare(fieldType, localName)
+          val localVariable: LocalVariable = body.declare(fieldType, localName)
           locals += localName -> localVariable
 
-          body.assign(localVariable, get(body.load(elementName),
-            field(valueStructure, valueStructure(fieldName), fieldName)))
+          body.assign(localVariable,
+            get(body.load(elementName),
+              FieldReference.field(tupleType, fieldType, fieldName))
+          )
       }
       block(copy(generator = body))
     }
@@ -999,6 +1013,16 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     generator.put(value, field(structure, fieldType, fieldName), generator.load(localVar))
   }
 
+  override def sortTableValuePutField(structure: Map[String, CodeGenType], sortItems: Iterable[SortItem],
+                                      value: Expression,
+                                      fieldType: CodeGenType,
+                                      fieldName: String,
+                                      localVar: String) = {
+    generator.put(value,
+      FieldReference.field(aux.comparableTypeReference(structure, sortItems), lowerType(fieldType), fieldName),
+      generator.load(localVar))
+  }
+
   override def updateProbeTable(structure: Map[String, CodeGenType], tableVar: String,
                                 tableType: RecordingJoinTableType,
                                 keyVars: Seq[String], element: Expression) = tableType match {
@@ -1210,6 +1234,13 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   override def newTableValue(targetVar: String, structure: Map[String, CodeGenType]) = {
     val valueType = aux.typeReference(structure)
+    generator.assign(valueType, targetVar, createNewInstance(valueType))
+    generator.load(targetVar)
+  }
+
+  override def newSortTableValue(targetVar: String, structure: Map[String, CodeGenType],
+                                 sortItems: Iterable[SortItem]) = {
+    val valueType = aux.comparableTypeReference(structure, sortItems)
     generator.assign(valueType, targetVar, createNewInstance(valueType))
     generator.load(targetVar)
   }

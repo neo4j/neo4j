@@ -19,11 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.codegen.ir
 
-import org.neo4j.cypher.internal.compiler.v3_2.codegen.{Variable, CodeGenContext}
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.CodeGenContext
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi.MethodStructure
 
 case class SortInstruction(opName: String,
-                           sortVariables: Seq[SortVariableInfo],
                            sortTableInfo: SortTableInfo)
   extends Instruction {
 
@@ -32,8 +31,7 @@ case class SortInstruction(opName: String,
 
   override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
     generator.trace(opName, Some(this.getClass.getSimpleName)) { body =>
-      // TODO: Invoke sorting algorithm
-      body
+      body.sortTableSort(sortTableInfo.tableName, sortTableInfo.valueStructure, sortTableInfo.sortItems)
     }
   }
 
@@ -41,9 +39,3 @@ case class SortInstruction(opName: String,
 
   override protected def operatorId = Set(opName)
 }
-
-sealed trait SortOrder
-case object Ascending extends SortOrder
-case object Descending extends SortOrder
-
-case class SortVariableInfo(queryVariableName: String, variable: Variable, sortOrder: SortOrder)
