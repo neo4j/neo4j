@@ -23,7 +23,6 @@ import org.junit.Rule;
 
 import java.util.Map;
 
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.server.security.enterprise.auth.BuiltInProceduresInteractionTestBase;
 import org.neo4j.server.security.enterprise.auth.NeoInteractionLevel;
 import org.neo4j.test.rule.SuppressOutput;

@@ -35,9 +35,9 @@ import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
-import org.neo4j.kernel.impl.query.QuerySource;
 import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.kernel.impl.query.TransactionalContextFactory;
+import org.neo4j.kernel.impl.query.clientconnection.ShellConnectionInfo;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.Continuation;
@@ -199,18 +199,10 @@ public class Start extends TransactionProvidingApp
         InternalTransaction transaction =
             graph.beginTransaction( KernelTransaction.Type.implicit, SecurityContext.AUTH_DISABLED );
         return contextFactory.newContext(
-            ShellQuerySession.describe( session ),
+            new ShellConnectionInfo( session.getId() ),
             transaction,
             queryText,
             queryParameters
         );
-    }
-
-    private static class ShellQuerySession
-    {
-        public static QuerySource describe( Session session )
-        {
-            return new QuerySource( "shell-session", "shell", session.getId().toString() );
-        }
     }
 }

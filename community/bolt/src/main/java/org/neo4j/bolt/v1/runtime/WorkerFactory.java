@@ -25,7 +25,7 @@ package org.neo4j.bolt.v1.runtime;
  */
 public interface WorkerFactory
 {
-    default BoltWorker newWorker( String connectionDescriptor )
+    default BoltWorker newWorker( BoltConnectionDescriptor connectionDescriptor )
     {
         return newWorker( connectionDescriptor, null );
     }
@@ -35,5 +35,5 @@ public interface WorkerFactory
      * @param onClose              callback for closing the underlying connection in case of protocol violation.
      * @return a new job queue
      */
-    BoltWorker newWorker( String connectionDescriptor, Runnable onClose );
+    BoltWorker newWorker( BoltConnectionDescriptor connectionDescriptor, Runnable onClose );
 }

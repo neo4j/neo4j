@@ -59,9 +59,4 @@ public abstract class QueryEngineProvider extends Service
     {
         return NoQueryEngine.INSTANCE;
     }
-
-    public static QuerySource describe()
-    {
-        return new QuerySource( "embedded-session" );
-    }
 }

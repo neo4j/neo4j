@@ -39,7 +39,8 @@ import org.neo4j.kernel.impl.coreapi.{InternalTransaction, PropertyContainerLock
 import org.neo4j.kernel.impl.factory.CanWrite
 import org.neo4j.kernel.impl.proc.Procedures
 import org.neo4j.kernel.impl.locking.LockTracer
-import org.neo4j.kernel.impl.query.{Neo4jTransactionalContext, Neo4jTransactionalContextFactory, QuerySource}
+import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo
+import org.neo4j.kernel.impl.query.{Neo4jTransactionalContext, Neo4jTransactionalContextFactory}
 import org.neo4j.storageengine.api.StorageStatement
 import org.neo4j.test.TestGraphDatabaseFactory
 
@@ -165,7 +166,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
 
   private def createTransactionContext(graphDatabaseCypherService: GraphDatabaseCypherService, transaction: InternalTransaction) = {
     val contextFactory = Neo4jTransactionalContextFactory.create(graphDatabaseCypherService, new PropertyContainerLocker)
-    contextFactory.newContext(QuerySource.UNKNOWN, transaction, "no query", Collections.emptyMap())
+    contextFactory.newContext(ClientConnectionInfo.EMBEDDED_CONNECTION, transaction, "no query", Collections.emptyMap())
   }
 
   private def createMiniGraph(relTypeName: String): Node = {

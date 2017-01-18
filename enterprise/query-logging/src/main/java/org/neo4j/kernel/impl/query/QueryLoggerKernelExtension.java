@@ -169,7 +169,7 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
 
         private String logEntry( long time, ExecutingQuery query )
         {
-            String sourceString = query.querySource().toString();
+            String sourceString = query.connectionDetailsForLogging();
             String queryText = query.queryText();
             String metaData = mapAsString( query.metaData() );
             if ( logQueryParameters )

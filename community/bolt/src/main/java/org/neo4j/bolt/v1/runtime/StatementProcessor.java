@@ -17,18 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.query;
+package org.neo4j.bolt.v1.runtime;
+
+import org.neo4j.bolt.v1.runtime.spi.BoltResult;
+import org.neo4j.function.ThrowingConsumer;
+import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 
 import java.util.Map;
 
-import org.neo4j.kernel.impl.coreapi.InternalTransaction;
-import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
-
-public interface TransactionalContextFactory
+public interface StatementProcessor
 {
-    TransactionalContext newContext( ClientConnectionInfo descriptor,
-                  InternalTransaction tx,
-                  String queryText,
-                  Map<String,Object> queryParameters
-    );
+    StatementMetadata run( String statement, Map<String, Object> params ) throws KernelException;
+
+    void streamResult( ThrowingConsumer<BoltResult, Exception> resultConsumer ) throws Exception;
+
+    void reset() throws TransactionFailureException;
+
+    void markCurrentTransactionForTermination();
+
+    boolean hasTransaction();
+
+    void setQuerySource( BoltQuerySource querySource );
 }

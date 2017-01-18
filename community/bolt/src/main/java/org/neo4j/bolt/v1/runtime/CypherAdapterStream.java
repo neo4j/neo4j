@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v1.runtime.cypher;
+package org.neo4j.bolt.v1.runtime;
 
 import java.time.Clock;
 import java.util.ArrayList;
@@ -35,7 +35,7 @@ import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.graphdb.Result;
 
-public class CypherAdapterStream extends BoltResult
+class CypherAdapterStream extends BoltResult
 {
     private final Result delegate;
     private final String[] fieldNames;
