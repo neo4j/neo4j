@@ -44,7 +44,7 @@ public abstract class AbstractUserRepository extends LifecycleAdapter implements
     protected volatile List<User> users = new ArrayList<>();
     protected AtomicLong lastLoaded = new AtomicLong( 0L );
 
-    private final Pattern usernamePattern = Pattern.compile( "^[a-zA-Z0-9_]+$" );
+    private final Pattern usernamePattern = Pattern.compile( "^[\\x21-\\x7E]+$" );
 
     @Override
     public void clear()
