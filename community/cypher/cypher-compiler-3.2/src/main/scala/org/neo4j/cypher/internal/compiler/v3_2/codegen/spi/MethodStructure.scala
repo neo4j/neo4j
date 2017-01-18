@@ -75,15 +75,14 @@ trait MethodStructure[E] {
   def newMapOfSets(name: String, keyTypes: IndexedSeq[CodeGenType], elementType: CodeGenType)
   def checkDistinct(name: String, key: Map[String,(CodeGenType, E)], keyVar: String, value: E, valueType: CodeGenType)(block: MethodStructure[E] => Unit)
 
-  def allocateSortTable(name: String, initialCapacity: Int, valueStructure: Map[String, CodeGenType],
-                        sortItems: Iterable[SortItem]): Unit
-  def sortTableAdd(name: String, valueStructure: Map[String, CodeGenType], sortItems: Iterable[SortItem], value: E): Unit
-  def sortTableSort(name: String, valueStructure: Map[String, CodeGenType], sortItems: Iterable[SortItem]): Unit
-  def sortTableIterate(name: String, valueStructure: Map[String, CodeGenType], sortItems: Iterable[SortItem],
+  def allocateSortTable(name: String, initialCapacity: Int, tupleDescriptor: OrderableTupleDescriptor): Unit
+  def sortTableAdd(name: String, tupleDescriptor: OrderableTupleDescriptor, value: E): Unit
+  def sortTableSort(name: String, tupleDescriptor: OrderableTupleDescriptor): Unit
+  def sortTableIterate(name: String, tupleDescriptor: OrderableTupleDescriptor,
                        varNameToField: Map[String, String])
                       (block: (MethodStructure[E]) => Unit): Unit
-  def newSortTableValue(targetVar: String, structure: Map[String, CodeGenType], sortItems: Iterable[SortItem]): E
-  def sortTableValuePutField(structure: Map[String, CodeGenType], sortItems: Iterable[SortItem],
+  def newSortTableValue(targetVar: String, tupleDescriptor: OrderableTupleDescriptor): E
+  def sortTableValuePutField(tupleDescriptor: OrderableTupleDescriptor,
                              value: E, fieldType: CodeGenType, fieldName: String, localVar: String): Unit
 
   def castToCollection(value: E): E
@@ -196,3 +195,19 @@ case object Ascending extends SortOrder
 case object Descending extends SortOrder
 
 case class SortItem(fieldName: String, sortOrder: SortOrder)
+
+/**
+  * What we call tuple here is a fixed length collection of query variable values,
+  * e.g. a result row (or intermediate row).
+  * The TupleDescriptor carries type information used to generate a materialization of this,
+  * e.g. a class with fields.
+  * The order of individual fields are not specified, but is left as an implementation detail.
+  */
+sealed trait TupleDescriptor {
+  val structure: Map[String, CodeGenType]
+}
+
+case class SimpleTupleDescriptor(structure: Map[String, CodeGenType]) extends TupleDescriptor
+case class HashableTupleDescriptor(structure: Map[String, CodeGenType]) extends TupleDescriptor
+case class OrderableTupleDescriptor(structure: Map[String, CodeGenType],
+                                    sortItems: Iterable[SortItem]) extends TupleDescriptor

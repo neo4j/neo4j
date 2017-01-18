@@ -25,7 +25,7 @@ import org.neo4j.codegen.Parameter.param
 import org.neo4j.codegen._
 import org.neo4j.cypher.internal.codegen.{CompiledOrderabilityUtils, CompiledEquivalenceUtils}
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions.CodeGenType
-import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi.SortItem
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi.{OrderableTupleDescriptor, SortItem}
 import org.neo4j.cypher.internal.compiler.v3_2.helpers._
 
 import scala.collection.mutable
@@ -76,21 +76,20 @@ class AuxGenerator(val packageName: String, val generator: CodeGenerator) {
     })
   }
 
-  def comparableTypeReference(structure: Map[String, CodeGenType],
-                              sortItems: Iterable[SortItem]): TypeReference = {
-    types.getOrElseUpdate(TypeKey(structure, Some(sortItems.toSeq)),
+  def comparableTypeReference(tupleDescriptor: OrderableTupleDescriptor): TypeReference = {
+    types.getOrElseUpdate(TypeKey(tupleDescriptor.structure, Some(tupleDescriptor.sortItems.toSeq)),
       using(generator.generateClass(packageName, newComparableValueTypeName(),
       typeRef[Comparable[_]])) { clazz =>
-      structure.foreach {
+      tupleDescriptor.structure.foreach {
         case (fieldName, fieldType: CodeGenType) => clazz.field(lowerType(fieldType), fieldName)
       }
       using(clazz.generateMethod(typeRef[Int], "compareTo", param(typeRef[Object], "other"))) { body =>
         val otherName = s"other$nameId"
         body.assign(body.declare(clazz.handle(), otherName), Expression.cast(clazz.handle(), body.load("other")))
 
-        sortItems.foreach {
+        tupleDescriptor.sortItems.foreach {
           case SortItem(fieldName, sortOrder) => {
-            val fieldType = structure.get(fieldName).get
+            val fieldType = tupleDescriptor.structure.get(fieldName).get
             val fieldReference = field(clazz.handle(), lowerType(fieldType), fieldName)
             val compareResultName = s"compare_$fieldName"
             val compareResult = body.declare(typeRef[Int], compareResultName)

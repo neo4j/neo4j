@@ -591,40 +591,35 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     }
   }
 
-  override def allocateSortTable(name: String, initialCapacity: Int, valueStructure: Map[String, CodeGenType],
-                                 sortItems: Iterable[SortItem]): Unit = {
-    val typ = TypeReference.parameterizedType(classOf[util.ArrayList[_]],
-                                              aux.comparableTypeReference(valueStructure, sortItems))
+  override def allocateSortTable(name: String, initialCapacity: Int, tupleDescriptor: OrderableTupleDescriptor): Unit = {
+    val typ = TypeReference.parameterizedType(classOf[util.ArrayList[_]], aux.comparableTypeReference(tupleDescriptor))
     val localVariable = generator.declare(typ, name)
     locals += name -> localVariable
     generator.assign(localVariable, createNewInstance(typ, (typeRef[Int], constant(initialCapacity))))
   }
 
-  override def sortTableAdd(name: String, valueStructure: Map[String, CodeGenType],
-                            sortItems: Iterable[SortItem], value: Expression): Unit = {
-    val valueType = aux.comparableTypeReference(valueStructure, sortItems)
+  override def sortTableAdd(name: String, tupleDescriptor: OrderableTupleDescriptor, value: Expression): Unit = {
     generator.expression(pop(invoke(generator.load(name),
       method[util.ArrayList[_], Boolean]("add", typeRef[Object]), box(value))))
   }
 
-  override def sortTableSort(name: String, valueStructure: Map[String, CodeGenType], sortItems: Iterable[SortItem]): Unit = {
-    val tupleType = aux.comparableTypeReference(valueStructure, sortItems)
+  override def sortTableSort(name: String, tupleDescriptor: OrderableTupleDescriptor): Unit = {
+    val tupleType = aux.comparableTypeReference(tupleDescriptor)
     val tableType = TypeReference.parameterizedType(classOf[util.List[_]], tupleType)
     generator.expression(invoke(
       method[java.util.Collections, Unit]("sort", tableType), generator.load(name)))
   }
 
-  override def sortTableIterate(tableName: String, valueStructure: Map[String, CodeGenType],
-                                sortItems: Iterable[SortItem],
+  override def sortTableIterate(tableName: String, tupleDescriptor: OrderableTupleDescriptor,
                                 varNameToField: Map[String, String])
                                (block: (MethodStructure[Expression]) => Unit): Unit = {
-    val tupleType = aux.comparableTypeReference(valueStructure, sortItems)
+    val tupleType = aux.comparableTypeReference(tupleDescriptor)
     val elementName = context.namer.newVarName()
 
     using(generator.forEach(Parameter.param(tupleType, elementName), generator.load(tableName))) { body =>
       varNameToField.foreach {
         case (localName, fieldName) =>
-          val fieldType = lowerType(valueStructure(fieldName))
+          val fieldType = lowerType(tupleDescriptor.structure(fieldName))
 
           val localVariable: LocalVariable = body.declare(fieldType, localName)
           locals += localName -> localVariable
@@ -1013,13 +1008,13 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     generator.put(value, field(structure, fieldType, fieldName), generator.load(localVar))
   }
 
-  override def sortTableValuePutField(structure: Map[String, CodeGenType], sortItems: Iterable[SortItem],
+  override def sortTableValuePutField(tupleDescriptor: OrderableTupleDescriptor,
                                       value: Expression,
                                       fieldType: CodeGenType,
                                       fieldName: String,
                                       localVar: String) = {
     generator.put(value,
-      FieldReference.field(aux.comparableTypeReference(structure, sortItems), lowerType(fieldType), fieldName),
+      FieldReference.field(aux.comparableTypeReference(tupleDescriptor), lowerType(fieldType), fieldName),
       generator.load(localVar))
   }
 
@@ -1238,9 +1233,8 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     generator.load(targetVar)
   }
 
-  override def newSortTableValue(targetVar: String, structure: Map[String, CodeGenType],
-                                 sortItems: Iterable[SortItem]) = {
-    val valueType = aux.comparableTypeReference(structure, sortItems)
+  override def newSortTableValue(targetVar: String, tupleDescriptor: OrderableTupleDescriptor) = {
+    val valueType = aux.comparableTypeReference(tupleDescriptor)
     generator.assign(valueType, targetVar, createNewInstance(valueType))
     generator.load(targetVar)
   }

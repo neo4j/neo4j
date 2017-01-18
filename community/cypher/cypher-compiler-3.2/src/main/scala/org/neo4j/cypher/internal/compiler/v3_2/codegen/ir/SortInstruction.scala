@@ -31,7 +31,7 @@ case class SortInstruction(opName: String,
 
   override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
     generator.trace(opName, Some(this.getClass.getSimpleName)) { body =>
-      body.sortTableSort(sortTableInfo.tableName, sortTableInfo.valueStructure, sortTableInfo.sortItems)
+      body.sortTableSort(sortTableInfo.tableName, sortTableInfo.tupleDescriptor)
     }
   }
 

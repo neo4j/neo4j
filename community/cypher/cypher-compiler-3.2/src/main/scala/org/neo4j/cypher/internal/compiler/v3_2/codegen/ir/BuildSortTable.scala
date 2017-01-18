@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v3_2.codegen.ir
 
 import org.neo4j.cypher.internal.compiler.v3_2.codegen._
-import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions.CodeGenType
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi._
 
 case class BuildSortTable(opName: String, tableName: String, columnVariables: Map[String, Variable],
@@ -31,18 +30,18 @@ case class BuildSortTable(opName: String, tableName: String, columnVariables: Ma
 
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
     val initialCapacity = 128 // TODO: Use value from cardinality estimation if possible
-    generator.allocateSortTable(tableName, initialCapacity, valueStructure, sortItems)
+    generator.allocateSortTable(tableName, initialCapacity, tupleDescriptor)
   }
 
   override def body[E](generator: MethodStructure[E])(implicit ignored: CodeGenContext): Unit = {
     generator.trace(opName, Some(this.getClass.getSimpleName)) { body =>
-      val tuple = body.newSortTableValue(context.namer.newVarName(), valueStructure, sortItems)
+      val tuple = body.newSortTableValue(context.namer.newVarName(), tupleDescriptor)
       fieldToVariableInfo.foreach {
         case (fieldName: String, info: FieldAndVariableInfo) =>
-          body.sortTableValuePutField(valueStructure, sortItems,
+          body.sortTableValuePutField(tupleDescriptor,
             tuple, info.incomingVariable.codeGenType, fieldName, info.incomingVariable.name)
       }
-      body.sortTableAdd(tableName, valueStructure, sortItems, tuple)
+      body.sortTableAdd(tableName, tupleDescriptor, tuple)
     }
   }
 
@@ -65,22 +64,23 @@ case class BuildSortTable(opName: String, tableName: String, columnVariables: Ma
       case (fieldName, info) => info.outgoingVariable.name -> info
     }
 
-  private val valueStructure: Map[String, CodeGenType] =
-    fieldToVariableInfo.mapValues(c => c.outgoingVariable.codeGenType)
+  private val tupleDescriptor = OrderableTupleDescriptor(
+      structure = fieldToVariableInfo.mapValues(c => c.outgoingVariable.codeGenType),
+      sortItems
+  )
 
   val sortTableInfo: SortTableInfo = SortTableInfo(
     tableName,
     fieldToVariableInfo,
-    valueStructure,
     outgoingVariableNameToVariableInfo,
-    sortItems)
+    tupleDescriptor
+  )
 }
 
 case class SortTableInfo(tableName: String,
                          fieldToVariableInfo: Map[String, FieldAndVariableInfo],
-                         valueStructure: Map[String, CodeGenType],
                          outgoingVariableNameToVariableInfo: Map[String, FieldAndVariableInfo],
-                         sortItems: Iterable[SortItem])
+                         tupleDescriptor: OrderableTupleDescriptor)
 
 case class FieldAndVariableInfo(fieldName: String,
                                 queryVariableName: String,
