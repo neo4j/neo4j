@@ -11,10 +11,13 @@ URL: http://neo4j.org/
 #BuildRequires: systemd
 #Requires: java-headless = 1.8.0, javapackages-tools
 
+Requires(post): systemd
+Requires(preun): systemd
+Requires(postun): systemd
+
 BuildArch:      noarch
 
 %define neo4jhome %{_localstatedir}/lib/neo4j
-
 
 %description
 
@@ -23,17 +26,58 @@ leverage not only data but also its relationships.
 
 
 %prep
-echo "In prep: $(pwd)"
-ls
-#%setup -q
-
 %build
-echo "In Build: $(pwd)"
-ls
+%clean
+
+# See https://fedoraproject.org/wiki/Packaging:Scriptlets?rd=Packaging:ScriptletSnippets
+# The are ordered roughly in the order they will be executed but see manual anyway.
+
+%pretrans
+
+%pre
+
+# Create neo4j user if it doesn't exist.
+if ! id neo4j > /dev/null 2>&1 ; then
+  adduser --system --home %{neo4jhome} --no-create-home \
+          --no-user-group --shell /bin/bash \
+          neo4j
+fi
+
+if [ $1 -gt 1 ]; then
+  # Upgrading
+  # Remember if neo4j is running
+  if systemctl is-active --quiet neo4j > /dev/null 2>&1 ; then
+    mkdir -p %{_localstatedir}/lib/rpm-state/neo4j
+    touch %{_localstatedir}/lib/rpm-state/neo4j/running
+    systemctl stop neo4j > /dev/null 2>&1 || :
+  fi
+fi
+
+
+%post
+
+# Pre uninstalling (includes upgrades)
+%preun
+
+if [ $1 -eq 0 ]; then
+  # Uninstalling
+  systemctl disable --now neo4j > /dev/null 2>&1 || :
+fi
+
+
+%postun
+
+%posttrans
+
+# Restore neo4j if it was running before upgrade
+if [ -e %{_localstatedir}/lib/rpm-state/neo4j/running ]; then
+  rm %{_localstatedir}/lib/rpm-state/neo4j/running
+  systemctl daemon-reload > /dev/null 2>&1 || :
+  systemctl start neo4j  > /dev/null 2>&1 || :
+fi
+
 
 %install
-echo "In install: $(pwd)"
-ls
 mkdir -p %{buildroot}/%{_bindir}
 mkdir -p %{buildroot}/%{_datadir}/neo4j/lib
 mkdir -p %{buildroot}/%{_datadir}/neo4j/bin/tools
@@ -58,23 +102,9 @@ install -m 0755 server/lib/* %{buildroot}/%{_datadir}/neo4j/lib
 cp -r server/bin/* %{buildroot}/%{_datadir}/neo4j/bin
 chmod -R 0755 %{buildroot}/%{_datadir}/neo4j/bin
 
-#touch %{buildroot}/%{_datadir}/log/neo4j/debug.log
-
 install -m 0644 server/README.txt %{buildroot}/%{_datadir}/doc/neo4j/README.txt
 install -m 0644 server/UPGRADE.txt %{buildroot}/%{_datadir}/doc/neo4j/UPGRADE.txt
 install -m 0644 server/LICENSES.txt %{buildroot}/%{_datadir}/doc/neo4j/LICENSES.txt
-
-%clean
-echo "In clean"
-
-%pre
-
-# Create neo4j user if it doesn't exist.
-if ! id neo4j > /dev/null 2>&1 ; then
-  adduser --system --home %{neo4jhome} --no-create-home \
-          --no-user-group --shell /bin/bash \
-          neo4j
-fi
 
 %files
 %defattr(-,root,root)
