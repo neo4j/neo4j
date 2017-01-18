@@ -97,19 +97,6 @@ public class NativeAllEntriesLabelScanReaderTest
         }
     }
 
-    private static long count( Labels[] data )
-    {
-        long count = 0;
-        for ( Labels labels : data )
-        {
-            for ( Pair<LabelScanKey,LabelScanValue> entry : labels.entries )
-            {
-                count += Long.bitCount( entry.other().bits );
-            }
-        }
-        return count;
-    }
-
     private List<Labels> randomData()
     {
         List<Labels> labels = new ArrayList<>();
