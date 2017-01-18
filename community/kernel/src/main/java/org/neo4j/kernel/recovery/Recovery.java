@@ -101,12 +101,12 @@ public class Recovery extends LifecycleAdapter
             recoveryToPosition = transactionsToRecover.position();
         }
 
-        if ( lastTransaction != null )
+        if ( recoveryToPosition.equals( LogPosition.UNSPECIFIED ) )
         {
-            // There were transactions recovered
-            spi.allTransactionsRecovered( lastTransaction, recoveryToPosition );
+            recoveryToPosition = recoveryFromPosition;
         }
 
+        spi.allTransactionsRecovered( lastTransaction, recoveryToPosition );
         recoveredLog = true;
         spi.forceEverything();
     }

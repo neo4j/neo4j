@@ -27,6 +27,7 @@ import org.neo4j.causalclustering.core.consensus.RaftMachine;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.core.consensus.log.pruning.LogPruner;
 import org.neo4j.causalclustering.core.consensus.outcome.ConsensusOutcome;
+import org.neo4j.causalclustering.core.state.machines.CoreStateMachines;
 import org.neo4j.causalclustering.core.state.snapshot.CoreSnapshot;
 import org.neo4j.causalclustering.core.state.snapshot.CoreStateDownloader;
 import org.neo4j.causalclustering.identity.ClusterId;
@@ -47,6 +48,7 @@ public class CoreState implements MessageHandler<RaftMessages.ClusterIdAwareMess
     private final ClusterIdentity clusterIdentity;
     private final CoreStateDownloader downloader;
     private final CommandApplicationProcess applicationProcess;
+    private final CoreStateMachines coreStateMachines;
     private boolean allowMessageHandling;
 
     public CoreState(
@@ -55,7 +57,8 @@ public class CoreState implements MessageHandler<RaftMessages.ClusterIdAwareMess
             ClusterIdentity clusterIdentity,
             LogProvider logProvider,
             CoreStateDownloader downloader,
-            CommandApplicationProcess commandApplicationProcess )
+            CommandApplicationProcess commandApplicationProcess,
+            CoreStateMachines coreStateMachines )
     {
         this.raftMachine = raftMachine;
         this.localDatabase = localDatabase;
@@ -63,6 +66,7 @@ public class CoreState implements MessageHandler<RaftMessages.ClusterIdAwareMess
         this.downloader = downloader;
         this.log = logProvider.getLog( getClass() );
         this.applicationProcess = commandApplicationProcess;
+        this.coreStateMachines = coreStateMachines;
     }
 
     public synchronized void handle( RaftMessages.ClusterIdAwareMessage clusterIdAwareMessage )
@@ -180,6 +184,7 @@ public class CoreState implements MessageHandler<RaftMessages.ClusterIdAwareMess
         }
 
         localDatabase.start();
+        coreStateMachines.installCommitProcess( localDatabase.getCommitProcess() );
         applicationProcess.start();
     }
 

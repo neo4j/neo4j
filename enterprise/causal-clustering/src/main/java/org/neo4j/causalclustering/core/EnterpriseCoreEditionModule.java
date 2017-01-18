@@ -83,7 +83,9 @@ import org.neo4j.kernel.internal.DefaultKernelData;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.KernelData;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
+import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.udc.UsageData;
@@ -134,12 +136,8 @@ public class EnterpriseCoreEditionModule extends EditionModule
         logProvider = logging.getInternalLogProvider();
         final Supplier<DatabaseHealth> databaseHealthSupplier = dependencies.provideDependency( DatabaseHealth.class );
 
-        LocalDatabase localDatabase = new LocalDatabase( platformModule.storeDir,
-                new StoreFiles( fileSystem ),
-                platformModule.dataSourceManager,
-                platformModule.pageCache,
-                fileSystem,
-                databaseHealthSupplier,
+        LocalDatabase localDatabase = new LocalDatabase( platformModule.storeDir, new StoreFiles( fileSystem ),
+                platformModule.dataSourceManager, platformModule.pageCache, fileSystem, databaseHealthSupplier,
                 logProvider );
 
         IdentityModule identityModule = new IdentityModule( platformModule, clusterStateDirectory );
@@ -172,8 +170,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
                 loggingOutbound, clusterStateDirectory, fileSystem, logProvider );
 
         CoreStateMachinesModule coreStateMachinesModule = new CoreStateMachinesModule( identityModule.myself(), platformModule, clusterStateDirectory,
-                config,
-                replicationModule.getReplicator(), consensusModule.raftMachine(), dependencies, localDatabase );
+                config, replicationModule.getReplicator(), consensusModule.raftMachine(), dependencies, localDatabase );
 
         this.idGeneratorFactory = coreStateMachinesModule.idGeneratorFactory;
         this.idTypeConfigurationProvider = coreStateMachinesModule.idTypeConfigurationProvider;

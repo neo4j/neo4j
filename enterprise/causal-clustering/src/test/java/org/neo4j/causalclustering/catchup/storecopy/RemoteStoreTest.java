@@ -48,7 +48,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.causalclustering.catchup.CatchupResult.SUCCESS_END_OF_STREAM;
 
-public class StoreFetcherTest
+public class RemoteStoreTest
 {
     @Test
     public void shouldCopyStoreFilesAndPullTransactions() throws Exception
@@ -60,12 +60,12 @@ public class StoreFetcherTest
         when( txPullClient.pullTransactions( any(), any(), anyLong(), any() ) ).thenReturn( new TxPullRequestResult( SUCCESS_END_OF_STREAM, 13) );
         TransactionLogCatchUpWriter writer = mock( TransactionLogCatchUpWriter.class );
 
-        StoreFetcher fetcher = new StoreFetcher( NullLogProvider.getInstance(), mock( FileSystemAbstraction.class ),
+        RemoteStore remoteStore = new RemoteStore( NullLogProvider.getInstance(), mock( FileSystemAbstraction.class ),
                 null, storeCopyClient, txPullClient, factory( writer ), new Monitors() );
 
         // when
         MemberId localhost = new MemberId( UUID.randomUUID() );
-        fetcher.copyStore( localhost, storeId, new File( "destination" ) );
+        remoteStore.copy( localhost, storeId, new File( "destination" ) );
 
         // then
         verify( storeCopyClient ).copyStoreFiles( eq( localhost ), eq( storeId ), any( StoreFileStreams.class ) );
@@ -90,11 +90,11 @@ public class StoreFetcherTest
 
         TransactionLogCatchUpWriter writer = mock( TransactionLogCatchUpWriter.class );
 
-        StoreFetcher fetcher = new StoreFetcher( NullLogProvider.getInstance(), mock( FileSystemAbstraction.class ),
+        RemoteStore remoteStore = new RemoteStore( NullLogProvider.getInstance(), mock( FileSystemAbstraction.class ),
                 null, storeCopyClient, txPullClient, factory( writer ), new Monitors() );
 
         // when
-        fetcher.copyStore( localhost, wantedStoreId, new File( "destination" ) );
+        remoteStore.copy( localhost, wantedStoreId, new File( "destination" ) );
 
         // then
         long previousTxId = lastFlushedTxId - 1; // the interface is defined as asking for the one preceding
@@ -110,7 +110,7 @@ public class StoreFetcherTest
         TxPullClient txPullClient = mock( TxPullClient.class );
         TransactionLogCatchUpWriter writer = mock( TransactionLogCatchUpWriter.class );
 
-        StoreFetcher fetcher = new StoreFetcher( NullLogProvider.getInstance(), mock( FileSystemAbstraction.class ),
+        RemoteStore remoteStore = new RemoteStore( NullLogProvider.getInstance(), mock( FileSystemAbstraction.class ),
                 null,
                 storeCopyClient, txPullClient, factory( writer ), new Monitors() );
 
@@ -120,7 +120,7 @@ public class StoreFetcherTest
         // when
         try
         {
-            fetcher.copyStore( null, storeId, null );
+            remoteStore.copy( null, storeId, null );
         }
         catch ( StoreCopyFailedException e )
         {

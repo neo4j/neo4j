@@ -32,30 +32,39 @@ import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
 import org.neo4j.kernel.impl.transaction.log.ReadOnlyTransactionIdStore;
+import org.neo4j.kernel.impl.transaction.log.ReadOnlyTransactionStore;
+import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
+import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.causalclustering.catchup.CatchupResult.SUCCESS_END_OF_BATCH;
 import static org.neo4j.causalclustering.catchup.CatchupResult.SUCCESS_END_OF_STREAM;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
-public class StoreFetcher
+/**
+ * Entry point for remote store related RPC.
+ */
+public class RemoteStore
 {
     private final Log log;
     private final Monitors monitors;
-    private FileSystemAbstraction fs;
-    private PageCache pageCache;
+    private final FileSystemAbstraction fs;
+    private final PageCache pageCache;
     private final LogProvider logProvider;
-    private StoreCopyClient storeCopyClient;
-    private TxPullClient txPullClient;
-    private TransactionLogCatchUpFactory transactionLogFactory;
+    private final StoreCopyClient storeCopyClient;
+    private final TxPullClient txPullClient;
+    private final TransactionLogCatchUpFactory transactionLogFactory;
 
-    public StoreFetcher( LogProvider logProvider,
-                         FileSystemAbstraction fs, PageCache pageCache,
-                         StoreCopyClient storeCopyClient, TxPullClient txPullClient,
-                         TransactionLogCatchUpFactory transactionLogFactory,
-                         Monitors monitors )
+    public RemoteStore( LogProvider logProvider,
+            FileSystemAbstraction fs, PageCache pageCache,
+            StoreCopyClient storeCopyClient, TxPullClient txPullClient,
+            TransactionLogCatchUpFactory transactionLogFactory,
+            Monitors monitors )
     {
         this.logProvider = logProvider;
         this.storeCopyClient = storeCopyClient;
@@ -63,18 +72,71 @@ public class StoreFetcher
         this.fs = fs;
         this.pageCache = pageCache;
         this.transactionLogFactory = transactionLogFactory;
-        log = logProvider.getLog( getClass() );
         this.monitors = monitors;
+        this.log = logProvider.getLog( getClass() );
+    }
+
+    /**
+     * Later stages of the startup process require at least one transaction to
+     * figure out the mapping between the transaction log and the consensus log.
+     *
+     * If there are no transaction logs then we can pull from and including
+     * the index which the metadata store points to. This would be the case
+     * for example with a backup taken during an idle period of the system.
+     *
+     * However, if there are transaction logs then we want to find out where
+     * they end and pull from there, excluding the last one so that we do not
+     * get duplicate entries.
+     */
+    private long getPullIndex( File storeDir ) throws IOException
+    {
+        /* this is the metadata store */
+        ReadOnlyTransactionIdStore txIdStore = new ReadOnlyTransactionIdStore( pageCache, storeDir );
+
+        /* Clean as in clean shutdown. Without transaction logs this should be the truth,
+        * but otherwise it can be used as a starting point for scanning the logs. */
+        long lastCleanTxId = txIdStore.getLastCommittedTransactionId();
+
+        /* these are the transaction logs */
+        ReadOnlyTransactionStore txStore = new ReadOnlyTransactionStore( pageCache, fs, storeDir, new Monitors() );
+
+        long lastTxId = BASE_TX_ID;
+        try ( Lifespan ignored = new Lifespan( txStore ) )
+        {
+            TransactionCursor cursor;
+            try
+            {
+                cursor = txStore.getTransactions( lastCleanTxId );
+            }
+            catch ( NoSuchTransactionException e )
+            {
+                log.info( "No transaction logs found. Will use metadata store as base for pull request." );
+                return lastCleanTxId;
+            }
+
+            while ( cursor.next() )
+            {
+                CommittedTransactionRepresentation tx = cursor.get();
+                lastTxId = tx.getCommitEntry().getTxId();
+            }
+
+            if ( lastTxId < lastCleanTxId )
+            {
+                throw new IllegalStateException( "Metadata index was higher than transaction log index." );
+            }
+
+            // we don't want to pull a transaction we already have in the log, hence +1
+            return lastTxId + 1;
+        }
     }
 
     public CatchupResult tryCatchingUp( MemberId from, StoreId expectedStoreId, File storeDir ) throws StoreCopyFailedException, IOException
     {
-        ReadOnlyTransactionIdStore transactionIdStore = new ReadOnlyTransactionIdStore( pageCache, storeDir );
-        long lastCommittedTxId = transactionIdStore.getLastCommittedTransactionId();
-        return pullTransactions( from, expectedStoreId, storeDir, lastCommittedTxId + 1, false );
+        long pullIndex = getPullIndex( storeDir );
+        return pullTransactions( from, expectedStoreId, storeDir, pullIndex, false );
     }
 
-    public void copyStore( MemberId from, StoreId expectedStoreId, File destDir )
+    public void copy( MemberId from, StoreId expectedStoreId, File destDir )
             throws StoreCopyFailedException, StreamingTransactionsFailedException
     {
         try
@@ -121,7 +183,7 @@ public class StoreFetcher
         }
     }
 
-    public StoreId getStoreIdOf( MemberId from ) throws StoreIdDownloadFailedException
+    public StoreId getStoreId( MemberId from ) throws StoreIdDownloadFailedException
     {
         return storeCopyClient.fetchStoreId( from );
     }
