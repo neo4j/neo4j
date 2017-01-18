@@ -17,13 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v1.runtime.cypher;
+package org.neo4j.kernel.builtinprocs;
 
-/**
- * Metadata that becomes available as soon as a statement is started, and is sent to the client before the result
- * stream is sent.
- */
-public interface StatementMetadata
+import org.neo4j.configuration.ConfigValue;
+
+public class ConfigResult
 {
-    String[] fieldNames();
+    public final String name;
+    public final String description;
+    public final String value;
+
+    public ConfigResult( ConfigValue configValue )
+    {
+        this.name = configValue.name();
+        this.description = configValue.description().orElse( "" );
+        this.value = configValue.value().map( Object::toString ).orElse( "" );
+    }
 }

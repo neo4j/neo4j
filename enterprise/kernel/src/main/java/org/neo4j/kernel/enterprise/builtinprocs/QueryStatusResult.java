@@ -26,7 +26,7 @@ import java.util.Map;
 
 import org.neo4j.kernel.api.ExecutingQuery;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
-import org.neo4j.kernel.impl.query.QuerySource;
+import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
 
 import static java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 import static java.util.concurrent.TimeUnit.HOURS;
@@ -42,11 +42,24 @@ public class QueryStatusResult
     public final String query;
     public final Map<String,Object> parameters;
     public final String startTime;
+    @Deprecated
     public final String elapsedTime;
+    /** EXPERIMENTAL: added in Neo4j 3.2 */
+    public final long elapsedTimeMillis; // TODO: this field should be of a Duration type (when Cypher supports that)
+    @Deprecated
     public final String connectionDetails;
-    public final long cpuTimeMillis;
+    /** EXPERIMENTAL: added in Neo4j 3.2 */
+    public final String requestScheme;
+    /** EXPERIMENTAL: added in Neo4j 3.2 */
+    public final String clientAddress;
+    /** EXPERIMENTAL: added in Neo4j 3.2 */
+    public final String requestUri;
+    /** EXPERIMENTAL: added in Neo4j 3.2 */
+    public final long cpuTimeMillis; // TODO: we want this field to be of a Duration type (when Cypher supports that)
+    /** EXPERIMENTAL: added in Neo4j 3.2 */
     public final Map<String,Object> status;
-    public final long waitTimeMillis;
+    /** EXPERIMENTAL: added in Neo4j 3.2 */
+    public final long waitTimeMillis; // TODO: we want this field to be of a Duration type (when Cypher supports that)
     public final Map<String,Object> metaData;
 
     QueryStatusResult( ExecutingQuery q ) throws InvalidArgumentsException
@@ -58,7 +71,7 @@ public class QueryStatusResult
                 q.queryParameters(),
                 q.startTime(),
                 q.elapsedTimeMillis(),
-                q.querySource(),
+                q.clientConnection(),
                 q.metaData(),
                 q.cpuTimeMillis(),
                 q.status(),
@@ -72,7 +85,7 @@ public class QueryStatusResult
             Map<String,Object> parameters,
             long startTime,
             long elapsedTime,
-            QuerySource querySource,
+            ClientConnectionInfo clientConnection,
             Map<String,Object> txMetaData,
             long cpuTimeMillis,
             Map<String,Object> status,
@@ -84,7 +97,11 @@ public class QueryStatusResult
         this.parameters = parameters;
         this.startTime = formatTime( startTime );
         this.elapsedTime = formatInterval( elapsedTime );
-        this.connectionDetails = querySource.toString();
+        this.elapsedTimeMillis = elapsedTime;
+        this.connectionDetails = clientConnection.asConnectionDetails();
+        this.requestScheme = clientConnection.requestScheme();
+        this.clientAddress = clientConnection.clientAddress();
+        this.requestUri = clientConnection.requestURI();
         this.metaData = txMetaData;
         this.cpuTimeMillis = cpuTimeMillis;
         this.status = status;

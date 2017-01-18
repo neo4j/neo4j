@@ -189,6 +189,13 @@ public class GBPTree<KEY,VALUE> implements Closeable
     private final SingleWriter writer;
 
     /**
+     * Tells whether or not there have been made changes (using {@link #writer()}) to this tree
+     * since last call to {@link #checkpoint(IOLimiter)}. This variable is set when calling {@link #writer()}
+     * and cleared inside {@link #checkpoint(IOLimiter)}.
+     */
+    private volatile boolean changesSinceLastCheckpoint;
+
+    /**
      * Check-pointing flushes updates to stable storage.
      * There's a critical section in check-pointing where, in order to guarantee a consistent check-pointed state
      * on stable storage, no writes are allowed to happen.
@@ -325,6 +332,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
 
         // Initialize free-list
         freeList.initializeAfterCreation();
+        changesSinceLastCheckpoint = true;
         checkpoint( IOLimiter.unlimited() );
     }
 
@@ -560,13 +568,24 @@ public class GBPTree<KEY,VALUE> implements Closeable
     /**
      * Checkpoints and flushes any pending changes to storage. After a successful call to this method
      * the data is durable and safe. {@link #writer() Changes} made after this call and until crashing or
-     * just {@link #close() closing} this tree will need to be replayed next time this tree is opened.
+     * otherwise non-clean shutdown (by omitting call to {@link #close()}) will need to be replayed
+     * next time this tree is opened. Re-applying such changes will then require a call to
+     * {@link #prepareForRecovery()} before {@link #writer() writing} the changes.
+     *
+     * A call to {@link #close()} will automatically do a checkpoint as well, if there have been changes made
+     * since last call to {@link #checkpoint(IOLimiter)} or since opening this tree.
      *
      * @param ioLimiter for controlling I/O usage.
      * @throws IOException on error flushing to storage.
      */
     public void checkpoint( IOLimiter ioLimiter ) throws IOException
     {
+        if ( !changesSinceLastCheckpoint )
+        {
+            // No changes has happened since last checkpoint was called, no need to do another checkpoint
+            return;
+        }
+
         // Flush dirty pages of the tree, do this before acquiring the lock so that writers won't be
         // blocked while we do this
         pagedFile.flushAndForce( ioLimiter );
@@ -592,6 +611,9 @@ public class GBPTree<KEY,VALUE> implements Closeable
 
             // Expose this fact.
             monitor.checkpointCompleted();
+
+            // Clear flag so that until next change there's no need to do another checkpoint.
+            changesSinceLastCheckpoint = false;
         }
         finally
         {
@@ -602,15 +624,25 @@ public class GBPTree<KEY,VALUE> implements Closeable
     }
 
     /**
-     * Closes this tree and its associated resources. No {@link #checkpoint(IOLimiter)} is performed
-     * as part of this call.
+     * Closes this tree and its associated resources. A {@link #checkpoint(IOLimiter)} is first performed
+     * as part of this call if there have been changes since last call to {@link #checkpoint(IOLimiter)}
+     * or since opening this tree.
      *
-     * @throws IOException on error closing resources.
+     * @throws IOException on error either checkpointing or closing resources.
      */
     @Override
     public void close() throws IOException
     {
-        pagedFile.close();
+        try
+        {
+            // Perform a checkpoint before closing. If no changes has happened since last checkpoint,
+            // no new checkpoint will be created.
+            checkpoint( IOLimiter.unlimited() );
+        }
+        finally
+        {
+            pagedFile.close();
+        }
     }
 
     /**
@@ -638,6 +670,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         {
             writer.take();
             success = true;
+            changesSinceLastCheckpoint = true;
             return writer;
         }
         finally
@@ -673,6 +706,13 @@ public class GBPTree<KEY,VALUE> implements Closeable
      */
     public void prepareForRecovery() throws IOException
     {
+        if ( changesSinceLastCheckpoint )
+        {
+            throw new IllegalStateException( "It seems that this method has been called in the wrong state. " +
+                    "It's expected that this is called after opening this tree, but before any changes " +
+                    "have been made" );
+        }
+
         // Increment unstable generation, widening the gap between stable and unstable generation
         // so that generations in between are considered crash generation(s).
         generation = generation( stableGeneration( generation ), unstableGeneration( generation ) + 1 );

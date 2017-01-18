@@ -34,6 +34,7 @@ import java.util.Map;
 
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.security.auth.BasicAuthentication;
+import org.neo4j.bolt.v1.runtime.BoltConnectionDescriptor;
 import org.neo4j.bolt.v1.runtime.BoltStateMachine;
 import org.neo4j.bolt.v1.runtime.LifecycleManagedBoltFactory;
 import org.neo4j.graphdb.DependencyResolver;
@@ -105,12 +106,12 @@ class SessionRule implements TestRule
         return new BasicAuthentication( authManager );
     }
 
-    BoltStateMachine newMachine( String connectionDescriptor )
+    BoltStateMachine newMachine( BoltConnectionDescriptor connectionDescriptor )
     {
         return newMachine( connectionDescriptor, Clock.systemUTC() );
     }
 
-    BoltStateMachine newMachine( String connectionDescriptor, Clock clock )
+    BoltStateMachine newMachine( BoltConnectionDescriptor connectionDescriptor, Clock clock )
     {
         if ( boltFactory == null )
         {

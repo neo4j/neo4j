@@ -45,7 +45,7 @@ public class MonitoredWorkerFactory implements WorkerFactory
     }
 
     @Override
-    public BoltWorker newWorker( String connectionDescriptor, Runnable onClose )
+    public BoltWorker newWorker( BoltConnectionDescriptor connectionDescriptor, Runnable onClose )
     {
         if( monitors.hasListeners( SessionMonitor.class ) )
         {

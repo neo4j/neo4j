@@ -17,26 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v1.runtime.cypher;
+package org.neo4j.bolt.v1.runtime;
 
-import org.neo4j.bolt.v1.runtime.spi.BoltResult;
-import org.neo4j.function.ThrowingConsumer;
-import org.neo4j.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-
-import java.util.Map;
-
-public interface StatementProcessor
+class BoltQuerySource
 {
-    StatementMetadata run( String statement, Map<String, Object> params ) throws KernelException;
+    final String principalName;
+    final String clientName;
+    final BoltConnectionDescriptor connectionDescriptor;
 
-    void streamResult( ThrowingConsumer<BoltResult, Exception> resultConsumer ) throws Exception;
-
-    void reset() throws TransactionFailureException;
-
-    void markCurrentTransactionForTermination();
-
-    boolean hasTransaction();
-
-    void setQuerySource( String querySource );
+    BoltQuerySource( String principalName, String clientName, BoltConnectionDescriptor connectionDescriptor )
+    {
+        this.principalName = principalName;
+        this.clientName = clientName;
+        this.connectionDescriptor = connectionDescriptor;
+    }
 }

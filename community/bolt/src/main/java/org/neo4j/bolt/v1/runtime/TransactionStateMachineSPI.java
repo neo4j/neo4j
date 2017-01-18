@@ -24,7 +24,6 @@ import java.time.Duration;
 import java.util.Map;
 
 import org.neo4j.bolt.v1.runtime.TransactionStateMachine.BoltResultHandle;
-import org.neo4j.bolt.v1.runtime.cypher.CypherAdapterStream;
 import org.neo4j.bolt.v1.runtime.spi.BoltResult;
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.graphdb.Result;
@@ -41,7 +40,8 @@ import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
-import org.neo4j.kernel.impl.query.QuerySource;
+import org.neo4j.kernel.impl.query.clientconnection.BoltConnectionInfo;
+import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
 import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.kernel.impl.query.TransactionalContextFactory;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
@@ -118,13 +118,16 @@ class TransactionStateMachineSPI implements TransactionStateMachine.SPI
     }
 
     @Override
-    public BoltResultHandle executeQuery( String querySource,
+    public BoltResultHandle executeQuery( BoltQuerySource querySource,
             SecurityContext securityContext,
             String statement,
             Map<String,Object> params, ThrowingAction<KernelException> onFail ) throws QueryExecutionKernelException
     {
         InternalTransaction internalTransaction = queryService.beginTransaction( implicit, securityContext );
-        QuerySource sourceDetails = new QuerySource( "bolt-session", querySource );
+        ClientConnectionInfo sourceDetails = new BoltConnectionInfo( querySource.principalName,
+                querySource.clientName,
+                querySource.connectionDescriptor.clientAddress,
+                querySource.connectionDescriptor.serverAddress );
         TransactionalContext transactionalContext =
                 contextFactory.newContext( sourceDetails, internalTransaction, statement, params );
 

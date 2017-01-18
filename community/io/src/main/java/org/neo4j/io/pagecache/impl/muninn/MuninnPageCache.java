@@ -432,6 +432,12 @@ public class MuninnPageCache implements PageCache
             }
 
             @Override
+            public String toString()
+            {
+                return fileHandle.toString();
+            }
+
+            @Override
             public void delete() throws IOException
             {
                 synchronized ( MuninnPageCache.this )

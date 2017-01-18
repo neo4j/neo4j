@@ -24,8 +24,6 @@ import java.util.Map;
 
 import org.neo4j.bolt.security.auth.AuthenticationResult;
 import org.neo4j.bolt.v1.runtime.bookmarking.Bookmark;
-import org.neo4j.bolt.v1.runtime.cypher.StatementMetadata;
-import org.neo4j.bolt.v1.runtime.cypher.StatementProcessor;
 import org.neo4j.bolt.v1.runtime.spi.BoltResult;
 import org.neo4j.bolt.v1.runtime.spi.BookmarkResult;
 import org.neo4j.cypher.InvalidSemanticsException;
@@ -128,7 +126,7 @@ public class TransactionStateMachine implements StatementProcessor
     }
 
     @Override
-    public void setQuerySource( String querySource )
+    public void setQuerySource( BoltQuerySource querySource )
     {
         this.ctx.querySource = querySource;
     }
@@ -373,7 +371,7 @@ public class TransactionStateMachine implements StatementProcessor
             }
         };
 
-        String querySource;
+        BoltQuerySource querySource;
         BoltResultHandle currentResultHandle;
 
         private MutableTransactionState( AuthenticationResult authenticationResult, Clock clock )
@@ -397,7 +395,7 @@ public class TransactionStateMachine implements StatementProcessor
 
         boolean isPeriodicCommit( String query );
 
-        BoltResultHandle executeQuery( String querySource,
+        BoltResultHandle executeQuery( BoltQuerySource querySource,
                 SecurityContext securityContext,
                 String statement,
                 Map<String,Object> params,

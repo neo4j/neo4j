@@ -104,7 +104,7 @@ public class GBPTreeTest
         if ( index != null )
         {
             assertTrue( index.consistencyCheck() );
-            index.close();
+            closeIndex();
         }
     }
 
@@ -571,6 +571,68 @@ public class GBPTreeTest
         }
     }
 
+    @Test
+    public void shouldCheckpointAfterInitialCreation() throws Exception
+    {
+        // GIVEN
+        CheckpointCounter checkpointCounter = new CheckpointCounter();
+
+        // WHEN
+        GBPTree<MutableLong,MutableLong> index = createIndex( 256, checkpointCounter );
+
+        // THEN
+        assertEquals( 1, checkpointCounter.count );
+    }
+
+    @Test
+    public void shouldCheckpointOnCloseAfterChangesHappened() throws Exception
+    {
+        // GIVEN
+        CheckpointCounter checkpointCounter = new CheckpointCounter();
+
+        // WHEN
+        GBPTree<MutableLong,MutableLong> index = createIndex( 256, checkpointCounter );
+        int countBefore = checkpointCounter.count;
+        try ( Writer<MutableLong,MutableLong> writer = index.writer() )
+        {
+            writer.put( new MutableLong( 0 ), new MutableLong( 1 ) );
+        }
+
+        // THEN
+        closeIndex();
+        assertEquals( countBefore + 1, checkpointCounter.count );
+    }
+
+    @Test
+    public void shouldNotCheckpointOnCloseIfNoChangesHappened() throws Exception
+    {
+        // GIVEN
+        CheckpointCounter checkpointCounter = new CheckpointCounter();
+
+        // WHEN
+        GBPTree<MutableLong,MutableLong> index = createIndex( 256, checkpointCounter );
+        int countBefore = checkpointCounter.count;
+        try ( Writer<MutableLong,MutableLong> writer = index.writer() )
+        {
+            writer.put( new MutableLong( 0 ), new MutableLong( 1 ) );
+        }
+        index.checkpoint( IOLimiter.unlimited() );
+        assertEquals( countBefore + 1, checkpointCounter.count );
+
+        // THEN
+        closeIndex();
+        assertEquals( countBefore + 1, checkpointCounter.count );
+    }
+
+    private void closeIndex() throws IOException
+    {
+        if ( index != null )
+        {
+            index.close();
+            index = null;
+        }
+    }
+
     private static class CheckpointControlledMonitor implements Monitor
     {
         private final Barrier.Control barrier = new Barrier.Control();
@@ -583,6 +645,17 @@ public class GBPTreeTest
             {
                 barrier.reached();
             }
+        }
+    }
+
+    private static class CheckpointCounter implements Monitor
+    {
+        private int count;
+
+        @Override
+        public void checkpointCompleted()
+        {
+            count++;
         }
     }
 
