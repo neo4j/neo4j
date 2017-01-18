@@ -111,7 +111,7 @@ import org.neo4j.storageengine.api.schema.PopulationProgress;
 
 import static java.lang.String.format;
 
-import static org.neo4j.collection.primitive.PrimitiveIntCollections.dedup;
+import static org.neo4j.collection.primitive.PrimitiveIntCollections.deduplicate;
 
 public class OperationsFacade
         implements ReadOperations, DataWriteOperations, SchemaWriteOperations, QueryRegistryOperations,
@@ -369,7 +369,7 @@ public class OperationsFacade
         try ( Cursor<NodeItem> node = dataRead().nodeCursorById( statement, nodeId ) )
         {
             return new CursorRelationshipIterator(
-                    node.get().relationships( direction( direction ), dedup( relTypes ) ) );
+                    node.get().relationships( direction( direction ), deduplicate( relTypes ) ) );
         }
     }
 

@@ -119,13 +119,13 @@ public class PrimitiveIntCollectionsTest
     }
 
     @Test
-    public void dedup() throws Exception
+    public void deduplicate() throws Exception
     {
         // GIVEN
         PrimitiveIntIterator items = PrimitiveIntCollections.iterator( 1, 1, 2, 3, 2 );
 
         // WHEN
-        PrimitiveIntIterator deduped = PrimitiveIntCollections.dedup( items );
+        PrimitiveIntIterator deduped = PrimitiveIntCollections.deduplicate( items );
 
         // THEN
         assertItems( deduped, 1, 2, 3 );
@@ -530,13 +530,13 @@ public class PrimitiveIntCollectionsTest
     }
 
     @Test
-    public void shouldDedup() throws Exception
+    public void shouldDeduplicate() throws Exception
     {
         // GIVEN
         int[] array = new int[] {1, 1, 2, 5, 6, 6};
 
         // WHEN
-        int[] deduped = PrimitiveIntCollections.dedup( array );
+        int[] deduped = PrimitiveIntCollections.deduplicate( array );
 
         // THEN
         assertArrayEquals( new int[] {1, 2, 5, 6}, deduped );

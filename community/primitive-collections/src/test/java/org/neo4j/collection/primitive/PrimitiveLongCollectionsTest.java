@@ -119,13 +119,13 @@ public class PrimitiveLongCollectionsTest
     }
 
     @Test
-    public void dedup() throws Exception
+    public void deduplicate() throws Exception
     {
         // GIVEN
         PrimitiveLongIterator items = PrimitiveLongCollections.iterator( 1, 1, 2, 3, 2 );
 
         // WHEN
-        PrimitiveLongIterator deduped = PrimitiveLongCollections.dedup( items );
+        PrimitiveLongIterator deduped = PrimitiveLongCollections.deduplicate( items );
 
         // THEN
         assertItems( deduped, 1, 2, 3 );
@@ -579,13 +579,13 @@ public class PrimitiveLongCollectionsTest
     }
 
     @Test
-    public void shouldDedup() throws Exception
+    public void shouldDeduplicate() throws Exception
     {
         // GIVEN
         long[] array = new long[] {1L, 1L, 2L, 5L, 6L, 6L};
 
         // WHEN
-        long[] deduped = PrimitiveLongCollections.dedup( array );
+        long[] deduped = PrimitiveLongCollections.deduplicate( array );
 
         // THEN
         assertArrayEquals( new long[] {1L, 2L, 5L, 6L}, deduped );

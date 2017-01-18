@@ -254,7 +254,7 @@ public class PrimitiveIntCollections
         };
     }
 
-    public static PrimitiveIntIterator dedup( PrimitiveIntIterator source )
+    public static PrimitiveIntIterator deduplicate( PrimitiveIntIterator source )
     {
         return new PrimitiveIntFilteringIterator( source )
         {
@@ -834,7 +834,7 @@ public class PrimitiveIntCollections
      * @param values sorted array of int values.
      * @return the provided array if no duplicates were found, otherwise a new shorter array w/o duplicates.
      */
-    public static int[] dedup( int[] values )
+    public static int[] deduplicate( int[] values )
     {
         int unique = 0;
         for ( int i = 0; i < values.length; i++ )

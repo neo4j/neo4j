@@ -263,7 +263,7 @@ public class PrimitiveLongCollections
         };
     }
 
-    public static PrimitiveLongIterator dedup( PrimitiveLongIterator source )
+    public static PrimitiveLongIterator deduplicate( PrimitiveLongIterator source )
     {
         return new PrimitiveLongFilteringIterator( source )
         {
@@ -887,7 +887,7 @@ public class PrimitiveLongCollections
      * @param values sorted array of long values.
      * @return the provided array if no duplicates were found, otherwise a new shorter array w/o duplicates.
      */
-    public static long[] dedup( long[] values )
+    public static long[] deduplicate( long[] values )
     {
         int unique = 0;
         for ( int i = 0; i < values.length; i++ )

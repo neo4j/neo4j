@@ -51,7 +51,7 @@ public class NodeInUseWithCorrectLabelsCheck
     private static long[] sortAndDeduplicate( long[] labels )
     {
         sort( labels );
-        return PrimitiveLongCollections.dedup( labels );
+        return PrimitiveLongCollections.deduplicate( labels );
     }
 
     @Override
