@@ -181,7 +181,7 @@ public class SlaveLocksClientTest
     }
 
     @Test
-    public void shouldNotTalkToLocalLocksOnReentrancyExclusive() throws Exception
+    public void shouldUseReEntryMethodsOnLocalLocksForReEntryExclusive() throws Exception
     {
         // Given we have grabbed and released a lock
         client.acquireExclusive( LockTracer.NONE, NODE, 1L );
@@ -191,12 +191,16 @@ public class SlaveLocksClientTest
         client.releaseExclusive( NODE, 1L );
 
         // Then this should cause the local lock manager to hold the lock
-        verify( local, times( 1 ) ).tryExclusiveLock( NODE, 1L );
-        verify( local, times( 0 ) ).releaseExclusive( NODE, 1L );
+        InOrder order = inOrder( local );
+        order.verify( local, times( 1 ) ).reEnterExclusive( NODE, 1L );
+        order.verify( local, times( 1 ) ).tryExclusiveLock( NODE, 1L );
+        order.verify( local, times( 1 ) ).reEnterExclusive( NODE, 1L );
+        order.verify( local, times( 1 ) ).releaseExclusive( NODE, 1L );
+        order.verifyNoMoreInteractions();
     }
 
     @Test
-    public void shouldNotTalkToLocalLocksOnReentrancyShared() throws Exception
+    public void shouldUseReEntryMethodsOnLocalLocksForReEntryShared() throws Exception
     {
         // Given we have grabbed and released a lock
         client.acquireShared( LockTracer.NONE, NODE, 1L );
@@ -206,8 +210,12 @@ public class SlaveLocksClientTest
         client.releaseShared( NODE, 1L );
 
         // Then this should cause the local lock manager to hold the lock
-        verify( local, times( 1 ) ).trySharedLock( NODE, 1L );
-        verify( local, times( 0 ) ).releaseShared( NODE, 1L );
+        InOrder order = inOrder( local );
+        order.verify( local, times( 1 ) ).reEnterShared( NODE, 1L );
+        order.verify( local, times( 1 ) ).trySharedLock( NODE, 1L );
+        order.verify( local, times( 1 ) ).reEnterShared( NODE, 1L );
+        order.verify( local, times( 1 ) ).releaseShared( NODE, 1L );
+        order.verifyNoMoreInteractions();
     }
 
     @Test

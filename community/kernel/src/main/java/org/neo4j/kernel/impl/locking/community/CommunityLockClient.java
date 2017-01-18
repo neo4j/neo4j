@@ -228,6 +228,48 @@ public class CommunityLockClient implements Locks.Client
     }
 
     @Override
+    public boolean reEnterShared( ResourceType resourceType, long resourceId )
+    {
+        stateHolder.incrementActiveClients( this );
+        try
+        {
+            return reEnter( localShared( resourceType ), resourceId );
+        }
+        finally
+        {
+            stateHolder.decrementActiveClients();
+        }
+    }
+
+    @Override
+    public boolean reEnterExclusive( ResourceType resourceType, long resourceId )
+    {
+        stateHolder.incrementActiveClients( this );
+        try
+        {
+            return reEnter( localExclusive( resourceType ), resourceId );
+        }
+        finally
+        {
+            stateHolder.decrementActiveClients();
+        }
+    }
+
+    private boolean reEnter( PrimitiveLongObjectMap<LockResource> localLocks, long resourceId )
+    {
+        LockResource resource = localLocks.get( resourceId );
+        if ( resource != null )
+        {
+            resource.acquireReference();
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    @Override
     public void releaseShared( ResourceType resourceType, long resourceId )
     {
         stateHolder.incrementActiveClients( this );
