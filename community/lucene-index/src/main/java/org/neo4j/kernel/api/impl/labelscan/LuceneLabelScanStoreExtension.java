@@ -80,25 +80,27 @@ public class LuceneLabelScanStoreExtension extends KernelExtensionFactory<Lucene
     @Override
     public LabelScanStoreProvider newInstance( KernelContext context, Dependencies dependencies ) throws Throwable
     {
-        boolean ephemeral = dependencies.getConfig().get( GraphDatabaseFacadeFactory.Configuration.ephemeral );
-        DirectoryFactory directoryFactory = directoryFactory( ephemeral, dependencies.fileSystem() );
+        Config config = dependencies.getConfig();
+        boolean ephemeral = config.get( GraphDatabaseFacadeFactory.Configuration.ephemeral );
+        FileSystemAbstraction fileSystem = dependencies.fileSystem();
+        DirectoryFactory directoryFactory = directoryFactory( ephemeral, fileSystem );
 
-        LabelScanIndex index = getLuceneIndex( context, directoryFactory, dependencies.fileSystem() );
+        LuceneLabelScanIndexBuilder indexBuilder = getIndexBuilder( context, directoryFactory, fileSystem, config );
         LogProvider logger = dependencies.getLogService().getInternalLogProvider();
         Monitor loggingMonitor = new LoggingMonitor( logger.getLog( LuceneLabelScanStore.class ), monitor );
-        LuceneLabelScanStore scanStore = new LuceneLabelScanStore( index,
+        LuceneLabelScanStore scanStore = new LuceneLabelScanStore( indexBuilder,
                 new FullLabelStream( dependencies.indexStoreView() ), loggingMonitor );
 
         return new LabelScanStoreProvider( LABEL_SCAN_STORE_NAME, scanStore, priority );
     }
 
-    private LabelScanIndex getLuceneIndex( KernelContext context, DirectoryFactory directoryFactory,
-            FileSystemAbstraction fileSystem )
+    private LuceneLabelScanIndexBuilder getIndexBuilder( KernelContext context, DirectoryFactory directoryFactory,
+            FileSystemAbstraction fileSystem, Config config )
     {
         return LuceneLabelScanIndexBuilder.create()
                 .withDirectoryFactory( directoryFactory )
                 .withFileSystem( fileSystem )
                 .withIndexRootFolder( LabelScanStoreProvider.getStoreDirectory( context.storeDir() ) )
-                .build();
+                .withConfig( config );
     }
 }

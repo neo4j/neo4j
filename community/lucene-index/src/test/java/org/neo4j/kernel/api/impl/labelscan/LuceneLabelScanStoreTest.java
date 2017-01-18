@@ -68,15 +68,14 @@ public class LuceneLabelScanStoreTest extends LabelScanStoreTest
         Config config = Config.defaults().with( MapUtil.stringMap(
                 GraphDatabaseSettings.read_only.name(), String.valueOf( readOnly ) ) );
 
-        LabelScanIndex index = LuceneLabelScanIndexBuilder.create()
+        LuceneLabelScanIndexBuilder indexBuilder = LuceneLabelScanIndexBuilder.create()
                 .withDirectoryFactory( directoryFactory )
                 .withIndexStorage( indexStorage )
                 .withOperationalMode( OperationalMode.single )
                 .withConfig( config )
-                .withDocumentFormat( documentFormat )
-                .build();
+                .withDocumentFormat( documentFormat );
 
-        return new LuceneLabelScanStore( index, asStream( existingData ), monitor );
+        return new LuceneLabelScanStore( indexBuilder, asStream( existingData ), monitor );
     }
 
     @Override

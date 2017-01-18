@@ -188,7 +188,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
             Dependencies dependencies = new Dependencies();
             dependencies.satisfyDependencies( Config.defaults(), fileSystem,
                     new SimpleLogService( logProvider, logProvider ), indexStoreView, pageCache );
-            KernelContext kernelContext = new SimpleKernelContext( fileSystem, directory, UNKNOWN, dependencies );
+            KernelContext kernelContext = new SimpleKernelContext( directory, UNKNOWN, dependencies );
             LabelScanStore labelScanStore = startLabelScanStore( config, dependencies, kernelContext );
             directStoreAccess = new DirectStoreAccess( nativeStores, labelScanStore, createIndexes( fileSystem,
                     config, operationalMode ) );
