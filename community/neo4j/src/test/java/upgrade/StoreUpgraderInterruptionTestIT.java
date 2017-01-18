@@ -137,7 +137,7 @@ public class StoreUpgraderInterruptionTestIT
 
         try
         {
-            newUpgrader( upgradableDatabase, progressMonitor, createIndexMigrator(), failingStoreMigrator )
+            newUpgrader( upgradableDatabase, pageCache, progressMonitor, createIndexMigrator(), failingStoreMigrator )
                     .migrateIfNeeded( workingDirectory );
             fail( "Should throw exception" );
         }
@@ -152,7 +152,8 @@ public class StoreUpgraderInterruptionTestIT
         progressMonitor = new SilentMigrationProgressMonitor();
         StoreMigrator migrator = new StoreMigrator( fs, pageCache, CONFIG, logService, schemaIndexProvider );
         SchemaIndexMigrator indexMigrator = createIndexMigrator();
-        newUpgrader(upgradableDatabase, progressMonitor, indexMigrator, migrator ).migrateIfNeeded( workingDirectory );
+        newUpgrader(upgradableDatabase, pageCache, progressMonitor, indexMigrator, migrator ).migrateIfNeeded(
+                workingDirectory );
 
         assertTrue( checkNeoStoreHasDefaultFormatVersion( check, workingDirectory ) );
         assertTrue( allStoreFilesHaveNoTrailer( fs, workingDirectory ) );
@@ -196,7 +197,7 @@ public class StoreUpgraderInterruptionTestIT
 
         try
         {
-            newUpgrader( upgradableDatabase, progressMonitor, createIndexMigrator(), failingStoreMigrator )
+            newUpgrader( upgradableDatabase, pageCache, progressMonitor, createIndexMigrator(), failingStoreMigrator )
                     .migrateIfNeeded( workingDirectory );
             fail( "Should throw exception" );
         }
@@ -210,7 +211,7 @@ public class StoreUpgraderInterruptionTestIT
 
         progressMonitor = new SilentMigrationProgressMonitor();
         StoreMigrator migrator = new StoreMigrator( fs, pageCache, CONFIG, logService, schemaIndexProvider );
-        newUpgrader( upgradableDatabase, progressMonitor, createIndexMigrator(), migrator )
+        newUpgrader( upgradableDatabase, pageCache, progressMonitor, createIndexMigrator(), migrator )
                 .migrateIfNeeded( workingDirectory );
 
         assertTrue( checkNeoStoreHasDefaultFormatVersion( check, workingDirectory ) );
@@ -223,14 +224,13 @@ public class StoreUpgraderInterruptionTestIT
         assertConsistentStore( workingDirectory );
     }
 
-    private StoreUpgrader newUpgrader(UpgradableDatabase upgradableDatabase, MigrationProgressMonitor progressMonitor,
-            SchemaIndexMigrator indexMigrator,
-            StoreMigrator migrator )
+    private StoreUpgrader newUpgrader( UpgradableDatabase upgradableDatabase, PageCache pageCache,
+            MigrationProgressMonitor progressMonitor, SchemaIndexMigrator indexMigrator, StoreMigrator migrator )
     {
         Config allowUpgrade = Config.embeddedDefaults( stringMap( GraphDatabaseSettings
                 .allow_store_upgrade.name(), "true" ) );
 
-        StoreUpgrader upgrader = new StoreUpgrader( upgradableDatabase, progressMonitor, allowUpgrade, fs,
+        StoreUpgrader upgrader = new StoreUpgrader( upgradableDatabase, progressMonitor, allowUpgrade, fs, pageCache,
                 NullLogProvider.getInstance() );
         upgrader.addParticipant( indexMigrator );
         upgrader.addParticipant( migrator );

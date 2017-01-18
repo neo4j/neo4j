@@ -29,7 +29,7 @@ public class LegacyLogFilenames
     private static final String[] allLegacyLogFilesPatterns =
             {"active_tx_log", "tm_tx_log\\..*", "nioneo_logical\\.log\\..*"};
 
-    static final FilenameFilter versionedLegacyLogFilesFilter = new FilenameFilter()
+    public static final FilenameFilter versionedLegacyLogFilesFilter = new FilenameFilter()
     {
         @Override
         public boolean accept( File dir, String name )

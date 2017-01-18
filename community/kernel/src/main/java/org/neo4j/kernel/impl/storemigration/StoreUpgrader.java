@@ -22,6 +22,8 @@ package org.neo4j.kernel.impl.storemigration;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -29,10 +31,11 @@ import java.util.regex.Pattern;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.FileHandle;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor.Section;
-import org.neo4j.kernel.impl.util.CustomIOConfigValidator;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -67,22 +70,23 @@ public class StoreUpgrader
     public static final String MIGRATION_DIRECTORY = "upgrade";
     public static final String MIGRATION_LEFT_OVERS_DIRECTORY = "upgrade_backup";
     private static final String MIGRATION_STATUS_FILE = "_status";
-    public static final String CUSTOM_IO_EXCEPTION_MESSAGE = "Store upgrade not allowed with custom IO integrations";
 
     private final UpgradableDatabase upgradableDatabase;
     private final MigrationProgressMonitor progressMonitor;
     private final List<StoreMigrationParticipant> participants = new ArrayList<>();
     private final Config config;
     private final FileSystemAbstraction fileSystem;
+    private final PageCache pageCache;
     private final Log log;
 
     public StoreUpgrader( UpgradableDatabase upgradableDatabase, MigrationProgressMonitor progressMonitor, Config
-            config, FileSystemAbstraction fileSystem, LogProvider logProvider )
+            config, FileSystemAbstraction fileSystem, PageCache pageCache, LogProvider logProvider )
     {
         this.upgradableDatabase = upgradableDatabase;
         this.progressMonitor = progressMonitor;
         this.fileSystem = fileSystem;
         this.config = config;
+        this.pageCache = pageCache;
         this.log = logProvider.getLog( getClass() );
     }
 
@@ -115,8 +119,6 @@ public class StoreUpgrader
         {
             throw new UpgradeNotAllowedByConfigurationException();
         }
-
-        CustomIOConfigValidator.assertCustomIOConfigNotUsed( config, CUSTOM_IO_EXCEPTION_MESSAGE );
 
         // One or more participants would like to do migration
         progressMonitor.started();
@@ -244,7 +246,7 @@ public class StoreUpgrader
                 index++;
             }
         }
-        catch ( IOException e )
+        catch ( IOException | UncheckedIOException e )
         {
             throw new UnableToUpgradeException( "Failure doing migration", e );
         }
@@ -256,16 +258,26 @@ public class StoreUpgrader
 
     private void cleanMigrationDirectory( File migrationDirectory )
     {
-        if ( migrationDirectory.exists() )
+        try
         {
-            try
+            if ( fileSystem.fileExists( migrationDirectory ) )
             {
                 fileSystem.deleteRecursively( migrationDirectory );
             }
-            catch ( IOException e )
+            // We use the page cache here to make sure that the migration directory is clean even if we are using a
+            // block device.
+            try
             {
-                throw new UnableToUpgradeException( "Failure deleting upgrade directory " + migrationDirectory, e );
+                pageCache.streamFilesRecursive( migrationDirectory ).forEach( FileHandle.HANDLE_DELETE );
             }
+            catch ( NoSuchFileException e )
+            {
+                // This means that we had no files to clean, this is fine.
+            }
+        }
+        catch ( IOException | UncheckedIOException e )
+        {
+            throw new UnableToUpgradeException( "Failure deleting upgrade directory " + migrationDirectory, e );
         }
         fileSystem.mkdir( migrationDirectory );
     }

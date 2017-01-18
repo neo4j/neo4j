@@ -69,8 +69,8 @@ public class BatchingNeoStoresTest
         {
             RecordFormats recordFormats = RecordFormatSelector.selectForConfig( Config.empty(),
                     NullLogProvider.getInstance() );
-            new BatchingNeoStores( fsr.get(), storeDir, recordFormats, DEFAULT, NullLogService.getInstance(), EMPTY,
-                    Config.empty() );
+            BatchingNeoStores.batchingNeoStores( fsr.get(), storeDir, recordFormats, DEFAULT,
+                    NullLogService.getInstance(), EMPTY, Config.empty() );
             fail( "Should fail on existing data" );
         }
         catch ( IllegalStateException e )
@@ -92,8 +92,8 @@ public class BatchingNeoStoresTest
         // WHEN
         RecordFormats recordFormats = Standard.LATEST_RECORD_FORMATS;
         int headerSize = recordFormats.dynamic().getRecordHeaderSize();
-        try ( BatchingNeoStores store = new BatchingNeoStores( fsr.get(), storeDir, recordFormats, DEFAULT,
-                NullLogService.getInstance(), EMPTY, config ) )
+        try ( BatchingNeoStores store = BatchingNeoStores.batchingNeoStores( fsr.get(), storeDir, recordFormats,
+                DEFAULT, NullLogService.getInstance(), EMPTY, config ) )
         {
             // THEN
             assertEquals( size + headerSize, store.getPropertyStore().getArrayStore().getRecordSize() );
