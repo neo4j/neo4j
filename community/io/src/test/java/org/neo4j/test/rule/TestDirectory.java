@@ -220,13 +220,18 @@ public class TestDirectory implements TestRule
         {
             owningTest = description.getTestClass();
         }
-        evaluateClassBaseTestFolder();
         String test = description.getMethodName();
         if ( test == null )
         {
             test = "static";
         }
+        return prepareDirectoryForTest( test );
+    }
+
+    public File prepareDirectoryForTest( String test ) throws IOException
+    {
         String dir = Digests.md5Hex( test );
+        evaluateClassBaseTestFolder();
         register( test, dir );
         return cleanDirectory( dir );
     }

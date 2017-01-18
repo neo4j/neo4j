@@ -87,7 +87,7 @@ public class RelationshipGroupDefragmenterTest
     @Before
     public void start()
     {
-        stores = new BatchingNeoStores( new DefaultFileSystemAbstraction(),
+        stores = BatchingNeoStores.batchingNeoStores( new DefaultFileSystemAbstraction(),
                 directory.absolutePath(), format, CONFIG, NullLogService.getInstance(),
                 AdditionalInitialIds.EMPTY, Config.defaults() );
     }

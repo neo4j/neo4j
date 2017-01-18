@@ -30,7 +30,7 @@ import org.neo4j.io.pagecache.PageCursor;
  */
 public class DelegatingPageCursor extends PageCursor
 {
-    private final PageCursor delegate;
+    protected final PageCursor delegate;
 
     public byte getByte()
     {
@@ -220,6 +220,10 @@ public class DelegatingPageCursor extends PageCursor
     public boolean shouldRetry() throws IOException
     {
         return delegate.shouldRetry();
+    }
+
+    public PageCursor unwrap( ) {
+        return delegate;
     }
 
     public DelegatingPageCursor( PageCursor delegate )

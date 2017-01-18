@@ -27,7 +27,7 @@ public class HighLimitFactory extends RecordFormats.Factory
 {
     public HighLimitFactory()
     {
-        super( HighLimit.NAME );
+        super( HighLimit.NAME, HighLimit.STORE_VERSION );
     }
 
     @Override
