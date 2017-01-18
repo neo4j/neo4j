@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{NoChildren, Plan
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_0.ast.{LabelToken, PropertyKeyToken}
 import org.neo4j.cypher.internal.frontend.v3_0.symbols.CTNode
-import org.neo4j.kernel.api.index.IndexDescriptor
+import org.neo4j.cypher.internal.compiler.v3_0.IndexDescriptor
 
 case class NodeIndexScanPipe(ident: String,
                              label: LabelToken,

@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_0.ast.{LabelToken, PropertyKeyToken}
 import org.neo4j.cypher.internal.frontend.v3_0.symbols.CTNode
 import org.neo4j.graphdb.Node
-import org.neo4j.kernel.api.index.IndexDescriptor
+import org.neo4j.cypher.internal.compiler.v3_0.IndexDescriptor
 
 abstract class AbstractNodeIndexStringScanPipe(ident: String,
                                                label: LabelToken,

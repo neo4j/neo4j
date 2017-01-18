@@ -41,7 +41,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.{Foldable, PropertyKeyId, Semanti
 import org.neo4j.graphdb.Node
 import org.neo4j.helpers.collection.Visitable
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
-import org.neo4j.kernel.api.index.IndexDescriptor
+import org.neo4j.cypher.internal.compiler.v3_0.IndexDescriptor
 import org.neo4j.kernel.impl.util.dbstructure.DbStructureVisitor
 import org.scalatest.matchers.{BeMatcher, MatchResult}
 

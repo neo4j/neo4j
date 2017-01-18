@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.frontend.v3_0.helpers.NonEmptyList
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
-import org.neo4j.kernel.api.index.IndexDescriptor
+import org.neo4j.cypher.internal.compiler.v3_0.IndexDescriptor
 
 class NodeFetchStrategyTest extends CypherFunSuite {
   val propertyName = "prop"

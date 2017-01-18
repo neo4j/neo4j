@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.pipes.NodeStartPipe
 import org.neo4j.cypher.internal.compiler.v3_0.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_0.helpers.NonEmptyList
 import org.neo4j.cypher.internal.frontend.v3_0.{ExclusiveBound, InclusiveBound, IndexHintException}
-import org.neo4j.kernel.api.index.IndexDescriptor
+import org.neo4j.cypher.internal.compiler.v3_0.IndexDescriptor
 
 class StartPointBuilderTest extends BuilderTest {
 

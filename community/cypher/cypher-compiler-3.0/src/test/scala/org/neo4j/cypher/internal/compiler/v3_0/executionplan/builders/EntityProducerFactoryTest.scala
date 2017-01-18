@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{PlanContext, QueryContext}
 import org.neo4j.cypher.internal.frontend.v3_0.IndexHintException
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
-import org.neo4j.kernel.api.index.IndexDescriptor
+import org.neo4j.cypher.internal.compiler.v3_0.IndexDescriptor
 
 class EntityProducerFactoryTest extends CypherFunSuite {
   var planContext: PlanContext = null

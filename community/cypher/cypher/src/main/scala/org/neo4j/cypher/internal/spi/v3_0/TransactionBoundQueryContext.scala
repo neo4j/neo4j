@@ -50,7 +50,7 @@ import org.neo4j.kernel.api._
 import org.neo4j.kernel.api.constraints.{NodePropertyExistenceConstraint, RelationshipPropertyExistenceConstraint, UniquenessConstraint}
 import org.neo4j.kernel.api.exceptions.ProcedureException
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
-import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
+import org.neo4j.kernel.api.index.InternalIndexState
 import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.kernel.impl.locking.ResourceTypes
 
@@ -58,7 +58,7 @@ import scala.collection.Iterator
 import scala.collection.JavaConverters._
 
 final class TransactionBoundQueryContext(val transactionalContext: TransactionalContextWrapper)(implicit indexSearchMonitor: IndexSearchMonitor)
-  extends TransactionBoundTokenContext(transactionalContext.statement) with QueryContext {
+  extends TransactionBoundTokenContext(transactionalContext.statement) with QueryContext with IndexDescriptorCompatibility {
 
   type EntityAccessor = NodeManager
 
