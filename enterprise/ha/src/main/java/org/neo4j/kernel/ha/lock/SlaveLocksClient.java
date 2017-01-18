@@ -249,24 +249,13 @@ class SlaveLocksClient implements Locks.Client
     @Override
     public Stream<? extends ActiveLock> activeLocks()
     {
-        return Stream.concat( // TODO: do we need to make these maps of locks ConcurrentHashMaps?
-                exclusiveLocks.entrySet().stream().flatMap( EXCLUSIVE_ACTIVE_LOCKS ),
-                sharedLocks.entrySet().stream().flatMap( SHARED_ACTIVE_LOCKS ) );
+        return client.activeLocks();
     }
 
     @Override
     public long activeLockCount()
     {
-        long count = 0; // TODO: do we need to make these maps of locks ConcurrentHashMaps?
-        for ( Map<Long,AtomicInteger> locks : exclusiveLocks.values() )
-        {
-            count += locks.size();
-        }
-        for ( Map<Long,AtomicInteger> locks : sharedLocks.values() )
-        {
-            count += locks.size();
-        }
-        return count;
+        return client.activeLockCount();
     }
 
     private static Function<Map.Entry<ResourceType,Map<Long,AtomicInteger>>,Stream<? extends ActiveLock>> activeLocks(
