@@ -56,7 +56,6 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
@@ -228,10 +227,10 @@ public class ReadReplicaReplicationIT
         ReadReplica readReplica = cluster.addReadReplicaWithId( 4 );
         readReplica.start();
         readReplica.database().beginTx().close();
-        readReplica.shutdown();
 
         // Change the store id, so it should fail to join the cluster again
-        changeStoreId( readReplica.storeDir() );
+        changeStoreId( readReplica );
+        readReplica.shutdown();
 
         try
         {
@@ -410,13 +409,11 @@ public class ReadReplicaReplicationIT
                 .reduce( true, ( acc, txId ) -> acc && txId == leaderTxId, Boolean::logicalAnd );
     }
 
-    private void changeStoreId( File storeDir ) throws IOException
+    private void changeStoreId( ReadReplica replica ) throws IOException
     {
-        File neoStoreFile = new File( storeDir, MetaDataStore.DEFAULT_NAME );
-        try ( PageCache pageCache = StandalonePageCacheFactory.createPageCache( new DefaultFileSystemAbstraction() ) )
-        {
-            MetaDataStore.setRecord( pageCache, neoStoreFile, TIME, System.currentTimeMillis() );
-        }
+        File neoStoreFile = new File( replica.storeDir(), MetaDataStore.DEFAULT_NAME );
+        PageCache pageCache = replica.database().getDependencyResolver().resolveDependency( PageCache.class );
+        MetaDataStore.setRecord( pageCache, neoStoreFile, TIME, System.currentTimeMillis() );
     }
 
     private long lastClosedTransactionId( boolean fail, GraphDatabaseFacade db )
