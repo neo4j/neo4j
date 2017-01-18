@@ -51,7 +51,6 @@ import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.extension.dependency.HighestSelectionStrategy;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
-import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.logging.SimpleLogService;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
@@ -183,19 +182,17 @@ public class ConsistencyCheckService
         } ) );
 
         // Bootstrap kernel extensions
-        Dependencies dependencies = new Dependencies();
-        dependencies.satisfyDependencies( consistencyCheckerConfig, fileSystem,
-                new SimpleLogService( logProvider, logProvider ), IndexStoreView.EMPTY, pageCache );
-        KernelContext kernelContext = new SimpleKernelContext( fileSystem, storeDir, UNKNOWN, dependencies );
         LifeSupport life = new LifeSupport();
-        KernelExtensions extensions = life.add( new KernelExtensions(
-                kernelContext, (Iterable) load( KernelExtensionFactory.class ), dependencies, ignore() ) );
-
         try ( NeoStores neoStores = factory.openAllNeoStores() )
         {
-            life.start();
             IndexStoreView indexStoreView = new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, neoStores );
-            OperationalMode operationalMode = OperationalMode.single;
+            Dependencies dependencies = new Dependencies();
+            dependencies.satisfyDependencies( consistencyCheckerConfig, fileSystem,
+                    new SimpleLogService( logProvider, logProvider ), indexStoreView, pageCache );
+            KernelContext kernelContext = new SimpleKernelContext( fileSystem, storeDir, UNKNOWN, dependencies );
+            KernelExtensions extensions = life.add( new KernelExtensions(
+                    kernelContext, (Iterable) load( KernelExtensionFactory.class ), dependencies, ignore() ) );
+            life.start();
             LabelScanStore labelScanStore = life.add( extensions.resolveDependency( LabelScanStoreProvider.class,
                     HighestSelectionStrategy.getInstance() ).getLabelScanStore() );
 
