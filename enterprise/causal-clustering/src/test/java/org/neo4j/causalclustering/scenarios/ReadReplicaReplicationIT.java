@@ -454,7 +454,9 @@ public class ReadReplicaReplicationIT
 
         try
         {
-            cluster.addReadReplicaWithIdAndRecordFormat( 0, Standard.LATEST_NAME );
+            String format = Standard.LATEST_NAME;
+            cluster.addReadReplicaWithIdAndRecordFormat( 0, format ).start();
+            fail( "starting read replica with '" + format + "' format should have failed" );
         }
         catch ( Exception e )
         {
