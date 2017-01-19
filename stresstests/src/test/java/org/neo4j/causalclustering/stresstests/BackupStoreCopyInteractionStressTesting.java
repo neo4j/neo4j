@@ -19,6 +19,7 @@
  */
 package org.neo4j.causalclustering.stresstests;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
@@ -36,10 +37,12 @@ import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.HazelcastDiscoveryServiceFactory;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.SocketAddress;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
+import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.lang.Boolean.parseBoolean;
 import static java.lang.Integer.parseInt;
@@ -67,7 +70,13 @@ public class BackupStoreCopyInteractionStressTesting
     private static final String DEFAULT_BASE_CORE_BACKUP_PORT = "8000";
     private static final String DEFAULT_BASE_EDGE_BACKUP_PORT = "9000";
 
-    private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+    @Rule
+    public final DefaultFileSystemRule defaultFileSystemRule = new DefaultFileSystemRule();
+    @Rule
+    public final PageCacheRule pageCacheRule = new PageCacheRule();
+
+    private final FileSystemAbstraction fs = defaultFileSystemRule.get();
+    private final PageCache pageCache = pageCacheRule.getPageCache( fs );
 
     @Test
     public void shouldBehaveCorrectlyUnderStress() throws Exception
@@ -124,7 +133,7 @@ public class BackupStoreCopyInteractionStressTesting
 
             Future<Throwable> workload = service.submit( new Workload( keepGoing, onFailure, cluster ) );
             Future<Throwable> startStopWorker = service.submit(
-                    new StartStopLoad( fs, keepGoing, onFailure, cluster, numberOfCores, numberOfEdges ) );
+                    new StartStopLoad( fs, pageCache, keepGoing, onFailure, cluster, numberOfCores, numberOfEdges ) );
             Future<Throwable> backupWorker = service.submit(
                     new BackupLoad( keepGoing, onFailure, cluster, numberOfCores, numberOfEdges, backupDirectory,
                             backupAddress ) );

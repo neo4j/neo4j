@@ -237,7 +237,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
             } );
         }
 
-        StoreCopyProcess storeCopyProcess = new StoreCopyProcess( fileSystem, localDatabase,
+        StoreCopyProcess storeCopyProcess = new StoreCopyProcess( fileSystem, pageCache, localDatabase,
                 copiedStoreRecovery, remoteStore, logProvider );
 
         CatchupPollingProcess catchupProcess =

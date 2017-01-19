@@ -23,27 +23,20 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 
 public class TemporaryStoreDirectory implements AutoCloseable
 {
     private static final String TEMP_COPY_DIRECTORY_NAME = "temp-copy";
 
-    private final FileSystemAbstraction fs;
     private final File tempStoreDir;
+    private final StoreFiles storeFiles;
 
-    public TemporaryStoreDirectory( FileSystemAbstraction fs, File parent ) throws IOException
+    public TemporaryStoreDirectory( FileSystemAbstraction fs, PageCache pageCache, File parent ) throws IOException
     {
-        this.fs = fs;
         this.tempStoreDir = new File( parent, TEMP_COPY_DIRECTORY_NAME );
-        cleanDirectory();
-    }
-
-    private void cleanDirectory() throws IOException
-    {
-        if ( !fs.mkdir( tempStoreDir ) )
-        {
-            fs.deleteRecursively( tempStoreDir );
-        }
+        storeFiles = new StoreFiles( fs, pageCache, ( directory, name ) -> true );
+        storeFiles.delete( tempStoreDir );
     }
 
     public File storeDir()
@@ -54,6 +47,6 @@ public class TemporaryStoreDirectory implements AutoCloseable
     @Override
     public void close() throws IOException
     {
-        cleanDirectory();
+        storeFiles.delete( tempStoreDir );
     }
 }

@@ -23,7 +23,9 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
@@ -35,6 +37,8 @@ import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.causalclustering.messaging.routing.AlwaysChooseFirstMember;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.NullLogProvider;
 
@@ -54,6 +58,8 @@ public class ReadReplicaStartupProcessTest
     private ConstantTimeRetryStrategy retryStrategy = new ConstantTimeRetryStrategy( 1, MILLISECONDS );
     private StoreCopyProcess storeCopyProcess = mock( StoreCopyProcess.class );
     private RemoteStore remoteStore = mock( RemoteStore.class );
+    private FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
+    private final PageCache pageCache = mock( PageCache.class );
     private LocalDatabase localDatabase = mock( LocalDatabase.class );
     private TopologyService hazelcastTopology = mock( TopologyService.class );
     private CoreTopology clusterTopology = mock( CoreTopology.class );
@@ -65,8 +71,9 @@ public class ReadReplicaStartupProcessTest
     private File storeDir = new File( "store-dir" );
 
     @Before
-    public void commonMocking() throws StoreIdDownloadFailedException
+    public void commonMocking() throws StoreIdDownloadFailedException, IOException
     {
+        when( pageCache.streamFilesRecursive( any(File.class) ) ).thenAnswer( ( f ) -> Stream.empty() );
         when( localDatabase.storeDir() ).thenReturn( storeDir );
         when( localDatabase.storeId() ).thenReturn( localStoreId );
         when( hazelcastTopology.coreServers() ).thenReturn( clusterTopology );
