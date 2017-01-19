@@ -27,6 +27,8 @@ import org.junit.runners.model.Statement;
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.util.Arrays;
+import java.util.stream.Collectors;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -256,12 +258,27 @@ public class TestDirectory implements TestRule
             throws IOException
     {
         File testData = new File( locateTarget( owningTest ), "test-data" );
-        File result = new File( testData, owningTest.getName() ).getAbsoluteFile();
+        File result = new File( testData, shorten( owningTest.getName() ) ).getAbsoluteFile();
         if ( clean )
         {
             clean( fs, result );
         }
         return result;
+    }
+
+    private static String shorten( String owningTestName )
+    {
+        int targetPartLength = 5;
+        String[] parts = owningTestName.split( "\\." );
+        for ( int i = 0; i < parts.length - 1; i++ )
+        {
+            String part = parts[i];
+            if ( part.length() > targetPartLength )
+            {
+                parts[i] = part.substring( 0, targetPartLength - 1 ) + "~";
+            }
+        }
+        return Arrays.stream( parts ).collect( Collectors.joining( "." ) );
     }
 
     private void register( String test, String dir )
