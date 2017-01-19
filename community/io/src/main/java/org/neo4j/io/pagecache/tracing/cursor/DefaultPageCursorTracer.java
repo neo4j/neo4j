@@ -44,7 +44,7 @@ public class DefaultPageCursorTracer implements PageCursorTracer
     private long bytesRead = 0L;
     private long bytesWritten = 0L;
     private long evictions = 0L;
-    private long flushes;
+    private long flushes = 0L;
 
     private long cyclePinsStart;
     private long cycleUnpinsStart;
@@ -105,13 +105,6 @@ public class DefaultPageCursorTracer implements PageCursorTracer
     public void init( PageCacheTracer pageCacheTracer )
     {
         this.pageCacheTracer = pageCacheTracer;
-        this.cyclePinsStart = pins;
-        this.cycleUnpinsStart = unpins;
-        this.cycleFaultsStart = faults;
-        this.cycleBytesReadStart = bytesRead;
-        this.cycleBytesWrittenStart = bytesWritten;
-        this.cycleEvictionsStart = evictions;
-        this.cycleFlushesStart = flushes;
     }
 
     public void reportEvents()
@@ -124,6 +117,18 @@ public class DefaultPageCursorTracer implements PageCursorTracer
         pageCacheTracer.evictions( Math.abs( evictions - cycleEvictionsStart ) );
         pageCacheTracer.bytesWritten( Math.abs( bytesWritten - cycleBytesWrittenStart ) );
         pageCacheTracer.flushes( Math.abs( flushes - cycleFlushesStart ) );
+        rememberReportedValues();
+    }
+
+    private void rememberReportedValues()
+    {
+        this.cyclePinsStart = pins;
+        this.cycleUnpinsStart = unpins;
+        this.cycleFaultsStart = faults;
+        this.cycleBytesReadStart = bytesRead;
+        this.cycleBytesWrittenStart = bytesWritten;
+        this.cycleEvictionsStart = evictions;
+        this.cycleFlushesStart = flushes;
     }
 
     @Override
@@ -148,6 +153,24 @@ public class DefaultPageCursorTracer implements PageCursorTracer
     public long bytesRead()
     {
         return bytesRead;
+    }
+
+    @Override
+    public long evictions()
+    {
+        return evictions;
+    }
+
+    @Override
+    public long bytesWritten()
+    {
+        return bytesWritten;
+    }
+
+    @Override
+    public long flushes()
+    {
+        return flushes;
     }
 
     @Override

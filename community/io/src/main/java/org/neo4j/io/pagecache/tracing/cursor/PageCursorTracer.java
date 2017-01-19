@@ -62,6 +62,24 @@ public interface PageCursorTracer extends PageCursorCounters
         }
 
         @Override
+        public long evictions()
+        {
+            return 0;
+        }
+
+        @Override
+        public long bytesWritten()
+        {
+            return 0;
+        }
+
+        @Override
+        public long flushes()
+        {
+            return 0;
+        }
+
+        @Override
         public PinEvent beginPin( boolean writeLock, long filePageId, PageSwapper swapper )
         {
             return PinEvent.NULL;

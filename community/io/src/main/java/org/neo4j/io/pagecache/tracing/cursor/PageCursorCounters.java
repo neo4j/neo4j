@@ -49,4 +49,19 @@ public interface PageCursorCounters
      */
     long bytesRead();
 
+    /**
+     * @return The number of page evictions observed thus far.
+     */
+    long evictions();
+
+    /**
+     * @return The sum total of bytes written through flushes thus far.
+     */
+    long bytesWritten();
+
+    /**
+     * @return The number of page flushes observed thus far.
+     */
+    long flushes();
+
 }

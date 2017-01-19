@@ -66,6 +66,24 @@ public class LinearHistoryPageCursorTracer implements PageCursorTracer
     }
 
     @Override
+    public long evictions()
+    {
+        return 0;
+    }
+
+    @Override
+    public long bytesWritten()
+    {
+        return 0;
+    }
+
+    @Override
+    public long flushes()
+    {
+        return 0;
+    }
+
+    @Override
     public PinEvent beginPin( boolean writeLock, long filePageId, PageSwapper swapper )
     {
         return tracer.add( new HEvents.PinHEvent( tracer, writeLock, filePageId, swapper ) );
