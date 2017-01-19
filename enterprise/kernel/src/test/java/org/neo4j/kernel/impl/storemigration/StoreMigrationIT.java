@@ -43,8 +43,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.EnterpriseGraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.graphdb.schema.ConstraintDefinition;
-import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
@@ -114,10 +112,10 @@ public class StoreMigrationIT
                     legacyStoreVersionCheck, toFormat );
             for ( RecordFormats fromFormat : recordFormatses )
             {
-                File db = new File( dir, fromFormat.storeVersion() + toFormat.storeVersion() );
+                File db = new File( dir, baseDirName( toFormat, fromFormat ) );
                 try
                 {
-                    createDb( fromFormat, pageCache, fs, db );
+                    createDb( fromFormat, db );
                     if ( !upgradableDatabase.hasCurrentVersion( db ) )
                     {
                         upgradableDatabase.checkUpgradeable( db );
@@ -133,6 +131,11 @@ public class StoreMigrationIT
         }
 
         return data;
+    }
+
+    private static String baseDirName(RecordFormats toFormat, RecordFormats fromFormat)
+    {
+        return fromFormat.storeVersion() + toFormat.storeVersion();
     }
 
     private static void addIfNotThere( RecordFormats f, ArrayList<RecordFormats> recordFormatses )
@@ -177,8 +180,7 @@ public class StoreMigrationIT
         }
     }
 
-    private static void createDb( RecordFormats recordFormat, PageCache pageCache, FileSystemAbstraction fs,
-            File storeDir ) throws IOException
+    private static void createDb( RecordFormats recordFormat, File storeDir ) throws IOException
     {
         GraphDatabaseService database = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir )
                 .setConfig( GraphDatabaseSettings.allow_store_upgrade, Settings.TRUE )
@@ -195,7 +197,7 @@ public class StoreMigrationIT
     @Test
     public void shouldMigrate() throws Exception
     {
-        File db = testDir.directory( from.toString() + to.toString() );
+        File db = testDir.directory( baseDirName( to, from ) );
         FileSystemAbstraction fs = fileSystemRule.get();
         fs.deleteRecursively( db );
         GraphDatabaseService database = getGraphDatabaseService( db, from.storeVersion() );
