@@ -22,9 +22,7 @@ package org.neo4j.consistency;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -37,7 +35,6 @@ import org.neo4j.commandline.arguments.OptionalBooleanArg;
 import org.neo4j.commandline.arguments.common.OptionalCanonicalPath;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Strings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
@@ -58,6 +55,8 @@ public class CheckConsistencyCommand implements AdminCommand
 
     public static final Arguments arguments = new Arguments()
             .withDatabase()
+            .withArgument( new OptionalCanonicalPath( "backup", "/path/to/backup", "",
+                    "Path to backup to check consistency of. Cannot be used together with --database." ) )
             .withAdditionalConfig()
             .withArgument( new OptionalBooleanArg( "verbose", false, "Enable verbose output." ) )
             .withArgument( new OptionalCanonicalPath( "report-dir", "directory", ".",
@@ -121,10 +120,12 @@ public class CheckConsistencyCommand implements AdminCommand
         final Boolean verbose;
         final Optional<Path> additionalConfigFile;
         final Path reportDir;
+        final Optional<Path> backupPath;
 
         try
         {
             database = arguments.parse( "database", args );
+            backupPath = arguments.parseOptionalPath( "backup", args );
             verbose = arguments.parseBoolean( "verbose", args );
             additionalConfigFile = arguments.parseOptionalPath( "additional-config", args );
             reportDir = arguments.parseOptionalPath( "report-dir", args )
@@ -135,11 +136,23 @@ public class CheckConsistencyCommand implements AdminCommand
             throw new IncorrectUsage( e.getMessage() );
         }
 
+        if ( backupPath.isPresent() )
+        {
+            if ( arguments.has( "database", args ) )
+            {
+                throw new IncorrectUsage( "Only one of '--database' and '--backup' can be specified." );
+            }
+            if ( !backupPath.get().toFile().isDirectory() )
+            {
+                throw new CommandFailed( format( "Specified backup should be a directory: %s", backupPath.get() ) );
+            }
+        }
+
         Config config = loadNeo4jConfig( homeDir, configDir, database, loadAdditionalConfig( additionalConfigFile ) );
 
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
         {
-            File storeDir = config.get( database_path );
+            File storeDir = backupPath.map( Path::toFile ).orElse( config.get( database_path ) );
             checkDbState( storeDir, config );
             ConsistencyCheckService.Result consistencyCheckResult = consistencyCheckService
                     .runFullConsistencyCheck( storeDir, config, ProgressMonitorFactory.textual( System.err ),

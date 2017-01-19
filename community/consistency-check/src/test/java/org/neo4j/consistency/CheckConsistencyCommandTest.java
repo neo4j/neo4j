@@ -21,6 +21,7 @@ package org.neo4j.consistency;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -57,6 +58,9 @@ public class CheckConsistencyCommandTest
 {
     @Rule
     public TestDirectory testDir = TestDirectory.testDirectory( getClass() );
+
+    @Rule
+    public ExpectedException expect = ExpectedException.none();
 
     @Test
     public void runsConsistencyChecker() throws Exception
@@ -205,6 +209,69 @@ public class CheckConsistencyCommandTest
     }
 
     @Test
+    public void databaseAndBackupAreMutuallyExclusive() throws Exception
+    {
+        ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
+
+        Path homeDir = testDir.directory( "home" ).toPath();
+        OutsideWorld outsideWorld = mock( OutsideWorld.class );
+        CheckConsistencyCommand checkConsistencyCommand =
+                new CheckConsistencyCommand( homeDir, testDir.directory( "conf" ).toPath(), outsideWorld,
+                        consistencyCheckService );
+
+        stub( consistencyCheckService.runFullConsistencyCheck( anyObject(), anyObject(), anyObject(), anyObject(),
+                anyObject(), anyBoolean(), anyObject() ) ).toReturn( ConsistencyCheckService.Result.success( null ) );
+
+        expect.expect( IncorrectUsage.class );
+        expect.expectMessage( "Only one of '--database' and '--backup' can be specified." );
+
+        checkConsistencyCommand.execute( new String[]{"--database=foo", "--backup=bar"} );
+    }
+
+    @Test
+    public void backupNeedsToBePath() throws Exception
+    {
+        ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
+
+        Path homeDir = testDir.directory( "home" ).toPath();
+        OutsideWorld outsideWorld = mock( OutsideWorld.class );
+        CheckConsistencyCommand checkConsistencyCommand =
+                new CheckConsistencyCommand( homeDir, testDir.directory( "conf" ).toPath(), outsideWorld,
+                        consistencyCheckService );
+
+        File backupPath = new File( homeDir.toFile(), "dir/does/not/exist" );
+
+        expect.expect( CommandFailed.class );
+        expect.expectMessage( "Specified backup should be a directory: " + backupPath );
+
+        checkConsistencyCommand.execute( new String[]{"--backup=" + backupPath} );
+    }
+
+    @Test
+    public void canRunOnBackup() throws Exception
+    {
+        ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
+
+        Path backupDir = testDir.directory( "backup" ).toPath();
+        Path homeDir = testDir.directory( "home" ).toPath();
+        OutsideWorld outsideWorld = mock( OutsideWorld.class );
+        CheckConsistencyCommand checkConsistencyCommand =
+                new CheckConsistencyCommand( homeDir, testDir.directory( "conf" ).toPath(), outsideWorld,
+                        consistencyCheckService );
+
+        when( consistencyCheckService
+                .runFullConsistencyCheck( eq( backupDir.toFile() ), any( Config.class ), any( ProgressMonitorFactory.class ),
+                        any( LogProvider.class ), any( FileSystemAbstraction.class ), eq( false ), anyObject() ) )
+                .thenReturn( ConsistencyCheckService.Result.success( null ) );
+
+        checkConsistencyCommand.execute( new String[]{"--backup=" + backupDir} );
+
+        verify( consistencyCheckService )
+                .runFullConsistencyCheck( eq( backupDir.toFile() ), any( Config.class ), any( ProgressMonitorFactory.class ),
+                        any( LogProvider.class ), any( FileSystemAbstraction.class ), eq( false ), anyObject() );
+    }
+
+    @Test
     public void shouldPrintNiceHelp() throws Throwable
     {
         try ( ByteArrayOutputStream baos = new ByteArrayOutputStream() )
@@ -215,6 +282,7 @@ public class CheckConsistencyCommandTest
             usage.printUsageForCommand( new CheckConsistencyCommand.Provider(), ps::println );
 
             assertEquals( String.format( "usage: neo4j-admin check-consistency [--database=<name>]%n" +
+                            "                                     [--backup=</path/to/backup>]%n" +
                             "                                     [--additional-config=<config-file-path>]%n" +
                             "                                     [--verbose[=<true|false>]]%n" +
                             "                                     [--report-dir=<directory>]%n" +
@@ -223,6 +291,9 @@ public class CheckConsistencyCommandTest
                             "%n" +
                             "options:%n" +
                             "  --database=<name>                        Name of database. [default:graph.db]%n" +
+                            "  --backup=</path/to/backup>               Path to backup to check consistency%n" +
+                            "                                           of. Cannot be used together with%n" +
+                            "                                           --database. [default:]%n" +
                             "  --additional-config=<config-file-path>   Configuration file to supply%n" +
                             "                                           additional configuration in.%n" +
                             "                                           [default:]%n" +
