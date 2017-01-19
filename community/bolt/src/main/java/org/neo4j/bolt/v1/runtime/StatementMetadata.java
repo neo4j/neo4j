@@ -17,35 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.query;
+package org.neo4j.bolt.v1.runtime;
 
-public class QuerySource
+/**
+ * Metadata that becomes available as soon as a statement is started, and is sent to the client before the result
+ * stream is sent.
+ */
+interface StatementMetadata
 {
-    private final String[] parts;
-
-    public static final QuerySource UNKNOWN = new QuerySource( "<unknown>");
-
-    public QuerySource( String ... parts )
-    {
-        this.parts = parts;
-    }
-
-    public QuerySource append( String newPart )
-    {
-        String[] newParts = new String[parts.length + 1];
-        System.arraycopy( parts, 0, newParts, 0, parts.length );
-        newParts[parts.length] = newPart;
-        return new QuerySource( newParts );
-    }
-
-    @Override
-    public String toString()
-    {
-        return toString( "\t" );
-    }
-
-    public String toString( String sep )
-    {
-        return String.join( sep, parts );
-    }
+    String[] fieldNames();
 }

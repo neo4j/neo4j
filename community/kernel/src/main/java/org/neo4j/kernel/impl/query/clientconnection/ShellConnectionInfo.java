@@ -17,18 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.rest.web;
+package org.neo4j.kernel.impl.query.clientconnection;
 
-import javax.servlet.http.HttpServletRequest;
+import java.io.Serializable;
 
-import org.neo4j.kernel.impl.query.QuerySource;
-
-public class ServerQuerySession
+/**
+ * @see ClientConnectionInfo Parent class for documentation and tests.
+ */
+public class ShellConnectionInfo extends ClientConnectionInfo
 {
-    public static QuerySource describe( HttpServletRequest request )
+    private final Serializable id;
+
+    public ShellConnectionInfo( Serializable id )
     {
-        return request == null ?
-            new QuerySource( "server-session" ) :
-            new QuerySource( "server-session", request.getScheme(), request.getRemoteAddr(), request.getRequestURI() );
+        this.id = id;
+    }
+
+    @Override
+    public String asConnectionDetails()
+    {
+        return "shell-session\tshell\t" + id;
     }
 }

@@ -30,7 +30,7 @@ import org.neo4j.io.pagecache.PageCursor;
  */
 public class DelegatingPageCursor extends PageCursor
 {
-    private final PageCursor delegate;
+    protected final PageCursor delegate;
 
     @Override
     public byte getByte()
@@ -264,6 +264,10 @@ public class DelegatingPageCursor extends PageCursor
     public boolean isWriteLocked()
     {
         return delegate.isWriteLocked();
+    }
+
+    public PageCursor unwrap( ) {
+        return delegate;
     }
 
     public DelegatingPageCursor( PageCursor delegate )

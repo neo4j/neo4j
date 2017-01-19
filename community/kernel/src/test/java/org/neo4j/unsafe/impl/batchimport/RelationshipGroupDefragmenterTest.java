@@ -90,7 +90,7 @@ public class RelationshipGroupDefragmenterTest
     @Before
     public void start()
     {
-        stores = new BatchingNeoStores( fileSystemRule.get(),
+        stores = BatchingNeoStores.batchingNeoStores( fileSystemRule.get(),
                 directory.absolutePath(), format, CONFIG, NullLogService.getInstance(),
                 AdditionalInitialIds.EMPTY, Config.defaults() );
     }

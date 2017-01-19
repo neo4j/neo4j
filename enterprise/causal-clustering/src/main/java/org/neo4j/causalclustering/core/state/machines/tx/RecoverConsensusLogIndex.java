@@ -28,12 +28,12 @@ import org.neo4j.logging.LogProvider;
  * Retrieves last raft log index that was appended to the transaction log, so that raft log replay can recover while
  * preserving idempotency (avoid appending the same transaction twice).
  */
-public class RecoverTransactionLogState
+public class RecoverConsensusLogIndex
 {
     private final Dependencies dependencies;
     private final LogProvider logProvider;
 
-    public RecoverTransactionLogState( Dependencies dependencies, LogProvider logProvider )
+    public RecoverConsensusLogIndex( Dependencies dependencies, LogProvider logProvider )
     {
         this.dependencies = dependencies;
         this.logProvider = logProvider;

@@ -29,17 +29,26 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiConsumer;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.FileHandle;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.store.StorePropertyCursor;
@@ -62,6 +71,7 @@ import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.NodeRecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.RelationshipRecordFormat;
+import org.neo4j.kernel.impl.store.format.standard.StandardV2_0;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_1;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_2;
 import org.neo4j.kernel.impl.store.id.ReadOnlyIdGeneratorFactory;
@@ -81,6 +91,7 @@ import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMo
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.util.CustomIOConfigValidator;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds;
@@ -97,7 +108,6 @@ import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.input.Inputs;
 import org.neo4j.unsafe.impl.batchimport.staging.CoarseBoundedProgressExecutionMonitor;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
-import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores;
 
 import static java.util.Arrays.asList;
 import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
@@ -132,6 +142,8 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     // complete upgrades in a reasonable time period.
 
     private static final char TX_LOG_COUNTERS_SEPARATOR = 'A';
+    public static final String CUSTOM_IO_EXCEPTION_MESSAGE =
+            "Migrating this version is not supported for custom IO configurations.";
 
     private final Config config;
     private final LogService logService;
@@ -162,6 +174,13 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     public void migrate( File storeDir, File migrationDir, MigrationProgressMonitor.Section progressMonitor,
             String versionToMigrateFrom, String versionToMigrateTo ) throws IOException
     {
+        if ( versionToMigrateFrom.equals( StandardV2_0.STORE_VERSION ) ||
+             versionToMigrateFrom.equals( StandardV2_1.STORE_VERSION ) ||
+             versionToMigrateFrom.equals( StandardV2_2.STORE_VERSION ) )
+        {
+            // These versions are not supported for block devices.
+            CustomIOConfigValidator.assertCustomIOConfigNotUsed( config, CUSTOM_IO_EXCEPTION_MESSAGE );
+        }
         // Extract information about the last transaction from legacy neostore
         File neoStore = new File( storeDir, MetaDataStore.DEFAULT_NAME );
         long lastTxId = MetaDataStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_ID );
@@ -425,7 +444,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                     readAdditionalIds( lastTxId, lastTxChecksum, lastTxLogVersion, lastTxLogByteOffset );
 
             // We have to make sure to keep the token ids if we're migrating properties/labels
-            BatchImporter importer = new ParallelBatchImporter( migrationDir.getAbsoluteFile(), fileSystem,
+            BatchImporter importer = new ParallelBatchImporter( migrationDir.getAbsoluteFile(), fileSystem, pageCache,
                     importConfig, logService,
                     withDynamicProcessorAssignment( migrationBatchImporterMonitor( legacyStore, progressMonitor,
                             importConfig ), importConfig ), additionalInitialIds, config, newFormat );
@@ -466,6 +485,19 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
             }
             StoreFile.fileOperation( DELETE, fileSystem, migrationDir, null, storesToDeleteFromMigratedDirectory,
                     true, null, StoreFileType.values() );
+            // When migrating on a block device there might be some files only accessible via the page cache.
+            try
+            {
+                Predicate<FileHandle> fileHandlePredicate = fileHandle -> storesToDeleteFromMigratedDirectory.stream()
+                        .anyMatch( storeFile -> storeFile.fileName( StoreFileType.STORE )
+                                .equals( fileHandle.getFile().getName() ) );
+                pageCache.streamFilesRecursive( migrationDir ).filter( fileHandlePredicate )
+                        .forEach( FileHandle.HANDLE_DELETE );
+            }
+            catch ( NoSuchFileException e )
+            {
+                // This means that we had no files only present in the page cache, this is fine.
+            }
         }
     }
 
@@ -478,7 +510,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     private void prepareBatchImportMigration( File storeDir, File migrationDir, RecordFormats oldFormat,
             RecordFormats newFormat ) throws IOException
     {
-        BatchingNeoStores.createStore( fileSystem, migrationDir.getPath(), config, newFormat );
+        createStore( migrationDir, newFormat );
 
         // We use the batch importer for migrating the data, and we use it in a special way where we only
         // rewrite the stores that have actually changed format. We know that to be node and relationship
@@ -497,9 +529,37 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                 StoreFile.NODE_LABEL_STORE};
         if ( newFormat.dynamic().equals( oldFormat.dynamic() ) )
         {
-            StoreFile.fileOperation( COPY, fileSystem, storeDir, migrationDir, Arrays.asList(storesFilesToMigrate),
+            // We use the page cache for copying the STORE files since these might be on a block device.
+            for ( StoreFile file : storesFilesToMigrate )
+            {
+                File fromPath = new File( storeDir, file.fileName( StoreFileType.STORE ) );
+                File toPath = new File( migrationDir, file.fileName( StoreFileType.STORE ) );
+                int pageSize = pageCache.pageSize();
+                try ( PagedFile fromFile = pageCache.map( fromPath, pageSize );
+                      PagedFile toFile = pageCache.map( toPath, pageSize, StandardOpenOption.CREATE );
+                      PageCursor fromCursor = fromFile.io( 0L, PagedFile.PF_SHARED_READ_LOCK );
+                      PageCursor toCursor = toFile.io( 0L, PagedFile.PF_SHARED_WRITE_LOCK ); )
+                {
+                    while ( fromCursor.next() )
+                    {
+                        toCursor.next();
+                        do
+                        {
+                            fromCursor.copyTo( 0, toCursor, 0, pageSize );
+                        }
+                        while ( fromCursor.shouldRetry() );
+                    }
+                }
+                catch ( NoSuchFileException e )
+                {
+                    // It is okay for the file to not be there.
+                }
+            }
+
+            // The ID files are to be kept on the normal file system, hence we use fileOperation to copy them.
+            StoreFile.fileOperation( COPY, fileSystem, storeDir, migrationDir, Arrays.asList( storesFilesToMigrate ),
                     true, // OK if it's not there (1.9)
-                    ExistingTargetStrategy.FAIL, StoreFileType.values() );
+                    ExistingTargetStrategy.FAIL, StoreFileType.ID);
         }
         else
         {
@@ -517,6 +577,22 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
             MigrationProgressMonitor.Section section = SilentMigrationProgressMonitor.NO_OP_SECTION;
 
             migrator.migrate( storeDir, oldFormat, migrationDir, newFormat, section, storesToMigrate, StoreType.NODE );
+        }
+    }
+
+    private void createStore( File migrationDir, RecordFormats newFormat )
+    {
+        StoreFactory storeFactory = new StoreFactory( new File( migrationDir.getPath() ), pageCache, fileSystem,
+                newFormat, NullLogProvider.getInstance() );
+        try ( NeoStores neoStores = storeFactory.openAllNeoStores( true ) )
+        {
+            neoStores.getMetaDataStore();
+            neoStores.getLabelTokenStore();
+            neoStores.getNodeStore();
+            neoStores.getPropertyStore();
+            neoStores.getRelationshipGroupStore();
+            neoStores.getRelationshipStore();
+            neoStores.getSchemaStore();
         }
     }
 
@@ -602,7 +678,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         };
     }
 
-    private <ENTITY extends InputEntity,RECORD extends PrimitiveRecord> BiConsumer<ENTITY,RECORD> propertyDecorator(
+    private <ENTITY extends InputEntity, RECORD extends PrimitiveRecord> BiConsumer<ENTITY,RECORD> propertyDecorator(
             boolean requiresPropertyMigration, RecordCursors cursors )
     {
         if ( !requiresPropertyMigration )
@@ -612,7 +688,8 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
 
         final StorePropertyCursor cursor = new StorePropertyCursor( cursors, ignored -> {} );
         final List<Object> scratch = new ArrayList<>();
-        return (ENTITY entity, RECORD record) -> {
+        return ( ENTITY entity, RECORD record ) ->
+        {
             cursor.init( record.getNextProp(), LockService.NO_LOCK );
             scratch.clear();
             while ( cursor.next() )
@@ -634,6 +711,30 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                 true, // allow to skip non existent source files
                 ExistingTargetStrategy.OVERWRITE, // allow to overwrite target files
                 StoreFileType.values() );
+        // Since some of the files might only be accessible through the page cache (i.e. block devices), we also try to
+        // move the files with the page cache.
+        try
+        {
+            Iterable<FileHandle> fileHandles = pageCache.streamFilesRecursive( migrationDir )::iterator;
+            for ( FileHandle fh : fileHandles )
+            {
+                Predicate<StoreFile> predicate =
+                        storeFile -> storeFile.fileName( StoreFileType.STORE ).equals( fh.getFile().getName() );
+                if ( StreamSupport.stream( StoreFile.currentStoreFiles().spliterator(), false ).anyMatch( predicate ) )
+                {
+                    final Optional<PagedFile> optionalPagedFile = pageCache.getExistingMapping( fh.getFile() );
+                    if ( optionalPagedFile.isPresent() )
+                    {
+                        optionalPagedFile.get().close();
+                    }
+                    fh.rename( new File( storeDir, fh.getFile().getName() ), StandardCopyOption.REPLACE_EXISTING );
+                }
+            }
+        }
+        catch ( NoSuchFileException e )
+        {
+            //This means that we had no files only present in the page cache, this is fine.
+        }
 
         RecordFormats oldFormat = selectForVersion( versionToUpgradeFrom );
         RecordFormats newFormat = selectForVersion( versionToUpgradeTo );

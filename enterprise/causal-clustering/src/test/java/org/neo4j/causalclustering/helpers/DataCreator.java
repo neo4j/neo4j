@@ -17,36 +17,24 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.core.state.machines.tx;
+package org.neo4j.causalclustering.helpers;
 
-import java.util.concurrent.TimeUnit;
+import org.neo4j.causalclustering.discovery.Cluster;
+import org.neo4j.causalclustering.discovery.CoreClusterMember;
 
-public class ConstantTimeRetryStrategy implements RetryStrategy
+public class DataCreator
 {
-    private final Timeout constantTimeout;
-
-    public ConstantTimeRetryStrategy( long backoffTime, TimeUnit timeUnit )
+    public static CoreClusterMember createNodes( Cluster cluster, int numberOfNodes ) throws Exception
     {
-        long backoffTimeMillis = timeUnit.toMillis( backoffTime );
-
-        constantTimeout = new Timeout()
+        CoreClusterMember last = null;
+        for ( int i = 0; i < numberOfNodes; i++ )
         {
-            @Override
-            public long getMillis()
+            last = cluster.coreTx( ( db, tx ) ->
             {
-                return backoffTimeMillis;
-            }
-
-            @Override
-            public void increment()
-            {
-            }
-        };
-    }
-
-    @Override
-    public Timeout newTimeout()
-    {
-        return constantTimeout;
+                db.createNode();
+                tx.success();
+            } );
+        }
+        return last;
     }
 }

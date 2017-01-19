@@ -89,7 +89,7 @@ public class ImportCommand implements AdminCommand
                     "  INTEGER: arbitrary integer values for identifying nodes,\n" +
                     "  ACTUAL: (advanced) actual node ids.\n" +
                     "For more information on id handling, please see the Neo4j Manual: " +
-                    "http://neo4j.com/docs/operations-manual/current/deployment/#import-tool" ) )
+                    "http://neo4j.com/docs/operations-manual/current/tools/import/" ) )
             .withArgument( new OptionalNamedArg( "input-encoding", "character-set", "UTF-8",
                     "Character set that input data is encoded in." ) );
     private static final Arguments allArguments = new Arguments()
@@ -120,7 +120,7 @@ public class ImportCommand implements AdminCommand
                     "  INTEGER: arbitrary integer values for identifying nodes,\n" +
                     "  ACTUAL: (advanced) actual node ids.\n" +
                     "For more information on id handling, please see the Neo4j Manual: " +
-                    "http://neo4j.com/docs/operations-manual/current/deployment/#import-tool" ) )
+                    "http://neo4j.com/docs/operations-manual/current/tools/import/" ) )
             .withArgument( new OptionalNamedArg( "input-encoding", "character-set", "UTF-8",
                     "Character set that input data is encoded in." ) );
 

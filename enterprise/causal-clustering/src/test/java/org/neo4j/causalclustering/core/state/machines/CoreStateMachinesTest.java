@@ -34,7 +34,7 @@ import org.neo4j.causalclustering.core.state.machines.locks.ReplicatedLockTokenS
 import org.neo4j.causalclustering.core.state.machines.token.ReplicatedTokenRequest;
 import org.neo4j.causalclustering.core.state.machines.token.ReplicatedTokenStateMachine;
 import org.neo4j.causalclustering.core.state.machines.token.TokenType;
-import org.neo4j.causalclustering.core.state.machines.tx.RecoverTransactionLogState;
+import org.neo4j.causalclustering.core.state.machines.tx.RecoverConsensusLogIndex;
 import org.neo4j.causalclustering.core.state.machines.tx.ReplicatedTransaction;
 import org.neo4j.causalclustering.core.state.machines.tx.ReplicatedTransactionStateMachine;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
@@ -164,11 +164,11 @@ public class CoreStateMachinesTest
             mock( ReplicatedLockTokenStateMachine.class );
     @SuppressWarnings( "unchecked" )
     private final ReplicatedIdAllocationStateMachine idAllocationSM = mock( ReplicatedIdAllocationStateMachine.class );
-    private final RecoverTransactionLogState recoverTransactionLogState = mock( RecoverTransactionLogState.class );
+    private final RecoverConsensusLogIndex recoverConsensusLogIndex = mock( RecoverConsensusLogIndex.class );
 
     private final CoreStateMachines coreStateMachines = new CoreStateMachines( txSM, labelTokenSM,
             relationshipTypeTokenSM, propertyKeyTokenSM, lockTokenSM, idAllocationSM,
-            recoverTransactionLogState, mock( LocalDatabase.class ) );
+            mock( LocalDatabase.class ), recoverConsensusLogIndex );
 
     private final ReplicatedTransaction replicatedTransaction = mock( ReplicatedTransaction.class );
     private final ReplicatedIdAllocationRequest iAllocationRequest = mock( ReplicatedIdAllocationRequest.class );

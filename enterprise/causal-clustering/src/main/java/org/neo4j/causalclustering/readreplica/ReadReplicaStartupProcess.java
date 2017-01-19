@@ -20,20 +20,18 @@
 package org.neo4j.causalclustering.readreplica;
 
 import java.io.IOException;
-import java.util.concurrent.locks.LockSupport;
 
-import org.neo4j.causalclustering.catchup.storecopy.CopiedStoreRecovery;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFailedException;
-import org.neo4j.causalclustering.catchup.storecopy.StoreFetcher;
+import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
+import org.neo4j.causalclustering.catchup.storecopy.RemoteStore;
 import org.neo4j.causalclustering.catchup.storecopy.StoreIdDownloadFailedException;
 import org.neo4j.causalclustering.catchup.storecopy.StreamingTransactionsFailedException;
-import org.neo4j.causalclustering.core.state.machines.tx.RetryStrategy;
+import org.neo4j.causalclustering.helper.RetryStrategy;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.causalclustering.messaging.routing.CoreMemberSelectionException;
 import org.neo4j.causalclustering.messaging.routing.CoreMemberSelectionStrategy;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -42,10 +40,7 @@ import static java.lang.String.format;
 
 class ReadReplicaStartupProcess implements Lifecycle
 {
-    private static final int MAX_ATTEMPTS = 5;
-
-    private final FileSystemAbstraction fs;
-    private final StoreFetcher storeFetcher;
+    private final RemoteStore remoteStore;
     private final LocalDatabase localDatabase;
     private final Lifecycle txPulling;
     private final CoreMemberSelectionStrategy connectionStrategy;
@@ -53,22 +48,21 @@ class ReadReplicaStartupProcess implements Lifecycle
     private final Log userLog;
 
     private final RetryStrategy retryStrategy;
-    private final CopiedStoreRecovery copiedStoreRecovery;
     private String lastIssue;
+    private final StoreCopyProcess storeCopyProcess;
 
-    ReadReplicaStartupProcess( FileSystemAbstraction fs, StoreFetcher storeFetcher, LocalDatabase localDatabase,
+    ReadReplicaStartupProcess( RemoteStore remoteStore, LocalDatabase localDatabase,
             Lifecycle txPulling, CoreMemberSelectionStrategy connectionStrategy, RetryStrategy retryStrategy,
-            LogProvider debugLogProvider, LogProvider userLogProvider, CopiedStoreRecovery copiedStoreRecovery )
+            LogProvider debugLogProvider, LogProvider userLogProvider, StoreCopyProcess storeCopyProcess )
     {
-        this.fs = fs;
-        this.storeFetcher = storeFetcher;
+        this.remoteStore = remoteStore;
         this.localDatabase = localDatabase;
         this.txPulling = txPulling;
         this.connectionStrategy = connectionStrategy;
         this.retryStrategy = retryStrategy;
-        this.copiedStoreRecovery = copiedStoreRecovery;
         this.debugLog = debugLogProvider.getLog( getClass() );
         this.userLog = userLogProvider.getLog( getClass() );
+        this.storeCopyProcess = storeCopyProcess;
     }
 
     @Override
@@ -88,13 +82,21 @@ class ReadReplicaStartupProcess implements Lifecycle
     {
         boolean syncedWithCore = false;
         RetryStrategy.Timeout timeout = retryStrategy.newTimeout();
-        for ( int attempt = 1; attempt <= MAX_ATTEMPTS && !syncedWithCore; attempt++ )
+        int attempt = 0;
+        while ( !syncedWithCore )
         {
-            MemberId source = findCoreMemberToCopyFrom();
+            attempt++;
+            MemberId source = null;
             try
             {
+                source = connectionStrategy.coreMember();
                 syncStoreWithCore( source );
                 syncedWithCore = true;
+            }
+            catch ( CoreMemberSelectionException e )
+            {
+                lastIssue = issueOf( "finding core member", attempt );
+                debugLog.warn( lastIssue );
             }
             catch ( StoreCopyFailedException e )
             {
@@ -124,8 +126,6 @@ class ReadReplicaStartupProcess implements Lifecycle
                 debugLog.warn( lastIssue );
                 break;
             }
-
-            attempt++;
         }
 
         if ( !syncedWithCore )
@@ -153,12 +153,11 @@ class ReadReplicaStartupProcess implements Lifecycle
             debugLog.info( "Local database is empty, attempting to replace with copy from core server %s", source );
 
             debugLog.info( "Finding store id of core server %s", source );
-            StoreId storeId = storeFetcher.getStoreIdOf( source );
+            StoreId storeId = remoteStore.getStoreId( source );
 
             debugLog.info( "Copying store from core server %s", source );
             localDatabase.delete();
-            new CopyStoreSafely( fs, localDatabase, copiedStoreRecovery, debugLog )
-                    .copyWholeStoreFrom( source, storeId, storeFetcher );
+            storeCopyProcess.replaceWithStoreFrom( source, storeId );
 
             debugLog.info( "Restarting local database after copy.", source );
         }
@@ -171,32 +170,12 @@ class ReadReplicaStartupProcess implements Lifecycle
     private void ensureSameStoreIdAs( MemberId remoteCore ) throws StoreIdDownloadFailedException
     {
         StoreId localStoreId = localDatabase.storeId();
-        StoreId remoteStoreId = storeFetcher.getStoreIdOf( remoteCore );
+        StoreId remoteStoreId = remoteStore.getStoreId( remoteCore );
         if ( !localStoreId.equals( remoteStoreId ) )
         {
             throw new IllegalStateException( format( "This read replica cannot join the cluster. " +
                             "The local database is not empty and has a mismatching storeId: expected %s actual %s.",
                     remoteStoreId, localStoreId ) );
-        }
-    }
-
-    private MemberId findCoreMemberToCopyFrom()
-    {
-        RetryStrategy.Timeout timeout = retryStrategy.newTimeout();
-        while ( true )
-        {
-            try
-            {
-                MemberId memberId = connectionStrategy.coreMember();
-                debugLog.info( "Server starting, connecting to core server %s", memberId );
-                return memberId;
-            }
-            catch ( CoreMemberSelectionException ex )
-            {
-                debugLog.info( "Failed to connect to core server. Retrying in %d ms.", timeout.getMillis() );
-                LockSupport.parkUntil( timeout.getMillis() + System.currentTimeMillis() );
-                timeout.increment();
-            }
         }
     }
 

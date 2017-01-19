@@ -17,28 +17,15 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.core.state.machines.tx;
+package org.neo4j.causalclustering.helper;
 
-import org.neo4j.kernel.impl.store.NeoStores;
-
-public class NeoStoreTransactionCounter implements TransactionCounter
+public interface RetryStrategy
 {
-    private final NeoStores neoStore;
+    Timeout newTimeout();
 
-    public NeoStoreTransactionCounter( NeoStores neoStore )
+    interface Timeout
     {
-        this.neoStore = neoStore;
+        long getMillis();
+        void increment();
     }
-
-    @Override
-    public long lastCommittedTransactionId()
-    {
-        throw new IllegalArgumentException(  );
-    }
-
-//    @Override
-//    public long lastCommittedTransactionId()
-//    {
-//        return neoStore.getLastCommittedTransactionId();
-//    }
 }

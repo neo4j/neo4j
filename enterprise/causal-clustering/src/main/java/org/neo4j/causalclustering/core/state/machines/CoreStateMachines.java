@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.function.Consumer;
 
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
+import org.neo4j.causalclustering.core.state.machines.tx.RecoverConsensusLogIndex;
 import org.neo4j.causalclustering.core.state.snapshot.CoreStateType;
 import org.neo4j.causalclustering.core.state.CommandDispatcher;
 import org.neo4j.causalclustering.core.state.snapshot.CoreSnapshot;
@@ -33,10 +34,9 @@ import org.neo4j.causalclustering.core.state.machines.token.ReplicatedTokenReque
 import org.neo4j.causalclustering.core.state.machines.token.ReplicatedTokenStateMachine;
 import org.neo4j.causalclustering.core.state.machines.tx.ReplicatedTransaction;
 import org.neo4j.causalclustering.core.state.machines.tx.ReplicatedTransactionStateMachine;
-import org.neo4j.causalclustering.core.state.machines.tx.RecoverTransactionLogState;
 import org.neo4j.causalclustering.core.state.machines.locks.ReplicatedLockTokenRequest;
 import org.neo4j.causalclustering.core.state.machines.locks.ReplicatedLockTokenStateMachine;
-import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
+import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.storageengine.api.Token;
 
@@ -52,8 +52,9 @@ public class CoreStateMachines
 
     private final ReplicatedLockTokenStateMachine replicatedLockTokenStateMachine;
     private final ReplicatedIdAllocationStateMachine idAllocationStateMachine;
-    private final RecoverTransactionLogState txLogState;
+
     private final LocalDatabase localDatabase;
+    private final RecoverConsensusLogIndex consensusLogIndexRecovery;
 
     private final CommandDispatcher currentBatch = new StateMachineCommandDispatcher();
     private volatile boolean runningBatch;
@@ -65,8 +66,8 @@ public class CoreStateMachines
             ReplicatedTokenStateMachine<Token> propertyKeyTokenStateMachine,
             ReplicatedLockTokenStateMachine replicatedLockTokenStateMachine,
             ReplicatedIdAllocationStateMachine idAllocationStateMachine,
-            RecoverTransactionLogState txLogState,
-            LocalDatabase localDatabase )
+            LocalDatabase localDatabase,
+            RecoverConsensusLogIndex consensusLogIndexRecovery )
     {
         this.replicatedTxStateMachine = replicatedTxStateMachine;
         this.labelTokenStateMachine = labelTokenStateMachine;
@@ -74,8 +75,8 @@ public class CoreStateMachines
         this.propertyKeyTokenStateMachine = propertyKeyTokenStateMachine;
         this.replicatedLockTokenStateMachine = replicatedLockTokenStateMachine;
         this.idAllocationStateMachine = idAllocationStateMachine;
-        this.txLogState = txLogState;
         this.localDatabase = localDatabase;
+        this.consensusLogIndexRecovery = consensusLogIndexRecovery;
     }
 
     public CommandDispatcher commandDispatcher()
@@ -125,11 +126,11 @@ public class CoreStateMachines
         // transactions and tokens live in the store
     }
 
-    void refresh( TransactionRepresentationCommitProcess localCommit )
+    public void installCommitProcess( TransactionCommitProcess localCommit )
     {
         assert !runningBatch;
+        long lastAppliedIndex = consensusLogIndexRecovery.findLastAppliedIndex();
 
-        long lastAppliedIndex = txLogState.findLastAppliedIndex();
         replicatedTxStateMachine.installCommitProcess( localCommit, lastAppliedIndex );
 
         labelTokenStateMachine.installCommitProcess( localCommit, lastAppliedIndex );
