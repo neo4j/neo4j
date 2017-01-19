@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api.constraints;
 
+import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.TokenNameLookup;
 
@@ -30,6 +32,11 @@ public class UniquenessConstraint extends NodePropertyConstraint
     public UniquenessConstraint( NodePropertyDescriptor descriptor )
     {
         super( descriptor );
+    }
+
+    public IndexDescriptor indexDescriptor()
+    {
+        return IndexDescriptorFactory.of( descriptor );
     }
 
     @Override

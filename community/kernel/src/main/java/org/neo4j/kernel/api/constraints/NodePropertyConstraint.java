@@ -27,7 +27,7 @@ import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 /**
  * Base class describing property constraint on nodes.
  */
-public abstract class NodePropertyConstraint implements PropertyConstraint, IndexBackedConstraint
+public abstract class NodePropertyConstraint implements PropertyConstraint
 {
     protected final NodePropertyDescriptor descriptor;
 
@@ -49,12 +49,6 @@ public abstract class NodePropertyConstraint implements PropertyConstraint, Inde
     public boolean matches( NodePropertyDescriptor descriptor )
     {
         return this.descriptor.equals( descriptor );
-    }
-
-    @Override
-    public IndexDescriptor indexDescriptor()
-    {
-        return IndexDescriptorFactory.of( descriptor );
     }
 
     @Override

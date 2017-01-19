@@ -35,7 +35,6 @@ import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
-import org.neo4j.kernel.api.constraints.IndexBackedConstraint;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
@@ -1117,7 +1116,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
 
         if ( constraint instanceof UniquenessConstraint )
         {
-            constraintIndexDoDrop( constraint.indexDescriptor() );
+            constraintIndexDoDrop( ((UniquenessConstraint) constraint).indexDescriptor() );
         }
         getOrCreateLabelState( constraint.label() ).getOrCreateConstraintsChanges().remove( constraint );
         changed();
@@ -1157,7 +1156,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public boolean constraintIndexDoUnRemove( IndexBackedConstraint constraint )
+    public boolean constraintIndexDoUnRemove( UniquenessConstraint constraint )
     {
         IndexDescriptor descriptor = constraint.indexDescriptor();
         if ( constraintIndexChangesDiffSets().unRemove( descriptor ) )

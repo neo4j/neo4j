@@ -33,7 +33,6 @@ import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
-import org.neo4j.kernel.api.constraints.IndexBackedConstraint;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
@@ -128,7 +127,7 @@ public class StateHandlingStatementOperationsTest
         context.uniquePropertyConstraintCreate( state, descriptor1 );
 
         // then
-        verify( txState ).constraintIndexDoUnRemove( any( IndexBackedConstraint.class ) );
+        verify( txState ).constraintIndexDoUnRemove( any( UniquenessConstraint.class ) );
     }
 
     @Test

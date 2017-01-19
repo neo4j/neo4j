@@ -24,9 +24,8 @@ import java.util.Iterator;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.NotFoundException;
-import org.neo4j.graphdb.schema.DefinitionWithProperties;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.kernel.api.schema.NodeMultiPropertyDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
@@ -42,9 +41,9 @@ import static java.util.Arrays.asList;
 
 public class PropertyNameUtils
 {
-    public static String getPropertyKeyNameAt( DefinitionWithProperties index, int propertyKeyIndex )
+    public static String getPropertyKeyNameAt( Iterable<String> properties, int propertyKeyIndex )
     {
-        for ( String propertyKey : index.getPropertyKeys() )
+        for ( String propertyKey : properties )
         {
             if ( propertyKeyIndex == 0 )
             {
@@ -61,12 +60,12 @@ public class PropertyNameUtils
         int labelId = readOperations.labelGetForName( index.getLabel().name() );
         int[] propertyKeyIds = getPropertyKeyIds( readOperations, index.getPropertyKeys() );
         NodePropertyDescriptor descriptor =
-                checkValidLabelAndProperties( index.getLabel(), labelId, propertyKeyIds, index );
+                checkValidLabelAndProperties( index.getLabel(), labelId, propertyKeyIds, index.getPropertyKeys() );
         return readOperations.indexGetForLabelAndPropertyKey( descriptor );
     }
 
     private static NodePropertyDescriptor checkValidLabelAndProperties( Label label, int labelId, int[] propertyKeyIds,
-            DefinitionWithProperties index )
+            Iterable<String> properties )
     {
         if ( labelId == KeyReadOperations.NO_SUCH_LABEL )
         {
@@ -78,11 +77,10 @@ public class PropertyNameUtils
             if ( propertyKeyIds[i] == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
             {
                 throw new NotFoundException(
-                        format( "Property key %s not found", getPropertyKeyNameAt( index, i ) ) );
+                        format( "Property key %s not found", getPropertyKeyNameAt( properties, i ) ) );
             }
         }
-        return propertyKeyIds.length > 1 ? new NodeMultiPropertyDescriptor( labelId, propertyKeyIds )
-                                         : new NodePropertyDescriptor( labelId, propertyKeyIds[0] );
+        return IndexDescriptorFactory.getNodePropertyDescriptor( labelId, propertyKeyIds );
     }
 
     public static IndexDescriptor getIndexDescriptor( ReadOperations readOperations, Label label,
@@ -92,7 +90,7 @@ public class PropertyNameUtils
         int labelId = readOperations.labelGetForName( label.name() );
         int[] propertyKeyIds = getPropertyKeyIds( readOperations, propertyKeys );
         NodePropertyDescriptor descriptor =
-                checkValidLabelAndProperties( label, labelId, propertyKeyIds, () -> asList( propertyKeys ) );
+                checkValidLabelAndProperties( label, labelId, propertyKeyIds, asList( propertyKeys ) );
         return readOperations.indexGetForLabelAndPropertyKey( descriptor );
     }
 
@@ -119,16 +117,6 @@ public class PropertyNameUtils
             propertyKeys[i] = tokenNameLookup.propertyKeyGetName( propertyKeyIds[i] );
         }
         return propertyKeys;
-    }
-
-    public static int[] getPropertyKeyIds( ReadOperations statement, DefinitionWithProperties index )
-    {
-        ArrayList<Integer> propertyKeyIds = new ArrayList<>();
-        for ( String propertyKey : index.getPropertyKeys() )
-        {
-            propertyKeyIds.add( statement.propertyKeyGetForName( propertyKey ) );
-        }
-        return propertyKeyIds.stream().mapToInt( i -> i ).toArray();
     }
 
     public static int[] getPropertyKeyIds( ReadOperations statement, String[] propertyKeys )

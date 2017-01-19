@@ -28,7 +28,7 @@ import org.neo4j.graphdb.RelationshipType;
  * <b>Note:</b> This interface is going to be changed/removed in next major release to better cope with node and
  * relationship constraints which are quite different concepts.
  */
-public interface ConstraintDefinition extends DefinitionWithProperties
+public interface ConstraintDefinition
 {
     /**
      * This accessor method returns a label which this constraint is associated with if this constraint has type

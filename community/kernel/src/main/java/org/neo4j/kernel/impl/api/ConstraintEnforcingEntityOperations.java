@@ -20,17 +20,14 @@
 package org.neo4j.kernel.impl.api;
 
 import java.util.Iterator;
-import java.util.function.Predicate;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.function.Predicates;
 import org.neo4j.helpers.Strings;
-import org.neo4j.helpers.collection.FilteringIterator;
+import org.neo4j.helpers.collection.CastingIterator;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
-import org.neo4j.kernel.api.constraints.IndexBackedConstraint;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
@@ -72,9 +69,6 @@ import static org.neo4j.kernel.impl.locking.ResourceTypes.indexEntryResourceId;
 
 public class ConstraintEnforcingEntityOperations implements EntityOperations, SchemaWriteOperations
 {
-    private static final Predicate<NodePropertyConstraint> UNIQUENESS_CONSTRAINT =
-            Predicates.instanceOf( UniquenessConstraint.class );
-
     private final EntityWriteOperations entityWriteOperations;
     private final EntityReadOperations entityReadOperations;
     private final SchemaWriteOperations schemaWriteOperations;
@@ -102,10 +96,10 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
         {
             NodeItem node = cursor.get();
             Iterator<NodePropertyConstraint> allConstraints = schemaReadOperations.constraintsGetForLabel( state, labelId );
-            Iterator<NodePropertyConstraint> constraints = uniquePropertyConstraints( allConstraints );
+            Iterator<UniquenessConstraint> constraints = uniquePropertyConstraints( allConstraints );
             while ( constraints.hasNext() )
             {
-                NodePropertyConstraint constraint = constraints.next();
+                UniquenessConstraint constraint = constraints.next();
                 // TODO: Support composite indexes
                 Object propertyValue = node.getProperty( constraint.descriptor().getPropertyKeyId() );
                 if ( propertyValue != null )
@@ -134,12 +128,12 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
                 {
                     int labelId = labels.get().getAsInt();
                     int propertyKeyId = property.propertyKeyId();
-                    Iterator<NodePropertyConstraint> constraintIterator =
+                    Iterator<UniquenessConstraint> constraintIterator =
                             uniquePropertyConstraints( schemaReadOperations.constraintsGetForLabelAndPropertyKey( state,
                                     new NodePropertyDescriptor( labelId, propertyKeyId ) ) );
                     if ( constraintIterator.hasNext() )
                     {
-                        NodePropertyConstraint constraint = constraintIterator.next();
+                        UniquenessConstraint constraint = constraintIterator.next();
                         validateNoExistingNodeWithLabelAndProperty( state, constraint, property.value(), node.id() );
                     }
                 }
@@ -150,7 +144,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
         return entityWriteOperations.nodeSetProperty( state, nodeId, property );
     }
 
-    private void validateNoExistingNodeWithLabelAndProperty( KernelStatement state,  IndexBackedConstraint constraint,
+    private void validateNoExistingNodeWithLabelAndProperty( KernelStatement state,  UniquenessConstraint constraint,
             Object value, long modifiedNode )
             throws ConstraintValidationKernelException
     {
@@ -189,9 +183,9 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
         }
     }
 
-    private Iterator<NodePropertyConstraint> uniquePropertyConstraints( Iterator<NodePropertyConstraint> constraints )
+    private Iterator<UniquenessConstraint> uniquePropertyConstraints( Iterator<NodePropertyConstraint> constraints )
     {
-        return new FilteringIterator<>( constraints, UNIQUENESS_CONSTRAINT );
+        return new CastingIterator<>( constraints, UniquenessConstraint.class );
     }
 
     // Simply delegate the rest of the invocations
