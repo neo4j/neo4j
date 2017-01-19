@@ -32,8 +32,9 @@ import static java.lang.String.format;
  * We should remove this class as soon as older Cypher compilers are re-released without any
  * kernel dependency on this.
  * <p>
- * //TODO: Delete this class!
+ * //TODO: Delete this class when 3.1.1 and 2.3.9 are released
  */
+@Deprecated
 public class IndexDescriptor
 {
     private NodePropertyDescriptor descriptor;

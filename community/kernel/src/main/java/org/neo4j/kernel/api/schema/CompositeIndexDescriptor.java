@@ -24,7 +24,7 @@ import org.neo4j.storageengine.api.schema.SchemaRule;
 import static java.lang.String.format;
 
 /**
- * Description of a single index.
+ * Description of an index with multiple properties.
  *
  * @see SchemaRule
  */

@@ -26,14 +26,41 @@ import static java.lang.String.format;
 
 /**
  * Description of a single index based on one label and one or more properties.
+ *
  * @see SchemaRule
  */
 public interface IndexDescriptor
 {
+    /**
+     * @return the key representing the label for which this index is defined
+     */
     int getLabelId();
+
+    /**
+     * @return the key representing the single property for which this index is defined if the index is a single
+     * property index, or throw an exception otherwise
+     */
     int getPropertyKeyId();
+
+    /**
+     * @return the keys representing the multiple properties for which this composite index is defined if the index
+     * is a multi-property index, or throw an exception otherwise
+     */
     int[] getPropertyKeyIds();
+
+    /**
+     * @return true if this index is a multi-property index
+     */
     boolean isComposite();
+
+    /**
+     * @param tokenNameLookup table of mappings from integer keys to token names for labels and properties
+     * @return a user readable description of the index using the label and property names instead of keys
+     */
     String userDescription( TokenNameLookup tokenNameLookup );
+
+    /**
+     * @return the underlying descriptor used to define this index
+     */
     NodePropertyDescriptor descriptor();
 }
