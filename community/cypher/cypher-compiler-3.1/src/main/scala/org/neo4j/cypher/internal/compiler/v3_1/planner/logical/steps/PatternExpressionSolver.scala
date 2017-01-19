@@ -161,7 +161,9 @@ object PatternExpressionSolver {
     def extractQG(source: LogicalPlan, namedExpr: PatternComprehension) = {
       import org.neo4j.cypher.internal.compiler.v3_1.ast.convert.plannerQuery.ExpressionConverters._
 
-      namedExpr.asQueryGraph.withArgumentIds(availableSymbols)
+      val queryGraph = namedExpr.asQueryGraph
+      val args = queryGraph.coveredIds intersect availableSymbols
+      queryGraph.withArgumentIds(args)
     }
 
     def createProjectionToCollect(pattern: PatternComprehension): Expression = pattern.projection

@@ -277,4 +277,27 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Ne
     executeWithCostPlannerOnly(query).toList //does not throw
   }
 
+  test("pattern comprehension play nice with OPTIOAL MATCH") {
+    val p1 = createLabeledNode(Map("name" -> "Tom Cruise"), "Person")
+    val p2 = createLabeledNode(Map("name" -> "Ron Howard"), "Person")
+    val p3 = createLabeledNode(Map("name" -> "Keanu Reeves"), "Person")
+
+    relate(p1, createLabeledNode(Map("title" -> "Cocktail"), "Movie"), "ACTED")
+    relate(p2, createLabeledNode(Map("title" -> "Cocoon"), "Movie"), "DIRECTED")
+    relate(p3, createLabeledNode(Map("title" -> "The Matrix"), "Movie"), "ACTED")
+
+    val query =
+      """match (a:Person)
+        |where a.name in ['Ron Howard', 'Keanu Reeves', 'Tom Cruise']
+        |optional match (a)-[:ACTED_IN]->(movie:Movie)
+        |return a.name as name,  [(a)-[:DIRECTED]->(dirMovie:Movie) | dirMovie.title] as dirMovie""".stripMargin
+
+    val result = executeWithCostPlannerOnly(query)
+    result.toList should equal(List(
+      Map("name" -> "Tom Cruise", "dirMovie" -> Seq()),
+      Map("name" -> "Ron Howard", "dirMovie" -> Seq("Cocoon")),
+      Map("name" -> "Keanu Reeves", "dirMovie" -> Seq())
+    ))
+  }
+
 }
