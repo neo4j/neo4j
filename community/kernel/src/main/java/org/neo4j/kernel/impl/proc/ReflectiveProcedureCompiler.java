@@ -242,6 +242,8 @@ public class ReflectiveProcedureCompiler
             return Mode.DBMS;
         case SCHEMA:
             return Mode.SCHEMA_WRITE;
+        case TOKEN:
+            return Mode.TOKEN;
         case WRITE:
             return Mode.READ_WRITE;
         default:

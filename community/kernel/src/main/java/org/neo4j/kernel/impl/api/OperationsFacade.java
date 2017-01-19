@@ -1556,6 +1556,28 @@ public class OperationsFacade
     }
 
     @Override
+    public RawIterator<Object[],ProcedureException> procedureCallToken( QualifiedName name, Object[] input )
+            throws ProcedureException
+    {
+        AccessMode accessMode = tx.securityContext().mode();
+        if ( !accessMode.allowsTokenCreates() )
+        {
+            throw accessMode.onViolation( format( "Token create operations are not allowed for %s.",
+                    tx.securityContext().description() ) );
+        }
+        return callProcedure( name, input,
+                new RestrictedAccessMode( tx.securityContext().mode(), AccessMode.Static.TOKEN_WRITE ) );
+    }
+
+    @Override
+    public RawIterator<Object[],ProcedureException> procedureCallTokenOverride( QualifiedName name, Object[] input )
+            throws ProcedureException
+    {
+        return callProcedure( name, input,
+                new OverriddenAccessMode( tx.securityContext().mode(), AccessMode.Static.TOKEN_WRITE ) );
+    }
+
+    @Override
     public RawIterator<Object[],ProcedureException> procedureCallSchema( QualifiedName name, Object[] input )
             throws ProcedureException
     {

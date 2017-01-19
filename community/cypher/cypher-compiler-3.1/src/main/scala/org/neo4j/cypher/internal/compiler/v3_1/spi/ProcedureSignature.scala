@@ -71,5 +71,6 @@ sealed trait  ProcedureAccessMode
 
 case class ProcedureReadOnlyAccess(allowed: Array[String]) extends ProcedureAccessMode
 case class ProcedureReadWriteAccess(allowed: Array[String]) extends ProcedureAccessMode
+case class ProcedureTokenWriteAccess(allowed: Array[String]) extends ProcedureAccessMode
 case class ProcedureSchemaWriteAccess(allowed: Array[String]) extends ProcedureAccessMode
 case class ProcedureDbmsAccess(allowed: Array[String]) extends ProcedureAccessMode

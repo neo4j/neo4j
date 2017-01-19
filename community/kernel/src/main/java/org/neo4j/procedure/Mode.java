@@ -25,5 +25,6 @@ public enum Mode
     WRITE,
     SCHEMA,
     DBMS,
-    DEFAULT
+    DEFAULT,
+    TOKEN
 }

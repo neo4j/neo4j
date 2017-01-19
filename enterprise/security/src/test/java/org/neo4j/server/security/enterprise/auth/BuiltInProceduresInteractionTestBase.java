@@ -321,7 +321,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     public void shouldCreateLabel()
     {
         assertFail( writeSubject, "CREATE (:MySpecialLabel)", TOKEN_CREATE_OPS_NOT_ALLOWED );
-        assertFail( writeSubject, "CALL db.createLabel('MySpecialLabel')", SCHEMA_OPS_NOT_ALLOWED );
+        assertFail( writeSubject, "CALL db.createLabel('MySpecialLabel')", TOKEN_CREATE_OPS_NOT_ALLOWED );
         assertEmpty( schemaSubject, "CALL db.createLabel('MySpecialLabel')" );
         assertSuccess( writeSubject, "MATCH (n:MySpecialLabel) RETURN count(n) AS count",
                 r -> r.next().get( "count" ).equals( 0 ) );
@@ -335,7 +335,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         assertFail( writeSubject,
                 "MATCH (a:Node), (b:Node) WHERE a.id = 0 AND b.id = 1 CREATE (a)-[:MySpecialRelationship]->(b)",
                 TOKEN_CREATE_OPS_NOT_ALLOWED );
-        assertFail( writeSubject, "CALL db.createRelationshipType('MySpecialRelationship')", SCHEMA_OPS_NOT_ALLOWED );
+        assertFail( writeSubject, "CALL db.createRelationshipType('MySpecialRelationship')", TOKEN_CREATE_OPS_NOT_ALLOWED );
         assertEmpty( schemaSubject, "CALL db.createRelationshipType('MySpecialRelationship')" );
         assertSuccess( writeSubject, "MATCH (n)-[c:MySpecialRelationship]-(m) RETURN count(c) AS count",
                 r -> r.next().get( "count" ).equals( 0 ) );
@@ -347,7 +347,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     public void shouldCreateProperty()
     {
         assertFail( writeSubject, "CREATE (a) SET a.MySpecialProperty = 'a'", TOKEN_CREATE_OPS_NOT_ALLOWED );
-        assertFail( writeSubject, "CALL db.createProperty('MySpecialProperty')", SCHEMA_OPS_NOT_ALLOWED );
+        assertFail( writeSubject, "CALL db.createProperty('MySpecialProperty')", TOKEN_CREATE_OPS_NOT_ALLOWED );
         assertEmpty( schemaSubject, "CALL db.createProperty('MySpecialProperty')" );
         assertSuccess( writeSubject, "MATCH (n) WHERE n.MySpecialProperty IS NULL RETURN count(n) AS count",
                 r -> r.next().get( "count" ).equals( 0 ) );

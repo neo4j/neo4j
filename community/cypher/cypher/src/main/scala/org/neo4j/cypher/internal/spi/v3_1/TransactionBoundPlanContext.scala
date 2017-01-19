@@ -164,6 +164,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapperv3_1, logger: I
   private def asCypherProcMode(mode: proc.Mode, allowed: Array[String]): ProcedureAccessMode = mode match {
     case proc.Mode.READ_ONLY => ProcedureReadOnlyAccess(allowed)
     case proc.Mode.READ_WRITE => ProcedureReadWriteAccess(allowed)
+    case proc.Mode.TOKEN => ProcedureTokenWriteAccess(allowed)
     case proc.Mode.SCHEMA_WRITE => ProcedureSchemaWriteAccess(allowed)
     case proc.Mode.DBMS => ProcedureDbmsAccess(allowed)
 

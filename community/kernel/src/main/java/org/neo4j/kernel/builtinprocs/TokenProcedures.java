@@ -28,7 +28,7 @@ import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 
-import static org.neo4j.procedure.Mode.SCHEMA;
+import static org.neo4j.procedure.Mode.TOKEN;
 
 public class TokenProcedures
 {
@@ -36,7 +36,7 @@ public class TokenProcedures
     public KernelTransaction tx;
 
     @Description( "Create a label" )
-    @Procedure( name = "db.createLabel", mode = SCHEMA )
+    @Procedure( name = "db.createLabel", mode = TOKEN )
     public void createLabel( @Name( "newLabel" ) String newLabel )
             throws IllegalTokenNameException, TooManyLabelsException
     {
@@ -44,14 +44,14 @@ public class TokenProcedures
     }
 
     @Description( "Create a RelationshipType" )
-    @Procedure( name = "db.createRelationshipType", mode = SCHEMA )
+    @Procedure( name = "db.createRelationshipType", mode = TOKEN )
     public void createRelationshipType( @Name( "newRelationshipType" ) String newRelationshipType )
             throws IllegalTokenNameException    {
         tx.acquireStatement().tokenWriteOperations().relationshipTypeGetOrCreateForName( newRelationshipType );
     }
 
     @Description( "Create a Property" )
-    @Procedure( name = "db.createProperty", mode = SCHEMA )
+    @Procedure( name = "db.createProperty", mode = TOKEN )
     public void createProperty( @Name( "newProperty" ) String newProperty ) throws IllegalTokenNameException
     {
         tx.acquireStatement().tokenWriteOperations().propertyKeyGetOrCreateForName( newProperty );

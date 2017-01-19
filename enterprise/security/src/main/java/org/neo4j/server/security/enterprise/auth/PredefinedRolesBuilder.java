@@ -28,6 +28,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.*;
 
@@ -35,7 +36,7 @@ public class PredefinedRolesBuilder implements RolesBuilder
 {
     public static final Map<String,SimpleRole> roles = staticBuildRoles();
 
-    public static Map<String,SimpleRole> staticBuildRoles()
+    private static Map<String,SimpleRole> staticBuildRoles()
     {
         Map<String, SimpleRole> roles = new LinkedHashMap<>( 4 );
 
@@ -60,11 +61,25 @@ public class PredefinedRolesBuilder implements RolesBuilder
         return roles;
     }
 
-    public static void setAllowPublisherTokenCreate( boolean allowTokenCreate )
+    static void setAllowPublisherTokenCreate( boolean allowTokenCreate )
     {
+
+        SimpleRole publisher = roles.get( PUBLISHER );
+        if ( publisher == null )
+        {
+            return;
+        }
         if ( allowTokenCreate )
         {
-            roles.get( PUBLISHER ).add( new WildcardPermission( "token:*" ) );
+            publisher.add( new WildcardPermission( "token:*" ) );
+        }
+        else
+        {
+            Set<Permission> permissions = publisher.getPermissions();
+            if ( permissions != null )
+            {
+                permissions.remove( new WildcardPermission( "token:*" ) );
+            }
         }
     }
 
