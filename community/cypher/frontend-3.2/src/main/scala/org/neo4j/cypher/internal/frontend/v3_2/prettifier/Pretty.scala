@@ -25,7 +25,14 @@ import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.parser.CypherParser
 import org.neo4j.cypher.internal.frontend.v3_2.{SemanticDirection, ast}
 
-case class Pretty(functionNameNormaliser: String => String = _.toUpperCase) extends PrettyPrinter {
+/**
+  * @param preserveColumnNames If this parameter is true, the prettifier will not change column names. This means
+  *                            that RETURN/WITH elements that are not aliased are not prettified, since that could
+  *                            change column names.
+  */
+case class Pretty(preserveColumnNames: Boolean) extends PrettyPrinter {
+
+  private val functionNameNormaliser: String => String = if (preserveColumnNames) identity else _.toUpperCase
 
   private val parser = new CypherParser
 
@@ -43,8 +50,8 @@ case class Pretty(functionNameNormaliser: String => String = _.toUpperCase) exte
   }
 
   def show(t: Statement): Doc = t match {
-    case Query(_, part) =>
-      show(part)
+    case Query(periodicCommitHint, part) =>
+     maybe(periodicCommitHint, (pc: PeriodicCommitHint) => periodicCommit(pc) <> space) <> show(part)
 
     case CreateIndex(l, p) =>
       "CREATE INDEX ON" <+> group(show(l) <> parens(show(p)))
@@ -57,6 +64,10 @@ case class Pretty(functionNameNormaliser: String => String = _.toUpperCase) exte
 
     case DropUniquePropertyConstraint(v, l, p) =>
       "DROP CONSTRAINT ON" <+> parens(expr(v) <> show(l)) <+> "ASSERT" <+> expr(p) <+> "IS UNIQUE"
+  }
+
+  private def periodicCommit(pc: PeriodicCommitHint) = {
+    "USING PERIODIC COMMIT" <> maybe(pc.size, space <> expr(_: Expression))
   }
 
   private def show(t: QueryPart): Doc = t match {
@@ -126,20 +137,22 @@ case class Pretty(functionNameNormaliser: String => String = _.toUpperCase) exte
       "RETURN" <> projection(distinct, items, orderBy, skip, limit)
 
     case Remove(rs) =>
-      "REMOVE" <+> vlist(rs.map(show), comma)
+      "REMOVE" <+> nest(group(fillsep(rs.map(show).toList, comma)))
 
     case SetClause(items) =>
       val setItems = items.map(show)
       "SET" <+> hlist(setItems, comma)
 
     case ast.Start(items, where) =>
-      "START" <+> vlist(items.map(startItem), comma) <> showWhere(where)
+      val START_ITEMS = nest(group(fillsep(items.map(startItem).toList, comma)))
+      val WHERE = showWhere(where)
+      "START" <+> START_ITEMS <> WHERE
 
     case UnresolvedCall(ns, name, args, pr) =>
       val YIELD = maybe(pr, (result: ProcedureResult) =>
-        space <> "YIELD" <+> vlist(result.items.map(show), comma)
+        space <> "YIELD" <+> vlist(result.items.map(show), comma) <> showWhere(result.where)
       )
-      val ARGS = maybe(args, (es: Seq[Expression]) => space <> parens(vlist(es.map(expr), comma <> linebreak)))
+      val ARGS = maybe(args, (es: Seq[Expression]) => parens(vlist(es.map(expr), comma <> linebreak)))
       val NAME = name.name
       val FQN = fqn(ns, name.name)
 
@@ -157,7 +170,7 @@ case class Pretty(functionNameNormaliser: String => String = _.toUpperCase) exte
     case SetExactPropertiesFromMapItem(v, e) =>
       showbin(v, "=", e)
     case SetIncludingPropertiesFromMapItem(v, e) =>
-      showbin(v, "=", e)
+      showbin(v, "+=", e)
   }
 
   private def fqn(ns: Namespace, name: String) = {
@@ -167,7 +180,7 @@ case class Pretty(functionNameNormaliser: String => String = _.toUpperCase) exte
 
   private def show(items: ReturnItems): Doc = {
     val itemsDocs = items.items.map {
-      case UnaliasedReturnItem(e, t) => expr(e)
+      case UnaliasedReturnItem(e, t) => if (preserveColumnNames) value(t) else expr(e)
       case AliasedReturnItem(e, alias) => expr(e) <+> "AS" <+> expr(alias)
     }
 
@@ -181,8 +194,10 @@ case class Pretty(functionNameNormaliser: String => String = _.toUpperCase) exte
                          skip: Option[Skip],
                          limit: Option[Limit]): Doc = {
     val DISTINCT: Doc = if (distinct) space <> "DISTINCT" else emptyDoc
-    val ORDER_BY: Doc = maybe(orderBy, space <> order(_: OrderBy))
-    DISTINCT <+> show(items) <> ORDER_BY
+    val ORDER_BY: Doc = maybe(orderBy, line <> order(_: OrderBy))
+    val SKIP = maybe(skip, (s: Skip) => line <> "SKIP" <+> expr(s.expression))
+    val LIMIT = maybe(limit, (l: Limit) => line <> "LIMIT" <+> expr(l.expression))
+    group(DISTINCT <+> show(items) <> ORDER_BY <> SKIP <> LIMIT)
   }
 
   private def curlies(d: Doc) = enclose("{", d, "}")
@@ -199,6 +214,8 @@ case class Pretty(functionNameNormaliser: String => String = _.toUpperCase) exte
       expr(v) <> curlies(nest(firstLine <> vlist(items.map(show), comma)))
     case ListLiteral(elements) if elements.isEmpty => "[]"
     case ListLiteral(elements) => brackets(hlist(elements.map(expr), comma))
+    case ListSlice(e, f, t) =>
+      expr(e) <> brackets(maybe(f, expr) <> ".." <> maybe(t, expr))
     case Parameter(name, _) => "$" <> string(name)
     case HasLabels(e, ls) => expr(e) <> vlist(ls.map(show))
 
@@ -206,6 +223,7 @@ case class Pretty(functionNameNormaliser: String => String = _.toUpperCase) exte
       val sep = if (lit.indexOf('\'') >= 0) "\"" else "'"
       sep <> lit <> sep
 
+    case x: NumberLiteral => x.stringVal
     case lit: Literal => value(lit.value)
     case Variable(name) => if (isValidIdentifier(name)) name else surround(name, "`")
     case Property(e, prop) => expr(e) <> dot <> show(prop)
@@ -243,7 +261,7 @@ case class Pretty(functionNameNormaliser: String => String = _.toUpperCase) exte
     case ReduceExpression(ReduceScope(accumulator, variable, e), init, list) =>
       val INIT = expr(accumulator) <+> equal <+> expr(init)
       val IN = expr(variable) <+> "IN" <+> expr(list)
-      "REDUCE" <> parens(INIT <> comma <+> IN <+> "|" <+> expr(e))
+      group("REDUCE" <> parens(INIT <> comma <@> IN <+> "|" <@> expr(e)))
 
     case NoneIterablePredicate(FilterScope(v, pred), e) =>
       "NONE" <> parens(expr(v) <+> "IN" <+> expr(e) <+> "WHERE" <+> expr(pred.get))
@@ -284,11 +302,6 @@ case class Pretty(functionNameNormaliser: String => String = _.toUpperCase) exte
       val break = op == "AND" || op == "OR" || op == "XOR"
       showbin(o.lhs, op, o.rhs, break)
 
-    case StringLiteral(lit) =>
-      val sep = if (lit.indexOf('\'') >= 0) "\"" else "'"
-      sep <> lit <> sep
-
-
     case MapExpression(elements) =>
       val els = elements map {
         case (prop, e) => show(prop) <> colon <+> expr(e)
@@ -300,25 +313,35 @@ case class Pretty(functionNameNormaliser: String => String = _.toUpperCase) exte
       val extract = maybe(extractExpression, space <> "|" <+> expr(_: Expression))
       brackets(expr(variable) <+> "IN" <+> expr(e) <> where <> extract)
 
+    case PatternComprehension(pathName, pattern, pred, proj, _) =>
+
+      val PATH_NAME = maybe(pathName, expr(_: Variable) <+> "=" <> space)
+      val PROJECT = space <> "|" <+> expr(proj)
+      val WHERE = maybe(pred, space <> "WHERE" <+> expr(_: Expression))
+      group(brackets(PATH_NAME <> show(pattern.element) <> WHERE <> PROJECT))
+
     case FunctionInvocation(ns, funcName, _, args) =>
       val NAME = funcName.name.toUpperCase
       val QUALIFIED_NAME = fqn(ns, functionNameNormaliser(funcName.name))
       val ARGUMENTS = hlist(args.map(expr), comma)
 
       QUALIFIED_NAME <> parens(ARGUMENTS)
+
+    case ShortestPathExpression(shortestPaths) =>
+      show(shortestPaths)
   }
 
   private def startItem(si: StartItem): Doc = si match {
     case NodeByIds(variable, ids) =>
       expr(variable) <+> equal <+> "node" <> parens(vlist(ids.map(expr), comma))
     case NodeByIdentifiedIndex(v, i, k, e) =>
-      expr(v) <+> equal <+> "node" <> parens(k <> equal <> expr(e))
+      expr(v) <+> equal <+> "node" <> colon <> string(i) <> parens(k <+> equal <+> expr(e))
     case NodeByIndexQuery(v, i, q) =>
-      expr(v) <+> equal <+> "node" <> parens(expr(q))
+      expr(v) <+> equal <+> "node" <> colon <> string(i) <> parens(expr(q))
     case RelationshipByIdentifiedIndex(v, i, k, e) =>
-      expr(v) <+> equal <+> "relationship" <> parens(k <> equal <> expr(e))
+      expr(v) <+> equal <+> "relationship" <> colon <> string(i) <> parens(k <+> equal <+> expr(e))
     case RelationshipByIndexQuery(v, i, q) =>
-      expr(v) <+> equal <+> "relationship" <> parens(expr(q))
+      expr(v) <+> equal <+> "relationship" <> colon <> string(i) <> parens(expr(q))
   }
 
   private def show(ri: ProcedureResultItem) = expr(ri.variable)
@@ -328,11 +351,11 @@ case class Pretty(functionNameNormaliser: String => String = _.toUpperCase) exte
 
   private def si(sortItem: SortItem): Doc = sortItem match {
     case AscSortItem(e) => expr(e) <+> "ASC"
-    case DescSortItem(e) => expr(e) <+> "ASC"
+    case DescSortItem(e) => expr(e) <+> "DESC"
   }
 
   private def order(orderBy: OrderBy): Doc = {
-    val sortItems: Doc = hlist(orderBy.sortItems.map(si))
+    val sortItems: Doc = nest(group(fillsep(orderBy.sortItems.map(si).toList, comma)))
     group("ORDER BY" <+> sortItems)
   }
 
@@ -392,11 +415,11 @@ case class Pretty(functionNameNormaliser: String => String = _.toUpperCase) exte
             "*" <> from <> ".." <> to
       }
       val TYPES = if (p.types.isEmpty) emptyDoc else
-        vlist(p.types.map(show))
+        colon <> folddoc(p.types.map(t => string(t.name)).toList, _ <> "|" <> _)
 
       val PROPS = maybe(p.properties, space <> expr(_: Expression))
 
-      if (p.variable.isEmpty && p.length.isEmpty && p.types.isEmpty)
+      if (p.variable.isEmpty && p.length.isEmpty && p.types.isEmpty && p.properties.isEmpty)
         emptyDoc
       else
         group("[" <> NAME <> TYPES <> LENGTH <> PROPS <> "]")
