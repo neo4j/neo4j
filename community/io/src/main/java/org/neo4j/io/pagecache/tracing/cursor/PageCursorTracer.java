@@ -23,8 +23,16 @@ import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PinEvent;
 
-//:TODO javadoc
-public interface PageCursorTracer
+/**
+ * Event tracer for page cursors.
+ *
+ * Performs event tracing related to particular page cursors and expose simple counters around them.
+ * Since events of each particular page cursor are part of whole page cache events, each particular page cursor
+ * tracer will eventually report them to global page cache counters/tracers.
+ *
+ * @see PageCursorTracer
+ */
+public interface PageCursorTracer extends PageCursorCounters
 {
 
     PageCursorTracer NULL = new PageCursorTracer()
@@ -72,29 +80,8 @@ public interface PageCursorTracer
         }
     };
 
-    /**
-     * @return The number of page faults observed thus far.
-     */
-    long faults();
-
-    /**
-     * @return The number of page pins observed thus far.
-     */
-    long pins();
-
-    /**
-     * @return The number of page unpins observed thus far.
-     */
-    long unpins();
-
-    /**
-     * @return The sum total of bytes read in through page faults thus far.
-     */
-    long bytesRead();
-
     PinEvent beginPin( boolean writeLock, long filePageId, PageSwapper swapper );
 
-    // TODO:: methods that glue current tracer to page cache tracer can be avoided?
     void init( PageCacheTracer tracer );
 
     void reportEvents();
