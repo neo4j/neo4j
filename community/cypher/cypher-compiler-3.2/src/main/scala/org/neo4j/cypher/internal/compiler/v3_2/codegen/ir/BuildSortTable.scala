@@ -35,11 +35,10 @@ case class BuildSortTable(opName: String, tableName: String, columnVariables: Ma
 
   override def body[E](generator: MethodStructure[E])(implicit ignored: CodeGenContext): Unit = {
     generator.trace(opName, Some(this.getClass.getSimpleName)) { body =>
-      val tuple = body.newSortTableValue(context.namer.newVarName(), tupleDescriptor)
+      val tuple = body.newTableValue(context.namer.newVarName(), tupleDescriptor)
       fieldToVariableInfo.foreach {
         case (fieldName: String, info: FieldAndVariableInfo) =>
-          body.sortTableValuePutField(tupleDescriptor,
-            tuple, info.incomingVariable.codeGenType, fieldName, info.incomingVariable.name)
+          body.putField(tupleDescriptor, tuple, fieldName, info.incomingVariable.name)
       }
       body.sortTableAdd(tableName, tupleDescriptor, tuple)
     }

@@ -46,7 +46,7 @@ trait MethodStructure[E] {
   def declare(varName: String, codeGenType: CodeGenType): Unit
   def declareProperty(name: String): Unit
   def declareCounter(name: String, initialValue: E): Unit
-  def putField(tupleDescriptor: TupleDescriptor, value: E, fieldType: CodeGenType, fieldName: String, localVar: String): Unit
+  def putField(tupleDescriptor: TupleDescriptor, value: E, fieldName: String, localVar: String): Unit
   def updateProbeTable(tupleDescriptor: TupleDescriptor, tableVar: String, tableType: RecordingJoinTableType, keyVars: Seq[String], element: E): Unit
   def probe(tableVar: String, tableType: JoinTableType, keyVars: Seq[String])(block: MethodStructure[E]=>Unit): Unit
   def updateProbeTableCount(tableVar: String, tableType: CountingJoinTableType, keyVar: Seq[String]): Unit
@@ -80,9 +80,6 @@ trait MethodStructure[E] {
   def sortTableIterate(name: String, tupleDescriptor: OrderableTupleDescriptor,
                        varNameToField: Map[String, String])
                       (block: (MethodStructure[E]) => Unit): Unit
-  def newSortTableValue(targetVar: String, tupleDescriptor: OrderableTupleDescriptor): E
-  def sortTableValuePutField(tupleDescriptor: OrderableTupleDescriptor,
-                             value: E, fieldType: CodeGenType, fieldName: String, localVar: String): Unit
 
   def castToCollection(value: E): E
 

@@ -51,7 +51,7 @@ case class BuildRecordingProbeTable(id: String, name: String, nodes: Set[Variabl
     generator.trace(id, Some(this.getClass.getSimpleName)) { body =>
       val tuple = body.newTableValue(context.namer.newVarName(), tupleDescriptor)
       fieldToVarName.foreach {
-        case (fieldName, localName) => body.putField(tupleDescriptor, tuple, localName.incoming.codeGenType, fieldName, localName.incoming.name)
+        case (fieldName, localName) => body.putField(tupleDescriptor, tuple, fieldName, localName.incoming.name)
       }
       body.updateProbeTable(tupleDescriptor, name, tableType, keyVars = nodes.toIndexedSeq.map(_.name), tuple)
     }

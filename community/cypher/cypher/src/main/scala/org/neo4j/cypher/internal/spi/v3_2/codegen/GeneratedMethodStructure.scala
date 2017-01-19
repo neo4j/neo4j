@@ -871,16 +871,19 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   private def joinTableType(resultType: JoinTableType): TypeReference = {
     val returnType = resultType match {
-      case LongToCountTable => typeRef[PrimitiveLongIntMap]
-      case LongsToCountTable => TypeReference
-        .parameterizedType(classOf[util.HashMap[_, _]], classOf[CompositeKey], classOf[java.lang.Integer])
-      case LongToListTable(structure, _) => parameterizedType(classOf[PrimitiveLongObjectMap[_]],
-                                                              parameterizedType(
-                                                                classOf[util.ArrayList[_]],
-                                                                aux.typeReference(structure)))
-      case LongsToListTable(structure, _) => TypeReference
-        .parameterizedType(classOf[util.HashMap[_, _]], typeRef[CompositeKey],
-                           parameterizedType(classOf[util.ArrayList[_]], aux.typeReference(structure)))
+      case LongToCountTable =>
+        typeRef[PrimitiveLongIntMap]
+      case LongsToCountTable =>
+        parameterizedType(classOf[util.HashMap[_, _]], classOf[CompositeKey], classOf[java.lang.Integer])
+      case LongToListTable(tupleDescriptor, _) =>
+        parameterizedType(classOf[PrimitiveLongObjectMap[_]],
+                          parameterizedType(classOf[util.ArrayList[_]],
+                                            aux.typeReference(tupleDescriptor)))
+      case LongsToListTable(tupleDescriptor, _) =>
+        parameterizedType(classOf[util.HashMap[_, _]],
+                          typeRef[CompositeKey],
+                          parameterizedType(classOf[util.ArrayList[_]],
+                                            aux.typeReference(tupleDescriptor)))
     }
     returnType
   }
@@ -973,7 +976,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
             case (l, f) =>
               val fieldType = lowerType(tupleDescriptor.structure(f))
               forEach.assign(fieldType, l, get(forEach.load(elementName),
-                                               field(tupleDescriptor, tupleDescriptor.structure(f), f)))
+                                               field(tupleDescriptor, f)))
           }
           block(copy(generator = forEach))
         }
@@ -997,27 +1000,18 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
             case (l, f) =>
               val fieldType = lowerType(tupleDescriptor.structure(f))
               forEach.assign(fieldType, l, get(forEach.load(elementName),
-                                               field(tupleDescriptor, tupleDescriptor.structure(f), f)))
+                                               field(tupleDescriptor, f)))
           }
           block(copy(generator = forEach))
         }
       }
   }
 
-  override def putField(tupleDescriptor: TupleDescriptor, value: Expression, fieldType: CodeGenType,
+  override def putField(tupleDescriptor: TupleDescriptor, value: Expression,
                         fieldName: String,
                         localVar: String) = {
-    generator.put(value, field(tupleDescriptor, fieldType, fieldName), generator.load(localVar))
-  }
-
-  // TODO: Replace with putField?
-  override def sortTableValuePutField(tupleDescriptor: OrderableTupleDescriptor,
-                                      value: Expression,
-                                      fieldType: CodeGenType,
-                                      fieldName: String,
-                                      localVar: String) = {
     generator.put(value,
-      FieldReference.field(aux.comparableTypeReference(tupleDescriptor), lowerType(fieldType), fieldName),
+      field(tupleDescriptor, fieldName),
       generator.load(localVar))
   }
 
@@ -1236,13 +1230,8 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     generator.load(targetVar)
   }
 
-  // TODO: Replace with newTableValue?
-  override def newSortTableValue(targetVar: String, tupleDescriptor: OrderableTupleDescriptor) = {
-    val tupleType = aux.comparableTypeReference(tupleDescriptor)
-    generator.assign(tupleType, targetVar, createNewInstance(tupleType))
-    generator.load(targetVar)
-  }
-
-  private def field(tupleDescriptor: TupleDescriptor, fieldType: CodeGenType, fieldName: String) =
+  private def field(tupleDescriptor: TupleDescriptor, fieldName: String) = {
+    val fieldType: CodeGenType = tupleDescriptor.structure(fieldName)
     FieldReference.field(aux.typeReference(tupleDescriptor), lowerType(fieldType), fieldName)
+  }
 }
