@@ -24,21 +24,24 @@ import java.io.IOException;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 public class StoreCopyProcess
 {
     private final FileSystemAbstraction fs;
+    private final PageCache pageCache;
     private final LocalDatabase localDatabase;
     private final CopiedStoreRecovery copiedStoreRecovery;
     private final Log log;
     private final RemoteStore remoteStore;
 
-    public StoreCopyProcess( FileSystemAbstraction fs, LocalDatabase localDatabase,
+    public StoreCopyProcess( FileSystemAbstraction fs, PageCache pageCache, LocalDatabase localDatabase,
             CopiedStoreRecovery copiedStoreRecovery, RemoteStore remoteStore, LogProvider logProvider )
     {
         this.fs = fs;
+        this.pageCache = pageCache;
         this.localDatabase = localDatabase;
         this.copiedStoreRecovery = copiedStoreRecovery;
         this.remoteStore = remoteStore;
@@ -48,7 +51,8 @@ public class StoreCopyProcess
     public void replaceWithStoreFrom( MemberId source, StoreId expectedStoreId )
             throws IOException, StoreCopyFailedException, StreamingTransactionsFailedException
     {
-        try ( TemporaryStoreDirectory tempStore = new TemporaryStoreDirectory( fs, localDatabase.storeDir() ) )
+        try ( TemporaryStoreDirectory tempStore = new TemporaryStoreDirectory( fs, pageCache,
+                localDatabase.storeDir() ) )
         {
             remoteStore.copy( source, expectedStoreId, tempStore.storeDir() );
             copiedStoreRecovery.recoverCopiedStore( tempStore.storeDir() );

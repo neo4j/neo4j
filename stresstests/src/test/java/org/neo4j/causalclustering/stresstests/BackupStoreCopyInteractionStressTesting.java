@@ -19,7 +19,10 @@
  */
 package org.neo4j.causalclustering.stresstests;
 
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.util.HashMap;
@@ -36,10 +39,12 @@ import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.HazelcastDiscoveryServiceFactory;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.SocketAddress;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.lang.Boolean.parseBoolean;
 import static java.lang.Integer.parseInt;
@@ -67,7 +72,21 @@ public class BackupStoreCopyInteractionStressTesting
     private static final String DEFAULT_BASE_CORE_BACKUP_PORT = "8000";
     private static final String DEFAULT_BASE_EDGE_BACKUP_PORT = "9000";
 
-    private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+    public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+    public final PageCacheRule pageCacheRule = new PageCacheRule();
+
+    @Rule
+    public RuleChain rules = RuleChain.outerRule( fileSystemRule ).around( pageCacheRule );
+
+    private FileSystemAbstraction fs;
+    private PageCache pageCache;
+
+    @Before
+    public void setUp()
+    {
+        fs = fileSystemRule.get();
+        pageCache = pageCacheRule.getPageCache( fs );
+    }
 
     @Test
     public void shouldBehaveCorrectlyUnderStress() throws Exception
@@ -124,7 +143,7 @@ public class BackupStoreCopyInteractionStressTesting
 
             Future<Throwable> workload = service.submit( new Workload( keepGoing, onFailure, cluster ) );
             Future<Throwable> startStopWorker = service.submit(
-                    new StartStopLoad( fs, keepGoing, onFailure, cluster, numberOfCores, numberOfEdges ) );
+                    new StartStopLoad( fs, pageCache, keepGoing, onFailure, cluster, numberOfCores, numberOfEdges ) );
             Future<Throwable> backupWorker = service.submit(
                     new BackupLoad( keepGoing, onFailure, cluster, numberOfCores, numberOfEdges, backupDirectory,
                             backupAddress ) );

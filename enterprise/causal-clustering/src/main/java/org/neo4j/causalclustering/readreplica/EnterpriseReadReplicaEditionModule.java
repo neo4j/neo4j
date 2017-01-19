@@ -239,7 +239,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         }
 
         StoreCopyProcess storeCopyProcess =
-                new StoreCopyProcess( fileSystem, localDatabase, copiedStoreRecovery, remoteStore, logProvider );
+                new StoreCopyProcess( fileSystem, pageCache, localDatabase, copiedStoreRecovery, remoteStore, logProvider );
 
         ConnectToRandomUpstreamCoreServer defaultStrategy = new ConnectToRandomUpstreamCoreServer();
         defaultStrategy.setDiscoveryService( topologyService );

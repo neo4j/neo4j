@@ -23,7 +23,9 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
@@ -67,7 +69,7 @@ public class CoreStateDownloaderTest
                     storeCopyProcess, coreStateMachines );
 
     @Before
-    public void commonMocking()
+    public void commonMocking() throws IOException
     {
         when( localDatabase.storeId() ).thenReturn( storeId );
         when( localDatabase.storeDir() ).thenReturn( storeDir );
