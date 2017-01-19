@@ -43,7 +43,7 @@ import static org.neo4j.kernel.configuration.Settings.listenAddress;
 import static org.neo4j.kernel.configuration.Settings.min;
 import static org.neo4j.kernel.configuration.Settings.setting;
 
-@Description("Settings for Causal Clustering")
+@Description( "Settings for Causal Clustering" )
 public class CausalClusteringSettings implements LoadableConfig
 {
     @Description( "Time out for a new member to catch up" )
@@ -80,7 +80,7 @@ public class CausalClusteringSettings implements LoadableConfig
     public static final Setting<ListenSocketAddress> transaction_listen_address =
             listenAddress( "causal_clustering.transaction_listen_address", 6000 );
 
-    @Description("Advertised hostname/IP address and port for the transaction shipping server.")
+    @Description( "Advertised hostname/IP address and port for the transaction shipping server." )
     public static final Setting<AdvertisedSocketAddress> transaction_advertised_address =
             advertisedAddress( "causal_clustering.transaction_advertised_address", transaction_listen_address );
 
@@ -88,7 +88,7 @@ public class CausalClusteringSettings implements LoadableConfig
     public static final Setting<ListenSocketAddress> raft_listen_address =
             listenAddress( "causal_clustering.raft_listen_address", 7000 );
 
-    @Description("Advertised hostname/IP address and port for the RAFT server.")
+    @Description( "Advertised hostname/IP address and port for the RAFT server." )
     public static final Setting<AdvertisedSocketAddress> raft_advertised_address =
             advertisedAddress( "causal_clustering.raft_advertised_address", raft_listen_address );
 
@@ -102,7 +102,8 @@ public class CausalClusteringSettings implements LoadableConfig
 
     @Description( "A comma-separated list of other members of the cluster to join." )
     public static final Setting<List<AdvertisedSocketAddress>> initial_discovery_members =
-            setting( "causal_clustering.initial_discovery_members", list( ",", ADVERTISED_SOCKET_ADDRESS ), NO_DEFAULT );
+            setting( "causal_clustering.initial_discovery_members", list( ",", ADVERTISED_SOCKET_ADDRESS ),
+                    NO_DEFAULT );
 
     @Description( "Prevents the network middleware from dumping its own logs. Defaults to true." )
     public static final Setting<Boolean> disable_middleware_logging =
@@ -308,7 +309,8 @@ public class CausalClusteringSettings implements LoadableConfig
     public static final Setting<Long> cluster_topology_refresh =
             setting( "causal_clustering.cluster_topology_refresh", DURATION, "1m", min( 1_000L ) );
 
-    @Description( "Strategy read replicas to choose upstream database server from which to pull transactional updates." )
+    @Description( "An ordered list in descending preference of the strategy which read replicas use to choose " +
+            "upstream database server from which to pull transactional updates." )
     public static final Setting<List<String>> upstream_selection_strategy =
             setting( "causal_clustering.upstream_selection_strategy", list( ",", STRING ), "default" );
 }

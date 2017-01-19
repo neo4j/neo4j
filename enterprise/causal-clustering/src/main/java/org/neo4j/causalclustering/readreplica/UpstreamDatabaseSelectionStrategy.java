@@ -19,6 +19,8 @@
  */
 package org.neo4j.causalclustering.readreplica;
 
+import java.util.Optional;
+
 import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.Service;
@@ -38,5 +40,5 @@ public abstract class UpstreamDatabaseSelectionStrategy extends Service
         this.topologyService = topologyService;
     }
 
-    public abstract MemberId upstreamDatabase() throws UpstreamDatabaseSelectionException;
+    public abstract Optional<MemberId> upstreamDatabase() throws UpstreamDatabaseSelectionException;
 }

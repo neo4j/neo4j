@@ -20,13 +20,14 @@
 package org.neo4j.causalclustering.readreplica;
 
 
-import java.util.LinkedHashSet;
+import java.util.LinkedList;
+import java.util.NoSuchElementException;
 
 import org.neo4j.causalclustering.identity.MemberId;
 
 public class UpstreamDatabaseStrategySelector
 {
-    private LinkedHashSet<UpstreamDatabaseSelectionStrategy> strategies = new LinkedHashSet<>();
+    private LinkedList<UpstreamDatabaseSelectionStrategy> strategies = new LinkedList<>();
 
     UpstreamDatabaseStrategySelector( UpstreamDatabaseSelectionStrategy defaultStrategy )
     {
@@ -36,12 +37,12 @@ public class UpstreamDatabaseStrategySelector
     UpstreamDatabaseStrategySelector( UpstreamDatabaseSelectionStrategy defaultStrategy,
             Iterable<UpstreamDatabaseSelectionStrategy> otherStrategies )
     {
-        strategies.add( defaultStrategy );
+        strategies.push( defaultStrategy );
         if ( otherStrategies != null )
         {
             for ( UpstreamDatabaseSelectionStrategy otherStrategy : otherStrategies )
             {
-                strategies.add( otherStrategy );
+                strategies.push( otherStrategy );
             }
         }
     }
@@ -49,14 +50,15 @@ public class UpstreamDatabaseStrategySelector
     public MemberId bestUpstreamDatabase() throws UpstreamDatabaseSelectionException
     {
         MemberId result = null;
+
         for ( UpstreamDatabaseSelectionStrategy strategy : strategies )
         {
             try
             {
-                result = strategy.upstreamDatabase();
+                result = strategy.upstreamDatabase().get();
                 break;
             }
-            catch ( UpstreamDatabaseSelectionException ex )
+            catch ( NoSuchElementException ex )
             {
                 // Do nothing, this strategy failed
             }

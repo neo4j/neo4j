@@ -23,6 +23,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
@@ -179,10 +180,10 @@ public class ReadReplicaStartupProcessTest
         }
 
         @Override
-        public MemberId upstreamDatabase() throws UpstreamDatabaseSelectionException
+        public Optional<MemberId> upstreamDatabase() throws UpstreamDatabaseSelectionException
         {
             CoreTopology coreTopology = topologyService.coreServers();
-            return coreTopology.members().iterator().next();
+            return Optional.ofNullable( coreTopology.members().iterator().next() );
         }
     }
 }

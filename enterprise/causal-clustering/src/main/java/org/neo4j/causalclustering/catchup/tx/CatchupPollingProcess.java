@@ -37,6 +37,7 @@ import org.neo4j.causalclustering.core.consensus.schedule.RenewableTimeoutServic
 import org.neo4j.causalclustering.core.consensus.schedule.RenewableTimeoutService.TimeoutName;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
+import org.neo4j.causalclustering.readreplica.UpstreamDatabaseSelectionException;
 import org.neo4j.causalclustering.readreplica.UpstreamDatabaseSelectionStrategy;
 import org.neo4j.causalclustering.readreplica.UpstreamDatabaseStrategySelector;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
@@ -182,7 +183,7 @@ public class CatchupPollingProcess extends LifecycleAdapter
         {
             upstream = selectionStrategyPipeline.bestUpstreamDatabase();
         }
-        catch ( Exception e )
+        catch ( UpstreamDatabaseSelectionException e )
         {
             log.warn( "Could not find upstream database from which to pull.", e );
             return;
@@ -292,9 +293,9 @@ public class CatchupPollingProcess extends LifecycleAdapter
         {
             core = selectionStrategyPipeline.bestUpstreamDatabase();
         }
-        catch ( Exception e )
+        catch ( UpstreamDatabaseSelectionException e )
         {
-            log.warn( "Could not find core member from which to copy store", e );
+            log.warn( "Could not find upstream database from which to copy store", e );
             return;
         }
 

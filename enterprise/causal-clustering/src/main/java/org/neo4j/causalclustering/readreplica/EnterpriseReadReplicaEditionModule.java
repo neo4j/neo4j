@@ -198,9 +198,8 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         DelayedRenewableTimeoutService catchupTimeoutService =
                 new DelayedRenewableTimeoutService( Clocks.systemClock(), logProvider );
 
-        LocalDatabase localDatabase =
-            new LocalDatabase( platformModule.storeDir, new StoreFiles( fileSystem ), platformModule.dataSourceManager,
-                    pageCache, fileSystem, databaseHealthSupplier, logProvider );
+        LocalDatabase localDatabase = new LocalDatabase( platformModule.storeDir, new StoreFiles( fileSystem ),
+                platformModule.dataSourceManager, pageCache, fileSystem, databaseHealthSupplier, logProvider );
 
         RemoteStore remoteStore =
                 new RemoteStore( platformModule.logging.getInternalLogProvider(), fileSystem, platformModule.pageCache,
@@ -261,9 +260,8 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         txPulling.add( new WaitForUpToDateStore( catchupProcess, logProvider ) );
 
         ExponentialBackoffStrategy retryStrategy = new ExponentialBackoffStrategy( 1, 30, TimeUnit.SECONDS );
-        life.add( new ReadReplicaStartupProcess( remoteStore, localDatabase, txPulling,
-                selectionStrategyPipeline, retryStrategy, logProvider,
-                platformModule.logging.getUserLogProvider(), storeCopyProcess ) );
+        life.add( new ReadReplicaStartupProcess( remoteStore, localDatabase, txPulling, selectionStrategyPipeline,
+                retryStrategy, logProvider, platformModule.logging.getUserLogProvider(), storeCopyProcess ) );
 
         dependencies.satisfyDependency( createSessionTracker() );
     }

@@ -20,6 +20,7 @@
 package org.neo4j.causalclustering.readreplica;
 
 import java.util.Iterator;
+import java.util.Optional;
 import java.util.Random;
 
 import org.neo4j.causalclustering.discovery.CoreTopology;
@@ -37,7 +38,7 @@ public class ConnectToRandomUpstreamCoreServer extends UpstreamDatabaseSelection
     }
 
     @Override
-    public MemberId upstreamDatabase() throws UpstreamDatabaseSelectionException
+    public Optional<MemberId> upstreamDatabase() throws UpstreamDatabaseSelectionException
     {
         final CoreTopology coreTopology = topologyService.coreServers();
 
@@ -57,6 +58,6 @@ public class ConnectToRandomUpstreamCoreServer extends UpstreamDatabaseSelection
         }
         while ( skippedServers-- > 0 );
 
-        return member;
+        return Optional.ofNullable( member );
     }
 }
