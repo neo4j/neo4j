@@ -93,7 +93,7 @@ public abstract class EntityPropertyDescriptor implements Comparable<EntityPrope
     @Override
     public String toString()
     {
-        return format( ":%s[%d](property[%d])", entityType().getTypeDescriptor(), entityId, propertyKeyId );
+        return format( ":%s[%d](property[%d])", entityType().getLabelingType(), entityId, propertyKeyId );
     }
 
     public String propertyIdText()

@@ -33,7 +33,7 @@ public class DuplicateEntitySchemaRuleException extends DuplicateSchemaRuleExcep
 
     public DuplicateEntitySchemaRuleException( EntityPropertyDescriptor descriptor, boolean unique )
     {
-        super( "Multiple %s found for " + descriptor.entityType().getTypeDescriptor() + " '%s' and property '%s'.",
+        super( "Multiple %s found for " + descriptor.entityType().getLabelingType() + " '%s' and property '%s'.",
                 descriptor, unique ? UNIQUE_CONSTRAINT_PREFIX : CONSTRAINT_PREFIX );
     }
 

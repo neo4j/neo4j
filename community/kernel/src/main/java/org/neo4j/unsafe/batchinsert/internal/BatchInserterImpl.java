@@ -1114,16 +1114,16 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     {
         private int[] getOrCreatePropertyKeyIds( Iterable<String> properties )
         {
-            ArrayList<Integer> propertyKeyIds = new ArrayList<>();
-            properties.forEach( index -> propertyKeyIds.add( getOrCreatePropertyKeyId( index ) ) );
-            return propertyKeyIds.stream().mapToInt( i -> i ).toArray();
-
+            return Iterables.stream( properties )
+                    .mapToInt( BatchInserterImpl.this::getOrCreatePropertyKeyId )
+                    .toArray();
         }
 
-        private int[] getOrCreatePropertyKeyIds( String[] propertyKeys )
+        private int[] getOrCreatePropertyKeyIds( String[] properties )
         {
-            return getOrCreatePropertyKeyIds( Arrays.asList( propertyKeys ) );
-
+            return Arrays.stream( properties )
+                    .mapToInt( BatchInserterImpl.this::getOrCreatePropertyKeyId )
+                    .toArray();
         }
 
         @Override

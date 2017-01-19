@@ -31,7 +31,7 @@ public class EntitySchemaRuleNotFoundException extends SchemaRuleNotFoundExcepti
 
     public EntitySchemaRuleNotFoundException( EntityPropertyDescriptor descriptor, boolean unique )
     {
-        super( "%s for " + descriptor.entityType().getTypeDescriptor() + " '%s' and property '%s' not found.",
+        super( "%s for " + descriptor.entityType().getLabelingType() + " '%s' and property '%s' not found.",
                 descriptor,
                 unique ? UNIQUE_CONSTRAINT_PREFIX : CONSTRAINT_PREFIX );
     }
