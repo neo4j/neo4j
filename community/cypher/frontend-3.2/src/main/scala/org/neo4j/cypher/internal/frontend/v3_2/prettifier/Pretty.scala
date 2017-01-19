@@ -38,7 +38,7 @@ case class Pretty(preserveColumnNames: Boolean) extends PrettyPrinter {
 
   override val defaultIndent: PPosition = 2
 
-  def reformat(query: String, width: Width = defaultWidth): String = {
+  def reformat(query: String, width: Width = 120): String = {
     val ast: Statement = parser.parse(query)
     super.pretty(show(ast), width).layout
   }
@@ -99,17 +99,17 @@ case class Pretty(preserveColumnNames: Boolean) extends PrettyPrinter {
 
   private def show(astNode: Clause): Doc = astNode match {
     case Create(pattern) =>
-      "CREATE" <+> show(pattern)
+      "CREATE" <> show(pattern)
 
     case CreateUnique(pattern) =>
-      "CREATE UNIQUE" <+> show(pattern)
+      "CREATE UNIQUE" <> show(pattern)
 
     case Delete(expressions, detach) =>
       val DETACH: Doc = if (detach) "DETACH" <> space else emptyDoc
       DETACH <> "DELETE" <+> hlist(expressions.map(expr), comma)
 
     case Foreach(variable, collExp, updates) =>
-      group("FOREACH" <+> lparen <> expr(variable) <+> "IN" <+> expr(collExp) <+> "|" <> group(nest(line <> vlist(updates.map(show)))) <@@> rparen)
+      "FOREACH" <+> parens( expr(variable) <+> "IN" <+> expr(collExp) <+> "|" <> nest(line <> vlist(updates.map(show))) <> linebreak)
 
     case Match(optional, pattern, hints, where) =>
       val OPTIONAL: Doc = ifTrue(optional, "OPTIONAL" <> line)
@@ -125,7 +125,7 @@ case class Pretty(preserveColumnNames: Boolean) extends PrettyPrinter {
       val mergeActions = if (actions.isEmpty)
         emptyDoc else
         nest(line <> vlist(actions.map(show)))
-      "MERGE" <+> show(pattern) <> mergeActions
+      "MERGE" <> show(pattern) <> mergeActions
 
     case PragmaWithout(vars) =>
       "_PRAGMA WITHOUT" <> hlist(vars.map(expr))
