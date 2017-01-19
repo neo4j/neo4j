@@ -24,12 +24,8 @@ import java.util.{Map => JavaMap}
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.{RuntimeJavaValueConverter, RuntimeScalaValueConverter}
-//<<<<<<< HEAD
-//import org.neo4j.cypher.internal.compiler.v3_2.prettifier.Prettifier
 import org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer
-//=======
 import org.neo4j.cypher.internal.frontend.v3_2.prettifier.Pretty
-//>>>>>>> Replace the old prettifier with the new Pretty
 import org.neo4j.cypher.internal.spi.v3_2.TransactionalContextWrapper
 import org.neo4j.cypher.internal.tracing.{CompilationTracer, TimingCompilationTracer}
 import org.neo4j.graphdb.config.Setting
