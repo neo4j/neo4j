@@ -37,18 +37,22 @@ class PrettyTest extends CypherFunSuite {
   }
 
   test("should not break CREATE in FOREACH") {
-    actual("match p=(n) foreach(x in p | create (x)--())") should equal(expected("MATCH p = (n)%nFOREACH (x IN p |%n  CREATE (x)--()%n)"))
+    actual("match p=(n) foreach(x in p | create (x)--())") should equal(expected(
+      "MATCH p = (n)%n" +
+      "FOREACH (x IN p |%n" +
+      "  CREATE (x)--()%n" +
+      ")"))
   }
 
   test("should not break CREATE in complex FOREACH") {
     actual("match p=(n) foreach(x in p | create (x)--() set x.foo = 'bar') return distinct p;") should equal(
       expected(
         "MATCH p = (n)%n" +
-          "FOREACH (x IN p |%n" +
-          "  CREATE (x)--()%n" +
-          "  SET x.foo = 'bar'%n" +
-          ")%n" +
-          "RETURN DISTINCT p")
+        "FOREACH (x IN p |%n" +
+        "  CREATE (x)--()%n" +
+        "  SET x.foo = 'bar'%n" +
+        ")%n" +
+        "RETURN DISTINCT p")
     )
   }
 
