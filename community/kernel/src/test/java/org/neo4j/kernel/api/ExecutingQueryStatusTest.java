@@ -41,10 +41,20 @@ public class ExecutingQueryStatusTest
     public void shouldProduceSensibleMapRepresentationInRunningState() throws Exception
     {
         // when
-        Map<String,Object> status = ExecutingQueryStatus.RUNNING.toMap( clock );
+        Map<String,Object> status = ExecutingQueryStatus.running().toMap( clock );
 
         // then
         assertEquals( singletonMap( "state", "RUNNING" ), status );
+    }
+
+    @Test
+    public void shouldProduceSensibleMapRepresentationInPlanningState() throws Exception
+    {
+        // when
+        Map<String,Object> status = ExecutingQueryStatus.planning().toMap( clock );
+
+        // then
+        assertEquals( singletonMap( "state", "PLANNING" ), status );
     }
 
     @Test

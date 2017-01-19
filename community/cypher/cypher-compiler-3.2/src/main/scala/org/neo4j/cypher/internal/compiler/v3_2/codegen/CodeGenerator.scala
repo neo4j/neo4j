@@ -72,7 +72,7 @@ class CodeGenerator(val structure: CodeStructure[GeneratedQuery], clock: Clock, 
           }
         }
 
-        CompiledPlan(updating = false, None, fp, plannerName, description, res.columns, builder)
+        CompiledPlan(updating = false, None, fp, plannerName, description, res.columns, builder, plan.indexUsage)
 
       case _ => throw new CantCompileQueryException("Can only compile plans with ProduceResult on top")
     }

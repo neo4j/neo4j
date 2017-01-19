@@ -19,8 +19,13 @@
  */
 package org.neo4j.kernel.enterprise.builtinprocs;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
+import java.util.function.BiConsumer;
+import java.util.function.Supplier;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -28,6 +33,7 @@ import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.kernel.enterprise.ImpermanentEnterpriseDatabaseRule;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.test.rule.DatabaseRule;
@@ -35,19 +41,30 @@ import org.neo4j.test.rule.concurrent.ThreadingRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasKey;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.cypher_hints_error;
 import static org.neo4j.test.rule.concurrent.ThreadingRule.waitingWhileIn;
 
 public class ListQueriesProcedureTest
 {
     @Rule
-    public final DatabaseRule db = new ImpermanentEnterpriseDatabaseRule();
+    public final DatabaseRule db = new ImpermanentEnterpriseDatabaseRule()
+    {
+        @Override
+        protected void configure( GraphDatabaseBuilder builder )
+        {
+            builder.setConfig( cypher_hints_error, "true" );
+        }
+    };
     @Rule
     public final ThreadingRule threads = new ThreadingRule();
 
@@ -70,36 +87,11 @@ public class ListQueriesProcedureTest
     public void shouldProvideElapsedCpuTime() throws Exception
     {
         // given
-        CountDownLatch nodeLocked = new CountDownLatch( 1 ), listQueriesLatch = new CountDownLatch( 1 );
-        Node node;
-        try ( Transaction tx = db.beginTx() )
-        {
-            node = db.createNode();
-            node.setProperty( "v", 1L );
-            tx.success();
-        }
-        threads.execute( parameter ->
-        {
-            try ( Transaction tx = db.beginTx() )
-            {
-                tx.acquireWriteLock( node );
-                nodeLocked.countDown();
-                listQueriesLatch.await();
-            }
-            return null;
-        }, null );
-        nodeLocked.await();
-
-        threads.executeAndAwait( parameter ->
-        {
-            db.execute( "MATCH (n) SET n.v = n.v + 1" ).close();
-            return null;
-        }, null, waitingWhileIn( GraphDatabaseFacade.class, "execute" ), 5, SECONDS );
-
-        try
+        String QUERY = "MATCH (n) SET n.v = n.v + 1";
+        try ( Resource<Node> test = test( db::createNode, Transaction::acquireWriteLock, QUERY ) )
         {
             // when
-            Map<String,Object> data = getQueryListing( "MATCH (n) SET n.v = n.v + 1" );
+            Map<String,Object> data = getQueryListing( QUERY );
 
             // then
             assertThat( data, hasKey( "elapsedTimeMillis" ) );
@@ -115,13 +107,13 @@ public class ListQueriesProcedureTest
             Map<String,Object> statusMap = (Map<String,Object>) status;
             assertEquals( "WAITING", statusMap.get( "state" ) );
             assertEquals( "NODE", statusMap.get( "resourceType" ) );
-            assertArrayEquals( new long[]{node.getId()}, (long[]) statusMap.get( "resourceIds" ) );
+            assertArrayEquals( new long[] {test.resource().getId()}, (long[]) statusMap.get( "resourceIds" ) );
             assertThat( data, hasKey( "waitTimeMillis" ) );
             Object waitTime1 = data.get( "waitTimeMillis" );
             assertThat( waitTime1, instanceOf( Long.class ) );
 
             // when
-            data = getQueryListing( "MATCH (n) SET n.v = n.v + 1" );
+            data = getQueryListing( QUERY );
 
             // then
             Long cpuTime2 = (Long) data.get( "cpuTimeMillis" );
@@ -129,9 +121,23 @@ public class ListQueriesProcedureTest
             Long waitTime2 = (Long) data.get( "waitTimeMillis" );
             assertThat( waitTime2, greaterThan( (Long) waitTime1 ) );
         }
-        finally
+    }
+
+    @Test
+    public void shouldListPlannerAndRuntimeUsed() throws Exception
+    {
+        // given
+        String QUERY = "MATCH (n) SET n.v = n.v - 1";
+        try ( Resource<Node> test = test( db::createNode, Transaction::acquireWriteLock, QUERY ) )
         {
-            listQueriesLatch.countDown();
+            // when
+            Map<String,Object> data = getQueryListing( QUERY );
+
+            // then
+            assertThat( data, hasKey( "planner" ) );
+            assertThat( data, hasKey( "runtime" ) );
+            assertThat( data.get( "planner" ), instanceOf( String.class ) );
+            assertThat( data.get( "runtime" ), instanceOf( String.class ) );
         }
     }
 
@@ -145,6 +151,122 @@ public class ListQueriesProcedureTest
         assertThat( data, hasKey( "requestScheme" ) );
         assertThat( data, hasKey( "clientAddress" ) );
         assertThat( data, hasKey( "requestUri" ) );
+    }
+
+    @Test
+    public void shouldListUsedIndexes() throws Exception
+    {
+        // given
+        String label = "IndexedLabel", property = "indexedProperty";
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().indexFor( label( label ) ).on( property ).create();
+            tx.success();
+        }
+        shouldListUsedIndexes( label, property );
+    }
+
+    @Test
+    public void shouldListUsedUniqueIndexes() throws Exception
+    {
+        // given
+        String label = "UniqueLabel", property = "uniqueProperty";
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().constraintFor( label( label ) ).assertPropertyIsUnique( property ).create();
+            tx.success();
+        }
+        shouldListUsedIndexes( label, property );
+    }
+
+    @Test
+    public void shouldListIndexesUsedForScans() throws Exception
+    {
+        // given
+        String QUERY = "MATCH (n:Node) USING INDEX n:Node(value) WHERE 1 < n.value < 10 SET n.value = 2";
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().indexFor( label( "Node" ) ).on( "value" ).create();
+            tx.success();
+        }
+        try ( Resource<Node> test = test( () ->
+        {
+            Node node = db.createNode( label( "Node" ) );
+            node.setProperty( "value", 5L );
+            return node;
+        }, Transaction::acquireWriteLock, QUERY ) )
+        {
+            // when
+            Map<String,Object> data = getQueryListing( QUERY );
+
+            // then
+            assertThat( data, hasEntry( equalTo( "indexes" ), instanceOf( List.class ) ) );
+            @SuppressWarnings( "unchecked" )
+            List<Map<String,Object>> indexes = (List<Map<String,Object>>) data.get( "indexes" );
+            assertEquals( "number of indexes used", 1, indexes.size() );
+            Map<String,Object> index = indexes.get( 0 );
+            assertThat( index, hasEntry( "identifier", "n" ) );
+            assertThat( index, hasEntry( "label", "Node" ) );
+            assertThat( index, hasEntry( "propertyKey", "value" ) );
+        }
+    }
+
+    private void shouldListUsedIndexes( String label, String property ) throws Exception
+    {
+        // given
+        String QUERY1 = "MATCH (n:" + label + "{" + property + ":5}) USING INDEX n:" + label + "(" + property +
+                ") SET n." + property + " = 3";
+        try ( Resource<Node> test = test( () ->
+        {
+            Node node = db.createNode( label( label ) );
+            node.setProperty( property, 5L );
+            return node;
+        }, Transaction::acquireWriteLock, QUERY1 ) )
+        {
+            // when
+            Map<String,Object> data = getQueryListing( QUERY1 );
+
+            // then
+            assertThat( data, hasEntry( equalTo( "indexes" ), instanceOf( List.class ) ) );
+            @SuppressWarnings( "unchecked" )
+            List<Map<String,Object>> indexes = (List<Map<String,Object>>) data.get( "indexes" );
+            assertEquals( "number of indexes used", 1, indexes.size() );
+            Map<String,Object> index = indexes.get( 0 );
+            assertThat( index, hasEntry( "identifier", "n" ) );
+            assertThat( index, hasEntry( "label", label ) );
+            assertThat( index, hasEntry( "propertyKey", property ) );
+        }
+
+        // given
+        String QUERY2 = "MATCH (n:" + label + "{" + property + ":3}) USING INDEX n:" + label + "(" + property +
+                ") MATCH (u:" + label + "{" + property + ":4}) USING INDEX u:" + label + "(" + property +
+                ") CREATE (n)-[:KNOWS]->(u)";
+        try ( Resource<Node> test = test( () ->
+        {
+            Node node = db.createNode( label( label ) );
+            node.setProperty( property, 4L );
+            return node;
+        }, Transaction::acquireWriteLock, QUERY2 ) )
+        {
+            // when
+            Map<String,Object> data = getQueryListing( QUERY2 );
+
+            // then
+            assertThat( data, hasEntry( equalTo( "indexes" ), instanceOf( List.class ) ) );
+            @SuppressWarnings( "unchecked" )
+            List<Map<String,Object>> indexes = (List<Map<String,Object>>) data.get( "indexes" );
+            assertEquals( "number of indexes used", 2, indexes.size() );
+
+            Map<String,Object> index1 = indexes.get( 0 );
+            assertThat( index1, hasEntry( "identifier", "n" ) );
+            assertThat( index1, hasEntry( "label", label ) );
+            assertThat( index1, hasEntry( "propertyKey", property ) );
+
+            Map<String,Object> index2 = indexes.get( 1 );
+            assertThat( index2, hasEntry( "identifier", "u" ) );
+            assertThat( index2, hasEntry( "label", label ) );
+            assertThat( index2, hasEntry( "propertyKey", property ) );
+        }
     }
 
     private Map<String,Object> getQueryListing( String query )
@@ -161,5 +283,59 @@ public class ListQueriesProcedureTest
             }
         }
         throw new AssertionError( "query not active: " + query );
+    }
+
+    private static class Resource<T> implements AutoCloseable
+    {
+        private final CountDownLatch latch;
+        private final T resource;
+
+        private Resource( CountDownLatch latch, T resource )
+        {
+            this.latch = latch;
+            this.resource = resource;
+        }
+
+        @Override
+        public void close()
+        {
+            latch.countDown();
+        }
+
+        public T resource()
+        {
+            return resource;
+        }
+    }
+
+    private <T> Resource<T> test( Supplier<T> setup, BiConsumer<Transaction,T> lock, String query )
+            throws TimeoutException, InterruptedException, ExecutionException
+    {
+        CountDownLatch resourceLocked = new CountDownLatch( 1 ), listQueriesLatch = new CountDownLatch( 1 );
+        T resource;
+        try ( Transaction tx = db.beginTx() )
+        {
+            resource = setup.get();
+            tx.success();
+        }
+        threads.execute( parameter ->
+        {
+            try ( Transaction tx = db.beginTx() )
+            {
+                lock.accept( tx, resource );
+                resourceLocked.countDown();
+                listQueriesLatch.await();
+            }
+            return null;
+        }, null );
+        resourceLocked.await();
+
+        threads.executeAndAwait( parameter ->
+        {
+            db.execute( query ).close();
+            return null;
+        }, null, waitingWhileIn( GraphDatabaseFacade.class, "execute" ), 5, SECONDS );
+
+        return new Resource<T>( listQueriesLatch, resource );
     }
 }

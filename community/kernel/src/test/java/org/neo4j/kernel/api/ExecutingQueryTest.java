@@ -39,6 +39,7 @@ import org.neo4j.test.FakeCpuClock;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
+import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonMap;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.hasEntry;
@@ -72,9 +73,53 @@ public class ExecutingQueryTest
     }
 
     @Test
-    public void shouldReportWaitTime() throws Exception
+    public void shouldTransitionBetweenStates() throws Exception
     {
         // initial
+        assertThat( query.status(), hasEntry( "state", "PLANNING" ) );
+
+        // when
+        query.planningCompleted( new ExecutingQuery.PlannerInfo( "the-planner", "the-runtime", emptyList() ) );
+
+        // then
+        assertThat( query.status(), hasEntry( "state", "RUNNING" ) );
+
+        // when
+        try ( LockWaitEvent event = lock( "NODE", 17 ) )
+        {
+            // then
+            assertThat( query.status(), hasEntry( "state", "WAITING" ) );
+        }
+        // then
+        assertThat( query.status(), hasEntry( "state", "RUNNING" ) );
+    }
+
+    @Test
+    public void shouldReportPlanningTime() throws Exception
+    {
+        // when
+        clock.forward( 124, TimeUnit.MILLISECONDS );
+
+        // then
+        assertEquals( query.planningTimeMillis(), query.elapsedTimeMillis() );
+
+        // when
+        clock.forward( 16, TimeUnit.MILLISECONDS );
+        query.planningCompleted( new ExecutingQuery.PlannerInfo( "the-planner", "the-runtime", emptyList() ) );
+        clock.forward( 200, TimeUnit.MILLISECONDS );
+
+        // then
+        assertEquals( 140, query.planningTimeMillis() );
+        assertEquals( 340, query.elapsedTimeMillis() );
+    }
+
+    @Test
+    public void shouldReportWaitTime() throws Exception
+    {
+        // given
+        query.planningCompleted( new ExecutingQuery.PlannerInfo( "the-planner", "the-runtime", emptyList() ) );
+
+        // then
         assertEquals( singletonMap( "state", "RUNNING" ), query.status() );
 
         // when

@@ -32,6 +32,9 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import javax.annotation.Nonnull;
 
+import static org.neo4j.function.ThrowingPredicate.throwingPredicate;
+import static org.neo4j.function.ThrowingSupplier.throwingSupplier;
+
 /**
  * Constructors for basic {@link Predicate} types
  */
@@ -147,7 +150,7 @@ public class Predicates
     public static <TYPE> TYPE await( Supplier<TYPE> supplier, Predicate<TYPE> predicate, long timeout,
             TimeUnit timeoutUnit ) throws TimeoutException
     {
-        return awaitEx( supplier::get, predicate::test, timeout, timeoutUnit );
+        return awaitEx( throwingSupplier( supplier ), throwingPredicate( predicate ), timeout, timeoutUnit );
     }
 
     public static <TYPE, EXCEPTION extends Exception> TYPE awaitEx( ThrowingSupplier<TYPE,EXCEPTION> supplier,
@@ -159,8 +162,8 @@ public class Predicates
         return composed.lastInput();
     }
 
-    public static <TYPE, EXCEPTION extends Exception> TYPE awaitEx( ThrowingSupplier<TYPE,EXCEPTION> supplier,
-            ThrowingPredicate<TYPE,EXCEPTION> predicate, long timeout, TimeUnit timeoutUnit )
+    public static <TYPE, EXCEPTION extends Exception> TYPE awaitEx( ThrowingSupplier<TYPE,? extends EXCEPTION> supplier,
+            ThrowingPredicate<TYPE, ? extends EXCEPTION> predicate, long timeout, TimeUnit timeoutUnit )
             throws TimeoutException, EXCEPTION
     {
         Suppliers.ThrowingCapturingSupplier<TYPE,EXCEPTION> composed = Suppliers.compose( supplier, predicate );
