@@ -30,22 +30,22 @@ import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.function.IntFunction;
+
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.index.Hit;
+import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.kernel.api.labelscan.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.labelscan.NodeLabelRange;
 import org.neo4j.test.rule.RandomRule;
 
+import static java.lang.Long.max;
+import static java.lang.Math.toIntExact;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static java.lang.Long.max;
-import static java.lang.Math.toIntExact;
-
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.asArray;
 import static org.neo4j.kernel.impl.index.labelscan.LabelScanValue.RANGE_SIZE;
 
