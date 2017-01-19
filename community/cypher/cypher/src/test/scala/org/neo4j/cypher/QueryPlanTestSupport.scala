@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.executionplan.InternalExecutionRe
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.KeyNames
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.NodeHashJoin
+import org.neo4j.cypher.internal.frontend.v3_2.helpers.StringHelper._
 import org.scalatest.matchers.{MatchResult, Matcher}
 
 trait QueryPlanTestSupport {
@@ -35,8 +36,8 @@ trait QueryPlanTestSupport {
       Matcher[InternalExecutionResult] {
     override def apply(result: InternalExecutionResult): MatchResult = {
       val plan: InternalPlanDescription = result.executionPlanDescription()
-      val planText = replaceAnonVariables(plan.toString.trim)
-      val expectedText = replaceAnonVariables(expectedPlan.trim)
+      val planText = replaceAnonVariables(plan.toString.trim.fixNewLines)
+      val expectedText = replaceAnonVariables(expectedPlan.trim.fixNewLines)
       MatchResult(
         matches = planText.startsWith(expectedText),
         rawFailureMessage = s"Plan does not match expected\n\nPlan:\n$planText\n\nExpected:\n$expectedText",
