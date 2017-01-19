@@ -171,7 +171,6 @@ public class DefaultPageCursorTracerTest
 
     private PageCursorTracer createTracer()
     {
-        DefaultPageCursorTracer.enablePinUnpinTracing();
         DefaultPageCursorTracer pageCursorTracer = new DefaultPageCursorTracer();
         pageCursorTracer.init( cacheTracer );
         return pageCursorTracer;

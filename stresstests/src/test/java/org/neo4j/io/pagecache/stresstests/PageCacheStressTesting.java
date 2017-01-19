@@ -40,12 +40,6 @@ import static org.neo4j.io.pagecache.stress.Conditions.timePeriod;
  */
 public class PageCacheStressTesting
 {
-    static {
-        // Pin/Unpin monitoring is disabled by default for performance reasons,
-        // but we have tests that verify that pinned and unpinned are called
-        // correctly.
-        DefaultPageCursorTracer.enablePinUnpinTracing();
-    }
 
     @Test
     public void shouldBehaveCorrectlyUnderStress() throws Exception

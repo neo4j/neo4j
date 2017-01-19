@@ -19,7 +19,6 @@
  */
 package org.neo4j.io.pagecache;
 
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
@@ -112,12 +111,6 @@ import static org.neo4j.test.matchers.ByteArrayMatcher.byteArray;
 @SuppressWarnings( "OptionalGetWithoutIsPresent" )
 public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSupport<T>
 {
-    @BeforeClass
-    public static void enablePinUnpinMonitoring()
-    {
-        DefaultPageCursorTracer.enablePinUnpinTracing();
-    }
-
     @Test
     public void mustReportConfiguredMaxPages() throws IOException
     {

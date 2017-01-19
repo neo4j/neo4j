@@ -20,10 +20,6 @@
 package org.neo4j.io.pagecache.tracing.cursor;
 
 import java.io.IOException;
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
-import java.lang.invoke.SwitchPoint;
 import java.util.Objects;
 
 import org.neo4j.io.pagecache.PageSwapper;
@@ -33,8 +29,6 @@ import org.neo4j.io.pagecache.tracing.FlushEventOpportunity;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 import org.neo4j.io.pagecache.tracing.PinEvent;
-
-import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.packageFlag;
 
 public class DefaultPageCursorTracer implements PageCursorTracer
 {
@@ -56,51 +50,10 @@ public class DefaultPageCursorTracer implements PageCursorTracer
 
     private PageCacheTracer pageCacheTracer;
 
-    private static final MethodHandle beginPinMH;
-    private static final SwitchPoint beginPinSwitchPoint;
-    static
-    {
-        try
-        {
-            // A hidden setting to have pin/unpin monitoring enabled from the start by default.
-            // NOTE: This flag is documented in jmx.asciidoc
-            boolean alwaysEnabled = packageFlag( DefaultPageCursorTracer.class, "tracePinUnpin", true );
-
-            MethodType type = MethodType.methodType( PinEvent.class );
-            MethodHandles.Lookup lookup = MethodHandles.lookup();
-            MethodHandle monitoredPinMH = lookup.findVirtual( DefaultPageCursorTracer.class, "beginTracingPin", type );
-            if ( alwaysEnabled )
-            {
-                beginPinMH = monitoredPinMH;
-                beginPinSwitchPoint = null;
-            }
-            else
-            {
-                MethodHandle nullPinMH = lookup.findVirtual( DefaultPageCursorTracer.class, "beginNullPin", type );
-                beginPinSwitchPoint = new SwitchPoint();
-                beginPinMH = beginPinSwitchPoint.guardWithTest( nullPinMH, monitoredPinMH );
-            }
-        }
-        catch ( Exception e )
-        {
-            throw new AssertionError( "Unexpected MethodHandle initiation error", e );
-        }
-    }
-
-    /**
-     * Enable monitoring of page pins and unpins, which is disabled by default for
-     * performance reasons.
-     *
-     * This is a one-way operation; once monitoring of pinning and unpinning has been
-     * enabled, it cannot be disabled again without restarting the JVM.
-     */
-    public static void enablePinUnpinTracing()
-    {
-        if ( beginPinSwitchPoint != null && !beginPinSwitchPoint.hasBeenInvalidated() )
-        {
-            SwitchPoint.invalidateAll( new SwitchPoint[]{ beginPinSwitchPoint } );
-        }
-    }
+    //TODO: remove id from there?
+    // A hidden setting to have pin/unpin monitoring enabled from the start by default.
+    // NOTE: This flag is documented in jmx.asciidoc
+    //boolean alwaysEnabled = packageFlag( DefaultPageCursorTracer.class, "tracePinUnpin", true );
 
     public void init( PageCacheTracer pageCacheTracer )
     {
@@ -175,31 +128,6 @@ public class DefaultPageCursorTracer implements PageCursorTracer
 
     @Override
     public PinEvent beginPin( boolean writeLock, long filePageId, PageSwapper swapper )
-    {
-        try
-        {
-            return (PinEvent) beginPinMH.invokeExact( this );
-        }
-        catch ( Throwable throwable )
-        {
-            throw new AssertionError( "Unexpected MethodHandle error", throwable );
-        }
-    }
-
-    /**
-     * Invoked through beginPinMH.
-     */
-    @SuppressWarnings( "UnusedDeclaration" )
-    private PinEvent beginNullPin()
-    {
-        return nullPinEvent;
-    }
-
-    /**
-     * Invoked through beginPinMH.
-     */
-    @SuppressWarnings( "UnusedDeclaration" )
-    private PinEvent beginTracingPin()
     {
         pins++;
         return pinTracingEvent;
