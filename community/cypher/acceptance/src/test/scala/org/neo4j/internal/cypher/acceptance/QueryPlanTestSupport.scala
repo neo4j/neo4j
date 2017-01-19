@@ -21,6 +21,7 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.frontend.v3_0.helpers.StringHelper._
 import org.scalatest.matchers.{MatchResult, Matcher}
 
 trait QueryPlanTestSupport {
@@ -33,8 +34,8 @@ trait QueryPlanTestSupport {
       Matcher[InternalExecutionResult] {
     override def apply(result: InternalExecutionResult): MatchResult = {
       val plan: InternalPlanDescription = result.executionPlanDescription()
-      val planText = replaceAnonVariables(plan.toString.trim)
-      val expectedText = replaceAnonVariables(expectedPlan.trim)
+      val planText = replaceAnonVariables(plan.toString.trim.fixNewLines)
+      val expectedText = replaceAnonVariables(expectedPlan.trim.fixNewLines)
       MatchResult(
         matches = planText.startsWith(expectedText),
         rawFailureMessage = s"Plan does not match expected\n\nPlan:\n$planText\n\nExpected:\n$expectedText",

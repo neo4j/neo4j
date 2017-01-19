@@ -20,11 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v3_0
 
 import org.neo4j.cypher.internal.frontend.v3_0.Scope
-import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.{CypherFunSuite, WindowsStringSafe}
 
 class ScopeTreeVerificationTest extends CypherFunSuite {
 
   import org.neo4j.cypher.internal.compiler.v3_0.helpers.ScopeTestHelper._
+
+  implicit val windowsSafe = WindowsStringSafe
 
   test("should reject scopes mapping the wrong name to a symbol") {
     val given = Scope(Map("a" -> intSymbol("a", 3), "b" -> intSymbol("x", 5)), Seq())
