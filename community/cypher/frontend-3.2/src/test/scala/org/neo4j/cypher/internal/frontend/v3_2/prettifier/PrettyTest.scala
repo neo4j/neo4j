@@ -176,7 +176,7 @@ class PrettyTest extends CypherFunSuite {
   }
 
   test("UNWIND should start on a new line") {
-    actual("WITH [1,2,2] AS coll UNWIND coll AS x RETURN collect(x)", identity) should equal(
+    actual("WITH [1,2,2] AS coll UNWIND coll AS x RETURN collect(x)", preserveColumnNames = true) should equal(
       expected("WITH [1, 2, 2] AS coll%nUNWIND coll AS x%nRETURN collect(x)"))
   }
 
@@ -187,8 +187,8 @@ class PrettyTest extends CypherFunSuite {
 
   private val parser = new CypherParser
 
-  private def actual(text: String, stringNormaliser: String => String = _.toUpperCase): String = {
-    val pretty = Pretty(stringNormaliser)
+  private def actual(text: String, preserveColumnNames: Boolean = false): String = {
+    val pretty = Pretty(preserveColumnNames)
     val ast = parser.parse(text)
     val reformatted = pretty.pretty(pretty.show(ast)).layout
     val secondRound = parser.parse(reformatted)

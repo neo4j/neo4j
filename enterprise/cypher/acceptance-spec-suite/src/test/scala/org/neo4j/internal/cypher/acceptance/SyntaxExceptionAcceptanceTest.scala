@@ -64,14 +64,14 @@ class SyntaxExceptionAcceptanceTest extends ExecutionEngineFunSuite {
 
   test("shortest path can not have minimum depth different from zero or one") {
     test(
-      "match (a), (b) where id(a) = 0 and id(b) = 1 match p=shortestPath(a-[*2..3]->b) return p",
+      "match (a), (b) where id(a) = 0 and id(b) = 1 match p=shortestPath((a)-[*2..3]->(b)) return p",
       "shortestPath(...) does not support a minimal length different from 0 or 1 (line 1, column 54)"
     )
   }
 
   test("shortest path can not have multiple links in it") {
     test(
-      "match (a), (b) where id(a) = 0 and id(b) = 1 match p=shortestPath(a-->()-->b) return p",
+      "match (a), (b) where id(a) = 0 and id(b) = 1 match p=shortestPath((a)-->()-->(b)) return p",
       "shortestPath(...) requires a pattern containing a single relationship (line 1, column 54)"
     )
   }
