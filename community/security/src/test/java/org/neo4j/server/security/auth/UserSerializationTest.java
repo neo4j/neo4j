@@ -40,6 +40,7 @@ public class UserSerializationTest
         List<User> users = asList(
                 new User.Builder( "Mike", Credential.forPassword( "1234321" ) ).withFlag( "not_as_nice" ).build(),
                 new User.Builder( "Steve", Credential.forPassword( "1234321" ) ).build(),
+                new User.Builder( "steve.stevesson@WINDOMAIN", Credential.forPassword( "1234321" ) ).build(),
                 new User.Builder( "Bob", Credential.forPassword( "0987654" ) ).build()
             );
 

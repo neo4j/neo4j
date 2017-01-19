@@ -157,12 +157,14 @@ public class FileUserRepositoryTest
                 "The provided username is empty." );
         assertException( () -> users.assertValidUsername( "" ), InvalidArgumentsException.class,
                 "The provided username is empty." );
-        assertException( () -> users.assertValidUsername( ":" ), InvalidArgumentsException.class,
-                "Username ':' contains illegal characters. Use simple ascii characters and numbers." );
+        assertException( () -> users.assertValidUsername( "," ), InvalidArgumentsException.class,
+                "Username ',' contains illegal characters. Use simple ascii characters and numbers." );
         assertException( () -> users.assertValidUsername( "with space" ), InvalidArgumentsException.class,
                 "Username 'with space' contains illegal characters. Use simple ascii characters and numbers." );
         assertException( () -> users.assertValidUsername( "with:colon" ), InvalidArgumentsException.class,
                 "Username 'with:colon' contains illegal characters. Use simple ascii characters and numbers." );
+        assertException( () -> users.assertValidUsername( "withå" ), InvalidArgumentsException.class,
+                "Username 'withå' contains illegal characters. Use simple ascii characters and numbers." );
     }
 
     @Test
