@@ -24,17 +24,17 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.function.IntFunction;
+
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.index.Hit;
-import org.neo4j.index.gbptree.GBPTree;
+import org.neo4j.index.internal.gbptree.GBPTree;
+import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.kernel.api.labelscan.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.labelscan.NodeLabelRange;
 
 import static java.lang.Long.min;
 import static java.lang.Math.toIntExact;
 import static java.util.Arrays.fill;
-
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.asArray;
 import static org.neo4j.kernel.impl.index.labelscan.LabelScanValue.RANGE_SIZE;
 
