@@ -200,7 +200,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
 
         StoreFiles storeFiles = new StoreFiles( fileSystem, pageCache );
         LocalDatabase localDatabase = new LocalDatabase( platformModule.storeDir, storeFiles,
-                platformModule.dataSourceManager, pageCache, fileSystem, databaseHealthSupplier, logProvider );
+                platformModule.dataSourceManager, pageCache, databaseHealthSupplier, logProvider );
 
         RemoteStore remoteStore =
                 new RemoteStore( platformModule.logging.getInternalLogProvider(), fileSystem, platformModule.pageCache,

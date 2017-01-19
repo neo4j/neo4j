@@ -147,9 +147,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
         LocalDatabase localDatabase = new LocalDatabase( platformModule.storeDir,
                 new StoreFiles( fileSystem, platformModule.pageCache ),
                 platformModule.dataSourceManager,
-                platformModule.pageCache,
-                fileSystem,
-                databaseHealthSupplier,
+                platformModule.pageCache, databaseHealthSupplier,
                 logProvider );
 
         IdentityModule identityModule = new IdentityModule( platformModule, clusterStateDirectory.get() );

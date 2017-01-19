@@ -21,17 +21,13 @@ package org.neo4j.causalclustering.catchup.storecopy;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 import org.neo4j.causalclustering.identity.StoreId;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.FileHandle;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
@@ -54,7 +50,6 @@ public class LocalDatabase implements Lifecycle
     private final StoreFiles storeFiles;
     private final DataSourceManager dataSourceManager;
     private final PageCache pageCache;
-    private final FileSystemAbstraction fileSystemAbstraction;
     private final Supplier<DatabaseHealth> databaseHealthSupplier;
     private final Log log;
 
@@ -65,14 +60,12 @@ public class LocalDatabase implements Lifecycle
     private volatile TransactionCommitProcess localCommit;
 
     public LocalDatabase( File storeDir, StoreFiles storeFiles, DataSourceManager dataSourceManager,
-            PageCache pageCache, FileSystemAbstraction fileSystemAbstraction,
-            Supplier<DatabaseHealth> databaseHealthSupplier, LogProvider logProvider )
+            PageCache pageCache, Supplier<DatabaseHealth> databaseHealthSupplier, LogProvider logProvider )
     {
         this.storeDir = storeDir;
         this.storeFiles = storeFiles;
         this.dataSourceManager = dataSourceManager;
         this.pageCache = pageCache;
-        this.fileSystemAbstraction = fileSystemAbstraction;
         this.databaseHealthSupplier = databaseHealthSupplier;
         this.log = logProvider.getLog( getClass() );
     }
