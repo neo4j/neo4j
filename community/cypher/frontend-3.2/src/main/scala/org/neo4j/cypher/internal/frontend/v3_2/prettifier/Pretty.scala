@@ -327,6 +327,13 @@ case class Pretty(preserveColumnNames: Boolean) extends PrettyPrinter {
       val WHERE = maybe(pred, space <> "WHERE" <+> expr(_: Expression))
       group(brackets(PATH_NAME <> show(pattern.element) <> WHERE <> PROJECT))
 
+    case PatternComprehension(pathName, pattern, pred, proj, _) =>
+
+      val PATH_NAME = maybe(pathName, expr(_: Variable) <+> "=" <> space)
+      val PROJECT = space <> "|" <+> expr(proj)
+      val WHERE = maybe(pred, space <> "WHERE" <+> expr(_: Expression))
+      group(brackets(PATH_NAME <> show(pattern.element) <> WHERE <> PROJECT))
+
     case FunctionInvocation(ns, funcName, _, args) =>
       val NAME = funcName.name.toUpperCase
       val QUALIFIED_NAME = fqn(ns, functionNameNormaliser(funcName.name))
