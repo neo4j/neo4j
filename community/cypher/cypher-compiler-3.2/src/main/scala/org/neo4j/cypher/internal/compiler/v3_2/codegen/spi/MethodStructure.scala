@@ -46,8 +46,8 @@ trait MethodStructure[E] {
   def declare(varName: String, codeGenType: CodeGenType): Unit
   def declareProperty(name: String): Unit
   def declareCounter(name: String, initialValue: E): Unit
-  def putField(structure: Map[String, CodeGenType], value: E, fieldType: CodeGenType, fieldName: String, localVar: String): Unit
-  def updateProbeTable(structure: Map[String, CodeGenType], tableVar: String, tableType: RecordingJoinTableType, keyVars: Seq[String], element: E): Unit
+  def putField(tupleDescriptor: TupleDescriptor, value: E, fieldType: CodeGenType, fieldName: String, localVar: String): Unit
+  def updateProbeTable(tupleDescriptor: TupleDescriptor, tableVar: String, tableType: RecordingJoinTableType, keyVars: Seq[String], element: E): Unit
   def probe(tableVar: String, tableType: JoinTableType, keyVars: Seq[String])(block: MethodStructure[E]=>Unit): Unit
   def updateProbeTableCount(tableVar: String, tableType: CountingJoinTableType, keyVar: Seq[String]): Unit
   def allocateProbeTable(tableVar: String, tableType: JoinTableType): Unit
@@ -57,7 +57,7 @@ trait MethodStructure[E] {
   def incrementInteger(name: String): Unit
   def decrementInteger(name: String): Unit
   def checkInteger(variableName: String, comparator: Comparator, value: Long): E
-  def newTableValue(targetVar: String, structure: Map[String, CodeGenType]): E
+  def newTableValue(targetVar: String, tupleDescriptor: TupleDescriptor): E
   def constantExpression(value: Object): E
   def asMap(map: Map[String, E]): E
   def asList(values: Seq[E]): E
@@ -65,13 +65,12 @@ trait MethodStructure[E] {
   def toSet(value: E): E
   def newDistinctSet(name: String, codeGenTypes: Iterable[CodeGenType])
   def distinctSetIfNotContains(name: String, structure: Map[String,(CodeGenType,E)])(block: MethodStructure[E] => Unit)
-  def distinctSetIterate(name: String, key: Map[String, CodeGenType])
-                                 (block: (MethodStructure[E]) => Unit)
+  def distinctSetIterate(name: String, key: HashableTupleDescriptor)(block: (MethodStructure[E]) => Unit)
   def newUniqueAggregationKey(varName: String, structure: Map[String, (CodeGenType,E)]): Unit
   def newAggregationMap(name: String, keyTypes: IndexedSeq[CodeGenType]): Unit
   def aggregationMapGet(name: String, varName: String, key: Map[String,(CodeGenType,E)], keyVar: String)
   def aggregationMapPut(name: String, key: Map[String,(CodeGenType,E)], keyVar: String, value: E): Unit
-  def aggregationMapIterate(name: String, key: Map[String,CodeGenType], valueVar: String)(block: MethodStructure[E] => Unit): Unit
+  def aggregationMapIterate(name: String, key: HashableTupleDescriptor, valueVar: String)(block: MethodStructure[E] => Unit): Unit
   def newMapOfSets(name: String, keyTypes: IndexedSeq[CodeGenType], elementType: CodeGenType)
   def checkDistinct(name: String, key: Map[String,(CodeGenType, E)], keyVar: String, value: E, valueType: CodeGenType)(block: MethodStructure[E] => Unit)
 
@@ -187,8 +186,8 @@ sealed trait RecordingJoinTableType extends JoinTableType
 
 case object LongToCountTable extends CountingJoinTableType
 case object LongsToCountTable extends CountingJoinTableType
-case class LongToListTable(structure: Map[String, CodeGenType], localMap: Map[String, String]) extends RecordingJoinTableType
-case class LongsToListTable(structure: Map[String, CodeGenType], localMap: Map[String, String]) extends RecordingJoinTableType
+case class LongToListTable(tupleDescriptor: TupleDescriptor, localMap: Map[String, String]) extends RecordingJoinTableType
+case class LongsToListTable(tupleDescriptor: TupleDescriptor, localMap: Map[String, String]) extends RecordingJoinTableType
 
 sealed trait SortOrder
 case object Ascending extends SortOrder

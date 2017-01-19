@@ -25,7 +25,7 @@ import org.neo4j.codegen.Parameter.param
 import org.neo4j.codegen._
 import org.neo4j.cypher.internal.codegen.{CompiledOrderabilityUtils, CompiledEquivalenceUtils}
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions.CodeGenType
-import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi.{OrderableTupleDescriptor, SortItem}
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi._
 import org.neo4j.cypher.internal.compiler.v3_2.helpers._
 
 import scala.collection.mutable
@@ -34,23 +34,27 @@ class AuxGenerator(val packageName: String, val generator: CodeGenerator) {
 
   import GeneratedQueryStructure.{lowerType, method, typeRef}
 
-  case class TypeKey(structure: Map[String, CodeGenType], maybeSortItems: Option[Seq[SortItem]] = None)
-
-  private val types: scala.collection.mutable.Map[TypeKey, TypeReference] = mutable.Map.empty
+  private val types: scala.collection.mutable.Map[_ >: TupleDescriptor, TypeReference] = mutable.Map.empty
   private var nameId = 0
 
-  def typeReference(structure: Map[String, CodeGenType]): TypeReference = {
-    types.getOrElseUpdate(TypeKey(structure), using(generator.generateClass(packageName, newValueTypeName())) { clazz =>
-      structure.foreach {
+  def typeReference(tupleDescriptor: TupleDescriptor) = tupleDescriptor match {
+    case t: SimpleTupleDescriptor => simpleTypeReference(t)
+    case t: HashableTupleDescriptor => hashableTypeReference(t)
+    case t: OrderableTupleDescriptor => comparableTypeReference(t)
+  }
+
+  def simpleTypeReference(tupleDescriptor: SimpleTupleDescriptor): TypeReference = {
+    types.getOrElseUpdate(tupleDescriptor, using(generator.generateClass(packageName, newSimpleTupleTypeName())) { clazz =>
+      tupleDescriptor.structure.foreach {
         case (fieldName, fieldType: CodeGenType) => clazz.field(lowerType(fieldType), fieldName)
       }
       clazz.handle()
     })
   }
 
-  def hashKey(structure: Map[String, CodeGenType]): TypeReference = {
-    types.getOrElseUpdate(TypeKey(structure), using(generator.generateClass(packageName, newKeyTypeName())) { clazz =>
-      structure.foreach {
+  def hashableTypeReference(tupleDescriptor: HashableTupleDescriptor): TypeReference = {
+    types.getOrElseUpdate(tupleDescriptor, using(generator.generateClass(packageName, newHashableTupleTypeName())) { clazz =>
+      tupleDescriptor.structure.foreach {
         case (fieldName, fieldType) => clazz.field(lowerType(fieldType), fieldName)
       }
       clazz.field(classOf[Int], "hashCode")
@@ -61,7 +65,7 @@ class AuxGenerator(val packageName: String, val generator: CodeGenerator) {
         val otherName = s"other$nameId"
         body.assign(body.declare(clazz.handle(), otherName), Expression.cast(clazz.handle(), body.load("other")))
 
-        body.returns(structure.map {
+        body.returns(tupleDescriptor.structure.map {
           case (fieldName, fieldType) =>
             val fieldReference = field(clazz.handle(), lowerType(fieldType), fieldName)
             Expression.invoke(method[CompiledEquivalenceUtils, Boolean]("equals", typeRef[Object], typeRef[Object]),
@@ -77,8 +81,8 @@ class AuxGenerator(val packageName: String, val generator: CodeGenerator) {
   }
 
   def comparableTypeReference(tupleDescriptor: OrderableTupleDescriptor): TypeReference = {
-    types.getOrElseUpdate(TypeKey(tupleDescriptor.structure, Some(tupleDescriptor.sortItems.toSeq)),
-      using(generator.generateClass(packageName, newComparableValueTypeName(),
+    types.getOrElseUpdate(tupleDescriptor,
+      using(generator.generateClass(packageName, newComparableTupleTypeName(),
       typeRef[Comparable[_]])) { clazz =>
       tupleDescriptor.structure.foreach {
         case (fieldName, fieldType: CodeGenType) => clazz.field(lowerType(fieldType), fieldName)
@@ -110,20 +114,20 @@ class AuxGenerator(val packageName: String, val generator: CodeGenerator) {
     })
   }
 
-  private def newValueTypeName() = {
-    val name = "ValueType" + nameId
+  private def newSimpleTupleTypeName() = {
+    val name = "SimpleTupleType" + nameId
     nameId += 1
     name
   }
 
-  private def newKeyTypeName() = {
-    val name = "KeyType" + nameId
+  private def newHashableTupleTypeName() = {
+    val name = "HashableTupleType" + nameId
     nameId += 1
     name
   }
 
-  private def newComparableValueTypeName() = {
-    val name = "ComparableValueType" + nameId
+  private def newComparableTupleTypeName() = {
+    val name = "ComparableTupleType" + nameId
     nameId += 1
     name
   }

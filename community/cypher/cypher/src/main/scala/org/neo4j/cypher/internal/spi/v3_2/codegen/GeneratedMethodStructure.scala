@@ -75,9 +75,9 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   private implicit class RichTableType(tableType: RecordingJoinTableType) {
 
     def extractHashTable(): HashTable = tableType match {
-      case LongToListTable(structure, localMap) =>
+      case LongToListTable(tupleDescriptor, localMap) =>
         // compute the participating types
-        val valueType = aux.typeReference(structure)
+        val valueType = aux.typeReference(tupleDescriptor)
         val listType = parameterizedType(classOf[util.ArrayList[_]], valueType)
         val tableType = parameterizedType(classOf[PrimitiveLongObjectMap[_]], valueType)
         // the methods we use on those types
@@ -87,9 +87,9 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
         HashTable(valueType, listType, tableType, get, put, add)
 
-      case LongsToListTable(structure, localMap) =>
+      case LongsToListTable(tupleDescriptor, localMap) =>
         // compute the participating types
-        val valueType = aux.typeReference(structure)
+        val valueType = aux.typeReference(tupleDescriptor)
         val listType = parameterizedType(classOf[util.ArrayList[_]], valueType)
         val tableType = parameterizedType(classOf[util.HashMap[_, _]], typeRef[CompositeKey], valueType)
         // the methods we use on those types
@@ -499,8 +499,9 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
       }
     }
   }
-  override def distinctSetIterate(name: String, key: Map[String, CodeGenType])
+  override def distinctSetIterate(name: String, keyTupleDescriptor: HashableTupleDescriptor)
                                     (block: (MethodStructure[Expression]) => Unit) = {
+    val key = keyTupleDescriptor.structure
     if (key.size == 1 && key.head._2.repr == IntType) {
       val (keyName, keyType) = key.head
       val localName = context.namer.newVarName()
@@ -518,7 +519,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
       val localName = context.namer.newVarName()
       val next = context.namer.newVarName()
       val variable = generator.declare(typeRef[java.util.Iterator[Object]], localName)
-      val keyStruct = aux.hashKey(key)
+      val keyStruct = aux.hashableTypeReference(keyTupleDescriptor)
       generator.assign(variable,
                        invoke(generator.load(name),method[util.HashSet[Object], util.Iterator[Object]]("iterator")))
       using(generator.whileLoop(
@@ -541,9 +542,9 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   }
 
   override def newUniqueAggregationKey(varName: String, structure: Map[String, (CodeGenType, Expression)]) = {
-    val typ = aux.hashKey(structure.map {
+    val typ = aux.hashableTypeReference(HashableTupleDescriptor(structure.map {
       case (n, (t, _)) => n -> t
-    })
+    }))
     val local = generator.declare(typ, varName)
     locals += varName -> local
     generator.assign(local, createNewInstance(typ))
@@ -785,8 +786,9 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     }
   }
 
-  override def aggregationMapIterate(name: String, key: Map[String, CodeGenType], valueVar: String)
+  override def aggregationMapIterate(name: String, keyTupleDescriptor: HashableTupleDescriptor, valueVar: String)
                                     (block: (MethodStructure[Expression]) => Unit) = {
+    val key = keyTupleDescriptor.structure
     if (key.size == 1 && key.head._2.repr == IntType) {
       val (keyName, keyType) = key.head
       val localName = context.namer.newVarName()
@@ -808,7 +810,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
       val next = context.namer.newVarName()
       val variable = generator
         .declare(typeRef[java.util.Iterator[java.util.Map.Entry[Object, java.lang.Long]]], localName)
-      val keyStruct = aux.hashKey(key)
+      val keyStruct = aux.hashableTypeReference(keyTupleDescriptor)
       generator.assign(variable,
                        invoke(invoke(generator.load(name),
                                      method[util.HashMap[Object, java.lang.Long],
@@ -956,7 +958,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
         body.assign(times, subtract(times, constant(1)))
       }
 
-    case tableType@LongToListTable(structure, localVars) =>
+    case tableType@LongToListTable(tupleDescriptor, localVars) =>
       assert(keyVars.size == 1)
       val keyVar = keyVars.head
 
@@ -969,15 +971,15 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
         using(onTrue.forEach(Parameter.param(hashTable.valueType, elementName), list)) { forEach =>
           localVars.foreach {
             case (l, f) =>
-              val fieldType = lowerType(structure(f))
+              val fieldType = lowerType(tupleDescriptor.structure(f))
               forEach.assign(fieldType, l, get(forEach.load(elementName),
-                                               field(structure, structure(f), f)))
+                                               field(tupleDescriptor, tupleDescriptor.structure(f), f)))
           }
           block(copy(generator = forEach))
         }
       }
 
-    case tableType@LongsToListTable(structure, localVars) =>
+    case tableType@LongsToListTable(tupleDescriptor, localVars) =>
       val hashTable = tableType.extractHashTable()
       val list = generator.declare(hashTable.listType, context.namer.newVarName())
       val elementName = context.namer.newVarName()
@@ -993,21 +995,22 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
         using(onTrue.forEach(Parameter.param(hashTable.valueType, elementName), list)) { forEach =>
           localVars.foreach {
             case (l, f) =>
-              val fieldType = lowerType(structure(f))
+              val fieldType = lowerType(tupleDescriptor.structure(f))
               forEach.assign(fieldType, l, get(forEach.load(elementName),
-                                               field(structure, structure(f), f)))
+                                               field(tupleDescriptor, tupleDescriptor.structure(f), f)))
           }
           block(copy(generator = forEach))
         }
       }
   }
 
-  override def putField(structure: Map[String, CodeGenType], value: Expression, fieldType: CodeGenType,
+  override def putField(tupleDescriptor: TupleDescriptor, value: Expression, fieldType: CodeGenType,
                         fieldName: String,
                         localVar: String) = {
-    generator.put(value, field(structure, fieldType, fieldName), generator.load(localVar))
+    generator.put(value, field(tupleDescriptor, fieldType, fieldName), generator.load(localVar))
   }
 
+  // TODO: Replace with putField?
   override def sortTableValuePutField(tupleDescriptor: OrderableTupleDescriptor,
                                       value: Expression,
                                       fieldType: CodeGenType,
@@ -1018,7 +1021,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
       generator.load(localVar))
   }
 
-  override def updateProbeTable(structure: Map[String, CodeGenType], tableVar: String,
+  override def updateProbeTable(tupleDescriptor: TupleDescriptor, tableVar: String,
                                 tableType: RecordingJoinTableType,
                                 keyVars: Seq[String], element: Expression) = tableType match {
     case _: LongToListTable =>
@@ -1227,18 +1230,19 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   override def coerceToBoolean(propertyExpression: Expression): Expression =
     invoke(coerceToPredicate, propertyExpression)
 
-  override def newTableValue(targetVar: String, structure: Map[String, CodeGenType]) = {
-    val valueType = aux.typeReference(structure)
-    generator.assign(valueType, targetVar, createNewInstance(valueType))
+  override def newTableValue(targetVar: String, tupleDescriptor: TupleDescriptor) = {
+    val tupleType = aux.typeReference(tupleDescriptor)
+    generator.assign(tupleType, targetVar, createNewInstance(tupleType))
     generator.load(targetVar)
   }
 
+  // TODO: Replace with newTableValue?
   override def newSortTableValue(targetVar: String, tupleDescriptor: OrderableTupleDescriptor) = {
-    val valueType = aux.comparableTypeReference(tupleDescriptor)
-    generator.assign(valueType, targetVar, createNewInstance(valueType))
+    val tupleType = aux.comparableTypeReference(tupleDescriptor)
+    generator.assign(tupleType, targetVar, createNewInstance(tupleType))
     generator.load(targetVar)
   }
 
-  private def field(structure: Map[String, CodeGenType], fieldType: CodeGenType, fieldName: String) =
-    FieldReference.field(aux.typeReference(structure), lowerType(fieldType), fieldName)
+  private def field(tupleDescriptor: TupleDescriptor, fieldType: CodeGenType, fieldName: String) =
+    FieldReference.field(aux.typeReference(tupleDescriptor), lowerType(fieldType), fieldName)
 }

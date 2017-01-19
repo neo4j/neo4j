@@ -49,11 +49,11 @@ case class BuildRecordingProbeTable(id: String, name: String, nodes: Set[Variabl
 
   override def body[E](generator: MethodStructure[E])(implicit ignored: CodeGenContext): Unit = {
     generator.trace(id, Some(this.getClass.getSimpleName)) { body =>
-      val value = body.newTableValue(context.namer.newVarName(), valueStructure)
+      val tuple = body.newTableValue(context.namer.newVarName(), tupleDescriptor)
       fieldToVarName.foreach {
-        case (fieldName, localName) => body.putField(valueStructure, value, localName.incoming.codeGenType, fieldName, localName.incoming.name)
+        case (fieldName, localName) => body.putField(tupleDescriptor, tuple, localName.incoming.codeGenType, fieldName, localName.incoming.name)
       }
-      body.updateProbeTable(valueStructure, name, tableType, nodes.toIndexedSeq.map(_.name), value)
+      body.updateProbeTable(tupleDescriptor, name, tableType, keyVars = nodes.toIndexedSeq.map(_.name), tuple)
     }
   }
 
@@ -67,10 +67,10 @@ case class BuildRecordingProbeTable(id: String, name: String, nodes: Set[Variabl
     case (fieldName, localName) => localName.outgoing.name -> fieldName
   }
 
-  private val valueStructure = fieldToVarName.mapValues(c => c.outgoing.codeGenType)
+  private val tupleDescriptor = SimpleTupleDescriptor(fieldToVarName.mapValues(c => c.outgoing.codeGenType))
 
-  override val tableType = if(nodes.size == 1 ) LongToListTable(valueStructure, varNameToField)
-                           else LongsToListTable(valueStructure, varNameToField)
+  override val tableType = if (nodes.size == 1) LongToListTable(tupleDescriptor, varNameToField)
+                           else LongsToListTable(tupleDescriptor, varNameToField)
 
   val joinData: JoinData = JoinData(fieldToVarName, name, tableType, id)
 }
