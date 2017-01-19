@@ -23,7 +23,7 @@ import org.bitbucket.inkytonik.kiama.output.PrettyPrinter
 import org.bitbucket.inkytonik.kiama.output.PrettyPrinterTypes.Width
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.parser.CypherParser
-import org.neo4j.cypher.internal.frontend.v3_2.{SemanticDirection, ast}
+import org.neo4j.cypher.internal.frontend.v3_2.{InternalException, SemanticDirection, ast}
 
 /**
   * @param preserveColumnNames If this parameter is true, the prettifier will not change column names. This means
@@ -342,6 +342,7 @@ case class Pretty(preserveColumnNames: Boolean) extends PrettyPrinter {
       expr(v) <+> equal <+> "relationship" <> colon <> string(i) <> parens(k <+> equal <+> expr(e))
     case RelationshipByIndexQuery(v, i, q) =>
       expr(v) <+> equal <+> "relationship" <> colon <> string(i) <> parens(expr(q))
+    case _ => throw new InternalException("not supported")
   }
 
   private def show(ri: ProcedureResultItem) = expr(ri.variable)
