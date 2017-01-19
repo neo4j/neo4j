@@ -17,23 +17,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.messaging.routing;
+package org.neo4j.causalclustering.readreplica;
 
-import org.neo4j.causalclustering.core.consensus.outcome.Outcome;
-import org.neo4j.causalclustering.identity.MemberId;
-
-public class LeaderOnlySelectionStrategy implements CoreMemberSelectionStrategy
+public class UpstreamDatabaseSelectionException extends Exception
 {
-    private final Outcome outcome;
-
-    public LeaderOnlySelectionStrategy( Outcome outcome )
+    UpstreamDatabaseSelectionException( String message )
     {
-        this.outcome = outcome;
-    }
-
-    @Override
-    public MemberId coreMember() throws CoreMemberSelectionException
-    {
-        return (MemberId) outcome.getLeader();
+        super( message );
     }
 }

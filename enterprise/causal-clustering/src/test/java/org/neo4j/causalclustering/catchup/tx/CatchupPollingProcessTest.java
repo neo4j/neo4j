@@ -23,18 +23,17 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.concurrent.CompletableFuture;
-
 import java.util.concurrent.Future;
 
 import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.CatchUpResponseCallback;
 import org.neo4j.causalclustering.catchup.CatchupResult;
-import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
+import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
 import org.neo4j.causalclustering.core.consensus.schedule.ControlledRenewableTimeoutService;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
-import org.neo4j.causalclustering.messaging.routing.CoreMemberSelectionStrategy;
+import org.neo4j.causalclustering.readreplica.UpstreamDatabaseStrategySelector;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -61,7 +60,7 @@ import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_I
 public class CatchupPollingProcessTest
 {
     private final CatchUpClient catchUpClient = mock( CatchUpClient.class );
-    private final CoreMemberSelectionStrategy serverSelection = mock( CoreMemberSelectionStrategy.class );
+    private final UpstreamDatabaseStrategySelector strategyPipeline = mock( UpstreamDatabaseStrategySelector.class );
     private final MemberId coreMemberId = mock( MemberId.class );
     private final TransactionIdStore idStore = mock( TransactionIdStore.class );
 
@@ -72,21 +71,23 @@ public class CatchupPollingProcessTest
     private final StoreCopyProcess storeCopyProcess = mock( StoreCopyProcess.class );
     private final StoreId storeId = new StoreId( 1, 2, 3, 4 );
     private final LocalDatabase localDatabase = mock( LocalDatabase.class );
+
     {
         when( localDatabase.storeId() ).thenReturn( storeId );
     }
+
     private final Lifecycle startStopOnStoreCopy = mock( Lifecycle.class );
 
     private final CatchupPollingProcess txPuller =
             new CatchupPollingProcess( NullLogProvider.getInstance(), localDatabase, startStopOnStoreCopy,
-                    catchUpClient, serverSelection, timeoutService, txPullIntervalMillis, txApplier, new Monitors(),
-                    storeCopyProcess, () -> mock( DatabaseHealth.class) );
+                    catchUpClient, strategyPipeline, timeoutService, txPullIntervalMillis, txApplier, new Monitors(),
+                    storeCopyProcess, () -> mock( DatabaseHealth.class ) );
 
     @Before
     public void before() throws Throwable
     {
         when( idStore.getLastCommittedTransactionId() ).thenReturn( BASE_TX_ID );
-        when( serverSelection.coreMember() ).thenReturn( coreMemberId );
+        when( strategyPipeline.bestUpstreamDatabase() ).thenReturn( coreMemberId );
     }
 
     @Test
@@ -114,8 +115,8 @@ public class CatchupPollingProcessTest
         when( txApplier.lastQueuedTxId() ).thenReturn( lastAppliedTxId );
 
         // when
-        when(catchUpClient.<CatchupResult>makeBlockingRequest(  any( MemberId.class ), any( TxPullRequest.class ),
-                any( CatchUpResponseCallback.class )  ))
+        when( catchUpClient.<CatchupResult>makeBlockingRequest( any( MemberId.class ), any( TxPullRequest.class ),
+                any( CatchUpResponseCallback.class ) ) )
                 .thenReturn( CatchupResult.SUCCESS_END_OF_BATCH, CatchupResult.SUCCESS_END_OF_STREAM );
 
         timeoutService.invokeTimeout( TX_PULLER_TIMEOUT );
@@ -130,9 +131,8 @@ public class CatchupPollingProcessTest
     {
         // when
         txPuller.start();
-        when( catchUpClient .makeBlockingRequest( any( MemberId.class ), any( TxPullRequest.class ),
-                any(CatchUpResponseCallback.class)))
-                .thenReturn( CatchupResult.SUCCESS_END_OF_STREAM );
+        when( catchUpClient.makeBlockingRequest( any( MemberId.class ), any( TxPullRequest.class ),
+                any( CatchUpResponseCallback.class ) ) ).thenReturn( CatchupResult.SUCCESS_END_OF_STREAM );
 
         timeoutService.invokeTimeout( TX_PULLER_TIMEOUT );
 
@@ -145,9 +145,8 @@ public class CatchupPollingProcessTest
     {
         // when
         txPuller.start();
-        when( catchUpClient.makeBlockingRequest(
-                any( MemberId.class ), any( TxPullRequest.class ), any( CatchUpResponseCallback.class ) ) )
-                .thenReturn( CatchupResult.E_TRANSACTION_PRUNED );
+        when( catchUpClient.makeBlockingRequest( any( MemberId.class ), any( TxPullRequest.class ),
+                any( CatchUpResponseCallback.class ) ) ).thenReturn( CatchupResult.E_TRANSACTION_PRUNED );
 
         timeoutService.invokeTimeout( TX_PULLER_TIMEOUT );
 
@@ -203,11 +202,9 @@ public class CatchupPollingProcessTest
     public void shouldNotSignalOperationalUntilPulling() throws Throwable
     {
         // given
-        when(catchUpClient.<CatchupResult>makeBlockingRequest(  any( MemberId.class ), any( TxPullRequest.class ),
-                any( CatchUpResponseCallback.class )  ))
-                .thenReturn(
-                        CatchupResult.E_TRANSACTION_PRUNED,
-                        CatchupResult.SUCCESS_END_OF_BATCH,
+        when( catchUpClient.<CatchupResult>makeBlockingRequest( any( MemberId.class ), any( TxPullRequest.class ),
+                any( CatchUpResponseCallback.class ) ) )
+                .thenReturn( CatchupResult.E_TRANSACTION_PRUNED, CatchupResult.SUCCESS_END_OF_BATCH,
                         CatchupResult.SUCCESS_END_OF_STREAM );
 
         // when

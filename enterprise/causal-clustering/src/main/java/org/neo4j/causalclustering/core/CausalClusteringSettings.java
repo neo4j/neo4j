@@ -43,106 +43,109 @@ import static org.neo4j.kernel.configuration.Settings.listenAddress;
 import static org.neo4j.kernel.configuration.Settings.min;
 import static org.neo4j.kernel.configuration.Settings.setting;
 
-@Description("Settings for Causal Clustering")
+@Description( "Settings for Causal Clustering" )
 public class CausalClusteringSettings implements LoadableConfig
 {
-    @Description("Time out for a new member to catch up")
+    @Description( "Time out for a new member to catch up" )
     public static final Setting<Long> join_catch_up_timeout =
             setting( "causal_clustering.join_catch_up_timeout", DURATION, "10m" );
 
-    @Description("The time limit within which a new leader election will occur if no messages are received.")
+    @Description( "The time limit within which a new leader election will occur if no messages are received." )
     public static final Setting<Long> leader_election_timeout =
             setting( "causal_clustering.leader_election_timeout", DURATION, "7s" );
 
-    @Description("The maximum batch size when catching up (in unit of entries)")
+    @Description( "The maximum batch size when catching up (in unit of entries)" )
     public static final Setting<Integer> catchup_batch_size =
             setting( "causal_clustering.catchup_batch_size", INTEGER, "64" );
 
-    @Description("The maximum lag allowed before log shipping pauses (in unit of entries)")
+    @Description( "The maximum lag allowed before log shipping pauses (in unit of entries)" )
     public static final Setting<Integer> log_shipping_max_lag =
             setting( "causal_clustering.log_shipping_max_lag", INTEGER, "256" );
 
-    @Description("Size of the RAFT in queue")
+    @Description( "Size of the RAFT in queue" )
     @Internal
     public static final Setting<Integer> raft_in_queue_size =
             setting( "causal_clustering.raft_in_queue_size", INTEGER, "64" );
 
-    @Description("Largest batch processed by RAFT")
+    @Description( "Largest batch processed by RAFT" )
     @Internal
     public static final Setting<Integer> raft_in_queue_max_batch =
             setting( "causal_clustering.raft_in_queue_max_batch", INTEGER, "64" );
 
-    @Description("Expected number of Core machines in the cluster")
+    @Description( "Expected number of Core machines in the cluster" )
     public static final Setting<Integer> expected_core_cluster_size =
             setting( "causal_clustering.expected_core_cluster_size", INTEGER, "3" );
 
-    @Description("Network interface and port for the transaction shipping server to listen on.")
+    @Description( "Network interface and port for the transaction shipping server to listen on." )
     public static final Setting<ListenSocketAddress> transaction_listen_address =
             listenAddress( "causal_clustering.transaction_listen_address", 6000 );
 
-    @Description("Advertised hostname/IP address and port for the transaction shipping server.")
+    @Description( "Advertised hostname/IP address and port for the transaction shipping server." )
     public static final Setting<AdvertisedSocketAddress> transaction_advertised_address =
             advertisedAddress( "causal_clustering.transaction_advertised_address", transaction_listen_address );
 
-    @Description("Network interface and port for the RAFT server to listen on.")
+    @Description( "Network interface and port for the RAFT server to listen on." )
     public static final Setting<ListenSocketAddress> raft_listen_address =
             listenAddress( "causal_clustering.raft_listen_address", 7000 );
 
-    @Description("Advertised hostname/IP address and port for the RAFT server.")
+    @Description( "Advertised hostname/IP address and port for the RAFT server." )
     public static final Setting<AdvertisedSocketAddress> raft_advertised_address =
             advertisedAddress( "causal_clustering.raft_advertised_address", raft_listen_address );
 
-    @Description("Host and port to bind the cluster member discovery management communication.")
+    @Description( "Host and port to bind the cluster member discovery management communication." )
     public static final Setting<ListenSocketAddress> discovery_listen_address =
             listenAddress( "causal_clustering.discovery_listen_address", 5000 );
 
-    @Description("Advertised cluster member discovery management communication.")
+    @Description( "Advertised cluster member discovery management communication." )
     public static final Setting<AdvertisedSocketAddress> discovery_advertised_address =
             advertisedAddress( "causal_clustering.discovery_advertised_address", discovery_listen_address );
 
-    @Description("A comma-separated list of other members of the cluster to join.")
+    @Description( "A comma-separated list of other members of the cluster to join." )
     public static final Setting<List<AdvertisedSocketAddress>> initial_discovery_members =
-            setting( "causal_clustering.initial_discovery_members", list( ",", ADVERTISED_SOCKET_ADDRESS ), NO_DEFAULT );
+            setting( "causal_clustering.initial_discovery_members", list( ",", ADVERTISED_SOCKET_ADDRESS ),
+                    NO_DEFAULT );
 
-    @Description("Prevents the network middleware from dumping its own logs. Defaults to true.")
+    @Description( "Prevents the network middleware from dumping its own logs. Defaults to true." )
     public static final Setting<Boolean> disable_middleware_logging =
             setting( "causal_clustering.disable_middleware_logging", BOOLEAN, TRUE );
 
-    @Description("The maximum file size before the storage file is rotated (in unit of entries)")
+    @Description( "The maximum file size before the storage file is rotated (in unit of entries)" )
     public static final Setting<Integer> last_flushed_state_size =
             setting( "causal_clustering.last_applied_state_size", INTEGER, "1000" );
 
-    @Description("The maximum file size before the ID allocation file is rotated (in unit of entries)")
+    @Description( "The maximum file size before the ID allocation file is rotated (in unit of entries)" )
     public static final Setting<Integer> id_alloc_state_size =
             setting( "causal_clustering.id_alloc_state_size", INTEGER, "1000" );
 
-    @Description("The maximum file size before the membership state file is rotated (in unit of entries)")
+    @Description( "The maximum file size before the membership state file is rotated (in unit of entries)" )
     public static final Setting<Integer> raft_membership_state_size =
             setting( "causal_clustering.raft_membership_state_size", INTEGER, "1000" );
 
-    @Description("The maximum file size before the vote state file is rotated (in unit of entries)")
-    public static final Setting<Integer> vote_state_size = setting( "causal_clustering.raft_vote_state_size", INTEGER, "1000" );
+    @Description( "The maximum file size before the vote state file is rotated (in unit of entries)" )
+    public static final Setting<Integer> vote_state_size =
+            setting( "causal_clustering.raft_vote_state_size", INTEGER, "1000" );
 
-    @Description("The maximum file size before the term state file is rotated (in unit of entries)")
-    public static final Setting<Integer> term_state_size = setting( "causal_clustering.raft_term_state_size", INTEGER, "1000" );
+    @Description( "The maximum file size before the term state file is rotated (in unit of entries)" )
+    public static final Setting<Integer> term_state_size =
+            setting( "causal_clustering.raft_term_state_size", INTEGER, "1000" );
 
-    @Description("The maximum file size before the global session tracker state file is rotated (in unit of entries)")
+    @Description( "The maximum file size before the global session tracker state file is rotated (in unit of entries)" )
     public static final Setting<Integer> global_session_tracker_state_size =
             setting( "causal_clustering.global_session_tracker_state_size", INTEGER, "1000" );
 
-    @Description("The maximum file size before the replicated lock token state file is rotated (in unit of entries)")
+    @Description( "The maximum file size before the replicated lock token state file is rotated (in unit of entries)" )
     public static final Setting<Integer> replicated_lock_token_state_size =
             setting( "causal_clustering.replicated_lock_token_state_size", INTEGER, "1000" );
 
-    @Description("The number of messages waiting to be sent to other servers in the cluster")
+    @Description( "The number of messages waiting to be sent to other servers in the cluster" )
     public static final Setting<Integer> outgoing_queue_size =
             setting( "causal_clustering.outgoing_queue_size", INTEGER, "64" );
 
-    @Description("The number of operations to be processed before the state machines flush to disk")
+    @Description( "The number of operations to be processed before the state machines flush to disk" )
     public static final Setting<Integer> state_machine_flush_window_size =
             setting( "causal_clustering.state_machine_flush_window_size", INTEGER, "4096" );
 
-    @Description("The maximum number of operations to be batched during applications of operations in the state machines")
+    @Description( "The maximum number of operations to be batched during applications of operations in the state machines" )
     public static final Setting<Integer> state_machine_apply_max_batch_size =
             setting( "causal_clustering.state_machine_apply_max_batch_size", INTEGER, "16" );
 
@@ -166,9 +169,9 @@ public class CausalClusteringSettings implements LoadableConfig
     public static final Setting<Long> raft_log_pruning_frequency =
             setting( "causal_clustering.raft_log_pruning_frequency", DURATION, "10m" );
 
-    @Description("Enable or disable the dump of all network messages pertaining to the RAFT protocol")
+    @Description( "Enable or disable the dump of all network messages pertaining to the RAFT protocol" )
     public static final Setting<Boolean> raft_messages_log_enable =
-            setting( "causal_clustering.raft_messages_log_enable", BOOLEAN, "false");
+            setting( "causal_clustering.raft_messages_log_enable", BOOLEAN, "false" );
 
     @Description( "Interval of pulling updates from cores." )
     public static final Setting<Long> pull_interval = setting( "causal_clustering.pull_interval", DURATION, "1s" );
@@ -179,11 +182,11 @@ public class CausalClusteringSettings implements LoadableConfig
     public static final Setting<Long> catch_up_client_inactivity_timeout =
             setting( "causal_clustering.catch_up_client_inactivity_timeout", DURATION, "5s" );
 
-    @Description("Throttle limit for logging unknown cluster member address")
+    @Description( "Throttle limit for logging unknown cluster member address" )
     public static final Setting<Long> unknown_address_logging_throttle =
             setting( "causal_clustering.unknown_address_logging_throttle", DURATION, "10000ms" );
 
-    @Description("Maximum number of transactions to send in response to a TX pull request.")
+    @Description( "Maximum number of transactions to send in response to a TX pull request." )
     @Internal
     public static final Setting<Integer> tx_pull_batch_size =
             setting( "causal_clustering.tx_pull_batch_size", INTEGER, "64" );
@@ -196,15 +199,15 @@ public class CausalClusteringSettings implements LoadableConfig
 
     @Description( "Time To Live before read replica is considered unavailable" )
     public static final Setting<Long> read_replica_time_to_live =
-            setting( "causal_clustering.read_replica_time_to_live", DURATION, "1m", min(60_000L) );
+            setting( "causal_clustering.read_replica_time_to_live", DURATION, "1m", min( 60_000L ) );
 
-    @Description( "Read replica 'call home' frequency"  )
+    @Description( "Read replica 'call home' frequency" )
     public static final Setting<Long> read_replica_refresh_rate =
-            setting( "causal_clustering.read_replica_refresh_rate", DURATION, "5s", min(5_000L) );
+            setting( "causal_clustering.read_replica_refresh_rate", DURATION, "5s", min( 5_000L ) );
 
-    @Description( "How long drivers should cache the data from the `dbms.cluster.routing.getServers()` procedure."  )
+    @Description( "How long drivers should cache the data from the `dbms.cluster.routing.getServers()` procedure." )
     public static final Setting<Long> cluster_routing_ttl =
-            setting( "causal_clustering.cluster_routing_ttl", DURATION, "5m", min(1_000L) );
+            setting( "causal_clustering.cluster_routing_ttl", DURATION, "5m", min( 1_000L ) );
 
     @Description( "Configure if the `dbms.cluster.routing.getServers()` procedure should include followers as read " +
             "endpoints or return only read replicas. If there are no read replicas in the cluster, followers are " +
@@ -304,5 +307,10 @@ public class CausalClusteringSettings implements LoadableConfig
 
     @Description( "Time between scanning the cluster to refresh current server's view of topology" )
     public static final Setting<Long> cluster_topology_refresh =
-            setting( "causal_clustering.cluster_topology_refresh", DURATION, "1m", min(1_000L) );
+            setting( "causal_clustering.cluster_topology_refresh", DURATION, "1m", min( 1_000L ) );
+
+    @Description( "An ordered list in descending preference of the strategy which read replicas use to choose " +
+            "upstream database server from which to pull transactional updates." )
+    public static final Setting<List<String>> upstream_selection_strategy =
+            setting( "causal_clustering.upstream_selection_strategy", list( ",", STRING ), "default" );
 }

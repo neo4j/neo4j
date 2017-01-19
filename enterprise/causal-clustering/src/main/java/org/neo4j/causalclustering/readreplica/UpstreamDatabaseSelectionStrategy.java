@@ -17,12 +17,28 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.messaging.routing;
+package org.neo4j.causalclustering.readreplica;
 
-public class CoreMemberSelectionException extends Exception
+import java.util.Optional;
+
+import org.neo4j.causalclustering.discovery.TopologyService;
+import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.helpers.Service;
+
+public abstract class UpstreamDatabaseSelectionStrategy extends Service
 {
-    public CoreMemberSelectionException( String message )
+    protected TopologyService topologyService;
+
+    public UpstreamDatabaseSelectionStrategy( String key, String... altKeys )
     {
-        super( message );
+        super( key, altKeys );
     }
+
+    // Service loaded can't inject this via the constructor
+    void setDiscoveryService( TopologyService topologyService )
+    {
+        this.topologyService = topologyService;
+    }
+
+    public abstract Optional<MemberId> upstreamDatabase() throws UpstreamDatabaseSelectionException;
 }

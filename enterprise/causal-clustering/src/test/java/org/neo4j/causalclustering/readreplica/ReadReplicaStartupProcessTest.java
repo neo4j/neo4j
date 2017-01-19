@@ -23,18 +23,19 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
-import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
 import org.neo4j.causalclustering.catchup.storecopy.RemoteStore;
+import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
 import org.neo4j.causalclustering.catchup.storecopy.StoreIdDownloadFailedException;
-import org.neo4j.causalclustering.helper.ConstantTimeRetryStrategy;
 import org.neo4j.causalclustering.discovery.CoreTopology;
 import org.neo4j.causalclustering.discovery.TopologyService;
+import org.neo4j.causalclustering.helper.ConstantTimeRetryStrategy;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
-import org.neo4j.causalclustering.messaging.routing.AlwaysChooseFirstMember;
+import org.neo4j.helpers.Service;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.NullLogProvider;
 
@@ -55,7 +56,7 @@ public class ReadReplicaStartupProcessTest
     private StoreCopyProcess storeCopyProcess = mock( StoreCopyProcess.class );
     private RemoteStore remoteStore = mock( RemoteStore.class );
     private LocalDatabase localDatabase = mock( LocalDatabase.class );
-    private TopologyService hazelcastTopology = mock( TopologyService.class );
+    private TopologyService topologyService = mock( TopologyService.class );
     private CoreTopology clusterTopology = mock( CoreTopology.class );
     private Lifecycle txPulling = mock( Lifecycle.class );
 
@@ -69,7 +70,7 @@ public class ReadReplicaStartupProcessTest
     {
         when( localDatabase.storeDir() ).thenReturn( storeDir );
         when( localDatabase.storeId() ).thenReturn( localStoreId );
-        when( hazelcastTopology.coreServers() ).thenReturn( clusterTopology );
+        when( topologyService.coreServers() ).thenReturn( clusterTopology );
         when( clusterTopology.members() ).thenReturn( asSet( memberId ) );
     }
 
@@ -81,9 +82,8 @@ public class ReadReplicaStartupProcessTest
         when( remoteStore.getStoreId( any() ) ).thenReturn( otherStoreId );
 
         ReadReplicaStartupProcess readReplicaStartupProcess =
-                new ReadReplicaStartupProcess( remoteStore, localDatabase, txPulling,
-                        new AlwaysChooseFirstMember( hazelcastTopology ), retryStrategy,
-                NullLogProvider.getInstance(), NullLogProvider.getInstance(), storeCopyProcess );
+                new ReadReplicaStartupProcess( remoteStore, localDatabase, txPulling, chooseFirstMember(),
+                        retryStrategy, NullLogProvider.getInstance(), NullLogProvider.getInstance(), storeCopyProcess );
 
         // when
         readReplicaStartupProcess.start();
@@ -94,6 +94,14 @@ public class ReadReplicaStartupProcessTest
         verify( txPulling ).start();
     }
 
+    private UpstreamDatabaseStrategySelector chooseFirstMember()
+    {
+        AlwaysChooseFirstMember firstMember = new AlwaysChooseFirstMember();
+        firstMember.setDiscoveryService( topologyService );
+
+        return new UpstreamDatabaseStrategySelector( firstMember );
+    }
+
     @Test
     public void shouldNotStartWithMismatchedNonEmptyStore() throws Throwable
     {
@@ -102,9 +110,8 @@ public class ReadReplicaStartupProcessTest
         when( remoteStore.getStoreId( any() ) ).thenReturn( otherStoreId );
 
         ReadReplicaStartupProcess readReplicaStartupProcess =
-                new ReadReplicaStartupProcess( remoteStore, localDatabase, txPulling,
-                        new AlwaysChooseFirstMember( hazelcastTopology ), retryStrategy,
-                        NullLogProvider.getInstance(), NullLogProvider.getInstance(), storeCopyProcess );
+                new ReadReplicaStartupProcess( remoteStore, localDatabase, txPulling, chooseFirstMember(),
+                        retryStrategy, NullLogProvider.getInstance(), NullLogProvider.getInstance(), storeCopyProcess );
 
         // when
         try
@@ -132,9 +139,8 @@ public class ReadReplicaStartupProcessTest
         when( localDatabase.isEmpty() ).thenReturn( false );
 
         ReadReplicaStartupProcess readReplicaStartupProcess =
-                new ReadReplicaStartupProcess( remoteStore, localDatabase, txPulling,
-                        new AlwaysChooseFirstMember( hazelcastTopology ), retryStrategy,
-                        NullLogProvider.getInstance(), NullLogProvider.getInstance(), storeCopyProcess );
+                new ReadReplicaStartupProcess( remoteStore, localDatabase, txPulling, chooseFirstMember(),
+                        retryStrategy, NullLogProvider.getInstance(), NullLogProvider.getInstance(), storeCopyProcess );
 
         // when
         readReplicaStartupProcess.start();
@@ -152,9 +158,8 @@ public class ReadReplicaStartupProcessTest
         when( localDatabase.isEmpty() ).thenReturn( false );
 
         ReadReplicaStartupProcess readReplicaStartupProcess =
-                new ReadReplicaStartupProcess( remoteStore, localDatabase, txPulling,
-                        new AlwaysChooseFirstMember( hazelcastTopology ), retryStrategy,
-                        NullLogProvider.getInstance(), NullLogProvider.getInstance(), storeCopyProcess );
+                new ReadReplicaStartupProcess( remoteStore, localDatabase, txPulling, chooseFirstMember(),
+                        retryStrategy, NullLogProvider.getInstance(), NullLogProvider.getInstance(), storeCopyProcess );
 
         readReplicaStartupProcess.start();
 
@@ -164,5 +169,21 @@ public class ReadReplicaStartupProcessTest
         // then
         verify( txPulling ).stop();
         verify( localDatabase ).stop();
+    }
+
+    @Service.Implementation( UpstreamDatabaseSelectionStrategy.class )
+    public static class AlwaysChooseFirstMember extends UpstreamDatabaseSelectionStrategy
+    {
+        public AlwaysChooseFirstMember()
+        {
+            super( "always-choose-first-member" );
+        }
+
+        @Override
+        public Optional<MemberId> upstreamDatabase() throws UpstreamDatabaseSelectionException
+        {
+            CoreTopology coreTopology = topologyService.coreServers();
+            return Optional.ofNullable( coreTopology.members().iterator().next() );
+        }
     }
 }

@@ -22,16 +22,14 @@ package org.neo4j.causalclustering.readreplica;
 import java.io.IOException;
 
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
+import org.neo4j.causalclustering.catchup.storecopy.RemoteStore;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFailedException;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
-import org.neo4j.causalclustering.catchup.storecopy.RemoteStore;
 import org.neo4j.causalclustering.catchup.storecopy.StoreIdDownloadFailedException;
 import org.neo4j.causalclustering.catchup.storecopy.StreamingTransactionsFailedException;
 import org.neo4j.causalclustering.helper.RetryStrategy;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
-import org.neo4j.causalclustering.messaging.routing.CoreMemberSelectionException;
-import org.neo4j.causalclustering.messaging.routing.CoreMemberSelectionStrategy;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -43,22 +41,23 @@ class ReadReplicaStartupProcess implements Lifecycle
     private final RemoteStore remoteStore;
     private final LocalDatabase localDatabase;
     private final Lifecycle txPulling;
-    private final CoreMemberSelectionStrategy connectionStrategy;
     private final Log debugLog;
     private final Log userLog;
 
     private final RetryStrategy retryStrategy;
+    private final UpstreamDatabaseStrategySelector selectionStrategyPipeline;
+
     private String lastIssue;
     private final StoreCopyProcess storeCopyProcess;
 
     ReadReplicaStartupProcess( RemoteStore remoteStore, LocalDatabase localDatabase,
-            Lifecycle txPulling, CoreMemberSelectionStrategy connectionStrategy, RetryStrategy retryStrategy,
+            Lifecycle txPulling, UpstreamDatabaseStrategySelector selectionStrategyPipeline, RetryStrategy retryStrategy,
             LogProvider debugLogProvider, LogProvider userLogProvider, StoreCopyProcess storeCopyProcess )
     {
         this.remoteStore = remoteStore;
         this.localDatabase = localDatabase;
         this.txPulling = txPulling;
-        this.connectionStrategy = connectionStrategy;
+        this.selectionStrategyPipeline = selectionStrategyPipeline;
         this.retryStrategy = retryStrategy;
         this.debugLog = debugLogProvider.getLog( getClass() );
         this.userLog = userLogProvider.getLog( getClass() );
@@ -89,11 +88,11 @@ class ReadReplicaStartupProcess implements Lifecycle
             MemberId source = null;
             try
             {
-                source = connectionStrategy.coreMember();
+                source = selectionStrategyPipeline.bestUpstreamDatabase();
                 syncStoreWithCore( source );
                 syncedWithCore = true;
             }
-            catch ( CoreMemberSelectionException e )
+            catch ( UpstreamDatabaseSelectionException e )
             {
                 lastIssue = issueOf( "finding core member", attempt );
                 debugLog.warn( lastIssue );
@@ -145,8 +144,9 @@ class ReadReplicaStartupProcess implements Lifecycle
         }
     }
 
-    private void syncStoreWithCore( MemberId source ) throws IOException, StoreIdDownloadFailedException,
-            StoreCopyFailedException, StreamingTransactionsFailedException
+    private void syncStoreWithCore( MemberId source )
+            throws IOException, StoreIdDownloadFailedException, StoreCopyFailedException,
+            StreamingTransactionsFailedException
     {
         if ( localDatabase.isEmpty() )
         {

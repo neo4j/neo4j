@@ -134,8 +134,8 @@ public abstract class Service
      *
      * @author Tobias Ivarsson
      */
-    @Target(ElementType.TYPE)
-    @Retention(RetentionPolicy.SOURCE)
+    @Target( ElementType.TYPE )
+    @Retention( RetentionPolicy.SOURCE )
     public @interface Implementation
     {
         /**
@@ -149,7 +149,7 @@ public abstract class Service
     /**
      * Load all implementations of a Service.
      *
-     * @param <T>  the type of the Service
+     * @param <T> the type of the Service
      * @param type the type of the Service to load
      * @return all registered implementations of the Service
      */
@@ -164,7 +164,9 @@ public abstract class Service
     }
 
     /**
-     * Load the Service implementation with the specified key. This method will return null if requested service not found.
+     * Load the Service implementation with the specified key. This method will return null if requested service not
+     * found.
+     *
      * @param type the type of the Service to load
      * @param key the key that identifies the desired implementation
      * @param <T> the type of the Service to load
@@ -185,9 +187,9 @@ public abstract class Service
     /**
      * Load the Service implementation with the specified key. This method should never return null.
      *
-     * @param <T>  the type of the Service
+     * @param <T> the type of the Service
      * @param type the type of the Service to load
-     * @param key  the key that identifies the desired implementation
+     * @param key the key that identifies the desired implementation
      * @return the matching Service implementation
      */
     public static <T extends Service> T load( Class<T> type, String key )
@@ -195,9 +197,8 @@ public abstract class Service
         T service = loadSilently( type, key );
         if ( service == null )
         {
-            throw new NoSuchElementException( String.format(
-                    "Could not find any implementation of %s with a key=\"%s\"",
-                    type.getName(), key ) );
+            throw new NoSuchElementException(
+                    String.format( "Could not find any implementation of %s with a key=\"%s\"", type.getName(), key ) );
         }
         return service;
     }
@@ -206,9 +207,9 @@ public abstract class Service
      * Create a new instance of a service implementation identified with the
      * specified key(s).
      *
-     * @param key     the main key for identifying this service implementation
+     * @param key the main key for identifying this service implementation
      * @param altKeys alternative spellings of the identifier of this service
-     *                implementation
+     * implementation
      */
     protected Service( String key, String... altKeys )
     {
@@ -283,7 +284,10 @@ public abstract class Service
                             }
                             catch ( Throwable e )
                             {
-                                e.printStackTrace();
+                                if ( printServiceLoaderStackTraces )
+                                {
+                                    e.printStackTrace();
+                                }
                             }
                         }
                         return null;
@@ -297,7 +301,7 @@ public abstract class Service
     {
         try
         {
-            HashMap<String, T> services = new HashMap<>();
+            HashMap<String,T> services = new HashMap<>();
             ClassLoader currentCL = Service.class.getClassLoader();
             ClassLoader contextCL = Thread.currentThread().getContextClassLoader();
 
@@ -331,8 +335,7 @@ public abstract class Service
         }
     }
 
-    private static <T> void putAllInstancesToMap( Iterable<T> services,
-                                                  Map<String, T> servicesMap )
+    private static <T> void putAllInstancesToMap( Iterable<T> services, Map<String,T> servicesMap )
     {
         for ( T instance : filterExceptions( services ) )
         {
