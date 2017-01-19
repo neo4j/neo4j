@@ -78,16 +78,16 @@ public class CoreToCoreCopySnapshotIT
 
         // shutdown the follower, remove the store, restart
         follower.shutdown();
-        deleteDirectoryRecursively( follower.storeDir() );
+        deleteDirectoryRecursively( follower.storeDir(), follower.serverId() );
         follower.start();
 
         // then
         assertEquals( DbRepresentation.of( source.database() ), DbRepresentation.of( follower.database() ) );
     }
 
-    protected void deleteDirectoryRecursively( File directory ) throws IOException
+    protected void deleteDirectoryRecursively( File directory, int id ) throws IOException
     {
-        // Extracted to the inheriting test in the block device repository can override it.
+        // Extracted so the inheriting test in the block device repository can override it. id is used there.
         FileUtils.deleteRecursively( directory );
     }
 
