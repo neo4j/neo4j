@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.parser.CypherParser
 import org.neo4j.cypher.internal.frontend.v3_2.{SemanticDirection, ast}
 
-case class Pretty(stringNormaliser: String => String = _.toUpperCase) extends PrettyPrinter {
+case class Pretty(functionNameNormaliser: String => String = _.toUpperCase) extends PrettyPrinter {
 
   private val parser = new CypherParser
 
@@ -70,6 +70,8 @@ case class Pretty(stringNormaliser: String => String = _.toUpperCase) extends Pr
       show(p) <@> "UNION" <@> show(q)
   }
 
+  private def ifTrue(opt: Boolean, f: Doc) =
+    if (opt) f else emptyDoc
 
   private def show(action: MergeAction): Doc = action match {
     case OnCreate(setClause) => "ON CREATE" <+> show(setClause)
@@ -77,28 +79,31 @@ case class Pretty(stringNormaliser: String => String = _.toUpperCase) extends Pr
   }
 
   private def showWhere(w: Option[Where]) =
-    maybe(w, (w: Where) => nest(line <> "WHERE" <+> expr(w.expression)))
+    maybe(w, (w: Where) => nest(line <> "WHERE" <+> nest(group(expr(w.expression)))))
+
+  private def show(p: Pattern): Doc = {
+    val paths = p.patternParts.map(show).map(group).toList
+    nest(group(softline <> folddoc(paths, _ <> comma <> softline <> _)))
+  }
 
   private def show(astNode: Clause): Doc = astNode match {
     case Create(pattern) =>
-      "CREATE" <+> nest(hlist(pattern.patternParts.map(show), comma))
+      "CREATE" <+> show(pattern)
 
     case CreateUnique(pattern) =>
-      "CREATE UNIQUE" <+> nest(hlist(pattern.patternParts.map(show), comma))
+      "CREATE UNIQUE" <+> show(pattern)
 
     case Delete(expressions, detach) =>
       val DETACH: Doc = if (detach) "DETACH" <> space else emptyDoc
       DETACH <> "DELETE" <+> hlist(expressions.map(expr), comma)
 
     case Foreach(variable, collExp, updates) =>
-      "FOREACH" <+> parens(expr(variable) <+> "IN" <+> expr(collExp) <+> "|" <> nest(line <> vlist(updates.map(show))) <> line)
+      group("FOREACH" <+> lparen <> expr(variable) <+> "IN" <+> expr(collExp) <+> "|" <> group(nest(line <> vlist(updates.map(show)))) <@@> rparen)
 
     case Match(optional, pattern, hints, where) =>
-      val paths = pattern.patternParts.map(show).map(group).toList
-      val OPTIONAL: Doc = if (optional) "OPTIONAL" <> space else emptyDoc
-      val PATTERN = nest(group(softline <> folddoc(paths, _ <> comma <> softline <> _)))
-      val HINTS = if (hints.isEmpty) emptyDoc else line <> vlist(hints.map(show))
-      group(OPTIONAL <> "MATCH") <> PATTERN <> HINTS <> showWhere(where)
+      val OPTIONAL: Doc = ifTrue(optional, "OPTIONAL" <> line)
+      val HINTS = ifTrue(hints.nonEmpty, line <> vlist(hints.map(show)))
+      group(OPTIONAL <> "MATCH") <> show(pattern) <> HINTS <> showWhere(where)
 
     case LoadCSV(withHeaders, url, variable, fieldTerminator) =>
       val HEADERS: Doc = if (withHeaders) space <> "WITH HEADERS" else emptyDoc
@@ -106,11 +111,10 @@ case class Pretty(stringNormaliser: String => String = _.toUpperCase) extends Pr
       "LOAD CSV" <> HEADERS <+> "FROM" <+> expr(url) <+> "AS" <+> expr(variable) <> TERMINATOR
 
     case Merge(pattern, actions) =>
-      val mergePattern = nest(vlist(pattern.patternParts.map(show)))
       val mergeActions = if (actions.isEmpty)
         emptyDoc else
         nest(line <> vlist(actions.map(show)))
-      "MERGE" <+> mergePattern <> mergeActions
+      "MERGE" <+> show(pattern) <> mergeActions
 
     case PragmaWithout(vars) =>
       "_PRAGMA WITHOUT" <> hlist(vars.map(expr))
@@ -135,7 +139,7 @@ case class Pretty(stringNormaliser: String => String = _.toUpperCase) extends Pr
       val YIELD = maybe(pr, (result: ProcedureResult) =>
         space <> "YIELD" <+> vlist(result.items.map(show), comma)
       )
-      val ARGS = maybe(args, (es: Seq[Expression]) => space <> parens(vlist(es.map(expr), comma)))
+      val ARGS = maybe(args, (es: Seq[Expression]) => space <> parens(vlist(es.map(expr), comma <> linebreak)))
       val NAME = name.name
       val FQN = fqn(ns, name.name)
 
@@ -149,7 +153,7 @@ case class Pretty(stringNormaliser: String => String = _.toUpperCase) extends Pr
     case SetPropertyItem(p, e) =>
       showbin(p, "=", e)
     case SetLabelItem(v, ls) =>
-      expr(v) <> hlist(ls.map(show))
+      expr(v) <> folddoc(ls.map(show).toList, _ <> _)
     case SetExactPropertiesFromMapItem(v, e) =>
       showbin(v, "=", e)
     case SetIncludingPropertiesFromMapItem(v, e) =>
@@ -158,7 +162,17 @@ case class Pretty(stringNormaliser: String => String = _.toUpperCase) extends Pr
 
   private def fqn(ns: Namespace, name: String) = {
     val elements = ns.parts.map(string) :+ string(name)
-    group(folddoc(elements, _ <> dot <> _))
+    folddoc(elements, _ <> dot <> _)
+  }
+
+  private def show(items: ReturnItems): Doc = {
+    val itemsDocs = items.items.map {
+      case UnaliasedReturnItem(e, t) => expr(e)
+      case AliasedReturnItem(e, alias) => expr(e) <+> "AS" <+> expr(alias)
+    }
+
+    val returnItems = if (items.includeExisting) asterisk +: itemsDocs else itemsDocs
+    nest(group(fillsep(returnItems.toList, comma)))
   }
 
   private def projection(distinct: Boolean,
@@ -168,14 +182,7 @@ case class Pretty(stringNormaliser: String => String = _.toUpperCase) extends Pr
                          limit: Option[Limit]): Doc = {
     val DISTINCT: Doc = if (distinct) space <> "DISTINCT" else emptyDoc
     val ORDER_BY: Doc = maybe(orderBy, space <> order(_: OrderBy))
-    val itemsDocs = items.items.map {
-      case UnaliasedReturnItem(e, t) => expr(e)
-      case AliasedReturnItem(e, alias) => expr(e) <+> "AS" <+> expr(alias)
-    }
-
-    val returnItems = if (items.includeExisting) asterisk +: itemsDocs else itemsDocs
-    val RETURN_ITEMS = hlist(returnItems, comma)
-    DISTINCT <+> RETURN_ITEMS <> ORDER_BY
+    DISTINCT <+> show(items) <> ORDER_BY
   }
 
   private def curlies(d: Doc) = enclose("{", d, "}")
@@ -200,8 +207,8 @@ case class Pretty(stringNormaliser: String => String = _.toUpperCase) extends Pr
       sep <> lit <> sep
 
     case lit: Literal => value(lit.value)
-    case Variable(name) => if (isValidIdentifier(name)) name else enclose("`", name, "`")
-    case Property(e, prop) => group(expr(e) <> dot <> show(prop))
+    case Variable(name) => if (isValidIdentifier(name)) name else surround(name, "`")
+    case Property(e, prop) => expr(e) <> dot <> show(prop)
     case PatternExpression(pattern) => show(pattern.element)
     case CountStar() => "COUNT(*)"
     case Not(e) => "NOT" <+> expr(e)
@@ -274,7 +281,8 @@ case class Pretty(stringNormaliser: String => String = _.toUpperCase) extends Pr
         case _: Subtract => "-"
         case _: Xor => "XOR"
       }
-      showbin(o.lhs, op, o.rhs)
+      val break = op == "AND" || op == "OR" || op == "XOR"
+      showbin(o.lhs, op, o.rhs, break)
 
     case StringLiteral(lit) =>
       val sep = if (lit.indexOf('\'') >= 0) "\"" else "'"
@@ -294,11 +302,10 @@ case class Pretty(stringNormaliser: String => String = _.toUpperCase) extends Pr
 
     case FunctionInvocation(ns, funcName, _, args) =>
       val NAME = funcName.name.toUpperCase
-      val QUALIFIED_NAME = fqn(ns, stringNormaliser(funcName.name))
+      val QUALIFIED_NAME = fqn(ns, functionNameNormaliser(funcName.name))
       val ARGUMENTS = hlist(args.map(expr), comma)
 
       QUALIFIED_NAME <> parens(ARGUMENTS)
-
   }
 
   private def startItem(si: StartItem): Doc = si match {
@@ -413,7 +420,9 @@ case class Pretty(stringNormaliser: String => String = _.toUpperCase) extends Pr
       show(el) <> show(pat) <> show(node)
   }
 
-  private def showbin(l: Expression, op: String, r: Expression): Doc =
-    expr(l) <+> op <+> expr(r)
+  private def showbin(l: Expression, op: String, r: Expression, allowBreaks: Boolean = false): Doc = {
+    val SEP = if(allowBreaks) line else space
+    expr(l) <> SEP <> op <> space <> expr(r)
+  }
 
 }
