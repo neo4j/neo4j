@@ -31,7 +31,6 @@ import java.util.Set;
 
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
@@ -63,7 +62,7 @@ class IndexUpdaterMap implements AutoCloseable, Iterable<IndexUpdater>
 
     List<IndexUpdater> getUpdaters( int labelId, int propertyKeyId )
     {
-        IndexDescriptor key = IndexDescriptorFactory.from( new NodePropertyDescriptor( labelId, propertyKeyId ) );
+        IndexDescriptor key = IndexDescriptorFactory.of( labelId, propertyKeyId );
         IndexUpdater updater = getUpdater( key );
         if ( updater != null )
         {

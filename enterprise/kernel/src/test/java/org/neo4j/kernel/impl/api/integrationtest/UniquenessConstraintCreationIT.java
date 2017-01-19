@@ -181,7 +181,7 @@ public class UniquenessConstraintCreationIT
         // then
         {
             ReadOperations statement = readOperationsInNewTransaction();
-            assertEquals( asSet( IndexDescriptorFactory.from( descriptor ) ),
+            assertEquals( asSet( IndexDescriptorFactory.of( descriptor ) ),
                     asSet( statement.uniqueIndexesGetAll() ) );
         }
     }
@@ -193,7 +193,7 @@ public class UniquenessConstraintCreationIT
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
             statement.uniquePropertyConstraintCreate( descriptor );
-            assertEquals( asSet( IndexDescriptorFactory.from( descriptor ) ),
+            assertEquals( asSet( IndexDescriptorFactory.of( descriptor ) ),
                     asSet( statement.uniqueIndexesGetAll() ) );
         }
 
@@ -278,7 +278,7 @@ public class UniquenessConstraintCreationIT
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
             constraint = statement.uniquePropertyConstraintCreate( descriptor );
-            assertEquals( asSet( IndexDescriptorFactory.from( descriptor ) ),
+            assertEquals( asSet( IndexDescriptorFactory.of( descriptor ) ),
                     asSet( statement.uniqueIndexesGetAll() ) );
             commit();
         }

@@ -127,8 +127,7 @@ public final class IndexSamplingManagerBean extends ManagementBeanProvider
                 throw new IllegalArgumentException( "No property or label key was found associated with " +
                         propertyKey + " and " + labelKey );
             }
-            NodePropertyDescriptor descriptor = new NodePropertyDescriptor( labelKeyId, propertyKeyId );
-            state.indexingService.triggerIndexSampling( IndexDescriptorFactory.from( descriptor ),
+            state.indexingService.triggerIndexSampling( IndexDescriptorFactory.of( labelKeyId, propertyKeyId ),
                     getIndexSamplingMode( forceSample ) );
         }
 

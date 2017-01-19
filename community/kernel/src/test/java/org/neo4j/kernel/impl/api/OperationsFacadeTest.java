@@ -84,7 +84,7 @@ public class OperationsFacadeTest
             throws SchemaRuleNotFoundException, DuplicateIndexSchemaRuleException
     {
         SchemaReadOperations readOperations = setupSchemaReadOperations();
-        IndexDescriptor index = IndexDescriptorFactory.from( descriptor );
+        IndexDescriptor index = IndexDescriptorFactory.of( descriptor );
         Mockito.when( readOperations
                 .uniqueIndexesGetForLabel( Mockito.any( KernelStatement.class ), Mockito.eq( descriptor.getLabelId() ) ) )
                 .thenReturn( Iterators.iterator( index, index ) );

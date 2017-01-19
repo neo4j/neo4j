@@ -97,8 +97,7 @@ public class IndexStatisticsIT
         awaitIndexOnline( indexAliensBySpecimen() );
 
         // where ALIEN and SPECIMEN are both the first ids of their kind
-        IndexDescriptor index =
-                IndexDescriptorFactory.from( new NodePropertyDescriptor( labelId( ALIEN ), pkId( SPECIMEN ) ) );
+        IndexDescriptor index = IndexDescriptorFactory.of( labelId( ALIEN ), pkId( SPECIMEN ) );
 
         // for which we don't have index counts
         resetIndexCounts( index );

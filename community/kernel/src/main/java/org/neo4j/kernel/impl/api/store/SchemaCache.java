@@ -147,7 +147,7 @@ public class SchemaCache
         else if ( rule instanceof IndexRule )
         {
             IndexRule indexRule = (IndexRule) rule;
-            IndexDescriptor index = IndexDescriptorFactory.from( indexRule );
+            IndexDescriptor index = IndexDescriptorFactory.of( indexRule );
             if ( !indexDescriptors.containsKey( index ) )
             {
                 indexDescriptors.put( index, new CommittedIndexDescriptor( index, indexRule.getId() ) );
@@ -218,13 +218,13 @@ public class SchemaCache
         else if ( rule instanceof IndexRule )
         {
             IndexRule indexRule = (IndexRule) rule;
-            indexDescriptors.remove( IndexDescriptorFactory.from( indexRule ) );
+            indexDescriptors.remove( IndexDescriptorFactory.of( indexRule ) );
         }
     }
 
     public IndexDescriptor indexDescriptor( NodePropertyDescriptor descriptor )
     {
-        IndexDescriptor indexDescriptor = IndexDescriptorFactory.from( descriptor );
+        IndexDescriptor indexDescriptor = IndexDescriptorFactory.of( descriptor );
         return indexDescriptors.containsKey(indexDescriptor) ? indexDescriptor : null;
     }
 }

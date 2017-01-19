@@ -27,5 +27,5 @@ trait IndexDescriptorCompatibility {
     new IndexDescriptor(index.getLabelId(), index.getPropertyKeyId);
 
   implicit def toNewIndexDescriptor(index: IndexDescriptor): org.neo4j.kernel.api.schema.IndexDescriptor =
-    IndexDescriptorFactory.from(IndexDescriptorFactory.getNodePropertyDescriptor(index.getLabelId(), index.getPropertyKeyId));
+    IndexDescriptorFactory.of(index.getLabelId(), index.getPropertyKeyId);
 }

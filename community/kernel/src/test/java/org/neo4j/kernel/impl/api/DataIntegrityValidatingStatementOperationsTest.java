@@ -57,12 +57,13 @@ public class DataIntegrityValidatingStatementOperationsTest
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
+    NodePropertyDescriptor descriptor = new NodePropertyDescriptor( 0, 7 );
+
     @Test
     public void shouldDisallowReAddingIndex() throws Exception
     {
         // GIVEN
-        NodePropertyDescriptor descriptor = new NodePropertyDescriptor( 0, 7 );
-        IndexDescriptor rule = IndexDescriptorFactory.from( descriptor );
+        IndexDescriptor rule = IndexDescriptorFactory.of( descriptor );
         SchemaReadOperations innerRead = mock( SchemaReadOperations.class );
         SchemaWriteOperations innerWrite = mock( SchemaWriteOperations.class );
         DataIntegrityValidatingStatementOperations ctx =
@@ -88,8 +89,7 @@ public class DataIntegrityValidatingStatementOperationsTest
     public void shouldDisallowAddingIndexWhenConstraintIndexExists() throws Exception
     {
         // GIVEN
-        NodePropertyDescriptor descriptor = new NodePropertyDescriptor( 0, 7 );
-        IndexDescriptor rule = IndexDescriptorFactory.from( descriptor );
+        IndexDescriptor rule = IndexDescriptorFactory.of( descriptor );
         SchemaReadOperations innerRead = mock( SchemaReadOperations.class );
         SchemaWriteOperations innerWrite = mock( SchemaWriteOperations.class );
         DataIntegrityValidatingStatementOperations ctx =
@@ -116,8 +116,7 @@ public class DataIntegrityValidatingStatementOperationsTest
     public void shouldDisallowDroppingIndexThatDoesNotExist() throws Exception
     {
         // GIVEN
-        NodePropertyDescriptor descriptor = new NodePropertyDescriptor( 0, 7 );
-        IndexDescriptor indexDescriptor = IndexDescriptorFactory.from( descriptor );
+        IndexDescriptor indexDescriptor = IndexDescriptorFactory.of( descriptor );
         SchemaReadOperations innerRead = mock( SchemaReadOperations.class );
         SchemaWriteOperations innerWrite = mock( SchemaWriteOperations.class );
         DataIntegrityValidatingStatementOperations ctx =
@@ -144,8 +143,7 @@ public class DataIntegrityValidatingStatementOperationsTest
     public void shouldDisallowDroppingIndexWhenConstraintIndexExists() throws Exception
     {
         // GIVEN
-        NodePropertyDescriptor descriptor = new NodePropertyDescriptor( 0, 7 );
-        IndexDescriptor indexDescriptor = IndexDescriptorFactory.from( descriptor );
+        IndexDescriptor indexDescriptor = IndexDescriptorFactory.of( descriptor );
         SchemaReadOperations innerRead = mock( SchemaReadOperations.class );
         SchemaWriteOperations innerWrite = mock( SchemaWriteOperations.class );
         DataIntegrityValidatingStatementOperations ctx =
@@ -173,8 +171,7 @@ public class DataIntegrityValidatingStatementOperationsTest
     public void shouldDisallowDroppingConstraintIndexThatDoesNotExists() throws Exception
     {
         // GIVEN
-        NodePropertyDescriptor descriptor = new NodePropertyDescriptor( 0, 7 );
-        IndexDescriptor indexDescriptor = IndexDescriptorFactory.from( descriptor );
+        IndexDescriptor indexDescriptor = IndexDescriptorFactory.of( descriptor );
         SchemaReadOperations innerRead = mock( SchemaReadOperations.class );
         SchemaWriteOperations innerWrite = mock( SchemaWriteOperations.class );
         DataIntegrityValidatingStatementOperations ctx =
@@ -202,8 +199,7 @@ public class DataIntegrityValidatingStatementOperationsTest
     public void shouldDisallowDroppingConstraintIndexThatIsReallyJustRegularIndex() throws Exception
     {
         // GIVEN
-        NodePropertyDescriptor descriptor = new NodePropertyDescriptor( 0, 7 );
-        IndexDescriptor indexDescriptor = IndexDescriptorFactory.from( descriptor );
+        IndexDescriptor indexDescriptor = IndexDescriptorFactory.of( descriptor );
         SchemaReadOperations innerRead = mock( SchemaReadOperations.class );
         SchemaWriteOperations innerWrite = mock( SchemaWriteOperations.class );
         DataIntegrityValidatingStatementOperations ctx =

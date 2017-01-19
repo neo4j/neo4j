@@ -66,7 +66,7 @@ public class DbStructureArgumentFormatterTest
     public void shouldFormatIndexDescriptors()
     {
         assertEquals( "IndexDescriptorFactory.from( new NodePropertyDescriptor( 23, 42 ) )",
-                formatArgument( IndexDescriptorFactory.from( new NodePropertyDescriptor( 23, 42 ) ) ) );
+                formatArgument( IndexDescriptorFactory.of( 23, 42 ) ) );
     }
 
     @Test

@@ -146,10 +146,7 @@ class KeyFormat implements CountsVisitor
             {
                 propertyKeyIds[i] = key.getInt( 10 + 4 * i );
             }
-            NodePropertyDescriptor descriptor =
-                    propertyKeyIds.length > 1 ? new NodeMultiPropertyDescriptor( labelId, propertyKeyIds )
-                                          : new NodePropertyDescriptor( labelId, propertyKeyIds[0] );
-            IndexDescriptor index = IndexDescriptorFactory.from( descriptor );
+            IndexDescriptor index = IndexDescriptorFactory.of( labelId, propertyKeyIds );
             byte indexKeyByte = key.getByte( 10 + 4 * propertyKeyIds.length );
             switch ( indexKeyByte )
             {

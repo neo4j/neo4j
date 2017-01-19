@@ -24,7 +24,6 @@ import org.junit.Test;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.NeoStoreDataSource;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
@@ -75,7 +74,7 @@ public class IndexSamplingManagerBeanTest
         storeAccess.triggerIndexSampling( EXISTING_LABEL, EXISTING_PROPERTY, false );
 
         // Then
-        verify( indexingService, times( 1 ) ).triggerIndexSampling( IndexDescriptorFactory.from( new NodePropertyDescriptor( LABEL_ID, PROPERTY_ID ) ) ,
+        verify( indexingService, times( 1 ) ).triggerIndexSampling( IndexDescriptorFactory.of( LABEL_ID, PROPERTY_ID ) ,
                 IndexSamplingMode.TRIGGER_REBUILD_UPDATED);
     }
 
@@ -90,8 +89,7 @@ public class IndexSamplingManagerBeanTest
         storeAccess.triggerIndexSampling( EXISTING_LABEL, EXISTING_PROPERTY, true );
 
         // Then
-        verify( indexingService, times( 1 ) ).triggerIndexSampling( IndexDescriptorFactory
-                        .from( new NodePropertyDescriptor( LABEL_ID, PROPERTY_ID ) ) ,
+        verify( indexingService, times( 1 ) ).triggerIndexSampling( IndexDescriptorFactory.of( LABEL_ID, PROPERTY_ID ) ,
                 IndexSamplingMode.TRIGGER_REBUILD_ALL);
     }
 

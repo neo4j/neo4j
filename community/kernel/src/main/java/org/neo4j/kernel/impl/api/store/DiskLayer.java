@@ -187,7 +187,7 @@ public class DiskLayer implements StoreReadLayer
 
     private static IndexDescriptor descriptor( IndexRule ruleRecord )
     {
-        return IndexDescriptorFactory.from( ruleRecord );
+        return IndexDescriptorFactory.of( ruleRecord );
     }
 
     @Override

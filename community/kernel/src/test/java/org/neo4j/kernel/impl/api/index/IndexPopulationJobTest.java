@@ -67,6 +67,7 @@ import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.impl.coreapi.schema.InternalSchemaActions;
+import org.neo4j.kernel.impl.coreapi.schema.PropertyNameUtils;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.AssertableLogProvider.LogMatcherBuilder;
@@ -686,7 +687,7 @@ public class IndexPopulationJobTest
             IndexDefinition indexDefinition = new IndexDefinitionImpl( actions, label, propertyKey, false );
             NodePropertyDescriptor descriptor =
                     IndexDescriptorFactory.getTokens( statement.readOperations(), indexDefinition );
-            IndexDescriptor index = IndexDescriptorFactory.from( descriptor );
+            IndexDescriptor index = IndexDescriptorFactory.of( descriptor );
             tx.success();
             return index;
         }
@@ -700,7 +701,7 @@ public class IndexPopulationJobTest
             int labelId = statement.readOperations().labelGetForName( label.name() );
             int propertyKeyId = statement.readOperations().propertyKeyGetForName( propertyKey );
             DoubleLongRegister result =
-                    statement.readOperations().indexUpdatesAndSize( IndexDescriptorFactory.from( new NodePropertyDescriptor( labelId, propertyKeyId ) ),
+                    statement.readOperations().indexUpdatesAndSize( IndexDescriptorFactory.of( labelId, propertyKeyId ),
                             Registers.newDoubleLongRegister() );
             tx.success();
             return result;
@@ -715,7 +716,7 @@ public class IndexPopulationJobTest
             DoubleLongRegister result = Registers.newDoubleLongRegister();
             int labelId = statement.readOperations().labelGetForName( label.name() );
             int propertyKeyId = statement.readOperations().propertyKeyGetForName( propertyKey );
-            statement.readOperations().indexSample( IndexDescriptorFactory.from( new NodePropertyDescriptor( labelId, propertyKeyId ) ), result );
+            statement.readOperations().indexSample( IndexDescriptorFactory.of( labelId, propertyKeyId ), result );
             tx.success();
             return result;
         }

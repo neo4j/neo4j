@@ -523,7 +523,7 @@ public class IndexingServiceTest
         // given
         IndexingService indexingService = newIndexingServiceWithMockedDependencies( populator, accessor, withData() );
         IndexSamplingMode mode = TRIGGER_REBUILD_ALL;
-        IndexDescriptor descriptor = IndexDescriptorFactory.from( new NodePropertyDescriptor( 0, 1 ) );
+        IndexDescriptor descriptor = IndexDescriptorFactory.of( 0, 1 );
 
         // when
         indexingService.triggerIndexSampling( descriptor, mode );
@@ -841,11 +841,11 @@ public class IndexingServiceTest
         indexing.createIndexes( indexRule1, indexRule2, indexRule3 );
 
         // THEN
-        verify( indexProvider ).getPopulator( eq( 0L ), eq( IndexDescriptorFactory.from(descriptor1) ),
+        verify( indexProvider ).getPopulator( eq( 0L ), eq( IndexDescriptorFactory.of(descriptor1) ),
                 eq( IndexConfiguration.NON_UNIQUE ), any( IndexSamplingConfig.class ) );
-        verify( indexProvider ).getPopulator( eq( 1L ), eq( IndexDescriptorFactory.from(descriptor2) ),
+        verify( indexProvider ).getPopulator( eq( 1L ), eq( IndexDescriptorFactory.of(descriptor2) ),
                 eq( IndexConfiguration.NON_UNIQUE ), any( IndexSamplingConfig.class ) );
-        verify( indexProvider ).getPopulator( eq( 2L ), eq( IndexDescriptorFactory.from(descriptor3) ),
+        verify( indexProvider ).getPopulator( eq( 2L ), eq( IndexDescriptorFactory.of(descriptor3) ),
                 eq( IndexConfiguration.NON_UNIQUE ), any( IndexSamplingConfig.class ) );
 
         waitForIndexesToComeOnline( indexing, 0, 1, 2 );

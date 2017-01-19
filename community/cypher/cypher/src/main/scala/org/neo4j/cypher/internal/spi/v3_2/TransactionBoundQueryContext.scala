@@ -263,10 +263,10 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   }
 
   implicit private def toKernelIndexDescriptor(descriptor: CypherIndexDescriptor): IndexDescriptor =
-    IndexDescriptorFactory.from(toNodePropertyDescriptor(descriptor))
+    IndexDescriptorFactory.of(toNodePropertyDescriptor(descriptor))
 
   implicit private def toIndexDescriptor(descriptor: NodePropertyDescriptor): IndexDescriptor =
-    IndexDescriptorFactory.from(descriptor)
+    IndexDescriptorFactory.of(descriptor)
 
   implicit private def toNodePropertyDescriptor(descriptor: CypherIndexDescriptor): NodePropertyDescriptor =
     if (descriptor.isComposite)

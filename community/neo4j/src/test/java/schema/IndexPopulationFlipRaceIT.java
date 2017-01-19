@@ -28,7 +28,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
@@ -145,8 +144,8 @@ public class IndexPopulationFlipRaceIT
             int keyAId = statement.readOperations().propertyKeyGetForName( keyA( i ) );
             int labelBId = statement.readOperations().labelGetForName( labelB( i ).name() );
             int keyBId = statement.readOperations().propertyKeyGetForName( keyB( i ) );
-            IndexDescriptor indexA = IndexDescriptorFactory.from( new NodePropertyDescriptor( labelAId, keyAId ) );
-            IndexDescriptor indexB = IndexDescriptorFactory.from( new NodePropertyDescriptor( labelBId, keyBId ) );
+            IndexDescriptor indexA = IndexDescriptorFactory.of( labelAId, keyAId );
+            IndexDescriptor indexB = IndexDescriptorFactory.of( labelBId, keyBId );
 
             for ( int j = 0; j < NODES_PER_INDEX; j++ )
             {

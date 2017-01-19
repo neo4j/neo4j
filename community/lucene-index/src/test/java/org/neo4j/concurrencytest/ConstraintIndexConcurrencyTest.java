@@ -26,7 +26,6 @@ import java.util.function.Supplier;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyConstraintViolationKernelException;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
@@ -76,7 +75,7 @@ public class ConstraintIndexConcurrencyTest
             Statement statement = statementSupplier.get();
             int labelId = statement.readOperations().labelGetForName( label.name() );
             int propertyKeyId = statement.readOperations().propertyKeyGetForName( propertyKey );
-            IndexDescriptor index = IndexDescriptorFactory.from( new NodePropertyDescriptor( labelId, propertyKeyId ) );
+            IndexDescriptor index = IndexDescriptorFactory.of( labelId, propertyKeyId );
             statement.readOperations().nodesGetFromIndexSeek( index,
                     "The value is irrelevant, we just want to perform some sort of lookup against this index" );
 

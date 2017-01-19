@@ -34,16 +34,32 @@ import static org.neo4j.kernel.impl.coreapi.schema.PropertyNameUtils.getProperty
  */
 public class IndexDescriptorFactory
 {
-    public static IndexDescriptor from( NodePropertyDescriptor descriptor )
+    public static IndexDescriptor of( int labelId, int... propertyKeyIds )
+    {
+        if ( propertyKeyIds.length == 0 )
+        {
+            throw new IllegalArgumentException( "Index descriptors must contain at least one property" );
+        }
+        else if ( propertyKeyIds.length == 1 )
+        {
+            return new SinglePropertyIndexDescriptor( labelId, propertyKeyIds[0] );
+        }
+        else
+        {
+            return new CompositeIndexDescriptor( labelId, propertyKeyIds );
+        }
+    }
+
+    public static IndexDescriptor of( NodePropertyDescriptor descriptor )
     {
         return descriptor.isComposite() ? new CompositeIndexDescriptor( descriptor.getLabelId(),
                 descriptor.getPropertyKeyIds() ) : new SinglePropertyIndexDescriptor( descriptor.getLabelId(),
                 descriptor.getPropertyKeyId() );
     }
 
-    public static IndexDescriptor from( IndexRule rule )
+    public static IndexDescriptor of( IndexRule rule )
     {
-        return from( rule.descriptor() );
+        return of( rule.descriptor() );
     }
 
     public static NodePropertyDescriptor getNodePropertyDescriptor( int labelId, int[] propertyKeyIds )
@@ -63,8 +79,7 @@ public class IndexDescriptorFactory
         int labelId = schemaWriteOperations.labelGetOrCreateForName( indexDefinition.getLabel().name() );
         int[] propertyKeyIds = getOrCreatePropertyKeyIds( schemaWriteOperations, indexDefinition );
 
-        return propertyKeyIds.length > 1 ? new NodeMultiPropertyDescriptor( labelId, propertyKeyIds )
-                                         : new NodePropertyDescriptor( labelId, propertyKeyIds[0] );
+        return getNodePropertyDescriptor( labelId, propertyKeyIds );
     }
 
     public static NodePropertyDescriptor getTokens( ReadOperations readOperations, IndexDefinition indexDefinition )
@@ -72,7 +87,6 @@ public class IndexDescriptorFactory
         int labelId = readOperations.labelGetForName( indexDefinition.getLabel().name() );
         int[] propertyKeyIds = getPropertyKeyIds( readOperations, indexDefinition.getPropertyKeys() );
 
-        return propertyKeyIds.length > 1 ? new NodeMultiPropertyDescriptor( labelId, propertyKeyIds )
-                                         : new NodePropertyDescriptor( labelId, propertyKeyIds[0] );
+        return getNodePropertyDescriptor( labelId, propertyKeyIds );
     }
 }

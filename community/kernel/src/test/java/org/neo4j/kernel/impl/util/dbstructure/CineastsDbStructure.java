@@ -78,11 +78,11 @@ implements Visitable<DbStructureVisitor>
         visitor.visitRelationshipType( 2, "ACTS_IN" );
         visitor.visitRelationshipType( 3, "RATED" );
         visitor.visitRelationshipType( 4, "ROOT" );
-        visitor.visitIndex( IndexDescriptorFactory.from( new NodePropertyDescriptor( 0, 9 ) ), ":Movie(title)", 1.0d, 12462L );
-        visitor.visitIndex( IndexDescriptorFactory.from( new NodePropertyDescriptor( 1, 5 ) ), ":Person(name)", 1.0d, 49845L );
-        visitor.visitIndex( IndexDescriptorFactory.from( new NodePropertyDescriptor( 3, 5 ) ), ":Actor(name)", 1.0d, 44689L );
-        visitor.visitIndex( IndexDescriptorFactory.from( new NodePropertyDescriptor( 4, 5 ) ), ":Director(name)", 1.0d, 6010L );
-        visitor.visitUniqueIndex( IndexDescriptorFactory.from( new NodePropertyDescriptor( 2, 3 ) ), ":User(login)", 1.0d, 45L );
+        visitor.visitIndex( IndexDescriptorFactory.of( 0, 9 ), ":Movie(title)", 1.0d, 12462L );
+        visitor.visitIndex( IndexDescriptorFactory.of( 1, 5 ), ":Person(name)", 1.0d, 49845L );
+        visitor.visitIndex( IndexDescriptorFactory.of( 3, 5 ), ":Actor(name)", 1.0d, 44689L );
+        visitor.visitIndex( IndexDescriptorFactory.of( 4, 5 ), ":Director(name)", 1.0d, 6010L );
+        visitor.visitUniqueIndex( IndexDescriptorFactory.of( 2, 3 ), ":User(login)", 1.0d, 45L );
         visitor.visitUniqueConstraint( new UniquenessConstraint( new NodePropertyDescriptor( 2, 3 ) ), "CONSTRAINT ON ( user:User ) ASSERT user.login IS UNIQUE" );
         visitor.visitAllNodesCount( 63042L );
         visitor.visitNodeCount( 0, "Movie", 12862L );

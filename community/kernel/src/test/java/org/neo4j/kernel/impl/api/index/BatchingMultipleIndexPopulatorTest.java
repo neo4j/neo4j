@@ -29,7 +29,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
@@ -292,7 +291,7 @@ public class BatchingMultipleIndexPopulatorTest
     private static IndexPopulator addPopulator( BatchingMultipleIndexPopulator batchingPopulator, int id )
     {
         IndexPopulator populator = mock( IndexPopulator.class );
-        IndexDescriptor descriptor = IndexDescriptorFactory.from( new NodePropertyDescriptor( id, id ) );
+        IndexDescriptor descriptor = IndexDescriptorFactory.of( id, id );
 
         IndexProxyFactory indexProxyFactory = mock( IndexProxyFactory.class );
         FailedIndexProxyFactory failedIndexProxyFactory = mock( FailedIndexProxyFactory.class );

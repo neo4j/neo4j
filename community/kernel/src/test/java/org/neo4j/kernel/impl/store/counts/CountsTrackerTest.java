@@ -28,7 +28,6 @@ import java.util.concurrent.Future;
 
 import org.neo4j.function.IOFunction;
 import org.neo4j.function.ThrowingFunction;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
@@ -79,7 +78,7 @@ public class CountsTrackerTest
     {
         // given
         CountsTracker tracker = resourceManager.managed( newTracker() );
-        IndexDescriptor index = IndexDescriptorFactory.from( new NodePropertyDescriptor( 1, 1 ) );
+        IndexDescriptor index = IndexDescriptorFactory.of( 1, 1 );
         CountsOracle oracle = new CountsOracle();
         {
             CountsOracle.Node a = oracle.node( 1 );
@@ -275,7 +274,7 @@ public class CountsTrackerTest
         File before = tracker.currentFile();
         try ( CountsAccessor.IndexStatsUpdater updater = tracker.updateIndexCounts() )
         {
-            updater.incrementIndexUpdates( IndexDescriptorFactory.from( new NodePropertyDescriptor( 7, 8 ) ), 100 );
+            updater.incrementIndexUpdates( IndexDescriptorFactory.of( 7, 8 ), 100 );
         }
 
         // when
@@ -368,7 +367,7 @@ public class CountsTrackerTest
         oracle.relationship( n1, 1, n3 );
         oracle.relationship( n1, 1, n2 );
         oracle.relationship( n0, 1, n3 );
-        IndexDescriptor index = IndexDescriptorFactory.from( new NodePropertyDescriptor( 1, 2 ) );
+        IndexDescriptor index = IndexDescriptorFactory.of( 1, 2 );
         oracle.indexUpdatesAndSize( index, 0L, 50L );
         oracle.indexSampling( index, 25L, 50L );
         return oracle;

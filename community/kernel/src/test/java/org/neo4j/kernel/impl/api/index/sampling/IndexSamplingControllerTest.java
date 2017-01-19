@@ -364,8 +364,8 @@ public class IndexSamplingControllerTest
     {
         when( samplingConfig.backgroundSampling() ).thenReturn( true );
         when( samplingConfig.jobLimit() ).thenReturn( 1 );
-        when( indexProxy.getDescriptor() ).thenReturn( IndexDescriptorFactory.from(descriptor) );
-        when( anotherIndexProxy.getDescriptor() ).thenReturn( IndexDescriptorFactory.from(anotherDescriptor) );
+        when( indexProxy.getDescriptor() ).thenReturn( IndexDescriptorFactory.of( descriptor ) );
+        when( anotherIndexProxy.getDescriptor() ).thenReturn( IndexDescriptorFactory.of( anotherDescriptor ) );
         when( snapshotProvider.indexMapSnapshot() ).thenReturn( indexMap );
         when( jobFactory.create( indexProxy ) ).thenReturn( job );
         when( jobFactory.create( anotherIndexProxy ) ).thenReturn( anotherJob );

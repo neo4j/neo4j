@@ -72,7 +72,7 @@ public class ConstraintIndexCreatorTest
         StatementOperationParts constraintCreationContext = mockedParts();
         StatementOperationParts indexCreationContext = mockedParts();
 
-        IndexDescriptor index = IndexDescriptorFactory.from( descriptor );
+        IndexDescriptor index = IndexDescriptorFactory.of( descriptor );
         KernelStatement state = mockedState();
 
         IndexingService indexingService = mock( IndexingService.class );
@@ -105,7 +105,7 @@ public class ConstraintIndexCreatorTest
         StatementOperationParts constraintCreationContext = mockedParts();
         KernelStatement state = mockedState();
 
-        IndexDescriptor index = IndexDescriptorFactory.from( descriptor );
+        IndexDescriptor index = IndexDescriptorFactory.of( descriptor );
 
         IndexingService indexingService = mock( IndexingService.class );
         StubKernel kernel = new StubKernel();
@@ -135,12 +135,12 @@ public class ConstraintIndexCreatorTest
         }
         assertEquals( 2, kernel.statements.size() );
         TransactionState tx1 = kernel.statements.get( 0 ).txState();
-        verify( tx1 ).constraintIndexRuleDoAdd( IndexDescriptorFactory.from( new NodePropertyDescriptor( 123, 456 ) ) );
+        verify( tx1 ).constraintIndexRuleDoAdd( IndexDescriptorFactory.of( 123, 456 ) );
         verifyNoMoreInteractions( tx1 );
         verify( constraintCreationContext.schemaReadOperations() ).indexGetCommittedId( state, index, CONSTRAINT );
         verifyNoMoreInteractions( constraintCreationContext.schemaReadOperations() );
         TransactionState tx2 = kernel.statements.get( 1 ).txState();
-        verify( tx2 ).constraintIndexDoDrop( IndexDescriptorFactory.from( new NodePropertyDescriptor( 123, 456 ) ) );
+        verify( tx2 ).constraintIndexDoDrop( IndexDescriptorFactory.of( 123, 456 ) );
         verifyNoMoreInteractions( tx2 );
     }
 
@@ -151,7 +151,7 @@ public class ConstraintIndexCreatorTest
         StubKernel kernel = new StubKernel();
         IndexingService indexingService = mock( IndexingService.class );
 
-        IndexDescriptor descriptor = IndexDescriptorFactory.from( new NodePropertyDescriptor( 123, 456 ) );
+        IndexDescriptor descriptor = IndexDescriptorFactory.of( 123, 456 );
 
         ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService );
 

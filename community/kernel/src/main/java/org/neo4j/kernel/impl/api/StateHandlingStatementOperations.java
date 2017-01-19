@@ -377,7 +377,7 @@ public class StateHandlingStatementOperations implements
     @Override
     public IndexDescriptor indexCreate( KernelStatement state, NodePropertyDescriptor descriptor )
     {
-        IndexDescriptor indexDescriptor = IndexDescriptorFactory.from(descriptor);
+        IndexDescriptor indexDescriptor = IndexDescriptorFactory.of(descriptor);
         state.txState().indexRuleDoAdd( indexDescriptor );
         return indexDescriptor;
     }

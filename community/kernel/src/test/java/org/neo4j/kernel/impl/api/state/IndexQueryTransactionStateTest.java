@@ -72,7 +72,7 @@ public class IndexQueryTransactionStateTest
     int propertyKeyId = 3;
     String value = "My Value";
     NodePropertyDescriptor descriptor = new NodePropertyDescriptor( labelId, propertyKeyId );
-    IndexDescriptor indexDescriptor = IndexDescriptorFactory.from( descriptor );
+    IndexDescriptor indexDescriptor = IndexDescriptorFactory.of( descriptor );
 
     private StoreReadLayer store;
     private StoreStatement statement;
@@ -95,8 +95,7 @@ public class IndexQueryTransactionStateTest
                 .<IndexDescriptor>emptyList() ) );
         when( store.indexesGetAll() ).then( answerAsIteratorFrom( Collections.<IndexDescriptor>emptyList() ) );
         when( store.constraintsGetForLabel( labelId ) ).thenReturn( Collections.<NodePropertyConstraint>emptyIterator() );
-        when( store.indexGetForLabelAndPropertyKey( descriptor ) )
-                .thenReturn( IndexDescriptorFactory.from( descriptor ) );
+        when( store.indexGetForLabelAndPropertyKey( descriptor ) ).thenReturn( indexDescriptor );
 
         statement = mock( StoreStatement.class );
         when( state.getStoreStatement() ).thenReturn( statement );

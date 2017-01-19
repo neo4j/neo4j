@@ -54,7 +54,7 @@ public abstract class NodePropertyConstraint implements PropertyConstraint, Inde
     @Override
     public IndexDescriptor indexDescriptor()
     {
-        return IndexDescriptorFactory.from( descriptor );
+        return IndexDescriptorFactory.of( descriptor );
     }
 
     @Override

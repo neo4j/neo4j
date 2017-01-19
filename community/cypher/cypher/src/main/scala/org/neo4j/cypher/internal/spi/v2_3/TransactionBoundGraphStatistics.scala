@@ -35,7 +35,7 @@ object TransactionBoundGraphStatistics {
 
     def indexSelectivity(label: LabelId, property: PropertyKeyId): Option[Selectivity] =
       try {
-        val indexDescriptor = IndexDescriptorFactory.from(new NodePropertyDescriptor(label, property))
+        val indexDescriptor = IndexDescriptorFactory.of( label, property )
         val labeledNodes = operations.countsForNodeWithoutTxState( label ).toDouble
 
         // Probability of any node with the given label, to have a property with a given value
@@ -51,7 +51,7 @@ object TransactionBoundGraphStatistics {
 
     def indexPropertyExistsSelectivity(label: LabelId, property: PropertyKeyId): Option[Selectivity] =
       try {
-        val indexDescriptor = IndexDescriptorFactory.from(new NodePropertyDescriptor(label, property))
+        val indexDescriptor = IndexDescriptorFactory.of( label, property )
         val labeledNodes = operations.countsForNodeWithoutTxState( label ).toDouble
 
         // Probability of any node with the given label, to have a given property

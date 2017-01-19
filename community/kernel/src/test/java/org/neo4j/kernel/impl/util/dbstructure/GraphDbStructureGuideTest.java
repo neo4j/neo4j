@@ -141,7 +141,7 @@ public class GraphDbStructureGuideTest
         commitAndReOpen();
 
         UniquenessConstraint constraint = createUniqueConstraint( labelId, pkId );
-        IndexDescriptor descriptor = IndexDescriptorFactory.from( new NodePropertyDescriptor( labelId, pkId ) );
+        IndexDescriptor descriptor = IndexDescriptorFactory.of( labelId, pkId );
 
         // WHEN
         accept( visitor );

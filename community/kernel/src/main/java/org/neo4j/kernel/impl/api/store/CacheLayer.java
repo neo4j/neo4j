@@ -105,7 +105,7 @@ public class CacheLayer implements StoreReadLayer
             final SchemaRule.Kind kind )
     {
         Iterator<SchemaRule> filteredRules = Iterators.filter( item -> item.getKind() == kind, rules.iterator() );
-        return Iterators.map( from -> IndexDescriptorFactory.from( (IndexRule) from ), filteredRules );
+        return Iterators.map( from -> IndexDescriptorFactory.of( (IndexRule) from ), filteredRules );
     }
 
     @Override

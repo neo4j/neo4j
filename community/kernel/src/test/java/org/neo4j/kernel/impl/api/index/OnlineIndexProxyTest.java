@@ -23,7 +23,6 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
@@ -36,7 +35,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 public class OnlineIndexProxyTest
 {
-    private final IndexDescriptor descriptor = IndexDescriptorFactory.from( new NodePropertyDescriptor( 1, 2 ) );
+    private final IndexDescriptor descriptor = IndexDescriptorFactory.of( 1, 2 );
     private final IndexConfiguration config = IndexConfiguration.NON_UNIQUE;
     private final SchemaIndexProvider.Descriptor providerDescriptor = mock( SchemaIndexProvider.Descriptor.class );
     private final IndexAccessor accessor = mock( IndexAccessor.class );

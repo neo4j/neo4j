@@ -478,7 +478,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
             propertyKeyIds[i] = propertyKeyId;
 
             IndexDescriptor descriptor =
-                    IndexDescriptorFactory.from( new NodePropertyDescriptor( labelId, propertyKeyId ) );
+                    IndexDescriptorFactory.of( labelId, propertyKeyId );
             populators[i] = schemaIndexProviders.apply( rule.getProviderDescriptor() )
                                                 .getPopulator( rule.getId(),
                                                         descriptor,

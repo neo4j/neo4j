@@ -415,7 +415,7 @@ public class FullCheckIntegrationTest
         while ( rules.hasNext() )
         {
             IndexRule rule = rules.next();
-            IndexDescriptor descriptor = IndexDescriptorFactory.from( rule );
+            IndexDescriptor descriptor = IndexDescriptorFactory.of( rule );
             IndexConfiguration indexConfig = IndexConfiguration.NON_UNIQUE;
             IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.empty() );
             IndexPopulator populator =

@@ -335,7 +335,7 @@ public class DbStructureCollector implements DbStructureVisitor
 
         public IndexStatistics getIndex( NodePropertyDescriptor descriptor )
         {
-            return indexMap.get( IndexDescriptorFactory.from( descriptor ) );
+            return indexMap.get( IndexDescriptorFactory.of( descriptor ) );
         }
 
         public Iterator<Pair<String, String>> iterator()

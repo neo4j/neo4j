@@ -50,9 +50,9 @@ public class IndexSamplingJobTrackerTest
     NodePropertyDescriptor descriptor11 = new NodePropertyDescriptor( 1, 1 );
     NodePropertyDescriptor descriptor12 = new NodePropertyDescriptor( 1, 2 );
     NodePropertyDescriptor descriptor22 = new NodePropertyDescriptor( 2, 2 );
-    IndexDescriptor index11 = IndexDescriptorFactory.from( descriptor11 );
-    IndexDescriptor index12 = IndexDescriptorFactory.from( descriptor12 );
-    IndexDescriptor index22 = IndexDescriptorFactory.from( descriptor22 );
+    IndexDescriptor index11 = IndexDescriptorFactory.of( descriptor11 );
+    IndexDescriptor index12 = IndexDescriptorFactory.of( descriptor12 );
+    IndexDescriptor index22 = IndexDescriptorFactory.of( descriptor22 );
 
     @Test
     public void shouldNotRunASampleJobWhichIsAlreadyRunning() throws Throwable
@@ -181,7 +181,7 @@ public class IndexSamplingJobTrackerTest
             @Override
             public IndexDescriptor descriptor()
             {
-                return IndexDescriptorFactory.from( descriptor11 );
+                return IndexDescriptorFactory.of( descriptor11 );
             }
 
             @Override

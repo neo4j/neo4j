@@ -34,7 +34,6 @@ import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.io.IOUtils;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
@@ -80,8 +79,7 @@ public class UniqueDatabaseIndexPopulatorTest
     private static final String INDEX_IDENTIFIER = "42";
 
     private final DirectoryFactory directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
-    private final IndexDescriptor descriptor = IndexDescriptorFactory
-            .from( new NodePropertyDescriptor( LABEL_ID, PROPERTY_KEY_ID ) );
+    private final IndexDescriptor descriptor = IndexDescriptorFactory.of( LABEL_ID, PROPERTY_KEY_ID );
 
     private final PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
 

@@ -222,7 +222,7 @@ public class BuiltInProceduresTest
         int labelId = token( label, labels );
         int propId = token( propKey, propKeys );
 
-        IndexDescriptor index = IndexDescriptorFactory.from( new NodePropertyDescriptor( labelId, propId ) );
+        IndexDescriptor index = IndexDescriptorFactory.of( labelId, propId );
         indexes.add( index );
     }
 
@@ -231,7 +231,7 @@ public class BuiltInProceduresTest
         int labelId = token( label, labels );
         int propId = token( propKey, propKeys );
 
-        IndexDescriptor index = IndexDescriptorFactory.from( new NodePropertyDescriptor( labelId, propId ) );
+        IndexDescriptor index = IndexDescriptorFactory.of( labelId, propId );
         uniqueIndexes.add( index );
         constraints.add( new UniquenessConstraint( index.descriptor() ) );
     }

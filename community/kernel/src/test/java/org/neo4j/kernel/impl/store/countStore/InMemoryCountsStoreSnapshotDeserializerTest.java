@@ -29,7 +29,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
@@ -165,7 +164,7 @@ public class InMemoryCountsStoreSnapshotDeserializerTest
         logChannel.putInt( 1 );
         logChannel.putLong( 1 );
         logChannel.putLong( 1 );
-        IndexDescriptor index = IndexDescriptorFactory.from( new NodePropertyDescriptor( 1, 1 ) );
+        IndexDescriptor index = IndexDescriptorFactory.of( 1, 1 );
 
         //WHEN
         IndexSampleKey expectedNode = CountsKeyFactory.indexSampleKey( index );
@@ -189,7 +188,7 @@ public class InMemoryCountsStoreSnapshotDeserializerTest
         logChannel.putInt( 1 );
         logChannel.putLong( 1 );
         logChannel.putLong( 1 );
-        IndexDescriptor index = IndexDescriptorFactory.from( new NodePropertyDescriptor( 1, 1 ) );
+        IndexDescriptor index = IndexDescriptorFactory.of( 1, 1 );
 
         //WHEN
         IndexStatisticsKey expectedNode = CountsKeyFactory.indexStatisticsKey( index );

@@ -76,7 +76,7 @@ public class OnlineIndexSamplingJobTest
     private final LogProvider logProvider = NullLogProvider.getInstance();
     private final IndexProxy indexProxy = mock( IndexProxy.class );
     private final IndexStoreView indexStoreView = mock( IndexStoreView.class );
-    private final IndexDescriptor indexDescriptor = IndexDescriptorFactory.from( new NodePropertyDescriptor( 1, 2 ) );
+    private final IndexDescriptor indexDescriptor = IndexDescriptorFactory.of( 1, 2 );
     private final IndexReader indexReader = mock( IndexReader.class );
     private final IndexSampler indexSampler = mock( IndexSampler.class );
 

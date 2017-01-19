@@ -61,13 +61,13 @@ public class IndexUpdaterMapTest
         indexMap = new IndexMap();
 
         indexProxy1 = mock( IndexProxy.class );
-        indexDescriptor1 = IndexDescriptorFactory.from( new NodePropertyDescriptor( 2, 3 ) );
+        indexDescriptor1 = IndexDescriptorFactory.of( 2, 3 );
         indexUpdater1 = mock( IndexUpdater.class );
         when( indexProxy1.getDescriptor() ).thenReturn( indexDescriptor1 );
         when( indexProxy1.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn( indexUpdater1 );
 
         indexProxy2 = mock( IndexProxy.class );
-        indexDescriptor2 = IndexDescriptorFactory.from( new NodePropertyDescriptor( 5, 6 ) );
+        indexDescriptor2 = IndexDescriptorFactory.of( 5, 6 );
         IndexUpdater indexUpdater2 = mock( IndexUpdater.class );
         when( indexProxy2.getDescriptor() ).thenReturn( indexDescriptor2 );
         when( indexProxy2.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn( indexUpdater2 );

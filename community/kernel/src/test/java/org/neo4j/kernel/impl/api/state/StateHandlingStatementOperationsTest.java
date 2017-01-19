@@ -41,13 +41,11 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
-import org.neo4j.kernel.impl.api.IndexReaderFactory;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexing;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.index.LegacyIndexStore;
-import org.neo4j.kernel.impl.locking.ReentrantLockService;
 import org.neo4j.kernel.impl.util.Cursors;
 import org.neo4j.kernel.impl.util.diffsets.DiffSets;
 import org.neo4j.storageengine.api.LabelItem;
@@ -55,7 +53,6 @@ import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.schema.IndexReader;
-import org.neo4j.storageengine.api.schema.LabelScanReader;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
@@ -72,7 +69,6 @@ import static org.neo4j.kernel.api.properties.Property.intProperty;
 import static org.neo4j.kernel.impl.api.StatementOperationsTestHelper.mockedState;
 import static org.neo4j.kernel.impl.api.state.StubCursors.asNodeCursor;
 import static org.neo4j.kernel.impl.api.state.StubCursors.asPropertyCursor;
-import static org.neo4j.test.MockedNeoStores.basicMockedNeoStores;
 
 public class StateHandlingStatementOperationsTest
 {
@@ -96,7 +92,7 @@ public class StateHandlingStatementOperationsTest
         when( state.txState() ).thenReturn( new TxState() );
         StoreStatement storeStatement = mock( StoreStatement.class );
         when( state.getStoreStatement() ).thenReturn( storeStatement );
-        Iterator<IndexDescriptor> indexesIterator = Collections.singletonList( IndexDescriptorFactory.from( new NodePropertyDescriptor( 0, 0 ) ) ).iterator();
+        Iterator<IndexDescriptor> indexesIterator = Collections.singletonList( IndexDescriptorFactory.of( 0, 0 ) ).iterator();
         when( inner.indexesGetForLabel( 0 ) ).thenReturn( indexesIterator );
         when( storeStatement.acquireSingleNodeCursor( anyLong() ) ).
                 thenReturn( asNodeCursor( 0 ) );
@@ -107,7 +103,7 @@ public class StateHandlingStatementOperationsTest
         NodePropertyDescriptor descriptor = new NodePropertyDescriptor( 0, 0 );
         ctx.indexCreate( state, descriptor );
         ctx.nodeAddLabel( state, 0, 0 );
-        ctx.indexDrop( state, IndexDescriptorFactory.from( descriptor ) );
+        ctx.indexDrop( state, IndexDescriptorFactory.of( descriptor ) );
         ctx.nodeRemoveLabel( state, 0, 0 );
 
         // one for add and one for remove
@@ -216,7 +212,7 @@ public class StateHandlingStatementOperationsTest
         KernelStatement statement = mock( KernelStatement.class );
         when( statement.hasTxStateWithChanges() ).thenReturn( true );
         when( statement.txState() ).thenReturn( txState );
-        IndexDescriptor index = IndexDescriptorFactory.from( new NodePropertyDescriptor( 1, 2 ) );
+        IndexDescriptor index = IndexDescriptorFactory.of( 1, 2 );
         when( txState.indexUpdatesForScanOrSeek( index, null ) ).thenReturn(
                 new DiffSets<>( Collections.singleton( 42L ), Collections.singleton( 44L ) )
         );
@@ -247,7 +243,7 @@ public class StateHandlingStatementOperationsTest
         KernelStatement statement = mock( KernelStatement.class );
         when( statement.hasTxStateWithChanges() ).thenReturn( true );
         when( statement.txState() ).thenReturn( txState );
-        IndexDescriptor index = IndexDescriptorFactory.from( new NodePropertyDescriptor( 1, 2 ) );
+        IndexDescriptor index = IndexDescriptorFactory.of( 1, 2 );
         when( txState.indexUpdatesForScanOrSeek( index, "value" ) ).thenReturn(
                 new DiffSets<>( Collections.singleton( 42L ), Collections.singleton( 44L ) )
         );
@@ -277,7 +273,7 @@ public class StateHandlingStatementOperationsTest
         KernelStatement statement = mock( KernelStatement.class );
         when( statement.hasTxStateWithChanges() ).thenReturn( true );
         when( statement.txState() ).thenReturn( txState );
-        IndexDescriptor index = IndexDescriptorFactory.from( new NodePropertyDescriptor( 1, 2 ) );
+        IndexDescriptor index = IndexDescriptorFactory.of( 1, 2 );
         when( txState.indexUpdatesForRangeSeekByPrefix( index, "prefix" ) ).thenReturn(
                 new DiffSets<>( Collections.singleton( 42L ), Collections.singleton( 44L ) )
         );
@@ -315,7 +311,7 @@ public class StateHandlingStatementOperationsTest
         when( statement.txState() ).thenReturn( txState );
         StorageStatement storageStatement = mock( StorageStatement.class );
         when( statement.getStoreStatement() ).thenReturn( storageStatement );
-        IndexDescriptor index = IndexDescriptorFactory.from( new NodePropertyDescriptor( 1, propertyKey ) );
+        IndexDescriptor index = IndexDescriptorFactory.of( 1, propertyKey );
         when( txState.indexUpdatesForRangeSeekByNumber( index, lower, true, upper, false ) ).thenReturn(
                 new DiffSets<>( Collections.singleton( 42L ), Collections.singleton( 44L ) )
         );
@@ -369,7 +365,7 @@ public class StateHandlingStatementOperationsTest
         KernelStatement statement = mock( KernelStatement.class );
         when( statement.hasTxStateWithChanges() ).thenReturn( true );
         when( statement.txState() ).thenReturn( txState );
-        IndexDescriptor index = IndexDescriptorFactory.from( new NodePropertyDescriptor( 1, 2 ) );
+        IndexDescriptor index = IndexDescriptorFactory.of( 1, 2 );
         when( txState.indexUpdatesForRangeSeekByString( index, "Anne", true, "Bill", false ) ).thenReturn(
                 new DiffSets<>( Collections.singleton( 42L ), Collections.singleton( 44L ) )
         );
@@ -405,7 +401,7 @@ public class StateHandlingStatementOperationsTest
 
         StateHandlingStatementOperations operations = newTxStateOps( mock( StoreReadLayer.class ) );
 
-        operations.nodeGetFromUniqueIndexSeek( kernelStatement, IndexDescriptorFactory.from( new NodePropertyDescriptor( 1, 1 ) ), "foo" );
+        operations.nodeGetFromUniqueIndexSeek( kernelStatement, IndexDescriptorFactory.of( 1, 1 ), "foo" );
 
         verify( indexReader ).close();
     }

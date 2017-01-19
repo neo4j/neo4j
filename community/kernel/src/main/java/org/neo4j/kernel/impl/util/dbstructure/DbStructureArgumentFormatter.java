@@ -89,7 +89,7 @@ public enum DbStructureArgumentFormatter implements ArgumentFormatter
         {
             NodePropertyDescriptor descriptor = (NodePropertyDescriptor) arg;
             int labelId = descriptor.getLabelId();
-            builder.append( format( "IndexDescriptorFactory.from( new NodePropertyDescriptor( %s, %s ) )", labelId, descriptor.propertyIdText( ) ) );
+            builder.append( format( "IndexDescriptorFactory.of( %s, %s )", labelId, descriptor.propertyIdText( ) ) );
         }
         else if ( arg instanceof NodePropertyDescriptor )
         {

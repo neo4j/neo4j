@@ -62,7 +62,7 @@ public class AwaitIndexProcedureTest
     private final IndexProcedures procedure = new IndexProcedures( new StubKernelTransaction( operations ), null );
     private final NodePropertyDescriptor descriptor = new NodePropertyDescriptor( 123, 456 );
     private final NodePropertyDescriptor anyDescriptor = new NodePropertyDescriptor( 0, 0 );
-    private final IndexDescriptor anyIndex = IndexDescriptorFactory.from( anyDescriptor );
+    private final IndexDescriptor anyIndex = IndexDescriptorFactory.of( anyDescriptor );
 
     @Test
     public void shouldThrowAnExceptionIfTheLabelDoesntExist() throws ProcedureException

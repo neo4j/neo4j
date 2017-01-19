@@ -29,7 +29,6 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
@@ -249,7 +248,7 @@ public class InMemoryCountsStoreCountsSnapshotSerializerTest
 
     private static IndexDescriptor indexFor( int labelId, int propertyKeyId )
     {
-        return IndexDescriptorFactory.from( new NodePropertyDescriptor( labelId, propertyKeyId ) );
+        return IndexDescriptorFactory.of( labelId, propertyKeyId );
     }
 
     private void initializeBuffers( int serializedLength )

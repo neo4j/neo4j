@@ -49,7 +49,7 @@ public class ConstraintEnforcingEntityOperationsTest
     private final int propertyKeyId = 2;
     private final String value = "value";
     private final IndexDescriptor indexDescriptor =
-            IndexDescriptorFactory.from( new NodePropertyDescriptor( labelId, propertyKeyId ) );
+            IndexDescriptorFactory.of( labelId, propertyKeyId );
     private EntityReadOperations readOps;
     private KernelStatement state;
     private Locks.Client locks;

@@ -85,7 +85,7 @@ public class ResampleIndexProcedureTest
     public void shouldLookUpTheIndexByLabelIdAndPropertyKeyId()
             throws ProcedureException, SchemaRuleNotFoundException, IndexNotFoundKernelException
     {
-        IndexDescriptor index = IndexDescriptorFactory.from( new NodePropertyDescriptor( 0, 0 ) );
+        IndexDescriptor index = IndexDescriptorFactory.of( 0, 0 );
         when( operations.labelGetForName( anyString() ) ).thenReturn( 123 );
         when( operations.propertyKeyGetForName( anyString() ) ).thenReturn( 456 );
         when( operations.indexGetForLabelAndPropertyKey( anyObject() ) ).thenReturn( index );
@@ -120,7 +120,7 @@ public class ResampleIndexProcedureTest
     @Test
     public void shouldTriggerResampling() throws SchemaRuleNotFoundException, ProcedureException
     {
-        IndexDescriptor index = IndexDescriptorFactory.from( new NodePropertyDescriptor( 123, 456 ) );
+        IndexDescriptor index = IndexDescriptorFactory.of( 123, 456 );
         when( operations.indexGetForLabelAndPropertyKey( anyObject() ) ).thenReturn( index );
 
         procedure.resampleIndex( ":Person(name)" );

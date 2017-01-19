@@ -196,7 +196,7 @@ public class IndexingService extends LifecycleAdapter
             IndexProxy indexProxy;
 
             long indexId = indexRule.getId();
-            IndexDescriptor descriptor = IndexDescriptorFactory.from( indexRule );
+            IndexDescriptor descriptor = IndexDescriptorFactory.of( indexRule );
             SchemaIndexProvider.Descriptor providerDescriptor = indexRule.getProviderDescriptor();
             SchemaIndexProvider provider = providerMap.apply( providerDescriptor );
             InternalIndexState initialState = provider.getInitialState( indexId );
@@ -532,7 +532,7 @@ public class IndexingService extends LifecycleAdapter
                 indexMapRef.setIndexMap( indexMap );
                 continue;
             }
-            final IndexDescriptor descriptor = IndexDescriptorFactory.from( rule );
+            final IndexDescriptor descriptor = IndexDescriptorFactory.of( rule );
             SchemaIndexProvider.Descriptor providerDescriptor = rule.getProviderDescriptor();
             boolean constraint = rule.isConstraintIndex();
             if ( state == State.RUNNING )

@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.store.countStore;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
@@ -63,7 +62,7 @@ public class CountsStoreMapGenerator
     {
         for ( int i = 0; i < num; i++ )
         {
-            IndexDescriptor descriptor = IndexDescriptorFactory.from( new NodePropertyDescriptor( i, i ) );
+            IndexDescriptor descriptor = IndexDescriptorFactory.of( i, i );
             map.put( CountsKeyFactory.indexSampleKey( descriptor ), new long[]{i, i} );
         }
     }
@@ -72,7 +71,7 @@ public class CountsStoreMapGenerator
     {
         for ( int i = 0; i < num; i++ )
         {
-            IndexDescriptor descriptor = IndexDescriptorFactory.from( new NodePropertyDescriptor( i, i ) );
+            IndexDescriptor descriptor = IndexDescriptorFactory.of( i, i );
             map.put( CountsKeyFactory.indexStatisticsKey( descriptor ), new long[]{i, i} );
         }
     }

@@ -1707,9 +1707,9 @@ public class TxStateTest
     private final NodePropertyDescriptor descriptorOn_1_1 = new NodePropertyDescriptor( 2, 3 );
     private final NodePropertyDescriptor descriptorOn_1_2 = new NodePropertyDescriptor( 2, 4 );
     private final NodePropertyDescriptor descriptorOn_2_1 = new NodePropertyDescriptor( 3, 3 );
-    private final IndexDescriptor indexOn_1_1 = IndexDescriptorFactory.from( descriptorOn_1_1 );
-    private final IndexDescriptor indexOn_1_2 = IndexDescriptorFactory.from( descriptorOn_1_2 );
-    private final IndexDescriptor indexOn_2_1 = IndexDescriptorFactory.from( descriptorOn_2_1 );
+    private final IndexDescriptor indexOn_1_1 = IndexDescriptorFactory.of( descriptorOn_1_1 );
+    private final IndexDescriptor indexOn_1_2 = IndexDescriptorFactory.of( descriptorOn_1_2 );
+    private final IndexDescriptor indexOn_2_1 = IndexDescriptorFactory.of( descriptorOn_2_1 );
 
     private TransactionState state;
 
