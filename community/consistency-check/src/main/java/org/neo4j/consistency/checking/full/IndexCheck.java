@@ -39,6 +39,6 @@ public class IndexCheck implements RecordCheck<IndexEntry, ConsistencyReport.Ind
     public void check( IndexEntry record, CheckerEngine<IndexEntry, ConsistencyReport.IndexConsistencyReport> engine, RecordAccess records )
     {
         engine.comparativeCheck( records.node( record.getId() ),
-                new NodeInUseWithCorrectLabelsCheck<IndexEntry,ConsistencyReport.IndexConsistencyReport>(new long[] {indexRule.getLabel()}) );
+                new NodeInUseWithCorrectLabelsCheck<IndexEntry,ConsistencyReport.IndexConsistencyReport>(new long[] {indexRule.getLabel()}, false ) );
     }
 }

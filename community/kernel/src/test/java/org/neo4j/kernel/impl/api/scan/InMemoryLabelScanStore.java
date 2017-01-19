@@ -32,10 +32,8 @@ import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 
-import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.labelscan.AllEntriesLabelScanReader;
@@ -144,21 +142,6 @@ public class InMemoryLabelScanStore implements LabelScanStore
             public void close()
             {   // Nothing to close
             }
-
-            @Override
-            public PrimitiveLongIterator labelsForNode( long nodeId )
-            {
-                PrimitiveLongSet nodes = Primitive.longSet();
-                for ( Map.Entry<Long,Set<Long>> entry : data.entrySet() )
-                {
-                    if ( entry.getValue().contains( nodeId ) )
-                    {
-                        nodes.add( entry.getKey() );
-                    }
-                }
-                return nodes.iterator();
-            }
-
         };
     }
 
@@ -197,6 +180,12 @@ public class InMemoryLabelScanStore implements LabelScanStore
     @Override
     public void force( IOLimiter limiter )
     {   // Nothing to force
+    }
+
+    @Override
+    public boolean isEmpty() throws IOException
+    {
+        return data.isEmpty();
     }
 
     @Override

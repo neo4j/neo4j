@@ -46,6 +46,7 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 
 import static java.lang.String.format;
+
 import static org.neo4j.consistency.checking.full.MultiPassStore.ARRAYS;
 import static org.neo4j.consistency.checking.full.MultiPassStore.LABELS;
 import static org.neo4j.consistency.checking.full.MultiPassStore.NODES;
@@ -171,13 +172,7 @@ public class ConsistencyCheckTasks
             tasks.add( create( "LabelNameStore", nativeStores.getLabelNameStore(), ROUND_ROBIN ) );
             tasks.add( create( "NodeDynamicLabelStore", nativeStores.getNodeDynamicLabelStore(), ROUND_ROBIN ) );
         }
-        if ( checkLabelScanStore )
-        {
-            tasks.add( recordScanner( "NodeStoreToLabelScanStore",
-                    new IterableStore<>( nativeStores.getNodeStore(), true ),
-                    new NodeToLabelScanRecordProcessor( reporter, labelScanStore ),
-                    CheckStage.Stage9_NS_LabelCounts, ROUND_ROBIN ) );
-        }
+
         ConsistencyReporter filteredReporter = multiPass.reporter( NODES );
         if ( checkLabelScanStore )
         {

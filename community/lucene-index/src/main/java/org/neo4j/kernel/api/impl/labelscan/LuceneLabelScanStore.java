@@ -137,6 +137,19 @@ public class LuceneLabelScanStore implements LabelScanStore
     }
 
     @Override
+    public boolean isEmpty() throws IOException
+    {
+        try ( AllEntriesLabelScanReader allEntries = allNodeLabelRanges() )
+        {
+            return allEntries.maxCount() == 0;
+        }
+        catch ( Exception e )
+        {
+            throw new IOException( e );
+        }
+    }
+
+    @Override
     public void stop()
     {   // Not needed
     }

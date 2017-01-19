@@ -19,13 +19,11 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.function.IntSupplier;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.RawIterator;
@@ -112,6 +110,8 @@ import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 
 import static java.lang.String.format;
+
+import static org.neo4j.collection.primitive.PrimitiveIntCollections.deduplicate;
 
 public class OperationsFacade
         implements ReadOperations, DataWriteOperations, SchemaWriteOperations, QueryRegistryOperations,
@@ -382,32 +382,6 @@ public class OperationsFacade
         case BOTH: return org.neo4j.storageengine.api.Direction.BOTH;
         default: throw new IllegalArgumentException( direction.name() );
         }
-    }
-
-    private static int[] deduplicate( int[] types )
-    {
-        int unique = 0;
-        for ( int i = 0; i < types.length; i++ )
-        {
-            int type = types[i];
-            for ( int j = 0; j < unique; j++ )
-            {
-                if ( type == types[j] )
-                {
-                    type = -1; // signal that this relationship is not unique
-                    break; // we will not find more than one conflict
-                }
-            }
-            if ( type != -1 )
-            { // this has to be done outside the inner loop, otherwise we'd never accept a single one...
-                types[unique++] = types[i];
-            }
-        }
-        if ( unique < types.length )
-        {
-            types = Arrays.copyOf( types, unique );
-        }
-        return types;
     }
 
     @Override

@@ -99,11 +99,6 @@ public class NullReporter implements ConsistencyReport.Reporter
     }
 
     @Override
-    public void forNodeLabelMatch( NodeRecord nodeRecord, RecordCheck<NodeRecord, ConsistencyReport.LabelsMatchReport> nodeLabelCheck )
-    {
-    }
-
-    @Override
     public void forRelationshipGroup( RelationshipGroupRecord record,
             RecordCheck<RelationshipGroupRecord, RelationshipGroupConsistencyReport> checker )
     {

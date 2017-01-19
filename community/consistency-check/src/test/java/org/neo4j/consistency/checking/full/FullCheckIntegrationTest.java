@@ -471,7 +471,7 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        on( stats ).verify( RecordType.NODE, 1 )
+        on( stats ).verify( RecordType.LABEL_SCAN_DOCUMENT, 1 )
                    .andThatsAllFolks();
     }
 
@@ -513,7 +513,7 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        on( stats ).verify( RecordType.NODE, 1 )
+        on( stats ).verify( RecordType.LABEL_SCAN_DOCUMENT, 1 )
                    .andThatsAllFolks();
     }
 
