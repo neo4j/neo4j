@@ -155,7 +155,7 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
         public void checkIndexRule( IndexRule rule, DynamicRecord record, RecordAccess records,
                 CheckerEngine<DynamicRecord,ConsistencyReport.SchemaConsistencyReport> engine )
         {
-            checkLabelAndPropertyRule( rule, rule.descriptor(), record, records, engine );
+            checkLabelAndPropertyRule( rule, record, records, engine );
 
             if ( rule.isConstraintIndex() && rule.getOwningConstraint() != null )
             {
@@ -171,7 +171,7 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
         public void checkUniquenessConstraintRule( UniquePropertyConstraintRule rule, DynamicRecord record,
                 RecordAccess records, CheckerEngine<DynamicRecord,ConsistencyReport.SchemaConsistencyReport> engine )
         {
-            checkLabelAndPropertyRule( rule, rule.descriptor(), record, records, engine );
+            checkLabelAndPropertyRule( rule, record, records, engine );
 
             DynamicRecord previousObligation = indexObligations.put( rule.getOwnedIndex(), record.clone() );
             if ( previousObligation != null )
@@ -184,7 +184,7 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
         public void checkNodePropertyExistenceRule( NodePropertyExistenceConstraintRule rule, DynamicRecord record,
                 RecordAccess records, CheckerEngine<DynamicRecord,ConsistencyReport.SchemaConsistencyReport> engine )
         {
-            checkLabelAndPropertyRule( rule, rule.descriptor(), record, records, engine );
+            checkLabelAndPropertyRule( rule, record, records, engine );
         }
 
         @Override
@@ -258,10 +258,11 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
         }
     }
 
-    private void checkLabelAndPropertyRule( SchemaRule rule, EntityPropertyDescriptor descriptor, DynamicRecord record,
+    private void checkLabelAndPropertyRule( SchemaRule rule, DynamicRecord record,
             RecordAccess records, CheckerEngine<DynamicRecord,ConsistencyReport.SchemaConsistencyReport> engine )
     {
         engine.comparativeCheck( records.label( rule.getLabel() ), VALID_LABEL );
+        EntityPropertyDescriptor descriptor = rule.descriptor();
         if ( descriptor instanceof NodePropertyDescriptor && ((NodePropertyDescriptor) descriptor).isComposite() )
         {
             int[] propertyKeys = descriptor.getPropertyKeyIds();
