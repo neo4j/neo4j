@@ -25,6 +25,7 @@ import java.util.List;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.helpers.collection.Iterables;
 
 import static java.util.Arrays.asList;
 import static java.util.Objects.requireNonNull;
@@ -42,12 +43,7 @@ abstract class MultiPropertyConstraintDefinition extends PropertyConstraintDefin
     protected MultiPropertyConstraintDefinition( InternalSchemaActions actions, IndexDefinition indexDefinition )
     {
         super( actions );
-
-        List<String> indexList = new ArrayList<>();
-        indexDefinition.getPropertyKeys().forEach( index -> indexList.add( index ) );
-        String[] propertyKeys = indexList.toArray( new String[indexList.size()] );
-
-        this.propertyKeys = requireNonEmpty( propertyKeys );
+        this.propertyKeys = requireNonEmpty( Iterables.asArray( String.class, indexDefinition.getPropertyKeys() ) );
     }
 
     private static String[] requireNonEmpty( String[] array )
@@ -60,7 +56,9 @@ abstract class MultiPropertyConstraintDefinition extends PropertyConstraintDefin
         for ( String field : array )
         {
             if ( field == null )
-            { throw new NullPointerException(); }
+            {
+                throw new IllegalArgumentException( "Property constraints cannot have null property names" );
+            }
         }
         return array;
     }

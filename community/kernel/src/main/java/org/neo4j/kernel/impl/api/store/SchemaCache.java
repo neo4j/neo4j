@@ -25,6 +25,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
@@ -58,7 +59,7 @@ public class SchemaCache
 
     private final Collection<NodePropertyConstraint> nodeConstraints = new HashSet<>();
     private final Collection<RelationshipPropertyConstraint> relationshipConstraints = new HashSet<>();
-    private final Map<IndexDescriptor, CommittedIndexDescriptor> indexDescriptors = new HashMap<>();
+    private final Set<IndexDescriptor> indexDescriptors = new HashSet<>();
     private final ConstraintSemantics constraintSemantics;
 
     public SchemaCache( ConstraintSemantics constraintSemantics, Iterable<SchemaRule> initialRules )
@@ -148,9 +149,9 @@ public class SchemaCache
         {
             IndexRule indexRule = (IndexRule) rule;
             IndexDescriptor index = IndexDescriptorFactory.of( indexRule );
-            if ( !indexDescriptors.containsKey( index ) )
+            if ( !indexDescriptors.contains( index ) )
             {
-                indexDescriptors.put( index, new CommittedIndexDescriptor( index, indexRule.getId() ) );
+                indexDescriptors.add( index );
             }
         }
     }
@@ -170,33 +171,6 @@ public class SchemaCache
         {
             addSchemaRule( schemaRule );
         }
-    }
-
-    // We could have had this class extend IndexDescriptor instead. That way we could have gotten the id
-    // from an IndexDescriptor instance directly. The problem is that it would only work for index descriptors
-    // instantiated by a SchemaCache. Perhaps that is always the case. Anyways, doing it like that resulted
-    // in unit test failures regarding the schema cache, so this way (the wrapping way) is a more generic
-    // and stable way of doing it.
-    private static class CommittedIndexDescriptor
-    {
-        private final IndexDescriptor descriptor;
-//        private final long id;
-
-        public CommittedIndexDescriptor( IndexDescriptor descriptor, long id )
-        {
-            this.descriptor = descriptor;
-//            this.id = id;
-        }
-
-        public IndexDescriptor getDescriptor()
-        {
-            return descriptor;
-        }
-
-//        public long getId()
-//        {
-//            return id;
-//        }
     }
 
     public void removeSchemaRule( long id )
@@ -225,6 +199,6 @@ public class SchemaCache
     public IndexDescriptor indexDescriptor( NodePropertyDescriptor descriptor )
     {
         IndexDescriptor indexDescriptor = IndexDescriptorFactory.of( descriptor );
-        return indexDescriptors.containsKey(indexDescriptor) ? indexDescriptor : null;
+        return indexDescriptors.contains(indexDescriptor) ? indexDescriptor : null;
     }
 }

@@ -46,8 +46,7 @@ public class UniquePropertyConstraintRule extends NodePropertyConstraintRule
     {
         super( id, descriptor, Kind.UNIQUENESS_CONSTRAINT );
         this.ownedIndexRule = ownedIndexRule;
-        //TODO: Find a better way of asserting this
-//        assert propertyKeyIds.length == 1; // Only uniqueness of a single property supported for now
+        assert !descriptor.isComposite(); // Only uniqueness of a single property supported for now
     }
 
     @Override

@@ -20,11 +20,11 @@
 package org.neo4j.kernel.impl.coreapi.schema;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.ReadOperations;
@@ -41,7 +41,11 @@ import static java.util.Arrays.asList;
 
 public class PropertyNameUtils
 {
-    public static String getPropertyKeyNameAt( Iterable<String> properties, int propertyKeyIndex )
+    private PropertyNameUtils()
+    {
+    }
+
+    private static String getPropertyKeyNameAt( Iterable<String> properties, int propertyKeyIndex )
     {
         for ( String propertyKey : properties )
         {
@@ -54,7 +58,7 @@ public class PropertyNameUtils
         return null;
     }
 
-    public static IndexDescriptor getIndexDescriptor( ReadOperations readOperations, IndexDefinition index )
+    static IndexDescriptor getIndexDescriptor( ReadOperations readOperations, IndexDefinition index )
             throws SchemaRuleNotFoundException
     {
         int labelId = readOperations.labelGetForName( index.getLabel().name() );
@@ -83,7 +87,7 @@ public class PropertyNameUtils
         return IndexDescriptorFactory.getNodePropertyDescriptor( labelId, propertyKeyIds );
     }
 
-    public static IndexDescriptor getIndexDescriptor( ReadOperations readOperations, Label label,
+    static IndexDescriptor getIndexDescriptor( ReadOperations readOperations, Label label,
             String[] propertyKeys )
             throws SchemaRuleNotFoundException
     {
@@ -131,9 +135,7 @@ public class PropertyNameUtils
 
     public static int[] getPropertyKeyIds( ReadOperations statement, Iterable<String> propertyKeys )
     {
-        ArrayList<Integer> propertyKeyIds = new ArrayList<>();
-        propertyKeys.forEach( index -> propertyKeyIds.add( statement.propertyKeyGetForName( index ) ) );
-        return propertyKeyIds.stream().mapToInt( i -> i ).toArray();
+        return Iterables.stream( propertyKeys ).mapToInt( statement::propertyKeyGetForName ).toArray();
     }
 
     public static int[] getOrCreatePropertyKeyIds( SchemaWriteOperations statement, String[] propertyKeys )
@@ -151,10 +153,9 @@ public class PropertyNameUtils
             throws IllegalTokenNameException
     {
         ArrayList<Integer> propertyKeyIds = new ArrayList<>();
-        Iterator<String> indexIterator = indexDefinition.getPropertyKeys().iterator();
-        while ( indexIterator.hasNext() )
+        for ( String s : indexDefinition.getPropertyKeys() )
         {
-            propertyKeyIds.add( statement.propertyKeyGetOrCreateForName( indexIterator.next() ) );
+            propertyKeyIds.add( statement.propertyKeyGetOrCreateForName( s ) );
         }
         return propertyKeyIds.stream().mapToInt( i -> i ).toArray();
     }

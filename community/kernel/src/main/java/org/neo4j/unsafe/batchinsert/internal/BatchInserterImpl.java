@@ -1127,7 +1127,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         }
 
         @Override
-        public IndexDefinition createIndexDefinition( Label label, String[] propertyKeys )
+        public IndexDefinition createIndexDefinition( Label label, String... propertyKeys )
         {
             int labelId = getOrCreateLabelId( label.name() );
             int[] propertyKeyIds = getOrCreatePropertyKeyIds( propertyKeys );
@@ -1159,7 +1159,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         }
 
         @Override
-        public ConstraintDefinition createPropertyExistenceConstraint( Label label, String[] propertyKeys )
+        public ConstraintDefinition createPropertyExistenceConstraint( Label label, String... propertyKeys )
         {
             int labelId = getOrCreateLabelId( label.name() );
             int[] propertyKeyIds = getOrCreatePropertyKeyIds( propertyKeys );

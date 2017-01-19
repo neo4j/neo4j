@@ -93,6 +93,6 @@ abstract class NodeConstraintDefinition extends MultiPropertyConstraintDefinitio
     @Override
     public int hashCode()
     {
-        return IndexDefinitionImpl.hashCode( label, propertyKeys );
+        return 31 * label.name().hashCode() + Arrays.hashCode( propertyKeys );
     }
 }

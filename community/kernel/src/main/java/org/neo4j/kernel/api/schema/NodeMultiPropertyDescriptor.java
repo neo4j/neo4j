@@ -91,13 +91,13 @@ public class NodeMultiPropertyDescriptor extends NodePropertyDescriptor
     @Override
     public String propertyIdText()
     {
-        return Arrays.stream( propertyKeyIds ).mapToObj( id -> Integer.toString( id ) )
+        return Arrays.stream( propertyKeyIds ).mapToObj( Integer::toString )
                 .collect( Collectors.joining( "," ) );
     }
 
     public String propertyNameText( TokenNameLookup tokenNameLookup )
     {
-        return Arrays.stream( propertyKeyIds ).mapToObj( id -> tokenNameLookup.propertyKeyGetName( id ) )
+        return Arrays.stream( propertyKeyIds ).mapToObj( tokenNameLookup::propertyKeyGetName )
                 .collect( Collectors.joining( "," ) );
     }
 
@@ -135,6 +135,6 @@ public class NodeMultiPropertyDescriptor extends NodePropertyDescriptor
             }
             return cmp;
         }
-        return -1;  //TODO: We can compare single and composite indexes, by sorting one type always above the other
+        return -1;
     }
 }

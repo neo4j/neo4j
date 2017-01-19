@@ -83,7 +83,7 @@ public class SchemaProcedure
                 {
                     IndexDescriptor index = indexDescriptorIterator.next();
                     String[] propertyNames = PropertyNameUtils.getPropertyKeys( statementTokenNameLookup, index.descriptor() );
-                    indexes.add( Arrays.stream( propertyNames ).collect( Collectors.joining( "," ) ) );
+                    indexes.add( String.join( ",", propertyNames ) );
                 }
                 properties.put( "indexes", indexes );
 

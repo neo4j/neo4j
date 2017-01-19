@@ -89,7 +89,7 @@ public class IndexDefinitionImpl implements IndexDefinition
     @Override
     public int hashCode()
     {
-        return hashCode(label, propertyKeys);
+        return 31 * label.name().hashCode() + Arrays.hashCode( propertyKeys );
     }
 
     @Override
@@ -121,17 +121,5 @@ public class IndexDefinitionImpl implements IndexDefinition
     protected void assertInUnterminatedTransaction()
     {
         actions.assertInOpenTransaction();
-    }
-
-    public static int hashCode(Label label, String[] propertyKeys)
-    {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + label.name().hashCode();
-        for ( String propertyKey : propertyKeys )
-        {
-            result = prime * result + propertyKey.hashCode();
-        }
-        return result;
     }
 }

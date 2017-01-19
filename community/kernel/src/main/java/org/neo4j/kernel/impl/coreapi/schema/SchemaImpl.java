@@ -125,8 +125,7 @@ public class SchemaImpl implements Schema
         }
     }
 
-    //TODO: Consider moving to PropertyNameUtils or IndexDescriptorFactory or similar
-    private IndexDefinition from( final ReadOperations statement, IndexDescriptor index,
+    private IndexDefinition descriptorToDefinition( final ReadOperations statement, IndexDescriptor index,
             final boolean constraintIndex )
     {
         try
@@ -144,7 +143,9 @@ public class SchemaImpl implements Schema
     private void addDefinitions( List<IndexDefinition> definitions, final ReadOperations statement,
                                  Iterator<IndexDescriptor> indexes, final boolean constraintIndex )
     {
-        addToCollection( map( rule -> from( statement, rule, constraintIndex ), indexes ), definitions );
+        addToCollection(
+                map( index -> descriptorToDefinition( statement, index, constraintIndex ), indexes ),
+                definitions );
     }
 
     @Override
@@ -373,7 +374,7 @@ public class SchemaImpl implements Schema
         }
 
         @Override
-        public IndexDefinition createIndexDefinition( Label label, String[] propertyKeys )
+        public IndexDefinition createIndexDefinition( Label label, String... propertyKeys )
         {
             try ( Statement statement = ctxSupplier.get() )
             {
@@ -464,7 +465,7 @@ public class SchemaImpl implements Schema
         }
 
         @Override
-        public ConstraintDefinition createPropertyExistenceConstraint( Label label, String[] propertyKeys )
+        public ConstraintDefinition createPropertyExistenceConstraint( Label label, String... propertyKeys )
         {
             try ( Statement statement = ctxSupplier.get() )
             {

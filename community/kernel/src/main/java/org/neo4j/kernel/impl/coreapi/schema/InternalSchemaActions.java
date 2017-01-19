@@ -36,7 +36,7 @@ import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
  */
 public interface InternalSchemaActions
 {
-    IndexDefinition createIndexDefinition( Label label, String[] propertyKey );
+    IndexDefinition createIndexDefinition( Label label, String... propertyKey );
 
     void dropIndexDefinitions( IndexDefinition indexDefinition );
 
@@ -44,7 +44,7 @@ public interface InternalSchemaActions
             throws IllegalTokenNameException, TooManyLabelsException, CreateConstraintFailureException,
                    AlreadyConstrainedException, AlreadyIndexedException;
 
-    ConstraintDefinition createPropertyExistenceConstraint( Label label, String[] propertyKey )
+    ConstraintDefinition createPropertyExistenceConstraint( Label label, String... propertyKey )
             throws IllegalTokenNameException, TooManyLabelsException, CreateConstraintFailureException,
             AlreadyConstrainedException;
 
