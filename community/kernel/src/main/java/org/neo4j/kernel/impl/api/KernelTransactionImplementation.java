@@ -29,6 +29,7 @@ import java.util.Optional;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.graphdb.TransactionTerminatedException;
@@ -50,6 +51,7 @@ import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.factory.AccessCapability;
+import org.neo4j.kernel.impl.locking.ActiveLock;
 import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocks;
@@ -791,6 +793,20 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public void dispose()
     {
         storageStatement.close();
+    }
+
+    /**
+     * This method will be invoked by concurrent threads for inspecting the locks held by this transaction.
+     * <p>
+     * The fact that {@link #statementLocks} is a volatile fields, grants us enough of a read barrier to get a good
+     * enough snapshot of the lock state (as long as the underlying methods give us such guarantees).
+     *
+     * @return the locks held by this transaction.
+     */
+    public Stream<? extends ActiveLock> activeLocks()
+    {
+        StatementLocks locks = this.statementLocks;
+        return locks == null ? Stream.empty() : locks.activeLocks();
     }
 
     /**

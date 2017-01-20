@@ -23,6 +23,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
+import java.util.stream.Stream;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.com.ComException;
@@ -34,6 +36,7 @@ import org.neo4j.kernel.AvailabilityGuard.UnavailableException;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
+import org.neo4j.kernel.impl.locking.ActiveLock;
 import org.neo4j.kernel.impl.locking.LockClientStoppedException;
 import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.LockWaitEvent;
@@ -57,6 +60,9 @@ import static org.neo4j.kernel.impl.locking.LockType.WRITE;
  */
 class SlaveLocksClient implements Locks.Client
 {
+    private static final Function<Map.Entry<ResourceType,Map<Long,AtomicInteger>>,Stream<? extends ActiveLock>>
+            EXCLUSIVE_ACTIVE_LOCKS = activeLocks( ActiveLock.Factory.EXCLUSIVE_LOCK ),
+            SHARED_ACTIVE_LOCKS = activeLocks( ActiveLock.Factory.SHARED_LOCK );
     private final Master master;
     private final Locks.Client client;
     private final Locks localLockManager;
@@ -110,7 +116,7 @@ class SlaveLocksClient implements Locks.Client
         long[] newResourceIds = onlyFirstTimeLocks( lockMap, resourceIds );
         if ( newResourceIds.length > 0 )
         {
-            try ( LockWaitEvent event = tracer.waitForLock( resourceType, resourceIds ) )
+            try ( LockWaitEvent event = tracer.waitForLock( false, resourceType, resourceIds ) )
             {
                 acquireSharedOnMaster( resourceType, newResourceIds );
             }
@@ -139,7 +145,7 @@ class SlaveLocksClient implements Locks.Client
         long[] newResourceIds = onlyFirstTimeLocks( lockMap, resourceIds );
         if ( newResourceIds.length > 0 )
         {
-            try ( LockWaitEvent event = tracer.waitForLock( resourceType, resourceIds ) )
+            try ( LockWaitEvent event = tracer.waitForLock( true, resourceType, resourceIds ) )
             {
                 acquireExclusiveOnMaster( resourceType, newResourceIds );
             }
@@ -238,6 +244,28 @@ class SlaveLocksClient implements Locks.Client
     {
         assertNotStopped();
         return initialized ? client.getLockSessionId() : -1;
+    }
+
+    @Override
+    public Stream<? extends ActiveLock> activeLocks()
+    {
+        return client.activeLocks();
+    }
+
+    @Override
+    public long activeLockCount()
+    {
+        return client.activeLockCount();
+    }
+
+    private static Function<Map.Entry<ResourceType,Map<Long,AtomicInteger>>,Stream<? extends ActiveLock>> activeLocks(
+            ActiveLock.Factory activeLock )
+    {
+        return entry -> entry.getValue().keySet().stream().map( resourceId ->
+        {
+            ResourceType resourceType = entry.getKey();
+            return activeLock.create( resourceType, resourceId );
+        } );
     }
 
     private void stopLockSessionOnMaster()

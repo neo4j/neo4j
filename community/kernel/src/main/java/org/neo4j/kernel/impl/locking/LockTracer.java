@@ -23,7 +23,7 @@ import org.neo4j.storageengine.api.lock.ResourceType;
 
 public interface LockTracer
 {
-    LockWaitEvent waitForLock( ResourceType resourceType, long... resourceIds );
+    LockWaitEvent waitForLock( boolean exclusive, ResourceType resourceType, long... resourceIds );
 
     default LockTracer combine( LockTracer tracer )
     {
@@ -37,7 +37,7 @@ public interface LockTracer
     LockTracer NONE = new LockTracer()
     {
         @Override
-        public LockWaitEvent waitForLock( ResourceType resourceType, long... resourceIds )
+        public LockWaitEvent waitForLock( boolean exclusive, ResourceType resourceType, long... resourceIds )
         {
             return LockWaitEvent.NONE;
         }

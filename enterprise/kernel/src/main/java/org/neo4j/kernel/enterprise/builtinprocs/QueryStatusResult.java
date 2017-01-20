@@ -62,6 +62,8 @@ public class QueryStatusResult
     /** EXPERIMENTAL: added in Neo4j 3.2 */
     public final Map<String,Object> status;
     /** EXPERIMENTAL: added in Neo4j 3.2 */
+    public final long activeLockCount;
+    /** EXPERIMENTAL: added in Neo4j 3.2 */
     public final long waitTimeMillis; // TODO: we want this field to be of a Duration type (when Cypher supports that)
     public final Map<String,Object> metaData;
     public final List<Map<String,String>> indexes;
@@ -78,6 +80,7 @@ public class QueryStatusResult
                 q.metaData(),
                 q.cpuTimeMillis(),
                 q.status(),
+                q.activeLockCount(),
                 q.waitTimeMillis() );
     }
 
@@ -91,6 +94,7 @@ public class QueryStatusResult
             Map<String,Object> txMetaData,
             long cpuTimeMillis,
             Map<String,Object> status,
+            long activeLockCount,
             long waitTimeMillis
     ) {
         this.queryId = queryId.toString();
@@ -107,6 +111,7 @@ public class QueryStatusResult
         this.metaData = txMetaData;
         this.cpuTimeMillis = cpuTimeMillis;
         this.status = status;
+        this.activeLockCount = activeLockCount;
         this.waitTimeMillis = waitTimeMillis;
         this.planner = query.planner;
         this.runtime = query.runtime;

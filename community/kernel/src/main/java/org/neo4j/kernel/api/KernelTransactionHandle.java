@@ -25,6 +25,7 @@ import java.util.stream.Stream;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.api.Kernel;
+import org.neo4j.kernel.impl.locking.ActiveLock;
 
 /**
  * View of a {@link KernelTransaction} that provides a limited set of actions against the transaction.
@@ -96,4 +97,9 @@ public interface KernelTransactionHandle
      * @return a list of all queries currently executing that use the underlying transaction
      */
     Stream<ExecutingQuery> executingQueries();
+
+    /**
+     * @return the lock requests granted for this transaction.
+     */
+    Stream<? extends ActiveLock> activeLocks();
 }

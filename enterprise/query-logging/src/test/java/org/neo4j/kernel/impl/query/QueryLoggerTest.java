@@ -309,6 +309,7 @@ public class QueryLoggerTest
                 queryText,
                 params,
                 metaData,
+                () -> 0,
                 Thread.currentThread(),
                 clock,
                 CpuClock.CPU_CLOCK );

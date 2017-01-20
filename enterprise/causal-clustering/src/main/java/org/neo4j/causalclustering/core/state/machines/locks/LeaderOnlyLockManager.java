@@ -21,12 +21,14 @@ package org.neo4j.causalclustering.core.state.machines.locks;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.stream.Stream;
 
 import org.neo4j.causalclustering.core.consensus.LeaderLocator;
 import org.neo4j.causalclustering.core.consensus.NoLeaderFoundException;
 import org.neo4j.causalclustering.core.replication.Replicator;
 import org.neo4j.causalclustering.core.state.machines.tx.ReplicatedTransactionStateMachine;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.kernel.impl.locking.ActiveLock;
 import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
@@ -256,6 +258,18 @@ public class LeaderOnlyLockManager implements Locks
         public int getLockSessionId()
         {
             return lockTokenId;
+        }
+
+        @Override
+        public Stream<? extends ActiveLock> activeLocks()
+        {
+            return localClient.activeLocks();
+        }
+
+        @Override
+        public long activeLockCount()
+        {
+            return localClient.activeLockCount();
         }
     }
 }

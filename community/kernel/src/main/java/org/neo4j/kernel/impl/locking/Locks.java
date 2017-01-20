@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.locking;
 
 import java.time.Clock;
+import java.util.stream.Stream;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.configuration.Config;
@@ -112,6 +113,10 @@ public interface Locks
 
         /** For slave transactions, this tracks an identifier for the lock session running on the master */
         int getLockSessionId();
+
+        Stream<? extends ActiveLock> activeLocks();
+
+        long activeLockCount();
     }
 
     /**

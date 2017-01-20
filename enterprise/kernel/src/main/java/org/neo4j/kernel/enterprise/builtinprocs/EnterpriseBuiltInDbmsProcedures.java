@@ -245,6 +245,24 @@ public class EnterpriseBuiltInDbmsProcedures
         }
     }
 
+    @Description( "List the active lock requests granted for the transaction executing the query with the given query id." )
+    @Procedure( name = "dbms.listActiveLocks", mode = DBMS )
+    public Stream<ActiveLocksQueryResult> listActiveLocks( @Name( "queryId" ) String queryId )
+            throws InvalidArgumentsException
+    {
+        try
+        {
+            long id = fromExternalString( queryId ).kernelQueryId();
+            return getActiveTransactions( tx -> executingQueriesWithId( id, tx ) )
+                    .flatMap( pair -> pair.first().activeLocks().map( ActiveLocksQueryResult::new ) );
+        }
+        catch ( UncaughtCheckedException uncaught )
+        {
+            throwIfPresent( uncaught.getCauseIfOfType( InvalidArgumentsException.class ) );
+            throw uncaught;
+        }
+    }
+
     @Description( "Kill all transactions executing the query with the given query id." )
     @Procedure( name = "dbms.killQuery", mode = DBMS )
     public Stream<QueryTerminationResult> killQuery( @Name( "id" ) String idText )
@@ -254,11 +272,7 @@ public class EnterpriseBuiltInDbmsProcedures
         {
             long queryId = fromExternalString( idText ).kernelQueryId();
 
-            Set<Pair<KernelTransactionHandle,ExecutingQuery>> executingQueries =
-                getActiveTransactions( tx -> executingQueriesWithId( queryId, tx ) );
-
-            return executingQueries
-                .stream()
+            return getActiveTransactions( tx -> executingQueriesWithId( queryId, tx ) )
                 .map( catchThrown( InvalidArgumentsException.class, this::killQueryTransaction ) );
          }
         catch ( UncaughtCheckedException uncaught )
@@ -281,11 +295,7 @@ public class EnterpriseBuiltInDbmsProcedures
                 .map( catchThrown( InvalidArgumentsException.class, QueryId::kernelQueryId ) )
                 .collect( toSet() );
 
-            Set<Pair<KernelTransactionHandle,ExecutingQuery>> executingQueries =
-                getActiveTransactions( tx -> executingQueriesWithIds( queryIds, tx ) );
-
-            return executingQueries
-                .stream()
+            return getActiveTransactions( tx -> executingQueriesWithIds( queryIds, tx ) )
                 .map( catchThrown( InvalidArgumentsException.class, this::killQueryTransaction ) );
         }
         catch ( UncaughtCheckedException uncaught )
@@ -295,14 +305,13 @@ public class EnterpriseBuiltInDbmsProcedures
         }
     }
 
-    private <T> Set<Pair<KernelTransactionHandle, T>> getActiveTransactions(
+    private <T> Stream<Pair<KernelTransactionHandle, T>> getActiveTransactions(
             Function<KernelTransactionHandle,Stream<T>> selector
     )
     {
         return getActiveTransactions( graph.getDependencyResolver() )
             .stream()
-            .flatMap( tx -> selector.apply( tx ).map( data -> Pair.of( tx, data ) ) )
-            .collect( toSet() );
+            .flatMap( tx -> selector.apply( tx ).map( data -> Pair.of( tx, data ) ) );
     }
 
     private Stream<ExecutingQuery> executingQueriesWithIds( Set<Long> ids, KernelTransactionHandle txHandle )

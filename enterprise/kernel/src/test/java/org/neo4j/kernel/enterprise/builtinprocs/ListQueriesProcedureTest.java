@@ -19,8 +19,10 @@
  */
 package org.neo4j.kernel.enterprise.builtinprocs;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
@@ -39,6 +41,7 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
 
+import static java.util.Collections.singletonMap;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.Matchers.equalTo;
@@ -49,6 +52,7 @@ import static org.hamcrest.Matchers.hasKey;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.cypher_hints_error;
@@ -87,11 +91,11 @@ public class ListQueriesProcedureTest
     public void shouldProvideElapsedCpuTime() throws Exception
     {
         // given
-        String QUERY = "MATCH (n) SET n.v = n.v + 1";
-        try ( Resource<Node> test = test( db::createNode, Transaction::acquireWriteLock, QUERY ) )
+        String query = "MATCH (n) SET n.v = n.v + 1";
+        try ( Resource<Node> test = test( db::createNode, Transaction::acquireWriteLock, query ) )
         {
             // when
-            Map<String,Object> data = getQueryListing( QUERY );
+            Map<String,Object> data = getQueryListing( query );
 
             // then
             assertThat( data, hasKey( "elapsedTimeMillis" ) );
@@ -106,6 +110,7 @@ public class ListQueriesProcedureTest
             @SuppressWarnings( "unchecked" )
             Map<String,Object> statusMap = (Map<String,Object>) status;
             assertEquals( "WAITING", statusMap.get( "state" ) );
+            assertEquals( "EXCLUSIVE", statusMap.get( "lockMode" ) );
             assertEquals( "NODE", statusMap.get( "resourceType" ) );
             assertArrayEquals( new long[] {test.resource().getId()}, (long[]) statusMap.get( "resourceIds" ) );
             assertThat( data, hasKey( "waitTimeMillis" ) );
@@ -113,7 +118,7 @@ public class ListQueriesProcedureTest
             assertThat( waitTime1, instanceOf( Long.class ) );
 
             // when
-            data = getQueryListing( QUERY );
+            data = getQueryListing( query );
 
             // then
             Long cpuTime2 = (Long) data.get( "cpuTimeMillis" );
@@ -138,6 +143,66 @@ public class ListQueriesProcedureTest
             assertThat( data, hasKey( "runtime" ) );
             assertThat( data.get( "planner" ), instanceOf( String.class ) );
             assertThat( data.get( "runtime" ), instanceOf( String.class ) );
+        }
+    }
+
+    @Test
+    public void shouldListActiveLocks() throws Exception
+    {
+        // given
+        String query = "MATCH (x:X) SET x.v = 5 WITH count(x) AS num MATCH (y:Y) SET y.c = num";
+        Set<Long> locked = new HashSet<>();
+        try ( Resource<Node> test = test( () ->
+        {
+            for ( int i = 0; i < 5; i++ )
+            {
+                locked.add( db.createNode( label( "X" ) ).getId() );
+            }
+            return db.createNode( label( "Y" ) );
+        }, Transaction::acquireWriteLock, query ) )
+        {
+            // when
+            try ( Result rows = db.execute( "CALL dbms.listQueries() "
+                    + "YIELD query AS queryText, queryId, activeLockCount "
+                    + "WHERE queryText = $queryText "
+                    + "CALL dbms.listActiveLocks(queryId) YIELD mode, resourceType, resourceId "
+                    + "RETURN *", singletonMap( "queryText", query ) ) )
+            {
+                // then
+                Set<Long> ids = new HashSet<>();
+                Long lockCount = null;
+                long rowCount = 0;
+                while ( rows.hasNext() )
+                {
+                    Map<String,Object> row = rows.next();
+                    Object resourceType = row.get( "resourceType" );
+                    Object activeLockCount = row.get( "activeLockCount" );
+                    if ( lockCount == null )
+                    {
+                        assertThat( "activeLockCount", activeLockCount, instanceOf( Long.class ) );
+                        lockCount = (Long) activeLockCount;
+                    }
+                    else
+                    {
+                        assertEquals( "activeLockCount", lockCount, activeLockCount );
+                    }
+                    if ( "SCHEMA".equals( resourceType ) )
+                    {
+                        assertEquals( "SHARED", row.get( "mode" ) );
+                        assertEquals( 0L, row.get( "resourceId" ) );
+                    }
+                    else
+                    {
+                        assertEquals( "NODE", resourceType );
+                        assertEquals( "EXCLUSIVE", row.get( "mode" ) );
+                        ids.add( (Long) row.get( "resourceId" ) );
+                    }
+                    rowCount++;
+                }
+                assertEquals( locked, ids );
+                assertNotNull( "activeLockCount", lockCount );
+                assertEquals( lockCount.intValue(), rowCount ); // note: only true because query is blocked
+            }
         }
     }
 

@@ -19,18 +19,23 @@
  */
 package org.neo4j.kernel.impl.locking.community;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
+import java.util.stream.Stream;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveIntObjectVisitor;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongObjectVisitor;
+import org.neo4j.kernel.impl.locking.ActiveLock;
 import org.neo4j.kernel.impl.locking.LockClientStateHolder;
 import org.neo4j.kernel.impl.locking.LockClientStoppedException;
 import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.storageengine.api.lock.ResourceType;
 
 import static java.lang.String.format;
@@ -312,6 +317,52 @@ public class CommunityLockClient implements Locks.Client
     public int getLockSessionId()
     {
         return lockTransaction.getId();
+    }
+
+    @Override
+    public Stream<? extends ActiveLock> activeLocks()
+    {
+        List<ActiveLock> locks = new ArrayList<>();
+        exclusiveLocks.visitEntries( collectActiveLocks( locks, ActiveLock.Factory.EXCLUSIVE_LOCK ) );
+        sharedLocks.visitEntries( collectActiveLocks( locks, ActiveLock.Factory.SHARED_LOCK ) );
+        return locks.stream();
+    }
+
+    @Override
+    public long activeLockCount()
+    {
+        LockCounter counter = new LockCounter();
+        exclusiveLocks.visitEntries( counter );
+        sharedLocks.visitEntries( counter );
+        return counter.locks;
+    }
+
+    private static class LockCounter
+            implements PrimitiveIntObjectVisitor<PrimitiveLongObjectMap<LockResource>,RuntimeException>
+    {
+        long locks;
+
+        @Override
+        public boolean visited( int key, PrimitiveLongObjectMap<LockResource> value )
+        {
+            locks += value.size();
+            return false;
+        }
+    }
+
+    private static PrimitiveIntObjectVisitor<PrimitiveLongObjectMap<LockResource>,RuntimeException> collectActiveLocks(
+            List<ActiveLock> locks, ActiveLock.Factory activeLock )
+    {
+        return ( typeId, exclusive ) ->
+        {
+            ResourceType resourceType = ResourceTypes.fromId( typeId );
+            exclusive.visitEntries( ( resourceId, lock ) ->
+            {
+                locks.add( activeLock.create( resourceType, resourceId ) );
+                return false;
+            } );
+            return false;
+        };
     }
 
     private PrimitiveLongObjectMap<LockResource> localShared( ResourceType resourceType )

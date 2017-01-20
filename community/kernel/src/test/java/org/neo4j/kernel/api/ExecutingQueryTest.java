@@ -50,6 +50,7 @@ public class ExecutingQueryTest
 {
     private final FakeClock clock = Clocks.fakeClock( ZonedDateTime.parse( "2016-12-03T15:10:00+01:00" ) );
     private final FakeCpuClock cpuClock = new FakeCpuClock();
+    private long lockCount;
     private ExecutingQuery query = new ExecutingQuery(
             1,
             ClientConnectionInfo.EMBEDDED_CONNECTION,
@@ -57,7 +58,7 @@ public class ExecutingQueryTest
             "hello world",
             Collections.emptyMap(),
             Collections.emptyMap(),
-            Thread.currentThread(),
+            () -> lockCount, Thread.currentThread(),
             clock,
             cpuClock );
 
@@ -170,19 +171,35 @@ public class ExecutingQueryTest
         assertEquals( 60, cpuTime );
     }
 
-    private LockWaitEvent lock( String resourceType, long resourceId )
+    @Test
+    public void shouldReportLockCount() throws Exception
     {
-        return query.lockTracer().waitForLock( resourceType( resourceType ), resourceId );
+        // given
+        lockCount = 11;
+
+        // then
+        assertEquals( 11, query.activeLockCount() );
+
+        // given
+        lockCount = 2;
+
+        // then
+        assertEquals( 2, query.activeLockCount() );
     }
 
-    static ResourceType resourceType( String string )
+    private LockWaitEvent lock( String resourceType, long resourceId )
+    {
+        return query.lockTracer().waitForLock( false, resourceType( resourceType ), resourceId );
+    }
+
+    static ResourceType resourceType( String name )
     {
         return new ResourceType()
         {
             @Override
             public String toString()
             {
-                return string;
+                return name();
             }
 
             @Override
@@ -195,6 +212,12 @@ public class ExecutingQueryTest
             public WaitStrategy waitStrategy()
             {
                 throw new UnsupportedOperationException( "not used" );
+            }
+
+            @Override
+            public String name()
+            {
+                return name;
             }
         };
     }

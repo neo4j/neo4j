@@ -20,8 +20,11 @@
 package org.neo4j.kernel.impl.enterprise.lock.forseti;
 
 import java.time.Clock;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.IntFunction;
+import java.util.stream.Stream;
 
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.collection.primitive.Primitive;
@@ -31,12 +34,14 @@ import org.neo4j.collection.primitive.PrimitiveLongVisitor;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.enterprise.lock.forseti.ForsetiLockManager.DeadlockResolutionStrategy;
+import org.neo4j.kernel.impl.locking.ActiveLock;
 import org.neo4j.kernel.impl.locking.LockAcquisitionTimeoutException;
 import org.neo4j.kernel.impl.locking.LockClientStateHolder;
 import org.neo4j.kernel.impl.locking.LockClientStoppedException;
 import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.LockWaitEvent;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.util.collection.SimpleBitSet;
 import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
 import org.neo4j.storageengine.api.lock.ResourceType;
@@ -240,7 +245,7 @@ public class ForsetiClient implements Locks.Client
 
                         if ( waitEvent == null )
                         {
-                            waitEvent = tracer.waitForLock( resourceType, resourceId );
+                            waitEvent = tracer.waitForLock( false, resourceType, resourceId );
                         }
                         applyWaitStrategy( resourceType, tries++ );
 
@@ -317,7 +322,7 @@ public class ForsetiClient implements Locks.Client
 
                         if ( waitEvent == null )
                         {
-                            waitEvent = tracer.waitForLock( resourceType, resourceId );
+                            waitEvent = tracer.waitForLock( true, resourceType, resourceId );
                         }
                         applyWaitStrategy( resourceType, tries++ );
                         markAsWaitingFor( existingLock, resourceType, resourceId );
@@ -635,6 +640,54 @@ public class ForsetiClient implements Locks.Client
         return clientId;
     }
 
+    @Override
+    public Stream<? extends ActiveLock> activeLocks()
+    {
+        List<ActiveLock> locks = new ArrayList<>();
+        collectActiveLocks( exclusiveLockCounts, locks, ActiveLock.Factory.EXCLUSIVE_LOCK );
+        collectActiveLocks( sharedLockCounts, locks, ActiveLock.Factory.SHARED_LOCK );
+        return locks.stream();
+    }
+
+    @Override
+    public long activeLockCount()
+    {
+        return countLocks( exclusiveLockCounts ) + countLocks( sharedLockCounts );
+    }
+
+    private static void collectActiveLocks(
+            PrimitiveLongIntMap[] counts,
+            List<ActiveLock> locks,
+            ActiveLock.Factory activeLock )
+    {
+        for ( int typeId = 0; typeId < counts.length; typeId++ )
+        {
+            PrimitiveLongIntMap lockCounts = counts[typeId];
+            if ( lockCounts != null )
+            {
+                ResourceType resourceType = ResourceTypes.fromId( typeId );
+                lockCounts.visitEntries( ( resourceId, count ) ->
+                {
+                    locks.add( activeLock.create( resourceType, resourceId ) );
+                    return false;
+                } );
+            }
+        }
+    }
+
+    private long countLocks( PrimitiveLongIntMap[] lockCounts )
+    {
+        long count = 0;
+        for ( PrimitiveLongIntMap lockCount : lockCounts )
+        {
+            if ( lockCount != null )
+            {
+                count += lockCount.size();
+            }
+        }
+        return count;
+    }
+
     public int waitListSize()
     {
         return waitList.size();
@@ -783,7 +836,7 @@ public class ForsetiClient implements Locks.Client
                     assertValid( waitStartMillis, resourceType, resourceId );
                     if ( waitEvent == null && priorEvent == null )
                     {
-                        waitEvent = tracer.waitForLock( resourceType, resourceId );
+                        waitEvent = tracer.waitForLock( true, resourceType, resourceId );
                     }
                     applyWaitStrategy( resourceType, tries++ );
                     markAsWaitingFor( sharedLock, resourceType, resourceId );
