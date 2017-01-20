@@ -30,16 +30,22 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Supplier;
 
+import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.store.MetaDataStore.Position;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -299,5 +305,32 @@ public class StoreFilesTest
         assertFalse( storeFiles.isEmpty( dir, fileOnPageCache ) );
         assertTrue( storeFiles.isEmpty( dir, Collections.emptyList() ) );
         assertTrue( storeFiles.isEmpty( dir, ingore ) );
+    }
+
+    @Test
+    public void mustReadStoreId() throws Exception
+    {
+        File dir = getBaseDir();
+        File neostore = new File( dir, MetaDataStore.DEFAULT_NAME );
+        ThreadLocalRandom rng = ThreadLocalRandom.current();
+        long time = rng.nextLong();
+        long randomNumber = rng.nextLong();
+        long upgradeTime = rng.nextLong();
+        long upgradeTransactionId = rng.nextLong();
+
+        createOnPageCache( neostore );
+
+        MetaDataStore.setRecord( pageCache, neostore, Position.TIME, time );
+        MetaDataStore.setRecord( pageCache, neostore, Position.RANDOM_NUMBER, randomNumber );
+        MetaDataStore.setRecord( pageCache, neostore, Position.STORE_VERSION, rng.nextLong() );
+        MetaDataStore.setRecord( pageCache, neostore, Position.UPGRADE_TIME, upgradeTime );
+        MetaDataStore.setRecord( pageCache, neostore, Position.UPGRADE_TRANSACTION_ID, upgradeTransactionId );
+
+        StoreId storeId = storeFiles.readStoreId( dir );
+
+        assertThat( storeId.getCreationTime(), is( time ) );
+        assertThat( storeId.getRandomId(), is( randomNumber ) );
+        assertThat( storeId.getUpgradeTime(), is( upgradeTime ) );
+        assertThat( storeId.getUpgradeId(), is( upgradeTransactionId ) );
     }
 }

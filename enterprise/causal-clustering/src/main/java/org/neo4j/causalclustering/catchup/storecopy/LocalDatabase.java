@@ -28,11 +28,9 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.neo4j.causalclustering.identity.StoreId;
-import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
-import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
@@ -49,7 +47,6 @@ public class LocalDatabase implements Lifecycle
 
     private final StoreFiles storeFiles;
     private final DataSourceManager dataSourceManager;
-    private final PageCache pageCache;
     private final Supplier<DatabaseHealth> databaseHealthSupplier;
     private final Log log;
 
@@ -60,12 +57,11 @@ public class LocalDatabase implements Lifecycle
     private volatile TransactionCommitProcess localCommit;
 
     public LocalDatabase( File storeDir, StoreFiles storeFiles, DataSourceManager dataSourceManager,
-            PageCache pageCache, Supplier<DatabaseHealth> databaseHealthSupplier, LogProvider logProvider )
+                          Supplier<DatabaseHealth> databaseHealthSupplier, LogProvider logProvider )
     {
         this.storeDir = storeDir;
         this.storeFiles = storeFiles;
         this.dataSourceManager = dataSourceManager;
-        this.pageCache = pageCache;
         this.databaseHealthSupplier = databaseHealthSupplier;
         this.log = logProvider.getLog( getClass() );
     }
@@ -125,10 +121,7 @@ public class LocalDatabase implements Lifecycle
     {
         try
         {
-            File neoStoreFile = new File( storeDir, MetaDataStore.DEFAULT_NAME );
-            org.neo4j.kernel.impl.store.StoreId kernelStoreId = MetaDataStore.getStoreId( pageCache, neoStoreFile );
-            return new StoreId( kernelStoreId.getCreationTime(), kernelStoreId.getRandomId(),
-                    kernelStoreId.getUpgradeTime(), kernelStoreId.getUpgradeId() );
+            return storeFiles.readStoreId( storeDir );
         }
         catch ( IOException e )
         {
