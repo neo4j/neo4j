@@ -19,13 +19,13 @@
  */
 package org.neo4j.causalclustering.catchup.storecopy;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.ReadableByteChannel;
-
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.stream.ChunkedInput;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.ReadableByteChannel;
 
 class FileSender implements ChunkedInput<FileChunk>
 {
@@ -66,18 +66,8 @@ class FileSender implements ChunkedInput<FileChunk>
             sentChunk = true;
         }
 
-        byte[] next;
-        if ( !endOfInput )
-        {
-            next = prefetch();
-        }
-        else
-        {
-            next = null;
-        }
-
+        byte[] next = prefetch();
         FileChunk fileChunk = FileChunk.create( preFetchedBytes == null ? new byte[0] : preFetchedBytes, next == null );
-
         preFetchedBytes = next;
 
         return fileChunk;
