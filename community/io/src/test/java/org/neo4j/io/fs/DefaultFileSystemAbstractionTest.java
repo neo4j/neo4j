@@ -19,66 +19,25 @@
  */
 package org.neo4j.io.fs;
 
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.UUID;
 
-import org.junit.Before;
-import org.junit.Test;
-
+import static java.lang.String.format;
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+import static org.neo4j.io.fs.DefaultFileSystemAbstraction.UNABLE_TO_CREATE_DIRECTORY_FORMAT;
 
-public class DefaultFileSystemAbstractionTest
+public class DefaultFileSystemAbstractionTest extends FileSystemAbstractionTest
 {
-    private final DefaultFileSystemAbstraction defaultFileSystemAbstraction = new DefaultFileSystemAbstraction();
-
-    private File path;
-
-    @Before
-    public void before() throws Exception
+    @Override
+    protected FileSystemAbstraction buildFileSystemAbstraction()
     {
-        path = new File( "target/" + UUID.randomUUID() );
-    }
-
-    @Test
-    public void shouldCreatePath() throws Exception
-    {
-        defaultFileSystemAbstraction.mkdirs( path );
-
-        assertThat( path.exists(), is( true ) );
-    }
-
-    @Test
-    public void shouldCreateDeepPath() throws Exception
-    {
-        path = new File( path, UUID.randomUUID() + "/" + UUID.randomUUID() );
-
-        defaultFileSystemAbstraction.mkdirs( path );
-
-        assertThat( path.exists(), is( true ) );
-    }
-
-    @Test
-    public void shouldCreatePathThatAlreadyExists() throws Exception
-    {
-        assertTrue( path.mkdir() );
-
-        defaultFileSystemAbstraction.mkdirs( path );
-
-        assertThat( path.exists(), is( true ) );
-    }
-
-    @Test
-    public void shouldCreatePathThatPointsToFile() throws Exception
-    {
-        assertTrue( path.mkdir() );
-        path = new File( path, "some_file" );
-        assertTrue( path.createNewFile() );
-
-        defaultFileSystemAbstraction.mkdirs( path );
-
-        assertThat( path.exists(), is( true ) );
+        return new DefaultFileSystemAbstraction();
     }
 
     @Test
@@ -95,15 +54,15 @@ public class DefaultFileSystemAbstractionTest
 
         try
         {
-            defaultFileSystemAbstraction.mkdirs( path );
+            fsa.mkdirs( path );
 
             fail();
         }
         catch ( IOException e )
         {
-            assertThat( path.exists(), is( false ) );
-            assertThat( e.getMessage(), is( String.format( DefaultFileSystemAbstraction
-                    .UNABLE_TO_CREATE_DIRECTORY_FORMAT, path ) ) );
+            assertFalse( fsa.fileExists( path ) );
+            String expectedMessage = format( UNABLE_TO_CREATE_DIRECTORY_FORMAT, path );
+            assertThat( e.getMessage(), is( expectedMessage ) );
         }
     }
 }
