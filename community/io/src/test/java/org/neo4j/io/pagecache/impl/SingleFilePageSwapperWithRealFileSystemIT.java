@@ -35,6 +35,12 @@ public class SingleFilePageSwapperWithRealFileSystemIT extends SingleFilePageSwa
     }
 
     @Override
+    protected boolean isRootAccessible()
+    {
+        return false;
+    }
+
+    @Override
     protected File getFile()
     {
         return testDir.file( super.getFile().getName() );

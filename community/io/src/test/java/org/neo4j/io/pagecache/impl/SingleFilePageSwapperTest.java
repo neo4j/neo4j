@@ -93,6 +93,12 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         return dir;
     }
 
+    @Override
+    protected boolean isRootAccessible()
+    {
+        return true;
+    }
+
     protected File getFile()
     {
         return file;

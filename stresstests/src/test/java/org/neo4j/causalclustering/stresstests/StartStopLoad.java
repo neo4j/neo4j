@@ -39,12 +39,14 @@ import static org.neo4j.consistency.ConsistencyCheckTool.runConsistencyCheckTool
 class StartStopLoad extends RepeatUntilOnSelectedMemberCallable
 {
     private final FileSystemAbstraction fs;
+    private final PageCache pageCache;
 
-    StartStopLoad( FileSystemAbstraction fs, BooleanSupplier keepGoing, Runnable onFailure, Cluster cluster,
-            int numberOfCores, int numberOfEdges )
+    StartStopLoad( FileSystemAbstraction fs, PageCache pageCache, BooleanSupplier keepGoing, Runnable onFailure,
+            Cluster cluster, int numberOfCores, int numberOfEdges )
     {
         super( keepGoing, onFailure, cluster, numberOfCores, numberOfEdges );
         this.fs = fs;
+        this.pageCache = pageCache;
     }
 
     @Override
@@ -64,8 +66,8 @@ class StartStopLoad extends RepeatUntilOnSelectedMemberCallable
     {
         File fromDirectory = new File( storeDir );
         File parent = fromDirectory.getParentFile();
-        try ( TemporaryStoreDirectory storeDirectory = new TemporaryStoreDirectory( fs, parent );
-                PageCache pageCache = StandalonePageCacheFactory.createPageCache( fs ) )
+        try ( TemporaryStoreDirectory storeDirectory = new TemporaryStoreDirectory( fs, pageCache, parent );
+              PageCache pageCache = StandalonePageCacheFactory.createPageCache( fs ) )
         {
             fs.copyRecursively( fromDirectory, storeDirectory.storeDir() );
             new CopiedStoreRecovery( Config.defaults(), kernelExtensions.listFactories(),  pageCache )

@@ -22,33 +22,82 @@ package org.neo4j.causalclustering.catchup.storecopy;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.nio.channels.WritableByteChannel;
+import java.nio.file.StandardOpenOption;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.neo4j.causalclustering.catchup.tx.FileCopyMonitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.monitoring.Monitors;
 
 class StreamToDisk implements StoreFileStreams
 {
     private final File storeDir;
     private final FileSystemAbstraction fs;
+    private final PageCache pageCache;
     private final FileCopyMonitor fileCopyMonitor;
+    private final Map<String,WritableByteChannel> channels;
+    private final Map<String,PagedFile> pagedFiles;
 
-    StreamToDisk( File storeDir, FileSystemAbstraction fs, Monitors monitors ) throws IOException
+    StreamToDisk( File storeDir, FileSystemAbstraction fs, PageCache pageCache, Monitors monitors ) throws IOException
     {
         this.storeDir = storeDir;
         this.fs = fs;
+        this.pageCache = pageCache;
         fs.mkdirs( storeDir );
         this.fileCopyMonitor = monitors.newMonitor( FileCopyMonitor.class );
+        channels = new HashMap<>();
+        pagedFiles = new HashMap<>();
+
     }
 
     @Override
-    public OutputStream createStream( String destination ) throws IOException
+    public void write( String destination, int requiredAlignment, byte[] data ) throws IOException
     {
         File fileName = new File( storeDir, destination );
         fs.mkdirs( fileName.getParentFile() );
 
         fileCopyMonitor.copyFile( fileName );
+        if ( StoreType.typeOf( destination ).map( StoreType::isRecordStore ).orElse( false ) )
+        {
+            WritableByteChannel channel = channels.get( destination );
+            if ( channel == null )
+            {
+                int filePageSize = pageCache.pageSize() - pageCache.pageSize() % requiredAlignment;
+                PagedFile pagedFile = pageCache.map( fileName, filePageSize, StandardOpenOption.CREATE );
+                channel = pagedFile.openWritableByteChannel();
+                pagedFiles.put( destination, pagedFile );
+                channels.put( destination, channel );
+            }
 
-        return fs.openAsOutputStream( fileName, true );
+            ByteBuffer buffer = ByteBuffer.wrap( data );
+            while ( buffer.hasRemaining() )
+            {
+                channel.write( buffer );
+            }
+        }
+        else
+        {
+            try ( OutputStream outputStream = fs.openAsOutputStream( fileName, true ) )
+            {
+                outputStream.write( data );
+            }
+        }
+    }
+
+    @Override
+    public void finish( String destination ) throws IOException
+    {
+        PagedFile pagedFile = pagedFiles.get( destination );
+        if ( pagedFile != null )
+        {
+            channels.get( destination ).close();
+            pagedFile.close();
+        }
     }
 }

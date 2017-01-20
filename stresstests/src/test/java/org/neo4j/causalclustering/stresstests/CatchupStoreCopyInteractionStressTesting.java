@@ -19,6 +19,7 @@
  */
 package org.neo4j.causalclustering.stresstests;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
@@ -32,10 +33,12 @@ import java.util.function.BooleanSupplier;
 
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.HazelcastDiscoveryServiceFactory;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
+import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.lang.Boolean.parseBoolean;
 import static java.lang.Integer.parseInt;
@@ -61,7 +64,13 @@ public class CatchupStoreCopyInteractionStressTesting
     private static final String DEFAULT_TX_PRUNE = "50 files";
     private static final String DEFAULT_WORKING_DIR = new File( getProperty( "java.io.tmpdir" ) ).getPath();
 
-    private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+    @Rule
+    public final DefaultFileSystemRule FileSystemRule = new DefaultFileSystemRule();
+    @Rule
+    public final PageCacheRule pageCacheRule = new PageCacheRule();
+
+    private final FileSystemAbstraction fs = FileSystemRule.get();
+    private final PageCache pageCache = pageCacheRule.getPageCache( fs );
 
     @Test
     public void shouldBehaveCorrectlyUnderStress() throws Exception
@@ -105,7 +114,7 @@ public class CatchupStoreCopyInteractionStressTesting
 
             Future<Throwable> workload = service.submit( new Workload( keepGoing, onFailure, cluster ) );
             Future<Throwable> startStopWorker = service.submit(
-                    new StartStopLoad( fs, keepGoing, onFailure, cluster, numberOfCores, numberOfEdges ) );
+                    new StartStopLoad( fs, pageCache, keepGoing, onFailure, cluster, numberOfCores, numberOfEdges ) );
             Future<Throwable> catchUpWorker = service.submit( new CatchUpLoad( keepGoing, onFailure, cluster ) );
 
             long timeout = durationInMinutes + 5;

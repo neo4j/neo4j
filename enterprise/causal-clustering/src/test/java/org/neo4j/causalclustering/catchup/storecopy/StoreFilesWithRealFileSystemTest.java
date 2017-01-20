@@ -19,24 +19,26 @@
  */
 package org.neo4j.causalclustering.catchup.storecopy;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.ByteToMessageDecoder;
+import org.junit.rules.RuleChain;
 
-import java.util.List;
+import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import org.neo4j.string.UTF8;
-
-public class FileHeaderDecoder extends ByteToMessageDecoder
+public class StoreFilesWithRealFileSystemTest extends StoreFilesTest
 {
     @Override
-    protected void decode( ChannelHandlerContext ctx, ByteBuf msg, List<Object> out ) throws Exception
+    protected void createRules()
     {
-        int length = msg.readInt();
-        byte[] bytes = new byte[length];
-        msg.readBytes( bytes );
-        String name = UTF8.decode( bytes );
-        int requiredAlignment = msg.readInt();
-        out.add( new FileHeader( name, requiredAlignment ) );
+        testDirectory = TestDirectory.testDirectory( StoreFilesTest.class );
+        DefaultFileSystemRule defaultFileSystemRule = new DefaultFileSystemRule();
+        fileSystemRule = defaultFileSystemRule::get;
+        hiddenFileSystemRule = new EphemeralFileSystemRule();
+        pageCacheRule = new PageCacheRule( );
+        rules = RuleChain.outerRule( defaultFileSystemRule )
+                         .around( testDirectory )
+                         .around( hiddenFileSystemRule )
+                         .around( pageCacheRule );
     }
 }

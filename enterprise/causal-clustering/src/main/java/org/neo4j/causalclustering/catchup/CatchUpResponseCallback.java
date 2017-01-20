@@ -36,7 +36,7 @@ public interface CatchUpResponseCallback<T>
 
     boolean onFileContent( CompletableFuture<T> signal, FileChunk fileChunk ) throws IOException;
 
-    void onFileStreamingComplete( CompletableFuture<T> signal, StoreCopyFinishedResponse response );
+    void onFileStreamingComplete( CompletableFuture<T> signal, StoreCopyFinishedResponse response ) throws IOException;
 
     void onTxPullResponse( CompletableFuture<T> signal, TxPullResponse tx );
 

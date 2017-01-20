@@ -37,8 +37,8 @@ import org.neo4j.causalclustering.discovery.CoreTopologyService;
 import org.neo4j.causalclustering.discovery.HazelcastDiscoveryServiceFactory;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -85,7 +85,7 @@ public class ConnectionInfoIT
         CatchupServer catchupServer =
                 new CatchupServer( logProvider, userLogProvider, mockSupplier(), mockSupplier(), mockSupplier(),
                         mockSupplier(), mock( BooleanSupplier.class ), coreState, config, new Monitors(),
-                        mockSupplier(), mock( FileSystemAbstraction.class ) );
+                        mockSupplier(), mock( FileSystemAbstraction.class ), mock( PageCache.class ) );
 
         //then
         try

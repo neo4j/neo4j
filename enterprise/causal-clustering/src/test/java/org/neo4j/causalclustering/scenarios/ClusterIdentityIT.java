@@ -77,6 +77,10 @@ public class ClusterIdentityIT
     public void setup() throws Exception
     {
         cluster = clusterRule.startCluster();
+        cluster.coreTx( (db,tx) -> {
+            SampleData.createSchema( db );
+            tx.success();
+        } );
     }
 
     @Test

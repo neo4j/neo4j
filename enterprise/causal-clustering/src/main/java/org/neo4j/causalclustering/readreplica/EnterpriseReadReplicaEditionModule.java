@@ -195,11 +195,9 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
                 new DelayedRenewableTimeoutService( Clocks.systemClock(), logProvider );
 
         LocalDatabase localDatabase = new LocalDatabase( platformModule.storeDir,
-                new StoreFiles( fileSystem ),
+                new StoreFiles( fileSystem, pageCache ),
                 platformModule.dataSourceManager,
-                pageCache,
-                fileSystem,
-                databaseHealthSupplier,
+                pageCache, databaseHealthSupplier,
                 logProvider );
 
         RemoteStore remoteStore = new RemoteStore( platformModule.logging.getInternalLogProvider(),
@@ -237,7 +235,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
             } );
         }
 
-        StoreCopyProcess storeCopyProcess = new StoreCopyProcess( fileSystem, localDatabase,
+        StoreCopyProcess storeCopyProcess = new StoreCopyProcess( fileSystem, pageCache, localDatabase,
                 copiedStoreRecovery, remoteStore, logProvider );
 
         CatchupPollingProcess catchupProcess =

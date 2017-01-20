@@ -76,7 +76,7 @@ class TrackingResponseHandler implements CatchUpResponseHandler
     }
 
     @Override
-    public void onFileStreamingComplete( StoreCopyFinishedResponse response )
+    public void onFileStreamingComplete( StoreCopyFinishedResponse response ) throws IOException
     {
         if ( !requestOutcomeSignal.isCancelled() )
         {
