@@ -189,7 +189,7 @@ public abstract class AbstractUserRepository extends LifecycleAdapter implements
         {
             throw new InvalidArgumentsException(
                     "Username '" + username +
-                    "' contains illegal characters. Use simple ascii characters and numbers." );
+                    "' contains illegal characters. Use ascii characters that are not ',', ':' or whitespaces." );
         }
     }
 
