@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.functions.functionConv
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi.MethodStructure
 import org.neo4j.cypher.internal.compiler.v3_2.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.frontend.v3_2.ast
+import org.neo4j.cypher.internal.frontend.v3_2.ast.PropertyKeyName
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 
 object ExpressionConverter {
@@ -109,6 +110,9 @@ object ExpressionConverter {
       case ast.Property(rel@ast.Variable(name), propKey) if context.semanticTable.isRelationship(rel) =>
         val token = propKey.id(context.semanticTable).map(_.id)
         RelProperty(token, propKey.name, context.getVariable(name), context.namer.newVarName())
+
+      case ast.Property(variable@ast.Variable(name), PropertyKeyName(propKeyName)) =>
+        MapProperty(context.getVariable(name), propKeyName)
 
       case ast.Parameter(name, _) => expressions.Parameter(name, context.namer.newVarName())
 

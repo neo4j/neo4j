@@ -114,6 +114,9 @@ trait MethodStructure[E] {
   // parameters
   def expectParameter(key: String, variableName: String): Unit
 
+  // map
+  def mapGetExpression(mapName: String, key: String): E
+
   // tracing
   def trace[V](planStepId: String, maybeSuffix: Option[String] = None)(block: MethodStructure[E] => V): V
   def incrementDbHits(): Unit

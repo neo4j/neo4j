@@ -329,6 +329,10 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
                                                            invoke(params, mapGet, constantExpression(key))))
   }
 
+  override def mapGetExpression(mapName: String, key: String): Expression = {
+    invoke(cast(typeRef[java.util.Map[String, Object]], generator.load(mapName)), mapGet, constantExpression(key))
+  }
+
   override def constantExpression(value: Object) = value match {
     case n: java.lang.Byte => constant(n.toLong)
     case n: java.lang.Short => constant(n.toLong)
