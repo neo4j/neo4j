@@ -17,12 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher
+package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.collection.RawIterator
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.Counter
 import org.neo4j.cypher.internal.compiler.v3_2.test_helpers.CreateTempFileTestSupport
+import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport}
 import org.neo4j.graphdb.Node
 import org.neo4j.kernel.api.exceptions.ProcedureException
 import org.neo4j.kernel.api.proc

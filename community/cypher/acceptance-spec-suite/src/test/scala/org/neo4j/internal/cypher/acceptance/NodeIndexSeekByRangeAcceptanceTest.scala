@@ -17,9 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher
+package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.{IndexSeekByRange, UniqueIndexSeekByRange}
+import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, SyntaxException}
 
 /**
   * These tests are testing the actual index implementation, thus they should all check the actual result.
@@ -928,7 +929,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Ne
     // Given
     val query = "MATCH (n:Label) WHERE n.prop >= [1, 2, 3] RETURN n.prop AS prop"
 
-    an[SyntaxException] should be thrownBy {
+    a [SyntaxException] should be thrownBy {
       executeWithAllPlannersAndCompatibilityMode(query).toList
     }
   }

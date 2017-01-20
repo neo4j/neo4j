@@ -39,7 +39,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_2.{IdName, PatternRelationship, SimplePatternLength}
 
-class PipeExecutionPlanBuilderAcceptanceTest extends CypherFunSuite with LogicalPlanningTestSupport {
+class PipeExecutionPlanBuilderIT extends CypherFunSuite with LogicalPlanningTestSupport {
 
   implicit val planContext: PlanContext = newMockedPlanContext
   implicit val pipeMonitor = mock[PipeMonitor]

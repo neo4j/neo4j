@@ -19,11 +19,9 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.RewindableExecutionResult
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.InternalExecutionResult
 import org.neo4j.graphdb.Node
 
-class RewindableExecutionResultAcceptanceTest extends ExecutionEngineFunSuite {
+class RewindableExecutionResultTest extends ExecutionEngineFunSuite {
   test("can do toList twice and get the same result") {
     val a = createNode()
     val b = createNode()

@@ -17,11 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher
+package org.neo4j.internal.cypher.acceptance
 
-import org.junit.Assert._
 import org.hamcrest.CoreMatchers._
+import org.junit.Assert._
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.ListSupport
+import org.neo4j.cypher.{CypherExecutionException, ExecutionEngineFunSuite, QueryStatisticsTestSupport}
 
 class UniqueConstraintValidationAcceptanceTest
   extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with ListSupport {
