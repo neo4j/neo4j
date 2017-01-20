@@ -4,3 +4,8 @@ Fail when comparing parameters to nodes
 Comparing nodes to properties
 Fail when comparing nodes to relationships
 Fail when comparing relationships to nodes
+
+// fixed in 3.1.1, awaiting update
+Handling non-string operands for STARTS WITH
+Handling non-string operands for CONTAINS
+Handling non-string operands for ENDS WITH
