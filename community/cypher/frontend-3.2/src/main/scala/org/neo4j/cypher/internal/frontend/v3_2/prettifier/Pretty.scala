@@ -206,7 +206,7 @@ case class Pretty(preserveColumnNames: Boolean) extends PrettyPrinter {
 
   private def hlist(docs: Traversable[Doc], sep: Doc = emptyDoc): Doc = hsep(docs.toList, sep)
 
-  private def expr(expression: Expression): Doc = expression match {
+  def expr(expression: Expression): Doc = expression match {
     case Parenthesis(inner) => parens(expr(inner))
     case MapExpression(elements) if elements.isEmpty => "{}"
     case MapProjection(v, items, _) =>

@@ -188,12 +188,12 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
         PlanDescriptionImpl(id, "ProduceResults", children, Seq(), variables)
 
       case Projection(_, expr) =>
-        val expressions = LegacyExpressions(expr.mapValues(toCommandExpression))
+        val expressions = Expressions(expr)
         PlanDescriptionImpl(id, "Projection", children, Seq(expressions), variables)
 
       case Selection(predicates, _) =>
-        val legacyExpressions = predicates.map(e => LegacyExpression(toCommandExpression(e)))
-        PlanDescriptionImpl(id, "Filter", children, legacyExpressions, variables)
+        val expression = Expression(ast.Ands(predicates.toSet)(null))
+        PlanDescriptionImpl(id, "Filter", children, Seq(expression), variables)
 
       case Skip(_, count) =>
         PlanDescriptionImpl(id, name = "Skip", children, Seq(Expression(count)), variables)
