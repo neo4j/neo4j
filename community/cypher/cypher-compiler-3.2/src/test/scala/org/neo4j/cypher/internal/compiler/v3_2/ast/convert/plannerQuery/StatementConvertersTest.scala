@@ -413,7 +413,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val nodeName = "  UNNAMED23"
     val exp: PatternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
       NodePattern(Some(Variable("a")(pos)), Seq(), None) _,
-      RelationshipPattern(Some(Variable(relName)(pos)), optional = false, Seq.empty, None, None, OUTGOING) _,
+      RelationshipPattern(Some(Variable(relName)(pos)), Seq.empty, None, None, OUTGOING) _,
       NodePattern(Some(Variable(nodeName)(pos)), Seq(), None) _
     ) _) _)
     val predicate= Predicate(Set(IdName("a")), exp)
@@ -465,7 +465,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val nodeName = "  UNNAMED38"
     val exp1: PatternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
       NodePattern(Some(Variable("a")(pos)), Seq(), None) _,
-      RelationshipPattern(Some(Variable(relName)(pos)), optional = false, Seq.empty, None, None, OUTGOING) _,
+      RelationshipPattern(Some(Variable(relName)(pos)), Seq.empty, None, None, OUTGOING) _,
       NodePattern(Some(Variable(nodeName)(pos)), Seq(), None) _
     ) _) _)
     val exp2: Expression = In(
@@ -488,7 +488,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val nodeName = "  UNNAMED23"
     val exp1: PatternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
       NodePattern(Some(Variable("a")(pos)), Seq(), None) _,
-      RelationshipPattern(Some(Variable(relName)(pos)), optional = false, Seq.empty, None, None, OUTGOING) _,
+      RelationshipPattern(Some(Variable(relName)(pos)), Seq.empty, None, None, OUTGOING) _,
       NodePattern(Some(Variable(nodeName)(pos)), Seq(), None) _
     ) _) _)
     val exp2: Expression = In(
@@ -511,7 +511,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val nodeName = "  UNNAMED39"
     val exp1: PatternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
       NodePattern(Some(Variable("a")(pos)), Seq(), None) _,
-      RelationshipPattern(Some(Variable(relName)(pos)), optional = false, Seq.empty, None, None, OUTGOING) _,
+      RelationshipPattern(Some(Variable(relName)(pos)), Seq.empty, None, None, OUTGOING) _,
       NodePattern(Some(Variable(nodeName)(pos)), Seq(), None) _
     ) _) _)
     val exp2: Expression = In(

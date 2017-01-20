@@ -64,5 +64,5 @@ class FindDuplicateRelationshipsTest extends CypherFunSuite {
     }
 
   private def relPattern(id: Variable) =
-    RelationshipPattern(Some(id), optional = false, Seq(), None, None, SemanticDirection.OUTGOING)(pos)
+    RelationshipPattern(Some(id), Seq(), None, None, SemanticDirection.OUTGOING)(pos)
 }

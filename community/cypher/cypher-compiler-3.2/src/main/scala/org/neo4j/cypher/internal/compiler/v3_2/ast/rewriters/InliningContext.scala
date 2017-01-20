@@ -66,7 +66,7 @@ case class InliningContext(projections: Map[Variable, Expression] = Map.empty,
         case alias @ Some(_) => node.copy(variable = alias)(node.position)
         case _               => node
       }
-    case rel @ RelationshipPattern(Some(ident), _, _, _, _, _) if okToRewrite(ident) =>
+    case rel @ RelationshipPattern(Some(ident), _, _, _, _) if okToRewrite(ident) =>
       alias(ident) match {
         case alias @ Some(_) => rel.copy(variable = alias)(rel.position)
         case _               => rel
