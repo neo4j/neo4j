@@ -229,8 +229,8 @@ public abstract class AuthProceduresInteractionTestBase<S> extends ProcedureInte
                 "The provided username is empty." );
         assertFail( adminSubject, "CALL dbms.security.createUser(',ss!', '1234', true)",
                 "Username ',ss!' contains illegal characters." );
-        assertFail( adminSubject, "CALL dbms.security.createUser(':åss!', '', true)",
-                "Username ':åss!' contains illegal characters." );
+        assertFail( adminSubject, "CALL dbms.security.createUser(',ss!', '', true)",
+                "Username ',ss!' contains illegal characters." );
     }
 
     @Test
