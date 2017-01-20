@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher
+package org.neo4j.internal.cypher.acceptance
 
 import java.io.ByteArrayOutputStream
 import java.util.zip.{DeflaterOutputStream, GZIPOutputStream}
@@ -25,6 +25,7 @@ import javax.servlet.http.{HttpServletRequest, HttpServletResponse}
 
 import org.eclipse.jetty.server.handler.{AbstractHandler, ContextHandler, ContextHandlerCollection}
 import org.eclipse.jetty.server.{Handler, Request, Server, ServerConnector}
+import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.scalatest.BeforeAndAfterAll
 
 class LoadCsvCompressionAcceptanceTest extends ExecutionEngineFunSuite with BeforeAndAfterAll {

@@ -116,14 +116,6 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
     )
   }
 
-  // TCK'd -- kept because of possible exclusion of this feature
-  test("cant re-use relationship variable") {
-    executeAndEnsureError(
-      "match (a)-[r]->(b)-[r]->(a) where id(a) = 0 return r",
-      "Cannot use the same relationship variable 'r' for multiple patterns (line 1, column 21 (offset: 20))"
-    )
-  }
-
   // Not TCK material; shortestPath, regex, constraints, hints, etc
 
   test("should know not to compare strings and numbers") {

@@ -17,8 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher
+package org.neo4j.internal.cypher.acceptance
 
+import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
 import org.neo4j.cypher.internal.spi.v3_1.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.compiler.v3_1.IndexDescriptor
 
@@ -166,7 +167,7 @@ class UniqueIndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPla
     graph.createConstraint("Crew", "name")
   }
 
-  private def assertNoLockingHappened: Unit = {
+  private def assertNoLockingHappened(): Unit = {
     withClue("Should not lock indexes: ") { lockingIndexSearchCalled should equal(false) }
   }
 

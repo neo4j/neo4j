@@ -59,6 +59,9 @@ Failing when performing property access on a non-map 1
 `toString()` failing on invalid arguments
 `max()` should aggregate strings
 `min()` should aggregate strings
+Handling non-string operands for STARTS WITH
+Handling non-string operands for CONTAINS
+Handling non-string operands for ENDS WITH
 
 // other
 `percentileCont()` failing on bad arguments

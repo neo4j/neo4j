@@ -20,84 +20,88 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
-import org.neo4j.cypher.internal.ExecutionResult
-import org.neo4j.cypher.internal.compatibility.CompatibilityPlanDescriptionFor3_1
 import org.neo4j.cypher.internal.compiler.v3_1._
-import org.neo4j.kernel.impl.query.TransactionalContext
+import org.neo4j.cypher.internal.compiler.v3_1.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription.Arguments
 import org.scalatest.matchers.{MatchResult, Matcher}
 
 class PreParsingAcceptanceTest extends ExecutionEngineFunSuite {
 
+  test("should not use eagerness when option not provided ") {
+    execute("MATCH () CREATE ()") shouldNot use("Eager")
+  }
+
+  test("should use eagerness when option is provided ") {
+    execute("CYPHER updateStrategy=eager MATCH () CREATE ()") should use("Eager")
+  }
+
   test("specifying no planner should provide IDP") {
     val query = "PROFILE RETURN 1"
 
-    eengine.execute(query, Map.empty[String,Any]) should havePlanner(IDPPlannerName)
+    execute(query) should havePlanner(IDPPlannerName)
   }
 
   test("specifying cost planner should provide IDP") {
     val query = "PROFILE CYPHER planner=cost RETURN 1"
 
-    eengine.execute(query, Map.empty[String,Any]) should havePlanner(IDPPlannerName)
+    execute(query) should havePlanner(IDPPlannerName)
   }
 
   test("specifying idp planner should provide IDP") {
     val query = "PROFILE CYPHER planner=idp RETURN 1"
 
-    eengine.execute(query, Map.empty[String,Any]) should havePlanner(IDPPlannerName)
+    execute(query) should havePlanner(IDPPlannerName)
   }
 
   test("specifying dp planner should provide DP") {
     val query = "PROFILE CYPHER planner=dp RETURN 1"
 
-    eengine.execute(query, Map.empty[String,Any]) should havePlanner(DPPlannerName)
+    execute(query) should havePlanner(DPPlannerName)
   }
 
   test("specifying rule planner should provide RULE") {
     val query = "PROFILE CYPHER planner=rule RETURN 1"
 
-    eengine.execute(query, Map.empty[String,Any]) should havePlanner(RulePlannerName)
+    execute(query) should havePlanner(RulePlannerName)
   }
 
   test("specifying cost planner should provide IDP using old syntax") {
     val query = "PROFILE CYPHER planner=cost RETURN 1"
 
-    eengine.execute(query, Map.empty[String,Any]) should havePlanner(IDPPlannerName)
+    execute(query) should havePlanner(IDPPlannerName)
   }
 
   test("specifying idp planner should provide IDP using old syntax") {
     val query = "PROFILE CYPHER planner=idp RETURN 1"
 
-    eengine.execute(query, Map.empty[String,Any]) should havePlanner(IDPPlannerName)
+    execute(query) should havePlanner(IDPPlannerName)
   }
 
   test("specifying dp planner should provide DP using old syntax") {
     val query = "PROFILE CYPHER planner=dp RETURN 1"
 
-    eengine.execute(query, Map.empty[String,Any]) should havePlanner(DPPlannerName)
+    execute(query) should havePlanner(DPPlannerName)
   }
 
   test("specifying rule planner should provide RULE using old syntax") {
     val query = "PROFILE CYPHER planner=rule RETURN 1"
 
-    eengine.execute(query, Map.empty[String,Any]) should havePlanner(RulePlannerName)
+    execute(query) should havePlanner(RulePlannerName)
   }
 
-  private def havePlanner(expected: PlannerName): Matcher[ExecutionResult] = new Matcher[ExecutionResult] {
-    override def apply(result: ExecutionResult): MatchResult = {
+  private def havePlanner(expected: PlannerName): Matcher[InternalExecutionResult] = new Matcher[InternalExecutionResult] {
+    override def apply(result: InternalExecutionResult): MatchResult = {
       // exhaust the iterator so we can collect the plan description
       result.length
       result.executionPlanDescription() match {
-        case CompatibilityPlanDescriptionFor3_1(_, _, actual, _) =>
+        case planDesc =>
+          val actual = planDesc.arguments.collectFirst {
+            case Arguments.Planner(name) => name
+          }
           MatchResult(
-            matches = actual == expected,
+            matches = actual.isDefined && actual.get == expected.name,
             rawFailureMessage = s"PlannerName should be $expected, but was $actual",
             rawNegatedFailureMessage = s"PlannerName should not be $actual"
-          )
-        case planDesc =>
-          MatchResult(
-            matches = false,
-            rawFailureMessage = s"Plan description should be of type CompatibilityPlanDescriptionFor2_3, but was ${planDesc.getClass.getSimpleName}",
-            rawNegatedFailureMessage = s"Plan description should be of type CompatibilityPlanDescriptionFor2_3, but was ${planDesc.getClass.getSimpleName}"
           )
       }
     }

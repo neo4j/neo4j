@@ -17,15 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher
+package org.neo4j.internal.cypher.acceptance
 
-class EagerStrategyAcceptanceTest  extends ExecutionEngineFunSuite {
+import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
 
-  test("should not use eagerness when option not provided ") {
-    execute("MATCH () CREATE ()") shouldNot use("Eager")
-  }
+class UpdateReportingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
+  test("creating a node gets reported as such") {
+    val output = updateWithBothPlannersAndCompatibilityMode("create (:A)").dumpToString()
 
-  test("should use eagerness when option is provided ") {
-    execute("CYPHER updateStrategy=eager MATCH () CREATE ()") should use("Eager")
+    output should include ("Nodes created: 1")
+    output should include ("Labels added: 1")
   }
 }

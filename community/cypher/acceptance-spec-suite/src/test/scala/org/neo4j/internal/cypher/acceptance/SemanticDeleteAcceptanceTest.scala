@@ -17,10 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher
+package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.frontend.v3_1.SemanticDirection
-import org.scalacheck.{Shrink, Gen}
+import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, PatternGen}
+import org.scalacheck.{Gen, Shrink}
 
 /*
  * Creates a random pattern, matches on it and deletes all variables
