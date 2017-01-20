@@ -91,7 +91,7 @@ object InternalPlanDescription {
     case class InequalityIndex(label: String, propertyKey: String, bounds: Seq[String]) extends Argument
     case class LabelName(label: String) extends Argument
     case class KeyNames(keys: Seq[String]) extends Argument
-    case class KeyExpressions(expressions: Seq[commands.expressions.Expression]) extends Argument
+    case class KeyExpressions(expressions: Seq[ast.Expression]) extends Argument
     case class EntityByIdRhs(value: PipeEntityByIdRhs) extends Argument
     case class EstimatedRows(value: Double) extends Argument
     case class Signature(procedureName: QualifiedName,
