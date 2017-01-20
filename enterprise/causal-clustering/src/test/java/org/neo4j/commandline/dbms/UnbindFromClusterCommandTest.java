@@ -32,6 +32,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.CommandLocator;
@@ -137,7 +138,10 @@ public class UnbindFromClusterCommandTest
         command.execute( databaseName( "graph.db" ) );
 
         // then
-        assertEquals( numberOfFilesAndDirsInANormalNeo4jStoreDir, Files.list( fakeDbDir ).toArray().length );
+        try ( Stream<Path> files = Files.list( fakeDbDir ) )
+        {
+            assertEquals( numberOfFilesAndDirsInANormalNeo4jStoreDir, files.count() );
+        }
     }
 
     @Test
@@ -263,10 +267,5 @@ public class UnbindFromClusterCommandTest
     private String[] nonExistentDatabaseArg()
     {
         return new String[]{"--database=" + UUID.randomUUID().toString()};
-    }
-
-    private String[] noArgs()
-    {
-        return new String[]{};
     }
 }
