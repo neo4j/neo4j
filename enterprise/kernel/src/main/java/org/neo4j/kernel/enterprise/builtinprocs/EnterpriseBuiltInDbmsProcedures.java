@@ -223,16 +223,18 @@ public class EnterpriseBuiltInDbmsProcedures
             case DBMS:
                 roles.add( "admin" );
                 break;
-            case READ_ONLY:
+            case DEFAULT:
                 roles.add( "reader" );
-            case READ_WRITE:
+            case READ:
+                roles.add( "reader" );
+            case WRITE:
                 roles.add( "publisher" );
             case TOKEN:
                 if ( publisherTokenCreate )
                 {
                     roles.add( "publisher" );
                 }
-            case SCHEMA_WRITE:
+            case SCHEMA:
                 roles.add( "architect" );
             default:
                 roles.add( "admin" );

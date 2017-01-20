@@ -35,10 +35,10 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.exceptions.KernelException
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException
 import org.neo4j.kernel.api.index.{InternalIndexState, IndexDescriptor => KernelIndexDescriptor}
-import org.neo4j.kernel.api.proc
 import org.neo4j.kernel.api.proc.Neo4jTypes.AnyType
 import org.neo4j.kernel.api.proc.{Neo4jTypes, QualifiedName => KernelQualifiedName}
 import org.neo4j.kernel.impl.proc.Neo4jValue
+import org.neo4j.procedure.Mode
 
 import scala.collection.JavaConverters._
 
@@ -161,12 +161,13 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapperv3_1, logger: I
 
   private def asOption[T](optional: Optional[T]): Option[T] = if (optional.isPresent) Some(optional.get()) else None
 
-  private def asCypherProcMode(mode: proc.Mode, allowed: Array[String]): ProcedureAccessMode = mode match {
-    case proc.Mode.READ_ONLY => ProcedureReadOnlyAccess(allowed)
-    case proc.Mode.READ_WRITE => ProcedureReadWriteAccess(allowed)
-    case proc.Mode.TOKEN => ProcedureTokenWriteAccess(allowed)
-    case proc.Mode.SCHEMA_WRITE => ProcedureSchemaWriteAccess(allowed)
-    case proc.Mode.DBMS => ProcedureDbmsAccess(allowed)
+  private def asCypherProcMode(mode: Mode, allowed: Array[String]): ProcedureAccessMode = mode match {
+    case Mode.READ => ProcedureReadOnlyAccess(allowed)
+    case Mode.DEFAULT => ProcedureReadOnlyAccess(allowed)
+    case Mode.WRITE => ProcedureReadWriteAccess(allowed)
+    case Mode.TOKEN => ProcedureTokenWriteAccess(allowed)
+    case Mode.SCHEMA => ProcedureSchemaWriteAccess(allowed)
+    case Mode.DBMS => ProcedureDbmsAccess(allowed)
 
     case _ => throw new CypherExecutionException(
       "Unable to execute procedure, because it requires an unrecognized execution mode: " + mode.name(), null )

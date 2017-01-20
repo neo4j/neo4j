@@ -27,6 +27,7 @@ import java.util.Optional;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.proc.Neo4jTypes.AnyType;
+import org.neo4j.procedure.Mode;
 
 import static java.util.Collections.unmodifiableList;
 
@@ -138,7 +139,7 @@ public class ProcedureSignature
         private final QualifiedName name;
         private final List<FieldSignature> inputSignature = new LinkedList<>();
         private List<FieldSignature> outputSignature = new LinkedList<>();
-        private Mode mode = Mode.READ_ONLY;
+        private Mode mode = Mode.READ;
         private Optional<String> deprecated = Optional.empty();
         private String[] allowed = new String[0];
         private Optional<String> description = Optional.empty();

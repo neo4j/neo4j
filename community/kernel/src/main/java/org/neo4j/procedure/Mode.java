@@ -18,13 +18,22 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.procedure;
-
+/**
+ * The procedure mode affects how the procedure will execute, and which capabilities
+ * it requires.
+ */
 public enum Mode
 {
+    /** This procedure will only perform read operations against the graph */
     READ,
+    /** This procedure may perform both read and write operations against the graph */
     WRITE,
+    /** This procedure will perform operations against the schema */
     SCHEMA,
+    /** This procedure will perform system operations - i.e. not against the graph */
     DBMS,
+    /** This procedure will only perform read operations against the graph */
     DEFAULT,
+    /** This procedure may perform both read and write operations against the graph and create new tokens */
     TOKEN
 }
