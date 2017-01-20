@@ -76,6 +76,18 @@ public class DeferringLockClient implements Locks.Client
     }
 
     @Override
+    public boolean reEnterShared( ResourceType resourceType, long resourceId )
+    {
+        throw new UnsupportedOperationException( "Should not be needed" );
+    }
+
+    @Override
+    public boolean reEnterExclusive( ResourceType resourceType, long resourceId )
+    {
+        throw new UnsupportedOperationException( "Should not be needed" );
+    }
+
+    @Override
     public void releaseShared( ResourceType resourceType, long resourceId )
     {
         assertNotStopped();

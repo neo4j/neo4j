@@ -475,6 +475,65 @@ public class ForsetiClient implements Locks.Client
     }
 
     @Override
+    public boolean reEnterShared( ResourceType resourceType, long resourceId )
+    {
+        stateHolder.incrementActiveClients( this );
+        try
+        {
+            PrimitiveLongIntMap heldShareLocks = sharedLockCounts[resourceType.typeId()];
+            PrimitiveLongIntMap heldExclusiveLocks = exclusiveLockCounts[resourceType.typeId()];
+
+            int heldCount = heldShareLocks.get( resourceId );
+            if ( heldCount != -1 )
+            {
+                // We already have a lock on this, just increment our local reference counter.
+                heldShareLocks.put( resourceId, Math.incrementExact( heldCount ) );
+                return true;
+            }
+
+            if ( heldExclusiveLocks.containsKey( resourceId ) )
+            {
+                // We already have an exclusive lock, so just leave that in place. When the exclusive lock is released,
+                // it will be automatically downgraded to a shared lock, since we bumped the share lock reference count.
+                heldShareLocks.put( resourceId, 1 );
+                return true;
+            }
+
+            // We didn't hold a lock already, so we cannot re-enter.
+            return false;
+        }
+        finally
+        {
+            stateHolder.decrementActiveClients();
+        }
+    }
+
+    @Override
+    public boolean reEnterExclusive( ResourceType resourceType, long resourceId )
+    {
+        stateHolder.incrementActiveClients( this );
+        try
+        {
+            PrimitiveLongIntMap heldLocks = exclusiveLockCounts[resourceType.typeId()];
+
+            int heldCount = heldLocks.get( resourceId );
+            if ( heldCount != -1 )
+            {
+                // We already have a lock on this, just increment our local reference counter.
+                heldLocks.put( resourceId, Math.incrementExact( heldCount ) );
+                return true;
+            }
+
+            // We didn't hold a lock already, so we cannot re-enter.
+            return false;
+        }
+        finally
+        {
+            stateHolder.decrementActiveClients();
+        }
+    }
+
+    @Override
     public void releaseShared( ResourceType resourceType, long resourceId )
     {
         stateHolder.incrementActiveClients( this );

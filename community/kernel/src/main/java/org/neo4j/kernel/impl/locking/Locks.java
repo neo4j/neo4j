@@ -94,6 +94,10 @@ public interface Locks
         /** Try grabbing shared lock, not waiting and returning a boolean indicating if we got the lock. */
         boolean trySharedLock( ResourceType resourceType, long resourceId );
 
+        boolean reEnterShared( ResourceType resourceType, long resourceId );
+
+        boolean reEnterExclusive( ResourceType resourceType, long resourceId );
+
         /** Release a set of shared locks */
         void releaseShared( ResourceType resourceType, long resourceId );
 

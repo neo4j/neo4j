@@ -445,6 +445,18 @@ public class DeferringLockClientTest
         }
 
         @Override
+        public boolean reEnterShared( ResourceType resourceType, long resourceId )
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean reEnterExclusive( ResourceType resourceType, long resourceId )
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public void releaseShared( ResourceType resourceType, long resourceId )
         {
         }
