@@ -103,7 +103,7 @@ trait MethodStructure[E] {
 
   // object handling
   def markAsNull(varName: String, codeGenType: CodeGenType): Unit
-  def nullablePrimitive(varName: String, codegenType: CodeGenType, onSuccess: E): E
+  def nullablePrimitive(varName: String, codeGenType: CodeGenType, onSuccess: E): E
   def nullableReference(varName: String, codeGenType: CodeGenType, onSuccess: E): E
   def isNull(name: String, codeGenType: CodeGenType): E
   def notNull(name: String, codeGenType: CodeGenType): E
@@ -159,7 +159,7 @@ trait MethodStructure[E] {
   def ifStatement(test: E)(block: MethodStructure[E] => Unit): Unit
   def ifNotStatement(test: E)(block: MethodStructure[E] => Unit): Unit
   def ifNonNullStatement(test: E)(block: MethodStructure[E] => Unit): Unit
-  def ternaryOperator(test:E, onSuccess:E, onError: E): E
+  def ternaryOperator(test: E, onTrue: E, onFalse: E): E
   def returnSuccessfully(): Unit
 
   // results

@@ -59,6 +59,8 @@ public interface MethodEmitter
 
     void beginIfNonNull( Expression...tests );
 
+    void beginBlock();
+
     void endBlock();
 
     <T> void tryCatchBlock( Consumer<T> body, Consumer<T> handler, LocalVariable exception, T block);

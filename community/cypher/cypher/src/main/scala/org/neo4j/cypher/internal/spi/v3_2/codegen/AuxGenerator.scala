@@ -80,6 +80,14 @@ class AuxGenerator(val packageName: String, val generator: CodeGenerator) {
     })
   }
 
+  private def sortResultSign(sortOrder: SortOrder): Int = sortOrder match {
+    case Ascending => -1
+    case Descending => +1
+  }
+
+  private def lessThanSortResult(sortOrder: SortOrder) = sortResultSign(sortOrder)
+  private def greaterThanSortResult(sortOrder: SortOrder) = -sortResultSign(sortOrder)
+
   def comparableTypeReference(tupleDescriptor: OrderableTupleDescriptor): TypeReference = {
     types.getOrElseUpdate(tupleDescriptor,
       using(generator.generateClass(packageName, newComparableTupleTypeName(),
@@ -87,28 +95,89 @@ class AuxGenerator(val packageName: String, val generator: CodeGenerator) {
       tupleDescriptor.structure.foreach {
         case (fieldName, fieldType: CodeGenType) => clazz.field(lowerType(fieldType), fieldName)
       }
-      using(clazz.generateMethod(typeRef[Int], "compareTo", param(typeRef[Object], "other"))) { body =>
+      using(clazz.generateMethod(typeRef[Int], "compareTo", param(typeRef[Object], "other"))) { l1 =>
         val otherName = s"other$nameId"
-        body.assign(body.declare(clazz.handle(), otherName), Expression.cast(clazz.handle(), body.load("other")))
+        l1.assign(l1.declare(clazz.handle(), otherName), Expression.cast(clazz.handle(), l1.load("other")))
 
-        tupleDescriptor.sortItems.foreach {
-          case SortItem(fieldName, sortOrder) => {
-            val fieldType = tupleDescriptor.structure.get(fieldName).get
-            val fieldReference = field(clazz.handle(), lowerType(fieldType), fieldName)
-            val compareResultName = s"compare_$fieldName"
-            val compareResult = body.declare(typeRef[Int], compareResultName)
-            body.assign(compareResult,
-              Expression.invoke(method[CompiledOrderabilityUtils, Int]("compare", typeRef[Object], typeRef[Object]),
-                Expression.box(
-                  Expression.get(body.self(), fieldReference)),
-                Expression.box(
-                  Expression.get(body.load(otherName), fieldReference))))
-            using(body.ifNotStatement(Expression.equal(compareResult, Expression.constant(0)))) { l1 =>
-              l1.returns(compareResult)
+        tupleDescriptor.sortItems.foreach { sortItem =>
+          val SortItem(fieldName, sortOrder) = sortItem
+          val codeGenType = tupleDescriptor.structure(fieldName)
+          val fieldType: TypeReference = lowerType(codeGenType)
+          val fieldReference = field(clazz.handle(), fieldType, fieldName)
+          val thisValueName = s"thisValue_$fieldName"
+          val otherValueName = s"otherValue_$fieldName"
+          using(l1.block()) { l2 =>
+            codeGenType match {
+              case CodeGenType.primitiveBool => {
+                /*
+                E.g.
+                boolean thisValue_a = this.a
+                boolean otherValue_a = other.a
+
+                if (thisValue_a != otherValue_a) {
+                  return (thisValue_a) ? 1 : -1
+                }
+                ...
+                */
+                val thisValueVariable: LocalVariable = l2.declare(fieldType, thisValueName)
+                val otherValueVariable: LocalVariable = l2.declare(fieldType, otherValueName)
+                l2.assign(thisValueVariable, Expression.get(l2.self(), fieldReference))
+                l2.assign(otherValueVariable, Expression.get(l2.load(otherName), fieldReference))
+
+                using(l2.ifNotStatement(Expression.lt(thisValueVariable, otherValueVariable))) { l3 =>
+                  l3.returns(Expression.ternary(thisValueVariable,
+                    Expression.constant(greaterThanSortResult(sortOrder)),
+                    Expression.constant(lessThanSortResult(sortOrder))))
+                }
+              }
+              // Other primitives (numbers, nodes and relationships) // TODO: Correct ordering of nulls for primitive nodes and relationships
+              case typ if typ.isPrimitive => {
+                /*
+                E.g.
+                long thisValue_a = this.a
+                long otherValue_a = other.a
+                if (thisValue_a < otherValue_a) {
+                  return -1;
+                } else if (otherValue_a < thisValue_a) {
+                  return +1;
+                }
+                ...
+                */
+                val thisValueVariable: LocalVariable = l2.declare(fieldType, thisValueName)
+                val otherValueVariable: LocalVariable = l2.declare(fieldType, otherValueName)
+                l2.assign(thisValueVariable, Expression.get(l2.self(), fieldReference))
+                l2.assign(otherValueVariable, Expression.get(l2.load(otherName), fieldReference))
+
+                using(l2.ifStatement(Expression.lt(thisValueVariable, otherValueVariable))) { l3 =>
+                  l3.returns(Expression.constant(lessThanSortResult(sortOrder)))
+                }
+                using(l2.ifStatement(Expression.lt(otherValueVariable, thisValueVariable))) { l3 =>
+                  l3.returns(Expression.constant(greaterThanSortResult(sortOrder)))
+                }
+              }
+              case _ => {
+                val compareResultName = s"compare_$fieldName"
+                val compareResult = l2.declare(typeRef[Int], compareResultName)
+                val thisField: Expression = Expression.box(Expression.get(l2.self(), fieldReference))
+                val otherField: Expression = Expression.box(Expression.get(l2.load(otherName), fieldReference))
+                // Invoke compare with the parameter order of the fields based on the sort order
+                val (lhs, rhs) = sortOrder match {
+                  case Ascending =>
+                    (thisField, otherField)
+                  case Descending =>
+                    (otherField, thisField)
+                }
+                l2.assign(compareResult,
+                  Expression.invoke(method[CompiledOrderabilityUtils, Int]("compare", typeRef[Object], typeRef[Object]),
+                    lhs, rhs))
+                using(l2.ifNotStatement(Expression.equal(compareResult, Expression.constant(0)))) { l3 =>
+                  l3.returns(compareResult)
+                }
+              }
             }
           }
         }
-        body.returns(Expression.constant(0))
+        l1.returns(Expression.constant(0))
       }
       clazz.handle()
     })

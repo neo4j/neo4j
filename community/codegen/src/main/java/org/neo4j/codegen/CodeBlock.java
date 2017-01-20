@@ -189,6 +189,12 @@ public class CodeBlock implements AutoCloseable
         return new CodeBlock( this );
     }
 
+    public CodeBlock block()
+    {
+        emitter.beginBlock();
+        return new CodeBlock( this );
+    }
+
     public void tryCatch( Consumer<CodeBlock> body, Consumer<CodeBlock> onError, Parameter exception )
     {
         emitter.tryCatchBlock( body, onError, localVariables.createNew( exception.type(), exception.name() ),

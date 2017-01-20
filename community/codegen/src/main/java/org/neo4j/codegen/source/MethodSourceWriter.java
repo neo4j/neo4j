@@ -198,6 +198,13 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     }
 
     @Override
+    public void beginBlock()
+    {
+        indent().append( "{\n" );
+        level.push( LEVEL );
+    }
+
+    @Override
     public <T> void tryCatchBlock( Consumer<T> body, Consumer<T> handler, LocalVariable exception, T block)
     {
 

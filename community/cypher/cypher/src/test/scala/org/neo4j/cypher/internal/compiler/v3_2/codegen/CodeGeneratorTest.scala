@@ -1407,8 +1407,8 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     // then
     val result = getResult(compiled, "b", "c")
     result.toList should equal(List(
+      Map("b" -> 2L,"c" -> 2L), // Because we sort Descending on b
       Map("b" -> 1L,"c" -> 1L),
-      Map("b" -> 2L,"c" -> 2L),
       Map("b" -> 3L,"c" -> 3L),
       Map("b" -> 4L,"c" -> 4L)))
   }
