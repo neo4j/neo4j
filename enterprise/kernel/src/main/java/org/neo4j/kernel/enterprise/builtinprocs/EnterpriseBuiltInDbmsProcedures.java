@@ -201,7 +201,7 @@ public class EnterpriseBuiltInDbmsProcedures
         Procedures procedures = graph.getDependencyResolver().resolveDependency( Procedures.class );
         return procedures.getAllProcedures().stream()
                 .sorted( ( a, b ) -> a.name().toString().compareTo( b.name().toString() ) )
-                .map( sig -> new ProcedureResult(sig, procedures.isAllowWriteTokenCreate()) );
+                .map( sig -> new ProcedureResult( sig, procedures.isAllowWriteTokenCreate() ) );
     }
 
     @SuppressWarnings( "WeakerAccess" )

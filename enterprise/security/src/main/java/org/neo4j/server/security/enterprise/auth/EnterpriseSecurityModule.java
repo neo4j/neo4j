@@ -91,9 +91,9 @@ public class EnterpriseSecurityModule extends SecurityModule
             );
         life.add( securityLog );
 
-        Boolean allowTokenCreate = config.get( SecuritySettings.allow_publisher_create_token );
+        boolean allowTokenCreate = config.get( SecuritySettings.allow_publisher_create_token );
         PredefinedRolesBuilder.setAllowPublisherTokenCreate( allowTokenCreate );
-        procedures.setAllowWriteTokenCreate( allowTokenCreate );
+        procedures.writerCreateToken( allowTokenCreate );
         EnterpriseAuthAndUserManager authManager = newAuthManager( config, logProvider, securityLog, fileSystem, jobScheduler );
         life.add( dependencies.dependencySatisfier().satisfyDependency( authManager ) );
 

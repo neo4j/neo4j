@@ -735,7 +735,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
 
     private void assertNotPredefinedRoleName( String roleName ) throws InvalidArgumentsException
     {
-        if ( PredefinedRolesBuilder.roles.keySet().contains( roleName ) )
+        if ( roleName != null && PredefinedRolesBuilder.roles.keySet().contains( roleName ) )
         {
             throw new InvalidArgumentsException(
                     format( "'%s' is a predefined role and can not be deleted.", roleName ) );

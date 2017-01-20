@@ -33,6 +33,7 @@ import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.QualifiedName;
 import org.neo4j.kernel.api.proc.UserFunctionSignature;
+import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.builtinprocs.SpecialBuiltInProcedures;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
@@ -52,7 +53,7 @@ public class Procedures extends LifecycleAdapter
     private final ThrowingConsumer<Procedures, ProcedureException> builtin;
     private final File pluginDir;
     private final Log log;
-    private boolean allowWriteTokenCreate = false;
+    private AccessMode writeMode;
 
     public Procedures()
     {
@@ -219,13 +220,23 @@ public class Procedures extends LifecycleAdapter
         builtin.accept( this );
     }
 
-    public void setAllowWriteTokenCreate( boolean allowWriteTokenCreate )
+    private boolean changed = false;
+
+    public void writerCreateToken( boolean allow )
     {
-        this.allowWriteTokenCreate = allowWriteTokenCreate;
+        if ( !changed )
+        {
+            writeMode = allow ? AccessMode.Static.TOKEN_WRITE : AccessMode.Static.WRITE;
+        }
+    }
+
+    public AccessMode getWriteMode()
+    {
+        return writeMode;
     }
 
     public boolean isAllowWriteTokenCreate()
     {
-        return allowWriteTokenCreate;
+        return writeMode.equals( AccessMode.Static.TOKEN_WRITE );
     }
 }

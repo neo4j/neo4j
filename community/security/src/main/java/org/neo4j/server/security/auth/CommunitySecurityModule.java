@@ -53,7 +53,7 @@ public class CommunitySecurityModule extends SecurityModule
 
         final PasswordPolicy passwordPolicy = new BasicPasswordPolicy();
 
-        procedures.setAllowWriteTokenCreate( true );
+        procedures.writerCreateToken( true );
         BasicAuthManager authManager =
                 new BasicAuthManager( userRepository, passwordPolicy, Clocks.systemClock(), initialUserRepository );
 
