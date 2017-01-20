@@ -121,20 +121,19 @@ public interface StoreReadLayer
     Iterator<StorageProperty> graphGetAllProperties();
 
     /**
-     * @param labelId label token id .
-     * @param propertyKeyIds property keyd token ids.
+     * @param descriptor describing the label and property key (or keys) defining the requested constraint.
      * @return node property constraints associated with the label and one or more property keys token ids.
      */
     Iterator<NodePropertyConstraint> constraintsGetForLabelAndPropertyKey( NodePropertyDescriptor descriptor );
 
     /**
-     * @param labelId label token id .
+     * @param labelId label token id.
      * @return node property constraints associated with the label token id.
      */
     Iterator<NodePropertyConstraint> constraintsGetForLabel( int labelId );
 
     /**
-     * @param descriptor of the relationship .
+     * @param descriptor of the relationship.
      * @return relationship property constraints associated with the relationship description.
      */
     Iterator<RelationshipPropertyConstraint> constraintsGetForRelationshipTypeAndPropertyKey(
