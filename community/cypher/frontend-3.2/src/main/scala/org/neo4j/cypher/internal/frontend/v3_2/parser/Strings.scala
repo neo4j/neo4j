@@ -42,8 +42,6 @@ trait Strings extends Base {
       | ch('n') ~ appendToStringBuilder('\n')
       | ch('r') ~ appendToStringBuilder('\r')
       | ch('t') ~ appendToStringBuilder('\t')
-      | ch('_') ~ appendToStringBuilder('_')
-      | ch('%') ~ appendToStringBuilder('%')
       | UTF16 ~~% withContext((code, ctx) => appendCodePointToStringBuilder(code)(ctx))
       | UTF32 ~~% withContext((code, ctx) => appendCodePointToStringBuilder(code)(ctx))
     )
