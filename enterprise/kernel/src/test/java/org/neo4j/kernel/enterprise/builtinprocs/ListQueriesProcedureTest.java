@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.enterprise.builtinprocs;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -28,9 +31,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
-
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Result;
@@ -45,7 +45,6 @@ import static java.util.Collections.singletonMap;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasKey;
@@ -124,7 +123,7 @@ public class ListQueriesProcedureTest
             Long cpuTime2 = (Long) data.get( "cpuTimeMillis" );
             assertThat( cpuTime2, greaterThanOrEqualTo( (Long) cpuTime1 ) );
             Long waitTime2 = (Long) data.get( "waitTimeMillis" );
-            assertThat( waitTime2, greaterThan( (Long) waitTime1 ) );
+            assertThat( waitTime2, greaterThanOrEqualTo( (Long) waitTime1 ) );
         }
     }
 
