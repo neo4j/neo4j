@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.frontend.v3_2.ast
 
 import org.neo4j.cypher.internal.frontend.v3_2._
-import org.neo4j.cypher.internal.frontend.v3_2.symbols.{CypherType, TypeSpec}
 
 object Function {
   private val knownFunctions: Seq[Function] = Vector(
@@ -44,7 +43,6 @@ object Function {
     functions.Exists,
     functions.Exp,
     functions.Floor,
-    functions.Has,
     functions.Haversin,
     functions.Head,
     functions.Id,
