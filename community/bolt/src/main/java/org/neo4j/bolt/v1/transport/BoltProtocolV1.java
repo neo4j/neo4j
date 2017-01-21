@@ -32,6 +32,7 @@ import org.neo4j.bolt.v1.messaging.BoltResponseMessageWriter;
 import org.neo4j.bolt.v1.messaging.Neo4jPack;
 import org.neo4j.bolt.v1.runtime.BoltWorker;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.logging.Log;
 
 /**
  * Implements version one of the Bolt Protocol when transported over a socket. This means this class will handle a
@@ -52,19 +53,16 @@ public class BoltProtocolV1 implements BoltProtocol
     private final BoltWorker worker;
 
     private final AtomicInteger inFlight = new AtomicInteger( 0 );
-    private final BoltMessageRouter bridge;
+
+    private final Log log;
 
     public BoltProtocolV1( BoltWorker worker, Channel outputChannel, LogService logging )
     {
-        // TODO; this part of the Bolt server side is rather messy - notably, the MessageHandler, Session and Session.Callback interfaces all
-        //       should reasonably be able to be refactored into something much less complicated.
-        //       Likewise the tracking of when to flush the outbound channel - if we moved that logic to ThreadedSessions, a lot of the complexity
-        //       below could likely be undone.
         this.chunkedOutput = new ChunkedOutput( outputChannel, DEFAULT_OUTPUT_BUFFER_SIZE );
         this.packer = new BoltResponseMessageWriter( new Neo4jPack.Packer( chunkedOutput ), chunkedOutput );
         this.worker = worker;
-        this.bridge = new BoltMessageRouter( logging.getInternalLog( getClass() ), worker, packer, this::onMessageDone );
-        this.dechunker = new BoltV1Dechunker( bridge, this::onMessageStarted );
+        this.log = logging.getInternalLog( getClass() );
+        this.dechunker = createDechunker( packer, worker, log );
     }
 
     /**
@@ -80,9 +78,9 @@ public class BoltProtocolV1 implements BoltProtocol
         {
             dechunker.handle( data );
         }
-        catch ( Throwable e )
+        catch ( Throwable t )
         {
-            // TODO: log error
+            log.error( "Error handling incoming message. Connection will be closed.", t );
             worker.halt();
         }
         finally
@@ -103,6 +101,12 @@ public class BoltProtocolV1 implements BoltProtocol
         dechunker.close();
         worker.halt();
         chunkedOutput.close();
+    }
+
+    private BoltV1Dechunker createDechunker( BoltResponseMessageWriter responseHandler, BoltWorker boltWorker, Log log )
+    {
+        BoltMessageRouter bridge = new BoltMessageRouter( log, boltWorker, responseHandler, this::onMessageDone );
+        return new BoltV1Dechunker( bridge, this::onMessageStarted );
     }
 
     /*
