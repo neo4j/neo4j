@@ -1,23 +1,46 @@
 #!/usr/bin/env bash
 set -eu
 # build-debian-packages:
-# Build Debian packages for Neo4j Community from tarball
+# Build Debian packages for Neo4j from tarball
 
-if [ $# -ne 5 ]
+parse_version() {
+  local filename=$(basename ${1})
+  local edition_version_extension=${filename#*-}
+  local version_extension=${edition_version_extension#*-}
+  version=${version_extension%-*}
+  deb_version=${version/-/.}
+}
+
+if [ $# -ne 3 ]
 then
-  echo "Usage: ${0} <workspace> <package name> <package contents> <distribution> <version>"
+  echo "Usage: ${0} <workspace> <tarball> <distribution>"
   exit 1
 fi
 
-workspace=${1}
-package_name=${2}
-package_contents=${3}
-distribution=${4}
-version_file=${5}
+package_directory=${1}
+tarball=${2}
+distribution=${3}
 
-# Prepare workspace
-package_directory=${workspace}/${package_name}
-mkdir -p ${package_directory}
+echo "Building Debian package"
+echo "Package directory: ${package_directory}"
+echo "Tarball: ${tarball}"
+echo "Distribution: ${distribution}"
+
+# Get version(s)
+parse_version ${tarball}
+
+# Figure if community or enterprise
+if [[ $(basename "${tarball}") =~ "enterprise" ]]; then
+  package_name="neo4j-enterprise"
+else
+  package_name="neo4j"
+fi
+
+echo "Package name: ${package_name}"
+
+# Extract tarball and prepare workspace
+mkdir -p ${package_directory}/server
+tar --strip-components=1 -xf ${tarball} -C ${package_directory}/server
 skeleton_directory=src/debian/skeleton
 cp -r ${skeleton_directory}/* ${package_directory}
 
@@ -33,15 +56,11 @@ done
 extras_directory=src/debian/extras/${package_name}
 cp -r ${extras_directory}/* ${package_directory}
 
-# Copy in tarball contents
-cp -r ${package_contents}/* ${package_directory}/server
-
 # Update changelog, control and files with package name etc
-version=$(cat ${version_file})
-DISTRIBUTION=${distribution} DATE=`date -R` PACKAGE_NAME=${package_name} VERSION=${version} envsubst '${DATE} ${DISTRIBUTION} ${PACKAGE_NAME} ${VERSION}' < ${skeleton_directory}/debian/changelog > ${package_directory}/debian/changelog
+DISTRIBUTION=${distribution} DATE=`date -R` PACKAGE_NAME=${package_name} VERSION=${deb_version} envsubst '${DATE} ${DISTRIBUTION} ${PACKAGE_NAME} ${VERSION}' < ${skeleton_directory}/debian/changelog > ${package_directory}/debian/changelog
 [[ ${package_name} = "neo4j" ]] && replaces="neo4j-enterprise" || replaces="neo4j"
 PACKAGE_NAME=${package_name} REPLACES=${replaces} envsubst '${PACKAGE_NAME} ${REPLACES}' < ${skeleton_directory}/debian/control > ${package_directory}/debian/control
-PACKAGE_NAME=${package_name} VERSION=${version} envsubst '${PACKAGE_NAME} ${VERSION}' < ${skeleton_directory}/debian/files > ${package_directory}/debian/files
+PACKAGE_NAME=${package_name} VERSION=${deb_version} envsubst '${PACKAGE_NAME} ${VERSION}' < ${skeleton_directory}/debian/files > ${package_directory}/debian/files
 
 # Make the Neo4j wrapper scripts available to debuild
 scripts_directory=${package_directory}/server/scripts
@@ -73,4 +92,3 @@ chmod 700 ${scripts_directory}/*
 
 # build package and metadata files
 (cd ${package_directory} && debuild -B -uc -us --lintian-opts --profile debian)
-
