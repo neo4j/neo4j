@@ -77,7 +77,7 @@ configuration_file=${package_directory}/server/conf/neo4j.conf
 sed -i 's/#dbms.directories.data=data/dbms.directories.data=\/var\/lib\/neo4j\/data/'             ${configuration_file}
 sed -i 's/#dbms.directories.plugins=plugins/dbms.directories.plugins=\/var\/lib\/neo4j\/plugins/' ${configuration_file}
 sed -i 's/#dbms.directories.import=import/dbms.directories.import=\/var\/lib\/neo4j\/import/'     ${configuration_file}
-cat src/debian/directories.conf >>${configuration_file}
+cat src/common/directories.conf >>${configuration_file}
 
 # Make scripts executable
 chmod 700 ${package_directory}/server/bin/*
