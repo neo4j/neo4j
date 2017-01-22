@@ -44,8 +44,8 @@ import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.PlatformModule;
-import org.neo4j.kernel.impl.logging.AbstractLogService;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.logging.SimpleLogService;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -135,6 +135,7 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
         return this;
     }
 
+    @Override
     public TestGraphDatabaseFactory setMonitors( Monitors monitors )
     {
         getCurrentState().setMonitors( monitors );
@@ -206,6 +207,7 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
 
         return new GraphDatabaseBuilder.DatabaseCreator()
         {
+            @Override
             public GraphDatabaseService newDatabase( Map<String,String> config )
             {
                 return newDatabase( Config.embeddedDefaults( config ) );
@@ -283,29 +285,20 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
                 return super.createFileSystemAbstraction();
             }
 
+            @Override
             protected LogService createLogService( LogProvider logProvider )
             {
-                final LogProvider internalLogProvider = state.getInternalLogProvider();
+                LogProvider internalLogProvider = state.getInternalLogProvider();
                 if ( internalLogProvider == null )
                 {
-                    return super.createLogService( logProvider );
+                    if ( !impermanent )
+                    {
+                        return super.createLogService( logProvider );
+                    }
+                    internalLogProvider = NullLogProvider.getInstance();
                 }
-
-                final LogProvider userLogProvider = state.databaseDependencies().userLogProvider();
-                return new AbstractLogService()
-                {
-                    @Override
-                    public LogProvider getUserLogProvider()
-                    {
-                        return userLogProvider;
-                    }
-
-                    @Override
-                    public LogProvider getInternalLogProvider()
-                    {
-                        return internalLogProvider;
-                    }
-                };
+                LogProvider userLogProvider = state.databaseDependencies().userLogProvider();
+                return new SimpleLogService( userLogProvider, internalLogProvider );
             }
         }
 
@@ -317,6 +310,7 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
                 super( storeDir, config, dependencies, graphDatabaseFacade, databaseInfo );
             }
 
+            @Override
             protected FileSystemAbstraction createNewFileSystem()
             {
                 return new EphemeralFileSystemAbstraction();

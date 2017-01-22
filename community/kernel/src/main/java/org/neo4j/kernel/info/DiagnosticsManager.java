@@ -28,10 +28,11 @@ import org.neo4j.kernel.info.DiagnosticsExtractor.VisitableDiagnostics;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.Logger;
+import org.neo4j.logging.NullLog;
 
 public class DiagnosticsManager implements Iterable<DiagnosticsProvider>, Lifecycle
 {
-    private final List<DiagnosticsProvider> providers = new CopyOnWriteArrayList<DiagnosticsProvider>();
+    private final List<DiagnosticsProvider> providers = new CopyOnWriteArrayList<>();
     private final Log targetLog;
     private volatile State state = State.INITIAL;
 
@@ -87,6 +88,7 @@ public class DiagnosticsManager implements Iterable<DiagnosticsProvider>, Lifecy
         dumpAll( DiagnosticsPhase.INITIALIZED, getTargetLog() );
     }
 
+    @Override
     public void start()
     {
         synchronized ( providers )
@@ -112,6 +114,7 @@ public class DiagnosticsManager implements Iterable<DiagnosticsProvider>, Lifecy
         providers.clear();
     }
 
+    @Override
     public void shutdown()
     {
         synchronized ( providers )
@@ -248,6 +251,13 @@ public class DiagnosticsManager implements Iterable<DiagnosticsProvider>, Lifecy
 
     private static void dump( DiagnosticsProvider provider, DiagnosticsPhase phase, Log log )
     {
+        // Optimization to skip diagnostics dumping (which is time consuming) if there's no log anyway.
+        // This is first and foremost useful for speeding up testing.
+        if ( log == NullLog.getInstance() )
+        {
+            return;
+        }
+
         try
         {
             provider.dump( phase, log.infoLogger() );
@@ -268,12 +278,12 @@ public class DiagnosticsManager implements Iterable<DiagnosticsProvider>, Lifecy
     {
         if ( extractor instanceof DiagnosticsExtractor.VisitableDiagnostics<?> )
         {
-            return new ExtractedVisitableDiagnosticsProvider<T>(
+            return new ExtractedVisitableDiagnosticsProvider<>(
                     (DiagnosticsExtractor.VisitableDiagnostics<T>) extractor, source );
         }
         else
         {
-            return new ExtractedDiagnosticsProvider<T>( extractor, source );
+            return new ExtractedDiagnosticsProvider<>( extractor, source );
         }
     }
 
