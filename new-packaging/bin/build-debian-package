@@ -3,19 +3,14 @@ set -eu
 # build-debian-packages:
 # Build Debian packages for Neo4j from tarball
 
-parse_version() {
-  local filename=$(basename ${1})
-  local edition_version_extension=${filename#*-}
-  local version_extension=${edition_version_extension#*-}
-  version=${version_extension%-*}
-  deb_version=${version/-/.}
-}
-
 if [ $# -ne 3 ]
 then
   echo "Usage: ${0} <workspace> <tarball> <distribution>"
   exit 1
 fi
+
+# Read in shared functions
+. "$(dirname ${0})/shared.sh"
 
 package_directory=${1}
 tarball=${2}
@@ -29,12 +24,10 @@ echo "Distribution: ${distribution}"
 # Get version(s)
 parse_version ${tarball}
 
+echo "Deb version: ${deb_version}"
+
 # Figure if community or enterprise
-if [[ $(basename "${tarball}") =~ "enterprise" ]]; then
-  package_name="neo4j-enterprise"
-else
-  package_name="neo4j"
-fi
+parse_pkgname ${tarball}
 
 echo "Package name: ${package_name}"
 

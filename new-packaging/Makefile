@@ -57,7 +57,6 @@ ${OUT}/neo4j-desktop/uberjar-filename.txt: ${OUT}/neo4j-desktop/community-versio
 	generate-uberjar-filename ${OUT}/neo4j-desktop/community-version.txt >${OUT}/neo4j-desktop/uberjar-filename.txt
 
 ${OUT}/debian/%: ${ARTIFACTS}/%-unix.tar.gz src/common/** src/debian/**
-	mkdir -p $@
 	build-debian-package $@ $< ${DISTRIBUTION}
 
 ${OUT}/tarballs/extracted/%: ${OUT}/tarballs/%-unix.tar.gz
