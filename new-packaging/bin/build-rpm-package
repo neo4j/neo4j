@@ -3,37 +3,69 @@ set -eu
 # build-rpm-package:
 # Build RPM package for Neo4j from tarball
 
-if [ $# -ne 6 ]
+if [ $# -ne 3 ]
 then
-  echo "Usage: ${0} <workspace> <package name> <package contents> <distribution> <version> <license>"
+  echo "Usage: ${0} <workspace> <tarball> <distribution>"
   exit 1
 fi
 
-workspace=${1}
-package_name=${2}
-package_contents=${3}
-distribution=${4}
-version_file=${5}
-license=${6}
+# Read in shared functions
+. "$(dirname ${0})/shared.sh"
 
-version=$(cat ${version_file})
+package_directory=${1}
+tarball=${2}
+distribution=${3}
+
+# Make path absolute because rpmbuild is a bit stupid
+if [[ ! "${package_directory}" =~ "^/" ]]; then
+  package_directory="$(pwd)/${package_directory}"
+fi
+
+echo "Building RPM package"
+echo "Package directory: ${package_directory}"
+echo "Tarball: ${tarball}"
+echo "Distribution: ${distribution}"
+
+# Get version(s)
+parse_version ${tarball}
+
+# https://fedoraproject.org/wiki/Packaging:Versioning
+if [ -z ${version_label} ]; then
+  # Release version
+  rpm_release="1"
+else
+  # Pre-release version
+  rpm_release="0.1.${version_label}"
+fi
+
+echo "RPM version: ${rpm_version}"
+echo "Release: ${rpm_release}"
+
+# Figure if community or enterprise
+parse_pkgname ${tarball}
+
+echo "Package name: ${package_name}"
+
+# Figure out which license
+parse_license ${tarball}
+
+echo "License: ${license}"
 
 # Prepare workspace
-package_directory=${workspace}/${package_name}
 mkdir -p ${package_directory}/{BUILD,RPMS,SOURCES,BUILDROOT,SPECS,SRPMS}/
-sources_directory=${package_directory}/BUILD/${package_name}-${version}
+sources_directory=${package_directory}/BUILD/${package_name}-${rpm_version}
 mkdir -p ${sources_directory}
 common_directory=src/common
 spec_directory=src/rpm
 
+# Extract tarball
+mkdir -p ${sources_directory}/server
+tar --strip-components=1 -xf ${tarball} -C ${sources_directory}/server
+
 # copy service file
 cp ${common_directory}/neo4j.service ${sources_directory}/
 
-# Copy in tarball contents
-mkdir -p ${sources_directory}/server
-cp -r ${package_contents}/* ${sources_directory}/server
-
-DISTRIBUTION=${distribution} DATE=`date -R` PACKAGE_NAME=${package_name} VERSION=${version} LICENSE=${license} envsubst '${DATE} ${DISTRIBUTION} ${PACKAGE_NAME} ${VERSION} ${LICENSE}' < ${spec_directory}/neo4j.spec > ${package_directory}/SPECS/neo4j.spec
+DISTRIBUTION=${distribution} DATE=`date -R` PACKAGE_NAME=${package_name} VERSION=${rpm_version} RELEASE=${rpm_release} LICENSE=${license} envsubst '${DATE} ${DISTRIBUTION} ${PACKAGE_NAME} ${VERSION} ${RELEASE} ${LICENSE}' < ${spec_directory}/neo4j.spec > ${package_directory}/SPECS/neo4j.spec
 
 # Make the Neo4j wrapper scripts available
 scripts_directory=${sources_directory}/server/scripts
@@ -70,6 +102,5 @@ chmod 700 ${sources_directory}/server/bin/*
 chmod 700 ${scripts_directory}/*
 
 # build package and metadata files
-#(cd ${package_directory} && debuild -B -uc -us --lintian-opts --profile debian)
 echo "%_topdir ${package_directory}" > ~/.rpmmacros
 (cd ${package_directory} && rpmbuild -bb SPECS/neo4j.spec)

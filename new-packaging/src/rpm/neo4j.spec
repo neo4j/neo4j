@@ -1,7 +1,7 @@
 Name: ${PACKAGE_NAME}
 Provides: neo4j
 Version: ${VERSION}
-Release: 1%{?dist}
+Release: ${RELEASE}%{?dist}
 Summary: Neo4j server is a database that stores data as graphs rather than tables.
 
 License: ${LICENSE}
