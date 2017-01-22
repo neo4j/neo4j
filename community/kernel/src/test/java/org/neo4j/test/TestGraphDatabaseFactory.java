@@ -286,18 +286,17 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
             }
 
             @Override
-            protected LogService createLogService( LogProvider logProvider )
+            protected LogService createLogService( LogProvider userLogProvider )
             {
                 LogProvider internalLogProvider = state.getInternalLogProvider();
                 if ( internalLogProvider == null )
                 {
                     if ( !impermanent )
                     {
-                        return super.createLogService( logProvider );
+                        return super.createLogService( userLogProvider );
                     }
                     internalLogProvider = NullLogProvider.getInstance();
                 }
-                LogProvider userLogProvider = state.databaseDependencies().userLogProvider();
                 return new SimpleLogService( userLogProvider, internalLogProvider );
             }
         }
