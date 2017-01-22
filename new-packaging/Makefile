@@ -1,5 +1,5 @@
 .DEFAULT: all
-.PHONY: all clean debian neo4j-desktop-mac neo4j-desktop-windows rpm tarball-community tarball-community-extracted tarball-enterprise tarball-enterprise-extracted
+.PHONY: all clean debian neo4j-desktop-mac neo4j-desktop-windows rpm
 
 ARTIFACTS=../packaging/standalone/target
 COMMUNITY_LICENSE=../community/LICENSE.txt
@@ -13,14 +13,10 @@ TARBALLS=$(shell find $(ARTIFACTS) -name '*.tar.gz')
 DEBS=$(patsubst ${ARTIFACTS}/%-unix.tar.gz,${OUT}/debian/%,${TARBALLS})
 RPMS=$(patsubst ${ARTIFACTS}/%-unix.tar.gz,${OUT}/rpm/%,${TARBALLS})
 
-all: debian neo4j-desktop-mac neo4j-desktop-windows rpm tarball-community tarball-enterprise
+all: debian neo4j-desktop-mac neo4j-desktop-windows rpm
 
 clean:
 	rm -rf ${OUT}
-
-${OUT}/neo4j-desktop/community-version.txt:
-	mkdir -p ${OUT}/neo4j-desktop
-	extract-version-from-pom ${COMMUNITY_POM} >${OUT}/neo4j-desktop/community-version.txt
 
 debian: ${DEBS}
 
@@ -32,28 +28,9 @@ neo4j-desktop-windows: ${OUT}/neo4j-desktop/community-version.txt ${OUT}/neo4j-d
 
 rpm: ${RPMS}
 
-tarball-community:
-	mkdir -p ${OUT}/tarballs
-	build-tarball ${ARTIFACTS}/neo4j-community-*-unix.tar.gz ${OUT}/tarballs
-
-tarball-community-extracted: tarball-community
-	mkdir -p ${OUT}/tarballs/extracted
-	tar -xf ${OUT}/tarballs/neo4j-community-*-unix.tar.gz -C ${OUT}/tarballs/extracted
-
-${OUT}/tarballs/community-version-debianized.txt: tarball-community
-	mkdir -p ${OUT}/tarballs
-	tarball-name-2-debian-version ${OUT}/tarballs/neo4j-community-*-unix.tar.gz >${OUT}/tarballs/community-version-debianized.txt
-
-tarball-enterprise:
-	build-tarball ${ARTIFACTS}/neo4j-enterprise-*-unix.tar.gz ${OUT}/tarballs
-
-tarball-enterprise-extracted: tarball-enterprise
-	mkdir -p ${OUT}/tarballs/extracted
-	tar -xf ${OUT}/tarballs/neo4j-enterprise-*-unix.tar.gz -C ${OUT}/tarballs/extracted
-
-${OUT}/tarballs/enterprise-version-debianized.txt: tarball-enterprise
-	mkdir -p ${OUT}/tarballs
-	tarball-name-2-debian-version ${OUT}/tarballs/neo4j-enterprise-*-unix.tar.gz >${OUT}/tarballs/enterprise-version-debianized.txt
+${OUT}/neo4j-desktop/community-version.txt:
+	mkdir -p ${OUT}/neo4j-desktop
+	extract-version-from-pom ${COMMUNITY_POM} >${OUT}/neo4j-desktop/community-version.txt
 
 ${OUT}/neo4j-desktop/uberjar-filename.txt: ${OUT}/neo4j-desktop/community-version.txt
 	mkdir -p ${OUT}/neo4j-desktop
@@ -64,11 +41,3 @@ ${OUT}/rpm/%: ${ARTIFACTS}/%-unix.tar.gz src/common/** src/rpm/**
 
 ${OUT}/debian/%: ${ARTIFACTS}/%-unix.tar.gz src/common/** src/debian/**
 	build-debian-package $@ $< ${DISTRIBUTION}
-
-${OUT}/tarballs/extracted/%: ${OUT}/tarballs/%-unix.tar.gz
-	mkdir -p $(dir $@)
-	tar -xf $< -C $(dir $@)
-
-${OUT}/tarballs/%-unix.tar.gz: ${ARTIFACTS}/%-unix.tar.gz
-	mkdir -p ${OUT}/tarballs
-	build-tarball $< ${OUT}/tarballs
