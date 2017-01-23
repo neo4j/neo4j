@@ -106,8 +106,7 @@ class RunnableBoltWorker implements Runnable, BoltWorker
         }
         catch ( Throwable t )
         {
-            userLog.error( "Fatal, worker for session '" + machine.key() + "' crashed. Please" +
-                           " contact your support representative if you are unable to resolve this.", t );
+            userLog.error( "Worker for session '" + machine.key() + "' crashed.", t );
         }
         finally
         {
