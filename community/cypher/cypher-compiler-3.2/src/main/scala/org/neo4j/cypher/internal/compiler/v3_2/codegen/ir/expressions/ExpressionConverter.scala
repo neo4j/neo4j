@@ -85,6 +85,9 @@ object ExpressionConverter {
       case CTNode => NodeProjection(variable)
       case CTRelationship => RelationshipProjection(variable)
       case CTString | CTBoolean | CTInteger | CTFloat => LoadVariable(variable)
+      case ListType(CTInteger) if variable.codeGenType.repr == ListReferenceType(IntType) =>
+        // TODO: PrimitiveProjection(variable)
+        AnyProjection(variable) // Temporarily resort to runtime projection
       case ListType(CTString) | ListType(CTBoolean) | ListType(CTInteger) | ListType(CTFloat) => LoadVariable(variable)
       case CTAny => AnyProjection(variable)
       case CTMap => AnyProjection(variable)

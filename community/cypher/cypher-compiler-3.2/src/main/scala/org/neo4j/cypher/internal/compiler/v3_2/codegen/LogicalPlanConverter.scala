@@ -31,7 +31,6 @@ import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{UnwindColl
 import org.neo4j.cypher.internal.compiler.v3_2.planner.{CantCompileQueryException, logical}
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Expression
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.Eagerly.immutableMapValues
-import org.neo4j.cypher.internal.frontend.v3_2.symbols.ListType
 import org.neo4j.cypher.internal.frontend.v3_2.{InternalException, ast, symbols}
 import org.neo4j.cypher.internal.ir.v3_2.IdName
 
@@ -571,12 +570,20 @@ object LogicalPlanConverter {
       val collection = ExpressionConverter.createExpression(unwind.expression)(context)
 
       // TODO: Handle range
-      val (elementType, castedCollection) = collection.codeGenType(context).ct match {
-        case ListType(innerType) => (innerType, collection)
-        case symbols.CTAny => (symbols.CTAny, CastToCollection(collection))
-        case t => throw new CantCompileQueryException(s"Unwind collection type $t not supported")
+      val collectionCodeGenType = collection.codeGenType(context)
+
+      val (elementCodeGenType, castedCollection) = collectionCodeGenType match {
+        case CodeGenType(symbols.ListType(innerType), ListReferenceType(innerReprType)) =>
+          (CodeGenType(innerType, innerReprType), collection)
+        case CodeGenType(symbols.ListType(innerType), _) =>
+          (CodeGenType(innerType, ReferenceType), collection)
+        case CodeGenType(symbols.CTAny, _) =>
+          (CodeGenType(symbols.CTAny, ReferenceType), CastToCollection(collection))
+        case t =>
+          throw new CantCompileQueryException(s"Unwind collection type $t not supported")
       }
-      val variable = Variable(unwind.variable.name, CodeGenType(elementType, ReferenceType), nullable = true)
+
+      val variable = Variable(unwind.variable.name, elementCodeGenType, nullable = elementCodeGenType.canBeNullable)
       context.addVariable(unwind.variable.name, variable)
 
       val (methodHandle, actions :: tl) = context.popParent().consume(context, this)

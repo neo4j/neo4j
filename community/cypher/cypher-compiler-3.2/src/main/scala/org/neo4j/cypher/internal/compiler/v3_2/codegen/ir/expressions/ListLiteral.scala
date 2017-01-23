@@ -21,7 +21,9 @@ package org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.CodeGenContext
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi.MethodStructure
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
+import org.neo4j.cypher.internal.compiler.v3_2.helpers.LiteralTypeSupport
+import org.neo4j.cypher.internal.frontend.v3_2.symbols
+import org.neo4j.cypher.internal.frontend.v3_2.symbols.ListType
 
 case class ListLiteral(expressions: Seq[CodeGenExpression]) extends CodeGenExpression {
 
@@ -30,18 +32,29 @@ case class ListLiteral(expressions: Seq[CodeGenExpression]) extends CodeGenExpre
       instruction.init(generator)
     }
 
-  override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) =
-    structure.asList(expressions.map(e => structure.box(e.generateExpression(structure), e.codeGenType)))
+  override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) = {
+    val cType = codeGenType
+    cType match {
+      case CodeGenType(ListType(_), ListReferenceType(innerRepr)) if RepresentationType.isPrimitive(innerRepr) =>
+        structure.asPrimitiveStream(expressions.map(e => {
+          e.generateExpression(structure)
+        }), cType)
+
+      case _ =>
+        structure.asList(expressions.map(e => structure.box(e.generateExpression(structure), e.codeGenType)))
+    }
+  }
 
   override def nullable(implicit context: CodeGenContext) = false
 
   override def codeGenType(implicit context: CodeGenContext) = {
     val commonType =
       if (expressions.nonEmpty)
-        expressions.map(_.codeGenType.ct).reduce[CypherType](_ leastUpperBound _)
+        expressions.map(_.codeGenType.ct).reduce[symbols.CypherType](_ leastUpperBound _)
       else
-        CTAny
+        symbols.CTAny
 
-    CodeGenType(CTList(commonType), ReferenceType)
+    val elementType = LiteralTypeSupport.deriveCodeGenType(commonType)
+    CodeGenType(symbols.CTList(commonType), ListReferenceType(elementType.repr))
   }
 }

@@ -26,8 +26,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.LongStream;
 
-import org.neo4j.cypher.internal.compiler.v3_2.helpers.JavaListWrapper;
 import org.neo4j.cypher.internal.frontend.v3_2.CypherTypeException;
 import org.neo4j.cypher.internal.frontend.v3_2.IncomparableValuesException;
 import org.neo4j.graphdb.Node;
@@ -196,6 +196,10 @@ public abstract class CompiledConversionUtils
         {
             ((Map) anyValue).replaceAll( (k, v) -> materializeAnyResult( nodeManager, v ) );
             return anyValue;
+        }
+        else if ( anyValue instanceof LongStream )
+        {
+            return ((LongStream) anyValue).boxed().collect( Collectors.toList() );
         }
         else
         {

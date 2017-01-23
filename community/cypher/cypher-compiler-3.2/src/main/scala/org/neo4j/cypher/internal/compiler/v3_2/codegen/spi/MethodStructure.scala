@@ -61,6 +61,7 @@ trait MethodStructure[E] {
   def constantExpression(value: Object): E
   def asMap(map: Map[String, E]): E
   def asList(values: Seq[E]): E
+  def asPrimitiveStream(values: Seq[E], codeGenType: CodeGenType): E
 
   def toSet(value: E): E
   def newDistinctSet(name: String, codeGenTypes: Iterable[CodeGenType])

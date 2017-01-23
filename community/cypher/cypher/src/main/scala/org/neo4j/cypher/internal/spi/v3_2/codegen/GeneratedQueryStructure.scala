@@ -27,7 +27,7 @@ import org.neo4j.codegen.TypeReference._
 import org.neo4j.codegen.source.{SourceCode, SourceVisitor}
 import org.neo4j.codegen.{CodeGenerator, Parameter, _}
 import org.neo4j.cypher.internal.compiler.v3_2.codegen._
-import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions.{BoolType, CodeGenType, FloatType, IntType, ReferenceType}
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions._
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi.{CodeStructure, CodeStructureResult, MethodStructure}
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_2.helpers._
@@ -191,6 +191,7 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
     case CodeGenType(symbols.CTFloat, FloatType) => typeRef[Double]
     case CodeGenType(symbols.CTBoolean, BoolType) => typeRef[Boolean]
     case CodeGenType(symbols.CTString, ReferenceType) => typeRef[String]
+    case CodeGenType(symbols.ListType(_), ListReferenceType(IntType)) => typeRef[Array[Long]]
     case _ => typeRef[Object]
   }
 

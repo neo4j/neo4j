@@ -20,7 +20,9 @@
 package org.neo4j.codegen;
 
 import java.util.Iterator;
+import java.util.PrimitiveIterator;
 import java.util.function.Consumer;
+import java.util.stream.LongStream;
 
 import static org.neo4j.codegen.LocalVariables.copy;
 import static org.neo4j.codegen.MethodReference.methodReference;
@@ -155,6 +157,21 @@ public class CodeBlock implements AutoCloseable
         block.assign( local.type(), local.name(),
                 Expression.cast( local.type(), Expression.invoke( block.load( iteratorName ),
                         methodReference( Iterator.class, Object.class, "next" ) ) ) );
+
+        return block;
+    }
+
+    public CodeBlock forEachLong( Parameter local, Expression iterable )
+    {
+        String iteratorName = local.name() + "Iter";
+
+        assign( PrimitiveIterator.OfLong.class, iteratorName, Expression.invoke( iterable,
+                MethodReference.methodReference( LongStream.class, PrimitiveIterator.OfLong.class, "iterator" ) ) );
+        CodeBlock block = whileLoop( Expression
+                .invoke( load( iteratorName ), methodReference( PrimitiveIterator.OfLong.class, boolean.class, "hasNext" ) ) );
+        block.assign( local.type(), local.name(),
+                Expression.invoke( block.load( iteratorName ),
+                        methodReference( PrimitiveIterator.OfLong.class, long.class, "nextLong" ) ) );
 
         return block;
     }

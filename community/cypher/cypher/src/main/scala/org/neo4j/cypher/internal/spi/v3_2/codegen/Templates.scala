@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.spi.v3_2.codegen
 import java.util
 import java.util.function.Consumer
+import java.util.stream.LongStream
 
 import org.neo4j.codegen.ExpressionTemplate._
 import org.neo4j.codegen.MethodReference._
@@ -57,6 +58,10 @@ object Templates {
   def asList[T](values: Seq[Expression])(implicit manifest: Manifest[T]): Expression = Expression.invoke(
     methodReference(typeRef[util.Arrays], typeRef[util.List[T]], "asList", typeRef[Array[Object]]),
     Expression.newArray(typeRef[T], values: _*))
+
+  def asLongStream(values: Seq[Expression]): Expression = Expression.invoke(
+    methodReference(typeRef[LongStream], typeRef[LongStream], "of", typeRef[Array[Long]]),
+    Expression.newArray(typeRef[Long], values: _*))
 
   def handleKernelExceptions[V](generate: CodeBlock, ro: FieldReference, finalizers: Seq[CodeBlock => Unit])
                          (block: CodeBlock => V): V = {

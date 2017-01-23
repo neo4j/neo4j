@@ -32,3 +32,11 @@ case object FloatType extends RepresentationType
 
 case object ReferenceType extends RepresentationType
 
+case class ListReferenceType(inner: RepresentationType) extends RepresentationType
+
+object RepresentationType {
+  def isPrimitive(repr: RepresentationType) = repr match {
+    case IntType | FloatType | BoolType => true
+    case _ => false
+  }
+}

@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.codegen.CompiledConversionUtils.CompositeKey
 import org.neo4j.cypher.internal.codegen._
 import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.commands.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.compiler.v3_2.codegen._
-import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions.{BoolType, CodeGenType, FloatType, IntType, ReferenceType, Parameter => _}
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions.{BoolType, CodeGenType, FloatType, IntType, Parameter => _, ReferenceType, _}
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi._
 import org.neo4j.cypher.internal.compiler.v3_2.helpers._
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
@@ -165,8 +165,16 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   override def forEach(varName: String, codeGenType: CodeGenType, iterable: Expression)
                       (block: MethodStructure[Expression] => Unit) =
-    using(generator.forEach(Parameter.param(lowerType(codeGenType), varName), iterable)) { body =>
-      block(copy(generator = body))
+    codeGenType match {
+      case CodeGenType.primitiveInt =>
+        using(generator.forEachLong(Parameter.param(lowerType(codeGenType), varName), iterable)) { body =>
+          block(copy(generator = body))
+        }
+      case _ => {
+        using(generator.forEach(Parameter.param(lowerType(codeGenType), varName), iterable)) { body =>
+          block(copy(generator = body))
+        }
+      }
     }
 
   override def ifStatement(test: Expression)(block: (MethodStructure[Expression]) => Unit) = {
@@ -467,6 +475,15 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   }
 
   override def asList(values: Seq[Expression]) = Templates.asList[Object](values)
+
+  override def asPrimitiveStream(values: Seq[Expression], codeGenType: CodeGenType) = {
+    codeGenType match {
+      case CodeGenType(_, ListReferenceType(IntType)) =>
+        Templates.asLongStream(values)
+      case _ =>
+        throw new IllegalArgumentException(s"CodeGenType $codeGenType not supported as primitive stream")
+    }
+  }
 
   override def toSet(value: Expression) =
     createNewInstance(typeRef[util.HashSet[Object]], (typeRef[util.Collection[_]], value))
