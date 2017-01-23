@@ -25,6 +25,10 @@ import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.kernel.api.schema.EntityPropertyDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
+/**
+ * Partial implementation of SchemaRule. Note that the id and kind of a SchemaRule are fixed properties that should
+ * never be modified of overridden by subclasses.
+ */
 public abstract class AbstractSchemaRule implements SchemaRule, RecordSerializable
 {
     protected final Kind kind;

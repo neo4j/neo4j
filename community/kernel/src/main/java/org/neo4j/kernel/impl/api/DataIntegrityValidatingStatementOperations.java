@@ -234,7 +234,6 @@ public class DataIntegrityValidatingStatementOperations implements
             NodePropertyDescriptor descriptor )
             throws AlreadyIndexedException, AlreadyConstrainedException
     {
-        //TODO: Consider using schemaReadDelegate.indexGetForLabelAndPropertyKey(state, indexDescriptor)
         for ( IndexDescriptor index : loop( schemaReadDelegate.indexesGetForLabel( state, descriptor.getLabelId() ) ) )
         {
             if ( index.equals( descriptor ) )

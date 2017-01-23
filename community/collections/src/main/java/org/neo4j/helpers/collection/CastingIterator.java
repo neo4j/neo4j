@@ -22,10 +22,10 @@ package org.neo4j.helpers.collection;
 import java.util.Iterator;
 
 /**
- * An iterator which filters another iterator, only letting items with certain
- * criteria pass through. All iteration/filtering is done lazily.
+ * An iterator which filters for elements of a given subtype, and casts to this type.
  *
- * @param <T> the type of items in the iteration.
+ * @param <T> the type of elements returned by this iterator.
+ * @param <A> the type of elements read by this iterator. This must be a supertype of T.
  */
 public class CastingIterator<T extends A, A> extends PrefetchingIterator<T>
 {
