@@ -27,9 +27,9 @@ import static java.util.Objects.requireNonNull;
  * In Cypher there are three different modes of execution:
  * <ul>
  * <li>Normal execution,</li>
- * <li>execution with the <a href="http://neo4j.com/docs/developer-manual/current/#execution-plans">{@code PROFILE}</a> directive,
+ * <li>execution with the <a href="http://neo4j.com/docs/developer-manual/current/cypher/execution-plans/">{@code PROFILE}</a> directive,
  * and</li>
- * <li>execution with the <a href="http://neo4j.com/docs/developer-manual/current/#execution-plans">{@code EXPLAIN}</a>
+ * <li>execution with the <a href="http://neo4j.com/docs/developer-manual/current/cypher/execution-plans/">{@code EXPLAIN}</a>
  * directive.</li>
  * </ul>
  * Instances of this class contain the required information to be able to tell these different execution modes apart.
@@ -123,7 +123,7 @@ public final class QueryExecutionType
      * {@linkplain ExecutionPlanDescription#getProfilerStatistics() contains profiling information}.
      *
      * This is {@code true} for queries executed with the
-     * <a href="http://neo4j.com/docs/developer-manual/current/#execution-plans">{@code PROFILE}</a> directive.
+     * <a href="http://neo4j.com/docs/developer-manual/current/cypher/execution-plans/">{@code PROFILE}</a> directive.
      *
      * @return {@code true} if the results from this execution would contain profiling information.
      */
@@ -137,7 +137,7 @@ public final class QueryExecutionType
      * {@linkplain ExecutionPlanDescription description of the execution plan}.
      *
      * This is {@code true} for queries executed with either the
-     * <a href="http://neo4j.com/docs/developer-manual/current/#execution-plans">{@code EXPLAIN} or {@code PROFILE} directives</a>.
+     * <a href="http://neo4j.com/docs/developer-manual/current/cypher/execution-plans/">{@code EXPLAIN} or {@code PROFILE} directives</a>.
      *
      * @return {@code true} if a description of the plan should be presented to the user.
      */
@@ -148,7 +148,7 @@ public final class QueryExecutionType
 
     /**
      * Signifies that the query was executed with the
-     * <a href="http://neo4j.com/docs/developer-manual/current/#execution-plans">{@code EXPLAIN} directive</a>.
+     * <a href="http://neo4j.com/docs/developer-manual/current/cypher/execution-plans/">{@code EXPLAIN} directive</a>.
      *
      * @return {@code true} if the query was executed using the {@code EXPLAIN} directive.
      */

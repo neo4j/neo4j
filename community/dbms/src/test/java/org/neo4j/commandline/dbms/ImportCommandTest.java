@@ -191,7 +191,7 @@ public class ImportCommandTest
                             "        INTEGER: arbitrary integer values for identifying nodes,%n" +
                             "        ACTUAL: (advanced) actual node ids.%n" +
                             "      For more information on id handling, please see the Neo4j Manual:%n" +
-                            "      http://neo4j.com/docs/operations-manual/current/tools/import/%n" +
+                            "      https://neo4j.com/docs/operations-manual/current/tools/import/%n" +
                             "      [default:STRING]%n" +
                             "  --input-encoding=<character-set>%n" +
                             "      Character set that input data is encoded in. [default:UTF-8]%n" ),

@@ -34,7 +34,7 @@ public class QueryExecutionException extends RuntimeException
     }
 
     /**
-     * The Neo4j error <a href="http://neo4j.com/docs/developer-manual/current/#status-codes">status code</a>.
+     * The Neo4j error <a href="http://neo4j.com/docs/developer-manual/current/reference/status-codes/">status code</a>.
      *
      * @return the Neo4j error status code.
      */

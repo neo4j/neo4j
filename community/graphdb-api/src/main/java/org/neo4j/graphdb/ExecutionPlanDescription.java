@@ -63,7 +63,7 @@ public interface ExecutionPlanDescription
      * Signifies that the query was profiled, and that statistics from the profiling can
      * {@link #getProfilerStatistics() be retrieved}.
      *
-     * The <a href="http://neo4j.com/docs/developer-manual/current/#execution-plans">{@code PROFILE}</a> directive in Cypher
+     * The <a href="http://neo4j.com/docs/developer-manual/current/cypher/execution-plans/">{@code PROFILE}</a> directive in Cypher
      * ensures the presence of profiler statistics in the plan description.
      *
      * @return true, if {@link ProfilerStatistics} are available for this execution step

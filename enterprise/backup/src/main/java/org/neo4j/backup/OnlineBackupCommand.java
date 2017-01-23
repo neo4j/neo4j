@@ -89,7 +89,7 @@ public class OnlineBackupCommand implements AdminCommand
         {
             return "Perform an online backup from a running Neo4j enterprise server. Neo4j's backup service must have" +
                     " been configured on the server beforehand. " +
-                    "See http://neo4j.com/docs/operations-manual/current/backup/ for more details.";
+                    "See https://neo4j.com/docs/operations-manual/current/backup/ for more details.";
         }
 
         @Override
