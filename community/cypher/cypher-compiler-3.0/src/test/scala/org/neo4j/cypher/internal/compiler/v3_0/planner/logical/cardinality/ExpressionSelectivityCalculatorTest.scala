@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.cardinality
 
 import org.mockito.Mockito.when
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{Cardinality, Selectivity}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.IdName
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{Cardinality, Selectivity}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{Predicate, Selections}
 import org.neo4j.cypher.internal.compiler.v3_0.spi.GraphStatistics
 import org.neo4j.cypher.internal.frontend.v3_0.ast._

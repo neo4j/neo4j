@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -28,10 +28,11 @@ import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.consistency.statistics.Statistics;
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -54,6 +55,7 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.RandomRule;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.Label.label;
@@ -158,9 +160,12 @@ public class DetectAllRelationshipInconsistenciesIT
 
     private GraphDatabaseAPI getGraphDatabaseAPI()
     {
-        return (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( directory.absolutePath() )
+        TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
+        GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( directory.absolutePath() );
+        GraphDatabaseService database = builder
                 .setConfig( GraphDatabaseSettings.record_format, getRecordFormatName() )
                 .newGraphDatabase();
+        return (GraphDatabaseAPI) database;
     }
 
     protected String getRecordFormatName()

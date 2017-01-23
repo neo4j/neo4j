@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -67,15 +67,16 @@ import static org.neo4j.helpers.NamedThreadFactory.daemon;
  */
 public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
 {
-    public static final String QUEUE_THRESHOLD_NAME = "queue_threshold";
     static final String TASK_QUEUE_SIZE_NAME = "task_queue_size";
     static final String AWAIT_TIMEOUT_MINUTES_NAME = "await_timeout_minutes";
     static final String BATCH_SIZE_NAME = "batch_size";
+    static final String MAXIMUM_NUMBER_OF_WORKERS_NAME = "population_workers_maximum";
 
     private static final String EOL = System.lineSeparator();
     private static final String FLUSH_THREAD_NAME_PREFIX = "Index Population Flush Thread";
 
-    private final int QUEUE_THRESHOLD = FeatureToggles.getInteger( getClass(), QUEUE_THRESHOLD_NAME, 20_000 );
+    private final int MAXIMUM_NUMBER_OF_WORKERS = FeatureToggles.getInteger( getClass(), MAXIMUM_NUMBER_OF_WORKERS_NAME,
+            Runtime.getRuntime().availableProcessors() - 1 );
     private final int TASK_QUEUE_SIZE = FeatureToggles.getInteger( getClass(), TASK_QUEUE_SIZE_NAME,
             getNumberOfPopulationWorkers() * 2 );
     private final int AWAIT_TIMEOUT_MINUTES = FeatureToggles.getInteger( getClass(), AWAIT_TIMEOUT_MINUTES_NAME, 30 );
@@ -131,22 +132,19 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
     @Override
     protected void populateFromQueue( long currentlyIndexedNodeId )
     {
-        if ( queue.size() >= QUEUE_THRESHOLD )
-        {
-            log.debug( "Populating from queue." + EOL + this );
-            flushAll();
-            awaitCompletion();
-            super.populateFromQueue( currentlyIndexedNodeId );
-            log.debug( "Drained queue and all batched updates." + EOL + this );
-        }
+        log.debug( "Populating from queue." + EOL + this );
+        flushAll();
+        awaitCompletion();
+        super.populateFromQueue( currentlyIndexedNodeId );
+        log.debug( "Drained queue and all batched updates." + EOL + this );
     }
 
     @Override
     public String toString()
     {
-        String updatesString = batchedUpdates.entrySet()
+        String updatesString = batchedUpdates.values()
                 .stream()
-                .map( entry -> entry.getKey() + " - " + entry.getValue().size() + " updates" )
+                .map( entry -> entry.size() + " updates" )
                 .collect( joining( ", ", "[", "]" ) );
 
         return "BatchingMultipleIndexPopulator{activeTasks=" + activeTasks + ", executor=" + executor + ", " +
@@ -334,9 +332,9 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
      *
      * @return number of threads that will be used for index population
      */
-    private static int getNumberOfPopulationWorkers()
+    private int getNumberOfPopulationWorkers()
     {
-        return Math.max( 2, Runtime.getRuntime().availableProcessors() - 1 );
+        return Math.max( 2, MAXIMUM_NUMBER_OF_WORKERS );
     }
 
     /**
@@ -383,7 +381,7 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
             {
                 delegate.run();
                 log.info( "Completed node store scan. " +
-                          "Flushing all pending deletes." + EOL + BatchingMultipleIndexPopulator.this );
+                          "Flushing all pending updates." + EOL + BatchingMultipleIndexPopulator.this );
                 flushAll();
             }
             catch ( Throwable scanError )
@@ -408,9 +406,22 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
         }
 
         @Override
+        public void acceptUpdate( MultipleIndexUpdater updater, NodePropertyUpdate update,
+                long currentlyIndexedNodeId )
+        {
+            delegate.acceptUpdate( updater, update, currentlyIndexedNodeId );
+        }
+
+        @Override
         public PopulationProgress getProgress()
         {
             return delegate.getProgress();
+        }
+
+        @Override
+        public void configure( List<IndexPopulation> populations )
+        {
+            delegate.configure( populations );
         }
     }
 }

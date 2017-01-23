@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>3.0.7-SNAPSHOT</version>
+    <version>3.0.9-SNAPSHOT</version>
 
     <relativePath>..</relativePath>
   </parent>
@@ -11,7 +11,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j.build</groupId>
   <artifactId>packaging-build</artifactId>
-  <version>3.0.7-SNAPSHOT</version>
+  <version>3.0.9-SNAPSHOT</version>
 
   <name>Neo4j Packaging Build</name>
   <packaging>pom</packaging>
@@ -81,18 +81,6 @@ terms of the relevant Commercial Agreement.
           <version>${project.version}</version>
           <type>pom</type>
         </dependency>
-        <dependency>
-          <groupId>org.neo4j.doc</groupId>
-          <artifactId>neo4j-manual-parent</artifactId>
-          <version>${project.version}</version>
-          <type>pom</type>
-        </dependency>
-        <dependency>
-          <groupId>org.neo4j.doc</groupId>
-          <artifactId>neo4j-manual</artifactId>
-          <version>${project.version}</version>
-          <type>pom</type>
-        </dependency>
       </dependencies>
       <build>
         <plugins>
@@ -111,10 +99,8 @@ terms of the relevant Commercial Agreement.
                     <include>org.neo4j:*</include>
                     <include>org.neo4j.app:*</include>
                     <include>org.neo4j.build:*</include>
-                    <include>org.neo4j.doc:*</include>
                     <include>org.neo4j.drivers:*</include>
                     <include>org.neo4j.server.plugin:*</include>
-                    <include>org.neo4j.examples:*</include>
                   </includes>
                   <excludes>
                     <exclude>org.neo4j:neo4j-cypher-compiler-1.9</exclude>
@@ -131,18 +117,6 @@ terms of the relevant Commercial Agreement.
           </plugin>
         </plugins>
       </build>
-    </profile>
-    <profile>
-      <id>installer-qa</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-        <property>
-          <name>installerQA</name>
-        </property>
-      </activation>
-      <modules>
-        <module>installer-qa</module>
-      </modules>
     </profile>
   </profiles>
 

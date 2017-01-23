@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,6 +19,7 @@
  */
 package org.neo4j.metrics;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -28,11 +29,15 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.EnterpriseGraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
@@ -44,14 +49,12 @@ import org.neo4j.metrics.source.db.TransactionMetrics;
 import org.neo4j.metrics.source.jvm.ThreadMetrics;
 import org.neo4j.test.ha.ClusterRule;
 
+import static java.lang.System.currentTimeMillis;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertThat;
-
-import static java.lang.System.currentTimeMillis;
-
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.check_point_interval_time;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.cypher_min_replan_interval;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -68,8 +71,8 @@ public class MetricsKernelExtensionFactoryIT
     @Rule
     public final ClusterRule clusterRule = new ClusterRule( getClass() );
 
-    private File outputPath;
     private HighlyAvailableGraphDatabase db;
+    private File outputPath;
 
     @Before
     public void setup() throws Throwable
@@ -86,6 +89,12 @@ public class MetricsKernelExtensionFactoryIT
         );
         db = clusterRule.withSharedConfig( config ).withCluster( clusterOfSize( 1 ) ).startCluster().getMaster();
         addNodes( 1 ); // to make sure creation of label and property key tokens do not mess up with assertions in tests
+    }
+
+    @After
+    public void tearDown()
+    {
+        db.shutdown();
     }
 
     @Test
@@ -221,6 +230,30 @@ public class MetricsKernelExtensionFactoryIT
         assertThat( threadCountResult, greaterThanOrEqualTo( 0L ) );
     }
 
+    @Test
+    public void mustBeAbleToStartWithNullTracer() throws Exception
+    {
+        // Start the database
+        File disabledTracerDb = clusterRule.directory( "disabledTracerDb" );
+        GraphDatabaseBuilder builder = new EnterpriseGraphDatabaseFactory().newEmbeddedDatabaseBuilder( disabledTracerDb );
+        GraphDatabaseService nullTracerDatabase =
+                builder.setConfig( MetricsSettings.neoEnabled, Settings.TRUE ).setConfig( csvEnabled, Settings.TRUE )
+                        .setConfig( csvPath, outputPath.getAbsolutePath() )
+                        .setConfig( GraphDatabaseFacadeFactory.Configuration.tracer, "null" ) // key point!
+                        .newGraphDatabase();
+        try ( Transaction tx = nullTracerDatabase.beginTx() )
+        {
+            Node node = nullTracerDatabase.createNode();
+            node.setProperty( "all", "is well" );
+            tx.success();
+        }
+        finally
+        {
+            nullTracerDatabase.shutdown();
+        }
+        // We assert that no exception is thrown during startup or the operation of the database.
+    }
+
     private void addNodes( int numberOfNodes )
     {
         for ( int i = 0; i < numberOfNodes; i++ )
@@ -233,5 +266,4 @@ public class MetricsKernelExtensionFactoryIT
             }
         }
     }
-
 }

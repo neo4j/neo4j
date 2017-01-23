@@ -3,14 +3,14 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>3.0.7-SNAPSHOT</version>
+    <version>3.0.9-SNAPSHOT</version>
     <relativePath>..</relativePath>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j.build</groupId>
   <artifactId>enterprise-build</artifactId>
-  <version>3.0.7-SNAPSHOT</version>
+  <version>3.0.9-SNAPSHOT</version>
 
   <name>Neo4j - Enterprise Build</name>
   <packaging>pom</packaging>
@@ -117,6 +117,11 @@ terms of the relevant Commercial Agreement.
         <dependency>
           <groupId>org.neo4j.test</groupId>
           <artifactId>neo4j-harness-enterprise</artifactId>
+          <version>${project.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>org.neo4j</groupId>
+          <artifactId>neo4j-deferred-locks</artifactId>
           <version>${project.version}</version>
         </dependency>
       </dependencies>

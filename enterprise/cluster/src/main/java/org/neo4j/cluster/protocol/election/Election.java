@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -36,6 +36,4 @@ public interface Election
      * currently. It is allowed for the same instance to be reelected.
      */
     void performRoleElections();
-
-    void promote( InstanceId node, String role );
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -45,6 +45,18 @@ public class SimpleLuceneLabelScanStoreReader implements LabelScanReader
     public PrimitiveLongIterator nodesWithLabel( int labelId )
     {
         return strategy.nodesWithLabel( partitionSearcher.getIndexSearcher(), labelId );
+    }
+
+    @Override
+    public PrimitiveLongIterator nodesWithAnyOfLabels( int... labelIds )
+    {
+        return strategy.nodesWithAnyOfLabels( partitionSearcher.getIndexSearcher(), labelIds );
+    }
+
+    @Override
+    public PrimitiveLongIterator nodesWithAllLabels( int... labelIds )
+    {
+        return strategy.nodesWithAllLabels( partitionSearcher.getIndexSearcher(), labelIds );
     }
 
     @Override

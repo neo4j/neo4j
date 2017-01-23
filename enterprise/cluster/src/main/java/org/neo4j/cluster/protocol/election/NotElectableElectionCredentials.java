@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -34,7 +34,7 @@ public final class NotElectableElectionCredentials implements ElectionCredential
     {}
 
     @Override
-    public int compareTo( Object o )
+    public int compareTo( ElectionCredentials o )
     {
         return -1;
     }

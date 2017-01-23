@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -631,7 +631,10 @@ public class MuninnPageCache implements PageCache
             if ( current == null )
             {
                 unparkEvictor();
-                return cooperativelyEvict( faultEvent );
+                MuninnPage page = cooperativelyEvict( faultEvent );
+                if ( page != null ) {
+                    return page;
+                }
             }
             else if ( current instanceof MuninnPage )
             {
@@ -666,6 +669,10 @@ public class MuninnPageCache implements PageCache
         do
         {
             assertHealthy();
+            if ( getFreelistHead() != null )
+            {
+                return null;
+            }
 
             if ( clockArm == pages.length )
             {
@@ -852,17 +859,14 @@ public class MuninnPageCache implements PageCache
                         if ( pageEvicted )
                         {
                             Object current;
-                            Object nextListHead;
-                            FreePage freePage = null;
+                            FreePage freePage = new FreePage( page );
                             do
                             {
                                 current = getFreelistHead();
-                                freePage = freePage == null?
-                                           new FreePage( page ) : freePage;
                                 freePage.setNext( (FreePage) current );
-                                nextListHead = freePage;
                             }
-                            while ( !compareAndSetFreelistHead( current, nextListHead ) );
+                            while ( !compareAndSetFreelistHead(
+                                    current, freePage ) );
                         }
                     }
                     finally

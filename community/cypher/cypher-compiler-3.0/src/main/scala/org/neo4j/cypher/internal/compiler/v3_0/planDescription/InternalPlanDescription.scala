@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -82,6 +82,9 @@ object InternalPlanDescription {
     case class ColumnsLeft(value: Seq[String]) extends Argument
     case class Expression(value: ast.Expression) extends Argument
     case class LegacyExpression(value: commands.expressions.Expression) extends Argument
+    case class LegacyExpressions(expressions: Map[String, commands.expressions.Expression]) extends Argument {
+      override def name = "LegacyExpression"
+    }
     case class UpdateActionName(value: String) extends Argument
     case class MergePattern(startPoint: String) extends Argument
     case class LegacyIndex(value: String) extends Argument
@@ -112,7 +115,7 @@ object InternalPlanDescription {
       override def name = "runtime-impl"
     }
     case class ExpandExpression(from: String, relName: String, relTypes:Seq[String], to: String,
-                                direction: SemanticDirection, varLength: Boolean = false) extends Argument
+                                direction: SemanticDirection, minLength: Int, maxLength: Option[Int]) extends Argument
     case class CountNodesExpression(ident: String, label: Option[LazyLabel]) extends Argument
     case class CountRelationshipsExpression(ident: String, startLabel: Option[LazyLabel],
                                             typeNames: LazyTypes, endLabel: Option[LazyLabel]) extends Argument

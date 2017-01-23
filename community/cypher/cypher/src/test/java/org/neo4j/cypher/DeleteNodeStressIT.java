@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -115,24 +115,31 @@ public class DeleteNodeStressIT
         assertFalse(hasFailed.get());
     }
 
+    @Test
+    public void shouldBeAbleToCheckLabelsWhileDeleting() throws IOException, ExecutionException, InterruptedException
+    {
+        // Given
+        executeInThread( "MATCH (n:L {prop:42}) OPTIONAL MATCH (m:L {prop:1337}) WITH n RETURN labels(n)" );
+        executeInThread( "MATCH (n:L {prop:42}) DELETE n" );
+
+        // When
+        executorService.awaitTermination( 3L, TimeUnit.SECONDS );
+        assertFalse(hasFailed.get());
+    }
+
     private void executeInThread( final String query )
     {
-        executorService.execute( new Runnable()
-        {
-            @Override
-            public void run()
+        executorService.execute( () -> {
+            Result execute = db.execute( query );
+            try
             {
-                Result execute = db.execute( query );
-                try
-                {
-                    //resultAsString is good test case since it serializes labels, types, properties etc
-                    execute.resultAsString();
-                }
-                catch ( Exception e )
-                {
-                    e.printStackTrace();
-                    hasFailed.set( true );
-                }
+                //resultAsString is good test case since it serializes labels, types, properties etc
+                execute.resultAsString();
+            }
+            catch ( Exception e )
+            {
+                e.printStackTrace();
+                hasFailed.set( true );
             }
         } );
     }

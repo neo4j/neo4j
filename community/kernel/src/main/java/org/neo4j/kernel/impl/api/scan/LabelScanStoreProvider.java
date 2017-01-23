@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -18,6 +18,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.kernel.impl.api.scan;
+
+import org.apache.commons.lang3.ArrayUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -113,7 +115,7 @@ public class LabelScanStoreProvider extends LifecycleAdapter implements Comparab
             // Keep the write for using it in visit
             this.writer = writer;
             IndexStoreView view = lazyIndexStoreView.get();
-            StoreScan<IOException> scan = view.visitNodes( ALWAYS_TRUE_INT, ALWAYS_TRUE_INT, null, this );
+            StoreScan<IOException> scan = view.visitNodes( ArrayUtils.EMPTY_INT_ARRAY, ALWAYS_TRUE_INT, null, this );
             scan.run();
             return count;
         }

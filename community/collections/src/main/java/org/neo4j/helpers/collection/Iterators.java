@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -723,5 +723,18 @@ public abstract class Iterators
             }
         }
         return sb.toString();
+    }
+
+    public static <T> PrefetchingIterator<T> prefetching( Iterator<T> iterator )
+    {
+        return iterator instanceof PrefetchingIterator ? (PrefetchingIterator<T>) iterator :
+            new PrefetchingIterator<T>()
+            {
+                @Override
+                protected T fetchNextOrNull()
+                {
+                    return iterator.hasNext() ? iterator.next() : null;
+                }
+            };
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -39,7 +39,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
 
   private def parseReturnedExpr(queryText: String) =
     projectionInlinedAst(queryText) match {
-      case Query(_, SingleQuery(Seq(_, Return(_, ReturnItems(_, Seq(AliasedReturnItem(expr, Variable("p")))), _, _, _)))) => expr
+      case Query(_, SingleQuery(Seq(_, Return(_, ReturnItems(_, Seq(AliasedReturnItem(expr, Variable("p")))), _, _, _, _)))) => expr
     }
 
   test("MATCH p = (a) RETURN p" ) {

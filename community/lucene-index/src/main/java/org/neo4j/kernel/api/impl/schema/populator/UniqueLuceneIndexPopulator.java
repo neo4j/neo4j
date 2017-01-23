@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -64,6 +64,12 @@ public class UniqueLuceneIndexPopulator extends LuceneIndexPopulator
     public void includeSample( NodePropertyUpdate update )
     {
         sampler.increment( 1 );
+    }
+
+    @Override
+    public void configureSampling( boolean onlineSampling )
+    {
+        // nothing to configure so far
     }
 
     @Override

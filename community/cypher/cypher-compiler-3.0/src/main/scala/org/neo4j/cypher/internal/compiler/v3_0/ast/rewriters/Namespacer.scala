@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -48,7 +48,7 @@ object Namespacer {
     statement.treeFold(Set.empty[Ref[Variable]]) {
 
       // ignore variable in StartItem that represents index names and key names
-      case Return(_, ReturnItems(_, items), _, _, _) =>
+      case Return(_, ReturnItems(_, items), _, _, _, _) =>
         val variables = items.map(_.alias.map(Ref[Variable]).get)
         acc => (acc ++ variables, Some(identity))
     }

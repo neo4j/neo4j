@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,14 +19,15 @@
  */
 package org.neo4j.index.impl.lucene.legacy;
 
-import java.util.Map;
-
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.rules.TestName;
+
+import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -37,19 +38,24 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public abstract class AbstractLuceneIndexTest
 {
     @Rule
     public final TestName testname = new TestName();
+    @ClassRule
+    public static TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( AbstractLuceneIndexTest.class );
     protected static GraphDatabaseService graphDb;
     protected Transaction tx;
 
     @BeforeClass
     public static void setUpStuff()
     {
-        graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        graphDb = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.graphDbDir() );
     }
 
     @AfterClass
@@ -136,28 +142,6 @@ public abstract class AbstractLuceneIndexTest
                 }
             };
 
-    static class FastRelationshipCreator implements EntityCreator<Relationship>
-    {
-        private Node node, otherNode;
-
-        public Relationship create( Object... properties )
-        {
-            if ( node == null )
-            {
-                node = graphDb.createNode();
-                otherNode = graphDb.createNode();
-            }
-            Relationship rel = node.createRelationshipTo( otherNode, TEST_TYPE );
-            setProperties( rel, properties );
-            return rel;
-        }
-        
-        public void delete( Relationship entity )
-        {
-            entity.delete();
-        }
-    }
-    
     private static void setProperties( PropertyContainer entity, Object... properties )
     {
         for ( Map.Entry<String, Object> entry : MapUtil.map( properties ).entrySet() )
@@ -165,7 +149,12 @@ public abstract class AbstractLuceneIndexTest
             entity.setProperty( entry.getKey(), entry.getValue() );
         }
     }
-    
+
+    protected Index<Node> nodeIndex()
+    {
+        return nodeIndex( currentIndexName(), stringMap() );
+    }
+
     protected Index<Node> nodeIndex( Map<String, String> config )
     {
         return nodeIndex( currentIndexName(), config );

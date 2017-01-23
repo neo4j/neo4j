@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -127,11 +127,14 @@ abstract class MuninnPageCursor extends PageCursor
         MuninnPageCursor cursor = this;
         do
         {
-            cursor.unpinCurrentPage();
-            cursor.releaseCursor();
-            // We null out the pagedFile field to allow it and its (potentially big) translation table to be garbage
-            // collected when the file is unmapped, since the cursors can stick around in thread local caches, etc.
-            cursor.pagedFile = null;
+            if ( cursor.pagedFile != null )
+            {
+                cursor.unpinCurrentPage();
+                cursor.releaseCursor();
+                // We null out the pagedFile field to allow it and its (potentially big) translation table to be garbage
+                // collected when the file is unmapped, since the cursors can stick around in thread local caches, etc.
+                cursor.pagedFile = null;
+            }
         }
         while ( (cursor = cursor.getAndClearLinkedCursor()) != null );
     }

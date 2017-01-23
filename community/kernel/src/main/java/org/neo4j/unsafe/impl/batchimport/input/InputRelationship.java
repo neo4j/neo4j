@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -106,8 +106,8 @@ public class InputRelationship extends InputEntity
     protected void toStringFields( Collection<Pair<String, ?>> fields )
     {
         super.toStringFields( fields );
-        fields.add( Pair.of( "startNode", startNode ) );
-        fields.add( Pair.of( "endNode", endNode ) );
+        fields.add( Pair.of( "startNode", startNode + " (" + startNodeGroup.name() + ")" ) );
+        fields.add( Pair.of( "endNode", endNode + " (" + endNodeGroup.name() + ")" ) );
         if ( hasTypeId() )
         {
             fields.add( Pair.of( "typeId", typeId ) );

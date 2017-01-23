@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -149,12 +149,19 @@ class PrettifierTest extends CypherFunSuite {
     )
   }
 
-  test("should handle call yield") {
+  test("should handle CALL YIELD") {
     actual("match (n) call db.indexes yield state RETURN *") should equal(expected("MATCH (n)%nCALL db.indexes YIELD state%nRETURN *"))
+  }
+
+  test("MERGE should start on a new line") {
+    actual("MERGE (a:A) MERGE (b:B) MERGE (a)-[:T]->(b) RETURN *") should equal(expected(
+      "MERGE (a:A)%nMERGE (b:B)%nMERGE (a)-[:T]->(b)%nRETURN *"))
+  }
+
+  test("UNWIND should start on a new line") {
+    actual("WITH [1,2,2] AS coll UNWIND coll AS x RETURN collect(x)") should equal(expected("WITH [1,2,2] AS coll%nUNWIND coll AS x%nRETURN collect(x)"))
   }
 
   private def actual(text: String) = Prettifier(text)
   private def expected(text: String) = String.format(text)
 }
-
-

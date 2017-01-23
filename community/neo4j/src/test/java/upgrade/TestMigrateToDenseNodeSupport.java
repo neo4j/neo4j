@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -35,7 +35,6 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.KernelAPI;
@@ -129,7 +128,7 @@ public class TestMigrateToDenseNodeSupport
     @Ignore( "Used for creating the dataset, using the previous store version" )
     public void createDb()
     {
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( testDir.graphDbDir() );
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDir.graphDbDir() );
         try
         {
             try ( Transaction tx = db.beginTx() )

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -89,6 +89,7 @@ public class ServerTestUtils
         addRelativeProperty( temporaryFolder, properties, DatabaseManagementSystemSettings.data_directory );
         addRelativeProperty( temporaryFolder, properties, GraphDatabaseSettings.logs_directory );
         addRelativeProperty( temporaryFolder, properties, ServerSettings.certificates_directory );
+        properties.put( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
     }
 
     private static void addRelativeProperty( File temporaryFolder, Map<String,String> properties,

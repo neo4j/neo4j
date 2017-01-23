@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -34,6 +34,7 @@ object PlanDescriptionArgumentSerializer {
     arg match {
       case ColumnsLeft(columns) => s"keep columns ${columns.mkString(SEPARATOR)}"
       case LegacyExpression(expr) => removeGeneratedNames(expr.toString)
+      case LegacyExpressions(expressions) => expressions.map({ case (k, v) => s"$k : $v" }).mkString("{", ", ", "}")
       case Expression(expr) => removeGeneratedNames(expr.toString)
       case UpdateActionName(action) => action
       case MergePattern(startPoint) => s"MergePattern($startPoint)"
@@ -55,12 +56,17 @@ object PlanDescriptionArgumentSerializer {
       case Runtime(runtime) => runtime
       case SourceCode(className, sourceCode) => sourceCode
       case RuntimeImpl(runtimeName) => runtimeName
-      case ExpandExpression(from, rel, typeNames, to, dir: SemanticDirection, varLength) =>
+      case ExpandExpression(from, rel, typeNames, to, dir: SemanticDirection, min, max) =>
         val left = if (dir == SemanticDirection.INCOMING) "<-" else "-"
         val right = if (dir == SemanticDirection.OUTGOING) "->" else "-"
-        val asterisk = if (varLength) "*" else ""
         val types = typeNames.mkString(":", "|:", "")
-        val relInfo = if (!varLength && typeNames.isEmpty && rel.unnamed) "" else s"[$rel$types$asterisk]"
+        val lengthDescr = (min, max) match {
+          case (1, Some(1)) => ""
+          case (1, None) => "*"
+          case (1, Some(m)) => s"*..$m"
+          case _ => s"*$min..${max.getOrElse("")}"
+        }
+        val relInfo = if (lengthDescr == "" && typeNames.isEmpty && rel.unnamed) "" else s"[$rel$types$lengthDescr]"
         s"($from)$left$relInfo$right($to)"
       case CountNodesExpression(ident, label) =>
         val node = label.map(l => ":" + l.name).mkString

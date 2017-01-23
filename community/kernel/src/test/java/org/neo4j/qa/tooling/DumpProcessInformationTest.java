@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,6 +19,7 @@
  */
 package org.neo4j.qa.tooling;
 
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -44,6 +45,8 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeThat;
+import static org.junit.Assume.assumeTrue;
+
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class DumpProcessInformationTest
@@ -52,6 +55,25 @@ public class DumpProcessInformationTest
 
     @Rule
     public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+
+    @Before
+    public void checkEnvironment()
+    {
+        assumeTrue( commandExists( "jps" ) );
+        assumeTrue( commandExists( "jstack -h" ) );
+    }
+
+    private boolean commandExists( String command )
+    {
+        try
+        {
+            return Runtime.getRuntime().exec( command ).waitFor() == 0;
+        }
+        catch ( Throwable e )
+        {
+            return false;
+        }
+    }
 
     @Test
     public void shouldDumpProcessInformation() throws Exception

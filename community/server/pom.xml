@@ -23,14 +23,14 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>3.0.7-SNAPSHOT</version>
+    <version>3.0.9-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j.app</groupId>
   <artifactId>neo4j-server</artifactId>
-  <version>3.0.7-SNAPSHOT</version>
+  <version>3.0.9-SNAPSHOT</version>
   <name>Neo4j - Server</name>
   <description>Standalone Neo4j server application.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
@@ -329,15 +329,6 @@
       <version>20090211</version>
       <scope>test</scope>
     </dependency>
-
-    <dependency>
-      <groupId>org.neo4j.doc</groupId>
-      <artifactId>neo4j-doc-tools</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-      <type>test-jar</type>
-    </dependency>
-
   </dependencies>
 
   <build>
@@ -505,52 +496,6 @@
             </group>
           </groups>
         </configuration>
-      </plugin>
-
-      <plugin>
-        <artifactId>maven-antrun-plugin</artifactId>
-        <version>1.7</version>
-        <!--$NO-MVN-MAN-VER$-->
-        <executions>
-          <execution>
-            <id>generate-source-based-documentation</id>
-            <phase>process-classes</phase>
-            <configuration>
-              <target>
-                <java classname="org.neo4j.server.rest.transactional.error.ErrorDocumentationGenerator"
-                      classpathref="maven.compile.classpath" failonerror="true">
-                  <arg value="${project.build.directory}/docs/dev/rest-api"/>
-                </java>
-              </target>
-            </configuration>
-            <goals>
-              <goal>run</goal>
-            </goals>
-          </execution>
-        </executions>
-        <dependencies>
-          <dependency>
-            <groupId>ant-contrib</groupId>
-            <artifactId>ant-contrib</artifactId>
-            <version>1.0b3</version>
-            <exclusions>
-              <exclusion>
-                <groupId>ant</groupId>
-                <artifactId>ant</artifactId>
-              </exclusion>
-            </exclusions>
-          </dependency>
-          <dependency>
-            <groupId>org.apache.ant</groupId>
-            <artifactId>ant</artifactId>
-            <version>1.8.2</version>
-          </dependency>
-          <dependency>
-            <groupId>org.apache.ant</groupId>
-            <artifactId>ant-apache-regexp</artifactId>
-            <version>1.8.2</version>
-          </dependency>
-        </dependencies>
       </plugin>
 
     </plugins>

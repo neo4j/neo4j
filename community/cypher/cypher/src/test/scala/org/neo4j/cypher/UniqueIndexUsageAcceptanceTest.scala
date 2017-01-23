@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -20,7 +20,7 @@
 package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundQueryContext.IndexSearchMonitor
-import org.neo4j.kernel.api.index.IndexDescriptor
+import org.neo4j.cypher.internal.compiler.v3_0.IndexDescriptor
 
 class UniqueIndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
   test("should be able to use indexes") {

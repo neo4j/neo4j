@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -20,9 +20,10 @@
 package cypher.cucumber.db
 
 import java.io.{File => JFile}
-import java.nio.file.{Path => JPath, Files, Paths}
+import java.nio.file.{Files, Paths, Path => JPath}
 
-import org.neo4j.graphdb.factory.{GraphDatabaseSettings, GraphDatabaseFactory}
+import org.neo4j.graphdb.factory.GraphDatabaseSettings
+import org.neo4j.test.TestGraphDatabaseFactory
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -60,7 +61,7 @@ case class DatabaseFactory(dbDir: JFile) extends ((String) => Unit) {
     val ImportQuery(script, params, fileRoot) = AvailableDatabase.archive(dbName)
     val dbPath = new JFile(dbDir, dbName)
     if (!dbPath.exists()) {
-      val graph = new GraphDatabaseFactory()
+      val graph = new TestGraphDatabaseFactory()
         .newEmbeddedDatabaseBuilder(dbPath)
         .setConfig(GraphDatabaseSettings.load_csv_file_url_root, fileRoot.toAbsolutePath.toString)
         .newGraphDatabase()

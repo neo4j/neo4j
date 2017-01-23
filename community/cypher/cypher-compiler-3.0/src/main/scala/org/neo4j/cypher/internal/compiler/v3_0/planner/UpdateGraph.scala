@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,8 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner
 
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{PatternRelationship, IdName}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
+import org.neo4j.cypher.internal.frontend.v3_0.ast.functions.Labels
 
 import scala.annotation.tailrec
 
@@ -141,25 +142,38 @@ trait UpdateGraph {
     containsUpdates && {
       val readQg = qg.mergeQueryGraph.getOrElse(qg)
 
-      (createNodeOverlap(readQg) ||
-        createRelationshipOverlap(readQg) ||
-        deleteOverlap(readQg) ||
-        removeLabelOverlap(readQg) ||
-        setLabelOverlap(readQg) ||
-        setPropertyOverlap(readQg) ||
-        deleteOverlapWithMergeIn(qg) ||
-        foreachOverlap(readQg))
+      createNodeOverlap(readQg) || createRelationshipOverlap(readQg) || deleteOverlap(readQg) ||
+        removeLabelOverlap(readQg) || setLabelOverlap(readQg) || setPropertyOverlap(readQg) ||
+        deleteOverlapWithMergeIn(qg) || foreachOverlap(readQg)
     }
   }
 
+  /*
+   * Determines whether there's an overlap in writes being done here, and reads being done in the given horizon.
+   */
+  def overlapsHorizon(horizon: QueryHorizon) = {
+    containsUpdates && ({
+      val propertiesReadInHorizon = horizon.dependingExpressions.collect {
+        case p: Property => p.propertyKey
+      }.toSet
+
+      setNodePropertyOverlap(propertiesReadInHorizon) || setRelPropertyOverlap(propertiesReadInHorizon)
+    } || {
+      (labelsToSet.nonEmpty || removeLabelPatterns.nonEmpty) &&
+        horizon.dependingExpressions.exists {
+          case f: FunctionInvocation if f.function.get == Labels => true
+          case _ => false
+        }
+    })
+  }
+
   def writeOnlyHeadOverlaps(qg: QueryGraph): Boolean = {
-    val a = containsUpdates
+    containsUpdates && {
+      val readQg = qg.mergeQueryGraph.getOrElse(qg)
 
-    val readQg = qg.mergeQueryGraph.getOrElse(qg)
-
-    val d = deleteOverlap(readQg)
-    val h = deleteOverlapWithMergeIn(qg)
-    a && (d || h)
+      deleteOverlap(readQg) ||
+        deleteOverlapWithMergeIn(qg)
+    }
   }
 
   def createsNodes: Boolean = mutatingPatterns.exists {
@@ -260,7 +274,9 @@ trait UpdateGraph {
    * Checks for overlap between what props are read in query graph
    * and what is updated with SET and MERGE here
    */
-  def setPropertyOverlap(qg: QueryGraph) = setNodePropertyOverlap(qg) || setRelPropertyOverlap(qg)
+  def setPropertyOverlap(qg: QueryGraph) =
+    setNodePropertyOverlap(qg.allKnownNodeProperties.map(_.propertyKey)) ||
+      setRelPropertyOverlap(qg.allKnownRelProperties.map(_.propertyKey))
 
   /*
    * Checks for overlap between identifiers being read in query graph
@@ -288,7 +304,7 @@ trait UpdateGraph {
   * Checks for overlap between what node props are read in query graph
   * and what is updated with SET here (properties added by create/merge directly is handled elsewhere)
   */
-  private def setNodePropertyOverlap(qg: QueryGraph): Boolean = {
+  private def setNodePropertyOverlap(propertiesToRead: Set[PropertyKeyName]): Boolean = {
 
     @tailrec
     def toNodePropertyPattern(patterns: Seq[MutatingPattern], acc: CreatesPropertyKeys): CreatesPropertyKeys = {
@@ -311,7 +327,6 @@ trait UpdateGraph {
     }
 
     val propertiesToSet = toNodePropertyPattern(mutatingPatterns, CreatesNoPropertyKeys)
-    val propertiesToRead = qg.allKnownNodeProperties.map(_.propertyKey)
 
     propertiesToRead.exists(propertiesToSet.overlaps)
   }
@@ -320,7 +335,7 @@ trait UpdateGraph {
    * Checks for overlap between what relationship props are read in query graph
    * and what is updated with SET her
    */
-  private def setRelPropertyOverlap(qg: QueryGraph): Boolean = {
+  private def setRelPropertyOverlap(propertiesToRead: Set[PropertyKeyName]): Boolean = {
     @tailrec
     def toRelPropertyPattern(patterns: Seq[MutatingPattern], acc: CreatesPropertyKeys): CreatesPropertyKeys = {
 
@@ -343,7 +358,6 @@ trait UpdateGraph {
     }
 
     val propertiesToSet = toRelPropertyPattern(mutatingPatterns, CreatesNoPropertyKeys)
-    val propertiesToRead = qg.allKnownRelProperties.map(_.propertyKey)
 
     propertiesToRead.exists(propertiesToSet.overlaps)
   }

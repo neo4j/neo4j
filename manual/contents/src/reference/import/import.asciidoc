@@ -1,9 +1,0 @@
-[[import]]
-Data Import
-===========
-
-For importing data using Cypher and CSV, see <<cypherdoc-importing-csv-files-with-cypher>>.
-
-For high-performance data import, see <<import-tool>>.
-
-

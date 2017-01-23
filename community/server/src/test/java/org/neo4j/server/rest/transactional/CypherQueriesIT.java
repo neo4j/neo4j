@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,16 +19,18 @@
  */
 package org.neo4j.server.rest.transactional;
 
-import org.junit.Test;
-
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.junit.Test;
+
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
 import org.neo4j.server.rest.domain.JsonParseException;
+
 import static org.junit.Assert.assertFalse;
-import static org.neo4j.server.rest.RESTDocsGenerator.ResponseEntity;
+
+import static org.neo4j.server.rest.RESTRequestGenerator.ResponseEntity;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
 
 public class CypherQueriesIT extends AbstractRestFunctionalTestBase
@@ -39,7 +41,6 @@ public class CypherQueriesIT extends AbstractRestFunctionalTestBase
     {
         // Document
         ResponseEntity response = gen.get()
-                .noGraph()
                 .expectedStatus( 200 )
                 .payload( quotedJson(
                         "{ 'statements': [ { 'statement': 'RETURN point({latitude:1.2,longitude:2.3}) as point' } ] }" ) )

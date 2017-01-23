@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -38,10 +38,10 @@ import org.neo4j.cypher.internal.spi.TransactionalContextWrapper
 import org.neo4j.cypher.internal.spi.v3_0.{TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport}
-import org.neo4j.graphdb.factory.GraphDatabaseFactory
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
+import org.neo4j.test.TestGraphDatabaseFactory
 
 import scala.xml.Elem
 
@@ -382,7 +382,7 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
 
   private def executionResults: Seq[DataSetResults] = (for ((dataSet, queries) <- queriesByDataSet) yield {
     val (dataSetName, dataSetDir) = dataSet
-    val db = new GraphDatabaseCypherService(new GraphDatabaseFactory().newEmbeddedDatabase(new File(dataSetDir)))
+    val db = new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newEmbeddedDatabase(new File(dataSetDir)))
     try {
       val queryResults = for ((queryName, queryText) <- queries) yield {
         val results = for ((compilerName, compilerCreator) <- compilers) yield {

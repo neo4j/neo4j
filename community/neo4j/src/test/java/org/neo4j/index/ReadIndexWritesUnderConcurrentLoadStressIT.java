@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,6 +19,10 @@
  */
 package org.neo4j.index;
 
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+
 import java.io.File;
 import java.text.DecimalFormat;
 import java.util.concurrent.CountDownLatch;
@@ -26,19 +30,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.lang.String.format;
-
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNot.not;
 import static org.hamcrest.core.IsNull.nullValue;
@@ -59,7 +58,7 @@ public class ReadIndexWritesUnderConcurrentLoadStressIT
     public void shouldReadNodeWrittenInPreviousTransaction() throws Throwable
     {
         File dbDir = temporaryFolder.newFolder();
-        GraphDatabaseService db = new GraphDatabaseFactory()
+        GraphDatabaseService db = new TestGraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( dbDir )
                 .setConfig( GraphDatabaseSettings.pagecache_memory, "2000M" )
                 .setConfig( GraphDatabaseSettings.logical_log_rotation_threshold, "500M" )

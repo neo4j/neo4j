@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -89,7 +89,7 @@ object ClauseConverters {
 
   private def addReturnToLogicalPlanInput(acc: PlannerQueryBuilder,
                                           clause: Return): PlannerQueryBuilder = clause match {
-    case Return(distinct, ri, optOrderBy, skip, limit) if !ri.includeExisting =>
+    case Return(distinct, ri, optOrderBy, skip, limit, _) if !ri.includeExisting =>
 
       val shuffle = asQueryShuffle(optOrderBy).
         withSkip(skip).
@@ -420,7 +420,7 @@ object ClauseConverters {
     val currentlyAvailableVariables = builder.currentlyAvailableVariables
 
     val setOfNodeVariables =
-      if (builder.semanticTable.isNode(clause.variable))
+      if (builder.semanticTable.isNode(clause.variable.name))
         Set(IdName.fromVariable(clause.variable))
       else Set.empty
 

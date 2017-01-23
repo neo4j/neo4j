@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -305,9 +305,9 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
         Eagerly.immutableMapValues[String, ast.Expression, AggregationExpression](aggregatingExpressions, buildExpression(_).asInstanceOf[AggregationExpression])
       )()
 
-    case FindShortestPaths(_, shortestPathPattern, predicates) =>
+    case FindShortestPaths(_, shortestPathPattern, predicates, withFallBack) =>
       val legacyShortestPath = shortestPathPattern.expr.asLegacyPatterns(shortestPathPattern.name.map(_.name)).head
-      new ShortestPathPipe(source, legacyShortestPath, predicates.map(toCommandPredicate))()
+      new ShortestPathPipe(source, legacyShortestPath, predicates.map(toCommandPredicate), withFallBack)()
 
     case UnwindCollection(_, variable, collection) =>
       UnwindPipe(source, toCommandExpression(collection), variable.name)()

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -35,7 +35,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Pair;
@@ -49,6 +48,7 @@ import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -97,8 +97,9 @@ public class StoreMigratorFrom21IT
 
         File dir = MigrationTestUtils.find21FormatStoreDirectoryWithDuplicateProperties( storeDir.directory() );
 
-        GraphDatabaseBuilder builder = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( dir )
-                        .setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" );
+        TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
+        GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( dir )
+                                              .setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" );
         GraphDatabaseService database = builder.newGraphDatabase();
         database.shutdown();
         ConsistencyCheckService service = new ConsistencyCheckService();

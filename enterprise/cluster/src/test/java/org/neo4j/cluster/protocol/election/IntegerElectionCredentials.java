@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -29,9 +29,9 @@ public class IntegerElectionCredentials implements ElectionCredentials
     }
 
     @Override
-    public int compareTo( Object o )
+    public int compareTo( ElectionCredentials o )
     {
         return o instanceof IntegerElectionCredentials
-                ? Integer.valueOf(credential).compareTo(Integer.valueOf(( (IntegerElectionCredentials) o).credential)) : 0;
+               ? Integer.valueOf(credential).compareTo( ((IntegerElectionCredentials) o).credential ) : 0;
     }
 }

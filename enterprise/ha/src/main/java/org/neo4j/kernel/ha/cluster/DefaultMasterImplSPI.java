@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -84,9 +84,6 @@ public class DefaultMasterImplSPI implements MasterImpl.SPI
                                  NeoStoreDataSource neoStoreDataSource)
     {
         this.graphDb = graphDb;
-
-        // Hmm, fetching the dependencies here instead of handing them in the constructor directly feels bad,
-        // but it seems like there's some intricate usage and need for the db's dependency resolver.
         this.fileSystem = fileSystemAbstraction;
         this.labels = labels;
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;

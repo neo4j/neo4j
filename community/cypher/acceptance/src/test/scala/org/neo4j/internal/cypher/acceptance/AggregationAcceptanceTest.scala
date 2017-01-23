@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,9 +19,22 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{SyntaxException, NewPlannerTestSupport, ExecutionEngineFunSuite}
+import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, SyntaxException}
 
 class AggregationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
+
+  test("should handle aggregations that are aliased to the same name as another aggregation") {
+    createLabeledNode("L")
+    createLabeledNode("M")
+
+    val query = """MATCH (:L) WITH count(*) AS stats
+                  |MATCH (:M) RETURN stats + count(*) AS stats
+                """.stripMargin
+
+    val result = executeWithAllPlanners(query)
+
+    result.toList should equal(List(Map("stats" -> 2)))
+  }
 
   test("should handle aggregates inside non aggregate expressions") {
     executeWithAllPlannersAndCompatibilityMode(

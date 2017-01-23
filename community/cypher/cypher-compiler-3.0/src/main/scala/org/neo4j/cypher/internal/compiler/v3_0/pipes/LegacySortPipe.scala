@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.commands.SortItem
-import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.LegacyExpression
+import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.LegacyExpressions
 
 import scala.math.signum
 
@@ -37,8 +37,13 @@ case class LegacySortPipe(source: Pipe, sortDescription: List[SortItem])
       sortWith((a, b) => compareBy(a, b, sortDescription)(state)).iterator
   }
 
-  def planDescription =
-    source.planDescription.andThen(this.id, "Sort", variables, sortDescription.map(item => LegacyExpression(item.expression)):_*)
+  def planDescription = {
+    val sorting = sortDescription.zipWithIndex.map {
+      case (sortItem, idx) => s"o$idx" -> sortItem.expression
+    }
+
+    source.planDescription.andThen(this.id, "Sort", variables, LegacyExpressions(sorting.toMap))
+  }
 
   override def dup(sources: List[Pipe]): Pipe = {
     val (source :: Nil) = sources

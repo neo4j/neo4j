@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -170,11 +170,19 @@ public abstract class MapUtil
      * @return the read data as a {@link Map}.
      * @throws IOException if the {@code stream} throws {@link IOException}.
      */
-    public static Map<String, String> load( InputStream stream ) throws IOException
+    public static Map<String,String> load( InputStream stream ) throws IOException
     {
         Properties props = new Properties();
         props.load( stream );
-        return new HashMap<>( (Map) props );
+
+        HashMap<String,String> result = new HashMap<>();
+        for ( Map.Entry<Object,Object> entry : props.entrySet() )
+        {
+            // Properties does not trim whitespace from the right side of values
+            result.put( (String) entry.getKey(), ( (String) entry.getValue() ).trim() );
+        }
+
+        return result;
     }
 
     /**

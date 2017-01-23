@@ -3,11 +3,11 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>3.0.7-SNAPSHOT</version>
+    <version>3.0.9-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
   <artifactId>neo4j-lucene-index</artifactId>
-  <version>3.0.7-SNAPSHOT</version>
+  <version>3.0.9-SNAPSHOT</version>
 
   <name>Neo4j - Lucene Index</name>
   <description>
@@ -129,15 +129,6 @@ the relevant Commercial Agreement.
 
   <build>
     <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <systemPropertyVariables>
-            <dbms.pagecache.memory.default.override>8m</dbms.pagecache.memory.default.override>
-          </systemPropertyVariables>
-        </configuration>
-      </plugin>
       <plugin>
         <artifactId>maven-javadoc-plugin</artifactId>
         <configuration>

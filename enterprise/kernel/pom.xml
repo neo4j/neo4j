@@ -3,12 +3,12 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>3.0.7-SNAPSHOT</version>
+    <version>3.0.9-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-enterprise-kernel</artifactId>
-  <version>3.0.7-SNAPSHOT</version>
+  <version>3.0.9-SNAPSHOT</version>
 
   <name>Neo4j - Enterprise Graph Database Kernel Features</name>
   <description>Enterprise features for Neo4j</description>
@@ -89,6 +89,12 @@
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
       <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-consistency-check</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
     </dependency>
 
     <!-- Neo4j test dependencies -->

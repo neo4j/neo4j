@@ -11,7 +11,7 @@
 
   <groupId>org.neo4j</groupId>
   <artifactId>parent</artifactId>
-  <version>3.0.7-SNAPSHOT</version>
+  <version>3.0.9-SNAPSHOT</version>
 
   <packaging>pom</packaging>
   <name>Neo4j</name>
@@ -35,8 +35,9 @@
     <test.runner.jvm.settings>-Xmx2G -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=target/test-data -Dorg.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.DIRTY_MEMORY=true -Dorg.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.CHECK_NATIVE_ACCESS=true -Dorg.neo4j.io.pagecache.impl.muninn.usePreciseCursorErrorStackTraces=true -XX:+UnlockExperimentalVMOptions -XX:+TrustFinalNonStaticFields</test.runner.jvm.settings>
     <doclint-groups>reference</doclint-groups>
     <jetty.version>9.2.9.v20150224</jetty.version>
-    <findbugs.version>3.0.0</findbugs.version>
+    <findbugs.version>3.0.1</findbugs.version>
     <git.commit>unknown-commit</git.commit>
+    <checkstyle.skip>true</checkstyle.skip>
   </properties>
 
   <modules>
@@ -45,7 +46,7 @@
     <module>integrationtests</module>
     <module>stresstests</module>
     <module>tools</module>
-    <module>doctools</module>
+    <module>packaging</module>
   </modules>
 
   <build>
@@ -54,17 +55,41 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <argLine>${test.runner.jvm.settings}</argLine>
+          <systemPropertyVariables>
+            <dbms.pagecache.memory.default.override>8m</dbms.pagecache.memory.default.override>
+          </systemPropertyVariables>
         </configuration>
       </plugin>
       <plugin>
         <artifactId>maven-failsafe-plugin</artifactId>
         <configuration>
           <argLine>${test.runner.jvm.settings}</argLine>
+          <systemPropertyVariables>
+            <dbms.pagecache.memory.default.override>8m</dbms.pagecache.memory.default.override>
+          </systemPropertyVariables>
         </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>attach-sources</id>
+            <phase>package</phase>
+            <goals>
+              <goal>jar-no-fork</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
     <pluginManagement>
       <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-source-plugin</artifactId>
+          <version>3.0.1</version>
+        </plugin>
         <plugin>
           <groupId>org.neo4j.build.plugins</groupId>
           <artifactId>clirr-maven-plugin</artifactId>
@@ -83,8 +108,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-shade-plugin</artifactId>
-          <version>2.1</version>
-          <!-- 2.1 ? Yes, 2.0 has maven3 issues -->
+          <version>2.4.3</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -116,7 +140,7 @@
             <plainTextReport>true</plainTextReport>
             <prependText>${licensing.prepend.text}</prependText>
             <excludedGroups>
-              ^((org.neo4j){1}|(org.neo4j.app){1}|(org.neo4j.doc){1}|(org.neo4j.server.plugin){1}|(org.neo4j.assembly){1}|(org.neo4j.bolt){1}|(org.neo4j.build){1}|(org.neo4j.examples){1}|(org.neo4j.test){1})$
+              ^((org.neo4j){1}|(org.neo4j.app){1}|(org.neo4j.server.plugin){1}|(org.neo4j.assembly){1}|(org.neo4j.bolt){1}|(org.neo4j.build){1}|(org.neo4j.test){1})$
             </excludedGroups>
             <excludedArtifacts>^((neo4j-browser))$</excludedArtifacts>
             <includedScopes>compile</includedScopes>
@@ -233,23 +257,6 @@
 
     <!-- Build configuration profiles -->
     <profile>
-      <id>neo-full-build</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-        <property>
-          <name>fullBuild</name>
-        </property>
-      </activation>
-      <modules>
-        <module>manual</module>
-        <module>packaging</module>
-        <module>packaging/installer-linux</module>
-      </modules>
-      <properties>
-        <attach-docs-phase>verify</attach-docs-phase>
-      </properties>
-    </profile>
-    <profile>
       <id>neodev</id>
       <activation>
         <activeByDefault>false</activeByDefault>
@@ -278,54 +285,6 @@
             </executions>
           </plugin>
         </plugins>
-      </build>
-    </profile>
-    <profile>
-      <id>neo-docs-build</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-        <property>
-          <name>docsBuild</name>
-        </property>
-      </activation>
-      <modules>
-        <module>manual</module>
-      </modules>
-      <properties>
-        <attach-java-sources-phase>package</attach-java-sources-phase>
-        <attach-java-test-sources-phase>package</attach-java-test-sources-phase>
-        <attach-test-jar-phase>package</attach-test-jar-phase>
-        <attach-docs-phase>verify</attach-docs-phase>
-        <integration-test-phase>integration-test</integration-test-phase>
-      </properties>
-      <build>
-        <pluginManagement>
-          <plugins>
-            <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-surefire-plugin</artifactId>
-              <configuration>
-                <includes>
-                  <include>**/DocTest*.java</include>
-                  <include>**/*DocTest.java</include>
-                  <include>**/*DocTests.java</include>
-                  <include>**/*DocTestCase.java</include>
-                </includes>
-              </configuration>
-            </plugin>
-            <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-failsafe-plugin</artifactId>
-              <configuration>
-                <includes>
-                  <include>**/DocIT*.java</include>
-                  <include>**/*DocIT.java</include>
-                  <include>**/*DocITCase.java</include>
-                </includes>
-              </configuration>
-            </plugin>
-          </plugins>
-        </pluginManagement>
       </build>
     </profile>
     <profile>

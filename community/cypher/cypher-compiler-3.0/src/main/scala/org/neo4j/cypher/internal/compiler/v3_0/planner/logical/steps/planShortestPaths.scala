@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -57,7 +57,7 @@ case object planShortestPaths {
       planShortestPathsWithFallback(inner, shortestPaths, predicates, safePredicates, needFallbackPredicates, queryGraph)
     }
     else {
-      context.logicalPlanProducer.planShortestPath(inner, shortestPaths, predicates)
+      context.logicalPlanProducer.planShortestPath(inner, shortestPaths, predicates, false)
     }
   }
 
@@ -82,7 +82,7 @@ case object planShortestPaths {
     // Plan FindShortestPaths within an Apply with an Optional so we get null rows when
     // the graph algorithm does not find anything (left-hand-side)
     val lhsArgument = lpp.planArgumentRowFrom(inner)
-    val lhsSp = lpp.planShortestPath(lhsArgument, shortestPath, predicates)
+    val lhsSp = lpp.planShortestPath(lhsArgument, shortestPath, predicates, true)
     val lhsOption = lpp.planOptional(lhsSp, Set.empty)
     val lhs = lpp.planApply(inner, lhsOption)
 

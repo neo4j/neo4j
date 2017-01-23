@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -29,6 +29,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.ReadableByteChannel;
@@ -76,6 +78,7 @@ import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -2420,31 +2423,55 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         }
     }
 
-    @Test( timeout = SHORT_TIMEOUT_MILLIS, expected = IllegalStateException.class )
+    @Test( timeout = SHORT_TIMEOUT_MILLIS )
     public void pagedFileIoMustThrowIfFileIsUnmapped() throws IOException
     {
         getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
 
         PagedFile pagedFile = pageCache.map( file( "a" ), filePageSize );
-        pagedFile.close();
+        closeThisPagedFile( pagedFile );
 
         try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
         {
-            cursor.next(); // This should throw
-            fail( "cursor.next() on unmapped file did not throw" );
+            try
+            {
+                cursor.next();
+                fail( "cursor.next() on unmapped file did not throw" );
+            }
+            catch ( IllegalStateException e )
+            {
+                StringWriter out = new StringWriter();
+                e.printStackTrace( new PrintWriter( out ) );
+                assertThat( out.toString(), containsString( "closeThisPagedFile" ) );
+            }
         }
     }
 
-    @Test( timeout = SHORT_TIMEOUT_MILLIS, expected = IllegalStateException.class )
+    protected void closeThisPagedFile( PagedFile pagedFile ) throws IOException
+    {
+        pagedFile.close();
+    }
+
+    @Test( timeout = SHORT_TIMEOUT_MILLIS )
     public void writeLockedPageCursorNextMustThrowIfFileIsUnmapped() throws IOException
     {
         getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
 
         PagedFile pagedFile = pageCache.map( file( "a" ), filePageSize );
         PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK );
-        pagedFile.close();
+        closeThisPagedFile( pagedFile );
 
-        cursor.next();
+        try
+        {
+            cursor.next();
+            fail( "cursor.next() on unmapped file did not throw" );
+        }
+        catch ( IllegalStateException e )
+        {
+            StringWriter out = new StringWriter();
+            e.printStackTrace( new PrintWriter( out ) );
+            assertThat( out.toString(), containsString( "closeThisPagedFile" ) );
+        }
     }
 
     @Test( timeout = SHORT_TIMEOUT_MILLIS, expected = IllegalStateException.class )
@@ -2646,6 +2673,44 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             {
                 assertFalse( cursor.shouldRetry() );
             }
+        }
+    }
+
+    @Test
+    public void pageCursorCloseShouldNotReturnAlreadyClosedLinkedCursorToPool() throws Exception
+    {
+        File file = file( "a" );
+        generateFileWithRecords( file, recordsPerFilePage * 2, recordSize );
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        try ( PagedFile pf = pageCache.map( file, filePageSize ) )
+        {
+            PageCursor a = pf.io( 0, PF_SHARED_WRITE_LOCK );
+            PageCursor b = a.openLinkedCursor( 0 );
+            b.close();
+            PageCursor c = a.openLinkedCursor( 0 ); // Will close b again, creating a loop in the CursorPool
+            PageCursor d = pf.io( 0, PF_SHARED_WRITE_LOCK ); // Same object as c because of loop in pool
+            assertNotSame( c, d );
+            c.close();
+            d.close();
+        }
+    }
+
+    @Test
+    public void pageCursorCloseShouldNotReturnSameObjectToCursorPoolTwice() throws Exception
+    {
+        File file = file( "a" );
+        generateFileWithRecords( file, recordsPerFilePage * 2, recordSize );
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        try ( PagedFile pf = pageCache.map( file, filePageSize ) )
+        {
+            PageCursor a = pf.io( 0, PF_SHARED_WRITE_LOCK );
+            a.close();
+            a.close(); // Return same object to CursorPool again, creating a Loop
+            PageCursor b = pf.io( 0, PF_SHARED_WRITE_LOCK );
+            PageCursor c = pf.io( 0, PF_SHARED_WRITE_LOCK );
+            assertNotSame( b, c );
+            b.close();
+            c.close();
         }
     }
 

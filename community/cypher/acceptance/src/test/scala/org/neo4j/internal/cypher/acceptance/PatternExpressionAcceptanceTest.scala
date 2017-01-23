@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -395,7 +395,7 @@ class PatternExpressionAcceptanceTest extends ExecutionEngineFunSuite with Match
 
     executionPlanDescription.cd("Argument").arguments should equal(List(EstimatedRows(1)))
     executionPlanDescription.cd("Expand(All)").arguments.toSet should equal(Set(
-      ExpandExpression("n", "  UNNAMED23", Seq("HAS"), "  UNNAMED32", SemanticDirection.OUTGOING, varLength = false),
+      ExpandExpression("n", "  UNNAMED23", Seq("HAS"), "  UNNAMED32", SemanticDirection.OUTGOING, 1, Some(1)),
       EstimatedRows(0.25)
     ))
   }

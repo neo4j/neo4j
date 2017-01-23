@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -29,7 +29,7 @@ object addEagernessIfNecessary extends (Pipe => Pipe) {
       val from = fromPipe.effects
       val to = toPipe.localEffects
       if (wouldConflict(from, to)) {
-        new EagerPipe(fromPipe)()(fromPipe.monitor)
+        EagerPipe(fromPipe)()(fromPipe.monitor)
       } else {
         fromPipe
       }
@@ -55,7 +55,9 @@ object addEagernessIfNecessary extends (Pipe => Pipe) {
         relsReadDeleteNodeConflict(fromWithoutLeafInfo, toWithoutLeafInfo) ||
         relsCreateReadConflict(from, toWithoutLeafInfo) ||
         relsDeleteReadConflict(fromWithoutLeafInfo, toWithoutLeafInfo) ||
-        relationshipPropertiesConflict(fromWithoutLeafInfo, toWithoutLeafInfo)
+        relationshipPropertiesConflict(fromWithoutLeafInfo, toWithoutLeafInfo) ||
+        readsWritesLabels(from, toWithoutLeafInfo) ||
+        writesReadsLabels(fromWithoutLeafInfo, toWithoutLeafInfo)
     }
   }
 
@@ -79,6 +81,8 @@ object addEagernessIfNecessary extends (Pipe => Pipe) {
     val relCreateReadConflict = relsCreateReadConflict(from, toWithoutLeafInfo)
     val relDeleteReadConflict = relsDeleteReadConflict(fromWithoutLeafInfo, toWithoutLeafInfo)
     val relPropConflict = relationshipPropertiesConflict(fromWithoutLeafInfo, toWithoutLeafInfo)
+    val readsWritesLabelConflict = readsWritesLabels(from, toWithoutLeafInfo)
+    val writesReadsLabelsConflict = writesReadsLabels(fromWithoutLeafInfo, toWithoutLeafInfo)
 
     nodeNonLeafReadWriteConflict ||
       nodeCreateReadConflict ||
@@ -89,7 +93,9 @@ object addEagernessIfNecessary extends (Pipe => Pipe) {
       relReadDeleteNodeConflict ||
       relCreateReadConflict ||
       relDeleteReadConflict ||
-      relPropConflict
+      relPropConflict ||
+      readsWritesLabelConflict ||
+      writesReadsLabelsConflict
   }
 
   private def relsReadCreateConflict(from: Effects, to: Effects) = {
@@ -179,6 +185,14 @@ object addEagernessIfNecessary extends (Pipe => Pipe) {
   }
 
   private def nodePropertiesConflict(from: Effects, to: Effects): Boolean = {
+    nodeReadWriteProps(from, to) || nodeWriteReadProps(from, to)
+  }
+
+  private def nodeWriteReadProps(from: Effects, to: Effects) = {
+    nodeReadWriteProps(to, from)
+  }
+
+  private def nodeReadWriteProps(from: Effects, to: Effects): Boolean = {
     val propertyReads = from.effectsSet.collect {
       case property: ReadsNodeProperty => property
     }
@@ -198,6 +212,14 @@ object addEagernessIfNecessary extends (Pipe => Pipe) {
   }
 
   private def relationshipPropertiesConflict(from: Effects, to: Effects): Boolean = {
+    relationshipReadWriteProps(from, to) || relationshipWriteReadProps(from, to)
+  }
+
+  private def relationshipWriteReadProps(from: Effects, to: Effects) = {
+    relationshipReadWriteProps(to, from)
+  }
+
+  private def relationshipReadWriteProps(from: Effects, to: Effects): Boolean = {
     val propertyReads = from.effectsSet.collect {
       case property: ReadsRelationshipProperty => property
     }
@@ -214,5 +236,23 @@ object addEagernessIfNecessary extends (Pipe => Pipe) {
         case WriteAnyRelationshipProperty => propertyReads.nonEmpty
         case SetGivenRelationshipProperty(prop) => propertyReads(ReadsGivenRelationshipProperty(prop))
       }
+  }
+
+  private def readsWritesLabels(from: Effects, to: Effects): Boolean = {
+    // Flip the order to reuse this code
+    writesReadsLabels(to, from)
+  }
+
+  private def writesReadsLabels(from: Effects, to: Effects): Boolean = {
+    val fromLabels = from.effectsSet.collect {
+      case SetLabel(label) => Set(label)
+    }.flatten
+
+    fromLabels.nonEmpty &&
+    to.effectsSet.exists {
+      case ReadsAnyLabel => true
+      case ReadsNodesWithLabels(toLabels) => (fromLabels intersect toLabels).nonEmpty
+      case _ => false
+    }
   }
 }

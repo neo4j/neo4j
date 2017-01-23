@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -147,6 +147,7 @@ public class NonUniqueDatabaseIndexPopulatorTest
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.empty() );
         NonUniqueLuceneIndexPopulator populator = new NonUniqueLuceneIndexPopulator( index, samplingConfig );
         populator.create();
+        populator.configureSampling( true );
         return populator;
     }
 }

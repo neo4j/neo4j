@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -422,12 +422,12 @@ case class With(
   }
 }
 
-case class Return(
-                   distinct: Boolean,
-                   returnItems: ReturnItems,
-                   orderBy: Option[OrderBy],
-                   skip: Option[Skip],
-                   limit: Option[Limit])(val position: InputPosition) extends ProjectionClause {
+case class Return(distinct: Boolean,
+                  returnItems: ReturnItems,
+                  orderBy: Option[OrderBy],
+                  skip: Option[Skip],
+                  limit: Option[Limit],
+                  excludedNames: Set[String] = Set.empty)(val position: InputPosition) extends ProjectionClause {
 
   override def name = "RETURN"
 

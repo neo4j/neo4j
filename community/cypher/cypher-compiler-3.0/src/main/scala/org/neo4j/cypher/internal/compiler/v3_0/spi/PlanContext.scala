@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.pipes.EntityProducer
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.{ExpanderStep, TraversalMatcher}
 import org.neo4j.graphdb.Node
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
-import org.neo4j.kernel.api.index.IndexDescriptor
+import org.neo4j.cypher.internal.compiler.v3_0.IndexDescriptor
 
 /**
  * PlanContext is an internal access layer to the graph that is solely used during plan building

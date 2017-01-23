@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -70,6 +70,9 @@ final class MuninnPagedFile implements PagedFile
 
     // Guarded by the monitor lock on MuninnPageCache (map and unmap)
     private boolean deleteOnClose;
+
+    // Used to trace the causes of any exceptions from getLastPageId.
+    private volatile Exception closeStackTrace;
 
     /**
      * The header state includes both the reference count of the PagedFile – 15 bits – and the ID of the last page in
@@ -199,6 +202,10 @@ final class MuninnPagedFile implements PagedFile
 
     void closeSwapper() throws IOException
     {
+        // We don't set closeStackTrace in close(), because the reference count may keep the file open.
+        // But if we get here, to close the swapper, then we are definitely unmapping!
+        closeStackTrace = new Exception( "tracing paged file closing" );
+
         if ( !deleteOnClose )
         {
             swapper.close();
@@ -377,7 +384,14 @@ final class MuninnPagedFile implements PagedFile
         long state = getHeaderState();
         if ( refCountOf( state ) == 0 )
         {
-            throw new IllegalStateException( "File has been unmapped: " + file().getPath() );
+            String msg = "File has been unmapped: " + file().getPath();
+            IllegalStateException exception = new IllegalStateException( msg );
+            Exception closedBy = closeStackTrace;
+            if ( closedBy != null )
+            {
+                exception.addSuppressed( closedBy );
+            }
+            throw exception;
         }
         return state & headerStateLastPageIdMask;
     }

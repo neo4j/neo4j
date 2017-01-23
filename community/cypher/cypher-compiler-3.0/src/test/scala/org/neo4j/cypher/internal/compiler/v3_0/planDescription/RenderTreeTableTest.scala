@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -21,16 +21,17 @@ package org.neo4j.cypher.internal.compiler.v3_0.planDescription
 
 import java.util.Locale
 
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Property, LengthFunction, Variable}
-import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.{Equals, HasLabel, PropertyExists, Not}
-import org.neo4j.cypher.internal.compiler.v3_0.commands.values.{TokenType, KeyToken}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{LengthFunction, Property, Variable}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.{Equals, HasLabel, Not, PropertyExists}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.values.{KeyToken, TokenType}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes._
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
-import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.{CypherFunSuite, WindowsStringSafe}
 import org.scalatest.BeforeAndAfterAll
 
 class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
+  implicit val windowsSafe = WindowsStringSafe
 
   private val defaultLocale = Locale.getDefault
   override def beforeAll() {
@@ -310,11 +311,11 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
     val expandPipe = VarLengthExpandPipe(pipe, "from", "rel", "to", SemanticDirection.INCOMING, SemanticDirection.OUTGOING, LazyTypes.empty, 0, None, nodeInScope = false)(Some(1L))(mock[PipeMonitor])
 
     renderAsTreeTable(expandPipe.planDescription) should equal(
-      """+-----------------------+----------------+-----------+----------------------+
-        || Operator              | Estimated Rows | Variables | Other                |
-        |+-----------------------+----------------+-----------+----------------------+
-        || +VarLengthExpand(All) |              1 | rel, to   | (from)-[rel:*]->(to) |
-        |+-----------------------+----------------+-----------+----------------------+
+      """+-----------------------+----------------+-----------+-------------------------+
+        || Operator              | Estimated Rows | Variables | Other                   |
+        |+-----------------------+----------------+-----------+-------------------------+
+        || +VarLengthExpand(All) |              1 | rel, to   | (from)<-[rel:*0..]-(to) |
+        |+-----------------------+----------------+-----------+-------------------------+
         |""".stripMargin)
   }
 
@@ -322,7 +323,7 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
     val arguments = Seq(
       Rows(42),
       DbHits(33),
-      ExpandExpression("  UNNAMED123", "R", Seq("WHOOP"), "  UNNAMED24", SemanticDirection.OUTGOING),
+      ExpandExpression("  UNNAMED123", "R", Seq("WHOOP"), "  UNNAMED24", SemanticDirection.OUTGOING, 1, Some(1)),
       EstimatedRows(1))
 
     val plan = PlanDescriptionImpl(new Id, "NAME", NoChildren, arguments, Set("n", "  UNNAMED123", "  FRESHID12", "  AGGREGATION255"))
@@ -339,7 +340,7 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
     val arguments = Seq(
       Rows(42),
       DbHits(33),
-      ExpandExpression("source", "through", Seq("SOME","OTHER","THING"), "target", SemanticDirection.OUTGOING),
+      ExpandExpression("source", "through", Seq("SOME","OTHER","THING"), "target", SemanticDirection.OUTGOING, 1, Some(1)),
       EstimatedRows(1))
 
     val plan = PlanDescriptionImpl(new Id, "NAME", NoChildren, arguments, Set("n"))
@@ -771,25 +772,25 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
 
   test("Variable line compaction with no variables") {
     val line = Line("NODE", Map.empty, Set.empty)
-    val compacted = new CompactedLine(line, Set.empty)
+    val compacted = CompactedLine(line, Set.empty)
     compacted.formattedVariables should be("")
   }
 
   test("Variable line compaction with only new variables") {
     val line = Line("NODE", Map.empty, Set("a", "b"))
-    val compacted = new CompactedLine(line, Set.empty)
+    val compacted = CompactedLine(line, Set.empty)
     compacted.formattedVariables should be("a, b")
   }
 
   test("Variable line compaction with only old variables") {
     val line = Line("NODE", Map.empty, Set("a", "b"))
-    val compacted = new CompactedLine(line, Set("a", "b"))
+    val compacted = CompactedLine(line, Set("a", "b"))
     compacted.formattedVariables should be("a, b")
   }
 
   test("Variable line compaction with old and new variables") {
     val line = Line("NODE", Map.empty, Set("a", "b", "c", "d"))
-    val compacted = new CompactedLine(line, Set("a", "b"))
+    val compacted = CompactedLine(line, Set("a", "b"))
     compacted.formattedVariables should be("c, d -- a, b")
   }
 

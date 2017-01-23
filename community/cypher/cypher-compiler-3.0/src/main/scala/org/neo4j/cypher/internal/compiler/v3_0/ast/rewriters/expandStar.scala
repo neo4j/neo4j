@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -34,8 +34,8 @@ case class expandStar(state: SemanticState) extends Rewriter {
       With(distinct = false, returnItems = returnItems(clause, Seq.empty, clause.excludedNames),
         orderBy = None, skip = None, limit = None, where = None)(clause.position)
 
-    case clause@Return(_, ri, _, _, _) if ri.includeExisting =>
-      clause.copy(returnItems = returnItems(clause, ri.items))(clause.position)
+    case clause@Return(_, ri, _, _, _, excludedNames) if ri.includeExisting =>
+      clause.copy(returnItems = returnItems(clause, ri.items, excludedNames), excludedNames = Set.empty)(clause.position)
 
     case expandedAstNode =>
       expandedAstNode

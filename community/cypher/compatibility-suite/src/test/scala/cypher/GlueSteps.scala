@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,7 +19,6 @@
  */
 package cypher
 
-import java.io.File
 import java.nio.file.{Files, Path}
 import java.util
 
@@ -30,7 +29,7 @@ import cypher.cucumber.db.DatabaseConfigProvider.cypherConfig
 import cypher.cucumber.db.DatabaseLoader
 import cypher.feature.parser.{Accepters, constructResultMatcher, parseParameters, statisticsParser}
 import org.neo4j.graphdb._
-import org.neo4j.graphdb.factory.{GraphDatabaseBuilder, GraphDatabaseFactory, GraphDatabaseSettings}
+import org.neo4j.graphdb.factory.{GraphDatabaseBuilder, GraphDatabaseSettings}
 import org.neo4j.test.TestGraphDatabaseFactory
 import org.scalatest.{FunSuiteLike, Matchers}
 
@@ -57,7 +56,7 @@ class GlueSteps extends FunSuiteLike with Matchers with ScalaDsl with EN with Ac
   }
 
   Given(NAMED_GRAPH) { (dbName: String) =>
-    val builder = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(DatabaseLoader(dbName))
+    val builder = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder(DatabaseLoader(dbName))
     graph = loadConfig(builder).newGraphDatabase()
   }
 

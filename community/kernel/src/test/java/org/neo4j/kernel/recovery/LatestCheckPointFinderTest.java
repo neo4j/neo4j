@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,12 +19,17 @@
  */
 package org.neo4j.kernel.recovery;
 
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-
-import org.junit.Before;
-import org.junit.Test;
+import java.util.Arrays;
+import java.util.Collection;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
@@ -48,6 +53,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.encodeLogVersion;
 
+@RunWith( Parameterized.class )
 public class LatestCheckPointFinderTest
 {
     private final PhysicalLogFiles logFiles = mock( PhysicalLogFiles.class );
@@ -57,31 +63,26 @@ public class LatestCheckPointFinderTest
     private final int olderLogVersion = 0;
     private final int logVersion = 1;
 
-    @Before
-    public void setup() throws IOException
+    private final int startLogVersion;
+    private final int endLogVersion;
+
+    public LatestCheckPointFinderTest( Integer startLogVersion, Integer endLogVersion )
     {
-        for ( int i = 0; i <= logVersion; i++ )
-        {
-            File file = mock( File.class );
-            when( logFiles.getLogFileForVersion( i ) ).thenReturn( file );
-            StoreChannel channel = mock( StoreChannel.class );
-            when( fs.open( eq( file ), anyString() ) ).thenReturn( channel );
-            final int version = i;
-            when( channel.read( any( ByteBuffer.class ) ) ).thenAnswer( invocationOnMock -> {
-                ByteBuffer buffer = (ByteBuffer) invocationOnMock.getArguments()[0];
-                buffer.putLong( encodeLogVersion( version ) );
-                buffer.putLong( 33 );
-                return LOG_HEADER_SIZE;
-            } );
-        }
-        when( fs.fileExists( any( File.class ) ) ).thenReturn( true );
+        this.startLogVersion = startLogVersion;
+        this.endLogVersion = endLogVersion;
+    }
+
+    @Parameterized.Parameters( name="{0},{1}")
+    public static Collection<Object[]> params()
+    {
+        return Arrays.asList( new Object[]{0, 1}, new Object[]{42, 43}  );
     }
 
     @Test
     public void noLogFilesFound() throws Throwable
     {
-        // given
-        // override the setup...
+        // given no files
+        int logVersion = startLogVersion;
         when( logFiles.getLogFileForVersion( logVersion ) ).thenReturn( mock( File.class ) );
         when( fs.fileExists( any( File.class ) ) ).thenReturn( false );
 
@@ -91,7 +92,6 @@ public class LatestCheckPointFinderTest
         LatestCheckPoint latestCheckPoint = finder.find( logVersion );
 
         // then
-
         assertEquals( new LatestCheckPoint( null, false, -1 ), latestCheckPoint );
     }
 
@@ -99,166 +99,179 @@ public class LatestCheckPointFinderTest
     public void oneLogFileNoCheckPoints() throws Throwable
     {
         // given
+        int logVersion = startLogVersion;
+        setupLogFiles( logVersion, logVersion );
         LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
 
         // when
-        LatestCheckPoint latestCheckPoint = finder.find( olderLogVersion );
+        LatestCheckPoint latestCheckPoint = finder.find( logVersion );
 
         // then
-        assertEquals( new LatestCheckPoint( null, false, olderLogVersion ), latestCheckPoint );
+        assertEquals( new LatestCheckPoint( null, false, logVersion ), latestCheckPoint );
     }
 
     @Test
     public void oneLogFileNoCheckPointsOneStart() throws Throwable
     {
         // given
+        int logVersion = startLogVersion;
+        setupLogFiles( logVersion, logVersion );
         LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
         LogEntryStart start = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( olderLogVersion, 16 ) );
         when( reader.readLogEntry( any( ReadableLogChannel.class ) ) ).thenReturn( start, null );
 
         // when
-        LatestCheckPoint latestCheckPoint = finder.find( olderLogVersion );
+        LatestCheckPoint latestCheckPoint = finder.find( logVersion );
 
         // then
-        assertEquals( new LatestCheckPoint( null, true, olderLogVersion ), latestCheckPoint );
+        assertEquals( new LatestCheckPoint( null, true, logVersion ), latestCheckPoint );
     }
 
     @Test
     public void twoLogFilesNoCheckPoints() throws Throwable
     {
         // given
+        setupLogFiles( startLogVersion, endLogVersion );
         LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
 
         // when
-        LatestCheckPoint latestCheckPoint = finder.find( logVersion );
+        LatestCheckPoint latestCheckPoint = finder.find( endLogVersion );
 
         // then
-        assertEquals( new LatestCheckPoint( null, false, olderLogVersion ), latestCheckPoint );
+        assertEquals( new LatestCheckPoint( null, false, startLogVersion ), latestCheckPoint );
     }
 
     @Test
     public void twoLogFilesNoCheckPointsOneStart() throws Throwable
     {
         // given
+        setupLogFiles( startLogVersion, endLogVersion );
         LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
-        LogEntryStart start = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( logVersion, 16 ) );
+        LogEntryStart start = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( endLogVersion, 16 ) );
         when( reader.readLogEntry( any( ReadableLogChannel.class ) ) ).thenReturn( start, null );
 
         // when
-        LatestCheckPoint latestCheckPoint = finder.find( logVersion );
+        LatestCheckPoint latestCheckPoint = finder.find( endLogVersion );
 
         // then
-        assertEquals( new LatestCheckPoint( null, true, olderLogVersion ), latestCheckPoint );
+        assertEquals( new LatestCheckPoint( null, true, startLogVersion ), latestCheckPoint );
     }
 
     @Test
     public void latestLogFileContainingACheckPointOnly() throws Throwable
     {
         // given
+        setupLogFiles( startLogVersion, endLogVersion );
         LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
-        CheckPoint checkPoint = new CheckPoint( new LogPosition( logVersion, 33 ) );
+        CheckPoint checkPoint = new CheckPoint( new LogPosition( endLogVersion, 33 ) );
 
         when( reader.readLogEntry( any( ReadableLogChannel.class ) ) ).thenReturn( checkPoint, null );
 
         // when
-        LatestCheckPoint latestCheckPoint = finder.find( logVersion );
+        LatestCheckPoint latestCheckPoint = finder.find( endLogVersion );
 
         // then
-        assertEquals( new LatestCheckPoint( checkPoint, false, logVersion ), latestCheckPoint );
+        assertEquals( new LatestCheckPoint( checkPoint, false, endLogVersion ), latestCheckPoint );
     }
 
     @Test
     public void latestLogFileContainingACheckPointAndAStartBefore() throws Throwable
     {
         // given
+        setupLogFiles( startLogVersion, endLogVersion );
         LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
-        LogEntryStart start = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( logVersion, 16 ) );
-        CheckPoint checkPoint = new CheckPoint( new LogPosition( logVersion, 33 ) );
+        LogEntryStart start = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( endLogVersion, 16 ) );
+        CheckPoint checkPoint = new CheckPoint( new LogPosition( endLogVersion, 33 ) );
         when( reader.readLogEntry( any( ReadableLogChannel.class ) ) ).thenReturn( start, checkPoint, null );
 
         // when
-        LatestCheckPoint latestCheckPoint = finder.find( logVersion );
+        LatestCheckPoint latestCheckPoint = finder.find( endLogVersion );
 
         // then
-        assertEquals( new LatestCheckPoint( checkPoint, false, logVersion ), latestCheckPoint );
+        assertEquals( new LatestCheckPoint( checkPoint, false, endLogVersion ), latestCheckPoint );
     }
 
     @Test
     public void latestLogFileContainingACheckPointAndAStartAfter() throws Throwable
     {
         // given
+        setupLogFiles( startLogVersion, endLogVersion );
         LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
-        CheckPoint checkPoint = new CheckPoint( new LogPosition( logVersion, 16 ) );
-        LogEntryStart start = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( logVersion, 33 ) );
+        CheckPoint checkPoint = new CheckPoint( new LogPosition( endLogVersion, 16 ) );
+        LogEntryStart start = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( endLogVersion, 33 ) );
         when( reader.readLogEntry( any( ReadableLogChannel.class ) ) ).thenReturn( start, checkPoint, null );
 
         // when
-        LatestCheckPoint latestCheckPoint = finder.find( logVersion );
+        LatestCheckPoint latestCheckPoint = finder.find( endLogVersion );
 
         // then
-        assertEquals( new LatestCheckPoint( checkPoint, true, logVersion ), latestCheckPoint );
+        assertEquals( new LatestCheckPoint( checkPoint, true, endLogVersion ), latestCheckPoint );
     }
 
     @Test
     public void latestLogFileContainingACheckPointAndAStartAtSamePosition() throws Throwable
     {
         // given
+        setupLogFiles( startLogVersion, endLogVersion );
         LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
-        CheckPoint checkPoint = new CheckPoint( new LogPosition( logVersion, 16 ) );
-        LogEntryStart start = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( logVersion, 16 ) );
+        CheckPoint checkPoint = new CheckPoint( new LogPosition( endLogVersion, 16 ) );
+        LogEntryStart start = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( endLogVersion, 16 ) );
         when( reader.readLogEntry( any( ReadableLogChannel.class ) ) ).thenReturn( start, checkPoint, null );
 
         // when
-        LatestCheckPoint latestCheckPoint = finder.find( logVersion );
+        LatestCheckPoint latestCheckPoint = finder.find( endLogVersion );
 
         // then
-        assertEquals( new LatestCheckPoint( checkPoint, true, logVersion ), latestCheckPoint );
+        assertEquals( new LatestCheckPoint( checkPoint, true, endLogVersion ), latestCheckPoint );
     }
 
     @Test
     public void latestLogFileContainingMultipleCheckPointsOneStartInBetween() throws Throwable
     {
         // given
+        setupLogFiles( startLogVersion, endLogVersion );
         LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
-        LogEntryStart start = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( logVersion, 22 ) );
-        CheckPoint checkPoint = new CheckPoint( new LogPosition( logVersion, 33 ) );
+        LogEntryStart start = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( endLogVersion, 22 ) );
+        CheckPoint checkPoint = new CheckPoint( new LogPosition( endLogVersion, 33 ) );
 
         when( reader.readLogEntry( any( ReadableLogChannel.class ) ) ).thenReturn(
                 mock( CheckPoint.class ), start, checkPoint, null );
 
         // when
-        LatestCheckPoint latestCheckPoint = finder.find( logVersion );
+        LatestCheckPoint latestCheckPoint = finder.find( endLogVersion );
 
         // then
-        assertEquals( new LatestCheckPoint( checkPoint, false, logVersion ), latestCheckPoint );
+        assertEquals( new LatestCheckPoint( checkPoint, false, endLogVersion ), latestCheckPoint );
     }
 
     @Test
     public void latestLogFileContainingMultipleCheckPointsOneStartAfterBoth() throws Throwable
     {
         // given
+        setupLogFiles( startLogVersion, endLogVersion );
         LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
-        CheckPoint checkPoint = new CheckPoint( new LogPosition( logVersion, 22 ) );
-        LogEntryStart start = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( logVersion, 33 ) );
+        CheckPoint checkPoint = new CheckPoint( new LogPosition( endLogVersion, 22 ) );
+        LogEntryStart start = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( endLogVersion, 33 ) );
 
         when( reader.readLogEntry( any( ReadableLogChannel.class ) ) ).thenReturn(
                 mock( CheckPoint.class ), checkPoint, start, null );
 
         // when
-        LatestCheckPoint latestCheckPoint = finder.find( logVersion );
+        LatestCheckPoint latestCheckPoint = finder.find( endLogVersion );
 
         // then
-        assertEquals( new LatestCheckPoint( checkPoint, true, logVersion ), latestCheckPoint );
+        assertEquals( new LatestCheckPoint( checkPoint, true, endLogVersion ), latestCheckPoint );
     }
 
     @Test
     public void olderLogFileContainingACheckPointAndNewerFileContainingAStart() throws Throwable
     {
         // given
+        setupLogFiles( startLogVersion, endLogVersion );
         LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
-        LogEntryStart start1 = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( logVersion, 22 ) );
-        LogEntryStart start2 = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( olderLogVersion, 16 ) );
-        CheckPoint checkPoint = new CheckPoint( new LogPosition( olderLogVersion, 33 ) );
+        LogEntryStart start1 = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( endLogVersion, 22 ) );
+        LogEntryStart start2 = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( startLogVersion, 16 ) );
+        CheckPoint checkPoint = new CheckPoint( new LogPosition( startLogVersion, 33 ) );
 
         when( reader.readLogEntry( any( ReadableLogChannel.class ) ) ).thenReturn(
                 start1, null, // first file
@@ -266,19 +279,20 @@ public class LatestCheckPointFinderTest
         );
 
         // when
-        LatestCheckPoint latestCheckPoint = finder.find( logVersion );
+        LatestCheckPoint latestCheckPoint = finder.find( endLogVersion );
 
         // then
-        assertEquals( new LatestCheckPoint( checkPoint, true, olderLogVersion ), latestCheckPoint );
+        assertEquals( new LatestCheckPoint( checkPoint, true, startLogVersion ), latestCheckPoint );
     }
 
     @Test
     public void olderLogFileContainingACheckPointAndNewerFileIsEmpty() throws Throwable
     {
         // given
+        setupLogFiles( startLogVersion, endLogVersion );
         LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
-        LogEntryStart start = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( olderLogVersion, 16 ) );
-        CheckPoint checkPoint = new CheckPoint( new LogPosition( olderLogVersion, 33 ) );
+        LogEntryStart start = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( startLogVersion, 16 ) );
+        CheckPoint checkPoint = new CheckPoint( new LogPosition( startLogVersion, 33 ) );
 
         when( reader.readLogEntry( any( ReadableLogChannel.class ) ) ).thenReturn(
                 null, // first file
@@ -286,19 +300,20 @@ public class LatestCheckPointFinderTest
         );
 
         // when
-        LatestCheckPoint latestCheckPoint = finder.find( logVersion );
+        LatestCheckPoint latestCheckPoint = finder.find( endLogVersion );
 
         // then
-        assertEquals( new LatestCheckPoint( checkPoint, false, olderLogVersion ), latestCheckPoint );
+        assertEquals( new LatestCheckPoint( checkPoint, false, startLogVersion ), latestCheckPoint );
     }
 
     @Test
     public void olderLogFileContainingAStartAndNewerFileContainingACheckPointPointingToAPreviousPositionThanStart() throws Throwable
     {
         // given
+        setupLogFiles( startLogVersion, endLogVersion );
         LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
-        LogEntryStart start = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( olderLogVersion, 22 ) );
-        CheckPoint checkPoint = new CheckPoint( new LogPosition( olderLogVersion, 16 ) );
+        LogEntryStart start = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( startLogVersion, 22 ) );
+        CheckPoint checkPoint = new CheckPoint( new LogPosition( startLogVersion, 16 ) );
 
         when( reader.readLogEntry( any( ReadableLogChannel.class ) ) ).thenReturn(
                 checkPoint, // first file
@@ -306,19 +321,20 @@ public class LatestCheckPointFinderTest
         );
 
         // when
-        LatestCheckPoint latestCheckPoint = finder.find( logVersion );
+        LatestCheckPoint latestCheckPoint = finder.find( endLogVersion );
 
         // then
-        assertEquals( new LatestCheckPoint( checkPoint, true, logVersion ), latestCheckPoint );
+        assertEquals( new LatestCheckPoint( checkPoint, true, endLogVersion ), latestCheckPoint );
     }
 
     @Test
     public void olderLogFileContainingAStartAndNewerFileContainingACheckPointPointingToALaterPositionThanStart() throws Throwable
     {
         // given
+        setupLogFiles( startLogVersion, endLogVersion );
         LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
-        LogEntryStart start = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( olderLogVersion, 22 ) );
-        CheckPoint checkPoint = new CheckPoint( new LogPosition( olderLogVersion, 25 ) );
+        LogEntryStart start = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( startLogVersion, 22 ) );
+        CheckPoint checkPoint = new CheckPoint( new LogPosition( startLogVersion, 25 ) );
 
         when( reader.readLogEntry( any( ReadableLogChannel.class ) ) ).thenReturn(
                 checkPoint, // first file
@@ -326,20 +342,21 @@ public class LatestCheckPointFinderTest
         );
 
         // when
-        LatestCheckPoint latestCheckPoint = finder.find( logVersion );
+        LatestCheckPoint latestCheckPoint = finder.find( endLogVersion );
 
         // then
-        assertEquals( new LatestCheckPoint( checkPoint, false, logVersion ), latestCheckPoint );
+        assertEquals( new LatestCheckPoint( checkPoint, false, endLogVersion ), latestCheckPoint );
     }
 
     @Test
     public void latestLogEmptyStartEntryBeforeAndAfterCheckPointInTheLastButOneLog() throws Throwable
     {
         // given
+        setupLogFiles( startLogVersion, endLogVersion );
         LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
-        LogEntry firstStart = new LogEntryStart(  0, 0, 0, 0, new byte[0], new LogPosition( olderLogVersion, 20 ) );
-        LogEntry secondStart = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( olderLogVersion, 27 ) );
-        CheckPoint checkPoint = new CheckPoint( new LogPosition( olderLogVersion, 25 ) );
+        LogEntry firstStart = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( startLogVersion, 20 ) );
+        LogEntry secondStart = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( startLogVersion, 27 ) );
+        CheckPoint checkPoint = new CheckPoint( new LogPosition( startLogVersion, 25 ) );
 
         when( reader.readLogEntry( any( ReadableLogChannel.class ) ) ).thenReturn(
                 null, // first file
@@ -347,9 +364,41 @@ public class LatestCheckPointFinderTest
         );
 
         // when
-        LatestCheckPoint latestCheckPoint = finder.find( logVersion );
+        LatestCheckPoint latestCheckPoint = finder.find( endLogVersion );
 
         // then
-        assertEquals( new LatestCheckPoint( checkPoint, true, olderLogVersion ), latestCheckPoint );
+        assertEquals( new LatestCheckPoint( checkPoint, true, startLogVersion ), latestCheckPoint );
+    }
+
+    private void setupLogFiles( int startLogVersion, int endLogVersion ) throws IOException
+    {
+        when( fs.fileExists( any( File.class ) ) ).thenReturn( false );
+        for ( int i = startLogVersion; i <= endLogVersion; i++ )
+        {
+            File file = mock( File.class );
+            when( fs.fileExists( file ) ).thenReturn( true );
+            when( logFiles.getLogFileForVersion( i ) ).thenReturn( file );
+            StoreChannel channel = mock( StoreChannel.class );
+            when( fs.open( eq( file ), anyString() ) ).thenReturn( channel );
+            final int version = i;
+            when( channel.read( any( ByteBuffer.class ) ) ).thenAnswer( new Answer<Object>()
+            {
+                @Override
+                public Object answer( InvocationOnMock invocationOnMock ) throws Throwable
+                {
+                    ByteBuffer buffer = (ByteBuffer) invocationOnMock.getArguments()[0];
+                    buffer.putLong( encodeLogVersion( version ) );
+                    buffer.putLong( 33 );
+                    return LOG_HEADER_SIZE;
+                }
+            } );
+        }
+
+        // to make sure we have a mocked file for the file before startLogVersion to avoid NPE...
+        if ( startLogVersion > 0 )
+        {
+            File file = mock( File.class );
+            when( logFiles.getLogFileForVersion( startLogVersion - 1 ) ).thenReturn( file );
+        }
     }
 }

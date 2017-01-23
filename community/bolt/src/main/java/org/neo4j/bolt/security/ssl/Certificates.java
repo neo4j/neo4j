@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -197,5 +197,9 @@ public class Certificates
             writer.writeObject( new PemObject( type, encodedContent ) );
             writer.flush();
         }
+        path.setReadable( false, false );
+        path.setWritable( false, false );
+        path.setReadable( true );
+        path.setWritable( true );
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -178,7 +178,9 @@ sealed trait ReadsRelationshipProperty extends ReadEffect
 
 case class ReadsGivenRelationshipProperty(propertyName: String) extends ReadsRelationshipProperty
 
-object ReadsAnyRelationshipProperty extends ReadsRelationshipProperty
+case object ReadsAnyRelationshipProperty extends ReadsRelationshipProperty
+
+case object ReadsAnyLabel extends ReadEffect
 
 //-----------------------------------------------------------------------------
 // Write effects

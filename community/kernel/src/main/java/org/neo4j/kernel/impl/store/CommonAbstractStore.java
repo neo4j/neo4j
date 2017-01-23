@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -851,18 +851,6 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     @Override
     public void close()
     {
-        if ( idGenerator == null || !storeOk )
-        {
-            try
-            {
-                closeStoreFile();
-            }
-            catch ( IOException e )
-            {
-                throw new UnderlyingStorageException( "Failed to close store file: " + getStorageFileName(), e );
-            }
-            return;
-        }
         try
         {
             closeStoreFile();

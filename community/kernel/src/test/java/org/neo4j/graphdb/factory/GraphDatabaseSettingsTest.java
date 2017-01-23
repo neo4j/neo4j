@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -42,7 +42,7 @@ public class GraphDatabaseSettingsTest
     public void mustHaveReasonableDefaultPageCacheMemorySizeInBytes() throws Exception
     {
         long bytes = Config.defaults().get( GraphDatabaseSettings.pagecache_memory );
-        assertThat( bytes, greaterThanOrEqualTo( ByteUnit.mebiBytes( 32 ) ) );
+        assertThat( bytes, greaterThanOrEqualTo( ByteUnit.mebiBytes( 8 ) ) );
         assertThat( bytes, lessThanOrEqualTo( ByteUnit.tebiBytes( 1 ) ) );
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -23,7 +23,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -31,9 +31,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.helpers.TransactionTemplate;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.ha.ClusterRule;
@@ -52,7 +52,6 @@ import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_I
 
 public class TxPushStrategyConfigIT
 {
-
     @Rule
     public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
     @Rule
@@ -67,6 +66,8 @@ public class TxPushStrategyConfigIT
     private static final int THIRD_SLAVE = 4;
     private InstanceId[] machineIds;
 
+    private final MissedReplicasMonitor monitorListener = new MissedReplicasMonitor();
+
     @Test
     public void shouldPushToSlavesInDescendingOrder() throws Exception
     {
@@ -74,13 +75,12 @@ public class TxPushStrategyConfigIT
 
         for ( int i = 0; i < 5; i++ )
         {
-            createTransactionOnMaster( cluster );
-            assertLastTransactions( cluster, lastTx( THIRD_SLAVE, BASE_TX_ID + 1 + i ) );
-            assertLastTransactions( cluster, lastTx( SECOND_SLAVE, BASE_TX_ID + 1 + i ) );
-            assertLastTransactions( cluster, lastTx( FIRST_SLAVE, BASE_TX_ID ) );
+            int missed = createTransactionOnMaster( cluster );
+            assertLastTransactions( cluster, lastTx( THIRD_SLAVE, BASE_TX_ID + 1 + i, missed ) );
+            assertLastTransactions( cluster, lastTx( SECOND_SLAVE, BASE_TX_ID + 1 + i, missed ) );
+            assertLastTransactions( cluster, lastTx( FIRST_SLAVE, BASE_TX_ID, missed ) );
         }
     }
-
 
     @Test
     public void shouldPushToSlavesInAscendingOrder() throws Exception
@@ -89,10 +89,10 @@ public class TxPushStrategyConfigIT
 
         for ( int i = 0; i < 5; i++ )
         {
-            createTransactionOnMaster( cluster );
-            assertLastTransactions( cluster, lastTx( FIRST_SLAVE, BASE_TX_ID + 1 + i ) );
-            assertLastTransactions( cluster, lastTx( SECOND_SLAVE, BASE_TX_ID + 1 + i ) );
-            assertLastTransactions( cluster, lastTx( THIRD_SLAVE, BASE_TX_ID ) );
+            int missed = createTransactionOnMaster( cluster );
+            assertLastTransactions( cluster, lastTx( FIRST_SLAVE, BASE_TX_ID + 1 + i, missed ) );
+            assertLastTransactions( cluster, lastTx( SECOND_SLAVE, BASE_TX_ID + 1 + i, missed ) );
+            assertLastTransactions( cluster, lastTx( THIRD_SLAVE, BASE_TX_ID, missed ) );
         }
     }
 
@@ -135,26 +135,27 @@ public class TxPushStrategyConfigIT
     {
         ManagedCluster cluster = startCluster( 4, 2, HaSettings.TxPushStrategy.fixed_descending );
 
-        createTransactionOn( cluster, new InstanceId( FIRST_SLAVE ) );
+        int missed = 0;
+        missed += createTransactionOn( cluster, new InstanceId( FIRST_SLAVE ) );
         assertLastTransactions( cluster,
-                lastTx( MASTER, BASE_TX_ID + 1 ),
-                lastTx( FIRST_SLAVE, BASE_TX_ID + 1 ),
-                lastTx( SECOND_SLAVE, BASE_TX_ID ),
-                lastTx( THIRD_SLAVE, BASE_TX_ID + 1 ) );
+                lastTx( MASTER, BASE_TX_ID + 1, missed ),
+                lastTx( FIRST_SLAVE, BASE_TX_ID + 1, missed ),
+                lastTx( SECOND_SLAVE, BASE_TX_ID, missed ),
+                lastTx( THIRD_SLAVE, BASE_TX_ID + 1, missed ) );
 
-        createTransactionOn( cluster, new InstanceId( SECOND_SLAVE ) );
+        missed += createTransactionOn( cluster, new InstanceId( SECOND_SLAVE ) );
         assertLastTransactions( cluster,
-                lastTx( MASTER, BASE_TX_ID + 2 ),
-                lastTx( FIRST_SLAVE, BASE_TX_ID + 1 ),
-                lastTx( SECOND_SLAVE, BASE_TX_ID + 2 ),
-                lastTx( THIRD_SLAVE, BASE_TX_ID + 2 ) );
+                lastTx( MASTER, BASE_TX_ID + 2, missed ),
+                lastTx( FIRST_SLAVE, BASE_TX_ID + 1, missed ),
+                lastTx( SECOND_SLAVE, BASE_TX_ID + 2, missed ),
+                lastTx( THIRD_SLAVE, BASE_TX_ID + 2, missed ) );
 
-        createTransactionOn( cluster, new InstanceId( THIRD_SLAVE ) );
+        missed += createTransactionOn( cluster, new InstanceId( THIRD_SLAVE ) );
         assertLastTransactions( cluster,
-                lastTx( MASTER, BASE_TX_ID + 3 ),
-                lastTx( FIRST_SLAVE, BASE_TX_ID + 1 ),
-                lastTx( SECOND_SLAVE, BASE_TX_ID + 3 ),
-                lastTx( THIRD_SLAVE, BASE_TX_ID + 3 ) );
+                lastTx( MASTER, BASE_TX_ID + 3, missed ),
+                lastTx( FIRST_SLAVE, BASE_TX_ID + 1, missed ),
+                lastTx( SECOND_SLAVE, BASE_TX_ID + 3, missed ),
+                lastTx( THIRD_SLAVE, BASE_TX_ID + 3, missed ) );
     }
 
     @Test
@@ -174,10 +175,10 @@ public class TxPushStrategyConfigIT
         cluster.await( masterAvailable() );
         HighlyAvailableGraphDatabase newMaster = cluster.getMaster();
         cluster.await( masterSeesSlavesAsAvailable( 1 ) );
-        createTransaction( cluster, newMaster );
+        int missed = createTransaction( cluster, newMaster );
         assertLastTransactions( cluster,
-                lastTx( FIRST_SLAVE, BASE_TX_ID + 1 ),
-                lastTx( SECOND_SLAVE, BASE_TX_ID + 1 ) );
+                lastTx( FIRST_SLAVE, BASE_TX_ID + 1, missed ),
+                lastTx( SECOND_SLAVE, BASE_TX_ID + 1, missed ) );
     }
 
     @Test
@@ -205,16 +206,20 @@ public class TxPushStrategyConfigIT
     private void mapMachineIds( ManagedCluster cluster )
     {
         machineIds = new InstanceId[cluster.size()];
-        machineIds[0] = cluster.getServerId( cluster.getMaster() );
+        HighlyAvailableGraphDatabase master = cluster.getMaster();
+        master.getDependencyResolver().resolveDependency( Monitors.class ).addMonitorListener( monitorListener );
+        machineIds[0] = cluster.getServerId( master );
         List<HighlyAvailableGraphDatabase> slaves = new ArrayList<>();
         for ( HighlyAvailableGraphDatabase hadb : cluster.getAllMembers() )
         {
             if ( !hadb.isMaster() )
             {
                 slaves.add( hadb );
+                hadb.getDependencyResolver().resolveDependency( Monitors.class )
+                        .removeMonitorListener( monitorListener );
             }
         }
-        Collections.sort( slaves, ( o1, o2 ) -> cluster.getServerId( o1 ) .compareTo(  cluster.getServerId( o2 ) ) );
+        slaves.sort( Comparator.comparing( cluster::getServerId ) );
         Iterator<HighlyAvailableGraphDatabase> iter = slaves.iterator();
         for ( int i = 1; iter.hasNext(); i++ )
         {
@@ -239,23 +244,23 @@ public class TxPushStrategyConfigIT
                 .getLastCommittedTransactionId();
     }
 
-    private LastTxMapping lastTx( int serverIndex, long txId )
+    private LastTxMapping lastTx( int serverIndex, long txId, int missed )
     {
         InstanceId serverId = machineIds[serverIndex - 1];
-        return new LastTxMapping( serverId, txId );
+        return new LastTxMapping( serverId, txId, missed );
     }
 
-    private void createTransactionOnMaster( ManagedCluster cluster )
+    private int createTransactionOnMaster( ManagedCluster cluster )
     {
-        createTransaction( cluster, cluster.getMaster() );
+        return createTransaction( cluster, cluster.getMaster() );
     }
 
-    private void createTransactionOn( ManagedCluster cluster, InstanceId serverId )
+    private int createTransactionOn( ManagedCluster cluster, InstanceId serverId )
     {
-        createTransaction( cluster, cluster.getMemberByServerId( serverId ) );
+        return createTransaction( cluster, cluster.getMemberByServerId( serverId ) );
     }
 
-    private void createTransaction( final ManagedCluster cluster, final GraphDatabaseAPI db )
+    private int createTransaction( final ManagedCluster cluster, final GraphDatabaseAPI db )
     {
         TransactionTemplate template = new TransactionTemplate()
                 .with( db )
@@ -282,24 +287,29 @@ public class TxPushStrategyConfigIT
                 } );
 
         template.execute( transaction -> {
+            monitorListener.clear();
             db.createNode();
         } );
+
+        return monitorListener.missed();
     }
 
     private static class LastTxMapping
     {
         private final InstanceId serverId;
         private final long txId;
+        private final int missed;
 
-        public LastTxMapping( InstanceId serverId, long txId )
+        LastTxMapping( InstanceId serverId, long txId, int missed )
         {
             this.serverId = serverId;
             this.txId = txId;
+            this.missed = missed;
         }
 
         public void format( StringBuilder failures, long txId )
         {
-            if ( txId != this.txId )
+            if ( txId < this.txId - this.missed || txId > this.txId)
             {
                 if ( failures.length() > 0 )
                     failures.append( ", " );
@@ -309,4 +319,24 @@ public class TxPushStrategyConfigIT
         }
     }
 
+    private static class MissedReplicasMonitor implements MasterTransactionCommitProcess.Monitor
+    {
+        private int missed;
+
+        @Override
+        public void missedReplicas( int number )
+        {
+            missed = number;
+        }
+
+        int missed()
+        {
+            return missed;
+        }
+
+        void clear()
+        {
+            missed = 0;
+        }
+    }
 }

@@ -1,6 +1,0 @@
-neo4j-enterprise (${neo4j.version.debian_compliant}) ${neo4j.version.stability}; urgency=low
-
-  * See https://github.com/neo4j/neo4j/wiki/Changelog for more details.
-
- -- ${neo4j.debian.maintainer}  ${neo4j.debian.buildDate}
-

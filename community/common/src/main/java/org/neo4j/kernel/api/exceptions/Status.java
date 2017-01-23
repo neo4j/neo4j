@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -605,14 +605,12 @@ public interface Status
 
         private final boolean rollbackTransaction;
         private final boolean shouldLog;
-        private final boolean respondToClient;
         private final String description;
 
         Classification( TransactionEffect transactionEffect, PublishingPolicy publishingPolicy, String description )
         {
             this.description = description;
             this.shouldLog = publishingPolicy.shouldLog();
-            this.respondToClient = publishingPolicy != PublishingPolicy.REFERS_TO_LOG;
             this.rollbackTransaction = transactionEffect == TransactionEffect.ROLLBACK;
         }
 
@@ -624,11 +622,6 @@ public interface Status
         public boolean shouldLog()
         {
             return shouldLog;
-        }
-
-        public boolean shouldRespondToClient()
-        {
-            return respondToClient;
         }
 
         public String description()

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -167,8 +167,10 @@ case class MergeIntoPipe(source: Pipe,
     }
   }
 
-  def planDescriptionWithoutCardinality =
-    source.planDescription.andThen(this.id, "Merge(Into)", variables, ExpandExpression(fromName, relName, Seq(typ), toName, dir))
+  def planDescriptionWithoutCardinality = {
+    val expandDescr = ExpandExpression(fromName, relName, Seq(typ), toName, dir, minLength = 1, maxLength = Some(1))
+    source.planDescription.andThen(this.id, "Merge(Into)", variables, expandDescr)
+  }
 
   val symbols = source.symbols.add(toName, CTNode).add(relName, CTRelationship)
 

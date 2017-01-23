@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,6 +19,11 @@
  */
 package recovery;
 
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -29,18 +34,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.helpers.collection.Iterables;
@@ -48,13 +47,12 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.lang.Boolean.getBoolean;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeNotNull;
-
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.test.SuppressOutput.suppress;
 import static org.neo4j.test.TargetDirectory.testDirForTest;
@@ -292,7 +290,7 @@ public class UniquenessRecoveryTest
 
     private static GraphDatabaseService graphdb( File path )
     {
-        return new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( path ).newGraphDatabase();
+        return new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( path ).newGraphDatabase();
     }
 
     private static void flushPageCache( GraphDatabaseService db )

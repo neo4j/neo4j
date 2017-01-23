@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -32,7 +32,7 @@ public class ServerIdElectionCredentials implements ElectionCredentials, Seriali
     }
 
     @Override
-    public int compareTo( Object o )
+    public int compareTo( ElectionCredentials o )
     {
         // Alphabetically lower URI means higher prio
         return -credentials.toString().compareTo( ((ServerIdElectionCredentials) o).credentials.toString() );

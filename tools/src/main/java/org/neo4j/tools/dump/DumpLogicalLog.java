@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -25,14 +25,21 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.ByteBuffer;
 import java.util.TimeZone;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.cursor.IOCursor;
 import org.neo4j.helpers.Args;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
+import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
+import org.neo4j.kernel.impl.transaction.command.Command.RelationshipCommand;
+import org.neo4j.kernel.impl.transaction.command.Command.RelationshipGroupCommand;
 import org.neo4j.kernel.impl.transaction.log.FilteringIOCursor;
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
@@ -44,9 +51,12 @@ import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChanne
 import org.neo4j.kernel.impl.transaction.log.ReaderLogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.TransactionLogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.tools.dump.InconsistencyReportReader.Inconsistencies;
 
 import static java.util.TimeZone.getTimeZone;
 
@@ -63,6 +73,7 @@ public class DumpLogicalLog
 {
     private static final String TO_FILE = "tofile";
     private static final String TX_FILTER = "txfilter";
+    private static final String CC_FILTER = "ccfilter";
 
     private final FileSystemAbstraction fileSystem;
 
@@ -72,7 +83,7 @@ public class DumpLogicalLog
     }
 
     public void dump( String filenameOrDirectory, PrintStream out,
-                     TimeZone timeZone, String regex ) throws IOException
+            Predicate<LogEntry[]> filter, Function<LogEntry,String> serializer ) throws IOException
     {
         File file = new File( filenameOrDirectory );
         printFile( file, out );
@@ -129,14 +140,14 @@ public class DumpLogicalLog
 
         IOCursor<LogEntry> entryCursor = new LogEntryCursor( entryReader, logChannel );
         TransactionLogEntryCursor transactionCursor = new TransactionLogEntryCursor( entryCursor );
-        try ( IOCursor<LogEntry[]> cursor = regex == null ? transactionCursor :
-                new FilteringIOCursor<>( transactionCursor, new TransactionRegexCriteria( regex, timeZone ) ) )
+        try ( IOCursor<LogEntry[]> cursor = filter == null ? transactionCursor :
+                new FilteringIOCursor<>( transactionCursor, filter ) )
         {
             while ( cursor.next() )
             {
                 for ( LogEntry entry : cursor.get() )
                 {
-                    out.println( entry.toString( timeZone ) );
+                    out.println( serializer.apply( entry ) );
                 }
             }
         }
@@ -172,13 +183,114 @@ public class DumpLogicalLog
         }
     }
 
+    public static class ConsistencyCheckOutputCriteria implements Predicate<LogEntry[]>, Function<LogEntry,String>
+    {
+        private final TimeZone timeZone;
+        private final PrimitiveLongSet relationshipIds = Primitive.longSet();
+        private final PrimitiveLongSet nodeIds = Primitive.longSet();
+        private final PrimitiveLongSet propertyIds = Primitive.longSet();
+        private final PrimitiveLongSet relationshipGroupIds = Primitive.longSet();
+
+        public ConsistencyCheckOutputCriteria( String ccFile, TimeZone timeZone ) throws IOException
+        {
+            this.timeZone = timeZone;
+            new InconsistencyReportReader( new Inconsistencies()
+            {
+                @Override
+                public void relationshipGroup( long id )
+                {
+                    relationshipGroupIds.add( id );
+                }
+
+                @Override
+                public void relationship( long id )
+                {
+                    relationshipIds.add( id );
+                }
+
+                @Override
+                public void property( long id )
+                {
+                    propertyIds.add( id );
+                }
+
+                @Override
+                public void node( long id )
+                {
+                    nodeIds.add( id );
+                }
+            } ).read( new File( ccFile ) );
+        }
+
+        @Override
+        public boolean test( LogEntry[] transaction )
+        {
+            for ( LogEntry logEntry : transaction )
+            {
+                if ( matches( logEntry ) )
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private boolean matches( LogEntry logEntry )
+        {
+            if ( logEntry instanceof LogEntryCommand )
+            {
+                if ( matches( ((LogEntryCommand)logEntry).getXaCommand() ) )
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private boolean matches( StorageCommand command )
+        {
+            if ( command instanceof NodeCommand )
+            {
+                return nodeIds.contains( ((NodeCommand) command).getKey() );
+            }
+            if ( command instanceof RelationshipCommand )
+            {
+                return relationshipIds.contains( ((RelationshipCommand) command).getKey() );
+            }
+            if ( command instanceof PropertyCommand )
+            {
+                return propertyIds.contains( ((PropertyCommand) command).getKey() );
+            }
+            if ( command instanceof RelationshipGroupCommand )
+            {
+                return relationshipGroupIds.contains( ((RelationshipGroupCommand) command).getKey() );
+            }
+            return false;
+        }
+
+        @Override
+        public String apply( LogEntry logEntry )
+        {
+            String result = logEntry.toString( timeZone );
+            if ( matches( logEntry ) )
+            {
+                result += "  <----";
+            }
+            return result;
+        }
+    }
+
     /**
-     * Usage: [--txfilter "regex"] [--tofile] storeDirOrFile1 storeDirOrFile2 ...
+     * Usage: [--txfilter "regex"] [--ccfilter cc-report-file] [--tofile] storeDirOrFile1 storeDirOrFile2 ...
      *
      * --txfilter
      * Will match regex against each {@link LogEntry} and if there is a match,
      * include transaction containing the LogEntry in the dump.
      * regex matching is done with {@link Pattern}
+     *
+     * --ccfilter
+     * Will look at an inconsistency report file from consistency checker and
+     * include transactions that are relevant to them
      *
      * --tofile
      * Redirects output to dump-logical-log.txt in the store directory
@@ -187,15 +299,41 @@ public class DumpLogicalLog
     {
         Args arguments = Args.withFlags( TO_FILE ).parse( args );
         TimeZone timeZone = parseTimeZoneConfig( arguments );
-        String regex = arguments.get( TX_FILTER );
+        Predicate<LogEntry[]> filter = parseFilter( arguments, timeZone );
+        Function<LogEntry,String> serializer = parseSerializer( filter, timeZone );
         try ( Printer printer = getPrinter( arguments ) )
         {
             for ( String fileAsString : arguments.orphans() )
             {
                 new DumpLogicalLog( new DefaultFileSystemAbstraction() )
-                        .dump( fileAsString, printer.getFor( fileAsString ), timeZone, regex );
+                        .dump( fileAsString, printer.getFor( fileAsString ), filter, serializer );
             }
         }
+    }
+
+    @SuppressWarnings( "unchecked" )
+    private static Function<LogEntry,String> parseSerializer( Predicate<LogEntry[]> filter, TimeZone timeZone )
+    {
+        if ( filter instanceof Function )
+        {
+            return (Function<LogEntry,String>) filter;
+        }
+        return logEntry -> logEntry.toString( timeZone );
+    }
+
+    private static Predicate<LogEntry[]> parseFilter( Args arguments, TimeZone timeZone ) throws IOException
+    {
+        String regex = arguments.get( TX_FILTER );
+        if ( regex != null )
+        {
+            return new TransactionRegexCriteria( regex, timeZone );
+        }
+        String cc = arguments.get( CC_FILTER );
+        if ( cc != null )
+        {
+            return new ConsistencyCheckOutputCriteria( cc, timeZone );
+        }
+        return null;
     }
 
     public static Printer getPrinter( Args args )

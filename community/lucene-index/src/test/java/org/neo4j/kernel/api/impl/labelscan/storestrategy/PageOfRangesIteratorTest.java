@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.impl.labelscan.storestrategy;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.junit.Test;
@@ -101,7 +102,7 @@ public class PageOfRangesIteratorTest
         } ).when( searcher ).search( same( query ), any( DocValuesCollector.class ) );
 
         PrimitiveLongIterator iterator = concat(
-                new PageOfRangesIterator( format, searcher, pageSize, query, labelId ) );
+                new PageOfRangesIterator( format, searcher, pageSize, query, Occur.MUST, labelId ) );
 
         // when
         List<Long> longs = PrimitiveLongCollections.asList( iterator );
@@ -114,7 +115,7 @@ public class PageOfRangesIteratorTest
                 longs );
 
         verify( searcher, times( 1 ) ).search( same( query ), any( DocValuesCollector.class ) );
-        verify( rangeNDV, times( 3 ) ).get( anyInt() );
+        verify( rangeNDV, times( 6 ) ).get( anyInt() );
         verify( labelNDV, times( 3 ) ).get( anyInt() );
 
         verifyNoMoreInteractions( searcher );

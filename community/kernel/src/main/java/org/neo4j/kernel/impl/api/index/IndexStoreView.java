@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api.index;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.function.IntPredicate;
 
 import org.neo4j.helpers.collection.Visitor;
@@ -43,9 +44,9 @@ public interface IndexStoreView extends PropertyAccessor
      * @return a {@link StoreScan} to start and to stop the scan.
      */
     <FAILURE extends Exception> StoreScan<FAILURE> visitNodes(
-            IntPredicate labelIdFilter, IntPredicate propertyKeyIdFilter,
+            int[] labelIds, IntPredicate propertyKeyIdFilter,
             Visitor<NodePropertyUpdates, FAILURE> propertyUpdateVisitor,
-            Visitor<NodeLabelUpdate, FAILURE> labelUpdateVisitor );
+            Visitor<NodeLabelUpdate, FAILURE> labelUpdateVisitor);
 
     /**
      * Produces {@link NodePropertyUpdate} objects from reading node {@code nodeId}, its labels and properties
@@ -77,9 +78,22 @@ public interface IndexStoreView extends PropertyAccessor
         }
 
         @Override
+        public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, NodePropertyUpdate update,
+                long currentlyIndexedNodeId )
+        {
+
+        }
+
+        @Override
         public PopulationProgress getProgress()
         {
             return PopulationProgress.DONE;
+        }
+
+        @Override
+        public void configure( List list )
+        {
+
         }
     };
 
@@ -92,7 +106,7 @@ public interface IndexStoreView extends PropertyAccessor
         }
 
         @Override
-        public <FAILURE extends Exception> StoreScan<FAILURE> visitNodes( IntPredicate labelIdFilter,
+        public <FAILURE extends Exception> StoreScan<FAILURE> visitNodes( int[] labelIds,
                 IntPredicate propertyKeyIdFilter, Visitor<NodePropertyUpdates,FAILURE> propertyUpdateVisitor,
                 Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor )
         {
@@ -126,5 +140,6 @@ public interface IndexStoreView extends PropertyAccessor
         public void incrementIndexUpdates( IndexDescriptor descriptor, long updatesDelta )
         {
         }
+
     };
 }

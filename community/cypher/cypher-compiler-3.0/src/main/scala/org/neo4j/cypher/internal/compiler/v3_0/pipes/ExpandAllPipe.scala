@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -58,8 +58,10 @@ case class ExpandAllPipe(source: Pipe,
   def getFromNode(row: ExecutionContext): Any =
     row.getOrElse(fromName, throw new InternalException(s"Expected to find a node at $fromName but found nothing"))
 
-  def planDescriptionWithoutCardinality =
-    source.planDescription.andThen(this.id, "Expand(All)", variables, ExpandExpression(fromName, relName, typeNames, toName, dir))
+  def planDescriptionWithoutCardinality = {
+    val expandDesc = ExpandExpression(fromName, relName, typeNames, toName, dir, 1, Some(1))
+    source.planDescription.andThen(this.id, "Expand(All)", variables, expandDesc)
+  }
 
   val symbols = source.symbols.add(toName, CTNode).add(relName, CTRelationship)
 

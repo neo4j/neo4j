@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -72,8 +72,10 @@ case class ExpandIntoPipe(source: Pipe,
     }
   }
 
-  def planDescriptionWithoutCardinality =
-    source.planDescription.andThen(this.id, "Expand(Into)", variables, ExpandExpression(fromName, relName, lazyTypes.names, toName, dir))
+  def planDescriptionWithoutCardinality = {
+    val expandDescr = ExpandExpression(fromName, relName, lazyTypes.names, toName, dir, minLength = 1, Some(1))
+    source.planDescription.andThen(this.id, "Expand(Into)", variables, expandDescr)
+  }
 
   val symbols = source.symbols.add(toName, CTNode).add(relName, CTRelationship)
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -104,6 +104,6 @@ class LuceneLabelScanIndex extends AbstractLuceneIndex
     private LabelScanReader createPartitionedReader( List<AbstractIndexPartition> partitions ) throws IOException
     {
         List<PartitionSearcher> searchers = acquireSearchers( partitions );
-        return new PartitionedLuceneLabelScanStoreReader(searchers, storageStrategy);
+        return new PartitionedLuceneLabelScanStoreReader(searchers, storageStrategy );
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -34,7 +34,7 @@ case object PlanEventHorizon
   override def apply(query: PlannerQuery, plan: LogicalPlan)(implicit context: LogicalPlanningContext): LogicalPlan = {
     val selectedPlan = context.config.applySelections(plan, query.queryGraph)
 
-    query.horizon match {
+    val projectedPlan = query.horizon match {
       case aggregatingProjection: AggregatingQueryProjection =>
         val aggregationPlan = aggregation(selectedPlan, aggregatingProjection)
         sortSkipAndLimit(aggregationPlan, query)
@@ -61,5 +61,8 @@ case object PlanEventHorizon
       case _ =>
         throw new CantHandleQueryException
     }
+
+    // We need to check if reads introduced in the horizon conflicts with future writes
+    Eagerness.horizonReadWriteEagerize(projectedPlan, query)
   }
 }

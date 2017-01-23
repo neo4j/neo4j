@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.ast.{LabelToken, PropertyKeyToken
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_0.{LabelId, PropertyKeyId}
 import org.neo4j.graphdb.Node
-import org.neo4j.kernel.api.index.IndexDescriptor
+import org.neo4j.cypher.internal.compiler.v3_0.IndexDescriptor
 
 class NodeIndexScanPipeTest extends CypherFunSuite with AstConstructionTestSupport {
 

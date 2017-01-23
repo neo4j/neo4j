@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -35,7 +35,7 @@ public interface QueueDistribution
     /**
      * Distributes records into {@link RecordConsumer}.
      */
-    public interface QueueDistributor<RECORD>
+    interface QueueDistributor<RECORD>
     {
         void distribute( RECORD record, RecordConsumer<RECORD> consumer ) throws InterruptedException;
     }
@@ -43,7 +43,7 @@ public interface QueueDistribution
     /**
      * Distributes records round-robin style to all queues.
      */
-    public static final QueueDistribution ROUND_ROBIN = new QueueDistribution()
+    QueueDistribution ROUND_ROBIN = new QueueDistribution()
     {
         @Override
         public <RECORD> QueueDistributor<RECORD> distributor( long recordsPerCpu, int numberOfThreads )
@@ -55,21 +55,21 @@ public interface QueueDistribution
     /**
      * Distributes {@link RelationshipRecord} depending on the start/end node ids.
      */
-    public static final QueueDistribution RELATIONSHIPS = new QueueDistribution()
+    QueueDistribution RELATIONSHIPS = new QueueDistribution()
     {
         @Override
         public QueueDistributor<RelationshipRecord> distributor( long recordsPerCpu, int numberOfThreads )
         {
-            return new RelationshipNodesQueueDistributor( recordsPerCpu );
+            return new RelationshipNodesQueueDistributor( recordsPerCpu, numberOfThreads );
         }
     };
 
-    static class RoundRobinQueueDistributor<RECORD> implements QueueDistributor<RECORD>
+    class RoundRobinQueueDistributor<RECORD> implements QueueDistributor<RECORD>
     {
         private final int numberOfThreads;
-        private int nextQIndex;
+        private int nextQIndex = 0;
 
-        public RoundRobinQueueDistributor( int numberOfThreads )
+        RoundRobinQueueDistributor( int numberOfThreads )
         {
             this.numberOfThreads = numberOfThreads;
         }
@@ -88,21 +88,25 @@ public interface QueueDistribution
         }
     }
 
-    static class RelationshipNodesQueueDistributor implements QueueDistributor<RelationshipRecord>
+    class RelationshipNodesQueueDistributor implements QueueDistributor<RelationshipRecord>
     {
         private final long recordsPerCpu;
+        private final int maxAvailableThread;
+        private final int numberOfThreads;
 
-        public RelationshipNodesQueueDistributor( long recordsPerCpu )
+        RelationshipNodesQueueDistributor( long recordsPerCpu, int numberOfThreads )
         {
             this.recordsPerCpu = recordsPerCpu;
+            this.numberOfThreads = numberOfThreads;
+            this.maxAvailableThread = numberOfThreads - 1;
         }
 
         @Override
         public void distribute( RelationshipRecord relationship, RecordConsumer<RelationshipRecord> consumer )
                 throws InterruptedException
         {
-            int qIndex1 = (int) (relationship.getFirstNode() / recordsPerCpu);
-            int qIndex2 = (int) (relationship.getSecondNode() / recordsPerCpu);
+            int qIndex1 = (int) Math.min( maxAvailableThread, (Math.abs( relationship.getFirstNode() ) / recordsPerCpu) );
+            int qIndex2 = (int) Math.min( maxAvailableThread, (Math.abs( relationship.getSecondNode() ) / recordsPerCpu) );
             try
             {
                 consumer.accept( relationship, qIndex1 );
@@ -114,7 +118,8 @@ public interface QueueDistribution
             catch ( ArrayIndexOutOfBoundsException e )
             {
                 throw Exceptions.withMessage( e, e.getMessage() + ", recordsPerCPU:" + recordsPerCpu +
-                        ", relationship:" + relationship );
+                        ", relationship:" + relationship +
+                        ", number of threads: " + numberOfThreads );
             }
         }
     }

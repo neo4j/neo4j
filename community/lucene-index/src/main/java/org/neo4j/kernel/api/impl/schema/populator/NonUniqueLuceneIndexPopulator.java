@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -27,22 +27,33 @@ import org.neo4j.kernel.api.impl.schema.SchemaIndex;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.impl.api.index.sampling.DefaultNonUniqueIndexSampler;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.sampling.NonUniqueIndexSampler;
 import org.neo4j.storageengine.api.schema.IndexSample;
 
 /**
  * A {@link LuceneIndexPopulator} used for non-unique Lucene schema indexes.
- * Performs sampling using {@link NonUniqueIndexSampler}.
+ * Performs sampling using {@link DefaultNonUniqueIndexSampler}.
  */
 public class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
 {
-    private final NonUniqueIndexSampler sampler;
+    private final IndexSamplingConfig samplingConfig;
+    private NonUniqueIndexSampler sampler;
+    private boolean updateSampling;
 
     public NonUniqueLuceneIndexPopulator( SchemaIndex luceneIndex, IndexSamplingConfig samplingConfig )
     {
         super( luceneIndex );
-        this.sampler = new NonUniqueIndexSampler( samplingConfig.sampleSizeLimit() );
+        this.samplingConfig = samplingConfig;
+    }
+
+    @Override
+    public void configureSampling( boolean onlineSampling )
+    {
+        this.updateSampling = onlineSampling;
+        this.sampler = onlineSampling ? createDefaultSampler()
+                                         : new DirectNonUniqueIndexSampler( luceneIndex );
     }
 
     @Override
@@ -54,18 +65,37 @@ public class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
     @Override
     public IndexUpdater newPopulatingUpdater( PropertyAccessor propertyAccessor ) throws IOException
     {
+        checkSampler();
         return new NonUniqueLuceneIndexPopulatingUpdater( writer, sampler );
     }
 
     @Override
     public void includeSample( NodePropertyUpdate update )
     {
-        sampler.include( LuceneDocumentStructure.encodedStringValue( update.getValueAfter() ) );
+        if ( updateSampling )
+        {
+            checkSampler();
+            sampler.include( LuceneDocumentStructure.encodedStringValue( update.getValueAfter() ) );
+        }
     }
 
     @Override
     public IndexSample sampleResult()
     {
+        checkSampler();
         return sampler.result();
+    }
+
+    private DefaultNonUniqueIndexSampler createDefaultSampler()
+    {
+        return new DefaultNonUniqueIndexSampler( samplingConfig.sampleSizeLimit() );
+    }
+
+    private void checkSampler()
+    {
+        if ( sampler == null )
+        {
+            throw new IllegalStateException( "Please configure populator sampler before using it." );
+        }
     }
 }

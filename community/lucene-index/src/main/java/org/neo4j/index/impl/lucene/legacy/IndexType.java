@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -44,10 +44,9 @@ import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -68,36 +67,16 @@ public abstract class IndexType
         }
 
         @Override
-        public void addToDocument( Document document, String key, Object value )
+        void removeFieldsFromDocument( Document document, String key, Object value )
         {
-            document.add( instantiateField( key, value, StringField.TYPE_STORED ) );
-            document.add( instantiateSortField( key, value ) );
+            removeFieldsFromDocument( document, key, key, value );
         }
 
         @Override
-        void removeFieldsFromDocument( Document document, String key, Object value )
+        protected void addNewFieldToDocument( Document document, String key, Object value )
         {
-            Set<String> values = null;
-            if ( value != null )
-            {
-                String stringValue = value.toString();
-                values = new HashSet<>( Arrays.asList(
-                        document.getValues( key ) ) );
-                if ( !values.remove( stringValue ) )
-                {
-                    return;
-                }
-            }
-            removeFieldFromDocument( document, key );
-            if ( value != null )
-            {
-                for ( String existingValue : values )
-                {
-                    addToDocument( document, key, existingValue );
-                }
-            }
-
-            restoreNumericFields( document );
+            document.add( instantiateField( key, value, StringField.TYPE_STORED ) );
+            document.add( instantiateSortField( key, value ) );
         }
 
         @Override
@@ -115,6 +94,7 @@ public abstract class IndexType
 
     private static class CustomType extends IndexType
     {
+        public static final String EXACT_FIELD_SUFFIX = "_e";
         private final Similarity similarity;
 
         CustomType( Analyzer analyzer, boolean toLowerCase, Similarity similarity )
@@ -139,14 +119,14 @@ public abstract class IndexType
 
         private String exactKey( String key )
         {
-            return key + "_e";
+            return key + EXACT_FIELD_SUFFIX;
         }
 
+        // TODO We should honor ValueContext instead of doing value.toString() here.
+        // if changing it, also change #get to honor ValueContext.
         @Override
-        public void addToDocument( Document document, String key, Object value )
+        protected void addNewFieldToDocument( Document document, String key, Object value )
         {
-            // TODO We should honor ValueContext instead of doing value.toString() here.
-            // if changing it, also change #get to honor ValueContext.
             document.add( new StringField( exactKey( key ), value.toString(), Store.YES ) );
             document.add( instantiateField( key, value, TextField.TYPE_STORED ) );
             document.add( instantiateSortField( key, value ) );
@@ -162,28 +142,13 @@ public abstract class IndexType
         @Override
         void removeFieldsFromDocument( Document document, String key, Object value )
         {
-            String exactKey = exactKey( key );
-            Set<String> values = null;
-            if ( value != null )
-            {
-                String stringValue = value.toString();
-                values = new HashSet<>( Arrays.asList( document.getValues( exactKey ) ) );
-                if ( !values.remove( stringValue ) )
-                {
-                    return;
-                }
-            }
-            document.removeFields( exactKey );
-            removeFieldFromDocument( document, key );
-            if ( value != null )
-            {
-                for ( String existingValue : values )
-                {
-                    addToDocument( document, key, existingValue );
-                }
-            }
+            removeFieldsFromDocument( document, key, exactKey( key ), value );
+        }
 
-            restoreNumericFields( document );
+        @Override
+        protected boolean isStoredField( IndexableField field )
+        {
+            return !field.name().endsWith( CustomType.EXACT_FIELD_SUFFIX ) && super.isStoredField( field );
         }
 
         @Override
@@ -202,6 +167,14 @@ public abstract class IndexType
         this.toLowerCase = toLowerCase;
     }
 
+    abstract void removeFieldsFromDocument( Document document, String key, Object value );
+
+    abstract void removeFieldFromDocument( Document document, String name );
+
+    abstract void addNewFieldToDocument( Document document, String key, Object value );
+
+    abstract Query get( String key, Object value );
+
     static IndexType getIndexType( Map<String, String> config )
     {
         String type = config.get( LuceneIndexImplementation.KEY_TYPE );
@@ -213,14 +186,14 @@ public abstract class IndexType
         if ( type != null )
         {
             // Use the built in alternatives... "exact" or "fulltext"
-            if ( type.equals( "exact" ) )
+            if ( "exact".equals( type ) )
             {
                 // In the exact case we default to false
                 boolean toLowerCase = TRUE.equals( toLowerCaseUnbiased );
 
                 result = toLowerCase ? new CustomType( new LowerCaseKeywordAnalyzer(), true, similarity ) : EXACT;
             }
-            else if ( type.equals( "fulltext" ) )
+            else if ( "fulltext".equals( type ) )
             {
                 // In the fulltext case we default to true
                 boolean toLowerCase = !FALSE.equals( toLowerCaseUnbiased );
@@ -250,6 +223,17 @@ public abstract class IndexType
             result = new CustomType( customAnalyzer, toLowerCase, similarity );
         }
         return result;
+    }
+
+    public void addToDocument( Document document, String key, Object value )
+    {
+        addNewFieldToDocument( document, key, value );
+        restoreSortFields( document );
+    }
+
+    protected boolean isStoredField( IndexableField field )
+    {
+        return field.fieldType().stored() && !FullTxData.TX_STATE_KEY.equals( field.name() );
     }
 
     private static boolean parseBoolean( String string, boolean valueIfNull )
@@ -284,8 +268,6 @@ public abstract class IndexType
         return null;
     }
 
-    abstract Query get( String key, Object value );
-
     TxData newTxData( LuceneLegacyIndex index )
     {
         return new ExactTxData( index );
@@ -314,8 +296,6 @@ public abstract class IndexType
             throw new RuntimeException( e );
         }
     }
-
-    abstract void addToDocument( Document document, String key, Object value );
 
     public static IndexableField instantiateField( String key, Object value, FieldType fieldType )
     {
@@ -368,7 +348,14 @@ public abstract class IndexType
         }
         else
         {
-            field = new SortedSetDocValuesField( key, new BytesRef( value.toString() ) );
+            if ( LuceneLegacyIndex.KEY_DOC_ID.equals( key ) )
+            {
+                field = new NumericDocValuesField( key, Long.parseLong( value.toString() ) );
+            }
+            else
+            {
+                field = new SortedSetDocValuesField( key, new BytesRef( value.toString() ) );
+            }
         }
         return field;
     }
@@ -385,10 +372,6 @@ public abstract class IndexType
         }
     }
 
-    abstract void removeFieldsFromDocument( Document document, String key, Object value );
-
-    abstract void removeFieldFromDocument( Document document, String name );
-
     private void clearDocument( Document document )
     {
         Set<String> names = new HashSet<>();
@@ -403,23 +386,67 @@ public abstract class IndexType
         }
     }
 
-    // Re-add numeric field since their index info is lost after reading the fields from the index store
-    protected void restoreNumericFields( Document document )
+    // Re-add field since their index info is lost after reading the fields from the index store
+    void restoreSortFields( Document document )
     {
-        List<IndexableField> numericFields = new ArrayList<>();
+        Map<String,Object> fieldsWithoutSortFields = new HashMap<>();
         for ( IndexableField field : document.getFields() )
         {
-            if ( field.numericValue() != null && !field.name().equals( LuceneLegacyIndex.KEY_DOC_ID ) &&
-                    DocValuesType.NONE.equals( field.fieldType().docValuesType() ) )
+            if ( isStoredField( field ) )
             {
-                numericFields.add( field );
+                IndexableField[] fields = document.getFields( field.name() );
+                if ( !haveSortField( fields ) )
+                {
+                    fieldsWithoutSortFields.put( field.name(), getFieldValue( field ) );
+                }
             }
         }
-        for ( IndexableField field : numericFields )
+        for ( Map.Entry<String,Object> entry : fieldsWithoutSortFields.entrySet() )
         {
-            removeFieldFromDocument( document, field.name() );
-            addToDocument( document, field.name(), field.numericValue() );
+            removeFieldsFromDocument( document, entry.getKey(), entry.getValue() );
+            addNewFieldToDocument( document, entry.getKey(), entry.getValue() );
         }
+    }
+
+    void removeFieldsFromDocument( Document document, String key, String exactKey, Object value )
+    {
+        Set<String> values = null;
+        if ( value != null )
+        {
+            String stringValue = value.toString();
+            values = new HashSet<>( Arrays.asList( document.getValues( exactKey ) ) );
+            if ( !values.remove( stringValue ) )
+            {
+                return;
+            }
+        }
+        removeFieldFromDocument( document, key );
+
+        if ( value != null )
+        {
+            for ( String existingValue : values )
+            {
+                addNewFieldToDocument( document, key, existingValue );
+            }
+        }
+    }
+
+    private boolean haveSortField( IndexableField[] fields )
+    {
+        for ( IndexableField field : fields )
+        {
+            if ( !DocValuesType.NONE.equals( field.fieldType().docValuesType() ) )
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private Object getFieldValue( IndexableField field )
+    {
+        Number numericFieldValue = field.numericValue();
+        return numericFieldValue != null ? numericFieldValue : field.stringValue();
     }
 
     public static Document newBaseDocument( long entityId )

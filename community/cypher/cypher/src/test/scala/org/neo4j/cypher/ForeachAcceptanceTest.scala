@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -135,5 +135,61 @@ class ForeachAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestS
 
     // then
     assertStats(result, nodesCreated = 2, relationshipsCreated = 1)
+  }
+
+  test("foreach with non-trivially typed collection and create pattern should not create bound node") {
+    // given
+    val query =
+      """CREATE (a),(b)
+        |WITH a, collect(b) as nodes, true as condition
+        |FOREACH (x IN CASE WHEN condition THEN nodes ELSE [] END | CREATE (a)-[:X]->(x) );""".stripMargin
+
+    // when
+    val result = updateWithBothPlannersAndCompatibilityMode(query)
+
+    // then
+    assertStats(result, nodesCreated = 2, relationshipsCreated = 1)
+  }
+
+  test("foreach with non-trivially typed collection and merge pattern should not create bound node") {
+    // given
+    createLabeledNode("Foo")
+    createLabeledNode("Bar")
+
+    val query =
+      """MATCH (n:Foo),(m:Bar)
+        |FOREACH (x IN CASE WHEN true THEN [n] ELSE [] END |
+        |   MERGE (x)-[:FOOBAR]->(m) );""".stripMargin
+
+    // when
+    val result = updateWithBothPlannersAndCompatibilityMode(query)
+
+    // then
+    assertStats(result, relationshipsCreated = 1)
+  }
+
+  test("foreach with mixed type collection should not plan create of bound node and fail at runtime") {
+    // given
+    createLabeledNode("Foo")
+    createLabeledNode("Bar")
+
+    val query =
+      """MATCH (n:Foo),(m:Bar)
+        |WITH n, [m, 42] as mixedTypeCollection
+        |FOREACH (x IN mixedTypeCollection | CREATE (n)-[:FOOBAR]->(x) );""".stripMargin
+
+    // when
+    val explain = executeWithCostPlannerOnly(s"EXPLAIN $query")
+
+    // then
+    explain.executionPlanDescription().toString shouldNot include("CreateNode")
+
+    // when
+    try {
+      val result = executeWithCostPlannerOnly(query)
+    }
+    catch {
+      case e: Exception => e.getMessage should startWith("Expected to find a node at x but")
+    }
   }
 }

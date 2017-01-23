@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,6 +19,8 @@
  */
 package org.neo4j.desktop.ui;
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.FlowLayout;
@@ -34,8 +36,6 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.border.Border;
-
-import org.apache.commons.lang.StringUtils;
 
 import static java.awt.font.TextAttribute.UNDERLINE;
 import static java.awt.font.TextAttribute.UNDERLINE_ON;

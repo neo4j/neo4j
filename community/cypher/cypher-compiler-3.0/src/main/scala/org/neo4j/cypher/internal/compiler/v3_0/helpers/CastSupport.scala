@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -80,6 +80,10 @@ object CastSupport {
       case (_: Float, _: Number) => a
 
       case (_: Double, _: Number) => a
+
+      case (a, b) if a == null || b == null => throw new CypherTypeException("Collections containing null values can not be stored in properties.")
+
+      case (a, b) if a.isInstanceOf[Seq[_]] || b.isInstanceOf[Seq[_]] => throw new CypherTypeException("Collections containing collections can not be stored in properties.")
 
       case _ => throw new CypherTypeException("Collections containing mixed types can not be stored in properties.")
     }

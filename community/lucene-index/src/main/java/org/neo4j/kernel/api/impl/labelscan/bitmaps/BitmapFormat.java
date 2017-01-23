@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -26,7 +26,7 @@ public enum BitmapFormat
     public final int shift;
     private final long mask;
 
-    private BitmapFormat( int shift, long mask )
+    BitmapFormat( int shift, long mask )
     {
         this.shift = shift;
         this.mask = mask;

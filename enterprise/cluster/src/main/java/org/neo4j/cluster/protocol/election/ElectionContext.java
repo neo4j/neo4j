@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -48,22 +48,16 @@ public interface ElectionContext
 
     Iterable<String> getRoles( InstanceId server );
 
-    void unelect( String roleName );
-
     boolean isElectionProcessInProgress( String role );
-
-    void startDemotionProcess( String role, final InstanceId demoteNode );
 
     void startElectionProcess( String role );
 
-    void startPromotionProcess( String role, final InstanceId promoteNode );
-
-    boolean voted( String role, InstanceId suggestedNode, Comparable<Object> suggestionCredentials,
+    boolean voted( String role, InstanceId suggestedNode, ElectionCredentials suggestionCredentials,
                        long electionVersion );
 
     InstanceId getElectionWinner( String role );
 
-    Comparable<Object> getCredentialsForRole( String role );
+    ElectionCredentials getCredentialsForRole( String role );
 
     int getVoteCount( String role );
 

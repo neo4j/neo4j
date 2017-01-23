@@ -55,7 +55,7 @@ Function Get-Java
     [Parameter(Mandatory=$true,ValueFromPipeline=$false,ParameterSetName='UtilityInvoke')]
     [Parameter(Mandatory=$true,ValueFromPipeline=$false,ParameterSetName='ServerInvoke')]
     [PSCustomObject]$Neo4jServer
-        
+
     ,[Parameter(Mandatory=$true,ValueFromPipeline=$false,ParameterSetName='ServerInvoke')]
     [switch]$ForServer
 
@@ -63,21 +63,21 @@ Function Get-Java
     [switch]$ForUtility
 
     ,[Parameter(Mandatory=$true,ValueFromPipeline=$false,ParameterSetName='UtilityInvoke')]
-    [string]$StartingClass    
+    [string]$StartingClass
   )
-  
+
   Begin
   {
   }
-  
+
   Process
   {
     $javaPath = ''
     $javaCMD = ''
-    
+
     $EnvJavaHome = Get-Neo4jEnv 'JAVA_HOME'
     $EnvClassPrefix = Get-Neo4jEnv 'CLASSPATH_PREFIX'
-    
+
     # Is JAVA specified in an environment variable
     if (($javaPath -eq '') -and ($EnvJavaHome -ne $null))
     {
@@ -87,7 +87,7 @@ Function Get-Java
     }
 
     # Attempt to find Java in registry
-    $regKey = 'Registry::HKLM\SOFTWARE\JavaSoft\Java Runtime Environment'    
+    $regKey = 'Registry::HKLM\SOFTWARE\JavaSoft\Java Runtime Environment'
     if (($javaPath -eq '') -and (Test-Path -Path $regKey))
     {
       $regJavaVersion = ''
@@ -107,7 +107,7 @@ Function Get-Java
     }
 
     # Attempt to find Java in registry (32bit Java on 64bit OS)
-    $regKey = 'Registry::HKLM\SOFTWARE\Wow6432Node\JavaSoft\Java Runtime Environment'    
+    $regKey = 'Registry::HKLM\SOFTWARE\Wow6432Node\JavaSoft\Java Runtime Environment'
     if (($javaPath -eq '') -and (Test-Path -Path $regKey))
     {
       $regJavaVersion = ''
@@ -125,7 +125,7 @@ Function Get-Java
         $javaPath = ''
       }
     }
-    
+
     # Attempt to find Java in the search path
     if ($javaPath -eq '')
     {
@@ -179,7 +179,7 @@ Function Get-Java
       # Parse Java config settings - GC
       $option = (Get-Neo4jSetting -Name 'dbms.logs.gc.enabled' -Neo4jServer $Neo4jServer)
       if (($option -ne $null) -and ($option.Value.ToLower() -eq 'true')) {
-        $ShellArgs += "-Xloggc:$($Neo4jServer.Home)/gc.log"
+        $ShellArgs += "-Xloggc:`"$($Neo4jServer.Home)/gc.log`""
 
         $option = (Get-Neo4jSetting -Name 'dbms.logs.gc.options' -Neo4jServer $Neo4jServer)
         if ($option -eq $null) {
@@ -208,9 +208,12 @@ Function Get-Java
           $ShellArgs += "-XX:NumberOfGCLogFiles=5"
         }
       }
-      $ShellArgs += @("-Dfile.encoding=UTF-8",$serverMainClass,"--config-dir=$($Neo4jServer.ConfDir)","--home-dir=$($Neo4jServer.Home)")
+        $ShellArgs += @("-Dfile.encoding=UTF-8",
+                        $serverMainClass,
+                        "--config-dir=`"$($Neo4jServer.ConfDir)`"",
+                        "--home-dir=`"$($Neo4jServer.Home)`"")
     }
-    
+
     # Shell arguments for the utility classes e.g. Import, Shell
     if ($PsCmdlet.ParameterSetName -eq 'UtilityInvoke')
     {
@@ -230,14 +233,14 @@ Function Get-Java
       $ShellArgs += @("-classpath $($EnvClassPrefix);$ClassPath",
                       "-Dbasedir=`"$($Neo4jServer.Home)`"", `
                       '-Dfile.encoding=UTF-8')
-            
+
       # Add the starting class
       $ShellArgs += @($StartingClass)
     }
 
     Write-Output @{'java' = $javaCMD; 'args' = $ShellArgs}
   }
-  
+
   End
   {
   }

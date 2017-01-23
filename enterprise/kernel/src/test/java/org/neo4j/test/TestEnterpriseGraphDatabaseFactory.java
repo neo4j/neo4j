@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -22,11 +22,14 @@ package org.neo4j.test;
 import java.io.File;
 import java.util.Map;
 
+import org.neo4j.graphdb.EnterpriseGraphDatabase;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
+import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.impl.enterprise.EnterpriseFacadeFactory;
+import org.neo4j.kernel.impl.factory.Edition;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.logging.AbstractLogService;
@@ -35,6 +38,16 @@ import org.neo4j.logging.LogProvider;
 
 public class TestEnterpriseGraphDatabaseFactory extends TestGraphDatabaseFactory
 {
+    @Override
+    protected GraphDatabaseBuilder.DatabaseCreator createDatabaseCreator( File storeDir,
+                                                                          GraphDatabaseFactoryState state )
+    {
+        return config -> {
+            config.put( "unsupported.dbms.ephemeral", "false" );
+            return new EnterpriseGraphDatabase( storeDir, config, state.databaseDependencies() );
+        };
+    }
+
     @Override
     protected GraphDatabaseBuilder.DatabaseCreator createImpermanentDatabaseCreator( final File storeDir,
             final TestGraphDatabaseFactoryState state )
@@ -49,7 +62,8 @@ public class TestEnterpriseGraphDatabaseFactory extends TestGraphDatabaseFactory
                 {
                     @Override
                     protected PlatformModule createPlatform( File storeDir, Map<String,String> params,
-                            Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
+                                                             Dependencies dependencies,
+                                                             GraphDatabaseFacade graphDatabaseFacade )
                     {
                         return new ImpermanentGraphDatabase.ImpermanentPlatformModule( storeDir, params, databaseInfo(),
                                 dependencies, graphDatabaseFacade )
@@ -100,5 +114,11 @@ public class TestEnterpriseGraphDatabaseFactory extends TestGraphDatabaseFactory
                         GraphDatabaseDependencies.newDependencies( state.databaseDependencies() ) );
             }
         };
+    }
+
+    @Override
+    public String getEdition()
+    {
+        return Edition.enterprise.toString();
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -42,6 +42,7 @@ import org.neo4j.test.ha.ClusterRule;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.neo4j.helpers.Exceptions.stringify;
+import static org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState.PENDING;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.instanceEvicted;
 
@@ -83,49 +84,26 @@ public class ClusterLocksIT
     @Test
     public void aPendingMemberShouldBeAbleToServeReads() throws Throwable
     {
+        // given
         createNodeOnMaster( testLabel, cluster.getMaster() );
         cluster.sync();
+
         HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
-
-        AtomicBoolean run = new AtomicBoolean( true );
-        AtomicReference<Throwable> ref = new AtomicReference<>(  );
-
-        Thread thread = new Thread()
-        {
-            @Override
-            public void run()
-            {
-                while ( run.get() )
-                {
-                    try ( Transaction tx = slave.beginTx() )
-                    {
-                        Node single = Iterables.single( slave.getAllNodes() );
-                        Label label = Iterables.single( single.getLabels() );
-                        assertEquals( testLabel, label );
-                        tx.success();
-                    }
-                    catch ( TransactionTerminatedException | TransientTransactionFailureException ex )
-                    {
-                        // this is fine we might have stopped or rolled back a transaction when we switched role..
-                    }
-                    catch ( Throwable t )
-                    {
-                        ref.compareAndSet( null, t );
-                    }
-                }
-            }
-        };
-
-        thread.start();
-
         cluster.fail( slave, ClusterManager.NetworkFlag.values() );
-        cluster.await( instanceEvicted( slave ), 20 );
+        cluster.await( instanceEvicted( slave ) );
 
-        run.set( false );
-        thread.join();
+        assertEquals( PENDING, slave.getInstanceState() );
 
-        Throwable throwable = ref.get();
-        assertNull( stringify( throwable ), throwable );
+        // when
+        try ( Transaction tx = slave.beginTx() )
+        {
+            Node single = Iterables.single( slave.getAllNodes() );
+            Label label = Iterables.single( single.getLabels() );
+            assertEquals( testLabel, label );
+            tx.success();
+        }
+
+        // then no exceptions thrown
     }
 
     private void takeExclusiveLockOnSameNodeAfterSwitch( Label testLabel, HighlyAvailableGraphDatabase master,

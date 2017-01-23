@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -21,7 +21,6 @@ package org.neo4j.server.rest.security;
 
 import javax.servlet.http.HttpServletRequest;
 
-//START SNIPPET: failingRule
 public class PermanentlyFailingSecurityRule implements SecurityRule
 {
 
@@ -46,4 +45,3 @@ public class PermanentlyFailingSecurityRule implements SecurityRule
         return SecurityFilter.basicAuthenticationResponse(REALM);
     }
 }
-// END SNIPPET: failingRule

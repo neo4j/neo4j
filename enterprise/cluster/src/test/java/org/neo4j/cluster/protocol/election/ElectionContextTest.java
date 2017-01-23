@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -293,11 +293,11 @@ public class ElectionContextTest
         electionContext.startElectionProcess( role1 );
         electionContext.startElectionProcess( role2 );
 
-        electionContext.voted( role1, failingInstance, mock( Comparable.class ), 2 );
-        electionContext.voted( role2, failingInstance, mock( Comparable.class ), 2 );
+        electionContext.voted( role1, failingInstance, mock( ElectionCredentials.class ), 2 );
+        electionContext.voted( role2, failingInstance, mock( ElectionCredentials.class ), 2 );
 
-        electionContext.voted( role1, otherInstance, mock( Comparable.class ), 2 );
-        electionContext.voted( role2, otherInstance, mock( Comparable.class ), 2 );
+        electionContext.voted( role1, otherInstance, mock( ElectionCredentials.class ), 2 );
+        electionContext.voted( role2, otherInstance, mock( ElectionCredentials.class ), 2 );
 
         heartbeatContext.suspect( failingInstance );
 

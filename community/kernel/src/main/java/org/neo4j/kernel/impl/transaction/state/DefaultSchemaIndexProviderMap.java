@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -41,7 +41,9 @@ public class DefaultSchemaIndexProviderMap implements SchemaIndexProviderMap
     public SchemaIndexProvider apply( SchemaIndexProvider.Descriptor descriptor )
     {
         if ( indexProvider.getProviderDescriptor().getKey().equals( descriptor.getKey() ) )
+        {
             return indexProvider;
+        }
 
         throw new IllegalArgumentException( "Tried to get index provider for an existing index with provider " +
                 descriptor + " whereas the default and only supported provider in this session is " +

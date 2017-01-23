@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -115,8 +115,11 @@ case class VarLengthExpandPipe(source: Pipe,
   def fetchFromContext(row: ExecutionContext, name: String): Any =
     row.getOrElse(name, throw new InternalException(s"Expected to find a node at $name but found nothing"))
 
-  def planDescriptionWithoutCardinality = source.planDescription.
-    andThen(this.id, s"VarLengthExpand(${if (nodeInScope) "Into" else "All"})", variables, ExpandExpression(fromName, relName, types.names, toName, projectedDir, varLength = true))
+  def planDescriptionWithoutCardinality = {
+    val expandExpr = ExpandExpression(fromName, relName, types.names, toName, dir, minLength = min, maxLength = max)
+    source.planDescription.
+      andThen(this.id, s"VarLengthExpand(${if (nodeInScope) "Into" else "All"})", variables, expandExpr)
+  }
 
   def symbols = source.symbols.add(toName, CTNode).add(relName, CTList(CTRelationship))
 

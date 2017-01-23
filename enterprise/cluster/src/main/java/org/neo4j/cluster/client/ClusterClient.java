@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -149,12 +149,6 @@ public class ClusterClient
     public void performRoleElections()
     {
         election.performRoleElections();
-    }
-
-    @Override
-    public void promote( InstanceId node, String role )
-    {
-        election.promote( node, role );
     }
 
     @Override

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,8 +19,6 @@
  */
 package org.neo4j.collection.primitive.hopscotch;
 
-import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
-
 public class LongKeyUnsafeTable<VALUE> extends UnsafeTable<VALUE>
 {
     public LongKeyUnsafeTable( int capacity, VALUE valueMarker )
@@ -31,13 +29,13 @@ public class LongKeyUnsafeTable<VALUE> extends UnsafeTable<VALUE>
     @Override
     protected long internalKey( long keyAddress )
     {
-        return UnsafeUtil.getLong( keyAddress );
+        return alignmentSafeGetLongAsTwoInts( keyAddress );
     }
 
     @Override
     protected void internalPut( long keyAddress, long key, VALUE value )
     {
-        UnsafeUtil.putLong( keyAddress, key );
+        alignmentSafePutLongAsTwoInts( keyAddress, key );
     }
 
     @Override

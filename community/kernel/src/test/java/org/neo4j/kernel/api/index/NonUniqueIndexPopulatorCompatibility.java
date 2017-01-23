@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -129,6 +129,7 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.empty() );
         IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, config, indexSamplingConfig );
         populator.create();
+        populator.configureSampling( true );
         long nodeId = 1;
         int propertyKeyId = 10, labelId = 11; // Can we just use arbitrary ids here?
         final String propertyValue = "value1";

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -507,7 +507,7 @@ public class HighAvailabilityMemberStateMachineTest
 
         TransactionIdStore transactionIdStoreMock = mock( TransactionIdStore.class );
         when( transactionIdStoreMock.getLastCommittedTransaction() ).thenReturn( new TransactionId( 0, 0, 0 ) );
-        SwitchToSlave switchToSlave = new SwitchToSlave( new File( "" ), NullLogService.getInstance(),
+        SwitchToSlaveCopyThenBranch switchToSlave = new SwitchToSlaveCopyThenBranch( new File( "" ), NullLogService.getInstance(),
                 mock( FileSystemAbstraction.class ),
                 config, dependencyResolver,
                 mock( HaIdGeneratorFactory.class ),

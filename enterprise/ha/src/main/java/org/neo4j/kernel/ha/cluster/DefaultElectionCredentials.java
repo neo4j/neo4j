@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -44,7 +44,7 @@ public final class DefaultElectionCredentials implements ElectionCredentials, Ex
     }
 
     @Override
-    public int compareTo( Object o )
+    public int compareTo( ElectionCredentials o )
     {
         DefaultElectionCredentials other = (DefaultElectionCredentials) o;
         if ( this.latestTxId == other.latestTxId )

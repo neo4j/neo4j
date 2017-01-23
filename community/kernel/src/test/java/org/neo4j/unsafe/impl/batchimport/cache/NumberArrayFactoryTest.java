@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -24,8 +24,10 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -120,5 +122,24 @@ public class NumberArrayFactoryTest
         verify( lowMemoryFactory, times( 1 ) ).newIntArray( 1*KILO, -1, 0 );
         assertTrue( array instanceof HeapIntArray );
         assertEquals( 12345, array.get( 1*KILO-10 ) );
+    }
+
+    @Test
+    public void shouldEvenCatchOtherExceptionsAndTryNext() throws Exception
+    {
+        // GIVEN
+        NumberArrayFactory throwingMemoryFactory = mock( NumberArrayFactory.class );
+        doThrow( ArithmeticException.class ).when( throwingMemoryFactory )
+                .newByteArray( anyLong(), any( byte[].class ), anyInt() );
+        NumberArrayFactory factory = new NumberArrayFactory.Auto( throwingMemoryFactory, NumberArrayFactory.HEAP );
+
+        // WHEN
+        ByteArray array = factory.newByteArray( 1*KILO, new byte[4], 0 );
+        array.setInt( 1*KILO-10, 0, 12345 );
+
+        // THEN
+        verify( throwingMemoryFactory, times( 1 ) ).newByteArray( eq( 1*KILO ), any( byte[].class ), eq( 0L ) );
+        assertTrue( array instanceof HeapByteArray );
+        assertEquals( 12345, array.getInt( 1*KILO-10, 0 ) );
     }
 }

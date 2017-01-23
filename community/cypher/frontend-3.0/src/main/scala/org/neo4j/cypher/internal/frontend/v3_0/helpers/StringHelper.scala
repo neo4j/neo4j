@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -30,6 +30,8 @@ object StringHelper {
 
     def cypherEscape: String =
       text.replace("\\", "\\\\")
+
+    def fixNewLines: String = text.replaceAll("\r\n", "\n")
 
     // (line 1, column 8 (offset: 7))
     def fixPosition: String = if (SystemUtils.IS_OS_WINDOWS) {

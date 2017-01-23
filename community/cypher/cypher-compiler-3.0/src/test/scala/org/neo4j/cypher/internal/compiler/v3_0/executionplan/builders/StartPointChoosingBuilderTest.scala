@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -35,7 +35,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.helpers.NonEmptyList
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.cypher.internal.frontend.v3_0.{SemanticDirection, ast}
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
-import org.neo4j.kernel.api.index.IndexDescriptor
+import org.neo4j.cypher.internal.compiler.v3_0.IndexDescriptor
 
 class StartPointChoosingBuilderTest extends BuilderTest {
   def builder = new StartPointChoosingBuilder

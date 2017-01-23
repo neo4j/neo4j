@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -36,18 +36,20 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
@@ -121,7 +123,9 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
     @Test
     public void queryIndexWithSortByNumeric() throws Exception
     {
-        Index<Node> index = nodeIndex( stringMap() );
+        Index<Node> index = nodeIndex();
+        commitTx();
+
         String numericProperty = "NODE_ID";
 
         try ( Transaction transaction = graphDb.beginTx() )
@@ -135,25 +139,15 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
             transaction.success();
         }
 
-        try ( Transaction transaction = graphDb.beginTx() )
-        {
-            QueryContext queryContext = new QueryContext( numericProperty + ":**" );
-            queryContext.sort( new Sort( new SortedNumericSortField( numericProperty, SortField.Type.INT, false ) ) );
-            IndexHits<Node> nodes = index.query( queryContext );
-
-            int expectedIndexId = 0;
-            for ( Node node : nodes )
-            {
-                assertEquals("Nodes should be sorted by numeric property", expectedIndexId++, node.getProperty( numericProperty ));
-            }
-            transaction.success();
-        }
+        queryAndSortNodesByNumericProperty( index, numericProperty );
     }
 
     @Test
     public void queryIndexWithSortByString() throws Exception
     {
-        Index<Node> index = nodeIndex( stringMap() );
+        Index<Node> index = nodeIndex();
+        commitTx();
+
         String stringProperty = "NODE_NAME";
 
         String[] names = new String[]{"Fry", "Leela", "Bender", "Amy", "Hubert", "Calculon"};
@@ -168,21 +162,144 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
             transaction.success();
         }
 
+        String[] sortedNames = new String[]{"Leela", "Hubert", "Fry", "Calculon", "Bender", "Amy"};
+        queryAndSortNodesByStringProperty(index, stringProperty, sortedNames );
+    }
+
+    @Test
+    public void queryIndexWithSortByNumericAfterOtherPropertyUpdate()
+    {
+        Index<Node> index = nodeIndex();
+        commitTx();
+
+        String yearProperty = "year";
+        String priceProperty = "price";
+
+        Label nodeLabel = Label.label( "priceyNodes" );
+
         try ( Transaction transaction = graphDb.beginTx() )
         {
-            QueryContext queryContext = new QueryContext( stringProperty + ":**" );
-            queryContext.sort( new Sort( new SortedSetSortField( stringProperty, true ) ) );
-            IndexHits<Node> nodes = index.query( queryContext );
-
-            int nameIndex = 0;
-            String[] sortedNames = new String[]{"Leela", "Hubert", "Fry", "Calculon", "Bender", "Amy"};
-            for ( Node node : nodes )
+            for ( int i = 0; i < 15; i++ )
             {
-                assertEquals("Nodes should be sorted by string property", sortedNames[nameIndex++],
-                        node.getProperty( stringProperty ));
+                Node node = graphDb.createNode(nodeLabel);
+                node.setProperty( yearProperty, i );
+                node.setProperty( priceProperty, i );
+                index.add( node, yearProperty, new ValueContext( i ).indexNumeric() );
+                index.add( node, priceProperty, new ValueContext( i ).indexNumeric() );
             }
             transaction.success();
         }
+
+        doubleNumericPropertyValueForAllNodesWithLabel( index, priceProperty, nodeLabel );
+
+        queryAndSortNodesByNumericProperty( index, yearProperty );
+        queryAndSortNodesByNumericProperty( index, priceProperty, (value) -> value * 2 );
+    }
+
+    @Test
+    public void queryIndexWithSortByNumericAfterSamePropertyUpdate()
+    {
+        Index<Node> index = nodeIndex( stringMap() );
+        commitTx();
+        String numericProperty = "PRODUCT_ID";
+
+        Label updatableIndexesProperty = Label.label( "updatableIndexes" );
+
+        try ( Transaction transaction = graphDb.beginTx() )
+        {
+            for ( int i = 0; i < 15; i++ )
+            {
+                Node node = graphDb.createNode(updatableIndexesProperty);
+                node.setProperty( numericProperty, i );
+                index.add( node, numericProperty, new ValueContext( i ).indexNumeric() );
+            }
+            transaction.success();
+        }
+
+        doubleNumericPropertyValueForAllNodesWithLabel( index, numericProperty, updatableIndexesProperty );
+        queryAndSortNodesByNumericProperty( index, numericProperty, i -> i * 2 );
+    }
+
+    @Test
+    public void queryIndexWithSortByStringAfterOtherPropertyUpdate()
+    {
+
+        Index<Node> index = nodeIndex( stringMap() );
+        commitTx();
+
+        String nameProperty = "NODE_NAME";
+        String jobNameProperty = "NODE_JOB_NAME";
+
+        String[] names = new String[]{"Fry", "Leela", "Bender", "Amy", "Hubert", "Calculon"};
+        String[] jobs = new String[]{"delivery boy", "pilot", "gambler", "intern", "professor", "actor"};
+        Label characters = Label.label( "characters" );
+        setPropertiesAndUpdateToJunior( index, nameProperty, jobNameProperty, names, jobs, characters );
+
+        String[] sortedNames = new String[]{"Leela", "Hubert", "Fry", "Calculon", "Bender", "Amy"};
+        String[] sortedJobs = {"junior professor", "junior pilot", "junior intern", "junior gambler",
+                "junior delivery boy", "junior actor"};
+        queryAndSortNodesByStringProperty( index, nameProperty, sortedNames );
+        queryAndSortNodesByStringProperty( index, jobNameProperty, sortedJobs );
+    }
+
+    @Test
+    public void queryCustomIndexWithSortByStringAfterOtherPropertyUpdate()
+    {
+
+        Index<Node> index = nodeIndex( MapUtil.stringMap( LuceneIndexImplementation.KEY_TYPE, "exact",
+                LuceneIndexImplementation.KEY_TO_LOWER_CASE, "true" ) );
+        commitTx();
+
+        String nameProperty = "NODE_NAME_CUSTOM";
+        String jobNameProperty = "NODE_JOB_NAME_CUSTOM";
+
+        String[] names = new String[]{"Fry", "Leela", "Bender", "Amy", "Hubert", "Calculon"};
+        String[] jobs = new String[]{"delivery boy", "pilot", "gambler", "intern", "professor", "actor"};
+        Label characters = Label.label( "characters_custom" );
+        setPropertiesAndUpdateToJunior( index, nameProperty, jobNameProperty, names, jobs, characters );
+
+        String[] sortedNames = new String[]{"Leela", "Hubert", "Fry", "Calculon", "Bender", "Amy"};
+        String[] sortedJobs = {"junior professor", "junior pilot", "junior intern", "junior gambler",
+                "junior delivery boy", "junior actor"};
+        queryAndSortNodesByStringProperty( index, nameProperty, sortedNames );
+        queryAndSortNodesByStringProperty( index, jobNameProperty, sortedJobs );
+    }
+
+    @Test
+    public void queryIndexWithSortByStringAfterSamePropertyUpdate()
+    {
+        Index<Node> index = nodeIndex( stringMap() );
+        commitTx();
+
+        String nameProperty = "NODE_NAME";
+        Label heroes = Label.label( "heroes" );
+
+        String[] names = new String[]{"Fry", "Leela", "Bender", "Amy", "Hubert", "Calculon"};
+        try ( Transaction transaction = graphDb.beginTx() )
+        {
+            for ( String name : names )
+            {
+                Node node = graphDb.createNode(heroes);
+                node.setProperty( nameProperty, name );
+                index.add( node, nameProperty, name );
+            }
+            transaction.success();
+        }
+
+        try ( Transaction transaction = graphDb.beginTx() )
+        {
+            ResourceIterator<Node> nodes = graphDb.findNodes( heroes );
+            nodes.stream().forEach( node -> {
+                node.setProperty( nameProperty, "junior " + node.getProperty( nameProperty )  );
+                index.remove( node, nameProperty );
+                index.add( node, nameProperty,  node.getProperty( nameProperty ));
+            } );
+            transaction.success();
+        }
+
+        String[] sortedNames = new String[]{"junior Leela", "junior Hubert", "junior Fry", "junior Calculon",
+                "junior Bender", "junior Amy"};
+        queryAndSortNodesByStringProperty( index, nameProperty, sortedNames );
     }
 
     @Test
@@ -1053,15 +1170,15 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         creator.delete( b );
         restartTx();
 
-        Iterators.count( (Iterator<Node>) index.get( key, value ) );
+        Iterators.count( index.get( key, value ) );
         rollbackTx();
         beginTx();
 
-        Iterators.count( (Iterator<Node>) index.get( key, value ) );
+        Iterators.count( index.get( key, value ) );
         index.add( c, "something", "whatever" );
         restartTx();
 
-        Iterators.count( (Iterator<Node>) index.get( key, value ) );
+        Iterators.count( index.get( key, value ) );
     }
 
     @Test
@@ -2022,4 +2139,96 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
             // THEN Good
         }
     }
+
+    private void queryAndSortNodesByNumericProperty( Index<Node> index, String numericProperty )
+    {
+        queryAndSortNodesByNumericProperty( index, numericProperty, Function.identity() );
+    }
+
+    private void queryAndSortNodesByNumericProperty( Index<Node> index, String numericProperty,
+            Function<Integer,? extends Number> expectedValueProvider )
+    {
+        try ( Transaction transaction = graphDb.beginTx() )
+        {
+            QueryContext queryContext = new QueryContext( numericProperty + ":**" );
+            queryContext.sort( new Sort( new SortedNumericSortField( numericProperty, SortField.Type.INT, false ) ) );
+            IndexHits<Node> nodes = index.query( queryContext );
+
+            int nodeIndex = 0;
+            for ( Node node : nodes )
+            {
+                assertEquals("Nodes should be sorted by numeric property",
+                        expectedValueProvider.apply( nodeIndex++), node.getProperty( numericProperty ));
+            }
+            transaction.success();
+        }
+    }
+
+    private void queryAndSortNodesByStringProperty( Index<Node> index, String stringProperty, String[] values )
+    {
+        queryAndSortNodesByStringProperty( index, stringProperty, ( i ) -> values[i] );
+    }
+
+    private void queryAndSortNodesByStringProperty( Index<Node> index, String stringProperty,
+            Function<Integer, String> expectedValueProvider )
+    {
+        try ( Transaction transaction = graphDb.beginTx() )
+        {
+            QueryContext queryContext = new QueryContext( stringProperty + ":**" );
+            queryContext.sort( new Sort( new SortedSetSortField( stringProperty, true ) ) );
+            IndexHits<Node> nodes = index.query( queryContext );
+
+            int nodeIndex = 0;
+            for ( Node node : nodes )
+            {
+                assertEquals("Nodes should be sorted by string property", expectedValueProvider.apply( nodeIndex++ ),
+                        node.getProperty( stringProperty ));
+            }
+            transaction.success();
+        }
+    }
+
+    private void doubleNumericPropertyValueForAllNodesWithLabel( Index<Node> index, String numericProperty,
+            Label label )
+    {
+        try ( Transaction transaction = graphDb.beginTx() )
+        {
+            ResourceIterator<Node> nodes = graphDb.findNodes( label );
+            nodes.stream().forEach( node -> {
+                node.setProperty( numericProperty, (Integer) node.getProperty( numericProperty ) * 2 );
+                index.remove( node, numericProperty );
+                index.add( node, numericProperty,  new ValueContext( node.getProperty( numericProperty )).indexNumeric() );
+            } );
+            transaction.success();
+        }
+    }
+
+    private void setPropertiesAndUpdateToJunior( Index<Node> index, String nameProperty, String jobNameProperty,
+            String[] names, String[] jobs, Label characters )
+    {
+        try ( Transaction transaction = graphDb.beginTx() )
+        {
+            for ( int i = 0; i < names.length; i++ )
+            {
+                Node node = graphDb.createNode(characters);
+                node.setProperty( nameProperty, names[i] );
+                node.setProperty( jobNameProperty, jobs[i] );
+                index.add( node, nameProperty, names[i] );
+                index.add( node, jobNameProperty, jobs[i] );
+            }
+            transaction.success();
+        }
+
+        try ( Transaction transaction = graphDb.beginTx() )
+        {
+            ResourceIterator<Node> nodes = graphDb.findNodes( characters );
+            nodes.stream().forEach( node ->
+            {
+                node.setProperty( jobNameProperty, "junior " + node.getProperty( jobNameProperty ) );
+                index.add( node, jobNameProperty, node.getProperty( jobNameProperty ) );
+            } );
+            transaction.success();
+        }
+    }
+
 }

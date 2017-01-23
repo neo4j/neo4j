@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,7 +19,11 @@
  */
 package org.neo4j.cypher
 
+import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.WindowsStringSafe
+
 class DumpToStringAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
+
+  implicit val windowsSafe = WindowsStringSafe
 
   test("format node") {
     createNode(Map("prop1" -> "A", "prop2" -> 2))
