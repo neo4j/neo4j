@@ -48,7 +48,11 @@ object ContextHelper extends MockitoSugar {
              updateStrategy: UpdateStrategy = mock[UpdateStrategy],
              clock: Clock = Clock.systemUTC(),
              codeStructure: CodeStructure[GeneratedQuery] = mock[CodeStructure[GeneratedQuery]],
-             codeGenConfiguration: CodeGenConfiguration = CodeGenConfiguration()): CompilerContext =
-    CompilerContext(exceptionCreator, tracer, notificationLogger, planContext, typeConverter, createFingerprintReference,
-      monitors, metrics, queryGraphSolver, config, updateStrategy, clock, codeStructure, codeGenConfiguration)
+             codeGenConfiguration: CodeGenConfiguration = CodeGenConfiguration()): CompilerContext = {
+    val context = CompilerContext(exceptionCreator, tracer, notificationLogger, planContext, typeConverter, createFingerprintReference,
+      monitors, metrics, queryGraphSolver, config, updateStrategy, clock)
+    context.
+      set(codeStructure).
+      set(codeGenConfiguration)
+  }
 }

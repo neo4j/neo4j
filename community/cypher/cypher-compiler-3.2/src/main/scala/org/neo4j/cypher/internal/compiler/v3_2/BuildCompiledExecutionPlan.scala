@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_2
 import org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer.CompilationPhase.CODE_GENERATION
 import org.neo4j.cypher.internal.compiler.v3_2.codegen._
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.profiling.ProfilingTracer
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi.CodeStructure
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.ExecutionPlanBuilder.DescriptionProvider
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_2.phases._
@@ -41,7 +42,7 @@ object BuildCompiledExecutionPlan extends Phase[CompilerContext] {
 
   override def process(from: CompilationState, context: CompilerContext): CompilationState =
     try {
-      val codeGen = new CodeGenerator(context.codeStructure, context.clock, context.codeGenConfiguration)
+      val codeGen = new CodeGenerator(context.get[CodeStructure[GeneratedQuery]], context.clock, context.get[CodeGenConfiguration])
       val compiled: CompiledPlan = codeGen.generate(from.logicalPlan, context.planContext, from.semanticTable, from.plannerName)
       val executionPlan: ExecutionPlan = createExecutionPlan(context, compiled)
       from.copy(maybeExecutionPlan = Some(executionPlan))
