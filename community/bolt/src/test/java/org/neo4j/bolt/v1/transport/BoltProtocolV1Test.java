@@ -24,19 +24,29 @@ import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import org.junit.Test;
-import org.neo4j.bolt.v1.runtime.BoltStateMachine;
-import org.neo4j.bolt.v1.runtime.SynchronousBoltWorker;
-import org.neo4j.kernel.impl.logging.NullLogService;
+import org.mockito.stubbing.Answer;
 
 import java.io.IOException;
+import java.util.Objects;
 
+import org.neo4j.bolt.v1.runtime.BoltStateMachine;
+import org.neo4j.bolt.v1.runtime.BoltWorker;
+import org.neo4j.bolt.v1.runtime.SynchronousBoltWorker;
+import org.neo4j.kernel.impl.logging.NullLogService;
+import org.neo4j.kernel.impl.logging.SimpleLogService;
+import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.NullLogProvider;
+
+import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.RETURNS_MOCKS;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class BoltProtocolV1Test
 {
@@ -44,9 +54,7 @@ public class BoltProtocolV1Test
     public void shouldNotTalkToChannelDirectlyOnFatalError() throws Throwable
     {
         // Given
-        Channel outputChannel = mock( Channel.class );
-        ByteBufAllocator allocator = mock( ByteBufAllocator.class, RETURNS_MOCKS );
-        when( outputChannel.alloc() ).thenReturn( allocator );
+        Channel outputChannel = newChannelMock();
 
         BoltStateMachine machine = mock( BoltStateMachine.class );
         BoltProtocolV1 protocol = new BoltProtocolV1( new SynchronousBoltWorker( machine ),
@@ -84,5 +92,43 @@ public class BoltProtocolV1Test
 
         verify( machine ).close();
         verify( buffer ).release();
+    }
+
+    @Test
+    public void messageProcessingErrorIsLogged() throws IOException
+    {
+        RuntimeException error = new RuntimeException( "Unexpected error!" );
+        ByteBuf data = newThrowingByteBuf( error );
+
+        AssertableLogProvider assertableLogProvider = new AssertableLogProvider();
+        SimpleLogService logService = new SimpleLogService( NullLogProvider.getInstance(), assertableLogProvider );
+
+        BoltProtocolV1 protocol = new BoltProtocolV1( mock( BoltWorker.class ), newChannelMock(), logService );
+
+        protocol.handle( mock( ChannelHandlerContext.class ), data );
+
+        assertableLogProvider.assertExactly(
+                inLog( BoltProtocolV1.class ).error(
+                        equalTo( "Failed to handle incoming Bolt message. Connection will be closed." ),
+                        equalTo( error ) ) );
+    }
+
+    private static ByteBuf newThrowingByteBuf( RuntimeException exceptionToThrow )
+    {
+        Objects.requireNonNull( exceptionToThrow );
+        ByteBuf buf = mock( ByteBuf.class, (Answer<Void>) invocation ->
+        {
+            throw exceptionToThrow;
+        } );
+        doReturn( true ).when( buf ).release();
+        return buf;
+    }
+
+    private static Channel newChannelMock()
+    {
+        Channel channel = mock( Channel.class );
+        ByteBufAllocator allocator = mock( ByteBufAllocator.class, RETURNS_MOCKS );
+        when( channel.alloc() ).thenReturn( allocator );
+        return channel;
     }
 }
