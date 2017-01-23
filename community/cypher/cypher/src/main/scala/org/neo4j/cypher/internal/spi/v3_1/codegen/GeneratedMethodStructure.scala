@@ -740,7 +740,7 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
     val getNodePropertyDescriptor =
       method[IndexDescriptorFactory, NodePropertyDescriptor]("getNodePropertyDescriptor", typeRef[Int], typeRef[Int])
     val getIndexDescriptor =
-      method[IndexDescriptorFactory, IndexDescriptor]("from", typeRef[NodePropertyDescriptor])
+      method[IndexDescriptorFactory, IndexDescriptor]("of", typeRef[NodePropertyDescriptor])
     generator.assign(typeRef[IndexDescriptor], descriptorVar,
       invoke(
         getIndexDescriptor,
