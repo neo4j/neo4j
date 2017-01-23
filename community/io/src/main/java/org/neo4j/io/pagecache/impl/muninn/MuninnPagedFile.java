@@ -103,7 +103,7 @@ final class MuninnPagedFile implements PagedFile, Flushable
     {
         this.pageCache = pageCache;
         this.filePageSize = filePageSize;
-        this.cursorPool = new CursorPool( this, cursorTracerSupplier );
+        this.cursorPool = new CursorPool( this, cursorTracerSupplier, tracer );
         this.tracer = tracer;
 
         // The translation table is an array of arrays of references to either null, MuninnPage objects, or Latch

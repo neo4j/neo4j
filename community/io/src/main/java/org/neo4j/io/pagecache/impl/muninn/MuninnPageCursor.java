@@ -83,8 +83,6 @@ abstract class MuninnPageCursor extends PageCursor
     final void initialiseFile( MuninnPagedFile pagedFile )
     {
         this.swapper = pagedFile.swapper;
-        // TODO: can we avoid this binding?
-        this.pageCursorTracer.init( pagedFile.tracer );
     }
 
     final void initialiseFlags( MuninnPagedFile pagedFile, long pageId, int pf_flags )

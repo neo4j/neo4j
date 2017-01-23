@@ -60,23 +60,37 @@ public class DefaultPageCursorTracer implements PageCursorTracer
     public void init( PageCacheTracer pageCacheTracer )
     {
         this.pageCacheTracer = pageCacheTracer;
+        resetCounters();
+    }
+
+    private void resetCounters()
+    {
+        pins = 0L;
+        unpins = 0L;
+        faults = 0L;
+        bytesRead = 0L;
+        bytesWritten = 0L;
+        evictions = 0L;
+        evictionExceptions = 0L;
+        flushes = 0L;
+        rememberCycleStartValues();
     }
 
     public void reportEvents()
     {
         Objects.nonNull( pageCacheTracer );
         pageCacheTracer.pins( Math.abs( pins - cyclePinsStart ) );
-        pageCacheTracer.unpins( Math.abs( pins - cycleUnpinsStart ) );
+        pageCacheTracer.unpins( Math.abs( unpins - cycleUnpinsStart ) );
         pageCacheTracer.faults( Math.abs( faults - cycleFaultsStart ) );
         pageCacheTracer.bytesRead( Math.abs( bytesRead - cycleBytesReadStart ) );
         pageCacheTracer.evictions( Math.abs( evictions - cycleEvictionsStart ) );
         pageCacheTracer.evictionExceptions( Math.abs( evictionExceptions - cycleEvictionExceptionsStart ) );
         pageCacheTracer.bytesWritten( Math.abs( bytesWritten - cycleBytesWrittenStart ) );
         pageCacheTracer.flushes( Math.abs( flushes - cycleFlushesStart ) );
-        rememberReportedValues();
+        rememberCycleStartValues();
     }
 
-    private void rememberReportedValues()
+    private void rememberCycleStartValues()
     {
         this.cyclePinsStart = pins;
         this.cycleUnpinsStart = unpins;
