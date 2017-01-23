@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.store.counts;
 
-import org.neo4j.kernel.api.schema.NodeMultiPropertyDescriptor;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.CountsVisitor;
@@ -119,16 +117,10 @@ class KeyFormat implements CountsVisitor
 
     private void indexKey( byte indexKey, IndexDescriptor descriptor )
     {
-        int[] propertyKeyIds =
-                descriptor.isComposite() ? descriptor.getPropertyKeyIds() : new int[]{descriptor.getPropertyKeyId()};
-        buffer.putByte( 0, INDEX );
-        buffer.putInt( 4, descriptor.getLabelId() );
-        buffer.putShort( 8, (short) propertyKeyIds.length );
-        for ( int i = 0; i < propertyKeyIds.length; i++ )
-        {
-            buffer.putInt( 10 + 4 * i, propertyKeyIds[i] );
-        }
-        buffer.putByte( 10 + 4 * propertyKeyIds.length, indexKey );
+        buffer.putByte( 0, INDEX )
+              .putInt( 4, descriptor.getLabelId() )
+              .putInt( 8, descriptor.getPropertyKeyId() )
+              .putByte( 15, indexKey );
     }
 
     public static CountsKey readKey( ReadableBuffer key ) throws UnknownKey
@@ -140,20 +132,14 @@ class KeyFormat implements CountsVisitor
         case KeyFormat.RELATIONSHIP_COUNT:
             return CountsKeyFactory.relationshipKey( key.getInt( 4 ), key.getInt( 8 ), key.getInt( 12 ) );
         case KeyFormat.INDEX:
-            int labelId = key.getInt( 4 );
-            int[] propertyKeyIds = new int[key.getShort( 8 )];
-            for ( int i = 0; i < propertyKeyIds.length; i++ )
-            {
-                propertyKeyIds[i] = key.getInt( 10 + 4 * i );
-            }
-            IndexDescriptor index = IndexDescriptorFactory.of( labelId, propertyKeyIds );
-            byte indexKeyByte = key.getByte( 10 + 4 * propertyKeyIds.length );
+            byte indexKeyByte = key.getByte( 15 );
+            IndexDescriptor descriptor = IndexDescriptorFactory.of( key.getInt( 4 ), key.getInt( 8 ) );
             switch ( indexKeyByte )
             {
             case KeyFormat.INDEX_STATS:
-                return indexStatisticsKey( index );
+                return indexStatisticsKey( descriptor );
             case KeyFormat.INDEX_SAMPLE:
-                return CountsKeyFactory.indexSampleKey( index );
+                return CountsKeyFactory.indexSampleKey( descriptor );
             default:
                 throw new IllegalStateException( "Unknown index key: " + indexKeyByte );
             }
