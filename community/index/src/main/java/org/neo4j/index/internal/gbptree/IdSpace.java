@@ -45,5 +45,5 @@ public class IdSpace
     /**
      * Min value allowed as tree node id.
      */
-    static final long MIN_TREE_NODE_ID = 3L;
+    static final long MIN_TREE_NODE_ID = 1L;
 }

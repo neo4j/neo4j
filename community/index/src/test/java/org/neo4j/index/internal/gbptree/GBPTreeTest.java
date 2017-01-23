@@ -368,11 +368,13 @@ public class GBPTreeTest
     {
         // GIVEN
         int pageSize = 1024;
+        File metaFile;
         try ( GBPTree<MutableLong,MutableLong> index = createIndex( pageSize ) )
         {   // Open/close is enough
+            metaFile = index.pagedFiles()[1];
         }
         index = null;
-        setFormatVersion( pageSize, GBPTree.FORMAT_VERSION - 1 );
+        setFormatVersion( metaFile, pageSize, GBPTree.FORMAT_VERSION - 1 );
 
         try
         {
@@ -659,9 +661,9 @@ public class GBPTreeTest
         }
     }
 
-    private void setFormatVersion( int pageSize, int formatVersion ) throws IOException
+    private void setFormatVersion( File metaFile, int pageSize, int formatVersion ) throws IOException
     {
-        try ( PagedFile pagedFile = pageCache.map( indexFile, pageSize );
+        try ( PagedFile pagedFile = pageCache.map( metaFile, pageSize );
               PageCursor cursor = pagedFile.io( IdSpace.META_PAGE_ID, PagedFile.PF_SHARED_WRITE_LOCK ) )
         {
             assertTrue( cursor.next() );

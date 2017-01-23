@@ -168,8 +168,8 @@ public class PointerCheckingTest
     public void checkSiblingShouldThrowOnReadIllegalPointer() throws Exception
     {
         // GIVEN
-        long generation = IdSpace.STATE_PAGE_A;
-        long pointer = this.secondGeneration;
+        long generation = this.secondGeneration;
+        long pointer = -1;
 
         // Can not use GenSafePointer.write because it will fail on pointer assertion.
         cursor.putInt( (int) pointer );

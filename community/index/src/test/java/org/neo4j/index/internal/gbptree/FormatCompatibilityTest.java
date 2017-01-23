@@ -43,12 +43,12 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.lang.String.format;
-import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
+import static org.neo4j.helpers.Exceptions.stringify;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
 import static org.neo4j.test.rule.PageCacheRule.config;
 
@@ -81,13 +81,13 @@ public class FormatCompatibilityTest
         File storeFile = directory.file( STORE );
         try
         {
-            unzipTo( storeFile );
+            unzipTo( directory.directory() );
         }
         catch ( FileNotFoundException e )
         {
             // First time this test is run, eh?
             createAndZipTree( storeFile );
-            tellDeveloperToCommitThisFormatVersion();
+            tellDeveloperToCommitThisFormatVersion( e );
         }
         assertTrue( CURRENT_FORMAT_ZIP + " seems to be missing from resources directory",
                 fsRule.get().fileExists( storeFile ) );
@@ -95,54 +95,65 @@ public class FormatCompatibilityTest
         // WHEN reading from the tree
         // THEN everything should work, otherwise there has likely been a format change
         PageCache pageCache = pageCacheRule.getPageCache( fsRule.get() );
-        try ( GBPTree<MutableLong,MutableLong> tree =
-                new GBPTree<>( pageCache, storeFile, new SimpleLongLayout(), 0, NO_MONITOR ) )
+        GBPTree<MutableLong,MutableLong> tree = null;
+        try
         {
-            try
+            tree = new GBPTree<>( pageCache, storeFile, new SimpleLongLayout(), 0, NO_MONITOR );
+            tree.consistencyCheck();
+            try ( RawCursor<Hit<MutableLong,MutableLong>,IOException> cursor =
+                    tree.seek( new MutableLong( 0 ), new MutableLong( KEY_COUNT ) ) )
             {
-                tree.consistencyCheck();
-                try ( RawCursor<Hit<MutableLong,MutableLong>,IOException> cursor =
-                        tree.seek( new MutableLong( 0 ), new MutableLong( KEY_COUNT ) ) )
+                for ( long expectedKey = 0; cursor.next(); expectedKey++ )
                 {
-                    for ( long expectedKey = 0; cursor.next(); expectedKey++ )
-                    {
-                        Hit<MutableLong,MutableLong> hit = cursor.get();
-                        assertEquals( expectedKey, hit.key().longValue() );
-                        assertEquals( value( expectedKey ), hit.value().longValue() );
-                    }
-                    assertFalse( cursor.next() );
+                    Hit<MutableLong,MutableLong> hit = cursor.get();
+                    assertEquals( expectedKey, hit.key().longValue() );
+                    assertEquals( value( expectedKey ), hit.value().longValue() );
                 }
-            }
-            catch ( Throwable t )
-            {
-                throw new AssertionError( format(
-                        "If this is the single failing test for %s this failure is a strong indication that format " +
-                                "has changed without also incrementing %s.FORMAT_VERSION. " +
-                                "Please go ahead and increment the format version",
-                        TREE_CLASS_NAME, TREE_CLASS_NAME ), t );
+                assertFalse( cursor.next() );
             }
         }
         catch ( MetadataMismatchException e )
         {
-            // Good actually, or?
-            assertThat( e.getMessage(), containsString( "format version" ) );
-
-            fsRule.get().deleteFile( storeFile );
             createAndZipTree( storeFile );
-
-            tellDeveloperToCommitThisFormatVersion();
+            tellDeveloperToCommitThisFormatVersion( e );
+        }
+        catch ( Throwable t )
+        {
+            createAndZipTree( storeFile );
+            throw new AssertionError( format(
+                    "If this is the single failing test for %s this failure is a strong indication that format " +
+                            "has changed without also incrementing %s.FORMAT_VERSION. " +
+                            "Please go ahead and increment the format version.%n" +
+                            "If this is wrong and FORMAT_VERSION has been incremented too then go ahead " +
+                            "and move:%n  %s into %n  %s",
+                            TREE_CLASS_NAME, TREE_CLASS_NAME,
+                            directory.file( CURRENT_FORMAT_ZIP ),
+                            currentFormatResourceFile() ), t );
+        }
+        finally
+        {
+            if ( tree != null )
+            {
+                tree.close();
+            }
         }
     }
 
-    private void tellDeveloperToCommitThisFormatVersion()
+    private void tellDeveloperToCommitThisFormatVersion( Exception e )
     {
         fail( format( "This is merely a notification to developer. Format has changed, %s.FORMAT_VERSION has also " +
                 "been properly incremented. A tree with this new format has been generated and should be committed. " +
-                "Please move:%n  %s%ninto %n  %s, %nreplacing the existing file there",
+                "Please move:%n  %s%ninto %n  %s, %nreplacing the existing file there. Cause of error:%n%n%s",
                 TREE_CLASS_NAME,
                 directory.file( CURRENT_FORMAT_ZIP ),
-                "<index-module>" + pathify( ".src.test.resources." ) +
-                pathify( getClass().getPackage().getName() + "." ) + CURRENT_FORMAT_ZIP ) );
+                currentFormatResourceFile(),
+                stringify( e ) ) );
+    }
+
+    private String currentFormatResourceFile()
+    {
+        return "<index-module>" + pathify( ".src.test.resources." ) +
+        pathify( getClass().getPackage().getName() + "." ) + CURRENT_FORMAT_ZIP;
     }
 
     private static String pathify( String name )
@@ -150,7 +161,7 @@ public class FormatCompatibilityTest
         return name.replace( '.', File.separatorChar );
     }
 
-    private void unzipTo( File storeFile ) throws IOException
+    private void unzipTo( File targetDirectory ) throws IOException
     {
         URL resource = getClass().getResource( CURRENT_FORMAT_ZIP );
         if ( resource == null )
@@ -161,16 +172,22 @@ public class FormatCompatibilityTest
         try ( ZipFile zipFile = new ZipFile( resource.getFile() ) )
         {
             Enumeration<? extends ZipEntry> entries = zipFile.entries();
-            assertTrue( entries.hasMoreElements() );
-            ZipEntry entry = entries.nextElement();
-            assertEquals( STORE, entry.getName() );
-            Files.copy( zipFile.getInputStream( entry ), storeFile.toPath() );
+            while ( entries.hasMoreElements() )
+            {
+                ZipEntry entry = entries.nextElement();
+                Files.copy( zipFile.getInputStream( entry ), new File( targetDirectory, entry.getName() ).toPath() );
+            }
         }
     }
 
     private void createAndZipTree( File storeFile ) throws IOException
     {
+        for ( File file : fsRule.get().listFiles( directory.directory() ) )
+        {
+            fsRule.get().deleteFile( file );
+        }
         PageCache pageCache = pageCacheRule.getPageCache( fsRule.get() );
+        File[] files;
         try ( GBPTree<MutableLong,MutableLong> tree =
                 new GBPTree<>( pageCache, storeFile, new SimpleLongLayout(), 0, NO_MONITOR ) )
         {
@@ -190,8 +207,9 @@ public class FormatCompatibilityTest
                 }
                 tree.checkpoint( IOLimiter.unlimited() );
             }
+            files = tree.pagedFiles();
         }
-        zip( storeFile );
+        zip( files );
     }
 
     private static long value( long key )
@@ -199,15 +217,18 @@ public class FormatCompatibilityTest
         return key * 2;
     }
 
-    private File zip( File toZip ) throws IOException
+    private File zip( File... files ) throws IOException
     {
         File targetFile = directory.file( CURRENT_FORMAT_ZIP );
         try ( ZipOutputStream out = new ZipOutputStream( new FileOutputStream( targetFile ) ) )
         {
-            ZipEntry entry = new ZipEntry( toZip.getName() );
-            entry.setSize( toZip.length() );
-            out.putNextEntry( entry );
-            Files.copy( toZip.toPath(), out );
+            for ( File file : files )
+            {
+                ZipEntry entry = new ZipEntry( file.getName() );
+                entry.setSize( file.length() );
+                out.putNextEntry( entry );
+                Files.copy( file.toPath(), out );
+            }
         }
         return targetFile;
     }
