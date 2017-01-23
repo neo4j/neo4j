@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.impl.labelscan;
 
 import java.util.function.Supplier;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings.LabelIndex;
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.NeoStoreDataSource;
@@ -43,7 +44,7 @@ import static org.neo4j.kernel.api.impl.index.LuceneKernelExtensions.directoryFa
 @Service.Implementation(KernelExtensionFactory.class)
 public class LuceneLabelScanStoreExtension extends KernelExtensionFactory<LuceneLabelScanStoreExtension.Dependencies>
 {
-    public static final String LABEL_SCAN_STORE_NAME = "lucene";
+    public static final String LABEL_SCAN_STORE_NAME = LabelIndex.LUCENE.name();
 
     private final int priority;
     private final Monitor monitor;

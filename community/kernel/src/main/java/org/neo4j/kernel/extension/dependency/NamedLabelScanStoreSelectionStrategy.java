@@ -19,9 +19,12 @@
  */
 package org.neo4j.kernel.extension.dependency;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
@@ -32,23 +35,24 @@ import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
  * <p>
  * Two parameters affects which {@link LabelScanStoreProvider} is selected:
  * <ol>
- * <li>Specifically configured label scan store name, see {@link GraphDatabaseSettings#label_scan_store},
+ * <li>Specifically configured label scan store name, see {@link GraphDatabaseSettings#label_index},
  * each {@link LabelScanStoreProvider} is instantiated with a name, which is matched with the configured name.
  * The setting can also be left unspecified, at which point the next parameter kicks in:</li>
  * <li>Highest prioritized instance, actually using {@link HighestSelectionStrategy}</li>
  */
-public class HighestPrioritizedLabelScanStore implements DependencyResolver.SelectionStrategy
+public class NamedLabelScanStoreSelectionStrategy implements DependencyResolver.SelectionStrategy
 {
     private final String specificallyConfigured;
 
-    public HighestPrioritizedLabelScanStore( String specificallyConfigured )
+    public NamedLabelScanStoreSelectionStrategy( String specificallyConfigured )
     {
+        Objects.requireNonNull( specificallyConfigured );
         this.specificallyConfigured = specificallyConfigured;
     }
 
-    public HighestPrioritizedLabelScanStore( Config config )
+    public NamedLabelScanStoreSelectionStrategy( Config config )
     {
-        this( config.get( GraphDatabaseSettings.label_scan_store ) );
+        this( config.get( GraphDatabaseSettings.label_index ) );
     }
 
     @Override
@@ -59,40 +63,18 @@ public class HighestPrioritizedLabelScanStore implements DependencyResolver.Sele
             throw new IllegalArgumentException( "Was expecting " + LabelScanStoreProvider.class );
         }
 
-        if ( specificallyConfigured != null )
+        List<String> candidateNames = new ArrayList<>();
+        for ( T candidate : candidates )
         {
-            Iterable<T> filtered = Iterables.filter(
-                    item -> nameOf( item ).equals( specificallyConfigured ), candidates );
-            T specificItem = Iterables.single( filtered, null );
-            if ( specificItem == null )
+            LabelScanStoreProvider provider = (LabelScanStoreProvider) candidate;
+            String candidateName = provider.getName();
+            candidateNames.add( candidateName );
+            if ( specificallyConfigured.equalsIgnoreCase( candidateName ) )
             {
-                throw new IllegalArgumentException( "Configured label scan store '" + specificallyConfigured +
-                        "', but couldn't find it among candidates " + candidateNames( candidates ) );
+                return candidate;
             }
-            return specificItem;
         }
-
-        return HighestSelectionStrategy.getInstance().select( type, candidates );
-    }
-
-    private static String candidateNames( Iterable<?> candidates )
-    {
-        StringBuilder builder = new StringBuilder( "[" );
-        int i = 0;
-        for ( Object candidate : candidates )
-        {
-            if ( i > 0 )
-            {
-                builder.append( "," );
-            }
-            builder.append( nameOf( candidate ) );
-            i++;
-        }
-        return builder.append( "]" ).toString();
-    }
-
-    private static String nameOf( Object candidate )
-    {
-        return ((LabelScanStoreProvider)candidate).getName();
+        throw new IllegalArgumentException( "Configured label index '" + specificallyConfigured +
+                "', but couldn't find it among candidates " + candidateNames );
     }
 }

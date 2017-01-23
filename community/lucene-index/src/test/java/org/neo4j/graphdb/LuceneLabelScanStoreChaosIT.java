@@ -32,7 +32,7 @@ import org.neo4j.test.rule.DatabaseRule;
 import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.assertTrue;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.label_scan_store;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.label_index;
 import static org.neo4j.io.fs.FileUtils.deleteRecursively;
 
 public class LuceneLabelScanStoreChaosIT extends LabelScanStoreChaosIT
@@ -82,6 +82,6 @@ public class LuceneLabelScanStoreChaosIT extends LabelScanStoreChaosIT
     @Override
     protected void addSpecificConfig( GraphDatabaseBuilder builder )
     {
-        builder.setConfig( label_scan_store, LuceneLabelScanStoreExtension.LABEL_SCAN_STORE_NAME );
+        builder.setConfig( label_index, LuceneLabelScanStoreExtension.LABEL_SCAN_STORE_NAME );
     }
 }

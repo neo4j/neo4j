@@ -28,7 +28,7 @@ import org.neo4j.kernel.impl.api.scan.NativeLabelScanStoreExtension;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.label_scan_store;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.label_index;
 
 public class NativeLabelScanStoreUpdateIT extends LabelScanStoreUpdateIT
 {
@@ -38,7 +38,7 @@ public class NativeLabelScanStoreUpdateIT extends LabelScanStoreUpdateIT
         @Override
         protected void configure( GraphDatabaseBuilder builder )
         {
-            builder.setConfig( label_scan_store, NativeLabelScanStoreExtension.LABEL_SCAN_STORE_NAME );
+            builder.setConfig( label_index, NativeLabelScanStoreExtension.LABEL_SCAN_STORE_NAME );
         }
     };
 

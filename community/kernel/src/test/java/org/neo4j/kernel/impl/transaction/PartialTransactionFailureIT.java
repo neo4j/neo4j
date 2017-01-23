@@ -40,7 +40,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
-import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStoreExtension;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -212,9 +211,7 @@ public class PartialTransactionFailureIT
         private static GraphDatabaseFacadeFactory.Dependencies dependencies()
         {
             GraphDatabaseFactoryState state = new GraphDatabaseFactoryState();
-            state.setKernelExtensions( Arrays.asList(
-                    new InMemoryIndexProviderFactory(),
-                    new InMemoryLabelScanStoreExtension() ) );
+            state.addKernelExtensions( Arrays.asList( new InMemoryIndexProviderFactory() ) );
             return state.databaseDependencies();
         }
     }

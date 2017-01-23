@@ -277,7 +277,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         indexStoreView = new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, neoStores );
 
         Dependencies deps = new Dependencies();
-        deps.satisfyDependencies( fileSystem, config, logService, indexStoreView );
+        deps.satisfyDependencies( fileSystem, config, logService, indexStoreView, pageCache );
 
         KernelExtensions extensions = life.add( new KernelExtensions(
                 new SimpleKernelContext( storeDir, DatabaseInfo.UNKNOWN, deps ),

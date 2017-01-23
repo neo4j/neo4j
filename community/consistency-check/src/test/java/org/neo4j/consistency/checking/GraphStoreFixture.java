@@ -51,7 +51,7 @@ import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.KernelExtensions;
-import org.neo4j.kernel.extension.dependency.HighestPrioritizedLabelScanStore;
+import org.neo4j.kernel.extension.dependency.NamedLabelScanStoreSelectionStrategy;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
@@ -204,7 +204,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
                 kernelContext, (Iterable) load( KernelExtensionFactory.class ), dependencies, ignore() ) );
         life.start();
         LabelScanStore labelScanStore = extensions.resolveDependency( LabelScanStoreProvider.class,
-                new HighestPrioritizedLabelScanStore( config ) ).getLabelScanStore();
+                new NamedLabelScanStoreSelectionStrategy( config ) ).getLabelScanStore();
         life.shutdown();
 
         // Start the selected LSS

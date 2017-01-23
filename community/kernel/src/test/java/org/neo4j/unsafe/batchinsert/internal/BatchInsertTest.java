@@ -74,9 +74,8 @@ import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStoreExtension;
-import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStoreExtension.NoDependencies;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
+import org.neo4j.kernel.impl.api.scan.NativeLabelScanStoreExtension;
 import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
@@ -239,8 +238,7 @@ public class BatchInsertTest
 
     private BatchInserter newBatchInserterWithSchemaIndexProvider( KernelExtensionFactory<?> provider ) throws Exception
     {
-        List<KernelExtensionFactory<?>> extensions = Arrays.asList(
-                provider, new InMemoryLabelScanStoreExtension() );
+        List<KernelExtensionFactory<?>> extensions = Arrays.asList( provider, new NativeLabelScanStoreExtension() );
         return BatchInserters.inserter( storeDir.absolutePath(), fileSystemRule.get(), configuration(), extensions );
     }
 
@@ -1526,6 +1524,10 @@ public class BatchInsertTest
                 }
             };
         }
+    }
+
+    interface NoDependencies
+    {
     }
 
     private static class ControlledLabelScanStore extends KernelExtensionFactory<NoDependencies>

@@ -26,7 +26,7 @@ import org.neo4j.kernel.api.impl.labelscan.LuceneLabelScanStoreExtension;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.label_scan_store;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.label_index;
 
 public class LuceneLabelScanStoreUpdateIT extends LabelScanStoreUpdateIT
 {
@@ -36,7 +36,7 @@ public class LuceneLabelScanStoreUpdateIT extends LabelScanStoreUpdateIT
         @Override
         protected void configure( GraphDatabaseBuilder builder )
         {
-            builder.setConfig( label_scan_store, LuceneLabelScanStoreExtension.LABEL_SCAN_STORE_NAME );
+            builder.setConfig( label_index, LuceneLabelScanStoreExtension.LABEL_SCAN_STORE_NAME );
         }
     };
 
