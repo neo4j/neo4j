@@ -52,7 +52,6 @@
     <module>lucene-index</module>
     <module>lucene-index-upgrade</module>
     <module>graph-algo</module>
-    <module>graph-matching</module>
     <module>neo4j</module>
     <module>neo4j-community</module>
     <module>shell</module>
