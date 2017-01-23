@@ -81,17 +81,31 @@ object ExpressionConverter {
 
     val variable = context.getVariable(variableQueryVariable)
 
-    variable.codeGenType.ct match {
-      case CTNode => NodeProjection(variable)
-      case CTRelationship => RelationshipProjection(variable)
-      case CTString | CTBoolean | CTInteger | CTFloat => LoadVariable(variable)
-      case ListType(CTInteger) if variable.codeGenType.repr == ListReferenceType(IntType) =>
+    variable.codeGenType match {
+      case CodeGenType(CTNode, _) => NodeProjection(variable)
+      case CodeGenType(CTRelationship, _) => RelationshipProjection(variable)
+      case CodeGenType(CTString, _) |
+           CodeGenType(CTBoolean, _) |
+           CodeGenType(CTInteger, _) |
+           CodeGenType(CTFloat, _) =>
+        LoadVariable(variable)
+      case CodeGenType(ListType(CTInteger), ListReferenceType(IntType)) =>
         // TODO: PrimitiveProjection(variable)
         AnyProjection(variable) // Temporarily resort to runtime projection
-      case ListType(CTString) | ListType(CTBoolean) | ListType(CTInteger) | ListType(CTFloat) => LoadVariable(variable)
-      case CTAny => AnyProjection(variable)
-      case CTMap => AnyProjection(variable)
-      case ListType(_) => AnyProjection(variable) // TODO: We could have a more specialized projection when the inner type is known to be node or relationship
+      case CodeGenType(ListType(CTFloat), ListReferenceType(FloatType)) =>
+        // TODO: PrimitiveProjection(variable)
+        AnyProjection(variable) // Temporarily resort to runtime projection
+      case CodeGenType(ListType(CTBoolean), ListReferenceType(BoolType)) =>
+        // TODO: PrimitiveProjection(variable)
+        AnyProjection(variable) // Temporarily resort to runtime projection
+      case CodeGenType(ListType(CTString), _) |
+           CodeGenType(ListType(CTBoolean), _) |
+           CodeGenType(ListType(CTInteger), _) |
+           CodeGenType(ListType(CTFloat), _) =>
+        LoadVariable(variable)
+      case CodeGenType(CTAny, _) => AnyProjection(variable)
+      case CodeGenType(CTMap, _) => AnyProjection(variable)
+      case CodeGenType(ListType(_), _) => AnyProjection(variable) // TODO: We could have a more specialized projection when the inner type is known to be node or relationship
       case _ => throw new CantCompileQueryException(s"The compiled runtime cannot handle results of type ${variable.codeGenType.ct}")
     }
   }

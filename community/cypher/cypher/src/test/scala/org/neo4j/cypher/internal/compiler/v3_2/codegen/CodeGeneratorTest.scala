@@ -1177,6 +1177,40 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     result.toList should equal(List(Map("x" -> 1L), Map("x" -> 2L), Map("x" -> 3L)))
   }
 
+  test("unwind list of floats") { // UNWIND [1.0, 2.0, 3.0] as x RETURN x
+    // given
+    val listLiteral = ListLiteral(Seq(
+      DecimalDoubleLiteral("1.0")(pos),
+      DecimalDoubleLiteral("2.0")(pos),
+      DecimalDoubleLiteral("3.0")(pos)
+    ))(pos)
+
+    val unwind = UnwindCollection(SingleRow()(solved), IdName("x"), listLiteral)(solved)
+    val plan = ProduceResult(List("x"), unwind)
+
+    // when
+    val compiled = compileAndExecute(plan)
+
+    // then
+    val result = getResult(compiled, "x")
+    result.toList should equal(List(Map("x" -> 1.0), Map("x" -> 2.0), Map("x" -> 3.0)))
+  }
+
+  test("unwind list of booleans") { // UNWIND [true, false] as x RETURN x
+    // given
+    val listLiteral = ListLiteral(Seq(True()(pos), False()(pos)))(pos)
+
+    val unwind = UnwindCollection(SingleRow()(solved), IdName("x"), listLiteral)(solved)
+    val plan = ProduceResult(List("x"), unwind)
+
+    // when
+    val compiled = compileAndExecute(plan)
+
+    // then
+    val result = getResult(compiled, "x")
+    result.toList should equal(List(Map("x" -> true), Map("x" -> false)))
+  }
+
   test("unwind list of integers with projection") { // UNWIND [1, 2, 3] as x WITH x as y RETURN y
     // given
     val listLiteral = literalIntList(1, 2, 3)
@@ -1249,6 +1283,36 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     // then
     val result = getResult(compiled, "x")
     result.toList should equal(List(Map("x" -> List(1L, 2L, 3L))))
+  }
+
+  test("projection of double list") { // WITH [1.0, 2.0, 3.0] as x RETURN x
+    // given
+    val listLiteral = literalFloatList(1.0, 2.0, 3.0)
+
+    val projection = Projection(SingleRow()(solved), Map("x" -> listLiteral))(solved)
+    val plan = ProduceResult(List("x"), projection)
+
+    // when
+    val compiled = compileAndExecute(plan)
+
+    // then
+    val result = getResult(compiled, "x")
+    result.toList should equal(List(Map("x" -> List(1.0, 2.0, 3.0))))
+  }
+
+  test("projection of boolean list") { // WITH [true, false] as x RETURN x
+    // given
+    val listLiteral = ListLiteral(Seq(True()(pos), False()(pos)))(pos)
+
+    val projection = Projection(SingleRow()(solved), Map("x" -> listLiteral))(solved)
+    val plan = ProduceResult(List("x"), projection)
+
+    // when
+    val compiled = compileAndExecute(plan)
+
+    // then
+    val result = getResult(compiled, "x")
+    result.toList should equal(List(Map("x" -> List(true, false))))
   }
 
   test("compare nullable relationships with equals") {
@@ -1348,12 +1412,7 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     ORDER BY a, b
     */
     // given
-    val listLiteral = ListLiteral(Seq(
-      SignedDecimalIntegerLiteral("3")(pos),
-      SignedDecimalIntegerLiteral("1")(pos),
-      SignedDecimalIntegerLiteral("2")(pos),
-      SignedDecimalIntegerLiteral("4")(pos)
-    ))(pos)
+    val listLiteral = literalIntList(3, 1, 2, 4)
 
     val unwind = UnwindCollection(SingleRow()(solved), IdName("x"), listLiteral)(solved)
     val projection = Projection(unwind,
@@ -1374,6 +1433,57 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
       Map("b" -> 2L,"c" -> 2L),
       Map("b" -> 3L,"c" -> 3L),
       Map("b" -> 4L,"c" -> 4L)))
+  }
+
+  test("sort projection with list of floats") {
+    /*
+    UNWIND [3.0,1.0,2.0,4.0] as x
+    WITH x AS a
+    RETURN a
+    ORDER BY a
+    */
+    // given
+    val listLiteral = literalFloatList(3.0, 1.0, 2.0, 4.0)
+    val unwind = UnwindCollection(SingleRow()(solved), IdName("x"), listLiteral)(solved)
+    val projection = Projection(unwind, Map("a" -> varFor("x")))(solved)
+    val orderBy = Sort(projection, List(Ascending(IdName("a"))))(solved)
+    val plan = ProduceResult(List("a"), orderBy)
+
+    // when
+    val compiled = compileAndExecute(plan)
+
+    // then
+    val result = getResult(compiled, "a")
+    result.toList should equal(List(
+      Map("a" -> 1.0),
+      Map("a" -> 2.0),
+      Map("a" -> 3.0),
+      Map("a" -> 4.0)))
+  }
+
+  test("sort projection with list of booleans") {
+    /*
+    UNWIND [true, false] as x
+    WITH x AS a
+    RETURN a
+    ORDER BY a
+    */
+    // given
+    val listLiteral = ListLiteral(Seq(True()(pos), False()(pos)))(pos)
+
+    val unwind = UnwindCollection(SingleRow()(solved), IdName("x"), listLiteral)(solved)
+    val projection = Projection(unwind, Map("a" -> varFor("x")))(solved)
+    val orderBy = Sort(projection, List(Ascending(IdName("a"))))(solved)
+    val plan = ProduceResult(List("a"), orderBy)
+
+    // when
+    val compiled = compileAndExecute(plan)
+
+    // then
+    val result = getResult(compiled, "a")
+    result.toList should equal(List(
+      Map("a" -> false),
+      Map("a" -> true)))
   }
 
   test("sort projection with list of integer maps") {

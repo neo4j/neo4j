@@ -170,6 +170,14 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
         using(generator.forEachLong(Parameter.param(lowerType(codeGenType), varName), iterable)) { body =>
           block(copy(generator = body))
         }
+      case CodeGenType.primitiveFloat =>
+        using(generator.forEachDouble(Parameter.param(lowerType(codeGenType), varName), iterable)) { body =>
+          block(copy(generator = body))
+        }
+      case CodeGenType.primitiveBool =>
+        using(generator.forEachBoolean(Parameter.param(lowerType(codeGenType), varName), iterable)) { body =>
+          block(copy(generator = body))
+        }
       case _ => {
         using(generator.forEach(Parameter.param(lowerType(codeGenType), varName), iterable)) { body =>
           block(copy(generator = body))
@@ -480,6 +488,12 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     codeGenType match {
       case CodeGenType(_, ListReferenceType(IntType)) =>
         Templates.asLongStream(values)
+      case CodeGenType(_, ListReferenceType(FloatType)) =>
+        Templates.asDoubleStream(values)
+      case CodeGenType(_, ListReferenceType(BoolType)) =>
+        // There are no primitive streams for booleans, so we use an IntStream with value conversions
+        // 0 = false, 1 = true
+        Templates.asIntStream(values.map(Expression.ternary(_, Expression.constant(1), Expression.constant(0))))
       case _ =>
         throw new IllegalArgumentException(s"CodeGenType $codeGenType not supported as primitive stream")
     }

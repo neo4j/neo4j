@@ -24,9 +24,10 @@ import org.neo4j.codegen.FieldReference.field
 import org.neo4j.codegen.Parameter.param
 import org.neo4j.codegen._
 import org.neo4j.cypher.internal.codegen.{CompiledOrderabilityUtils, CompiledEquivalenceUtils}
-import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions.CodeGenType
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions.{RepresentationType, CodeGenType}
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi._
 import org.neo4j.cypher.internal.compiler.v3_2.helpers._
+import org.neo4j.cypher.internal.frontend.v3_2.symbols
 
 import scala.collection.mutable
 
@@ -108,30 +109,9 @@ class AuxGenerator(val packageName: String, val generator: CodeGenerator) {
           val otherValueName = s"otherValue_$fieldName"
           using(l1.block()) { l2 =>
             codeGenType match {
-              case CodeGenType.primitiveBool => {
-                /*
-                E.g.
-                boolean thisValue_a = this.a
-                boolean otherValue_a = other.a
-
-                if (thisValue_a != otherValue_a) {
-                  return (thisValue_a) ? 1 : -1
-                }
-                ...
-                */
-                val thisValueVariable: LocalVariable = l2.declare(fieldType, thisValueName)
-                val otherValueVariable: LocalVariable = l2.declare(fieldType, otherValueName)
-                l2.assign(thisValueVariable, Expression.get(l2.self(), fieldReference))
-                l2.assign(otherValueVariable, Expression.get(l2.load(otherName), fieldReference))
-
-                using(l2.ifNotStatement(Expression.lt(thisValueVariable, otherValueVariable))) { l3 =>
-                  l3.returns(Expression.ternary(thisValueVariable,
-                    Expression.constant(greaterThanSortResult(sortOrder)),
-                    Expression.constant(lessThanSortResult(sortOrder))))
-                }
-              }
-              // Other primitives (numbers, nodes and relationships) // TODO: Correct ordering of nulls for primitive nodes and relationships
-              case typ if typ.isPrimitive => {
+              // TODO: Primitive nodes and relationships including correct ordering of nulls
+              // TODO: Extract shared code between cases
+              case CodeGenType(symbols.CTInteger, reprType) => {
                 /*
                 E.g.
                 long thisValue_a = this.a
@@ -143,10 +123,14 @@ class AuxGenerator(val packageName: String, val generator: CodeGenerator) {
                 }
                 ...
                 */
+                val isPrimitive = RepresentationType.isPrimitive(reprType)
                 val thisValueVariable: LocalVariable = l2.declare(fieldType, thisValueName)
                 val otherValueVariable: LocalVariable = l2.declare(fieldType, otherValueName)
-                l2.assign(thisValueVariable, Expression.get(l2.self(), fieldReference))
-                l2.assign(otherValueVariable, Expression.get(l2.load(otherName), fieldReference))
+                val thisField = Expression.get(l2.self(), fieldReference)
+                val otherField = Expression.get(l2.load(otherName), fieldReference)
+
+                l2.assign(thisValueVariable, if (isPrimitive) thisField else Expression.box(thisField))
+                l2.assign(otherValueVariable, if (isPrimitive) otherField else Expression.box(otherField))
 
                 using(l2.ifStatement(Expression.lt(thisValueVariable, otherValueVariable))) { l3 =>
                   l3.returns(Expression.constant(lessThanSortResult(sortOrder)))
@@ -155,11 +139,75 @@ class AuxGenerator(val packageName: String, val generator: CodeGenerator) {
                   l3.returns(Expression.constant(greaterThanSortResult(sortOrder)))
                 }
               }
-              case _ => {
+              case CodeGenType(symbols.CTFloat, reprType) => {
+                // We use Double.compare(double, double) which handles float equality properly
+                /*
+                E.g.
+                double thisValue_a = this.a
+                double otherValue_a = other.a
+                compare_a = Double.compare(thisValue_a, otherValue_a) == 0)
+                if ( !(compare_a == 0) ) {
+                  return -1;
+                } else if (otherValue_a < thisValue_a) {
+                  return +1;
+                }
+                ...
+                */
+                val isPrimitive = RepresentationType.isPrimitive(reprType)
                 val compareResultName = s"compare_$fieldName"
                 val compareResult = l2.declare(typeRef[Int], compareResultName)
-                val thisField: Expression = Expression.box(Expression.get(l2.self(), fieldReference))
-                val otherField: Expression = Expression.box(Expression.get(l2.load(otherName), fieldReference))
+                val thisField = Expression.get(l2.self(), fieldReference)
+                val otherField = Expression.get(l2.load(otherName), fieldReference)
+
+                // Invoke compare with the parameter order of the fields based on the sort order
+                val (lhs, rhs) = sortOrder match {
+                  case Ascending =>
+                    (thisField, otherField)
+                  case Descending =>
+                    (otherField, thisField)
+                }
+                l2.assign(compareResult,
+                  Expression.invoke(method[java.lang.Double, Int]("compare", typeRef[Double], typeRef[Double]),
+                    if (isPrimitive) lhs else Expression.box(lhs),
+                    if (isPrimitive) rhs else Expression.box(rhs)))
+                using(l2.ifNotStatement(Expression.equal(compareResult, Expression.constant(0)))) { l3 =>
+                  l3.returns(compareResult)
+                }
+              }
+              case CodeGenType(symbols.CTBoolean, reprType) => {
+                /*
+                E.g.
+                boolean thisValue_a = this.a
+                boolean otherValue_a = other.a
+
+                if (thisValue_a != otherValue_a) {
+                  return (thisValue_a) ? 1 : -1
+                }
+                ...
+                */
+                val isPrimitive = RepresentationType.isPrimitive(reprType)
+                val thisValueVariable: LocalVariable = l2.declare(fieldType, thisValueName)
+                val otherValueVariable: LocalVariable = l2.declare(fieldType, otherValueName)
+
+                val thisField = Expression.get(l2.self(), fieldReference)
+                val otherField = Expression.get(l2.load(otherName), fieldReference)
+
+                l2.assign(thisValueVariable, if (isPrimitive) thisField else Expression.box(thisField))
+                l2.assign(otherValueVariable, if (isPrimitive) otherField else Expression.box(otherField))
+
+                using(l2.ifNotStatement(Expression.equal(thisValueVariable, otherValueVariable))) { l3 =>
+                  l3.returns(Expression.ternary(thisValueVariable,
+                    Expression.constant(greaterThanSortResult(sortOrder)),
+                    Expression.constant(lessThanSortResult(sortOrder))))
+                }
+              }
+              case _ => {
+                // Use CompiledOrderabilityUtils.compare which handles mixed-types according to Cypher orderability semantics
+                val compareResultName = s"compare_$fieldName"
+                val compareResult = l2.declare(typeRef[Int], compareResultName)
+                val thisField = Expression.box(Expression.get(l2.self(), fieldReference))
+                val otherField = Expression.box(Expression.get(l2.load(otherName), fieldReference))
+
                 // Invoke compare with the parameter order of the fields based on the sort order
                 val (lhs, rhs) = sortOrder match {
                   case Ascending =>

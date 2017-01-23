@@ -22,6 +22,8 @@ package org.neo4j.codegen;
 import java.util.Iterator;
 import java.util.PrimitiveIterator;
 import java.util.function.Consumer;
+import java.util.stream.DoubleStream;
+import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 
 import static org.neo4j.codegen.LocalVariables.copy;
@@ -172,6 +174,39 @@ public class CodeBlock implements AutoCloseable
         block.assign( local.type(), local.name(),
                 Expression.invoke( block.load( iteratorName ),
                         methodReference( PrimitiveIterator.OfLong.class, long.class, "nextLong" ) ) );
+
+        return block;
+    }
+
+    public CodeBlock forEachDouble( Parameter local, Expression iterable )
+    {
+        String iteratorName = local.name() + "Iter";
+
+        assign( PrimitiveIterator.OfDouble.class, iteratorName, Expression.invoke( iterable,
+                MethodReference.methodReference( DoubleStream.class, PrimitiveIterator.OfDouble.class, "iterator" ) ) );
+        CodeBlock block = whileLoop( Expression
+                .invoke( load( iteratorName ), methodReference( PrimitiveIterator.OfDouble.class, boolean.class, "hasNext" ) ) );
+        block.assign( local.type(), local.name(),
+                Expression.invoke( block.load( iteratorName ),
+                        methodReference( PrimitiveIterator.OfDouble.class, double.class, "nextDouble" ) ) );
+
+        return block;
+    }
+
+    public CodeBlock forEachBoolean( Parameter local, Expression iterable )
+    {
+        String iteratorName = local.name() + "Iter";
+
+        // IntStream is used for iterable expressions of primitive booleans
+        assign( PrimitiveIterator.OfInt.class, iteratorName, Expression.invoke( iterable,
+                MethodReference.methodReference( IntStream.class, PrimitiveIterator.OfInt.class, "iterator" ) ) );
+        CodeBlock block = whileLoop( Expression
+                .invoke( load( iteratorName ), methodReference( PrimitiveIterator.OfInt.class, boolean.class, "hasNext" ) ) );
+        block.assign( local.type(), local.name(),
+                Expression.not( Expression.equal(
+                        Expression.constant( 0 ),
+                        Expression.invoke( block.load( iteratorName ),
+                                methodReference( PrimitiveIterator.OfInt.class, int.class, "nextInt" ) ) ) ) );
 
         return block;
     }

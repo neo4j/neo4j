@@ -26,6 +26,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.DoubleStream;
+import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 
 import org.neo4j.cypher.internal.frontend.v3_2.CypherTypeException;
@@ -200,6 +202,14 @@ public abstract class CompiledConversionUtils
         else if ( anyValue instanceof LongStream )
         {
             return ((LongStream) anyValue).boxed().collect( Collectors.toList() );
+        }
+        else if ( anyValue instanceof DoubleStream )
+        {
+            return ((DoubleStream) anyValue).boxed().collect( Collectors.toList() );
+        }
+        else if ( anyValue instanceof IntStream )
+        {
+            return ((IntStream) anyValue).mapToObj( i -> i != 0 ).collect( Collectors.toList() );
         }
         else
         {
