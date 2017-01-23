@@ -227,6 +227,7 @@ public class Procedures extends LifecycleAdapter
         if ( !changed )
         {
             writeMode = allow ? AccessMode.Static.TOKEN_WRITE : AccessMode.Static.WRITE;
+            changed = true;
         }
     }
 
