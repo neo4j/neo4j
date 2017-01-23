@@ -19,16 +19,16 @@
  */
 package org.neo4j.kernel.builtinprocs;
 
+import org.hamcrest.Matcher;
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.stubbing.Answer;
+
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-
-import org.hamcrest.Matcher;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.stubbing.Answer;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Node;
@@ -181,7 +181,8 @@ public class BuiltInProceduresTest
         // When/Then
         assertThat( call( "dbms.procedures" ), containsInAnyOrder(
                 record( "dbms.listConfig",
-                        "dbms.listConfig(namePrefix =  :: STRING?) :: (name :: STRING?, description :: STRING?, value" +
+                        "dbms.listConfig(searchString =  :: STRING?) :: (name :: STRING?, description :: STRING?, " +
+                                "value" +
                                 " :: STRING?)",
                         "List the currently active config of Neo4j." ),
             record( "db.awaitIndex", "db.awaitIndex(index :: STRING?, timeOutSeconds = 300 :: INTEGER?) :: VOID", "Wait for an index to come online (for example: CALL db.awaitIndex(\":Person(name)\"))." ),

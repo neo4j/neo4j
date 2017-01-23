@@ -107,8 +107,8 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
         // Then
         assertThat( asList( stream ), containsInAnyOrder(
                 equalTo( new Object[]{ "dbms.listConfig",
-                        "dbms.listConfig(namePrefix =  :: STRING?) :: (name :: STRING?, description :: STRING?, value" +
-                                " :: STRING?)",
+                        "dbms.listConfig(searchString =  :: STRING?) :: (name :: STRING?, description :: STRING?, " +
+                                "value :: STRING?)",
                         "List the currently active config of Neo4j." } ),
                 equalTo( new Object[]{"db.constraints", "db.constraints() :: (description :: STRING?)", "List all constraints in the database."} ),
                 equalTo( new Object[]{"db.indexes", "db.indexes() :: (description :: STRING?, state :: STRING?, type :: STRING?)", "List all indexes in the database."} ),

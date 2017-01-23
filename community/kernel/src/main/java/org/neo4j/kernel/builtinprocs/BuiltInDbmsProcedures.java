@@ -42,13 +42,13 @@ public class BuiltInDbmsProcedures
 
     @Description( "List the currently active config of Neo4j." )
     @Procedure( name = "dbms.listConfig", mode = DBMS )
-    public Stream<ConfigResult> listConfig( @Name( value = "namePrefix", defaultValue = "" ) String namePrefix )
+    public Stream<ConfigResult> listConfig( @Name( value = "searchString", defaultValue = "" ) String searchString )
     {
         Config config = graph.getDependencyResolver().resolveDependency( Config.class );
         return config.getConfigValues().values().stream()
                 .map( ConfigResult::new )
-                .filter( c -> !c.name.startsWith( "unsupported" ) )
-                .filter( c -> c.name.startsWith( namePrefix ) )
+                .filter( c -> !c.name.toLowerCase().startsWith( "unsupported" ) )
+                .filter( c -> c.name.toLowerCase().contains( searchString.toLowerCase() ) )
                 .sorted( Comparator.comparing( c -> c.name ) );
     }
 
