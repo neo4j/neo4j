@@ -90,7 +90,7 @@ case class UniqueLink(left: NamedExpectation, right: NamedExpectation, rel: Name
 
       def createUpdateActions(): Seq[UpdateWrapper] = {
         val relExpectations = rel.getExpectations(context, state)
-        val (startExp, endExp) = orderByDir(Literal(existingNode), Identifier(other.name), dir)
+        val (startExp, endExp) = orderByDir(Literal(existingNode), Identifier(other.name), if (dir == SemanticDirection.BOTH) SemanticDirection.INCOMING else dir)
         val createRel = CreateRelationship(rel.name,
           RelationshipEndpoint(startExp, Map(), Seq.empty),
           RelationshipEndpoint(endExp, Map(), Seq.empty), relType, relExpectations.properties)

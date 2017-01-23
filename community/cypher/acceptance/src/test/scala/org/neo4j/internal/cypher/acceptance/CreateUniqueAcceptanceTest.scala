@@ -63,6 +63,28 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineFunSuite with QueryStati
     }
   }
 
+  test("create unique accepts undirected relationship with second node needing to be created") {
+    createNode("existing" -> true)
+
+    val rel = executeScalar[Relationship]("MATCH (a {existing: true}) CREATE UNIQUE (a)-[r:X]-(b) RETURN r")
+    graph.inTx {
+      // De-facto behavior in Rule planner was to create relationships from new node to existing node
+      rel.getStartNode.hasProperty("existing") should equal(false)
+      rel.getEndNode.hasProperty("existing") should equal(true)
+    }
+  }
+
+  test("create unique accepts undirected relationship with first node needing to be created") {
+    createNode("existing" -> true)
+
+    val rel = executeScalar[Relationship]("MATCH (b {existing: true}) CREATE UNIQUE (a)-[r:X]-(b) RETURN r")
+    graph.inTx {
+      // De-facto behavior in Rule planner was to create relationships from new node to existing node
+      rel.getStartNode.hasProperty("existing") should equal(false)
+      rel.getEndNode.hasProperty("existing") should equal(true)
+    }
+  }
+
   test("create_new_node_with_labels_on_the_right") {
     val a = createNode()
     val b = createNode()
