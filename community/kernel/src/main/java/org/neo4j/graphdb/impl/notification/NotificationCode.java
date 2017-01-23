@@ -101,6 +101,11 @@ public enum NotificationCode
             Status.Statement.FeatureDeprecationWarning,
             "The query used a deprecated procedure."
     ),
+    PROCEDURE_WARNING(
+            SeverityLevel.WARNING,
+            Status.Security.NativeProcedureWarning,
+            "Native user management procedures will not affect non-native users."
+    ),
     EAGER_LOAD_CSV(
         SeverityLevel.WARNING,
         Status.Statement.EagerOperatorWarning,

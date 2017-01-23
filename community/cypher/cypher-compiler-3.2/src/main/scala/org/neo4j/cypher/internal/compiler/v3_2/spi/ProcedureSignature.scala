@@ -27,13 +27,14 @@ case class ProcedureSignature(name: QualifiedName,
                               outputSignature: Option[IndexedSeq[FieldSignature]],
                               deprecationInfo: Option[String],
                               accessMode: ProcedureAccessMode,
-                              description: Option[String] = None) {
+                              description: Option[String] = None,
+                              warning: Option[String] = None) {
 
   def outputFields = outputSignature.getOrElse(Seq.empty)
 
   def isVoid = outputSignature.isEmpty
 
-  override def toString = {
+  override def toString = {0
     val sig = inputSignature.mkString(", ")
     outputSignature.map(out => s"$name($sig) :: ${out.mkString(", ")}").getOrElse(s"$name($sig) :: VOID")
   }

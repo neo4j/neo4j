@@ -101,7 +101,8 @@ case class CypherCompiler(createExecutionPlan: Transformer,
 
   val prepareForCaching: Transformer =
     RewriteProcedureCalls andThen
-    ProcedureDeprecationWarnings
+    ProcedureDeprecationWarnings andThen
+    ProcedureWarnings
 
   val costBasedPlanning: PipeLine =
     SemanticAnalysis(warn = false) andThen

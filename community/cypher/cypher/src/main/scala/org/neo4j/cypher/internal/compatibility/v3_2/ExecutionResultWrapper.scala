@@ -145,6 +145,8 @@ class ExecutionResultWrapper(val inner: InternalExecutionResult, val planner: Pl
       NotificationCode.DEPRECATED_PROCEDURE.notification(pos.asInputPosition, NotificationDetail.Factory.deprecatedName(oldName, newName))
     case DeprecatedPlannerNotification =>
       NotificationCode.DEPRECATED_PLANNER.notification(graphdb.InputPosition.empty)
+    case ProcedureWarningNotification(pos, name) =>
+      NotificationCode.PROCEDURE_WARNING.notification(pos.asInputPosition)
   }
 
   override def accept[EX <: Exception](visitor: ResultVisitor[EX]) = inner.accept(wrapVisitor(visitor))
