@@ -154,6 +154,11 @@ class ReflectiveProcedureCompiler
 
     List<CallableProcedure> compileProcedure( Class<?> procDefinition ) throws KernelException
     {
+        return compileProcedure( procDefinition, "" );
+    }
+
+    List<CallableProcedure> compileProcedure( Class<?> procDefinition, String warning ) throws KernelException
+    {
         try
         {
             List<Method> procedureMethods = Arrays.stream( procDefinition.getDeclaredMethods() )
@@ -170,7 +175,7 @@ class ReflectiveProcedureCompiler
             ArrayList<CallableProcedure> out = new ArrayList<>( procedureMethods.size() );
             for ( Method method : procedureMethods )
             {
-                out.add( compileProcedure( procDefinition, constructor, method ) );
+                out.add( compileProcedure( procDefinition, constructor, method, warning ) );
             }
             out.sort( Comparator.comparing( a -> a.signature().name().toString() ) );
             return out;
@@ -186,7 +191,7 @@ class ReflectiveProcedureCompiler
         }
     }
 
-    private ReflectiveProcedure compileProcedure( Class<?> procDefinition, MethodHandle constructor, Method method )
+    private ReflectiveProcedure compileProcedure( Class<?> procDefinition, MethodHandle constructor, Method method, String warning )
             throws ProcedureException, IllegalAccessException
     {
         String valueName = method.getAnnotation( Procedure.class ).value();
@@ -217,9 +222,11 @@ class ReflectiveProcedureCompiler
         Optional<String> deprecated = deprecated( method, procedure::deprecatedBy,
                 "Use of @Procedure(deprecatedBy) without @Deprecated in " + procName );
 
+        Optional<String> warn = (warning == null || warning.isEmpty()) ? Optional.empty() : Optional.of( warning );
+
         ProcedureSignature signature =
                 new ProcedureSignature( procName, inputSignature, outputMapper.signature(),
-                        mode, deprecated, config.rolesFor( procName.toString() ), description );
+                        mode, deprecated, config.rolesFor( procName.toString() ), description, warn );
 
         return new ReflectiveProcedure( signature, constructor, procedureMethod, outputMapper, setters );
     }
