@@ -103,6 +103,7 @@ terms of the relevant Commercial Agreement.
                     <include>org.neo4j.server.plugin:*</include>
                   </includes>
                   <excludes>
+                    <exclude>org.neo4j:neo4j-graph-matching</exclude>
                     <exclude>org.neo4j:neo4j-cypher-compiler-1.9</exclude>
                     <exclude>org.neo4j:neo4j-cypher-compiler-2.0</exclude>
                     <exclude>org.neo4j:neo4j-cypher-compiler-2.1</exclude>
