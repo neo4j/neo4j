@@ -139,7 +139,7 @@ class ExpressionsTest extends ParserTest[ast.Expression, legacy.Expression] with
   }
 
 
-  test("escaping_wildcard_characters") {
+   test("escaping_wildcard_characters") {
     parsing(
       """'\_'""") shouldGive
       legacy.Literal("_")
