@@ -80,7 +80,7 @@ public class BoltProtocolV1 implements BoltProtocol
         }
         catch ( Throwable t )
         {
-            log.error( "Error handling incoming message. Connection will be closed.", t );
+            log.error( "Failed to handle incoming Bolt message. Connection will be closed.", t );
             worker.halt();
         }
         finally

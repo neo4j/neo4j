@@ -109,7 +109,7 @@ public class BoltProtocolV1Test
 
         assertableLogProvider.assertExactly(
                 inLog( BoltProtocolV1.class ).error(
-                        equalTo( "Error handling incoming message. Connection will be closed." ),
+                        equalTo( "Failed to handle incoming Bolt message. Connection will be closed." ),
                         equalTo( error ) ) );
     }
 
