@@ -223,12 +223,12 @@ public class AuthProceduresIT
     @Test
     public void shouldShowCurrentUser() throws Exception
     {
-        assertSuccess( admin, "CALL dbms.security.showCurrentUser()",
+        assertSuccess( admin, "CALL dbms.showCurrentUser()",
                 r -> assertKeyIsMap( r, "username", "flags", map( "neo4j", listOf( PWD_CHANGE ) ) ) );
 
         authManager.newUser( "andres", "123", false );
         BasicSecurityContext andres = login( "andres", "123" );
-        assertSuccess( andres, "CALL dbms.security.showCurrentUser()",
+        assertSuccess( andres, "CALL dbms.showCurrentUser()",
                 r -> assertKeyIsMap( r, "username", "flags", map( "andres", listOf() ) ) );
     }
 

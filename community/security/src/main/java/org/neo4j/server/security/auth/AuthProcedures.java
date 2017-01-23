@@ -89,10 +89,18 @@ public class AuthProcedures
     }
 
     @Description( "Show the current user." )
-    @Procedure( name = "dbms.security.showCurrentUser", mode = DBMS )
+    @Procedure( name = "dbms.showCurrentUser", mode = DBMS )
     public Stream<UserResult> showCurrentUser() throws InvalidArgumentsException, IOException
     {
         return Stream.of( userResultForName( securityContext.subject().username() ) );
+    }
+
+    @Deprecated
+    @Description( "Show the current user. Deprecated by dbms.showCurrentUser." )
+    @Procedure( name = "dbms.security.showCurrentUser", mode = DBMS )
+    public Stream<UserResult> showCurrentUserDeprecated() throws InvalidArgumentsException, IOException
+    {
+        return showCurrentUser();
     }
 
     @Description( "List all local users." )
