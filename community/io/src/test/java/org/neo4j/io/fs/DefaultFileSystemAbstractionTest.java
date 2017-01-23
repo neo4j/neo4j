@@ -19,101 +19,33 @@
  */
 package org.neo4j.io.fs;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.UUID;
 
-import org.neo4j.graphdb.mockfs.CloseTrackingFileSystem;
-import org.neo4j.io.fs.watcher.FileWatcher;
-import org.neo4j.test.rule.TestDirectory;
-
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-public class DefaultFileSystemAbstractionTest
+import static java.lang.String.format;
+
+import static org.neo4j.io.fs.DefaultFileSystemAbstraction.UNABLE_TO_CREATE_DIRECTORY_FORMAT;
+
+public class DefaultFileSystemAbstractionTest extends FileSystemAbstractionTest
 {
-    @Rule
-    public TestDirectory testDirectory = TestDirectory.testDirectory();
-
-    private DefaultFileSystemAbstraction defaultFileSystemAbstraction;
-    private File path;
-
-    @Before
-    public void before() throws Exception
+    @Override
+    protected FileSystemAbstraction buildFileSystemAbstraction()
     {
-        path = testDirectory.file( "testFile" );
-        defaultFileSystemAbstraction = new DefaultFileSystemAbstraction();
-    }
-
-    @After
-    public void tearDown() throws IOException
-    {
-        defaultFileSystemAbstraction.close();
-    }
-
-    @Test
-    public void fileWatcherCreation() throws IOException
-    {
-        try (FileWatcher fileWatcher = defaultFileSystemAbstraction.fileWatcher())
-        {
-            assertNotNull( fileWatcher.watch( testDirectory.directory( "testDirectory" ) ) );
-        }
-    }
-
-    @Test
-    public void shouldCreatePath() throws Exception
-    {
-        defaultFileSystemAbstraction.mkdirs( path );
-
-        assertThat( path.exists(), is( true ) );
-    }
-
-    @Test
-    public void shouldCreateDeepPath() throws Exception
-    {
-        path = new File( path, UUID.randomUUID() + "/" + UUID.randomUUID() );
-
-        defaultFileSystemAbstraction.mkdirs( path );
-
-        assertThat( path.exists(), is( true ) );
-    }
-
-    @Test
-    public void shouldCreatePathThatAlreadyExists() throws Exception
-    {
-        assertTrue( path.mkdir() );
-
-        defaultFileSystemAbstraction.mkdirs( path );
-
-        assertThat( path.exists(), is( true ) );
-    }
-
-    @Test
-    public void shouldCreatePathThatPointsToFile() throws Exception
-    {
-        assertTrue( path.mkdir() );
-        path = new File( path, "some_file" );
-        assertTrue( path.createNewFile() );
-
-        defaultFileSystemAbstraction.mkdirs( path );
-
-        assertThat( path.exists(), is( true ) );
+        return new DefaultFileSystemAbstraction();
     }
 
     @Test
     public void shouldFailGracefullyWhenPathCannotBeCreated() throws Exception
     {
-        path = new File( testDirectory.directory(), String.valueOf( UUID.randomUUID() ) )
+        path = new File( dir.directory(), String.valueOf( UUID.randomUUID() ) )
         {
             @Override
             public boolean mkdirs()
@@ -124,32 +56,15 @@ public class DefaultFileSystemAbstractionTest
 
         try
         {
-            defaultFileSystemAbstraction.mkdirs( path );
+            fsa.mkdirs( path );
 
             fail();
         }
         catch ( IOException e )
         {
-            assertThat( path.exists(), is( false ) );
-            assertThat( e.getMessage(), is( String.format( DefaultFileSystemAbstraction
-                    .UNABLE_TO_CREATE_DIRECTORY_FORMAT, path ) ) );
+            assertFalse( fsa.fileExists( path ) );
+            String expectedMessage = format( UNABLE_TO_CREATE_DIRECTORY_FORMAT, path );
+            assertThat( e.getMessage(), is( expectedMessage ) );
         }
-    }
-
-    @Test
-    public void closeThirdPartyFileSystemsOnClose() throws IOException
-    {
-        CloseTrackingFileSystem closeTrackingFileSystem = new CloseTrackingFileSystem();
-
-        CloseTrackingFileSystem fileSystem = defaultFileSystemAbstraction
-                .getOrCreateThirdPartyFileSystem( CloseTrackingFileSystem.class,
-                        thirdPartyFileSystemClass -> closeTrackingFileSystem );
-
-        assertSame( closeTrackingFileSystem, fileSystem );
-        assertFalse( closeTrackingFileSystem.isClosed() );
-
-        defaultFileSystemAbstraction.close();
-
-        assertTrue( closeTrackingFileSystem.isClosed() );
     }
 }
