@@ -228,6 +228,11 @@ public class ListQueriesProcedureTest
             db.schema().indexFor( label( label ) ).on( property ).create();
             tx.success();
         }
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().awaitIndexesOnline( 5, SECONDS );
+            tx.success();
+        }
         shouldListUsedIndexes( label, property );
     }
 
@@ -252,6 +257,11 @@ public class ListQueriesProcedureTest
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().indexFor( label( "Node" ) ).on( "value" ).create();
+            tx.success();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().awaitIndexesOnline( 5, SECONDS );
             tx.success();
         }
         try ( Resource<Node> test = test( () ->
