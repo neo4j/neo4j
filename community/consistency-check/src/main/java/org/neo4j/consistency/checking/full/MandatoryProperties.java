@@ -30,6 +30,7 @@ import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReporter;
+import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.record.NodePropertyExistenceConstraintRule;
@@ -52,35 +53,24 @@ public class MandatoryProperties
     {
         this.storeAccess = storeAccess;
         SchemaStorage schemaStorage = new SchemaStorage( storeAccess.getSchemaStore() );
-        for ( Iterator<PropertyConstraintRule> rules = schemaStorage.schemaRules( BASE_RULE ); safeHasNext( rules ); )
+
+        for ( PropertyConstraintRule rule : constraintsIgnoringMalformed( schemaStorage ) )
         {
-            PropertyConstraintRule rule = rules.next();
-
-            PrimitiveIntObjectMap<int[]> storage;
-            int labelOrRelType;
-            int propertyKey;
-
             switch ( rule.getKind() )
             {
             case NODE_PROPERTY_EXISTENCE_CONSTRAINT:
-                storage = nodes;
                 NodePropertyExistenceConstraintRule nodeRule = (NodePropertyExistenceConstraintRule) rule;
-                labelOrRelType = nodeRule.getLabel();
-                propertyKey = nodeRule.getPropertyKey();
+                recordConstraint( nodeRule.getLabel(), nodeRule.getPropertyKey(), nodes );
                 break;
 
             case RELATIONSHIP_PROPERTY_EXISTENCE_CONSTRAINT:
-                storage = relationships;
                 RelationshipPropertyExistenceConstraintRule relRule = (RelationshipPropertyExistenceConstraintRule) rule;
-                labelOrRelType = relRule.getRelationshipType();
-                propertyKey = relRule.getPropertyKey();
+                recordConstraint( relRule.getRelationshipType(), relRule.getPropertyKey(), relationships );
                 break;
 
             default:
                 continue;
             }
-
-            recordConstraint( labelOrRelType, propertyKey, storage );
         }
     }
 
@@ -131,19 +121,43 @@ public class MandatoryProperties
         };
     }
 
-    private boolean safeHasNext( Iterator<?> iterator )
+    /**
+     * The iterators returned by the SchemaStorage will throw a `MalformedSchemaRuleException` wrapped in a
+     * `RuntimeException` if it encounters malformed schema rules. As the iterator implementation is prefetching this
+     * will manifest in the hasNext() call. Attempting again will actually attempt to read the schema rule after the
+     * malformed one. This method will therefore execute `hasNext()` until 1) it reads a complete schema rule, 2) all
+     * schema rules are read, or 3) it get's an exception that is not wrapping a `MalformedSchemaRuleException`.
+     */
+    private Iterable<PropertyConstraintRule> constraintsIgnoringMalformed( SchemaStorage schemaStorage )
     {
-        for (; ; )
-        {
-            try
+        final Iterator<PropertyConstraintRule> ruleIterator = schemaStorage.schemaRules( BASE_RULE );
+        return () -> new Iterator<PropertyConstraintRule>()
             {
-                return iterator.hasNext();
-            }
-            catch ( Exception e )
-            {
-                // ignore
-            }
-        }
+                @Override
+                public boolean hasNext()
+                {
+                    while ( true )
+                    {
+                        try
+                        {
+                            return ruleIterator.hasNext();
+                        }
+                        catch ( Exception e )
+                        {
+                            if ( !MalformedSchemaRuleException.class.isInstance( e.getCause() ) )
+                            {
+                                throw e;
+                            }
+                        }
+                    }
+                }
+
+                @Override
+                public PropertyConstraintRule next()
+                {
+                    return ruleIterator.next();
+                }
+            };
     }
 
     private static void recordConstraint( int labelOrRelType, int propertyKey, PrimitiveIntObjectMap<int[]> storage )
