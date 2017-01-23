@@ -52,11 +52,6 @@ public class DefaultPageCursorTracer implements PageCursorTracer
 
     private PageCacheTracer pageCacheTracer;
 
-    //TODO: remove id from there?
-    // A hidden setting to have pin/unpin monitoring enabled from the start by default.
-    // NOTE: This flag is documented in jmx.asciidoc
-    //boolean alwaysEnabled = packageFlag( DefaultPageCursorTracer.class, "tracePinUnpin", true );
-
     public void init( PageCacheTracer pageCacheTracer )
     {
         this.pageCacheTracer = pageCacheTracer;
