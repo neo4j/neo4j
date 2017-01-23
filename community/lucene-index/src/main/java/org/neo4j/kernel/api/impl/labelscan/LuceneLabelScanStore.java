@@ -32,8 +32,6 @@ import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.impl.api.scan.FullStoreChangeStream;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 
 public class LuceneLabelScanStore implements LabelScanStore
@@ -41,16 +39,14 @@ public class LuceneLabelScanStore implements LabelScanStore
     private final LabelScanIndex luceneIndex;
     // We get in a full store stream here in case we need to fully rebuild the store if it's missing or corrupted.
     private final FullStoreChangeStream fullStoreStream;
-    private final Log log;
     private final Monitor monitor;
     private boolean needsRebuild;
 
     public LuceneLabelScanStore( LabelScanIndex luceneIndex, FullStoreChangeStream fullStoreStream,
-            LogProvider logProvider, Monitor monitor )
+            Monitor monitor )
     {
         this.luceneIndex = luceneIndex;
         this.fullStoreStream = fullStoreStream;
-        this.log = logProvider.getLog( getClass() );
         this.monitor = monitor;
     }
 
@@ -96,7 +92,6 @@ public class LuceneLabelScanStore implements LabelScanStore
         {
             if ( !luceneIndex.exists() )
             {
-                log.info( "No lucene scan store index found, this might just be first use. Preparing to rebuild." );
                 monitor.noIndex();
 
                 luceneIndex.create();
@@ -104,7 +99,6 @@ public class LuceneLabelScanStore implements LabelScanStore
             }
             else if ( !luceneIndex.isValid() )
             {
-                log.warn( "Lucene scan store index could not be read. Preparing to rebuild." );
                 monitor.notValidIndex();
                 luceneIndex.drop();
                 luceneIndex.create();
@@ -115,7 +109,6 @@ public class LuceneLabelScanStore implements LabelScanStore
         catch ( LockObtainFailedException e )
         {
             luceneIndex.close();
-            log.error( "Index is locked by another process or database", e );
             monitor.lockedIndex( e );
             throw e;
         }
@@ -128,10 +121,8 @@ public class LuceneLabelScanStore implements LabelScanStore
         {   // we saw in init() that we need to rebuild the index, so do it here after the
             // neostore has been properly started.
             monitor.rebuilding();
-            log.info( "Rebuilding lucene scan store, this may take a while" );
             long numberOfNodes = LabelScanStoreProvider.rebuild( this, fullStoreStream );
             monitor.rebuilt( numberOfNodes );
-            log.info( "Lucene scan store rebuilt (roughly " + numberOfNodes + " nodes)" );
             needsRebuild = false;
         }
     }

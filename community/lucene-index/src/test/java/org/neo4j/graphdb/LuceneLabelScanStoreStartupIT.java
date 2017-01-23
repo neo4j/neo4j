@@ -19,21 +19,62 @@
  */
 package org.neo4j.graphdb;
 
-import org.neo4j.kernel.api.impl.labelscan.LuceneLabelScanStore;
-import org.neo4j.kernel.api.labelscan.LabelScanStore;
-import org.neo4j.test.rule.DatabaseRule;
+import java.io.File;
+import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Stream;
 
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertThat;
+import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
+import org.neo4j.kernel.api.impl.labelscan.LuceneLabelScanIndexBuilder;
+import org.neo4j.kernel.api.impl.labelscan.LuceneLabelScanStoreExtension;
+
+import static org.junit.Assert.assertTrue;
+
+import static java.util.stream.Collectors.toList;
+
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.label_scan_store;
+import static org.neo4j.io.fs.FileUtils.deleteRecursively;
 
 public class LuceneLabelScanStoreStartupIT extends LabelScanStoreStartupIT
 {
     @Override
-    protected LabelScanStore getLabelScanStore( DatabaseRule dbRule )
+    protected void addSpecificConfig( GraphDatabaseBuilder builder )
     {
-        DependencyResolver dependencyResolver = dbRule.getDependencyResolver();
-        LabelScanStore labelScanStore = dependencyResolver.resolveDependency( LabelScanStore.class );
-        assertThat( labelScanStore, instanceOf( LuceneLabelScanStore.class ) );
-        return labelScanStore;
+        builder.setConfig( label_scan_store, LuceneLabelScanStoreExtension.LABEL_SCAN_STORE_NAME );
+    }
+
+    private List<File> labelScanStoreIndexDirectories( File storeDirectory )
+    {
+        File rootDir = new File( new File( new File( new File( storeDirectory, "schema" ), "label" ), "lucene" ),
+                LuceneLabelScanIndexBuilder.DEFAULT_INDEX_IDENTIFIER );
+
+        File[] partitionDirs = rootDir.listFiles( File::isDirectory );
+        return (partitionDirs == null) ? Collections.emptyList() : Stream.of( partitionDirs ).collect( toList() );
+    }
+
+    @Override
+    protected void corruptLabelScanStoreFiles( File storeDirectory ) throws IOException
+    {
+        List<File> partitionDirs = labelScanStoreIndexDirectories( storeDirectory );
+        for ( File partitionDir : partitionDirs )
+        {
+            for ( File file : partitionDir.listFiles() )
+            {
+                scrambleFile( file );
+            }
+        }
+    }
+
+    @Override
+    protected void deleteLabelScanStoreFiles( File storeDirectory ) throws IOException
+    {
+        List<File> partitionDirs = labelScanStoreIndexDirectories( storeDirectory );
+        for ( File dir : partitionDirs )
+        {
+            assertTrue( "We seem to want to delete the wrong directory here", dir.exists() );
+            assertTrue( "No index files to delete", dir.listFiles().length > 0 );
+            deleteRecursively( dir );
+        }
     }
 }

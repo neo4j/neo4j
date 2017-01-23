@@ -52,7 +52,9 @@ public abstract class LabelScanStoreHaIT
         // This check is here o check so that the extension provided by this test is selected.
         // It can be higher than 3 (number of cluster members) since some members may restart
         // some services to switch role.
-        assertTrue( monitor.callsTo_init >= 3 );
+        assertTrue( "Expected initial calls to init to be at least one per cluster member (>= 3), " +
+                "but was " + monitor.callsTo_init,
+                monitor.callsTo_init >= 3 );
 
         // GIVEN
         // An HA cluster where the master started with initial data consisting
@@ -116,6 +118,7 @@ public abstract class LabelScanStoreHaIT
                     if ( serverId == 1 )
                     {
                         GraphDatabaseService db = new TestGraphDatabaseFactory()
+                                .addKernelExtension( testExtension )
                                 .newEmbeddedDatabaseBuilder( storeDir.getAbsoluteFile() )
                                 .newGraphDatabase();
                         try

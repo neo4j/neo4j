@@ -101,7 +101,7 @@ public class RecordStorageEngineRule extends ExternalResource
             throw new IllegalStateException();
         }
         IdGeneratorFactory idGeneratorFactory = new EphemeralIdGenerator.Factory();
-        LabelScanStoreProvider labelScanStoreProvider = new LabelScanStoreProvider( labelScanStore, 42 );
+        LabelScanStoreProvider labelScanStoreProvider = new LabelScanStoreProvider( "test", labelScanStore, 42 );
         LegacyIndexProviderLookup legacyIndexProviderLookup = mock( LegacyIndexProviderLookup.class );
         when( legacyIndexProviderLookup.all() ).thenReturn( Iterables.empty() );
         IndexConfigStore indexConfigStore = new IndexConfigStore( storeDirectory, fs );

@@ -480,6 +480,14 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<Integer> batch_inserter_batch_size = setting( "unsupported.tools.batch_inserter.batch_size", INTEGER,
             "10000" );
 
+    @Description( "Overrides otherwise automatically selected label scan store to use. " +
+            "If this setting is specified then this configured name will be matched with one of the loaded " +
+            "label scan stores, or fail if not found. If this setting isn't specified then the loaded " +
+            "label scan store with highest priority will be selected. Both name and priority of each " +
+            "label scan store is set by the kernel extension loading it." )
+    @Internal
+    public static final Setting<String> label_scan_store = setting( "unsupported.dbms.label_scan_store", STRING, NO_DEFAULT );
+
     // Security settings
 
     @Description("Enable auth requirement to access Neo4j.")

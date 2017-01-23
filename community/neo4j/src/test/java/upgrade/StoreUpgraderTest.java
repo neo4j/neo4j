@@ -131,8 +131,8 @@ public class StoreUpgraderTest
     private StoreVersionCheck check;
     private final String version;
     private final SchemaIndexProvider schemaIndexProvider = new InMemoryIndexProvider();
-    private final LabelScanStoreProvider labelScanStoreProvider = new LabelScanStoreProvider( new
-            InMemoryLabelScanStore(), 2 );
+    private final LabelScanStoreProvider labelScanStoreProvider = new LabelScanStoreProvider(
+            "test", new InMemoryLabelScanStore(), 2 );
 
     private final Config allowMigrateConfig = Config.embeddedDefaults( MapUtil.stringMap( GraphDatabaseSettings
             .allow_store_upgrade.name(), "true" ) );

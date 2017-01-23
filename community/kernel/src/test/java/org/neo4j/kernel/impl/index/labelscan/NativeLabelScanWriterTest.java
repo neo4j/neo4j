@@ -45,9 +45,9 @@ import static java.lang.Integer.max;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.asArray;
-import static org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStoreTest.flipRandom;
-import static org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStoreTest.getLabels;
-import static org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStoreTest.nodesWithLabel;
+import static org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStoreIT.flipRandom;
+import static org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStoreIT.getLabels;
+import static org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStoreIT.nodesWithLabel;
 
 public class NativeLabelScanWriterTest
 {

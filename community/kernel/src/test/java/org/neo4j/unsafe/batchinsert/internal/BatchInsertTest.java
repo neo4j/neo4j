@@ -1541,7 +1541,7 @@ public class BatchInsertTest
         @Override
         public Lifecycle newInstance( KernelContext context, NoDependencies dependencies ) throws Throwable
         {
-            return new LabelScanStoreProvider( labelScanStore, 100 );
+            return new LabelScanStoreProvider( "test", labelScanStore, 100 );
         }
     }
 

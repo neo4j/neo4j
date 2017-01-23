@@ -17,30 +17,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.scan;
+package org.neo4j.graphdb;
 
-import org.neo4j.helpers.Service;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.impl.spi.KernelContext;
+import org.junit.ClassRule;
 
-@Service.Implementation( KernelExtensionFactory.class )
-public class InMemoryLabelScanStoreExtension extends
-        KernelExtensionFactory<InMemoryLabelScanStoreExtension.NoDependencies>
+import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
+import org.neo4j.kernel.api.impl.labelscan.LuceneLabelScanStoreExtension;
+import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.rule.ImpermanentDatabaseRule;
+
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.label_scan_store;
+
+public class LuceneLabelScanStoreUpdateIT extends LabelScanStoreUpdateIT
 {
-    public static final String LABEL_SCAN_STORE_NAME = "in-memory";
-
-    public interface NoDependencies
-    {   // No dependencies
-    }
-
-    public InMemoryLabelScanStoreExtension()
+    @ClassRule
+    public static final DatabaseRule dbRule = new ImpermanentDatabaseRule()
     {
-        super( "in-memory-scan-store" );
-    }
+        @Override
+        protected void configure( GraphDatabaseBuilder builder )
+        {
+            builder.setConfig( label_scan_store, LuceneLabelScanStoreExtension.LABEL_SCAN_STORE_NAME );
+        }
+    };
 
     @Override
-    public LabelScanStoreProvider newInstance( KernelContext context, NoDependencies dependencies ) throws Throwable
+    protected GraphDatabaseService db()
     {
-        return new LabelScanStoreProvider( LABEL_SCAN_STORE_NAME, new InMemoryLabelScanStore(), 2 );
+        return dbRule;
     }
 }

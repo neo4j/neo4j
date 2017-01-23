@@ -22,13 +22,13 @@ package org.neo4j.index.internal.gbptree;
 /**
  * Defines special page ids for {@link GBPTree}.
  */
-class IdSpace
+public class IdSpace
 {
     /**
      * Page id of the meta page holding information about root id and custom user meta information.
      * This page id is statically allocated throughout the life of a tree.
      */
-    static final long META_PAGE_ID = 0L;
+    public static final long META_PAGE_ID = 0L;
 
     /**
      * State page with IDs such as free-list, highId, rootId and more. There are two such pages alternating

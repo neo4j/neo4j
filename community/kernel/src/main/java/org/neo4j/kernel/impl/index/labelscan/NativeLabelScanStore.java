@@ -22,13 +22,17 @@ package org.neo4j.kernel.impl.index.labelscan;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.NoSuchFileException;
 import java.util.function.IntFunction;
+import java.util.stream.Collectors;
 
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.index.internal.gbptree.Layout;
+import org.neo4j.index.internal.gbptree.MetadataMismatchException;
+import org.neo4j.io.pagecache.FileHandle;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.labelscan.AllEntriesLabelScanReader;
@@ -39,6 +43,7 @@ import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 
+import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
 import static org.neo4j.helpers.collection.Iterators.iterator;
 import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
@@ -67,6 +72,18 @@ import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
  */
 public class NativeLabelScanStore implements LabelScanStore
 {
+    static final String FILE_NAME = DEFAULT_NAME + ".labelscanstore.db";
+
+    /**
+     * Whether or not this label scan store is read-only.
+     */
+    private final boolean readOnly;
+
+    /**
+     * Monitoring internal events.
+     */
+    private final Monitor monitor;
+
     /**
      * {@link PageCache} to {@link PageCache#map(File, int, java.nio.file.OpenOption...)}
      * store file backing this label scan store. Passed to {@link GBPTree}.
@@ -108,25 +125,33 @@ public class NativeLabelScanStore implements LabelScanStore
      */
     private boolean recoveryStarted;
 
+    /**
+     * Set during {@link #init()} if {@link #start()} will need to rebuild the whole label scan store from
+     * {@link FullStoreChangeStream}.
+     */
+    private boolean needsRebuild;
+
     private final NativeLabelScanWriter singleWriter;
 
     public NativeLabelScanStore( PageCache pageCache, File storeDir,
-            FullStoreChangeStream fullStoreChangeStream )
+            FullStoreChangeStream fullStoreChangeStream, boolean readOnly, Monitor monitor )
     {
-        this( pageCache, storeDir, fullStoreChangeStream, 0/*means no opinion about page size*/ );
+        this( pageCache, storeDir, fullStoreChangeStream, readOnly, monitor, 0/*means no opinion about page size*/ );
     }
 
     /*
      * Test access to be able to control page size.
      */
     NativeLabelScanStore( PageCache pageCache, File storeDir,
-            FullStoreChangeStream fullStoreChangeStream, int pageSize )
+            FullStoreChangeStream fullStoreChangeStream, boolean readOnly, Monitor monitor, int pageSize )
     {
         this.pageCache = pageCache;
         this.pageSize = pageSize;
         this.fullStoreChangeStream = fullStoreChangeStream;
-        this.storeFile = new File( storeDir, DEFAULT_NAME + ".labelscanstore.db" );
+        this.storeFile = new File( storeDir, FILE_NAME );
         this.singleWriter = new NativeLabelScanWriter( 1_000 );
+        this.readOnly = readOnly;
+        this.monitor = monitor;
     }
 
     /**
@@ -152,6 +177,11 @@ public class NativeLabelScanStore implements LabelScanStore
     @Override
     public LabelScanWriter newWriter()
     {
+        if ( readOnly )
+        {
+            throw new UnsupportedOperationException( "Can't create index writer in read only mode." );
+        }
+
         try
         {
             if ( !started && !recoveryStarted )
@@ -191,12 +221,6 @@ public class NativeLabelScanStore implements LabelScanStore
         }
     }
 
-    /**
-     * Unsupported by this implementation.
-     *
-     * @return nothing since {@link UnsupportedOperationException} will be thrown.
-     * @throws UnsupportedOperationException since not supported by this implementation.
-     */
     @Override
     public AllEntriesLabelScanReader allNodeLabelRanges()
     {
@@ -249,7 +273,61 @@ public class NativeLabelScanStore implements LabelScanStore
     @Override
     public void init() throws IOException
     {
+        monitor.init();
+
+        boolean storeExists = storeExists();
+        if ( readOnly && !storeExists )
+        {
+            throw new UnsupportedOperationException( "Tried to create native label scan store " +
+                    storeFile + " in read-only mode, but no such store exists" );
+        }
+
+        try
+        {
+            needsRebuild = !storeExists;
+            if ( !storeExists )
+            {
+                monitor.noIndex();
+            }
+
+            instantiateTree();
+        }
+        catch ( MetadataMismatchException e )
+        {
+            // GBPTree is corrupt. Try to rebuild.
+            monitor.notValidIndex();
+            drop();
+            instantiateTree();
+            needsRebuild = true;
+        }
+    }
+
+    private boolean storeExists() throws IOException
+    {
+        try
+        {
+            storeFileHandle();
+            return true;
+        }
+        catch ( NoSuchFileException e )
+        {
+            return false;
+        }
+    }
+
+    private FileHandle storeFileHandle() throws IOException
+    {
+        return single( pageCache.streamFilesRecursive( storeFile ).collect( Collectors.toList() ) );
+    }
+
+    private void instantiateTree() throws IOException
+    {
         index = new GBPTree<>( pageCache, storeFile, new LabelScanLayout(), pageSize, GBPTree.NO_MONITOR );
+    }
+
+    private void drop() throws IOException
+    {
+        storeFileHandle().delete();
     }
 
     /**
@@ -261,9 +339,17 @@ public class NativeLabelScanStore implements LabelScanStore
     @Override
     public void start() throws IOException
     {
-        if ( isEmpty() )
+        if ( needsRebuild )
         {
-            LabelScanStoreProvider.rebuild( this, fullStoreChangeStream );
+            if ( readOnly )
+            {
+                throw new IOException( "Tried to start label scan store " + storeFile +
+                        " as read-only and the index needs rebuild. This makes the label scan store unusable" );
+            }
+            monitor.rebuilding();
+            long numberOfNodes = LabelScanStoreProvider.rebuild( this, fullStoreChangeStream );
+            monitor.rebuilt( numberOfNodes );
+            needsRebuild = false;
         }
         started = true;
     }

@@ -43,6 +43,7 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.legacyindex.AutoIndexing;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.extension.dependency.HighestPrioritizedLabelScanStore;
 import org.neo4j.kernel.extension.dependency.HighestSelectionStrategy;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
@@ -264,6 +265,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     private Dependencies dependencies;
     private LifeSupport life;
     private SchemaIndexProvider schemaIndexProvider;
+    private LabelScanStoreProvider labelScanStoreProvider;
     private File storeDir;
     private boolean readOnly;
     private final AccessCapability accessCapability;
@@ -395,6 +397,11 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         schemaIndexProvider = dependencyResolver.resolveDependency( SchemaIndexProvider.class,
                 HighestSelectionStrategy.getInstance() );
 
+        String configuredLabelScanStoreName = config.get( GraphDatabaseSettings.label_scan_store );
+        labelScanStoreProvider =
+                dependencyResolver.resolveDependency( LabelScanStoreProvider.class,
+                        new HighestPrioritizedLabelScanStore( configuredLabelScanStoreName ) );
+
         IndexConfigStore indexConfigStore = new IndexConfigStore( storeDir, fs );
         dependencies.satisfyDependency( lockService );
         dependencies.satisfyDependency( indexConfigStore );
@@ -523,10 +530,6 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
 
     private void upgradeStore( RecordFormats format )
     {
-        LabelScanStoreProvider labelScanStoreProvider =
-                dependencyResolver.resolveDependency( LabelScanStoreProvider.class,
-                        HighestSelectionStrategy.getInstance() );
-
         VisibleMigrationProgressMonitor progressMonitor =
                 new VisibleMigrationProgressMonitor( logService.getUserLog( StoreMigrator.class ) );
         new DatabaseMigrator(
@@ -547,8 +550,6 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             LegacyIndexProviderLookup legacyIndexProviderLookup, IndexConfigStore indexConfigStore,
             Runnable schemaStateChangeCallback, SynchronizedArrayIdOrderingQueue legacyIndexTransactionOrdering )
     {
-        LabelScanStoreProvider labelScanStore = dependencyResolver.resolveDependency( LabelScanStoreProvider.class,
-                HighestSelectionStrategy.getInstance() );
         // TODO we should break this dependency on the kernelModule (which has not yet been created at this point in
         // TODO the code) and instead let information about generations of transactions flow through the StorageEngine
         // TODO API
@@ -558,7 +559,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                 eligibleForReuse, idTypeConfigurationProvider, pageCache, fs, logProvider, propertyKeyTokenHolder,
                 labelTokens, relationshipTypeTokens, schemaStateChangeCallback, constraintSemantics, scheduler,
                 tokenNameLookup, lockService, schemaIndexProvider, indexingServiceMonitor, databaseHealth,
-                labelScanStore, legacyIndexProviderLookup, indexConfigStore, legacyIndexTransactionOrdering,
+                labelScanStoreProvider, legacyIndexProviderLookup, indexConfigStore, legacyIndexTransactionOrdering,
                 transactionSnapshotSupplier );
 
         // We pretend that the storage engine abstract hides all details within it. Whereas that's mostly

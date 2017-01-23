@@ -20,7 +20,6 @@
 package org.neo4j.graphdb;
 
 import org.junit.Before;
-import org.junit.ClassRule;
 import org.hamcrest.Matchers;
 import org.junit.Rule;
 import org.junit.Test;
@@ -31,10 +30,6 @@ import java.util.Set;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.test.rule.DatabaseRule;
-import org.neo4j.test.rule.ImpermanentDatabaseRule;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -43,11 +38,8 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.emptySetOf;
 import static org.neo4j.helpers.collection.Iterators.single;
 
-public class LabelScanStoreUpdateIT
+public abstract class LabelScanStoreUpdateIT
 {
-    @ClassRule
-    public static final DatabaseRule dbRule = new ImpermanentDatabaseRule();
-
     @Rule
     public final TestName testName = new TestName();
 
@@ -178,7 +170,7 @@ public class LabelScanStoreUpdateIT
     public void shouldHandleLargeAmountsOfNodesAddedAndRemovedInSameTx() throws Exception
     {
         // Given
-        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
+        GraphDatabaseService db = db();
         int labelsToAdd = 80;
         int labelsToRemove = 40;
 
@@ -216,11 +208,13 @@ public class LabelScanStoreUpdateIT
         }
     }
 
+    protected abstract GraphDatabaseService db();
+
     private void verifyFoundNodes( Label label, String sizeMismatchMessage, long... expectedNodeIds )
     {
-        try ( Transaction ignored = dbRule.getGraphDatabaseAPI().beginTx() )
+        try ( Transaction ignored = db().beginTx() )
         {
-            ResourceIterator<Node> nodes = dbRule.getGraphDatabaseAPI().findNodes( label );
+            ResourceIterator<Node> nodes = db().findNodes( label );
             List<Node> nodeList = Iterators.asList( nodes );
             assertThat( sizeMismatchMessage, nodeList, Matchers.hasSize( expectedNodeIds.length ) );
             int index = 0;
@@ -233,7 +227,7 @@ public class LabelScanStoreUpdateIT
 
     private void removeLabels( Node node, Label... labels )
     {
-        try ( Transaction tx = dbRule.getGraphDatabaseAPI().beginTx() )
+        try ( Transaction tx = db().beginTx() )
         {
             for ( Label label : labels )
             {
@@ -245,7 +239,7 @@ public class LabelScanStoreUpdateIT
 
     private void deleteNode( Node node )
     {
-        try ( Transaction tx = dbRule.getGraphDatabaseAPI().beginTx() )
+        try ( Transaction tx = db().beginTx() )
         {
             node.delete();
             tx.success();
@@ -254,17 +248,17 @@ public class LabelScanStoreUpdateIT
 
     private Set<Node> getAllNodesWithLabel( Label label )
     {
-        try ( Transaction tx = dbRule.getGraphDatabaseAPI().beginTx() )
+        try ( Transaction tx = db().beginTx() )
         {
-            return asSet( dbRule.getGraphDatabaseAPI().findNodes( label ) );
+            return asSet( db().findNodes( label ) );
         }
     }
 
     private Node createLabeledNode( Label... labels )
     {
-        try ( Transaction tx = dbRule.getGraphDatabaseAPI().beginTx() )
+        try ( Transaction tx = db().beginTx() )
         {
-            Node node = dbRule.getGraphDatabaseAPI().createNode( labels );
+            Node node = db().createNode( labels );
             tx.success();
             return node;
         }
@@ -272,7 +266,7 @@ public class LabelScanStoreUpdateIT
 
     private void addLabels( Node node, Label... labels )
     {
-        try ( Transaction tx = dbRule.getGraphDatabaseAPI().beginTx() )
+        try ( Transaction tx = db().beginTx() )
         {
             for ( Label label : labels )
             {
@@ -284,9 +278,9 @@ public class LabelScanStoreUpdateIT
 
     private Node getNodeById(long id)
     {
-        try (Transaction ignored = dbRule.beginTx())
+        try (Transaction ignored = db().beginTx())
         {
-            return dbRule.getNodeById( id );
+            return db().getNodeById( id );
         }
     }
 
