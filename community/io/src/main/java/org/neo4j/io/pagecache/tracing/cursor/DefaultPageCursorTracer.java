@@ -55,20 +55,6 @@ public class DefaultPageCursorTracer implements PageCursorTracer
     public void init( PageCacheTracer pageCacheTracer )
     {
         this.pageCacheTracer = pageCacheTracer;
-        resetCounters();
-    }
-
-    private void resetCounters()
-    {
-        pins = 0L;
-        unpins = 0L;
-        faults = 0L;
-        bytesRead = 0L;
-        bytesWritten = 0L;
-        evictions = 0L;
-        evictionExceptions = 0L;
-        flushes = 0L;
-        rememberCycleStartValues();
     }
 
     public void reportEvents()
@@ -93,8 +79,8 @@ public class DefaultPageCursorTracer implements PageCursorTracer
         this.cycleBytesReadStart = bytesRead;
         this.cycleBytesWrittenStart = bytesWritten;
         this.cycleEvictionsStart = evictions;
-        this.cycleFlushesStart = flushes;
         this.cycleEvictionExceptionsStart = evictionExceptions;
+        this.cycleFlushesStart = flushes;
     }
 
     @Override

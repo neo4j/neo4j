@@ -56,53 +56,6 @@ public class DefaultPageCursorTracerTest
     }
 
     @Test
-    public void resetCursorTracerOnInit()
-    {
-        pageCursorTracer.init( cacheTracer );
-        generateEventSet();
-        pageCursorTracer.reportEvents();
-
-        assertEquals( 1, cacheTracer.pins() );
-        assertEquals( 1, cacheTracer.unpins() );
-        assertEquals( 1, cacheTracer.faults() );
-        assertEquals( 1, cacheTracer.evictions() );
-        assertEquals( 1, cacheTracer.evictionExceptions() );
-        assertEquals( 1, cacheTracer.flushes() );
-        assertEquals( 10, cacheTracer.bytesWritten() );
-        assertEquals( 150, cacheTracer.bytesRead() );
-
-        assertEquals( 1, pageCursorTracer.pins() );
-        assertEquals( 1, pageCursorTracer.unpins() );
-        assertEquals( 1, pageCursorTracer.faults() );
-        assertEquals( 1, pageCursorTracer.evictions() );
-        assertEquals( 1, pageCursorTracer.evictionExceptions() );
-        assertEquals( 1, pageCursorTracer.flushes() );
-        assertEquals( 10, pageCursorTracer.bytesWritten() );
-        assertEquals( 150, pageCursorTracer.bytesRead() );
-
-        pageCursorTracer.init( cacheTracer );
-        generateEventSet();
-        pageCursorTracer.reportEvents();
-        assertEquals( 1, pageCursorTracer.pins() );
-        assertEquals( 1, pageCursorTracer.unpins() );
-        assertEquals( 1, pageCursorTracer.faults() );
-        assertEquals( 1, pageCursorTracer.evictions() );
-        assertEquals( 1, pageCursorTracer.evictionExceptions() );
-        assertEquals( 1, pageCursorTracer.flushes() );
-        assertEquals( 10, pageCursorTracer.bytesWritten() );
-        assertEquals( 150, pageCursorTracer.bytesRead() );
-
-        assertEquals( 2, cacheTracer.pins() );
-        assertEquals( 2, cacheTracer.unpins() );
-        assertEquals( 2, cacheTracer.faults() );
-        assertEquals( 2, cacheTracer.evictions() );
-        assertEquals( 2, cacheTracer.evictionExceptions() );
-        assertEquals( 2, cacheTracer.flushes() );
-        assertEquals( 20, cacheTracer.bytesWritten() );
-        assertEquals( 300, cacheTracer.bytesRead() );
-    }
-
-    @Test
     public void countPageFaultsAndBytesRead()
     {
         PinEvent pinEvent = pageCursorTracer.beginPin( true, 0, swapper );
