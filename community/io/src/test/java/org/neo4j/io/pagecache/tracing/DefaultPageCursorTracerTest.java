@@ -22,6 +22,8 @@ package org.neo4j.io.pagecache.tracing;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.io.IOException;
+
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -56,12 +58,18 @@ public class DefaultPageCursorTracerTest
     public void countPageFaultsAndBytesRead()
     {
         PinEvent pinEvent = pageCursorTracer.beginPin( true, 0, swapper );
-        PageFaultEvent pageFaultEvent = pinEvent.beginPageFault();
-        pageFaultEvent.addBytesRead( 42 );
-        pageFaultEvent.done();
-        pageFaultEvent = pinEvent.beginPageFault();
-        pageFaultEvent.addBytesRead( 42 );
-        pageFaultEvent.done();
+        {
+            PageFaultEvent pageFaultEvent = pinEvent.beginPageFault();
+            {
+                pageFaultEvent.addBytesRead( 42 );
+            }
+            pageFaultEvent.done();
+            pageFaultEvent = pinEvent.beginPageFault();
+            {
+                pageFaultEvent.addBytesRead( 42 );
+            }
+            pageFaultEvent.done();
+        }
         pinEvent.done();
 
         assertEquals( 1, pageCursorTracer.pins() );
@@ -74,18 +82,24 @@ public class DefaultPageCursorTracerTest
     public void countPageEvictions() throws Exception
     {
         PinEvent pinEvent = pageCursorTracer.beginPin( true, 0, swapper );
-        PageFaultEvent faultEvent = pinEvent.beginPageFault();
-        EvictionEvent evictionEvent = faultEvent.beginEviction();
-        evictionEvent.setFilePageId( 0 );
-        evictionEvent.setCachePageId( 0 );
-        evictionEvent.close();
-        faultEvent.done();
+        {
+            PageFaultEvent faultEvent = pinEvent.beginPageFault();
+            {
+                EvictionEvent evictionEvent = faultEvent.beginEviction();
+                evictionEvent.setFilePageId( 0 );
+                evictionEvent.setCachePageId( 0 );
+                evictionEvent.threwException( new IOException( "exception" ) );
+                evictionEvent.close();
+            }
+            faultEvent.done();
+        }
         pinEvent.done();
 
         assertEquals( 1, pageCursorTracer.pins() );
         assertEquals( 1, pageCursorTracer.unpins() );
         assertEquals( 1, pageCursorTracer.faults() );
         assertEquals( 1, pageCursorTracer.evictions() );
+        assertEquals( 1, pageCursorTracer.evictionExceptions() );
     }
 
     @Test
@@ -124,31 +138,33 @@ public class DefaultPageCursorTracerTest
     @Test
     public void reportCountersToPageCursorTracer()
     {
-        generateEvents();
+        generateEventSet();
         pageCursorTracer.reportEvents();
 
         assertEquals( 1, cacheTracer.pins() );
         assertEquals( 1, cacheTracer.unpins() );
         assertEquals( 1, cacheTracer.faults() );
         assertEquals( 1, cacheTracer.evictions() );
+        assertEquals( 1, cacheTracer.evictionExceptions() );
         assertEquals( 1, cacheTracer.flushes() );
         assertEquals( 10, cacheTracer.bytesWritten() );
         assertEquals( 150, cacheTracer.bytesRead() );
 
-        generateEvents();
-        generateEvents();
+        generateEventSet();
+        generateEventSet();
         pageCursorTracer.reportEvents();
 
         assertEquals( 3, cacheTracer.pins() );
         assertEquals( 3, cacheTracer.unpins() );
         assertEquals( 3, cacheTracer.faults() );
         assertEquals( 3, cacheTracer.evictions() );
+        assertEquals( 3, cacheTracer.evictionExceptions() );
         assertEquals( 3, cacheTracer.flushes() );
         assertEquals( 30, cacheTracer.bytesWritten() );
         assertEquals( 450, cacheTracer.bytesRead() );
     }
 
-    private void generateEvents()
+    private void generateEventSet()
     {
         PinEvent pinEvent = pageCursorTracer.beginPin( false, 0, swapper );
         {
@@ -162,6 +178,7 @@ public class DefaultPageCursorTracerTest
                     flushEvent.addBytesWritten( 10 );
                     flushEvent.done();
                 }
+                evictionEvent.threwException( new IOException( "eviction exception" ) );
                 evictionEvent.close();
             }
             pageFaultEvent.done();

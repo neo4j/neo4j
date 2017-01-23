@@ -123,6 +123,12 @@ public class DelegatingPageCacheTracer implements PageCacheTracer
     }
 
     @Override
+    public void evictionExceptions( long evictionExceptions )
+    {
+        delegate.evictionExceptions( evictionExceptions );
+    }
+
+    @Override
     public void bytesWritten( long bytesWritten )
     {
         delegate.bytesWritten( bytesWritten );

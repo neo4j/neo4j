@@ -72,6 +72,12 @@ public class LinearHistoryPageCursorTracer implements PageCursorTracer
     }
 
     @Override
+    public long evictionExceptions()
+    {
+        return 0;
+    }
+
+    @Override
     public long bytesWritten()
     {
         return 0;

@@ -254,6 +254,12 @@ public class DefaultPageCacheTracer implements PageCacheTracer
     }
 
     @Override
+    public void evictionExceptions( long evictionExceptions )
+    {
+        this.evictionExceptions.getAndAdd( evictionExceptions );
+    }
+
+    @Override
     public void bytesWritten( long bytesWritten )
     {
         this.bytesWritten.getAndAdd( bytesWritten );

@@ -150,6 +150,11 @@ public interface PageCacheTracer extends PageCacheCounters
         }
 
         @Override
+        public void evictionExceptions( long evictionExceptions )
+        {
+        }
+
+        @Override
         public void bytesWritten( long bytesWritten )
         {
         }
@@ -204,6 +209,8 @@ public interface PageCacheTracer extends PageCacheCounters
     void bytesRead( long bytesRead );
 
     void evictions( long evictions );
+
+    void evictionExceptions( long evictionExceptions );
 
     void bytesWritten( long bytesWritten );
 

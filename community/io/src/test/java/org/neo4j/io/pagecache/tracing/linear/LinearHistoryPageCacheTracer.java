@@ -164,6 +164,11 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
     }
 
     @Override
+    public void evictionExceptions( long evictionExceptions )
+    {
+    }
+
+    @Override
     public void bytesWritten( long bytesWritten )
     {
     }

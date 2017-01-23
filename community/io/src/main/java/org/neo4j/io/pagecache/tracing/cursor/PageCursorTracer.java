@@ -68,6 +68,12 @@ public interface PageCursorTracer extends PageCursorCounters
         }
 
         @Override
+        public long evictionExceptions()
+        {
+            return 0;
+        }
+
+        @Override
         public long bytesWritten()
         {
             return 0;

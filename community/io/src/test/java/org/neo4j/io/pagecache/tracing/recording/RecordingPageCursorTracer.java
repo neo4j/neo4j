@@ -82,6 +82,12 @@ public class RecordingPageCursorTracer extends RecordingTracer implements PageCu
     }
 
     @Override
+    public long evictionExceptions()
+    {
+        return 0;
+    }
+
+    @Override
     public long bytesWritten()
     {
         return 0;

@@ -38,6 +38,7 @@ public class DefaultPageCursorTracer implements PageCursorTracer
     private long bytesRead = 0L;
     private long bytesWritten = 0L;
     private long evictions = 0L;
+    private long evictionExceptions = 0L;
     private long flushes = 0L;
 
     private long cyclePinsStart;
@@ -46,6 +47,7 @@ public class DefaultPageCursorTracer implements PageCursorTracer
     private long cycleBytesReadStart;
     private long cycleBytesWrittenStart;
     private long cycleEvictionsStart;
+    private long cycleEvictionExceptionsStart;
     private long cycleFlushesStart;
 
     private PageCacheTracer pageCacheTracer;
@@ -68,6 +70,7 @@ public class DefaultPageCursorTracer implements PageCursorTracer
         pageCacheTracer.faults( Math.abs( faults - cycleFaultsStart ) );
         pageCacheTracer.bytesRead( Math.abs( bytesRead - cycleBytesReadStart ) );
         pageCacheTracer.evictions( Math.abs( evictions - cycleEvictionsStart ) );
+        pageCacheTracer.evictionExceptions( Math.abs( evictionExceptions - cycleEvictionExceptionsStart ) );
         pageCacheTracer.bytesWritten( Math.abs( bytesWritten - cycleBytesWrittenStart ) );
         pageCacheTracer.flushes( Math.abs( flushes - cycleFlushesStart ) );
         rememberReportedValues();
@@ -82,6 +85,7 @@ public class DefaultPageCursorTracer implements PageCursorTracer
         this.cycleBytesWrittenStart = bytesWritten;
         this.cycleEvictionsStart = evictions;
         this.cycleFlushesStart = flushes;
+        this.cycleEvictionExceptionsStart = evictionExceptions;
     }
 
     @Override
@@ -112,6 +116,12 @@ public class DefaultPageCursorTracer implements PageCursorTracer
     public long evictions()
     {
         return evictions;
+    }
+
+    @Override
+    public long evictionExceptions()
+    {
+        return evictionExceptions;
     }
 
     @Override
@@ -153,25 +163,6 @@ public class DefaultPageCursorTracer implements PageCursorTracer
         }
     };
 
-    private final PinEvent nullPinEvent = new PinEvent()
-    {
-        @Override
-        public void setCachePageId( int cachePageId )
-        {
-        }
-
-        @Override
-        public PageFaultEvent beginPageFault()
-        {
-            return pageFaultEvent;
-        }
-
-        @Override
-        public void done()
-        {
-        }
-    };
-
     private final EvictionEvent evictionEvent = new EvictionEvent()
     {
         @Override
@@ -193,6 +184,7 @@ public class DefaultPageCursorTracer implements PageCursorTracer
         @Override
         public void threwException( IOException exception )
         {
+            evictionExceptions++;
         }
 
         @Override

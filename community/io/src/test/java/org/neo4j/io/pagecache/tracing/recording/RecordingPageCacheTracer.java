@@ -172,6 +172,11 @@ public class RecordingPageCacheTracer extends RecordingTracer implements PageCac
     }
 
     @Override
+    public void evictionExceptions( long evictionExceptions )
+    {
+    }
+
+    @Override
     public void bytesWritten( long bytesWritten )
     {
     }
