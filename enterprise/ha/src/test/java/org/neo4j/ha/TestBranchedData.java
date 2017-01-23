@@ -57,8 +57,11 @@ import static java.lang.String.format;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.SLAVE;
+import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.UNKNOWN;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
+import static org.neo4j.kernel.impl.ha.ClusterManager.memberThinksItIsRole;
 
 public class TestBranchedData
 {
@@ -166,12 +169,10 @@ public class TestBranchedData
         }
         // so anyways, when thor comes back into the cluster
         cluster.info( format( "%n   ==== REPAIRING CABLES ====%n" ) );
+        cluster.await( memberThinksItIsRole( thor, UNKNOWN ) );
         thorRepairKit.repair();
-        while ( thor.isMaster() )
-        {
-            Thread.sleep( 100 );
-        }
-        cluster.await( ClusterManager.masterSeesAllSlavesAsAvailable() );
+        cluster.await( memberThinksItIsRole( thor, SLAVE ) );
+        cluster.await( allSeesAllAsAvailable() );
         assertFalse( thor.isMaster() );
 
         // Now do some more transactions on current master (odin) and have thor pull those
