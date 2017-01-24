@@ -21,7 +21,6 @@ package org.neo4j.cluster.client;
 
 import org.apache.commons.lang3.RandomStringUtils;
 
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.Nonnull;
@@ -88,35 +87,17 @@ public class Cluster
         return result;
     }
 
-    public boolean contains( URI serverId )
-    {
-        for ( Member member : members )
-        {
-            if ( serverId.toString().contains( member.getHost() ) )
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
     /**
      * Represents a member tag in the discovery XML file.
      */
     public static class Member
     {
-        private String host;
-        private boolean fullHaMember;
+        private final String host;
+        private final boolean fullHaMember;
 
         public Member( int port, boolean fullHaMember )
         {
             this( localhost() + ":" + port, fullHaMember );
-        }
-
-        public Member( String host )
-        {
-            this( host, true );
         }
 
         public Member( String host, boolean fullHaMember )
