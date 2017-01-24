@@ -17,15 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.spi
+package org.neo4j.cypher.internal.spi.v2_3
 
-import org.neo4j.kernel.api.index.IndexDescriptor
-import org.neo4j.kernel.api.schema.IndexDescriptorFactory
+import org.neo4j.cypher.internal.compiler.v2_3.{IndexDescriptor => CypherIndexDescriptor}
+import org.neo4j.kernel.api.schema.{
+      IndexDescriptor => KernelIndexDescriptor,
+      IndexDescriptorFactory => KernelIndexDescriptorFactory}
 
 trait IndexDescriptorCompatibility {
-  implicit def toOldIndexDescriptor(index: org.neo4j.kernel.api.schema.IndexDescriptor): IndexDescriptor =
-    new IndexDescriptor(index.getLabelId(), index.getPropertyKeyId);
+  implicit def cypherToKernel(index:CypherIndexDescriptor) =
+    KernelIndexDescriptorFactory.of( index.label, index.property )
 
-  implicit def toNewIndexDescriptor(index: IndexDescriptor): org.neo4j.kernel.api.schema.IndexDescriptor =
-    IndexDescriptorFactory.of(index.getLabelId(), index.getPropertyKeyId);
+  implicit def kernelToCypher(index:KernelIndexDescriptor) =
+    CypherIndexDescriptor( index.getLabelId, index.getPropertyKeyId )
 }

@@ -190,7 +190,7 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-cypher-compiler-2.3</artifactId>
-      <version>2.3.8</version>
+      <version>2.3.9</version>
       <exclusions>
         <exclusion>
           <groupId>org.neo4j</groupId>
@@ -217,7 +217,7 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-cypher-compiler-3.1</artifactId>
-      <version>3.1.0</version>
+      <version>3.1.1</version>
       <exclusions>
         <exclusion>
           <groupId>org.neo4j</groupId>
