@@ -21,11 +21,13 @@ package org.neo4j.cypher.internal.spi.v3_2.codegen
 
 import java.lang.reflect.Modifier
 import java.util
+import java.util.stream.{DoubleStream, IntStream, LongStream}
 
 import org.neo4j.codegen.CodeGeneratorOption._
 import org.neo4j.codegen.TypeReference._
 import org.neo4j.codegen.source.{SourceCode, SourceVisitor}
 import org.neo4j.codegen.{CodeGenerator, Parameter, _}
+import org.neo4j.cypher.internal.codegen.{PrimitiveNodeStream, PrimitiveRelationshipStream}
 import org.neo4j.cypher.internal.compiler.v3_2.codegen._
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions._
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi.{CodeStructure, CodeStructureResult, MethodStructure}
@@ -190,8 +192,13 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
     case CodeGenType(symbols.CTInteger, IntType) => typeRef[Long]
     case CodeGenType(symbols.CTFloat, FloatType) => typeRef[Double]
     case CodeGenType(symbols.CTBoolean, BoolType) => typeRef[Boolean]
-    case CodeGenType(symbols.CTString, ReferenceType) => typeRef[String]
-    case CodeGenType(symbols.ListType(_), ListReferenceType(IntType)) => typeRef[Array[Long]]
+    //case CodeGenType(symbols.CTString, ReferenceType) => typeRef[String] // We do not care about non-primitive types
+    case CodeGenType(symbols.ListType(symbols.CTNode), ListReferenceType(IntType)) => typeRef[PrimitiveNodeStream]
+    case CodeGenType(symbols.ListType(symbols.CTRelationship), ListReferenceType(IntType)) => typeRef[PrimitiveRelationshipStream]
+    case CodeGenType(symbols.ListType(_), ListReferenceType(IntType)) => typeRef[LongStream]
+    case CodeGenType(symbols.ListType(_), ListReferenceType(FloatType)) => typeRef[DoubleStream]
+    case CodeGenType(symbols.ListType(_), ListReferenceType(BoolType)) => typeRef[IntStream]
+    case CodeGenType(symbols.ListType(_), _) => typeRef[java.lang.Iterable[Object]]
     case _ => typeRef[Object]
   }
 

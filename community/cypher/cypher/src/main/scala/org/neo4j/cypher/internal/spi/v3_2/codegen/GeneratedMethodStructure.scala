@@ -34,7 +34,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions.{BoolType,
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi._
 import org.neo4j.cypher.internal.compiler.v3_2.helpers._
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
-import org.neo4j.cypher.internal.frontend.v3_2.symbols.{CTNode, CTRelationship}
+import org.neo4j.cypher.internal.frontend.v3_2.symbols.{ListType, CTNode, CTRelationship}
 import org.neo4j.cypher.internal.frontend.v3_2.{ParameterNotFoundException, SemanticDirection, symbols}
 import org.neo4j.cypher.internal.spi.v3_2.codegen.Methods._
 import org.neo4j.cypher.internal.spi.v3_2.codegen.Templates.{createNewInstance, handleKernelExceptions, newRelationshipDataExtractor, tryCatch}
@@ -486,6 +486,10 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   override def asPrimitiveStream(values: Seq[Expression], codeGenType: CodeGenType) = {
     codeGenType match {
+      case CodeGenType(ListType(CTNode), ListReferenceType(IntType)) =>
+        Templates.asPrimitiveNodeStream(values)
+      case CodeGenType(ListType(CTRelationship), ListReferenceType(IntType)) =>
+        Templates.asPrimitiveRelationshipStream(values)
       case CodeGenType(_, ListReferenceType(IntType)) =>
         Templates.asLongStream(values)
       case CodeGenType(_, ListReferenceType(FloatType)) =>

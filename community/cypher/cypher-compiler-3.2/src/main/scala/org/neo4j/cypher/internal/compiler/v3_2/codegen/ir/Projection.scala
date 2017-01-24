@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.codegen.ir
 
-import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions.{CodeGenType, CodeGenExpression}
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions.CodeGenExpression
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi.MethodStructure
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.{CodeGenContext, Variable}
 
@@ -43,9 +43,8 @@ case class Projection(projectionOpName: String, variables: Map[Variable, CodeGen
             body.assign(variable.name, variable.codeGenType, expr.generateExpression(body))
           }
           else {
-            // Declare the variable with a non-specific Object type for non-primitive types to avoid casting
-            body.declare(variable.name, CodeGenType.Any)
-            body.assign(variable.name, CodeGenType.Any, expr.generateExpression(body))
+            body.declare(variable.name, variable.codeGenType)
+            body.assign(variable.name, variable.codeGenType, expr.generateExpression(body))
           }
       }
       action.body(body)
