@@ -122,6 +122,7 @@ public class ClusterManager
     private static final int CLUSTER_MAX_PORT = 21_000;
     private static final int HA_MIN_PORT = CLUSTER_MAX_PORT + 1;
     private static final int HA_MAX_PORT = HA_MIN_PORT + 10_000;
+    public static final int FIRST_SERVER_ID = 1;
 
     /**
      * Network Flags for passing into {@link ManagedCluster#fail(HighlyAvailableGraphDatabase, NetworkFlag...)}
@@ -813,7 +814,7 @@ public class ClusterManager
         private Listener<GraphDatabaseService> initialDatasetCreator;
         private List<Predicate<ManagedCluster>> availabilityChecks = Collections.emptyList();
         private boolean consistencyCheck;
-        private int firstInstanceId = 1;
+        private int firstInstanceId = FIRST_SERVER_ID;
 
         public Builder( File root )
         {
