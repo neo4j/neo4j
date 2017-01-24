@@ -21,14 +21,13 @@ package org.neo4j.cypher.internal.compatibility
 
 import java.net.URL
 
-import org.neo4j.cypher.internal.compiler.v2_3.spi
+import org.neo4j.cypher.internal.compiler.v2_3.{IndexDescriptor, spi}
 import org.neo4j.cypher.internal.compiler.v2_3.spi._
 import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
 import org.neo4j.cypher.{ConstraintValidationException, CypherExecutionException}
-import org.neo4j.graphdb.{ConstraintViolationException => KernelConstraintViolationException, Node, PropertyContainer, Relationship}
+import org.neo4j.graphdb.{Node, PropertyContainer, Relationship, ConstraintViolationException => KernelConstraintViolationException}
 import org.neo4j.kernel.api.TokenNameLookup
 import org.neo4j.kernel.api.exceptions.KernelException
-import org.neo4j.kernel.api.index.IndexDescriptor
 
 class ExceptionTranslatingQueryContextFor2_3(inner: QueryContext) extends DelegatingQueryContext(inner) {
   override def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int =
