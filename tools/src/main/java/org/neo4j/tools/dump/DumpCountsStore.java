@@ -152,14 +152,14 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
     public void visitIndexStatistics( IndexDescriptor index, long updates, long size )
     {
         out.printf( "\tIndexStatistics[(%s {%s})]:\tupdates=%d, size=%d%n",
-                label( index.getLabelId() ), index.descriptor().propertyIdText(), updates, size );
+                label( index.getLabelId() ), propertyKey( index.descriptor().getPropertyKeyId() ), updates, size );
     }
 
     @Override
     public void visitIndexSample( IndexDescriptor index, long unique, long size )
     {
         out.printf( "\tIndexSample[(%s {%s})]:\tunique=%d, size=%d%n",
-                label( index.getLabelId() ), index.descriptor().propertyIdText(), unique, size );
+                label( index.getLabelId() ), propertyKey( index.descriptor().getPropertyKeyId() ), unique, size );
     }
 
     @Override
