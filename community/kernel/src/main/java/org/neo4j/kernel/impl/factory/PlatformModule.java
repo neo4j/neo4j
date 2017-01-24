@@ -46,6 +46,7 @@ import org.neo4j.kernel.impl.security.URLAccessRules;
 import org.neo4j.kernel.impl.spi.SimpleKernelContext;
 import org.neo4j.kernel.impl.transaction.TransactionStats;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerMonitor;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
@@ -113,6 +114,8 @@ public class PlatformModule
     public final TransactionStats transactionMonitor;
 
     public final SystemNanoClock clock;
+
+    public final StoreCopyCheckPointMutex storeCopyCheckPointMutex;
 
     public PlatformModule( File providedStoreDir, Map<String,String> params, DatabaseInfo databaseInfo,
             GraphDatabaseFacadeFactory.Dependencies externalDependencies, GraphDatabaseFacade graphDatabaseFacade )
@@ -198,6 +201,9 @@ public class PlatformModule
                 externalDependencies.kernelExtensions(), dependencies, UnsatisfiedDependencyStrategies.fail() ) );
 
         urlAccessRule = dependencies.satisfyDependency( URLAccessRules.combined( externalDependencies.urlAccessRules() ) );
+
+        storeCopyCheckPointMutex = new StoreCopyCheckPointMutex();
+        dependencies.satisfyDependency( storeCopyCheckPointMutex );
 
         publishPlatformInfo( dependencies.resolveDependency( UsageData.class ) );
     }

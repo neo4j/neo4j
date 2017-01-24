@@ -119,6 +119,7 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointThresholds;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerImpl;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CountCommittedTransactionThreshold;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.TimeCheckPointThreshold;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
@@ -261,6 +262,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     private final IOLimiter ioLimiter;
     private final AvailabilityGuard availabilityGuard;
     private final SystemNanoClock clock;
+    private final StoreCopyCheckPointMutex storeCopyCheckPointMutex;
 
     private Dependencies dependencies;
     private LifeSupport life;
@@ -314,7 +316,8 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             IOLimiter ioLimiter,
             AvailabilityGuard availabilityGuard,
             SystemNanoClock clock,
-            AccessCapability accessCapability )
+            AccessCapability accessCapability,
+            StoreCopyCheckPointMutex storeCopyCheckPointMutex )
     {
         this.storeDir = storeDir;
         this.config = config;
@@ -326,6 +329,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         this.scheduler = scheduler;
         this.logService = logService;
         this.autoIndexing = autoIndexing;
+        this.storeCopyCheckPointMutex = storeCopyCheckPointMutex;
         this.logProvider = logService.getInternalLogProvider();
         this.propertyKeyTokenHolder = propertyKeyTokens;
         this.labelTokens = labelTokens;
@@ -640,7 +644,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
 
         final CheckPointerImpl checkPointer = new CheckPointerImpl(
                 transactionIdStore, threshold, storageEngine, logPruning, appender, databaseHealth, logProvider,
-                tracers.checkPointTracer, ioLimiter );
+                tracers.checkPointTracer, ioLimiter, storeCopyCheckPointMutex );
 
         long recurringPeriod = Math.min( timeMillisThreshold, TimeUnit.SECONDS.toMillis( 10 ) );
         CheckPointScheduler checkPointScheduler = new CheckPointScheduler( checkPointer, scheduler, recurringPeriod );

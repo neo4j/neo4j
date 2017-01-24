@@ -50,6 +50,7 @@ import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -386,7 +387,8 @@ public class StoreCopyClientTest
                     original.getDependencyResolver().resolveDependency( PageCache.class );
 
             RequestContext requestContext = new StoreCopyServer( neoStoreDataSource, checkPointer, fs,
-                    originalDir, new Monitors().newMonitor( StoreCopyServer.Monitor.class ), pageCache )
+                    originalDir, new Monitors().newMonitor( StoreCopyServer.Monitor.class ), pageCache,
+                    new StoreCopyCheckPointMutex() )
                     .flushStoresAndStreamStoreFiles( "test", writer, false );
 
             final StoreId storeId =
