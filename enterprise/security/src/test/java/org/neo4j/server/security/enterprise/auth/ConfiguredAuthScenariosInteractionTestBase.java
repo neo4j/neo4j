@@ -21,9 +21,26 @@ package org.neo4j.server.security.enterprise.auth;
 
 import org.junit.Test;
 
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.Map;
+
+import org.neo4j.graphdb.Notification;
+import org.neo4j.graphdb.Result;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
 
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.ADMIN;
+import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.ARCHITECT;
+import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.PUBLISHER;
+import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.READER;
 
 public abstract class ConfiguredAuthScenariosInteractionTestBase<S> extends ProcedureInteractionTestBase<S>
 {
@@ -79,5 +96,61 @@ public abstract class ConfiguredAuthScenariosInteractionTestBase<S> extends Proc
         assertEmpty( noneSubject, "CALL db.createLabel('MySpecialLabel')" );
         assertEmpty( noneSubject, "CALL db.createRelationshipType('MySpecialRelationship')" );
         assertEmpty( noneSubject, "CALL db.createProperty('MySpecialProperty')" );
+    }
+
+    @Test
+    public void shouldWarnWhenUsingNativeAndOtherProvider() throws Throwable
+    {
+        configuredSetup( stringMap( SecuritySettings.auth_providers.name(), "native ,LDAP" ) );
+        assertSuccess( adminSubject, "CALL dbms.security.listUsers", r -> assertKeyIsMap( r, "username", "roles", userList ) );
+        GraphDatabaseFacade localGraph = neo.getLocalGraph();
+        InternalTransaction transaction = localGraph
+                .beginTransaction( KernelTransaction.Type.explicit, StandardEnterpriseSecurityContext.AUTH_DISABLED );
+        Result result =
+                localGraph.execute( transaction, "EXPLAIN CALL dbms.security.listUsers", Collections.emptyMap() );
+        assertThat(
+                containsNotification( result, "Native user management procedures will not affect non-native users." ),
+                equalTo( true ) );
+        transaction.success();
+        transaction.close();
+    }
+
+    @Test
+    public void shouldNotWarnWhenUsingNativeAndOtherProvider() throws Throwable
+    {
+        configuredSetup( stringMap( SecuritySettings.auth_provider.name(), "native" ) );
+        assertSuccess( adminSubject, "CALL dbms.security.listUsers", r -> assertKeyIsMap( r, "username", "roles", userList ) );
+
+        GraphDatabaseFacade localGraph = neo.getLocalGraph();
+        InternalTransaction transaction = localGraph
+                .beginTransaction( KernelTransaction.Type.explicit, StandardEnterpriseSecurityContext.AUTH_DISABLED );
+        Result result =
+                localGraph.execute( transaction, "EXPLAIN CALL dbms.security.listUsers", Collections.emptyMap() );
+        assertThat(
+                containsNotification( result, "Native user management procedures will not affect non-native users." ),
+                equalTo( false ) );
+        transaction.success();
+        transaction.close();
+    }
+
+    private Map<String, Object> userList = map(
+            "adminSubject", listOf( ADMIN ),
+            "readSubject", listOf( READER ),
+            "schemaSubject", listOf( ARCHITECT ),
+            "writeSubject", listOf( PUBLISHER ),
+            "pwdSubject", listOf( ),
+            "noneSubject", listOf( ),
+            "neo4j", listOf( ADMIN )
+    );
+
+    private boolean containsNotification( Result result, String description )
+    {
+        Iterator<Notification> itr = result.getNotifications().iterator();
+        boolean found = false;
+        while ( itr.hasNext() )
+        {
+            found |= itr.next().getDescription().equals( description );
+        }
+        return found;
     }
 }
