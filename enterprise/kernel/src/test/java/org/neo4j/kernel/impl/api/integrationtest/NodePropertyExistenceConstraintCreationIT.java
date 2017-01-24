@@ -27,6 +27,7 @@ import org.neo4j.SchemaHelper;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
@@ -44,7 +45,7 @@ import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterators.single;
 
 public class NodePropertyExistenceConstraintCreationIT
-        extends AbstractConstraintCreationIT<NodePropertyExistenceConstraint>
+        extends AbstractConstraintCreationIT<NodePropertyExistenceConstraint,NodePropertyDescriptor>
 {
     @Override
     int initializeLabelOrRelType( SchemaWriteOperations writeOps, String name ) throws KernelException
@@ -53,10 +54,10 @@ public class NodePropertyExistenceConstraintCreationIT
     }
 
     @Override
-    NodePropertyExistenceConstraint createConstraint( SchemaWriteOperations writeOps, int type, int property )
+    NodePropertyExistenceConstraint createConstraint( SchemaWriteOperations writeOps, NodePropertyDescriptor descriptor )
             throws Exception
     {
-        return writeOps.nodePropertyExistenceConstraintCreate( type, property );
+        return writeOps.nodePropertyExistenceConstraintCreate( descriptor );
     }
 
     @Override
@@ -66,9 +67,9 @@ public class NodePropertyExistenceConstraintCreationIT
     }
 
     @Override
-    NodePropertyExistenceConstraint newConstraintObject( int type, int property )
+    NodePropertyExistenceConstraint newConstraintObject(NodePropertyDescriptor descriptor )
     {
-        return new NodePropertyExistenceConstraint( type, property );
+        return new NodePropertyExistenceConstraint( descriptor );
     }
 
     @Override
@@ -96,6 +97,12 @@ public class NodePropertyExistenceConstraintCreationIT
         }
     }
 
+    @Override
+    NodePropertyDescriptor makeDescriptor( int typeId, int propertyKeyId )
+    {
+        return new NodePropertyDescriptor( typeId, propertyKeyId );
+    }
+
     @Test
     public void shouldNotDropPropertyExistenceConstraintThatDoesNotExistWhenThereIsAUniquePropertyConstraint()
             throws Exception
@@ -104,7 +111,7 @@ public class NodePropertyExistenceConstraintCreationIT
         UniquenessConstraint constraint;
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            constraint = statement.uniquePropertyConstraintCreate( typeId, propertyKeyId );
+            constraint = statement.uniquePropertyConstraintCreate( descriptor );
             commit();
         }
 
@@ -113,7 +120,7 @@ public class NodePropertyExistenceConstraintCreationIT
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
             statement.constraintDrop(
-                    new NodePropertyExistenceConstraint( constraint.label(), constraint.propertyKey() ) );
+                    new NodePropertyExistenceConstraint( constraint.descriptor() ) );
 
             fail( "expected exception" );
         }
@@ -132,7 +139,7 @@ public class NodePropertyExistenceConstraintCreationIT
             ReadOperations statement = readOperationsInNewTransaction();
 
             Iterator<NodePropertyConstraint> constraints =
-                    statement.constraintsGetForLabelAndPropertyKey( typeId, propertyKeyId );
+                    statement.constraintsGetForLabelAndPropertyKey( descriptor );
 
             assertEquals( constraint, single( constraints ) );
         }

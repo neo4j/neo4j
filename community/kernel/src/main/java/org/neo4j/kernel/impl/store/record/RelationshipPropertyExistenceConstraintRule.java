@@ -21,36 +21,36 @@ package org.neo4j.kernel.impl.store.record;
 
 import java.nio.ByteBuffer;
 
+import org.neo4j.kernel.api.schema.EntityPropertyDescriptor;
+import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 
 public class RelationshipPropertyExistenceConstraintRule extends RelationshipPropertyConstraintRule
 {
-    private final int propertyKeyId;
-
     public static RelationshipPropertyExistenceConstraintRule relPropertyExistenceConstraintRule( long id,
-            int relTypeId, int propertyKeyId )
+            RelationshipPropertyDescriptor descriptor )
     {
-        return new RelationshipPropertyExistenceConstraintRule( id, relTypeId, propertyKeyId );
+        return new RelationshipPropertyExistenceConstraintRule( id, descriptor );
     }
 
     public static RelationshipPropertyExistenceConstraintRule readRelPropertyExistenceConstraintRule( long id,
             int relTypeId, ByteBuffer buffer )
     {
-        return new RelationshipPropertyExistenceConstraintRule( id, relTypeId, readPropertyKey( buffer ) );
+        return new RelationshipPropertyExistenceConstraintRule( id,
+                new RelationshipPropertyDescriptor( relTypeId, readPropertyKey( buffer ) ) );
     }
 
-    private RelationshipPropertyExistenceConstraintRule( long id, int relTypeId, int propertyKeyId )
+    private RelationshipPropertyExistenceConstraintRule( long id, RelationshipPropertyDescriptor descriptor )
     {
-        super( id, relTypeId, Kind.RELATIONSHIP_PROPERTY_EXISTENCE_CONSTRAINT );
-        this.propertyKeyId = propertyKeyId;
+        super( id, descriptor, Kind.RELATIONSHIP_PROPERTY_EXISTENCE_CONSTRAINT );
     }
 
     @Override
     public String toString()
     {
-        return "RelationshipPropertyExistenceConstraint" + id + ", relationshipType=" + relationshipType +
-               ", kind=" + kind + ", propertyKeyId=" + propertyKeyId + "]";
+        return "RelationshipPropertyExistenceConstraint" + id + ", relationshipType=" + getRelationshipType() +
+               ", kind=" + kind + ", propertyKeyId=" + descriptor.propertyIdText() + "]";
     }
 
     @Override
@@ -64,9 +64,9 @@ public class RelationshipPropertyExistenceConstraintRule extends RelationshipPro
     @Override
     public void serialize( ByteBuffer target )
     {
-        target.putInt( relationshipType );
+        target.putInt( getRelationshipType() );
         target.put( kind.id() );
-        target.putInt( propertyKeyId );
+        target.putInt( descriptor.getPropertyKeyId() );
     }
 
     private static int readPropertyKey( ByteBuffer buffer )
@@ -76,42 +76,12 @@ public class RelationshipPropertyExistenceConstraintRule extends RelationshipPro
 
     public int getPropertyKey()
     {
-        return propertyKeyId;
+        return descriptor.getPropertyKeyId();
     }
 
     @Override
     public RelationshipPropertyConstraint toConstraint()
     {
-        return new RelationshipPropertyExistenceConstraint( getRelationshipType(), getPropertyKey() );
-    }
-
-    @Override
-    public boolean containsPropertyKeyId( int propertyKeyId )
-    {
-        return propertyKeyId == this.propertyKeyId;
-    }
-
-    @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
-            return true;
-        }
-        if ( o == null || getClass() != o.getClass() )
-        {
-            return false;
-        }
-        if ( !super.equals( o ) )
-        {
-            return false;
-        }
-        return propertyKeyId == ((RelationshipPropertyExistenceConstraintRule) o).propertyKeyId;
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return 31 * super.hashCode() + propertyKeyId;
+        return new RelationshipPropertyExistenceConstraint( descriptor() );
     }
 }

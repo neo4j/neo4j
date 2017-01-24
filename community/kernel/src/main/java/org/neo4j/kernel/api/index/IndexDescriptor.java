@@ -19,25 +19,29 @@
  */
 package org.neo4j.kernel.api.index;
 
-import org.neo4j.kernel.api.TokenNameLookup;
-import org.neo4j.storageengine.api.schema.SchemaRule;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 
 import static java.lang.String.format;
 
 /**
- * Description of a single index.
- *
- * @see SchemaRule
+ * This is a new version of the old IndexDescriptor interface created here only to allow
+ * older versions of Cypher to run on newer kernels. This is because Cypher supports older
+ * cypher-compiler modules to be instantiated and run within newer versions of Neo4j, and they
+ * assume certain kernel API's remain unchanged. However, the IndexDescriptor was refactored
+ * considerably during the 3.2 development process to allow for composite indexes and constraints.
+ * We should remove this class as soon as older Cypher compilers are re-released without any
+ * kernel dependency on this.
+ * <p>
+ * //TODO: Delete this class when 3.1.1 and 2.3.9 are released
  */
+@Deprecated
 public class IndexDescriptor
 {
-    private final int labelId;
-    private final int propertyKeyId;
+    private NodePropertyDescriptor descriptor;
 
     public IndexDescriptor( int labelId, int propertyKeyId )
     {
-        this.labelId = labelId;
-        this.propertyKeyId = propertyKeyId;
+        this.descriptor = new NodePropertyDescriptor( labelId, propertyKeyId );
     }
 
     @Override
@@ -47,11 +51,10 @@ public class IndexDescriptor
         {
             return true;
         }
-        if ( obj != null && getClass() == obj.getClass() )
+        if ( obj != null && obj instanceof IndexDescriptor )
         {
             IndexDescriptor that = (IndexDescriptor) obj;
-            return this.labelId == that.labelId &&
-                    this.propertyKeyId == that.propertyKeyId;
+            return this.descriptor.equals( that.descriptor );
         }
         return false;
     }
@@ -59,9 +62,7 @@ public class IndexDescriptor
     @Override
     public int hashCode()
     {
-        int result = labelId;
-        result = 31 * result + propertyKeyId;
-        return result;
+        return this.descriptor.hashCode();
     }
 
     /**
@@ -69,7 +70,7 @@ public class IndexDescriptor
      */
     public int getLabelId()
     {
-        return labelId;
+        return descriptor.getLabelId();
     }
 
     /**
@@ -77,22 +78,12 @@ public class IndexDescriptor
      */
     public int getPropertyKeyId()
     {
-        return propertyKeyId;
+        return descriptor.getPropertyKeyId();
     }
 
     @Override
     public String toString()
     {
-        return format( ":label[%d](property[%d])", labelId, propertyKeyId );
-    }
-
-    /**
-     * @param tokenNameLookup used for looking up names for token ids.
-     * @return a user friendly description of what this index indexes.
-     */
-    public String userDescription( TokenNameLookup tokenNameLookup )
-    {
-        return format( ":%s(%s)",
-                tokenNameLookup.labelGetName( labelId ), tokenNameLookup.propertyKeyGetName( propertyKeyId ) );
+        return format( ":label[%d](property[%d])", descriptor.getLabelId(), descriptor.getPropertyKeyId() );
     }
 }

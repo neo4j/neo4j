@@ -34,7 +34,8 @@ import java.util.function.IntPredicate;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexConfiguration;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
@@ -158,8 +159,8 @@ public class MultipleIndexPopulatorTest
     @Test
     public void testFailByPopulation() throws IOException
     {
-        IndexDescriptor descriptor1 = new IndexDescriptor( 1, 1 );
-        IndexDescriptor descriptor2 = new IndexDescriptor( 2, 2 );
+        IndexDescriptor descriptor1 = IndexDescriptorFactory.of( 1, 1 );
+        IndexDescriptor descriptor2 = IndexDescriptorFactory.of( 2, 2 );
 
         IndexPopulator populator1 = createIndexPopulator();
         IndexPopulator populator2 = createIndexPopulator();
@@ -176,8 +177,8 @@ public class MultipleIndexPopulatorTest
     @Test
     public void testFailByPopulationRemovesPopulator() throws IOException
     {
-        IndexDescriptor descriptor1 = new IndexDescriptor( 1, 1 );
-        IndexDescriptor descriptor2 = new IndexDescriptor( 2, 2 );
+        IndexDescriptor descriptor1 = IndexDescriptorFactory.of( 1, 1 );
+        IndexDescriptor descriptor2 = IndexDescriptorFactory.of( 2, 2 );
 
         IndexPopulator populator1 = createIndexPopulator();
         IndexPopulator populator2 = createIndexPopulator();
@@ -196,7 +197,7 @@ public class MultipleIndexPopulatorTest
     @Test
     public void testFailByNonExistingPopulation() throws IOException
     {
-        IndexDescriptor descriptor = new IndexDescriptor( 1, 1 );
+        IndexDescriptor descriptor = IndexDescriptorFactory.of( 1, 1 );
         IndexPopulation nonExistingPopulation = mock( IndexPopulation.class );
 
         IndexPopulator populator = createIndexPopulator();

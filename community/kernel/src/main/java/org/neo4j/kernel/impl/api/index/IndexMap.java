@@ -24,7 +24,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.function.BiConsumer;
 
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
 
 /**
  * Bundles various mappings to IndexProxy. Used by IndexingService via IndexMapReference.

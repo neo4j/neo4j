@@ -26,7 +26,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.function.IntSupplier;
 
@@ -35,7 +35,8 @@ import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
@@ -168,6 +169,9 @@ public class LabelTransactionStateTest
                 labels( 2, 1, 3 ) );
 
         // WHEN
+        List<IndexDescriptor> indexes = Collections.singletonList(
+                IndexDescriptorFactory.of( 2, 2 ) );
+        when( store.indexesGetForLabel( 2 ) ).thenReturn( indexes.iterator() );
         txContext.nodeAddLabel( state, 2, 2 );
 
         // THEN

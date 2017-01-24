@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.exceptions.schema;
 
+import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 
@@ -39,10 +40,11 @@ public class RelationshipPropertyExistenceConstraintVerificationFailedKernelExce
     @Override
     public String getUserMessage( TokenNameLookup tokenNameLookup )
     {
+        RelationshipPropertyDescriptor descriptor = constraint.descriptor();
         return String.format( "Relationship(%s) with type `%s` has no value for property `%s`",
                 relationshipId,
-                tokenNameLookup.relationshipTypeGetName( constraint.relationshipType() ),
-                tokenNameLookup.propertyKeyGetName( constraint.propertyKey() ) );
+                tokenNameLookup.relationshipTypeGetName( descriptor.getRelationshipTypeId() ),
+                tokenNameLookup.propertyKeyGetName( descriptor.getPropertyKeyId() ) );
     }
 
     @Override

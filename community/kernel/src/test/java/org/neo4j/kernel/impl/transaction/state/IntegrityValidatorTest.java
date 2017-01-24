@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.state;
 
 import org.junit.Test;
 
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.exceptions.schema.UniquenessConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -47,7 +48,7 @@ public class IntegrityValidatorTest
         doThrow( new UniquenessConstraintVerificationFailedKernelException( null, new RuntimeException() ) )
                 .when( indexes ).validateIndex( 2L );
 
-        UniquePropertyConstraintRule record = uniquenessConstraintRule( 1L, 1, 1, 2L );
+        UniquePropertyConstraintRule record = uniquenessConstraintRule( 1L, new NodePropertyDescriptor( 1, 1 ), 2L );
 
         // When
         try

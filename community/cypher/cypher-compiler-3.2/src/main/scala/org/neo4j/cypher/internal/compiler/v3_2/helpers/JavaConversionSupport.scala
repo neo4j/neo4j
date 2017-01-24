@@ -22,7 +22,10 @@ package org.neo4j.cypher.internal.compiler.v3_2.helpers
 import org.neo4j.collection.primitive.{PrimitiveIntIterator, PrimitiveLongIterator}
 import org.neo4j.cypher.internal.frontend.v3_2.EntityNotFoundException
 
+import scala.collection.JavaConversions._
+
 object JavaConversionSupport {
+
   def asScala(iterator: PrimitiveLongIterator): Iterator[Long] = new Iterator[Long] {
     def hasNext = iterator.hasNext
     def next() = iterator.next()

@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{Cardinality, Sel
 import org.neo4j.cypher.internal.compiler.v2_3.spi.{GraphStatistics, StatisticsCompletingGraphStatistics}
 import org.neo4j.cypher.internal.frontend.v2_3.{LabelId, NameId, PropertyKeyId, RelTypeId}
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException
-import org.neo4j.kernel.api.index.IndexDescriptor
-import org.neo4j.kernel.api.{Statement => KernelStatement, ReadOperations}
+import org.neo4j.kernel.api.ReadOperations
+import org.neo4j.kernel.api.schema.{IndexDescriptorFactory, NodePropertyDescriptor}
 
 object TransactionBoundGraphStatistics {
   def apply(ops: ReadOperations) = new StatisticsCompletingGraphStatistics(new BaseTransactionBoundGraphStatistics(ops))
@@ -35,7 +35,7 @@ object TransactionBoundGraphStatistics {
 
     def indexSelectivity(label: LabelId, property: PropertyKeyId): Option[Selectivity] =
       try {
-        val indexDescriptor = new IndexDescriptor( label, property )
+        val indexDescriptor = IndexDescriptorFactory.of( label, property )
         val labeledNodes = operations.countsForNodeWithoutTxState( label ).toDouble
 
         // Probability of any node with the given label, to have a property with a given value
@@ -51,7 +51,7 @@ object TransactionBoundGraphStatistics {
 
     def indexPropertyExistsSelectivity(label: LabelId, property: PropertyKeyId): Option[Selectivity] =
       try {
-        val indexDescriptor = new IndexDescriptor( label, property )
+        val indexDescriptor = IndexDescriptorFactory.of( label, property )
         val labeledNodes = operations.countsForNodeWithoutTxState( label ).toDouble
 
         // Probability of any node with the given label, to have a given property

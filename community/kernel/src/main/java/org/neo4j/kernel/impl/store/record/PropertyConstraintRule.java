@@ -20,15 +20,19 @@
 package org.neo4j.kernel.impl.store.record;
 
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
+import org.neo4j.kernel.api.schema.EntityPropertyDescriptor;
 
 public abstract class PropertyConstraintRule extends AbstractSchemaRule
 {
-    PropertyConstraintRule( long id, Kind kind )
+    PropertyConstraintRule( long id, Kind kind, EntityPropertyDescriptor descriptor )
     {
-        super( id, kind );
+        super( id, kind, descriptor );
     }
 
     public abstract PropertyConstraint toConstraint();
 
-    public abstract boolean containsPropertyKeyId( int propertyKeyId );
+    public boolean containsPropertyKeyId( int propertyKeyId )
+    {
+        return propertyKeyId == descriptor.getPropertyKeyId();
+    }
 }

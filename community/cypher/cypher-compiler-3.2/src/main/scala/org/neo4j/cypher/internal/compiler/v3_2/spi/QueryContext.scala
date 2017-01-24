@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
 import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
 import org.neo4j.kernel.api.constraints.{NodePropertyExistenceConstraint, RelationshipPropertyExistenceConstraint, UniquenessConstraint}
-import org.neo4j.kernel.api.index.IndexDescriptor
+import org.neo4j.cypher.internal.compiler.v3_2.IndexDescriptor
 
 import scala.collection.Iterator
 
@@ -83,9 +83,9 @@ trait QueryContext extends TokenContext {
 
   def getOrCreatePropertyKeyId(propertyKey: String): Int
 
-  def addIndexRule(labelId: Int, propertyKeyId: Int): IdempotentResult[IndexDescriptor]
+  def addIndexRule(descriptor: IndexDescriptor): IdempotentResult[IndexDescriptor]
 
-  def dropIndexRule(labelId: Int, propertyKeyId: Int)
+  def dropIndexRule(descriptor: IndexDescriptor)
 
   def indexSeek(index: IndexDescriptor, value: Any): Iterator[Node]
 
@@ -103,9 +103,9 @@ trait QueryContext extends TokenContext {
 
   def getOrCreateFromSchemaState[K, V](key: K, creator: => V): V
 
-  def createUniqueConstraint(labelId: Int, propertyKeyId: Int): IdempotentResult[UniquenessConstraint]
+  def createUniqueConstraint(descriptor: IndexDescriptor): IdempotentResult[UniquenessConstraint]
 
-  def dropUniqueConstraint(labelId: Int, propertyKeyId: Int)
+  def dropUniqueConstraint(descriptor: IndexDescriptor)
 
   def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): IdempotentResult[NodePropertyExistenceConstraint]
 

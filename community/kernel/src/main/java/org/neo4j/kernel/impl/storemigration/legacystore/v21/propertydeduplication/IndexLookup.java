@@ -63,13 +63,21 @@ class IndexLookup implements AutoCloseable
             if ( schemaRule.getKind() == SchemaRule.Kind.INDEX_RULE )
             {
                 IndexRule rule = (IndexRule) schemaRule;
-                List<IndexRule> ruleList = indexRuleIndex.get( rule.getPropertyKey() );
-                if ( ruleList == null )
+                if ( rule.descriptor().isComposite() )
                 {
-                    ruleList = new LinkedList<>();
-                    indexRuleIndex.put( rule.getPropertyKey(), ruleList );
+                    throw new UnsupportedOperationException( "Composite Index not yet supported" );
                 }
-                ruleList.add( rule );
+                else
+                {
+                    int propertyKey = rule.descriptor().getPropertyKeyId();
+                    List<IndexRule> ruleList = indexRuleIndex.get( propertyKey );
+                    if ( ruleList == null )
+                    {
+                        ruleList = new LinkedList<>();
+                        indexRuleIndex.put( propertyKey, ruleList );
+                    }
+                    ruleList.add( rule );
+                }
             }
         }
         return indexRuleIndex;
@@ -94,9 +102,19 @@ class IndexLookup implements AutoCloseable
         {
             for ( IndexRule indexRule : indexRules )
             {
-                if ( indexRule.getPropertyKey() == propertyKeyId && indexRule.getLabel() == labelId  )
+                if ( indexRule.getLabel() == labelId )
                 {
-                    return indexRule;
+                    if ( indexRule.descriptor().isComposite() )
+                    {
+                        throw new UnsupportedOperationException( "Composite Index not yet supported" );
+                    }
+                    else
+                    {
+                        if ( indexRule.descriptor().getPropertyKeyId() == propertyKeyId )
+                        {
+                            return indexRule;
+                        }
+                    }
                 }
             }
         }

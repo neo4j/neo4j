@@ -19,19 +19,20 @@
  */
 package org.neo4j.kernel.impl.store.counts.keys;
 
+import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.api.CountsVisitor;
 
 public final class IndexStatisticsKey extends IndexKey
 {
-    IndexStatisticsKey( int labelId, int propertyKeyId )
+    IndexStatisticsKey( IndexDescriptor descriptor )
     {
-        super( labelId, propertyKeyId, CountsKeyType.INDEX_STATISTICS );
+        super( descriptor, CountsKeyType.INDEX_STATISTICS );
     }
 
     @Override
     public void accept( CountsVisitor visitor, long updates, long size )
     {
-        visitor.visitIndexStatistics( labelId(), propertyKeyId(), updates, size );
+        visitor.visitIndexStatistics( descriptor(), updates, size );
     }
 
     @Override
@@ -39,14 +40,7 @@ public final class IndexStatisticsKey extends IndexKey
     {
         if ( other instanceof IndexStatisticsKey )
         {
-            IndexStatisticsKey
-                    that = (IndexStatisticsKey) other;
-            int cmp = this.labelId() - that.labelId();
-            if ( cmp == 0 )
-            {
-                cmp = this.propertyKeyId() - that.propertyKeyId();
-            }
-            return cmp;
+            return super.compareTo( other );
         }
         return recordType().ordinal() - other.recordType().ordinal();
     }

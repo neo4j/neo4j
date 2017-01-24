@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.store.counts.keys;
 
+import org.neo4j.kernel.api.schema.IndexDescriptor;
+
 public class CountsKeyFactory
 {
     public static NodeKey nodeKey( int labelId )
@@ -31,13 +33,13 @@ public class CountsKeyFactory
         return new RelationshipKey( startLabelId, typeId, endLabelId );
     }
 
-    public static IndexStatisticsKey indexStatisticsKey( int labelId, int propertyKeyId )
+    public static IndexStatisticsKey indexStatisticsKey( IndexDescriptor descriptor )
     {
-        return new IndexStatisticsKey( labelId, propertyKeyId );
+        return new IndexStatisticsKey( descriptor );
     }
 
-    public static IndexSampleKey indexSampleKey( int labelId, int propertyKeyId )
+    public static IndexSampleKey indexSampleKey( IndexDescriptor descriptor )
     {
-        return new IndexSampleKey( labelId, propertyKeyId );
+        return new IndexSampleKey( descriptor );
     }
 }

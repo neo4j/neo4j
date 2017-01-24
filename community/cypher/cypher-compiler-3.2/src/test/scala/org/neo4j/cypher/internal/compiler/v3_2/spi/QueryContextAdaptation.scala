@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
 import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
 import org.neo4j.kernel.api.constraints.{NodePropertyExistenceConstraint, RelationshipPropertyExistenceConstraint, UniquenessConstraint}
-import org.neo4j.kernel.api.index.IndexDescriptor
+import org.neo4j.cypher.internal.compiler.v3_2.IndexDescriptor
 
 trait QueryContextAdaptation {
   self: QueryContext =>
@@ -43,7 +43,8 @@ trait QueryContextAdaptation {
 
   override def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int): Unit = ???
 
-  override def createUniqueConstraint(labelId: Int, propertyKeyId: Int): IdempotentResult[UniquenessConstraint] = ???
+  override def createUniqueConstraint(descriptor: IndexDescriptor):
+  IdempotentResult[UniquenessConstraint] = ???
 
   override def getOrCreateRelTypeId(relTypeName: String): Int = ???
 
@@ -79,7 +80,7 @@ trait QueryContextAdaptation {
 
   override def getLabelsForNode(node: Long): scala.Iterator[Int] = ???
 
-  override def dropUniqueConstraint(labelId: Int, propertyKeyId: Int): Unit = ???
+  override def dropUniqueConstraint(descriptor: IndexDescriptor): Unit = ???
 
   // Check if a runtime value is a node, relationship, path or some such value returned from
   override def isGraphKernelResultValue(v: Any): Boolean = ???
@@ -112,7 +113,7 @@ trait QueryContextAdaptation {
 
   override def relationshipEndNode(rel: Relationship): Node = ???
 
-  override def dropIndexRule(labelId: Int, propertyKeyId: Int): Unit = ???
+  override def dropIndexRule(descriptor: IndexDescriptor): Unit = ???
 
   override def lockNodes(nodeIds: Long*): Unit = ???
 
@@ -145,7 +146,7 @@ trait QueryContextAdaptation {
 
   override def nodeCountByCountStore(labelId: Int): Long = ???
 
-  override def addIndexRule(labelId: Int, propertyKeyId: Int): IdempotentResult[IndexDescriptor] = ???
+  override def addIndexRule(descriptor: IndexDescriptor): IdempotentResult[IndexDescriptor] = ???
 
   override def getOptRelTypeId(relType: String): Option[Int] = ???
 

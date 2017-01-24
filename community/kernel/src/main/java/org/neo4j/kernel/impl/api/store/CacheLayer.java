@@ -20,13 +20,14 @@
 package org.neo4j.kernel.impl.api.store;
 
 import java.util.Iterator;
-import java.util.function.Function;
 import java.util.function.Predicate;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.function.Predicates;
 import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
+import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
@@ -37,7 +38,8 @@ import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.store.record.IndexRule;
@@ -59,13 +61,6 @@ import org.neo4j.storageengine.api.schema.SchemaRule;
  */
 public class CacheLayer implements StoreReadLayer
 {
-    private static final Function<? super SchemaRule, IndexDescriptor> TO_INDEX_RULE =
-            from -> {
-                IndexRule rule = (IndexRule) from;
-                // We know that we only have int range of property key ids.
-                return new IndexDescriptor( rule.getLabel(), rule.getPropertyKey() );
-            };
-
     private final SchemaCache schemaCache;
     private final DiskLayer diskLayer;
 
@@ -110,7 +105,7 @@ public class CacheLayer implements StoreReadLayer
             final SchemaRule.Kind kind )
     {
         Iterator<SchemaRule> filteredRules = Iterators.filter( item -> item.getKind() == kind, rules.iterator() );
-        return Iterators.map( TO_INDEX_RULE, filteredRules );
+        return Iterators.map( from -> IndexDescriptorFactory.of( (IndexRule) from ), filteredRules );
     }
 
     @Override
@@ -145,7 +140,7 @@ public class CacheLayer implements StoreReadLayer
             if ( rule instanceof IndexSchemaRule )
             {
                 IndexSchemaRule indexRule = (IndexSchemaRule) rule;
-                if ( filter.test( indexRule.getKind() ) && indexRule.getPropertyKey() == index.getPropertyKeyId() )
+                if ( filter.test( indexRule.getKind() ) && indexRule.matches( index.descriptor() ))
                 {
                     return indexRule;
                 }
@@ -173,9 +168,9 @@ public class CacheLayer implements StoreReadLayer
     }
 
     @Override
-    public Iterator<NodePropertyConstraint> constraintsGetForLabelAndPropertyKey( int labelId, int propertyKeyId )
+    public Iterator<NodePropertyConstraint> constraintsGetForLabelAndPropertyKey( NodePropertyDescriptor descriptor )
     {
-        return schemaCache.constraintsForLabelAndProperty( labelId, propertyKeyId );
+        return schemaCache.constraintsForLabelAndProperty( descriptor );
     }
 
     @Override
@@ -185,10 +180,10 @@ public class CacheLayer implements StoreReadLayer
     }
 
     @Override
-    public Iterator<RelationshipPropertyConstraint> constraintsGetForRelationshipTypeAndPropertyKey( int typeId,
-            int propertyKeyId )
+    public Iterator<RelationshipPropertyConstraint> constraintsGetForRelationshipTypeAndPropertyKey(
+            RelationshipPropertyDescriptor descriptor )
     {
-        return schemaCache.constraintsForRelationshipTypeAndProperty( typeId, propertyKeyId );
+        return schemaCache.constraintsForRelationshipTypeAndProperty( descriptor );
     }
 
     @Override
@@ -210,9 +205,9 @@ public class CacheLayer implements StoreReadLayer
     }
 
     @Override
-    public IndexDescriptor indexGetForLabelAndPropertyKey( int labelId, int propertyKey )
+    public IndexDescriptor indexGetForLabelAndPropertyKey( NodePropertyDescriptor descriptor )
     {
-        return schemaCache.indexDescriptor( labelId, propertyKey );
+        return schemaCache.indexDescriptor( descriptor );
     }
 
     @Override

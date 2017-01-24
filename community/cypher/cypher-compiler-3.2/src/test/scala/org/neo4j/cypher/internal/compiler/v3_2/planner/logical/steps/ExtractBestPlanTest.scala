@@ -21,16 +21,15 @@ package org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps
 
 import org.mockito.Matchers._
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.compiler.v3_2.RecordingNotificationLogger
 import org.neo4j.cypher.internal.compiler.v3_2.planner._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_2.spi.PlanContext
+import org.neo4j.cypher.internal.compiler.v3_2.{IndexDescriptor, RecordingNotificationLogger}
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.notification.{IndexHintUnfulfillableNotification, JoinHintUnfulfillableNotification}
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_2.{IndexHintException, JoinHintException, SemanticDirection}
 import org.neo4j.cypher.internal.ir.v3_2.{IdName, PatternRelationship, VarPatternLength}
-import org.neo4j.kernel.api.index.IndexDescriptor
 
 class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -53,7 +52,9 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
   private def getPlanContext(hasIndex: Boolean): PlanContext = {
 
     val planContext = newMockedPlanContext
-    val indexDescriptor: Option[IndexDescriptor] = if (hasIndex) Option(new IndexDescriptor(0,0)) else None
+    val indexDescriptor: Option[IndexDescriptor] =
+      if (hasIndex) Option(IndexDescriptor(0, 0))
+      else None
 
     when(planContext.getIndexRule(anyString(),anyString())).thenReturn(indexDescriptor)
     when(planContext.getUniqueIndexRule(anyString(),anyString())).thenReturn(None)

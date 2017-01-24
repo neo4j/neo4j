@@ -29,9 +29,9 @@ import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.security.AnonymousContext;
-import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.test.rule.RandomRule;
@@ -144,15 +144,15 @@ public class IndexPopulationFlipRaceIT
             int keyAId = statement.readOperations().propertyKeyGetForName( keyA( i ) );
             int labelBId = statement.readOperations().labelGetForName( labelB( i ).name() );
             int keyBId = statement.readOperations().propertyKeyGetForName( keyB( i ) );
+            IndexDescriptor indexA = IndexDescriptorFactory.of( labelAId, keyAId );
+            IndexDescriptor indexB = IndexDescriptorFactory.of( labelBId, keyBId );
 
             for ( int j = 0; j < NODES_PER_INDEX; j++ )
             {
                 long nodeAId = data.first()[j];
-                assertEquals( 1, statement.readOperations().nodesCountIndexed(
-                        new IndexDescriptor( labelAId, keyAId ), nodeAId, nodeAId ) );
+                assertEquals( 1, statement.readOperations().nodesCountIndexed( indexA, nodeAId, nodeAId ) );
                 long nodeBId = data.other()[j];
-                assertEquals( 1, statement.readOperations().nodesCountIndexed(
-                        new IndexDescriptor( labelBId, keyBId ), nodeBId, nodeBId ) );
+                assertEquals( 1, statement.readOperations().nodesCountIndexed( indexB, nodeBId, nodeBId ) );
             }
         }
     }

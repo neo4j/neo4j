@@ -42,7 +42,7 @@ public class NodePropertyExistenceConstraintVerificationFailedKernelException
         return String.format( "Node(%s) with label `%s` has no value for property `%s`",
                 nodeId,
                 tokenNameLookup.labelGetName( constraint.label() ),
-                tokenNameLookup.propertyKeyGetName( constraint.propertyKey() ) );
+                constraint.descriptor().propertyNameText( tokenNameLookup ) );
     }
 
     @Override

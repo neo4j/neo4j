@@ -23,6 +23,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -34,7 +35,7 @@ import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.UniquenessConstraintVerificationFailedKernelException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
@@ -58,18 +59,18 @@ public class ConstraintIndexCreator
      * You MUST hold a schema write lock before you call this method.
      */
     public long createUniquenessConstraintIndex( KernelStatement state, SchemaReadOperations schema,
-            int labelId, int propertyKeyId )
+            NodePropertyDescriptor descriptor )
             throws ConstraintVerificationFailedKernelException, TransactionFailureException,
             CreateConstraintFailureException, DropIndexFailureException
     {
-        IndexDescriptor descriptor = createConstraintIndex( labelId, propertyKeyId );
-        UniquenessConstraint constraint = new UniquenessConstraint( labelId, propertyKeyId );
-
+        UniquenessConstraint constraint = new UniquenessConstraint( descriptor );
+        IndexDescriptor index = createConstraintIndex( constraint );
         boolean success = false;
         try
         {
-            long indexId = schema.indexGetCommittedId( state, descriptor, CONSTRAINT );
-            awaitIndexPopulation( constraint, indexId );
+            long indexId = schema.indexGetCommittedId( state, index, CONSTRAINT );
+
+            awaitConstrainIndexPopulation( constraint, indexId );
             success = true;
             return indexId;
         }
@@ -86,7 +87,7 @@ public class ConstraintIndexCreator
         {
             if ( !success )
             {
-                dropUniquenessConstraintIndex( descriptor );
+                dropUniquenessConstraintIndex( index );
             }
         }
     }
@@ -113,7 +114,7 @@ public class ConstraintIndexCreator
         }
     }
 
-    private void awaitIndexPopulation( UniquenessConstraint constraint, long indexId )
+    private void awaitConstrainIndexPopulation( UniquenessConstraint constraint, long indexId )
             throws InterruptedException, ConstraintVerificationFailedKernelException
     {
         try
@@ -140,7 +141,7 @@ public class ConstraintIndexCreator
         }
     }
 
-    public IndexDescriptor createConstraintIndex( final int labelId, final int propertyKeyId )
+    public IndexDescriptor createConstraintIndex( final UniquenessConstraint constraint )
     {
         try ( KernelTransaction transaction =
                       kernelSupplier.get().newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
@@ -150,13 +151,12 @@ public class ConstraintIndexCreator
             // write lock. It is assumed that the transaction that invoked this "inner" transaction
             // holds a schema write lock, and that it will wait for this inner transaction to do its
             // work.
-            IndexDescriptor descriptor = new IndexDescriptor( labelId, propertyKeyId );
             // TODO (Ben+Jake): The Transactor is really part of the kernel internals, so it needs access to the
             // internal implementation of Statement. However it is currently used by the external
             // RemoveOrphanConstraintIndexesOnStartup job. This needs revisiting.
-            ((KernelStatement) statement).txState().constraintIndexRuleDoAdd( descriptor );
+            ((KernelStatement) statement).txState().constraintIndexRuleDoAdd( constraint.indexDescriptor() );
             transaction.success();
-            return descriptor;
+            return constraint.indexDescriptor();
         }
         catch ( TransactionFailureException e )
         {

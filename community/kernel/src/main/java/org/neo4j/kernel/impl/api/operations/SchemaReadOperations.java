@@ -22,13 +22,15 @@ package org.neo4j.kernel.impl.api.operations;
 import java.util.Iterator;
 import java.util.function.Predicate;
 
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
+import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
@@ -39,7 +41,7 @@ public interface SchemaReadOperations
     /**
      * Returns the descriptor for the given labelId and propertyKey.
      */
-    IndexDescriptor indexGetForLabelAndPropertyKey( KernelStatement state, int labelId, int propertyKey );
+    IndexDescriptor indexGetForLabelAndPropertyKey( KernelStatement state, NodePropertyDescriptor descriptor );
 
     /**
      * Get all indexes for a label.
@@ -88,10 +90,11 @@ public interface SchemaReadOperations
     String indexGetFailure( Statement state, IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /**
-     * Get all constraints applicable to label and propertyKey. There are only {@link NodePropertyConstraint}
+     * Get all constraints applicable to label and propertyKeys. There are only {@link NodePropertyConstraint}
      * for the time being.
      */
-    Iterator<NodePropertyConstraint> constraintsGetForLabelAndPropertyKey( KernelStatement state, int labelId, int propertyKeyId );
+    Iterator<NodePropertyConstraint> constraintsGetForLabelAndPropertyKey( KernelStatement state,
+            NodePropertyDescriptor descriptor );
 
     /**
      * Get all constraints applicable to label. There are only {@link NodePropertyConstraint}
@@ -104,7 +107,7 @@ public interface SchemaReadOperations
      * There are only {@link RelationshipPropertyConstraint} for the time being.
      */
     Iterator<RelationshipPropertyConstraint> constraintsGetForRelationshipTypeAndPropertyKey( KernelStatement state,
-            int relTypeId, int propertyKeyId );
+            RelationshipPropertyDescriptor descriptor );
 
     /**
      * Get all constraints applicable to relationship type. There are only {@link RelationshipPropertyConstraint}

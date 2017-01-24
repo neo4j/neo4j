@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.exceptions.schema;
 
+import org.neo4j.kernel.api.schema.EntityPropertyDescriptor;
 import org.neo4j.kernel.api.exceptions.Status;
 
 public abstract class DuplicateSchemaRuleException extends SchemaRuleException
@@ -26,9 +27,9 @@ public abstract class DuplicateSchemaRuleException extends SchemaRuleException
     protected static final String UNIQUE_CONSTRAINT_PREFIX = "uniqueness constraints";
     protected static final String CONSTRAINT_PREFIX = "constraints";
 
-    protected DuplicateSchemaRuleException( String messageTemplate, int ruleEntityId, int propertyKeyId, String
+    protected DuplicateSchemaRuleException( String messageTemplate, EntityPropertyDescriptor descriptor, String
             messagePrefix )
     {
-        super( Status.Schema.SchemaRuleDuplicateFound, messageTemplate, ruleEntityId, propertyKeyId, messagePrefix );
+        super( Status.Schema.SchemaRuleDuplicateFound, messageTemplate, descriptor, messagePrefix );
     }
 }

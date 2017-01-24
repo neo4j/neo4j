@@ -33,7 +33,10 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
@@ -94,11 +97,10 @@ public class IndexStatisticsIT
         awaitIndexOnline( indexAliensBySpecimen() );
 
         // where ALIEN and SPECIMEN are both the first ids of their kind
-        int labelId = labelId( ALIEN );
-        int pkId = pkId( SPECIMEN );
+        IndexDescriptor index = IndexDescriptorFactory.of( labelId( ALIEN ), pkId( SPECIMEN ) );
 
         // for which we don't have index counts
-        resetIndexCounts( labelId, pkId );
+        resetIndexCounts( index );
 
         // when we shutdown the database and restart it
         restart();
@@ -108,11 +110,11 @@ public class IndexStatisticsIT
         assertEqualRegisters(
                 "Unexpected updates and size for the index",
                 newDoubleLongRegister( 0, 32 ),
-                tracker.indexUpdatesAndSize( labelId, pkId, newDoubleLongRegister() ) );
+                tracker.indexUpdatesAndSize( index, newDoubleLongRegister() ) );
         assertEqualRegisters(
             "Unexpected sampling result",
             newDoubleLongRegister( 16, 32 ),
-            tracker.indexSample( labelId, pkId, newDoubleLongRegister() )
+            tracker.indexSample( index, newDoubleLongRegister() )
         );
 
         // and also
@@ -187,12 +189,12 @@ public class IndexStatisticsIT
         }
     }
 
-    private void resetIndexCounts( int labelId, int pkId )
+    private void resetIndexCounts( IndexDescriptor index )
     {
         try ( CountsAccessor.IndexStatsUpdater updater = neoStores().getCounts().updateIndexCounts() )
         {
-            updater.replaceIndexSample( labelId, pkId, 0, 0 );
-            updater.replaceIndexUpdateAndSize( labelId, pkId, 0, 0 );
+            updater.replaceIndexSample( index, 0, 0 );
+            updater.replaceIndexUpdateAndSize( index, 0, 0 );
         }
     }
 

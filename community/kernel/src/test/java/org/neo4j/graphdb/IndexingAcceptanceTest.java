@@ -31,11 +31,13 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.mockito.matcher.Neo4jMatchers;
@@ -602,10 +604,8 @@ public class IndexingAcceptanceTest
     private IndexDescriptor indexDescriptor(ReadOperations readOperations, IndexDefinition index)
             throws SchemaRuleNotFoundException
     {
-        int labelId = readOperations.labelGetForName( index.getLabel().name() );
-        String propertyName = index.getPropertyKeys().iterator().next();
-        int propertyId = readOperations.propertyKeyGetForName( propertyName );
-        return readOperations.indexGetForLabelAndPropertyKey( labelId, propertyId );
+        NodePropertyDescriptor descriptor = IndexDescriptorFactory.getTokens( readOperations, index );
+        return readOperations.indexGetForLabelAndPropertyKey( descriptor );
     }
 
     private Statement getStatement( GraphDatabaseAPI db )

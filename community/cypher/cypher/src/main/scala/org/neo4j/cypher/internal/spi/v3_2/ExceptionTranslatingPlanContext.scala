@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.spi.v3_2
 import org.neo4j.cypher.internal.compiler.v3_2.InternalNotificationLogger
 import org.neo4j.cypher.internal.compiler.v3_2.spi._
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
-import org.neo4j.kernel.api.index.IndexDescriptor
+import org.neo4j.cypher.internal.compiler.v3_2.IndexDescriptor
 
 class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext with ExceptionTranslationSupport {
 

@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.commands._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
+import org.neo4j.cypher.internal.compiler.v3_2.IndexDescriptor
 
 class ConstraintOperationPipe(op: PropertyConstraintOperation, keyToken: KeyToken, propertyKey: KeyToken)
                              (val id: Id = new Id)(implicit val monitor: PipeMonitor) extends Pipe {
@@ -31,8 +32,8 @@ class ConstraintOperationPipe(op: PropertyConstraintOperation, keyToken: KeyToke
     val propertyKeyId = propertyKey.getOrCreateId(state.query)
 
     op match {
-      case _: CreateUniqueConstraint => state.query.createUniqueConstraint(keyTokenId, propertyKeyId)
-      case _: DropUniqueConstraint   => state.query.dropUniqueConstraint(keyTokenId, propertyKeyId)
+      case _: CreateUniqueConstraint => state.query.createUniqueConstraint(IndexDescriptor(keyTokenId, propertyKeyId))
+      case _: DropUniqueConstraint   => state.query.dropUniqueConstraint(IndexDescriptor(keyTokenId, propertyKeyId))
       case _: CreateNodePropertyExistenceConstraint => state.query.createNodePropertyExistenceConstraint(keyTokenId, propertyKeyId)
       case _: DropNodePropertyExistenceConstraint => state.query.dropNodePropertyExistenceConstraint(keyTokenId, propertyKeyId)
       case _: CreateRelationshipPropertyExistenceConstraint => state.query.createRelationshipPropertyExistenceConstraint(keyTokenId, propertyKeyId)

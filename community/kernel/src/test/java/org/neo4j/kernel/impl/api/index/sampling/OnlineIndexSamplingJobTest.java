@@ -22,9 +22,11 @@ package org.neo4j.kernel.impl.api.index.sampling;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexConfiguration;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.logging.LogProvider;
@@ -74,7 +76,7 @@ public class OnlineIndexSamplingJobTest
     private final LogProvider logProvider = NullLogProvider.getInstance();
     private final IndexProxy indexProxy = mock( IndexProxy.class );
     private final IndexStoreView indexStoreView = mock( IndexStoreView.class );
-    private final IndexDescriptor indexDescriptor = new IndexDescriptor( 1, 2 );
+    private final IndexDescriptor indexDescriptor = IndexDescriptorFactory.of( 1, 2 );
     private final IndexReader indexReader = mock( IndexReader.class );
     private final IndexSampler indexSampler = mock( IndexSampler.class );
 

@@ -20,58 +20,60 @@
 package org.neo4j.kernel.impl.store.record;
 
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 
+import org.neo4j.kernel.api.schema.NodeMultiPropertyDescriptor;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
 
 public class UniquePropertyConstraintRule extends NodePropertyConstraintRule
 {
-    private final int[] propertyKeyIds;
     private final long ownedIndexRule;
 
-    /** We currently only support uniqueness constraints on a single property. */
-    public static UniquePropertyConstraintRule uniquenessConstraintRule( long id, int labelId, int propertyKeyId,
+    public static UniquePropertyConstraintRule uniquenessConstraintRule( long id, NodePropertyDescriptor descriptor,
                                                                          long ownedIndexRule )
     {
-        return new UniquePropertyConstraintRule( id, labelId, new int[] {propertyKeyId}, ownedIndexRule );
+        return new UniquePropertyConstraintRule( id, descriptor, ownedIndexRule );
     }
 
     public static UniquePropertyConstraintRule readUniquenessConstraintRule( long id, int labelId, ByteBuffer buffer )
     {
-        return new UniquePropertyConstraintRule( id, labelId, readPropertyKeys( buffer ), readOwnedIndexRule( buffer ) );
+        return new UniquePropertyConstraintRule( id, readDescriptor( labelId, buffer ), readOwnedIndexRule( buffer ) );
     }
 
-    private UniquePropertyConstraintRule( long id, int labelId, int[] propertyKeyIds, long ownedIndexRule )
+    private UniquePropertyConstraintRule( long id, NodePropertyDescriptor descriptor, long ownedIndexRule )
     {
-        super( id, labelId, Kind.UNIQUENESS_CONSTRAINT );
+        super( id, descriptor, Kind.UNIQUENESS_CONSTRAINT );
         this.ownedIndexRule = ownedIndexRule;
-        assert propertyKeyIds.length == 1; // Only uniqueness of a single property supported for now
-        this.propertyKeyIds = propertyKeyIds;
+        assert !descriptor.isComposite(); // Only uniqueness of a single property supported for now
     }
 
     @Override
     public String toString()
     {
-        return "UniquePropertyConstraintRule[id=" + id + ", label=" + label + ", kind=" + kind +
-               ", propertyKeys=" + Arrays.toString( propertyKeyIds ) + ", ownedIndex=" + ownedIndexRule + "]";
+        return "UniquePropertyConstraintRule[id=" + id + ", label=" + descriptor().getLabelId() + ", kind=" + kind +
+               ", propertyKeys=" + descriptor.propertyIdText() + ", ownedIndex=" + ownedIndexRule + "]";
     }
 
     @Override
     public int length()
     {
+        //TODO: Change format to rather use short/int for length/propertyId, much like count store does
+        int propertyCount = descriptor().isComposite() ? descriptor.getPropertyKeyIds().length : 1;
         return 4 /* label */ +
                1 /* kind id */ +
                1 +  /* the number of properties that form a unique tuple */
-               8 * propertyKeyIds.length + /* the property keys themselves */
+               8 * propertyCount + /* the property keys themselves */
                8; /* owned index rule */
     }
 
     @Override
     public void serialize( ByteBuffer target )
     {
-        target.putInt( label );
+        int[] propertyKeyIds =
+                descriptor().isComposite() ? descriptor.getPropertyKeyIds() : new int[]{descriptor.getPropertyKeyId()};
+        target.putInt( descriptor().getLabelId() );
         target.put( kind.id() );
         target.put( (byte) propertyKeyIds.length );
         for ( int propertyKeyId : propertyKeyIds )
@@ -81,39 +83,26 @@ public class UniquePropertyConstraintRule extends NodePropertyConstraintRule
         target.putLong( ownedIndexRule );
     }
 
-    private static int[] readPropertyKeys( ByteBuffer buffer )
+    private static NodePropertyDescriptor readDescriptor(int labelId, ByteBuffer buffer)
     {
         int[] keys = new int[buffer.get()];
-        for ( int i = 0; i < keys.length; i++ )
+        if ( keys.length > 1 )
         {
-            keys[i] = safeCastLongToInt( buffer.getLong() );
+            for ( int i = 0; i < keys.length; i++ )
+            {
+                keys[i] = safeCastLongToInt( buffer.getLong() );
+            }
+            return new NodeMultiPropertyDescriptor( labelId, keys );
         }
-        return keys;
+        else
+        {
+            return new NodePropertyDescriptor( labelId, safeCastLongToInt( buffer.getLong() ) );
+        }
     }
 
     private static long readOwnedIndexRule( ByteBuffer buffer )
     {
         return buffer.getLong();
-    }
-
-    @Override
-    public boolean containsPropertyKeyId( int propertyKeyId )
-    {
-        for ( int keyId : propertyKeyIds )
-        {
-            if ( keyId == propertyKeyId )
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    // This method exists as long as only single property keys are supported
-    public int getPropertyKey()
-    {
-        // Property key "singleness" is checked elsewhere, in the constructor and when deserializing.
-        return propertyKeyIds[0];
     }
 
     public long getOwnedIndex()
@@ -124,30 +113,7 @@ public class UniquePropertyConstraintRule extends NodePropertyConstraintRule
     @Override
     public UniquenessConstraint toConstraint()
     {
-        return new UniquenessConstraint( getLabel(), getPropertyKey() );
+        return new UniquenessConstraint( descriptor() );
     }
 
-    @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
-            return true;
-        }
-        if ( o == null || getClass() != o.getClass() )
-        {
-            return false;
-        }
-        if ( !super.equals( o ) )
-        {
-            return false;
-        }
-        return Arrays.equals( propertyKeyIds, ((UniquePropertyConstraintRule) o).propertyKeyIds );
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return 31 * super.hashCode() + Arrays.hashCode( propertyKeyIds );
-    }
 }

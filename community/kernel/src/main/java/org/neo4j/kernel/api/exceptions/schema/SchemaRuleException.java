@@ -19,23 +19,23 @@
  */
 package org.neo4j.kernel.api.exceptions.schema;
 
+import org.neo4j.kernel.api.schema.EntityPropertyDescriptor;
 import org.neo4j.kernel.api.exceptions.Status;
 
 import static java.lang.String.format;
 
 public class SchemaRuleException extends SchemaKernelException
 {
-    protected final int ruleEntityId;
-    protected final int propertyKeyId;
+    protected final EntityPropertyDescriptor descriptor;
     protected final String messageTemplate;
     protected final String messagePrefix;
 
-    protected SchemaRuleException( Status status, String messageTemplate, int ruleEntityId, int propertyKeyId,
-            String messagePrefix)
+    protected SchemaRuleException( Status status, String messageTemplate, EntityPropertyDescriptor descriptor,
+            String messagePrefix )
     {
-        super( status, format( messageTemplate, messagePrefix, ruleEntityId, propertyKeyId ) );
-        this.ruleEntityId = ruleEntityId;
-        this.propertyKeyId = propertyKeyId;
+        super( status, format( messageTemplate, messagePrefix, descriptor.getEntityId(),
+                descriptor.propertyIdText( ) ) );
+        this.descriptor = descriptor;
         this.messageTemplate = messageTemplate;
         this.messagePrefix = messagePrefix;
     }

@@ -204,11 +204,11 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
 
       case NodeIndexSeek(IdName(ident), label, propertyKey, valueExpr, _) =>
         val indexSeekMode = IndexSeekModeFactory(unique = false, readOnly = readOnly).fromQueryExpression(valueExpr)
-        NodeIndexSeekPipe(ident, label, propertyKey, valueExpr.map(buildExpression), indexSeekMode)(id = id)
+        NodeIndexSeekPipe(ident, label, Seq(propertyKey), valueExpr.map(buildExpression), indexSeekMode)(id = id)
 
       case NodeUniqueIndexSeek(IdName(ident), label, propertyKey, valueExpr, _) =>
         val indexSeekMode = IndexSeekModeFactory(unique = true, readOnly = readOnly).fromQueryExpression(valueExpr)
-        NodeIndexSeekPipe(ident, label, propertyKey, valueExpr.map(buildExpression), indexSeekMode)(id = id)
+        NodeIndexSeekPipe(ident, label, Seq(propertyKey), valueExpr.map(buildExpression), indexSeekMode)(id = id)
 
       case NodeIndexScan(IdName(ident), label, propertyKey, _) =>
         NodeIndexScanPipe(ident, label, propertyKey)(id = id)

@@ -91,7 +91,8 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
             {
                 properties = propertyReader.propertyBlocks( propertyRecs );
             }
-            PropertyBlock property = propertyWithKey( properties, indexRule.getPropertyKey() );
+            //TODO: Support composite indexes
+            PropertyBlock property = propertyWithKey( properties, indexRule.descriptor().getPropertyKeyId() );
 
             if ( property == null )
             {

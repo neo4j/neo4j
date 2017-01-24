@@ -21,20 +21,22 @@ package org.neo4j.kernel.builtinprocs;
 
 import org.junit.Test;
 
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IndexSchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyObject;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -83,14 +85,14 @@ public class ResampleIndexProcedureTest
     public void shouldLookUpTheIndexByLabelIdAndPropertyKeyId()
             throws ProcedureException, SchemaRuleNotFoundException, IndexNotFoundKernelException
     {
+        IndexDescriptor index = IndexDescriptorFactory.of( 0, 0 );
         when( operations.labelGetForName( anyString() ) ).thenReturn( 123 );
         when( operations.propertyKeyGetForName( anyString() ) ).thenReturn( 456 );
-        when( operations.indexGetForLabelAndPropertyKey( anyInt(), anyInt() ) )
-                .thenReturn( new IndexDescriptor( 0, 0 ) );
+        when( operations.indexGetForLabelAndPropertyKey( anyObject() ) ).thenReturn( index );
 
         procedure.resampleIndex( ":Person(name)" );
 
-        verify( operations ).indexGetForLabelAndPropertyKey( 123, 456 );
+        verify( operations ).indexGetForLabelAndPropertyKey( new NodePropertyDescriptor( 123, 456 ) );
     }
 
     @Test
@@ -98,10 +100,11 @@ public class ResampleIndexProcedureTest
             throws SchemaRuleNotFoundException, IndexNotFoundKernelException
 
     {
+        NodePropertyDescriptor descriptor = new NodePropertyDescriptor( 0, 0 );
         when( operations.labelGetForName( anyString() ) ).thenReturn( 0 );
         when( operations.propertyKeyGetForName( anyString() ) ).thenReturn( 0 );
-        when( operations.indexGetForLabelAndPropertyKey( anyInt(), anyInt() ) )
-                .thenThrow( new IndexSchemaRuleNotFoundException( -1, -1 ) );
+        when( operations.indexGetForLabelAndPropertyKey( anyObject() ) )
+                .thenThrow( new IndexSchemaRuleNotFoundException( descriptor ) );
 
         try
         {
@@ -117,8 +120,8 @@ public class ResampleIndexProcedureTest
     @Test
     public void shouldTriggerResampling() throws SchemaRuleNotFoundException, ProcedureException
     {
-        IndexDescriptor index = new IndexDescriptor( 123, 456 );
-        when( operations.indexGetForLabelAndPropertyKey( anyInt(), anyInt() ) ).thenReturn( index );
+        IndexDescriptor index = IndexDescriptorFactory.of( 123, 456 );
+        when( operations.indexGetForLabelAndPropertyKey( anyObject() ) ).thenReturn( index );
 
         procedure.resampleIndex( ":Person(name)" );
 

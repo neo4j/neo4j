@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
-import org.mockito.Matchers._
+import org.mockito.Matchers
+import org.mockito.Matchers.any
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{ListLiteral, Literal, Variable}
@@ -29,7 +30,6 @@ import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.{CypherFunSuite, WindowsStringSafe}
 import org.neo4j.cypher.internal.frontend.v3_2.{CypherTypeException, LabelId, PropertyKeyId}
 import org.neo4j.graphdb.Node
-import org.neo4j.kernel.api.index.IndexDescriptor
 
 class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSupport {
 
@@ -37,8 +37,8 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
   implicit val windowsSafe = WindowsStringSafe
 
   val label = LabelToken(LabelName("LabelName") _, LabelId(11))
-  val propertyKey = PropertyKeyToken(PropertyKeyName("PropertyName") _, PropertyKeyId(10))
-  val descriptor = new IndexDescriptor(label.nameId.id, propertyKey.nameId.id)
+  val propertyKey = Seq(PropertyKeyToken(PropertyKeyName("PropertyName") _, PropertyKeyId(10)))
+  val descriptor = IndexDescriptor(label.nameId.id, (propertyKey.map(_.nameId.id).toArray))
   val node = mock[Node]
   val node2 = mock[Node]
 
@@ -226,7 +226,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
     when(query.indexSeek(any(), any())).thenReturn(Iterator.empty)
 
     values.foreach {
-      case (searchTerm, result) => when(query.indexSeek(descriptor, searchTerm)).thenReturn(result)
+      case (searchTerm, result) => when(query.indexSeek(any(), Matchers.eq(searchTerm))).thenReturn(result)
     }
 
     query

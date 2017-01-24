@@ -48,6 +48,7 @@ import org.neo4j.consistency.store.RecordReference;
 import org.neo4j.consistency.store.synthetic.CountsEntry;
 import org.neo4j.consistency.store.synthetic.IndexEntry;
 import org.neo4j.consistency.store.synthetic.LabelScanDocument;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.impl.labelscan.LuceneNodeLabelRange;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -332,7 +333,8 @@ public class ConsistencyReporterTest
             }
             if ( type == IndexRule.class )
             {
-                return IndexRule.indexRule( 1, 2, 3, new SchemaIndexProvider.Descriptor( "provider", "version" ) );
+                return IndexRule.indexRule( 1, new NodePropertyDescriptor( 2, 3 ),
+                        new SchemaIndexProvider.Descriptor( "provider", "version" ) );
             }
             if ( type == RelationshipGroupRecord.class )
             {

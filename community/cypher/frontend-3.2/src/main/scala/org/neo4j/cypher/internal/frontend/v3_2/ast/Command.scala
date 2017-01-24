@@ -26,11 +26,13 @@ sealed trait Command extends Statement {
   override def returnColumns = List.empty
 }
 
-case class CreateIndex(label: LabelName, property: PropertyKeyName)(val position: InputPosition) extends Command {
+case class CreateIndex(label: LabelName, properties: List[PropertyKeyName])(val position: InputPosition) extends Command {
+//  def property = properties(0)
   def semanticCheck = Seq()
 }
 
-case class DropIndex(label: LabelName, property: PropertyKeyName)(val position: InputPosition) extends Command {
+case class DropIndex(label: LabelName, properties: List[PropertyKeyName])(val position: InputPosition) extends Command {
+  def property = properties(0)
   def semanticCheck = Seq()
 }
 

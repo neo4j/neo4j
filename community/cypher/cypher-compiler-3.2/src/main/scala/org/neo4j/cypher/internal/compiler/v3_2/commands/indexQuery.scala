@@ -35,7 +35,7 @@ object indexQuery extends GraphElementPropertyFunctions {
             state: QueryState,
             index: Any => GenTraversableOnce[Node],
             labelName: String,
-            propertyName: String): Iterator[Node] = queryExpression match {
+            propertyNames: Seq[String]): Iterator[Node] = queryExpression match {
 
     case SingleQueryExpression(inner) =>
       val value = inner(m)(state)
@@ -47,7 +47,7 @@ object indexQuery extends GraphElementPropertyFunctions {
           value: Any => lookupNodes(value, index)
         }.iterator
         case null => Iterator.empty
-        case _ => throw new CypherTypeException(s"Expected the value for looking up :$labelName($propertyName) to be a collection but it was not.")
+        case _ => throw new CypherTypeException(s"Expected the value for looking up :$labelName(${propertyNames.mkString(",")}) to be a collection but it was not.")
       }
 
     case RangeQueryExpression(rangeWrapper) =>

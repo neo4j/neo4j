@@ -60,7 +60,7 @@ public class MandatoryProperties
             {
             case NODE_PROPERTY_EXISTENCE_CONSTRAINT:
                 NodePropertyExistenceConstraintRule nodeRule = (NodePropertyExistenceConstraintRule) rule;
-                recordConstraint( nodeRule.getLabel(), nodeRule.getPropertyKey(), nodes );
+                recordConstraint( nodeRule.getLabel(), nodeRule.descriptor().getPropertyKeyId(), nodes );
                 break;
 
             case RELATIONSHIP_PROPERTY_EXISTENCE_CONSTRAINT:

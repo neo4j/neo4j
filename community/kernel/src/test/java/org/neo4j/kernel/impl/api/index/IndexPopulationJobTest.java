@@ -39,17 +39,20 @@ import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexConfiguration;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
@@ -58,11 +61,13 @@ import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.security.AnonymousContext;
-import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
+import org.neo4j.kernel.impl.coreapi.schema.InternalSchemaActions;
+import org.neo4j.kernel.impl.coreapi.schema.PropertyNameUtils;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.AssertableLogProvider.LogMatcherBuilder;
@@ -117,6 +122,7 @@ public class IndexPopulationJobTest
     private KernelAPI kernel;
     private IndexStoreView indexStoreView;
     private KernelSchemaStateStore stateHolder;
+    private InternalSchemaActions actions = mock( InternalSchemaActions.class );
 
     private int labelId;
 
@@ -675,15 +681,16 @@ public class IndexPopulationJobTest
 
     private IndexDescriptor indexDescriptor( Label label, String propertyKey ) throws TransactionFailureException
     {
-        IndexDescriptor descriptor;
         try ( KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AnonymousContext.read() );
               Statement statement = tx.acquireStatement() )
         {
-            descriptor = new IndexDescriptor( statement.readOperations().labelGetForName( label.name() ),
-                    statement.readOperations().propertyKeyGetForName( propertyKey ) );
+            IndexDefinition indexDefinition = new IndexDefinitionImpl( actions, label, propertyKey, false );
+            NodePropertyDescriptor descriptor =
+                    IndexDescriptorFactory.getTokens( statement.readOperations(), indexDefinition );
+            IndexDescriptor index = IndexDescriptorFactory.of( descriptor );
             tx.success();
+            return index;
         }
-        return descriptor;
     }
 
     private DoubleLongRegister indexUpdatesAndSize( Label label, String propertyKey ) throws KernelException
@@ -694,7 +701,7 @@ public class IndexPopulationJobTest
             int labelId = statement.readOperations().labelGetForName( label.name() );
             int propertyKeyId = statement.readOperations().propertyKeyGetForName( propertyKey );
             DoubleLongRegister result =
-                    statement.readOperations().indexUpdatesAndSize( new IndexDescriptor( labelId, propertyKeyId ),
+                    statement.readOperations().indexUpdatesAndSize( IndexDescriptorFactory.of( labelId, propertyKeyId ),
                             Registers.newDoubleLongRegister() );
             tx.success();
             return result;
@@ -709,7 +716,7 @@ public class IndexPopulationJobTest
             DoubleLongRegister result = Registers.newDoubleLongRegister();
             int labelId = statement.readOperations().labelGetForName( label.name() );
             int propertyKeyId = statement.readOperations().propertyKeyGetForName( propertyKey );
-            statement.readOperations().indexSample( new IndexDescriptor( labelId, propertyKeyId ), result );
+            statement.readOperations().indexSample( IndexDescriptorFactory.of( labelId, propertyKeyId ), result );
             tx.success();
             return result;
         }

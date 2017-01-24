@@ -30,6 +30,7 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.AbstractSchemaRule;
@@ -43,6 +44,7 @@ import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.nio.ByteBuffer.wrap;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.Iterators.asCollection;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 
@@ -90,9 +92,8 @@ public class SchemaStoreTest
     public void serializationAndDeserialization() throws Exception
     {
         // GIVEN
-        int propertyKey = 4;
-        int labelId = 1;
-        IndexRule indexRule = IndexRule.indexRule( store.nextId(), labelId, propertyKey, PROVIDER_DESCRIPTOR );
+        NodePropertyDescriptor descriptor = new NodePropertyDescriptor( 1, 4 );
+        IndexRule indexRule = IndexRule.indexRule( store.nextId(), descriptor, PROVIDER_DESCRIPTOR );
 
         // WHEN
         byte[] serialized = new RecordSerializer().append( indexRule ).serialize();
@@ -102,7 +103,7 @@ public class SchemaStoreTest
         assertEquals( indexRule.getId(), readIndexRule.getId() );
         assertEquals( indexRule.getKind(), readIndexRule.getKind() );
         assertEquals( indexRule.getLabel(), readIndexRule.getLabel() );
-        assertEquals( indexRule.getPropertyKey(), readIndexRule.getPropertyKey() );
+        assertTrue( indexRule.descriptor().equals( readIndexRule.descriptor() ) );
         assertEquals( indexRule.getProviderDescriptor(), readIndexRule.getProviderDescriptor() );
     }
 
@@ -111,9 +112,9 @@ public class SchemaStoreTest
     {
         // GIVEN
         Collection<SchemaRule> rules = Arrays.<SchemaRule>asList(
-                IndexRule.indexRule( store.nextId(), 0, 5, PROVIDER_DESCRIPTOR ),
-                IndexRule.indexRule( store.nextId(), 1, 6, PROVIDER_DESCRIPTOR ),
-                IndexRule.indexRule( store.nextId(), 1, 7, PROVIDER_DESCRIPTOR ) );
+                IndexRule.indexRule( store.nextId(), new NodePropertyDescriptor( 0, 5 ), PROVIDER_DESCRIPTOR ),
+                IndexRule.indexRule( store.nextId(), new NodePropertyDescriptor( 1, 6 ), PROVIDER_DESCRIPTOR ),
+                IndexRule.indexRule( store.nextId(), new NodePropertyDescriptor( 1, 7 ), PROVIDER_DESCRIPTOR ) );
         for ( SchemaRule rule : rules )
         {
             storeRule( rule );

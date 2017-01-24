@@ -33,11 +33,11 @@ case class IndexOperationPipe(indexOp: IndexOperation)(val id: Id = new Id)(impl
     indexOp match {
       case CreateIndex(_, propertyKeys, _) =>
         val propertyKeyIds: Seq[Int] = propertyKeys.map( queryContext.getOrCreatePropertyKeyId )
-        queryContext.addIndexRule(labelId, single(propertyKeyIds))
+        queryContext.addIndexRule(IndexDescriptor(labelId, propertyKeyIds))
 
       case DropIndex(_, propertyKeys, _) =>
         val propertyKeyIds: Seq[Int] = propertyKeys.map( queryContext.getOrCreatePropertyKeyId )
-        queryContext.dropIndexRule(labelId, single(propertyKeyIds))
+        queryContext.dropIndexRule(IndexDescriptor(labelId, propertyKeyIds))
 
       case _ =>
         throw new UnsupportedOperationException("Unknown IndexOperation encountered")

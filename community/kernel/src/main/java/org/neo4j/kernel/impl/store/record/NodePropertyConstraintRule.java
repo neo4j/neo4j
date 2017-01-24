@@ -19,22 +19,26 @@
  */
 package org.neo4j.kernel.impl.store.record;
 
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 
 public abstract class NodePropertyConstraintRule extends PropertyConstraintRule
 {
-    protected final int label;
-
-    public NodePropertyConstraintRule( long id, int label, Kind kind )
+    public NodePropertyConstraintRule( long id, NodePropertyDescriptor descriptor, Kind kind )
     {
-        super( id, kind );
-        this.label = label;
+        super( id, kind, descriptor );
+    }
+
+    @Override
+    public final NodePropertyDescriptor descriptor()
+    {
+        return (NodePropertyDescriptor) descriptor;
     }
 
     @Override
     public final int getLabel()
     {
-        return label;
+        return descriptor().getLabelId();
     }
 
     @Override
@@ -44,30 +48,16 @@ public abstract class NodePropertyConstraintRule extends PropertyConstraintRule
     }
 
     @Override
+    public boolean containsPropertyKeyId( int propertyKeyId )
+    {
+        return this.descriptor.getPropertyKeyId() == propertyKeyId;
+    }
+
+    public boolean matches(NodePropertyDescriptor descriptor)
+    {
+        return this.descriptor.equals( descriptor );
+    }
+
+    @Override
     public abstract NodePropertyConstraint toConstraint();
-
-    @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
-            return true;
-        }
-        if ( o == null || getClass() != o.getClass() )
-        {
-            return false;
-        }
-        if ( !super.equals( o ) )
-        {
-            return false;
-        }
-        return label == ((NodePropertyConstraintRule) o).label;
-
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return 31 * super.hashCode() + label;
-    }
 }

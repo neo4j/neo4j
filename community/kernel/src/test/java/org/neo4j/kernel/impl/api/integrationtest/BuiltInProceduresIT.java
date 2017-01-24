@@ -23,9 +23,13 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import org.neo4j.collection.RawIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.DataWriteOperations;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.security.AnonymousContext;
@@ -176,8 +180,9 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
         int labelId1 = ops.labelGetOrCreateForName( "Person" );
         int labelId2 = ops.labelGetOrCreateForName( "Age" );
         int propertyKeyId = ops.propertyKeyGetOrCreateForName( "foo" );
-        ops.indexCreate( labelId1, propertyKeyId );
-        ops.uniquePropertyConstraintCreate( labelId2, propertyKeyId );
+        //TODO: Add test support for composite indexes
+        ops.indexCreate( new NodePropertyDescriptor( labelId1, propertyKeyId ) );
+        ops.uniquePropertyConstraintCreate( new NodePropertyDescriptor( labelId2, propertyKeyId ) );
         commit();
 
         //let indexes come online
@@ -191,10 +196,16 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
         RawIterator<Object[],ProcedureException> stream =
                 procedureCallOpsInNewTx().procedureCallRead( procedureName( "db", "indexes" ), new Object[0] );
 
+        Set<Object[]> result = new HashSet<>();
+        while ( stream.hasNext() )
+        {
+            result.add( stream.next() );
+        }
+
         // Then
-        assertThat( stream.next(), equalTo( new Object[]{"INDEX ON :Age(foo)", "ONLINE",
-                "node_unique_property"} ) );
-        assertThat( stream.next(), equalTo( new Object[]{"INDEX ON :Person(foo)", "ONLINE",
-                "node_label_property"} ) );
+        assertThat( result, containsInAnyOrder(
+                new Object[]{"INDEX ON :Age(foo)", "ONLINE", "node_unique_property"},
+                new Object[]{"INDEX ON :Person(foo)", "ONLINE", "node_label_property"}
+            ) );
     }
 }

@@ -37,9 +37,11 @@ import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ExecutingQuery;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.LegacyIndexHits;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.ProcedureCallOperations;
 import org.neo4j.kernel.api.QueryRegistryOperations;
 import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
@@ -70,7 +72,7 @@ import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IndexSchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
@@ -610,16 +612,16 @@ public class OperationsFacade
 
     // <SchemaRead>
     @Override
-    public IndexDescriptor indexGetForLabelAndPropertyKey( int labelId, int propertyKeyId )
+    public IndexDescriptor indexGetForLabelAndPropertyKey( NodePropertyDescriptor descriptor )
             throws SchemaRuleNotFoundException
     {
         statement.assertOpen();
-        IndexDescriptor descriptor = schemaRead().indexGetForLabelAndPropertyKey( statement, labelId, propertyKeyId );
-        if ( descriptor == null )
+        IndexDescriptor indexDescriptor = schemaRead().indexGetForLabelAndPropertyKey( statement, descriptor );
+        if ( indexDescriptor == null )
         {
-            throw new IndexSchemaRuleNotFoundException( labelId, propertyKeyId );
+            throw new IndexSchemaRuleNotFoundException( descriptor );
         }
-        return descriptor;
+        return indexDescriptor;
     }
 
     @Override
@@ -637,16 +639,16 @@ public class OperationsFacade
     }
 
     @Override
-    public IndexDescriptor uniqueIndexGetForLabelAndPropertyKey( int labelId, int propertyKeyId )
+    public IndexDescriptor uniqueIndexGetForLabelAndPropertyKey( NodePropertyDescriptor descriptor )
             throws SchemaRuleNotFoundException, DuplicateIndexSchemaRuleException
 
     {
         IndexDescriptor result = null;
-        Iterator<IndexDescriptor> indexes = uniqueIndexesGetForLabel( labelId );
+        Iterator<IndexDescriptor> indexes = uniqueIndexesGetForLabel( descriptor.getLabelId() );
         while ( indexes.hasNext() )
         {
             IndexDescriptor index = indexes.next();
-            if ( index.getPropertyKeyId() == propertyKeyId )
+            if ( index.equals( descriptor ) )
             {
                 if ( null == result )
                 {
@@ -654,14 +656,14 @@ public class OperationsFacade
                 }
                 else
                 {
-                    throw new DuplicateIndexSchemaRuleException( labelId, propertyKeyId, true );
+                    throw new DuplicateIndexSchemaRuleException( descriptor, true );
                 }
             }
         }
 
         if ( null == result )
         {
-            throw new IndexSchemaRuleNotFoundException( labelId, propertyKeyId, true );
+            throw new IndexSchemaRuleNotFoundException( descriptor, true );
         }
 
         return result;
@@ -724,10 +726,10 @@ public class OperationsFacade
     }
 
     @Override
-    public Iterator<NodePropertyConstraint> constraintsGetForLabelAndPropertyKey( int labelId, int propertyKeyId )
+    public Iterator<NodePropertyConstraint> constraintsGetForLabelAndPropertyKey( NodePropertyDescriptor descriptor )
     {
         statement.assertOpen();
-        return schemaRead().constraintsGetForLabelAndPropertyKey( statement, labelId, propertyKeyId );
+        return schemaRead().constraintsGetForLabelAndPropertyKey( statement, descriptor );
     }
 
     @Override
@@ -745,11 +747,11 @@ public class OperationsFacade
     }
 
     @Override
-    public Iterator<RelationshipPropertyConstraint> constraintsGetForRelationshipTypeAndPropertyKey( int typeId,
-            int propertyKeyId )
+    public Iterator<RelationshipPropertyConstraint> constraintsGetForRelationshipTypeAndPropertyKey(
+            RelationshipPropertyDescriptor descriptor )
     {
         statement.assertOpen();
-        return schemaRead().constraintsGetForRelationshipTypeAndPropertyKey( statement, typeId, propertyKeyId );
+        return schemaRead().constraintsGetForRelationshipTypeAndPropertyKey( statement, descriptor );
     }
 
     @Override
@@ -1017,11 +1019,11 @@ public class OperationsFacade
 
     // <SchemaWrite>
     @Override
-    public IndexDescriptor indexCreate( int labelId, int propertyKeyId )
+    public IndexDescriptor indexCreate( NodePropertyDescriptor descriptor )
             throws AlreadyIndexedException, AlreadyConstrainedException
     {
         statement.assertOpen();
-        return schemaWrite().indexCreate( statement, labelId, propertyKeyId );
+        return schemaWrite().indexCreate( statement, descriptor );
     }
 
     @Override
@@ -1032,28 +1034,28 @@ public class OperationsFacade
     }
 
     @Override
-    public UniquenessConstraint uniquePropertyConstraintCreate( int labelId, int propertyKeyId )
+    public UniquenessConstraint uniquePropertyConstraintCreate( NodePropertyDescriptor descriptor )
             throws CreateConstraintFailureException, AlreadyConstrainedException, AlreadyIndexedException
     {
         statement.assertOpen();
-        return schemaWrite().uniquePropertyConstraintCreate( statement, labelId, propertyKeyId );
+        return schemaWrite().uniquePropertyConstraintCreate( statement, descriptor );
     }
 
     @Override
-    public NodePropertyExistenceConstraint nodePropertyExistenceConstraintCreate( int labelId, int propertyKeyId )
+    public NodePropertyExistenceConstraint nodePropertyExistenceConstraintCreate( NodePropertyDescriptor descriptor )
             throws CreateConstraintFailureException, AlreadyConstrainedException
     {
         statement.assertOpen();
-        return schemaWrite().nodePropertyExistenceConstraintCreate( statement, labelId, propertyKeyId );
+        return schemaWrite().nodePropertyExistenceConstraintCreate( statement, descriptor );
     }
 
     @Override
     public RelationshipPropertyExistenceConstraint relationshipPropertyExistenceConstraintCreate(
-            int relTypeId, int propertyKeyId )
+            RelationshipPropertyDescriptor descriptor )
             throws CreateConstraintFailureException, AlreadyConstrainedException
     {
         statement.assertOpen();
-        return schemaWrite().relationshipPropertyExistenceConstraintCreate( statement, relTypeId, propertyKeyId );
+        return schemaWrite().relationshipPropertyExistenceConstraintCreate( statement, descriptor );
     }
 
     @Override

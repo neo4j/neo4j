@@ -38,6 +38,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
@@ -45,7 +46,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelExceptio
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
@@ -209,7 +210,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
 
     private IndexReader getIndexReader( int propertyId, Integer countryLabelId ) throws IndexNotFoundKernelException
     {
-        return indexService.getIndexProxy( new IndexDescriptor( countryLabelId, propertyId ) ).newReader();
+        return indexService.getIndexProxy( IndexDescriptorFactory.of( countryLabelId, propertyId ) ).newReader();
     }
 
     private void launchCustomIndexPopulation( Map<String,Integer> labelNameIdMap, int propertyId,
@@ -276,7 +277,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
             throws IndexNotFoundKernelException, IndexPopulationFailedKernelException, InterruptedException,
             IndexActivationFailedKernelException
     {
-        IndexProxy indexProxy = indexService.getIndexProxy( new IndexDescriptor( labelId, propertyId ) );
+        IndexProxy indexProxy = indexService.getIndexProxy( IndexDescriptorFactory.of( labelId, propertyId ) );
         indexProxy.awaitStoreScanCompleted();
         indexProxy.activate();
     }
@@ -284,9 +285,8 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     private IndexRule[] createIndexRules( Map<String,Integer> labelNameIdMap, int propertyId )
     {
         return labelNameIdMap.values().stream()
-                .map( index -> new IndexRule( index, index, propertyId,
-                        new SchemaIndexProvider.Descriptor( "lucene", "version" ), null ) )
-                .toArray( IndexRule[]::new );
+                .map( index -> new IndexRule( index, new NodePropertyDescriptor( index, propertyId ),
+                        new SchemaIndexProvider.Descriptor( "lucene", "version" ), null ) ).toArray( IndexRule[]::new );
     }
 
     private List<IndexRule> getIndexRules( NeoStores neoStores )

@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.codegen.CompiledConversionUtils.CompositeKey
 import org.neo4j.cypher.internal.codegen._
 import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.commands.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.compiler.v3_2.codegen._
-import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions.{BoolType, CodeGenType, FloatType, IntType, Parameter => _, ReferenceType}
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions.{BoolType, CodeGenType, FloatType, IntType, ReferenceType, Parameter => _}
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi._
 import org.neo4j.cypher.internal.compiler.v3_2.helpers._
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
@@ -39,7 +39,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.{ParameterNotFoundException, Sema
 import org.neo4j.cypher.internal.spi.v3_2.codegen.Methods._
 import org.neo4j.cypher.internal.spi.v3_2.codegen.Templates.{createNewInstance, handleKernelExceptions, newRelationshipDataExtractor, tryCatch}
 import org.neo4j.graphdb.Direction
-import org.neo4j.kernel.api.index.IndexDescriptor
+import org.neo4j.kernel.api.schema.{IndexDescriptor, IndexDescriptorFactory, NodePropertyDescriptor}
 import org.neo4j.kernel.impl.api.RelationshipDataExtractor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 
@@ -1133,9 +1133,15 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     generator.assign(typeRef[Int], propIdVar, invoke(readOperations, propertyKeyGetForName, constant(propName)))
 
   override def newIndexDescriptor(descriptorVar: String, labelVar: String, propKeyVar: String) = {
+    val getNodePropertyDescriptor =
+      method[IndexDescriptorFactory, NodePropertyDescriptor]("getNodePropertyDescriptor", typeRef[Int], typeRef[Int])
+    val getIndexDescriptor =
+      method[IndexDescriptorFactory, IndexDescriptor]("of", typeRef[NodePropertyDescriptor])
     generator.assign(typeRef[IndexDescriptor], descriptorVar,
-                     createNewInstance(typeRef[IndexDescriptor], (typeRef[Int], generator.load(labelVar)),
-                                       (typeRef[Int], generator.load(propKeyVar)))
+                      invoke(
+                        getIndexDescriptor,
+                        invoke(getNodePropertyDescriptor, generator.load(labelVar), generator.load(propKeyVar))
+                      )
     )
   }
 

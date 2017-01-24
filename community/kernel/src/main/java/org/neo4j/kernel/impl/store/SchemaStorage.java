@@ -27,6 +27,8 @@ import java.util.function.Predicate;
 import org.neo4j.function.Predicates;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.PrefetchingIterator;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
+import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.exceptions.schema.DuplicateEntitySchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.EntitySchemaRuleNotFoundException;
@@ -41,7 +43,6 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipPropertyConstraintRule;
 import org.neo4j.kernel.impl.store.record.RelationshipPropertyExistenceConstraintRule;
 import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
-import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.storageengine.api.schema.SchemaRule.Kind;
 
@@ -107,9 +108,9 @@ public class SchemaStorage implements SchemaRuleAccess
      *
      * Otherwise throw if there are not exactly one matching candidate rule.
      */
-    public IndexRule indexRule( int labelId, int propertyKeyId )
+    public IndexRule indexRule( NodePropertyDescriptor descriptor )
     {
-        return indexRule( labelId, propertyKeyId, IndexRuleKind.ALL );
+        return indexRule( descriptor, IndexRuleKind.ALL );
     }
 
     /**
@@ -117,10 +118,10 @@ public class SchemaStorage implements SchemaRuleAccess
      *
      * Otherwise throw if there are not exactly one matching candidate rule.
      */
-    public IndexRule indexRule( final int labelId, final int propertyKeyId, IndexRuleKind kind )
+    public IndexRule indexRule( NodePropertyDescriptor descriptor, IndexRuleKind kind )
     {
         Iterator<IndexRule> rules = schemaRules( cast( IndexRule.class ), IndexRule.class,
-                rule -> rule.getLabel() == labelId && rule.getPropertyKey() == propertyKeyId );
+                rule -> rule.matches( descriptor ) );
 
         IndexRule foundRule = null;
 
@@ -261,10 +262,10 @@ public class SchemaStorage implements SchemaRuleAccess
         return schemaStore.nextId();
     }
 
-    public NodePropertyExistenceConstraintRule nodePropertyExistenceConstraint( int labelId, int propertyKeyId )
+    public NodePropertyExistenceConstraintRule nodePropertyExistenceConstraint( NodePropertyDescriptor descriptor )
             throws SchemaRuleNotFoundException, DuplicateSchemaRuleException
     {
-        return nodeConstraintRule( NodePropertyExistenceConstraintRule.class, labelId, propertyKeyId );
+        return nodeConstraintRule( NodePropertyExistenceConstraintRule.class, descriptor );
     }
 
     public RelationshipPropertyExistenceConstraintRule relationshipPropertyExistenceConstraint( int typeId,
@@ -273,28 +274,27 @@ public class SchemaStorage implements SchemaRuleAccess
         return relationshipConstraintRule( RelationshipPropertyExistenceConstraintRule.class, typeId, propertyKeyId );
     }
 
-    public UniquePropertyConstraintRule uniquenessConstraint( int labelId, final int propertyKeyId )
+    public UniquePropertyConstraintRule uniquenessConstraint( NodePropertyDescriptor descriptor )
             throws SchemaRuleNotFoundException, DuplicateSchemaRuleException
     {
-        return nodeConstraintRule( UniquePropertyConstraintRule.class, labelId, propertyKeyId );
+        return nodeConstraintRule( UniquePropertyConstraintRule.class, descriptor );
     }
 
     private <Rule extends NodePropertyConstraintRule> Rule nodeConstraintRule( Class<Rule> type,
-            final int labelId, final int propertyKeyId )
+            final NodePropertyDescriptor descriptor )
             throws SchemaRuleNotFoundException, DuplicateEntitySchemaRuleException
     {
-        Iterator<Rule> rules = schemaRules( cast( type ), type, item -> item.getLabel() == labelId &&
-                                                                item.containsPropertyKeyId( propertyKeyId ) );
+        Iterator<Rule> rules = schemaRules( cast( type ), type, item -> item.matches(descriptor) );
         if ( !rules.hasNext() )
         {
-            throw new EntitySchemaRuleNotFoundException( EntityType.NODE, labelId, propertyKeyId );
+            throw new EntitySchemaRuleNotFoundException( descriptor );
         }
 
         Rule rule = rules.next();
 
         if ( rules.hasNext() )
         {
-            throw new DuplicateEntitySchemaRuleException( EntityType.NODE, labelId, propertyKeyId );
+            throw new DuplicateEntitySchemaRuleException( descriptor );
         }
         return rule;
     }
@@ -308,14 +308,16 @@ public class SchemaStorage implements SchemaRuleAccess
                         item.containsPropertyKeyId( propertyKeyId ) );
         if ( !rules.hasNext() )
         {
-            throw new EntitySchemaRuleNotFoundException( EntityType.RELATIONSHIP, relationshipTypeId, propertyKeyId );
+            throw new EntitySchemaRuleNotFoundException(
+                    new RelationshipPropertyDescriptor( relationshipTypeId, propertyKeyId ) );
         }
 
         Rule rule = rules.next();
 
         if ( rules.hasNext() )
         {
-            throw new DuplicateEntitySchemaRuleException( EntityType.RELATIONSHIP, relationshipTypeId, propertyKeyId );
+            throw new DuplicateEntitySchemaRuleException(
+                    new RelationshipPropertyDescriptor( relationshipTypeId, propertyKeyId ) );
         }
         return rule;
     }

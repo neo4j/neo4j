@@ -29,7 +29,9 @@ import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
+import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 
 public interface SchemaWriteOperations extends TokenWriteOperations
 {
@@ -37,20 +39,21 @@ public interface SchemaWriteOperations extends TokenWriteOperations
      * Creates an index, indexing properties with the given {@code propertyKeyId} for nodes with the given
      * {@code labelId}.
      */
-    IndexDescriptor indexCreate( int labelId, int propertyKeyId )
+    IndexDescriptor indexCreate( NodePropertyDescriptor nodeDescriptor )
             throws AlreadyIndexedException, AlreadyConstrainedException;
 
     /** Drops a {@link IndexDescriptor} from the database */
     void indexDrop( IndexDescriptor descriptor ) throws DropIndexFailureException;
 
-    UniquenessConstraint uniquePropertyConstraintCreate( int labelId, int propertyKeyId )
+    UniquenessConstraint uniquePropertyConstraintCreate( NodePropertyDescriptor descriptor )
             throws CreateConstraintFailureException, AlreadyConstrainedException, AlreadyIndexedException;
 
-    NodePropertyExistenceConstraint nodePropertyExistenceConstraintCreate( int labelId, int propertyKeyId )
+    NodePropertyExistenceConstraint nodePropertyExistenceConstraintCreate( NodePropertyDescriptor descriptor )
             throws CreateConstraintFailureException, AlreadyConstrainedException;
 
-    RelationshipPropertyExistenceConstraint relationshipPropertyExistenceConstraintCreate( int relationshipTypeId,
-            int propertyKeyId ) throws CreateConstraintFailureException, AlreadyConstrainedException;
+    RelationshipPropertyExistenceConstraint relationshipPropertyExistenceConstraintCreate(
+            RelationshipPropertyDescriptor relationshipPropertyDescriptor ) throws
+            CreateConstraintFailureException, AlreadyConstrainedException;
 
     void constraintDrop( NodePropertyConstraint constraint ) throws DropConstraintFailureException;
 

@@ -19,28 +19,28 @@
  */
 package org.neo4j.kernel.api.exceptions.schema;
 
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.index.IndexDescriptor;
 
 import static java.lang.String.format;
 
 public class DropIndexFailureException extends SchemaKernelException
 {
-    private final IndexDescriptor indexDescriptor;
+    private final NodePropertyDescriptor descriptor;
     private static final String message = "Unable to drop index on %s: %s";
 
-    public DropIndexFailureException( IndexDescriptor indexDescriptor, SchemaKernelException cause )
+    public DropIndexFailureException( NodePropertyDescriptor descriptor, SchemaKernelException cause )
     {
-        super( Status.Schema.IndexDropFailed, format( message, indexDescriptor, cause.getMessage() ), cause );
-        this.indexDescriptor = indexDescriptor;
+        super( Status.Schema.IndexDropFailed, format( message, descriptor, cause.getMessage() ), cause );
+        this.descriptor = descriptor;
     }
 
     @Override
     public String getUserMessage( TokenNameLookup tokenNameLookup )
     {
-        return format( message, indexDescriptor.userDescription( tokenNameLookup ),
+        return format( message, descriptor.userDescription( tokenNameLookup ),
                 ((KernelException) getCause()).getUserMessage( tokenNameLookup ) );
     }
 }
