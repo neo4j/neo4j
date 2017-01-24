@@ -46,7 +46,7 @@ import org.neo4j.graphdb.traversal.{Evaluators, TraversalDescription, Uniqueness
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.constraints.{NodePropertyExistenceConstraint, RelationshipPropertyExistenceConstraint, UniquenessConstraint}
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
-import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
+import org.neo4j.kernel.api.index.InternalIndexState
 import org.neo4j.kernel.api.{exceptions, _}
 import org.neo4j.kernel.impl.core.NodeManager
 
@@ -54,7 +54,7 @@ import scala.collection.JavaConverters._
 import scala.collection.{Iterator, mutable}
 
 final class TransactionBoundQueryContext(tc: TransactionalContextWrapperv3_1)
-  extends TransactionBoundTokenContext(tc.statement) with QueryContext {
+  extends TransactionBoundTokenContext(tc.statement) with QueryContext with IndexDescriptorCompatibility {
 
   override val nodeOps = new NodeOperations
   override val relationshipOps = new RelationshipOperations
