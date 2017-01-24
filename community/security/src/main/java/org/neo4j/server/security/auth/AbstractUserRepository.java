@@ -44,7 +44,8 @@ public abstract class AbstractUserRepository extends LifecycleAdapter implements
     protected volatile List<User> users = new ArrayList<>();
     protected AtomicLong lastLoaded = new AtomicLong( 0L );
 
-    private final Pattern usernamePattern = Pattern.compile( "^[a-zA-Z0-9_]+$" );
+    // Allow all ascii from '!' to '~', apart from ',' and ':' which are used as separators in flat file
+    private final Pattern usernamePattern = Pattern.compile( "^[\\x21-\\x2B\\x2D-\\x39\\x3B-\\x7E]+$" );
 
     @Override
     public void clear()
@@ -188,7 +189,7 @@ public abstract class AbstractUserRepository extends LifecycleAdapter implements
         {
             throw new InvalidArgumentsException(
                     "Username '" + username +
-                    "' contains illegal characters. Use simple ascii characters and numbers." );
+                    "' contains illegal characters. Use ascii characters that are not ',', ':' or whitespaces." );
         }
     }
 
