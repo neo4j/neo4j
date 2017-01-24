@@ -24,6 +24,7 @@ import org.neo4j.codegen.FieldReference.field
 import org.neo4j.codegen.Parameter.param
 import org.neo4j.codegen._
 import org.neo4j.cypher.internal.codegen.{CompiledOrderabilityUtils, CompiledEquivalenceUtils}
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.CodeGenContext
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions.{RepresentationType, CodeGenType}
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi._
 import org.neo4j.cypher.internal.compiler.v3_2.helpers._
@@ -102,11 +103,12 @@ class AuxGenerator(val packageName: String, val generator: CodeGenerator) {
 
         tupleDescriptor.sortItems.foreach { sortItem =>
           val SortItem(fieldName, sortOrder) = sortItem
-          val codeGenType = tupleDescriptor.structure(fieldName)
+          val sanitizedFieldName = CodeGenContext.sanitizedName(fieldName)
+          val codeGenType = tupleDescriptor.structure(sanitizedFieldName)
           val fieldType: TypeReference = lowerType(codeGenType)
-          val fieldReference = field(clazz.handle(), fieldType, fieldName)
-          val thisValueName = s"thisValue_$fieldName"
-          val otherValueName = s"otherValue_$fieldName"
+          val fieldReference = field(clazz.handle(), fieldType, sanitizedFieldName)
+          val thisValueName = s"thisValue_$sanitizedFieldName"
+          val otherValueName = s"otherValue_$sanitizedFieldName"
           using(l1.block()) { l2 =>
             codeGenType match {
               // TODO: Primitive nodes and relationships including correct ordering of nulls
@@ -154,7 +156,7 @@ class AuxGenerator(val packageName: String, val generator: CodeGenerator) {
                 ...
                 */
                 val isPrimitive = RepresentationType.isPrimitive(reprType)
-                val compareResultName = s"compare_$fieldName"
+                val compareResultName = s"compare_$sanitizedFieldName"
                 val compareResult = l2.declare(typeRef[Int], compareResultName)
                 val thisField = Expression.get(l2.self(), fieldReference)
                 val otherField = Expression.get(l2.load(otherName), fieldReference)
@@ -203,7 +205,7 @@ class AuxGenerator(val packageName: String, val generator: CodeGenerator) {
               }
               case _ => {
                 // Use CompiledOrderabilityUtils.compare which handles mixed-types according to Cypher orderability semantics
-                val compareResultName = s"compare_$fieldName"
+                val compareResultName = s"compare_$sanitizedFieldName"
                 val compareResult = l2.declare(typeRef[Int], compareResultName)
                 val thisField = Expression.box(Expression.get(l2.self(), fieldReference))
                 val otherField = Expression.box(Expression.get(l2.load(otherName), fieldReference))

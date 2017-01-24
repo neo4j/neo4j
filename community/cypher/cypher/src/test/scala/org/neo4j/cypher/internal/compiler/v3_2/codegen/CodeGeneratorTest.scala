@@ -1465,27 +1465,27 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
   test("sort projection with list of floats") {
     /*
     UNWIND [3.0,1.0,2.0,4.0] as x
-    WITH x AS a
-    RETURN a
-    ORDER BY a
+    WITH x, x AS `  FRESHID666`
+    RETURN x
+    ORDER BY `  FRESHID666`
     */
     // given
     val listLiteral = literalFloatList(3.0, 1.0, 2.0, 4.0)
     val unwind = UnwindCollection(SingleRow()(solved), IdName("x"), listLiteral)(solved)
-    val projection = Projection(unwind, Map("a" -> varFor("x")))(solved)
-    val orderBy = Sort(projection, List(Ascending(IdName("a"))))(solved)
-    val plan = ProduceResult(List("a"), orderBy)
+    val projection = Projection(unwind, Map("x" -> varFor("x"), "  FRESHID666" -> varFor("x")))(solved)
+    val orderBy = Sort(projection, List(Ascending(IdName("  FRESHID666"))))(solved)
+    val plan = ProduceResult(List("x"), orderBy)
 
     // when
     val compiled = compileAndExecute(plan)
 
     // then
-    val result = getResult(compiled, "a")
+    val result = getResult(compiled, "x")
     result.toList should equal(List(
-      Map("a" -> 1.0),
-      Map("a" -> 2.0),
-      Map("a" -> 3.0),
-      Map("a" -> 4.0)))
+      Map("x" -> 1.0),
+      Map("x" -> 2.0),
+      Map("x" -> 3.0),
+      Map("x" -> 4.0)))
   }
 
   test("sort projection with list of booleans") {

@@ -50,9 +50,10 @@ case class BuildSortTable(opName: String, tableName: String, columnVariables: Ma
 
   private val fieldToVariableInfo: Map[String, FieldAndVariableInfo] = columnVariables.map {
     case (queryVariableName: String, incoming: Variable) =>
-      (queryVariableName, // < Name the field after the query variable
+      val fieldName = CodeGenContext.sanitizedName(queryVariableName) // < Name the field after the query variable
+      (fieldName,
         FieldAndVariableInfo(
-          fieldName = queryVariableName,
+          fieldName = fieldName,
           queryVariableName = queryVariableName,
           incomingVariable = incoming,
           outgoingVariable = incoming.copy(name = context.namer.newVarName())))

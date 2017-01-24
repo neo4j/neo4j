@@ -80,3 +80,7 @@ class CodeGenContext(val semanticTable: SemanticTable, idMap: Map[LogicalPlan, I
     operatorIds.getOrElseUpdate(idMap(plan), namer.newOpName(plan.getClass.getSimpleName))
   }
 }
+
+object CodeGenContext {
+  def sanitizedName(name: String) = name.replace(" ", "_")
+}
