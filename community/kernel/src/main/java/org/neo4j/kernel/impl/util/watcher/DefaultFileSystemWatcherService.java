@@ -37,7 +37,7 @@ public class DefaultFileSystemWatcherService implements FileSystemWatcherService
     private ThreadFactory fileWatchers;
     private Thread watcher;
 
-    DefaultFileSystemWatcherService( JobScheduler jobScheduler, FileWatcher fileWatcher )
+    public DefaultFileSystemWatcherService( JobScheduler jobScheduler, FileWatcher fileWatcher )
     {
         this.jobScheduler = jobScheduler;
         this.fileWatcher = fileWatcher;

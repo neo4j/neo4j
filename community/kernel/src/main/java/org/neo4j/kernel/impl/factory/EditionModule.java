@@ -19,9 +19,13 @@
  */
 package org.neo4j.kernel.impl.factory;
 
+import java.io.File;
+import java.util.function.Predicate;
+
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.watcher.RestartableFileSystemWatcher;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
@@ -46,6 +50,9 @@ import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.util.DependencySatisfier;
 import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.kernel.impl.util.watcher.DefaultFileDeletionEventListener;
+import org.neo4j.kernel.impl.util.watcher.DefaultFileSystemWatcherService;
+import org.neo4j.kernel.impl.util.watcher.FileSystemWatcherService;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.internal.KernelDiagnostics;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -102,6 +109,29 @@ public abstract class EditionModule
     public IOLimiter ioLimiter;
 
     public IdReuseEligibility eligibleForIdReuse;
+
+    public FileSystemWatcherService watcherService;
+
+    protected FileSystemWatcherService createFileSystemWatcherService( FileSystemAbstraction fileSystem, File storeDir,
+            LogService logging, JobScheduler jobScheduler, Predicate<String> fileNameFilter )
+    {
+        try
+        {
+            RestartableFileSystemWatcher watcher = new RestartableFileSystemWatcher( fileSystem.fileWatcher() );
+            watcher.addFileWatchEventListener( new DefaultFileDeletionEventListener( logging, fileNameFilter ) );
+            watcher.watch( storeDir );
+            // register to watch store dir parent folder to see when store dir removed
+            watcher.watch( storeDir.getParentFile() );
+            return new DefaultFileSystemWatcherService( jobScheduler, watcher );
+        }
+        catch ( Exception e )
+        {
+            Log log = logging.getInternalLog( getClass() );
+            log.warn( "Can not create file watcher for current file system. File monitoring capabilities for store " +
+                    "files will be disabled.", e );
+            return FileSystemWatcherService.EMPTY_WATCHER;
+        }
+    }
 
     protected void doAfterRecoveryAndStartup( DatabaseInfo databaseInfo, DependencyResolver dependencyResolver )
     {

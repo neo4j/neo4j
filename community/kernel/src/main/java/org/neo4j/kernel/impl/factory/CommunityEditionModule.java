@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.factory;
 
 import java.io.File;
 import java.time.Clock;
+import java.util.function.Predicate;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -60,6 +61,7 @@ import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
 import org.neo4j.kernel.impl.store.id.configuration.CommunityIdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.internal.DefaultKernelData;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -87,6 +89,11 @@ public class CommunityEditionModule extends EditionModule
         DataSourceManager dataSourceManager = platformModule.dataSourceManager;
         LifeSupport life = platformModule.life;
         life.add( platformModule.dataSourceManager );
+
+        watcherService = createFileSystemWatcherService( fileSystem, storeDir, logging,
+                platformModule.jobScheduler, fileWatcherFileNameFilter() );
+        dependencies.satisfyDependencies( watcherService );
+        life.add( watcherService );
 
         this.accessCapability = config.get( GraphDatabaseSettings.read_only )? new ReadOnly() : new CanWrite();
 
@@ -129,6 +136,11 @@ public class CommunityEditionModule extends EditionModule
         publishEditionInfo( dependencies.resolveDependency( UsageData.class ), platformModule.databaseInfo, config );
 
         dependencies.satisfyDependency( createSessionTracker() );
+    }
+
+    static Predicate<String> fileWatcherFileNameFilter()
+    {
+        return fileName -> !fileName.startsWith( PhysicalLogFile.DEFAULT_NAME );
     }
 
     protected IdTypeConfigurationProvider createIdTypeConfigurationProvider( Config config )

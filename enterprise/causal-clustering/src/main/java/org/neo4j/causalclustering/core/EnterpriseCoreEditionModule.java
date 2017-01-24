@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.PrintWriter;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.neo4j.causalclustering.ReplicationModule;
@@ -56,6 +57,8 @@ import org.neo4j.causalclustering.messaging.RaftChannelInitializer;
 import org.neo4j.causalclustering.messaging.RaftOutbound;
 import org.neo4j.causalclustering.messaging.SenderService;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
+import org.neo4j.com.storecopy.StoreUtil;
+import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -82,6 +85,7 @@ import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.DefaultKernelData;
@@ -161,13 +165,18 @@ public class EnterpriseCoreEditionModule extends EditionModule
         logProvider = logging.getInternalLogProvider();
         final Supplier<DatabaseHealth> databaseHealthSupplier = dependencies.provideDependency( DatabaseHealth.class );
 
+        watcherService = createFileSystemWatcherService( fileSystem, storeDir, logging,
+                platformModule.jobScheduler, fileWatcherFileNameFilter() );
+        dependencies.satisfyDependencies( watcherService );
+        life.add( watcherService );
         LocalDatabase localDatabase = new LocalDatabase( platformModule.storeDir,
                 new StoreFiles( fileSystem, platformModule.pageCache ),
                 platformModule.dataSourceManager,
                 databaseHealthSupplier,
-                platformModule.watcherService,
+                watcherService,
                 platformModule.availabilityGuard,
                 logProvider );
+
 
         IdentityModule identityModule = new IdentityModule( platformModule, clusterStateDirectory.get() );
 
@@ -220,6 +229,15 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
         life.add( consensusModule.raftTimeoutService() );
         life.add( coreServerModule.membershipWaiterLifecycle );
+    }
+
+    static Predicate<String> fileWatcherFileNameFilter()
+    {
+        return Predicates.all(
+                fileName -> !fileName.startsWith( PhysicalLogFile.DEFAULT_NAME ),
+                filename -> !filename.startsWith( StoreUtil.BRANCH_SUBDIRECTORY ),
+                filename -> !filename.startsWith( StoreUtil.TEMP_COPY_DIRECTORY_NAME )
+        );
     }
 
     private MessageLogger<MemberId> createMessageLogger( Config config, LifeSupport life, MemberId myself )

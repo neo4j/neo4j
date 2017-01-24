@@ -28,8 +28,6 @@ import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemLifecycleAdapter;
-import org.neo4j.io.fs.watcher.FileWatcher;
-import org.neo4j.io.fs.watcher.RestartableFileSystemWatcher;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
@@ -48,9 +46,6 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
-import org.neo4j.kernel.impl.util.watcher.DefaultFileDeletionEventListener;
-import org.neo4j.kernel.impl.util.watcher.FileSystemWatcherService;
-import org.neo4j.kernel.impl.util.watcher.FileSystemWatcherServiceFactory;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.info.JvmChecker;
 import org.neo4j.kernel.info.JvmMetadataRepository;
@@ -116,8 +111,6 @@ public class PlatformModule
 
     public final StoreCopyCheckPointMutex storeCopyCheckPointMutex;
 
-    public final FileSystemWatcherService watcherService;
-
     public PlatformModule( File providedStoreDir, Map<String,String> params, DatabaseInfo databaseInfo,
             GraphDatabaseFacadeFactory.Dependencies externalDependencies, GraphDatabaseFacade graphDatabaseFacade )
     {
@@ -176,11 +169,6 @@ public class PlatformModule
         dependencies.satisfyDependency( firstImplementor(
                 CheckPointerMonitor.class, tracers.checkPointTracer, CheckPointerMonitor.NULL ) );
 
-        FileWatcher fileWatcher = createFileWatcher();
-        watcherService = FileSystemWatcherServiceFactory.createFileSystemWatcherService( jobScheduler, fileWatcher );
-        dependencies.satisfyDependencies( watcherService );
-        life.add( watcherService );
-
         pageCache = dependencies.satisfyDependency( createPageCache( fileSystem, config, logging, tracers ) );
         life.add( new PageCacheLifecycle( pageCache ) );
 
@@ -208,26 +196,6 @@ public class PlatformModule
         dependencies.satisfyDependency( storeCopyCheckPointMutex );
 
         publishPlatformInfo( dependencies.resolveDependency( UsageData.class ) );
-    }
-
-    protected FileWatcher createFileWatcher()
-    {
-        try
-        {
-            RestartableFileSystemWatcher watcher = new RestartableFileSystemWatcher( fileSystem.fileWatcher() );
-            watcher.addFileWatchEventListener( new DefaultFileDeletionEventListener( logging ) );
-            watcher.watch( storeDir );
-            // register to watch store dir parent folder to see when store dir removed
-            watcher.watch( storeDir.getParentFile() );
-            return watcher;
-        }
-        catch ( Exception e )
-        {
-            Log log = logging.getInternalLog( getClass() );
-            log.warn( "Can not create file watcher for current file system. File monitoring capabilities for store " +
-                    "files will be disabled.", e );
-            return FileWatcher.SILENT_WATCHER;
-        }
     }
 
     protected SystemNanoClock createClock()

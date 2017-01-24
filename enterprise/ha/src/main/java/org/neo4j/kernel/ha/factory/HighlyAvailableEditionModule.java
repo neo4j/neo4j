@@ -29,6 +29,7 @@ import java.time.Clock;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.neo4j.cluster.ClusterSettings;
@@ -49,8 +50,10 @@ import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvid
 import org.neo4j.com.Server;
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.com.storecopy.StoreCopyClient;
+import org.neo4j.com.storecopy.StoreUtil;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.function.Factory;
+import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
@@ -90,8 +93,8 @@ import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
 import org.neo4j.kernel.ha.cluster.SimpleHighAvailabilityMemberContext;
 import org.neo4j.kernel.ha.cluster.SwitchToMaster;
 import org.neo4j.kernel.ha.cluster.SwitchToSlave;
-import org.neo4j.kernel.ha.cluster.SwitchToSlaveCopyThenBranch;
 import org.neo4j.kernel.ha.cluster.SwitchToSlaveBranchThenCopy;
+import org.neo4j.kernel.ha.cluster.SwitchToSlaveCopyThenBranch;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.ha.cluster.member.HighAvailabilitySlaves;
 import org.neo4j.kernel.ha.cluster.member.ObservedClusterMembers;
@@ -156,6 +159,7 @@ import org.neo4j.kernel.impl.store.stats.IdBasedStoreEntityCounters;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
@@ -174,7 +178,6 @@ import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
 
 import static java.lang.reflect.Proxy.newProxyInstance;
-
 import static org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache.TransactionMetadata;
 
 /**
@@ -186,12 +189,6 @@ public class HighlyAvailableEditionModule
 {
     private HighAvailabilityMemberStateMachine memberStateMachine;
     public ClusterMembers members;
-
-    @Override
-    public void registerEditionSpecificProcedures( Procedures procedures ) throws KernelException
-    {
-        procedures.registerProcedure( EnterpriseBuiltInDbmsProcedures.class, true );
-    }
 
     public HighlyAvailableEditionModule( final PlatformModule platformModule )
     {
@@ -213,6 +210,11 @@ public class HighlyAvailableEditionModule
         this.accessCapability = config.get( GraphDatabaseSettings.read_only )? new ReadOnly() : new CanWrite();
 
         idTypeConfigurationProvider = new EnterpriseIdTypeConfigurationProvider( config );
+
+        watcherService = createFileSystemWatcherService( platformModule.fileSystem, storeDir, logging,
+                platformModule.jobScheduler, fileWatcherFileNameFilter() );
+        dependencies.satisfyDependencies( watcherService );
+        life.add( watcherService );
 
         // Set Netty logger
         InternalLoggerFactory.setDefaultFactory( new NettyLoggerFactory( logging.getInternalLogProvider() ) );
@@ -532,6 +534,21 @@ public class HighlyAvailableEditionModule
         life.add( paxosLife );
 
         dependencies.satisfyDependency( createSessionTracker() );
+    }
+
+    @Override
+    public void registerEditionSpecificProcedures( Procedures procedures ) throws KernelException
+    {
+        procedures.registerProcedure( EnterpriseBuiltInDbmsProcedures.class, true );
+    }
+
+    static Predicate<String> fileWatcherFileNameFilter()
+    {
+        return Predicates.all(
+                fileName -> !fileName.startsWith( PhysicalLogFile.DEFAULT_NAME ),
+                filename -> !filename.startsWith( StoreUtil.BRANCH_SUBDIRECTORY ),
+                filename -> !filename.startsWith( StoreUtil.TEMP_COPY_DIRECTORY_NAME )
+        );
     }
 
     private SwitchToSlave chooseSwitchToSlaveStrategy( PlatformModule platformModule, Config config, Dependencies
