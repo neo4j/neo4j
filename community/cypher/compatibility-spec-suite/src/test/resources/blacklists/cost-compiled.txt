@@ -211,11 +211,7 @@ Longer pattern with bound nodes without matches
 Handling optional matches between optionally matched entities
 Handling optional matches between nulls
 OPTIONAL MATCH and `collect()`
-ORDER BY should return results in ascending order
-ORDER BY DESC should return results in descending order
 ORDER BY of a column introduced in RETURN should return salient results in ascending order
-Renaming columns before ORDER BY should return results in ascending order
-Handle projections with ORDER BY - GH#4937
 ORDER BY should order booleans in the expected order
 ORDER BY DESC should order booleans in the expected order
 ORDER BY should order strings in the expected order
@@ -224,9 +220,6 @@ ORDER BY should order ints in the expected order
 ORDER BY DESC should order ints in the expected order
 ORDER BY should order floats in the expected order
 ORDER BY DESC should order floats in the expected order
-Handle ORDER BY with LIMIT 1
-ORDER BY with LIMIT 0 should not generate errors
-ORDER BY with negative parameter for LIMIT should not generate errors
 ORDER BY with a negative LIMIT should fail with a syntax exception
 Pattern comprehension and ORDER BY
 Returning a pattern comprehension
