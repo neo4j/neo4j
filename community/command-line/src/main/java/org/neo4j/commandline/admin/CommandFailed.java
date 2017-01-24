@@ -19,8 +19,6 @@
  */
 package org.neo4j.commandline.admin;
 
-import org.neo4j.kernel.StoreLockException;
-
 public class CommandFailed extends Exception
 {
     public CommandFailed( String message, Exception cause )
@@ -28,9 +26,9 @@ public class CommandFailed extends Exception
         super( message, cause );
     }
 
-    public CommandFailed( StoreLockException exception )
+    public CommandFailed( Throwable cause )
     {
-        super( exception );
+        super( cause );
     }
 
     public CommandFailed( String message )

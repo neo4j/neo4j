@@ -40,7 +40,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.causalclustering.core.consensus.ReplicatedInteger.valueOf;
-import static org.neo4j.causalclustering.core.consensus.log.RaftLog.PHYSICAL_LOG_DIRECTORY_NAME;
+import static org.neo4j.causalclustering.core.consensus.log.RaftLog.RAFT_LOG_DIRECTORY_NAME;
 import static org.neo4j.causalclustering.core.consensus.log.RaftLogHelper.hasNoContent;
 import static org.neo4j.causalclustering.core.consensus.log.RaftLogHelper.readLogEntry;
 import static org.neo4j.logging.NullLogProvider.getInstance;
@@ -52,7 +52,7 @@ public class SegmentedRaftLogDurabilityTest
 
     private final RaftLogFactory logFactory = ( fileSystem ) ->
     {
-        File directory = new File( PHYSICAL_LOG_DIRECTORY_NAME );
+        File directory = new File( RAFT_LOG_DIRECTORY_NAME );
         fileSystem.mkdir( directory );
 
         long rotateAtSizeBytes = 128;

@@ -44,7 +44,6 @@ import org.neo4j.logging.NullLogProvider;
 
 import static org.neo4j.causalclustering.core.server.CoreServerModule.LAST_FLUSHED_NAME;
 import static org.neo4j.causalclustering.ReplicationModule.SESSION_TRACKER_NAME;
-import static org.neo4j.causalclustering.core.EnterpriseCoreEditionModule.CLUSTER_STATE_DIRECTORY_NAME;
 import static org.neo4j.causalclustering.core.IdentityModule.CORE_MEMBER_ID_NAME;
 import static org.neo4j.causalclustering.core.consensus.ConsensusModule.RAFT_MEMBERSHIP_NAME;
 import static org.neo4j.causalclustering.core.consensus.ConsensusModule.RAFT_TERM_NAME;
@@ -59,29 +58,31 @@ public class DumpClusterState
     private final PrintStream out;
 
     /**
-     * @param args [0] = graph database folder
+     * @param args [0] = data directory
      * @throws IOException When IO exception occurs.
      */
-    public static void main( String[] args ) throws IOException
+    public static void main( String[] args ) throws IOException, ClusterStateException
     {
         if ( args.length != 1 )
         {
-            System.out.println( "usage: DumpClusterState <graph.db>" );
+            System.out.println( "usage: DumpClusterState <data directory>" );
             System.exit( 1 );
         }
 
+        File dataDirectory = new File( args[0] );
+
         DumpClusterState dumpTool = new DumpClusterState(
                 new DefaultFileSystemAbstraction(),
-                new File( args[0], CLUSTER_STATE_DIRECTORY_NAME ),
+                dataDirectory,
                 System.out );
 
         dumpTool.dump();
     }
 
-    DumpClusterState( FileSystemAbstraction fs, File clusterStateDirectory, PrintStream out )
+    DumpClusterState( FileSystemAbstraction fs, File dataDirectory, PrintStream out ) throws ClusterStateException
     {
         this.fs = fs;
-        this.clusterStateDirectory = clusterStateDirectory;
+        this.clusterStateDirectory = new ClusterStateDirectory( dataDirectory ).initialize( fs ).get();
         this.out = out;
     }
 

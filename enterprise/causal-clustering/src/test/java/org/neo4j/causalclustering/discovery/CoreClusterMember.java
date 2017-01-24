@@ -29,6 +29,7 @@ import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.core.consensus.RaftMachine;
 import org.neo4j.causalclustering.core.consensus.log.segmented.FileNames;
+import org.neo4j.causalclustering.core.state.ClusterStateDirectory;
 import org.neo4j.causalclustering.core.state.CoreState;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -44,8 +45,7 @@ import org.neo4j.server.configuration.ClientConnectorSettings.HttpConnector.Encr
 import static java.lang.String.format;
 import static java.util.stream.Collectors.joining;
 
-import static org.neo4j.causalclustering.core.EnterpriseCoreEditionModule.CLUSTER_STATE_DIRECTORY_NAME;
-import static org.neo4j.causalclustering.core.consensus.log.RaftLog.PHYSICAL_LOG_DIRECTORY_NAME;
+import static org.neo4j.causalclustering.core.consensus.log.RaftLog.RAFT_LOG_DIRECTORY_NAME;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class CoreClusterMember implements ClusterMember
@@ -53,6 +53,8 @@ public class CoreClusterMember implements ClusterMember
     private final File neo4jHome;
     private final DiscoveryServiceFactory discoveryServiceFactory;
     private final File storeDir;
+    private final File clusterStateDir;
+    private final File raftLogDir;
     private final Map<String, String> config = stringMap();
     private final int serverId;
     private final String boltAdvertisedAddress;
@@ -105,10 +107,14 @@ public class CoreClusterMember implements ClusterMember
         }
 
         this.neo4jHome = new File( parentDir, "server-core-" + serverId );
+        config.put( GraphDatabaseSettings.neo4j_home.name(), neo4jHome.getAbsolutePath() );
         config.put( GraphDatabaseSettings.logs_directory.name(), new File( neo4jHome, "logs" ).getAbsolutePath() );
 
         this.discoveryServiceFactory = discoveryServiceFactory;
-        storeDir = new File( new File( new File( neo4jHome, "data" ), "databases" ), "graph.db" );
+        File dataDir = new File( neo4jHome, "data" );
+        clusterStateDir = ClusterStateDirectory.withoutInitializing( dataDir ).get();
+        raftLogDir = new File( clusterStateDir, RAFT_LOG_DIRECTORY_NAME );
+        storeDir = new File( new File( dataDir, "databases" ), "graph.db" );
         storeDir.mkdirs();
     }
 
@@ -172,8 +178,7 @@ public class CoreClusterMember implements ClusterMember
 
     public SortedMap<Long, File> getLogFileNames()
     {
-        File clusterStateDir = new File( storeDir, CLUSTER_STATE_DIRECTORY_NAME );
-        File logFilesDir = new File( clusterStateDir, PHYSICAL_LOG_DIRECTORY_NAME );
+        File logFilesDir = new File( clusterStateDir, RAFT_LOG_DIRECTORY_NAME );
         return new FileNames( logFilesDir ).getAllFiles( new DefaultFileSystemAbstraction(), null );
     }
 
@@ -197,5 +202,15 @@ public class CoreClusterMember implements ClusterMember
     public ClientConnectorAddresses clientConnectorAddresses()
     {
         return ClientConnectorAddresses.extractFromConfig( new Config( this.config ) );
+    }
+
+    public File clusterStateDirectory()
+    {
+        return clusterStateDir;
+    }
+
+    public File raftLogDirectory()
+    {
+        return raftLogDir;
     }
 }

@@ -110,7 +110,7 @@ public class CoreEdgeMetricsIT
             assertAllNodesVisible( db.database() );
         }
 
-        File coreMetricsDir = new File( cluster.getCoreMemberById( 0 ).storeDir(), csvPath.getDefaultValue() );
+        File coreMetricsDir = new File( cluster.getCoreMemberById( 0 ).homeDir(), csvPath.getDefaultValue() );
 
         assertEventually( "append index eventually accurate",
                 () -> readLongValue( metricsCsv( coreMetricsDir, CoreMetrics.APPEND_INDEX ) ),
@@ -130,9 +130,9 @@ public class CoreEdgeMetricsIT
 
         assertEventually( "tx pull requests received eventually accurate", () -> {
             long total = 0;
-            for ( final CoreGraphDatabase db : cluster.coreMembers().stream().map( CoreClusterMember::database ).collect( Collectors.toList()) )
+            for ( final File homeDir : cluster.coreMembers().stream().map( CoreClusterMember::homeDir ).collect( Collectors.toList()) )
             {
-                File metricsDir = new File( db.getStoreDir(), "metrics" );
+                File metricsDir = new File( homeDir, "metrics" );
                 total += readLongValue( metricsCsv( metricsDir, CoreMetrics.TX_PULL_REQUESTS_RECEIVED ) );
             }
             return total;
@@ -146,7 +146,7 @@ public class CoreEdgeMetricsIT
                 () -> readLongValue( metricsCsv( coreMetricsDir, CoreMetrics.IS_LEADER ) ),
                 greaterThanOrEqualTo( 0L ), TIMEOUT, TimeUnit.SECONDS );
 
-        File readReplicaMetricsDir = new File( cluster.getReadReplicaById( 0 ).storeDir(), "metrics" );
+        File readReplicaMetricsDir = new File( cluster.getReadReplicaById( 0 ).homeDir(), "metrics" );
 
         assertEventually( "pull update request registered",
                 () -> readLongValue( metricsCsv( readReplicaMetricsDir, PULL_UPDATES ) ),

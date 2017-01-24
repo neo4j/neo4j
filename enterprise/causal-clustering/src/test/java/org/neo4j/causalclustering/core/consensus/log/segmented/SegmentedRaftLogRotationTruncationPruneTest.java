@@ -34,7 +34,7 @@ import org.neo4j.time.Clocks;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.causalclustering.core.consensus.ReplicatedInteger.valueOf;
-import static org.neo4j.causalclustering.core.consensus.log.RaftLog.PHYSICAL_LOG_DIRECTORY_NAME;
+import static org.neo4j.causalclustering.core.consensus.log.RaftLog.RAFT_LOG_DIRECTORY_NAME;
 import static org.neo4j.logging.NullLogProvider.getInstance;
 
 public class SegmentedRaftLogRotationTruncationPruneTest
@@ -119,7 +119,7 @@ public class SegmentedRaftLogRotationTruncationPruneTest
     {
         FileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
 
-        File directory = new File( PHYSICAL_LOG_DIRECTORY_NAME );
+        File directory = new File( RAFT_LOG_DIRECTORY_NAME );
         fileSystem.mkdir( directory );
 
         LogProvider logProvider = getInstance();
