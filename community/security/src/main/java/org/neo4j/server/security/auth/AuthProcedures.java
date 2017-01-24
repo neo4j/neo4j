@@ -97,7 +97,7 @@ public class AuthProcedures
 
     @Deprecated
     @Description( "Show the current user. Deprecated by dbms.showCurrentUser." )
-    @Procedure( name = "dbms.security.showCurrentUser", mode = DBMS )
+    @Procedure( name = "dbms.security.showCurrentUser", mode = DBMS, deprecatedBy = "dbms.showCurrentUser" )
     public Stream<UserResult> showCurrentUserDeprecated() throws InvalidArgumentsException, IOException
     {
         return showCurrentUser();
