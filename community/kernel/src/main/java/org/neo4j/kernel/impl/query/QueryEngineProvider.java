@@ -19,9 +19,15 @@
  */
 package org.neo4j.kernel.impl.query;
 
+import java.util.Comparator;
+import java.util.List;
+
 import org.neo4j.helpers.Service;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+
+import static org.neo4j.helpers.collection.Iterables.asList;
 
 public abstract class QueryEngineProvider extends Service
 {
@@ -32,21 +38,15 @@ public abstract class QueryEngineProvider extends Service
 
     protected abstract QueryExecutionEngine createEngine( Dependencies deps, GraphDatabaseAPI graphAPI );
 
+    protected abstract int enginePriority();
+
     public static QueryExecutionEngine initialize( Dependencies deps, GraphDatabaseAPI graphAPI,
             Iterable<QueryEngineProvider> providers )
     {
-        QueryEngineProvider provider = null;
-        for ( QueryEngineProvider candidate : providers )
-        {
-            if ( provider == null )
-            {
-                provider = candidate;
-            }
-            else
-            {
-                throw new IllegalStateException( "Too many query engines." );
-            }
-        }
+        List<QueryEngineProvider> engineProviders = asList( providers );
+        engineProviders.sort( Comparator.comparingInt( QueryEngineProvider::enginePriority ) );
+        QueryEngineProvider provider = Iterables.firstOrNull( engineProviders );
+
         if ( provider == null )
         {
             return noEngine();

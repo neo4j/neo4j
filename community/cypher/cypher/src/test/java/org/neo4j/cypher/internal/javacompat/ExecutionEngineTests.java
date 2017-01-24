@@ -26,9 +26,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.cypher.internal.CommunityCompatibilityFactory;
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService;
 import org.neo4j.graphdb.Result;
 import org.neo4j.kernel.GraphDatabaseQueryService;
+import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -37,6 +39,7 @@ import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
 import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.kernel.impl.query.TransactionalContextFactory;
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
@@ -55,7 +58,13 @@ public class ExecutionEngineTests
     public void shouldConvertListsAndMapsWhenPassingFromScalaToJava() throws Exception
     {
         GraphDatabaseQueryService graph = new GraphDatabaseCypherService( this.database.getGraphDatabaseAPI() );
-        ExecutionEngine executionEngine = new ExecutionEngine( graph, NullLogProvider.getInstance() );
+        KernelAPI kernelAPI = graph.getDependencyResolver().resolveDependency( KernelAPI.class );
+        Monitors monitors = graph.getDependencyResolver().resolveDependency( Monitors.class );
+
+        NullLogProvider nullLogProvider = NullLogProvider.getInstance();
+        CommunityCompatibilityFactory compatibilityFactory =
+                new CommunityCompatibilityFactory( graph, kernelAPI, monitors, nullLogProvider );
+        ExecutionEngine executionEngine = new ExecutionEngine( graph, nullLogProvider, compatibilityFactory );
 
         Result result;
         try ( InternalTransaction tx = graph

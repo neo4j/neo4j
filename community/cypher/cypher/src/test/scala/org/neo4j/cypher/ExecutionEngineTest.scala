@@ -36,7 +36,9 @@ import org.neo4j.kernel.NeoStoreDataSource
 import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.api.security.AnonymousContext
 import org.neo4j.kernel.impl.coreapi.TopLevelTransaction
+import org.neo4j.logging.NullLogProvider
 import org.neo4j.test.TestGraphDatabaseFactory
+import org.neo4j.cypher.ExecutionEngineHelper.createEngine
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -480,8 +482,8 @@ order by a.COL1""")
 
   test("createEngineWithSpecifiedParserVersion") {
     val config = Map[Setting[_], String](GraphDatabaseSettings.cypher_parser_version ->  "2.3")
-    val db = new TestGraphDatabaseFactory().newImpermanentDatabase(config.asJava)
-    val engine = new ExecutionEngine(new GraphDatabaseCypherService(db))
+    val db: GraphDatabaseService = new TestGraphDatabaseFactory().newImpermanentDatabase(config.asJava)
+    val engine = createEngine(db)
 
     try {
       // This syntax is valid today, but should give an exception in 1.5
@@ -630,7 +632,7 @@ order by a.COL1""")
 
   test("syntax errors should not leave dangling transactions") {
 
-    val engine = new ExecutionEngine(graph)
+    val engine = createEngine(graph)
 
     intercept[Throwable](engine.execute("BABY START SMILING, YOU KNOW THE SUN IS SHINING.", Map.empty[String, Any]))
 
@@ -965,7 +967,7 @@ order by a.COL1""")
     result should have size 2
   }
 
-  override def databaseConfig() = super.databaseConfig() ++ Map(
+  override def databaseConfig(): Map[Setting[_], String] = super.databaseConfig() ++ Map(
     GraphDatabaseSettings.cypher_min_replan_interval -> "0",
     GraphDatabaseSettings.cypher_compiler_tracing -> "true"
   )
@@ -1008,14 +1010,14 @@ order by a.COL1""")
     (0 until 100).foreach { _ => createLabeledNode("Person") }
     //WHEN
     eengine.execute(s"match (n:Person) return n", Map.empty[String, Any]).toList
-    planningListener.planRequests.toSeq should equal(Seq(
+    planningListener.planRequests should equal(Seq(
       s"match (n:Person) return n"
     ))
     (0 until 9).foreach { _ => createLabeledNode("Dog") }
     eengine.execute(s"match (n:Person) return n", Map.empty[String, Any]).toList
 
     //THEN
-    planningListener.planRequests.toSeq should equal(Seq(
+    planningListener.planRequests should equal(Seq(
       s"match (n:Person) return n"
     ))
   }
@@ -1034,7 +1036,7 @@ order by a.COL1""")
     val result2 = eengine.execute("match (n) return n", Map.empty[String, Any]).toList
     result2 shouldBe empty
 
-    planningListener.planRequests.toSeq should equal(Seq(
+    planningListener.planRequests should equal(Seq(
       s"match (n) return n",
       s"match (n) return n"
     ))
@@ -1047,6 +1049,6 @@ order by a.COL1""")
     val db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( new File( "target/readonly" ) )
       .setConfig( GraphDatabaseSettings.read_only, "true" )
       .newGraphDatabase()
-    new ExecutionEngine(new GraphDatabaseCypherService(db))
+    createEngine(db)
   }
 }

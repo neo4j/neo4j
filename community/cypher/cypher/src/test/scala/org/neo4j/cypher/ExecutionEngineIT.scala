@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.CostBasedPlannerName
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.helpers.GraphIcing
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
+import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.GraphDatabaseQueryService
@@ -36,6 +37,7 @@ import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.impl.proc.Procedures
 import org.neo4j.procedure.Mode
 import org.neo4j.test.TestGraphDatabaseFactory
+import org.neo4j.cypher.ExecutionEngineHelper.createEngine
 
 import scala.collection.immutable.Map
 
@@ -189,9 +191,9 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
 
   test("should not leak transaction when closing the result for a query") {
     //given
-    val db = new TestGraphDatabaseFactory().newImpermanentDatabase()
+    val db: GraphDatabaseService = new TestGraphDatabaseFactory().newImpermanentDatabase()
     val service = new GraphDatabaseCypherService(db)
-    val engine = new ExecutionEngine(service)
+    val engine = createEngine(service)
 
     // when
     db.execute("return 1").close()
@@ -213,7 +215,7 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     //given
     val db = new TestGraphDatabaseFactory().newImpermanentDatabase()
     val service = new GraphDatabaseCypherService(db)
-    val engine = new ExecutionEngine(service)
+    val engine = createEngine(service)
 
     // when
     db.execute("profile return 1").close()
@@ -245,7 +247,7 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     //given
     val db = new TestGraphDatabaseFactory().newImpermanentDatabase()
     val service = new GraphDatabaseCypherService(db)
-    val engine = new ExecutionEngine(service)
+    val engine = createEngine(service)
 
     // when
     db.execute("explain return 1").close()
@@ -267,7 +269,7 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     //given
     val db = new TestGraphDatabaseFactory().newImpermanentDatabase()
     val service = new GraphDatabaseCypherService(db)
-    val engine = new ExecutionEngine(service)
+    val engine = createEngine(service)
 
     // when
     intercept[SyntaxException](engine.execute("", Map.empty[String, Object]))
@@ -280,7 +282,7 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     //given
     val db = new TestGraphDatabaseFactory().newImpermanentDatabase()
     val service = new GraphDatabaseCypherService(db)
-    val engine = new ExecutionEngine(service)
+    val engine = createEngine(service)
 
     procedures(service).register(new AllNodesProcedure())
     txBridge(service).hasTransaction shouldBe false
@@ -305,7 +307,7 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     //given
     val db = new TestGraphDatabaseFactory().newImpermanentDatabase()
     val service = new GraphDatabaseCypherService(db)
-    val engine = new ExecutionEngine(service)
+    val engine = createEngine(service)
 
     procedures(service).register(new AllNodesProcedure())
     txBridge(service).hasTransaction shouldBe false
@@ -330,7 +332,7 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     //given
     val db = new TestGraphDatabaseFactory().newImpermanentDatabase()
     val service = new GraphDatabaseCypherService(db)
-    val engine = new ExecutionEngine(service)
+    val engine = createEngine(service)
 
     procedures(service).register(new AllNodesProcedure())
     txBridge(service).hasTransaction shouldBe false
@@ -355,7 +357,7 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     //given
     val db = new TestGraphDatabaseFactory().newImpermanentDatabase()
     val service = new GraphDatabaseCypherService(db)
-    val engine = new ExecutionEngine(service)
+    val engine = createEngine(service)
 
     import scala.collection.JavaConverters._
     // when
@@ -378,7 +380,7 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     //given
     val db = new TestGraphDatabaseFactory().newImpermanentDatabase()
     val service = new GraphDatabaseCypherService(db)
-    val engine = new ExecutionEngine(service)
+    val engine = createEngine(service)
 
     import scala.collection.JavaConverters._
     // when
@@ -401,7 +403,7 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     //given
     val db = new TestGraphDatabaseFactory().newImpermanentDatabase()
     val service = new GraphDatabaseCypherService(db)
-    val engine = new ExecutionEngine(service)
+    val engine = createEngine(service)
 
     import scala.collection.JavaConverters._
     // when
@@ -424,7 +426,7 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     //given
     val db = new TestGraphDatabaseFactory().newImpermanentDatabase()
     val service = new GraphDatabaseCypherService(db)
-    val engine = new ExecutionEngine(service)
+    val engine = createEngine(service)
 
     procedures(service).register(new AllNodesProcedure())
     txBridge(service).hasTransaction shouldBe false
@@ -450,7 +452,7 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     //given
     val db = new TestGraphDatabaseFactory().newImpermanentDatabase()
     val service = new GraphDatabaseCypherService(db)
-    val engine = new ExecutionEngine(service)
+    val engine = createEngine(service)
 
     procedures(service).register(new AllNodesProcedure())
     txBridge(service).hasTransaction shouldBe false
@@ -476,7 +478,7 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     //given
     val db = new TestGraphDatabaseFactory().newImpermanentDatabase()
     val service = new GraphDatabaseCypherService(db)
-    val engine = new ExecutionEngine(service)
+    val engine = createEngine(service)
 
     procedures(service).register(new AllNodesProcedure())
     txBridge(service).hasTransaction shouldBe false
@@ -502,7 +504,7 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     //given
     val db = new TestGraphDatabaseFactory().newImpermanentDatabase()
     val service = new GraphDatabaseCypherService(db)
-    val engine = new ExecutionEngine(service)
+    val engine = createEngine(service)
 
     // when
     db.execute("return 1").accept(consumerVisitor)
@@ -519,7 +521,7 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     //given
     val db = new TestGraphDatabaseFactory().newImpermanentDatabase()
     val service = new GraphDatabaseCypherService(db)
-    val engine = new ExecutionEngine(service)
+    val engine = createEngine(service)
 
     // when
     db.execute("profile return 1").accept(consumerVisitor)
@@ -536,7 +538,7 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     //given
     val db = new TestGraphDatabaseFactory().newImpermanentDatabase()
     val service = new GraphDatabaseCypherService(db)
-    val engine = new ExecutionEngine(service)
+    val engine = createEngine(service)
 
     // when
     db.execute("explain return 1").accept(consumerVisitor)
@@ -553,7 +555,7 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     //given
     val db = new TestGraphDatabaseFactory().newImpermanentDatabase()
     val service = new GraphDatabaseCypherService(db)
-    val engine = new ExecutionEngine(service)
+    val engine = createEngine(service)
 
     procedures(service).register(new AllNodesProcedure())
     txBridge(service).hasTransaction shouldBe false
@@ -573,7 +575,7 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     //given
     val db = new TestGraphDatabaseFactory().newImpermanentDatabase()
     val service = new GraphDatabaseCypherService(db)
-    val engine = new ExecutionEngine(service)
+    val engine = createEngine(service)
 
     procedures(service).register(new AllNodesProcedure())
     txBridge(service).hasTransaction shouldBe false
@@ -593,7 +595,7 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     //given
     val db = new TestGraphDatabaseFactory().newImpermanentDatabase()
     val service = new GraphDatabaseCypherService(db)
-    val engine = new ExecutionEngine(service)
+    val engine = createEngine(service)
 
     procedures(service).register(new AllNodesProcedure())
     txBridge(service).hasTransaction shouldBe false

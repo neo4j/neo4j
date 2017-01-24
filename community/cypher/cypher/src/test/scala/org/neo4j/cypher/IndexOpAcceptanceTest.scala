@@ -22,7 +22,7 @@ package org.neo4j.cypher
 import java.io.{File, FileOutputStream}
 import java.util.concurrent.TimeUnit
 
-import org.neo4j.cypher.internal.ExecutionEngine
+import org.neo4j.cypher.ExecutionEngineHelper.createEngine
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.api.exceptions.schema.{DropIndexFailureException, NoSuchIndexException}
@@ -99,7 +99,7 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
     val storeDir = new File("target/test-data/impermanent-db")
     storeDir.deleteAll()
     graph = new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newEmbeddedDatabase(storeDir))
-    eengine = new ExecutionEngine(graph)
+    eengine = createEngine(graph)
     execute("CREATE INDEX ON :Person(name)")
     execute("create (:Person {name:42})")
     val tx = graph.getGraphDatabaseService.beginTx()
@@ -116,7 +116,7 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
     stream.close()
 
     graph = new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newEmbeddedDatabase(storeDir))
-    eengine = new ExecutionEngine(graph)
+    eengine = createEngine(graph)
     graph.getGraphDatabaseService
   }
 }

@@ -20,7 +20,6 @@
 package org.neo4j.cypher
 
 import org.mockito.Mockito.when
-import org.neo4j.cypher.internal.compiler.v3_2.codegen.CodeGenConfiguration
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.idp.DefaultIDPSolverConfig
 import org.neo4j.cypher.internal.compiler.v3_2.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v3_2.CypherCompilerConfiguration

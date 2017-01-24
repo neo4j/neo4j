@@ -24,14 +24,12 @@ import java.time.{Clock, Instant, ZoneOffset}
 import org.neo4j.cypher.GraphDatabaseTestSupport
 import org.neo4j.cypher.internal.compatibility.v3_2.{StringInfoLogger, WrappedMonitors}
 import org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer.NO_TRACING
-import org.neo4j.cypher.internal.compiler.v3_2.codegen.CodeGenConfiguration
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.ExecutionPlan
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.IdentityTypeConverter
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_2.phases.devNullLogger
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.spi.v3_2.codegen.GeneratedQueryStructure
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.logging.AssertableLogProvider.inLog
@@ -54,15 +52,15 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
         errorIfShortestPathFallbackUsedAtRuntime = false,
         nonIndexedLabelWarningThreshold = 10000L
       ),
-      clock, GeneratedQueryStructure,
+      clock,
       WrappedMonitors(kernelMonitors),
       new StringInfoLogger(log),
       plannerName = Some(IDPPlannerName),
       runtimeName = Some(CompiledRuntimeName),
       updateStrategy = None,
-      codeGenMode = None,
       rewriterSequencer = RewriterStepSequencer.newValidating,
-      typeConverter = IdentityTypeConverter
+      typeConverter = IdentityTypeConverter,
+      runtimeBuilder = CommunityRuntimeBuilder
     )
   }
 

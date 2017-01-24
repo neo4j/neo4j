@@ -1,0 +1,291 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                      http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.neo4j</groupId>
+    <artifactId>cypher-parent</artifactId>
+    <version>3.2.0-SNAPSHOT</version>
+    <relativePath>../../community/cypher/</relativePath>
+  </parent>
+
+  <artifactId>cypher-enterprise-parent</artifactId>
+  <version>3.2.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+  <name>Neo4j - Enterprise Cypher Build</name>
+  <description>Project that builds the Neo4j Cypher modules as part of the Enterprise distribution.</description>
+  <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
+
+  <properties>
+    <bundle.namespace>org.neo4j.cypher</bundle.namespace>
+    <short-name>community-cypher-build</short-name>
+    <license-text.header>AGPL-3-header.txt</license-text.header>
+    <docs-plugin.skip>true</docs-plugin.skip>
+    <componentversion.skip>true</componentversion.skip>
+  </properties>
+
+  <scm>
+    <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
+    <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>
+    <url>https://github.com/neo4j/neo4j</url>
+  </scm>
+
+  <modules>
+    <module>spec-suite-tools</module>
+    <module>acceptance-spec-suite</module>
+    <module>compatibility-spec-suite</module>
+    <module>cypher</module>
+    <module>cypher-compiled-runtime-3.2</module>
+  </modules>
+
+  <build>
+    <plugins>
+
+      <plugin>
+        <groupId>net.alchim31.maven</groupId>
+        <artifactId>scala-maven-plugin</artifactId>
+        <version>3.2.0</version>
+        <executions>
+          <execution>
+            <id>scala-compile</id>
+            <goals>
+              <goal>add-source</goal>
+              <goal>compile</goal>
+            </goals>
+            <phase>process-resources</phase>
+          </execution>
+          <execution>
+            <id>scala-test-compile</id>
+            <phase>${scala-test-compile-phase}</phase>
+            <goals>
+              <goal>testCompile</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <args>
+              <arg>-Xmax-classfile-name</arg>
+              <arg>100</arg>
+              <!-- arg>-deprecation</arg -->
+          </args>
+          <jvmArgs>
+            <jvmArg>-Xms64m</jvmArg>
+            <jvmArg>-Xmx1024m</jvmArg>
+          </jvmArgs>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.neo4j.build.plugins</groupId>
+        <artifactId>clirr-maven-plugin</artifactId>
+        <configuration>
+          <includes>
+            <include>org/neo4j/cypher</include>
+          </includes>
+
+          <excludes>
+            <!-- Ignore all Cypher internals -->
+            <exclude>org/neo4j/cypher/internal/*</exclude>
+          </excludes>
+        </configuration>
+      </plugin>
+
+      <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-enforcer-plugin</artifactId>
+          <version>1.3.1</version>
+          <executions>
+              <execution>
+                  <id>enforce-dont-exist</id>
+                  <goals>
+                      <goal>enforce</goal>
+                  </goals>
+                  <configuration>
+                      <rules>
+                          <requireFilesDontExist>
+                              <files>
+                                  <file>cypher-compiler-3.1</file>
+                                  <file>cypher-compiler-3.0</file>
+                                  <file>cypher-compiler-2.3</file>
+                              </files>
+                          </requireFilesDontExist>
+                      </rules>
+                      <fail>true</fail>
+                  </configuration>
+              </execution>
+          </executions>
+      </plugin>
+    </plugins>
+
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.scalastyle</groupId>
+          <artifactId>scalastyle-maven-plugin</artifactId>
+          <version>0.4.0</version>
+          <configuration>
+            <verbose>false</verbose>
+            <failOnViolation>true</failOnViolation>
+            <includeTestSourceDirectory>true</includeTestSourceDirectory>
+            <failOnWarning>false</failOnWarning>
+            <inputEncoding>UTF-8</inputEncoding>
+            <sourceDirectory>${basedir}/src/main/scala</sourceDirectory>
+            <testSourceDirectory>${basedir}/src/test/scala</testSourceDirectory>
+            <configLocation>${project.basedir}/../../../community/cypher/scalastyle_config.xml</configLocation>
+            <outputFile>${basedir}/target/scalastyle-output.xml</outputFile>
+            <outputEncoding>UTF-8</outputEncoding>
+          </configuration>
+          <executions>
+            <execution>
+              <goals>
+                <goal>check</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+
+  <!-- inherited dependencies, versions are set in dependencyManagement -->
+
+  <dependencies>
+
+    <!-- shared java test dependencies -->
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+        <groupId>org.hamcrest</groupId>
+        <artifactId>hamcrest-core</artifactId>
+        <scope>test</scope>
+    </dependency>
+    <dependency>
+        <groupId>org.hamcrest</groupId>
+        <artifactId>hamcrest-library</artifactId>
+        <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+  </dependencies>
+
+  <!-- Required versions for each dependency, inherited dependencies are set in dependencies -->
+
+  <dependencyManagement>
+    <dependencies>
+
+      <!-- scala test dependencies -->
+
+      <dependency>
+        <groupId>org.scalatest</groupId>
+        <artifactId>scalatest_2.11</artifactId>
+        <version>2.2.5</version>
+        <scope>test</scope>
+        <exclusions>
+          <exclusion>
+            <artifactId>scala-library</artifactId>
+            <groupId>org.scala-lang</groupId>
+          </exclusion>
+          <exclusion>
+            <artifactId>scala-reflect</artifactId>
+            <groupId>org.scala-lang</groupId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.scalautils</groupId>
+        <artifactId>scalautils_2.11</artifactId>
+        <version>2.1.7</version>
+        <scope>test</scope>
+        <exclusions>
+          <exclusion>
+            <artifactId>scala-library</artifactId>
+            <groupId>org.scala-lang</groupId>
+          </exclusion>
+          <exclusion>
+            <artifactId>scala-reflect</artifactId>
+            <groupId>org.scala-lang</groupId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.scalacheck</groupId>
+        <artifactId>scalacheck_2.11</artifactId>
+        <version>1.12.5</version>
+        <scope>test</scope>
+      </dependency>
+
+      <!-- neo4j -->
+
+      <dependency>
+        <groupId>org.neo4j</groupId>
+        <artifactId>neo4j-kernel</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.neo4j</groupId>
+        <artifactId>neo4j-kernel</artifactId>
+        <version>${project.version}</version>
+        <type>test-jar</type>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.neo4j</groupId>
+        <artifactId>neo4j-common</artifactId>
+        <version>${project.version}</version>
+        <type>test-jar</type>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.neo4j</groupId>
+        <artifactId>neo4j-io</artifactId>
+        <version>${project.version}</version>
+        <type>test-jar</type>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.neo4j</groupId>
+        <artifactId>neo4j-graphviz</artifactId>
+        <version>${project.version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.neo4j</groupId>
+        <artifactId>neo4j-lucene-index</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.neo4j</groupId>
+        <artifactId>neo4j-graph-matching</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.neo4j</groupId>
+        <artifactId>neo4j-graph-algo</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <!-- other -->
+
+      <dependency>
+        <groupId>org.parboiled</groupId>
+        <artifactId>parboiled-scala_2.11</artifactId>
+        <version>1.1.7</version>
+        <exclusions>
+          <exclusion>
+            <artifactId>scala-library</artifactId>
+            <groupId>org.scala-lang</groupId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+
+    </dependencies>
+  </dependencyManagement>
+</project>

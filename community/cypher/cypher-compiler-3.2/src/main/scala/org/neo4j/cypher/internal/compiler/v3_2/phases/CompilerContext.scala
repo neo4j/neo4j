@@ -29,27 +29,15 @@ import org.neo4j.cypher.internal.compiler.v3_2.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_2.phases.{BaseContext, CompilationPhaseTracer, InternalNotificationLogger, Monitors}
 import org.neo4j.cypher.internal.frontend.v3_2.{CypherException, InputPosition}
 
-import scala.reflect.ClassTag
-
-case class CompilerContext(exceptionCreator: (String, InputPosition) => CypherException,
-                   tracer: CompilationPhaseTracer,
-                   notificationLogger: InternalNotificationLogger,
-                   planContext: PlanContext,
-                   typeConverter: RuntimeTypeConverter,
-                   createFingerprintReference: Option[PlanFingerprint] => PlanFingerprintReference,
-                   monitors: Monitors,
-                   metrics: Metrics,
-                   queryGraphSolver: QueryGraphSolver,
-                   config: CypherCompilerConfiguration,
-                   updateStrategy: UpdateStrategy,
-                   clock: Clock,
-                   extra: Map[Class[_], AnyRef] = Map.empty) extends BaseContext {
-
-  def get[T: ClassTag](implicit manifest: Manifest[T]) = {
-    extra.get(manifest.runtimeClass).asInstanceOf[T]
-  }
-
-  def set[T <: AnyRef : ClassTag](value: T)(implicit manifest: Manifest[T]): CompilerContext = {
-    copy(extra = extra + (manifest.runtimeClass -> value))
-  }
-}
+class CompilerContext(val exceptionCreator: (String, InputPosition) => CypherException,
+                      val tracer: CompilationPhaseTracer,
+                      val notificationLogger: InternalNotificationLogger,
+                      val planContext: PlanContext,
+                      val typeConverter: RuntimeTypeConverter,
+                      val createFingerprintReference: Option[PlanFingerprint] => PlanFingerprintReference,
+                      val monitors: Monitors,
+                      val metrics: Metrics,
+                      val queryGraphSolver: QueryGraphSolver,
+                      val config: CypherCompilerConfiguration,
+                      val updateStrategy: UpdateStrategy,
+                      val clock: Clock) extends BaseContext

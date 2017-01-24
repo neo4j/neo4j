@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.javacompat;
 import java.util.Map;
 
 import org.neo4j.cypher.CypherException;
+import org.neo4j.cypher.internal.CompatibilityFactory;
 import org.neo4j.graphdb.Result;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
@@ -45,9 +46,10 @@ public class ExecutionEngine implements QueryExecutionEngine
      * @param queryService The database to wrap
      * @param logProvider A {@link LogProvider} for cypher-statements
      */
-    public ExecutionEngine( GraphDatabaseQueryService queryService, LogProvider logProvider )
+    public ExecutionEngine( GraphDatabaseQueryService queryService, LogProvider logProvider,
+            CompatibilityFactory compatibilityFactory )
     {
-        inner = new org.neo4j.cypher.internal.ExecutionEngine( queryService, logProvider );
+        inner = new org.neo4j.cypher.internal.ExecutionEngine( queryService, logProvider, compatibilityFactory );
     }
 
     @Override

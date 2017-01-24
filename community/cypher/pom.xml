@@ -37,9 +37,6 @@
     <module>ir-3.2</module>
     <module>cypher-compiler-3.2</module>
     <module>cypher</module>
-    <module>spec-suite-tools</module>
-    <module>acceptance-spec-suite</module>
-    <module>compatibility-spec-suite</module>
   </modules>
 
   <build>

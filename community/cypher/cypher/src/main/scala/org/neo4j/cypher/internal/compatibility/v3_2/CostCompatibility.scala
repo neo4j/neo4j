@@ -21,15 +21,13 @@ package org.neo4j.cypher.internal.compatibility.v3_2
 
 import java.time.Clock
 
+import org.neo4j.cypher.internal.compiler.v3_1.codegen.{ByteCodeMode, SourceCodeMode}
 import org.neo4j.cypher.internal.compiler.v3_2._
-import org.neo4j.cypher.internal.compiler.v3_2.codegen.{ByteCodeMode, SourceCodeMode}
-import org.neo4j.cypher.internal.spi.v3_2.codegen.GeneratedQueryStructure
 import org.neo4j.cypher.{CypherCodeGenMode, CypherPlanner, CypherRuntime, CypherUpdateStrategy}
 import org.neo4j.kernel.api.KernelAPI
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
 
-// TODO: Merge with the trait?
 case class CostCompatibility(config: CypherCompilerConfiguration,
                              clock: Clock,
                              kernelMonitors: KernelMonitors,
@@ -40,7 +38,7 @@ case class CostCompatibility(config: CypherCompilerConfiguration,
                              codeGenMode: CypherCodeGenMode,
                              updateStrategy: CypherUpdateStrategy) extends Compatibility {
 
-  protected val compiler = {
+  protected override val compiler: CypherCompiler = {
     val maybePlannerName = planner match {
       case CypherPlanner.default => None
       case CypherPlanner.cost | CypherPlanner.idp => Some(IDPPlannerName)
@@ -67,8 +65,8 @@ case class CostCompatibility(config: CypherCompilerConfiguration,
 
     val logger = new StringInfoLogger(log)
     val monitors = WrappedMonitors(kernelMonitors)
-    CypherCompilerFactory.costBasedCompiler(config, clock, GeneratedQueryStructure, monitors, logger, rewriterSequencer,
-      maybePlannerName, maybeRuntimeName, maybeCodeGenMode, maybeUpdateStrategy, typeConversions)
+    CypherCompilerFactory.costBasedCompiler(config, clock, monitors, logger, rewriterSequencer,
+      maybePlannerName, maybeRuntimeName, maybeUpdateStrategy, typeConversions, CommunityRuntimeBuilder)
   }
 
   override val queryCacheSize: Int = config.queryCacheSize

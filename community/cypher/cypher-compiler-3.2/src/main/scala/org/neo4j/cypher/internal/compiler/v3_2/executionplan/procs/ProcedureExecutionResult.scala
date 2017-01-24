@@ -21,11 +21,10 @@ package org.neo4j.cypher.internal.compiler.v3_2.executionplan.procs
 
 import java.util
 
-import org.neo4j.cypher.internal.compiler.v3_2.codegen.ResultRowImpl
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{InternalQueryType, ProcedureCallMode, StandardInternalExecutionResult}
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_2.spi.{InternalResultVisitor, QualifiedName, QueryContext}
-import org.neo4j.cypher.internal.compiler.v3_2.{ExecutionMode, InternalQueryStatistics, ProfileMode, TaskCloser}
+import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.frontend.v3_2.ProfilerStatisticsNotReadyException
 
 /**
