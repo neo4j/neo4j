@@ -163,7 +163,6 @@ Matching relationships into a list and matching variable length using the list, 
 Matching and optionally matching with bound nodes in reverse direction
 Matching and optionally matching with unbound nodes and equality predicate in reverse direction
 Fail when using property access on primitive type
-Matching and returning ordered results, with LIMIT
 Counting an empty graph
 Matching variable length pattern with property predicate
 Variable length pattern checking labels on endnodes
@@ -212,15 +211,6 @@ Handling optional matches between optionally matched entities
 Handling optional matches between nulls
 OPTIONAL MATCH and `collect()`
 ORDER BY of a column introduced in RETURN should return salient results in ascending order
-ORDER BY should order booleans in the expected order
-ORDER BY DESC should order booleans in the expected order
-ORDER BY should order strings in the expected order
-ORDER BY DESC should order strings in the expected order
-ORDER BY should order ints in the expected order
-ORDER BY DESC should order ints in the expected order
-ORDER BY should order floats in the expected order
-ORDER BY DESC should order floats in the expected order
-ORDER BY with a negative LIMIT should fail with a syntax exception
 Pattern comprehension and ORDER BY
 Returning a pattern comprehension
 Returning a pattern comprehension with label predicate
@@ -245,13 +235,7 @@ Remove a single relationship property
 Remove a single relationship property
 Remove multiple relationship properties
 Remove a missing property should be a valid operation
-Start the result from the second row
-Start the result from the second row by param
-Get rows in the middle
-Get rows in the middle by param
 Sort on aggregated function
-Support sort and distinct
-Support ordering by a property after being distinct-ified
 Count star should count everything in scope
 Absolute function
 Return collection size
@@ -271,11 +255,7 @@ Matching and disregarding output, then matching again
 Returning an expression
 Concatenating and returning the size of literal lists
 Concatenating and returning the size of literal lists
-Limiting amount of rows when there are fewer left than the LIMIT argument
 `substring()` with default second argument
-Returning all variables with ordering
-Using aliased DISTINCT expression in ORDER BY
-Returned columns do not change from using ORDER BY
 Arithmetic expressions should propagate null values
 Indexing into nested literal lists
 Multiple aliasing and backreferencing
@@ -406,14 +386,12 @@ Handling mixed relationship patterns 2
 Handling relationships that are already bound in variable length paths
 NOT and false
 Fail when trying to compare strings and numbers
-ORDER BY and LIMIT can be used
 Aliasing
 Handle dependencies across WITH
 Handle dependencies across WITH with SKIP
 WHERE after WITH should filter results
 WHERE after WITH can filter on top of an aggregation
 ORDER BY on an aggregating key
-ORDER BY a DISTINCT column
 WHERE on a DISTINCT column
 A simple pattern with one bound endpoint
 Null handling
@@ -432,8 +410,6 @@ Fail when adding new label predicate on a node that is already bound 4
 Fail when adding new label predicate on a node that is already bound 5
 Failing on incorrect unicode literal
 Failing on aggregation in WHERE
-Failing on aggregation in ORDER BY after RETURN
-Failing on aggregation in ORDER BY after WITH
 Failing when not aliasing expressions in WITH
 Failing when using undefined variable in pattern
 Failing when using undefined variable in SET
