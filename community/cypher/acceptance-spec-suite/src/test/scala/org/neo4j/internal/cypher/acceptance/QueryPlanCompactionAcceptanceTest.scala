@@ -749,7 +749,6 @@ class QueryPlanCompactionAcceptanceTest extends ExecutionEngineFunSuite with Que
     val query = "EXPLAIN LOAD CSV WITH HEADERS FROM {csv_filename} AS line MERGE (u1:User {login: line.user1}) MERGE " +
       "(u2:User {login: line.user2}) CREATE (u1)-[:FRIEND]->(u2)"
     val result = executeWithCostPlannerOnly(query)
-    println(result.executionPlanDescription())
     result should havePlanLike(
       """
         |+-------------------------+----------------+---------------------------+------------------------+
