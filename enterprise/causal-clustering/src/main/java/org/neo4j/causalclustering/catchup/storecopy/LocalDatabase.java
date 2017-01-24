@@ -37,6 +37,7 @@ import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
+import org.neo4j.kernel.impl.util.watcher.FileSystemWatcherService;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
@@ -59,6 +60,7 @@ public class LocalDatabase implements Lifecycle
     private final Supplier<DatabaseHealth> databaseHealthSupplier;
     private final AvailabilityGuard availabilityGuard;
     private final Log log;
+    private final FileSystemWatcherService watcherService;
 
     private volatile StoreId storeId;
     private volatile DatabaseHealth databaseHealth;
@@ -67,7 +69,8 @@ public class LocalDatabase implements Lifecycle
     private volatile TransactionCommitProcess localCommit;
 
     public LocalDatabase( File storeDir, StoreFiles storeFiles, DataSourceManager dataSourceManager,
-            Supplier<DatabaseHealth> databaseHealthSupplier,  AvailabilityGuard availabilityGuard,
+            Supplier<DatabaseHealth> databaseHealthSupplier, FileSystemWatcherService watcherService,
+            AvailabilityGuard availabilityGuard,
             LogProvider logProvider )
     {
         this.storeDir = storeDir;
@@ -75,6 +78,7 @@ public class LocalDatabase implements Lifecycle
         this.dataSourceManager = dataSourceManager;
         this.databaseHealthSupplier = databaseHealthSupplier;
         this.availabilityGuard = availabilityGuard;
+        this.watcherService = watcherService;
         this.log = logProvider.getLog( getClass() );
 
         raiseAvailabilityGuard( NOT_STOPPED );
@@ -93,6 +97,7 @@ public class LocalDatabase implements Lifecycle
         log.info( "Starting with storeId: " + storeId );
 
         dataSourceManager.start();
+        watcherService.start();
 
         dropAvailabilityGuard();
     }
@@ -220,6 +225,7 @@ public class LocalDatabase implements Lifecycle
         raiseAvailabilityGuard( requirement );
         databaseHealth = null;
         localCommit = null;
+        watcherService.stop();
         dataSourceManager.stop();
     }
 

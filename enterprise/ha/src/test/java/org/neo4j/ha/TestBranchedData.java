@@ -32,6 +32,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 
 import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.com.storecopy.StoreUtil;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
@@ -50,7 +51,6 @@ import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
 import org.neo4j.kernel.impl.ha.ClusterManager.RepairKit;
 import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.util.Listener;
-import org.neo4j.com.storecopy.StoreUtil;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.storageengine.api.StoreFileMetadata;

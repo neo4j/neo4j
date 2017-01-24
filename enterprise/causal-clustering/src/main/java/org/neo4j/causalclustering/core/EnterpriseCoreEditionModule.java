@@ -165,6 +165,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
                 new StoreFiles( fileSystem, platformModule.pageCache ),
                 platformModule.dataSourceManager,
                 databaseHealthSupplier,
+                platformModule.watcherService,
                 platformModule.availabilityGuard,
                 logProvider );
 

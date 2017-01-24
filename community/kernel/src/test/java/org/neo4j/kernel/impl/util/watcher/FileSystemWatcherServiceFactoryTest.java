@@ -24,13 +24,12 @@ import org.junit.Test;
 
 import org.neo4j.io.fs.watcher.FileWatcher;
 import org.neo4j.kernel.impl.util.JobScheduler;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 
-public class WatcherLifecycleAdapterFactoryTest
+public class FileSystemWatcherServiceFactoryTest
 {
 
     private JobScheduler scheduler = mock( JobScheduler.class );
@@ -38,16 +37,16 @@ public class WatcherLifecycleAdapterFactoryTest
     @Test
     public void createDummyAdapterForSilentWatcher()
     {
-        LifecycleAdapter adapter =
-                WatcherLifecycleAdapterFactory.createLifecycleAdapter( scheduler, FileWatcher.SILENT_WATCHER );
-        assertEquals( adapter.getClass(), LifecycleAdapter.class );
+        FileSystemWatcherService service =
+                FileSystemWatcherServiceFactory.createFileSystemWatcherService( scheduler, FileWatcher.SILENT_WATCHER );
+        assertSame( service, FileSystemWatcherService.EMPTY_WATCHER );
     }
 
     @Test
     public void createDefaultWatcherAdapter()
     {
-        LifecycleAdapter adapter =
-                WatcherLifecycleAdapterFactory.createLifecycleAdapter( scheduler, mock( FileWatcher.class ) );
-        assertThat( adapter, Matchers.instanceOf( FileWatcherLifecycleAdapter.class ) );
+        FileSystemWatcherService service =
+                FileSystemWatcherServiceFactory.createFileSystemWatcherService( scheduler, mock( FileWatcher.class ) );
+        assertThat( service, Matchers.instanceOf( DefaultFileSystemWatcherService.class ) );
     }
 }

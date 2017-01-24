@@ -21,20 +21,19 @@ package org.neo4j.kernel.impl.util.watcher;
 
 import org.neo4j.io.fs.watcher.FileWatcher;
 import org.neo4j.kernel.impl.util.JobScheduler;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 /**
  * Factory used for construction of proper adaptor for available {@link FileWatcher}.
  * In case if silent matcher is used dummy adapter will be used, otherwise will use default wrapper that will bind
  * monitoring cycles to corresponding lifecycle phases.
  */
-public class WatcherLifecycleAdapterFactory
+public class FileSystemWatcherServiceFactory
 {
 
-    public static LifecycleAdapter createLifecycleAdapter( JobScheduler jobScheduler, FileWatcher fileWatcher )
+    public static FileSystemWatcherService createFileSystemWatcherService( JobScheduler jobScheduler, FileWatcher fileWatcher )
     {
-        return FileWatcher.SILENT_WATCHER.equals( fileWatcher ) ? new LifecycleAdapter()
-                                                                : new FileWatcherLifecycleAdapter( jobScheduler,
+        return FileWatcher.SILENT_WATCHER.equals( fileWatcher ) ? FileSystemWatcherService.EMPTY_WATCHER
+                                                                : new DefaultFileSystemWatcherService( jobScheduler,
                                                                         fileWatcher );
     }
 }

@@ -74,6 +74,7 @@ import org.neo4j.kernel.impl.transaction.TransactionStats;
 import org.neo4j.kernel.impl.transaction.log.MissingLogDataException;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
+import org.neo4j.kernel.impl.util.watcher.FileSystemWatcherService;
 import org.neo4j.kernel.internal.StoreLockerLifecycleAdapter;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -101,6 +102,7 @@ public abstract class SwitchToSlave
             TransactionCommittingResponseUnpacker.class,
             IndexConfigStore.class,
             OnlineBackupKernelExtension.class,
+            FileSystemWatcherService.class
     };
     private final StoreCopyClient storeCopyClient;
     private final Function<Slave,SlaveServer> slaveServerFactory;

@@ -21,20 +21,18 @@ package org.neo4j.kernel.impl.factory;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
 import java.util.Map;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.security.URLAccessRule;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemLifecycleAdapter;
 import org.neo4j.io.fs.watcher.FileWatcher;
+import org.neo4j.io.fs.watcher.RestartableFileSystemWatcher;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies;
 import org.neo4j.kernel.impl.api.LogRotationMonitor;
@@ -51,7 +49,8 @@ import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.impl.util.watcher.DefaultFileDeletionEventListener;
-import org.neo4j.kernel.impl.util.watcher.WatcherLifecycleAdapterFactory;
+import org.neo4j.kernel.impl.util.watcher.FileSystemWatcherService;
+import org.neo4j.kernel.impl.util.watcher.FileSystemWatcherServiceFactory;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.info.JvmChecker;
 import org.neo4j.kernel.info.JvmMetadataRepository;
@@ -117,6 +116,8 @@ public class PlatformModule
 
     public final StoreCopyCheckPointMutex storeCopyCheckPointMutex;
 
+    public final FileSystemWatcherService watcherService;
+
     public PlatformModule( File providedStoreDir, Map<String,String> params, DatabaseInfo databaseInfo,
             GraphDatabaseFacadeFactory.Dependencies externalDependencies, GraphDatabaseFacade graphDatabaseFacade )
     {
@@ -176,8 +177,9 @@ public class PlatformModule
                 CheckPointerMonitor.class, tracers.checkPointTracer, CheckPointerMonitor.NULL ) );
 
         FileWatcher fileWatcher = createFileWatcher();
-        dependencies.satisfyDependencies( fileWatcher );
-        life.add( WatcherLifecycleAdapterFactory.createLifecycleAdapter( jobScheduler, fileWatcher ) );
+        watcherService = FileSystemWatcherServiceFactory.createFileSystemWatcherService( jobScheduler, fileWatcher );
+        dependencies.satisfyDependencies( watcherService );
+        life.add( watcherService );
 
         pageCache = dependencies.satisfyDependency( createPageCache( fileSystem, config, logging, tracers ) );
         life.add( new PageCacheLifecycle( pageCache ) );
@@ -212,7 +214,7 @@ public class PlatformModule
     {
         try
         {
-            FileWatcher watcher = fileSystem.fileWatcher();
+            RestartableFileSystemWatcher watcher = new RestartableFileSystemWatcher( fileSystem.fileWatcher() );
             watcher.addFileWatchEventListener( new DefaultFileDeletionEventListener( logging ) );
             watcher.watch( storeDir );
             // register to watch store dir parent folder to see when store dir removed
@@ -322,24 +324,6 @@ public class PlatformModule
     protected TransactionStats createTransactionStats()
     {
         return new TransactionStats();
-    }
-
-    private Iterable<Class<?>> getSettingsClasses( Iterable<Class<?>> settingsClasses,
-            Iterable<KernelExtensionFactory<?>> kernelExtensions )
-    {
-        List<Class<?>> totalSettingsClasses = Iterables.asList( settingsClasses );
-
-        // Get the list of settings classes for extensions
-        for ( KernelExtensionFactory<?> kernelExtension : kernelExtensions )
-        {
-            Class<?> settingsClass = kernelExtension.getSettingsClass();
-            if ( settingsClass != null )
-            {
-                totalSettingsClasses.add( settingsClass );
-            }
-        }
-
-        return totalSettingsClasses;
     }
 
 }
