@@ -20,7 +20,9 @@
 package org.neo4j.bolt.v1.runtime.concurrent;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.bolt.v1.runtime.BoltConnectionAuthFatality;
@@ -39,7 +41,7 @@ class RunnableBoltWorker implements Runnable, BoltWorker
 {
     private static final int workQueueSize = Integer.getInteger( "org.neo4j.bolt.workQueueSize", 100 );
 
-    private final ArrayBlockingQueue<Job> jobQueue = new ArrayBlockingQueue<>( workQueueSize );
+    private final BlockingQueue<Job> jobQueue = new ArrayBlockingQueue<>( workQueueSize );
     private final BoltStateMachine machine;
     private final Log log;
     private final Log userLog;
@@ -58,6 +60,7 @@ class RunnableBoltWorker implements Runnable, BoltWorker
      * possible.
      * @param job an operation to be performed on the session
      */
+    @Override
     public void enqueue( Job job )
     {
         try
@@ -66,6 +69,7 @@ class RunnableBoltWorker implements Runnable, BoltWorker
         }
         catch ( InterruptedException e )
         {
+            Thread.currentThread().interrupt();
             throw new RuntimeException( "Worker interrupted while queueing request, the session may have been " +
                     "forcibly closed, or the database may be shutting down." );
         }
@@ -74,7 +78,7 @@ class RunnableBoltWorker implements Runnable, BoltWorker
     @Override
     public void run()
     {
-        ArrayList<Job> batch = new ArrayList<>( workQueueSize );
+        List<Job> batch = new ArrayList<>( workQueueSize );
 
         try
         {
@@ -111,7 +115,7 @@ class RunnableBoltWorker implements Runnable, BoltWorker
         }
     }
 
-    private void executeBatch( ArrayList<Job> batch ) throws BoltConnectionFatality
+    private void executeBatch( List<Job> batch ) throws BoltConnectionFatality
     {
         for ( int i = 0; keepRunning && i < batch.size(); i++ )
         {
