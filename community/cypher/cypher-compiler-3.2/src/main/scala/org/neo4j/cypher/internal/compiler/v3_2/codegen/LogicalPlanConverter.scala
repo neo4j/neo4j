@@ -583,7 +583,8 @@ object LogicalPlanConverter {
           throw new CantCompileQueryException(s"Unwind collection type $t not supported")
       }
 
-      val variable = Variable(unwind.variable.name, elementCodeGenType, nullable = elementCodeGenType.canBeNullable)
+      val variableName = context.namer.newVarName()
+      val variable = Variable(variableName, elementCodeGenType, nullable = elementCodeGenType.canBeNullable)
       context.addVariable(unwind.variable.name, variable)
 
       val (methodHandle, actions :: tl) = context.popParent().consume(context, this)
