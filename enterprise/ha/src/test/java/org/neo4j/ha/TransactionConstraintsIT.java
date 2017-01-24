@@ -28,6 +28,7 @@ import org.junit.rules.RuleChain;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
+import org.neo4j.cluster.InstanceId;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -47,21 +48,22 @@ import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.ha.ClusterRule;
 import org.neo4j.test.rule.dump.DumpProcessInformationRule;
 
-import static java.lang.System.currentTimeMillis;
-import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.neo4j.helpers.collection.Iterables.first;
+
+import static java.lang.System.currentTimeMillis;
+import static java.util.concurrent.TimeUnit.MINUTES;
+
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
 import static org.neo4j.test.rule.dump.DumpProcessInformationRule.localVm;
 
 public class TransactionConstraintsIT
 {
-    private static final int SLAVE_ONLY_ID = 1;
+    private static final int SLAVE_ONLY_ID = ClusterManager.FIRST_SERVER_ID + 1;
 
     @Rule
     public final ClusterRule clusterRule =
@@ -149,7 +151,7 @@ public class TransactionConstraintsIT
 
     private HighlyAvailableGraphDatabase getSlaveOnlySlave()
     {
-        HighlyAvailableGraphDatabase db = first( cluster.getAllMembers() );
+        HighlyAvailableGraphDatabase db = cluster.getMemberByServerId( new InstanceId( SLAVE_ONLY_ID ) );
         assertEquals( SLAVE_ONLY_ID, cluster.getServerId( db ).toIntegerIndex() );
         assertFalse( db.isMaster() );
         return db;
