@@ -103,7 +103,7 @@ public class GraphDbHelper
 
     public void setNodeProperties( long nodeId, Map<String, Object> properties )
     {
-        try ( Transaction tx = database.getGraph().beginTransaction( implicit, AnonymousContext.write() ) )
+        try ( Transaction tx = database.getGraph().beginTransaction( implicit, AnonymousContext.writeToken() ) )
         {
             Node node = database.getGraph().getNodeById( nodeId );
             for ( Map.Entry<String, Object> propertyEntry : properties.entrySet() )
@@ -116,7 +116,7 @@ public class GraphDbHelper
 
     public long createNode( Label... labels )
     {
-        try ( Transaction tx = database.getGraph().beginTransaction( implicit, AnonymousContext.write() ) )
+        try ( Transaction tx = database.getGraph().beginTransaction( implicit, AnonymousContext.writeToken() ) )
         {
             Node node = database.getGraph().createNode( labels );
             tx.success();
@@ -126,7 +126,7 @@ public class GraphDbHelper
 
     public long createNode( Map<String, Object> properties, Label... labels )
     {
-        try ( Transaction tx = database.getGraph().beginTransaction( implicit, AnonymousContext.write() ) )
+        try ( Transaction tx = database.getGraph().beginTransaction( implicit, AnonymousContext.writeToken() ) )
         {
             Node node = database.getGraph().createNode( labels );
             for ( Map.Entry<String, Object> entry : properties.entrySet() )
@@ -150,7 +150,7 @@ public class GraphDbHelper
 
     public long createRelationship( String type, long startNodeId, long endNodeId )
     {
-        try (Transaction tx = database.getGraph().beginTransaction( implicit, AnonymousContext.write() ))
+        try (Transaction tx = database.getGraph().beginTransaction( implicit, AnonymousContext.writeToken() ))
         {
             Node startNode = database.getGraph().getNodeById( startNodeId );
             Node endNode = database.getGraph().getNodeById( endNodeId );
@@ -163,7 +163,7 @@ public class GraphDbHelper
 
     public long createRelationship( String type )
     {
-        try ( Transaction tx = database.getGraph().beginTransaction( implicit, AnonymousContext.write() ) )
+        try ( Transaction tx = database.getGraph().beginTransaction( implicit, AnonymousContext.writeToken() ) )
         {
             Node startNode = database.getGraph().createNode();
             Node endNode = database.getGraph().createNode();
@@ -177,7 +177,7 @@ public class GraphDbHelper
     public void setRelationshipProperties( long relationshipId, Map<String, Object> properties )
 
     {
-        try ( Transaction tx = database.getGraph().beginTransaction( implicit, AnonymousContext.write() ) )
+        try ( Transaction tx = database.getGraph().beginTransaction( implicit, AnonymousContext.writeToken() ) )
         {
             Relationship relationship = database.getGraph().getRelationshipById( relationshipId );
             for ( Map.Entry<String, Object> propertyEntry : properties.entrySet() )
@@ -354,7 +354,7 @@ public class GraphDbHelper
 
     public void addLabelToNode( long node, String labelName )
     {
-        try ( Transaction tx = database.getGraph().beginTransaction( implicit, AnonymousContext.write() ) )
+        try ( Transaction tx = database.getGraph().beginTransaction( implicit, AnonymousContext.writeToken() ) )
         {
             database.getGraph().getNodeById( node ).addLabel( label( labelName ) );
             tx.success();

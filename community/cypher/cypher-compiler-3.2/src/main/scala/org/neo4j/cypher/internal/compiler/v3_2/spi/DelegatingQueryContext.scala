@@ -187,6 +187,9 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
   override def callReadWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) =
     singleDbHit(inner.callReadWriteProcedure(name, args, allowed))
 
+  override def callTokenWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) =
+    singleDbHit(inner.callTokenWriteProcedure(name, args, allowed))
+
   override def callSchemaWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) =
     singleDbHit(inner.callSchemaWriteProcedure(name, args, allowed))
 

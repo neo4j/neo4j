@@ -42,13 +42,13 @@ import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
 import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.api.proc.FieldSignature;
-import org.neo4j.kernel.api.proc.Mode;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.QualifiedName;
 import org.neo4j.kernel.api.proc.UserFunctionSignature;
 import org.neo4j.kernel.impl.proc.OutputMappers.OutputMapper;
 import org.neo4j.logging.Log;
 import org.neo4j.procedure.Description;
+import org.neo4j.procedure.Mode;
 import org.neo4j.procedure.PerformsWrites;
 import org.neo4j.procedure.Procedure;
 import org.neo4j.procedure.UserAggregationFunction;
@@ -200,7 +200,7 @@ class ReflectiveProcedureCompiler
 
         Optional<String> description = description( method );
         Procedure procedure = method.getAnnotation( Procedure.class );
-        Mode mode = mode( procedure.mode() );
+        Mode mode = procedure.mode();
         if ( method.isAnnotationPresent( PerformsWrites.class ) )
         {
             if ( !procedure.mode().equals( org.neo4j.procedure.Mode.DEFAULT ) )
@@ -210,7 +210,7 @@ class ReflectiveProcedureCompiler
             }
             else
             {
-                mode = Mode.READ_WRITE;
+                mode = Mode.WRITE;
             }
         }
 
@@ -374,22 +374,6 @@ class ReflectiveProcedureCompiler
         }
 
         return deprecated;
-    }
-
-    private Mode mode( org.neo4j.procedure.Mode incoming )
-    {
-        switch ( incoming )
-        {
-        case DBMS:
-            return Mode.DBMS;
-        case SCHEMA:
-            return Mode.SCHEMA_WRITE;
-        case WRITE:
-            return Mode.READ_WRITE;
-        default:
-            return Mode.READ_ONLY;
-
-        }
     }
 
     private Optional<String> description( Method method )

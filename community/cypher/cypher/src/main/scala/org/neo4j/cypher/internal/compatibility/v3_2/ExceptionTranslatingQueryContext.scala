@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_2
 
 import java.net.URL
 
+import org.neo4j.cypher.internal.compiler.v3_2.spi.QualifiedName
 import org.neo4j.cypher.internal.compiler.v3_2.IndexDescriptor
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{Expander, KernelPredicate, UserDefinedAggregator}
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.matching.PatternNode
@@ -134,6 +135,9 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
 
   override def callReadWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] =
     translateIterator(inner.callReadWriteProcedure(name, args, allowed))
+
+  override def callTokenWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]):
+  Iterator[Array[AnyRef]] = translateIterator(inner.callTokenWriteProcedure(name, args, allowed))
 
   override def callSchemaWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] =
     translateIterator(inner.callSchemaWriteProcedure(name, args, allowed))
