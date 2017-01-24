@@ -189,6 +189,33 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
       Map("a" -> iNode, "b" -> hNode)))
   }
 
+  test("all nodes scan + expand + projection") { // MATCH (a)-[r]->(b) WITH a, b RETURN a, b, 1
+    //given
+    val plan = ProduceResult(List("a", "b", "1"),
+      Projection(
+        Expand(
+          AllNodesScan(IdName("a"), Set.empty)(solved), IdName("a"),
+          SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r"), ExpandAll)(solved),
+        Map("a" -> varFor("a"),
+          "b" -> varFor("b"),
+          "1" -> Parameter("  AUTOINT0", CTInteger)(pos)))(solved))
+
+    //when
+    val compiled = compileAndExecute(plan, Map("  AUTOINT0" -> Long.box(1L)))
+
+    //then
+    val result = getResult(compiled, "a", "b", "1")
+
+    result should equal(List(
+      Map("a" -> aNode, "b" -> dNode, "1" -> 1L),
+      Map("a" -> bNode, "b" -> dNode, "1" -> 1L),
+      Map("a" -> cNode, "b" -> eNode, "1" -> 1L),
+      Map("a" -> fNode, "b" -> dNode, "1" -> 1L),
+      Map("a" -> gNode, "b" -> eNode, "1" -> 1L),
+      Map("a" -> hNode, "b" -> iNode, "1" -> 1L),
+      Map("a" -> iNode, "b" -> hNode, "1" -> 1L)))
+  }
+
   test("label scan + expand outgoing") { // MATCH (a:T1)-[r]->(b) RETURN a, b
     //given
     val plan = ProduceResult(List("a", "b"),

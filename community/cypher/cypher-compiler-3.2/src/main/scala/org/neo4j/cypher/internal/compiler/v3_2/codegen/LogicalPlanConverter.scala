@@ -308,12 +308,12 @@ object LogicalPlanConverter {
     private def expandAllConsume(context: CodeGenContext,
                                  child: CodeGenPlan): (Option[JoinTableMethod], List[Instruction]) = {
       val relVar = Variable(context.namer.newVarName(), CodeGenType.primitiveRel)
+      val fromNodeVar = context.getVariable(expand.from.name)
       val toNodeVar = Variable(context.namer.newVarName(), CodeGenType.primitiveNode)
       context.addVariable(expand.relName.name, relVar)
       context.addVariable(expand.to.name, toNodeVar)
 
       val (methodHandle, action :: tl) = context.popParent().consume(context, this)
-      val fromNodeVar = context.getVariable(expand.from.name)
       val typeVar2TypeName = expand.types.map(t => context.namer.newVarName() -> t.name).toMap
       val opName = context.registerOperator(expand)
       val expandGenerator = ExpandAllLoopDataGenerator(opName, fromNodeVar, expand.dir, typeVar2TypeName, toNodeVar,
@@ -326,10 +326,10 @@ object LogicalPlanConverter {
                                   child: CodeGenPlan): (Option[JoinTableMethod], List[Instruction]) = {
       val relVar = Variable(context.namer.newVarName(), CodeGenType.primitiveRel)
       context.addVariable(expand.relName.name, relVar)
-
-      val (methodHandle, action :: tl) = context.popParent().consume(context, this)
       val fromNodeVar = context.getVariable(expand.from.name)
       val toNodeVar = context.getVariable(expand.to.name)
+
+      val (methodHandle, action :: tl) = context.popParent().consume(context, this)
       val typeVar2TypeName = expand.types.map(t => context.namer.newVarName() -> t.name).toMap
       val opName = context.registerOperator(expand)
       val expandGenerator = ExpandIntoLoopDataGenerator(opName, fromNodeVar, expand.dir, typeVar2TypeName, toNodeVar,
@@ -358,12 +358,12 @@ object LogicalPlanConverter {
                                  child: CodeGenPlan): (Option[JoinTableMethod], List[Instruction]) = {
       //mark relationship and node to visit as nullable
       val relVar = Variable(context.namer.newVarName(), CodeGenType.primitiveRel, nullable = true)
+      val fromNodeVar = context.getVariable(optionalExpand.from.name)
       val toNodeVar = Variable(context.namer.newVarName(), CodeGenType.primitiveNode, nullable = true)
       context.addVariable(optionalExpand.relName.name, relVar)
       context.addVariable(optionalExpand.to.name, toNodeVar)
 
       val (methodHandle, action :: tl) = context.popParent().consume(context, this)
-      val fromNodeVar = context.getVariable(optionalExpand.from.name)
       val typeVar2TypeName = optionalExpand.types.map(t => context.namer.newVarName() -> t.name).toMap
       val opName = context.registerOperator(optionalExpand)
 
@@ -396,10 +396,10 @@ object LogicalPlanConverter {
       //mark relationship  to visit as nullable
       val relVar = Variable(context.namer.newVarName(), CodeGenType.primitiveRel, nullable = true)
       context.addVariable(optionalExpand.relName.name, relVar)
-
-      val (methodHandle, action :: tl) = context.popParent().consume(context, this)
       val fromNodeVar = context.getVariable(optionalExpand.from.name)
       val toNodeVar = context.getVariable(optionalExpand.to.name)
+
+      val (methodHandle, action :: tl) = context.popParent().consume(context, this)
       val typeVar2TypeName = optionalExpand.types.map(t => context.namer.newVarName() -> t.name).toMap
       val opName = context.registerOperator(optionalExpand)
 
