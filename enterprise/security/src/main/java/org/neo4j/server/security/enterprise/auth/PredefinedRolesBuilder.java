@@ -26,37 +26,68 @@ import org.apache.shiro.authz.permission.WildcardPermission;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.*;
 
 public class PredefinedRolesBuilder implements RolesBuilder
 {
-    public static final Map<String,SimpleRole> roles = staticBuildRoles();
+    private static final WildcardPermission SCHEMA = new WildcardPermission( "schema:*" );
+    private static final WildcardPermission FULL = new WildcardPermission( "*" );
+    private static final WildcardPermission TOKEN = new WildcardPermission( "token:*" );
+    private static final WildcardPermission WRITE = new WildcardPermission( "data:*" );
+    private static final WildcardPermission READ = new WildcardPermission( "data:read" );
 
-    public static Map<String,SimpleRole> staticBuildRoles()
+    private static final Map<String,SimpleRole> innerRoles = staticBuildRoles();
+    public static final Map<String,SimpleRole> roles = Collections.unmodifiableMap( innerRoles );
+
+    private static Map<String,SimpleRole> staticBuildRoles()
     {
-        Map<String, SimpleRole> roles = new LinkedHashMap<>( 4 );
+        Map<String,SimpleRole> roles = new ConcurrentHashMap<>( 4 );
 
         SimpleRole admin = new SimpleRole( ADMIN );
-        admin.add( new WildcardPermission( "*" ) );
+        admin.add( FULL );
         roles.put( ADMIN, admin );
 
         SimpleRole architect = new SimpleRole( ARCHITECT );
-        architect.add( new WildcardPermission( "schema:*" ) );
-        architect.add( new WildcardPermission( "data:*" ) );
+        architect.add( SCHEMA );
+        architect.add( WRITE );
+        architect.add( TOKEN );
         roles.put( ARCHITECT, architect );
 
         SimpleRole publisher = new SimpleRole( PUBLISHER );
-        publisher.add( new WildcardPermission( "data:*" ) );
+        publisher.add( WRITE );
         roles.put( PUBLISHER, publisher );
 
         SimpleRole reader = new SimpleRole( READER );
-        reader.add( new WildcardPermission( "data:read" ) );
+        reader.add( READ );
         roles.put( READER, reader );
 
         return roles;
+    }
+
+    static void setAllowPublisherTokenCreate( boolean allowTokenCreate )
+    {
+
+        SimpleRole publisher = innerRoles.get( PUBLISHER );
+        if ( publisher == null )
+        {
+            return;
+        }
+        if ( allowTokenCreate )
+        {
+            publisher.add( TOKEN );
+        }
+        else
+        {
+            Set<Permission> permissions = publisher.getPermissions();
+            if ( permissions != null )
+            {
+                permissions.remove( TOKEN );
+            }
+        }
     }
 
     public static final RolePermissionResolver rolePermissionResolver = new RolePermissionResolver()
@@ -64,6 +95,10 @@ public class PredefinedRolesBuilder implements RolesBuilder
         @Override
         public Collection<Permission> resolvePermissionsInRole( String roleString )
         {
+            if ( roleString == null )
+            {
+                return Collections.emptyList();
+            }
             SimpleRole role = roles.get( roleString );
             if ( role != null )
             {
@@ -79,7 +114,7 @@ public class PredefinedRolesBuilder implements RolesBuilder
     @Override
     public Map<String,SimpleRole> buildRoles()
     {
-        return staticBuildRoles();
+        return roles;
     }
 
 }

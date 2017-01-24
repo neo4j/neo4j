@@ -64,6 +64,7 @@ public abstract class EditionModule
     void registerProcedures( Procedures procedures ) throws KernelException
     {
         procedures.registerProcedure( org.neo4j.kernel.builtinprocs.BuiltInProcedures.class );
+        procedures.registerProcedure( org.neo4j.kernel.builtinprocs.TokenProcedures.class );
         procedures.registerProcedure( org.neo4j.kernel.builtinprocs.BuiltInDbmsProcedures.class );
 
         registerEditionSpecificProcedures( procedures );

@@ -32,9 +32,9 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.exceptions.KernelException
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException
 import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
-import org.neo4j.kernel.api.proc
 import org.neo4j.kernel.api.proc.Neo4jTypes.AnyType
-import org.neo4j.kernel.api.proc.{ProcedureSignature => KernelProcedureSignature, Mode, QualifiedName, Neo4jTypes}
+import org.neo4j.kernel.api.proc.{ QualifiedName, Neo4jTypes}
+import org.neo4j.procedure.Mode
 
 import scala.collection.JavaConverters._
 
@@ -139,9 +139,10 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapperv3_1)
   }
 
   private def asCypherProcMode(mode: Mode): ProcedureAccessMode = mode match {
-    case proc.Mode.READ_ONLY => ProcedureReadOnlyAccess
-    case proc.Mode.READ_WRITE => ProcedureReadWriteAccess
-    case proc.Mode.DBMS => ProcedureDbmsAccess
+    case Mode.READ => ProcedureReadOnlyAccess
+    case Mode.DEFAULT => ProcedureReadOnlyAccess
+    case Mode.WRITE => ProcedureReadWriteAccess
+    case Mode.DBMS => ProcedureDbmsAccess
     case _ => throw new CypherExecutionException(
       "Unable to execute procedure, because it requires an unrecognized execution mode: " + mode.name(), null )
   }

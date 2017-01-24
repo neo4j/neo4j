@@ -128,7 +128,16 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
                         " STRING?, edition :: STRING?)", "List DBMS components and their versions."} ),
                 equalTo( new Object[]{"dbms.queryJmx", "dbms.queryJmx(query :: STRING?) :: (name :: STRING?, " +
                         "description :: STRING?, attributes :: MAP?)", "Query JMX management data by domain and name." +
-                                                                       " For instance, \"org.neo4j:*\""} )
+                                                                       " For instance, \"org.neo4j:*\""} ),
+                equalTo(new Object[]{"db.createLabel","db.createLabel(newLabel :: STRING?) :: VOID", "Create a label"
+                }),
+                equalTo(new Object[]{"db.createProperty","db.createProperty(newProperty :: STRING?) :: VOID",
+                        "Create a Property"
+                }),
+                equalTo(new Object[]{"db.createRelationshipType",
+                        "db.createRelationshipType(newRelationshipType :: STRING?) :: VOID",
+                        "Create a RelationshipType"
+                })
         ) );
     }
 

@@ -198,9 +198,10 @@ public class EnterpriseBuiltInDbmsProcedures
     @Procedure( name = "dbms.procedures", mode = DBMS )
     public Stream<ProcedureResult> listProcedures()
     {
-        return graph.getDependencyResolver().resolveDependency( Procedures.class ).getAllProcedures().stream()
+        Procedures procedures = graph.getDependencyResolver().resolveDependency( Procedures.class );
+        return procedures.getAllProcedures().stream()
                 .sorted( ( a, b ) -> a.name().toString().compareTo( b.name().toString() ) )
-                .map( ProcedureResult::new );
+                .map( sig -> new ProcedureResult( sig, procedures.isAllowWriteTokenCreate() ) );
     }
 
     @SuppressWarnings( "WeakerAccess" )
@@ -211,7 +212,7 @@ public class EnterpriseBuiltInDbmsProcedures
         public final String description;
         public final List<String> roles;
 
-        public ProcedureResult( ProcedureSignature signature )
+        public ProcedureResult( ProcedureSignature signature, boolean publisherTokenCreate )
         {
             this.name = signature.name().toString();
             this.signature = signature.toString();
@@ -222,11 +223,18 @@ public class EnterpriseBuiltInDbmsProcedures
             case DBMS:
                 roles.add( "admin" );
                 break;
-            case READ_ONLY:
+            case DEFAULT:
                 roles.add( "reader" );
-            case READ_WRITE:
+            case READ:
+                roles.add( "reader" );
+            case WRITE:
                 roles.add( "publisher" );
-            case SCHEMA_WRITE:
+            case TOKEN:
+                if ( publisherTokenCreate )
+                {
+                    roles.add( "publisher" );
+                }
+            case SCHEMA:
                 roles.add( "architect" );
             default:
                 roles.add( "admin" );

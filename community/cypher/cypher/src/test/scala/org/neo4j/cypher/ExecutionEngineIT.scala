@@ -29,13 +29,13 @@ import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.proc._
-import org.neo4j.kernel.api.{proc, Statement}
+import org.neo4j.kernel.api.Statement
 import org.neo4j.kernel.api.exceptions.ProcedureException
 import Context.KERNEL_TRANSACTION
 import org.neo4j.kernel.api.proc._
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.impl.proc.Procedures
-import org.neo4j.kernel.impl.query.TransactionalContext
+import org.neo4j.procedure.Mode
 import org.neo4j.test.TestGraphDatabaseFactory
 
 import scala.collection.immutable.Map
@@ -690,7 +690,7 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     val procedureName = new QualifiedName(Array[String]("org", "neo4j", "bench"), "getAllNodes")
     val emptySignature = List.empty[FieldSignature].asJava
     val signature: ProcedureSignature = new ProcedureSignature(
-      procedureName, paramSignature, resultSignature, proc.Mode.READ_ONLY, java.util.Optional.empty(), Array.empty,
+      procedureName, paramSignature, resultSignature, Mode.READ, java.util.Optional.empty(), Array.empty,
       java.util.Optional.empty())
 
     def paramSignature = List.empty[FieldSignature].asJava

@@ -135,6 +135,7 @@ public class OperationsFacade
 
     final KeyWriteOperations tokenWrite()
     {
+        statement.assertAllows( AccessMode::allowsTokenCreates, "Token create" );
         return operations.keyWriteOperations();
     }
 
@@ -923,6 +924,12 @@ public class OperationsFacade
     public int labelGetOrCreateForName( String labelName ) throws IllegalTokenNameException, TooManyLabelsException
     {
         statement.assertOpen();
+        int id = tokenRead().labelGetForName( statement, labelName );
+        if (id != KeyReadOperations.NO_SUCH_LABEL )
+        {
+            return id;
+        }
+
         return tokenWrite().labelGetOrCreateForName( statement, labelName );
     }
 
@@ -930,6 +937,11 @@ public class OperationsFacade
     public int propertyKeyGetOrCreateForName( String propertyKeyName ) throws IllegalTokenNameException
     {
         statement.assertOpen();
+        int id = tokenRead().propertyKeyGetForName( statement, propertyKeyName );
+        if (id != KeyReadOperations.NO_SUCH_PROPERTY_KEY )
+        {
+            return id;
+        }
         return tokenWrite().propertyKeyGetOrCreateForName( statement,
                 propertyKeyName );
     }
@@ -938,6 +950,11 @@ public class OperationsFacade
     public int relationshipTypeGetOrCreateForName( String relationshipTypeName ) throws IllegalTokenNameException
     {
         statement.assertOpen();
+        int id = tokenRead().relationshipTypeGetForName( statement, relationshipTypeName );
+        if (id != KeyReadOperations.NO_SUCH_RELATIONSHIP_TYPE )
+        {
+            return id;
+        }
         return tokenWrite().relationshipTypeGetOrCreateForName( statement, relationshipTypeName );
     }
 
@@ -1524,16 +1541,36 @@ public class OperationsFacade
             throw accessMode.onViolation( format( "Write operations are not allowed for %s.",
                     tx.securityContext().description() ) );
         }
-        return callProcedure( name, input,
-                new RestrictedAccessMode( tx.securityContext().mode(), AccessMode.Static.WRITE ) );
+        return callProcedure( name, input, new RestrictedAccessMode( tx.securityContext().mode(), procedures.getWriteMode() ) );
     }
 
     @Override
     public RawIterator<Object[],ProcedureException> procedureCallWriteOverride( QualifiedName name, Object[] input )
             throws ProcedureException
     {
+        return callProcedure( name, input, new OverriddenAccessMode( tx.securityContext().mode(), procedures.getWriteMode() ) );
+    }
+
+    @Override
+    public RawIterator<Object[],ProcedureException> procedureCallToken( QualifiedName name, Object[] input )
+            throws ProcedureException
+    {
+        AccessMode accessMode = tx.securityContext().mode();
+        if ( !accessMode.allowsTokenCreates() )
+        {
+            throw accessMode.onViolation( format( "Token create operations are not allowed for %s.",
+                    tx.securityContext().description() ) );
+        }
         return callProcedure( name, input,
-                new OverriddenAccessMode( tx.securityContext().mode(), AccessMode.Static.WRITE ) );
+                new RestrictedAccessMode( tx.securityContext().mode(), AccessMode.Static.TOKEN_WRITE ) );
+    }
+
+    @Override
+    public RawIterator<Object[],ProcedureException> procedureCallTokenOverride( QualifiedName name, Object[] input )
+            throws ProcedureException
+    {
+        return callProcedure( name, input,
+                new OverriddenAccessMode( tx.securityContext().mode(), AccessMode.Static.TOKEN_WRITE ) );
     }
 
     @Override

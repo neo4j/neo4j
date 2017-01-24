@@ -100,6 +100,7 @@ public class EnterpriseEditionModule extends CommunityEditionModule
         }
         else
         {
+            procedures.writerCreateToken( false );
             platformModule.life.add( platformModule.dependencies.satisfyDependency( EnterpriseAuthManager.NO_AUTH ) );
         }
     }
