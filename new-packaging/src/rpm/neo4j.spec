@@ -1,7 +1,7 @@
 Name: ${PACKAGE_NAME}
 Provides: neo4j
 Version: ${VERSION}
-Release: 1%{?dist}
+Release: ${RELEASE}%{?dist}
 Summary: Neo4j server is a database that stores data as graphs rather than tables.
 
 License: ${LICENSE}
@@ -111,6 +111,10 @@ install -m 0644 manpages/* %{buildroot}/%{_mandir}/man1
 
 %files
 %defattr(-,root,root)
+# Needed to make sure empty directories get created
+%dir %{neo4jhome}/plugins
+%dir %{neo4jhome}/import
+%dir %{neo4jhome}/data/databases
 
 %{_datadir}/neo4j
 %{_bindir}/*
