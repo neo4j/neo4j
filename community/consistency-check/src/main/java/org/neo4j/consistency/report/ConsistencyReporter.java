@@ -52,6 +52,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 
 import static java.util.Arrays.asList;
 import static org.neo4j.helpers.Exceptions.launderedException;
+import static org.neo4j.helpers.Exceptions.stringify;
 import static org.neo4j.helpers.Exceptions.withCause;
 
 public class ConsistencyReporter implements ConsistencyReport.Reporter
@@ -119,7 +120,10 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
         }
         catch ( Exception e )
         {
-            handler.report.error( type, record, "Failed to check record: " + e.getMessage(), new Object[0] );
+            // This is a rare event and exposing the stack trace is a good idea, otherwise we
+            // can only see that something went wrong, not at all what.
+            handler.report.error( type, record, "Failed to check record: " + stringify( e ),
+                    new Object[0] );
         }
         handler.updateSummary();
     }
