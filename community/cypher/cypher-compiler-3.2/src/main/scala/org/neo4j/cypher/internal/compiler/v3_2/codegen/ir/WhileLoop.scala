@@ -29,7 +29,6 @@ case class WhileLoop(variable: Variable, producer: LoopDataGenerator, action: In
     generator.trace(producer.opName) { body =>
       producer.produceIterator(iterator, body)
       body.whileLoop(producer.hasNext(body, iterator)) { loopBody =>
-        loopBody.incrementDbHits()
         loopBody.incrementRows()
         producer.produceNext(variable, iterator, loopBody)
         action.body(loopBody)

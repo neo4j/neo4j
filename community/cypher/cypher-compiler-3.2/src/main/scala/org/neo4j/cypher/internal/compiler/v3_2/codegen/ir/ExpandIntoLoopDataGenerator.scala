@@ -43,8 +43,10 @@ case class ExpandIntoLoopDataGenerator(opName: String, fromVar: Variable, dir: S
   }
 
   override def produceNext[E](nextVar: Variable, iterVar: String, generator: MethodStructure[E])
-                             (implicit context: CodeGenContext) =
+                             (implicit context: CodeGenContext) = {
+    generator.incrementDbHits()
     generator.nextRelationship(iterVar, dir, relVar.name)
+  }
 
   override def hasNext[E](generator: MethodStructure[E], iterVar: String): E = generator.hasNextRelationship(iterVar)
 }

@@ -20,7 +20,8 @@
 package org.neo4j.cypher.internal.spi.v3_2.codegen
 
 import java.util
-import java.util.stream.LongStream
+import java.util.PrimitiveIterator
+import java.util.stream.{DoubleStream, IntStream, LongStream}
 
 import org.neo4j.codegen.Expression.{not, or, _}
 import org.neo4j.codegen.MethodReference.methodReference
@@ -35,7 +36,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions.{BoolType,
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi._
 import org.neo4j.cypher.internal.compiler.v3_2.helpers._
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
-import org.neo4j.cypher.internal.frontend.v3_2.symbols.{ListType, CTNode, CTRelationship}
+import org.neo4j.cypher.internal.frontend.v3_2.symbols.{CTNode, CTRelationship, ListType}
 import org.neo4j.cypher.internal.frontend.v3_2.{ParameterNotFoundException, SemanticDirection, symbols}
 import org.neo4j.cypher.internal.spi.v3_2.codegen.Methods._
 import org.neo4j.cypher.internal.spi.v3_2.codegen.Templates.{createNewInstance, handleKernelExceptions, newRelationshipDataExtractor, tryCatch}
@@ -166,34 +167,8 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   override def forEach(varName: String, codeGenType: CodeGenType, iterable: Expression)
                       (block: MethodStructure[Expression] => Unit) =
-    codeGenType match {
-      case CodeGenType.primitiveNode =>
-        using(generator.forEachLong(Parameter.param(lowerType(codeGenType), varName),
-          invoke(iterable, methodReference(typeRef[PrimitiveEntityStream], typeRef[LongStream], "longStream")))) { body =>
-          block(copy(generator = body))
-        }
-      case CodeGenType.primitiveRel =>
-        using(generator.forEachLong(Parameter.param(lowerType(codeGenType), varName),
-          invoke(iterable, methodReference(typeRef[PrimitiveRelationshipStream], typeRef[LongStream], "longStream")))) { body =>
-          block(copy(generator = body))
-        }
-      case CodeGenType.primitiveInt =>
-        using(generator.forEachLong(Parameter.param(lowerType(codeGenType), varName), iterable)) { body =>
-          block(copy(generator = body))
-        }
-      case CodeGenType.primitiveFloat =>
-        using(generator.forEachDouble(Parameter.param(lowerType(codeGenType), varName), iterable)) { body =>
-          block(copy(generator = body))
-        }
-      case CodeGenType.primitiveBool =>
-        using(generator.forEachBoolean(Parameter.param(lowerType(codeGenType), varName), iterable)) { body =>
-          block(copy(generator = body))
-        }
-      case _ => {
-        using(generator.forEach(Parameter.param(lowerType(codeGenType), varName), iterable)) { body =>
-          block(copy(generator = body))
-        }
-      }
+    using(generator.forEach(Parameter.param(lowerType(codeGenType), varName), iterable)) { body =>
+      block(copy(generator = body))
     }
 
   override def ifStatement(test: Expression)(block: (MethodStructure[Expression]) => Unit) = {
@@ -513,6 +488,72 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
         throw new IllegalArgumentException(s"CodeGenType $codeGenType not supported as primitive stream")
     }
   }
+
+  override def declarePrimitiveIterator(name: String, iterableCodeGenType: CodeGenType): Unit = {
+    val variable = iterableCodeGenType match {
+      case CodeGenType(symbols.ListType(_), ListReferenceType(IntType)) =>
+        generator.declare(typeRef[PrimitiveIterator.OfLong], name)
+      case CodeGenType(symbols.ListType(_), ListReferenceType(FloatType)) =>
+        generator.declare(typeRef[PrimitiveIterator.OfDouble], name)
+      case CodeGenType(symbols.ListType(_), ListReferenceType(BoolType)) =>
+        generator.declare(typeRef[PrimitiveIterator.OfInt], name)
+      case _ => throw new IllegalArgumentException(s"CodeGenType $iterableCodeGenType not supported as primitive iterator")
+    }
+    locals += (name -> variable)
+  }
+
+  override def primitiveIteratorFrom(iterable: Expression, iterableCodeGenType: CodeGenType) =
+    iterableCodeGenType match {
+      case CodeGenType(symbols.ListType(symbols.CTNode), ListReferenceType(IntType)) =>
+        invoke(cast(typeRef[PrimitiveNodeStream], iterable), method[PrimitiveNodeStream, PrimitiveIterator.OfLong]("primitiveIterator"))
+      case CodeGenType(symbols.ListType(symbols.CTRelationship), ListReferenceType(IntType)) =>
+        invoke(cast(typeRef[PrimitiveRelationshipStream], iterable), method[PrimitiveRelationshipStream, PrimitiveIterator.OfLong]("primitiveIterator"))
+      case CodeGenType(symbols.ListType(_), ListReferenceType(IntType)) =>
+        invoke(cast(typeRef[LongStream], iterable), method[LongStream, PrimitiveIterator.OfLong]("iterator"))
+      case CodeGenType(symbols.ListType(_), ListReferenceType(FloatType)) =>
+        invoke(cast(typeRef[DoubleStream], iterable), method[DoubleStream, PrimitiveIterator.OfDouble]("iterator"))
+      case CodeGenType(symbols.ListType(_), ListReferenceType(BoolType)) =>
+        invoke(cast(typeRef[IntStream], iterable), method[IntStream, PrimitiveIterator.OfInt]("iterator"))
+      case _ => throw new IllegalArgumentException(s"CodeGenType $iterableCodeGenType not supported as primitive iterator")
+    }
+
+  override def primitiveIteratorNext(iterator: Expression, iterableCodeGenType: CodeGenType) =
+    iterableCodeGenType match {
+      case CodeGenType(symbols.ListType(_), ListReferenceType(IntType)) =>
+        // Nodes & Relationships are also covered by this case
+        invoke(iterator, method[PrimitiveIterator.OfLong, Long]("nextLong"))
+      case CodeGenType(symbols.ListType(_), ListReferenceType(FloatType)) =>
+        invoke(iterator, method[PrimitiveIterator.OfDouble, Double]("nextDouble"))
+      case CodeGenType(symbols.ListType(_), ListReferenceType(BoolType)) =>
+        not(equal(constant(0), invoke(iterator, method[PrimitiveIterator.OfInt, Int]("nextInt"))))
+      case _ => throw new IllegalArgumentException(s"CodeGenType $iterableCodeGenType not supported as primitive iterator")
+    }
+
+  override def primitiveIteratorHasNext(iterator: Expression, iterableCodeGenType: CodeGenType) =
+    iterableCodeGenType match {
+      case CodeGenType(symbols.ListType(_), ListReferenceType(IntType)) =>
+        // Nodes & Relationships are also covered by this case
+        invoke(iterator, method[PrimitiveIterator.OfLong, Long]("hasNext"))
+      case CodeGenType(symbols.ListType(_), ListReferenceType(FloatType)) =>
+        invoke(iterator, method[PrimitiveIterator.OfDouble, Double]("hasNext"))
+      case CodeGenType(symbols.ListType(_), ListReferenceType(BoolType)) =>
+        invoke(iterator, method[PrimitiveIterator.OfInt, Int]("hasNext"))
+      case _ => throw new IllegalArgumentException(s"CodeGenType $iterableCodeGenType not supported as primitive iterator")
+    }
+
+  override def declareIterator(name: String): Unit = {
+    val variable = generator.declare(typeRef[java.util.Iterator[Object]], name)
+    locals += (name -> variable)
+  }
+
+  override def iteratorFrom(iterable: Expression) =
+    invoke(method[CompiledConversionUtils, java.util.Iterator[_]]("iteratorFrom", typeRef[Object]), iterable)
+
+  override def iteratorNext(iterator: Expression) =
+    invoke(iterator, method[java.util.Iterator[_], Object]("next"))
+
+  override def iteratorHasNext(iterator: Expression) =
+    invoke(iterator, method[java.util.Iterator[_], Boolean]("hasNext"))
 
   override def toSet(value: Expression) =
     createNewInstance(typeRef[util.HashSet[Object]], (typeRef[util.Collection[_]], value))

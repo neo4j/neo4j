@@ -20,17 +20,21 @@
 package org.neo4j.cypher.internal.codegen;
 
 import java.util.Iterator;
-import java.util.Spliterator;
-import java.util.function.Consumer;
+import java.util.PrimitiveIterator;
 import java.util.stream.LongStream;
 
-public abstract class PrimitiveEntityStream implements Iterable<Long>
+public abstract class PrimitiveEntityStream<T>
 {
-    private final LongStream inner;
+    protected final LongStream inner;
 
     public PrimitiveEntityStream( LongStream inner )
     {
         this.inner = inner;
+    }
+
+    public PrimitiveIterator.OfLong primitiveIterator()
+    {
+        return inner.iterator();
     }
 
     public LongStream longStream()
@@ -38,21 +42,5 @@ public abstract class PrimitiveEntityStream implements Iterable<Long>
         return inner;
     }
 
-    @Override
-    public Iterator<Long> iterator()
-    {
-        return inner.iterator();
-    }
-
-    @Override
-    public void forEach( Consumer<? super Long> action )
-    {
-        throw new UnsupportedOperationException( "PrimitiveEntityStream does not support forEach" );
-    }
-
-    @Override
-    public Spliterator<Long> spliterator()
-    {
-        throw new UnsupportedOperationException( "PrimitiveEntityStream does not support spliterator" );
-    }
+    public abstract Iterator<T> iterator();
 }

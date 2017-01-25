@@ -63,6 +63,16 @@ trait MethodStructure[E] {
   def asList(values: Seq[E]): E
   def asPrimitiveStream(values: Seq[E], codeGenType: CodeGenType): E
 
+  def declarePrimitiveIterator(name: String, iterableCodeGenType: CodeGenType): Unit
+  def primitiveIteratorFrom(iterable: E, iterableCodeGenType: CodeGenType): E
+  def primitiveIteratorNext(iterator: E, iterableCodeGenType: CodeGenType): E
+  def primitiveIteratorHasNext(iterator: E, iterableCodeGenType: CodeGenType): E
+
+  def declareIterator(name: String): Unit
+  def iteratorFrom(iterable: E): E
+  def iteratorNext(iterator: E): E
+  def iteratorHasNext(iterator: E): E
+
   def toSet(value: E): E
   def newDistinctSet(name: String, codeGenTypes: Iterable[CodeGenType])
   def distinctSetIfNotContains(name: String, structure: Map[String,(CodeGenType,E)])(block: MethodStructure[E] => Unit)

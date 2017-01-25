@@ -23,6 +23,7 @@ import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -228,6 +229,38 @@ public abstract class CompiledConversionUtils
         else
         {
             return anyValue;
+        }
+    }
+
+    public static final Iterator iteratorFrom( Object iterable )
+    {
+        if ( iterable instanceof Iterable )
+        {
+            return ((Iterable) iterable).iterator();
+        }
+        else if ( iterable instanceof PrimitiveEntityStream )
+        {
+            return ((PrimitiveEntityStream) iterable).iterator();
+        }
+        else if ( iterable instanceof LongStream )
+        {
+            return ((LongStream) iterable).iterator();
+        }
+        else if ( iterable instanceof DoubleStream )
+        {
+            return ((DoubleStream) iterable).iterator();
+        }
+        else if ( iterable instanceof IntStream )
+        {
+            return ((IntStream) iterable).iterator();
+        }
+        else if ( iterable == null )
+        {
+            return Collections.emptyIterator();
+        }
+        else
+        {
+            throw new CypherTypeException( "Don't know how to create an iterator out of " + iterable.getClass().getSimpleName(), null );
         }
     }
 }

@@ -19,9 +19,10 @@
  */
 package org.neo4j.cypher.internal.codegen;
 
+import java.util.Iterator;
 import java.util.stream.LongStream;
 
-public class PrimitiveNodeStream extends PrimitiveEntityStream
+public class PrimitiveNodeStream extends PrimitiveEntityStream<NodeIdWrapper>
 {
     public PrimitiveNodeStream( LongStream inner )
     {
@@ -31,5 +32,12 @@ public class PrimitiveNodeStream extends PrimitiveEntityStream
     public static PrimitiveNodeStream of( long[] array )
     {
         return new PrimitiveNodeStream( LongStream.of( array ) );
+    }
+
+    @Override
+    // This method is only used when we do not know the element type at compile time, so it has to box the elements
+    public Iterator<NodeIdWrapper> iterator()
+    {
+        return inner.mapToObj( NodeIdWrapper::new ).iterator();
     }
 }

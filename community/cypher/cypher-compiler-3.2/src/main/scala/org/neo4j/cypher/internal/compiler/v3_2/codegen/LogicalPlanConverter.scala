@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.{ManyQueryExpression, QueryExpression, RangeQueryExpression, SingleQueryExpression}
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.{One, ZeroOneOrMany}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{UnwindCollection, _}
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.{CantCompileQueryException, logical}
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Expression
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.Eagerly.immutableMapValues
@@ -55,7 +55,7 @@ object LogicalPlanConverter {
     case p: plans.Aggregation => aggregationAsCodeGenPlan(p)
     case p: plans.NodeCountFromCountStore => nodeCountFromCountStore(p)
     case p: plans.RelationshipCountFromCountStore => relCountFromCountStore(p)
-    case p: UnwindCollection => unwindAsCodeGenPlan(p)
+    case p: plans.UnwindCollection => unwindAsCodeGenPlan(p)
     case p: Sort => sortAsCodeGenPlan(p)
 
     case _ =>
@@ -567,18 +567,21 @@ object LogicalPlanConverter {
     override val logicalPlan = unwind
 
     override def consume(context: CodeGenContext, child: CodeGenPlan) = {
-      val collection = ExpressionConverter.createExpression(unwind.expression)(context)
+      val collection: CodeGenExpression = ExpressionConverter.createExpression(unwind.expression)(context)
 
       // TODO: Handle range
       val collectionCodeGenType = collection.codeGenType(context)
 
-      val (elementCodeGenType, castedCollection) = collectionCodeGenType match {
-        case CodeGenType(symbols.ListType(innerType), ListReferenceType(innerReprType)) =>
-          (CodeGenType(innerType, innerReprType), collection)
+      val opName = context.registerOperator(logicalPlan)
+
+      val (elementCodeGenType, loopDataGenerator) = collectionCodeGenType match {
+        case CodeGenType(symbols.ListType(innerType), ListReferenceType(innerReprType))
+          if RepresentationType.isPrimitive(innerReprType) =>
+          (CodeGenType(innerType, innerReprType), UnwindPrimitiveCollection(opName, collection))
         case CodeGenType(symbols.ListType(innerType), _) =>
-          (CodeGenType(innerType, ReferenceType), collection)
+          (CodeGenType(innerType, ReferenceType), ir.UnwindCollection(opName, collection))
         case CodeGenType(symbols.CTAny, _) =>
-          (CodeGenType(symbols.CTAny, ReferenceType), CastToCollection(collection))
+          (CodeGenType(symbols.CTAny, ReferenceType), ir.UnwindCollection(opName, collection))
         case t =>
           throw new CantCompileQueryException(s"Unwind collection type $t not supported")
       }
@@ -589,7 +592,7 @@ object LogicalPlanConverter {
 
       val (methodHandle, actions :: tl) = context.popParent().consume(context, this)
 
-      (methodHandle, ForEachExpression(variable, castedCollection, actions) :: tl)
+      (methodHandle, WhileLoop(variable, loopDataGenerator, actions) :: tl)
     }
   }
 
