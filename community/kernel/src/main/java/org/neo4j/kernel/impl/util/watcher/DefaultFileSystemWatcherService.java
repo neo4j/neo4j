@@ -75,6 +75,12 @@ public class DefaultFileSystemWatcherService implements FileSystemWatcherService
         fileWatcher.close();
     }
 
+    @Override
+    public FileWatcher getFileWatcher()
+    {
+        return fileWatcher;
+    }
+
     private class FileSystemEventWatcher implements Runnable
     {
         @Override

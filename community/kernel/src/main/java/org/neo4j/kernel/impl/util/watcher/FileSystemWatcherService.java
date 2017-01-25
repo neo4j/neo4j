@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.util.watcher;
 
+import org.neo4j.io.fs.watcher.FileWatcher;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 /**
@@ -30,6 +31,12 @@ public interface FileSystemWatcherService extends Lifecycle
 {
     FileSystemWatcherService EMPTY_WATCHER = new FileSystemWatcherService()
     {
+        @Override
+        public FileWatcher getFileWatcher()
+        {
+            return FileWatcher.SILENT_WATCHER;
+        }
+
         @Override
         public void init() throws Throwable
         {
@@ -50,5 +57,7 @@ public interface FileSystemWatcherService extends Lifecycle
         {
         }
     };
+
+    FileWatcher getFileWatcher();
 
 }

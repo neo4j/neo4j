@@ -51,6 +51,7 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.util.watcher.DefaultFileDeletionEventListener;
+import org.neo4j.kernel.impl.util.watcher.FileSystemWatcherService;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -154,7 +155,7 @@ public class FileWatchIT
     public void doNotNotifyAboutLuceneIndexFilesDeletion() throws InterruptedException, IOException
     {
         DependencyResolver dependencyResolver = ((GraphDatabaseAPI) database).getDependencyResolver();
-        FileWatcher fileWatcher = dependencyResolver.resolveDependency( FileWatcher.class );
+        FileWatcher fileWatcher = getFileWatcher( database );
         CheckPointer checkPointer = dependencyResolver.resolveDependency( CheckPointer.class );
 
         String propertyStoreName = MetaDataStore.DEFAULT_NAME + StoreFactory.PROPERTY_STORE_NAME;
@@ -309,7 +310,7 @@ public class FileWatchIT
     private FileWatcher getFileWatcher( GraphDatabaseService database )
     {
         DependencyResolver dependencyResolver = ((GraphDatabaseAPI) database).getDependencyResolver();
-        return dependencyResolver.resolveDependency( FileWatcher.class );
+        return dependencyResolver.resolveDependency( FileSystemWatcherService.class ).getFileWatcher();
     }
 
     private void deleteFile( File storeDir, String fileName )
