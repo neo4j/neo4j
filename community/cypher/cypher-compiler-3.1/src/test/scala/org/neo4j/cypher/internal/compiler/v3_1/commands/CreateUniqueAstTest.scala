@@ -56,8 +56,8 @@ class CreateUniqueAstTest extends CypherFunSuite {
         end = ParsedEntity("b"), typ = Seq("REL"),
         dir = OUTGOING, optional = false)) -->(
       expectedLinks = Seq(UniqueLink(
-        start = NamedExpectation("a"),
-        end = NamedExpectation("b"),
+        left = NamedExpectation("a"),
+        right = NamedExpectation("b"),
         rel = NamedExpectation("r", simplePropMap),
         relType = "REL", dir = OUTGOING)),
       expectedNamedPaths = Seq()
