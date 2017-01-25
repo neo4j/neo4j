@@ -137,7 +137,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     val deprecationInfo = asOption(ks.deprecated())
     val mode = asCypherProcMode(ks.mode(), ks.allowed())
     val description = asOption(ks.description())
-    val warning = asOption(ks.warning())
+    val warning = ks.warning()
 
     ProcedureSignature(name, input, output, deprecationInfo, mode, description, warning)
   }
