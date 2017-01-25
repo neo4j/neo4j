@@ -85,7 +85,6 @@ object ExecutionEngineHelper {
   def createEngine(graphDatabaseCypherService: GraphDatabaseQueryService, logProvider: LogProvider = NullLogProvider.getInstance()): ExecutionEngine = {
     val resolver = graphDatabaseCypherService.getDependencyResolver
     val kernel = resolver.resolveDependency(classOf[KernelAPI])
-    val lastCommittedTxId = LastCommittedTxIdProvider(graphDatabaseCypherService)
     val kernelMonitors: KernelMonitors = resolver.resolveDependency(classOf[KernelMonitors])
     val compatibilityFactory = new CommunityCompatibilityFactory(graphDatabaseCypherService, kernel, kernelMonitors, logProvider)
     new ExecutionEngine(graphDatabaseCypherService, logProvider, compatibilityFactory)

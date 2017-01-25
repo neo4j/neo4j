@@ -611,22 +611,6 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     txBridge(service).hasTransaction shouldBe false
   }
 
-  test("should be possible to close compiled result after it is consumed") {
-    // given
-    val db = new TestGraphDatabaseFactory().newImpermanentDatabase()
-
-    // when
-    val result = db.execute("CYPHER runtime=compiled MATCH (n) RETURN n")
-    result.accept(new ResultVisitor[RuntimeException] {
-      def visit(row: ResultRow) = true
-    })
-
-    result.close()
-
-    // then
-    // call to close actually worked
-  }
-
   test("should not refer to stale plan context in the cached execution plans") {
     // given
     val db = new TestGraphDatabaseFactory().newImpermanentDatabase()
