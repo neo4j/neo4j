@@ -29,7 +29,7 @@ Author = 'Network Engine for Objects'
 
 CompanyName = 'Network Engine for Objects'
 
-Copyright = 'http://neo4j.com/licensing/'
+Copyright = 'https://neo4j.com/licensing/'
 
 Description = 'Powershell module to manage a Neo4j instance on Windows'
 
