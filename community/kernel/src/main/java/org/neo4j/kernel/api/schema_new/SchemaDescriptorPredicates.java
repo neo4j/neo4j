@@ -43,7 +43,7 @@ public class SchemaDescriptorPredicates
         return properties.contains( propertyId );
     }
 
-    public static SchemaComputer<Optional<Integer>> getLabel = new SchemaComputer<Optional<Integer>>()
+    private static SchemaComputer<Optional<Integer>> getLabel = new SchemaComputer<Optional<Integer>>()
     {
         @Override
         public Optional<Integer> compute( LabelSchemaDescriptor schema )
@@ -58,7 +58,7 @@ public class SchemaDescriptorPredicates
         }
     };
 
-    public static SchemaComputer<Optional<Integer>> getRelType = new SchemaComputer<Optional<Integer>>()
+    private static SchemaComputer<Optional<Integer>> getRelType = new SchemaComputer<Optional<Integer>>()
     {
         @Override
         public Optional<Integer> compute( LabelSchemaDescriptor schema )
@@ -73,7 +73,7 @@ public class SchemaDescriptorPredicates
         }
     };
 
-    public static SchemaComputer<List<Integer>> getProperties = new SchemaComputer<List<Integer>>()
+    private static SchemaComputer<List<Integer>> getProperties = new SchemaComputer<List<Integer>>()
     {
         @Override
         public List<Integer> compute( LabelSchemaDescriptor schema )
@@ -85,21 +85,6 @@ public class SchemaDescriptorPredicates
         public List<Integer> compute( RelationTypeSchemaDescriptor schema )
         {
             return asList( schema.getPropertyIds() );
-        }
-    };
-
-    public static SchemaComputer<Optional<Integer>> getProperty = new SchemaComputer<Optional<Integer>>()
-    {
-        @Override
-        public Optional<Integer> compute( LabelSchemaDescriptor schema )
-        {
-            return schema.getPropertyIds().length == 0 ? Optional.empty() : Optional.of( schema.getPropertyIds()[0] );
-        }
-
-        @Override
-        public Optional<Integer> compute( RelationTypeSchemaDescriptor schema )
-        {
-            return schema.getPropertyIds().length == 0 ? Optional.empty() : Optional.of( schema.getPropertyIds()[0] );
         }
     };
 

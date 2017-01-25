@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.store.record;
 
-import org.apache.commons.lang3.NotImplementedException;
-
 import java.nio.ByteBuffer;
 
 import org.neo4j.graphdb.Label;
@@ -28,7 +26,6 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaComputer;
-import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaProcessor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.string.UTF8;
@@ -178,7 +175,7 @@ public class IndexRule extends AbstractSchemaRule
     }
 
     @Override
-    public SchemaDescriptor getSchemaDescriptor()
+    public LabelSchemaDescriptor getSchemaDescriptor()
     {
         return descriptor.schema();
     }
@@ -212,23 +209,20 @@ public class IndexRule extends AbstractSchemaRule
                 @Override
                 public Integer compute( LabelSchemaDescriptor schema )
                 {
-                    switch ( descriptor.type() )
-                    {
-                    default:
-                        return    4 /* label id */
-                                + 1 /* kind id */
-                                + UTF8.computeRequiredByteBufferSize( providerDescriptor.getKey() )
-                                + UTF8.computeRequiredByteBufferSize( providerDescriptor.getVersion() )
-                                + 2                              /* number of property keys */
-                                + 8 * 1                          /* the property keys, for now only 1 */
-                                + (canSupportUniqueConstraint() ? 8 : 0)  /* constraint indexes have an owner field */;
-                    }
+                    // regardless of descriptor.type()
+                    return    4 /* label id */
+                            + 1 /* kind id */
+                            + UTF8.computeRequiredByteBufferSize( providerDescriptor.getKey() )
+                            + UTF8.computeRequiredByteBufferSize( providerDescriptor.getVersion() )
+                            + 2                              /* number of property keys */
+                            + 8 * 1                          /* the property keys, for now only 1 */
+                            + (canSupportUniqueConstraint() ? 8 : 0)  /* constraint indexes have an owner field */;
                 }
 
                 @Override
                 public Integer compute( RelationTypeSchemaDescriptor schema )
                 {
-                    throw new NotImplementedException( "This constraint type is not yet supported by the store" );
+                    throw new UnsupportedOperationException( "This constraint type is not yet supported by the store" );
                 }
             };
 
@@ -244,28 +238,24 @@ public class IndexRule extends AbstractSchemaRule
         @Override
         public void process( LabelSchemaDescriptor schema )
         {
-            switch ( descriptor.type() )
+            // regardless of descriptor.type()
+            buffer.putInt( schema.getLabelId() );
+            Kind kind = canSupportUniqueConstraint() ? CONSTRAINT_INDEX_RULE : INDEX_RULE;
+            buffer.put( kind.id() );
+            UTF8.putEncodedStringInto( providerDescriptor.getKey(), buffer );
+            UTF8.putEncodedStringInto( providerDescriptor.getVersion(), buffer );
+            buffer.putShort( (short) 1 /*propertyKeys.length*/ );
+            buffer.putLong( schema.getPropertyIds()[0] );
+            if ( canSupportUniqueConstraint() )
             {
-            default:
-                buffer.putInt( schema.getLabelId() );
-                Kind kind = canSupportUniqueConstraint() ? CONSTRAINT_INDEX_RULE : INDEX_RULE;
-                buffer.put( kind.id() );
-                UTF8.putEncodedStringInto( providerDescriptor.getKey(), buffer );
-                UTF8.putEncodedStringInto( providerDescriptor.getVersion(), buffer );
-                buffer.putShort( (short) 1 /*propertyKeys.length*/ );
-                buffer.putLong( schema.getPropertyIds()[0] );
-                if ( canSupportUniqueConstraint() )
-                {
-                    buffer.putLong( owningConstraint );
-                }
-                break;
+                buffer.putLong( owningConstraint );
             }
         }
 
         @Override
         public void process( RelationTypeSchemaDescriptor schema )
         {
-            throw new NotImplementedException( "This index type is not yet supported by the store" );
+            throw new UnsupportedOperationException( "This index type is not yet supported by the store" );
         }
     }
 }

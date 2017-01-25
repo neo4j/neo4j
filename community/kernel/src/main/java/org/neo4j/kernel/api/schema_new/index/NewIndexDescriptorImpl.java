@@ -20,16 +20,16 @@
 package org.neo4j.kernel.api.schema_new.index;
 
 import org.neo4j.kernel.api.TokenNameLookup;
-import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 
 import static java.lang.String.format;
 
 class NewIndexDescriptorImpl implements NewIndexDescriptor
 {
-    private final SchemaDescriptor schema;
+    private final LabelSchemaDescriptor schema;
     private final NewIndexDescriptor.Type type;
 
-    NewIndexDescriptorImpl( SchemaDescriptor schema, Type type )
+    NewIndexDescriptorImpl( LabelSchemaDescriptor schema, Type type )
     {
         this.schema = schema;
         this.type = type;
@@ -42,7 +42,7 @@ class NewIndexDescriptorImpl implements NewIndexDescriptor
     }
 
     @Override
-    public SchemaDescriptor schema()
+    public LabelSchemaDescriptor schema()
     {
         return schema;
     }

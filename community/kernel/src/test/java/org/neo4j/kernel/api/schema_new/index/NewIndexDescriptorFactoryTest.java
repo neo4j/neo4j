@@ -31,7 +31,6 @@ import static org.neo4j.kernel.api.schema_new.SchemaTestUtil.simpleNameLookup;
 public class NewIndexDescriptorFactoryTest
 {
     private static final int LABEL_ID = 0;
-    private static final int REL_TYPE_ID = 0;
 
     @Test
     public void shouldCreateIndexDescriptors()
@@ -41,10 +40,6 @@ public class NewIndexDescriptorFactoryTest
         desc = NewIndexDescriptorFactory.forLabel( LABEL_ID, 1 );
         assertThat( desc.type(), equalTo( NewIndexDescriptor.Type.GENERAL ) );
         assertThat( desc.schema(), equalTo( SchemaDescriptorFactory.forLabel( LABEL_ID, 1 ) ) );
-
-        desc = NewIndexDescriptorFactory.forRelType( REL_TYPE_ID, 1 );
-        assertThat( desc.type(), equalTo( NewIndexDescriptor.Type.GENERAL ) );
-        assertThat( desc.schema(), equalTo( SchemaDescriptorFactory.forRelType( REL_TYPE_ID, 1 ) ) );
     }
 
     @Test
@@ -55,10 +50,6 @@ public class NewIndexDescriptorFactoryTest
         desc = NewIndexDescriptorFactory.uniqueForLabel( LABEL_ID, 1 );
         assertThat( desc.type(), equalTo( NewIndexDescriptor.Type.UNIQUE ) );
         assertThat( desc.schema(), equalTo( SchemaDescriptorFactory.forLabel( LABEL_ID, 1 ) ) );
-
-        desc = NewIndexDescriptorFactory.uniqueForRelType( REL_TYPE_ID, 1 );
-        assertThat( desc.type(), equalTo( NewIndexDescriptor.Type.UNIQUE ) );
-        assertThat( desc.schema(), equalTo( SchemaDescriptorFactory.forRelType( REL_TYPE_ID, 1 ) ) );
     }
 
     @Test
@@ -73,14 +64,6 @@ public class NewIndexDescriptorFactoryTest
         desc1 = NewIndexDescriptorFactory.uniqueForLabel( LABEL_ID, 1 );
         desc2 = NewIndexDescriptorFactory.uniqueForLabel( LABEL_ID, 1 );
         assertEquality( desc1, desc2 );
-
-        desc1 = NewIndexDescriptorFactory.forRelType( LABEL_ID, 1 );
-        desc2 = NewIndexDescriptorFactory.forRelType( LABEL_ID, 1 );
-        assertEquality( desc1, desc2 );
-
-        desc1 = NewIndexDescriptorFactory.uniqueForRelType( REL_TYPE_ID, 1 );
-        desc2 = NewIndexDescriptorFactory.uniqueForRelType( REL_TYPE_ID, 1 );
-        assertEquality( desc1, desc2 );
     }
 
     @Test
@@ -88,11 +71,7 @@ public class NewIndexDescriptorFactoryTest
     {
         assertThat( NewIndexDescriptorFactory.forLabel( 1, 2 ).userDescription( simpleNameLookup ),
                 equalTo( "Index( GENERAL, :Label1(property2) )" ) );
-        assertThat( NewIndexDescriptorFactory.forRelType( 1, 3 ).userDescription( simpleNameLookup ),
-                equalTo( "Index( GENERAL, -[:RelType1(property3)]- )" ) );
         assertThat( NewIndexDescriptorFactory.uniqueForLabel( 2, 4 ).userDescription( simpleNameLookup ),
                 equalTo( "Index( UNIQUE, :Label2(property4) )" ) );
-        assertThat( NewIndexDescriptorFactory.uniqueForRelType( 2, 5 ).userDescription( simpleNameLookup ),
-                equalTo( "Index( UNIQUE, -[:RelType2(property5)]- )" ) );
     }
 }

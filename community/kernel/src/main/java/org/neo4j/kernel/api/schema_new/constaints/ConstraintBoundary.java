@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.api.schema_new.constaints;
 
-import org.apache.commons.lang3.NotImplementedException;
-
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
@@ -28,9 +26,9 @@ import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
-import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaComputer;
 
 /**
@@ -75,7 +73,7 @@ public class ConstraintBoundary
                         schema.getLabelId(), schema.getPropertyIds()[0] ) );
 
             default:
-                throw new NotImplementedException( "Although we cannot get here, this has not been implemented." );
+                throw new UnsupportedOperationException( "Although we cannot get here, this has not been implemented." );
             }
         }
 

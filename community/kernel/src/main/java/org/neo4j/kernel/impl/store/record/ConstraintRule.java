@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.store.record;
 
-import org.apache.commons.lang3.NotImplementedException;
-
 import java.nio.ByteBuffer;
 import java.util.Optional;
 
@@ -50,16 +48,14 @@ public class ConstraintRule extends AbstractSchemaRule
                 readOwnedIndexRule( buffer ) );
     }
 
-    public static ConstraintRule readNodePropertyExistenceConstraintRule(
-            long id, int labelId, ByteBuffer buffer )
+    public static ConstraintRule readNodePropertyExistenceConstraintRule( long id, int labelId, ByteBuffer buffer )
     {
         return new ConstraintRule( id,
                 ConstraintDescriptorFactory.existsForLabel( labelId, readPropertyKey( buffer ) ),
                 Optional.empty() );
     }
 
-    public static ConstraintRule readRelPropertyExistenceConstraintRule( long id,
-            int relTypeId, ByteBuffer buffer )
+    public static ConstraintRule readRelPropertyExistenceConstraintRule( long id, int relTypeId, ByteBuffer buffer )
     {
         return new ConstraintRule( id,
                 ConstraintDescriptorFactory.existsForRelType( relTypeId, readPropertyKey( buffer ) ),
@@ -177,7 +173,7 @@ public class ConstraintRule extends AbstractSchemaRule
                                 4; /* property key id */
 
                     default:
-                        throw new NotImplementedException( "This constraint type is not yet supported by the store" );
+                        throw new UnsupportedOperationException( "This constraint type is not yet supported by the store" );
                     }
                 }
 
@@ -225,7 +221,7 @@ public class ConstraintRule extends AbstractSchemaRule
                 break;
 
             default:
-                throw new NotImplementedException( "This constraint type is not yet supported by the store" );
+                throw new UnsupportedOperationException( "This constraint type is not yet supported by the store" );
             }
         }
 

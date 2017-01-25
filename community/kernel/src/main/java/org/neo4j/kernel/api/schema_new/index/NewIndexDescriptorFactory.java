@@ -31,18 +31,8 @@ public class NewIndexDescriptorFactory
         return new NewIndexDescriptorImpl( SchemaDescriptorFactory.forLabel( labelId, propertyIds ), GENERAL );
     }
 
-    public static NewIndexDescriptor forRelType( int relTypeId, int... propertyIds )
-    {
-        return new NewIndexDescriptorImpl( SchemaDescriptorFactory.forRelType( relTypeId, propertyIds ), GENERAL );
-    }
-
     public static NewIndexDescriptor uniqueForLabel( int labelId, int... propertyIds )
     {
         return new NewIndexDescriptorImpl( SchemaDescriptorFactory.forLabel( labelId, propertyIds ), UNIQUE );
-    }
-
-    public static NewIndexDescriptor uniqueForRelType( int relTypeId, int... propertyIds )
-    {
-        return new NewIndexDescriptorImpl( SchemaDescriptorFactory.forRelType( relTypeId, propertyIds ), UNIQUE );
     }
 }

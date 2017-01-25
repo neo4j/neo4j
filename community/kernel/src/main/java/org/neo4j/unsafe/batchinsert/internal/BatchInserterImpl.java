@@ -19,8 +19,6 @@
  */
 package org.neo4j.unsafe.batchinsert.internal;
 
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -68,11 +66,11 @@ import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema_new.SchemaDescriptorPredicates;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
@@ -164,8 +162,6 @@ import static java.lang.Boolean.parseBoolean;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.kernel.api.schema.IndexDescriptorFactory.getNodePropertyDescriptor;
-import static org.neo4j.kernel.api.schema_new.SchemaDescriptorPredicates.getLabel;
-import static org.neo4j.kernel.api.schema_new.SchemaDescriptorPredicates.getProperty;
 import static org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor.Type.EXISTS;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 import static org.neo4j.kernel.impl.store.PropertyStore.encodeString;
@@ -468,15 +464,14 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         for ( int i = 0; i < labelIds.length; i++ )
         {
             IndexRule rule = rules[i];
-            int labelId = getLabel.compute( rule.getSchemaDescriptor() ).orElseThrow( NotImplementedException::new );
-            int propertyKeyId = getProperty.compute( rule.getSchemaDescriptor() ).orElseThrow( NotImplementedException::new );
+            int labelId = rule.getSchemaDescriptor().getLabelId();
+            int propertyKeyId = rule.getSchemaDescriptor().getPropertyIds()[0];
 
             labelIds[i] = labelId;
             // TODO: Support composite indexes
             propertyKeyIds[i] = propertyKeyId;
 
-            IndexDescriptor descriptor =
-                    org.neo4j.kernel.api.schema.IndexDescriptorFactory.of( labelId, propertyKeyId );
+            IndexDescriptor descriptor = IndexDescriptorFactory.of( labelId, propertyKeyId );
             populators[i] = schemaIndexProviders.apply( rule.getProviderDescriptor() )
                                                 .getPopulator( rule.getId(),
                                                         descriptor,

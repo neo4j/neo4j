@@ -20,7 +20,7 @@
 package org.neo4j.kernel.api.schema_new.index;
 
 import org.neo4j.kernel.api.TokenNameLookup;
-import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 
 public interface NewIndexDescriptor
 {
@@ -28,7 +28,11 @@ public interface NewIndexDescriptor
 
     Type type();
 
-    SchemaDescriptor schema();
+    /**
+     * This method currently returns the specific LabelSchemaDescriptor, as we do not support indexes on relations.
+     * When we do, consider down-typing this to a SchemaDescriptor.
+     */
+    LabelSchemaDescriptor schema();
 
     /**
      * @param tokenNameLookup used for looking up names for token ids.
