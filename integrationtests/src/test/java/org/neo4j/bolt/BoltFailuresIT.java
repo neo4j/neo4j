@@ -164,9 +164,8 @@ public class BoltFailuresIT
         db = startTestDb( monitors );
         driver = createDriver();
 
-        try
+        try ( Session session = driver.session() )
         {
-            Session session = driver.session();
             if ( shouldBeAbleToGetSession )
             {
                 session.run( "CREATE ()" ).consume();
@@ -191,10 +190,12 @@ public class BoltFailuresIT
         driver = createDriver();
 
         Session session = driver.session();
+
+        // setup monitor to throw before running the query to make processing of the RUN message fail
+        monitorSetup.accept( sessionMonitor );
         session.run( "CREATE ()" );
         try
         {
-            monitorSetup.accept( sessionMonitor );
             session.close();
             fail( "Exception expected" );
         }
