@@ -69,8 +69,8 @@ import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
@@ -162,7 +162,6 @@ import static java.lang.Boolean.parseBoolean;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.kernel.api.schema.IndexDescriptorFactory.getNodePropertyDescriptor;
-import static org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor.Type.EXISTS;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 import static org.neo4j.kernel.impl.store.PropertyStore.encodeString;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
@@ -389,45 +388,32 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
 
     private void verifyIndexOrUniquenessConstraintCanBeCreated( int labelId, int[] propertyKeyIds, String errorMessage )
     {
-        LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds );
-        for ( SchemaRule rule : schemaCache.schemaRulesBySchema( descriptor ) )
-        {
-            if ( !isExistenceConstraint( rule ) )
-            {
-                throw new ConstraintViolationException( errorMessage );
-            }
+        LabelSchemaDescriptor schemaDescriptor = SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds );
+        ConstraintDescriptor constraintDescriptor = ConstraintDescriptorFactory.uniqueForLabel( labelId, propertyKeyIds );
+        if ( schemaCache.hasIndexRule( schemaDescriptor ) || schemaCache.hasConstraintRule( constraintDescriptor ) ) {
+            throw new ConstraintViolationException( errorMessage );
         }
-    }
-
-    private boolean isExistenceConstraint( SchemaRule rule )
-    {
-        return rule instanceof ConstraintRule &&
-                ((ConstraintRule)rule).getConstraintDescriptor().type() == EXISTS;
     }
 
     private void validateNodePropertyExistenceConstraintCanBeCreated( int labelId, int[] propertyKeyIds )
     {
-        LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds );
-        for ( SchemaRule rule : schemaCache.schemaRulesBySchema( descriptor ) )
+        ConstraintDescriptor constraintDescriptor = ConstraintDescriptorFactory.existsForLabel( labelId, propertyKeyIds );
+
+        if ( schemaCache.hasConstraintRule( constraintDescriptor ) )
         {
-            if ( isExistenceConstraint( rule ) )
-            {
-                throw new ConstraintViolationException(
+            throw new ConstraintViolationException(
                         "Node property existence constraint for given {label;property} already exists" );
-            }
         }
     }
 
     private void validateRelationshipConstraintCanBeCreated( int relTypeId, int propertyKeyId )
     {
-        RelationTypeSchemaDescriptor descriptor = SchemaDescriptorFactory.forRelType( relTypeId, propertyKeyId );
-        for ( SchemaRule rule : schemaCache.schemaRulesBySchema( descriptor ) )
+        ConstraintDescriptor constraintDescriptor = ConstraintDescriptorFactory.existsForLabel( relTypeId, propertyKeyId );
+
+        if ( schemaCache.hasConstraintRule( constraintDescriptor ) )
         {
-            if ( isExistenceConstraint( rule ) )
-            {
-                throw new ConstraintViolationException(
+            throw new ConstraintViolationException(
                         "Relationship property existence constraint for given {type;property} already exists" );
-            }
         }
     }
 

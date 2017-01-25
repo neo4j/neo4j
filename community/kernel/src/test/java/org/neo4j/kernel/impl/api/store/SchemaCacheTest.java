@@ -56,7 +56,7 @@ import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.
 public class SchemaCacheTest
 {
     final SchemaRule hans = newIndexRule( 1, 0, 5 );
-    final SchemaRule witch = newIndexRule( 2, 3, 6 );
+    final SchemaRule witch = nodePropertyExistenceConstraintRule( 2, 3, 6 );
     final SchemaRule gretel = newIndexRule( 3, 0, 7 );
 
     @Test
@@ -64,31 +64,15 @@ public class SchemaCacheTest
     {
         // GIVEN
         Collection<SchemaRule> rules = asList( hans, witch, gretel );
-        SchemaCache cache = new SchemaCache( new StandardConstraintSemantics(), rules );
+        SchemaCache cache = new SchemaCache( new ConstraintSemantics(), rules );
 
         // THEN
-        assertEquals( asSet( hans, gretel ), Iterables.asSet( cache.schemaRulesForLabel( 0 ) ) );
-        assertEquals( asSet( witch ), Iterables.asSet( cache.schemaRulesForLabel( 3 ) ) );
-        assertEquals( Iterables.asSet( rules ), Iterables.asSet( cache.schemaRules() ) );
+        assertEquals( asSet( hans, gretel ), Iterables.asSet( cache.indexRules() ) );
+        assertEquals( asSet( witch ), Iterables.asSet( cache.constraintRules() ) );
     }
 
     @Test
-    public void should_add_schema_rules_to_a_label()
-    {
-        // GIVEN
-        Collection<SchemaRule> rules = Collections.emptyList();
-        SchemaCache cache = new SchemaCache( new StandardConstraintSemantics(), rules );
-
-        // WHEN
-        cache.addSchemaRule( hans );
-        cache.addSchemaRule( gretel );
-
-        // THEN
-        assertEquals( asSet( hans, gretel ), Iterables.asSet( cache.schemaRulesForLabel( 0 ) ) );
-    }
-
-    @Test
-    public void should_to_retrieve_all_schema_rules()
+    public void should_add_schema_rules()
     {
         // GIVEN
         SchemaCache cache = newSchemaCache();
@@ -96,9 +80,11 @@ public class SchemaCacheTest
         // WHEN
         cache.addSchemaRule( hans );
         cache.addSchemaRule( gretel );
+        cache.addSchemaRule( witch );
 
         // THEN
-        assertEquals( asSet( hans, gretel ), Iterables.asSet( cache.schemaRules() ) );
+        assertEquals( asSet( hans, gretel ), Iterables.asSet( cache.indexRules() ) );
+        assertEquals( asSet( witch ), Iterables.asSet( cache.constraintRules() ) );
     }
 
     @Test
