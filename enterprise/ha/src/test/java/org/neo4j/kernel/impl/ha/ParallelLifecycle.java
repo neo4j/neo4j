@@ -26,7 +26,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
@@ -80,7 +80,7 @@ class ParallelLifecycle extends LifecycleAdapter
         perform( Lifecycle::shutdown );
     }
 
-    private void perform( Action action ) throws InterruptedException
+    private void perform( Action action ) throws Exception
     {
         ExecutorService service = Executors.newFixedThreadPool( lifecycles.size() );
         List<Future<?>> futures = new ArrayList<>();
@@ -102,9 +102,14 @@ class ParallelLifecycle extends LifecycleAdapter
         service.shutdown();
         if ( !service.awaitTermination( timeout, unit ) )
         {
-            throw new IllegalStateException( "Couldn't perform all actions" );
+            for ( Future<?> future : futures )
+            {
+                future.cancel( true );
+            }
         }
-        futures.forEach( future ->
+
+        Exception exception = null;
+        for ( Future<?> future : futures )
         {
             try
             {
@@ -112,9 +117,13 @@ class ParallelLifecycle extends LifecycleAdapter
             }
             catch ( InterruptedException | ExecutionException e )
             {
-                throw new RuntimeException( e );
+                exception = Exceptions.combine( exception, e );
             }
-        } );
+        }
+        if ( exception != null )
+        {
+            throw exception;
+        }
     }
 
     private interface Action
