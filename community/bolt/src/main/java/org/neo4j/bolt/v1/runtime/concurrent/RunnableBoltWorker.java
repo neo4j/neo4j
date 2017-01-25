@@ -20,7 +20,9 @@
 package org.neo4j.bolt.v1.runtime.concurrent;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.bolt.v1.runtime.BoltConnectionAuthFatality;
@@ -37,16 +39,14 @@ import org.neo4j.logging.Log;
  */
 class RunnableBoltWorker implements Runnable, BoltWorker
 {
-    /** Poison pill for closing the session and shutting down the worker */
-    static final Job SHUTDOWN = session1 -> {};
-
     private static final int workQueueSize = Integer.getInteger( "org.neo4j.bolt.workQueueSize", 100 );
 
-    private final ArrayBlockingQueue<Job> jobQueue = new ArrayBlockingQueue<>( workQueueSize );
+    private final BlockingQueue<Job> jobQueue = new ArrayBlockingQueue<>( workQueueSize );
     private final BoltStateMachine machine;
     private final Log log;
     private final Log userLog;
-    private boolean keepRunning;
+
+    private volatile boolean keepRunning = true;
 
     RunnableBoltWorker( BoltStateMachine machine, LogService logging )
     {
@@ -60,6 +60,7 @@ class RunnableBoltWorker implements Runnable, BoltWorker
      * possible.
      * @param job an operation to be performed on the session
      */
+    @Override
     public void enqueue( Job job )
     {
         try
@@ -68,6 +69,7 @@ class RunnableBoltWorker implements Runnable, BoltWorker
         }
         catch ( InterruptedException e )
         {
+            Thread.currentThread().interrupt();
             throw new RuntimeException( "Worker interrupted while queueing request, the session may have been " +
                     "forcibly closed, or the database may be shutting down." );
         }
@@ -76,8 +78,7 @@ class RunnableBoltWorker implements Runnable, BoltWorker
     @Override
     public void run()
     {
-        keepRunning = true;
-        ArrayList<Job> batch = new ArrayList<>( workQueueSize );
+        List<Job> batch = new ArrayList<>( workQueueSize );
 
         try
         {
@@ -110,12 +111,11 @@ class RunnableBoltWorker implements Runnable, BoltWorker
         }
         finally
         {
-            // Attempt to close the session, as an effort to release locks and other resources held by the session
-            machine.close();
+            closeStateMachine();
         }
     }
 
-    private void executeBatch( ArrayList<Job> batch ) throws BoltConnectionFatality
+    private void executeBatch( List<Job> batch ) throws BoltConnectionFatality
     {
         for ( int i = 0; keepRunning && i < batch.size(); i++ )
         {
@@ -126,14 +126,7 @@ class RunnableBoltWorker implements Runnable, BoltWorker
 
     private void execute( Job job ) throws BoltConnectionFatality
     {
-        if ( job == SHUTDOWN )
-        {
-            keepRunning = false;
-        }
-        else
-        {
-            job.perform( machine );
-        }
+        job.perform( machine );
     }
 
     @Override
@@ -145,14 +138,19 @@ class RunnableBoltWorker implements Runnable, BoltWorker
     @Override
     public void halt()
     {
-        try
-        {
-            machine.close();
-        }
-        finally
-        {
-            keepRunning = false;
-        }
+        keepRunning = false;
     }
 
+    private void closeStateMachine()
+    {
+        try
+        {
+            // Attempt to close the state machine, as an effort to release locks and other resources
+            machine.close();
+        }
+        catch ( Throwable t )
+        {
+            log.error( "Unable to close Bolt session '" + machine.key() + "'", t );
+        }
+    }
 }
