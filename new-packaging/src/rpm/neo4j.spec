@@ -41,7 +41,7 @@ fi
 if [ $1 -gt 1 ]; then
   # Upgrading
   # Remember if neo4j is running
-  if [ -e "/run/systemd" ]; then
+  if [ -e "/run/systemd/system" ]; then
     # SystemD is the init-system
     if systemctl is-active --quiet neo4j > /dev/null 2>&1 ; then
       mkdir -p %{_localstatedir}/lib/rpm-state/neo4j
@@ -50,11 +50,12 @@ if [ $1 -gt 1 ]; then
     fi
   else
     # SysVInit must be the init-system
-    if neo4j status > /dev/null 2>&1 ; then
+    if service neo4j status > /dev/null 2>&1 ; then
       mkdir -p %{_localstatedir}/lib/rpm-state/neo4j
       touch %{_localstatedir}/lib/rpm-state/neo4j/running
       service neo4j stop > /dev/null 2>&1 || :
     fi
+  fi
 fi
 
 
@@ -65,7 +66,7 @@ fi
 
 if [ $1 -eq 0 ]; then
   # Uninstalling
-  if [ -e "/run/systemd" ]; then
+  if [ -e "/run/systemd/system" ]; then
     systemctl stop neo4j > /dev/null 2>&1 || :
     systemctl disable --quiet neo4j > /dev/null 2>&1 || :
   else
@@ -82,7 +83,7 @@ fi
 # Restore neo4j if it was running before upgrade
 if [ -e %{_localstatedir}/lib/rpm-state/neo4j/running ]; then
   rm %{_localstatedir}/lib/rpm-state/neo4j/running
-  if [ -e "/run/systemd" ]; then
+  if [ -e "/run/systemd/system" ]; then
     systemctl daemon-reload > /dev/null 2>&1 || :
     systemctl start neo4j  > /dev/null 2>&1 || :
   else
@@ -101,6 +102,7 @@ mkdir -p %{buildroot}/%{neo4jhome}/data/databases
 mkdir -p %{buildroot}/%{neo4jhome}/import
 mkdir -p %{buildroot}/%{_sysconfdir}/neo4j
 mkdir -p %{buildroot}/%{_localstatedir}/log/neo4j
+mkdir -p %{buildroot}/%{_localstatedir}/run/neo4j
 mkdir -p %{buildroot}/lib/systemd/system
 mkdir -p %{buildroot}/%{_mandir}/man1
 mkdir -p %{buildroot}/%{_sysconfdir}/default
@@ -133,6 +135,7 @@ install -m 0644 manpages/* %{buildroot}/%{_mandir}/man1
 %dir %{neo4jhome}/plugins
 %dir %{neo4jhome}/import
 %dir %{neo4jhome}/data/databases
+%attr(-,neo4j,root) %dir %{_localstatedir}/run/neo4j
 
 %{_datadir}/neo4j
 %{_bindir}/*

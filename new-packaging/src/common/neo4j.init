@@ -38,16 +38,25 @@
 
 PATH=/sbin:/usr/sbin:/bin:/usr/bin
 NAME=neo4j
-DAEMON=/usr/bin/$NAME
+DAEMON=/usr/bin/${NAME}
 PIDDIR=/var/run/${NAME}
 PIDFILE=${PIDDIR}/neo4j.pid
-SCRIPTNAME=/etc/init.d/$NAME-service
+SCRIPTNAME=/etc/init.d/${NAME}
 
 [ -x "$DAEMON" ] || exit 0
 [ -r /etc/default/$NAME ] && . /etc/default/$NAME
 [ -n "${NEO_USER}" ] || NEO_USER=$NAME
 
-. /lib/lsb/init-functions
+LSB=""
+if [ -f /lib/lsb/init-functions ]; then
+  . /lib/lsb/init-functions
+  LSB="LSB"
+elif [ -f /etc/init.d/functions ]; then
+  . /etc/init.d/functions
+else
+  echo "Error: your platform is not supported by ${NAME}" >&2
+  exit 1
+fi
 
 do_start()
 {
@@ -55,12 +64,25 @@ do_start()
   [ -d "${PIDDIR}" ] || mkdir -p "${PIDDIR}"
   chown "${NEO_USER}:" "${PIDDIR}"
 
-  start-stop-daemon --chuid ${NEO_USER} --start --quiet --oknodo --pidfile $PIDFILE --exec $DAEMON -- start
+  if [ -z ${LSB} ]; then
+    daemon --user="${NEO_USER}" --pidfile="${PIDFILE}" "${DAEMON} start > /dev/null 2>&1 &"
+  else
+    start-stop-daemon --chuid ${NEO_USER} --start --quiet --oknodo --pidfile ${PIDFILE} --exec ${DAEMON} -- start
+  fi
 }
 
 do_stop()
 {
-  $DAEMON stop
+  ${DAEMON} stop
+}
+
+do_status()
+{
+  if [ -z ${LSB} ]; then
+    status -p "${PIDFILE}" "${NAME}"
+  else
+    status_of_proc -p "${PIDFILE}" "${DAEMON}" "${NAME}"
+  fi
 }
 
 do_ulimit()
@@ -78,7 +100,7 @@ case "$1" in
     do_stop
     ;;
   status)
-    status_of_proc -p $PIDFILE "$DAEMON" "$NAME"
+    do_status
     ;;
   restart|force-reload)
     do_stop && do_start
