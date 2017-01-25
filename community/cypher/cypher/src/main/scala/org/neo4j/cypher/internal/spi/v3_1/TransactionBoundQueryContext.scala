@@ -26,7 +26,7 @@ import org.neo4j.collection.RawIterator
 import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.collection.primitive.base.Empty.EMPTY_PRIMITIVE_LONG_COLLECTION
 import org.neo4j.cypher.internal.compiler.v3_1.MinMaxOrdering.{BY_NUMBER, BY_STRING, BY_VALUE}
-import org.neo4j.cypher.internal.compiler.v3_1.{IndexDescriptor => CypherIndexDescriptor,_}
+import org.neo4j.cypher.internal.compiler.v3_1._
 import org.neo4j.cypher.internal.compiler.v3_1.ast.convert.commands.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions
 import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.{KernelPredicate, OnlyDirectionExpander, TypeAndDirectionExpander}
@@ -136,12 +136,12 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
     new BeansAPIRelationshipIterator(relationships, entityAccessor)
   }
 
-  override def indexSeek(index: CypherIndexDescriptor, value: Any) = {
+  override def indexSeek(index: IndexDescriptor, value: Any) = {
     indexSearchMonitor.indexSeek(index, value)
     JavaConversionSupport.mapToScalaENFXSafe(txContext.statement.readOperations().nodesGetFromIndexSeek(index, value))(nodeOps.getById)
   }
 
-  override def indexSeekByRange(index: CypherIndexDescriptor, value: Any) = value match {
+  override def indexSeekByRange(index: IndexDescriptor, value: Any) = value match {
 
     case PrefixRange(prefix: String) =>
       indexSeekByPrefixRange(index, prefix)
@@ -152,7 +152,7 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
       throw new InternalException(s"Unsupported index seek by range: $range")
   }
 
-  private def indexSeekByPrefixRange(index: CypherIndexDescriptor, range: InequalitySeekRange[Any]): scala.Iterator[Node] = {
+  private def indexSeekByPrefixRange(index: IndexDescriptor, range: InequalitySeekRange[Any]): scala.Iterator[Node] = {
     val groupedRanges = range.groupBy { (bound: Bound[Any]) =>
       bound.endPoint match {
         case n: Number => classOf[Number]
@@ -200,12 +200,12 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
       }
   }
 
-  private def indexSeekByPrefixRange(index: CypherIndexDescriptor, prefix: String): scala.Iterator[Node] = {
+  private def indexSeekByPrefixRange(index: IndexDescriptor, prefix: String): scala.Iterator[Node] = {
     val indexedNodes = txContext.statement.readOperations().nodesGetFromIndexRangeSeekByPrefix(index, prefix)
     JavaConversionSupport.mapToScalaENFXSafe(indexedNodes)(nodeOps.getById)
   }
 
-  private def indexSeekByNumericalRange(index: CypherIndexDescriptor, range: InequalitySeekRange[Number]): scala.Iterator[Node] = {
+  private def indexSeekByNumericalRange(index: IndexDescriptor, range: InequalitySeekRange[Number]): scala.Iterator[Node] = {
     val readOps = txContext.statement.readOperations()
     val matchingNodes: PrimitiveLongIterator = (range match {
 
@@ -232,7 +232,7 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
     JavaConversionSupport.mapToScalaENFXSafe(matchingNodes)(nodeOps.getById)
   }
 
-  private def indexSeekByStringRange(index: CypherIndexDescriptor, range: InequalitySeekRange[String]): scala.Iterator[Node] = {
+  private def indexSeekByStringRange(index: IndexDescriptor, range: InequalitySeekRange[String]): scala.Iterator[Node] = {
     val readOps = txContext.statement.readOperations()
     val matchingNodes: PrimitiveLongIterator = range match {
 
@@ -260,16 +260,16 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
     JavaConversionSupport.mapToScalaENFXSafe(matchingNodes)(nodeOps.getById)
   }
 
-  override def indexScan(index: CypherIndexDescriptor) =
+  override def indexScan(index: IndexDescriptor) =
     mapToScalaENFXSafe(txContext.statement.readOperations().nodesGetFromIndexScan(index))(nodeOps.getById)
 
-  override def indexScanByContains(index: CypherIndexDescriptor, value: String) =
+  override def indexScanByContains(index: IndexDescriptor, value: String) =
     mapToScalaENFXSafe(txContext.statement.readOperations().nodesGetFromIndexContainsScan(index, value))(nodeOps.getById)
 
-  override def indexScanByEndsWith(index: CypherIndexDescriptor, value: String) =
+  override def indexScanByEndsWith(index: IndexDescriptor, value: String) =
     mapToScalaENFXSafe(txContext.statement.readOperations().nodesGetFromIndexEndsWithScan(index, value))(nodeOps.getById)
 
-  override def lockingUniqueIndexSeek(index: CypherIndexDescriptor, value: Any): Option[Node] = {
+  override def lockingUniqueIndexSeek(index: IndexDescriptor, value: Any): Option[Node] = {
     indexSearchMonitor.lockingUniqueIndexSeek(index, value)
     val nodeId = txContext.statement.readOperations().nodeGetFromUniqueIndexSeek(index, value)
     if (StatementConstants.NO_SUCH_NODE == nodeId) None else Some(nodeOps.getById(nodeId))
@@ -461,7 +461,7 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
     txContext.statement.readOperations().schemaStateGetOrCreate(key, javaCreator)
   }
 
-  override def addIndexRule(labelId: Int, propertyKeyId: Int): IdempotentResult[CypherIndexDescriptor] = try {
+  override def addIndexRule(labelId: Int, propertyKeyId: Int): IdempotentResult[IndexDescriptor] = try {
     IdempotentResult(txContext.statement.schemaWriteOperations().indexCreate(new NodePropertyDescriptor(labelId, propertyKeyId)))
   } catch {
     case _: AlreadyIndexedException =>
@@ -717,8 +717,8 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
 
 object TransactionBoundQueryContext {
   trait IndexSearchMonitor {
-    def indexSeek(index: CypherIndexDescriptor, value: Any): Unit
+    def indexSeek(index: IndexDescriptor, value: Any): Unit
 
-    def lockingUniqueIndexSeek(index: CypherIndexDescriptor, value: Any): Unit
+    def lockingUniqueIndexSeek(index: IndexDescriptor, value: Any): Unit
   }
 }

@@ -17,10 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.spi.v2_3
+package org.neo4j.cypher.internal.spi.v3_2
 
-import org.neo4j.cypher.internal.compiler.v2_3.{IndexDescriptor => CypherIndexDescriptor}
-import org.neo4j.kernel.api.schema.{IndexDescriptor => KernelIndexDescriptor, IndexDescriptorFactory}
+import org.neo4j.cypher.internal.compiler.v3_2.{IndexDescriptor => CypherIndexDescriptor}
+import org.neo4j.kernel.api.schema.{IndexDescriptor => KernelIndexDescriptor, NodeMultiPropertyDescriptor, NodePropertyDescriptor, IndexDescriptorFactory}
 
 trait IndexDescriptorCompatibility {
   implicit def cypherToKernel(index: CypherIndexDescriptor) =

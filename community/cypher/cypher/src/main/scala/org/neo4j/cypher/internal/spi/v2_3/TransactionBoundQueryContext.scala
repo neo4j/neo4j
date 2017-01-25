@@ -26,7 +26,7 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.collection.primitive.base.Empty.EMPTY_PRIMITIVE_LONG_COLLECTION
 import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v2_3.MinMaxOrdering.{BY_NUMBER, BY_STRING, BY_VALUE}
-import org.neo4j.cypher.internal.compiler.v2_3.{IndexDescriptor => CypherIndexDescriptor,_}
+import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{KernelPredicate, OnlyDirectionExpander, TypeAndDirectionExpander}
@@ -127,10 +127,10 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
     new BeansAPIRelationshipIterator(relationships, nodeManager)
   }
 
-  def indexSeek(index: CypherIndexDescriptor, value: Any) =
+  def indexSeek(index: IndexDescriptor, value: Any) =
     JavaConversionSupport.mapToScalaENFXSafe(tc.statement.readOperations().nodesGetFromIndexSeek(index, value))(nodeOps.getById)
 
-  def indexSeekByRange(index: CypherIndexDescriptor, value: Any) = value match {
+  def indexSeekByRange(index: IndexDescriptor, value: Any) = value match {
 
     case PrefixRange(prefix: String) =>
       indexSeekByPrefixRange(index, prefix)
@@ -142,7 +142,7 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
       throw new InternalException(s"Unsupported index seek by range: $range")
   }
 
-  private def indexSeekByPrefixRange(index: CypherIndexDescriptor, range: InequalitySeekRange[Any]): scala.Iterator[Node] = {
+  private def indexSeekByPrefixRange(index: IndexDescriptor, range: InequalitySeekRange[Any]): scala.Iterator[Node] = {
     val groupedRanges = range.groupBy { (bound: Bound[Any]) =>
       bound.endPoint match {
         case n: Number => classOf[Number]
@@ -190,12 +190,12 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
     }
   }
 
-  private def indexSeekByPrefixRange(index: CypherIndexDescriptor, prefix: String): scala.Iterator[Node] = {
+  private def indexSeekByPrefixRange(index: IndexDescriptor, prefix: String): scala.Iterator[Node] = {
     val indexedNodes = tc.statement.readOperations().nodesGetFromIndexRangeSeekByPrefix(index, prefix)
     JavaConversionSupport.mapToScalaENFXSafe(indexedNodes)(nodeOps.getById)
   }
 
-  private def indexSeekByNumericalRange(index: CypherIndexDescriptor, range: InequalitySeekRange[Number]): scala.Iterator[Node] = {
+  private def indexSeekByNumericalRange(index: IndexDescriptor, range: InequalitySeekRange[Number]): scala.Iterator[Node] = {
     val readOps = tc.statement.readOperations()
     val matchingNodes: PrimitiveLongIterator = (range match {
 
@@ -222,7 +222,7 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
     JavaConversionSupport.mapToScalaENFXSafe(matchingNodes)(nodeOps.getById)
   }
 
-  private def indexSeekByStringRange(index: CypherIndexDescriptor, range: InequalitySeekRange[String]): scala.Iterator[Node] = {
+  private def indexSeekByStringRange(index: IndexDescriptor, range: InequalitySeekRange[String]): scala.Iterator[Node] = {
     val readOps = tc.statement.readOperations()
     val matchingNodes: PrimitiveLongIterator = range match {
 
@@ -250,10 +250,10 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
     JavaConversionSupport.mapToScalaENFXSafe(matchingNodes)(nodeOps.getById)
   }
 
-  def indexScan(index: CypherIndexDescriptor) =
+  def indexScan(index: IndexDescriptor) =
     mapToScalaENFXSafe(tc.statement.readOperations().nodesGetFromIndexScan(index))(nodeOps.getById)
 
-  override def lockingExactUniqueIndexSearch(index: CypherIndexDescriptor, value: Any): Option[Node] = {
+  override def lockingExactUniqueIndexSearch(index: IndexDescriptor, value: Any): Option[Node] = {
     val nodeId: Long = tc.statement.readOperations().nodeGetFromUniqueIndexSeek(index, value)
     if (StatementConstants.NO_SUCH_NODE == nodeId) None else Some(nodeOps.getById(nodeId))
   }
@@ -455,7 +455,7 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
     tc.statement.readOperations().schemaStateGetOrCreate(key, javaCreator)
   }
 
-  def addIndexRule(labelId: Int, propertyKeyId: Int): IdempotentResult[CypherIndexDescriptor] = try {
+  def addIndexRule(labelId: Int, propertyKeyId: Int): IdempotentResult[IndexDescriptor] = try {
     IdempotentResult(tc.statement.schemaWriteOperations().indexCreate(new NodePropertyDescriptor(labelId, propertyKeyId)))
   } catch {
     case _: AlreadyIndexedException =>
