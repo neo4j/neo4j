@@ -79,8 +79,6 @@ public class TestPullUpdates
     {
         ClusterManager.ManagedCluster cluster = clusterRule.
                 withSharedSetting( HaSettings.pull_interval, PULL_INTERVAL + "ms" ).
-                withSharedSetting( ClusterSettings.heartbeat_interval, "2s" ).
-                withSharedSetting( ClusterSettings.heartbeat_timeout, "30s" ).
                 startCluster();
 
         cluster.info( "### Creating initial dataset" );

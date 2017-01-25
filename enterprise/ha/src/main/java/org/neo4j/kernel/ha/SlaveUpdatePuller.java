@@ -42,6 +42,7 @@ import org.neo4j.kernel.ha.com.slave.MasterClient;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.CappedLogger;
 import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.kernel.impl.util.JobScheduler.JobHandle;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -112,7 +113,7 @@ import static java.lang.System.currentTimeMillis;
  *
  * @see org.neo4j.kernel.ha.UpdatePuller
  */
-public class SlaveUpdatePuller implements Runnable, UpdatePuller
+public class SlaveUpdatePuller implements Runnable, UpdatePuller, JobScheduler.CancelListener
 {
     public interface Monitor
     {
@@ -140,7 +141,7 @@ public class SlaveUpdatePuller implements Runnable, UpdatePuller
     private final LastUpdateTime lastUpdateTime;
     private final InstanceId instanceId;
     private final AvailabilityGuard availabilityGuard;
-    private InvalidEpochExceptionHandler invalidEpochHandler;
+    private final InvalidEpochExceptionHandler invalidEpochHandler;
     private final Monitor monitor;
     private final JobScheduler jobScheduler;
     private volatile Thread updatePullingThread;
@@ -188,6 +189,12 @@ public class SlaveUpdatePuller implements Runnable, UpdatePuller
         }
     }
 
+    @Override
+    public void cancelled( boolean mayInterruptIfRunning )
+    {
+        halted = true;
+    }
+
     private void periodicallyPullUpdates()
     {
         while ( !halted )
@@ -213,7 +220,8 @@ public class SlaveUpdatePuller implements Runnable, UpdatePuller
         }
 
         shutdownLatch = new BinaryLatch();
-        jobScheduler.schedule( JobScheduler.Groups.pullUpdates, this );
+        JobHandle handle = jobScheduler.schedule( JobScheduler.Groups.pullUpdates, this );
+        handle.registerCancelListener( this );
     }
 
     @Override
