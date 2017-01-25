@@ -36,17 +36,20 @@ import org.neo4j.graphdb.{Node}
 import scala.collection.Map
 
 object UniqueLink {
-  def apply(start: String, end: String, relName: String, relType: String, dir: SemanticDirection): UniqueLink =
+  def apply(leftName: String, rightName: String, relName: String, relType: String, dir: SemanticDirection): UniqueLink =
     new UniqueLink(
-      NamedExpectation(start, Map.empty),
-      NamedExpectation(end, Map.empty),
+      NamedExpectation(leftName, Map.empty),
+      NamedExpectation(rightName, Map.empty),
       NamedExpectation(relName, Map.empty), relType, dir)
 }
 
-case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: NamedExpectation, relType: String, dir: SemanticDirection)
+case class UniqueLink(left: NamedExpectation, right: NamedExpectation, rel: NamedExpectation, relType: String, dir: SemanticDirection)
   extends GraphElementPropertyFunctions with Pattern with MapSupport {
 
   def exec(context: ExecutionContext, state: QueryState): Option[(UniqueLink, CreateUniqueResult)] = {
+
+    def orderByDir[T]( a:T, b:T, dir:SemanticDirection ):(T,T) =
+      if (dir != SemanticDirection.INCOMING) (a, b) else (b, a)
 
     def getNode(expect: NamedExpectation): Option[Node] = context.get(expect.name) match {
       case Some(n: Node)                             => Some(n)
@@ -62,14 +65,15 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
     // This method sees if a matching relationship already exists between two nodes
     // If any matching rels are found, they are returned. Otherwise, a new one is
     // created and returned.
-    def twoNodes(startNode: Node, endNode: Node): Option[(UniqueLink, CreateUniqueResult)] = {
-      val rels = state.query.getRelationshipsForIds(startNode, dir, Some(state.query.getOptRelTypeId(relType).toSeq)).
-        filter(r => r.getOtherNode(startNode) == endNode && rel.compareWithExpectations(r, context, state) ).
+    def twoNodes(leftNode: Node, rightNode: Node): Option[(UniqueLink, CreateUniqueResult)] = {
+      val rels = state.query.getRelationshipsForIds(leftNode, dir, Some(state.query.getOptRelTypeId(relType).toSeq)).
+        filter(r => r.getOtherNode(leftNode) == rightNode && rel.compareWithExpectations(r, context, state) ).
         toList
 
       rels match {
         case List() =>
           val expectations = rel.getExpectations(context, state)
+          val (startNode, endNode) = orderByDir(leftNode, rightNode, dir)
           val createRel = CreateRelationship(rel.name,
             RelationshipEndpoint(Literal(startNode), Map(), Seq.empty),
             RelationshipEndpoint(Literal(endNode), Map(), Seq.empty), relType, expectations.properties)
@@ -82,20 +86,14 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
     // When only one node exists in the context, we'll traverse all the relationships of that node
     // and try to find a matching node/rel. If matches are found, they are returned. If nothing is
     // found, we'll create it and return it
-    def oneNode(startNode: Node, dir: SemanticDirection, other: NamedExpectation): Option[(UniqueLink, CreateUniqueResult)] = {
+    def oneNode(existingNode: Node, dir: SemanticDirection, other: NamedExpectation): Option[(UniqueLink, CreateUniqueResult)] = {
 
       def createUpdateActions(): Seq[UpdateWrapper] = {
         val relExpectations = rel.getExpectations(context, state)
-        val createRel = if (dir == SemanticDirection.OUTGOING) {
-          CreateRelationship(rel.name,
-            RelationshipEndpoint(Literal(startNode), Map(), Seq.empty),
-            RelationshipEndpoint(Variable(other.name), Map(), Seq.empty), relType, relExpectations.properties)
-        } else {
-          CreateRelationship(rel.name,
-            RelationshipEndpoint(Variable(other.name), Map(), Seq.empty),
-            RelationshipEndpoint(Literal(startNode), Map(), Seq.empty), relType, relExpectations.properties)
-        }
-
+        val (startExp, endExp) = orderByDir(Literal(existingNode), Variable(other.name), if (dir == SemanticDirection.BOTH) SemanticDirection.INCOMING else dir)
+        val createRel = CreateRelationship(rel.name,
+          RelationshipEndpoint(startExp, Map(), Seq.empty),
+          RelationshipEndpoint(endExp, Map(), Seq.empty), relType, relExpectations.properties)
         val relUpdate = UpdateWrapper(Seq(other.name), createRel, createRel.key)
         val expectations = other.getExpectations(context, state)
         val nodeCreate = UpdateWrapper(Seq(), CreateNode(other.name, expectations.properties, expectations.labels), other.name)
@@ -103,14 +101,14 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
         Seq(nodeCreate, relUpdate)
       }
 
-      val rels = state.query.getRelationshipsForIds(startNode, dir, Some(state.query.getOptRelTypeId(relType).toSeq)).
-        filter(r => rel.compareWithExpectations(r, context, state) && other.compareWithExpectations(r.getOtherNode(startNode), context, state)).toList
+      val rels = state.query.getRelationshipsForIds(existingNode, dir, Some(state.query.getOptRelTypeId(relType).toSeq)).
+        filter(r => rel.compareWithExpectations(r, context, state) && other.compareWithExpectations(r.getOtherNode(existingNode), context, state)).toList
 
       rels match {
         case List() =>
           Some(this -> Update(createUpdateActions()))
 
-        case List(r) => Some(this -> Traverse(rel.name -> r, other.name -> r.getOtherNode(startNode)))
+        case List(r) => Some(this -> Traverse(rel.name -> r, other.name -> r.getOtherNode(existingNode)))
 
         case _ => throw new UniquePathNotUniqueException("The pattern " + this + " produced multiple possible paths, and that is not allowed")
       }
@@ -119,18 +117,15 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
 
     // We haven't yet figured out if we already have both elements in the context
     // so let's start by finding that first
-    val s = getNode(start)
-    val e = getNode(end)
+    (getNode(left), getNode(right)) match {
+      case (Some(leftNode), None) => oneNode(leftNode, dir, right)
+      case (None, Some(rightNode)) => oneNode(rightNode, dir.reversed, left)
 
-    (s, e) match {
-      case (Some(startNode), None) => oneNode(startNode, dir, end)
-      case (None, Some(startNode)) => oneNode(startNode, dir.reversed, start)
-
-      case (Some(startNode), Some(endNode)) => {
+      case (Some(leftNode), Some(rightNode)) => {
         if (context.contains(rel.name))
           None //We've already solved this pattern.
         else
-          twoNodes(startNode, endNode)
+          twoNodes(leftNode, rightNode)
       }
 
       case _ => Some(this -> CanNotAdvance())
@@ -139,17 +134,17 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
 
   // These are the nodes that have properties defined. They should always go first,
   // so any other links that use these nodes have to have them locked.
-  def nodesWProps:Seq[NamedExpectation] = Seq(start,end).filter(_.properties.nonEmpty)
+  def nodesWProps:Seq[NamedExpectation] = Seq(left,right).filter(_.properties.nonEmpty)
 
-  lazy val variable2 = Seq(start.name -> CTNode, end.name -> CTNode, rel.name -> CTRelationship)
+  lazy val variable2 = Seq(left.name -> CTNode, right.name -> CTNode, rel.name -> CTRelationship)
 
-  def symbolTableDependencies:Set[String] = start.properties.symboltableDependencies ++
-    end.properties.symboltableDependencies ++
+  def symbolTableDependencies:Set[String] = left.properties.symboltableDependencies ++
+    right.properties.symboltableDependencies ++
     rel.properties.symboltableDependencies
 
   def rewrite(f: (Expression) => Expression): UniqueLink = {
-    val s = NamedExpectation(start.name, start.properties.rewrite(f), start.labels.map(_.typedRewrite[KeyToken](f)))
-    val e = NamedExpectation(end.name, end.properties.rewrite(f), end.labels.map(_.typedRewrite[KeyToken](f)))
+    val s = NamedExpectation(left.name, left.properties.rewrite(f), left.labels.map(_.typedRewrite[KeyToken](f)))
+    val e = NamedExpectation(right.name, right.properties.rewrite(f), right.labels.map(_.typedRewrite[KeyToken](f)))
     val r = NamedExpectation(rel.name, rel.properties.rewrite(f), rel.labels.map(_.typedRewrite[KeyToken](f)))
     UniqueLink(s, e, r, relType, dir)
   }
@@ -167,27 +162,27 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
       "[%s:`%s`%s]".format(relName, relType, props)
     }
 
-    start.toString + leftArrow(dir) + relInfo + rightArrow(dir) + end.toString
+    left.toString + leftArrow(dir) + relInfo + rightArrow(dir) + right.toString
   }
 
-  def children = Seq(start.e, end.e, rel.e)
+  def children = Seq(left.e, right.e, rel.e)
 
   def optional: Boolean = false
 
   def possibleStartPoints = Seq(
-    start.name -> CTNode,
-    end.name -> CTNode,
+    left.name -> CTNode,
+    right.name -> CTNode,
     rel.name -> CTRelationship)
 
   def predicate = True()
 
   def relTypes = Seq(relType)
 
-  def nodes = Seq(start.name, end.name)
+  def nodes = Seq(left.name, right.name)
 
   def rels = Seq(rel.name)
 
-  def names = Seq(start.name, end.name, rel.name)
+  def names = Seq(left.name, right.name, rel.name)
 
   /**
    * Either returns a unique link where the expectation is respected,
@@ -207,17 +202,15 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
       }
     }
 
-    if ((expectation.name != start.name) && (expectation.name != end.name)) {
+    if ((expectation.name != left.name) && (expectation.name != right.name)) {
       this
     } else {
-      val s = compareAndMatch(start)
-      val e = compareAndMatch(end)
-      copy(start = s, end = e)
+      copy(left = compareAndMatch(left), right = compareAndMatch(right))
     }
   }
 
   def effects(symbols: SymbolTable): Effects = {
-    val hasBothEndNodesInScope = symbols.hasVariableNamed(start.name) && symbols.hasVariableNamed(end.name)
+    val hasBothEndNodesInScope = symbols.hasVariableNamed(left.name) && symbols.hasVariableNamed(right.name)
 
     if (hasBothEndNodesInScope)
       Effects(ReadsRelationshipsWithTypes(relType), CreatesRelationship(relType))
