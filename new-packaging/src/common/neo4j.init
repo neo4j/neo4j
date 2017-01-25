@@ -1,5 +1,9 @@
 #!/bin/sh
 
+### BEGIN REDHAT INFO
+# chkconfig: 2345 99 20
+# description: Neo4j Graph Database server
+### END REDHAT INFO
 ### BEGIN INIT INFO
 # Provides:          neo4j
 # Required-Start:    $remote_fs $syslog $network
