@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
 
 class ShortestPathBuilderTest extends BuilderTest {
 
-  val builder = new ShortestPathBuilder
+  val builder = new ShortestPathBuilder(false, false)
 
   test("should_not_accept_if_no_shortest_paths_exist") {
     val q = PartiallySolvedQuery().

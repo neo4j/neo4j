@@ -20,8 +20,9 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.PathImpl
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, SyntaxException}
+import org.neo4j.cypher._
 import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.factory.GraphDatabaseSettings
 
 class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
@@ -29,6 +30,8 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
   var nodeB: Node = null
   var nodeC: Node = null
   var nodeD: Node = null
+
+  override def databaseConfig = Map(GraphDatabaseSettings.forbid_shortestpath_common_nodes -> "false")
 
   override protected def initTest(): Unit = {
     super.initTest()
@@ -313,6 +316,17 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
 
     val result = executeWithAllPlannersAndCompatibilityMode("match p = shortestpath((a:A)-[r*0..1]->(n)) return nodes(p) as nodes").columnAs[List[Node]]("nodes").toSet
     result should equal(Set(List(nodeA), List(nodeA, nodeB)))
+  }
+
+  test("if asked for also return paths of length 0, even when no max length is speficied") {
+    /*
+       a-b-c
+     */
+    relate(nodeA, nodeB)
+    relate(nodeB, nodeC)
+
+    val result = executeWithAllPlannersAndCompatibilityMode("match p = shortestpath((a:A)-[r*0..]->(n)) return nodes(p) as nodes").columnAs[List[Node]]("nodes").toSet
+    result should equal(Set(List(nodeA), List(nodeA, nodeB), List(nodeA, nodeB, nodeC)))
   }
 
   test("we can ask explicitly for paths of minimal length 1") {

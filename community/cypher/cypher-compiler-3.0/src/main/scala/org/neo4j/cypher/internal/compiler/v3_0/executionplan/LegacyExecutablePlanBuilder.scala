@@ -176,7 +176,9 @@ The Neo4j Team""")
       new LoadCSVBuilder,
       new StartPointBuilder,
       new MatchBuilder,
-      new ShortestPathBuilder,
+      new ShortestPathBuilder(
+        withFallBack = false, // Rule planner does not support exhaustive fallback
+        config.errorIfShortestPathHasCommonNodesAtRuntime),
       new DisconnectedShortestPathEndPointsBuilder
     )
   }
