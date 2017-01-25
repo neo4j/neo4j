@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.locking;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;
@@ -32,6 +33,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.test.rule.VerboseTimeout;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
@@ -50,6 +52,11 @@ public class AcquisitionTimeoutCompatibility extends LockingCompatibilityTestSui
     private Locks lockManager;
     private Locks.Client client;
     private Locks.Client client2;
+
+    @Rule
+    public VerboseTimeout timeout = VerboseTimeout.builder()
+                                        .withTimeout( TEST_TIMEOUT, TimeUnit.MILLISECONDS )
+                                        .build();
 
     public AcquisitionTimeoutCompatibility( LockingCompatibilityTestSuite suite )
     {
@@ -75,7 +82,7 @@ public class AcquisitionTimeoutCompatibility extends LockingCompatibilityTestSui
         lockManager.close();
     }
 
-    @Test( timeout = TEST_TIMEOUT )
+    @Test
     public void terminateSharedLockAcquisition() throws ExecutionException, InterruptedException
     {
         client.acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 1 );
@@ -91,7 +98,7 @@ public class AcquisitionTimeoutCompatibility extends LockingCompatibilityTestSui
         verifyAcquisitionFailure( sharedLockAcquisition );
     }
 
-    @Test( timeout = TEST_TIMEOUT )
+    @Test
     public void terminateExclusiveLockAcquisitionForExclusivelyLockedResource() throws InterruptedException
     {
         client.acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 1 );
@@ -107,7 +114,7 @@ public class AcquisitionTimeoutCompatibility extends LockingCompatibilityTestSui
         verifyAcquisitionFailure( exclusiveLockAcquisition );
     }
 
-    @Test (timeout = TEST_TIMEOUT)
+    @Test
     public void terminateExclusiveLockAcquisitionForSharedLockedResource() throws InterruptedException
     {
         client.acquireShared( LockTracer.NONE, ResourceTypes.NODE, 1 );
@@ -123,7 +130,7 @@ public class AcquisitionTimeoutCompatibility extends LockingCompatibilityTestSui
         verifyAcquisitionFailure( exclusiveLockAcquisition );
     }
 
-    @Test( timeout = TEST_TIMEOUT )
+    @Test
     public void terminateExclusiveLockAcquisitionForSharedLockedResourceWithSharedLockHeld() throws InterruptedException
     {
         client.acquireShared( LockTracer.NONE, ResourceTypes.NODE, 1 );
