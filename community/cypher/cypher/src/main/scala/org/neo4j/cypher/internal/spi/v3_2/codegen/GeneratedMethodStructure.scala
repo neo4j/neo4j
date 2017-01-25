@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.spi.v3_2.codegen
 
 import java.util
+import java.util.stream.LongStream
 
 import org.neo4j.codegen.Expression.{not, or, _}
 import org.neo4j.codegen.MethodReference.methodReference
@@ -166,6 +167,16 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   override def forEach(varName: String, codeGenType: CodeGenType, iterable: Expression)
                       (block: MethodStructure[Expression] => Unit) =
     codeGenType match {
+      case CodeGenType.primitiveNode =>
+        using(generator.forEachLong(Parameter.param(lowerType(codeGenType), varName),
+          invoke(iterable, methodReference(typeRef[PrimitiveEntityStream], typeRef[LongStream], "longStream")))) { body =>
+          block(copy(generator = body))
+        }
+      case CodeGenType.primitiveRel =>
+        using(generator.forEachLong(Parameter.param(lowerType(codeGenType), varName),
+          invoke(iterable, methodReference(typeRef[PrimitiveRelationshipStream], typeRef[LongStream], "longStream")))) { body =>
+          block(copy(generator = body))
+        }
       case CodeGenType.primitiveInt =>
         using(generator.forEachLong(Parameter.param(lowerType(codeGenType), varName), iterable)) { body =>
           block(copy(generator = body))

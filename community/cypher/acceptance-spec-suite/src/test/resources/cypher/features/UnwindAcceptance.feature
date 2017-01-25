@@ -53,12 +53,14 @@ Feature: UnwindAcceptance
       """
       MATCH (n:A {prop: 'a'})-[r:R {prop: 'r'}]->()
       WITH *
-      UNWIND [[42],[n],[r],[n,42],[r,42]] as i
+      UNWIND [[42],[0.7],[true],[n],[r],[n,42],[r,42]] as i
       RETURN i
       """
     Then the result should be:
       | i                      |
       | [42]                   |
+      | [0.7]                  |
+      | [true]                 |
       | [(:A {prop: 'a'})]     |
       | [[:R {prop: 'r'}]]     |
       | [(:A {prop: 'a'}), 42] |
@@ -144,3 +146,46 @@ Feature: UnwindAcceptance
       | {k: [[:R]], l: 's'}     |
       | [{k: [(:A), [:R]]}]      |
     And no side effects
+
+  Scenario: Primitive node type support in list literal
+    Given an empty graph
+    And having executed:
+      """
+      CREATE (:A)
+      CREATE (:B)
+      CREATE (:C)
+      """
+    When executing query:
+      """
+      MATCH (a:A), (b:B), (c:C)
+      WITH *
+      UNWIND [a, b, c] as i
+      RETURN i
+      """
+    Then the result should be:
+      | i    |
+      | (:A) |
+      | (:B) |
+      | (:C) |
+    And no side effects
+
+  Scenario: Primitive relationship type support in list literal
+    Given an empty graph
+    And having executed:
+      """
+      CREATE ()-[:R]->()
+      CREATE ()-[:S]->()
+      """
+    When executing query:
+      """
+      MATCH ()-[r:R]->(), ()-[s:S]->()
+      WITH *
+      UNWIND [r, s] as i
+      RETURN i
+      """
+    Then the result should be:
+      | i    |
+      | [:R] |
+      | [:S] |
+    And no side effects
+
