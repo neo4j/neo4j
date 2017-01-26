@@ -37,7 +37,7 @@ NAME=neo4j
 DAEMON=/usr/bin/$NAME
 PIDDIR=/var/run/${NAME}
 PIDFILE=${PIDDIR}/neo4j.pid
-SCRIPTNAME=/etc/init.d/$NAME-service
+SCRIPTNAME=/etc/init.d/${NAME}
 
 [ -x "$DAEMON" ] || exit 0
 [ -r /etc/default/$NAME ] && . /etc/default/$NAME
