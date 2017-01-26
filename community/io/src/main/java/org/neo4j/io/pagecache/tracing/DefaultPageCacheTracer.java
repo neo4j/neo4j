@@ -21,7 +21,7 @@ package org.neo4j.io.pagecache.tracing;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 
 import org.neo4j.io.pagecache.PageSwapper;
 
@@ -30,29 +30,29 @@ import org.neo4j.io.pagecache.PageSwapper;
  */
 public class DefaultPageCacheTracer implements PageCacheTracer
 {
-    protected final AtomicLong faults = new AtomicLong();
-    protected final AtomicLong evictions = new AtomicLong();
-    protected final AtomicLong pins = new AtomicLong();
-    protected final AtomicLong unpins = new AtomicLong();
-    protected final AtomicLong flushes = new AtomicLong();
-    protected final AtomicLong bytesRead = new AtomicLong();
-    protected final AtomicLong bytesWritten = new AtomicLong();
-    protected final AtomicLong filesMapped = new AtomicLong();
-    protected final AtomicLong filesUnmapped = new AtomicLong();
-    protected final AtomicLong evictionExceptions = new AtomicLong();
+    protected final LongAdder faults = new LongAdder();
+    protected final LongAdder evictions = new LongAdder();
+    protected final LongAdder pins = new LongAdder();
+    protected final LongAdder unpins = new LongAdder();
+    protected final LongAdder flushes = new LongAdder();
+    protected final LongAdder bytesRead = new LongAdder();
+    protected final LongAdder bytesWritten = new LongAdder();
+    protected final LongAdder filesMapped = new LongAdder();
+    protected final LongAdder filesUnmapped = new LongAdder();
+    protected final LongAdder evictionExceptions = new LongAdder();
 
     private final FlushEvent flushEvent = new FlushEvent()
     {
         @Override
         public void addBytesWritten( long bytes )
         {
-            bytesWritten.getAndAdd( bytes );
+            bytesWritten.add( bytes );
         }
 
         @Override
         public void done()
         {
-            flushes.getAndIncrement();
+            flushes.increment();
         }
 
         @Override
@@ -90,7 +90,7 @@ public class DefaultPageCacheTracer implements PageCacheTracer
         @Override
         public void threwException( IOException exception )
         {
-            evictionExceptions.getAndIncrement();
+            evictionExceptions.increment();
         }
 
         @Override
@@ -101,7 +101,7 @@ public class DefaultPageCacheTracer implements PageCacheTracer
         @Override
         public void close()
         {
-            evictions.getAndIncrement();
+            evictions.increment();
         }
     };
 
@@ -136,13 +136,13 @@ public class DefaultPageCacheTracer implements PageCacheTracer
     @Override
     public void mappedFile( File file )
     {
-        filesMapped.getAndIncrement();
+        filesMapped.increment();
     }
 
     @Override
     public void unmappedFile( File file )
     {
-        filesUnmapped.getAndIncrement();
+        filesUnmapped.increment();
     }
 
     @Override
@@ -166,108 +166,108 @@ public class DefaultPageCacheTracer implements PageCacheTracer
     @Override
     public long faults()
     {
-        return faults.get();
+        return faults.sum();
     }
 
     @Override
     public long evictions()
     {
-        return evictions.get();
+        return evictions.sum();
     }
 
     @Override
     public long pins()
     {
-        return pins.get();
+        return pins.sum();
     }
 
     @Override
     public long unpins()
     {
-        return unpins.get();
+        return unpins.sum();
     }
 
     @Override
     public long flushes()
     {
-        return flushes.get();
+        return flushes.sum();
     }
 
     @Override
     public long bytesRead()
     {
-        return bytesRead.get();
+        return bytesRead.sum();
     }
 
     @Override
     public long bytesWritten()
     {
-        return bytesWritten.get();
+        return bytesWritten.sum();
     }
 
     @Override
     public long filesMapped()
     {
-        return filesMapped.get();
+        return filesMapped.sum();
     }
 
     @Override
     public long filesUnmapped()
     {
-        return filesUnmapped.get();
+        return filesUnmapped.sum();
     }
 
     @Override
     public long evictionExceptions()
     {
-        return evictionExceptions.get();
+        return evictionExceptions.sum();
     }
 
     @Override
     public void pins( long pins )
     {
-        this.pins.getAndAdd( pins );
+        this.pins.add( pins );
     }
 
     @Override
     public void unpins( long unpins )
     {
-        this.unpins.getAndAdd( unpins );
+        this.unpins.add( unpins );
     }
 
     @Override
     public void faults( long faults )
     {
-        this.faults.getAndAdd( faults );
+        this.faults.add( faults );
     }
 
     @Override
     public void bytesRead( long bytesRead )
     {
-        this.bytesRead.getAndAdd( bytesRead );
+        this.bytesRead.add( bytesRead );
     }
 
     @Override
     public void evictions( long evictions )
     {
-        this.evictions.getAndAdd( evictions );
+        this.evictions.add( evictions );
     }
 
     @Override
     public void evictionExceptions( long evictionExceptions )
     {
-        this.evictionExceptions.getAndAdd( evictionExceptions );
+        this.evictionExceptions.add( evictionExceptions );
     }
 
     @Override
     public void bytesWritten( long bytesWritten )
     {
-        this.bytesWritten.getAndAdd( bytesWritten );
+        this.bytesWritten.add( bytesWritten );
     }
 
     @Override
     public void flushes( long flushes )
     {
-        this.flushes.getAndAdd( flushes );
+        this.flushes.add( flushes );
     }
 }

@@ -32,23 +32,23 @@ import org.neo4j.io.pagecache.tracing.PinEvent;
 
 public class DefaultPageCursorTracer implements PageCursorTracer
 {
-    private long pins = 0L;
-    private long unpins = 0L;
-    private long faults = 0L;
-    private long bytesRead = 0L;
-    private long bytesWritten = 0L;
-    private long evictions = 0L;
-    private long evictionExceptions = 0L;
-    private long flushes = 0L;
+    private long totalPins = 0L;
+    private long totalUnpins = 0L;
+    private long totalFaults = 0L;
+    private long totalBytesRead = 0L;
+    private long totalBytesWritten = 0L;
+    private long totalEvictions = 0L;
+    private long totalEvictionExceptions = 0L;
+    private long totalFlushes = 0L;
 
-    private long cyclePinsStart;
-    private long cycleUnpinsStart;
-    private long cycleFaultsStart;
-    private long cycleBytesReadStart;
-    private long cycleBytesWrittenStart;
-    private long cycleEvictionsStart;
-    private long cycleEvictionExceptionsStart;
-    private long cycleFlushesStart;
+    private long pins;
+    private long unpins;
+    private long faults;
+    private long bytesRead;
+    private long bytesWritten;
+    private long evictions;
+    private long evictionExceptions;
+    private long flushes;
 
     private PageCacheTracer pageCacheTracer;
 
@@ -60,75 +60,107 @@ public class DefaultPageCursorTracer implements PageCursorTracer
     public void reportEvents()
     {
         Objects.nonNull( pageCacheTracer );
-        pageCacheTracer.pins( Math.abs( pins - cyclePinsStart ) );
-        pageCacheTracer.unpins( Math.abs( unpins - cycleUnpinsStart ) );
-        pageCacheTracer.faults( Math.abs( faults - cycleFaultsStart ) );
-        pageCacheTracer.bytesRead( Math.abs( bytesRead - cycleBytesReadStart ) );
-        pageCacheTracer.evictions( Math.abs( evictions - cycleEvictionsStart ) );
-        pageCacheTracer.evictionExceptions( Math.abs( evictionExceptions - cycleEvictionExceptionsStart ) );
-        pageCacheTracer.bytesWritten( Math.abs( bytesWritten - cycleBytesWrittenStart ) );
-        pageCacheTracer.flushes( Math.abs( flushes - cycleFlushesStart ) );
-        rememberCycleStartValues();
+        if (pins > 0)
+        {
+            pageCacheTracer.pins( pins );
+        }
+        if (unpins > 0)
+        {
+            pageCacheTracer.unpins( unpins );
+        }
+        if ( faults > 0 )
+        {
+            pageCacheTracer.faults( faults );
+        }
+        if ( bytesRead > 0 )
+        {
+            pageCacheTracer.bytesRead( bytesRead );
+        }
+        if ( evictions > 0 )
+        {
+            pageCacheTracer.evictions( evictions );
+        }
+        if ( evictionExceptions > 0 )
+        {
+            pageCacheTracer.evictionExceptions( evictionExceptions );
+        }
+        if ( bytesWritten > 0 )
+        {
+            pageCacheTracer.bytesWritten( bytesWritten );
+        }
+        if ( flushes > 0 )
+        {
+            pageCacheTracer.flushes( flushes );
+        }
+        updateTotals();
     }
 
-    private void rememberCycleStartValues()
+    private void updateTotals()
     {
-        this.cyclePinsStart = pins;
-        this.cycleUnpinsStart = unpins;
-        this.cycleFaultsStart = faults;
-        this.cycleBytesReadStart = bytesRead;
-        this.cycleBytesWrittenStart = bytesWritten;
-        this.cycleEvictionsStart = evictions;
-        this.cycleEvictionExceptionsStart = evictionExceptions;
-        this.cycleFlushesStart = flushes;
+        this.totalPins += pins;
+        this.totalUnpins += unpins;
+        this.totalFaults += faults;
+        this.totalBytesRead += bytesRead;
+        this.totalBytesWritten += bytesWritten;
+        this.totalEvictions += evictions;
+        this.totalEvictionExceptions += evictionExceptions;
+        this.totalFlushes += flushes;
+        pins = 0;
+        unpins = 0;
+        faults = 0;
+        bytesRead = 0;
+        bytesWritten = 0;
+        evictions = 0;
+        evictionExceptions = 0;
+        flushes = 0;
     }
 
     @Override
     public long faults()
     {
-        return faults;
+        return totalFaults + faults;
     }
 
     @Override
     public long pins()
     {
-        return pins;
+        return totalPins + pins;
     }
 
     @Override
     public long unpins()
     {
-        return unpins;
+        return totalUnpins + unpins;
     }
 
     @Override
     public long bytesRead()
     {
-        return bytesRead;
+        return totalBytesRead + bytesRead;
     }
 
     @Override
     public long evictions()
     {
-        return evictions;
+        return totalEvictions + evictions;
     }
 
     @Override
     public long evictionExceptions()
     {
-        return evictionExceptions;
+        return totalEvictionExceptions + evictionExceptions;
     }
 
     @Override
     public long bytesWritten()
     {
-        return bytesWritten;
+        return totalBytesWritten + bytesWritten;
     }
 
     @Override
     public long flushes()
     {
-        return flushes;
+        return totalFlushes + flushes;
     }
 
     @Override
@@ -260,5 +292,4 @@ public class DefaultPageCursorTracer implements PageCursorTracer
         {
         }
     };
-
 }
