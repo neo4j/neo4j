@@ -47,11 +47,22 @@ SCRIPTNAME=/etc/init.d/${NAME}
 [ -r /etc/default/$NAME ] && . /etc/default/$NAME
 [ -n "${NEO_USER}" ] || NEO_USER=$NAME
 
-LSB=""
-if [ -f /lib/lsb/init-functions ]; then
+# Debian distros and SUSE
+has_lsb_init()
+{
+  test -f "/lib/lsb/init-functions"
+}
+
+# RedHat/Centos distros
+has_init()
+{
+  test -f "/etc/init.d/functions"
+}
+
+
+if has_lsb_init ; then
   . /lib/lsb/init-functions
-  LSB="LSB"
-elif [ -f /etc/init.d/functions ]; then
+elif has_init ; then
   . /etc/init.d/functions
 else
   echo "Error: your platform is not supported by ${NAME}" >&2
@@ -64,10 +75,10 @@ do_start()
   [ -d "${PIDDIR}" ] || mkdir -p "${PIDDIR}"
   chown "${NEO_USER}:" "${PIDDIR}"
 
-  if [ -z ${LSB} ]; then
-    daemon --user="${NEO_USER}" --pidfile="${PIDFILE}" "${DAEMON} start > /dev/null 2>&1 &"
-  else
+  if has_lsb_init ; then
     start-stop-daemon --chuid ${NEO_USER} --start --quiet --oknodo --pidfile ${PIDFILE} --exec ${DAEMON} -- start
+  else
+    daemon --user="${NEO_USER}" --pidfile="${PIDFILE}" "${DAEMON} start > /dev/null 2>&1 &"
   fi
 }
 
@@ -78,10 +89,10 @@ do_stop()
 
 do_status()
 {
-  if [ -z ${LSB} ]; then
-    status -p "${PIDFILE}" "${NAME}"
-  else
+  if has_lsb_init ; then
     status_of_proc -p "${PIDFILE}" "${DAEMON}" "${NAME}"
+  else
+    status -p "${PIDFILE}" "${NAME}"
   fi
 }
 
