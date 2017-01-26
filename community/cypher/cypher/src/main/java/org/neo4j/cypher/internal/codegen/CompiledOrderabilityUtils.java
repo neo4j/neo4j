@@ -23,6 +23,9 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.cypher.internal.frontend.v3_2.IncomparableValuesException;
+import org.neo4j.graphdb.Path;
+
 /**
  * Helper class for dealing with orderability in compiled code.
  *
@@ -60,6 +63,8 @@ import java.util.Map;
  *    </ul>
  *  <li> VOID (i.e. the type of null)
  * </ul>
+ *
+ * TBD: POINT and GEOMETRY
  */
 public class CompiledOrderabilityUtils {
     /**
@@ -69,14 +74,6 @@ public class CompiledOrderabilityUtils {
     {
         throw new UnsupportedOperationException(  );
     }
-
-    /*
-        if (x == null) {
-          if (y == null) 0 else -1
-        } else if (y == null) {
-          +1
-        } else {
-     */
 
     /**
      * Compare with Cypher orderability semantics for disjoint types
@@ -100,26 +97,27 @@ public class CompiledOrderabilityUtils {
         {
             return -1;
         }
-        // MAP types
-//        else if ( lhs instanceof Map<?, ?>)
-//        {
-//            if ( rhs instanceof Map<?, ?> ) {
-//                // Compare maps
-//                Map<String, Object> lMap = (Map<String, Object>) lhs;
-//                Map<String, Object> rMap = (Map<String, Object>) rhs;
-//
-//
-//            }
-//            else
-//            {
-//                return -1;
-//            }
-//        }
-        else if ( lhs instanceof Comparable && rhs instanceof Comparable )
+
+        // Compare the types
+        // TODO: Test coverage for the Orderability CIP
+        SuperType leftType = SuperType.ofValue( lhs );
+        SuperType rightType = SuperType.ofValue( rhs );
+
+        int typeComparison = SuperType.TYPE_ID_COMPARATOR.compare( leftType, rightType );
+        if ( typeComparison != 0 )
+        {
+            // Types are different an decides the order
+            return typeComparison;
+        }
+
+        // TODO Type-specific compare
+        if ( lhs.getClass().isAssignableFrom( rhs.getClass() ) &&
+             lhs instanceof Comparable && rhs instanceof Comparable )
         {
             return ((Comparable) lhs).compareTo( rhs );
         }
-        throw new RuntimeException( "Comparing unsupported types" );
+
+        throw new IncomparableValuesException( lhs.getClass().getSimpleName(), rhs.getClass().getSimpleName() );
     }
 
     public enum SuperType
@@ -128,6 +126,7 @@ public class CompiledOrderabilityUtils {
         NODE( 1 ),
         RELATIONSHIP( 2 ),
         LIST( 3 ),
+        ARRAY( 3 ), // Same order as LIST
         PATH( 4 ),
         STRING( 5 ),
         BOOLEAN( 6 ),
@@ -148,11 +147,6 @@ public class CompiledOrderabilityUtils {
 
         public static SuperType ofValue( Object value )
         {
-            if ( null == value )
-            {
-                throw new NullPointerException( "null is not a valid property value and hence has no " +
-                        "PropertyValueComparison.SuperType" );
-            }
             if ( value instanceof String )
             {
                 return STRING;
@@ -185,7 +179,14 @@ public class CompiledOrderabilityUtils {
             {
                 return RELATIONSHIP;
             }
-            // TODO: PATH
+            else if ( value instanceof Path )
+            {
+                return PATH;
+            }
+            else if ( value.getClass().isArray() )
+            {
+                return ARRAY;
+            }
             return VOID;
         }
 

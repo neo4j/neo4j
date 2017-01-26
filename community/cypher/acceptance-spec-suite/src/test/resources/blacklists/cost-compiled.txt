@@ -131,3 +131,5 @@ Find a shortest path of length 1 if requested to
 Find a shortest path among paths matched using a non-variable length pattern
 Find a combination of a shortest path and a pattern expression
 Filter with AND/OR
+// unsupported orderability
+ORDER BY nodes should return null results last in ascending order
