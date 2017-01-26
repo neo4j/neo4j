@@ -1,35 +1,67 @@
+/*
+ * Copyright (c) 2002-2017 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.neo4j.cypher.internal.codegen;
 
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.util.Arrays;
+
 import org.neo4j.cypher.internal.frontend.v3_2.IncomparableValuesException;
+import org.neo4j.kernel.impl.api.PropertyValueComparison;
 
 import static java.lang.String.format;
 
+/**
+ * Inspired by {@link org.neo4j.kernel.impl.api.PropertyValueComparisonTest}
+ */
 public class CompiledOrderabilityUtilsTest
 {
     @Rule
     public ExpectedException thrown = ExpectedException.none();
 
+    // TODO add acceptance tests too
+
     public static Object[] values = new Object[]{
             // OTHER
-//            PropertyValueComparison.LOWEST_OBJECT,
-//            new Object(),
-
+            PropertyValueComparison.LOWEST_OBJECT,
+            new Object(),
+            new Object[]{1, "foo"},
+            new Object[]{1, "foo", 3},
+            new Object[]{1, 2, "bar"},
+            new Object[]{1, 2, "car"},
+            // TODO fails when this is uncommented
+//            new int[]{1, 2, 3},
             // STRING
             "",
-//            Character.MIN_VALUE,
+            Character.MIN_VALUE,
             " ",
             "20",
             "x",
             "y",
-//            Character.MIN_HIGH_SURROGATE,
-//            Character.MAX_HIGH_SURROGATE,
-//            Character.MIN_LOW_SURROGATE,
-//            Character.MAX_LOW_SURROGATE,
-//            Character.MAX_VALUE,
+            Character.MIN_HIGH_SURROGATE,
+            Character.MAX_HIGH_SURROGATE,
+            Character.MIN_LOW_SURROGATE,
+            Character.MAX_LOW_SURROGATE,
+            Character.MAX_VALUE,
 
             // BOOLEAN
             false,
@@ -67,6 +99,24 @@ public class CompiledOrderabilityUtilsTest
             Double.NaN
     };
 
+//    // TODO investigate: fails
+//    public static Object[] values = new Object[]{
+//            // OTHER
+//            new Object[]{1, "foo"},
+//            new Object[]{1, "foo", 3},
+//            new Object[]{1, 2, "bar"},
+//            new int[]{1, 2, 3}
+//    };
+
+//    // TODO investigate: passes
+//    public static Object[] values = new Object[]{
+//            // OTHER
+//            new Object[]{1, "foo"},
+//            new Object[]{1, "foo", 3},
+//            new Object[]{1, 2, "bar"},
+//            new Object[]{1, 2, 3}
+//    };
+
     @Test
     public void shouldOrderValuesCorrectly()
     {
@@ -78,19 +128,58 @@ public class CompiledOrderabilityUtilsTest
                 Object right = values[j];
 
                 int cmpPos = sign( i - j );
-                int cmpVal = sign( compare(  left, right ) );
+                int cmpVal = sign( compare( left, right ) );
 
-//                System.out.println( format( "%s (%d), %s (%d) => %d (%d)", left, i, right, j, cmpLeft, i - j ) );
-
-                if ( cmpPos != cmpVal)
+                if ( cmpPos != cmpVal )
                 {
                     throw new AssertionError( format(
                             "Comparing %s against %s does not agree with their positions in the sorted list (%d and " +
                             "%d)",
-                            left, right, i, j
+                            toString( left ), toString( right ), i, j
                     ) );
                 }
             }
+        }
+    }
+
+    private String toString( Object o )
+    {
+        Class clazz = o.getClass();
+        if ( clazz.equals( Object[].class ) )
+        {
+            return Arrays.toString( (Object[]) o );
+        }
+        else if ( clazz.equals( int[].class ) )
+        {
+            return Arrays.toString( (int[]) o );
+        }
+        else if ( clazz.equals( Integer[].class ) )
+        {
+            return Arrays.toString( (Integer[]) o );
+        }
+        else if ( clazz.equals( long[].class ) )
+        {
+            return Arrays.toString( (long[]) o );
+        }
+        else if ( clazz.equals( Long[].class ) )
+        {
+            return Arrays.toString( (Long[]) o );
+        }
+        else if ( clazz.equals( String[].class ) )
+        {
+            return Arrays.toString( (String[]) o );
+        }
+        else if ( clazz.equals( boolean[].class ) )
+        {
+            return Arrays.toString( (boolean[]) o );
+        }
+        else if ( clazz.equals( Boolean[].class ) )
+        {
+            return Arrays.toString( (Boolean[]) o );
+        }
+        else
+        {
+            return o.toString();
         }
     }
 
@@ -108,7 +197,9 @@ public class CompiledOrderabilityUtilsTest
         }
         catch ( IncomparableValuesException e )
         {
-            throw new AssertionError( format("Failed to compare %s:%s and %s:%s", left,left.getClass().getName(), right,right.getClass().getName()), e );
+            throw new AssertionError(
+                    format( "Failed to compare %s:%s and %s:%s", left, left.getClass().getName(), right,
+                            right.getClass().getName() ), e );
         }
     }
 

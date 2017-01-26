@@ -19,13 +19,17 @@
  */
 package org.neo4j.cypher.internal.codegen;
 
+import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
 import org.neo4j.cypher.internal.frontend.v3_2.IncomparableValuesException;
 import org.neo4j.graphdb.Path;
 import org.neo4j.helpers.MathUtil;
+
+import static java.lang.String.format;
 
 /**
  * Helper class for dealing with orderability in compiled code.
@@ -67,13 +71,14 @@ import org.neo4j.helpers.MathUtil;
  *
  * TBD: POINT and GEOMETRY
  */
-public class CompiledOrderabilityUtils {
+public class CompiledOrderabilityUtils
+{
     /**
      * Do not instantiate this class
      */
     private CompiledOrderabilityUtils()
     {
-        throw new UnsupportedOperationException(  );
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -116,16 +121,15 @@ public class CompiledOrderabilityUtils {
 
     public enum SuperType
     {
-        MAP( 0, new FallbackComparator() /*TODO*/ ),
-        NODE( 1, new FallbackComparator() /*TODO*/ ),
-        RELATIONSHIP( 2, new FallbackComparator() /*TODO*/ ),
-        LIST( 3, new FallbackComparator() /*TODO*/ ),
-        ARRAY( 3, new FallbackComparator() /*TODO*/ ), // Same order as LIST
-        PATH( 4, new FallbackComparator() /*TODO*/ ),
-        STRING( 5, new FallbackComparator() /*TODO*/ ),
-        BOOLEAN( 6, new FallbackComparator() /*TODO*/ ),
-        NUMBER( 7, new NumberComparator() ),
-        VOID( 8, new FallbackComparator() /*TODO*/ );
+        MAP( 0, FALLBACK_COMPARATOR /*TODO*/ ),
+        NODE( 1, FALLBACK_COMPARATOR /*TODO*/ ),
+        RELATIONSHIP( 2, FALLBACK_COMPARATOR /*TODO*/ ),
+        LIST( 3, LIST_COMPARATOR ),
+        PATH( 4, FALLBACK_COMPARATOR /*TODO*/ ),
+        STRING( 5, STRING_COMPARATOR ),
+        BOOLEAN( 6, BOOLEAN_COMPARATOR ),
+        NUMBER( 7, NUMBER_COMPARATOR ),
+        VOID( 8, FALLBACK_COMPARATOR /*TODO*/ );
 
         public final int typeId;
         public final Comparator comparator;
@@ -143,7 +147,7 @@ public class CompiledOrderabilityUtils {
 
         public static SuperType ofValue( Object value )
         {
-            if ( value instanceof String )
+            if ( value instanceof String || value instanceof Character )
             {
                 return STRING;
             }
@@ -155,15 +159,11 @@ public class CompiledOrderabilityUtils {
             {
                 return BOOLEAN;
             }
-            else if ( value instanceof Character )
-            {
-                return STRING;
-            }
             else if ( value instanceof Map<?,?> )
             {
                 return MAP;
             }
-            else if ( value instanceof List<?> )
+            else if ( value instanceof List<?> || value.getClass().isArray() )
             {
                 return LIST;
             }
@@ -179,10 +179,6 @@ public class CompiledOrderabilityUtils {
             {
                 return PATH;
             }
-            else if ( value.getClass().isArray() )
-            {
-                return ARRAY;
-            }
             return VOID;
         }
 
@@ -196,28 +192,28 @@ public class CompiledOrderabilityUtils {
         };
     }
 
-    private static class FallbackComparator implements Comparator<Object>
+    private static Comparator FALLBACK_COMPARATOR = new Comparator<Object>()
     {
         @Override
         public int compare( Object lhs, Object rhs )
         {
             if ( lhs.getClass().isAssignableFrom( rhs.getClass() ) &&
-                 lhs instanceof Comparable && rhs instanceof Comparable )
+                 lhs instanceof Comparable &&
+                 rhs instanceof Comparable )
             {
                 return ((Comparable) lhs).compareTo( rhs );
             }
 
             throw new IncomparableValuesException( lhs.getClass().getSimpleName(), rhs.getClass().getSimpleName() );
         }
-    }
+    };
 
-    private static class NumberComparator implements Comparator<Number>
+    private static Comparator NUMBER_COMPARATOR = new Comparator<Number>()
     {
         @Override
         public int compare( Number lhs, Number rhs )
         {
-            //if floats compare float values if integer types,
-            //compare long values
+            //if floats compare float values if integer types, compare long values
             if ( lhs instanceof Double && rhs instanceof Float )
             {
                 return ((Double) lhs).compareTo( rhs.doubleValue() );
@@ -247,5 +243,108 @@ public class CompiledOrderabilityUtils {
             //everything else is a long from cyphers point-of-view
             return Long.compare( lhs.longValue(), rhs.longValue() );
         }
-    }
+    };
+
+    private static Comparator STRING_COMPARATOR = new Comparator<Object>()
+    {
+        @Override
+        public int compare( Object lhs, Object rhs )
+        {
+            if ( lhs instanceof Character && rhs instanceof String )
+            {
+                return lhs.toString().compareTo( (String) rhs );
+            }
+            else if ( lhs instanceof String && rhs instanceof Character )
+            {
+                return ((String) lhs).compareTo( rhs.toString() );
+            }
+            else
+            { return ((Comparable) lhs).compareTo( rhs ); }
+        }
+    };
+
+    private static Comparator BOOLEAN_COMPARATOR = new Comparator<Boolean>()
+    {
+        @Override
+        public int compare( Boolean lhs, Boolean rhs )
+        {
+            return lhs.compareTo( rhs );
+        }
+    };
+
+    private static Comparator LIST_COMPARATOR = new Comparator<Object>()
+    {
+        @Override
+        public int compare( Object lhs, Object rhs )
+        {
+            Iterator lhsIter = (lhs.getClass().isArray()) ? arrayToIterator( lhs ) : ((List) lhs).iterator();
+            Iterator rhsIter = (rhs.getClass().isArray()) ? arrayToIterator( rhs ) : ((List) rhs).iterator();
+            while ( lhsIter.hasNext() )
+            {
+                if ( !rhsIter.hasNext() )
+                {
+                    return 1;
+                }
+                int result = CompiledOrderabilityUtils.compare( lhsIter.next(), rhsIter.next() );
+                if ( 0 != result )
+                {
+                    if ( rhsIter.hasNext() == lhsIter.hasNext() )
+                    {
+                        return result;
+                    }
+                    else
+                    {
+                        return (lhsIter.hasNext()) ? 1 : -1;
+                    }
+                }
+            }
+            if ( rhsIter.hasNext() )
+            {
+                return -1;
+            }
+            return 0;
+        }
+
+        private Iterator arrayToIterator( Object o )
+        {
+            Class clazz = o.getClass();
+            if ( clazz.equals( Object[].class ) )
+            {
+                return Arrays.asList( (Object[]) o ).iterator();
+            }
+            else if ( clazz.equals( int[].class ) )
+            {
+                return Arrays.asList( (int[]) o ).iterator();
+            }
+            else if ( clazz.equals( Integer[].class ) )
+            {
+                return Arrays.asList( (Integer[]) o ).iterator();
+            }
+            else if ( clazz.equals( long[].class ) )
+            {
+                return Arrays.asList( (long[]) o ).iterator();
+            }
+            else if ( clazz.equals( Long[].class ) )
+            {
+                return Arrays.asList( (Long[]) o ).iterator();
+            }
+            else if ( clazz.equals( String[].class ) )
+            {
+                return Arrays.asList( (String[]) o ).iterator();
+            }
+            else if ( clazz.equals( boolean[].class ) )
+            {
+                return Arrays.asList( (boolean[]) o ).iterator();
+            }
+            else if ( clazz.equals( Boolean[].class ) )
+            {
+                return Arrays.asList( (Boolean[]) o ).iterator();
+            }
+            else
+            {
+                // TODO which exception to throw here?
+                throw new RuntimeException( format( "Can not convert to iterator: %s", clazz.getName() ) );
+            }
+        }
+    };
 }
