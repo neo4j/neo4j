@@ -129,8 +129,11 @@ public class KernelTransactionsIT
     @Test
     public void shutdownWhileRunningTransaction()
     {
-        exception.expect( new RootCauseMatcher<>( TransactionFailureException.class,
-                "Transaction terminated since marked as shut down." ) );
+        exception.expect( new RootCauseMatcher<>( TransactionTerminatedException.class,
+                "The transaction has been terminated. Retry your operation in a " +
+                        "new transaction, and you should see a successful result. " +
+                        "The database is not currently available to serve your request, " +
+                        "refer to the database logs for more details. Retrying your request at a later time may succeed." ) );
 
         try ( Transaction ignored = database.beginTx() )
         {
@@ -142,8 +145,11 @@ public class KernelTransactionsIT
     @Test
     public void shutdownDatabaseWhileHaveActiveTransactionRunning() throws InterruptedException
     {
-        exception.expect( new RootCauseMatcher<>( TransactionFailureException.class,
-                "Transaction terminated since marked as shut down." ) );
+        exception.expect( new RootCauseMatcher<>( TransactionTerminatedException.class,
+                "The transaction has been terminated. Retry your operation in a " +
+                        "new transaction, and you should see a successful result. " +
+                        "The database is not currently available to serve your request, " +
+                        "refer to the database logs for more details. Retrying your request at a later time may succeed." ) );
 
         CountDownLatch latch = new CountDownLatch( 1 );
         try ( Transaction transaction = database.beginTx() )
@@ -162,8 +168,11 @@ public class KernelTransactionsIT
     @Test
     public void shutdownWithHaveActiveTerminatedTransactionRunning() throws InterruptedException
     {
-        exception.expect( new RootCauseMatcher<>( TransactionFailureException.class,
-                "Transaction terminated since marked as shut down." ) );
+        exception.expect( new RootCauseMatcher<>( TransactionTerminatedException.class,
+                "The transaction has been terminated. Retry your operation in a " +
+                        "new transaction, and you should see a successful result. " +
+                        "The database is not currently available to serve your request, " +
+                        "refer to the database logs for more details. Retrying your request at a later time may succeed." ) );
 
         CountDownLatch latch = new CountDownLatch( 1 );
         try ( Transaction transaction = database.beginTx() )

@@ -749,8 +749,11 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         KernelTransactionImplementation transaction = newTransaction( 1000 );
         transaction.markAsShutdown();
 
-        expectedException.expect( TransactionFailureException.class );
-        expectedException.expectMessage( "Transaction terminated since marked as shut down." );
+        expectedException.expect( TransactionTerminatedException.class );
+        expectedException.expectMessage( "The transaction has been terminated. Retry your operation in a " +
+                "new transaction, and you should see a successful result. " +
+                "The database is not currently available to serve your request, " +
+                "refer to the database logs for more details. Retrying your request at a later time may succeed." );
         transaction.close();
     }
 

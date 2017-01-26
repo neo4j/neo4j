@@ -67,6 +67,7 @@ import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
+import static org.neo4j.kernel.api.exceptions.Status.General.DatabaseUnavailable;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
 
 
@@ -445,8 +446,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             assertTransactionNotClosed();
             if ( transactionStatus.isShutdown() )
             {
-                throw new TransactionFailureException( Status.Transaction.TransactionTerminated,
-                        "Transaction terminated since marked as shut down." );
+                throw new TransactionTerminatedException( DatabaseUnavailable );
             }
             else
             {
