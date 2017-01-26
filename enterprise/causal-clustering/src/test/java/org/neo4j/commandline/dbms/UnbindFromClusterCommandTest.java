@@ -19,11 +19,13 @@
  */
 package org.neo4j.commandline.dbms;
 
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.channels.FileChannel;
@@ -31,9 +33,9 @@ import java.nio.channels.FileLock;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.UUID;
-import java.util.stream.Stream;
 
+import org.neo4j.causalclustering.core.state.ClusterStateDirectory;
+import org.neo4j.causalclustering.core.state.ClusterStateException;
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.CommandLocator;
 import org.neo4j.commandline.admin.IncorrectUsage;
@@ -46,39 +48,55 @@ import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
-import static junit.framework.TestCase.fail;
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.startsWith;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.internal.StoreLocker.STORE_LOCK_FILENAME;
 
 public class UnbindFromClusterCommandTest
 {
-
     private final TestDirectory testDir = TestDirectory.testDirectory();
     private final EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
 
     @Rule
     public final RuleChain ruleChain = RuleChain.outerRule( fileSystemRule ).around( testDir );
+    private Path homeDir;
+    private Path confDir;
+
+    private FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+    private OutsideWorld outsideWorld = mock( OutsideWorld.class );
+
+    @Before
+    public void setup() throws ClusterStateException
+    {
+        homeDir = testDir.directory( "home" ).toPath();
+        confDir = testDir.directory( "conf" ).toPath();
+        fs.mkdir( homeDir.toFile() );
+
+        when( outsideWorld.fileSystem() ).thenReturn( fs );
+    }
+
+    private File createClusterStateDir( FileSystemAbstraction fs ) throws ClusterStateException
+    {
+        File dataDir = new File( homeDir.toFile(), "data" );
+        ClusterStateDirectory clusterStateDirectory = new ClusterStateDirectory( dataDir, false );
+        clusterStateDirectory.initialize( fs );
+        return clusterStateDirectory.get();
+    }
 
     @Test
     public void shouldFailIfSpecifiedDatabaseDoesNotExist() throws Exception
     {
         // given
-        FileSystemAbstraction fsa = fileSystemRule.get();
-        fsa.mkdir( testDir.directory() );
-
-        UnbindFromClusterCommand command =
-                new UnbindFromClusterCommand( testDir.directory().toPath(), testDir.directory( "conf" ).toPath(),
-                        mock( OutsideWorld.class ) );
+        UnbindFromClusterCommand command = new UnbindFromClusterCommand( homeDir, confDir, outsideWorld );
 
         try
         {
             // when
-            command.execute( nonExistentDatabaseArg() );
+            command.execute( databaseNameParameter( "doesnotexist.db" ) );
             fail();
         }
         catch ( IncorrectUsage e )
@@ -92,31 +110,24 @@ public class UnbindFromClusterCommandTest
     public void shouldFailToUnbindLiveDatabase() throws Exception
     {
         // given
-        try ( FileSystemAbstraction fsa = new DefaultFileSystemAbstraction() ) // because locking
+        createClusterStateDir( fs );
+        UnbindFromClusterCommand command = new UnbindFromClusterCommand( homeDir, confDir, outsideWorld );
+
+        FileLock fileLock = createLockedFakeDbDir( homeDir );
+        try
         {
-            fsa.mkdir( testDir.directory() );
-
-            UnbindFromClusterCommand command =
-                    new UnbindFromClusterCommand( testDir.directory().toPath(), testDir.directory( "conf" ).toPath(),
-                            mock( OutsideWorld.class ) );
-
-            FileLock fileLock = createLockedFakeDbDir( testDir.directory().toPath() );
-
-            try
-            {
-                // when
-                command.execute( databaseName( "graph.db" ) );
-                fail();
-            }
-            catch ( CommandFailed e )
-            {
-                // then
-                assertThat( e.getMessage(), containsString( "Database is currently locked. Please shutdown Neo4j." ) );
-            }
-            finally
-            {
-                fileLock.release();
-            }
+            // when
+            command.execute( databaseNameParameter( "graph.db" ) );
+            fail();
+        }
+        catch ( CommandFailed e )
+        {
+            // then
+            assertThat( e.getMessage(), containsString( "Database is currently locked. Please shutdown Neo4j." ) );
+        }
+        finally
+        {
+            fileLock.release();
         }
     }
 
@@ -124,49 +135,39 @@ public class UnbindFromClusterCommandTest
     public void shouldRemoveClusterStateDirectoryForGivenDatabase() throws Exception
     {
         // given
-        final int numberOfFilesAndDirsInANormalNeo4jStoreDir = 35;
-
-        FileSystemAbstraction fsa = fileSystemRule.get();
-        fsa.mkdir( testDir.directory() );
-
-        Path fakeDbDir = createUnlockedFakeDbDir( testDir.directory().toPath() );
-        UnbindFromClusterCommand command =
-                new UnbindFromClusterCommand( testDir.directory().toPath(), testDir.directory( "conf" ).toPath(),
-                        mock( OutsideWorld.class ) );
+        File clusterStateDir = createClusterStateDir( fs );
+        createUnlockedFakeDbDir( homeDir );
+        UnbindFromClusterCommand command = new UnbindFromClusterCommand( homeDir, confDir, outsideWorld );
 
         // when
-        command.execute( databaseName( "graph.db" ) );
+        command.execute( databaseNameParameter( "graph.db" ) );
 
         // then
-        try ( Stream<Path> files = Files.list( fakeDbDir ) )
-        {
-            assertEquals( numberOfFilesAndDirsInANormalNeo4jStoreDir, files.count() );
-        }
+        assertFalse( fs.fileExists( clusterStateDir ) );
     }
 
     @Test
     public void shouldReportWhenClusterStateDirectoryIsNotPresent() throws Exception
     {
         // given
-        FileSystemAbstraction fsa = fileSystemRule.get();
-        fsa.mkdir( testDir.directory() );
-
-        Path fakeDbDir = createUnlockedFakeDbDir( testDir.directory().toPath() );
-        Files.delete( Paths.get( fakeDbDir.toString(), "cluster-state" ) );
-
-        OutsideWorld outsideWorld = mock( OutsideWorld.class );
-        UnbindFromClusterCommand command =
-                new UnbindFromClusterCommand( testDir.directory().toPath(), testDir.directory( "conf" ).toPath(),
-                        outsideWorld );
+        createUnlockedFakeDbDir( homeDir );
+        UnbindFromClusterCommand command = new UnbindFromClusterCommand( homeDir, confDir, outsideWorld );
 
         // when
-        command.execute( databaseName( "graph.db" ) );
-
-        verify( outsideWorld ).stdErrLine( startsWith( "No cluster state found in" ) );
+        try
+        {
+            // when
+            command.execute( databaseNameParameter( "graph.db" ) );
+        }
+        catch ( CommandFailed e )
+        {
+            // then
+            assertThat( e.getMessage(), containsString( "Cluster state directory does not exist" ) );
+        }
     }
 
     @Test
-    public void shouldPrintNiceHelp() throws Throwable
+    public void shouldPrintUsage() throws Throwable
     {
         try ( ByteArrayOutputStream baos = new ByteArrayOutputStream() )
         {
@@ -175,86 +176,28 @@ public class UnbindFromClusterCommandTest
             Usage usage = new Usage( "neo4j-admin", mock( CommandLocator.class ) );
             usage.printUsageForCommand( new UnbindFromClusterCommand.Provider(), ps::println );
 
-            assertEquals( String.format( "usage: neo4j-admin unbind [--database=<name>]%n" +
-                            "%n" +
-                            "Removes cluster state data from the specified database making it suitable for%n" +
-                            "use in single instance database, or for seeding a new cluster.%n" +
-                            "%n" +
-                            "options:%n" +
-                            "  --database=<name>   Name of database. [default:graph.db]%n" ),
-                    baos.toString() );
+            assertThat( baos.toString(), containsString( "usage" ) );
         }
     }
 
-    private String[] databaseName( String databaseName )
+    private Path createUnlockedFakeDbDir( Path homeDir ) throws IOException
     {
-        return new String[]{"--database=" + databaseName};
-    }
-
-    private Path createUnlockedFakeDbDir( Path parent ) throws IOException
-    {
-        Path fakeDbDir = createFakeDbDir( parent );
+        Path fakeDbDir = createFakeDbDir( homeDir );
         Files.createFile( Paths.get( fakeDbDir.toString(), STORE_LOCK_FILENAME ) );
         return fakeDbDir;
     }
 
-    private FileLock createLockedFakeDbDir( Path parent ) throws IOException
+    private FileLock createLockedFakeDbDir( Path homeDir ) throws IOException
     {
-        return createLockedStoreLockFileIn( createFakeDbDir( parent ) );
+        return createLockedStoreLockFileIn( createFakeDbDir( homeDir ) );
     }
 
-    private Path createFakeDbDir( Path parent ) throws IOException
+    private Path createFakeDbDir( Path homeDir ) throws IOException
     {
-        Path data = createDirectory( parent, "data" );
-        Path database = createDirectory( data, "databases" );
-        Path graph_db = createDirectory( database, "graph.db" );
-        createDirectory( graph_db, "cluster-state" );
-        createDirectory( graph_db, "schema" );
-        createDirectory( graph_db, "index" );
-        createFile( graph_db, "neostore" );
-        createFile( graph_db, "neostore.counts.db.a" );
-        createFile( graph_db, "neostore.id" );
-        createFile( graph_db, "neostore.labeltokenstore.db" );
-        createFile( graph_db, "neostore.labeltokenstore.db.id" );
-        createFile( graph_db, "neostore.labeltokenstore.db.names" );
-        createFile( graph_db, "neostore.labeltokenstore.db.names.id" );
-        createFile( graph_db, "neostore.nodestore.db" );
-        createFile( graph_db, "neostore.nodestore.db.id" );
-        createFile( graph_db, "neostore.nodestore.db.labels" );
-        createFile( graph_db, "neostore.nodestore.db.labels.id" );
-        createFile( graph_db, "neostore.propertystore.db" );
-        createFile( graph_db, "neostore.propertystore.db.arrays" );
-        createFile( graph_db, "neostore.propertystore.db.arrays.id" );
-        createFile( graph_db, "neostore.propertystore.db.id" );
-        createFile( graph_db, "neostore.propertystore.db.index" );
-        createFile( graph_db, "neostore.propertystore.db.index.id" );
-        createFile( graph_db, "neostore.propertystore.db.index.keys" );
-        createFile( graph_db, "neostore.propertystore.db.index.keys.id" );
-        createFile( graph_db, "neostore.propertystore.db.strings" );
-        createFile( graph_db, "neostore.propertystore.db.strings.id" );
-        createFile( graph_db, "neostore.relationshipgroupstore.db" );
-        createFile( graph_db, "neostore.relationshipgroupstore.db.id" );
-        createFile( graph_db, "neostore.relationshipstore.db" );
-        createFile( graph_db, "neostore.relationshipstore.db.id" );
-        createFile( graph_db, "neostore.relationshiptypestore.db" );
-        createFile( graph_db, "neostore.relationshiptypestore.db.id" );
-        createFile( graph_db, "neostore.relationshiptypestore.db.names" );
-        createFile( graph_db, "neostore.relationshiptypestore.db.names.id" );
-        createFile( graph_db, "neostore.schemastore.db" );
-        createFile( graph_db, "neostore.schemastore.db.id" );
-        createFile( graph_db, "neostore.transaction.db.0" );
-
-        return graph_db;
-    }
-
-    private Path createFile( Path parent, String file ) throws IOException
-    {
-        return Files.createFile( Paths.get( parent.toString(), file ) );
-    }
-
-    private Path createDirectory( Path parent, String subDir ) throws IOException
-    {
-        return Files.createDirectory( Paths.get( parent.toString(), subDir ) );
+        Path graphDb = homeDir.resolve( "data/databases/graph.db" );
+        fs.mkdirs( graphDb.toFile() );
+        fs.create( graphDb.resolve( "neostore" ).toFile() );
+        return graphDb;
     }
 
     private FileLock createLockedStoreLockFileIn( Path parent ) throws IOException
@@ -264,8 +207,8 @@ public class UnbindFromClusterCommandTest
         return channel.lock( 0, Long.MAX_VALUE, true );
     }
 
-    private String[] nonExistentDatabaseArg()
+    private String[] databaseNameParameter( String databaseName )
     {
-        return new String[]{"--database=" + UUID.randomUUID().toString()};
+        return new String[]{"--database=" + databaseName};
     }
 }

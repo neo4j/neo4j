@@ -54,7 +54,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.causalclustering.TestStoreId.assertAllStoresHaveTheSameStoreId;
-import static org.neo4j.causalclustering.core.EnterpriseCoreEditionModule.CLUSTER_STATE_DIRECTORY_NAME;
 import static org.neo4j.causalclustering.core.server.CoreServerModule.CLUSTER_ID_NAME;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.RANDOM_NUMBER;
@@ -206,9 +205,9 @@ public class ClusterIdentityIT
             tx.success();
         } );
 
-        File storeDir = cluster.getCoreMemberById( 0 ).storeDir();
+        CoreClusterMember coreMember = cluster.getCoreMemberById( 0 );
         cluster.removeCoreMemberWithMemberId( 0 );
-        changeClusterId( storeDir );
+        changeClusterId( coreMember );
 
         SampleData.createSomeData( 100, cluster );
 
@@ -265,9 +264,9 @@ public class ClusterIdentityIT
         return dbs.stream().map( CoreClusterMember::storeDir ).collect( Collectors.toList() );
     }
 
-    private void changeClusterId( File storeDir ) throws IOException
+    private void changeClusterId( CoreClusterMember coreMember ) throws IOException
     {
-        SimpleStorage<ClusterId> clusterIdStorage = new SimpleFileStorage<>( fs, new File( storeDir, CLUSTER_STATE_DIRECTORY_NAME ),
+        SimpleStorage<ClusterId> clusterIdStorage = new SimpleFileStorage<>( fs, coreMember.clusterStateDirectory(),
                 CLUSTER_ID_NAME, new ClusterId.Marshal(), NullLogProvider.getInstance() );
         clusterIdStorage.writeState( new ClusterId( UUID.randomUUID() ) );
     }
