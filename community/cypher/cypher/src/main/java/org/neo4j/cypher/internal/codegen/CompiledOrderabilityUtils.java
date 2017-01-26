@@ -25,6 +25,7 @@ import java.util.Map;
 
 import org.neo4j.cypher.internal.frontend.v3_2.IncomparableValuesException;
 import org.neo4j.graphdb.Path;
+import org.neo4j.helpers.MathUtil;
 
 /**
  * Helper class for dealing with orderability in compiled code.
@@ -110,33 +111,28 @@ public class CompiledOrderabilityUtils {
             return typeComparison;
         }
 
-        // TODO Type-specific compare
-        if ( lhs.getClass().isAssignableFrom( rhs.getClass() ) &&
-             lhs instanceof Comparable && rhs instanceof Comparable )
-        {
-            return ((Comparable) lhs).compareTo( rhs );
-        }
-
-        throw new IncomparableValuesException( lhs.getClass().getSimpleName(), rhs.getClass().getSimpleName() );
+        return leftType.comparator.compare( lhs, rhs );
     }
 
     public enum SuperType
     {
-        MAP( 0 ),
-        NODE( 1 ),
-        RELATIONSHIP( 2 ),
-        LIST( 3 ),
-        ARRAY( 3 ), // Same order as LIST
-        PATH( 4 ),
-        STRING( 5 ),
-        BOOLEAN( 6 ),
-        NUMBER( 7 ),
-        VOID( 8 );
+        MAP( 0, new FallbackComparator() /*TODO*/ ),
+        NODE( 1, new FallbackComparator() /*TODO*/ ),
+        RELATIONSHIP( 2, new FallbackComparator() /*TODO*/ ),
+        LIST( 3, new FallbackComparator() /*TODO*/ ),
+        ARRAY( 3, new FallbackComparator() /*TODO*/ ), // Same order as LIST
+        PATH( 4, new FallbackComparator() /*TODO*/ ),
+        STRING( 5, new FallbackComparator() /*TODO*/ ),
+        BOOLEAN( 6, new FallbackComparator() /*TODO*/ ),
+        NUMBER( 7, new NumberComparator() ),
+        VOID( 8, new FallbackComparator() /*TODO*/ );
 
         public final int typeId;
+        public final Comparator comparator;
 
-        SuperType( int typeId )
+        SuperType( int typeId, Comparator comparator )
         {
+            this.comparator = comparator;
             this.typeId = typeId;
         }
 
@@ -198,5 +194,58 @@ public class CompiledOrderabilityUtils {
                 return left.typeId - right.typeId;
             }
         };
+    }
+
+    private static class FallbackComparator implements Comparator<Object>
+    {
+        @Override
+        public int compare( Object lhs, Object rhs )
+        {
+            if ( lhs.getClass().isAssignableFrom( rhs.getClass() ) &&
+                 lhs instanceof Comparable && rhs instanceof Comparable )
+            {
+                return ((Comparable) lhs).compareTo( rhs );
+            }
+
+            throw new IncomparableValuesException( lhs.getClass().getSimpleName(), rhs.getClass().getSimpleName() );
+        }
+    }
+
+    private static class NumberComparator implements Comparator<Number>
+    {
+        @Override
+        public int compare( Number lhs, Number rhs )
+        {
+            //if floats compare float values if integer types,
+            //compare long values
+            if ( lhs instanceof Double && rhs instanceof Float )
+            {
+                return ((Double) lhs).compareTo( rhs.doubleValue() );
+            }
+            else if ( lhs instanceof Float && rhs instanceof Double )
+            {
+                return -((Double) rhs).compareTo( lhs.doubleValue() );
+            }
+            else if ( lhs instanceof Float && rhs instanceof Float )
+            {
+                return ((Float) lhs).compareTo( (Float) rhs );
+            }
+            else if ( lhs instanceof Double && rhs instanceof Double )
+            {
+                return ((Double) lhs).compareTo( (Double) rhs );
+            }
+            // Right hand side is neither Float nor Double
+            else if ( (lhs instanceof Double || lhs instanceof Float) )
+            {
+                return MathUtil.compareDoubleAgainstLong( lhs.doubleValue(), rhs.longValue() );
+            }
+            // Left hand side is neither Float nor Double
+            else if ( (rhs instanceof Double || rhs instanceof Float) )
+            {
+                return -MathUtil.compareDoubleAgainstLong( rhs.doubleValue(), lhs.longValue() );
+            }
+            //everything else is a long from cyphers point-of-view
+            return Long.compare( lhs.longValue(), rhs.longValue() );
+        }
     }
 }
