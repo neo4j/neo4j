@@ -64,7 +64,7 @@ public class DumpClusterStateTest
     @Before
     public void setup() throws ClusterStateException
     {
-        clusterStateDirectory.initialize( fsa );
+        clusterStateDirectory.initialize( fsa.get() );
     }
 
     @Test

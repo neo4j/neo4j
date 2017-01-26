@@ -25,7 +25,7 @@ import org.junit.Test;
 
 import java.io.File;
 
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
@@ -36,7 +36,7 @@ public class ClusterStateDirectoryTest
 {
     @Rule
     public DefaultFileSystemRule fsRule = new DefaultFileSystemRule();
-    private DefaultFileSystemAbstraction fs = fsRule.get();
+    private FileSystemAbstraction fs = fsRule.get();
 
     @Rule
     public TestDirectory testDirectory = TestDirectory.testDirectory( fs );
