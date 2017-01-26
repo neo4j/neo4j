@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.builtinprocs;
 
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -44,7 +45,6 @@ import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.api.proc.Neo4jTypes;
 import org.neo4j.kernel.api.proc.QualifiedName;
 
-import static java.util.Arrays.asList;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.helpers.collection.Pair.pair;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
@@ -205,7 +205,7 @@ public class JmxQueryProcedure extends CallableProcedure.BasicProcedure
 
     private List<Object> toNeo4jValue( Object[] array )
     {
-        return asList(array).stream().map( this::toNeo4jValue ).collect( Collectors.toList() );
+        return Arrays.stream(array).map( this::toNeo4jValue ).collect( Collectors.toList() );
     }
 
     private Map<String, Object> toNeo4jValue( CompositeData composite )

@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -41,6 +40,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
@@ -64,83 +64,83 @@ public class SchemaProcedure
         final Map<String,NodeImpl> nodes = new HashMap<>();
         final Map<String,Set<RelationshipImpl>> relationships = new HashMap<>();
 
-        ReadOperations readOperations = kernelTransaction.acquireStatement().readOperations();
-        StatementTokenNameLookup statementTokenNameLookup = new StatementTokenNameLookup( readOperations );
-
-        try ( Transaction transaction = graphDatabaseAPI.beginTx(); )
+        try ( Statement statement = kernelTransaction.acquireStatement() )
         {
-            // add all labelsInDatabase
-            ResourceIterator<Label> labelsInDatabase = graphDatabaseAPI.getAllLabelsInUse().iterator();
-            while ( labelsInDatabase.hasNext() )
+            ReadOperations readOperations = statement.readOperations();
+            StatementTokenNameLookup statementTokenNameLookup = new StatementTokenNameLookup( readOperations );
+
+            try ( Transaction transaction = graphDatabaseAPI.beginTx() )
             {
-                Label label = labelsInDatabase.next();
-                Map<String,Object> properties = new HashMap<>();
-
-                Iterator<IndexDescriptor> indexDescriptorIterator =
-                        readOperations.indexesGetForLabel( readOperations.labelGetForName( label.name() ) );
-                ArrayList<String> indexes = new ArrayList<>();
-                while ( indexDescriptorIterator.hasNext() )
+                // add all labelsInDatabase
+                ResourceIterator<Label> labelsInDatabase = graphDatabaseAPI.getAllLabelsInUse().iterator();
+                while ( labelsInDatabase.hasNext() )
                 {
-                    IndexDescriptor index = indexDescriptorIterator.next();
-                    String[] propertyNames = PropertyNameUtils.getPropertyKeys( statementTokenNameLookup, index.descriptor() );
-                    indexes.add( String.join( ",", propertyNames ) );
-                }
-                properties.put( "indexes", indexes );
-
-                Iterator<NodePropertyConstraint> nodePropertyConstraintIterator =
-                        readOperations.constraintsGetForLabel( readOperations.labelGetForName( label.name() ) );
-                ArrayList<String> constraints = new ArrayList<>();
-                while ( nodePropertyConstraintIterator.hasNext() )
-                {
-                    constraints
-                            .add( nodePropertyConstraintIterator.next().userDescription( statementTokenNameLookup ) );
-                }
-                properties.put( "constraints", constraints );
-
-                getOrCreateLabel( label.name(), properties, nodes );
-            }
-
-            //add all relationships
-
-            Iterator<RelationshipType> relationshipTypeIterator =
-                    graphDatabaseAPI.getAllRelationshipTypesInUse().iterator();
-            while ( relationshipTypeIterator.hasNext() )
-            {
-                RelationshipType relationshipType = relationshipTypeIterator.next();
-                String relationshipTypeGetName = relationshipType.name();
-                int relId = readOperations.relationshipTypeGetForName( relationshipTypeGetName );
-                ResourceIterator<Label> labelsInUse = graphDatabaseAPI.getAllLabelsInUse().iterator();
-
-                List<NodeImpl> startNodes = new LinkedList<>();
-                List<NodeImpl> endNodes = new LinkedList<>();
-
-                while ( labelsInUse.hasNext() )
-                {
-                    Label labelToken = labelsInUse.next();
-                    String labelName = labelToken.name();
+                    Label label = labelsInDatabase.next();
                     Map<String,Object> properties = new HashMap<>();
-                    NodeImpl node = getOrCreateLabel( labelName, properties, nodes );
-                    int labelId = readOperations.labelGetForName( labelName );
 
-                    if ( readOperations.countsForRelationship( labelId, relId, ReadOperations.ANY_LABEL ) > 0 )
+                    Iterator<IndexDescriptor> indexDescriptorIterator = readOperations.indexesGetForLabel( readOperations.labelGetForName( label.name() ) );
+                    ArrayList<String> indexes = new ArrayList<>();
+                    while ( indexDescriptorIterator.hasNext() )
                     {
-                        startNodes.add( node );
+                        IndexDescriptor index = indexDescriptorIterator.next();
+                        String[] propertyNames = PropertyNameUtils.getPropertyKeys( statementTokenNameLookup, index.descriptor() );
+                        indexes.add( String.join( ",", propertyNames ) );
                     }
-                    if ( readOperations.countsForRelationship( ReadOperations.ANY_LABEL, relId, labelId ) > 0 )
+                    properties.put( "indexes", indexes );
+
+                    Iterator<NodePropertyConstraint> nodePropertyConstraintIterator = readOperations.constraintsGetForLabel( readOperations.labelGetForName( label.name() ) );
+                    ArrayList<String> constraints = new ArrayList<>();
+                    while ( nodePropertyConstraintIterator.hasNext() )
                     {
-                        endNodes.add( node );
+                        constraints.add( nodePropertyConstraintIterator.next().userDescription( statementTokenNameLookup ) );
                     }
+                    properties.put( "constraints", constraints );
+
+                    getOrCreateLabel( label.name(), properties, nodes );
                 }
-                for ( NodeImpl startNode : startNodes )
+
+                //add all relationships
+
+                Iterator<RelationshipType> relationshipTypeIterator = graphDatabaseAPI.getAllRelationshipTypesInUse().iterator();
+                while ( relationshipTypeIterator.hasNext() )
                 {
-                    for ( NodeImpl endNode : endNodes )
+                    RelationshipType relationshipType = relationshipTypeIterator.next();
+                    String relationshipTypeGetName = relationshipType.name();
+                    int relId = readOperations.relationshipTypeGetForName( relationshipTypeGetName );
+                    ResourceIterator<Label> labelsInUse = graphDatabaseAPI.getAllLabelsInUse().iterator();
+
+                    List<NodeImpl> startNodes = new LinkedList<>();
+                    List<NodeImpl> endNodes = new LinkedList<>();
+
+                    while ( labelsInUse.hasNext() )
                     {
-                        RelationshipImpl relationship = addRelationship( startNode, endNode, relationshipTypeGetName, relationships );
+                        Label labelToken = labelsInUse.next();
+                        String labelName = labelToken.name();
+                        Map<String,Object> properties = new HashMap<>();
+                        NodeImpl node = getOrCreateLabel( labelName, properties, nodes );
+                        int labelId = readOperations.labelGetForName( labelName );
+
+                        if ( readOperations.countsForRelationship( labelId, relId, ReadOperations.ANY_LABEL ) > 0 )
+                        {
+                            startNodes.add( node );
+                        }
+                        if ( readOperations.countsForRelationship( ReadOperations.ANY_LABEL, relId, labelId ) > 0 )
+                        {
+                            endNodes.add( node );
+                        }
+                    }
+                    for ( NodeImpl startNode : startNodes )
+                    {
+                        for ( NodeImpl endNode : endNodes )
+                        {
+                            RelationshipImpl relationship =
+                                    addRelationship( startNode, endNode, relationshipTypeGetName, relationships );
+                        }
                     }
                 }
+                transaction.success();
+                return getGraphResult( nodes, relationships );
             }
-            transaction.success();
-            return getGraphResult( nodes, relationships );
         }
     }
 

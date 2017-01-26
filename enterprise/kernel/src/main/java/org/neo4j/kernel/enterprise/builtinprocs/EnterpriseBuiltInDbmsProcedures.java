@@ -36,6 +36,7 @@ import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.api.ExecutingQuery;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.bolt.ManagedBoltStateMachine;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
@@ -92,7 +93,10 @@ public class EnterpriseBuiltInDbmsProcedures
                             "keys and values to be less than %d, got %d", HARD_CHAR_LIMIT, totalCharSize ) );
         }
 
-        getCurrentTx().acquireStatement().queryRegistration().setMetaData( data );
+        try ( Statement statement = getCurrentTx().acquireStatement() )
+        {
+            statement.queryRegistration().setMetaData( data );
+        }
     }
 
     private KernelTransaction getCurrentTx()
