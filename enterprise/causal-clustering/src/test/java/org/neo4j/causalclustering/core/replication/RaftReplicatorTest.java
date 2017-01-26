@@ -44,6 +44,7 @@ import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.logging.NullLog;
 import org.neo4j.time.Clocks;
+import org.neo4j.logging.NullLogProvider;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static junit.framework.TestCase.assertEquals;
@@ -80,7 +81,7 @@ public class RaftReplicatorTest
 
         RaftReplicator replicator =
                 new RaftReplicator( leaderLocator, myself, outbound, sessionPool,
-                        capturedProgress, retryStrategy, availabilityGuard );
+                        capturedProgress, retryStrategy, availabilityGuard, NullLogProvider.getInstance() );
 
         ReplicatedInteger content = ReplicatedInteger.valueOf( 5 );
         Thread replicatingThread = replicatingThread( replicator, content, false );
@@ -107,7 +108,7 @@ public class RaftReplicatorTest
         CapturingOutbound outbound = new CapturingOutbound();
 
         RaftReplicator replicator = new RaftReplicator( leaderLocator, myself, outbound,
-                sessionPool, capturedProgress, retryStrategy, availabilityGuard );
+                sessionPool, capturedProgress, retryStrategy, availabilityGuard, NullLogProvider.getInstance() );
 
         ReplicatedInteger content = ReplicatedInteger.valueOf( 5 );
         Thread replicatingThread = replicatingThread( replicator, content, false );
@@ -131,7 +132,7 @@ public class RaftReplicatorTest
         CapturingOutbound outbound = new CapturingOutbound();
 
         RaftReplicator replicator = new RaftReplicator( leaderLocator, myself, outbound,
-                sessionPool, capturedProgress, retryStrategy, availabilityGuard );
+                sessionPool, capturedProgress, retryStrategy, availabilityGuard, NullLogProvider.getInstance() );
 
         ReplicatedInteger content = ReplicatedInteger.valueOf( 5 );
         Thread replicatingThread = replicatingThread( replicator, content, true );
@@ -162,7 +163,7 @@ public class RaftReplicatorTest
 
         RaftReplicator replicator =
                 new RaftReplicator( leaderLocator, myself, outbound, sessionPool, capturedProgress, retryStrategy,
-                        availabilityGuard );
+                        availabilityGuard, NullLogProvider.getInstance() );
 
         ReplicatedInteger content = ReplicatedInteger.valueOf( 5 );
         ReplicatingThread replicatingThread = replicatingThread( replicator, content, true );
