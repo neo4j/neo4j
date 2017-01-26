@@ -76,23 +76,26 @@ class DumpToStringAcceptanceTest extends ExecutionEngineFunSuite with NewRuntime
   }
 }
 
-trait NewRuntimeTestSupport extends NewPlannerTestSupport with ExecutionEngineTestSupport {
-  self: ExecutionEngineFunSuite =>
-  override protected def createGraphDatabase(): GraphDatabaseCypherService = {
-    val impermanentDatabase = new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabase(databaseConfig().asJava)
-    new GraphDatabaseCypherService(impermanentDatabase)
-  }
-
-  override protected def initTest(): Unit = {
-    eengine = createEngine(graph)
-  }
-
-  def createEngine(graphDatabaseCypherService: GraphDatabaseQueryService, logProvider: LogProvider = NullLogProvider.getInstance()): ExecutionEngine = {
-    val resolver = graphDatabaseCypherService.getDependencyResolver
-    val kernel = resolver.resolveDependency(classOf[KernelAPI])
-    val kernelMonitors: KernelMonitors = resolver.resolveDependency(classOf[KernelMonitors])
-    val communityCompatibilityFactory = new CommunityCompatibilityFactory(graphDatabaseCypherService, kernel, kernelMonitors, logProvider)
-    val compatibilityFactory = new EnterpriseCompatibilityFactory(communityCompatibilityFactory, graph, kernel, kernelMonitors, logProvider)
-    new ExecutionEngine(graphDatabaseCypherService, logProvider, compatibilityFactory)
-  }
+trait NewRuntimeTestSupport extends NewPlannerTestSupport {
+    self: ExecutionEngineFunSuite =>
 }
+//  with ExecutionEngineTestSupport {
+//  self: ExecutionEngineFunSuite =>
+//  override protected def createGraphDatabase(): GraphDatabaseCypherService = {
+//    val impermanentDatabase = new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabase(databaseConfig().asJava)
+//    new GraphDatabaseCypherService(impermanentDatabase)
+//  }
+//
+//  override protected def initTest(): Unit = {
+//    eengine = createEngine(graph)
+//  }
+//
+//  def createEngine(graphDatabaseCypherService: GraphDatabaseQueryService, logProvider: LogProvider = NullLogProvider.getInstance()): ExecutionEngine = {
+//    val resolver = graphDatabaseCypherService.getDependencyResolver
+//    val kernel = resolver.resolveDependency(classOf[KernelAPI])
+//    val kernelMonitors: KernelMonitors = resolver.resolveDependency(classOf[KernelMonitors])
+//    val communityCompatibilityFactory = new CommunityCompatibilityFactory(graphDatabaseCypherService, kernel, kernelMonitors, logProvider)
+//    val compatibilityFactory = new EnterpriseCompatibilityFactory(communityCompatibilityFactory, graph, kernel, kernelMonitors, logProvider)
+//    new ExecutionEngine(graphDatabaseCypherService, logProvider, compatibilityFactory)
+//  }
+//}

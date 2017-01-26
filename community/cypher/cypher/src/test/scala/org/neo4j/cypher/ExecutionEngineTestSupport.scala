@@ -24,10 +24,10 @@ import java.util.concurrent.TimeUnit
 import org.hamcrest.CoreMatchers._
 import org.junit.Assert._
 import org.neo4j.cypher.ExecutionEngineHelper.createEngine
-import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.helpers.GraphIcing
+import org.neo4j.cypher.internal.{CompatibilityFactory, ExecutionEngine, RewindableExecutionResult}
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.GraphDatabaseQueryService
@@ -86,7 +86,8 @@ object ExecutionEngineHelper {
     val resolver = graphDatabaseCypherService.getDependencyResolver
     val kernel = resolver.resolveDependency(classOf[KernelAPI])
     val kernelMonitors: KernelMonitors = resolver.resolveDependency(classOf[KernelMonitors])
-    val compatibilityFactory = new CommunityCompatibilityFactory(graphDatabaseCypherService, kernel, kernelMonitors, logProvider)
+    val compatibilityFactory = resolver.resolveDependency( classOf[CompatibilityFactory] )
+
     new ExecutionEngine(graphDatabaseCypherService, logProvider, compatibilityFactory)
   }
 }

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.javacompact;
+package org.neo4j.cypher.internal.javacompat;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -29,7 +29,7 @@ import java.util.Map;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.test.rule.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.EnterpriseDatabaseRule;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
@@ -38,7 +38,7 @@ import static org.hamcrest.core.IsNull.notNullValue;
 public class ExecutionResultTest
 {
     @Rule
-    public final ImpermanentDatabaseRule db = new ImpermanentDatabaseRule();
+    public final EnterpriseDatabaseRule db = new EnterpriseDatabaseRule();
 
     @Test
     public void shouldBePossibleToConsumeCompiledExecutionResultsWithIterator()

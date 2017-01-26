@@ -59,7 +59,7 @@ public class CommunityCypherEngineProvider extends QueryEngineProvider
         LogProvider logProvider = logService.getInternalLogProvider();
         CommunityCompatibilityFactory compatibilityFactory =
                 new CommunityCompatibilityFactory( queryService, kernelAPI, monitors, logProvider );
-
+        deps.satisfyDependencies( compatibilityFactory );
         return new ExecutionEngine( queryService, logProvider, compatibilityFactory);
     }
 }

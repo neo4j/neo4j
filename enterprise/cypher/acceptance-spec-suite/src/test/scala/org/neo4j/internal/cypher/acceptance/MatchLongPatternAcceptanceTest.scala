@@ -208,10 +208,10 @@ class MatchLongPatternAcceptanceTest extends ExecutionEngineFunSuite with QueryS
       runWithConfig(config.toSeq: _*) {
         (engine, db) =>
           graph = db
-//          eengine = engine
+          eengine = engine
           makeLargeMatrixDataset(100)
           val monitor = TestIDPSolverMonitor()
-          val monitors: monitoring.Monitors = graph.getDependencyResolver.resolveDependency(classOf[org.neo4j.kernel.monitoring.Monitors])
+          val monitors: monitoring.Monitors = graph.getDependencyResolver.resolveDependency(classOf[monitoring.Monitors])
           monitors.addMonitorListener(monitor)
           val result = innerExecute(s"EXPLAIN CYPHER planner=IDP $query")
           val counts = countExpandsAndJoins(result.executionPlanDescription())

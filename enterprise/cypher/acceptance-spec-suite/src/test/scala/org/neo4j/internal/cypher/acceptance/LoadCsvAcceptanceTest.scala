@@ -27,10 +27,11 @@ import org.neo4j.cypher._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.compiler.v3_2.test_helpers.CreateTempFileTestSupport
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.StringHelper.RichString
+import org.neo4j.graphdb.QueryExecutionException
 import org.neo4j.graphdb.config.Configuration
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.graphdb.security.URLAccessRule
-import org.neo4j.test.TestGraphDatabaseFactory
+import org.neo4j.test.{TestEnterpriseGraphDatabaseFactory, TestGraphDatabaseFactory}
 import org.scalatest.BeforeAndAfterAll
 
 import scala.collection.JavaConverters._
@@ -392,12 +393,12 @@ class LoadCsvAcceptanceTest
   }
 
   test("should fail for file urls if local file access disallowed") {
-    val db = new TestGraphDatabaseFactory()
+    val db = new TestEnterpriseGraphDatabaseFactory()
       .newImpermanentDatabaseBuilder()
       .setConfig(GraphDatabaseSettings.allow_file_urls, "false")
       .newGraphDatabase()
 
-    intercept[LoadExternalResourceException] {
+    intercept[QueryExecutionException] {
       db.execute(s"LOAD CSV FROM 'file:///tmp/blah.csv' AS line CREATE (a {name:line[0]})", emptyMap())
     }.getMessage should endWith(": configuration property 'dbms.security.allow_csv_import_from_file_urls' is false")
   }
@@ -422,12 +423,12 @@ class LoadCsvAcceptanceTest
   test("should restrict file urls to be rooted within an authorized directory") {
     val dir = createTempDirectory("loadcsvroot")
 
-    val db = new TestGraphDatabaseFactory()
+    val db = new TestEnterpriseGraphDatabaseFactory()
       .newImpermanentDatabaseBuilder()
       .setConfig(GraphDatabaseSettings.load_csv_file_url_root, dir.toString)
       .newGraphDatabase()
 
-    intercept[LoadExternalResourceException] {
+    intercept[QueryExecutionException] {
       db.execute(s"LOAD CSV FROM 'file:///../foo.csv' AS line RETURN line[0] AS field", emptyMap()).asScala.size
     }.getMessage should endWith(" file URL points outside configured import directory")
   }
@@ -554,5 +555,6 @@ class LoadCsvAcceptanceTest
     httpServer.stop()
   }
 
-  private def createFile(filename: String = "cypher", dir: String = null)(f: PrintWriter => Unit): String = createTempFileURL(filename, ".csv")(f)
+  private def createFile(filename: String = "cypher", dir: String = null)(f: PrintWriter => Unit): String =
+    createTempFileURL(filename, ".csv")(f)
 }

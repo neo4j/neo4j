@@ -29,7 +29,7 @@ import cypher.feature.parser._
 import cypher.feature.parser.matchers.ResultWrapper
 import org.neo4j.collection.RawIterator
 import org.neo4j.cypher.internal.frontend.v3_2.symbols.{CypherType, _}
-import org.neo4j.graphdb.factory.{GraphDatabaseFactory, GraphDatabaseSettings}
+import org.neo4j.graphdb.factory.{EnterpriseGraphDatabaseFactory, GraphDatabaseFactory, GraphDatabaseSettings}
 import org.neo4j.graphdb.{GraphDatabaseService, QueryStatistics, Result, Transaction}
 import org.neo4j.kernel.api.KernelAPI
 import org.neo4j.kernel.api.exceptions.ProcedureException
@@ -37,7 +37,7 @@ import org.neo4j.kernel.api.proc.CallableProcedure.BasicProcedure
 import org.neo4j.kernel.api.proc.{Context, Neo4jTypes}
 import org.neo4j.kernel.internal.GraphDatabaseAPI
 import org.neo4j.procedure.Mode
-import org.neo4j.test.TestGraphDatabaseFactory
+import org.neo4j.test.{TestEnterpriseGraphDatabaseFactory, TestGraphDatabaseFactory}
 import org.opencypher.tools.tck.TCKCucumberTemplate
 import org.opencypher.tools.tck.constants.TCKStepDefinitions._
 import org.scalatest.{FunSuiteLike, Matchers}
@@ -176,7 +176,7 @@ trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
     val config = currentDatabaseConfig(pcSize.toString)
     val archiveUse = GraphArchive(recipe, config).readOnlyUse
     val path = graphArchiveLibrary.lendForReadOnlyUse(archiveUse)(graphImporter)
-    val builder = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(path.jfile)
+    val builder = new EnterpriseGraphDatabaseFactory().newEmbeddedDatabaseBuilder(path.jfile)
     builder.setConfig(archiveUse.dbConfig.asJava)
     builder.newGraphDatabase().asInstanceOf[GraphDatabaseAPI]
   }
@@ -241,7 +241,7 @@ trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
 
   object graphImporter extends GraphArchiveImporter {
     protected def createDatabase(archive: GraphArchive.Descriptor, destination: Path): GraphDatabaseService = {
-      val builder = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(destination.jfile)
+      val builder = new EnterpriseGraphDatabaseFactory().newEmbeddedDatabaseBuilder(destination.jfile)
       builder.setConfig(archive.dbConfig.asJava)
       builder.newGraphDatabase()
     }
@@ -250,9 +250,9 @@ trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
 
 object DbBuilder {
   def initEmpty(config: Map[String, String]): GraphDatabaseAPI = {
-    val builder = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
-    builder.setConfig(config.asJava)
-    builder.newGraphDatabase().asInstanceOf[GraphDatabaseAPI]
+      val builder = new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabaseBuilder()
+      builder.setConfig(config.asJava)
+      builder.newGraphDatabase().asInstanceOf[GraphDatabaseAPI]
   }
 
   /**

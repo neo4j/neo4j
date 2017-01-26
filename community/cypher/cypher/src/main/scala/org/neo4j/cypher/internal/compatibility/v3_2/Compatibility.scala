@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compiler.v3_2
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{LegacyNodeIndexUsage, LegacyRelationshipIndexUsage, SchemaIndexScanUsage, SchemaIndexSeekUsage, ExecutionPlan => ExecutionPlan_v3_2}
-import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilationState
+import org.neo4j.cypher.internal.compiler.v3_2.phases.{CompilationState, CompilerContext}
 import org.neo4j.cypher.internal.compiler.v3_2.{InfoLogger, ExplainMode => ExplainModev3_2, NormalMode => NormalModev3_2, ProfileMode => ProfileModev3_2}
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_2.phases.{CompilationPhaseTracer, RecordingNotificationLogger}
@@ -38,7 +38,7 @@ import org.neo4j.logging.Log
 
 import scala.util.Try
 
-trait Compatibility {
+trait Compatibility[C <: CompilerContext] {
   val queryCacheSize: Int
   val kernelMonitors: KernelMonitors
   val kernelAPI: KernelAPI
@@ -50,7 +50,7 @@ trait Compatibility {
     if (assertionsEnabled()) newValidating else newPlain
   }
 
-  protected val compiler: v3_2.CypherCompiler
+  protected val compiler: v3_2.CypherCompiler[C]
 
   implicit val executionMonitor: QueryExecutionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
 

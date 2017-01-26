@@ -20,8 +20,10 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.compatibility.{v2_3, v3_1, _}
-import org.neo4j.cypher.internal.compiler.v3_2.CypherCompilerConfiguration
-import org.neo4j.cypher.{CypherPlanner, CypherRuntime}
+import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.{ByteCodeMode, CodeGenConfiguration, CodeGenMode, SourceCodeMode}
+import org.neo4j.cypher.internal.compiler.v3_2._
+import org.neo4j.cypher.internal.spi.v3_2.codegen.GeneratedQueryStructure
+import org.neo4j.cypher.{CypherCodeGenMode, CypherPlanner, CypherRuntime}
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelAPI
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
@@ -36,13 +38,23 @@ class EnterpriseCompatibilityFactory(inner: CompatibilityFactory, graph: GraphDa
   override def create(spec: PlannerSpec_v3_1, config: CypherCompilerConfiguration): v3_1.Compatibility =
     inner.create(spec, config)
 
-  override def create(spec: PlannerSpec_v3_2, config: CypherCompilerConfiguration): v3_2.Compatibility =
+  override def create(spec: PlannerSpec_v3_2, config: CypherCompilerConfiguration): v3_2.Compatibility[_] =
     (spec.planner, spec.runtime) match {
       case (CypherPlanner.rule, _) => inner.create(spec, config)
 
       case (_, CypherRuntime.compiled) | (_, CypherRuntime.default) =>
-        v3_2.CostCompatibility(config, CompilerEngineDelegator.CLOCK, kernelMonitors, kernelAPI,
-          logProvider.getLog(getClass), spec.planner, spec.runtime, spec.codeGenMode, spec.updateStrategy)
+
+        val codeGenMode = spec.codeGenMode match {
+          case CypherCodeGenMode.default => CodeGenMode.default
+          case CypherCodeGenMode.byteCode => ByteCodeMode
+          case CypherCodeGenMode.sourceCode => SourceCodeMode
+        }
+
+        val codeGenConfiguration: CodeGenConfiguration = CodeGenConfiguration(mode = codeGenMode)
+
+        val contextCreator = new EnterpriseContextCreator(GeneratedQueryStructure, codeGenConfiguration)
+        v3_2.CostCompatibility(config, CompilerEngineDelegator.CLOCK, kernelMonitors, kernelAPI, logProvider.getLog
+        (getClass), spec.planner, spec.runtime, spec.updateStrategy, EnterpriseRuntimeBuilder, contextCreator)
 
       case _ => inner.create(spec, config)
     }

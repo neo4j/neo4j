@@ -23,14 +23,14 @@ import java.time.Clock
 
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.RuntimeTypeConverter
-import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilerContext
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical._
+import org.neo4j.cypher.internal.compiler.v3_2.phases.{CompilerContext, Transformer}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.idp._
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_2.phases.Monitors
 
-object CypherCompilerFactory {
+class CypherCompilerFactory[C <: CompilerContext, T <: Transformer[C]] {
   val monitorTag = "cypher3.2"
 
   def costBasedCompiler(config: CypherCompilerConfiguration,
@@ -41,7 +41,8 @@ object CypherCompilerFactory {
                         runtimeName: Option[RuntimeName],
                         updateStrategy: Option[UpdateStrategy],
                         typeConverter: RuntimeTypeConverter,
-                        runtimeBuilder: RuntimeBuilder[CompilerContext]): CypherCompiler = {
+                        runtimeBuilder: RuntimeBuilder[T],
+                        contextCreator: ContextCreator[C]): CypherCompiler[C] = {
     val rewriter = new ASTRewriter(rewriterSequencer)
     val metricsFactory = CachedMetricsFactory(SimpleMetricsFactory)
 
@@ -59,9 +60,6 @@ object CypherCompilerFactory {
     monitors.addMonitorListener(logStalePlanRemovalMonitor(logger), monitorTag)
     val cacheMonitor = monitors.newMonitor[AstCacheMonitor](monitorTag)
     val cache = new MonitoringCacheAccessor[Statement, ExecutionPlan](cacheMonitor)
-
-    val contextCreator = new CommunityContextCreator(monitors, createFingerprintReference, typeConverter,
-      metricsFactory, queryGraphSolver, config, actualUpdateStrategy, clock)
 
     CypherCompiler(runtimePipeline, rewriter, cache, planCacheFactory, cacheMonitor, monitors, rewriterSequencer,
       createFingerprintReference, typeConverter, metricsFactory, queryGraphSolver, config, actualUpdateStrategy, clock,

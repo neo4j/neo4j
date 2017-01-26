@@ -36,7 +36,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.RewriterStepSeq
 import org.neo4j.cypher.internal.frontend.v3_2.phases.{CompilationPhaseTracer, InternalNotificationLogger, Monitors}
 import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilerContext
 
-case class CypherCompiler(createExecutionPlan: Transformer[CompilerContext],
+case class CypherCompiler[Context <: CompilerContext](createExecutionPlan: Transformer[Context],
                           astRewriter: ASTRewriter,
                           cacheAccessor: CacheAccessor[Statement, ExecutionPlan],
                           planCacheFactory: () => LFUCache[Statement, ExecutionPlan],
@@ -50,7 +50,7 @@ case class CypherCompiler(createExecutionPlan: Transformer[CompilerContext],
                           config: CypherCompilerConfiguration,
                           updateStrategy: UpdateStrategy,
                           clock: Clock,
-                          contextCreation: ContextCreator) {
+                          contextCreation: ContextCreator[Context]) {
 
   def planQuery(queryText: String,
                 context: PlanContext,
@@ -66,7 +66,9 @@ case class CypherCompiler(createExecutionPlan: Transformer[CompilerContext],
                         planContext: PlanContext,
                         offset: Option[InputPosition] = None,
                         tracer: CompilationPhaseTracer): (ExecutionPlan, Map[String, Any]) = {
-    val context = contextCreation.create(tracer, notificationLogger, planContext, input.queryText, input.startPosition)
+    val context: Context = contextCreation.create(tracer, notificationLogger, planContext, input.queryText,
+      input.startPosition, monitors, createFingerprintReference, typeConverter, metricsFactory,
+      queryGraphSolver, config, updateStrategy, clock)
     val preparedCompilationState = prepareForCaching.transform(input, context)
     val cache = provideCache(cacheAccessor, cacheMonitor, planContext)
     val isStale = (plan: ExecutionPlan) => plan.isStale(planContext.txIdProvider, planContext.statistics)
@@ -86,28 +88,29 @@ case class CypherCompiler(createExecutionPlan: Transformer[CompilerContext],
     val plannerName = PlannerName(plannerNameText)
     val startState = CompilationState(queryText, offset, plannerName)
     //TODO: these nulls are a short cut
-    val context = contextCreation.create(tracer, notificationLogger, planContext = null, rawQueryText, offset)
+    val context = contextCreation.create(tracer, notificationLogger, planContext = null, rawQueryText, offset, monitors,
+      createFingerprintReference, typeConverter, metricsFactory, queryGraphSolver, config, updateStrategy, clock)
     CompilationPhases.parsing(sequencer).transform(startState, context)
   }
 
-  val irConstruction: Transformer[CompilerContext] =
+  val irConstruction: Transformer[Context] =
     ResolveTokens andThen
     CreatePlannerQuery.adds[UnionQuery] andThen
     OptionalMatchRemover
 
-  val prepareForCaching: Transformer[CompilerContext] =
+  val prepareForCaching: Transformer[Context] =
     RewriteProcedureCalls andThen
     ProcedureDeprecationWarnings andThen
     ProcedureWarnings
 
-  val costBasedPlanning: Transformer[CompilerContext] =
+  val costBasedPlanning: Transformer[Context] =
     QueryPlanner().adds[LogicalPlan] andThen
     PlanRewriter(sequencer) andThen
     If(_.unionQuery.readOnly) (
       CheckForUnresolvedTokens
     )
 
-  val planAndCreateExecPlan: Transformer[CompilerContext] =
+  val planAndCreateExecPlan: Transformer[Context] =
     ProcedureCallOrSchemaCommandPlanBuilder andThen
     If(_.maybeExecutionPlan.isEmpty)(
       CompilationPhases.lateAstRewriting andThen

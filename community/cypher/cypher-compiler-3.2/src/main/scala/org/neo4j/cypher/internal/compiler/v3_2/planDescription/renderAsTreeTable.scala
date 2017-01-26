@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v3_2.planDescription
 
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments._
 
-import scala.Predef
 import scala.collection.{Map, mutable}
 
 object renderAsTreeTable extends (InternalPlanDescription => String) {
@@ -35,7 +34,7 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
   val MAX_VARIABLE_COLUMN_WIDTH = 100
   private val OTHER = "Other"
   private val HEADERS = Seq(OPERATOR, ESTIMATED_ROWS, ROWS, HITS, TIME, VARIABLES, OTHER)
-  val newLine = System.lineSeparator()
+  private val newLine = System.lineSeparator()
 
   def apply(plan: InternalPlanDescription): String = {
 
@@ -43,8 +42,8 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
     val lines = accumulate(plan)
 
     def compactLine(line: Line, previous: Seq[(Line, CompactedLine)]) = {
-      val repeatedVariables = if (previous.size > 0) previous.head._1.variables.intersect(line.variables) else Set.empty[String]
-      new CompactedLine(line, repeatedVariables)
+      val repeatedVariables = if (previous.nonEmpty) previous.head._1.variables.intersect(line.variables) else Set.empty[String]
+      CompactedLine(line, repeatedVariables)
     }
 
     val compactedLines = lines.reverse.foldLeft(Seq.empty[(Line, CompactedLine)]) { (acc, line) =>
@@ -63,7 +62,7 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
     val result = new StringBuilder((2 + newLine.length + headers.map(width).sum) * (lines.size * 2 + 3))
 
     def pad(width:Int, char:String=" ") =
-      for (i <- 1 to width) result.append(char)
+      for (_ <- 1 to width) result.append(char)
     def divider(line:LineDetails = null) = {
       for (header <- headers) {
         if (line != null && header == OPERATOR && line.connection.isDefined) {
@@ -188,14 +187,14 @@ case class CompactedLine(line: Line, repeated: Set[String]) extends LineDetails 
   val varSep = ", "
   val typeSep = " -- "
   val suffix = ", ..."
-  val formattedVariables = formatVariables(renderAsTreeTable.MAX_VARIABLE_COLUMN_WIDTH)
+  val formattedVariables: String = formatVariables(renderAsTreeTable.MAX_VARIABLE_COLUMN_WIDTH)
 
   def apply(key: String): Justified = if (key == renderAsTreeTable.VARIABLES)
     Left(formattedVariables)
   else
     line(key)
 
-  def connection = line.connection
+  def connection: Option[String] = line.connection
 
   private def formattedVars(vars: List[String], prefix: String = "") = vars match {
     case v :: Nil => List(prefix + v)
@@ -203,10 +202,10 @@ case class CompactedLine(line: Line, repeated: Set[String]) extends LineDetails 
     case _ => vars
   }
 
-  def formatVariables(length: Int) = {
+  def formatVariables(length: Int): String = {
     val newVars = (line.variables -- repeated).toList.sorted.map(PlanDescriptionArgumentSerializer.removeGeneratedNames)
     val oldVars = repeated.toList.sorted.map(PlanDescriptionArgumentSerializer.removeGeneratedNames)
-    val all = if(newVars.length > 0)
+    val all = if(newVars.nonEmpty)
       formattedVars(newVars) ++ formattedVars(oldVars, typeSep)
     else
       formattedVars(oldVars)
@@ -239,7 +238,7 @@ case class CompactedLine(line: Line, repeated: Set[String]) extends LineDetails 
 }
 
 sealed abstract class Justified(text:String) {
-  def length = text.length
+  def length: Int = text.length
 }
 case class Left(text:String) extends Justified(text)
 case class Right(text:String) extends Justified(text)

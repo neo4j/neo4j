@@ -22,12 +22,13 @@ package org.neo4j.cypher.internal.compiler.v3_2
 import org.neo4j.cypher.internal.compiler.v3_2.phases._
 import org.neo4j.cypher.internal.frontend.v3_2.InvalidArgumentException
 
-trait RuntimeBuilder[C <: CompilerContext] {
-  def create(runtimeName: Option[RuntimeName], useErrorsOverWarnings: Boolean): Transformer[C]
+trait RuntimeBuilder[T <: Transformer[_]] {
+  def create(runtimeName: Option[RuntimeName], useErrorsOverWarnings: Boolean): T
 }
 
-object CommunityRuntimeBuilder extends RuntimeBuilder[CompilerContext] {
-  def create(runtimeName: Option[RuntimeName], useErrorsOverWarnings: Boolean): Transformer[CompilerContext] = runtimeName match {
+object CommunityRuntimeBuilder extends RuntimeBuilder[Transformer[CompilerContext]] {
+  override def create(runtimeName: Option[RuntimeName], useErrorsOverWarnings: Boolean): Transformer[CompilerContext] =
+    runtimeName match {
     case None | Some(InterpretedRuntimeName) =>
       BuildInterpretedExecutionPlan
 

@@ -53,7 +53,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
     graph = createGraphDatabase()
   }
 
-  protected def createGraphDatabase() = {
+  protected def createGraphDatabase(): GraphDatabaseCypherService = {
     new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newImpermanentDatabase(databaseConfig().asJava))
   }
 

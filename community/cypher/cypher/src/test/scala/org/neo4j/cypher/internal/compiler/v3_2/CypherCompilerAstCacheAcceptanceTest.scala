@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compatibility.v3_2.{StringInfoLogger, WrappedMo
 import org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer.NO_TRACING
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.ExecutionPlan
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.IdentityTypeConverter
+import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilerContext
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_2.phases.devNullLogger
@@ -39,9 +40,9 @@ import scala.collection.Map
 
 class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSupport {
   def createCompiler(queryCacheSize: Int = 128, statsDivergenceThreshold: Double = 0.5, queryPlanTTL: Long = 1000,
-                     clock: Clock = Clock.systemUTC(), log: Log = NullLog.getInstance): CypherCompiler = {
+                     clock: Clock = Clock.systemUTC(), log: Log = NullLog.getInstance): CypherCompiler[CompilerContext] = {
 
-    CypherCompilerFactory.costBasedCompiler(
+    new CypherCompilerFactory().costBasedCompiler(
       CypherCompilerConfiguration(
         queryCacheSize,
         statsDivergenceThreshold,
@@ -60,7 +61,8 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
       updateStrategy = None,
       rewriterSequencer = RewriterStepSequencer.newValidating,
       typeConverter = IdentityTypeConverter,
-      runtimeBuilder = CommunityRuntimeBuilder
+      runtimeBuilder = CommunityRuntimeBuilder,
+      contextCreator = CommunityContextCreator
     )
   }
 
@@ -89,7 +91,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
   override def databaseConfig(): Map[Setting[_], String] = Map(GraphDatabaseSettings.cypher_min_replan_interval -> "0")
 
   var counter: CacheCounter = _
-  var compiler: CypherCompiler = _
+  var compiler: CypherCompiler[CompilerContext] = _
 
   override protected def beforeEach(): Unit = {
     super.beforeEach()

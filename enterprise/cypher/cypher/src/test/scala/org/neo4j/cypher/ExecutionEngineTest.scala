@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer.Com
 import org.neo4j.cypher.internal.compiler.v3_2.test_helpers.CreateTempFileTestSupport
 import org.neo4j.cypher.internal.tracing.TimingCompilationTracer
 import org.neo4j.cypher.internal.tracing.TimingCompilationTracer.QueryEvent
+import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
@@ -36,7 +37,7 @@ import org.neo4j.kernel.NeoStoreDataSource
 import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.api.security.AnonymousContext
 import org.neo4j.kernel.impl.coreapi.TopLevelTransaction
-import org.neo4j.test.TestGraphDatabaseFactory
+import org.neo4j.test.{TestEnterpriseGraphDatabaseFactory, TestGraphDatabaseFactory}
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -965,6 +966,10 @@ order by a.COL1""")
     result should have size 2
   }
 
+  override protected def createGraphDatabase(): GraphDatabaseCypherService = {
+    new GraphDatabaseCypherService(new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabase(databaseConfig().asJava))
+  }
+
   override def databaseConfig(): Map[Setting[_], String] = super.databaseConfig() ++ Map(
     GraphDatabaseSettings.cypher_min_replan_interval -> "0",
     GraphDatabaseSettings.cypher_compiler_tracing -> "true"
@@ -1042,9 +1047,9 @@ order by a.COL1""")
 
   private def createReadOnlyEngine(): ExecutionEngine = {
     FileUtils.deleteRecursively(new File("target/readonly"))
-    val old = new TestGraphDatabaseFactory().newEmbeddedDatabase( new File( "target/readonly" ) )
+    val old = new TestEnterpriseGraphDatabaseFactory().newEmbeddedDatabase( new File( "target/readonly" ) )
     old.shutdown()
-    val db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( new File( "target/readonly" ) )
+    val db = new TestEnterpriseGraphDatabaseFactory().newEmbeddedDatabaseBuilder( new File( "target/readonly" ) )
       .setConfig( GraphDatabaseSettings.read_only, "true" )
       .newGraphDatabase()
     createEngine(db)

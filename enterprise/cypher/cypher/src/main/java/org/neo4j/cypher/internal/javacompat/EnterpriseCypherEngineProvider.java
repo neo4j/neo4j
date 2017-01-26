@@ -63,7 +63,7 @@ public class EnterpriseCypherEngineProvider extends QueryEngineProvider
 
         EnterpriseCompatibilityFactory compatibilityFactory =
                 new EnterpriseCompatibilityFactory( inner, queryService, kernelAPI, monitors, logProvider );
-
+        deps.satisfyDependency( compatibilityFactory );
         return new ExecutionEngine( queryService, logProvider, compatibilityFactory );
     }
 }

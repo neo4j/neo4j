@@ -24,11 +24,9 @@ import org.neo4j.cypher.internal.compiler.v3_2.phases.{Do, If, Transformer}
 import org.neo4j.cypher.internal.frontend.v3_2.InvalidArgumentException
 import org.neo4j.cypher.internal.frontend.v3_2.notification.RuntimeUnsupportedNotification
 
-class CompiledRuntimeBuilder extends RuntimeBuilder[CompiledRuntimeContext] {
+class CompiledRuntimeBuilder extends RuntimeBuilder[Transformer[CompiledRuntimeContext]] {
 
-  type C = CompiledRuntimeContext
-
-  def create(runtimeName: Option[RuntimeName], useErrorsOverWarnings: Boolean): Transformer[C] =
+  override def create(runtimeName: Option[RuntimeName], useErrorsOverWarnings: Boolean): Transformer[CompiledRuntimeContext] =
     runtimeName match {
       case None =>
         BuildCompiledExecutionPlan andThen
@@ -48,11 +46,11 @@ class CompiledRuntimeBuilder extends RuntimeBuilder[CompiledRuntimeContext] {
       case Some(CompiledRuntimeName) =>
         BuildCompiledExecutionPlan andThen
           If(_.maybeExecutionPlan.isEmpty)(
-            Do((ctx: C) => warnThatCompiledRuntimeDoesNotYetSupportQuery(ctx)) andThen
+            Do((ctx: CompiledRuntimeContext) => warnThatCompiledRuntimeDoesNotYetSupportQuery(ctx)) andThen
               BuildInterpretedExecutionPlan
           )
     }
 
-  private def warnThatCompiledRuntimeDoesNotYetSupportQuery(ctx: C) =
+  private def warnThatCompiledRuntimeDoesNotYetSupportQuery(ctx: CompiledRuntimeContext) =
     ctx.notificationLogger.log(RuntimeUnsupportedNotification)
 }
