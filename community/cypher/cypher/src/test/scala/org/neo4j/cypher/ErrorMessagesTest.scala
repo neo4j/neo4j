@@ -177,13 +177,6 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with CypherSerializer {
     )
   }
 
-  test("can not use optional pattern as predicate") {
-    expectError(
-      "match (a) where id(a) = 1 RETURN (a)-[?]->()",
-      "Invalid input '?': expected whitespace, a variable, relationship types, a length specification, a property map, ']', RelationshipsPattern or an expression (line 1, column 39 (offset: 38))"
-    )
-  }
-
   test("trying to drop constraint index should return sensible error") {
     graph.createConstraint("LabelName", "Prop")
 
@@ -215,20 +208,6 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with CypherSerializer {
     expectError(
       "DROP CONSTRAINT ON (person:Person) ASSERT person.name IS UNIQUE",
       "No such constraint"
-    )
-  }
-
-  test("report deprecated use of property name with question mark") {
-    expectError(
-      "match (n) where id(n) = 0 return n.title? = \"foo\"",
-      "Invalid input '?': expected an identifier character, '.', whitespace, '(', node labels, '[', \"=~\", IN, STARTS, ENDS, CONTAINS, IS, '^', '*', '/', '%', '+', '-', '=', \"<>\", \"!=\", '<', '>', \"<=\", \">=\", AND, XOR, OR, AS, ',', ORDER, SKIP, LIMIT, LOAD CSV, START, MATCH, UNWIND, MERGE, CREATE, SET, DELETE, REMOVE, FOREACH, WITH, CALL, RETURN, UNION, ';' or end of input (line 1, column 41 (offset: 40))"
-    )
-  }
-
-  test("report deprecated use of property name with exclamation mark") {
-    expectError(
-      "match (n) where id(n) = 0 return n.title! = \"foo\"",
-      "Invalid input ' ': expected '=' (line 1, column 42 (offset: 41))"
     )
   }
 
