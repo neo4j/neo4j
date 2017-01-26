@@ -69,7 +69,7 @@ public class ReplicationModule
 
         ExponentialBackoffStrategy retryStrategy = new ExponentialBackoffStrategy( 10, 60, SECONDS );
         replicator = life.add( new RaftReplicator( consensusModule.raftMachine(), myself, outbound, sessionPool,
-            progressTracker, retryStrategy ) );
+            progressTracker, retryStrategy, logProvider ) );
     }
 
     public RaftReplicator getReplicator()

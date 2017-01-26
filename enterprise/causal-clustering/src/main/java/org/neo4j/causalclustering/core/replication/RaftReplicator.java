@@ -32,6 +32,8 @@ import org.neo4j.causalclustering.helper.RetryStrategy;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 /**
  * A replicator implementation suitable in a RAFT context. Will handle resending due to timeouts and leader switches.
@@ -43,13 +45,14 @@ public class RaftReplicator extends LifecycleAdapter implements Replicator, List
     private final ProgressTracker progressTracker;
     private final LocalSessionPool sessionPool;
     private final RetryStrategy retryStrategy;
+    private final LeaderLocator leaderLocator;
+    private final Log log;
 
-    private MemberId leader;
     private volatile boolean shutdown;
 
     public RaftReplicator( LeaderLocator leaderLocator, MemberId me,
-            Outbound<MemberId,RaftMessages.RaftMessage> outbound, LocalSessionPool sessionPool,
-            ProgressTracker progressTracker, RetryStrategy retryStrategy )
+                           Outbound<MemberId, RaftMessages.RaftMessage> outbound, LocalSessionPool sessionPool,
+                           ProgressTracker progressTracker, RetryStrategy retryStrategy, LogProvider logProvider )
     {
         this.me = me;
         this.outbound = outbound;
@@ -57,19 +60,14 @@ public class RaftReplicator extends LifecycleAdapter implements Replicator, List
         this.sessionPool = sessionPool;
         this.retryStrategy = retryStrategy;
 
-        try
-        {
-            this.leader = leaderLocator.getLeader();
-        }
-        catch ( NoLeaderFoundException e )
-        {
-            this.leader = null;
-        }
+        this.leaderLocator = leaderLocator;
         leaderLocator.registerListener( this );
+        log = logProvider.getLog( getClass() );
     }
 
     @Override
-    public Future<Object> replicate( ReplicatedContent command, boolean trackResult ) throws InterruptedException
+    public Future<Object> replicate( ReplicatedContent command, boolean trackResult ) throws InterruptedException, NoLeaderFoundException
+
     {
         OperationContext session = sessionPool.acquireSession();
 
@@ -80,9 +78,9 @@ public class RaftReplicator extends LifecycleAdapter implements Replicator, List
         do
         {
             assertDatabaseNotShutdown();
-            outbound.send( leader, new RaftMessages.NewEntry.Request( me, operation ) );
             try
             {
+                outbound.send( leaderLocator.getLeader(), new RaftMessages.NewEntry.Request( me, operation ) );
                 progress.awaitReplication( timeout.getMillis() );
                 timeout.increment();
             }
@@ -90,6 +88,10 @@ public class RaftReplicator extends LifecycleAdapter implements Replicator, List
             {
                 progressTracker.abort( operation );
                 throw e;
+            }
+            catch ( NoLeaderFoundException e )
+            {
+                log.debug( "Could not replicate operation " + operation + " because no leader was found. Retrying.", e );
             }
         } while( !progress.isReplicated() );
 
@@ -110,7 +112,6 @@ public class RaftReplicator extends LifecycleAdapter implements Replicator, List
     @Override
     public void receive( MemberId leader )
     {
-        this.leader = leader;
         progressTracker.triggerReplicationEvent();
     }
 
