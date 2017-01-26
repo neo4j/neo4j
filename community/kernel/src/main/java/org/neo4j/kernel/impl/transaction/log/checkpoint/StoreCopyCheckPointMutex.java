@@ -35,7 +35,7 @@ import static org.neo4j.helpers.Exceptions.launderedException;
  * Mutex between {@link #storeCopy(ThrowingAction) store-copy} and {@link #checkPoint() check-point}.
  * This to prevent those two running concurrently.
  * <p>
- * Normally a check-point implies first doing a check-point and so this relationships is somewhat intricate.
+ * Normally a store-copy implies first doing a check-point and so this relationships is somewhat intricate.
  * In addition to having {@link #storeCopy(ThrowingAction)} as the "read lock" and {@link #checkPoint()} as the
  * "write lock", {@link #storeCopy(ThrowingAction)} also accepts a code snippet to run before first concurrent
  * store-copy grabs the lock, a snippet which can include a check-point.
@@ -77,7 +77,7 @@ public class StoreCopyCheckPointMutex
     private int storeCopyCount;
 
     /**
-     * Whether or not the first (of the concurrently ongoing store-copy requests has had its "before"
+     * Whether or not the first (of the concurrently ongoing store-copy requests) has had its "before"
      * action completed. The other store-copy requests will wait for this flag to be {@code true}.
      */
     private volatile boolean storeCopyActionCompleted;
