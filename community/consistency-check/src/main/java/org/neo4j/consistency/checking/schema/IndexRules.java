@@ -35,7 +35,7 @@ public class IndexRules
             @Override
             public Iterator<IndexRule> iterator()
             {
-                return new SchemaStorage( schemaStore ).allIndexRules();
+                return new SchemaStorage( schemaStore ).indexesGetAll();
             }
         };
     }

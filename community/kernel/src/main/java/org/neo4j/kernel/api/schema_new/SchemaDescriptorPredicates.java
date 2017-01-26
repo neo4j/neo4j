@@ -25,19 +25,19 @@ import java.util.Optional;
 
 public class SchemaDescriptorPredicates
 {
-    public static boolean hasLabel( SchemaDescriptorSupplier supplier, int labelId )
+    public static boolean hasLabel( SchemaDescriptor.Supplier supplier, int labelId )
     {
         Optional<Integer> labelOpt = getLabel.compute( supplier.getSchemaDescriptor() );
         return labelOpt.isPresent() && labelOpt.get() == labelId;
     }
 
-    public static boolean hasRelType( SchemaDescriptorSupplier supplier, int relTypeId )
+    public static boolean hasRelType( SchemaDescriptor.Supplier supplier, int relTypeId )
     {
         Optional<Integer> relTypeOpt = getRelType.compute( supplier.getSchemaDescriptor() );
         return relTypeOpt.isPresent() && relTypeOpt.get() == relTypeId;
     }
 
-    public static boolean hasProperty( SchemaDescriptorSupplier supplier, int propertyId )
+    public static boolean hasProperty( SchemaDescriptor.Supplier supplier, int propertyId )
     {
         List<Integer> properties = getProperties.compute( supplier.getSchemaDescriptor() );
         return properties.contains( propertyId );

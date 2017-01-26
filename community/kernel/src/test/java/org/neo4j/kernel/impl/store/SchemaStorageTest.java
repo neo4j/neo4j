@@ -106,7 +106,7 @@ public class SchemaStorageTest
                 index( LABEL2, PROP1 ) );
 
         // When
-        IndexRule rule = storage.indexRule( schemaDescriptor( LABEL1, PROP2 ) );
+        IndexRule rule = storage.indexGetForSchema( schemaDescriptor( LABEL1, PROP2 ) );
 
         // Then
         assertNotNull( rule );
@@ -121,7 +121,7 @@ public class SchemaStorageTest
                 index( LABEL1, PROP1 ) );
 
         // When
-        IndexRule rule = storage.indexRule( schemaDescriptor( LABEL1, PROP2 ) );
+        IndexRule rule = storage.indexGetForSchema( schemaDescriptor( LABEL1, PROP2 ) );
 
         // Then
         assertNull( rule );
@@ -136,7 +136,7 @@ public class SchemaStorageTest
                 index( LABEL1, PROP2 ) );
 
         // When
-        IndexRule rule = storage.indexRule( schemaDescriptor( LABEL1, PROP1 ), IndexRuleKind.CONSTRAINT );
+        IndexRule rule = storage.indexGetForSchema( schemaDescriptor( LABEL1, PROP1 ), IndexRuleKind.CONSTRAINT );
 
         // Then
         assertNotNull( rule );
@@ -153,7 +153,7 @@ public class SchemaStorageTest
                 uniquenessConstraint( LABEL2, PROP1 ) );
 
         // When
-        Set<IndexRule> listedRules = asSet( storage.allIndexRules() );
+        Set<IndexRule> listedRules = asSet( storage.indexesGetAll() );
 
         // Then
         Set<IndexRule> expectedRules = new HashSet<>();
@@ -174,7 +174,7 @@ public class SchemaStorageTest
                 uniquenessConstraint( LABEL2, PROP1 ) );
 
         // When
-        ConstraintRule rule = storage.singleConstraintRule(
+        ConstraintRule rule = storage.constraintsGetSingle(
                 ConstraintDescriptorFactory.uniqueForLabel( labelId( LABEL1 ), propId( PROP1 ) ) );
 
         // Then
@@ -195,7 +195,7 @@ public class SchemaStorageTest
                 "No node property existence constraint was found for :Label1(prop1)." ) );
 
         // WHEN
-        storage.singleConstraintRule(
+        storage.constraintsGetSingle(
                 ConstraintDescriptorFactory.existsForLabel( labelId( LABEL1 ), propId( PROP1 ) ) );
     }
 
@@ -218,7 +218,7 @@ public class SchemaStorageTest
                 "Multiple uniqueness constraints found for :Label1(prop1)." ) );
 
         // WHEN
-        schemaStorageSpy.singleConstraintRule(
+        schemaStorageSpy.constraintsGetSingle(
                 ConstraintDescriptorFactory.uniqueForLabel( labelId( LABEL1 ), propId( PROP1 ) ) );
     }
 
@@ -234,7 +234,7 @@ public class SchemaStorageTest
                 "No relationship property existence constraint was found for -[:Type1(prop1)]-." ) );
 
         //WHEN
-        storage.singleConstraintRule(
+        storage.constraintsGetSingle(
                 ConstraintDescriptorFactory.existsForRelType( typeId( TYPE1 ), propId( PROP1 ) ) );
     }
 
@@ -257,7 +257,7 @@ public class SchemaStorageTest
                 "Multiple relationship property existence constraints found for -[:Type1(prop1)]-." ) );
 
         // WHEN
-        schemaStorageSpy.singleConstraintRule(
+        schemaStorageSpy.constraintsGetSingle(
                 ConstraintDescriptorFactory.existsForRelType( typeId( TYPE1 ), propId( PROP1 ) ) );
     }
 

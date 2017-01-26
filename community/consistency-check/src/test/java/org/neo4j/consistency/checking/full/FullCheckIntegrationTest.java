@@ -410,7 +410,7 @@ public class FullCheckIntegrationTest
         DirectStoreAccess storeAccess = fixture.directStoreAccess();
 
         // fail all indexes
-        Iterator<IndexRule> rules = new SchemaStorage( storeAccess.nativeStores().getSchemaStore() ).allIndexRules();
+        Iterator<IndexRule> rules = new SchemaStorage( storeAccess.nativeStores().getSchemaStore() ).indexesGetAll();
         while ( rules.hasNext() )
         {
             IndexRule rule = rules.next();

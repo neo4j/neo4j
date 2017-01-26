@@ -208,7 +208,7 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
         SchemaStorage.IndexRuleKind kind = isConstraintIndex ?
                 SchemaStorage.IndexRuleKind.CONSTRAINT
                 : SchemaStorage.IndexRuleKind.INDEX;
-        IndexRule rule = schemaStorage.indexRule(
+        IndexRule rule = schemaStorage.indexGetForSchema(
                 SchemaDescriptorFactory.forLabel( desc.getLabelId(), desc.getPropertyKeyId() ), kind );
         recordState.dropSchemaRule( rule );
     }
@@ -220,7 +220,7 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
         long constraintId = schemaStorage.newRuleId();
         int propertyKeyId = element.descriptor().getPropertyKeyId();
 
-        IndexRule indexRule = schemaStorage.indexRule(
+        IndexRule indexRule = schemaStorage.indexGetForSchema(
                 SchemaDescriptorFactory.forLabel( element.label(), propertyKeyId ),
                 SchemaStorage.IndexRuleKind.CONSTRAINT );
         recordState.createSchemaRule(
@@ -237,7 +237,7 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
             clearSchemaState = true;
             int propertyKeyId = element.descriptor().getPropertyKeyId();
 
-            recordState.dropSchemaRule( schemaStorage.singleConstraintRule(
+            recordState.dropSchemaRule( schemaStorage.constraintsGetSingle(
                     ConstraintDescriptorFactory.uniqueForLabel( element.label(), propertyKeyId )
                 ) );
         }
@@ -272,7 +272,7 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
             clearSchemaState = true;
             int propertyKeyId = element.descriptor().getPropertyKeyId();
 
-            recordState.dropSchemaRule( schemaStorage.singleConstraintRule(
+            recordState.dropSchemaRule( schemaStorage.constraintsGetSingle(
                     ConstraintDescriptorFactory.existsForLabel( element.label(), propertyKeyId )
                 ) );
         }
@@ -306,7 +306,7 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
             //TODO: Support composite indexes
             clearSchemaState = true;
 
-            recordState.dropSchemaRule( schemaStorage.singleConstraintRule(
+            recordState.dropSchemaRule( schemaStorage.constraintsGetSingle(
                     ConstraintDescriptorFactory.existsForRelType(
                             element.descriptor().getRelationshipTypeId(), element.descriptor().getPropertyKeyId() )
                 ) );

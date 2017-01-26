@@ -261,8 +261,8 @@ public class UniquenessConstraintCreationIT
 
         // then
         SchemaStorage schema = new SchemaStorage( neoStores().getSchemaStore() );
-        IndexRule indexRule = schema.indexRule( SchemaDescriptorFactory.forLabel( typeId, propertyKeyId ) );
-        ConstraintRule constraintRule = schema.singleConstraintRule(
+        IndexRule indexRule = schema.indexGetForSchema( SchemaDescriptorFactory.forLabel( typeId, propertyKeyId ) );
+        ConstraintRule constraintRule = schema.constraintsGetSingle(
                 ConstraintDescriptorFactory.uniqueForLabel( typeId, propertyKeyId ) );
         assertEquals( constraintRule.getId(), indexRule.getOwningConstraint().longValue() );
         assertEquals( indexRule.getId(), constraintRule.getOwnedIndex() );

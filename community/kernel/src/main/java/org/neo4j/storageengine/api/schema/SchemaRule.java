@@ -23,14 +23,14 @@ import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaComputer;
-import org.neo4j.kernel.api.schema_new.SchemaDescriptorSupplier;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 
 /**
  * Represents a stored schema rule.
  */
-public interface SchemaRule extends SchemaDescriptorSupplier
+public interface SchemaRule extends SchemaDescriptor.Supplier
 {
     /**
      * The persistence id for this rule.

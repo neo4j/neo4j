@@ -292,7 +292,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
 
     private List<IndexRule> getIndexRules( NeoStores neoStores )
     {
-        return Iterators.asList( new SchemaStorage( neoStores.getSchemaStore() ).allIndexRules() );
+        return Iterators.asList( new SchemaStorage( neoStores.getSchemaStore() ).indexesGetAll() );
     }
 
     private Map<String, Integer> getLabelIdsByName( String... names )

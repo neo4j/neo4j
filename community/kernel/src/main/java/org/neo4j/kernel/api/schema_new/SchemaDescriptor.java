@@ -34,4 +34,19 @@ public interface SchemaDescriptor
      * @return a user friendly description of what this index indexes.
      */
     String userDescription( TokenNameLookup tokenNameLookup );
+
+    /**
+     * Checks whether a schema descriptor Supplier supplies this schema descriptor.
+     * @param supplier supplier to get a schema descriptor from
+     * @return true if the supplied schema descriptor equals this schema descriptor
+     */
+    default boolean isSame( Supplier supplier )
+    {
+        return this.equals( supplier.getSchemaDescriptor() );
+    }
+
+    interface Supplier
+    {
+        SchemaDescriptor getSchemaDescriptor();
+    }
 }

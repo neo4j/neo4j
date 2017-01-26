@@ -35,4 +35,19 @@ public interface ConstraintDescriptor
      * @return a user friendly description of what this index indexes.
      */
     String userDescription( TokenNameLookup tokenNameLookup );
+
+    /**
+     * Checks whether a constraint descriptor Supplier supplies this constraint descriptor.
+     * @param supplier supplier to get a constraint descriptor from
+     * @return true if the supplied constraint descriptor equals this constraint descriptor
+     */
+    default boolean isSame( Supplier supplier )
+    {
+        return this.equals( supplier.getConstraintDescriptor() );
+    }
+
+    interface Supplier
+    {
+        ConstraintDescriptor getConstraintDescriptor();
+    }
 }

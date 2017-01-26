@@ -36,7 +36,7 @@ import static org.neo4j.storageengine.api.schema.SchemaRule.Kind.NODE_PROPERTY_E
 import static org.neo4j.storageengine.api.schema.SchemaRule.Kind.RELATIONSHIP_PROPERTY_EXISTENCE_CONSTRAINT;
 import static org.neo4j.storageengine.api.schema.SchemaRule.Kind.UNIQUENESS_CONSTRAINT;
 
-public class ConstraintRule extends AbstractSchemaRule
+public class ConstraintRule extends AbstractSchemaRule implements ConstraintDescriptor.Supplier
 {
     private final Optional<Long> ownedIndexRule;
     private final ConstraintDescriptor descriptor;

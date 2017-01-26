@@ -21,10 +21,9 @@ package org.neo4j.kernel.impl.store;
 
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.function.Function;
 import java.util.function.Predicate;
 
-import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.function.Predicates;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
@@ -79,23 +78,22 @@ public class SchemaStorage implements SchemaRuleAccess
      * Find the IndexRule, of any kind, for the given SchemaDescriptor.
      *
      * @return  the matching IndexRule, or null if no matching IndexRule was found
-     * @throws  IllegalStateException if more than one matching candidate rule.
+     * @throws  IllegalStateException if more than one matching rule.
      */
-    public IndexRule indexRule( SchemaDescriptor descriptor )
+    public IndexRule indexGetForSchema( SchemaDescriptor schemaDescriptor )
     {
-        return indexRule( descriptor, IndexRuleKind.ALL );
+        return indexGetForSchema( schemaDescriptor, IndexRuleKind.ALL );
     }
 
     /**
      * Find the IndexRule that matches both the given SchemaDescriptor and passed the filter.
      *
      * @return  the matching IndexRule, or null if no matching IndexRule was found
-     * @throws  IllegalStateException if more than one matching candidate rule.
+     * @throws  IllegalStateException if more than one matching rule.
      */
-    public IndexRule indexRule( final SchemaDescriptor descriptor, Predicate<IndexRule> filter )
+    public IndexRule indexGetForSchema( final SchemaDescriptor descriptor, Predicate<IndexRule> filter )
     {
-        Iterator<IndexRule> rules = schemaRules( cast( IndexRule.class ), IndexRule.class,
-                rule -> rule.getSchemaDescriptor().equals( descriptor ) );
+        Iterator<IndexRule> rules = loadAllSchemaRules( descriptor::isSame, IndexRule.class, false );
 
         IndexRule foundRule = null;
 
@@ -116,41 +114,81 @@ public class SchemaStorage implements SchemaRuleAccess
         return foundRule;
     }
 
-    public Iterator<IndexRule> allIndexRules()
+    public Iterator<IndexRule> indexesGetAll()
     {
-        return schemaRules( IndexRule.class );
+        return loadAllSchemaRules( Predicates.alwaysTrue(), IndexRule.class, false );
     }
 
-    public Iterator<ConstraintRule> allConstraintRules()
+    public Iterator<ConstraintRule> constraintsGetAll()
     {
-        return schemaRules( ConstraintRule.class );
+        return loadAllSchemaRules( Predicates.alwaysTrue(), ConstraintRule.class, false );
     }
 
-    public <R> Iterator<R> mapConstraintRulesFor(
-            Predicate<ConstraintRule> predicate, Function<ConstraintRule, R> map )
+    public Iterator<ConstraintRule> constraintsGetAllIgnoreMalformed()
     {
-        return schemaRules( map, ConstraintRule.class, predicate );
+        return loadAllSchemaRules( Predicates.alwaysTrue(), ConstraintRule.class, true );
     }
 
-    private <R extends SchemaRule, T> Iterator<T> schemaRules(
-            Function<? super R, T> conversion, final Class<R> ruleType, final Predicate<R> predicate )
+    public Iterator<ConstraintRule> constraintsGetForRelType( int relTypeId )
     {
-        @SuppressWarnings("unchecked"/*the predicate ensures that this is safe*/)
-        Function<SchemaRule, T> ruleConversion = (Function) conversion;
-        return Iterators.map( ruleConversion, Iterators
-                .filter( rule -> ruleType.isInstance( rule ) && predicate.test( (R) rule ), loadAllSchemaRules() ) );
+        return loadAllSchemaRules( rule -> SchemaDescriptorPredicates.hasRelType( rule, relTypeId ),
+                ConstraintRule.class, false );
     }
 
-    private <R extends SchemaRule> Iterator<R> schemaRules( final Class<R> ruleClass )
+    public Iterator<ConstraintRule> constraintsGetForLabel( int labelId )
     {
-        @SuppressWarnings({"UnnecessaryLocalVariable", "unchecked"/*the predicate ensures that this cast is safe*/})
-        Iterator<R> result = (Iterator) Iterators.filter( ruleClass::isInstance, loadAllSchemaRules() );
-        return result;
+        return loadAllSchemaRules( rule -> SchemaDescriptorPredicates.hasLabel( rule, labelId ),
+                ConstraintRule.class, false );
     }
 
-    Iterator<SchemaRule> loadAllSchemaRules()
+    public Iterator<ConstraintRule> constraintsGetForSchema( SchemaDescriptor schemaDescriptor )
     {
-        return new PrefetchingIterator<SchemaRule>()
+        return loadAllSchemaRules( schemaDescriptor::isSame, ConstraintRule.class, false );
+    }
+
+    /**
+     * Get the constraint rule that matches the given ConstraintDescriptor
+     * @param descriptor the ConstraintDescriptor to match
+     * @return the matching ConstrainRule
+     * @throws SchemaRuleNotFoundException if no ConstraintRule matches the given descriptor
+     * @throws DuplicateSchemaRuleException if two or more ConstraintRules match the given descriptor
+     */
+    public ConstraintRule constraintsGetSingle( final ConstraintDescriptor descriptor )
+            throws SchemaRuleNotFoundException, DuplicateSchemaRuleException
+    {
+        Iterator<ConstraintRule> rules = loadAllSchemaRules( descriptor::isSame, ConstraintRule.class, false );
+
+        if ( !rules.hasNext() )
+        {
+            throw new SchemaRuleNotFoundException( SchemaRule.Kind.map( descriptor ), descriptor.schema() );
+        }
+
+        ConstraintRule rule = rules.next();
+
+        if ( rules.hasNext() )
+        {
+            throw new DuplicateSchemaRuleException( SchemaRule.Kind.map( descriptor ), descriptor.schema() );
+        }
+        return rule;
+    }
+
+    public Iterator<SchemaRule> loadAllSchemaRules()
+    {
+        return loadAllSchemaRules( Predicates.alwaysTrue(), SchemaRule.class, false );
+    }
+
+    @Override
+    public SchemaRule loadSingleSchemaRule( long ruleId ) throws MalformedSchemaRuleException
+    {
+        return loadSingleSchemaRuleViaBuffer( ruleId, newRecordBuffer() );
+    }
+
+    <ReturnType extends SchemaRule> Iterator<ReturnType> loadAllSchemaRules(
+            final Predicate<ReturnType> predicate,
+            final Class<ReturnType> returnType,
+            final boolean ignoreMalformed )
+    {
+        return new PrefetchingIterator<ReturnType>()
         {
             private final long highestId = schemaStore.getHighestPossibleIdInUse();
             private long currentId = 1; /*record 0 contains the block size*/
@@ -158,7 +196,7 @@ public class SchemaStorage implements SchemaRuleAccess
             private final DynamicRecord record = schemaStore.newRecord();
 
             @Override
-            protected SchemaRule fetchNextOrNull()
+            protected ReturnType fetchNextOrNull()
             {
                 while ( currentId <= highestId )
                 {
@@ -168,12 +206,22 @@ public class SchemaStorage implements SchemaRuleAccess
                     {
                         try
                         {
-                            return getSchemaRule( id, scratchData );
+                            SchemaRule schemaRule = loadSingleSchemaRuleViaBuffer( id, scratchData );
+                            if ( returnType.isInstance( schemaRule ) )
+                            {
+                                ReturnType returnRule = returnType.cast( schemaRule );
+                                if ( predicate.test( returnRule ) )
+                                {
+                                    return returnRule;
+                                }
+                            }
                         }
                         catch ( MalformedSchemaRuleException e )
                         {
-                            // TODO remove this and throw this further up
-                            throw new RuntimeException( e );
+                            if ( !ignoreMalformed )
+                            {
+                                throw new RuntimeException( e );
+                            }
                         }
                     }
                 }
@@ -182,18 +230,7 @@ public class SchemaStorage implements SchemaRuleAccess
         };
     }
 
-    @Override
-    public SchemaRule loadSingleSchemaRule( long ruleId ) throws MalformedSchemaRuleException
-    {
-        return getSchemaRule( ruleId, newRecordBuffer() );
-    }
-
-    private byte[] newRecordBuffer()
-    {
-        return new byte[schemaStore.getRecordSize()*4];
-    }
-
-    private SchemaRule getSchemaRule( long id, byte[] buffer ) throws MalformedSchemaRuleException
+    private SchemaRule loadSingleSchemaRuleViaBuffer( long id, byte[] buffer ) throws MalformedSchemaRuleException
     {
         Collection<DynamicRecord> records;
         try
@@ -212,49 +249,8 @@ public class SchemaStorage implements SchemaRuleAccess
         return schemaStore.nextId();
     }
 
-    public ConstraintRule singleConstraintRule( final ConstraintDescriptor descriptor )
-            throws SchemaRuleNotFoundException, DuplicateSchemaRuleException
+    private byte[] newRecordBuffer()
     {
-        Iterator<ConstraintRule> rules = schemaRules(
-                cast( ConstraintRule.class ), ConstraintRule.class,
-                item -> item.getConstraintDescriptor().equals( descriptor ) );
-
-        if ( !rules.hasNext() )
-        {
-            throw new SchemaRuleNotFoundException( SchemaRule.Kind.map( descriptor ), descriptor.schema() );
-        }
-
-        ConstraintRule rule = rules.next();
-
-        if ( rules.hasNext() )
-        {
-            throw new DuplicateSchemaRuleException( SchemaRule.Kind.map( descriptor ), descriptor.schema() );
-        }
-        return rule;
-    }
-
-    public Iterator<ConstraintRule> constraintRules( SchemaDescriptor descriptor )
-    {
-        return schemaRules(
-                cast( ConstraintRule.class ), ConstraintRule.class,
-                item -> item.getSchemaDescriptor().equals( descriptor ) );
-    }
-
-    private static <FROM, TO> Function<FROM,TO> cast( final Class<TO> to )
-    {
-        return new Function<FROM,TO>()
-        {
-            @Override
-            public TO apply( FROM from )
-            {
-                return to.cast( from );
-            }
-
-            @Override
-            public String toString()
-            {
-                return "cast(to=" + to.getName() + ")";
-            }
-        };
+        return new byte[schemaStore.getRecordSize()*4];
     }
 }

@@ -131,43 +131,9 @@ public class MandatoryProperties
         };
     }
 
-    /**
-     * The iterators returned by the SchemaStorage will throw a `MalformedSchemaRuleException` wrapped in a
-     * `RuntimeException` if it encounters malformed schema rules. As the iterator implementation is prefetching this
-     * will manifest in the hasNext() call. Attempting again will actually attempt to read the schema rule after the
-     * malformed one. This method will therefore execute `hasNext()` until 1) it reads a complete schema rule, 2) all
-     * schema rules are read, or 3) it get's an exception that is not wrapping a `MalformedSchemaRuleException`.
-     */
     private Iterable<ConstraintRule> constraintsIgnoringMalformed( SchemaStorage schemaStorage )
     {
-        final Iterator<ConstraintRule> ruleIterator = schemaStorage.allConstraintRules();
-        return () -> new Iterator<ConstraintRule>()
-            {
-                @Override
-                public boolean hasNext()
-                {
-                    while ( true )
-                    {
-                        try
-                        {
-                            return ruleIterator.hasNext();
-                        }
-                        catch ( Exception e )
-                        {
-                            if ( !MalformedSchemaRuleException.class.isInstance( e.getCause() ) )
-                            {
-                                throw e;
-                            }
-                        }
-                    }
-                }
-
-                @Override
-                public ConstraintRule next()
-                {
-                    return ruleIterator.next();
-                }
-            };
+        return schemaStorage::constraintsGetAllIgnoreMalformed;
     }
 
     private static void recordConstraint( int labelOrRelType, int propertyKey, PrimitiveIntObjectMap<int[]> storage )
