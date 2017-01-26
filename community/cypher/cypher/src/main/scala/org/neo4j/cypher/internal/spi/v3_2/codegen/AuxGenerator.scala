@@ -23,9 +23,9 @@ package org.neo4j.cypher.internal.spi.v3_2.codegen
 import org.neo4j.codegen.FieldReference.field
 import org.neo4j.codegen.Parameter.param
 import org.neo4j.codegen._
-import org.neo4j.cypher.internal.codegen.{CompiledOrderabilityUtils, CompiledEquivalenceUtils}
+import org.neo4j.cypher.internal.codegen.{CompiledEquivalenceUtils, CompiledOrderabilityUtils}
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.CodeGenContext
-import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions.{RepresentationType, CodeGenType}
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions.{ReferenceType, CodeGenType, RepresentationType}
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi._
 import org.neo4j.cypher.internal.compiler.v3_2.helpers._
 import org.neo4j.cypher.internal.frontend.v3_2.symbols
@@ -98,8 +98,8 @@ class AuxGenerator(val packageName: String, val generator: CodeGenerator) {
         case (fieldName, fieldType: CodeGenType) => clazz.field(lowerType(fieldType), fieldName)
       }
       using(clazz.generateMethod(typeRef[Int], "compareTo", param(typeRef[Object], "other"))) { l1 =>
-        val otherName = s"other$nameId"
-        l1.assign(l1.declare(clazz.handle(), otherName), Expression.cast(clazz.handle(), l1.load("other")))
+        val otherTupleName = s"other$nameId"
+        l1.assign(l1.declare(clazz.handle(), otherTupleName), Expression.cast(clazz.handle(), l1.load("other")))
 
         tupleDescriptor.sortItems.foreach { sortItem =>
           val SortItem(fieldName, sortOrder) = sortItem
@@ -109,6 +109,39 @@ class AuxGenerator(val packageName: String, val generator: CodeGenerator) {
           val fieldReference = field(clazz.handle(), fieldType, sanitizedFieldName)
           val thisValueName = s"thisValue_$sanitizedFieldName"
           val otherValueName = s"otherValue_$sanitizedFieldName"
+
+          // Helper for generating code expressions for the field values to compare, with proper boxing
+          def extractFields(block: CodeBlock, reprType: RepresentationType): (Expression, Expression) = {
+            val isPrimitive = RepresentationType.isPrimitive(reprType)
+            val thisField = Expression.get(block.self(), fieldReference)
+            val otherField = Expression.get(block.load(otherTupleName), fieldReference)
+            if(isPrimitive)
+              (thisField, otherField)
+            else
+              (Expression.box(thisField), Expression.box(otherField))
+          }
+
+          // Helper for generating code for extracting the field values to compare,
+          // and assigning them to local variables
+          def assignComparatorVariablesFor(block: CodeBlock, reprType: RepresentationType): (LocalVariable, LocalVariable) = {
+            val (thisField, otherField) = extractFields(block, reprType)
+            val thisValueVariable: LocalVariable = block.declare(fieldType, thisValueName)
+            val otherValueVariable: LocalVariable = block.declare(fieldType, otherValueName)
+
+            block.assign(thisValueVariable, thisField)
+            block.assign(otherValueVariable, otherField)
+
+            (thisValueVariable, otherValueVariable)
+          }
+
+          def rearrangeInSortOrder(lhs: Expression, rhs: Expression, sortOrder: SortOrder): (Expression, Expression) =
+            sortOrder match {
+              case Ascending =>
+                (lhs, rhs)
+              case Descending =>
+                (rhs, lhs)
+            }
+
           using(l1.block()) { l2 =>
             codeGenType match {
               // TODO: Primitive nodes and relationships including correct ordering of nulls
@@ -125,14 +158,7 @@ class AuxGenerator(val packageName: String, val generator: CodeGenerator) {
                 }
                 ...
                 */
-                val isPrimitive = RepresentationType.isPrimitive(reprType)
-                val thisValueVariable: LocalVariable = l2.declare(fieldType, thisValueName)
-                val otherValueVariable: LocalVariable = l2.declare(fieldType, otherValueName)
-                val thisField = Expression.get(l2.self(), fieldReference)
-                val otherField = Expression.get(l2.load(otherName), fieldReference)
-
-                l2.assign(thisValueVariable, if (isPrimitive) thisField else Expression.box(thisField))
-                l2.assign(otherValueVariable, if (isPrimitive) otherField else Expression.box(otherField))
+                val (thisValueVariable, otherValueVariable) = assignComparatorVariablesFor(l2, reprType)
 
                 using(l2.ifStatement(Expression.lt(thisValueVariable, otherValueVariable))) { l3 =>
                   l3.returns(Expression.constant(lessThanSortResult(sortOrder)))
@@ -155,23 +181,15 @@ class AuxGenerator(val packageName: String, val generator: CodeGenerator) {
                 }
                 ...
                 */
-                val isPrimitive = RepresentationType.isPrimitive(reprType)
                 val compareResultName = s"compare_$sanitizedFieldName"
                 val compareResult = l2.declare(typeRef[Int], compareResultName)
-                val thisField = Expression.get(l2.self(), fieldReference)
-                val otherField = Expression.get(l2.load(otherName), fieldReference)
+                val (thisField, otherField) = extractFields(l2, reprType)
 
                 // Invoke compare with the parameter order of the fields based on the sort order
-                val (lhs, rhs) = sortOrder match {
-                  case Ascending =>
-                    (thisField, otherField)
-                  case Descending =>
-                    (otherField, thisField)
-                }
+                val (lhs, rhs) = rearrangeInSortOrder(thisField, otherField, sortOrder)
+
                 l2.assign(compareResult,
-                  Expression.invoke(method[java.lang.Double, Int]("compare", typeRef[Double], typeRef[Double]),
-                    if (isPrimitive) lhs else Expression.box(lhs),
-                    if (isPrimitive) rhs else Expression.box(rhs)))
+                  Expression.invoke(method[java.lang.Double, Int]("compare", typeRef[Double], typeRef[Double]), lhs, rhs))
                 using(l2.ifNotStatement(Expression.equal(compareResult, Expression.constant(0)))) { l3 =>
                   l3.returns(compareResult)
                 }
@@ -187,15 +205,7 @@ class AuxGenerator(val packageName: String, val generator: CodeGenerator) {
                 }
                 ...
                 */
-                val isPrimitive = RepresentationType.isPrimitive(reprType)
-                val thisValueVariable: LocalVariable = l2.declare(fieldType, thisValueName)
-                val otherValueVariable: LocalVariable = l2.declare(fieldType, otherValueName)
-
-                val thisField = Expression.get(l2.self(), fieldReference)
-                val otherField = Expression.get(l2.load(otherName), fieldReference)
-
-                l2.assign(thisValueVariable, if (isPrimitive) thisField else Expression.box(thisField))
-                l2.assign(otherValueVariable, if (isPrimitive) otherField else Expression.box(otherField))
+                val (thisValueVariable, otherValueVariable) = assignComparatorVariablesFor(l2, reprType)
 
                 using(l2.ifNotStatement(Expression.equal(thisValueVariable, otherValueVariable))) { l3 =>
                   l3.returns(Expression.ternary(thisValueVariable,
@@ -207,16 +217,12 @@ class AuxGenerator(val packageName: String, val generator: CodeGenerator) {
                 // Use CompiledOrderabilityUtils.compare which handles mixed-types according to Cypher orderability semantics
                 val compareResultName = s"compare_$sanitizedFieldName"
                 val compareResult = l2.declare(typeRef[Int], compareResultName)
-                val thisField = Expression.box(Expression.get(l2.self(), fieldReference))
-                val otherField = Expression.box(Expression.get(l2.load(otherName), fieldReference))
+
+                val (thisField, otherField) = extractFields(l2, ReferenceType) // NOTE: Always force boxing in this case
 
                 // Invoke compare with the parameter order of the fields based on the sort order
-                val (lhs, rhs) = sortOrder match {
-                  case Ascending =>
-                    (thisField, otherField)
-                  case Descending =>
-                    (otherField, thisField)
-                }
+                val (lhs, rhs) = rearrangeInSortOrder(thisField, otherField, sortOrder)
+
                 l2.assign(compareResult,
                   Expression.invoke(method[CompiledOrderabilityUtils, Int]("compare", typeRef[Object], typeRef[Object]),
                     lhs, rhs))
