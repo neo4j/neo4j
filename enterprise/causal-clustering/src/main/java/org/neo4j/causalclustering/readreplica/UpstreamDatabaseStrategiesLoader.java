@@ -23,22 +23,22 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
-import org.neo4j.causalclustering.discovery.TopologyService;
+import org.neo4j.causalclustering.discovery.ReadReplicaTopologyService;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.configuration.Config;
 
 /**
  * Loads and initialises any service implementations of <class>UpstreamDatabaseSelectionStrategy</class>.
- * Exposes configured instances of that interface via an interator.
+ * Exposes configured instances of that interface via an iterator.
  */
 public class UpstreamDatabaseStrategiesLoader implements Iterable<UpstreamDatabaseSelectionStrategy>
 {
-    private final TopologyService topologyService;
+    private final ReadReplicaTopologyService readReplicaTopologyService;
     private final Config config;
 
-    public UpstreamDatabaseStrategiesLoader( TopologyService topologyService, Config config )
+    public UpstreamDatabaseStrategiesLoader( ReadReplicaTopologyService readReplicaTopologyService, Config config )
     {
-        this.topologyService = topologyService;
+        this.readReplicaTopologyService = readReplicaTopologyService;
         this.config = config;
     }
 
@@ -50,14 +50,22 @@ public class UpstreamDatabaseStrategiesLoader implements Iterable<UpstreamDataba
 
         LinkedHashSet<UpstreamDatabaseSelectionStrategy> candidates = new LinkedHashSet<>();
 
+        System.out.println("Registered strategies --> ");
+        for ( UpstreamDatabaseSelectionStrategy upstreamDatabaseSelectionStrategy : allImplementationsOnClasspath )
+        {
+            System.out.println(upstreamDatabaseSelectionStrategy.getClass());
+        }
+
         for ( String key : config.get( CausalClusteringSettings.upstream_selection_strategy ) )
         {
+            System.out.println( "Looking for key --> " + key );
             for ( UpstreamDatabaseSelectionStrategy candidate : allImplementationsOnClasspath )
             {
                 if ( candidate.getKeys().iterator().next().equals( key ) )
                 {
-                    candidate.setDiscoveryService( topologyService );
+                    candidate.setDiscoveryService( readReplicaTopologyService );
                     candidates.add( candidate );
+                    System.out.println( "Added strategy --> " + candidate.getClass() );
                 }
             }
         }

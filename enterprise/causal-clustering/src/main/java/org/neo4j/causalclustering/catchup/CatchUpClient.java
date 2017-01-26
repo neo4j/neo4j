@@ -31,8 +31,8 @@ import java.time.Clock;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
-import org.neo4j.causalclustering.discovery.CoreAddresses;
-import org.neo4j.causalclustering.discovery.TopologyService;
+import org.neo4j.causalclustering.discovery.CatchupServerAddress;
+import org.neo4j.causalclustering.discovery.ReadReplicaTopologyService;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.messaging.CatchUpRequest;
 import org.neo4j.helpers.AdvertisedSocketAddress;
@@ -48,7 +48,7 @@ import static org.neo4j.causalclustering.catchup.TimeoutLoop.waitForCompletion;
 public class CatchUpClient extends LifecycleAdapter
 {
     private final LogProvider logProvider;
-    private final TopologyService discoveryService;
+    private final ReadReplicaTopologyService discoveryService;
     private final Log log;
     private final Clock clock;
     private final Monitors monitors;
@@ -57,7 +57,7 @@ public class CatchUpClient extends LifecycleAdapter
 
     private NioEventLoopGroup eventLoopGroup;
 
-    public CatchUpClient( TopologyService discoveryService, LogProvider logProvider, Clock clock,
+    public CatchUpClient( ReadReplicaTopologyService discoveryService, LogProvider logProvider, Clock clock,
             long inactivityTimeoutMillis, Monitors monitors )
     {
         this.logProvider = logProvider;
@@ -68,12 +68,13 @@ public class CatchUpClient extends LifecycleAdapter
         this.monitors = monitors;
     }
 
-    public <T> T makeBlockingRequest( MemberId target, CatchUpRequest request,
+    public <T> T makeBlockingRequest( MemberId upstream, CatchUpRequest request,
             CatchUpResponseCallback<T> responseHandler ) throws CatchUpClientException
     {
         CompletableFuture<T> future = new CompletableFuture<>();
         Optional<AdvertisedSocketAddress> catchUpAddress =
-                discoveryService.coreServers().find( target ).map( CoreAddresses::getCatchupServer );
+                discoveryService.allServers().find( upstream ).map( CatchupServerAddress::getCatchupServer );
+
 
         CatchUpChannel channel = pool.acquire( catchUpAddress.orElseThrow(
                 () -> new CatchUpClientException( "Cannot find the target member socket address" ) ) );
@@ -93,7 +94,7 @@ public class CatchUpClient extends LifecycleAdapter
         channel.send( request );
 
         String operation = String.format( "Timed out executing operation %s on %s (%s)",
-                request, target, catchUpAddress.get() );
+                request, upstream, catchUpAddress.get() );
 
         return waitForCompletion( future, operation, channel::millisSinceLastResponse, inactivityTimeoutMillis, log );
     }

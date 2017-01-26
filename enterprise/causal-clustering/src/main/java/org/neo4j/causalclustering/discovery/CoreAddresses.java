@@ -21,7 +21,7 @@ package org.neo4j.causalclustering.discovery;
 
 import org.neo4j.helpers.AdvertisedSocketAddress;
 
-public class CoreAddresses implements ClientConnector
+public class CoreAddresses implements CatchupServerAddress, ClientConnector
 {
     private final AdvertisedSocketAddress raftServer;
     private final AdvertisedSocketAddress catchupServer;
@@ -40,6 +40,7 @@ public class CoreAddresses implements ClientConnector
         return raftServer;
     }
 
+    @Override
     public AdvertisedSocketAddress getCatchupServer()
     {
         return catchupServer;

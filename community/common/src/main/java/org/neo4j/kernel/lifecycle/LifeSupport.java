@@ -435,6 +435,8 @@ public class LifeSupport
                 }
                 catch ( Throwable e )
                 {
+                    System.out.println("problems --> ");
+                    e.printStackTrace();
                     currentStatus = changedStatus( instance, currentStatus, LifecycleStatus.STOPPED );
                     if( e instanceof LifecycleException )
                     {

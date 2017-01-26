@@ -21,13 +21,13 @@ package org.neo4j.causalclustering.readreplica;
 
 import java.util.Optional;
 
-import org.neo4j.causalclustering.discovery.TopologyService;
+import org.neo4j.causalclustering.discovery.ReadReplicaTopologyService;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.Service;
 
 public abstract class UpstreamDatabaseSelectionStrategy extends Service
 {
-    protected TopologyService topologyService;
+    protected ReadReplicaTopologyService readReplicaTopologyService;
 
     public UpstreamDatabaseSelectionStrategy( String key, String... altKeys )
     {
@@ -35,9 +35,9 @@ public abstract class UpstreamDatabaseSelectionStrategy extends Service
     }
 
     // Service loaded can't inject this via the constructor
-    void setDiscoveryService( TopologyService topologyService )
+    void setDiscoveryService( ReadReplicaTopologyService readReplicaTopologyService )
     {
-        this.topologyService = topologyService;
+        this.readReplicaTopologyService = readReplicaTopologyService;
     }
 
     public abstract Optional<MemberId> upstreamDatabase() throws UpstreamDatabaseSelectionException;

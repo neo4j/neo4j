@@ -182,7 +182,7 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
 
         c.setNetworkConfig( networkConfig );
 
-        MemberAttributeConfig memberAttributeConfig = HazelcastClusterTopology.buildMemberAttributes( myself, config );
+        MemberAttributeConfig memberAttributeConfig = HazelcastClusterTopology.buildMemberAttributesForCore( myself, config );
 
         c.setMemberAttributeConfig( memberAttributeConfig );
         userLog.info( "Waiting for other members to join cluster before continuing..." );
@@ -221,6 +221,12 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
     public ReadReplicaTopology readReplicas()
     {
         return latestReadReplicaTopology;
+    }
+
+    @Override
+    public ClusterTopology allServers()
+    {
+        return new ClusterTopology( coreServers(), readReplicas() );
     }
 
     @Override

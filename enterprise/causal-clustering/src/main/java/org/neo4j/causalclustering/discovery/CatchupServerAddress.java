@@ -19,26 +19,9 @@
  */
 package org.neo4j.causalclustering.discovery;
 
-import org.neo4j.causalclustering.identity.ClusterId;
+import org.neo4j.helpers.AdvertisedSocketAddress;
 
-public interface CoreTopologyService extends ReadReplicaTopologyService
+public interface CatchupServerAddress
 {
-    void addCoreTopologyListener( Listener listener );
-
-    /**
-     * Publishes the cluster ID so that other members might discover it.
-     * Should only succeed to publish if one missing or already the same (CAS logic).
-     *
-     * @param clusterId The cluster ID to publish.
-     *
-     * @return True if the cluster ID was successfully CAS:ed, otherwise false.
-     */
-    boolean setClusterId( ClusterId clusterId );
-
-    void refreshCoreTopology();
-
-    interface Listener
-    {
-        void onCoreTopologyChange( CoreTopology coreTopology );
-    }
+    AdvertisedSocketAddress getCatchupServer();
 }

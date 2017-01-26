@@ -79,22 +79,22 @@ class ReadReplicaStartupProcess implements Lifecycle
     @Override
     public void start() throws IOException
     {
-        boolean syncedWithCore = false;
+        boolean syncedWithUpstream = false;
         RetryStrategy.Timeout timeout = retryStrategy.newTimeout();
         int attempt = 0;
-        while ( !syncedWithCore )
+        while ( !syncedWithUpstream )
         {
             attempt++;
             MemberId source = null;
             try
             {
                 source = selectionStrategyPipeline.bestUpstreamDatabase();
-                syncStoreWithCore( source );
-                syncedWithCore = true;
+                syncStoreWithUpstream( source );
+                syncedWithUpstream = true;
             }
             catch ( UpstreamDatabaseSelectionException e )
             {
-                lastIssue = issueOf( "finding core member", attempt );
+                lastIssue = issueOf( "finding upstream member", attempt );
                 debugLog.warn( lastIssue );
             }
             catch ( StoreCopyFailedException e )
@@ -127,7 +127,9 @@ class ReadReplicaStartupProcess implements Lifecycle
             }
         }
 
-        if ( !syncedWithCore )
+        System.out.println("--> Got out of this loop");
+
+        if ( !syncedWithUpstream )
         {
             userLog.error( lastIssue );
             throw new RuntimeException( lastIssue );
@@ -144,18 +146,18 @@ class ReadReplicaStartupProcess implements Lifecycle
         }
     }
 
-    private void syncStoreWithCore( MemberId source )
+    private void syncStoreWithUpstream( MemberId source )
             throws IOException, StoreIdDownloadFailedException, StoreCopyFailedException,
             StreamingTransactionsFailedException
     {
         if ( localDatabase.isEmpty() )
         {
-            debugLog.info( "Local database is empty, attempting to replace with copy from core server %s", source );
+            debugLog.info( "Local database is empty, attempting to replace with copy from upstream server %s", source );
 
-            debugLog.info( "Finding store id of core server %s", source );
+            debugLog.info( "Finding store id of upstream server %s", source );
             StoreId storeId = remoteStore.getStoreId( source );
 
-            debugLog.info( "Copying store from core server %s", source );
+            debugLog.info( "Copying store from upstream server %s", source );
             localDatabase.delete();
             storeCopyProcess.replaceWithStoreFrom( source, storeId );
 
@@ -167,10 +169,10 @@ class ReadReplicaStartupProcess implements Lifecycle
         }
     }
 
-    private void ensureSameStoreIdAs( MemberId remoteCore ) throws StoreIdDownloadFailedException
+    private void ensureSameStoreIdAs( MemberId upstream ) throws StoreIdDownloadFailedException
     {
         StoreId localStoreId = localDatabase.storeId();
-        StoreId remoteStoreId = remoteStore.getStoreId( remoteCore );
+        StoreId remoteStoreId = remoteStore.getStoreId( upstream );
         if ( !localStoreId.equals( remoteStoreId ) )
         {
             throw new IllegalStateException( format( "This read replica cannot join the cluster. " +

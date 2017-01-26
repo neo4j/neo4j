@@ -20,41 +20,53 @@
 package org.neo4j.causalclustering.readreplica;
 
 
-import java.util.LinkedList;
+import java.util.LinkedHashSet;
 import java.util.NoSuchElementException;
 
 import org.neo4j.causalclustering.identity.MemberId;
 
+import static org.neo4j.helpers.collection.Iterables.count;
+
 public class UpstreamDatabaseStrategySelector
 {
-    private LinkedList<UpstreamDatabaseSelectionStrategy> strategies = new LinkedList<>();
+    private LinkedHashSet<UpstreamDatabaseSelectionStrategy> strategies = new LinkedHashSet<>();
+    private MemberId myself;
 
     UpstreamDatabaseStrategySelector( UpstreamDatabaseSelectionStrategy defaultStrategy )
     {
-        this( defaultStrategy, null );
+        this( defaultStrategy, null, null );
     }
 
     UpstreamDatabaseStrategySelector( UpstreamDatabaseSelectionStrategy defaultStrategy,
-            Iterable<UpstreamDatabaseSelectionStrategy> otherStrategies )
+            Iterable<UpstreamDatabaseSelectionStrategy> otherStrategies, MemberId myself )
     {
-        strategies.push( defaultStrategy );
+        this.myself = myself;
+        System.out.println( "No of additional strategies --> " + count( otherStrategies ) );
         if ( otherStrategies != null )
         {
             for ( UpstreamDatabaseSelectionStrategy otherStrategy : otherStrategies )
             {
-                strategies.push( otherStrategy );
+                strategies.add( otherStrategy );
             }
+        }
+        strategies.add( defaultStrategy );
+
+        System.out.println( "Loaded strategies --> " );
+        for ( UpstreamDatabaseSelectionStrategy strategy : strategies )
+        {
+            System.out.println( strategy.getClass() );
         }
     }
 
     public MemberId bestUpstreamDatabase() throws UpstreamDatabaseSelectionException
     {
         MemberId result = null;
-
-        for ( UpstreamDatabaseSelectionStrategy strategy : strategies )
+        System.out.println("--------------------------------------------------------------------------------");
+        for ( UpstreamDatabaseSelectionStrategy strategy : this.strategies )
         {
             try
             {
+                System.out.println( "Trying " + myself + " --> " + strategy.getClass() );
                 result = strategy.upstreamDatabase().get();
                 break;
             }
@@ -63,6 +75,7 @@ public class UpstreamDatabaseStrategySelector
                 // Do nothing, this strategy failed
             }
         }
+        System.out.println("--------------------------------------------------------------------------------");
 
         if ( result == null )
         {

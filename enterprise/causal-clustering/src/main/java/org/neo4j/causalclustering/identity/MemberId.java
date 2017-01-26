@@ -38,7 +38,7 @@ public class MemberId
     {
         Objects.requireNonNull( uuid );
         this.uuid = uuid;
-        shortName = uuid.toString().substring( 0, 8 );
+        shortName = uuid.toString();//.substring( 0, 8 );
     }
 
     public UUID getUuid()

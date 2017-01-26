@@ -28,11 +28,11 @@ import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.Service;
 
 @Service.Implementation( UpstreamDatabaseSelectionStrategy.class )
-public class ConnectToRandomUpstreamCoreServer extends UpstreamDatabaseSelectionStrategy
+public class ConnectToRandomCoreServer extends UpstreamDatabaseSelectionStrategy
 {
     private final Random random = new Random();
 
-    public ConnectToRandomUpstreamCoreServer()
+    public ConnectToRandomCoreServer()
     {
         super( "random" );
     }
@@ -40,7 +40,7 @@ public class ConnectToRandomUpstreamCoreServer extends UpstreamDatabaseSelection
     @Override
     public Optional<MemberId> upstreamDatabase() throws UpstreamDatabaseSelectionException
     {
-        final CoreTopology coreTopology = topologyService.coreServers();
+        final CoreTopology coreTopology = readReplicaTopologyService.coreServers();
 
         if ( coreTopology.members().size() == 0 )
         {

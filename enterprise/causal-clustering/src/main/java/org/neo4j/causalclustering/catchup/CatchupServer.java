@@ -137,11 +137,8 @@ public class CatchupServer extends LifecycleAdapter
 
         workerGroup = new NioEventLoopGroup( 0, threadFactory );
 
-        ServerBootstrap bootstrap = new ServerBootstrap()
-                .group( workerGroup )
-                .channel( NioServerSocketChannel.class )
-                .localAddress( listenAddress.socketAddress() )
-                .childHandler( new ChannelInitializer<SocketChannel>()
+        ServerBootstrap bootstrap = new ServerBootstrap().group( workerGroup ).channel( NioServerSocketChannel.class )
+                .localAddress( listenAddress.socketAddress() ).childHandler( new ChannelInitializer<SocketChannel>()
                 {
                     @Override
                     protected void initChannel( SocketChannel ch )
@@ -175,14 +172,21 @@ public class CatchupServer extends LifecycleAdapter
                                         transactionIdStoreSupplier, logicalTransactionStoreSupplier, txPullBatchSize,
                                         monitors, logProvider ) );
                         pipeline.addLast( new ChunkedWriteHandler() );
+
                         pipeline.addLast( new GetStoreRequestHandler( protocol, dataSourceSupplier,
                                 checkPointerSupplier, fs, pageCache, logProvider, storeCopyCheckPointMutex ) );
+
                         pipeline.addLast( new GetStoreIdRequestHandler( protocol, storeIdSupplier ) );
-                        pipeline.addLast( new CoreSnapshotRequestHandler( protocol, coreState ) );
+
+                        if ( coreState != null )
+                        {
+                            pipeline.addLast( new CoreSnapshotRequestHandler( protocol, coreState ) );
+                        }
 
                         pipeline.addLast( new ExceptionLoggingHandler( log ) );
                         pipeline.addLast( new ExceptionMonitoringHandler(
-                                monitors.newMonitor( ExceptionMonitoringHandler.Monitor.class, CatchupServer.class ) ) );
+                                monitors.newMonitor( ExceptionMonitoringHandler.Monitor.class,
+                                        CatchupServer.class ) ) );
                         pipeline.addLast( new ExceptionSwallowingHandler() );
                     }
                 } );
@@ -191,15 +195,19 @@ public class CatchupServer extends LifecycleAdapter
         {
             channel = bootstrap.bind().syncUninterruptibly().channel();
         }
-        catch( Exception e )
+        catch ( Exception e )
         {
             // thanks to netty we need to catch everything and do an instanceof because it does not declare properly
             // checked exception but it still throws them with some black magic at runtime.
             //noinspection ConstantConditions
             if ( e instanceof BindException )
             {
-                userLog.error( "Address is already bound for setting: " + CausalClusteringSettings.transaction_listen_address + " with value: " + listenAddress );
-                log.error( "Address is already bound for setting: " + CausalClusteringSettings.transaction_listen_address + " with value: " + listenAddress, e );
+                userLog.error(
+                        "Address is already bound for setting: " + CausalClusteringSettings.transaction_listen_address +
+                                " with value: " + listenAddress );
+                log.error(
+                        "Address is already bound for setting: " + CausalClusteringSettings.transaction_listen_address +
+                                " with value: " + listenAddress, e );
                 throw e;
             }
         }
@@ -207,12 +215,11 @@ public class CatchupServer extends LifecycleAdapter
 
     private ChannelInboundHandler decoders( CatchupServerProtocol protocol )
     {
-        RequestDecoderDispatcher<State> decoderDispatcher =
-                new RequestDecoderDispatcher<>( protocol, logProvider );
+        RequestDecoderDispatcher<State> decoderDispatcher = new RequestDecoderDispatcher<>( protocol, logProvider );
         decoderDispatcher.register( State.TX_PULL, new TxPullRequestDecoder() );
         decoderDispatcher.register( State.GET_STORE, new GetStoreRequestDecoder() );
         decoderDispatcher.register( State.GET_STORE_ID, new SimpleRequestDecoder( GetStoreIdRequest::new ) );
-        decoderDispatcher.register( State.GET_CORE_SNAPSHOT, new SimpleRequestDecoder( CoreSnapshotRequest::new) );
+        decoderDispatcher.register( State.GET_CORE_SNAPSHOT, new SimpleRequestDecoder( CoreSnapshotRequest::new ) );
         return decoderDispatcher;
     }
 

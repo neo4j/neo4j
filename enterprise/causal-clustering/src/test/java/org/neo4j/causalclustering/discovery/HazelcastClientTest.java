@@ -71,6 +71,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import org.neo4j.causalclustering.core.consensus.schedule.ControlledRenewableTimeoutService;
+import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
@@ -96,6 +97,8 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class HazelcastClientTest
 {
+    private MemberId myself = new MemberId( UUID.randomUUID() );
+
     private Config config()
     {
         Config defaults = Config.defaults();
@@ -118,7 +121,7 @@ public class HazelcastClientTest
         // given
         HazelcastConnector connector = mock( HazelcastConnector.class );
         HazelcastClient client = new HazelcastClient( connector, NullLogProvider.getInstance(), config(), new
-                ControlledRenewableTimeoutService(), 60_000, 5_000 );
+                ControlledRenewableTimeoutService(), 60_000, 5_000, myself );
 
         HazelcastInstance hazelcastInstance = mock( HazelcastInstance.class );
         when( connector.connectToHazelcast() ).thenReturn( hazelcastInstance );
@@ -146,7 +149,7 @@ public class HazelcastClientTest
         // given
         HazelcastConnector connector = mock( HazelcastConnector.class );
         HazelcastClient client = new HazelcastClient( connector, NullLogProvider.getInstance(), config(), new
-                ControlledRenewableTimeoutService(), 60_000, 5_000 );
+                ControlledRenewableTimeoutService(), 60_000, 5_000, myself );
 
         HazelcastInstance hazelcastInstance = mock( HazelcastInstance.class );
         when( connector.connectToHazelcast() ).thenReturn( hazelcastInstance );
@@ -189,7 +192,7 @@ public class HazelcastClientTest
         when( hazelcastInstance.getSet( anyString() ) ).thenReturn( new HazelcastSet() );
 
         HazelcastClient client = new HazelcastClient( connector, logProvider, config(), new
-                ControlledRenewableTimeoutService(), 60_000, 5_000 );
+                ControlledRenewableTimeoutService(), 60_000, 5_000, myself );
 
         com.hazelcast.core.Cluster cluster = mock( Cluster.class );
         when( hazelcastInstance.getCluster() ).thenReturn( cluster );
@@ -211,7 +214,7 @@ public class HazelcastClientTest
         // given
         HazelcastConnector connector = mock( HazelcastConnector.class );
         HazelcastClient client = new HazelcastClient( connector, NullLogProvider.getInstance(), config(), new
-                ControlledRenewableTimeoutService(), 60_000, 5_000 );
+                ControlledRenewableTimeoutService(), 60_000, 5_000, myself );
 
         HazelcastInstance hazelcastInstance = mock( HazelcastInstance.class );
         when( connector.connectToHazelcast() ).thenReturn( hazelcastInstance );
@@ -233,7 +236,7 @@ public class HazelcastClientTest
         // given
         HazelcastConnector connector = mock( HazelcastConnector.class );
         HazelcastClient client = new HazelcastClient( connector, NullLogProvider.getInstance(), config(), new
-                ControlledRenewableTimeoutService(), 60_000, 5_000 );
+                ControlledRenewableTimeoutService(), 60_000, 5_000, myself );
 
         HazelcastInstance hazelcastInstance1 = mock( HazelcastInstance.class );
         HazelcastInstance hazelcastInstance2 = mock( HazelcastInstance.class );
@@ -303,7 +306,7 @@ public class HazelcastClientTest
 
         ControlledRenewableTimeoutService renewableTimeoutService = new ControlledRenewableTimeoutService();
         HazelcastClient hazelcastClient = new HazelcastClient( connector, NullLogProvider.getInstance(), config(),
-                renewableTimeoutService, 60_000, 5_000 );
+                renewableTimeoutService, 60_000, 5_000, myself );
 
         hazelcastClient.start();
 
@@ -347,7 +350,7 @@ public class HazelcastClientTest
 
         ControlledRenewableTimeoutService renewableTimeoutService = new ControlledRenewableTimeoutService();
         HazelcastClient hazelcastClient = new HazelcastClient( connector, NullLogProvider.getInstance(), config(),
-                renewableTimeoutService, 60_000, 5_000 );
+                renewableTimeoutService, 60_000, 5_000, myself );
 
         hazelcastClient.start();
 
@@ -378,7 +381,7 @@ public class HazelcastClientTest
         ControlledRenewableTimeoutService renewableTimeoutService = new ControlledRenewableTimeoutService();
 
         HazelcastClient hazelcastClient = new HazelcastClient( connector, NullLogProvider.getInstance(), config(),
-                renewableTimeoutService, 60_000, 5_000 );
+                renewableTimeoutService, 60_000, 5_000, myself );
 
         hazelcastClient.start();
 

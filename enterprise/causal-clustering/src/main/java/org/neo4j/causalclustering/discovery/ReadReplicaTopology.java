@@ -19,35 +19,47 @@
  */
 package org.neo4j.causalclustering.discovery;
 
-import java.util.HashSet;
+import java.util.Collection;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.neo4j.causalclustering.identity.ClusterId;
+import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.collection.Pair;
+
+import static java.util.Collections.emptyMap;
+
 
 public class ReadReplicaTopology
 {
-    private final Set<ReadReplicaAddresses> readReplicaMembers;
+    public static final ReadReplicaTopology EMPTY = new ReadReplicaTopology( emptyMap() );
 
-    public ReadReplicaTopology( Set<ReadReplicaAddresses> readReplicaMembers )
+    private final Map<MemberId,ReadReplicaAddresses> readReplicaMembers;
+
+    public ReadReplicaTopology( Map<MemberId,ReadReplicaAddresses> readReplicaMembers )
     {
         this.readReplicaMembers = readReplicaMembers;
     }
 
-    public Set<ReadReplicaAddresses> members()
+    public Collection<ReadReplicaAddresses> members()
     {
-        return readReplicaMembers;
+        return readReplicaMembers.values();
     }
 
-    public Set<ReadReplicaAddresses> difference( ReadReplicaTopology other )
+    public Optional<ReadReplicaAddresses> find( MemberId memberId )
     {
-        Pair<Set<ReadReplicaAddresses>, Set<ReadReplicaAddresses>> split = split( readReplicaMembers, other.members() );
-        Set<ReadReplicaAddresses> big = split.first();
-        Set<ReadReplicaAddresses> small = split.other();
-
-        return big.stream().filter( n -> !small.contains( n ) ).collect( Collectors.toSet() );
+        return Optional.ofNullable( readReplicaMembers.get( memberId ) );
     }
+
+//    public Set<ReadReplicaAddresses> difference( ReadReplicaTopology other )
+//    {
+//        Pair<Set<ReadReplicaAddresses>, Set<ReadReplicaAddresses>> split = split( readReplicaMembers, other.members() );
+//        Set<ReadReplicaAddresses> big = split.first();
+//        Set<ReadReplicaAddresses> small = split.other();
+//
+//        return big.stream().filter( n -> !small.contains( n ) ).collect( Collectors.toSet() );
+//    }
 
     private Pair<Set<ReadReplicaAddresses>, Set<ReadReplicaAddresses>> split(
             Set<ReadReplicaAddresses> one, Set<ReadReplicaAddresses> two )

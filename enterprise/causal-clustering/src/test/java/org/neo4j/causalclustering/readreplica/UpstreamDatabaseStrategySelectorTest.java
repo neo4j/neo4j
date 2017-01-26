@@ -28,7 +28,7 @@ import java.util.UUID;
 
 import org.neo4j.causalclustering.discovery.CoreAddresses;
 import org.neo4j.causalclustering.discovery.CoreTopology;
-import org.neo4j.causalclustering.discovery.TopologyService;
+import org.neo4j.causalclustering.discovery.ReadReplicaTopologyService;
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.Service;
@@ -59,7 +59,7 @@ public class UpstreamDatabaseStrategySelectorTest
         when( goodOne.upstreamDatabase() ).thenReturn( Optional.of( theMemberId ) );
 
         UpstreamDatabaseStrategySelector selector =
-                new UpstreamDatabaseStrategySelector( badOne, iterable( goodOne, anotherBadOne ) );
+                new UpstreamDatabaseStrategySelector( badOne, iterable( goodOne, anotherBadOne ), null );
 
         // when
         MemberId result = selector.bestUpstreamDatabase();
@@ -72,13 +72,13 @@ public class UpstreamDatabaseStrategySelectorTest
     public void shouldDefaultToRandomCoreServerIfNoOtherStrategySpecified() throws Exception
     {
         // given
-        TopologyService topologyService = mock( TopologyService.class );
+        ReadReplicaTopologyService readReplicaTopologyService = mock( ReadReplicaTopologyService.class );
         MemberId memberId = new MemberId( UUID.randomUUID() );
-        when( topologyService.coreServers() ).thenReturn( new CoreTopology( new ClusterId( UUID.randomUUID() ), false,
+        when( readReplicaTopologyService.coreServers() ).thenReturn( new CoreTopology( new ClusterId( UUID.randomUUID() ), false,
                 mapOf( memberId, mock( CoreAddresses.class ) ) ) );
 
-        ConnectToRandomUpstreamCoreServer defaultStrategy = new ConnectToRandomUpstreamCoreServer();
-        defaultStrategy.setDiscoveryService( topologyService );
+        ConnectToRandomCoreServer defaultStrategy = new ConnectToRandomCoreServer();
+        defaultStrategy.setDiscoveryService( readReplicaTopologyService );
 
         UpstreamDatabaseStrategySelector selector = new UpstreamDatabaseStrategySelector( defaultStrategy );
 
@@ -93,18 +93,18 @@ public class UpstreamDatabaseStrategySelectorTest
     public void shouldUseSpecifiedStrategyInPreferenceToDefault() throws Exception
     {
         // given
-        TopologyService topologyService = mock( TopologyService.class );
+        ReadReplicaTopologyService readReplicaTopologyService = mock( ReadReplicaTopologyService.class );
         MemberId memberId = new MemberId( UUID.randomUUID() );
-        when( topologyService.coreServers() ).thenReturn( new CoreTopology( new ClusterId( UUID.randomUUID() ), false,
+        when( readReplicaTopologyService.coreServers() ).thenReturn( new CoreTopology( new ClusterId( UUID.randomUUID() ), false,
                 mapOf( memberId, mock( CoreAddresses.class ) ) ) );
 
-        ConnectToRandomUpstreamCoreServer shouldNotUse = new ConnectToRandomUpstreamCoreServer();
+        ConnectToRandomCoreServer shouldNotUse = new ConnectToRandomCoreServer();
 
         UpstreamDatabaseSelectionStrategy mockStrategy = mock( UpstreamDatabaseSelectionStrategy.class );
         when( mockStrategy.upstreamDatabase() ).thenReturn( Optional.of( new MemberId( UUID.randomUUID() ) ) );
 
         UpstreamDatabaseStrategySelector selector =
-                new UpstreamDatabaseStrategySelector( shouldNotUse, iterable( mockStrategy ) );
+                new UpstreamDatabaseStrategySelector( shouldNotUse, iterable( mockStrategy ), null );
 
         // when
         selector.bestUpstreamDatabase();

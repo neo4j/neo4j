@@ -62,7 +62,7 @@ public class ClusterOverviewProcedureTest
         coreMembers.put( follower1, adressesForCore( 1 ) );
         coreMembers.put( follower2, adressesForCore( 2 ) );
 
-        Set<ReadReplicaAddresses> readReplicas = addressesForReadReplicas( 4, 5 );
+        Map<MemberId,ReadReplicaAddresses> readReplicas = addresses( 4, 5 );
 
         when( topologyService.coreServers() ).thenReturn( new CoreTopology( null, false, coreMembers ) );
         when( topologyService.readReplicas() ).thenReturn( new ReadReplicaTopology( readReplicas ) );

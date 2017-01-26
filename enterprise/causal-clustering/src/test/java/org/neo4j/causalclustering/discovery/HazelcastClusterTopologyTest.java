@@ -45,8 +45,8 @@ import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
-import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.buildMemberAttributes;
-import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.extractMemberAttributes;
+import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.buildMemberAttributesForCore;
+import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.extractMemberAttributesForCore;
 
 public class HazelcastClusterTopologyTest
 {
@@ -68,8 +68,8 @@ public class HazelcastClusterTopologyTest
         config.augment( settings );
 
         // when
-        Map<String, Object> attributes = buildMemberAttributes( memberId, config ).getAttributes();
-        Pair<MemberId, CoreAddresses> extracted = extractMemberAttributes( new MemberImpl( null, null, attributes,
+        Map<String, Object> attributes = buildMemberAttributesForCore( memberId, config ).getAttributes();
+        Pair<MemberId, CoreAddresses> extracted = extractMemberAttributesForCore( new MemberImpl( null, null, attributes,
                 false ) );
 
         // then
@@ -102,7 +102,7 @@ public class HazelcastClusterTopologyTest
             settings.put( new BoltConnector( "http" ).advertised_address.name(), "http:" + (i + 1) );
 
             config.augment( settings );
-            Map<String, Object> attributes = buildMemberAttributes( memberId, config ).getAttributes();
+            Map<String, Object> attributes = buildMemberAttributesForCore( memberId, config ).getAttributes();
             hazelcastMembers.add( new MemberImpl( new Address( "localhost", i ), null, attributes, false ) );
 
         }
@@ -141,7 +141,7 @@ public class HazelcastClusterTopologyTest
             settings.put( new BoltConnector( "http" ).advertised_address.name(), "http:" + (i + 1) );
 
             config.augment( settings );
-            Map<String, Object> attributes = buildMemberAttributes( memberId, config ).getAttributes();
+            Map<String, Object> attributes = buildMemberAttributesForCore( memberId, config ).getAttributes();
             if ( i == 2 )
             {
                 attributes.remove( HazelcastClusterTopology.RAFT_SERVER );

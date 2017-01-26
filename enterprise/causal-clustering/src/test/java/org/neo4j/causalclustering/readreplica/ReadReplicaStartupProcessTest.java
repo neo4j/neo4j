@@ -33,7 +33,7 @@ import org.neo4j.causalclustering.catchup.storecopy.RemoteStore;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
 import org.neo4j.causalclustering.catchup.storecopy.StoreIdDownloadFailedException;
 import org.neo4j.causalclustering.discovery.CoreTopology;
-import org.neo4j.causalclustering.discovery.TopologyService;
+import org.neo4j.causalclustering.discovery.ReadReplicaTopologyService;
 import org.neo4j.causalclustering.helper.ConstantTimeRetryStrategy;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
@@ -62,7 +62,7 @@ public class ReadReplicaStartupProcessTest
     private FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
     private final PageCache pageCache = mock( PageCache.class );
     private LocalDatabase localDatabase = mock( LocalDatabase.class );
-    private TopologyService topologyService = mock( TopologyService.class );
+    private ReadReplicaTopologyService readReplicaTopologyService = mock( ReadReplicaTopologyService.class );
     private CoreTopology clusterTopology = mock( CoreTopology.class );
     private Lifecycle txPulling = mock( Lifecycle.class );
 
@@ -77,7 +77,7 @@ public class ReadReplicaStartupProcessTest
         when( pageCache.streamFilesRecursive( any(File.class) ) ).thenAnswer( ( f ) -> Stream.empty() );
         when( localDatabase.storeDir() ).thenReturn( storeDir );
         when( localDatabase.storeId() ).thenReturn( localStoreId );
-        when( topologyService.coreServers() ).thenReturn( clusterTopology );
+        when( readReplicaTopologyService.coreServers() ).thenReturn( clusterTopology );
         when( clusterTopology.members() ).thenReturn( asSet( memberId ) );
     }
 
@@ -104,7 +104,7 @@ public class ReadReplicaStartupProcessTest
     private UpstreamDatabaseStrategySelector chooseFirstMember()
     {
         AlwaysChooseFirstMember firstMember = new AlwaysChooseFirstMember();
-        firstMember.setDiscoveryService( topologyService );
+        firstMember.setDiscoveryService( readReplicaTopologyService );
 
         return new UpstreamDatabaseStrategySelector( firstMember );
     }
@@ -189,7 +189,7 @@ public class ReadReplicaStartupProcessTest
         @Override
         public Optional<MemberId> upstreamDatabase() throws UpstreamDatabaseSelectionException
         {
-            CoreTopology coreTopology = topologyService.coreServers();
+            CoreTopology coreTopology = readReplicaTopologyService.coreServers();
             return Optional.ofNullable( coreTopology.members().iterator().next() );
         }
     }
