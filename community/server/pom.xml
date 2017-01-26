@@ -85,24 +85,6 @@
     </license>
   </licenses>
 
-  <dependencyManagement>
-    <dependencies>
-      <dependency>
-        <groupId>org.apache.httpcomponents</groupId>
-        <artifactId>httpclient</artifactId>
-        <scope>test</scope>
-        <version>4.3.4</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.apache.httpcomponents</groupId>
-        <artifactId>httpcore</artifactId>
-        <scope>test</scope>
-        <version>4.3.2</version>
-      </dependency>
-    </dependencies>
-  </dependencyManagement>
-
   <dependencies>
     <dependency>
       <groupId>org.neo4j</groupId>
