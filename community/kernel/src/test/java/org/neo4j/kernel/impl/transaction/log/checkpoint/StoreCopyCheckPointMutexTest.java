@@ -23,18 +23,27 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.graphdb.Resource;
+import org.neo4j.test.Barrier;
 import org.neo4j.test.Race;
 import org.neo4j.test.rule.concurrent.OtherThreadRule;
+
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.lessThan;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -46,9 +55,12 @@ import static org.neo4j.test.Race.throwing;
 public class StoreCopyCheckPointMutexTest
 {
     private static final ThrowingAction<IOException> NO_OP = () -> {};
+    private static final ThrowingAction<IOException> ASSERT_NOT_CALLED = () -> fail( "Should not be called" );
 
     @Rule
     public final OtherThreadRule<Void> t2 = new OtherThreadRule<>( "T2" );
+    @Rule
+    public final OtherThreadRule<Void> t3 = new OtherThreadRule<>( "T3" );
 
     private final StoreCopyCheckPointMutex mutex = new StoreCopyCheckPointMutex();
 
@@ -189,6 +201,74 @@ public class StoreCopyCheckPointMutexTest
         // It's hard to make predictions about what should have been seen. Most importantly is that
         // The lock doesn't hang any requests and that number of calls to the action less than number of threads
         assertThat( action.count(), lessThan( threads ) );
+    }
+
+    @Test
+    public void shouldPropagateStoreCopyActionFailureToOtherStoreCopyRequests() throws Exception
+    {
+        // GIVEN
+        Barrier.Control barrier = new Barrier.Control();
+        IOException controlledFailure = new IOException( "My own fault" );
+        AtomicReference<Future<Object>> secondRequest = new AtomicReference<>();
+        ThrowingAction<IOException> controllableAndFailingAction = new ThrowingAction<IOException>()
+        {
+            @Override
+            public void apply() throws IOException
+            {
+                // Now that we know we're first, start the second request...
+                secondRequest.set( t3.execute( state -> mutex.storeCopy( ASSERT_NOT_CALLED ) ) );
+                // ...and wait for it to reach its destination
+                barrier.awaitUninterruptibly();
+                try
+                {
+                    // OK, second request has made progress into the request, so we can now produce our failure
+                    throw controlledFailure;
+                }
+                finally
+                {
+                    barrier.release();
+                }
+            }
+        };
+
+        Future<Object> firstRequest = t2.execute( state -> mutex.storeCopy( controllableAndFailingAction ) );
+        while ( secondRequest.get() == null )
+        {
+            parkARandomWhile();
+        }
+        t3.get().waitUntilWaiting( details -> details.isAt( StoreCopyCheckPointMutex.class,
+                "waitForFirstStoreCopyActionToComplete" ) );
+
+        // WHEN
+        barrier.reached();
+
+        // THEN
+        try
+        {
+            firstRequest.get();
+        }
+        catch ( ExecutionException e )
+        {
+            assertSame( controlledFailure, e.getCause() );
+        }
+        try
+        {
+            secondRequest.get().get();
+        }
+        catch ( ExecutionException e )
+        {
+            Throwable cooperativeActionFailure = e.getCause();
+            assertThat( cooperativeActionFailure.getMessage(), containsString( "Co-operative" ) );
+            assertSame( controlledFailure, cooperativeActionFailure.getCause() );
+        }
+
+        // WHEN afterwards trying another store-copy
+        CountingAction action = new CountingAction();
+        try ( Resource lock = mutex.storeCopy( action ) )
+        {
+            // THEN
+            assertEquals( 1, action.count() );
+        }
     }
 
     private static void parkARandomWhile()

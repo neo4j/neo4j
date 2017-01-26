@@ -102,32 +102,39 @@ public class StoreCopyCheckPointMutex
     {
         Lock readLock = lock.readLock();
         boolean firstConcurrentRead = incrementCount() == 0;
-        if ( firstConcurrentRead )
+        boolean success = false;
+        try
         {
-            try
+            if ( firstConcurrentRead )
             {
-                beforeFirstConcurrentStoreCopy.apply();
-            }
-            catch ( Throwable e )
-            {
-                storeCopyActionError = e;
-                throw launderedException( IOException.class, e );
-            }
-            readLock.lock();
-            storeCopyActionCompleted = true;
-        }
-        else
-        {
-            // Wait for the "before" first store copy to complete
-            while ( !storeCopyActionCompleted )
-            {
-                if ( storeCopyActionError != null )
+                try
                 {
-                    throw new IOException( "Co-operative action before store-copy failed", storeCopyActionError );
+                    beforeFirstConcurrentStoreCopy.apply();
                 }
-                parkAWhile();
+                catch ( Throwable e )
+                {
+                    storeCopyActionError = e;
+                    throw launderedException( IOException.class, e );
+                }
+                storeCopyActionCompleted = true;
             }
-            readLock.lock();
+            else
+            {
+                // Wait for the "before" first store copy to complete
+                waitForFirstStoreCopyActionToComplete();
+            }
+            success = true;
+        }
+        finally
+        {
+            if ( success )
+            {
+                readLock.lock();
+            }
+            else
+            {
+                decrementCount();
+            }
         }
 
         return () ->
@@ -136,6 +143,18 @@ public class StoreCopyCheckPointMutex
             decrementCount();
             readLock.unlock();
         };
+    }
+
+    private void waitForFirstStoreCopyActionToComplete() throws IOException
+    {
+        while ( !storeCopyActionCompleted )
+        {
+            if ( storeCopyActionError != null )
+            {
+                throw new IOException( "Co-operative action before store-copy failed", storeCopyActionError );
+            }
+            parkAWhile();
+        }
     }
 
     private synchronized void decrementCount()
