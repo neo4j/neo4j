@@ -32,42 +32,33 @@ class ShortestPathComplexQueryAcceptanceTest extends ExecutionEngineFunSuite wit
     setupModel()
     val result = executeUsingCostPlannerOnly(
       """
-        |//same idea but iterating over two collections of nodes
-        |profile match (charles:Pixie { fname : 'Charles'}),(joey:Pixie { fname : 'Joey'}),(kim:Pixie { fname : 'Kim'})
-        |with kim as kimDeal, collect(charles) as charlesT, collect(joey) as joeyS
-        |unwind charlesT AS charlesThompson
-        |unwind joeyS AS joeySantiago
-        |match pathx = allShortestPaths((charlesThompson)-[*1..5]-(joeySantiago))
-        |where none (n IN nodes(pathx) where id(n) = id(kimDeal))
-        |with nodes(pathx) as nodes
-        |return nodes
+        |PROFILE MATCH (charles:Pixie { fname : 'Charles'}),(joey:Pixie { fname : 'Joey'}),(kim:Pixie { fname : 'Kim'})
+        |WITH kim AS kimDeal, collect(charles) AS charlesT, collect(joey) AS joeyS
+        |UNWIND charlesT AS charlesThompson
+        |UNWIND joeyS AS joeySantiago
+        |MATCH pathx = allShortestPaths((charlesThompson)-[*1..5]-(joeySantiago))
+        |WHERE none (n IN nodes(pathx) WHERE id(n) = id(kimDeal))
+        |RETURN extract(node in nodes(pathx) | id(node)) as ids
       """.stripMargin)
-    val results = result.columnAs("nodes").toList
-    println(results)
-    println(result.executionPlanDescription())
-    val ids = results(0).asInstanceOf[Seq[_]].map(n => n.asInstanceOf[Node].getId)
-    ids should be(List(0, 4, 3, 2))
+    val results = result.columnAs("ids").toList
+    results should be(List(List(0, 4, 3, 2)))
     result should use("VarLengthExpand(Into)", "AntiConditionalApply")
   }
 
   test("shortestPath with complex LHS should be planned with exhaustive fallback and include predicate") {
-    System.setProperty("pickBestPlan.VERBOSE","true")
     setupModel()
     val result = executeUsingCostPlannerOnly(
       """
-        |profile match (charles:Pixie { fname : 'Charles'}),(joey:Pixie { fname : 'Joey'}),(kim:Pixie { fname : 'Kim'})
-        |with kim as kimDeal, collect(charles) as charlesT, collect(joey) as joeyS
-        |unwind charlesT AS charlesThompson
-        |unwind joeyS AS joeySantiago
-        |match pathx = shortestPath((charlesThompson)-[*1..5]-(joeySantiago))
-        |where none (n IN nodes(pathx) where id(n) = id(kimDeal))
-        |unwind nodes(pathx) as nodes
-        |return nodes
+        |PROFILE MATCH (charles:Pixie { fname : 'Charles'}),(joey:Pixie { fname : 'Joey'}),(kim:Pixie { fname : 'Kim'})
+        |WITH kim AS kimDeal, collect(charles) AS charlesT, collect(joey) AS joeyS
+        |UNWIND charlesT AS charlesThompson
+        |UNWIND joeyS AS joeySantiago
+        |MATCH pathx = shortestPath((charlesThompson)-[*1..5]-(joeySantiago))
+        |WHERE none (n IN nodes(pathx) WHERE id(n) = id(kimDeal))
+        |RETURN extract(node in nodes(pathx) | id(node)) as ids
       """.stripMargin)
-    val results = result.columnAs("nodes").toList
-    println(results)
-    println(result.executionPlanDescription())
-    assertThat(results.length, equalTo(4))
+    val results = result.columnAs("ids").toList
+    results should be(List(List(0, 4, 3, 2)))
     result should use("VarLengthExpand(Into)", "AntiConditionalApply")
   }
 
@@ -79,14 +70,13 @@ class ShortestPathComplexQueryAcceptanceTest extends ExecutionEngineFunSuite wit
   private def setupModel(): Unit = {
     executeUsingCostPlannerOnly(
       """
-        |//dataset creation
-        |merge (p1:Pixie {fname:'Charles'})
-        |merge (p2:Pixie {fname:'Kim'})
-        |merge (p3:Pixie {fname:'Joey'})
-        |merge (p4:Pixie {fname:'David'})
-        |merge (p5:Pixie {fname:'Paz'})
-        |merge (p1)-[:KNOWS]->(p2)-[:KNOWS]->(p3)-[:KNOWS]->(p4)-[:KNOWS]->(p5)-[:KNOWS]->(p1)
-        |return p1,p2,p3,p4,p5
+        |MERGE (p1:Pixie {fname:'Charles'})
+        |MERGE (p2:Pixie {fname:'Kim'})
+        |MERGE (p3:Pixie {fname:'Joey'})
+        |MERGE (p4:Pixie {fname:'David'})
+        |MERGE (p5:Pixie {fname:'Paz'})
+        |MERGE (p1)-[:KNOWS]->(p2)-[:KNOWS]->(p3)-[:KNOWS]->(p4)-[:KNOWS]->(p5)-[:KNOWS]->(p1)
+        |RETURN p1,p2,p3,p4,p5
       """.stripMargin)
   }
 }
