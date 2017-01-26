@@ -20,18 +20,17 @@
 package org.neo4j.cypher.internal.spi.v2_3
 
 import org.neo4j.cypher.MissingIndexException
+import org.neo4j.cypher.internal.compiler.v2_3.IndexDescriptor
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.EntityProducer
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.ExpanderStep
 import org.neo4j.cypher.internal.compiler.v2_3.spi._
-import org.neo4j.cypher.internal.spi.IndexDescriptorCompatibility
 import org.neo4j.cypher.internal.spi.v3_2.TransactionalContextWrapper
 import org.neo4j.graphdb.Node
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.exceptions.KernelException
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException
-import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor
-import org.neo4j.kernel.api.schema.{IndexDescriptor => NewIndexDescriptor}
+import org.neo4j.kernel.api.index.InternalIndexState
+import org.neo4j.kernel.api.schema.{NodePropertyDescriptor, IndexDescriptor => KernelIndexDescriptor}
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore
 
 import scala.collection.JavaConverters._
@@ -67,7 +66,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper)
   private def evalOrNone[T](f: => Option[T]): Option[T] =
     try { f } catch { case _: SchemaKernelException => None }
 
-  private def getOnlineIndex(descriptor: NewIndexDescriptor): Option[IndexDescriptor] =
+  private def getOnlineIndex(descriptor: KernelIndexDescriptor): Option[IndexDescriptor] =
     tc.statement.readOperations().indexGetState(descriptor) match {
       case InternalIndexState.ONLINE => Some(descriptor)
       case _                         => None

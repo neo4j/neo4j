@@ -35,7 +35,6 @@ import org.neo4j.cypher.internal.compiler.v3_2.helpers.JavaConversionSupport
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.JavaConversionSupport._
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.compiler.v3_2.spi._
-import org.neo4j.cypher.internal.compiler.v3_2.{IndexDescriptor => CypherIndexDescriptor}
 import org.neo4j.cypher.internal.frontend.v3_2._
 import org.neo4j.cypher.internal.spi.BeansAPIRelationshipIterator
 import org.neo4j.cypher.internal.spi.v3_2.TransactionBoundQueryContext.IndexSearchMonitor
@@ -55,7 +54,7 @@ import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, Alre
 import org.neo4j.kernel.api.index.InternalIndexState
 import org.neo4j.kernel.api.proc.CallableUserAggregationFunction.Aggregator
 import org.neo4j.kernel.api.proc.{QualifiedName => KernelQualifiedName}
-import org.neo4j.kernel.api.schema.{IndexDescriptor, IndexDescriptorFactory, NodeMultiPropertyDescriptor, NodePropertyDescriptor, RelationshipPropertyDescriptor}
+import org.neo4j.kernel.api.schema.{IndexDescriptorFactory, NodeMultiPropertyDescriptor, NodePropertyDescriptor, RelationshipPropertyDescriptor}
 import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.kernel.impl.locking.ResourceTypes
 
@@ -63,7 +62,7 @@ import scala.collection.Iterator
 import scala.collection.JavaConverters._
 
 final class TransactionBoundQueryContext(val transactionalContext: TransactionalContextWrapper)(implicit indexSearchMonitor: IndexSearchMonitor)
-  extends TransactionBoundTokenContext(transactionalContext.statement) with QueryContext {
+  extends TransactionBoundTokenContext(transactionalContext.statement) with QueryContext with IndexDescriptorCompatibility {
 
   type EntityAccessor = NodeManager
 
@@ -138,12 +137,12 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     new BeansAPIRelationshipIterator(relationships, entityAccessor)
   }
 
-  override def indexSeek(index: CypherIndexDescriptor, value: Any) = {
+  override def indexSeek(index: IndexDescriptor, value: Any) = {
     indexSearchMonitor.indexSeek(index, value)
     JavaConversionSupport.mapToScalaENFXSafe(transactionalContext.statement.readOperations().nodesGetFromIndexSeek(index, value))(nodeOps.getById)
   }
 
-  override def indexSeekByRange(index: CypherIndexDescriptor, value: Any) = value match {
+  override def indexSeekByRange(index: IndexDescriptor, value: Any) = value match {
 
     case PrefixRange(prefix: String) =>
       indexSeekByPrefixRange(index, prefix)
@@ -262,36 +261,18 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     JavaConversionSupport.mapToScalaENFXSafe(matchingNodes)(nodeOps.getById)
   }
 
-  implicit private def toKernelIndexDescriptor(descriptor: CypherIndexDescriptor): IndexDescriptor =
-    IndexDescriptorFactory.of(toNodePropertyDescriptor(descriptor))
-
-  implicit private def toIndexDescriptor(descriptor: NodePropertyDescriptor): IndexDescriptor =
-    IndexDescriptorFactory.of(descriptor)
-
-  implicit private def toNodePropertyDescriptor(descriptor: CypherIndexDescriptor): NodePropertyDescriptor =
-    if (descriptor.isComposite)
-      new NodeMultiPropertyDescriptor(descriptor.label, descriptor.properties)
-    else
-      new NodePropertyDescriptor(descriptor.label, descriptor.property)
-
-  implicit private def kernelToCypher(descriptor: IndexDescriptor) =
-    if (descriptor.isComposite)
-      CypherIndexDescriptor(descriptor.getLabelId, descriptor.getPropertyKeyIds)
-    else
-      CypherIndexDescriptor(descriptor.getLabelId, descriptor.getPropertyKeyId)
-
-  override def indexScan(index: CypherIndexDescriptor) =
+  override def indexScan(index: IndexDescriptor) =
     mapToScalaENFXSafe(transactionalContext.statement.readOperations().nodesGetFromIndexScan(index))(nodeOps.getById)
 
-  override def indexScanByContains(index: CypherIndexDescriptor, value: String) =
+  override def indexScanByContains(index: IndexDescriptor, value: String) =
     mapToScalaENFXSafe(transactionalContext.statement.readOperations().nodesGetFromIndexContainsScan(index, value))(nodeOps.getById)
 
-  override def indexScanByEndsWith(index: CypherIndexDescriptor, value: String) =
+  override def indexScanByEndsWith(index: IndexDescriptor, value: String) =
     mapToScalaENFXSafe(transactionalContext.statement.readOperations().nodesGetFromIndexEndsWithScan(index, value))(nodeOps.getById)
 
-  override def lockingUniqueIndexSeek(index: CypherIndexDescriptor, value: Any): Option[Node] = {
+  override def lockingUniqueIndexSeek(index: IndexDescriptor, value: Any): Option[Node] = {
     indexSearchMonitor.lockingUniqueIndexSeek(index, value)
-    val nodeId = transactionalContext.statement.readOperations().nodeGetFromUniqueIndexSeek(toKernelIndexDescriptor(index), value)
+    val nodeId = transactionalContext.statement.readOperations().nodeGetFromUniqueIndexSeek(index, value)
     if (StatementConstants.NO_SUCH_NODE == nodeId) None else Some(nodeOps.getById(nodeId))
   }
 
@@ -481,7 +462,13 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     transactionalContext.statement.readOperations().schemaStateGetOrCreate(key, javaCreator)
   }
 
-  override def addIndexRule(descriptor: CypherIndexDescriptor): IdempotentResult[CypherIndexDescriptor] = {
+  implicit private def toNodePropertyDescriptor(descriptor: IndexDescriptor): NodePropertyDescriptor =
+    if (descriptor.isComposite)
+      new NodeMultiPropertyDescriptor(descriptor.label, descriptor.properties)
+    else
+      new NodePropertyDescriptor(descriptor.label, descriptor.property)
+
+  override def addIndexRule(descriptor: IndexDescriptor): IdempotentResult[IndexDescriptor] = {
     val index = toNodePropertyDescriptor(descriptor)
     try {
       IdempotentResult(transactionalContext.statement.schemaWriteOperations().indexCreate(index))
@@ -494,17 +481,17 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     }
   }
 
-  override def dropIndexRule(descriptor: CypherIndexDescriptor) =
+  override def dropIndexRule(descriptor: IndexDescriptor) =
     transactionalContext.statement.schemaWriteOperations().indexDrop(descriptor)
 
-  override def createUniqueConstraint(descriptor: CypherIndexDescriptor): IdempotentResult[UniquenessConstraint] = try {
+  override def createUniqueConstraint(descriptor: IndexDescriptor): IdempotentResult[UniquenessConstraint] = try {
     IdempotentResult(transactionalContext.statement.schemaWriteOperations().uniquePropertyConstraintCreate(descriptor))
   } catch {
     case existing: AlreadyConstrainedException =>
       IdempotentResult(existing.constraint().asInstanceOf[UniquenessConstraint], wasCreated = false)
   }
 
-  override def dropUniqueConstraint(descriptor: CypherIndexDescriptor) =
+  override def dropUniqueConstraint(descriptor: IndexDescriptor) =
     transactionalContext.statement.schemaWriteOperations().constraintDrop(new UniquenessConstraint(descriptor))
 
   override def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): IdempotentResult[NodePropertyExistenceConstraint] =
@@ -757,8 +744,8 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
 object TransactionBoundQueryContext {
   trait IndexSearchMonitor {
-    def indexSeek(index: CypherIndexDescriptor, value: Any): Unit
+    def indexSeek(index: IndexDescriptor, value: Any): Unit
 
-    def lockingUniqueIndexSeek(index: CypherIndexDescriptor, value: Any): Unit
+    def lockingUniqueIndexSeek(index: IndexDescriptor, value: Any): Unit
   }
 }

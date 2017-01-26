@@ -21,13 +21,13 @@ package org.neo4j.cypher.internal.compatibility.v3_1
 
 import java.net.URL
 
+import org.neo4j.cypher.internal.compiler.v3_1.IndexDescriptor
 import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.{Expander, KernelPredicate}
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.compiler.v3_1.spi._
 import org.neo4j.cypher.internal.frontend.v3_1.SemanticDirection
 import org.neo4j.cypher.internal.spi.v3_1.ExceptionTranslationSupport
 import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
-import org.neo4j.kernel.api.index.IndexDescriptor
 
 import scala.collection.Iterator
 
