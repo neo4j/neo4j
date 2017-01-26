@@ -73,7 +73,7 @@ public class StoreCopyClient
 
                         @Override
                         public void onFileStreamingComplete( CompletableFuture<Long> signal,
-                                StoreCopyFinishedResponse response ) throws IOException
+                                StoreCopyFinishedResponse response )
                         {
                             log.info( "Finished streaming %s", destination );
                             signal.complete( response.lastCommittedTxBeforeStoreCopy() );
