@@ -109,7 +109,7 @@ public class StoreMigration
         deps.satisfyDependencies( fs, config );
         deps.satisfyDependencies( legacyIndexProvider );
 
-        KernelContext kernelContext = new SimpleKernelContext( fs, storeDirectory, DatabaseInfo.UNKNOWN, deps );
+        KernelContext kernelContext = new SimpleKernelContext( storeDirectory, DatabaseInfo.UNKNOWN, deps );
         KernelExtensions kernelExtensions = life.add( new KernelExtensions(
                 kernelContext, GraphDatabaseDependencies.newDependencies().kernelExtensions(),
                 deps, ignore() ) );

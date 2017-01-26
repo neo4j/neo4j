@@ -20,6 +20,7 @@
 package org.neo4j.index.lucene;
 
 import org.neo4j.index.impl.lucene.legacy.LuceneIndexImplementation;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
@@ -36,6 +37,8 @@ public class LuceneKernelExtensionFactory extends KernelExtensionFactory<LuceneK
         IndexProviders getIndexProviders();
 
         IndexConfigStore getIndexStore();
+
+        FileSystemAbstraction fileSystem();
     }
 
     public LuceneKernelExtensionFactory()
@@ -50,7 +53,7 @@ public class LuceneKernelExtensionFactory extends KernelExtensionFactory<LuceneK
                 context.storeDir(),
                 dependencies.getConfig(),
                 dependencies::getIndexStore,
-                context.fileSystem(),
+                dependencies.fileSystem(),
                 dependencies.getIndexProviders() );
     }
 }

@@ -60,8 +60,7 @@ public class CsvOutputTest
     public void setup()
     {
         File storeDir = directory.directory();
-        kernelContext = new SimpleKernelContext( fileSystemRule.get(), storeDir,
-                DatabaseInfo.UNKNOWN, new Dependencies() );
+        kernelContext = new SimpleKernelContext( storeDir, DatabaseInfo.UNKNOWN, new Dependencies() );
     }
 
     @Test

@@ -158,8 +158,7 @@ public class BatchingNeoStores implements AutoCloseable
         dependencies.satisfyDependency( this );
         dependencies.satisfyDependency( logService );
         dependencies.satisfyDependency( IndexStoreView.EMPTY );
-        KernelContext kernelContext = new SimpleKernelContext( fileSystem, storeDir, DatabaseInfo.UNKNOWN,
-                dependencies );
+        KernelContext kernelContext = new SimpleKernelContext( storeDir, DatabaseInfo.UNKNOWN, dependencies );
         @SuppressWarnings( { "unchecked", "rawtypes" } )
         KernelExtensions extensions = life.add( new KernelExtensions(
                 kernelContext, (Iterable) Service.load( KernelExtensionFactory.class ),
