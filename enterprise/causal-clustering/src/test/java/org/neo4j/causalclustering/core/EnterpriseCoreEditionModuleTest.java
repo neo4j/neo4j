@@ -42,7 +42,6 @@ public class EnterpriseCoreEditionModuleTest
         assertTrue( filter.test( MetaDataStore.DEFAULT_NAME ) );
         assertTrue( filter.test( StoreFile.NODE_STORE.fileName( StoreFileType.STORE ) ) );
         assertFalse( filter.test( PhysicalLogFile.DEFAULT_NAME + ".1" ) );
-        assertFalse( filter.test( StoreUtil.BRANCH_SUBDIRECTORY ) );
         assertFalse( filter.test( StoreUtil.TEMP_COPY_DIRECTORY_NAME ) );
     }
 

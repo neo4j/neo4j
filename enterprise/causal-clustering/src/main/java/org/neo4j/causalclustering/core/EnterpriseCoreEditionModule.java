@@ -235,7 +235,6 @@ public class EnterpriseCoreEditionModule extends EditionModule
     {
         return Predicates.all(
                 fileName -> !fileName.startsWith( PhysicalLogFile.DEFAULT_NAME ),
-                filename -> !filename.startsWith( StoreUtil.BRANCH_SUBDIRECTORY ),
                 filename -> !filename.startsWith( StoreUtil.TEMP_COPY_DIRECTORY_NAME )
         );
     }
