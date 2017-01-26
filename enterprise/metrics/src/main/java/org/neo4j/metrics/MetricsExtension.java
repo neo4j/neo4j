@@ -34,36 +34,26 @@ import org.neo4j.metrics.source.Neo4jMetricsBuilder;
 public class MetricsExtension implements Lifecycle
 {
     private final LifeSupport life = new LifeSupport();
-    private final MetricsKernelExtensionFactory.Dependencies dependencies;
-    private final LogService logService;
-    private final Config configuration;
-    private final KernelContext kernelContext;
+    private Log logger;
+    private CompositeEventReporter reporter;
+    private boolean metricsBuilt;
 
-    public MetricsExtension( KernelContext kernelContext, MetricsKernelExtensionFactory.Dependencies dependencies )
+    MetricsExtension( KernelContext kernelContext, MetricsKernelExtensionFactory.Dependencies dependencies )
     {
-        this.kernelContext = kernelContext;
-        this.dependencies = dependencies;
-        this.logService = dependencies.logService();
-        this.configuration = dependencies.configuration();
+        LogService logService = dependencies.logService();
+        Config configuration = dependencies.configuration();
+        logger = logService.getUserLog( getClass() );
+
+        MetricRegistry registry = new MetricRegistry();
+        reporter = new EventReporterBuilder( configuration, registry, logger, kernelContext, life ).build();
+        metricsBuilt = new Neo4jMetricsBuilder( registry, reporter, configuration, logService, kernelContext,
+                                                dependencies, life ).build();
     }
 
     @Override
     public void init()
     {
-        Log logger = logService.getUserLog( getClass() );
         logger.info( "Initiating metrics..." );
-
-        // Setup metrics
-        final MetricRegistry registry = new MetricRegistry();
-
-        // Setup output
-        CompositeEventReporter reporter =
-                new EventReporterBuilder( configuration, registry, logger, kernelContext, life ).build();
-
-        // Setup metric gathering
-        boolean metricsBuilt = new Neo4jMetricsBuilder(
-                registry, reporter, configuration, logService, kernelContext, dependencies, life ).build();
-
         if ( metricsBuilt && reporter.isEmpty() )
         {
             logger.warn( "Several metrics were enabled but no exporting option was configured to report values to. " +
