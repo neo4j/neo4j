@@ -192,13 +192,13 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
     case CodeGenType(symbols.CTInteger, IntType) => typeRef[Long]
     case CodeGenType(symbols.CTFloat, FloatType) => typeRef[Double]
     case CodeGenType(symbols.CTBoolean, BoolType) => typeRef[Boolean]
-    //case CodeGenType(symbols.CTString, ReferenceType) => typeRef[String] // We do not care about non-primitive types
+    //case CodeGenType(symbols.CTString, ReferenceType) => typeRef[String] // We do not (yet) care about non-primitive types
     case CodeGenType(symbols.ListType(symbols.CTNode), ListReferenceType(IntType)) => typeRef[PrimitiveNodeStream]
     case CodeGenType(symbols.ListType(symbols.CTRelationship), ListReferenceType(IntType)) => typeRef[PrimitiveRelationshipStream]
     case CodeGenType(symbols.ListType(_), ListReferenceType(IntType)) => typeRef[LongStream]
     case CodeGenType(symbols.ListType(_), ListReferenceType(FloatType)) => typeRef[DoubleStream]
     case CodeGenType(symbols.ListType(_), ListReferenceType(BoolType)) => typeRef[IntStream]
-    case CodeGenType(symbols.ListType(_), _) => typeRef[java.lang.Iterable[Object]]
+    //case CodeGenType(symbols.ListType(_), _) => typeRef[java.lang.Iterable[Object]] // We do not (yet) have a shared base class for List types
     case _ => typeRef[Object]
   }
 

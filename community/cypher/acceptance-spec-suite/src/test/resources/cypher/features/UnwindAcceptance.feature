@@ -32,6 +32,7 @@ Feature: UnwindAcceptance
       WITH *
       UNWIND [42, 0.7, true, 's', n, r] as i
       RETURN i
+      ORDER BY "no order"
       """
     Then the result should be:
       | i                 |
@@ -55,6 +56,7 @@ Feature: UnwindAcceptance
       WITH *
       UNWIND [[42],[0.7],[true],[n],[r],[n,42],[r,42]] as i
       RETURN i
+      ORDER BY "no order"
       """
     Then the result should be:
       | i                      |
@@ -83,6 +85,7 @@ Feature: UnwindAcceptance
                {k: r, l: 's'}
              ] as i
       RETURN i
+      ORDER BY "no order"
       """
     Then the result should be:
       | i                 |
@@ -109,6 +112,7 @@ Feature: UnwindAcceptance
                [ {k: [n, r]} ]
              ] as i
       RETURN i
+      ORDER BY "no order"
       """
     Then the result should be:
       | i                        |
@@ -137,6 +141,7 @@ Feature: UnwindAcceptance
              ] as i
       WITH i as j
       RETURN j
+      ORDER BY "no order"
       """
     Then the result should be:
       | j                        |
@@ -161,6 +166,7 @@ Feature: UnwindAcceptance
       WITH *
       UNWIND [a, b, c] as i
       RETURN i
+      ORDER BY "no order"
       """
     Then the result should be:
       | i    |
@@ -182,6 +188,7 @@ Feature: UnwindAcceptance
       WITH *
       UNWIND [r, s] as i
       RETURN i
+      ORDER BY "no order"
       """
     Then the result should be:
       | i    |
