@@ -28,6 +28,7 @@ import java.util.Map;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.Result;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
@@ -108,27 +109,27 @@ public abstract class ConfiguredAuthScenariosInteractionTestBase<S> extends Proc
                 .beginTransaction( KernelTransaction.Type.explicit, StandardEnterpriseSecurityContext.AUTH_DISABLED );
         Result result =
                 localGraph.execute( transaction, "EXPLAIN CALL dbms.security.listUsers", Collections.emptyMap() );
-        assertThat(
-                containsNotification( result, "Native user management procedures will not affect non-native users." ),
-                equalTo( true ) );
+        String description = String.format( "%s (%s)", Status.Procedure.ProcedureWarning.code().description(),
+                "dbms.security.listUsers only affect native users." );
+        assertThat( containsNotification( result, description ), equalTo( true ) );
         transaction.success();
         transaction.close();
     }
 
     @Test
-    public void shouldNotWarnWhenUsingNativeAndOtherProvider() throws Throwable
+    public void shouldNotWarnWhenOnlyUsingNativeProvider() throws Throwable
     {
         configuredSetup( stringMap( SecuritySettings.auth_provider.name(), "native" ) );
-        assertSuccess( adminSubject, "CALL dbms.security.listUsers", r -> assertKeyIsMap( r, "username", "roles", userList ) );
-
+        assertSuccess( adminSubject, "CALL dbms.security.listUsers",
+                r -> assertKeyIsMap( r, "username", "roles", userList ) );
         GraphDatabaseFacade localGraph = neo.getLocalGraph();
         InternalTransaction transaction = localGraph
                 .beginTransaction( KernelTransaction.Type.explicit, StandardEnterpriseSecurityContext.AUTH_DISABLED );
         Result result =
                 localGraph.execute( transaction, "EXPLAIN CALL dbms.security.listUsers", Collections.emptyMap() );
-        assertThat(
-                containsNotification( result, "Native user management procedures will not affect non-native users." ),
-                equalTo( false ) );
+        String description = String.format( "%s (%s)", Status.Procedure.ProcedureWarning.code().description(),
+                "dbms.security.listUsers only affect native users." );
+        assertThat( containsNotification( result, description ), equalTo( false ) );
         transaction.success();
         transaction.close();
     }

@@ -103,8 +103,8 @@ public enum NotificationCode
     ),
     PROCEDURE_WARNING(
             SeverityLevel.WARNING,
-            Status.Security.NativeProcedureWarning,
-            "Native user management procedures will not affect non-native users."
+            Status.Procedure.ProcedureWarning,
+            "The query used a procedure that generate a warning."
     ),
     EAGER_LOAD_CSV(
         SeverityLevel.WARNING,

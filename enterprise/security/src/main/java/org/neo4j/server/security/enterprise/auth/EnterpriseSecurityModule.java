@@ -110,7 +110,7 @@ public class EnterpriseSecurityModule extends SecurityModule
                     ctx -> authManager.getUserManager( asEnterprise( ctx.get( SECURITY_CONTEXT ) ) ) );
             if ( config.get( SecuritySettings.auth_providers ).size() > 1 )
             {
-                procedures.registerProcedure( UserManagementProcedures.class, true, true );
+                procedures.registerProcedure( UserManagementProcedures.class, true, "%s only affect native users." );
             }
             else
             {

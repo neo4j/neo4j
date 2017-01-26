@@ -51,6 +51,11 @@ public interface NotificationDetail
             return createNotificationDetail( "the missing relationship type is", relType, true );
         }
 
+        public static NotificationDetail procedureWarning( final String procedure, final String warning )
+        {
+            return createProcedureWarningNotificationDetail( procedure, warning );
+        }
+
         public static NotificationDetail propertyName( final String name )
         {
             return createNotificationDetail( "the missing property name is", name, true );
@@ -159,6 +164,30 @@ public interface NotificationDetail
                     {
                         return String.format( "'%s' has been replaced by '%s'", oldName, newName );
                     }
+                }
+            };
+        }
+
+        private static NotificationDetail createProcedureWarningNotificationDetail( String procedure, String warning )
+        {
+            return new NotificationDetail()
+            {
+                @Override
+                public String name()
+                {
+                    return procedure;
+                }
+
+                @Override
+                public String value()
+                {
+                    return warning;
+                }
+
+                @Override
+                public String toString()
+                {
+                    return String.format( warning, procedure );
                 }
             };
         }

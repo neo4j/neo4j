@@ -75,8 +75,8 @@ object ProcedureWarnings extends VisitorPhase {
 
   private def findWarnings(statement: Statement): Set[InternalNotification] =
     statement.treeFold(Set.empty[InternalNotification]) {
-      case f@ResolvedCall(ProcedureSignature(name, _, _, _, _, _, true), _, _, _, _) =>
-        (seq) => (seq + ProcedureWarningNotification(f.position, name.toString), None)
+      case f@ResolvedCall(ProcedureSignature(name, _, _, _, _, _, Some(warning)), _, _, _, _) =>
+        (seq) => (seq + ProcedureWarningNotification(f.position, name.toString, warning), None)
       case _:UnresolvedCall =>
         throw new InternalException("Expected procedures to have been resolved already")
     }

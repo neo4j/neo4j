@@ -60,6 +60,6 @@ case class DeprecatedFunctionNotification(position: InputPosition, oldName: Stri
 
 case class DeprecatedProcedureNotification(position: InputPosition, oldName: String, newName: String) extends InternalNotification
 
-case class ProcedureWarningNotification(position: InputPosition, procedure: String) extends InternalNotification
+case class ProcedureWarningNotification(position: InputPosition, procedure: String, warning: String) extends InternalNotification
 
 case object DeprecatedPlannerNotification extends InternalNotification
