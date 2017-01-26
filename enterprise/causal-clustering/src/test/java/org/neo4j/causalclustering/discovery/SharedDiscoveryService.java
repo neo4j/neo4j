@@ -106,8 +106,7 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
         lock.lock();
         try
         {
-            return new ReadReplicaTopology( unmodifiableSet( readReplicaAddresses )
-            );
+            return new ReadReplicaTopology( unmodifiableSet( readReplicaAddresses ) );
         }
         finally
         {
