@@ -38,8 +38,6 @@ trait PlanContext extends TokenContext with ProcedureSignatureResolver {
 
   def getUniqueIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor]
 
-  def getUniquenessConstraint(labelName: String, propertyKey: String): Option[UniquenessConstraint]
-
   def hasPropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean
 
   def checkNodeIndex(idxName: String)

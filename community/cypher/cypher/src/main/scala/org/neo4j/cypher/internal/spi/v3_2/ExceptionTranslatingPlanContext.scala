@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.spi.v3_2
 
 import org.neo4j.cypher.internal.compiler.v3_2.spi._
-import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.cypher.internal.compiler.v3_2.IndexDescriptor
 import org.neo4j.cypher.internal.frontend.v3_2.phases.InternalNotificationLogger
 
@@ -51,9 +50,6 @@ class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext wi
 
   override def hasIndexRule(labelName: String): Boolean =
     translateException(inner.hasIndexRule(labelName))
-
-  override def getUniquenessConstraint(labelName: String, propertyKey: String): Option[UniquenessConstraint] =
-    translateException(inner.getUniquenessConstraint(labelName, propertyKey))
 
   override def hasPropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean =
     translateException(inner.hasPropertyExistenceConstraint(labelName, propertyKey))
