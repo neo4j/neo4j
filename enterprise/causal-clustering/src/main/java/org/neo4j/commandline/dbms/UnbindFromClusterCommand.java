@@ -19,15 +19,17 @@
  */
 package org.neo4j.commandline.dbms;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import org.neo4j.causalclustering.core.state.ClusterStateDirectory;
+import org.neo4j.causalclustering.core.state.ClusterStateException;
 import org.neo4j.commandline.admin.AdminCommand;
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
@@ -41,16 +43,13 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.server.configuration.ConfigLoader;
 
-import static java.lang.String.format;
-import static java.nio.file.Files.exists;
-import static org.neo4j.causalclustering.core.EnterpriseCoreEditionModule.CLUSTER_STATE_DIRECTORY_NAME;
-
 public class UnbindFromClusterCommand implements AdminCommand
 {
     private static final Arguments arguments = new Arguments().withDatabase();
     private Path homeDir;
     private Path configDir;
     private OutsideWorld outsideWorld;
+
     UnbindFromClusterCommand( Path homeDir, Path configDir, OutsideWorld outsideWorld )
     {
         this.homeDir = homeDir;
@@ -79,20 +78,17 @@ public class UnbindFromClusterCommand implements AdminCommand
         try
         {
             Config config = loadNeo4jConfig( homeDir, configDir, arguments.parse( "database", args ) );
+            File dataDirectory = config.get( DatabaseManagementSystemSettings.data_directory );
             Path pathToSpecificDatabase = config.get( DatabaseManagementSystemSettings.database_path ).toPath();
 
             Validators.CONTAINS_EXISTING_DATABASE.validate( pathToSpecificDatabase.toFile() );
 
-            if ( exists( Paths.get( pathToSpecificDatabase.toString(), "cluster-state" ) ) )
-            {
-                confirmTargetDirectoryIsWritable( pathToSpecificDatabase );
-                deleteClusterStateIn( clusterStateFrom( pathToSpecificDatabase ) );
-            }
-            else
-            {
-                outsideWorld.stdErrLine(
-                        format( "No cluster state found in %s. No work perfomed.", pathToSpecificDatabase ) );
-            }
+            confirmTargetDirectoryIsWritable( pathToSpecificDatabase );
+
+            ClusterStateDirectory clusterStateDirectory = new ClusterStateDirectory( dataDirectory );
+            clusterStateDirectory.initialize( outsideWorld.fileSystem() );
+
+            deleteClusterStateIn( clusterStateDirectory.get().toPath() );
         }
         catch ( StoreLockException e )
         {
@@ -106,17 +102,16 @@ public class UnbindFromClusterCommand implements AdminCommand
         {
             throw new CommandFailed( "Unbind failed: " + e.getMessage(), e );
         }
+        catch ( ClusterStateException e )
+        {
+            throw new CommandFailed( e );
+        }
     }
 
     private void confirmTargetDirectoryIsWritable( Path pathToSpecificDatabase )
             throws CommandFailed, CannotWriteException, IOException
     {
         new StoreLockChecker().withLock( pathToSpecificDatabase ).close();
-    }
-
-    private Path clusterStateFrom( Path target )
-    {
-        return Paths.get( target.toString(), CLUSTER_STATE_DIRECTORY_NAME );
     }
 
     private void deleteClusterStateIn( Path target ) throws UnbindFailureException
@@ -147,14 +142,14 @@ public class UnbindFromClusterCommand implements AdminCommand
         @Override
         public String summary()
         {
-            return "Removes cluster state data from the specified database.";
+            return "Removes cluster state data for the specified database.";
         }
 
         @Override
         public String description()
         {
-            return "Removes cluster state data from the specified database making it suitable for use in single " +
-                            "instance database, or for seeding a new cluster.";
+            return "Removes cluster state data for the specified database, so that the " +
+                   "instance can rebind to a new or recovered cluster.";
         }
 
         @Override
@@ -169,11 +164,6 @@ public class UnbindFromClusterCommand implements AdminCommand
         UnbindFailureException( Exception e )
         {
             super( e );
-        }
-
-        UnbindFailureException( String message, Object... args )
-        {
-            super( format( message, args ) );
         }
     }
 }

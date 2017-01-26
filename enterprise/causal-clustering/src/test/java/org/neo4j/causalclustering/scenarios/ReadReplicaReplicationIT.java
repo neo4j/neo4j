@@ -87,8 +87,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.causalclustering.core.EnterpriseCoreEditionModule.CLUSTER_STATE_DIRECTORY_NAME;
-import static org.neo4j.causalclustering.core.consensus.log.RaftLog.PHYSICAL_LOG_DIRECTORY_NAME;
+import static org.neo4j.causalclustering.core.consensus.log.RaftLog.RAFT_LOG_DIRECTORY_NAME;
 import static org.neo4j.com.storecopy.StoreUtil.TEMP_COPY_DIRECTORY_NAME;
 import static org.neo4j.function.Predicates.awaitEx;
 import static org.neo4j.helpers.collection.Iterables.count;
@@ -483,7 +482,7 @@ public class ReadReplicaReplicationIT
             tx.success();
         } );
 
-        long baseVersion = versionBy( cluster.awaitLeader().storeDir(), Math::max );
+        long baseVersion = versionBy( cluster.awaitLeader().raftLogDirectory(), Math::max );
 
         CoreClusterMember coreGraphDatabase = null;
         for ( int j = 0; j < 2; j++ )
@@ -499,8 +498,8 @@ public class ReadReplicaReplicationIT
             } );
         }
 
-        File storeDir = coreGraphDatabase.storeDir();
-        assertEventually( "pruning happened", () -> versionBy( storeDir, Math::min ), greaterThan( baseVersion ), 5,
+        File raftLogDir = coreGraphDatabase.raftLogDirectory();
+        assertEventually( "pruning happened", () -> versionBy( raftLogDir, Math::min ), greaterThan( baseVersion ), 5,
                 SECONDS );
 
         // when
@@ -514,9 +513,8 @@ public class ReadReplicaReplicationIT
         }
     }
 
-    private long versionBy( File storeDir, BinaryOperator<Long> operator )
+    private long versionBy( File raftLogDir, BinaryOperator<Long> operator )
     {
-        File raftLogDir = new File( new File( storeDir, CLUSTER_STATE_DIRECTORY_NAME ), PHYSICAL_LOG_DIRECTORY_NAME );
         SortedMap<Long,File> logs =
                 new FileNames( raftLogDir ).getAllFiles( new DefaultFileSystemAbstraction(), mock( Log.class ) );
         return logs.keySet().stream().reduce( operator ).orElseThrow( IllegalStateException::new );

@@ -72,6 +72,7 @@ public class CoreToCoreCopySnapshotIT
         // shutdown the follower, remove the store, restart
         follower.shutdown();
         FileUtils.deleteRecursively( follower.storeDir() );
+        FileUtils.deleteRecursively( follower.clusterStateDirectory() );
         follower.start();
 
         // then

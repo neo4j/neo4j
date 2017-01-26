@@ -45,6 +45,7 @@ public class ReadReplica implements ClusterMember
 {
     private final Map<String, String> config = stringMap();
     private final DiscoveryServiceFactory discoveryServiceFactory;
+    private final File neo4jHome;
     private final File storeDir;
     private final int memberId;
     private final String boltAdvertisedAddress;
@@ -93,7 +94,8 @@ public class ReadReplica implements ClusterMember
         config.put( new ClientConnectorSettings.HttpConnector( "http", Encryption.NONE ).listen_address.name(), "127.0.0.1:" + httpPort );
         config.put( new ClientConnectorSettings.HttpConnector( "http", Encryption.NONE ).advertised_address.name(), "127.0.0.1:" + httpPort );
 
-        File neo4jHome = new File( parentDir, "read-replica-" + memberId );
+        this.neo4jHome = new File( parentDir, "read-replica-" + memberId );
+        config.put( GraphDatabaseSettings.neo4j_home.name(), neo4jHome.getAbsolutePath() );
         config.put( GraphDatabaseSettings.logs_directory.name(), new File( neo4jHome, "logs" ).getAbsolutePath() );
 
         this.discoveryServiceFactory = discoveryServiceFactory;
@@ -163,4 +165,8 @@ public class ReadReplica implements ClusterMember
         return String.format( "bolt://%s", boltAdvertisedAddress );
     }
 
+    public File homeDir()
+    {
+        return neo4jHome;
+    }
 }

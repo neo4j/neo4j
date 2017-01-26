@@ -28,11 +28,9 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
-import org.neo4j.causalclustering.core.EnterpriseCoreEditionModule;
 import org.neo4j.test.causalclustering.ClusterRule;
 
 import static org.hamcrest.Matchers.equalTo;
-import static org.neo4j.causalclustering.core.consensus.log.RaftLog.PHYSICAL_LOG_DIRECTORY_NAME;
 import static org.neo4j.causalclustering.scenarios.SampleData.createData;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.raft_log_pruning_strategy;
 import static org.neo4j.test.assertion.Assert.assertEventually;
@@ -64,9 +62,9 @@ public class CorePruningIT
         }
 
         // when pruning kicks in then some files are actually deleted
-        File storeDir = coreGraphDatabase.storeDir();
+        File raftLogDir = coreGraphDatabase.raftLogDirectory();
         int expectedNumberOfLogFilesAfterPruning = 2;
-        assertEventually( "raft logs eventually pruned", () -> numberOfFiles( storeDir ),
+        assertEventually( "raft logs eventually pruned", () -> numberOfFiles( raftLogDir ),
                 equalTo( expectedNumberOfLogFilesAfterPruning ), 5, TimeUnit.SECONDS );
     }
 
@@ -80,22 +78,18 @@ public class CorePruningIT
         int txs = 1000;
         for ( int i = 0; i < txs; i++ )
         {
-            coreGraphDatabase = cluster.coreTx( ( db, tx ) -> {
-                createData( db, 1 );
-            } );
+            coreGraphDatabase = cluster.coreTx( ( db, tx ) -> createData( db, 1 ) );
         }
 
         // when pruning kicks in then some files are actually deleted
-        File storeDir = coreGraphDatabase.storeDir();
         int expectedNumberOfLogFilesAfterPruning = 2;
-        assertEventually( "raft logs eventually pruned", () -> numberOfFiles( storeDir ),
+        File raftLogDir = coreGraphDatabase.raftLogDirectory();
+        assertEventually( "raft logs eventually pruned", () -> numberOfFiles( raftLogDir ),
                 equalTo( expectedNumberOfLogFilesAfterPruning ), 5, TimeUnit.SECONDS );
     }
 
-    private int numberOfFiles( File storeDir ) throws RuntimeException
+    private int numberOfFiles( File raftLogDir ) throws RuntimeException
     {
-        File clusterDir = new File( storeDir, EnterpriseCoreEditionModule.CLUSTER_STATE_DIRECTORY_NAME );
-        File raftLogDir = new File( clusterDir, PHYSICAL_LOG_DIRECTORY_NAME );
         return raftLogDir.list().length;
     }
 }

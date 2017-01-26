@@ -43,7 +43,6 @@ import org.neo4j.test.causalclustering.ClusterRule;
 import org.neo4j.test.rule.PageCacheRule;
 
 import static java.util.Collections.singletonList;
-import static org.neo4j.causalclustering.core.EnterpriseCoreEditionModule.CLUSTER_STATE_DIRECTORY_NAME;
 import static org.neo4j.causalclustering.discovery.Cluster.dataMatchesEventually;
 import static org.neo4j.causalclustering.helpers.DataCreator.createNodes;
 
@@ -110,7 +109,7 @@ public class TransactionLogRecoveryIT
 
         // and deleting the cluster state, making sure a snapshot is required during startup
         // effectively a seeding scenario -- representing the use of the unbind command on a crashed store
-        fs.deleteRecursively( new File( core.storeDir(), CLUSTER_STATE_DIRECTORY_NAME ) );
+        fs.deleteRecursively( core.clusterStateDirectory() );
 
         // then: we should still be able to start
         core.start();
