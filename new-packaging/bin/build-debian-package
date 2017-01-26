@@ -39,8 +39,8 @@ cp -r ${skeleton_directory}/* ${package_directory}
 
 # Rename service files to match package-name so we still get a service called neo4j
 cp src/common/neo4j.service ${package_directory}/debian/${package_name}.neo4j.service
-mv ${package_directory}/debian/neo4j.default ${package_directory}/debian/${package_name}.neo4j.default
-mv ${package_directory}/debian/neo4j.init ${package_directory}/debian/${package_name}.neo4j.init
+cp src/common/neo4j.default ${package_directory}/debian/${package_name}.neo4j.default
+cp src/common/neo4j.init ${package_directory}/debian/${package_name}.neo4j.init
 
 # Rename rules input files to match package
 for file in $(cd ${package_directory}/debian && ls package.*)

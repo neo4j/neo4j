@@ -62,8 +62,10 @@ spec_directory=src/rpm
 mkdir -p ${sources_directory}/server
 tar --strip-components=1 -xf ${tarball} -C ${sources_directory}/server
 
-# copy service file
+# copy service files
 cp ${common_directory}/neo4j.service ${sources_directory}/
+cp ${common_directory}/neo4j.init ${sources_directory}/
+cp ${common_directory}/neo4j.default ${sources_directory}/
 
 DISTRIBUTION=${distribution} DATE=`date -R` PACKAGE_NAME=${package_name} VERSION=${rpm_version} RELEASE=${rpm_release} LICENSE=${license} envsubst '${DATE} ${DISTRIBUTION} ${PACKAGE_NAME} ${VERSION} ${RELEASE} ${LICENSE}' < ${spec_directory}/neo4j.spec > ${package_directory}/SPECS/neo4j.spec
 
@@ -82,6 +84,7 @@ then
 fi
 
 # Copy manpages
+rm -rf ${sources_directory}/manpages
 cp -r ${common_directory}/manpages ${sources_directory}
 gzip ${sources_directory}/manpages/*
 

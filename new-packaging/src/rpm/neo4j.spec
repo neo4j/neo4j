@@ -9,11 +9,7 @@ URL: http://neo4j.org/
 #Source: https://github.com/neo4j/neo4j/archive/%{version}.tar.gz
 
 Requires: java-1.8.0-headless, javapackages-tools
-Requires(post): systemd
-Requires(preun): systemd
-Requires(postun): systemd
 
-#BuildRequires: systemd
 BuildArch:      noarch
 
 %define neo4jhome %{_localstatedir}/lib/neo4j
@@ -45,10 +41,20 @@ fi
 if [ $1 -gt 1 ]; then
   # Upgrading
   # Remember if neo4j is running
-  if systemctl is-active --quiet neo4j > /dev/null 2>&1 ; then
-    mkdir -p %{_localstatedir}/lib/rpm-state/neo4j
-    touch %{_localstatedir}/lib/rpm-state/neo4j/running
-    systemctl stop neo4j > /dev/null 2>&1 || :
+  if [ -e "/run/systemd/system" ]; then
+    # SystemD is the init-system
+    if systemctl is-active --quiet neo4j > /dev/null 2>&1 ; then
+      mkdir -p %{_localstatedir}/lib/rpm-state/neo4j
+      touch %{_localstatedir}/lib/rpm-state/neo4j/running
+      systemctl stop neo4j > /dev/null 2>&1 || :
+    fi
+  else
+    # SysVInit must be the init-system
+    if service neo4j status > /dev/null 2>&1 ; then
+      mkdir -p %{_localstatedir}/lib/rpm-state/neo4j
+      touch %{_localstatedir}/lib/rpm-state/neo4j/running
+      service neo4j stop > /dev/null 2>&1 || :
+    fi
   fi
 fi
 
@@ -60,8 +66,13 @@ fi
 
 if [ $1 -eq 0 ]; then
   # Uninstalling
-  systemctl disable --quiet neo4j > /dev/null 2>&1 || :
-  systemctl stop neo4j > /dev/null 2>&1 || :
+  if [ -e "/run/systemd/system" ]; then
+    systemctl stop neo4j > /dev/null 2>&1 || :
+    systemctl disable --quiet neo4j > /dev/null 2>&1 || :
+  else
+    service neo4j stop > /dev/null 2>&1 || :
+    chkconfig --del neo4j > /dev/null 2>&1 || :
+  fi
 fi
 
 
@@ -72,8 +83,12 @@ fi
 # Restore neo4j if it was running before upgrade
 if [ -e %{_localstatedir}/lib/rpm-state/neo4j/running ]; then
   rm %{_localstatedir}/lib/rpm-state/neo4j/running
-  systemctl daemon-reload > /dev/null 2>&1 || :
-  systemctl start neo4j  > /dev/null 2>&1 || :
+  if [ -e "/run/systemd/system" ]; then
+    systemctl daemon-reload > /dev/null 2>&1 || :
+    systemctl start neo4j  > /dev/null 2>&1 || :
+  else
+    service neo4j start > /dev/null 2>&1 || :
+  fi
 fi
 
 
@@ -87,12 +102,17 @@ mkdir -p %{buildroot}/%{neo4jhome}/data/databases
 mkdir -p %{buildroot}/%{neo4jhome}/import
 mkdir -p %{buildroot}/%{_sysconfdir}/neo4j
 mkdir -p %{buildroot}/%{_localstatedir}/log/neo4j
+mkdir -p %{buildroot}/%{_localstatedir}/run/neo4j
 mkdir -p %{buildroot}/lib/systemd/system
 mkdir -p %{buildroot}/%{_mandir}/man1
+mkdir -p %{buildroot}/%{_sysconfdir}/default
+mkdir -p %{buildroot}/%{_sysconfdir}/init.d
 
 cd %{name}-%{version}
 
 install neo4j.service %{buildroot}/lib/systemd/system/neo4j.service
+install -m 0644 neo4j.default %{buildroot}/%{_sysconfdir}/default/neo4j
+install -m 0755 neo4j.init %{buildroot}/%{_sysconfdir}/init.d/neo4j
 
 install -m 0644 server/conf/* %{buildroot}/%{_sysconfdir}/neo4j
 
@@ -115,13 +135,16 @@ install -m 0644 manpages/* %{buildroot}/%{_mandir}/man1
 %dir %{neo4jhome}/plugins
 %dir %{neo4jhome}/import
 %dir %{neo4jhome}/data/databases
+%attr(-,neo4j,root) %dir %{_localstatedir}/run/neo4j
 
 %{_datadir}/neo4j
 %{_bindir}/*
 %attr(-,neo4j,root) %{neo4jhome}
 %attr(-,neo4j,root) %dir %{_localstatedir}/log/neo4j
 /lib/systemd/system/neo4j.service
+%{_sysconfdir}/init.d/neo4j
 
+%config(noreplace) %{_sysconfdir}/default/neo4j
 %attr(-,neo4j,root) %config(noreplace) %{_sysconfdir}/neo4j
 
 %doc %{_mandir}/man1/*
