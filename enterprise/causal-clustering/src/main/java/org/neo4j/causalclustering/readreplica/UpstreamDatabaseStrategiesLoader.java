@@ -36,7 +36,7 @@ public class UpstreamDatabaseStrategiesLoader implements Iterable<UpstreamDataba
     private final ReadReplicaTopologyService readReplicaTopologyService;
     private final Config config;
 
-    public UpstreamDatabaseStrategiesLoader( ReadReplicaTopologyService readReplicaTopologyService, Config config )
+    UpstreamDatabaseStrategiesLoader( ReadReplicaTopologyService readReplicaTopologyService, Config config )
     {
         this.readReplicaTopologyService = readReplicaTopologyService;
         this.config = config;
@@ -50,22 +50,14 @@ public class UpstreamDatabaseStrategiesLoader implements Iterable<UpstreamDataba
 
         LinkedHashSet<UpstreamDatabaseSelectionStrategy> candidates = new LinkedHashSet<>();
 
-        System.out.println("Registered strategies --> ");
-        for ( UpstreamDatabaseSelectionStrategy upstreamDatabaseSelectionStrategy : allImplementationsOnClasspath )
-        {
-            System.out.println(upstreamDatabaseSelectionStrategy.getClass());
-        }
-
         for ( String key : config.get( CausalClusteringSettings.upstream_selection_strategy ) )
         {
-            System.out.println( "Looking for key --> " + key );
             for ( UpstreamDatabaseSelectionStrategy candidate : allImplementationsOnClasspath )
             {
                 if ( candidate.getKeys().iterator().next().equals( key ) )
                 {
                     candidate.setDiscoveryService( readReplicaTopologyService );
                     candidates.add( candidate );
-                    System.out.println( "Added strategy --> " + candidate.getClass() );
                 }
             }
         }

@@ -137,8 +137,6 @@ public class ReadReplicaToReadReplicaCatchupIT
 
         secondReadReplica.start();
 
-        System.out.println( "HERE" );
-
         // then
 
         for ( final ReadReplica server : cluster.readReplicas() )
@@ -180,7 +178,7 @@ public class ReadReplicaToReadReplicaCatchupIT
     public static class SpecificReplicaStrategy extends UpstreamDatabaseSelectionStrategy
     {
         // This because we need a stable point for config to inject into Service loader loaded classes
-        public static final UpstreamFactory upstreamFactory = new UpstreamFactory();
+        static final UpstreamFactory upstreamFactory = new UpstreamFactory();
 
         private ReadReplica upstream;
 
@@ -193,9 +191,7 @@ public class ReadReplicaToReadReplicaCatchupIT
         @Override
         public Optional<MemberId> upstreamDatabase() throws UpstreamDatabaseSelectionException
         {
-            Optional<MemberId> memberId = upstream.memberId();
-            System.out.println( "best upstream memberID --> " + memberId.get() );
-            return memberId;
+            return upstream.memberId();
         }
     }
 

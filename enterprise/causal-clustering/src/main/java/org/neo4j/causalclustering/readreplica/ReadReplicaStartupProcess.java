@@ -127,8 +127,6 @@ class ReadReplicaStartupProcess implements Lifecycle
             }
         }
 
-        System.out.println("--> Got out of this loop");
-
         if ( !syncedWithUpstream )
         {
             userLog.error( lastIssue );

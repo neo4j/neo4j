@@ -117,7 +117,6 @@ public class ReadReplica implements ClusterMember
 
     public void start()
     {
-        System.out.println( config );
         database = new ReadReplicaGraphDatabase( storeDir, Config.embeddedDefaults( config ),
                 GraphDatabaseDependencies.newDependencies().monitors( monitors ), discoveryServiceFactory, memberId().get() );
     }

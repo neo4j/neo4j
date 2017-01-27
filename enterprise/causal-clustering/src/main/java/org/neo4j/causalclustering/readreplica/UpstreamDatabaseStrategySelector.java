@@ -25,7 +25,6 @@ import java.util.NoSuchElementException;
 
 import org.neo4j.causalclustering.identity.MemberId;
 
-import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.Iterables.empty;
 
 public class UpstreamDatabaseStrategySelector
@@ -42,7 +41,6 @@ public class UpstreamDatabaseStrategySelector
             Iterable<UpstreamDatabaseSelectionStrategy> otherStrategies, MemberId myself )
     {
         this.myself = myself;
-        System.out.println( "No of additional strategies --> " + count( otherStrategies ) );
         if ( otherStrategies != null )
         {
             for ( UpstreamDatabaseSelectionStrategy otherStrategy : otherStrategies )
@@ -51,24 +49,16 @@ public class UpstreamDatabaseStrategySelector
             }
         }
         strategies.add( defaultStrategy );
-
-        System.out.println( "Loaded strategies --> " );
-        for ( UpstreamDatabaseSelectionStrategy strategy : strategies )
-        {
-            System.out.println( strategy.getClass() );
-        }
     }
 
     public MemberId bestUpstreamDatabase() throws UpstreamDatabaseSelectionException
     {
         MemberId result = null;
-        System.out.println("--------------------------------------------------------------------------------");
         for ( UpstreamDatabaseSelectionStrategy strategy : this.strategies )
         {
             try
             {
-                System.out.println( "Trying " + myself + " --> " + strategy.getClass() );
-                if(strategy.upstreamDatabase().isPresent())
+                if ( strategy.upstreamDatabase().isPresent() )
                 {
                     result = strategy.upstreamDatabase().get();
                 }
@@ -79,7 +69,6 @@ public class UpstreamDatabaseStrategySelector
                 // Do nothing, this strategy failed
             }
         }
-        System.out.println("--------------------------------------------------------------------------------");
 
         if ( result == null )
         {
