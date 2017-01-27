@@ -22,11 +22,11 @@ package org.neo4j.cypher.internal.compiler.v3_2.planner.logical
 import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
 import org.neo4j.cypher.internal.compiler.v3_2.phases.{CompilationState, Condition, Context, Phase}
-import org.neo4j.cypher.internal.compiler.v3_2.planner.{AggregatingQueryProjection, QueryGraph, RegularPlannerQuery, _}
+import org.neo4j.cypher.internal.compiler.v3_2.planner.{QueryGraph, RegularPlannerQuery, _}
 import org.neo4j.cypher.internal.frontend.v3_2.Rewritable._
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{Expression, FunctionInvocation, _}
 import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, Rewriter, topDown}
-import org.neo4j.cypher.internal.ir.v3_2.{IdName, PatternRelationship}
+import org.neo4j.cypher.internal.ir.v3_2.{AggregatingQueryProjection, IdName, PatternRelationship}
 
 import scala.annotation.tailrec
 import scala.collection.mutable.ListBuffer

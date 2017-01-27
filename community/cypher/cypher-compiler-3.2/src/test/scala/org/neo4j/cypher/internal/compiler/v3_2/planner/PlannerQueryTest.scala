@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.planner
 
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{AstConstructionTestSupport, SortItem, UnsignedDecimalIntegerLiteral}
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_2.{IdName, LazyMode, QueryShuffle}
+import org.neo4j.cypher.internal.ir.v3_2.{IdName, LazyMode, QueryProjection, QueryShuffle}
 
 class PlannerQueryTest extends CypherFunSuite with AstConstructionTestSupport {
   test("pair map") {
