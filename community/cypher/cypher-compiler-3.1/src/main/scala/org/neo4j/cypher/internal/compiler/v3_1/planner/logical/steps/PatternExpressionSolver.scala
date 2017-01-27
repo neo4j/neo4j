@@ -229,11 +229,9 @@ case class ListSubQueryExpressionSolver[T <: Expression](
     val (namedExpr, namedMap) = namer(expr)
 
     val qg = extractQG(source, namedExpr)
-
-    val argLeafPlan = Some(context.logicalPlanProducer.planQueryArgumentRow(qg))
     val innerContext = createPlannerContext(context, namedMap)
 
-    val innerPlan = innerContext.strategy.plan(qg)(innerContext, argLeafPlan)
+    val innerPlan = innerContext.strategy.plan(qg)(innerContext)
     val collectionName = FreshIdNameGenerator.name(expr.position)
     val projectedPath = projectionCreator(namedExpr)
     val projectedInner = context.logicalPlanProducer.planRegularProjection(innerPlan, Map(collectionName -> projectedPath), Map.empty)(innerContext)

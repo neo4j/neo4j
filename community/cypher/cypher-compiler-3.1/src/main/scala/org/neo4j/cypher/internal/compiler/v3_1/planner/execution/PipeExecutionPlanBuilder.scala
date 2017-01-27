@@ -25,9 +25,8 @@ import org.neo4j.cypher.internal.compiler.v3_1.ast.ResolvedCall
 import org.neo4j.cypher.internal.compiler.v3_1.ast.convert.commands.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v3_1.ast.convert.commands.PatternConverters._
 import org.neo4j.cypher.internal.compiler.v3_1.ast.convert.commands.StatementConverters
-import org.neo4j.cypher.internal.compiler.v3_1.ast.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.compiler.v3_1.commands.EntityProducerFactory
-import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.{AggregationExpression, Expression => CommandExpression, Literal}
+import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.{AggregationExpression, Literal, Expression => CommandExpression}
 import org.neo4j.cypher.internal.compiler.v3_1.commands.predicates.{True, _}
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.builders.prepare.KeyTokenResolver
@@ -36,7 +35,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.{Limit => L
 import org.neo4j.cypher.internal.compiler.v3_1.planner.{CantHandleQueryException, PeriodicCommit, logical}
 import org.neo4j.cypher.internal.compiler.v3_1.spi.{InstrumentedGraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.compiler.v3_1.symbols.SymbolTable
-import org.neo4j.cypher.internal.compiler.v3_1.{ExecutionContext, Monitors, ast => compilerAst, pipes}
+import org.neo4j.cypher.internal.compiler.v3_1.{ExecutionContext, Monitors, pipes, ast => compilerAst}
 import org.neo4j.cypher.internal.frontend.v3_1._
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.frontend.v3_1.helpers.Eagerly
@@ -393,6 +392,9 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
 
     case RepeatableRead(_) =>
       RepeatableReadPipe(source)()
+
+    case LockNodes(_, nodesToLock) =>
+      LockNodesPipe(source, nodesToLock.map(_.name))()
 
     case x =>
       throw new CantHandleQueryException(x.toString)

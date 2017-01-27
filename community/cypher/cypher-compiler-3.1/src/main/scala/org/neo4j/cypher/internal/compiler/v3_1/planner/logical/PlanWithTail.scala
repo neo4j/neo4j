@@ -27,7 +27,7 @@ This class ties together disparate query graphs through their event horizons. It
 which in most cases is then rewritten away by LogicalPlan rewriting.
 */
 case class PlanWithTail(planEventHorizon: LogicalPlanningFunction2[PlannerQuery, LogicalPlan, LogicalPlan] = PlanEventHorizon,
-                        planPart: (PlannerQuery, LogicalPlanningContext, Option[LogicalPlan]) => LogicalPlan = planPart,
+                        planPart: (PlannerQuery, LogicalPlanningContext) => LogicalPlan = planPart,
                         planUpdates: LogicalPlanningFunction3[PlannerQuery, LogicalPlan, Boolean, LogicalPlan] = PlanUpdates)
   extends LogicalPlanningFunction2[LogicalPlan, Option[PlannerQuery], LogicalPlan] {
 
@@ -35,8 +35,7 @@ case class PlanWithTail(planEventHorizon: LogicalPlanningFunction2[PlannerQuery,
     remaining match {
       case Some(plannerQuery) =>
         val lhsContext = context.recurse(lhs)
-        val row = context.logicalPlanProducer.planArgumentRowFrom(lhs)
-        val partPlan = planPart(plannerQuery, lhsContext, Some(row))
+        val partPlan = planPart(plannerQuery, lhsContext)
         val firstPlannerQuery = false
         val planWithUpdates = planUpdates(plannerQuery, partPlan, firstPlannerQuery)(context)
 

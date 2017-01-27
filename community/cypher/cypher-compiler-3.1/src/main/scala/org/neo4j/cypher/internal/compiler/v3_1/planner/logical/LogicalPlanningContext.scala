@@ -36,7 +36,8 @@ case class LogicalPlanningContext(planContext: PlanContext,
                                   notificationLogger: InternalNotificationLogger,
                                   useErrorsOverWarnings: Boolean = false,
                                   errorIfShortestPathFallbackUsedAtRuntime: Boolean = false,
-                                  config: QueryPlannerConfiguration = QueryPlannerConfiguration.default) {
+                                  config: QueryPlannerConfiguration = QueryPlannerConfiguration.default,
+                                  leafPlanUpdater: LogicalPlan => LogicalPlan = identity) {
   def withStrictness(strictness: StrictnessMode) = copy(input = input.withPreferredStrictness(strictness))
 
   def recurse(plan: LogicalPlan) = copy(input = input.recurse(plan))
