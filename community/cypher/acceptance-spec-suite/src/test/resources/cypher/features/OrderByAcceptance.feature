@@ -41,3 +41,22 @@ Feature: OrderByAcceptance
       | (:B) |
       | null |
     And no side effects
+
+  Scenario: ORDER BY relationships should return null results last in ascending order
+    And having executed:
+      """
+      CREATE (:A)-[:REL]->(:B),
+             (:A)
+      """
+    When executing query:
+      """
+      MATCH (a:A)
+      OPTIONAL MATCH (a)-[r:REL]->()
+      RETURN r
+      ORDER BY r
+      """
+    Then the result should be, in order:
+      | r      |
+      | [:REL] |
+      | null   |
+    And no side effects

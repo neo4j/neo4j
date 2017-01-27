@@ -51,3 +51,7 @@ Explanation of   in-query procedure call
 Pattern expression inside list comprehension
 Get node degree via length of pattern expression
 Get node degree via length of pattern expression that specifies a relationship type
+
+//OrderByAcceptance.feature - Unsupported orderability
+ORDER BY nodes should return null results last in ascending order
+ORDER BY relationships should return null results last in ascending order
