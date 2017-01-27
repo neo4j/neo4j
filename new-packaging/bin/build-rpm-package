@@ -104,7 +104,6 @@ chmod 700 ${sources_directory}/server/bin/*
 chmod 700 ${scripts_directory}/*
 
 # build package and metadata files
-echo "%_topdir ${package_directory}" > ~/.rpmmacros
-(cd ${package_directory} && rpmbuild -bb SPECS/neo4j.spec)
+(cd ${package_directory} && rpmbuild --define "_topdir ${package_directory}" -bb SPECS/neo4j.spec)
 # Move finished RPMs to directory below because TeamCity sucks
 cp ${package_directory}/RPMS/noarch/*.rpm ${package_directory}/..
