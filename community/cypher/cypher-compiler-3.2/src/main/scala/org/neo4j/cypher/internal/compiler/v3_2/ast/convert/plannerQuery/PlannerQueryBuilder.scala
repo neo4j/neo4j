@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.planner._
 import org.neo4j.cypher.internal.frontend.v3_2.ast.RelationshipStartItem
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.UnNamedNameGenerator
 import org.neo4j.cypher.internal.frontend.v3_2.{SemanticDirection, SemanticTable}
-import org.neo4j.cypher.internal.ir.v3_2.{IdName, PatternRelationship, SimplePatternLength}
+import org.neo4j.cypher.internal.ir.v3_2.{IdName, PatternRelationship, QueryHorizon, SimplePatternLength}
 
 case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: SemanticTable, returns: Seq[IdName] = Seq.empty)
   extends ListSupport {

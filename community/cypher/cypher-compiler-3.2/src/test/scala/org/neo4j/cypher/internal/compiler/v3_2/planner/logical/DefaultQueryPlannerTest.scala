@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.phases.devNullLogger
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_2.{ExpressionTypeInfo, SemanticTable}
-import org.neo4j.cypher.internal.ir.v3_2.{IdName, LazyMode}
+import org.neo4j.cypher.internal.ir.v3_2.{IdName, LazyMode, RegularQueryProjection}
 
 class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
