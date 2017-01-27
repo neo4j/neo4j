@@ -40,13 +40,16 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 public class IndexConfigStore extends LifecycleAdapter
 {
     public static final String INDEX_DB_FILE_NAME = "index.db";
+    private static final String OLD_INDEX_DB_FILE_NAME = INDEX_DB_FILE_NAME + ".old";
+    private static final String TMP_INDEX_DB_FILE_NAME = INDEX_DB_FILE_NAME + ".tmp";
+
     private static final byte[] MAGICK = new byte[] { 'n', 'e', 'o', '4', 'j', '-', 'i', 'n', 'd', 'e', 'x' };
     private static final int VERSION = 1;
 
     private final File file;
     private final File oldFile;
-    private final Map<String, Map<String, String>> nodeConfig = new ConcurrentHashMap<String, Map<String,String>>();
-    private final Map<String, Map<String, String>> relConfig = new ConcurrentHashMap<String, Map<String,String>>();
+    private final Map<String, Map<String, String>> nodeConfig = new ConcurrentHashMap<>();
+    private final Map<String, Map<String, String>> relConfig = new ConcurrentHashMap<>();
     private ByteBuffer dontUseBuffer = ByteBuffer.allocate( 100 );
     private final FileSystemAbstraction fileSystem;
 
@@ -54,7 +57,7 @@ public class IndexConfigStore extends LifecycleAdapter
     {
         this.fileSystem = fileSystem;
         this.file = new File( graphDbStoreDir, INDEX_DB_FILE_NAME );
-        this.oldFile = new File( file.getParentFile(), file.getName() + ".old" );
+        this.oldFile = new File( graphDbStoreDir, OLD_INDEX_DB_FILE_NAME );
     }
 
     private ByteBuffer buffer( int size )
@@ -138,7 +141,7 @@ public class IndexConfigStore extends LifecycleAdapter
             {
                 break;
             }
-            Map<String, String> properties = new HashMap<String, String>();
+            Map<String, String> properties = new HashMap<>();
             for ( int p = 0; p < propertyCount; p++ )
             {
                 String key = readNextString( channel );
@@ -257,7 +260,7 @@ public class IndexConfigStore extends LifecycleAdapter
     private void write()
     {
         // Write to a .tmp file
-        File tmpFile = new File( this.file.getParentFile(), this.file.getName() + ".tmp" );
+        File tmpFile = new File( this.file.getParentFile(), TMP_INDEX_DB_FILE_NAME );
         write( tmpFile );
 
         // Make sure the .old file doesn't exist, then rename the current one to .old

@@ -78,6 +78,7 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.factory.ReadOnly;
 import org.neo4j.kernel.impl.factory.StatementLocksFactorySelector;
+import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
@@ -295,6 +296,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
     {
         return Predicates.any(
                 fileName -> fileName.startsWith( PhysicalLogFile.DEFAULT_NAME ),
+                fileName -> fileName.startsWith( IndexConfigStore.INDEX_DB_FILE_NAME ),
                 filename -> filename.startsWith( StoreUtil.BRANCH_SUBDIRECTORY ),
                 filename -> filename.startsWith( StoreUtil.TEMP_COPY_DIRECTORY_NAME )
         );

@@ -24,6 +24,7 @@ import org.junit.Test;
 import java.util.function.Predicate;
 
 import org.neo4j.com.storecopy.StoreUtil;
+import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
@@ -41,6 +42,7 @@ public class HighlyAvailableEditionModuleTest
         assertFalse( filter.test( MetaDataStore.DEFAULT_NAME ) );
         assertFalse( filter.test( StoreFile.NODE_STORE.fileName( StoreFileType.STORE ) ) );
         assertTrue( filter.test( PhysicalLogFile.DEFAULT_NAME + ".1" ) );
+        assertTrue( filter.test( IndexConfigStore.INDEX_DB_FILE_NAME + ".any" ) );
         assertTrue( filter.test( StoreUtil.BRANCH_SUBDIRECTORY ) );
         assertTrue( filter.test( StoreUtil.TEMP_COPY_DIRECTORY_NAME ) );
     }

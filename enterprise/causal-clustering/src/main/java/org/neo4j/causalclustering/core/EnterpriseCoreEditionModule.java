@@ -56,8 +56,8 @@ import org.neo4j.causalclustering.messaging.Outbound;
 import org.neo4j.causalclustering.messaging.RaftChannelInitializer;
 import org.neo4j.causalclustering.messaging.RaftOutbound;
 import org.neo4j.causalclustering.messaging.SenderService;
-import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.com.storecopy.StoreUtil;
+import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -81,6 +81,7 @@ import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.factory.StatementLocksFactorySelector;
+import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
@@ -235,6 +236,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
     {
         return Predicates.any(
                 fileName -> fileName.startsWith( PhysicalLogFile.DEFAULT_NAME ),
+                fileName -> fileName.startsWith( IndexConfigStore.INDEX_DB_FILE_NAME ),
                 filename -> filename.startsWith( StoreUtil.TEMP_COPY_DIRECTORY_NAME )
         );
     }

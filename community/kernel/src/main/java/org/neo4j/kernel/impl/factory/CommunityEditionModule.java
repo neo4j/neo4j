@@ -23,6 +23,7 @@ import java.io.File;
 import java.time.Clock;
 import java.util.function.Predicate;
 
+import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
@@ -48,6 +49,7 @@ import org.neo4j.kernel.impl.core.DelegatingRelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.ReadOnlyTokenCreator;
 import org.neo4j.kernel.impl.core.TokenCreator;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
+import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocksFactory;
@@ -140,7 +142,10 @@ public class CommunityEditionModule extends EditionModule
 
     static Predicate<String> fileWatcherFileNameFilter()
     {
-        return fileName -> fileName.startsWith( PhysicalLogFile.DEFAULT_NAME );
+        return Predicates.any(
+                fileName -> fileName.startsWith( PhysicalLogFile.DEFAULT_NAME ),
+                fileName -> fileName.startsWith( IndexConfigStore.INDEX_DB_FILE_NAME )
+        );
     }
 
     protected IdTypeConfigurationProvider createIdTypeConfigurationProvider( Config config )
