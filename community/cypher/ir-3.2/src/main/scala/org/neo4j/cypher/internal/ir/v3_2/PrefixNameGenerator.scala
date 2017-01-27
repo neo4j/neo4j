@@ -17,13 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_2.helpers
+package org.neo4j.cypher.internal.ir.v3_2
 
 import org.neo4j.cypher.internal.frontend.v3_2.InputPosition
 
-object FreshIdNameGenerator extends PrefixNameGenerator("FRESHID")
+sealed case class PrefixNameGenerator(generatorName: String) {
+  val prefix = s"  $generatorName"
 
-object AggregationNameGenerator extends PrefixNameGenerator("AGGREGATION")
+  def name(position: InputPosition): String = s"$prefix${position.toOffsetString}"
+
+  def isNamed(x: String) = !notNamed(x)
+  def notNamed(x: String) = x.startsWith(prefix)
+}
+
+object PrefixNameGenerator {
+  def namePrefix(prefix: String) = s"  $prefix"
+}
 
 object UnNamedNameGenerator extends PrefixNameGenerator("UNNAMED") {
   implicit class NameString(name: String) {
@@ -32,15 +41,6 @@ object UnNamedNameGenerator extends PrefixNameGenerator("UNNAMED") {
   }
 }
 
-object PrefixNameGenerator {
-  def namePrefix(prefix: String) = s"  $prefix"
-}
+object FreshIdNameGenerator extends PrefixNameGenerator("FRESHID")
 
-case class PrefixNameGenerator(generatorName: String) {
-  val prefix = s"  $generatorName"
-
-  def name(position: InputPosition): String = s"$prefix${position.toOffsetString}"
-
-  def isNamed(x: String) = !notNamed(x)
-  def notNamed(x: String) = x.startsWith(prefix)
-}
+object AggregationNameGenerator extends PrefixNameGenerator("AGGREGATION")
