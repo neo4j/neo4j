@@ -61,7 +61,7 @@ public class ConstraintBoundary
         }
 
         @Override
-        public PropertyConstraint compute( LabelSchemaDescriptor schema )
+        public PropertyConstraint computeSpecific( LabelSchemaDescriptor schema )
         {
             switch ( descriptor.type() ) {
             case UNIQUE:
@@ -78,7 +78,7 @@ public class ConstraintBoundary
         }
 
         @Override
-        public PropertyConstraint compute( RelationTypeSchemaDescriptor schema )
+        public PropertyConstraint computeSpecific( RelationTypeSchemaDescriptor schema )
         {
             return new RelationshipPropertyExistenceConstraint( new RelationshipPropertyDescriptor(
                     schema.getRelTypeId(), schema.getPropertyIds()[0] ) );

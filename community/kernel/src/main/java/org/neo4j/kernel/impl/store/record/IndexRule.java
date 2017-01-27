@@ -152,13 +152,13 @@ public class IndexRule extends AbstractSchemaRule
     @Override
     public int length()
     {
-        return lengthComputer.compute( descriptor.schema() );
+        return lengthComputer.computeSpecific( descriptor.schema() );
     }
 
     @Override
     public void serialize( ByteBuffer target )
     {
-        new Serializer( target ).process( descriptor.schema() );
+        new Serializer( target ).processSpecific( descriptor.schema() );
     }
 
     @Override
@@ -207,7 +207,7 @@ public class IndexRule extends AbstractSchemaRule
     private SchemaComputer<Integer> lengthComputer =
             new SchemaComputer<Integer>() {
                 @Override
-                public Integer compute( LabelSchemaDescriptor schema )
+                public Integer computeSpecific( LabelSchemaDescriptor schema )
                 {
                     // regardless of descriptor.type()
                     return    4 /* label id */
@@ -220,7 +220,7 @@ public class IndexRule extends AbstractSchemaRule
                 }
 
                 @Override
-                public Integer compute( RelationTypeSchemaDescriptor schema )
+                public Integer computeSpecific( RelationTypeSchemaDescriptor schema )
                 {
                     throw new UnsupportedOperationException( "This constraint type is not yet supported by the store" );
                 }
@@ -236,7 +236,7 @@ public class IndexRule extends AbstractSchemaRule
         }
 
         @Override
-        public void process( LabelSchemaDescriptor schema )
+        public void processSpecific( LabelSchemaDescriptor schema )
         {
             // regardless of descriptor.type()
             buffer.putInt( schema.getLabelId() );
@@ -253,7 +253,7 @@ public class IndexRule extends AbstractSchemaRule
         }
 
         @Override
-        public void process( RelationTypeSchemaDescriptor schema )
+        public void processSpecific( RelationTypeSchemaDescriptor schema )
         {
             throw new UnsupportedOperationException( "This index type is not yet supported by the store" );
         }

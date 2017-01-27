@@ -22,12 +22,36 @@ package org.neo4j.kernel.api.schema_new;
 import org.neo4j.kernel.api.TokenNameLookup;
 
 /**
- * This interface represents one schema unit, for example a label-property pair that denotes the domain of an index.
+ * Internal representation of one schema unit, for example a label-property pair.
+ *
+ * Even when only supporting a small set of different schemas, the number of common methods is very small. This
+ * interface therefore supports a visitor type access pattern, results can be computed using the {#compute} method, and
+ * side-effect type logic performed using the processWith method. This means that when implementing this interface
+ * with a new concrete type, the compute and processWith method implementations need to be added similarly to
+ * how this is done in eg. LabelSchemaDescriptor, and the SchemaProcessor and SchemaComputer interfaces need to be
+ * extended with methods taking the new concrete type as argument.
  */
 public interface SchemaDescriptor
 {
-    <R> R compute( SchemaComputer<R> processor );
-    void process( SchemaProcessor processor );
+    /**
+     * Computes some value by feeding this object into the given SchemaComputer.
+     *
+     * Note that implementers of this method just need to call `return computer.compute( this );`.
+     *
+     * @param computer The SchemaComputer that hold the logic for the computation
+     * @param <R> The return type
+     * @return The result of the computation
+     */
+    <R> R computeWith( SchemaComputer<R> computer );
+
+    /**
+     * Performs some side-effect type logic by processing this object using the given SchemaProcessor.
+     *
+     * Note that implementers of this method just need to call `return processor.process( this );`.
+     *
+     * @param processor The SchemaProcessor that hold the logic for the computation
+     */
+    void processWith( SchemaProcessor processor );
 
     /**
      * @param tokenNameLookup used for looking up names for token ids.
@@ -40,7 +64,7 @@ public interface SchemaDescriptor
      * @param supplier supplier to get a schema descriptor from
      * @return true if the supplied schema descriptor equals this schema descriptor
      */
-    default boolean isSame( Supplier supplier )
+    default boolean isSame( SchemaDescriptor.Supplier supplier )
     {
         return this.equals( supplier.getSchemaDescriptor() );
     }

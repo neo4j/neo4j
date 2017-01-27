@@ -19,13 +19,33 @@
  */
 package org.neo4j.kernel.api.schema_new;
 
+/**
+ * A SchemaComputer computes values of type R from SchemaDescriptors. To get the concrete type of the target schema
+ * descriptor, a visitor pattern is used to bounce the code path into the correct overloaded computeSpecific variant.
+ * Perhaps the most useful way to view this, is to think of the computer as a switch on the argument .getClass, and
+ * the computeSpecific as correctly typed cases. The benefit of using the visitor pattern, is that implementers of
+ * new concrete SchemaDescriptor implementers will be forced to implement the necessary methods at compile time,
+ * avoiding bugs due to missed instance of checks.
+ *
+ * DANGER: Visitor patterns can be very hard to follow and debug. Take care to make callers easily readable!
+ *
+ * @param <R> the computation result type
+ */
 public interface SchemaComputer<R>
 {
+    /**
+     * Convenience method to make compute calls more readable.
+     * @param schema the SchemaDescriptor that is to be computed with.
+     */
     default R compute( SchemaDescriptor schema )
     {
-        return schema.compute( this );
+        return schema.computeWith( this );
     }
 
-    R compute( LabelSchemaDescriptor schema );
-    R compute( RelationTypeSchemaDescriptor schema );
+    /*
+    The following section contains the overloaded process signatures for all concrete SchemaDescriptor implementers.
+    Add new overloaded methods here when adding more concrete SchemaDescriptors.
+     */
+    R computeSpecific( LabelSchemaDescriptor schema );
+    R computeSpecific( RelationTypeSchemaDescriptor schema );
 }

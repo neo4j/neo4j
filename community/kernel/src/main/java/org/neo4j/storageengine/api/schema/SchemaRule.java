@@ -102,13 +102,13 @@ public interface SchemaRule extends SchemaDescriptor.Supplier
         private static SchemaComputer<Kind> existenceKindMapper = new SchemaComputer<Kind>()
         {
             @Override
-            public Kind compute( LabelSchemaDescriptor schema )
+            public Kind computeSpecific( LabelSchemaDescriptor schema )
             {
                 return NODE_PROPERTY_EXISTENCE_CONSTRAINT;
             }
 
             @Override
-            public Kind compute( RelationTypeSchemaDescriptor schema )
+            public Kind computeSpecific( RelationTypeSchemaDescriptor schema )
             {
                 return RELATIONSHIP_PROPERTY_EXISTENCE_CONSTRAINT;
             }

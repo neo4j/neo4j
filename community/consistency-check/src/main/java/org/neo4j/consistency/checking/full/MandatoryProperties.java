@@ -66,7 +66,7 @@ public class MandatoryProperties
     private SchemaProcessor constraintRecorder = new SchemaProcessor()
     {
         @Override
-        public void process( LabelSchemaDescriptor schema )
+        public void processSpecific( LabelSchemaDescriptor schema )
         {
             for ( int propertyId : schema.getPropertyIds() )
             {
@@ -75,7 +75,7 @@ public class MandatoryProperties
         }
 
         @Override
-        public void process( RelationTypeSchemaDescriptor schema )
+        public void processSpecific( RelationTypeSchemaDescriptor schema )
         {
             for ( int propertyId : schema.getPropertyIds() )
             {

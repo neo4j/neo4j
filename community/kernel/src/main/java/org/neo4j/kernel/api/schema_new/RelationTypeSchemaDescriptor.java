@@ -37,15 +37,15 @@ public class RelationTypeSchemaDescriptor implements SchemaDescriptor
     }
 
     @Override
-    public <R> R compute( SchemaComputer<R> processor )
+    public <R> R computeWith( SchemaComputer<R> processor )
     {
-        return processor.compute( this );
+        return processor.computeSpecific( this );
     }
 
     @Override
-    public void process( SchemaProcessor processor )
+    public void processWith( SchemaProcessor processor )
     {
-        processor.process( this );
+        processor.processSpecific( this );
     }
 
     @Override

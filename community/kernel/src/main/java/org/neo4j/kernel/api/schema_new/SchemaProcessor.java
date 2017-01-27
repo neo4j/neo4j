@@ -19,13 +19,26 @@
  */
 package org.neo4j.kernel.api.schema_new;
 
+/**
+ * A SchemaProcessor performs from side-effect processing on a SchemaDescriptor. To get the concrete type of the
+ * target schema descriptor, a visitor pattern is used to bounce the code path into the correct overloaded
+ * processSpecific variant. See SchemaComputer.
+ */
 public interface SchemaProcessor
 {
+    /**
+     * Convenience method to make calls more readable.
+     * @param schema the SchemaDescriptor that is to be processed.
+     */
     default void process( SchemaDescriptor schema )
     {
-        schema.process( this );
+        schema.processWith( this );
     }
 
-    void process( LabelSchemaDescriptor schema );
-    void process( RelationTypeSchemaDescriptor schema );
+    /*
+    The following section contains the overloaded process signatures for all concrete SchemaDescriptor implementers.
+    Add new overloaded methods here when adding more concrete SchemaDescriptors.
+     */
+    void processSpecific( LabelSchemaDescriptor schema );
+    void processSpecific( RelationTypeSchemaDescriptor schema );
 }

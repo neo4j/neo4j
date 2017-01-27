@@ -22,6 +22,10 @@ package org.neo4j.kernel.api.schema_new.constaints;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
 
+/**
+ * Internal representation of a graph constraint, including the schema unit it targets (eg. label-property combination)
+ * and the how that schema unit is constrained (eg. "has to exist", or "must be unique").
+ */
 public interface ConstraintDescriptor
 {
     enum Type { UNIQUE, EXISTS }

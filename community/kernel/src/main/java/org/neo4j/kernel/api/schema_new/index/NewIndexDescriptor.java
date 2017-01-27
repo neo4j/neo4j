@@ -22,6 +22,10 @@ package org.neo4j.kernel.api.schema_new.index;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 
+/**
+ * Internal representation of a graph index, including the schema unit it targets (eg. label-property combination)
+ * and the type of index. UNIQUE indexes are used to back uniqueness constraints.
+ */
 public interface NewIndexDescriptor
 {
     enum Type { GENERAL, UNIQUE }

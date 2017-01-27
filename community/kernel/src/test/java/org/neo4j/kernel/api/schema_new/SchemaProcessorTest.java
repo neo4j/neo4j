@@ -39,13 +39,13 @@ public class SchemaProcessorTest
         SchemaProcessor processor = new SchemaProcessor()
         {
             @Override
-            public void process( LabelSchemaDescriptor schema )
+            public void processSpecific( LabelSchemaDescriptor schema )
             {
                 callHistory.add( "LabelSchemaDescriptor" );
             }
 
             @Override
-            public void process( RelationTypeSchemaDescriptor schema )
+            public void processSpecific( RelationTypeSchemaDescriptor schema )
             {
                 callHistory.add( "RelationTypeSchemaDescriptor" );
             }

@@ -127,7 +127,7 @@ public class ConstraintRule extends AbstractSchemaRule implements ConstraintDesc
     @Override
     public int length()
     {
-        return descriptor.schema().compute( lengthComputer );
+        return descriptor.schema().computeWith( lengthComputer );
     }
 
     @Override
@@ -156,7 +156,7 @@ public class ConstraintRule extends AbstractSchemaRule implements ConstraintDesc
     private SchemaComputer<Integer> lengthComputer =
             new SchemaComputer<Integer>() {
                 @Override
-                public Integer compute( LabelSchemaDescriptor schema )
+                public Integer computeSpecific( LabelSchemaDescriptor schema )
                 {
                     switch ( descriptor.type() )
                     {
@@ -178,7 +178,7 @@ public class ConstraintRule extends AbstractSchemaRule implements ConstraintDesc
                 }
 
                 @Override
-                public Integer compute( RelationTypeSchemaDescriptor schema )
+                public Integer computeSpecific( RelationTypeSchemaDescriptor schema )
                 {
                     return  4 /* relationship type id */ +
                             1 /* kind id */ +
@@ -196,7 +196,7 @@ public class ConstraintRule extends AbstractSchemaRule implements ConstraintDesc
         }
 
         @Override
-        public void process( LabelSchemaDescriptor schema )
+        public void processSpecific( LabelSchemaDescriptor schema )
         {
             switch ( descriptor.type() )
             {
@@ -226,7 +226,7 @@ public class ConstraintRule extends AbstractSchemaRule implements ConstraintDesc
         }
 
         @Override
-        public void process( RelationTypeSchemaDescriptor schema )
+        public void processSpecific( RelationTypeSchemaDescriptor schema )
         {
             buffer.putInt( schema.getRelTypeId() );
             buffer.put( RELATIONSHIP_PROPERTY_EXISTENCE_CONSTRAINT.id() );

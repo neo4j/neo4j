@@ -239,7 +239,7 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
         }
 
         @Override
-        public void process( LabelSchemaDescriptor schema )
+        public void processSpecific( LabelSchemaDescriptor schema )
         {
             engine.comparativeCheck( records.label( schema.getLabelId() ), VALID_LABEL );
             for ( int propertyId : schema.getPropertyIds() )
@@ -249,7 +249,7 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
         }
 
         @Override
-        public void process( RelationTypeSchemaDescriptor schema )
+        public void processSpecific( RelationTypeSchemaDescriptor schema )
         {
             engine.comparativeCheck( records.relationshipType( schema.getRelTypeId() ), VALID_RELATIONSHIP_TYPE );
             for ( int propertyId : schema.getPropertyIds() )
