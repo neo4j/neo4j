@@ -29,6 +29,12 @@ object Selections {
   def from(expressions: Expression): Selections = new Selections(expressions.asPredicates)
 }
 
+object unsolvedPreds extends ((Selections, LogicalPlan) => Seq[Expression]) {
+  def apply(s: Selections, l: LogicalPlan): Seq[Expression] =
+    s.scalarPredicatesGiven(l.availableSymbols)
+    .filterNot(predicate => l.solved.exists(_.queryGraph.selections.contains(predicate)))
+}
+
 case class Selections(predicates: Set[Predicate] = Set.empty) {
   def isEmpty = predicates.isEmpty
 
@@ -39,10 +45,6 @@ case class Selections(predicates: Set[Predicate] = Set.empty) {
   def predicatesGivenForRequiredSymbol(allowed: Set[IdName], required: IdName): Seq[Expression] = predicates.collect {
     case p@Predicate(_, predicate) if p.hasDependenciesMetForRequiredSymbol(allowed, required) => predicate
   }.toIndexedSeq
-
-  def unsolvedPredicates(plan: LogicalPlan): Seq[Expression] =
-    scalarPredicatesGiven(plan.availableSymbols)
-      .filterNot(predicate => plan.solved.exists(_.queryGraph.selections.contains(predicate)))
 
   def scalarPredicatesGiven(ids: Set[IdName]): Seq[Expression] = predicatesGiven(ids).filterNot(containsPatternPredicates)
 
