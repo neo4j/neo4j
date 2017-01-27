@@ -81,7 +81,7 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
         List<PropertyBlock> properties = null;
         for ( IndexRule indexRule : indexes.rules() )
         {
-            int labelId = indexRule.getSchemaDescriptor().getLabelId();
+            long labelId = indexRule.getSchemaDescriptor().getLabelId();
             if ( !labels.contains( labelId ) )
             {
                 continue;

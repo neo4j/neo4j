@@ -65,6 +65,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR;
 
@@ -207,7 +209,7 @@ public class SchemaStorageTest
         TokenNameLookup tokenNameLookup = getDefaultTokenNameLookup();
 
         SchemaStorage schemaStorageSpy = Mockito.spy( storage );
-        Mockito.when( schemaStorageSpy.loadAllSchemaRules() ).thenReturn(
+        Mockito.when( schemaStorageSpy.loadAllSchemaRules( any(), any(), anyBoolean() ) ).thenReturn(
                 Iterators.iterator(
                         getUniquePropertyConstraintRule( 1L, LABEL1, PROP1 ),
                         getUniquePropertyConstraintRule( 2L, LABEL1, PROP1 ) ) );
@@ -246,7 +248,7 @@ public class SchemaStorageTest
         TokenNameLookup tokenNameLookup = getDefaultTokenNameLookup();
 
         SchemaStorage schemaStorageSpy = Mockito.spy( storage );
-        Mockito.when( schemaStorageSpy.loadAllSchemaRules() ).thenReturn(
+        Mockito.when( schemaStorageSpy.loadAllSchemaRules( any(), any(), anyBoolean() ) ).thenReturn(
                 Iterators.iterator(
                         getRelationshipPropertyExistenceConstraintRule( 1L, TYPE1, PROP1 ),
                         getRelationshipPropertyExistenceConstraintRule( 2L, TYPE1, PROP1 ) ) );
