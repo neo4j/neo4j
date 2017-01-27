@@ -52,14 +52,13 @@ import org.neo4j.function.ThrowingAction;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.rule.RepeatRule;
-import org.neo4j.test.rule.RepeatRule.Repeat;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.String.format;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.MASTER;
 import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.SLAVE;
 import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.UNKNOWN;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
@@ -70,12 +69,10 @@ public class TestBranchedData
 {
     private final LifeRule life = new LifeRule( true );
     private final TestDirectory directory = TestDirectory.testDirectory();
-    private final RepeatRule repeat = new RepeatRule();
 
     @Rule
     public final RuleChain ruleChain = RuleChain
-            .outerRule( repeat )
-            .around( directory )
+            .outerRule( directory )
             .around( life );
 
     @Test
@@ -137,11 +134,9 @@ public class TestBranchedData
      * during the course of the test. This to test functionality of some internal components being restarted.
      */
     @SuppressWarnings( "unchecked" )
-    @Repeat( times = 100 )
     @Test
     public void shouldCopyStoreFromMasterIfBranchedInLiveScenario() throws Throwable
     {
-        System.out.println( "-" );
         // GIVEN a cluster of 3, all having the same data (node A)
         // thor is whoever is the master to begin with
         // odin is whoever is picked as _the_ slave given thor as initial master
@@ -183,13 +178,16 @@ public class TestBranchedData
         cluster.await( memberThinksItIsRole( thor, UNKNOWN ) );
         thorRepairKit.repair();
         cluster.await( memberThinksItIsRole( thor, SLAVE ) );
+        cluster.await( memberThinksItIsRole( odin, MASTER ) );
         cluster.await( allSeesAllAsAvailable() );
         assertFalse( thor.isMaster() );
 
         // Now do some more transactions on current master (odin) and have thor pull those
         for( int i = 0; i < 3; i++ )
         {
-            createNodes( odin, String.valueOf( "" + i ), 100_000, andIndexInto( indexName ) );
+            int ii = i;
+            retryOnTransactionFailure( () ->
+                    createNodes( odin, String.valueOf( "" + ii ), 100_000, andIndexInto( indexName ) ) );
             cluster.sync();
             cluster.force();
         }
