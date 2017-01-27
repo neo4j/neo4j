@@ -22,21 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.planner
 import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.plannerQuery.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
-import org.neo4j.cypher.internal.ir.v3_2.IdName
-
-case class Predicate(dependencies: Set[IdName], expr: Expression) {
-
-  def hasDependenciesMet(symbols: Set[IdName]): Boolean =
-    (dependencies -- symbols).isEmpty
-
-  def hasDependenciesMetForRequiredSymbol(symbols: Set[IdName], required: IdName): Boolean =
-    dependencies.contains(required) && hasDependenciesMet(symbols)
-}
-
-
-object Predicate {
-  implicit val byPosition = Ordering.by { (predicate: Predicate) => predicate.expr.position }
-}
+import org.neo4j.cypher.internal.ir.v3_2.{IdName, Predicate}
 
 object Selections {
   def from(expressions: Traversable[Expression]): Selections = new Selections(expressions.flatMap(_.asPredicates).toSet)
