@@ -17,18 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps
+package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
-import org.neo4j.cypher.internal.compiler.v3_2.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.{LeafPlanner, LogicalPlanningContext}
+import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
+import org.neo4j.graphdb.Node
 
-object argumentLeafPlanner extends LeafPlanner {
-  def apply(qg: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] = {
-    val ids = qg.patternNodes ++ qg.patternRelationships.map(_.name)
-    if ((qg.argumentIds intersect ids).isEmpty)
-      Seq.empty
-    else
-      Seq(context.logicalPlanProducer.planQueryArgumentRow(qg))
-  }
+case class LockNodesPipe(src: Pipe, variablesToLock: Set[String])(val id: Id = new Id)
+                        (implicit pipeMonitor: PipeMonitor)
+  extends PipeWithSource(src, pipeMonitor)  {
+
+  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
+    input.map { ctx =>
+      val nodesToLock: Set[Long] = variablesToLock.flatMap { varName =>
+        Option(ctx(varName).asInstanceOf[Node]).map(_.getId)
+      }
+      state.query.lockNodes(nodesToLock.toSeq: _*)
+      ctx
+    }
 }

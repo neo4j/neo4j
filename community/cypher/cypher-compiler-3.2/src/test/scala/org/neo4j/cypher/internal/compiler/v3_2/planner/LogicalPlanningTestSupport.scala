@@ -22,8 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.planner
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_2._
-import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters._
-import org.neo4j.cypher.internal.compiler.v3_2.codegen.CodeGenConfiguration
+import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters.{namePatternPredicatePatternElements, _}
 import org.neo4j.cypher.internal.compiler.v3_2.phases._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.execution.PipeExecutionBuilderContext
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.Metrics._
@@ -31,7 +30,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.idp._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps.LogicalPlanProducer
-import org.neo4j.cypher.internal.compiler.v3_2.spi._
+import org.neo4j.cypher.internal.compiler.v3_2.spi.{GraphStatistics, PlanContext, ProcedureSignature, _}
 import org.neo4j.cypher.internal.compiler.v3_2.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSequencer.newPlain
@@ -105,7 +104,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
 
   def newMockedStrategy(plan: LogicalPlan) = {
     val strategy = mock[QueryGraphSolver]
-    doReturn(plan).when(strategy).plan(any())(any(), any())
+    doReturn(plan).when(strategy).plan(any())(any())
     strategy
   }
 

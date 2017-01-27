@@ -54,7 +54,7 @@ case class QueryPlanner(planSingleQuery: LogicalPlanningFunction1[PlannerQuery, 
 
   def plan(unionQuery: UnionQuery)(implicit context: LogicalPlanningContext): (Option[PeriodicCommit], LogicalPlan) =
     unionQuery match {
-      case UnionQuery(queries, distinct, returns, periodicCommitHint) =>
+      case UnionQuery(queries, distinct, _, periodicCommitHint) =>
         val plan = planQueries(queries, distinct)
         (periodicCommitHint, createProduceResultOperator(plan, unionQuery))
 
@@ -81,13 +81,13 @@ case class QueryPlanner(planSingleQuery: LogicalPlanningFunction1[PlannerQuery, 
   }
 }
 
-case object planPart extends ((PlannerQuery, LogicalPlanningContext, Option[LogicalPlan]) => LogicalPlan) {
+case object planPart extends ((PlannerQuery, LogicalPlanningContext) => LogicalPlan) {
 
-  def apply(query: PlannerQuery, context: LogicalPlanningContext, leafPlan: Option[LogicalPlan]): LogicalPlan = {
+  def apply(query: PlannerQuery, context: LogicalPlanningContext): LogicalPlan = {
     val ctx = query.preferredStrictness match {
       case Some(mode) if !context.input.strictness.contains(mode) => context.withStrictness(mode)
       case _ => context
     }
-    ctx.strategy.plan(query.queryGraph)(ctx, leafPlan)
+    ctx.strategy.plan(query.queryGraph)(ctx)
   }
 }

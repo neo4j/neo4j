@@ -164,7 +164,7 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
 
   private def createStrategy(plan: LogicalPlan*): QueryGraphSolver = {
     val strategy = mock[QueryGraphSolver]
-    when(strategy.plan(any[QueryGraph])(any[LogicalPlanningContext], any())).thenReturn(plan.head, plan.tail:_*)
+    when(strategy.plan(any[QueryGraph])(any[LogicalPlanningContext])).thenReturn(plan.head, plan.tail:_*)
     strategy
   }
 }

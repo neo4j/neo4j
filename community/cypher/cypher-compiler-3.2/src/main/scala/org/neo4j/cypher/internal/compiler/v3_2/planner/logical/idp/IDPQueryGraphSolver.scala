@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps.planShortestPaths
+
 import scala.annotation.tailrec
 
 trait IDPQueryGraphSolverMonitor extends IDPSolverMonitor {
@@ -52,7 +53,7 @@ case class IDPQueryGraphSolver(singleComponentSolver: SingleComponentPlannerTrai
 
   private implicit val x = singleComponentSolver
 
-  def plan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan]): LogicalPlan = {
+  def plan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): LogicalPlan = {
     implicit val kit = kitWithShortestPathSupport(context.config.toKit())
     val components = queryGraph.connectedComponents
     val plans = if (components.isEmpty) planEmptyComponent(queryGraph) else planComponents(components)
@@ -75,12 +76,12 @@ case class IDPQueryGraphSolver(singleComponentSolver: SingleComponentPlannerTrai
       case (plan, _) => plan
     }
 
-  private def planComponents(components: Seq[QueryGraph])(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan], kit: QueryPlannerKit): Seq[PlannedComponent] =
+  private def planComponents(components: Seq[QueryGraph])(implicit context: LogicalPlanningContext, kit: QueryPlannerKit): Seq[PlannedComponent] =
     components.map { qg =>
       PlannedComponent(qg, singleComponentSolver.planComponent(qg))
     }
 
-  private def planEmptyComponent(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan], kit: QueryPlannerKit): Seq[PlannedComponent] = {
+  private def planEmptyComponent(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, kit: QueryPlannerKit): Seq[PlannedComponent] = {
     val plan = if (queryGraph.argumentIds.isEmpty)
       context.logicalPlanProducer.planSingleRow()
     else

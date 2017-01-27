@@ -32,6 +32,6 @@ object leafPlanOptions extends LeafPlanFinder {
     val leafPlanCandidateLists = config.leafPlanners.candidates(queryGraph)
     val leafPlanCandidateListsWithSelections = queryPlannerKit.select(leafPlanCandidateLists, queryGraph)
     val bestLeafPlans: Iterable[LogicalPlan] = leafPlanCandidateListsWithSelections.flatMap(pickBest(_))
-    bestLeafPlans.toSet
+    bestLeafPlans.map(context.leafPlanUpdater).toSet
   }
 }

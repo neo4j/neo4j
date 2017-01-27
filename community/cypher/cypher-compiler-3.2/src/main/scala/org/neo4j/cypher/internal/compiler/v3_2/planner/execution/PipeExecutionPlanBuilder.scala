@@ -257,6 +257,9 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
       case Expand(_, IdName(fromName), dir, types: Seq[RelTypeName], IdName(toName), IdName(relName), ExpandInto) =>
         ExpandIntoPipe(source, fromName, relName, toName, dir, LazyTypes(types))(id = id)
 
+      case LockNodes(_, nodesToLock) =>
+        LockNodesPipe(source, nodesToLock.map(_.name))()
+
       case OptionalExpand(_, IdName(fromName), dir, types, IdName(toName), IdName(relName), ExpandAll, predicates) =>
         val predicate = predicates.map(buildPredicate).reduceOption(_ andWith _).getOrElse(True())
         OptionalExpandAllPipe(source, fromName, relName, toName, dir, LazyTypes(types), predicate)(id = id)
