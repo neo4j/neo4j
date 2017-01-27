@@ -60,3 +60,48 @@ Feature: OrderByAcceptance
       | [:REL] |
       | null   |
     And no side effects
+
+  # The ORDER BY should work even if the "WITH x" will not become a `Projection` in the logical plan
+  Scenario: ORDER BY with unwind primitive integer
+    When executing query:
+      """
+      WITH [4, 3, 1, 2] as lst
+      UNWIND lst AS x
+      WITH x
+      ORDER BY x
+      RETURN x
+      """
+    Then the result should be, in order:
+      | x |
+      | 1 |
+      | 2 |
+      | 3 |
+      | 4 |
+
+    And no side effects
+
+  Scenario: ORDER BY two node properties
+    And having executed:
+      """
+      CREATE (:L {a: 3, b: "a"}),
+             (:L {a: 1, b: "b"}),
+             (:L {a: 3, b: "c"}),
+             (:L {a: 4, b: "d"}),
+             (:L {a: 2, b: "e"})
+      """
+    When executing query:
+      """
+      MATCH (n:L)
+      WITH n.a as a, n.b as b
+      ORDER BY a, b DESC
+      RETURN a, b
+      """
+    Then the result should be, in order:
+      |  a  |  b  |
+      |  1  | 'b' |
+      |  2  | 'e' |
+      |  3  | 'c' |
+      |  3  | 'a' |
+      |  4  | 'd' |
+
+    And no side effects

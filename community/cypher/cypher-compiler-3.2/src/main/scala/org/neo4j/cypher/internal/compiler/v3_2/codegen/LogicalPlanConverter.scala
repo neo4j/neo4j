@@ -589,6 +589,8 @@ object LogicalPlanConverter {
       val variableName = context.namer.newVarName()
       val variable = Variable(variableName, elementCodeGenType, nullable = elementCodeGenType.canBeNullable)
       context.addVariable(unwind.variable.name, variable)
+      // Unwind is a kind of projection that only adds one exposed variable, and keeps everything exposed that was already projected
+      context.addProjectedVariable(unwind.variable.name, variable)
 
       val (methodHandle, actions :: tl) = context.popParent().consume(context, this)
 

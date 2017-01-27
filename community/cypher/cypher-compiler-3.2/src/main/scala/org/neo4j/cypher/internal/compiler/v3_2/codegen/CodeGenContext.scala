@@ -51,10 +51,14 @@ class CodeGenContext(val semanticTable: SemanticTable, idMap: Map[LogicalPlan, I
 
   def variableQueryVariables(): Set[String] = variables.keySet.toSet
 
+  // We need to keep track of variables that are exposed by a QueryHorizon,
+  // e.g. Projection, Unwind, ProcedureCall, LoadCsv
+  // These variables are the only ones that needs to be considered for materialization by an eager operation, e.g. Sort
   def addProjectedVariable(queryVariable: String, variable: Variable) {
     projectedVariables.put(queryVariable, variable)
   }
 
+  // We need to clear projected variables that are no longer exposed by a QueryHorizon, e.g a regular Projection
   def clearProjectedVariables(): Unit = {
     projectedVariables.clear()
   }
