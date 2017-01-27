@@ -24,6 +24,7 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.IntStream;
 
 import org.neo4j.cypher.internal.frontend.v3_2.IncomparableValuesException;
 import org.neo4j.graphdb.Path;
@@ -279,30 +280,17 @@ public class CompiledOrderabilityUtils
         {
             Iterator lhsIter = (lhs.getClass().isArray()) ? arrayToIterator( lhs ) : ((List) lhs).iterator();
             Iterator rhsIter = (rhs.getClass().isArray()) ? arrayToIterator( rhs ) : ((List) rhs).iterator();
-            while ( lhsIter.hasNext() )
+            while ( lhsIter.hasNext() && rhsIter.hasNext() )
             {
-                if ( !rhsIter.hasNext() )
-                {
-                    return 1;
-                }
                 int result = CompiledOrderabilityUtils.compare( lhsIter.next(), rhsIter.next() );
                 if ( 0 != result )
                 {
-                    if ( rhsIter.hasNext() == lhsIter.hasNext() )
-                    {
-                        return result;
-                    }
-                    else
-                    {
-                        return (lhsIter.hasNext()) ? 1 : -1;
-                    }
+                    return result;
                 }
             }
-            if ( rhsIter.hasNext() )
-            {
-                return -1;
-            }
-            return 0;
+            return (lhsIter.hasNext()) ? 1
+                                       : (rhsIter.hasNext()) ? -1
+                                                             : 0;
         }
 
         private Iterator arrayToIterator( Object o )
@@ -310,35 +298,36 @@ public class CompiledOrderabilityUtils
             Class clazz = o.getClass();
             if ( clazz.equals( Object[].class ) )
             {
-                return Arrays.asList( (Object[]) o ).iterator();
+                return Arrays.stream( (Object[]) o ).iterator();
             }
             else if ( clazz.equals( int[].class ) )
             {
-                return Arrays.asList( (int[]) o ).iterator();
+                return Arrays.stream( (int[]) o ).iterator();
             }
             else if ( clazz.equals( Integer[].class ) )
             {
-                return Arrays.asList( (Integer[]) o ).iterator();
+                return Arrays.stream( (Integer[]) o ).iterator();
             }
             else if ( clazz.equals( long[].class ) )
             {
-                return Arrays.asList( (long[]) o ).iterator();
+                return Arrays.stream( (long[]) o ).iterator();
             }
             else if ( clazz.equals( Long[].class ) )
             {
-                return Arrays.asList( (Long[]) o ).iterator();
+                return Arrays.stream( (Long[]) o ).iterator();
             }
             else if ( clazz.equals( String[].class ) )
             {
-                return Arrays.asList( (String[]) o ).iterator();
+                return Arrays.stream( (String[]) o ).iterator();
             }
             else if ( clazz.equals( boolean[].class ) )
             {
-                return Arrays.asList( (boolean[]) o ).iterator();
+                // TODO Is there a better way to covert boolean[] to Iterator?
+                return IntStream.range( 0, ((boolean[]) o).length ).mapToObj( i -> ((boolean[]) o)[i] ).iterator();
             }
             else if ( clazz.equals( Boolean[].class ) )
             {
-                return Arrays.asList( (Boolean[]) o ).iterator();
+                return Arrays.stream( (Boolean[]) o ).iterator();
             }
             else
             {

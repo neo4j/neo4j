@@ -46,10 +46,10 @@ public class CompiledOrderabilityUtilsTest
             new Object(),
             new Object[]{1, "foo"},
             new Object[]{1, "foo", 3},
+            new Object[]{1, true, "car"},
             new Object[]{1, 2, "bar"},
             new Object[]{1, 2, "car"},
-            // TODO fails when this is uncommented
-//            new int[]{1, 2, 3},
+            new int[]{1, 2, 3},
             // STRING
             "",
             Character.MIN_VALUE,
@@ -98,24 +98,6 @@ public class CompiledOrderabilityUtilsTest
             Double.POSITIVE_INFINITY,
             Double.NaN
     };
-
-//    // TODO investigate: fails
-//    public static Object[] values = new Object[]{
-//            // OTHER
-//            new Object[]{1, "foo"},
-//            new Object[]{1, "foo", 3},
-//            new Object[]{1, 2, "bar"},
-//            new int[]{1, 2, 3}
-//    };
-
-//    // TODO investigate: passes
-//    public static Object[] values = new Object[]{
-//            // OTHER
-//            new Object[]{1, "foo"},
-//            new Object[]{1, "foo", 3},
-//            new Object[]{1, 2, "bar"},
-//            new Object[]{1, 2, 3}
-//    };
 
     @Test
     public void shouldOrderValuesCorrectly()
