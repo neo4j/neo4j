@@ -26,6 +26,7 @@ import java.util.NoSuchElementException;
 import org.neo4j.causalclustering.identity.MemberId;
 
 import static org.neo4j.helpers.collection.Iterables.count;
+import static org.neo4j.helpers.collection.Iterables.empty;
 
 public class UpstreamDatabaseStrategySelector
 {
@@ -34,7 +35,7 @@ public class UpstreamDatabaseStrategySelector
 
     UpstreamDatabaseStrategySelector( UpstreamDatabaseSelectionStrategy defaultStrategy )
     {
-        this( defaultStrategy, null, null );
+        this( defaultStrategy, empty(), null );
     }
 
     UpstreamDatabaseStrategySelector( UpstreamDatabaseSelectionStrategy defaultStrategy,
@@ -67,7 +68,10 @@ public class UpstreamDatabaseStrategySelector
             try
             {
                 System.out.println( "Trying " + myself + " --> " + strategy.getClass() );
-                result = strategy.upstreamDatabase().get();
+                if(strategy.upstreamDatabase().isPresent())
+                {
+                    result = strategy.upstreamDatabase().get();
+                }
                 break;
             }
             catch ( NoSuchElementException ex )

@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.collection.Pair;
@@ -33,7 +32,7 @@ import static java.util.Collections.emptyMap;
 
 public class ReadReplicaTopology
 {
-    public static final ReadReplicaTopology EMPTY = new ReadReplicaTopology( emptyMap() );
+    static final ReadReplicaTopology EMPTY = new ReadReplicaTopology( emptyMap() );
 
     private final Map<MemberId,ReadReplicaAddresses> readReplicaMembers;
 
@@ -50,28 +49,6 @@ public class ReadReplicaTopology
     public Optional<ReadReplicaAddresses> find( MemberId memberId )
     {
         return Optional.ofNullable( readReplicaMembers.get( memberId ) );
-    }
-
-//    public Set<ReadReplicaAddresses> difference( ReadReplicaTopology other )
-//    {
-//        Pair<Set<ReadReplicaAddresses>, Set<ReadReplicaAddresses>> split = split( readReplicaMembers, other.members() );
-//        Set<ReadReplicaAddresses> big = split.first();
-//        Set<ReadReplicaAddresses> small = split.other();
-//
-//        return big.stream().filter( n -> !small.contains( n ) ).collect( Collectors.toSet() );
-//    }
-
-    private Pair<Set<ReadReplicaAddresses>, Set<ReadReplicaAddresses>> split(
-            Set<ReadReplicaAddresses> one, Set<ReadReplicaAddresses> two )
-    {
-        if ( one.size() > two.size() )
-        {
-            return Pair.pair( one, two );
-        }
-        else
-        {
-            return Pair.pair( two, one );
-        }
     }
 
     @Override

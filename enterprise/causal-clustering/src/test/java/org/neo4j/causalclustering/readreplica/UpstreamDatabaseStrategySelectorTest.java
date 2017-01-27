@@ -110,7 +110,7 @@ public class UpstreamDatabaseStrategySelectorTest
         selector.bestUpstreamDatabase();
 
         // then
-        verify( mockStrategy, times( 1 ) ).upstreamDatabase();
+        verify( mockStrategy, times( 2 ) ).upstreamDatabase();
     }
 
     @Service.Implementation( UpstreamDatabaseSelectionStrategy.class )
