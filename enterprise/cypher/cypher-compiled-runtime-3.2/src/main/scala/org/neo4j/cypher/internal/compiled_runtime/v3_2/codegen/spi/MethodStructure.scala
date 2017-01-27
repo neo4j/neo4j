@@ -61,6 +61,7 @@ trait MethodStructure[E] {
   def constantExpression(value: Object): E
   def asMap(map: Map[String, E]): E
   def asList(values: Seq[E]): E
+  def asPrimitiveStream(values: E, codeGenType: CodeGenType): E
   def asPrimitiveStream(values: Seq[E], codeGenType: CodeGenType): E
 
   def declarePrimitiveIterator(name: String, iterableCodeGenType: CodeGenType): Unit
@@ -123,7 +124,7 @@ trait MethodStructure[E] {
   def toFloat(expression:E): E
 
   // parameters
-  def expectParameter(key: String, variableName: String): Unit
+  def expectParameter(key: String, variableName: String, codeGenType: CodeGenType): Unit
 
   // map
   def mapGetExpression(mapName: String, key: String): E

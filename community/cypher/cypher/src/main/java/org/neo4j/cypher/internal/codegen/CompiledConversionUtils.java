@@ -37,6 +37,8 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.impl.core.NodeManager;
 
+import static java.lang.String.format;
+
 // Class with static methods used by compiled execution plans
 public abstract class CompiledConversionUtils
 {
@@ -181,6 +183,22 @@ public abstract class CompiledConversionUtils
         }
     }
 
+    public static Object loadPrimitiveListParameter( Object value )
+    {
+        if ( value instanceof Node )
+        {
+            return new NodeIdWrapper( ((Node) value).getId() );
+        }
+        else if ( value instanceof Relationship )
+        {
+            return new RelationshipIdWrapper( ((Relationship) value).getId() );
+        }
+        else
+        {
+            return value;
+        }
+    }
+
     public static final Object materializeAnyResult( NodeManager nodeManager, Object anyValue )
     {
         if ( anyValue instanceof NodeIdWrapper )
@@ -262,5 +280,40 @@ public abstract class CompiledConversionUtils
         {
             throw new CypherTypeException( "Don't know how to create an iterator out of " + iterable.getClass().getSimpleName(), null );
         }
+    }
+
+    public static LongStream toLongStream( Object list )
+    {
+        if ( list == null )
+        {
+            return LongStream.empty();
+        }
+        else if ( list instanceof List )
+        {
+            return ((List) list).stream().mapToLong( n -> ((Number) n).longValue() );
+        }
+        else if ( list instanceof Object[] )
+        {
+            return Arrays.stream( (Object[]) list ).mapToLong( n -> ((Number) n).longValue() );
+        }
+        else if ( list instanceof byte[] )
+        {
+            byte[] array = (byte[]) list;
+            return IntStream.range( 0, array.length ).map( i -> array[i] ).mapToLong( i -> i );
+        }
+        else if ( list instanceof short[] )
+        {
+            short[] array = (short[]) list;
+            return IntStream.range( 0, array.length ).map( i -> array[i] ).mapToLong( i -> i );
+        }
+        else if ( list instanceof int[] )
+        {
+            return IntStream.of( (int[]) list ).mapToLong( i -> i );
+        }
+        else if ( list instanceof long[] )
+        {
+            return LongStream.of( (long[]) list );
+        }
+        throw new IllegalArgumentException( format( "Can not be converted to stream: %s", list.getClass().getName() ) );
     }
 }

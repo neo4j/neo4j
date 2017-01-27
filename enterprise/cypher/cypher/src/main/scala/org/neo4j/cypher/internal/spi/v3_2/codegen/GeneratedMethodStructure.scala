@@ -326,13 +326,25 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   private def loadEvent = generator
     .load(events.headOption.getOrElse(throw new IllegalStateException("no current trace event")))
 
-  override def expectParameter(key: String, variableName: String) = {
+  override def expectParameter(key: String, variableName: String, codeGenType: CodeGenType) = {
     using(
       generator.ifNotStatement(invoke(params, mapContains, constant(key)))) { block =>
       block.throwException(parameterNotFoundException(key))
     }
-    generator.assign(typeRef[Object], variableName, invoke(loadParameter,
-                                                           invoke(params, mapGet, constantExpression(key))))
+    val invokeLoadParameter = invoke(loadParameter, invoke(params, mapGet, constantExpression(key)))
+    generator.assign(lowerType(codeGenType), variableName,
+      // We assume the value in the parameter map will always be boxed, so if we are declaring
+      // a primitive variable we need to unbox
+      if (codeGenType.isPrimitive)
+        unbox(invokeLoadParameter, codeGenType)
+      else {
+        codeGenType match {
+          case CodeGenType(_, ListReferenceType(repr)) if RepresentationType.isPrimitive(repr) =>
+            asPrimitiveStream(invokeLoadParameter, codeGenType)
+          case _ => invokeLoadParameter
+        }
+      }
+    )
   }
 
   override def mapGetExpression(mapName: String, key: String): Expression = {
@@ -477,6 +489,33 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   }
 
   override def asList(values: Seq[Expression]) = Templates.asList[Object](values)
+
+  override def asPrimitiveStream(publicTypeList: Expression, codeGenType: CodeGenType) = {
+    codeGenType match {
+      // PrimitiveNodeStream.of( (List<Node>) publicTypeList )
+
+      case CodeGenType(ListType(CTNode), ListReferenceType(IntType)) =>
+        Expression.invoke(methodReference(typeRef[PrimitiveNodeStream], typeRef[PrimitiveNodeStream], "of", typeRef[Object]), publicTypeList)
+      case CodeGenType(ListType(CTRelationship), ListReferenceType(IntType)) =>
+        Expression.invoke(methodReference(typeRef[PrimitiveRelationshipStream], typeRef[PrimitiveRelationshipStream], "of", typeRef[Object]), publicTypeList)
+      case CodeGenType(_, ListReferenceType(IntType)) =>
+        // byte[]
+        // short[]
+        // int[]
+        // long[]
+        // Object[] -> Arrays.stream((Object[]) o).mapToLong(((Number)o).longValue());
+        Expression.invoke(methodReference(typeRef[CompiledConversionUtils], typeRef[LongStream], "toLongStream", typeRef[Object]), publicTypeList)
+        // TODO
+//      case CodeGenType(_, ListReferenceType(FloatType)) =>
+//        Templates.asDoubleStream(values)
+//      case CodeGenType(_, ListReferenceType(BoolType)) =>
+//        // There are no primitive streams for booleans, so we use an IntStream with value conversions
+//        // 0 = false, 1 = true
+//        Templates.asIntStream(values.map(Expression.ternary(_, Expression.constant(1), Expression.constant(0))))
+      case _ =>
+        throw new IllegalArgumentException(s"CodeGenType $codeGenType not supported as primitive stream")
+    }
+  }
 
   override def asPrimitiveStream(values: Seq[Expression], codeGenType: CodeGenType) = {
     codeGenType match {

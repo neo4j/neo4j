@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.CodeGenContext
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.expressions
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.functions.functionConverter
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.spi.MethodStructure
+import org.neo4j.cypher.internal.compiled_runtime.v3_2.helpers.LiteralTypeSupport
 import org.neo4j.cypher.internal.compiler.v3_2.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.frontend.v3_2.ast
 import org.neo4j.cypher.internal.frontend.v3_2.ast.PropertyKeyName
@@ -131,7 +132,8 @@ object ExpressionConverter {
       case ast.Property(variable@ast.Variable(name), PropertyKeyName(propKeyName)) =>
         MapProperty(context.getVariable(name), propKeyName)
 
-      case ast.Parameter(name, _) => expressions.Parameter(name, context.namer.newVarName())
+      case ast.Parameter(name, cypherType) =>
+        expressions.Parameter(name, context.namer.newVarName(), LiteralTypeSupport.deriveCodeGenType(cypherType))
 
       case lit: ast.IntegerLiteral => Literal(lit.value)
 
