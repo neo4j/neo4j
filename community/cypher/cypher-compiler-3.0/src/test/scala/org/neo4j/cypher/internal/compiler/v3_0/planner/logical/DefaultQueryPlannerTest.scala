@@ -24,7 +24,7 @@ import org.mockito.Mockito.{times, verify, when}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps.LogicalPlanProducer
-import org.neo4j.cypher.internal.compiler.v3_0.planner.{CardinalityEstimation, LogicalPlanningTestSupport2, PlannerQuery, QueryGraph, RegularPlannerQuery, RegularQueryProjection, UnionQuery}
+import org.neo4j.cypher.internal.compiler.v3_0.planner._
 import org.neo4j.cypher.internal.compiler.v3_0.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_0.ast.{ASTAnnotationMap, Expression, Hint}
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
@@ -93,7 +93,7 @@ class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
     when(context.config).thenReturn(QueryPlannerConfiguration.default)
     when(context.input).thenReturn(QueryGraphSolverInput.empty)
     when(context.strategy).thenReturn(new QueryGraphSolver with PatternExpressionSolving {
-      override def plan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan]): LogicalPlan = lp
+      override def plan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): LogicalPlan = lp
     })
     when(context.withStrictness(any())).thenReturn(context)
     val producer = mock[LogicalPlanProducer]

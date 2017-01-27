@@ -36,7 +36,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{Limit => L
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{CantHandleQueryException, PeriodicCommit, logical}
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{InstrumentedGraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
-import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionContext, Monitors, ast => compilerAst, pipes}
+import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionContext, Monitors, pipes, ast => compilerAst}
 import org.neo4j.cypher.internal.frontend.v3_0._
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.helpers.Eagerly
@@ -391,6 +391,9 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
 
     case RepeatableRead(_) =>
       RepeatableReadPipe(source)()
+
+    case LockNodes(_, nodesToLock) =>
+      LockNodesPipe(source, nodesToLock.map(_.name))()
 
     case x =>
       throw new CantHandleQueryException(x.toString)

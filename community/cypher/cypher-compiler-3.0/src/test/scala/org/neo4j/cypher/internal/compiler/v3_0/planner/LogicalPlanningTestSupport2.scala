@@ -61,7 +61,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
   var tokenResolver = new SimpleTokenResolver()
   val planRewriter = LogicalPlanRewriter(rewriterSequencer)
   final var planner = new DefaultQueryPlanner(planRewriter) {
-    def internalPlan(query: PlannerQuery)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan] = None): LogicalPlan =
+    def internalPlan(query: PlannerQuery)(implicit context: LogicalPlanningContext): LogicalPlan =
       planSingleQuery(query)
   }
   var queryGraphSolver: QueryGraphSolver = new IDPQueryGraphSolver(SingleComponentPlanner(mock[IDPQueryGraphSolverMonitor]), cartesianProductsOrValueJoins, mock[IDPQueryGraphSolverMonitor])

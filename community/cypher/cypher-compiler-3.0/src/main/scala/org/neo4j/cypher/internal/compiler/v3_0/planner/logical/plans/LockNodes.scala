@@ -17,18 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps
+package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v3_0.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{LeafPlanner, LogicalPlanningContext}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.{CardinalityEstimation, PlannerQuery}
 
-object argumentLeafPlanner extends LeafPlanner {
-  def apply(qg: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] = {
-    val ids = qg.patternNodes ++ qg.patternRelationships.map(_.name)
-    if ((qg.argumentIds intersect ids).isEmpty)
-      Seq.empty
-    else
-      Seq(context.logicalPlanProducer.planQueryArgumentRow(qg))
-  }
+case class LockNodes(source: LogicalPlan, nodesToLock: Set[IdName])(val solved: PlannerQuery with CardinalityEstimation)
+  extends LogicalPlan with LazyLogicalPlan {
+  override def lhs: Option[LogicalPlan] = Some(source)
+
+  override def rhs: Option[LogicalPlan] = None
+
+  override def availableSymbols: Set[IdName] = source.availableSymbols
 }
