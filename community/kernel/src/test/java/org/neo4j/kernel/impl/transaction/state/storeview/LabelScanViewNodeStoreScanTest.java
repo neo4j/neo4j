@@ -158,7 +158,7 @@ public class LabelScanViewNodeStoreScanTest
 
     private MultipleIndexPopulator.IndexPopulation getPopulation( LabelScanTestMultipleIndexPopulator indexPopulator )
     {
-        return indexPopulator.createPopulation( mock( IndexPopulator.class ), null, null, null, null, null, null );
+        return indexPopulator.createPopulation( mock( IndexPopulator.class ), 1, null, null, null, null, null, null );
     }
 
     private LabelScanViewNodeStoreScan<Exception> getLabelScanViewStoreScan( int[] labelIds )
@@ -176,13 +176,13 @@ public class LabelScanViewNodeStoreScanTest
         }
 
         @Override
-        public IndexPopulation createPopulation( IndexPopulator populator,
+        public IndexPopulation createPopulation( IndexPopulator populator, long indexId,
                 IndexDescriptor descriptor, IndexConfiguration config,
                 SchemaIndexProvider.Descriptor providerDescriptor,
                 FlippableIndexProxy flipper, FailedIndexProxyFactory failedIndexProxyFactory,
                 String indexUserDescription )
         {
-            return super.createPopulation( populator, descriptor, config, providerDescriptor, flipper,
+            return super.createPopulation( populator, indexId, descriptor, config, providerDescriptor, flipper,
                             failedIndexProxyFactory,
                             indexUserDescription );
         }

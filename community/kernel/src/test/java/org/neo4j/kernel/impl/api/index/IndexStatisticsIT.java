@@ -24,6 +24,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -48,6 +49,7 @@ import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.register.Register.DoubleLongRegister;
+import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
@@ -98,9 +100,10 @@ public class IndexStatisticsIT
 
         // where ALIEN and SPECIMEN are both the first ids of their kind
         IndexDescriptor index = IndexDescriptorFactory.of( labelId( ALIEN ), pkId( SPECIMEN ) );
+        long indexId = indexId( index );
 
         // for which we don't have index counts
-        resetIndexCounts( index );
+        resetIndexCounts( indexId );
 
         // when we shutdown the database and restart it
         restart();
@@ -110,11 +113,11 @@ public class IndexStatisticsIT
         assertEqualRegisters(
                 "Unexpected updates and size for the index",
                 newDoubleLongRegister( 0, 32 ),
-                tracker.indexUpdatesAndSize( index, newDoubleLongRegister() ) );
+                tracker.indexUpdatesAndSize( indexId, newDoubleLongRegister() ) );
         assertEqualRegisters(
             "Unexpected sampling result",
             newDoubleLongRegister( 16, 32 ),
-            tracker.indexSample( index, newDoubleLongRegister() )
+            tracker.indexSample( indexId, newDoubleLongRegister() )
         );
 
         // and also
@@ -189,12 +192,24 @@ public class IndexStatisticsIT
         }
     }
 
-    private void resetIndexCounts( IndexDescriptor index )
+    private long indexId(IndexDescriptor index)
+    {
+        for ( SchemaRule rule : neoStores().getSchemaStore() )
+        {
+            if ( rule.descriptor().equals( index.descriptor() ) )
+            {
+                return rule.getId();
+            }
+        }
+        return -1;
+    }
+
+    private void resetIndexCounts( long indexId )
     {
         try ( CountsAccessor.IndexStatsUpdater updater = neoStores().getCounts().updateIndexCounts() )
         {
-            updater.replaceIndexSample( index, 0, 0 );
-            updater.replaceIndexUpdateAndSize( index, 0, 0 );
+            updater.replaceIndexSample( indexId, 0, 0 );
+            updater.replaceIndexUpdateAndSize( indexId, 0, 0 );
         }
     }
 

@@ -56,14 +56,14 @@ public class CountsOracle
         state.addRelationship( start.labels, type, end.labels );
     }
 
-    public void indexUpdatesAndSize( IndexDescriptor descriptor, long updates, long size )
+    public void indexUpdatesAndSize( long indexId, long updates, long size )
     {
-        state.replaceIndexUpdateAndSize( descriptor, updates, size );
+        state.replaceIndexUpdateAndSize( indexId, updates, size );
     }
 
-    public void indexSampling( IndexDescriptor descriptor, long unique, long size )
+    public void indexSampling( long indexId, long unique, long size )
     {
-        state.replaceIndexSample( descriptor, unique, size );
+        state.replaceIndexSample( indexId, unique, size );
     }
 
     public void update( CountsTracker target, long txId )
@@ -110,19 +110,19 @@ public class CountsOracle
             }
 
             @Override
-            public void visitIndexStatistics( IndexDescriptor descriptor, long updates, long size )
+            public void visitIndexStatistics( long indexId, long updates, long size )
             {
                 Register.DoubleLongRegister output =
-                        tracker.indexUpdatesAndSize( descriptor, newDoubleLongRegister() );
+                        tracker.indexUpdatesAndSize( indexId, newDoubleLongRegister() );
                 assertEquals( "Should be able to read visited state.", output.readFirst(), updates );
                 assertEquals( "Should be able to read visited state.", output.readSecond(), size );
             }
 
             @Override
-            public void visitIndexSample( IndexDescriptor descriptor, long unique, long size )
+            public void visitIndexSample( long indexId, long unique, long size )
             {
                 Register.DoubleLongRegister output =
-                        tracker.indexSample( descriptor, newDoubleLongRegister() );
+                        tracker.indexSample( indexId, newDoubleLongRegister() );
                 assertEquals( "Should be able to read visited state.", output.readFirst(), unique );
                 assertEquals( "Should be able to read visited state.", output.readSecond(), size );
             }

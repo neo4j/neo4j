@@ -119,7 +119,8 @@ public class ResampleIndexProcedureTest
     }
 
     @Test
-    public void shouldTriggerResampling() throws SchemaRuleNotFoundException, ProcedureException
+    public void shouldTriggerResampling()
+            throws SchemaRuleNotFoundException, ProcedureException, IndexNotFoundKernelException
     {
         IndexDescriptor index = IndexDescriptorFactory.of( 123, 456 );
         when( operations.indexGetForLabelAndPropertyKey( anyObject() ) ).thenReturn( index );

@@ -69,15 +69,13 @@ public class CountsSnapshotDeserializer
                 break;
 
             case INDEX_SAMPLE:
-                descriptor = IndexDescriptorFactory.of( readNodePropertyDescriptor( channel ) );
-                key = indexSampleKey( descriptor );
+                key = indexSampleKey( channel.getLong() );
                 value = new long[]{channel.getLong(), channel.getLong()};
                 map.put( key, value );
                 break;
 
             case INDEX_STATISTICS:
-                descriptor = IndexDescriptorFactory.of( readNodePropertyDescriptor( channel ) );
-                key = indexStatisticsKey( descriptor );
+                key = indexStatisticsKey( channel.getLong() );
                 value = new long[]{channel.getLong(), channel.getLong()};
                 map.put( key, value );
                 break;
@@ -90,24 +88,5 @@ public class CountsSnapshotDeserializer
             }
         }
         return new CountsSnapshot( txid, map );
-    }
-
-    private static NodePropertyDescriptor readNodePropertyDescriptor( ReadableClosableChannel channel ) throws IOException
-    {
-        int labelId = channel.getInt();
-        short length = channel.getShort();
-        if ( length > 1 )
-        {
-            int[] propertyKeyIds = new int[length];
-            for ( int i = 0; i < length; i++ )
-            {
-                propertyKeyIds[i] = channel.getInt();
-            }
-            return new NodeMultiPropertyDescriptor( labelId, propertyKeyIds );
-        }
-        else
-        {
-            return new NodePropertyDescriptor( labelId, channel.getInt() );
-        }
     }
 }

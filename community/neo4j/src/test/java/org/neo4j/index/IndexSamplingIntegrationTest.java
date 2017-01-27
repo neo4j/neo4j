@@ -30,8 +30,11 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
+import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -181,7 +184,24 @@ public class IndexSamplingIntegrationTest
         assertEquals( nodes - deletedNodes, indexSizeRegister.readSecond() );
     }
 
-    private DoubleLongRegister fetchIndexSamplingValues( GraphDatabaseService db )
+    private long indexId( GraphDatabaseAPI api ) throws IndexNotFoundKernelException
+    {
+        try ( Transaction tx = api.beginTx() )
+        {
+            IndexingService indexingService =
+                    api.getDependencyResolver().resolveDependency( IndexingService.class );
+            ReadOperations readOperations =
+                    api.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class ).get()
+                            .readOperations();
+            int labelId = readOperations.labelGetForName( label.name() );
+            int propertyKeyId = readOperations.propertyKeyGetForName( property );
+            long indexId = indexingService.getIndexId( IndexDescriptorFactory.of( labelId, propertyKeyId ) );
+            tx.success();
+            return indexId;
+        }
+    }
+
+    private DoubleLongRegister fetchIndexSamplingValues( GraphDatabaseService db ) throws IndexNotFoundKernelException
     {
         try
         {
@@ -191,8 +211,7 @@ public class IndexSamplingIntegrationTest
             GraphDatabaseAPI api = (GraphDatabaseAPI) db;
             CountsTracker countsTracker = api.getDependencyResolver().resolveDependency( RecordStorageEngine.class )
                     .testAccessNeoStores().getCounts();
-            IndexDescriptor descriptor = IndexDescriptorFactory.of( 0, 0 );
-            IndexSampleKey key = CountsKeyFactory.indexSampleKey( descriptor ); // cheating a bit...
+            IndexSampleKey key = CountsKeyFactory.indexSampleKey( indexId( api ) );
             return countsTracker.get( key, Registers.newDoubleLongRegister() );
         }
         finally
@@ -204,7 +223,7 @@ public class IndexSamplingIntegrationTest
         }
     }
 
-    private DoubleLongRegister fetchIndexSizeValues( GraphDatabaseService db )
+    private DoubleLongRegister fetchIndexSizeValues( GraphDatabaseService db ) throws IndexNotFoundKernelException
     {
         try
         {
@@ -214,8 +233,7 @@ public class IndexSamplingIntegrationTest
             GraphDatabaseAPI api = (GraphDatabaseAPI) db;
             CountsTracker countsTracker = api.getDependencyResolver().resolveDependency( RecordStorageEngine.class )
                     .testAccessNeoStores().getCounts();
-            IndexDescriptor descriptor = IndexDescriptorFactory.of( 0, 0 );
-            IndexStatisticsKey key = CountsKeyFactory.indexStatisticsKey( descriptor ); // cheating a bit...
+            IndexStatisticsKey key = CountsKeyFactory.indexStatisticsKey( indexId( api ) );
             return countsTracker.get( key, Registers.newDoubleLongRegister() );
         }
         finally

@@ -77,7 +77,7 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey>
 {
     /** The format specifier for the current version of the store file format. */
     private static final byte[] FORMAT = {'N', 'e', 'o', 'C', 'o', 'u', 'n', 't',
-                                          'S', 't', 'o', 'r', 'e', /**/0, 1, 'V'};
+                                          'S', 't', 'o', 'r', 'e', /**/0, 2, 'V'};
     @SuppressWarnings("unchecked")
     private static final HeaderField<?>[] HEADER_FIELDS = new HeaderField[]{FileVersion.FILE_VERSION};
     public static final String LEFT = ".a", RIGHT = ".b";
@@ -184,16 +184,16 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey>
     }
 
     @Override
-    public Register.DoubleLongRegister indexUpdatesAndSize( IndexDescriptor descriptor,
+    public Register.DoubleLongRegister indexUpdatesAndSize( long indexId,
                                                             Register.DoubleLongRegister target )
     {
-        return get( indexStatisticsKey( descriptor ), target );
+        return get( indexStatisticsKey( indexId ), target );
     }
 
     @Override
-    public Register.DoubleLongRegister indexSample( IndexDescriptor descriptor, Register.DoubleLongRegister target )
+    public Register.DoubleLongRegister indexSample( long indexId, Register.DoubleLongRegister target )
     {
-        return get( indexSampleKey( descriptor ), target );
+        return get( indexSampleKey( indexId ), target );
     }
 
     public Optional<CountsAccessor.Updater> apply( long txId )

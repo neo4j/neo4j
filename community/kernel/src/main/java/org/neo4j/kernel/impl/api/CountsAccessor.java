@@ -40,13 +40,13 @@ public interface CountsAccessor extends CountsVisitor.Visitable
      * @param target a register to store the read values in
      * @return the input register for convenience
      */
-    DoubleLongRegister indexUpdatesAndSize( IndexDescriptor descriptor, DoubleLongRegister target );
+    DoubleLongRegister indexUpdatesAndSize( long indexId, DoubleLongRegister target );
 
     /**
      * @param target a register to store the read values in
      * @return the input register for convenience
      */
-    DoubleLongRegister indexSample( IndexDescriptor descriptor, DoubleLongRegister target );
+    DoubleLongRegister indexSample( long indexId, DoubleLongRegister target );
 
     interface Updater extends AutoCloseable
     {
@@ -60,11 +60,11 @@ public interface CountsAccessor extends CountsVisitor.Visitable
 
     interface IndexStatsUpdater extends AutoCloseable
     {
-        void replaceIndexUpdateAndSize( IndexDescriptor descriptor, long updates, long size );
+        void replaceIndexUpdateAndSize( long indexId, long updates, long size );
 
-        void replaceIndexSample( IndexDescriptor descriptor, long unique, long size );
+        void replaceIndexSample( long indexId, long unique, long size );
 
-        void incrementIndexUpdates( IndexDescriptor descriptor, long delta );
+        void incrementIndexUpdates( long indexId, long delta );
 
         @Override
         void close();
@@ -94,15 +94,15 @@ public interface CountsAccessor extends CountsVisitor.Visitable
         }
 
         @Override
-        public void visitIndexStatistics( IndexDescriptor descriptor, long updates, long size )
+        public void visitIndexStatistics( long indexId, long updates, long size )
         {
-            stats.replaceIndexUpdateAndSize( descriptor, updates, size );
+            stats.replaceIndexUpdateAndSize( indexId, updates, size );
         }
 
         @Override
-        public void visitIndexSample( IndexDescriptor descriptor, long unique, long size )
+        public void visitIndexSample( long indexId, long unique, long size )
         {
-            stats.replaceIndexSample( descriptor, unique, size );
+            stats.replaceIndexSample( indexId, unique, size );
         }
     }
 }

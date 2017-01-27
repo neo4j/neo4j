@@ -48,14 +48,14 @@ public class OnlineIndexSamplingJobTest
     public void shouldSampleTheIndexAndStoreTheValueWhenTheIndexIsOnline()
     {
         // given
-        OnlineIndexSamplingJob job = new OnlineIndexSamplingJob( indexProxy, indexStoreView, "Foo", logProvider );
+        OnlineIndexSamplingJob job = new OnlineIndexSamplingJob( indexId, indexProxy, indexStoreView, "Foo", logProvider );
         when( indexProxy.getState() ).thenReturn( ONLINE );
 
         // when
         job.run();
 
         // then
-        verify( indexStoreView ).replaceIndexCounts( indexDescriptor, indexUniqueValues, indexSize, indexSize );
+        verify( indexStoreView ).replaceIndexCounts( indexId, indexUniqueValues, indexSize, indexSize );
         verifyNoMoreInteractions( indexStoreView );
     }
 
@@ -63,7 +63,7 @@ public class OnlineIndexSamplingJobTest
     public void shouldSampleTheIndexButDoNotStoreTheValuesIfTheIndexIsNotOnline()
     {
         // given
-        OnlineIndexSamplingJob job = new OnlineIndexSamplingJob( indexProxy, indexStoreView, "Foo", logProvider );
+        OnlineIndexSamplingJob job = new OnlineIndexSamplingJob( indexId, indexProxy, indexStoreView, "Foo", logProvider );
         when( indexProxy.getState() ).thenReturn( FAILED );
 
         // when
@@ -74,6 +74,7 @@ public class OnlineIndexSamplingJobTest
     }
 
     private final LogProvider logProvider = NullLogProvider.getInstance();
+    private final long indexId = 1;
     private final IndexProxy indexProxy = mock( IndexProxy.class );
     private final IndexStoreView indexStoreView = mock( IndexStoreView.class );
     private final IndexDescriptor indexDescriptor = IndexDescriptorFactory.of( 1, 2 );

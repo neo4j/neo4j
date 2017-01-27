@@ -54,11 +54,13 @@ import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
+import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
@@ -174,6 +176,7 @@ public class IndexStatisticsTest
         // given
         createSomePersons();
         IndexDescriptor index = awaitOnline( createIndex( "Person", "name" ) );
+        long indexId = indexId( index );
 
         // when
         dropIndex( index );
@@ -186,12 +189,12 @@ public class IndexStatisticsTest
         }
         catch ( IndexNotFoundKernelException e )
         {
-            DoubleLongRegister actual = getTracker().indexSample( index, Registers.newDoubleLongRegister() );
+            DoubleLongRegister actual = getTracker().indexSample( indexId, Registers.newDoubleLongRegister() );
             assertDoubleLongEquals( 0L, 0L, actual );
         }
 
         // and then index size and index updates are zero on disk
-        DoubleLongRegister actual = getTracker().indexUpdatesAndSize( index, Registers.newDoubleLongRegister() );
+        DoubleLongRegister actual = getTracker().indexUpdatesAndSize( indexId, Registers.newDoubleLongRegister() );
         assertDoubleLongEquals( 0L, 0L, actual );
     }
 
@@ -494,6 +497,24 @@ public class IndexStatisticsTest
             tx.success();
             return index;
         }
+    }
+
+    private long indexId(IndexDescriptor index)
+    {
+        for ( SchemaRule rule : neoStores().getSchemaStore() )
+        {
+            if ( rule.descriptor().equals( index.descriptor() ) )
+            {
+                return rule.getId();
+            }
+        }
+        return -1;
+    }
+
+    private NeoStores neoStores()
+    {
+        return ( (GraphDatabaseAPI) db ).getDependencyResolver().resolveDependency( RecordStorageEngine.class )
+                .testAccessNeoStores();
     }
 
     private IndexDescriptor awaitOnline( IndexDescriptor index ) throws KernelException

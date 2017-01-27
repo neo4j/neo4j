@@ -25,7 +25,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.state.RecordState;
@@ -68,9 +67,9 @@ public class CountsRecordState implements CountsAccessor, RecordState, CountsAcc
     }
 
     @Override
-    public DoubleLongRegister indexSample( IndexDescriptor descriptor, DoubleLongRegister target )
+    public DoubleLongRegister indexSample( long indexId, DoubleLongRegister target )
     {
-        counts( indexSampleKey( descriptor ) ).copyTo( target );
+        counts( indexSampleKey( indexId ) ).copyTo( target );
         return target;
     }
 
@@ -84,28 +83,28 @@ public class CountsRecordState implements CountsAccessor, RecordState, CountsAcc
     }
 
     @Override
-    public DoubleLongRegister indexUpdatesAndSize( IndexDescriptor descriptor, DoubleLongRegister target )
+    public DoubleLongRegister indexUpdatesAndSize( long indexId, DoubleLongRegister target )
     {
-        counts( indexStatisticsKey( descriptor ) ).copyTo( target );
+        counts( indexStatisticsKey( indexId ) ).copyTo( target );
         return target;
     }
 
     @Override
-    public void replaceIndexUpdateAndSize( IndexDescriptor descriptor, long updates, long size )
+    public void replaceIndexUpdateAndSize( long indexId, long updates, long size )
     {
-        counts( indexStatisticsKey( descriptor ) ).write( updates, size );
+        counts( indexStatisticsKey( indexId ) ).write( updates, size );
     }
 
     @Override
-    public void incrementIndexUpdates( IndexDescriptor descriptor, long delta )
+    public void incrementIndexUpdates( long indexId, long delta )
     {
-        counts( indexStatisticsKey( descriptor ) ).increment( delta, 0L );
+        counts( indexStatisticsKey( indexId ) ).increment( delta, 0L );
     }
 
     @Override
-    public void replaceIndexSample( IndexDescriptor descriptor, long unique, long size )
+    public void replaceIndexSample( long indexId, long unique, long size )
     {
-        counts( indexSampleKey( descriptor ) ).write( unique, size );
+        counts( indexSampleKey( indexId ) ).write( unique, size );
     }
 
     @Override
@@ -286,15 +285,15 @@ public class CountsRecordState implements CountsAccessor, RecordState, CountsAcc
             verify( relationshipKey( startLabelId, typeId, endLabelId ), 0, count );
         }
         @Override
-        public void visitIndexStatistics( IndexDescriptor descriptor, long updates, long size )
+        public void visitIndexStatistics( long indexId, long updates, long size )
         {
-            verify( indexStatisticsKey( descriptor ), updates, size );
+            verify( indexStatisticsKey( indexId ), updates, size );
         }
 
         @Override
-        public void visitIndexSample( IndexDescriptor descriptor, long unique, long size )
+        public void visitIndexSample( long indexId, long unique, long size )
         {
-            verify( indexSampleKey( descriptor ), unique, size );
+            verify( indexSampleKey( indexId ), unique, size );
         }
 
         private void verify( CountsKey key, long actualFirst, long actualSecond )

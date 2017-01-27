@@ -62,8 +62,7 @@ public class CountsStoreMapGenerator
     {
         for ( int i = 0; i < num; i++ )
         {
-            IndexDescriptor descriptor = IndexDescriptorFactory.of( i, i );
-            map.put( CountsKeyFactory.indexSampleKey( descriptor ), new long[]{i, i} );
+            map.put( CountsKeyFactory.indexSampleKey( i ), new long[]{i, i} );
         }
     }
 
@@ -71,8 +70,7 @@ public class CountsStoreMapGenerator
     {
         for ( int i = 0; i < num; i++ )
         {
-            IndexDescriptor descriptor = IndexDescriptorFactory.of( i, i );
-            map.put( CountsKeyFactory.indexStatisticsKey( descriptor ), new long[]{i, i} );
+            map.put( CountsKeyFactory.indexStatisticsKey( i ), new long[]{i, i} );
         }
     }
 }

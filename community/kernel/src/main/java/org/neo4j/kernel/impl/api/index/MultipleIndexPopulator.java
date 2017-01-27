@@ -72,7 +72,7 @@ import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
  * Usage of this class should be something like:
  * <ol>
  * <li>Instantiation.</li>
- * <li>One or more calls to {@link #addPopulator(IndexPopulator, IndexDescriptor, Descriptor, IndexConfiguration,
+ * <li>One or more calls to {@link #addPopulator(IndexPopulator, long, IndexDescriptor, Descriptor, IndexConfiguration,
  * FlippableIndexProxy, FailedIndexProxyFactory, String)}.</li>
  * <li>Call to {@link #create()} to create data structures and files to start accepting updates.</li>
  * <li>Call to {@link #indexAllNodes()} (blocking call).</li>
@@ -109,23 +109,24 @@ public class MultipleIndexPopulator implements IndexPopulator
 
     public IndexPopulation addPopulator(
             IndexPopulator populator,
+            long indexId,
             IndexDescriptor descriptor,
             Descriptor providerDescriptor, IndexConfiguration config,
             FlippableIndexProxy flipper,
             FailedIndexProxyFactory failedIndexProxyFactory,
             String indexUserDescription )
     {
-        IndexPopulation population = createPopulation( populator, descriptor, config, providerDescriptor, flipper,
+        IndexPopulation population = createPopulation( populator, indexId, descriptor, config, providerDescriptor, flipper,
                 failedIndexProxyFactory, indexUserDescription );
         populations.add( population );
         return population;
     }
 
-    protected IndexPopulation createPopulation( IndexPopulator populator, IndexDescriptor descriptor,
+    protected IndexPopulation createPopulation( IndexPopulator populator, long indexId, IndexDescriptor descriptor,
             IndexConfiguration config, Descriptor providerDescriptor, FlippableIndexProxy flipper,
             FailedIndexProxyFactory failedIndexProxyFactory, String indexUserDescription )
     {
-        return new IndexPopulation( populator, descriptor, config, providerDescriptor, flipper, failedIndexProxyFactory,
+        return new IndexPopulation( populator, indexId, descriptor, config, providerDescriptor, flipper, failedIndexProxyFactory,
                 indexUserDescription );
     }
 
@@ -289,7 +290,7 @@ public class MultipleIndexPopulator implements IndexPopulator
     public void replaceIndexCounts( long uniqueElements, long maxUniqueElements, long indexSize )
     {
         forEachPopulation( population ->
-                storeView.replaceIndexCounts( population.descriptor, uniqueElements, maxUniqueElements, indexSize ) );
+                storeView.replaceIndexCounts( population.indexId, uniqueElements, maxUniqueElements, indexSize ) );
     }
 
     public void flipAfterPopulation()
@@ -453,6 +454,7 @@ public class MultipleIndexPopulator implements IndexPopulator
     public class IndexPopulation
     {
         public final IndexPopulator populator;
+        final long indexId;
         final IndexDescriptor descriptor;
         final IndexConfiguration config;
         final SchemaIndexProvider.Descriptor providerDescriptor;
@@ -464,6 +466,7 @@ public class MultipleIndexPopulator implements IndexPopulator
 
         IndexPopulation(
                 IndexPopulator populator,
+                long indexId,
                 IndexDescriptor descriptor,
                 IndexConfiguration config,
                 Descriptor providerDescriptor,
@@ -472,13 +475,14 @@ public class MultipleIndexPopulator implements IndexPopulator
                 String indexUserDescription )
         {
             this.populator = populator;
+            this.indexId = indexId;
             this.descriptor = descriptor;
             this.config = config;
             this.providerDescriptor = providerDescriptor;
             this.flipper = flipper;
             this.failedIndexProxyFactory = failedIndexProxyFactory;
             this.indexUserDescription = indexUserDescription;
-            this.indexCountsRemover = new IndexCountsRemover( storeView, descriptor );
+            this.indexCountsRemover = new IndexCountsRemover( storeView, indexId );
         }
 
         private void flipToFailed( Throwable t )
@@ -523,7 +527,7 @@ public class MultipleIndexPopulator implements IndexPopulator
             flipper.flip( () -> {
                 populateFromQueueIfAvailable( Long.MAX_VALUE );
                 IndexSample sample = populator.sampleResult();
-                storeView.replaceIndexCounts( descriptor, sample.uniqueValues(), sample.sampleSize(),
+                storeView.replaceIndexCounts( indexId, sample.uniqueValues(), sample.sampleSize(),
                         sample.indexSize() );
                 populator.close( true );
                 return null;

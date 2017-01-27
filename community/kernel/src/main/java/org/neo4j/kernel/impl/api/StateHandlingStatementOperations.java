@@ -1160,13 +1160,14 @@ public class StateHandlingStatementOperations implements
 
     @Override
     public DoubleLongRegister indexUpdatesAndSize( KernelStatement statement, IndexDescriptor index,
-            DoubleLongRegister target )
+            DoubleLongRegister target ) throws IndexNotFoundKernelException
     {
         return storeLayer.indexUpdatesAndSize( index, target );
     }
 
     @Override
     public DoubleLongRegister indexSample( KernelStatement statement, IndexDescriptor index, DoubleLongRegister target )
+            throws IndexNotFoundKernelException
     {
         return storeLayer.indexSample( index, target );
     }

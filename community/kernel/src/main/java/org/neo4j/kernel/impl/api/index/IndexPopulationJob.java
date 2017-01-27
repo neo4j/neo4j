@@ -75,6 +75,7 @@ public class IndexPopulationJob implements Runnable
      * @param failedIndexProxyFactory {@link FailedIndexProxyFactory} to use after an unsuccessful population.
      */
     public void addPopulator( IndexPopulator populator,
+            long indexId,
             IndexDescriptor descriptor,
             IndexConfiguration config,
             SchemaIndexProvider.Descriptor providerDescriptor,
@@ -83,7 +84,7 @@ public class IndexPopulationJob implements Runnable
             FailedIndexProxyFactory failedIndexProxyFactory )
     {
         assert storeScan == null : "Population have already started, too late to add populators at this point";
-        this.multiPopulator.addPopulator( populator, descriptor, providerDescriptor, config, flipper,
+        this.multiPopulator.addPopulator( populator, indexId, descriptor, providerDescriptor, config, flipper,
                 failedIndexProxyFactory, indexUserDescription );
     }
 

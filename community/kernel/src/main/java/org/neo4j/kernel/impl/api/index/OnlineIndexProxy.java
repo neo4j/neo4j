@@ -39,6 +39,7 @@ import static org.neo4j.helpers.FutureAdapter.VOID;
 
 public class OnlineIndexProxy implements IndexProxy
 {
+    private final long indexId;
     private final IndexDescriptor descriptor;
     final IndexAccessor accessor;
     private final IndexStoreView storeView;
@@ -72,17 +73,18 @@ public class OnlineIndexProxy implements IndexProxy
     //   slightly more costly, but shouldn't make that big of a difference hopefully.
     private final boolean forcedIdempotentMode;
 
-    public OnlineIndexProxy( IndexDescriptor descriptor, IndexConfiguration configuration, IndexAccessor accessor,
-                             IndexStoreView storeView, SchemaIndexProvider.Descriptor providerDescriptor,
-                             boolean forcedIdempotentMode )
+    public OnlineIndexProxy( long indexId, IndexDescriptor descriptor, IndexConfiguration configuration,
+            IndexAccessor accessor, IndexStoreView storeView, SchemaIndexProvider.Descriptor providerDescriptor,
+            boolean forcedIdempotentMode )
     {
+        this.indexId = indexId;
         this.descriptor = descriptor;
         this.storeView = storeView;
         this.providerDescriptor = providerDescriptor;
         this.accessor = accessor;
         this.configuration = configuration;
         this.forcedIdempotentMode = forcedIdempotentMode;
-        this.indexCountsRemover = new IndexCountsRemover( storeView, descriptor );
+        this.indexCountsRemover = new IndexCountsRemover( storeView, indexId );
     }
 
     @Override
@@ -98,7 +100,7 @@ public class OnlineIndexProxy implements IndexProxy
 
     private IndexUpdater updateCountingUpdater( final IndexUpdater indexUpdater )
     {
-        return new UpdateCountingIndexUpdater( storeView, descriptor, indexUpdater );
+        return new UpdateCountingIndexUpdater( storeView, indexId, indexUpdater );
     }
 
     @Override

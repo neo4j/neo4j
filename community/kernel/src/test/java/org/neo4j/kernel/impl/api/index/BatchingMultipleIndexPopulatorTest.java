@@ -292,14 +292,18 @@ public class BatchingMultipleIndexPopulatorTest
     {
         IndexPopulator populator = mock( IndexPopulator.class );
         IndexDescriptor descriptor = IndexDescriptorFactory.of( id, id );
+        long indexId = id;
 
         IndexProxyFactory indexProxyFactory = mock( IndexProxyFactory.class );
         FailedIndexProxyFactory failedIndexProxyFactory = mock( FailedIndexProxyFactory.class );
         FlippableIndexProxy flipper = new FlippableIndexProxy();
         flipper.setFlipTarget( indexProxyFactory );
 
-        batchingPopulator.addPopulator( populator, descriptor, new SchemaIndexProvider.Descriptor( "foo", "1" ),
-                IndexConfiguration.NON_UNIQUE, flipper, failedIndexProxyFactory, "testIndex" );
+        batchingPopulator.addPopulator(
+                populator, indexId, descriptor,
+                new SchemaIndexProvider.Descriptor( "foo", "1" ),
+                IndexConfiguration.NON_UNIQUE, flipper,
+                failedIndexProxyFactory, "testIndex" );
 
         return populator;
     }

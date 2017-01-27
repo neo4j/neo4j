@@ -155,19 +155,17 @@ public class InMemoryCountsStoreSnapshotDeserializerTest
     public void correctlyDeserializeIndexSample() throws IOException
     {
         //GIVEN
+        long indexId = 1;
         serializedBytes = ByteBuffer.allocate( 1000 );
         InMemoryClosableChannel logChannel = new InMemoryClosableChannel( serializedBytes.array(), false );
         writeSimpleHeader( logChannel );
         logChannel.put( INDEX_SAMPLE.code );
-        logChannel.putInt( 1 );
-        logChannel.putShort( (short) 1 );
-        logChannel.putInt( 1 );
+        logChannel.putLong( indexId );
         logChannel.putLong( 1 );
         logChannel.putLong( 1 );
-        IndexDescriptor index = IndexDescriptorFactory.of( 1, 1 );
 
         //WHEN
-        IndexSampleKey expectedNode = CountsKeyFactory.indexSampleKey( index );
+        IndexSampleKey expectedNode = CountsKeyFactory.indexSampleKey( indexId );
         CountsSnapshot countsSnapshot = deserialize( logChannel );
 
         //THEN
@@ -179,19 +177,17 @@ public class InMemoryCountsStoreSnapshotDeserializerTest
     public void correctlyDeserializeIndexStatistics() throws IOException
     {
         //GIVEN
+        long indexId = 1;
         serializedBytes = ByteBuffer.allocate( 1000 );
         InMemoryClosableChannel logChannel = new InMemoryClosableChannel( serializedBytes.array(), false );
         writeSimpleHeader( logChannel );
         logChannel.put( INDEX_STATISTICS.code );
-        logChannel.putInt( 1 );
-        logChannel.putShort( (short) 1 );
-        logChannel.putInt( 1 );
+        logChannel.putLong( indexId );
         logChannel.putLong( 1 );
         logChannel.putLong( 1 );
-        IndexDescriptor index = IndexDescriptorFactory.of( 1, 1 );
 
         //WHEN
-        IndexStatisticsKey expectedNode = CountsKeyFactory.indexStatisticsKey( index );
+        IndexStatisticsKey expectedNode = CountsKeyFactory.indexStatisticsKey( indexId );
         CountsSnapshot countsSnapshot = deserialize( logChannel );
 
         //THEN

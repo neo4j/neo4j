@@ -98,11 +98,11 @@ final class CountsUpdater implements CountsAccessor.Updater, CountsAccessor.Inde
      * For key format, see {@link KeyFormat#visitIndexStatistics(IndexDescriptor, long, long)}
      */
     @Override
-    public void replaceIndexUpdateAndSize( IndexDescriptor descriptor, long updates, long size )
+    public void replaceIndexUpdateAndSize( long indexId, long updates, long size )
     {
         try
         {
-            updater.apply( indexStatisticsKey( descriptor ), new Write( updates, size ) );
+            updater.apply( indexStatisticsKey( indexId ), new Write( updates, size ) );
         }
         catch ( IOException e )
         {
@@ -121,11 +121,11 @@ final class CountsUpdater implements CountsAccessor.Updater, CountsAccessor.Inde
      * For key format, see {@link KeyFormat#visitIndexSample(IndexDescriptor, long, long)}
      */
     @Override
-    public void replaceIndexSample( IndexDescriptor descriptor, long unique, long size )
+    public void replaceIndexSample( long indexId, long unique, long size )
     {
         try
         {
-            updater.apply( indexSampleKey( descriptor ), new Write( unique, size ) );
+            updater.apply( indexSampleKey( indexId ), new Write( unique, size ) );
         }
         catch ( IOException e )
         {
@@ -135,14 +135,14 @@ final class CountsUpdater implements CountsAccessor.Updater, CountsAccessor.Inde
 
     /**
      * For key format, see {@link KeyFormat#visitIndexStatistics(IndexDescriptor, long, long)}
-     * For value format, see {@link CountsUpdater#replaceIndexUpdateAndSize(IndexDescriptor, long, long)}
+     * For value format, see {@link CountsUpdater#replaceIndexUpdateAndSize(long, long, long)}
      */
     @Override
-    public void incrementIndexUpdates( IndexDescriptor descriptor, long delta )
+    public void incrementIndexUpdates( long indexId, long delta )
     {
         try
         {
-            updater.apply( indexStatisticsKey( descriptor ), incrementFirstBy( delta ) );
+            updater.apply( indexStatisticsKey( indexId ), incrementFirstBy( delta ) );
         }
         catch ( IOException e )
         {
