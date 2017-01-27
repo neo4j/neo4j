@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.planner
 
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.ast.functions.Labels
-import org.neo4j.cypher.internal.ir.v3_2.{IdName, QueryHorizon}
+import org.neo4j.cypher.internal.ir.v3_2._
 
 import scala.annotation.tailrec
 
