@@ -19,18 +19,13 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.hamcrest.CoreMatchers._
-import org.junit.Assert._
-import org.neo4j.cypher.internal.RewindableExecutionResult
-import org.neo4j.cypher.internal.compatibility.ExecutionResultWrapperFor3_0
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
-import org.neo4j.graphdb.Node
 
 class ShortestPathComplexQueryAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
   test("allShortestPaths with complex LHS should be planned with exhaustive fallback and include predicate") {
     setupModel()
-    val result = executeUsingCostPlannerOnly(
+    val result = executeWithCostPlannerOnly(
       """
         |PROFILE MATCH (charles:Pixie { fname : 'Charles'}),(joey:Pixie { fname : 'Joey'}),(kim:Pixie { fname : 'Kim'})
         |WITH kim AS kimDeal, collect(charles) AS charlesT, collect(joey) AS joeyS
@@ -47,7 +42,7 @@ class ShortestPathComplexQueryAcceptanceTest extends ExecutionEngineFunSuite wit
 
   test("shortestPath with complex LHS should be planned with exhaustive fallback and include predicate") {
     setupModel()
-    val result = executeUsingCostPlannerOnly(
+    val result = executeWithCostPlannerOnly(
       """
         |PROFILE MATCH (charles:Pixie { fname : 'Charles'}),(joey:Pixie { fname : 'Joey'}),(kim:Pixie { fname : 'Kim'})
         |WITH kim AS kimDeal, collect(charles) AS charlesT, collect(joey) AS joeyS
@@ -62,13 +57,8 @@ class ShortestPathComplexQueryAcceptanceTest extends ExecutionEngineFunSuite wit
     result should use("VarLengthExpand(Into)", "AntiConditionalApply")
   }
 
-  def executeUsingCostPlannerOnly(query: String) =
-    eengine.execute(s"CYPHER planner=IDP $query", Map.empty[String, Any], graph.session()) match {
-      case e:ExecutionResultWrapperFor3_0 => RewindableExecutionResult(e)
-    }
-
   private def setupModel(): Unit = {
-    executeUsingCostPlannerOnly(
+    executeWithCostPlannerOnly(
       """
         |MERGE (p1:Pixie {fname:'Charles'})
         |MERGE (p2:Pixie {fname:'Kim'})
