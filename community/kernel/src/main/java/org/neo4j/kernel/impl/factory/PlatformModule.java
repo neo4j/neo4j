@@ -194,7 +194,7 @@ public class PlatformModule
         transactionMonitor = dependencies.satisfyDependency( createTransactionStats() );
 
         kernelExtensions = dependencies.satisfyDependency( new KernelExtensions(
-                new SimpleKernelContext( fileSystem, storeDir, databaseInfo, dependencies ),
+                new SimpleKernelContext( storeDir, databaseInfo, dependencies ),
                 externalDependencies.kernelExtensions(), dependencies, UnsatisfiedDependencyStrategies.fail() ) );
 
         urlAccessRule = dependencies.satisfyDependency( URLAccessRules.combined( externalDependencies.urlAccessRules() ) );
