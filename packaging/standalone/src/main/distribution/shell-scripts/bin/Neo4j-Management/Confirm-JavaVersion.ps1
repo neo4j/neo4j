@@ -71,7 +71,7 @@ Function Confirm-JavaVersion
     }
     
     $javaHelpText = "* Please use Oracle(R) Java(TM) 8, OpenJDK(TM) or IBM J9 to run Neo4j Server.`n" +
-                    "* Please see http://docs.neo4j.org/ for Neo4j Server installation instructions."
+                    "* Please see https://neo4j.com/docs/ for Neo4j installation instructions."
 
     # Read the contents of the redirected output
     $content = (Get-Content -Path $stdError) -join "`n`r"

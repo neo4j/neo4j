@@ -1,12 +1,12 @@
 = Neo4j: Graphs for Everyone =
 
-http://neo4j.com[Neo4j] is the world's leading Graph Database. It is a high performance graph store with all the features expected of a mature and robust database, like a friendly query language and ACID transactions. The programmer works with a flexible network structure of nodes and relationships rather than static tables -- yet enjoys all the benefits of enterprise-quality database. For many applications, Neo4j offers orders of magnitude performance benefits compared to relational DBs.
+https://neo4j.com[Neo4j] is the world's leading Graph Database. It is a high performance graph store with all the features expected of a mature and robust database, like a friendly query language and ACID transactions. The programmer works with a flexible network structure of nodes and relationships rather than static tables -- yet enjoys all the benefits of enterprise-quality database. For many applications, Neo4j offers orders of magnitude performance benefits compared to relational DBs.
 
-Learn more on the http://neo4j.com[Neo4j website].
+Learn more on the https://neo4j.com[Neo4j website].
 
 == Using Neo4j ==
 
-Neo4j is available both as a standalone server, or an embeddable component. You can http://neo4j.com/download/[download] or http://console.neo4j.org[try online].
+Neo4j is available both as a standalone server, or an embeddable component. You can https://neo4j.com/download/[download] or http://console.neo4j.org[try online].
 
 == Extending Neo4j ==
 
@@ -74,4 +74,4 @@ to start Neo4j.
 
 == Licensing ==
 
-Neo4j is an open source product. We support a Community edition under the GPLv3 license. The Enterprise edition is available under the AGPLv3 license for open source projects otherwise under a commercial license from http://info.neotechnology.com/contactus.html[Neo Technology].
+Neo4j is an open source product. We support a Community edition under the GPLv3 license. The Enterprise edition is available under the AGPLv3 license for open source projects otherwise under a commercial license from https://info.neotechnology.com/contactus.html[Neo Technology].

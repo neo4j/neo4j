@@ -120,8 +120,8 @@ _find_java_home() {
 }
 
 _show_java_help() {
-  echo "* Please use Oracle(R) Java(TM) 8, OpenJDK(TM) or IBM J9 to run Neo4j Server."
-  echo "* Please see http://docs.neo4j.org/ for Neo4j Server installation instructions."
+  echo "* Please use Oracle(R) Java(TM) 8, OpenJDK(TM) or IBM J9 to run Neo4j."
+  echo "* Please see https://neo4j.com/docs/ for Neo4j installation instructions."
 }
 
 _setup_calculated_paths() {
