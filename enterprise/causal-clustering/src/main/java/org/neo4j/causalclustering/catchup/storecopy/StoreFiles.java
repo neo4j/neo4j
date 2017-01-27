@@ -32,7 +32,7 @@ public class StoreFiles
         // Skip log files and tx files from temporary database
         return !name.startsWith( "metrics" ) && !name.startsWith( "temp-copy" ) &&
                 !name.startsWith( "raft-messages." ) && !name.startsWith( "debug." ) &&
-                !name.startsWith( "store_lock" );
+                !name.startsWith( "data" ) && !name.startsWith( "store_lock" );
     };
     private FileSystemAbstraction fs;
 
