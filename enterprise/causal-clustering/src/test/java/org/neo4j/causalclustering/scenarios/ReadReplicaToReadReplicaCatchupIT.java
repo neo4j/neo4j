@@ -24,7 +24,6 @@ import org.junit.Test;
 
 import java.io.File;
 import java.util.Optional;
-import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -66,7 +65,7 @@ public class ReadReplicaToReadReplicaCatchupIT
                     .withDiscoveryServiceFactory( new HazelcastDiscoveryServiceFactory() );
 
     @Test
-    public void shouldEventuallyPullTransactionAcrossReadReplicas() throws Exception
+    public void shouldEventuallyPullTransactionAcrossReadReplicas() throws Throwable
     {
         // given
         Cluster cluster = clusterRule.startCluster();
@@ -121,14 +120,10 @@ public class ReadReplicaToReadReplicaCatchupIT
             }
         }
 
-//        System.out.println( "shutting down cores" );
-//
-//        for ( CoreClusterMember coreClusterMember : cluster.coreMembers() )
-//        {
-//            coreClusterMember.shutdown();
-//        }
-//
-//        System.out.println( "shutdown cores" );
+        for ( CoreClusterMember coreClusterMember : cluster.coreMembers() )
+        {
+            coreClusterMember.stopCatchupServer();
+        }
 
         // when
         upstreamFactory.setCurrent( firstReadReplica );

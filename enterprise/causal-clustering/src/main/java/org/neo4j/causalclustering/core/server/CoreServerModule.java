@@ -199,6 +199,9 @@ public class CoreServerModule
                 new CheckpointerSupplier( platformModule.dependencies ), fileSystem, platformModule.pageCache,
                 platformModule.storeCopyCheckPointMutex );
 
+        // Exposes this so that tests can start/stop the catchup server
+        dependencies.satisfyDependency( catchupServer );
+
         servicesToStopOnStoreCopy.add( catchupServer );
 
         // batches messages from raft server -> core state
