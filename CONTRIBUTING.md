@@ -1,10 +1,10 @@
 # Contributing to the Neo4j Ecosystem
 
-At [Neo Technology](http://neo4j.com/), we develop our software in the open at GitHub.
+At [Neo Technology](https://neo4j.com/), we develop our software in the open at GitHub.
 This provides transparency for you, our users, and allows you to fork the software to make your own additions and enhancements.
 We also provide areas specifically for community contributions, in particular the [neo4j-contrib](https://github.com/neo4j-contrib) space.
 
-There's an active [mailing list](https://groups.google.com/forum/#!forum/neo4j) and [Slack channel](http://neo4j.com/slack) where we work directly with the community.
+There's an active [mailing list](https://groups.google.com/forum/#!forum/neo4j) and [Slack channel](https://neo4j.com/slack) where we work directly with the community.
 If you're not already a member, sign up!
 
 We love our community and wouldn't be where we are without you.
@@ -14,10 +14,10 @@ We love our community and wouldn't be where we are without you.
 
 Where you raise an issue depends largely on the nature of the problem.
 
-Firstly, if you are an Enterprise customer, you might want to head over to our [Customer Support Portal](http://support.neo4j.com/).
+Firstly, if you are an Enterprise customer, you might want to head over to our [Customer Support Portal](https://support.neo4j.com/).
 
 There are plenty of public channels available too, though.
-If you simply want to get started or have a question on how to use a particular feature, drop a line to the [mailing list](https://groups.google.com/forum/#!forum/neo4j), ask a question in [Slack](http://neo4j.com/slack), or [tweet](https://twitter.com/neo4j) us.
+If you simply want to get started or have a question on how to use a particular feature, drop a line to the [mailing list](https://groups.google.com/forum/#!forum/neo4j), ask a question in [Slack](https://neo4j.com/slack), or [tweet](https://twitter.com/neo4j) us.
 If you think you might have hit a bug in our software (it happens occasionally!) or you have specific feature request then use the issue feature on the relevant GitHub repository.
 Check first though as someone else may have already raised something similar.
 
@@ -44,7 +44,7 @@ If you want to contribute a pull request, we have a little bit of process you'll
 - Create a branch (with a useful name) for your contribution
 - Make sure you're familiar with the appropriate coding style (this varies by language so ask if you're in doubt)
 - Include unit tests if appropriate (obviously not necessary for documentation changes)
-- Take a moment to read and sign our [CLA](http://neo4j.com/developer/cla)
+- Take a moment to read and sign our [CLA](https://neo4j.com/developer/cla)
 
 We can't guarantee that we'll accept pull requests and may ask you to make some changes before they go in.
 Occasionally, we might also have logistical, commercial, or legal reasons why we can't accept your work but we'll try to find an alternative way for you to contribute in that case.
@@ -61,6 +61,6 @@ And we'll do our best to help you promote and co-ordinate your Neo ecosystem pro
 
 ## Further reading
 
-If you want to find out more about how you can contribute, head over to our website for [more information](http://neo4j.com/developer/contributing-code/).
+If you want to find out more about how you can contribute, head over to our website for [more information](https://neo4j.com/developer/contributing-code/).
 
 

@@ -88,7 +88,7 @@ class CsvImporter implements Importer
                 "            INTEGER: arbitrary integer values for identifying nodes.\n" +
                 "            ACTUAL: (advanced) actual node ids. The default option is STRING.\n" +
                 "        For more information on id handling, please see the Neo4j Manual:\n" +
-                "        http://neo4j.com/docs/operations-manual/current/tools/import/\n" +
+                "        https://neo4j.com/docs/operations-manual/current/tools/import/\n" +
                 "--input-encoding <character-set>\n" +
                 "        Character set that input data is encoded in. Defaults to UTF-8.\n";
     }

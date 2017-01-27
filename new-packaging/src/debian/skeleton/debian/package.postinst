@@ -53,7 +53,7 @@ case "$1" in
             echo "installation."
             echo
             echo "You MUST read the upgrade guide before re-starting the database.  The upgrade"
-            echo "guide can be found at http://neo4j.com/guides/upgrade/."
+            echo "guide can be found at https://neo4j.com/guides/upgrade/."
             echo
             database_count=$(find /var/lib/neo4j/data -type f |grep neostore$ | sed s,/neostore$,, | wc -l)
             if [ "$database_count" -gt "0" ]; then

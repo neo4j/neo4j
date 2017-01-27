@@ -41,7 +41,7 @@ public class DeadlockDetectedException extends TransientTransactionFailureExcept
                 "between these transactions. This exception was thrown instead of ending up in that deadlock.\n" +
                 "\n" +
                 "See the deadlock section in the Neo4j Java developer reference for how to avoid this: " +
-                "http://neo4j.com/docs/java-reference/current/#transactions-deadlocks\n" +
+                "https://neo4j.com/docs/java-reference/current/#transactions-deadlocks\n" +
                 "\n" +
                 "Details: '" + message + "'.", cause );
     }
