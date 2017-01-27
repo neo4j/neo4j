@@ -31,9 +31,11 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -1102,19 +1104,19 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     @SuppressWarnings( "unchecked" )
     private Matcher<Map<String, Object>> hasQuery( String query )
     {
-        return (Matcher<Map<String, Object>>) (Matcher) hasEntry( equalTo( "query" ), equalTo( query ) );
+        return (Matcher) hasEntry( equalTo( "query" ), equalTo( query ) );
     }
 
     @SuppressWarnings( "unchecked" )
     private Matcher<Map<String, Object>> hasUsername( String username )
     {
-        return (Matcher<Map<String, Object>>) (Matcher) hasEntry( equalTo( "username" ), equalTo( username ) );
+        return (Matcher) hasEntry( equalTo( "username" ), equalTo( username ) );
     }
 
     @SuppressWarnings( "unchecked" )
     private Matcher<Map<String, Object>> hasQueryId()
     {
-        return (Matcher<Map<String, Object>>) (Matcher) hasEntry(
+        return hasEntry(
             equalTo( "queryId" ),
             allOf( (Matcher) isA( String.class ), (Matcher) containsString( QueryId.QUERY_ID_PREFIX ) )
         );
@@ -1123,7 +1125,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     @SuppressWarnings( "unchecked" )
     private Matcher<Map<String, Object>> hasStartTimeAfter( OffsetDateTime startTime )
     {
-        return (Matcher<Map<String, Object>>) (Matcher) hasEntry( equalTo( "startTime" ), new BaseMatcher<String>()
+        return (Matcher) hasEntry( equalTo( "startTime" ), new BaseMatcher<String>()
         {
             @Override
             public void describeTo( Description description )
@@ -1143,28 +1145,33 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     @SuppressWarnings( "unchecked" )
     private Matcher<Map<String, Object>> hasNoParameters()
     {
-        return (Matcher<Map<String, Object>>) (Matcher) hasEntry( equalTo( "parameters" ), equalTo( emptyMap() ) );
+        return (Matcher) hasEntry( equalTo( "parameters" ), equalTo( emptyMap() ) );
     }
 
     @SuppressWarnings( "unchecked" )
     private Matcher<Map<String, Object>> hasConnectionDetails( String expected )
     {
-        return (Matcher<Map<String, Object>>) (Matcher) hasEntry( equalTo( "connectionDetails" ),
+        return (Matcher) hasEntry( equalTo( "connectionDetails" ),
                 containsString( expected ) );
     }
 
     @SuppressWarnings( "unchecked" )
     private Matcher<Map<String, Object>> hasMetaData( Map<String,Object> expected )
     {
-        return (Matcher<Map<String, Object>>) (Matcher) hasEntry( equalTo( "metaData" ),
-                allOf(
-                    expected.entrySet().stream().map(
-                            entry -> hasEntry(
-                                    equalTo( entry.getKey() ),
-                                    equalTo( entry.getValue() )
-                            )
+        return (Matcher) hasEntry( equalTo( "metaData" ), allOf(
+                expected.entrySet().stream().map(
+                        entryMapper()
                         ).collect( Collectors.toList() )
                 ) );
     }
 
+    @SuppressWarnings( {"rawtypes", "unchecked"} )
+    private Function<Entry<String,Object>,Matcher<Entry<String,Object>>> entryMapper()
+    {
+        return entry -> {
+            Matcher keyMatcher = equalTo( entry.getKey() );
+            Matcher valueMatcher = equalTo( entry.getValue() );
+            return hasEntry( keyMatcher, valueMatcher );
+        };
+    }
 }
