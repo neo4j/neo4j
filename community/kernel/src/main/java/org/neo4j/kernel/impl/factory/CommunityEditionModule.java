@@ -140,7 +140,7 @@ public class CommunityEditionModule extends EditionModule
 
     static Predicate<String> fileWatcherFileNameFilter()
     {
-        return fileName -> !fileName.startsWith( PhysicalLogFile.DEFAULT_NAME );
+        return fileName -> fileName.startsWith( PhysicalLogFile.DEFAULT_NAME );
     }
 
     protected IdTypeConfigurationProvider createIdTypeConfigurationProvider( Config config )

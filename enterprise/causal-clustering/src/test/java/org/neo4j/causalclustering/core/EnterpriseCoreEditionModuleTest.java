@@ -39,10 +39,9 @@ public class EnterpriseCoreEditionModuleTest
     public void fileWatcherFileNameFilter()
     {
         Predicate<String> filter = EnterpriseCoreEditionModule.fileWatcherFileNameFilter();
-        assertTrue( filter.test( MetaDataStore.DEFAULT_NAME ) );
-        assertTrue( filter.test( StoreFile.NODE_STORE.fileName( StoreFileType.STORE ) ) );
-        assertFalse( filter.test( PhysicalLogFile.DEFAULT_NAME + ".1" ) );
-        assertFalse( filter.test( StoreUtil.TEMP_COPY_DIRECTORY_NAME ) );
+        assertFalse( filter.test( MetaDataStore.DEFAULT_NAME ) );
+        assertFalse( filter.test( StoreFile.NODE_STORE.fileName( StoreFileType.STORE ) ) );
+        assertTrue( filter.test( PhysicalLogFile.DEFAULT_NAME + ".1" ) );
+        assertTrue( filter.test( StoreUtil.TEMP_COPY_DIRECTORY_NAME ) );
     }
-
 }

@@ -45,7 +45,7 @@ public class DefaultFileDeletionEventListener implements FileWatchEventListener
     @Override
     public void fileDeleted( String fileName )
     {
-        if ( fileNameFilter.test( fileName ) )
+        if ( !fileNameFilter.test( fileName ) )
         {
             internalLog.error( format( "'%s' which belongs to the store was deleted while database was running.",
                     fileName ) );

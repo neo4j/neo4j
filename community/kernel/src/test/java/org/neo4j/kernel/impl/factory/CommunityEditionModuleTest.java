@@ -38,9 +38,9 @@ public class CommunityEditionModuleTest
     public void fileWatcherFileNameFilter()
     {
         Predicate<String> filter = CommunityEditionModule.fileWatcherFileNameFilter();
-        assertTrue( filter.test( MetaDataStore.DEFAULT_NAME ) );
-        assertTrue( filter.test( StoreFile.NODE_STORE.fileName( StoreFileType.STORE ) ) );
-        assertFalse( filter.test( PhysicalLogFile.DEFAULT_NAME + ".1" ) );
+        assertFalse( filter.test( MetaDataStore.DEFAULT_NAME ) );
+        assertFalse( filter.test( StoreFile.NODE_STORE.fileName( StoreFileType.STORE ) ) );
+        assertTrue( filter.test( PhysicalLogFile.DEFAULT_NAME + ".1" ) );
     }
 
 }

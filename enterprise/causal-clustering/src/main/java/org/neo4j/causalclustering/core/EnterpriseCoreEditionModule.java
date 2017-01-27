@@ -233,9 +233,9 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
     static Predicate<String> fileWatcherFileNameFilter()
     {
-        return Predicates.all(
-                fileName -> !fileName.startsWith( PhysicalLogFile.DEFAULT_NAME ),
-                filename -> !filename.startsWith( StoreUtil.TEMP_COPY_DIRECTORY_NAME )
+        return Predicates.any(
+                fileName -> fileName.startsWith( PhysicalLogFile.DEFAULT_NAME ),
+                filename -> filename.startsWith( StoreUtil.TEMP_COPY_DIRECTORY_NAME )
         );
     }
 
