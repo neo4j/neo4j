@@ -104,6 +104,11 @@ public class KernelTransactionTestBase
         return newTransaction( 0, AUTH_DISABLED, transactionTimeoutMillis );
     }
 
+    public KernelTransactionImplementation newTransaction( long transactionTimeoutMillis, TransactionTracer transactionTracer )
+    {
+        return newTransaction( 0, AUTH_DISABLED, transactionTimeoutMillis );
+    }
+
     public KernelTransactionImplementation newTransaction( SecurityContext securityContext )
     {
         return newTransaction( 0, securityContext );
@@ -137,9 +142,14 @@ public class KernelTransactionTestBase
 
     public KernelTransactionImplementation newNotInitializedTransaction()
     {
+        return newNotInitializedTransaction( TransactionTracer.NULL );
+    }
+
+    public KernelTransactionImplementation newNotInitializedTransaction( TransactionTracer transactionTracer )
+    {
         return new KernelTransactionImplementation( operationContainer, schemaWriteGuard,
                 hooks, null, null, headerInformationFactory, commitProcess, transactionMonitor, legacyIndexStateSupplier,
-                txPool, clock, TransactionTracer.NULL, LockTracer.NONE, storageEngine, new CanWrite() );
+                txPool, clock, transactionTracer, LockTracer.NONE, storageEngine, new CanWrite() );
     }
 
     public class CapturingCommitProcess implements TransactionCommitProcess
