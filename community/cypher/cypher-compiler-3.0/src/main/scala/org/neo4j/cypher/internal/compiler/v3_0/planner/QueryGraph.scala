@@ -214,11 +214,12 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
       case patternNode if !visited(patternNode) =>
         val qg = connectedComponentFor(patternNode, visited)
         val coveredIds = qg.coveredIds
-        val predicates = selections.predicates.filter(_.dependencies.subsetOf(coveredIds ++ argumentIds))
-        val filteredHints = hints.filter(h => h.variables.forall(variable => coveredIds.contains(IdName(variable.name))))
         val shortestPaths = shortestPathPatterns.filter {
           p => coveredIds.contains(p.rel.nodes._1) && coveredIds.contains(p.rel.nodes._2)
         }
+        val shortestPathIds = shortestPaths.flatMap(p => p.name)
+        val predicates = selections.predicates.filter(_.dependencies.subsetOf(coveredIds ++ argumentIds ++ shortestPathIds))
+        val filteredHints = hints.filter(h => h.variables.forall(variable => coveredIds.contains(IdName(variable.name))))
         qg.
           withSelections(Selections(predicates)).
           withArgumentIds(argumentIds).
