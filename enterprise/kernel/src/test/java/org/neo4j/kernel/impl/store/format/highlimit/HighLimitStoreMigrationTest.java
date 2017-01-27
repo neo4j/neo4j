@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.store.format.highlimit;
 
+import org.hamcrest.Matchers;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -32,6 +33,7 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.format.CapabilityType;
 import org.neo4j.kernel.impl.store.format.highlimit.v300.HighLimitV3_0_0;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
@@ -40,9 +42,10 @@ import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
+
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
 
 public class HighLimitStoreMigrationTest
@@ -83,7 +86,8 @@ public class HighLimitStoreMigrationTest
         migrator.migrate( storeDir, migrationDir, progressMonitor, HighLimitV3_0_0.STORE_VERSION, HighLimit.STORE_VERSION );
 
         int newStoreFilesCount = fileSystem.listFiles( migrationDir ).length;
-        assertEquals( "Store should be migrated and new store files should be created.", 17, newStoreFilesCount );
+        assertThat( "Store should be migrated and new store files should be created.",
+                newStoreFilesCount, Matchers.greaterThanOrEqualTo( StoreType.values().length ) );
     }
 
     private File prepareNeoStoreFile( FileSystemAbstraction fileSystem, File storeDir, String storeVersion,

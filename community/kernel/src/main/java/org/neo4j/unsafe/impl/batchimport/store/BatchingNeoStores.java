@@ -28,14 +28,11 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies;
-import org.neo4j.kernel.extension.dependency.HighestSelectionStrategy;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
-import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
@@ -87,7 +84,6 @@ public class BatchingNeoStores implements AutoCloseable
     private final PageCache pageCache;
     private final NeoStores neoStores;
     private final LifeSupport life = new LifeSupport();
-    private final LabelScanStore labelScanStore;
     private final IoTracer ioTracer;
     private final RecordFormats recordFormats;
 
@@ -165,8 +161,6 @@ public class BatchingNeoStores implements AutoCloseable
                 kernelContext, (Iterable) Service.load( KernelExtensionFactory.class ),
                 dependencies, UnsatisfiedDependencyStrategies.ignore() ) );
         life.start();
-        labelScanStore = life.add( extensions.resolveDependency( LabelScanStoreProvider.class,
-                HighestSelectionStrategy.getInstance() ).getLabelScanStore() );
     }
 
     public static BatchingNeoStores batchingNeoStores( FileSystemAbstraction fileSystem, File storeDir,
@@ -297,11 +291,6 @@ public class BatchingNeoStores implements AutoCloseable
     public long getLastCommittedTransactionId()
     {
         return neoStores.getMetaDataStore().getLastCommittedTransactionId();
-    }
-
-    public LabelScanStore getLabelScanStore()
-    {
-        return labelScanStore;
     }
 
     public NeoStores getNeoStores()

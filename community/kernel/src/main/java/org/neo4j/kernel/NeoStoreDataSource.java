@@ -397,10 +397,8 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         schemaIndexProvider = dependencyResolver.resolveDependency( SchemaIndexProvider.class,
                 HighestSelectionStrategy.getInstance() );
 
-        String configuredLabelScanStoreName = config.get( GraphDatabaseSettings.label_scan_store );
-        labelScanStoreProvider =
-                dependencyResolver.resolveDependency( LabelScanStoreProvider.class,
-                        new HighestPrioritizedLabelScanStore( configuredLabelScanStoreName ) );
+        labelScanStoreProvider = dependencyResolver.resolveDependency( LabelScanStoreProvider.class,
+                new HighestPrioritizedLabelScanStore( config ) );
 
         IndexConfigStore indexConfigStore = new IndexConfigStore( storeDir, fs );
         dependencies.satisfyDependency( lockService );

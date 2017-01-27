@@ -55,7 +55,7 @@ public class NativeLabelScanStoreExtension extends
 
     public NativeLabelScanStoreExtension()
     {
-        this( 0 /*disabled by default*/, LabelScanStore.Monitor.EMPTY );
+        this( 100, LabelScanStore.Monitor.EMPTY );
     }
 
     public NativeLabelScanStoreExtension( int priority, LabelScanStore.Monitor monitor )
