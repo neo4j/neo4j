@@ -191,10 +191,6 @@ the relevant Commercial Agreement.
                   <filtering>false</filtering>
                 </resource>
                 <resource>
-                  <directory>${project.build.directory}/../../graph-matching/src/main/java/</directory>
-                  <filtering>false</filtering>
-                </resource>
-                <resource>
                   <directory>${project.build.directory}/../../jmx/src/main/java/</directory>
                   <filtering>false</filtering>
                 </resource>

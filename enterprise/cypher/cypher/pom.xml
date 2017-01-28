@@ -260,10 +260,6 @@
         </exclusion>
         <exclusion>
           <groupId>org.neo4j</groupId>
-          <artifactId>neo4j-graph-matching</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.neo4j</groupId>
           <artifactId>neo4j-graph-algo</artifactId>
         </exclusion>
         <exclusion>
@@ -296,10 +292,6 @@
         <exclusion>
           <groupId>org.neo4j</groupId>
           <artifactId>neo4j-lucene-index</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.neo4j</groupId>
-          <artifactId>neo4j-graph-matching</artifactId>
         </exclusion>
         <exclusion>
           <groupId>org.neo4j</groupId>

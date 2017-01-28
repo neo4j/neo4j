@@ -263,11 +263,6 @@
       </dependency>
       <dependency>
         <groupId>org.neo4j</groupId>
-        <artifactId>neo4j-graph-matching</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.neo4j</groupId>
         <artifactId>neo4j-graph-algo</artifactId>
         <version>${project.version}</version>
       </dependency>
