@@ -292,19 +292,19 @@ public abstract class CompiledConversionUtils
         {
             return ((List) list).stream().mapToLong( n -> ((Number) n).longValue() );
         }
-        else if ( list instanceof Object[] )
+        else if ( Object[].class.isAssignableFrom( list.getClass() ) )
         {
             return Arrays.stream( (Object[]) list ).mapToLong( n -> ((Number) n).longValue() );
         }
         else if ( list instanceof byte[] )
         {
             byte[] array = (byte[]) list;
-            return IntStream.range( 0, array.length ).map( i -> array[i] ).mapToLong( i -> i );
+            return IntStream.range( 0, array.length ).mapToLong( i -> array[i] );
         }
         else if ( list instanceof short[] )
         {
             short[] array = (short[]) list;
-            return IntStream.range( 0, array.length ).map( i -> array[i] ).mapToLong( i -> i );
+            return IntStream.range( 0, array.length ).mapToLong( i -> array[i] );
         }
         else if ( list instanceof int[] )
         {
@@ -313,6 +313,54 @@ public abstract class CompiledConversionUtils
         else if ( list instanceof long[] )
         {
             return LongStream.of( (long[]) list );
+        }
+        throw new IllegalArgumentException( format( "Can not be converted to stream: %s", list.getClass().getName() ) );
+    }
+
+    public static DoubleStream toDoubleStream( Object list )
+    {
+        if ( list == null )
+        {
+            return DoubleStream.empty();
+        }
+        else if ( list instanceof List )
+        {
+            return ((List) list).stream().mapToDouble( n -> ((Number) n).doubleValue() );
+        }
+        else if ( Object[].class.isAssignableFrom( list.getClass() ) )
+        {
+            return Arrays.stream( (Object[]) list ).mapToDouble( n -> ((Number) n).doubleValue() );
+        }
+        else if ( list instanceof float[] )
+        {
+            float[] array = (float[]) list;
+            return IntStream.range( 0, array.length ).mapToDouble( i -> array[i] );
+        }
+        else if ( list instanceof double[] )
+        {
+            return DoubleStream.of( (double[]) list );
+        }
+        throw new IllegalArgumentException( format( "Can not be converted to stream: %s", list.getClass().getName() ) );
+    }
+
+    public static IntStream toBooleanStream( Object list )
+    {
+        if ( list == null )
+        {
+            return IntStream.empty();
+        }
+        else if ( list instanceof List )
+        {
+            return ((List) list).stream().mapToInt( n -> ((Number) n).intValue() );
+        }
+        else if ( Object[].class.isAssignableFrom( list.getClass() ) )
+        {
+            return Arrays.stream( (Object[]) list ).mapToInt( n -> ((Number) n).intValue() );
+        }
+        else if ( list instanceof boolean[] )
+        {
+            boolean[] array = (boolean[]) list;
+            return IntStream.range( 0, array.length ).map( i -> (array[i]) ? 1 : 0 );
         }
         throw new IllegalArgumentException( format( "Can not be converted to stream: %s", list.getClass().getName() ) );
     }

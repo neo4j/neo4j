@@ -492,8 +492,6 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   override def asPrimitiveStream(publicTypeList: Expression, codeGenType: CodeGenType) = {
     codeGenType match {
-      // PrimitiveNodeStream.of( (List<Node>) publicTypeList )
-
       case CodeGenType(ListType(CTNode), ListReferenceType(IntType)) =>
         Expression.invoke(methodReference(typeRef[PrimitiveNodeStream], typeRef[PrimitiveNodeStream], "of", typeRef[Object]), publicTypeList)
       case CodeGenType(ListType(CTRelationship), ListReferenceType(IntType)) =>
@@ -503,15 +501,17 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
         // short[]
         // int[]
         // long[]
-        // Object[] -> Arrays.stream((Object[]) o).mapToLong(((Number)o).longValue());
+        // Object[]
         Expression.invoke(methodReference(typeRef[CompiledConversionUtils], typeRef[LongStream], "toLongStream", typeRef[Object]), publicTypeList)
-        // TODO
-//      case CodeGenType(_, ListReferenceType(FloatType)) =>
-//        Templates.asDoubleStream(values)
-//      case CodeGenType(_, ListReferenceType(BoolType)) =>
-//        // There are no primitive streams for booleans, so we use an IntStream with value conversions
-//        // 0 = false, 1 = true
-//        Templates.asIntStream(values.map(Expression.ternary(_, Expression.constant(1), Expression.constant(0))))
+      case CodeGenType(_, ListReferenceType(FloatType)) =>
+        // float[]
+        // double[]
+        // Object[]
+        Expression.invoke(methodReference(typeRef[CompiledConversionUtils], typeRef[DoubleStream], "toDoubleStream", typeRef[Object]), publicTypeList)
+      case CodeGenType(_, ListReferenceType(BoolType)) =>
+        // boolean[]
+        // Object[]
+        Expression.invoke(methodReference(typeRef[CompiledConversionUtils], typeRef[IntStream], "toBooleanStream", typeRef[Object]), publicTypeList)
       case _ =>
         throw new IllegalArgumentException(s"CodeGenType $codeGenType not supported as primitive stream")
     }
