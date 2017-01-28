@@ -19,6 +19,7 @@
  */
 package org.neo4j.ha;
 
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -133,6 +134,7 @@ public class TestBranchedData
      * Main difference to {@link #shouldCopyStoreFromMasterIfBranched()} is that no instances are shut down
      * during the course of the test. This to test functionality of some internal components being restarted.
      */
+    @Ignore
     @SuppressWarnings( "unchecked" )
     @Test
     public void shouldCopyStoreFromMasterIfBranchedInLiveScenario() throws Throwable
