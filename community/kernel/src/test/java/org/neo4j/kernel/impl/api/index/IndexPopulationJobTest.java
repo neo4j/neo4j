@@ -654,7 +654,7 @@ public class IndexPopulationJobTest
                                                       LogProvider logProvider,
                                                       boolean constraint ) throws TransactionFailureException
     {
-        return newIndexPopulationJob( 
+        return newIndexPopulationJob(
                 mock( FailedIndexProxyFactory.class ), populator, flipper, storeView, logProvider, constraint );
     }
 
