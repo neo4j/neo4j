@@ -24,11 +24,14 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
+import java.util.stream.LongStream;
 
 import org.neo4j.cypher.UnorderableValueException;
 import org.neo4j.cypher.internal.frontend.v3_2.IncomparableValuesException;
 import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.helpers.MathUtil;
 
 import static java.lang.String.format;
@@ -124,10 +127,10 @@ public class CompiledOrderabilityUtils
     public enum SuperType
     {
         MAP( 0, FALLBACK_COMPARATOR /*TODO*/ ),
-        NODE( 1, FALLBACK_COMPARATOR /*TODO*/ ),
-        RELATIONSHIP( 2, FALLBACK_COMPARATOR /*TODO*/ ),
+        NODE( 1, NODE_COMPARATOR ),
+        RELATIONSHIP( 2, RELATIONSHIP_COMPARATOR ),
         LIST( 3, LIST_COMPARATOR ),
-        PATH( 4, FALLBACK_COMPARATOR /*TODO*/ ),
+        PATH( 4, PATH_COMPARATOR ),
         STRING( 5, STRING_COMPARATOR ),
         BOOLEAN( 6, BOOLEAN_COMPARATOR ),
         NUMBER( 7, NUMBER_COMPARATOR ),
@@ -185,6 +188,7 @@ public class CompiledOrderabilityUtils
                 }
                 return RELATIONSHIP;
             }
+            // TODO is Path really the class that compiled runtime will be using?
             else if ( value instanceof Path )
             {
                 return PATH;
@@ -205,7 +209,7 @@ public class CompiledOrderabilityUtils
     // NOTE: nulls are handled at the top of the public compare() method
     // so the type-specific comparators should not check arguments for null
 
-    private static Comparator FALLBACK_COMPARATOR = new Comparator<Object>()
+    private static Comparator<Object> FALLBACK_COMPARATOR = new Comparator<Object>()
     {
         @Override
         public int compare( Object lhs, Object rhs )
@@ -221,7 +225,7 @@ public class CompiledOrderabilityUtils
         }
     };
 
-    private static Comparator VOID_COMPARATOR = new Comparator<Object>()
+    private static Comparator<Object> VOID_COMPARATOR = new Comparator<Object>()
     {
         @Override
         public int compare( Object lhs, Object rhs )
@@ -230,7 +234,7 @@ public class CompiledOrderabilityUtils
         }
     };
 
-    private static Comparator NUMBER_COMPARATOR = new Comparator<Number>()
+    private static Comparator<Number> NUMBER_COMPARATOR = new Comparator<Number>()
     {
         @Override
         public int compare( Number lhs, Number rhs )
@@ -267,7 +271,7 @@ public class CompiledOrderabilityUtils
         }
     };
 
-    private static Comparator STRING_COMPARATOR = new Comparator<Object>()
+    private static Comparator<Object> STRING_COMPARATOR = new Comparator<Object>()
     {
         @Override
         public int compare( Object lhs, Object rhs )
@@ -285,7 +289,7 @@ public class CompiledOrderabilityUtils
         }
     };
 
-    private static Comparator BOOLEAN_COMPARATOR = new Comparator<Boolean>()
+    private static Comparator<Boolean> BOOLEAN_COMPARATOR = new Comparator<Boolean>()
     {
         @Override
         public int compare( Boolean lhs, Boolean rhs )
@@ -294,13 +298,53 @@ public class CompiledOrderabilityUtils
         }
     };
 
-    private static Comparator LIST_COMPARATOR = new Comparator<Object>()
+    private static Comparator<NodeIdWrapper> NODE_COMPARATOR = new Comparator<NodeIdWrapper>()
+    {
+        @Override
+        public int compare( NodeIdWrapper lhs, NodeIdWrapper rhs )
+        {
+            return Long.compare( lhs.id(), rhs.id() );
+        }
+    };
+
+    private static Comparator<RelationshipIdWrapper> RELATIONSHIP_COMPARATOR = new Comparator<RelationshipIdWrapper>()
+    {
+        @Override
+        public int compare( RelationshipIdWrapper lhs, RelationshipIdWrapper rhs )
+        {
+            return Long.compare( lhs.id(), rhs.id() );
+        }
+    };
+
+    // TODO test
+    private static Comparator<Path> PATH_COMPARATOR = new Comparator<Path>()
+    {
+        @Override
+        public int compare( Path lhs, Path rhs )
+        {
+            Iterator<PropertyContainer> lhsIter = lhs.iterator();
+            Iterator<PropertyContainer> rhsIter = lhs.iterator();
+            while ( lhsIter.hasNext() && rhsIter.hasNext() )
+            {
+                int result = CompiledOrderabilityUtils.compare( lhsIter.next(), rhsIter.next() );
+                if ( 0 != result )
+                {
+                    return result;
+                }
+            }
+            return (lhsIter.hasNext()) ? 1
+                                       : (rhsIter.hasNext()) ? -1
+                                                             : 0;
+        }
+    };
+
+    private static Comparator<Object> LIST_COMPARATOR = new Comparator<Object>()
     {
         @Override
         public int compare( Object lhs, Object rhs )
         {
-            Iterator lhsIter = (lhs.getClass().isArray()) ? arrayToIterator( lhs ) : ((List) lhs).iterator();
-            Iterator rhsIter = (rhs.getClass().isArray()) ? arrayToIterator( rhs ) : ((List) rhs).iterator();
+            Iterator lhsIter = toIterator( lhs );
+            Iterator rhsIter = toIterator( rhs );
             while ( lhsIter.hasNext() && rhsIter.hasNext() )
             {
                 int result = CompiledOrderabilityUtils.compare( lhsIter.next(), rhsIter.next() );
@@ -314,28 +358,32 @@ public class CompiledOrderabilityUtils
                                                              : 0;
         }
 
-        private Iterator arrayToIterator( Object o )
+        private Iterator toIterator( Object o )
         {
             Class clazz = o.getClass();
-            if ( clazz.equals( Object[].class ) )
+            if ( Iterable.class.isAssignableFrom( clazz) )
+            {
+                return ((Iterable) o).iterator();
+            }
+            else if ( Object[].class.isAssignableFrom( clazz) )
             {
                 return Arrays.stream( (Object[]) o ).iterator();
             }
             else if ( clazz.equals( int[].class ) )
             {
-                return Arrays.stream( (int[]) o ).iterator();
-            }
-            else if ( clazz.equals( Integer[].class ) )
-            {
-                return Arrays.stream( (Integer[]) o ).iterator();
+                return IntStream.of( (int[]) o ).iterator();
             }
             else if ( clazz.equals( long[].class ) )
             {
-                return Arrays.stream( (long[]) o ).iterator();
+                return LongStream.of( (long[]) o ).iterator();
             }
-            else if ( clazz.equals( Long[].class ) )
+            else if ( clazz.equals( float[].class ) )
             {
-                return Arrays.stream( (Long[]) o ).iterator();
+                return IntStream.range( 0, ((float[]) o).length ).mapToObj( i -> ((float[]) o)[i] ).iterator();
+            }
+            else if ( clazz.equals( double[].class ) )
+            {
+                return DoubleStream.of( (double[]) o ).iterator();
             }
             else if ( clazz.equals( String[].class ) )
             {

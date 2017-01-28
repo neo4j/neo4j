@@ -44,26 +44,35 @@ public class CompiledOrderabilityUtilsTest
 
             // NODE
             new NodeIdWrapper( 1 ),
-            //new NodeIdWrapper( 2 ), TODO: FIXME
+            new NodeIdWrapper( 2 ),
 
             // RELATIONSHIP
             new RelationshipIdWrapper( 1 ),
-            //new RelationshipIdWrapper( 2 ), TODO: FIXME
+            new RelationshipIdWrapper( 2 ),
 
             // LIST
+            new String[]{"boo"},
             new String[]{"foo"},
+            new boolean[]{false},
+            new Boolean[]{true},
             new Object[]{1, "foo"},
             new Object[]{1, "foo", 3},
             new Object[]{1, true, "car"},
             new Object[]{1, 2, "bar"},
             new Object[]{1, 2, "car"},
-            new int[]   {1, 2, 3},
-            new Object[]{1,  2, 3L, Double.NEGATIVE_INFINITY},
-            new long[]  {1,  2, 3,  Long.MIN_VALUE},
-            new int[]   {1,  2, 3,  Integer.MIN_VALUE},
-            new Object[]{1L, 2, 3,  Double.NaN},
-            new Object[]{1L, 2, 3,  new NodeIdWrapper(-1)},
-            new int[]   {2},
+            new int[]{1, 2, 3},
+            new Object[]{1, 2, 3L, Double.NEGATIVE_INFINITY},
+            new long[]{1, 2, 3, Long.MIN_VALUE},
+            new int[]{1, 2, 3, Integer.MIN_VALUE},
+            new Object[]{1L, 2, 3, Double.NaN},
+            new Object[]{1L, 2, 3, new NodeIdWrapper(-1)},
+            new Long[]{1L, 2L, 4L},
+            new int[]{2},
+            new Integer[]{3},
+            new double[]{4D},
+            new Double[]{5D},
+            new float[]{6},
+            new Float[]{7F},
             new Object[]{new RelationshipIdWrapper(-1)},
 
             // TODO: PATH
