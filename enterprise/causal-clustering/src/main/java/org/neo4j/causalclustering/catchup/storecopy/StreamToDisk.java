@@ -91,12 +91,14 @@ class StreamToDisk implements StoreFileStreams
     }
 
     @Override
-    public void finish( String destination ) throws IOException
+    public void close() throws IOException
     {
-        PagedFile pagedFile = pagedFiles.get( destination );
-        if ( pagedFile != null )
+        for ( WritableByteChannel channel : channels.values() )
         {
-            channels.get( destination ).close();
+            channel.close();
+        }
+        for ( PagedFile pagedFile : pagedFiles.values() )
+        {
             pagedFile.close();
         }
     }

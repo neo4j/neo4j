@@ -64,10 +64,6 @@ public class StoreCopyClient
                                 throws IOException
                         {
                             storeFileStreams.write( destination, requiredAlignment, fileChunk.bytes() );
-                            if ( fileChunk.isLast() )
-                            {
-                                storeFileStreams.finish( destination );
-                            }
                             return fileChunk.isLast();
                         }
 
