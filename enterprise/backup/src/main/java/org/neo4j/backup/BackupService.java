@@ -267,7 +267,6 @@ class BackupService
         {
             if ( directoryIsEmpty( fileSystem, targetDirectory ) )
             {
-                TODO:
                 log.info( "Previous backup not found, a new full backup will be performed." );
                 return fullBackup( fileSystem, sourceHostNameOrIp, sourcePort, targetDirectory, consistencyCheck,
                         config, timeout, forensics );
