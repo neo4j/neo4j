@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.ha.transaction;
 
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -73,6 +74,7 @@ import static org.neo4j.kernel.impl.ha.ClusterManager.memberThinksItIsRole;
  * This test is a stress test and duration of execution can be controlled via system property
  * -D{@link org.neo4j.kernel.ha.transaction.TransactionThroughMasterSwitchStressIT}.duration
  */
+@Ignore
 public class TransactionThroughMasterSwitchStressIT
 {
     @Rule
