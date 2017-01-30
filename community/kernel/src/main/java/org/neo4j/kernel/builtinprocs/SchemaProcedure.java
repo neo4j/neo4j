@@ -78,21 +78,25 @@ public class SchemaProcedure
                     Label label = labelsInDatabase.next();
                     Map<String,Object> properties = new HashMap<>();
 
-                    Iterator<IndexDescriptor> indexDescriptorIterator = readOperations.indexesGetForLabel( readOperations.labelGetForName( label.name() ) );
+                    Iterator<IndexDescriptor> indexDescriptorIterator =
+                            readOperations.indexesGetForLabel( readOperations.labelGetForName( label.name() ) );
                     ArrayList<String> indexes = new ArrayList<>();
                     while ( indexDescriptorIterator.hasNext() )
                     {
                         IndexDescriptor index = indexDescriptorIterator.next();
-                        String[] propertyNames = PropertyNameUtils.getPropertyKeys( statementTokenNameLookup, index.descriptor() );
+                        String[] propertyNames =
+                                PropertyNameUtils.getPropertyKeys( statementTokenNameLookup, index.descriptor() );
                         indexes.add( String.join( ",", propertyNames ) );
                     }
                     properties.put( "indexes", indexes );
 
-                    Iterator<NodePropertyConstraint> nodePropertyConstraintIterator = readOperations.constraintsGetForLabel( readOperations.labelGetForName( label.name() ) );
+                    Iterator<NodePropertyConstraint> nodePropertyConstraintIterator =
+                            readOperations.constraintsGetForLabel( readOperations.labelGetForName( label.name() ) );
                     ArrayList<String> constraints = new ArrayList<>();
                     while ( nodePropertyConstraintIterator.hasNext() )
                     {
-                        constraints.add( nodePropertyConstraintIterator.next().userDescription( statementTokenNameLookup ) );
+                        constraints.add( nodePropertyConstraintIterator.next()
+                                .userDescription( statementTokenNameLookup ) );
                     }
                     properties.put( "constraints", constraints );
 
@@ -101,7 +105,8 @@ public class SchemaProcedure
 
                 //add all relationships
 
-                Iterator<RelationshipType> relationshipTypeIterator = graphDatabaseAPI.getAllRelationshipTypesInUse().iterator();
+                Iterator<RelationshipType> relationshipTypeIterator =
+                        graphDatabaseAPI.getAllRelationshipTypesInUse().iterator();
                 while ( relationshipTypeIterator.hasNext() )
                 {
                     RelationshipType relationshipType = relationshipTypeIterator.next();
