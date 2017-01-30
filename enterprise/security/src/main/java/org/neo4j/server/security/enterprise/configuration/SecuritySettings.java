@@ -321,6 +321,7 @@ public class SecuritySettings implements LoadableConfig
     // Misc settings
     //=========================================================================
 
+    @Internal
     @Description( "Set to true if connection pooling should be used for authorization searches using the " +
                   "system account." )
     public static final Setting<Boolean> ldap_authorization_connection_pooling =

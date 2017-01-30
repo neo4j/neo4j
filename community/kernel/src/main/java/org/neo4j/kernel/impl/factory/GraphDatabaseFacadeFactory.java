@@ -32,6 +32,7 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.Internal;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
@@ -83,16 +84,19 @@ public class GraphDatabaseFacadeFactory
 
     public static class Configuration implements LoadableConfig
     {
+        @Internal
         public static final Setting<Boolean> ephemeral =
                 setting( "unsupported.dbms.ephemeral", Settings.BOOLEAN, Settings.FALSE );
 
-        // Kept here to have it not be publicly documented.
+        @Internal
         public static final Setting<String> lock_manager =
                 setting( "unsupported.dbms.lock_manager", Settings.STRING, "" );
 
+        @Internal
         public static final Setting<String> tracer =
                 setting( "unsupported.dbms.tracer", Settings.STRING, (String) null ); // 'null' default.
 
+        @Internal
         public static final Setting<String> editionName =
                 setting( "unsupported.dbms.edition", Settings.STRING, Edition.unknown.toString() );
     }
