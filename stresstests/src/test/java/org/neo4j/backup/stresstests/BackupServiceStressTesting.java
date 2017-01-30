@@ -24,10 +24,12 @@ import org.junit.Test;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
@@ -110,10 +112,10 @@ public class BackupServiceStressTesting
                     new StartStop( keepGoingSupplier, onFailure, graphDatabaseBuilder::newGraphDatabase, dbRef ) );
 
             long timeout = durationInMinutes + 5;
-            assertNull( Exceptions.stringify( workload.get() ), workload.get( timeout, MINUTES ) );
-            assertNull( Exceptions.stringify( backupWorker.get() ), backupWorker.get( timeout, MINUTES ) );
-            assertNull( Exceptions.stringify( startStopWorker.get() ), startStopWorker.get( timeout, MINUTES ) );
 
+            assertSuccessfulExecution( workload, timeout );
+            assertSuccessfulExecution( backupWorker, timeout );
+            assertSuccessfulExecution( startStopWorker, timeout );
             service.shutdown();
             if ( !service.awaitTermination( 30, TimeUnit.SECONDS ) )
             {
@@ -130,5 +132,12 @@ public class BackupServiceStressTesting
         // let's cleanup disk space when everything went well
         FileUtils.deleteRecursively( storeDirectory );
         FileUtils.deleteRecursively( workDirectory );
+    }
+
+    private void assertSuccessfulExecution( Future<Throwable> future, long timeout )
+            throws InterruptedException, ExecutionException, TimeoutException
+    {
+        Throwable executionResults = future.get( timeout, MINUTES );
+        assertNull( Exceptions.stringify( executionResults ), executionResults );
     }
 }
