@@ -19,10 +19,12 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
+import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import org.neo4j.graphdb.Result;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.test.DoubleLatch;
@@ -33,7 +35,7 @@ import static junit.framework.TestCase.fail;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 
-public class ThreadedTransaction<S>
+class ThreadedTransaction<S>
 {
     private volatile Future<Throwable> done = null;
     private final NeoInteractionLevel<S> neo;
@@ -75,7 +77,7 @@ public class ThreadedTransaction<S>
         ThreadingRule threading, S subject, KernelTransaction.Type txType, boolean startEarly, String... queries )
     {
         NamedFunction<S, Throwable> startTransaction =
-                new NamedFunction<S, Throwable>( "threaded-transaction-" + queries.hashCode() )
+                new NamedFunction<S, Throwable>( "threaded-transaction-" + Arrays.hashCode( queries ) )
                 {
                     @Override
                     public Throwable apply( S subject )
@@ -125,7 +127,6 @@ public class ThreadedTransaction<S>
         return queries;
     }
 
-    @SuppressWarnings( "ThrowableResultOfMethodCallIgnored" )
     void closeAndAssertSuccess() throws Throwable
     {
         Throwable exceptionInOtherThread = join();
@@ -137,18 +138,17 @@ public class ThreadedTransaction<S>
 
     void closeAndAssertTransactionTermination() throws Throwable
     {
-        //noinspection ThrowableResultOfMethodCallIgnored
         Throwable exceptionInOtherThread = join();
         if ( exceptionInOtherThread == null )
         {
             fail( "Expected BridgeTransactionTerminatedException in ThreadedCreate, but no exception was raised" );
         }
-        assertThat( exceptionInOtherThread.getMessage(), containsString( "Explicitly terminated by the user.") );
+        assertThat( Exceptions.stringify( exceptionInOtherThread ),
+                exceptionInOtherThread.getMessage(), containsString( "Explicitly terminated by the user.") );
     }
 
     void closeAndAssertQueryKilled() throws Throwable
     {
-        //noinspection ThrowableResultOfMethodCallIgnored
         Throwable exceptionInOtherThread = join();
         if ( exceptionInOtherThread == null )
         {
