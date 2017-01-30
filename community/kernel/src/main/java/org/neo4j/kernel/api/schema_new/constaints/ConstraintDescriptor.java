@@ -22,36 +22,76 @@ package org.neo4j.kernel.api.schema_new.constaints;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
 
+import static java.lang.String.format;
+
 /**
  * Internal representation of a graph constraint, including the schema unit it targets (eg. label-property combination)
  * and the how that schema unit is constrained (eg. "has to exist", or "must be unique").
  */
-public interface ConstraintDescriptor
+public class ConstraintDescriptor
 {
-    enum Type { UNIQUE, EXISTS }
+    public enum Type { UNIQUE, EXISTS }
 
-    SchemaDescriptor schema();
+    public interface Supplier
+    {
+        ConstraintDescriptor getConstraintDescriptor();
+    }
 
-    Type type();
+    private final SchemaDescriptor schema;
+    private final ConstraintDescriptor.Type type;
+
+    ConstraintDescriptor( SchemaDescriptor schema, Type type )
+    {
+        this.schema = schema;
+        this.type = type;
+    }
+
+    // METHODS
+
+    public SchemaDescriptor schema()
+    {
+        return schema;
+    }
+
+    public Type type()
+    {
+        return type;
+    }
 
     /**
      * @param tokenNameLookup used for looking up names for token ids.
      * @return a user friendly description of what this index indexes.
      */
-    String userDescription( TokenNameLookup tokenNameLookup );
+
+    public String userDescription( TokenNameLookup tokenNameLookup )
+    {
+        return format( "Constraint( %s, %s )", type.name(), schema.userDescription( tokenNameLookup ) );
+    }
 
     /**
      * Checks whether a constraint descriptor Supplier supplies this constraint descriptor.
      * @param supplier supplier to get a constraint descriptor from
      * @return true if the supplied constraint descriptor equals this constraint descriptor
      */
-    default boolean isSame( Supplier supplier )
+    public boolean isSame( Supplier supplier )
     {
         return this.equals( supplier.getConstraintDescriptor() );
     }
 
-    interface Supplier
+    @Override
+    public boolean equals( Object o )
     {
-        ConstraintDescriptor getConstraintDescriptor();
+        if ( o != null && o instanceof ConstraintDescriptor )
+        {
+            ConstraintDescriptor that = (ConstraintDescriptor)o;
+            return this.type() == that.type() && this.schema().equals( that.schema() );
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return type.hashCode() & schema.hashCode();
     }
 }

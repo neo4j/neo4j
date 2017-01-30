@@ -28,11 +28,11 @@ public class NewIndexDescriptorFactory
 {
     public static NewIndexDescriptor forLabel( int labelId, int... propertyIds )
     {
-        return new NewIndexDescriptorImpl( SchemaDescriptorFactory.forLabel( labelId, propertyIds ), GENERAL );
+        return new NewIndexDescriptor( SchemaDescriptorFactory.forLabel( labelId, propertyIds ), GENERAL );
     }
 
     public static NewIndexDescriptor uniqueForLabel( int labelId, int... propertyIds )
     {
-        return new NewIndexDescriptorImpl( SchemaDescriptorFactory.forLabel( labelId, propertyIds ), UNIQUE );
+        return new NewIndexDescriptor( SchemaDescriptorFactory.forLabel( labelId, propertyIds ), UNIQUE );
     }
 }

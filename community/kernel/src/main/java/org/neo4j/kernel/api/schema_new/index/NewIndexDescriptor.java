@@ -22,40 +22,82 @@ package org.neo4j.kernel.api.schema_new.index;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 
+import static java.lang.String.format;
+
 /**
  * Internal representation of a graph index, including the schema unit it targets (eg. label-property combination)
  * and the type of index. UNIQUE indexes are used to back uniqueness constraints.
+ *
+ * This will be renamed to IndexDescriptor, once the old org.neo4j.kernel.api.schema.IndexDescriptor is completely
+ * removed.
  */
-public interface NewIndexDescriptor
+public class NewIndexDescriptor
 {
-    enum Type { GENERAL, UNIQUE }
+    public enum Type { GENERAL, UNIQUE }
 
-    Type type();
+    public interface Supplier
+    {
+        NewIndexDescriptor getNewIndexDescriptor();
+    }
+
+    private final LabelSchemaDescriptor schema;
+    private final NewIndexDescriptor.Type type;
+
+    NewIndexDescriptor( LabelSchemaDescriptor schema, Type type )
+    {
+        this.schema = schema;
+        this.type = type;
+    }
+
+    // METHODS
+
+    public Type type()
+    {
+        return type;
+    }
 
     /**
      * This method currently returns the specific LabelSchemaDescriptor, as we do not support indexes on relations.
      * When we do, consider down-typing this to a SchemaDescriptor.
      */
-    LabelSchemaDescriptor schema();
+    public LabelSchemaDescriptor schema()
+    {
+        return schema;
+    }
 
     /**
      * @param tokenNameLookup used for looking up names for token ids.
      * @return a user friendly description of what this index indexes.
      */
-    String userDescription( TokenNameLookup tokenNameLookup );
+    public String userDescription( TokenNameLookup tokenNameLookup )
+    {
+        return format( "Index( %s, %s )", type.name(), schema.userDescription( tokenNameLookup ) );
+    }
 
     /**
-     * Checks whether a constraint descriptor Supplier supplies this constraint descriptor.
-     * @param supplier supplier to get a constraint descriptor from
-     * @return true if the supplied constraint descriptor equals this constraint descriptor
+     * Checks whether an index descriptor Supplier supplies this index descriptor.
+     * @param supplier supplier to get a index descriptor from
+     * @return true if the supplied index descriptor equals this index descriptor
      */
-    default boolean isSame( Supplier supplier )
+    public boolean isSame( Supplier supplier )
     {
         return this.equals( supplier.getNewIndexDescriptor() );
     }
 
-    interface Supplier
+    @Override
+    public boolean equals( Object o )
     {
-        NewIndexDescriptor getNewIndexDescriptor();
+        if ( o != null && o instanceof NewIndexDescriptor )
+        {
+            NewIndexDescriptor that = (NewIndexDescriptor)o;
+            return this.type() == that.type() && this.schema().equals( that.schema() );
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return type.hashCode() & schema.hashCode();
     }
 }

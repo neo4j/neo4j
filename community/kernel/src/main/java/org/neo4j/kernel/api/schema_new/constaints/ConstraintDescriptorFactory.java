@@ -28,21 +28,21 @@ public class ConstraintDescriptorFactory
 {
     public static ConstraintDescriptor existsForLabel( int labelId, int... propertyIds )
     {
-        return new ConstraintDescriptorImpl( SchemaDescriptorFactory.forLabel( labelId, propertyIds ), EXISTS );
+        return new ConstraintDescriptor( SchemaDescriptorFactory.forLabel( labelId, propertyIds ), EXISTS );
     }
 
     public static ConstraintDescriptor existsForRelType( int relTypeId, int... propertyIds )
     {
-        return new ConstraintDescriptorImpl( SchemaDescriptorFactory.forRelType( relTypeId, propertyIds ), EXISTS );
+        return new ConstraintDescriptor( SchemaDescriptorFactory.forRelType( relTypeId, propertyIds ), EXISTS );
     }
 
     public static ConstraintDescriptor uniqueForLabel( int labelId, int... propertyIds )
     {
-        return new ConstraintDescriptorImpl( SchemaDescriptorFactory.forLabel( labelId, propertyIds ), UNIQUE );
+        return new ConstraintDescriptor( SchemaDescriptorFactory.forLabel( labelId, propertyIds ), UNIQUE );
     }
 
     public static ConstraintDescriptor uniqueForRelType( int relTypeId, int... propertyIds )
     {
-        return new ConstraintDescriptorImpl( SchemaDescriptorFactory.forRelType( relTypeId, propertyIds ), UNIQUE );
+        return new ConstraintDescriptor( SchemaDescriptorFactory.forRelType( relTypeId, propertyIds ), UNIQUE );
     }
 }
