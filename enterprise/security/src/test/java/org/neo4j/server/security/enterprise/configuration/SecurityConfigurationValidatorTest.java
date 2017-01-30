@@ -33,8 +33,6 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class SecurityConfigurationValidatorTest
 {
-
-
     @Test
     public void shouldWarnIfUsingSeveralConfigs() throws Throwable
     {
@@ -48,7 +46,7 @@ public class SecurityConfigurationValidatorTest
         }
         catch ( InvalidSettingException invalid )
         {
-            assertEquals( "Using both auth_provider and auth_providers and they do not match:" +
+            assertEquals( "Using both SecuritySettings.auth_provider and SecuritySettings.auth_providers and they do not match:" +
                     " auth_provider = native , auth_provider = [native, LDAP]", invalid.getMessage() );
         }
     }
@@ -65,7 +63,7 @@ public class SecurityConfigurationValidatorTest
         }
         catch ( InvalidSettingException invalid )
         {
-            assertEquals( "Using both auth_provider and auth_providers and they do not match:" +
+            assertEquals( "Using both SecuritySettings.auth_provider and SecuritySettings.auth_providers and they do not match:" +
                     " auth_provider = native , auth_provider = [LDAP]", invalid.getMessage() );
         }
     }
