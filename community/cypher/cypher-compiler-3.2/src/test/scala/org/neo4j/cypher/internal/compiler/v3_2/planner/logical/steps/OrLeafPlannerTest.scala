@@ -24,10 +24,10 @@ import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.{LeafPlanFromExpression, LeafPlansForVariable}
-import org.neo4j.cypher.internal.compiler.v3_2.planner.{LogicalPlanningTestSupport, QueryGraph, Selections}
+import org.neo4j.cypher.internal.compiler.v3_2.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{Ors, Variable}
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_2.IdName
+import org.neo4j.cypher.internal.ir.v3_2.{IdName, QueryGraph, Selections}
 
 class OrLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 

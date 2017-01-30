@@ -22,12 +22,13 @@ package org.neo4j.cypher.internal.compiled_runtime.v3_2
 import org.neo4j.cypher.internal.compatibility.v3_2.WrappedMonitors
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.NewRuntimeSuccessRateMonitor
 import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilationState
+import org.neo4j.cypher.internal.compiler.v3_2.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{LogicalPlan, ProduceResult, SingleRow}
-import org.neo4j.cypher.internal.compiler.v3_2.planner.{CantCompileQueryException, CardinalityEstimation, QueryGraph, RegularPlannerQuery}
 import org.neo4j.cypher.internal.compiler.v3_2.spi.GraphStatistics
 import org.neo4j.cypher.internal.compiler.v3_2.{CostBasedPlannerName, HardcodedGraphStatistics, NotImplementedPlanContext}
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticTable
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.ir.v3_2.{CardinalityEstimation, QueryGraph, RegularPlannerQuery}
 import org.neo4j.cypher.internal.spi.v3_2.codegen.GeneratedQueryStructure
 import org.neo4j.kernel.monitoring.Monitors
 

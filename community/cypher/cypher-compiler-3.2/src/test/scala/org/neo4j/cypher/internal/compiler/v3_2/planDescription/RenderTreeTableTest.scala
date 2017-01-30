@@ -28,10 +28,9 @@ import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescr
 import org.neo4j.cypher.internal.compiler.v3_2.planner.execution.FakeIdMap
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.LogicalPlan2PlanDescription
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{Expand, ExpandAll, SingleRow}
-import org.neo4j.cypher.internal.compiler.v3_2.planner.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.{CypherFunSuite, WindowsStringSafe}
-import org.neo4j.cypher.internal.ir.v3_2.{Cardinality, IdName}
+import org.neo4j.cypher.internal.ir.v3_2.{Cardinality, CardinalityEstimation, IdName, PlannerQuery}
 import org.scalatest.BeforeAndAfterAll
 
 class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {

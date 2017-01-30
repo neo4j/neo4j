@@ -19,8 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v3_2.planner.{CardinalityEstimation, PlannerQuery}
-import org.neo4j.cypher.internal.ir.v3_2.{IdName, StrictnessMode}
+import org.neo4j.cypher.internal.ir.v3_2.{CardinalityEstimation, IdName, PlannerQuery, StrictnessMode}
 
 case class EmptyResult(inner: LogicalPlan)(val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalPlan {

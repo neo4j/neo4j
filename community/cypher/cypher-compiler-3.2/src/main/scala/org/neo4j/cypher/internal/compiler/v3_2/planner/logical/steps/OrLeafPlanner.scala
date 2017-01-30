@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.planner._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.{LeafPlanFromExpression, LeafPlanner, LeafPlansForVariable, LogicalPlanningContext}
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{Expression, Ors}
+import org.neo4j.cypher.internal.ir.v3_2.QueryGraph
 
 case class OrLeafPlanner(inner: Seq[LeafPlanFromExpression]) extends LeafPlanner {
 

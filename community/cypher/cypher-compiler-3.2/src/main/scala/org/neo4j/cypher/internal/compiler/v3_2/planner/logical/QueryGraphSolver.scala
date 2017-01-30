@@ -19,12 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v3_2.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.frontend.v3_2.InternalException
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.ast.rewriters.PatternExpressionPatternElementNamer
-import org.neo4j.cypher.internal.ir.v3_2.IdName
+import org.neo4j.cypher.internal.ir.v3_2.{IdName, QueryGraph}
 
 trait QueryGraphSolver {
   def plan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): LogicalPlan
@@ -38,7 +37,7 @@ trait PatternExpressionSolving {
 
   self: QueryGraphSolver =>
 
-  import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.plannerQuery.ExpressionConverters._
+  import org.neo4j.cypher.internal.ir.v3_2.helpers.ExpressionConverters._
 
   def planPatternExpression(planArguments: Set[IdName], expr: PatternExpression)
                            (implicit context: LogicalPlanningContext): (LogicalPlan, PatternExpression) = {

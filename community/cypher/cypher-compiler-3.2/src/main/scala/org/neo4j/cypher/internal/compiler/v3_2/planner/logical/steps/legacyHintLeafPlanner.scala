@@ -19,11 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v3_2.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.{LeafPlanner, LogicalPlanningContext}
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{LegacyIndexHint, NodeStartItem, RelationshipStartItem}
-import org.neo4j.cypher.internal.ir.v3_2.IdName
+import org.neo4j.cypher.internal.ir.v3_2.{IdName, QueryGraph}
 
 object legacyHintLeafPlanner extends LeafPlanner {
   def apply(qg: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] = {

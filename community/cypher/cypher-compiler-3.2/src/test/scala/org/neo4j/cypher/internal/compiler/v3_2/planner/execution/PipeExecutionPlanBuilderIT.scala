@@ -37,7 +37,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_2.{IdName, PatternRelationship, SimplePatternLength}
+import org.neo4j.cypher.internal.ir.v3_2._
 
 class PipeExecutionPlanBuilderIT extends CypherFunSuite with LogicalPlanningTestSupport {
 

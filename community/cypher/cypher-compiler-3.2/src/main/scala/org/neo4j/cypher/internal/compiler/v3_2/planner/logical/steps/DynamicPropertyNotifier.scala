@@ -19,11 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v3_2.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{LabelName, Variable}
 import org.neo4j.cypher.internal.frontend.v3_2.notification.InternalNotification
-import org.neo4j.cypher.internal.ir.v3_2.IdName
+import org.neo4j.cypher.internal.ir.v3_2.{IdName, QueryGraph}
 
 object DynamicPropertyNotifier {
 

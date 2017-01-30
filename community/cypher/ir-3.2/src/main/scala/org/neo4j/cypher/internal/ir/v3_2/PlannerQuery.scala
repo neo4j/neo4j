@@ -17,28 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_2.planner
+package org.neo4j.cypher.internal.ir.v3_2
 
 import org.neo4j.cypher.internal.frontend.v3_2.InternalException
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{Hint, LabelName, Variable}
-import org.neo4j.cypher.internal.ir.v3_2._
 
 import scala.annotation.tailrec
 import scala.collection.GenTraversableOnce
-
-case class UnionQuery(queries: Seq[PlannerQuery], distinct: Boolean, returns: Seq[IdName], periodicCommit: Option[PeriodicCommit]) {
-  def readOnly: Boolean = queries.forall(_.readOnly)
-}
-
-case class RegularPlannerQuery(queryGraph: QueryGraph = QueryGraph.empty,
-                               horizon: QueryHorizon = QueryProjection.empty,
-                               tail: Option[PlannerQuery] = None) extends PlannerQuery {
-  // This is here to stop usage of copy from the outside
-  override protected def copy(queryGraph: QueryGraph = queryGraph,
-                              horizon: QueryHorizon = horizon,
-                              tail: Option[PlannerQuery] = tail) =
-    RegularPlannerQuery(queryGraph, horizon, tail)
-}
 
 sealed trait PlannerQuery {
   val queryGraph: QueryGraph
@@ -191,6 +176,16 @@ object PlannerQuery {
   }
 }
 
+case class RegularPlannerQuery(queryGraph: QueryGraph = QueryGraph.empty,
+                               horizon: QueryHorizon = QueryProjection.empty,
+                               tail: Option[PlannerQuery] = None) extends PlannerQuery {
+  // This is here to stop usage of copy from the outside
+  override protected def copy(queryGraph: QueryGraph = queryGraph,
+                              horizon: QueryHorizon = horizon,
+                              tail: Option[PlannerQuery] = tail) =
+    RegularPlannerQuery(queryGraph, horizon, tail)
+}
+
 trait CardinalityEstimation {
   self: PlannerQuery =>
 
@@ -206,4 +201,8 @@ object CardinalityEstimation {
         val estimatedCardinality = cardinality
       }
   }
+}
+
+case class UnionQuery(queries: Seq[PlannerQuery], distinct: Boolean, returns: Seq[IdName], periodicCommit: Option[PeriodicCommit]) {
+  def readOnly: Boolean = queries.forall(_.readOnly)
 }

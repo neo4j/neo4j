@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{NodeHashJo
 import org.neo4j.cypher.internal.compiler.v3_2.planner._
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_2.{Cardinality, IdName}
+import org.neo4j.cypher.internal.ir.v3_2._
 
 class PredicateRemovalThroughJoinsTest extends CypherFunSuite with LogicalPlanningTestSupport {
   val aHasLabel = identHasLabel("a", "LABEL")

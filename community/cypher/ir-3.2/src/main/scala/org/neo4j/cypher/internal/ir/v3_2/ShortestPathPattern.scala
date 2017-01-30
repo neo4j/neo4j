@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.ir.v3_2
 
-import org.neo4j.cypher.internal.frontend.v3_2.ast
+import org.neo4j.cypher.internal.frontend.v3_2.ast.ShortestPaths
 
 final case class ShortestPathPattern(name: Option[IdName], rel: PatternRelationship, single: Boolean)
-                                    (val expr: ast.ShortestPaths) {
+                                    (val expr: ShortestPaths) {
 
   def isFindableFrom(symbols: Set[IdName]) = symbols.contains(rel.left) && symbols.contains(rel.right)
 

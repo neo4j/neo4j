@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_2.spi.GraphStatistics
 import org.neo4j.cypher.internal.frontend.v3_2.{LabelId, PropertyKeyId, SemanticTable}
-import org.neo4j.cypher.internal.ir.v3_2.{Cardinality, Cost}
+import org.neo4j.cypher.internal.ir.v3_2.{Cardinality, Cost, PlannerQuery, QueryGraph}
 
 trait LogicalPlanningConfiguration {
   def updateSemanticTableWithTokens(in: SemanticTable): SemanticTable

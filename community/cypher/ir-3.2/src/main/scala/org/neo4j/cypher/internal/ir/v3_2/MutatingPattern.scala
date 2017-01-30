@@ -22,11 +22,11 @@ package org.neo4j.cypher.internal.ir.v3_2
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{Expression, LabelName, PropertyKeyName, RelTypeName}
 
-trait MutatingPattern {
+sealed trait MutatingPattern {
   def coveredIds: Set[IdName]
 }
 
-trait NoSymbols {
+sealed trait NoSymbols {
   self : MutatingPattern =>
   override def coveredIds = Set.empty[IdName]
 }
@@ -64,3 +64,20 @@ case class CreateRelationshipPattern(relName: IdName, leftNode: IdName, relType:
 }
 
 case class DeleteExpression(expression: Expression, forced: Boolean) extends MutatingPattern with NoSymbols
+
+sealed trait MergePattern {
+  self : MutatingPattern =>
+  def matchGraph: QueryGraph
+}
+
+case class MergeNodePattern(createNodePattern: CreateNodePattern, matchGraph: QueryGraph, onCreate: Seq[SetMutatingPattern],
+                            onMatch: Seq[SetMutatingPattern]) extends MutatingPattern with MergePattern {
+  override def coveredIds = matchGraph.allCoveredIds
+}
+
+case class MergeRelationshipPattern(createNodePatterns: Seq[CreateNodePattern], createRelPatterns: Seq[CreateRelationshipPattern],
+                                    matchGraph: QueryGraph, onCreate: Seq[SetMutatingPattern], onMatch: Seq[SetMutatingPattern]) extends MutatingPattern with MergePattern {
+  override def coveredIds = matchGraph.allCoveredIds
+}
+
+case class ForeachPattern(variable: IdName, expression: Expression, innerUpdates: PlannerQuery) extends MutatingPattern with NoSymbols

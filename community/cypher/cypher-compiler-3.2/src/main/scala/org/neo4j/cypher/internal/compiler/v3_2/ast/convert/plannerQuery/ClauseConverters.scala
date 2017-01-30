@@ -20,11 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v3_2.ast.convert.plannerQuery
 
 import org.neo4j.cypher.internal.compiler.v3_2.ast.ResolvedCall
-import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.plannerQuery.ExpressionConverters._
-import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.plannerQuery.PatternConverters._
+import org.neo4j.cypher.internal.ir.v3_2.helpers.ExpressionConverters._
+import org.neo4j.cypher.internal.ir.v3_2.helpers.PatternConverters._
 import org.neo4j.cypher.internal.compiler.v3_2.planner._
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.{InternalException, SemanticTable, SyntaxException}
+import org.neo4j.cypher.internal.ir.v3_2.exception.CantHandleQueryException
 import org.neo4j.cypher.internal.ir.v3_2.{NoHeaders, _}
 
 import scala.collection.mutable

@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.LogicalPlanningCo
 import org.neo4j.cypher.internal.frontend.v3_2.ast
 import org.neo4j.cypher.internal.frontend.v3_2.ast.AscSortItem
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_2.{Cardinality, IdName, RegularQueryProjection}
+import org.neo4j.cypher.internal.ir.v3_2._
 
 class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
 

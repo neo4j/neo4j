@@ -20,10 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v3_2.executionplan
 
 import org.neo4j.cypher.internal.compiler.v3_2.pipes._
+import org.neo4j.cypher.internal.compiler.v3_2.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.compiler.v3_2.planner.{CantCompileQueryException, CantHandleQueryException}
 import org.neo4j.cypher.internal.frontend.v3_2.PlannerName
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Statement
+import org.neo4j.cypher.internal.ir.v3_2.exception.CantHandleQueryException
 
 case class PipeInfo(pipe: Pipe,
                     updating: Boolean,
