@@ -39,6 +39,7 @@ import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.LegacyIndexTransactionStateImpl;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
+import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.proc.Procedures;
@@ -181,7 +182,6 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
     public void disposeAll()
     {
         terminateTransactions();
-        markAllTransactionsAsShutdown();
         localTxPool.disposeAll();
         globalTxPool.disposeAll();
     }
@@ -189,11 +189,6 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
     public void terminateTransactions()
     {
         markAllTransactionsAsTerminated();
-    }
-
-    private void markAllTransactionsAsShutdown()
-    {
-        allTransactions.forEach( KernelTransactionImplementation::markAsShutdown );
     }
 
     private void markAllTransactionsAsTerminated()

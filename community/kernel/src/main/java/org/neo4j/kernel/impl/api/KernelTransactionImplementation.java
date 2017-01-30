@@ -26,7 +26,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -67,9 +68,7 @@ import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
-import static org.neo4j.kernel.api.exceptions.Status.General.DatabaseUnavailable;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
-
 
 /**
  * This class should replace the {@link org.neo4j.kernel.api.KernelTransaction} interface, and take its name, as soon
@@ -119,9 +118,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private SecurityContext securityContext;
     private volatile StatementLocks statementLocks;
     private boolean beforeHookInvoked;
-    private final TransactionStatus transactionStatus = new TransactionStatus();
+    private volatile boolean closing;
+    private volatile boolean closed;
     private boolean failure;
     private boolean success;
+    private volatile Status terminationReason;
     private long startTimeMillis;
     private long timeoutMillis;
     private long lastTransactionIdWhenStarted;
@@ -132,6 +133,15 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private long commitTime;
     private volatile int reuseCount;
     private volatile Map<String,Object> userMetaData;
+
+    /**
+     * Lock prevents transaction {@link #markForTermination(Status)}  transaction termination} from interfering with
+     * {@link #close() transaction commit} and specifically with {@link #release()}.
+     * Termination can run concurrently with commit and we need to make sure that it terminates the right lock client
+     * and the right transaction (with the right {@link #reuseCount}) because {@link KernelTransactionImplementation}
+     * instances are pooled.
+     */
+    private final Lock terminationReleaseLock = new ReentrantLock();
 
     public KernelTransactionImplementation( StatementOperationContainer operationContainer,
                                             SchemaWriteGuard schemaWriteGuard,
@@ -177,10 +187,13 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         this.type = type;
         this.statementLocks = statementLocks;
+        this.terminationReason = null;
+        this.closing = false;
+        this. closed = false;
+        this.beforeHookInvoked = false;
         this.failure = false;
         this.success = false;
         this.beforeHookInvoked = false;
-        this.transactionStatus.init();
         this.writeState = TransactionWriteState.NONE;
         this.startTimeMillis = clock.millis();
         this.timeoutMillis = transactionTimeout;
@@ -234,24 +247,48 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public Optional<Status> getReasonIfTerminated()
     {
-        return transactionStatus.getTerminationReason();
+        return Optional.ofNullable( terminationReason );
     }
 
     boolean markForTermination( long expectedReuseCount, Status reason )
     {
-        return expectedReuseCount == reuseCount && markForTerminationIfPossible( reason );
+        terminationReleaseLock.lock();
+        try
+        {
+            return expectedReuseCount == reuseCount && markForTerminationIfPossible( reason );
+        }
+        finally
+        {
+            terminationReleaseLock.unlock();
+        }
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * This method is guarded by {@link #terminationReleaseLock} to coordinate concurrent
+     * {@link #close()} and {@link #release()} calls.
+     */
     @Override
     public void markForTermination( Status reason )
     {
-        markForTerminationIfPossible( reason );
+        terminationReleaseLock.lock();
+        try
+        {
+            markForTerminationIfPossible( reason );
+        }
+        finally
+        {
+            terminationReleaseLock.unlock();
+        }
     }
 
     private boolean markForTerminationIfPossible( Status reason )
     {
-        if ( transactionStatus.terminate( reason ) )
+        if ( canBeTerminated() )
         {
+            failure = true;
+            terminationReason = reason;
             if ( statementLocks != null )
             {
                 statementLocks.stop();
@@ -265,7 +302,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public boolean isOpen()
     {
-        return transactionStatus.isOpen();
+        return !closed && !closing;
     }
 
     @Override
@@ -287,7 +324,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public KernelStatement acquireStatement()
     {
-        assertTransactionNotClosed();
+        assertTransactionOpen();
         currentStatement.acquire();
         return currentStatement;
     }
@@ -354,6 +391,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     private void markAsClosed( long txId )
     {
+        assertTransactionOpen();
+        closed = true;
         closeCurrentStatementIfAny();
         for ( CloseListener closeListener : closeListeners )
         {
@@ -366,9 +405,17 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         currentStatement.forceClose();
     }
 
-    private void assertTransactionNotClosed()
+    private void assertTransactionNotClosing()
     {
-        if ( isClosed() )
+        if ( closing )
+        {
+            throw new IllegalStateException( "This transaction is already being closed." );
+        }
+    }
+
+    private void assertTransactionOpen()
+    {
+        if ( closed )
         {
             throw new IllegalStateException( "This transaction has already been completed." );
         }
@@ -389,28 +436,15 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return hasTxStateWithChanges() && txState.hasDataChanges();
     }
 
-    public boolean isClosed()
-    {
-        return transactionStatus.isClosed();
-    }
-
-    public boolean isShutdown()
-    {
-        return transactionStatus.isShutdown();
-    }
-
-    public boolean isClosing()
-    {
-        return transactionStatus.isClosing();
-    }
-
     @Override
     public long closeTransaction() throws TransactionFailureException
     {
-        markTransactionAsClosing();
+        assertTransactionOpen();
+        assertTransactionNotClosing();
+        closeCurrentStatementIfAny();
+        closing = true;
         try
         {
-            closeCurrentStatementIfAny();
             if ( failure || !success || isTerminated() )
             {
                 rollback();
@@ -426,8 +460,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         {
             try
             {
+                closed = true;
+                closing = false;
                 transactionEvent.setSuccess( success );
-                transactionEvent.setFailure( failure || isTerminated() );
+                transactionEvent.setFailure( failure );
                 transactionEvent.setTransactionType( writeState.name() );
                 transactionEvent.setReadOnly( txState == null || !txState.hasChanges() );
                 transactionEvent.close();
@@ -439,21 +475,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
     }
 
-    private void markTransactionAsClosing() throws TransactionFailureException
+    public boolean isClosing()
     {
-        if ( !transactionStatus.closing() )
-        {
-            assertTransactionNotClosed();
-            if ( transactionStatus.isShutdown() )
-            {
-                throw new TransactionTerminatedException( DatabaseUnavailable );
-            }
-            else
-            {
-                throw new IllegalStateException(
-                        "Transaction is already closing. Repeated execution of transactions are not allowed." );
-            }
-        }
+        return closing;
     }
 
     /**
@@ -472,15 +496,18 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      */
     private void failOnNonExplicitRollbackIfNeeded() throws TransactionFailureException
     {
+        if ( success && isTerminated() )
+        {
+            throw new TransactionTerminatedException( terminationReason );
+        }
         if ( success )
         {
-            throw getReasonIfTerminated().map( TransactionTerminatedException::new )
-                    // Success was called, but also failure which means that the client code using this
-                    // transaction passed through a happy path, but the transaction was still marked as
-                    // failed for one or more reasons. Tell the user that although it looked happy it
-                    // wasn't committed, but was instead rolled back.
-                    .orElseThrow( () -> new TransactionFailureException( Status.Transaction.TransactionMarkedAsFailed,
-                            "Transaction rolled back even if marked as successful" ) );
+            // Success was called, but also failure which means that the client code using this
+            // transaction passed through a happy path, but the transaction was still marked as
+            // failed for one or more reasons. Tell the user that although it looked happy it
+            // wasn't committed, but was instead rolled back.
+            throw new TransactionFailureException( Status.Transaction.TransactionMarkedAsFailed,
+                    "Transaction rolled back even if marked as successful" );
         }
     }
 
@@ -552,6 +579,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                             startTimeMillis, lastTransactionIdWhenStarted, timeCommitted,
                             commitLocks.getLockSessionId() );
 
+                    // Commit the transaction
                     success = true;
                     TransactionToApply batch = new TransactionToApply( transactionRepresentation );
                     txId = transactionId = commitProcess.commit( batch, commitEvent, INTERNAL );
@@ -660,47 +688,47 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     /**
      * Release resources held up by this transaction & return it to the transaction pool.
+     * This method is guarded by {@link #terminationReleaseLock} to coordinate concurrent
      * {@link #markForTermination(Status)} calls.
      */
     private void release()
     {
-        Throwable lockCloseException = closeLocksSilently();
-        statementLocks = null;
-        transactionStatus.close();
-        type = null;
-        securityContext = null;
-        transactionEvent = null;
-        legacyIndexTransactionState = null;
-        txState = null;
-        hooksState = null;
-        currentTransactionOperations = null;
-        closeListeners.clear();
-        reuseCount++;
-        userMetaData = Collections.emptyMap();
-        pool.release( this );
-        if ( lockCloseException != null )
-        {
-            throw new RuntimeException( lockCloseException );
-        }
-    }
-
-    private Throwable closeLocksSilently()
-    {
-        Throwable lockClosingThrowable = null;
+        terminationReleaseLock.lock();
         try
         {
             statementLocks.close();
+            statementLocks = null;
+            terminationReason = null;
+            type = null;
+            securityContext = null;
+            transactionEvent = null;
+            legacyIndexTransactionState = null;
+            txState = null;
+            hooksState = null;
+            currentTransactionOperations = null;
+            closeListeners.clear();
+            reuseCount++;
+            userMetaData = Collections.emptyMap();
+            pool.release( this );
         }
-        catch ( Throwable e )
+        finally
         {
-            lockClosingThrowable = e;
+            terminationReleaseLock.unlock();
         }
-        return lockClosingThrowable;
+    }
+
+    /**
+     * Transaction can be terminated only when it is not closed and not already terminated.
+     * Otherwise termination does not make sense.
+     */
+    private boolean canBeTerminated()
+    {
+        return !closed && !isTerminated();
     }
 
     private boolean isTerminated()
     {
-        return transactionStatus.isTerminated();
+        return terminationReason != null;
     }
 
     @Override
@@ -764,22 +792,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     public void dispose()
     {
-        markAsShutdown();
         storageStatement.close();
-    }
-
-    void markAsShutdown()
-    {
-        if ( transactionStatus.shutdown() )
-        {
-            // since transaction is marked as closed now and any new calls to close transaction
-            // are no longer possible we can release the locks now immediately
-            StatementLocks localLocks = this.statementLocks;
-            if ( localLocks != null )
-            {
-                localLocks.close();
-            }
-        }
     }
 
     /**
@@ -834,121 +847,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         TransactionWriteState upgradeToSchemaWrites() throws InvalidTransactionTypeKernelException
         {
             return SCHEMA;
-        }
-    }
-
-    static class TransactionStatus
-    {
-        private static final int OPEN = 0;
-        private static final int CLOSING = 1;
-        private static final int CLOSED = 2;
-        private static final int SHUTDOWN = 3;
-        private static final int STATE_BITS_MASK = 0x3;
-        private static final int NON_STATE_BITS_MASK = 0xFFFF_FFFC;
-        private static final int TERMINATED = 1 << 3;
-
-        private static final AtomicIntegerFieldUpdater<TransactionStatus> statusUpdater =
-                AtomicIntegerFieldUpdater.newUpdater( TransactionStatus.class, "status" );
-        // updated by statusUpdater
-        private volatile int status = CLOSED;
-        private Status terminationReason;
-
-        public void init()
-        {
-            reset();
-            statusUpdater.set( this, OPEN );
-        }
-
-        public void reset()
-        {
-            terminationReason = null;
-        }
-
-        public boolean isOpen()
-        {
-            return !isClosed();
-        }
-
-        public boolean isClosed()
-        {
-            return is( CLOSED );
-        }
-
-        public boolean isClosing()
-        {
-            return is( CLOSING );
-        }
-
-        public boolean isTerminated()
-        {
-            return (statusUpdater.get( this ) & TERMINATED) != 0;
-        }
-
-        public boolean terminate( Status reason )
-        {
-            int currentStatus;
-            do
-            {
-                currentStatus = statusUpdater.get( this );
-                if ( (currentStatus != OPEN) && (currentStatus != CLOSING) )
-                {
-                    return false;
-                }
-                terminationReason = reason;
-            }
-            while ( !statusUpdater.compareAndSet( this, currentStatus, currentStatus | TERMINATED ) );
-            return true;
-        }
-
-        public boolean closing()
-        {
-            return setOpenTransactionStatus( CLOSING );
-        }
-
-        private boolean setOpenTransactionStatus( int newStatus )
-        {
-            int currentStatus;
-            do
-            {
-                currentStatus = statusUpdater.get( this );
-                if ( (currentStatus & STATE_BITS_MASK) != OPEN )
-                {
-                    return false;
-                }
-            }
-            while ( !statusUpdater.compareAndSet( this, currentStatus, (currentStatus & NON_STATE_BITS_MASK) | newStatus ) );
-            return true;
-        }
-
-        boolean shutdown()
-        {
-            return setOpenTransactionStatus( SHUTDOWN );
-        }
-
-        public void close()
-        {
-            reset();
-            statusUpdater.set( this, CLOSED );
-        }
-
-        Optional<Status> getTerminationReason()
-        {
-            return Optional.ofNullable( terminationReason );
-        }
-
-        private boolean is( int statusCode )
-        {
-            return is( statusUpdater.get( this ), statusCode );
-        }
-
-        private boolean is( int currentStatus, int statusCode )
-        {
-            return (currentStatus & STATE_BITS_MASK) == statusCode;
-        }
-
-        public boolean isShutdown()
-        {
-            return is( SHUTDOWN );
         }
     }
 }
