@@ -35,8 +35,6 @@ import java.util.function.BooleanSupplier;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.test.ThreadTestUtils;
 
@@ -77,8 +75,12 @@ public class BackupServiceStressTesting
         boolean enableIndexes =
                 parseBoolean( fromEnv( "BACKUP_SERVICE_STRESS_ENABLE_INDEXES", DEFAULT_ENABLE_INDEXES ) );
 
-        File storeDirectory = ensureExistsAndEmpty( new File( directory, "store" ) );
-        File workDirectory = ensureExistsAndEmpty( new File( directory, "work" ) );
+        File store = new File( directory, "store" );
+        File work = new File( directory, "work" );
+        FileUtils.deleteRecursively( store );
+        FileUtils.deleteRecursively( work );
+        File storeDirectory = ensureExistsAndEmpty( store );
+        File workDirectory = ensureExistsAndEmpty( work );
 
         final Map<String,String> config =
                 configureBackup( configureTxLogRotationAndPruning( new HashMap<>(), txPrune ), backupHostname,

@@ -20,22 +20,17 @@
 package org.neo4j.backup.stresstests;
 
 import java.io.File;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.BooleanSupplier;
-import java.util.function.Predicate;
 
-import org.neo4j.backup.OnlineBackup;
-import org.neo4j.helper.IsChannelClosedException;
-import org.neo4j.helper.IsConnectionException;
-import org.neo4j.helper.IsConnectionRestByPeer;
-import org.neo4j.helper.IsStoreClosed;
+import org.neo4j.backup.BackupHelper;
+import org.neo4j.backup.BackupResult;
 import org.neo4j.helper.RepeatUntilCallable;
 
 class BackupLoad extends RepeatUntilCallable
 {
-    private final Predicate<Throwable> isTransientError =
-            new IsConnectionException().or( new IsConnectionRestByPeer() ).or( new IsChannelClosedException() )
-                    .or( new IsStoreClosed() );
+
     private final String backupHostname;
     private final int backupPort;
     private final File backupDir;
@@ -51,25 +46,14 @@ class BackupLoad extends RepeatUntilCallable
     @Override
     protected void doWork()
     {
-        OnlineBackup backup;
-        try
-        {
-            backup = OnlineBackup.from( backupHostname, backupPort ).backup( backupDir );
-        }
-        catch ( Throwable t )
-        {
-            if ( isTransientError.test( t ) )
-            {
-                // if we could not connect, wait a bit and try again...
-                LockSupport.parkNanos( 10_000_000 );
-                return;
-            }
-            throw t;
-        }
-
-        if ( !backup.isConsistent() )
+        BackupResult backupResult = BackupHelper.backup( backupHostname, backupPort, backupDir );
+        if ( !backupResult.isConsistent() )
         {
             throw new RuntimeException( "Inconsistent backup" );
+        }
+        if (backupResult.isTransientErrorOnBackup())
+        {
+            LockSupport.parkNanos( TimeUnit.MILLISECONDS.toNanos( 10 ) );
         }
     }
 }
