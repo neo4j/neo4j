@@ -59,6 +59,7 @@ public class SchemaAcceptanceTest
     private GraphDatabaseService db;
     private Label label = Labels.MY_LABEL;
     private String propertyKey = "my_property_key";
+    private String secondPropertyKey = "my_second_property_key";
 
     private enum Labels implements Label
     {
@@ -77,6 +78,16 @@ public class SchemaAcceptanceTest
     {
         // WHEN
         IndexDefinition index = createIndex( db, label, propertyKey );
+
+        // THEN
+        assertThat( getIndexes( db, label ), containsOnly( index ) );
+    }
+
+    @Test
+    public void addingACompositeIndexingRuleShouldSucceed() throws Exception
+    {
+        // WHEN
+        IndexDefinition index = createIndex( db, label, propertyKey, secondPropertyKey );
 
         // THEN
         assertThat( getIndexes( db, label ), containsOnly( index ) );
@@ -154,25 +165,6 @@ public class SchemaAcceptanceTest
 
         // THEN
         assertThat( caught, not( nullValue() ) );
-    }
-
-    @Test
-    public void shouldThrowConstraintViolationIfAskedToCreateCompoundIndex() throws Exception
-    {
-        // WHEN
-        try ( Transaction tx = db.beginTx() )
-        {
-            Schema schema = db.schema();
-            schema.indexFor( label )
-                    .on( "my_property_key" )
-                    .on( "other_property" ).create();
-            tx.success();
-            fail( "Should not be able to create index on multiple propertyKey keys" );
-        }
-        catch ( UnsupportedOperationException e )
-        {
-            assertThat( e.getMessage(), containsString( "Compound indexes" ) );
-        }
     }
 
     @Test
@@ -291,6 +283,20 @@ public class SchemaAcceptanceTest
             // THEN
             assertEquals( Schema.IndexState.ONLINE, db.schema().getIndexState( index ) );
         }
+    }
+
+    @Test
+    public void shouldPopulateIndex() throws Exception
+    {
+        // GIVEN
+        Node node = createNode( db, propertyKey, "Neo", label );
+
+        // create an index
+        IndexDefinition index = createIndex( db, label, propertyKey );
+        waitForIndex( db, index );
+
+        // THEN
+        assertThat( findNodesByLabelAndProperty( label, propertyKey, "Neo", db ), containsOnly( node ) );
     }
 
     @Test
