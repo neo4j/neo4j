@@ -103,6 +103,18 @@ public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
 
         state = new RecoveryProtocol( fileSystem, fileNames, readerPool, contentMarshal, logProvider ).run();
         log.info( "log started with recovered state %s", state );
+        /*
+         * Recovery guarantees that once complete the header of the last raft log file is intact. No such guarantee
+         * is made for the last log entry in the last file (or any of the files for that matter). To complete
+         * recovery we need to rotate away the last log file, so that any incomplete entries at the end of the last
+         * do not have entries appended after them, which would result in unaligned (and therefore wrong) reads.
+         * As an obvious optimization, we don't need to rotate if the file contains only the header, such as is
+         * the case of a newly created log.
+         */
+        if ( state.segments.last().size() > SegmentHeader.SIZE )
+        {
+            rotateSegment( state.appendIndex, state.appendIndex, state.terms.latest() );
+        }
 
         readerPoolPruner = scheduler.scheduleRecurring( new JobScheduler.Group( "reader-pool-pruner", POOLED ),
                 () -> readerPool.prune( READER_POOL_MAX_AGE, MINUTES ), READER_POOL_MAX_AGE, READER_POOL_MAX_AGE, MINUTES );
