@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_2.planner
+package org.neo4j.cypher.internal.ir.v3_2
 
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{Expression, MapExpression, PropertyKeyName}
 
@@ -28,6 +28,22 @@ sealed trait CreatesPropertyKeys {
   def overlaps(propertyKeyName: PropertyKeyName): Boolean
 
   def +(createsPropertyKeys: CreatesPropertyKeys): CreatesPropertyKeys
+}
+
+object CreatesPropertyKeys {
+  def apply(properties: Expression*): CreatesPropertyKeys = {
+    //CREATE ()
+    if (properties.isEmpty) CreatesNoPropertyKeys
+    else {
+      val knownProp: Seq[Seq[(PropertyKeyName, Expression)]] = properties.collect {
+        case MapExpression(props) => props
+      }
+      //all prop keys are known, CREATE ({prop1:1, prop2:2})
+      if (knownProp.size == properties.size) CreatesKnownPropertyKeys(knownProp.flatMap(_.map(s => s._1)).toSet)
+      //props created are not known, e.g. CREATE ({props})
+      else CreatesUnknownPropertyKeys
+    }
+  }
 }
 
 /*
@@ -51,6 +67,7 @@ case class CreatesKnownPropertyKeys(keys: Set[PropertyKeyName]) extends CreatesP
     case CreatesUnknownPropertyKeys => CreatesUnknownPropertyKeys
   }
 }
+
 object CreatesKnownPropertyKeys {
   def apply(propertyKeyNames: PropertyKeyName*): CreatesKnownPropertyKeys = CreatesKnownPropertyKeys(propertyKeyNames.toSet)
 }
@@ -63,20 +80,3 @@ case object CreatesUnknownPropertyKeys extends CreatesPropertyKeys {
 
   override def +(createsPropertyKeys: CreatesPropertyKeys) = CreatesUnknownPropertyKeys
 }
-
-object CreatesPropertyKeys {
-  def apply(properties: Expression*): CreatesPropertyKeys = {
-    //CREATE ()
-    if (properties.isEmpty) CreatesNoPropertyKeys
-    else {
-      val knownProp: Seq[Seq[(PropertyKeyName, Expression)]] = properties.collect {
-        case MapExpression(props) => props
-      }
-      //all prop keys are known, CREATE ({prop1:1, prop2:2})
-      if (knownProp.size == properties.size) CreatesKnownPropertyKeys(knownProp.flatMap(_.map(s => s._1)).toSet)
-      //props created are not known, e.g. CREATE ({props})
-      else CreatesUnknownPropertyKeys
-    }
-  }
-}
-
