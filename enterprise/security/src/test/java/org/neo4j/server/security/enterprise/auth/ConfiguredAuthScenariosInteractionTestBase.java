@@ -110,7 +110,7 @@ public abstract class ConfiguredAuthScenariosInteractionTestBase<S> extends Proc
         Result result =
                 localGraph.execute( transaction, "EXPLAIN CALL dbms.security.listUsers", Collections.emptyMap() );
         String description = String.format( "%s (%s)", Status.Procedure.ProcedureWarning.code().description(),
-                "dbms.security.listUsers only affect native users." );
+                "dbms.security.listUsers only applies to native users." );
         assertThat( containsNotification( result, description ), equalTo( true ) );
         transaction.success();
         transaction.close();
@@ -128,7 +128,7 @@ public abstract class ConfiguredAuthScenariosInteractionTestBase<S> extends Proc
         Result result =
                 localGraph.execute( transaction, "EXPLAIN CALL dbms.security.listUsers", Collections.emptyMap() );
         String description = String.format( "%s (%s)", Status.Procedure.ProcedureWarning.code().description(),
-                "dbms.security.listUsers only affect native users." );
+                "dbms.security.listUsers only applies to native users." );
         assertThat( containsNotification( result, description ), equalTo( false ) );
         transaction.success();
         transaction.close();

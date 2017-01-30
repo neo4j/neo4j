@@ -390,7 +390,7 @@ public interface Status
         ProcedureTimedOut( ClientError,
                 "The procedure has not completed within the specified timeout. You may want to retry with a longer " +
                 "timeout." ),
-        ProcedureWarning( ClientNotification, "The query used a procedure that generate a warning." );
+        ProcedureWarning( ClientNotification, "The query used a procedure that generated a warning." );
 
         private final Code code;
 

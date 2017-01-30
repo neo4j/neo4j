@@ -104,7 +104,7 @@ public enum NotificationCode
     PROCEDURE_WARNING(
             SeverityLevel.WARNING,
             Status.Procedure.ProcedureWarning,
-            "The query used a procedure that generate a warning."
+            "The query used a procedure that generated a warning."
     ),
     EAGER_LOAD_CSV(
         SeverityLevel.WARNING,
