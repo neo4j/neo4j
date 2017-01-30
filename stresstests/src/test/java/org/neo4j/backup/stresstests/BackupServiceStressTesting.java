@@ -44,7 +44,10 @@ import org.neo4j.test.ThreadTestUtils;
 import static java.lang.Boolean.parseBoolean;
 import static java.lang.Integer.parseInt;
 import static java.lang.Long.parseLong;
+import static java.lang.String.format;
+import static java.lang.System.currentTimeMillis;
 import static java.lang.System.getProperty;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
@@ -111,11 +114,11 @@ public class BackupServiceStressTesting
             Future<Throwable> startStopWorker = service.submit(
                     new StartStop( keepGoingSupplier, onFailure, graphDatabaseBuilder::newGraphDatabase, dbRef ) );
 
-            long timeout = durationInMinutes + 5;
+            long expirationTime = currentTimeMillis() + TimeUnit.MINUTES.toMillis( durationInMinutes + 5 );
+            assertSuccessfulExecution( workload, maxWaitTime( expirationTime ), expirationTime  );
+            assertSuccessfulExecution( backupWorker, maxWaitTime( expirationTime ), expirationTime );
+            assertSuccessfulExecution( startStopWorker, maxWaitTime( expirationTime ), expirationTime );
 
-            assertSuccessfulExecution( workload, timeout );
-            assertSuccessfulExecution( backupWorker, timeout );
-            assertSuccessfulExecution( startStopWorker, timeout );
             service.shutdown();
             if ( !service.awaitTermination( 30, TimeUnit.SECONDS ) )
             {
@@ -134,10 +137,25 @@ public class BackupServiceStressTesting
         FileUtils.deleteRecursively( workDirectory );
     }
 
-    private void assertSuccessfulExecution( Future<Throwable> future, long timeout )
+    private long maxWaitTime( long expirationTime )
+    {
+        return Math.max( 0, expirationTime - currentTimeMillis() );
+    }
+
+    private void assertSuccessfulExecution( Future<Throwable> future, long timeoutMillis, long expirationTime )
             throws InterruptedException, ExecutionException, TimeoutException
     {
-        Throwable executionResults = future.get( timeout, MINUTES );
-        assertNull( Exceptions.stringify( executionResults ), executionResults );
+        try
+        {
+            Throwable executionResults = future.get( timeoutMillis, MILLISECONDS );
+            assertNull( Exceptions.stringify( executionResults ), executionResults );
+        }
+        catch ( TimeoutException t )
+        {
+            System.err.println( format( "Timeout waiting task completion. Overtime %d ms. Dumping all threads.",
+                    currentTimeMillis() - expirationTime ) );
+            ThreadTestUtils.dumpAllStackTraces();
+            throw t;
+        }
     }
 }
