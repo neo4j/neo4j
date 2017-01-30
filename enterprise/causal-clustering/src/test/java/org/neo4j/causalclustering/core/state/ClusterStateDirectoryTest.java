@@ -63,7 +63,7 @@ public class ClusterStateDirectoryTest
         File oldClusterStateFile = new File( oldStateDir, fileName );
 
         fs.mkdirs( oldStateDir );
-        fs.create( oldClusterStateFile );
+        fs.create( oldClusterStateFile ).close();
 
         // when
         ClusterStateDirectory clusterStateDirectory = new ClusterStateDirectory( dataDir, storeDir, false );
@@ -86,7 +86,7 @@ public class ClusterStateDirectoryTest
         File oldClusterStateFile = new File( oldStateDir, fileName );
 
         fs.mkdirs( oldStateDir );
-        fs.create( oldClusterStateFile );
+        fs.create( oldClusterStateFile ).close();
 
         // when
         ClusterStateDirectory clusterStateDirectory = new ClusterStateDirectory( dataDir, storeDir, false );
