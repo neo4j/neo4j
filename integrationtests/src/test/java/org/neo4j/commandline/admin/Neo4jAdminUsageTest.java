@@ -54,6 +54,8 @@ public class Neo4jAdminUsageTest
                         "        Sets the initial password of the initial admin user ('neo4j').\n" +
                         "    restore\n" +
                         "        Restore a backed up database.\n" +
+                        "    version\n" +
+                        "        Check the version of a Neo4j database store.\n" +
                         "    backup\n" +
                         "        Perform an online backup from a running Neo4j enterprise server.\n" +
                         "    unbind\n" +
