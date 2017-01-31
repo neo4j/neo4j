@@ -40,6 +40,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
@@ -192,9 +193,14 @@ public class QueryLoggerIT
 
     private List<String> readAllLines( File logFilename ) throws IOException
     {
+        return readAllLines( fileSystem.get(), logFilename );
+    }
+
+    public static List<String> readAllLines( FileSystemAbstraction fs, File logFilename ) throws IOException
+    {
         List<String> logLines = new ArrayList<>();
         try ( BufferedReader reader = new BufferedReader(
-                fileSystem.get().openAsReader( logFilename, StandardCharsets.UTF_8 ) ) )
+                fs.openAsReader( logFilename, StandardCharsets.UTF_8 ) ) )
         {
             for ( String line; (line = reader.readLine()) != null; )
             {
