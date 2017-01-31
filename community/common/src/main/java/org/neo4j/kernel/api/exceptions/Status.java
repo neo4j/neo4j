@@ -258,6 +258,9 @@ public interface Status
                 "might be used in order to find the requested shortest path." ),
 
         // client notifications (not supported/deprecated)
+        PlannerUnavailableWarning( ClientNotification,
+                "The RULE planner is not available in the current CYPHER version, the query has been run by an older " +
+                        "CYPHER version." ),
         PlannerUnsupportedWarning( ClientNotification,
                 "This query is not supported by the COST planner." ),
         RuntimeUnsupportedWarning( ClientNotification,

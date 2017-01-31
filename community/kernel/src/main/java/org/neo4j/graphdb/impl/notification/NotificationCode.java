@@ -20,6 +20,8 @@
 package org.neo4j.graphdb.impl.notification;
 
 
+import java.util.Objects;
+
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.SeverityLevel;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -55,6 +57,11 @@ public enum NotificationCode
         SeverityLevel.WARNING,
         Status.Statement.PlannerUnsupportedWarning,
         "Using COST planner is unsupported for this query, please use RULE planner instead"
+    ),
+    RULE_PLANNER_UNAVAILABLE_FALLBACK(
+        SeverityLevel.WARNING,
+        Status.Statement.PlannerUnavailableWarning,
+        "Using RULE planner is unsupported for CYPHER version, the query has been execute by an older CYPHER version"
     ),
     RUNTIME_UNSUPPORTED(
         SeverityLevel.WARNING,
@@ -228,6 +235,28 @@ public enum NotificationCode
                     "position=" + position +
                     ", detailedDescription='" + detailedDescription + '\'' +
                     '}';
+        }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() )
+            {
+                return false;
+            }
+            Notification that = (Notification) o;
+            return Objects.equals( position, that.position ) &&
+                    Objects.equals( detailedDescription, that.detailedDescription );
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return Objects.hash( position, detailedDescription );
         }
     }
 }
