@@ -44,9 +44,16 @@ case class Pretty(preserveColumnNames: Boolean) extends PrettyPrinter {
   }
 
   private def show(name: SymbolicName): Doc = name match {
-    case LabelName(label) => colon <> label
-    case RelTypeName(label) => colon <> label
-    case PropertyKeyName(prop) => prop
+    case LabelName(label) => colon <> backtickIfNecessary(label)
+    case RelTypeName(label) => colon <> backtickIfNecessary(label)
+    case PropertyKeyName(prop) => backtickIfNecessary(prop)
+  }
+
+  private def backtickIfNecessary(input: String): Doc = {
+    if (isValidIdentifier(input))
+      input
+    else
+      surround(input, "`")
   }
 
   def show(t: Statement): Doc = t match {
@@ -181,7 +188,7 @@ case class Pretty(preserveColumnNames: Boolean) extends PrettyPrinter {
   private def show(items: ReturnItems): Doc = {
     val itemsDocs = items.items.map {
       case UnaliasedReturnItem(e, t) => if (preserveColumnNames) value(t) else expr(e)
-      case AliasedReturnItem(e, alias) => expr(e) <+> "AS" <+> expr(alias)
+      case AliasedReturnItem(e, alias) => group(expr(e) <> line <> "AS" <+> expr(alias))
     }
 
     val returnItems = if (items.includeExisting) asterisk +: itemsDocs else itemsDocs
@@ -225,7 +232,7 @@ case class Pretty(preserveColumnNames: Boolean) extends PrettyPrinter {
 
     case x: NumberLiteral => x.stringVal
     case lit: Literal => value(lit.value)
-    case Variable(name) => if (isValidIdentifier(name)) name else surround(name, "`")
+    case Variable(name) => backtickIfNecessary(name)
     case Property(e, prop) => expr(e) <> dot <> show(prop)
     case PatternExpression(pattern) => show(pattern.element)
     case CountStar() => "COUNT(*)"
@@ -309,9 +316,9 @@ case class Pretty(preserveColumnNames: Boolean) extends PrettyPrinter {
       curlies(hlist(els, comma))
 
     case ListComprehension(ExtractScope(variable, innerPredicate, extractExpression), e) =>
-      val where = maybe(innerPredicate, space <> "WHERE" <+> expr(_: Expression))
+      val where = maybe(innerPredicate, line <> "WHERE" <+> expr(_: Expression))
       val extract = maybe(extractExpression, space <> "|" <+> expr(_: Expression))
-      brackets(expr(variable) <+> "IN" <+> expr(e) <> where <> extract)
+      group(brackets(expr(variable) <+> "IN" <+> expr(e) <> where <> extract))
 
     case PatternComprehension(pathName, pattern, pred, proj, _) =>
 
@@ -416,7 +423,7 @@ case class Pretty(preserveColumnNames: Boolean) extends PrettyPrinter {
             "*" <> from <> ".." <> to
       }
       val TYPES = if (p.types.isEmpty) emptyDoc else
-        colon <> folddoc(p.types.map(t => string(t.name)).toList, _ <> "|" <> _)
+        colon <> folddoc(p.types.map(t => backtickIfNecessary(t.name)).toList, _ <> "|" <> _)
 
       val PROPS = maybe(p.properties, space <> expr(_: Expression))
 
