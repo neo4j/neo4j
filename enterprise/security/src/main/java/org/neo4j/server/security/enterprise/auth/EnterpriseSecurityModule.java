@@ -27,6 +27,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -110,7 +111,8 @@ public class EnterpriseSecurityModule extends SecurityModule
                     ctx -> authManager.getUserManager( asEnterprise( ctx.get( SECURITY_CONTEXT ) ) ) );
             if ( config.get( SecuritySettings.auth_providers ).size() > 1 )
             {
-                procedures.registerProcedure( UserManagementProcedures.class, true, "%s only applies to native users." );
+                procedures.registerProcedure( UserManagementProcedures.class, true,
+                        Optional.of( "%s only applies to native users." ) );
             }
             else
             {

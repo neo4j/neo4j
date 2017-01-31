@@ -140,7 +140,7 @@ public class Procedures extends LifecycleAdapter
      */
     public void registerProcedure( Class<?> proc, boolean overrideCurrentImplementation ) throws KernelException
     {
-        registerProcedure( proc, overrideCurrentImplementation, "" );
+        registerProcedure( proc, overrideCurrentImplementation, Optional.empty() );
     }
 
     /**
@@ -149,7 +149,9 @@ public class Procedures extends LifecycleAdapter
      * @param overrideCurrentImplementation set to true if procedures within this class should override older procedures with the same name
      * @param warning the warning the procedure should generate when called
      */
-    public void registerProcedure( Class<?> proc, boolean overrideCurrentImplementation, String warning ) throws KernelException
+    public void registerProcedure( Class<?> proc, boolean overrideCurrentImplementation, Optional<String> warning )
+            throws
+            KernelException
     {
         for ( CallableProcedure procedure : compiler.compileProcedure( proc, warning ) )
         {

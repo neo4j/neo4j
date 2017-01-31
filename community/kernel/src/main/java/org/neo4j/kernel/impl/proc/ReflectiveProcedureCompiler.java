@@ -152,12 +152,7 @@ class ReflectiveProcedureCompiler
         }
     }
 
-    List<CallableProcedure> compileProcedure( Class<?> procDefinition ) throws KernelException
-    {
-        return compileProcedure( procDefinition, "" );
-    }
-
-    List<CallableProcedure> compileProcedure( Class<?> procDefinition, String warning ) throws KernelException
+    List<CallableProcedure> compileProcedure( Class<?> procDefinition, Optional<String> warning ) throws KernelException
     {
         try
         {
@@ -191,7 +186,8 @@ class ReflectiveProcedureCompiler
         }
     }
 
-    private ReflectiveProcedure compileProcedure( Class<?> procDefinition, MethodHandle constructor, Method method, String warning )
+    private ReflectiveProcedure compileProcedure( Class<?> procDefinition, MethodHandle constructor, Method method,
+            Optional<String> warning )
             throws ProcedureException, IllegalAccessException
     {
         String valueName = method.getAnnotation( Procedure.class ).value();
@@ -222,11 +218,9 @@ class ReflectiveProcedureCompiler
         Optional<String> deprecated = deprecated( method, procedure::deprecatedBy,
                 "Use of @Procedure(deprecatedBy) without @Deprecated in " + procName );
 
-        Optional<String> warn = (warning == null || warning.isEmpty()) ? Optional.empty() : Optional.of( warning );
-
         ProcedureSignature signature =
                 new ProcedureSignature( procName, inputSignature, outputMapper.signature(),
-                        mode, deprecated, config.rolesFor( procName.toString() ), description, warn );
+                        mode, deprecated, config.rolesFor( procName.toString() ), description, warning );
 
         return new ReflectiveProcedure( signature, constructor, procedureMethod, outputMapper, setters );
     }
