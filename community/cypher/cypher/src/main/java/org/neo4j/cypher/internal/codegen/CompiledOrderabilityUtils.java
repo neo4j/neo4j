@@ -137,8 +137,8 @@ public class CompiledOrderabilityUtils
 
         SuperType( int typeId, Comparator comparator )
         {
-            this.comparator = comparator;
             this.typeId = typeId;
+            this.comparator = comparator;
         }
 
         public boolean isSuperTypeOf( Object value )
@@ -192,6 +192,9 @@ public class CompiledOrderabilityUtils
             }
         };
     }
+
+    // NOTE: nulls are handled at the top of the public compare() method
+    // so the type-specific comparators should not check arguments for null
 
     private static Comparator FALLBACK_COMPARATOR = new Comparator<Object>()
     {

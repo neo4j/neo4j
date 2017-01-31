@@ -211,7 +211,7 @@ case class SortItem(fieldName: String, sortOrder: SortOrder)
   * e.g. a result row (or intermediate row).
   * The TupleDescriptor carries type information used to generate a materialization of this,
   * e.g. a class with fields.
-  * The order of individual fields are not specified, but is left as an implementation detail.
+  * The order of individual fields is not specified, but is left as an implementation detail.
   */
 sealed trait TupleDescriptor {
   val structure: Map[String, CodeGenType]

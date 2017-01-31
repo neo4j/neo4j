@@ -20,10 +20,8 @@
 
 Feature: OrderByAcceptance
 
-  Background:
-    Given any graph
-
   Scenario: ORDER BY nodes should return null results last in ascending order
+    Given an empty graph
     And having executed:
       """
       CREATE (:A)-[:REL]->(:B),
@@ -43,6 +41,7 @@ Feature: OrderByAcceptance
     And no side effects
 
   Scenario: ORDER BY relationships should return null results last in ascending order
+    Given an empty graph
     And having executed:
       """
       CREATE (:A)-[:REL]->(:B),
@@ -63,9 +62,10 @@ Feature: OrderByAcceptance
 
   # The ORDER BY should work even if the "WITH x" will not become a `Projection` in the logical plan
   Scenario: ORDER BY with unwind primitive integer
+    Given any graph
     When executing query:
       """
-      WITH [4, 3, 1, 2] as lst
+      WITH [4, 3, 1, 2] AS lst
       UNWIND lst AS x
       WITH x
       ORDER BY x
@@ -81,6 +81,7 @@ Feature: OrderByAcceptance
     And no side effects
 
   Scenario: ORDER BY two node properties
+    Given an empty graph
     And having executed:
       """
       CREATE (:L {a: 3, b: "a"}),
@@ -92,7 +93,7 @@ Feature: OrderByAcceptance
     When executing query:
       """
       MATCH (n:L)
-      WITH n.a as a, n.b as b
+      WITH n.a AS a, n.b AS b
       ORDER BY a, b DESC
       RETURN a, b
       """
