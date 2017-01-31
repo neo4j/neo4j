@@ -98,4 +98,10 @@ public final class InputPosition
         result = 31 * result + column;
         return result;
     }
+
+    @Override
+    public String toString()
+    {
+        return "InputPosition{" + "offset=" + offset + ", line=" + line + ", column=" + column + '}';
+    }
 }

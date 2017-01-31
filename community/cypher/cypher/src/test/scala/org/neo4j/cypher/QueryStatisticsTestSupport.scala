@@ -44,7 +44,7 @@ trait QueryStatisticsTestSupport extends MockitoSugar {
 
         override def endFailure(query: ExecutingQuery, throwable: Throwable){}
       }
-      val r = new ExecutionResultWrapper(actual, CostBasedPlannerName.default, CompiledRuntimeName)
+      val r = new ExecutionResultWrapper(actual, CostBasedPlannerName.default, CompiledRuntimeName, Set.empty)
       apply(r.queryStatistics())
     }
   }

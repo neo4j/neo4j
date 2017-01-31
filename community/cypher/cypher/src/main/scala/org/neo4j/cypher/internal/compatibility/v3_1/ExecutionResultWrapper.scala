@@ -36,8 +36,8 @@ import org.neo4j.graphdb.impl.notification.{NotificationCode, NotificationDetail
 
 import scala.collection.JavaConverters._
 
-
-class ExecutionResultWrapper(val inner: InternalExecutionResult, val planner: PlannerName, val runtime: RuntimeName)
+class ExecutionResultWrapper(val inner: InternalExecutionResult, val planner: PlannerName, val runtime: RuntimeName,
+                             preParsingNotification: Set[org.neo4j.graphdb.Notification])
   extends ExecutionResult {
 
   override def planDescriptionRequested = inner.planDescriptionRequested
@@ -99,7 +99,7 @@ class ExecutionResultWrapper(val inner: InternalExecutionResult, val planner: Pl
     }
   }
 
-  override def notifications = inner.notifications.map(asKernelNotification)
+  override def notifications = inner.notifications.map(asKernelNotification) ++ preParsingNotification
 
   private def asKernelNotification(notification: InternalNotification) = notification match {
     case CartesianProductNotification(pos, variables) =>

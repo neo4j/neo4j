@@ -40,7 +40,6 @@ import org.neo4j.logging.Log
 
 import scala.util.Try
 
-
 trait Compatibility {
   val graph: GraphDatabaseQueryService
   val queryCacheSize: Int
@@ -58,18 +57,20 @@ trait Compatibility {
 
   implicit val executionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
 
-  def produceParsedQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer) = {
-    val notificationLogger = new RecordingNotificationLogger
-    val preparedSyntacticQueryForV_3_1 =
+  def produceParsedQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer,
+                         preParsingNotifications: Set[org.neo4j.graphdb.Notification]): ParsedQuery = {
+      val notificationLogger = new RecordingNotificationLogger
+      val preparedSyntacticQueryForV_3_1 =
       Try(compiler.prepareSyntacticQuery(preParsedQuery.statement,
         preParsedQuery.rawStatement,
         notificationLogger,
         preParsedQuery.planner.name,
         Some(as3_1(preParsedQuery.offset)), tracer))
     new ParsedQuery {
-      def isPeriodicCommit = preparedSyntacticQueryForV_3_1.map(_.isPeriodicCommit).getOrElse(false)
+      override def isPeriodicCommit: Boolean = preparedSyntacticQueryForV_3_1.map(_.isPeriodicCommit).getOrElse(false)
 
-      def plan(transactionalContext: TransactionalContextWrapperV3_2, tracer: v3_2.CompilationPhaseTracer): (ExecutionPlan, Map[String, Any]) =
+      override def plan(transactionalContext: TransactionalContextWrapperV3_2, tracer: v3_2.CompilationPhaseTracer):
+        (ExecutionPlan, Map[String, Any]) =
         exceptionHandler.runSafely {
           val tc = TransactionalContextWrapperV3_1(transactionalContext.tc)
           val planContext = new ExceptionTranslatingPlanContext(new TransactionBoundPlanContext(tc, notificationLogger))
@@ -79,14 +80,14 @@ trait Compatibility {
           // Log notifications/warnings from planning
           planImpl.notifications(planContext).foreach(notificationLogger += _)
 
-          (new ExecutionPlanWrapper(planImpl), extractedParameters)
+          (new ExecutionPlanWrapper(planImpl, preParsingNotifications), extractedParameters)
         }
 
-      override def hasErrors = preparedSyntacticQueryForV_3_1.isFailure
+      override def hasErrors: Boolean = preparedSyntacticQueryForV_3_1.isFailure
     }
   }
 
-  class ExecutionPlanWrapper(inner: ExecutionPlan_v3_1) extends ExecutionPlan {
+  class ExecutionPlanWrapper(inner: ExecutionPlan_v3_1, preParsingNotifications: Set[org.neo4j.graphdb.Notification]) extends ExecutionPlan {
 
     private val searchMonitor = kernelMonitors.newMonitor(classOf[IndexSearchMonitor])
 
@@ -106,7 +107,7 @@ trait Compatibility {
         val innerResult = inner.run(queryContext(transactionalContext), innerExecutionMode, innerParams)
         new ClosingExecutionResult(
           transactionalContext.tc.executingQuery(),
-          new ExecutionResultWrapper(innerResult, inner.plannerUsed, inner.runtimeUsed),
+          new ExecutionResultWrapper(innerResult, inner.plannerUsed, inner.runtimeUsed, preParsingNotifications),
           exceptionHandler.runSafely
         )
       }
