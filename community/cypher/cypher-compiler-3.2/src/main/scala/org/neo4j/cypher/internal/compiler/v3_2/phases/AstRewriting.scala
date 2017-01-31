@@ -63,7 +63,7 @@ case class AstRewriting(sequencer: String => RewriterStepSequencer, shouldExtrac
 }
 
 object LateAstRewriting extends StatementRewriter {
-  override def instance(context: CompilerContext): Rewriter = inSequence(
+  override def instance(context: BaseContext): Rewriter = inSequence(
     collapseMultipleInPredicates,
     nameUpdatingClauses,
     projectNamedPaths,

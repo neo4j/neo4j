@@ -35,10 +35,11 @@ import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.{CantHandleQueryException, logical}
 import org.neo4j.cypher.internal.compiler.v3_2.spi.{InstrumentedGraphStatistics, PlanContext}
-import org.neo4j.cypher.internal.compiler.v3_2.{ExecutionContext, Monitors, pipes, ast => compilerAst}
+import org.neo4j.cypher.internal.compiler.v3_2.{ExecutionContext, pipes, ast => compilerAst}
 import org.neo4j.cypher.internal.frontend.v3_2._
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.Eagerly
+import org.neo4j.cypher.internal.frontend.v3_2.phases.Monitors
 import org.neo4j.cypher.internal.ir.v3_2.{IdName, PeriodicCommit, VarPatternLength}
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 

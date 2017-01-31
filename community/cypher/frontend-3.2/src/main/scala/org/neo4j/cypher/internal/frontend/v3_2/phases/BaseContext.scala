@@ -25,4 +25,5 @@ trait BaseContext {
   def tracer: CompilationPhaseTracer
   def notificationLogger: InternalNotificationLogger
   def exceptionCreator: (String, InputPosition) => CypherException
+  def monitors: Monitors
 }

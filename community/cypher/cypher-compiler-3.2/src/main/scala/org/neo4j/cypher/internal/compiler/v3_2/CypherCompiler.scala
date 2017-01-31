@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v3_2
 
 import java.time.Clock
 
-import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters.{CNFNormalizer, Namespacer, rewriteEqualityToInPredicate}
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.CodeGenConfiguration
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi.CodeStructure
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan._
@@ -34,9 +33,9 @@ import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.rewriter.Pl
 import org.neo4j.cypher.internal.compiler.v3_2.planner.{CheckForUnresolvedTokens, ResolveTokens, UnionQuery}
 import org.neo4j.cypher.internal.compiler.v3_2.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSequencer
+import org.neo4j.cypher.internal.frontend.v3_2.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Statement
-import org.neo4j.cypher.internal.frontend.v3_2.phases.{BaseContext, CompilationPhaseTracer, InternalNotificationLogger}
-import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, SemanticState}
+import org.neo4j.cypher.internal.frontend.v3_2.phases.{CompilationPhaseTracer, InternalNotificationLogger, Monitors}
 
 case class CypherCompiler(createExecutionPlan: Transformer[CompilerContext],
                           astRewriter: ASTRewriter,
@@ -90,30 +89,20 @@ case class CypherCompiler(createExecutionPlan: Transformer[CompilerContext],
     val startState = CompilationState(queryText, offset, plannerName)
     //TODO: these nulls are a short cut
     val context = createContext(tracer, notificationLogger, planContext = null, rawQueryText, offset, codeGenConfiguration = null)
-    parsing.transform(startState, context)
+    CompilationPhases.parsing(sequencer).transform(startState, context)
   }
 
-  val parsing: Transformer[BaseContext] =
-    Parsing.adds[Statement] andThen
-    SyntaxDeprecationWarnings andThen
-    PreparatoryRewriting andThen
-    SemanticAnalysis(warn = true).adds[SemanticState] andThen
-    AstRewriting(sequencer, shouldExtractParams = true)
+  val irConstruction: Transformer[CompilerContext] =
+    ResolveTokens andThen
+    CreatePlannerQuery.adds[UnionQuery] andThen
+    OptionalMatchRemover
 
   val prepareForCaching: Transformer[CompilerContext] =
     RewriteProcedureCalls andThen
     ProcedureDeprecationWarnings andThen
     ProcedureWarnings
 
-  val costBasedPlanning: Transformer[CompilerContext] =
-    SemanticAnalysis(warn = false) andThen
-    Namespacer andThen
-    rewriteEqualityToInPredicate andThen
-    CNFNormalizer andThen
-    LateAstRewriting andThen
-    ResolveTokens andThen
-    CreatePlannerQuery.adds[UnionQuery] andThen
-    OptionalMatchRemover andThen
+  val costBasedPlanning =
     QueryPlanner().adds[LogicalPlan] andThen
     PlanRewriter(sequencer) andThen
     If(_.unionQuery.readOnly) (
@@ -123,6 +112,8 @@ case class CypherCompiler(createExecutionPlan: Transformer[CompilerContext],
   val planAndCreateExecPlan: Transformer[CompilerContext] =
     ProcedureCallOrSchemaCommandPlanBuilder andThen
     If(_.maybeExecutionPlan.isEmpty)(
+      CompilationPhases.lateAstRewriting andThen
+      irConstruction andThen
       costBasedPlanning andThen
       createExecutionPlan.adds[ExecutionPlan]
     )
