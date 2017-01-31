@@ -34,8 +34,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.PrefetchingIterator;
@@ -51,6 +53,7 @@ import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.ParallelSort.Com
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Group;
 import org.neo4j.unsafe.impl.batchimport.input.Groups;
+import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.input.SimpleInputIterator;
 import org.neo4j.unsafe.impl.batchimport.input.SimpleInputIteratorWrapper;
 
@@ -582,6 +585,38 @@ public class EncodingIdMapperTest
                 any( Object.class ), anyLong(), anyString(), anyString(), anyString() );
     }
 
+    @Test
+    public void shouldDetectLargeAmountsOfCollisions() throws Exception
+    {
+        // GIVEN
+        IdMapper mapper = mapper( new StringEncoder(), Radix.STRING, NO_MONITOR );
+        int count = EncodingIdMapper.COUNTING_BATCH_SIZE * 2;
+        List<Object> ids = new ArrayList<>();
+        long id = 0;
+
+        // Generate and add all input ids
+        while ( id < count )
+        {
+            String inputId = UUID.randomUUID().toString();
+            ids.add( inputId );
+            mapper.put( inputId, id++, GLOBAL );
+        }
+
+        // And add them one more time
+        for ( Object inputId : ids )
+        {
+            mapper.put( inputId, id++, GLOBAL );
+        }
+        ids.addAll( ids );
+
+        // WHEN
+        CountingCollector collector = new CountingCollector();
+        mapper.prepare( SimpleInputIteratorWrapper.wrap( "source", ids ), collector, NONE );
+
+        // THEN
+        assertEquals( count, collector.count );
+    }
+
     private IdMapper mapper( Encoder encoder, Factory<Radix> radix, Monitor monitor )
     {
         return mapper( encoder, radix, monitor, ParallelSort.DEFAULT );
@@ -784,6 +819,49 @@ public class EncodingIdMapperTest
         abstract Factory<Object> data( Random random );
     }
 
-    public final @Rule RandomRule random = new RandomRule().withSeed( 1436724681847L );
-    public final @Rule RepeatRule repeater = new RepeatRule();
+    @Rule
+    public final RandomRule random = new RandomRule();
+    @Rule
+    public final RepeatRule repeater = new RepeatRule();
+
+    private static class CountingCollector implements Collector
+    {
+        private int count;
+
+        @Override
+        public void collectBadRelationship( InputRelationship relationship, Object specificValue )
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void collectDuplicateNode( Object id, long actualId, String group, String firstSource,
+                String otherSource )
+        {
+            count++;
+        }
+
+        @Override
+        public void collectExtraColumns( String source, long row, String value )
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public int badEntries()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public PrimitiveLongIterator leftOverDuplicateNodesIds()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void close()
+        {   // Nothing to close
+        }
+    }
 }
