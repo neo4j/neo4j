@@ -27,11 +27,11 @@ import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.{RewriterCondit
 import org.neo4j.cypher.internal.frontend.v3_2.ast.NotEquals
 import org.neo4j.cypher.internal.frontend.v3_2.{Rewriter, inSequence}
 
-case class AstRewriting(sequencer: String => RewriterStepSequencer, shouldExtractParams: Boolean) extends Phase {
+case class AstRewriting(sequencer: String => RewriterStepSequencer, shouldExtractParams: Boolean) extends Phase[BaseContext] {
 
   private val astRewriter = new ASTRewriter(sequencer, shouldExtractParams)
 
-  override def process(in: CompilationState, context: Context): CompilationState = {
+  override def process(in: CompilationState, context: BaseContext): CompilationState = {
 
     val (rewrittenStatement, extractedParams, postConditions) = astRewriter.rewrite(in.queryText, in.statement, in.semantics)
 

@@ -192,7 +192,7 @@ case object OptionalMatchRemover extends PlannerQueryRewriter {
 
 }
 
-trait PlannerQueryRewriter extends Phase {
+trait PlannerQueryRewriter extends Phase[Context] {
   override def phase: CompilationPhase = LOGICAL_PLANNING
 
   def instance(context: Context): Rewriter

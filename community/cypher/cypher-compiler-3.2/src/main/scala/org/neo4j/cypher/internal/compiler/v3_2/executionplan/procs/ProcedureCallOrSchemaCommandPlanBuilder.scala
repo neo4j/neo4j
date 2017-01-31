@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.ast._
 /**
   * This planner takes on queries that requires no planning such as procedures and schema commands
   */
-case object ProcedureCallOrSchemaCommandPlanBuilder extends Phase {
+case object ProcedureCallOrSchemaCommandPlanBuilder extends Phase[Context] {
 
   override def phase: CompilationPhase = PIPE_BUILDING
 

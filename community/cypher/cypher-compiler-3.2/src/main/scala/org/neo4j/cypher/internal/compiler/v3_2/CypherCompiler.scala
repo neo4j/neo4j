@@ -37,7 +37,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSeq
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, SemanticState}
 
-case class CypherCompiler(createExecutionPlan: Transformer,
+case class CypherCompiler(createExecutionPlan: Transformer[Context],
                           astRewriter: ASTRewriter,
                           cacheAccessor: CacheAccessor[Statement, ExecutionPlan],
                           planCacheFactory: () => LFUCache[Statement, ExecutionPlan],
@@ -92,19 +92,19 @@ case class CypherCompiler(createExecutionPlan: Transformer,
     parsing.transform(startState, context)
   }
 
-  val parsing: Transformer =
+  val parsing: Transformer[BaseContext] =
     Parsing.adds[Statement] andThen
     SyntaxDeprecationWarnings andThen
     PreparatoryRewriting andThen
     SemanticAnalysis(warn = true).adds[SemanticState] andThen
     AstRewriting(sequencer, shouldExtractParams = true)
 
-  val prepareForCaching: Transformer =
+  val prepareForCaching: Transformer[Context] =
     RewriteProcedureCalls andThen
     ProcedureDeprecationWarnings andThen
     ProcedureWarnings
 
-  val costBasedPlanning: PipeLine =
+  val costBasedPlanning: Transformer[Context] =
     SemanticAnalysis(warn = false) andThen
     Namespacer andThen
     rewriteEqualityToInPredicate andThen
@@ -119,7 +119,7 @@ case class CypherCompiler(createExecutionPlan: Transformer,
       CheckForUnresolvedTokens
     )
 
-  val planAndCreateExecPlan: Transformer =
+  val planAndCreateExecPlan: Transformer[Context] =
     ProcedureCallOrSchemaCommandPlanBuilder andThen
     If(_.maybeExecutionPlan.isEmpty)(
       costBasedPlanning andThen

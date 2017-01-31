@@ -43,4 +43,10 @@ case class Context(exceptionCreator: (String, InputPosition) => CypherException,
                    updateStrategy: UpdateStrategy,
                    clock: Clock,
                    codeStructure: CodeStructure[GeneratedQuery],
-                   codeGenConfiguration: CodeGenConfiguration)
+                   codeGenConfiguration: CodeGenConfiguration) extends BaseContext
+
+trait BaseContext {
+  def tracer: CompilationPhaseTracer
+  def notificationLogger: InternalNotificationLogger
+  def exceptionCreator: (String, InputPosition) => CypherException
+}

@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v3_2.spi.{GraphStatistics, PlanContext, QueryContext}
 import org.neo4j.cypher.internal.frontend.v3_2.notification.InternalNotification
 
-object BuildCompiledExecutionPlan extends Phase {
+object BuildCompiledExecutionPlan extends Phase[Context] {
 
   override def phase = CODE_GENERATION
 

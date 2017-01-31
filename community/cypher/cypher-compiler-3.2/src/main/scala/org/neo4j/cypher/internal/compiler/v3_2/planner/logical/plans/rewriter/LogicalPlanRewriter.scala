@@ -48,7 +48,7 @@ case class PlanRewriter(rewriterSequencer: String => RewriterStepSequencer) exte
   ).rewriter)
 }
 
-trait LogicalPlanRewriter extends Phase {
+trait LogicalPlanRewriter extends Phase[Context] {
   override def phase: CompilationPhase = LOGICAL_PLANNING
 
   def instance(context: Context): Rewriter

@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.spi.{GraphStatistics, PlanContext
 import org.neo4j.cypher.internal.frontend.v3_2.PeriodicCommitInOpenTransactionException
 import org.neo4j.cypher.internal.frontend.v3_2.notification.InternalNotification
 
-object BuildInterpretedExecutionPlan extends Phase {
+object BuildInterpretedExecutionPlan extends Phase[Context] {
   override def phase = PIPE_BUILDING
 
   override def description = "create interpreted execution plan"
