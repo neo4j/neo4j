@@ -37,7 +37,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSeq
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, SemanticState}
 
-case class CypherCompiler(createExecutionPlan: Transformer[Context],
+case class CypherCompiler(createExecutionPlan: Transformer[CompilerContext],
                           astRewriter: ASTRewriter,
                           cacheAccessor: CacheAccessor[Statement, ExecutionPlan],
                           planCacheFactory: () => LFUCache[Statement, ExecutionPlan],
@@ -99,12 +99,12 @@ case class CypherCompiler(createExecutionPlan: Transformer[Context],
     SemanticAnalysis(warn = true).adds[SemanticState] andThen
     AstRewriting(sequencer, shouldExtractParams = true)
 
-  val prepareForCaching: Transformer[Context] =
+  val prepareForCaching: Transformer[CompilerContext] =
     RewriteProcedureCalls andThen
     ProcedureDeprecationWarnings andThen
     ProcedureWarnings
 
-  val costBasedPlanning: Transformer[Context] =
+  val costBasedPlanning: Transformer[CompilerContext] =
     SemanticAnalysis(warn = false) andThen
     Namespacer andThen
     rewriteEqualityToInPredicate andThen
@@ -119,7 +119,7 @@ case class CypherCompiler(createExecutionPlan: Transformer[Context],
       CheckForUnresolvedTokens
     )
 
-  val planAndCreateExecPlan: Transformer[Context] =
+  val planAndCreateExecPlan: Transformer[CompilerContext] =
     ProcedureCallOrSchemaCommandPlanBuilder andThen
     If(_.maybeExecutionPlan.isEmpty)(
       costBasedPlanning andThen
@@ -140,7 +140,7 @@ case class CypherCompiler(createExecutionPlan: Transformer[Context],
                             planContext: PlanContext,
                             queryText: String,
                             offset: Option[InputPosition],
-                            codeGenConfiguration: CodeGenConfiguration): Context = {
+                            codeGenConfiguration: CodeGenConfiguration): CompilerContext = {
     val exceptionCreator = new SyntaxExceptionCreator(queryText, offset)
 
     val metrics: Metrics = if (planContext == null)
@@ -148,7 +148,7 @@ case class CypherCompiler(createExecutionPlan: Transformer[Context],
     else
       metricsFactory.newMetrics(planContext.statistics)
 
-    Context(exceptionCreator, tracer, notificationLogger, planContext, typeConverter, createFingerprintReference,
+    CompilerContext(exceptionCreator, tracer, notificationLogger, planContext, typeConverter, createFingerprintReference,
       monitors, metrics, queryGraphSolver, config, updateStrategy, clock, structure, codeGenConfiguration)
   }
 }

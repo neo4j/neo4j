@@ -30,20 +30,20 @@ import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.{Metrics, QueryGr
 import org.neo4j.cypher.internal.compiler.v3_2.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_2.{CypherException, InputPosition}
 
-case class Context(exceptionCreator: (String, InputPosition) => CypherException,
-                   tracer: CompilationPhaseTracer,
-                   notificationLogger: InternalNotificationLogger,
-                   planContext: PlanContext,
-                   typeConverter: RuntimeTypeConverter,
-                   createFingerprintReference: Option[PlanFingerprint] => PlanFingerprintReference,
-                   monitors: Monitors,
-                   metrics: Metrics,
-                   queryGraphSolver: QueryGraphSolver,
-                   config: CypherCompilerConfiguration,
-                   updateStrategy: UpdateStrategy,
-                   clock: Clock,
-                   codeStructure: CodeStructure[GeneratedQuery],
-                   codeGenConfiguration: CodeGenConfiguration) extends BaseContext
+case class CompilerContext(exceptionCreator: (String, InputPosition) => CypherException,
+                           tracer: CompilationPhaseTracer,
+                           notificationLogger: InternalNotificationLogger,
+                           planContext: PlanContext,
+                           typeConverter: RuntimeTypeConverter,
+                           createFingerprintReference: Option[PlanFingerprint] => PlanFingerprintReference,
+                           monitors: Monitors,
+                           metrics: Metrics,
+                           queryGraphSolver: QueryGraphSolver,
+                           config: CypherCompilerConfiguration,
+                           updateStrategy: UpdateStrategy,
+                           clock: Clock,
+                           codeStructure: CodeStructure[GeneratedQuery],
+                           codeGenConfiguration: CodeGenConfiguration) extends BaseContext
 
 trait BaseContext {
   def tracer: CompilationPhaseTracer

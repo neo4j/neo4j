@@ -193,7 +193,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     Do(rewriteStuff _) andThen
     CreatePlannerQuery
 
-  private def rewriteStuff(input: CompilationState, context: Context): CompilationState = {
+  private def rewriteStuff(input: CompilationState, context: CompilerContext): CompilationState = {
     val newStatement = input.statement.endoRewrite(namePatternPredicatePatternElements)
     input.copy(maybeStatement = Some(newStatement))
   }

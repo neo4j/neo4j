@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.InvalidArgumentException
 import org.neo4j.cypher.internal.frontend.v3_2.notification.RuntimeUnsupportedNotification
 
 object RuntimeBuilder {
-  def create(runtimeName: Option[RuntimeName], useErrorsOverWarnings: Boolean): Transformer[Context] = runtimeName match {
+  def create(runtimeName: Option[RuntimeName], useErrorsOverWarnings: Boolean): Transformer[CompilerContext] = runtimeName match {
     case None | Some(InterpretedRuntimeName) =>
       BuildInterpretedExecutionPlan
 
@@ -37,7 +37,7 @@ object RuntimeBuilder {
     case Some(CompiledRuntimeName) =>
       BuildCompiledExecutionPlan andThen
       If(_.maybeExecutionPlan.isEmpty)(
-        Do { (c:Context) => c.notificationLogger.log(RuntimeUnsupportedNotification) } andThen
+        Do { (c:CompilerContext) => c.notificationLogger.log(RuntimeUnsupportedNotification) } andThen
         BuildInterpretedExecutionPlan
       )
 

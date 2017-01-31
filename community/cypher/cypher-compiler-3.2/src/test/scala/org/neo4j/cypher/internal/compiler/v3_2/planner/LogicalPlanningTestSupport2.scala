@@ -145,12 +145,12 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     //
     // cf. QueryPlanningStrategy
     //
-    private def namePatternPredicates(input: CompilationState, context: Context): CompilationState = {
+    private def namePatternPredicates(input: CompilationState, context: CompilerContext): CompilationState = {
       val newStatement = input.statement.endoRewrite(namePatternPredicatePatternElements)
       input.copy(maybeStatement = Some(newStatement))
     }
 
-    private def removeApply(input: CompilationState, context: Context): CompilationState = {
+    private def removeApply(input: CompilationState, context: CompilerContext): CompilationState = {
       val newPlan = input.logicalPlan.endoRewrite(fixedPoint(unnestApply))
       input.copy(maybeLogicalPlan = Some(newPlan))
     }

@@ -30,14 +30,14 @@ import org.neo4j.cypher.internal.compiler.v3_2.spi.{GraphStatistics, PlanContext
 import org.neo4j.cypher.internal.frontend.v3_2.PeriodicCommitInOpenTransactionException
 import org.neo4j.cypher.internal.frontend.v3_2.notification.InternalNotification
 
-object BuildInterpretedExecutionPlan extends Phase[Context] {
+object BuildInterpretedExecutionPlan extends Phase[CompilerContext] {
   override def phase = PIPE_BUILDING
 
   override def description = "create interpreted execution plan"
 
   override def postConditions = Set(Contains[ExecutionPlan])
 
-  override def process(from: CompilationState, context: Context): CompilationState = {
+  override def process(from: CompilationState, context: CompilerContext): CompilationState = {
     val logicalPlan = from.logicalPlan
     val idMap = LogicalPlanIdentificationBuilder(logicalPlan)
     val executionPlanBuilder = new PipeExecutionPlanBuilder(context.clock, context.monitors)

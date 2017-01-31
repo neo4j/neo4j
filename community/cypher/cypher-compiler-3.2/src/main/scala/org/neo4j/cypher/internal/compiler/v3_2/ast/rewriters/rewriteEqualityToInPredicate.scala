@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
-import org.neo4j.cypher.internal.compiler.v3_2.phases.{CompilationState, Condition, Context, Phase}
+import org.neo4j.cypher.internal.compiler.v3_2.phases.{CompilationState, Condition, CompilerContext, Phase}
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.{Rewriter, bottomUp}
 
@@ -29,7 +29,7 @@ case object rewriteEqualityToInPredicate extends StatementRewriter {
 
   override def description: String = "normalize equality predicates into IN comparisons"
 
-  override def instance(ignored: Context): Rewriter = bottomUp(Rewriter.lift {
+  override def instance(ignored: CompilerContext): Rewriter = bottomUp(Rewriter.lift {
     // id(a) = value => id(a) IN [value]
     case predicate@Equals(func@FunctionInvocation(_, _, _, IndexedSeq(idExpr)), idValueExpr)
       if func.function == functions.Id =>
@@ -47,12 +47,12 @@ case object rewriteEqualityToInPredicate extends StatementRewriter {
   override def postConditions: Set[Condition] = Set.empty
 }
 
-trait StatementRewriter extends Phase[Context] {
+trait StatementRewriter extends Phase[CompilerContext] {
   override def phase: CompilationPhase = AST_REWRITE
 
-  def instance(context: Context): Rewriter
+  def instance(context: CompilerContext): Rewriter
 
-  override def process(from: CompilationState, context: Context): CompilationState = {
+  override def process(from: CompilationState, context: CompilerContext): CompilationState = {
     val rewritten = from.statement.endoRewrite(instance(context))
     from.copy(maybeStatement = Some(rewritten))
   }

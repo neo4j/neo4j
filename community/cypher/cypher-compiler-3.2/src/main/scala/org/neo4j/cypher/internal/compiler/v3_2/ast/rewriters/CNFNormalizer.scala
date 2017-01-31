@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v3_2._
-import org.neo4j.cypher.internal.compiler.v3_2.phases.{Condition, Context}
+import org.neo4j.cypher.internal.compiler.v3_2.phases.{Condition, CompilerContext}
 import org.neo4j.cypher.internal.frontend.v3_2.Foldable._
 import org.neo4j.cypher.internal.frontend.v3_2.Rewritable._
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
@@ -31,7 +31,7 @@ case object CNFNormalizer extends StatementRewriter {
 
   override def description: String = "normalize boolean predicates into conjunctive normal form"
 
-  override def instance(context: Context): Rewriter = {
+  override def instance(context: CompilerContext): Rewriter = {
     implicit val monitor = context.monitors.newMonitor[AstRewritingMonitor]()
     inSequence(
       deMorganRewriter(),

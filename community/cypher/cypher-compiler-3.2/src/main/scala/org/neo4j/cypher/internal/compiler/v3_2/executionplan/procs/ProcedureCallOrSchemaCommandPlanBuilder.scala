@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.Compilatio
 import org.neo4j.cypher.internal.compiler.v3_2.IndexDescriptor
 import org.neo4j.cypher.internal.compiler.v3_2.ast.ResolvedCall
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan._
-import org.neo4j.cypher.internal.compiler.v3_2.phases.{CompilationState, Condition, Context, Phase}
+import org.neo4j.cypher.internal.compiler.v3_2.phases.{CompilationState, Condition, CompilerContext, Phase}
 import org.neo4j.cypher.internal.compiler.v3_2.spi.QueryContext
 import org.neo4j.cypher.internal.frontend.v3_2._
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.ast._
 /**
   * This planner takes on queries that requires no planning such as procedures and schema commands
   */
-case object ProcedureCallOrSchemaCommandPlanBuilder extends Phase[Context] {
+case object ProcedureCallOrSchemaCommandPlanBuilder extends Phase[CompilerContext] {
 
   override def phase: CompilationPhase = PIPE_BUILDING
 
@@ -40,7 +40,7 @@ case object ProcedureCallOrSchemaCommandPlanBuilder extends Phase[Context] {
 
   override def postConditions: Set[Condition] = Set.empty
 
-  override def process(from: CompilationState, context: Context): CompilationState = {
+  override def process(from: CompilationState, context: CompilerContext): CompilationState = {
     val maybeExecutionPlan: Option[ExecutionPlan] = from.statement match {
       // Global call: CALL foo.bar.baz("arg1", 2)
       case Query(None, SingleQuery(Seq(resolved@ResolvedCall(signature, args, _, _, _)))) =>

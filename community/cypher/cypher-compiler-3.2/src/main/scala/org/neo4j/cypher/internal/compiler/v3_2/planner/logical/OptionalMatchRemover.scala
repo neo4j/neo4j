@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
-import org.neo4j.cypher.internal.compiler.v3_2.phases.{CompilationState, Condition, Context, Phase}
+import org.neo4j.cypher.internal.compiler.v3_2.phases.{CompilationState, Condition, CompilerContext, Phase}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.{AggregatingQueryProjection, QueryGraph, RegularPlannerQuery, _}
 import org.neo4j.cypher.internal.frontend.v3_2.Rewritable._
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{Expression, FunctionInvocation, _}
@@ -38,7 +38,7 @@ case object OptionalMatchRemover extends PlannerQueryRewriter {
 
   override def postConditions: Set[Condition] = Set.empty
 
-  override def instance(ignored: Context): Rewriter = topDown(Rewriter.lift {
+  override def instance(ignored: CompilerContext): Rewriter = topDown(Rewriter.lift {
     case RegularPlannerQuery(graph, proj@AggregatingQueryProjection(distinctExpressions, aggregations, _), tail)
       if validAggregations(aggregations) =>
 
@@ -192,12 +192,12 @@ case object OptionalMatchRemover extends PlannerQueryRewriter {
 
 }
 
-trait PlannerQueryRewriter extends Phase[Context] {
+trait PlannerQueryRewriter extends Phase[CompilerContext] {
   override def phase: CompilationPhase = LOGICAL_PLANNING
 
-  def instance(context: Context): Rewriter
+  def instance(context: CompilerContext): Rewriter
 
-  override def process(from: CompilationState, context: Context): CompilationState = {
+  override def process(from: CompilationState, context: CompilerContext): CompilationState = {
     val query: UnionQuery = from.unionQuery
     val rewritten = query.endoRewrite(instance(context))
     from.copy(maybeUnionQuery = Some(rewritten))

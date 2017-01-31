@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{LogicalPla
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.ir.v3_2.PeriodicCommit
 
-case class QueryPlanner(planSingleQuery: LogicalPlanningFunction1[PlannerQuery, LogicalPlan] = PlanSingleQuery()) extends Phase[Context] {
+case class QueryPlanner(planSingleQuery: LogicalPlanningFunction1[PlannerQuery, LogicalPlan] = PlanSingleQuery()) extends Phase[CompilerContext] {
 
   override def phase = LOGICAL_PLANNING
 
@@ -34,7 +34,7 @@ case class QueryPlanner(planSingleQuery: LogicalPlanningFunction1[PlannerQuery, 
 
   override def postConditions = Set(Contains[LogicalPlan])
 
-  override def process(from: CompilationState, context: Context): CompilationState = {
+  override def process(from: CompilationState, context: CompilerContext): CompilationState = {
     val logicalPlanProducer = LogicalPlanProducer(context.metrics.cardinality)
     val logicalPlanningContext = LogicalPlanningContext(
       planContext = context.planContext,
