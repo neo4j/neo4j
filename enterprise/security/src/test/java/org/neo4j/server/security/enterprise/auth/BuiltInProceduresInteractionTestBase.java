@@ -501,7 +501,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     @Test
     public void shouldTerminateQueriesEvenIfUsingPeriodicCommit() throws Throwable
     {
-        for ( int i = 8; i <= 11; i++ )
+        for ( int batchSize = 8; batchSize <= 11; batchSize++ )
         {
             // Spawns a throttled HTTP server, runs a PERIODIC COMMIT that fetches data from this server,
             // and checks that the query is visible when using listQueries()
@@ -511,7 +511,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
             final Barrier.Control barrier = new Barrier.Control();
 
             // Serve CSV via local web server, let Jetty find a random port for us
-            Server server = createHttpServer( latch, barrier, i, 50 - i );
+            Server server = createHttpServer( latch, barrier, batchSize, 50 - batchSize );
             server.start();
             int localPort = getLocalPort( server );
 
@@ -547,10 +547,13 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
                 // When
                 barrier.release();
                 latch.finishAndWaitForAllToFinish();
-                server.stop();
 
                 // Then
                 write.closeAndAssertTransactionTermination();
+
+                // stop server after assertion to avoid other kind of failures due to races (e.g., already closed
+                // lock clients )
+                server.stop();
             }
         }
     }
