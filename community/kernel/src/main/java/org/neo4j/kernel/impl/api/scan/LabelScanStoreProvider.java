@@ -41,19 +41,17 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  * get the {@link LabelScanStore} from this provider, stick it in an e.g. {@link LifeSupport} of its own.
  * {@link LabelScanStoreProvider} implements {@link Lifecycle} to adhere to {@link KernelExtensionFactory} contract.
  */
-public class LabelScanStoreProvider extends LifecycleAdapter implements Comparable<LabelScanStoreProvider>
+public class LabelScanStoreProvider extends LifecycleAdapter
 {
     private static final String KEY = "lucene";
 
     private final String name;
     private final LabelScanStore labelScanStore;
-    private final int priority;
 
-    public LabelScanStoreProvider( String name, LabelScanStore labelScanStore, int priority )
+    public LabelScanStoreProvider( String name, LabelScanStore labelScanStore )
     {
         this.name = name;
         this.labelScanStore = labelScanStore;
-        this.priority = priority;
     }
 
     public String getName()
@@ -72,15 +70,9 @@ public class LabelScanStoreProvider extends LifecycleAdapter implements Comparab
     }
 
     @Override
-    public int compareTo( LabelScanStoreProvider o )
-    {
-        return priority - o.priority;
-    }
-
-    @Override
     public String toString()
     {
-        return getClass().getSimpleName() + "[" + labelScanStore + ", prio:" + priority + "]";
+        return getClass().getSimpleName() + "[" + labelScanStore + "]";
     }
 
     public static long rebuild( LabelScanStore store, FullStoreChangeStream fullStoreStream ) throws IOException

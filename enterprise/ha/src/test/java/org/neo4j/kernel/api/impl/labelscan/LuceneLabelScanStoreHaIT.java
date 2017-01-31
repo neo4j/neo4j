@@ -28,7 +28,7 @@ public class LuceneLabelScanStoreHaIT extends LabelScanStoreHaIT
     @Override
     protected KernelExtensionFactory<?> labelScanStoreExtension( LabelScanStore.Monitor monitor )
     {
-        return new LuceneLabelScanStoreExtension( 100, monitor );
+        return new LuceneLabelScanStoreExtension( monitor );
     }
 
     @Override

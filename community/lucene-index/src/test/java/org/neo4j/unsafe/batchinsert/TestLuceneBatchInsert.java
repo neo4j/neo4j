@@ -40,6 +40,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings.LabelIndex;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.index.IndexManager;
@@ -91,7 +92,9 @@ public class TestLuceneBatchInsert
         storeDir = testDirectory.graphDbDir();
         Iterable filteredKernelExtensions = filter( onlyRealLuceneExtensions(),
                 Service.load( KernelExtensionFactory.class ) );
-        inserter = BatchInserters.inserter( storeDir, fileSystemRule.get(), stringMap(), filteredKernelExtensions );
+        inserter = BatchInserters.inserter( storeDir, fileSystemRule.get(),
+                stringMap( GraphDatabaseSettings.label_index.name(), LabelIndex.LUCENE.name() ),
+                filteredKernelExtensions );
     }
 
     @After

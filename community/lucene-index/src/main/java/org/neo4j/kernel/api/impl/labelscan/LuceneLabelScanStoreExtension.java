@@ -46,7 +46,6 @@ public class LuceneLabelScanStoreExtension extends KernelExtensionFactory<Lucene
 {
     public static final String LABEL_SCAN_STORE_NAME = LabelIndex.LUCENE.name();
 
-    private final int priority;
     private final Monitor monitor;
 
     public interface Dependencies
@@ -68,14 +67,13 @@ public class LuceneLabelScanStoreExtension extends KernelExtensionFactory<Lucene
 
     public LuceneLabelScanStoreExtension()
     {
-        this( 10, null );
+        this( Monitor.EMPTY );
     }
 
-    LuceneLabelScanStoreExtension( int priority, Monitor monitor )
+    LuceneLabelScanStoreExtension( Monitor monitor )
     {
         super( "lucene-scan-store" );
-        this.priority = priority;
-        this.monitor = (monitor == null) ? Monitor.EMPTY : monitor;
+        this.monitor = monitor;
     }
 
     @Override
@@ -92,7 +90,7 @@ public class LuceneLabelScanStoreExtension extends KernelExtensionFactory<Lucene
         LuceneLabelScanStore scanStore = new LuceneLabelScanStore( indexBuilder,
                 new FullLabelStream( dependencies.indexStoreView() ), loggingMonitor );
 
-        return new LabelScanStoreProvider( LABEL_SCAN_STORE_NAME, scanStore, priority );
+        return new LabelScanStoreProvider( LABEL_SCAN_STORE_NAME, scanStore );
     }
 
     private LuceneLabelScanIndexBuilder getIndexBuilder( KernelContext context, DirectoryFactory directoryFactory,

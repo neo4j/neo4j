@@ -26,35 +26,30 @@ import java.util.Objects;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 
 /**
- * Select the "correct" {@link LabelScanStoreProvider} among potentially several implementations
- * loaded as {@link KernelExtensions}.
- * <p>
- * Two parameters affects which {@link LabelScanStoreProvider} is selected:
- * <ol>
- * <li>Specifically configured label scan store name, see {@link GraphDatabaseSettings#label_index},
- * each {@link LabelScanStoreProvider} is instantiated with a name, which is matched with the configured name.
- * The setting can also be left unspecified, at which point the next parameter kicks in:</li>
- * <li>Highest prioritized instance, actually using {@link HighestSelectionStrategy}</li>
+ * Select a {@link LabelScanStoreProvider} with specific name, among potentially many.
  */
 public class NamedLabelScanStoreSelectionStrategy implements DependencyResolver.SelectionStrategy
 {
     private final String specificallyConfigured;
 
-    public NamedLabelScanStoreSelectionStrategy( String specificallyConfigured )
-    {
-        Objects.requireNonNull( specificallyConfigured );
-        this.specificallyConfigured = specificallyConfigured;
-    }
-
     public NamedLabelScanStoreSelectionStrategy( Config config )
     {
-        this( config.get( GraphDatabaseSettings.label_index ) );
+        this.specificallyConfigured = config.get( GraphDatabaseSettings.label_index );
+        Objects.requireNonNull( specificallyConfigured );
     }
 
+    /**
+     * Selects the {@link LabelScanStoreProvider} with the specific name for this strategy, or fail.
+     *
+     * @param type type of items.
+     * @param candidates candidates to choose from, i.e. loaded {@link LabelScanStoreProvider} instances.
+     * @return the {@link LabelScanStoreProvider} with the specific name.
+     * @throws IllegalArgumentException if no candidate matched the name or if the candidates weren't
+     * {@link LabelScanStoreProvider}.
+     */
     @Override
     public <T> T select( Class<T> type, Iterable<T> candidates ) throws IllegalArgumentException
     {

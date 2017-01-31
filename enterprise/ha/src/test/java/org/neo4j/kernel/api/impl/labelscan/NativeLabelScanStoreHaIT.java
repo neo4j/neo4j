@@ -29,7 +29,7 @@ public class NativeLabelScanStoreHaIT extends LabelScanStoreHaIT
     @Override
     protected KernelExtensionFactory<?> labelScanStoreExtension( LabelScanStore.Monitor monitor )
     {
-        return new NativeLabelScanStoreExtension( 100, monitor );
+        return new NativeLabelScanStoreExtension( monitor );
     }
 
     @Override

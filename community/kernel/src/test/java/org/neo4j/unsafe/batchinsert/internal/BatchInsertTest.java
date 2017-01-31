@@ -1543,7 +1543,7 @@ public class BatchInsertTest
         @Override
         public Lifecycle newInstance( KernelContext context, NoDependencies dependencies ) throws Throwable
         {
-            return new LabelScanStoreProvider( "test", labelScanStore, 100 );
+            return new LabelScanStoreProvider( GraphDatabaseSettings.label_index.getDefaultValue(), labelScanStore );
         }
     }
 
