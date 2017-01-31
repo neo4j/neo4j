@@ -20,6 +20,7 @@
 package org.neo4j.causalclustering.catchup.storecopy;
 
 import java.io.File;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 import io.netty.channel.ChannelHandlerContext;
@@ -30,6 +31,8 @@ import org.neo4j.causalclustering.catchup.ResponseMessageType;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFinishedResponse.Status;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
@@ -47,16 +50,18 @@ public class GetStoreRequestHandler extends SimpleChannelInboundHandler<GetStore
     private final Supplier<NeoStoreDataSource> dataSource;
     private final Supplier<CheckPointer> checkPointerSupplier;
     private final FileSystemAbstraction fs;
+    private PageCache pageCache;
     private final Log log;
 
     public GetStoreRequestHandler( CatchupServerProtocol protocol, Supplier<NeoStoreDataSource> dataSource,
-                                   Supplier<CheckPointer> checkPointerSupplier, FileSystemAbstraction fs,
-                                   LogProvider logProvider )
+            Supplier<CheckPointer> checkPointerSupplier, FileSystemAbstraction fs, PageCache pageCache,
+            LogProvider logProvider )
     {
         this.protocol = protocol;
         this.dataSource = dataSource;
         this.checkPointerSupplier = checkPointerSupplier;
         this.fs = fs;
+        this.pageCache = pageCache;
         this.log = logProvider.getLog( getClass() );
     }
 
@@ -74,12 +79,25 @@ public class GetStoreRequestHandler extends SimpleChannelInboundHandler<GetStore
             {
                 while ( files.hasNext() )
                 {
-                    File file = files.next().file();
+                    StoreFileMetadata fileMetadata = files.next();
+                    File file = fileMetadata.file();
                     log.debug( "Sending file " + file );
-
                     ctx.writeAndFlush( ResponseMessageType.FILE );
-                    ctx.writeAndFlush( new FileHeader( relativePath( dataSource.get().getStoreDir(), file ) ) );
-                    ctx.writeAndFlush( new FileSender( fs.open( file, "r" ) ) );
+                    ctx.writeAndFlush( new FileHeader( relativePath( dataSource.get().getStoreDir(), file ),
+                            fileMetadata.recordSize() ) );
+                    Optional<PagedFile> existingMapping = pageCache.getExistingMapping( file );
+                    if ( existingMapping.isPresent() )
+                    {
+                        try ( PagedFile pagedFile = existingMapping.get() )
+                        {
+                            ctx.writeAndFlush( new FileSender(
+                                    pagedFile.openReadableByteChannel() ) );
+                        }
+                    }
+                    else
+                    {
+                        ctx.writeAndFlush( new FileSender( fs.open( file, "r" ) ) );
+                    }
                 }
             }
             endStoreCopy( SUCCESS, ctx, lastCheckPointedTx );

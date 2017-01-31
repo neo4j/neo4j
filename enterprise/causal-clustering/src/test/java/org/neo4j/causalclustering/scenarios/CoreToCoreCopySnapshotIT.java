@@ -22,6 +22,7 @@ package org.neo4j.causalclustering.scenarios;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.File;
 import java.io.IOException;
 import java.time.Clock;
 import java.util.Map;
@@ -49,11 +50,16 @@ import static org.neo4j.causalclustering.discovery.Cluster.dataOnMemberEventuall
 import static org.neo4j.causalclustering.scenarios.SampleData.createData;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
+/**
+ * Note that this test is extended in the blockdevice repository.
+ */
 public class CoreToCoreCopySnapshotIT
 {
+    protected static final int NR_CORE_MEMBERS = 3;
+
     @Rule
     public final ClusterRule clusterRule = new ClusterRule( getClass() )
-            .withNumberOfCoreMembers( 3 )
+            .withNumberOfCoreMembers( NR_CORE_MEMBERS )
             .withNumberOfReadReplicas( 0 );
 
     @Test
@@ -72,12 +78,18 @@ public class CoreToCoreCopySnapshotIT
 
         // shutdown the follower, remove the store, restart
         follower.shutdown();
-        FileUtils.deleteRecursively( follower.storeDir() );
-        FileUtils.deleteRecursively( follower.clusterStateDirectory() );
+        deleteDirectoryRecursively( follower.storeDir(), follower.serverId() );
+        deleteDirectoryRecursively( follower.clusterStateDirectory(), follower.serverId() );
         follower.start();
 
         // then
         assertEquals( DbRepresentation.of( source.database() ), DbRepresentation.of( follower.database() ) );
+    }
+
+    protected void deleteDirectoryRecursively( File directory, int id ) throws IOException
+    {
+        // Extracted so the inheriting test in the block device repository can override it. id is used there.
+        FileUtils.deleteRecursively( directory );
     }
 
     @Test

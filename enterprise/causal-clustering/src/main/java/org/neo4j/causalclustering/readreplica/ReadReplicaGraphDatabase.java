@@ -31,13 +31,9 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Dependencies;
 import org.neo4j.kernel.impl.factory.PlatformModule;
-import org.neo4j.kernel.impl.util.CustomIOConfigValidator;
 
 public class ReadReplicaGraphDatabase extends GraphDatabaseFacade
 {
-    public static final String CUSTOM_IO_EXCEPTION_MESSAGE =
-            "Read replica mode is not allowed with custom IO integrations";
-
     public ReadReplicaGraphDatabase( File storeDir, Config config, Dependencies dependencies )
     {
         this( storeDir, config, dependencies, new HazelcastDiscoveryServiceFactory() );
@@ -46,7 +42,6 @@ public class ReadReplicaGraphDatabase extends GraphDatabaseFacade
     public ReadReplicaGraphDatabase( File storeDir, Config config, Dependencies dependencies,
             DiscoveryServiceFactory discoveryServiceFactory )
     {
-        CustomIOConfigValidator.assertCustomIOConfigNotUsed( config, CUSTOM_IO_EXCEPTION_MESSAGE );
         Function<PlatformModule,EditionModule> factory =
                 ( platformModule ) -> new EnterpriseReadReplicaEditionModule( platformModule, discoveryServiceFactory );
         new GraphDatabaseFacadeFactory( DatabaseInfo.READ_REPLICA, factory ).initFacade( storeDir, config,

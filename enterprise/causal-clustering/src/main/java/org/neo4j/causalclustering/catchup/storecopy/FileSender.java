@@ -25,18 +25,17 @@ import io.netty.handler.stream.ChunkedInput;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-
-import org.neo4j.io.fs.StoreChannel;
+import java.nio.channels.ReadableByteChannel;
 
 class FileSender implements ChunkedInput<FileChunk>
 {
-    private final StoreChannel channel;
+    private final ReadableByteChannel channel;
     private final ByteBuffer byteBuffer;
     private boolean endOfInput = false;
     private boolean sentChunk = false;
     private byte[] preFetchedBytes;
 
-    public FileSender( StoreChannel channel ) throws IOException
+    public FileSender( ReadableByteChannel channel ) throws IOException
     {
         this.channel = channel;
         byteBuffer = ByteBuffer.allocateDirect( FileChunk.MAX_SIZE );
@@ -69,7 +68,6 @@ class FileSender implements ChunkedInput<FileChunk>
 
         byte[] next = prefetch();
         FileChunk fileChunk = FileChunk.create( preFetchedBytes == null ? new byte[0] : preFetchedBytes, next == null );
-
         preFetchedBytes = next;
 
         return fileChunk;

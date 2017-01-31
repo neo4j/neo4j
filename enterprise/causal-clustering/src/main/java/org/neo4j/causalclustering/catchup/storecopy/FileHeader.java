@@ -24,15 +24,28 @@ import java.util.Objects;
 public class FileHeader
 {
     private final String fileName;
+    private final int requiredAlignment;
 
     public FileHeader( String fileName )
     {
+        // A required alignment of 1 basically means that any alignment will do.
+        this( fileName, 1 );
+    }
+
+    public FileHeader( String fileName, int requiredAlignment )
+    {
         this.fileName = fileName;
+        this.requiredAlignment = requiredAlignment;
     }
 
     public String fileName()
     {
         return fileName;
+    }
+
+    public int requiredAlignment()
+    {
+        return requiredAlignment;
     }
 
     @Override

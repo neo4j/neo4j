@@ -4939,6 +4939,20 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
+    public void streamFilesRecursiveMustBeAbleToGivePathRelativeToBase() throws Exception
+    {
+        configureStandardPageCache();
+        File sub = existingDirectory( "sub" );
+        File a = file( "a" );
+        File b = new File( sub, "b" );
+        ensureExists( b );
+        File base = a.getParentFile();
+        Set<File> set = pageCache.streamFilesRecursive( base ).map( FileHandle::getRelativeFile ).collect( toSet() );
+        assertThat( "Files relative to base directory " + base,
+                set, containsInAnyOrder( new File( "a" ), new File( "sub" + File.separator + "b" ) ) );
+    }
+
+    @Test
     public void streamFilesRecursiveMustListSingleFileGivenAsBase() throws Exception
     {
         configureStandardPageCache();

@@ -23,6 +23,7 @@ import java.io.File;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
@@ -69,7 +70,8 @@ public class CopiedStoreRecovery extends LifecycleAdapter
         }
         catch ( Exception e )
         {
-            if ( e.getCause() != null && e.getCause().getCause() instanceof UpgradeNotAllowedByConfigurationException )
+            Throwable peeled = Exceptions.peel( e, ( t ) -> !(t instanceof UpgradeNotAllowedByConfigurationException) );
+            if ( peeled != null )
             {
                 throw new RuntimeException( failedToStartMessage(), e );
             }
