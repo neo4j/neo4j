@@ -276,7 +276,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
                 platformModule.dependencies.provideDependency( TransactionIdStore.class ),
                 platformModule.dependencies.provideDependency( LogicalTransactionStore.class ),
                 localDatabase::dataSource, localDatabase::isAvailable, null, config, platformModule.monitors,
-                new CheckpointerSupplier( platformModule.dependencies ), fileSystem );
+                new CheckpointerSupplier( platformModule.dependencies ), fileSystem, pageCache);
 
         servicesToStopOnStoreCopy.add( catchupServer );
 
