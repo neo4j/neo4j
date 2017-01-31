@@ -1277,6 +1277,68 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     ))
   }
 
+  test("count with non-nullable literal") {
+    when(semanticTable.resolvedPropertyKeyNames).thenReturn(mutable.Map.empty[String, PropertyKeyId])
+    val scan = AllNodesScan(IdName("a"), Set.empty)(solved)
+    val ns: Namespace = Namespace(List())(pos)
+    val count: FunctionName = FunctionName("count")(pos)
+
+    val property = literalInt(42) // <== This cannot be nullable
+
+    val invocation: FunctionInvocation = FunctionInvocation(ns, count, distinct = false, Vector(property))(pos)
+    val aggregation = Aggregation(scan, Map("a" -> ast.Variable("a")(pos)), Map("c" -> invocation))(solved)
+    val plan = ProduceResult(List("c"), aggregation)
+
+    //when
+    val compiled = compileAndExecute(plan)
+
+    val result = getResult(compiled, "c")
+
+    //then
+    result.toList should equal(List(
+      Map("c" -> 1),
+      Map("c" -> 1),
+      Map("c" -> 1),
+      Map("c" -> 1),
+      Map("c" -> 1),
+      Map("c" -> 1),
+      Map("c" -> 1),
+      Map("c" -> 1),
+      Map("c" -> 1))
+    )
+  }
+
+  test("count distinct with non-nullable literal") {
+    when(semanticTable.resolvedPropertyKeyNames).thenReturn(mutable.Map.empty[String, PropertyKeyId])
+    val scan = AllNodesScan(IdName("a"), Set.empty)(solved)
+    val ns: Namespace = Namespace(List())(pos)
+    val count: FunctionName = FunctionName("count")(pos)
+
+    val property = literalInt(42) // <== This cannot be nullable
+
+    val invocation: FunctionInvocation = FunctionInvocation(ns, count, distinct = true, Vector(property))(pos)
+    val aggregation = Aggregation(scan, Map("a" -> ast.Variable("a")(pos)), Map("c" -> invocation))(solved)
+    val plan = ProduceResult(List("c"), aggregation)
+
+    //when
+    val compiled = compileAndExecute(plan)
+
+    val result = getResult(compiled, "c")
+
+    //then
+    result.toList should equal(List(
+      Map("c" -> 1),
+      Map("c" -> 1),
+      Map("c" -> 1),
+      Map("c" -> 1),
+      Map("c" -> 1),
+      Map("c" -> 1),
+      Map("c" -> 1),
+      Map("c" -> 1),
+      Map("c" -> 1))
+    )
+  }
+
   private def compile(plan: LogicalPlan) = {
     generator.generate(plan, newMockedPlanContext, semanticTable, CostBasedPlannerName.default)
   }
