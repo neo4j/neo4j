@@ -105,26 +105,24 @@ public class StoreMigration
         // Add participants from kernel extensions...
         LegacyIndexProvider legacyIndexProvider = new LegacyIndexProvider();
 
-        Dependencies deps = new Dependencies();
-        deps.satisfyDependencies( fs, config );
-        deps.satisfyDependencies( legacyIndexProvider );
-
-        KernelContext kernelContext = new SimpleKernelContext( storeDirectory, DatabaseInfo.UNKNOWN, deps );
-        KernelExtensions kernelExtensions = life.add( new KernelExtensions(
-                kernelContext, GraphDatabaseDependencies.newDependencies().kernelExtensions(),
-                deps, ignore() ) );
-
-        // Add the kernel store migrator
-        life.start();
-        SchemaIndexProvider schemaIndexProvider = kernelExtensions.resolveDependency( SchemaIndexProvider.class,
-                HighestSelectionStrategy.getInstance() );
-
-        LabelScanStoreProvider labelScanStoreProvider = kernelExtensions
-                .resolveDependency( LabelScanStoreProvider.class, HighestSelectionStrategy.getInstance() );
-
         Log log = userLogProvider.getLog( StoreMigration.class );
         try ( PageCache pageCache = createPageCache( fs, config ) )
         {
+            Dependencies deps = new Dependencies();
+            deps.satisfyDependencies( fs, config, legacyIndexProvider, pageCache, logService );
+
+            KernelContext kernelContext = new SimpleKernelContext( storeDirectory, DatabaseInfo.UNKNOWN, deps );
+            KernelExtensions kernelExtensions = life.add( new KernelExtensions(
+                    kernelContext, GraphDatabaseDependencies.newDependencies().kernelExtensions(),
+                    deps, ignore() ) );
+
+            // Add the kernel store migrator
+            life.start();
+
+            SchemaIndexProvider schemaIndexProvider = kernelExtensions.resolveDependency( SchemaIndexProvider.class,
+                    HighestSelectionStrategy.getInstance() );
+            LabelScanStoreProvider labelScanStoreProvider = kernelExtensions
+                    .resolveDependency( LabelScanStoreProvider.class, HighestSelectionStrategy.getInstance() );
             long startTime = System.currentTimeMillis();
             DatabaseMigrator migrator = new DatabaseMigrator( progressMonitor, fs, config, logService,
                     schemaIndexProvider, labelScanStoreProvider, legacyIndexProvider.getIndexProviders(),
