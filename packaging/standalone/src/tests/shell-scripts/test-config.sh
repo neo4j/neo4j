@@ -36,4 +36,16 @@ test_expect_success "can configure log directory outside neo4j-root" "
   test_expect_file_matching 'stdout from java' '$(pwd)/other-log-dir/neo4j.log'
 "
 
+test_expect_success "should warn that connectors with arbitrary names are deprecated" "
+  set_config 'dbms.connector.bla.type' 'HTTP', neo4j.conf &&
+  test_expect_stderr_matching \
+      'WARNING: connectors with names other than [http,https,bolt] are
+         deprecated and support for them will be removed in a future
+         version of Neo4j. Offending lines in ${NEO4J_CONF/neo4j.conf}:
+
+         dbms.connector.bla.*
+                        ^' \
+      ${run_command}
+"
+
 test_done
