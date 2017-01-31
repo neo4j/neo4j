@@ -44,7 +44,7 @@ import static org.neo4j.kernel.api.impl.index.LuceneKernelExtensions.directoryFa
 @Service.Implementation(KernelExtensionFactory.class)
 public class LuceneLabelScanStoreExtension extends KernelExtensionFactory<LuceneLabelScanStoreExtension.Dependencies>
 {
-    public static final String LABEL_SCAN_STORE_NAME = LabelIndex.LUCENE.name();
+    private static final String NAME = LabelIndex.LUCENE.name();
 
     private final Monitor monitor;
 
@@ -90,7 +90,7 @@ public class LuceneLabelScanStoreExtension extends KernelExtensionFactory<Lucene
         LuceneLabelScanStore scanStore = new LuceneLabelScanStore( indexBuilder,
                 new FullLabelStream( dependencies.indexStoreView() ), loggingMonitor );
 
-        return new LabelScanStoreProvider( LABEL_SCAN_STORE_NAME, scanStore );
+        return new LabelScanStoreProvider( NAME, scanStore );
     }
 
     private LuceneLabelScanIndexBuilder getIndexBuilder( KernelContext context, DirectoryFactory directoryFactory,

@@ -23,7 +23,7 @@ import java.io.File;
 
 import org.neo4j.graphdb.LabelScanStoreChaosIT;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
-import org.neo4j.kernel.impl.api.scan.NativeLabelScanStoreExtension;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings.LabelIndex;
 import org.neo4j.test.rule.DatabaseRule.RestartAction;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.label_index;
@@ -50,6 +50,6 @@ public class NativeLabelScanStoreChaosIT extends LabelScanStoreChaosIT
     @Override
     protected void addSpecificConfig( GraphDatabaseBuilder builder )
     {
-        builder.setConfig( label_index, NativeLabelScanStoreExtension.LABEL_SCAN_STORE_NAME );
+        builder.setConfig( label_index, LabelIndex.NATIVE.name() );
     }
 }

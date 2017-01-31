@@ -26,9 +26,8 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings.LabelIndex;
 import org.neo4j.kernel.api.impl.labelscan.LuceneLabelScanIndexBuilder;
-import org.neo4j.kernel.api.impl.labelscan.LuceneLabelScanStoreExtension;
-
 import static org.junit.Assert.assertTrue;
 
 import static java.util.stream.Collectors.toList;
@@ -41,7 +40,7 @@ public class LuceneLabelScanStoreStartupIT extends LabelScanStoreStartupIT
     @Override
     protected void addSpecificConfig( GraphDatabaseBuilder builder )
     {
-        builder.setConfig( label_index, LuceneLabelScanStoreExtension.LABEL_SCAN_STORE_NAME );
+        builder.setConfig( label_index, LabelIndex.LUCENE.name() );
     }
 
     private List<File> labelScanStoreIndexDirectories( File storeDirectory )

@@ -39,7 +39,7 @@ import org.neo4j.logging.Log;
 public class NativeLabelScanStoreExtension extends
         KernelExtensionFactory<NativeLabelScanStoreExtension.Dependencies>
 {
-    public static final String LABEL_SCAN_STORE_NAME = LabelIndex.NATIVE.name();
+    private static final String NAME = LabelIndex.NATIVE.name();
     private final LabelScanStore.Monitor monitor;
 
     public interface Dependencies
@@ -60,7 +60,7 @@ public class NativeLabelScanStoreExtension extends
 
     public NativeLabelScanStoreExtension( LabelScanStore.Monitor monitor )
     {
-        super( LABEL_SCAN_STORE_NAME );
+        super( NAME );
         this.monitor = monitor;
     }
 
@@ -75,6 +75,6 @@ public class NativeLabelScanStoreExtension extends
                 new FullLabelStream( dependencies.indexStoreView() ),
                 dependencies.getConfig().get( GraphDatabaseSettings.read_only ),
                 monitor );
-        return new LabelScanStoreProvider( LABEL_SCAN_STORE_NAME, labelScanStore );
+        return new LabelScanStoreProvider( NAME, labelScanStore );
     }
 }
