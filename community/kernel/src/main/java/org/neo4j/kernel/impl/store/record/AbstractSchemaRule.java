@@ -22,24 +22,19 @@ package org.neo4j.kernel.impl.store.record;
 import java.nio.ByteBuffer;
 
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
-import org.neo4j.kernel.api.schema.EntityPropertyDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
 /**
- * Partial implementation of SchemaRule. Note that the id and kind of a SchemaRule are fixed properties that should
+ * Partial implementation of SchemaRule. Note that the id of a SchemaRule is a fixed property that should
  * never be modified of overridden by subclasses.
  */
 public abstract class AbstractSchemaRule implements SchemaRule, RecordSerializable
 {
-    protected final Kind kind;
     protected final long id;
-    protected final EntityPropertyDescriptor descriptor;
 
-    public AbstractSchemaRule( long id, Kind kind, EntityPropertyDescriptor descriptor )
+    public AbstractSchemaRule( long id )
     {
         this.id = id;
-        this.kind = kind;
-        this.descriptor = descriptor;
     }
 
     @Override
@@ -47,42 +42,6 @@ public abstract class AbstractSchemaRule implements SchemaRule, RecordSerializab
     {
         return this.id;
     }
-
-    @Override
-    public final Kind getKind()
-    {
-        return this.kind;
-    }
-
-    @Override
-    public abstract int length();
-
-    @Override
-    public abstract void serialize( ByteBuffer target );
-
-    @Override
-    public final boolean equals( Object o )
-    {
-        if ( this == o )
-        {
-            return true;
-        }
-        if ( o != null && o instanceof AbstractSchemaRule )
-        {
-            AbstractSchemaRule that = (AbstractSchemaRule) o;
-            return kind == that.kind && this.descriptor.equals( that.descriptor() );
-        }
-        return false;
-    }
-
-    @Override
-    public final int hashCode()
-    {
-        return 31 * kind.hashCode() + descriptor.hashCode();
-    }
-
-    @Override
-    public abstract String toString();
 
     public static SchemaRule deserialize( long id, ByteBuffer buffer ) throws MalformedSchemaRuleException
     {
@@ -105,7 +64,7 @@ public abstract class AbstractSchemaRule implements SchemaRule, RecordSerializab
         }
     }
 
-    protected static SchemaRule newRule( Kind kind, long id, int labelId, ByteBuffer buffer )
+    private static SchemaRule newRule( Kind kind, long id, int labelId, ByteBuffer buffer )
     {
         switch ( kind )
         {
@@ -114,30 +73,11 @@ public abstract class AbstractSchemaRule implements SchemaRule, RecordSerializab
         case CONSTRAINT_INDEX_RULE:
             return IndexRule.readIndexRule( id, true, labelId, buffer );
         case UNIQUENESS_CONSTRAINT:
-            return UniquePropertyConstraintRule.readUniquenessConstraintRule( id, labelId, buffer );
+            return ConstraintRule.readUniquenessConstraintRule( id, labelId, buffer );
         case NODE_PROPERTY_EXISTENCE_CONSTRAINT:
-            return NodePropertyExistenceConstraintRule.readNodePropertyExistenceConstraintRule( id, labelId, buffer );
+            return ConstraintRule.readNodePropertyExistenceConstraintRule( id, labelId, buffer );
         case RELATIONSHIP_PROPERTY_EXISTENCE_CONSTRAINT:
-            return RelationshipPropertyExistenceConstraintRule
-                    .readRelPropertyExistenceConstraintRule( id, labelId, buffer );
-        default:
-            throw new IllegalArgumentException( kind.name() );
-        }
-    }
-
-    public static Class<?> getRuleClass( Kind kind )
-    {
-        switch ( kind )
-        {
-        case INDEX_RULE:
-        case CONSTRAINT_INDEX_RULE:
-            return IndexRule.class;
-        case UNIQUENESS_CONSTRAINT:
-            return UniquePropertyConstraintRule.class;
-        case NODE_PROPERTY_EXISTENCE_CONSTRAINT:
-            return NodePropertyExistenceConstraintRule.class;
-        case RELATIONSHIP_PROPERTY_EXISTENCE_CONSTRAINT:
-            return RelationshipPropertyExistenceConstraintRule.class;
+            return ConstraintRule.readRelPropertyExistenceConstraintRule( id, labelId, buffer );
         default:
             throw new IllegalArgumentException( kind.name() );
         }

@@ -40,8 +40,8 @@ import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
+import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.register.Register.DoubleLongRegister;
-import org.neo4j.storageengine.api.schema.IndexSchemaRule;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
@@ -92,7 +92,7 @@ public interface StoreReadLayer
      * @return schema rule id for matching index.
      * @throws SchemaRuleNotFoundException if no such index exists in storage.
      */
-    long indexGetCommittedId( IndexDescriptor index, Predicate<SchemaRule.Kind> filter )
+    long indexGetCommittedId( IndexDescriptor index, Predicate<IndexRule> filter )
             throws SchemaRuleNotFoundException;
 
     /**
@@ -101,7 +101,7 @@ public interface StoreReadLayer
      * @return index schema rule for matching index.
      * @throws SchemaRuleNotFoundException if no such index exists in storage.
      */
-    IndexSchemaRule indexRule( IndexDescriptor index, Predicate<SchemaRule.Kind> filter )
+    IndexRule indexRule( IndexDescriptor index, Predicate<IndexRule> filter )
             throws SchemaRuleNotFoundException;
 
     /**

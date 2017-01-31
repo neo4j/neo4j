@@ -32,11 +32,11 @@ import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.schema.IndexSchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -52,6 +52,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.api.index.InternalIndexState.FAILED;
 import static org.neo4j.kernel.api.index.InternalIndexState.ONLINE;
 import static org.neo4j.kernel.api.index.InternalIndexState.POPULATING;
+import static org.neo4j.storageengine.api.schema.SchemaRule.Kind.INDEX_RULE;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public class AwaitIndexProcedureTest
@@ -136,10 +137,10 @@ public class AwaitIndexProcedureTest
             throws SchemaRuleNotFoundException, IndexNotFoundKernelException
 
     {
-        when( operations.labelGetForName( anyString() ) ).thenReturn( 0 );
         when( operations.propertyKeyGetForName( anyString() ) ).thenReturn( 0 );
-        when( operations.indexGetForLabelAndPropertyKey( anyObject() ) )
-                .thenThrow( new IndexSchemaRuleNotFoundException( anyDescriptor ) );
+        when( operations.labelGetForName( anyString() ) ).thenReturn( 0 );
+        when( operations.indexGetForLabelAndPropertyKey( any() ) ).thenThrow(
+                new SchemaRuleNotFoundException( INDEX_RULE, SchemaDescriptorFactory.forLabel( 0, 0 ) ) );
 
         try
         {

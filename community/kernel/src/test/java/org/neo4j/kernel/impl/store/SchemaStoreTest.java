@@ -30,7 +30,8 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.AbstractSchemaRule;
@@ -92,8 +93,10 @@ public class SchemaStoreTest
     public void serializationAndDeserialization() throws Exception
     {
         // GIVEN
-        NodePropertyDescriptor descriptor = new NodePropertyDescriptor( 1, 4 );
-        IndexRule indexRule = IndexRule.indexRule( store.nextId(), descriptor, PROVIDER_DESCRIPTOR );
+        int propertyKey = 4;
+        int labelId = 1;
+        IndexRule indexRule = IndexRule.indexRule( store.nextId(),
+                NewIndexDescriptorFactory.forLabel( labelId, propertyKey ), PROVIDER_DESCRIPTOR );
 
         // WHEN
         byte[] serialized = new RecordSerializer().append( indexRule ).serialize();
@@ -101,9 +104,8 @@ public class SchemaStoreTest
 
         // THEN
         assertEquals( indexRule.getId(), readIndexRule.getId() );
-        assertEquals( indexRule.getKind(), readIndexRule.getKind() );
-        assertEquals( indexRule.getLabel(), readIndexRule.getLabel() );
-        assertTrue( indexRule.descriptor().equals( readIndexRule.descriptor() ) );
+        assertEquals( indexRule.getSchemaDescriptor(), readIndexRule.getSchemaDescriptor() );
+        assertEquals( indexRule.getIndexDescriptor(), readIndexRule.getIndexDescriptor() );
         assertEquals( indexRule.getProviderDescriptor(), readIndexRule.getProviderDescriptor() );
     }
 
@@ -112,9 +114,10 @@ public class SchemaStoreTest
     {
         // GIVEN
         Collection<SchemaRule> rules = Arrays.<SchemaRule>asList(
-                IndexRule.indexRule( store.nextId(), new NodePropertyDescriptor( 0, 5 ), PROVIDER_DESCRIPTOR ),
-                IndexRule.indexRule( store.nextId(), new NodePropertyDescriptor( 1, 6 ), PROVIDER_DESCRIPTOR ),
-                IndexRule.indexRule( store.nextId(), new NodePropertyDescriptor( 1, 7 ), PROVIDER_DESCRIPTOR ) );
+                indexRule( store.nextId(), 0, 5, PROVIDER_DESCRIPTOR ),
+                indexRule( store.nextId(), 1, 6, PROVIDER_DESCRIPTOR ),
+                indexRule( store.nextId(), 1, 7, PROVIDER_DESCRIPTOR ) );
+
         for ( SchemaRule rule : rules )
         {
             storeRule( rule );
@@ -125,6 +128,11 @@ public class SchemaStoreTest
 
         // THEN
         assertEquals( rules, readRules );
+    }
+
+    private IndexRule indexRule( long ruleId, int labelId, int propertyId, SchemaIndexProvider.Descriptor descriptor )
+    {
+        return IndexRule.indexRule( ruleId, NewIndexDescriptorFactory.forLabel( labelId, propertyId ), descriptor );
     }
 
 //    TODO ENABLE WHEN MULTIPLE PROPERTY KEYS PER INDEX RULE IS SUPPORTED

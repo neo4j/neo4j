@@ -27,8 +27,8 @@ import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaStore;
+import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
-import org.neo4j.kernel.impl.store.record.PropertyConstraintRule;
 
 /**
  * Visits commands targeted towards the {@link NeoStores} and update corresponding stores.
@@ -148,7 +148,7 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter
             schemaStore.updateRecord( record );
         }
 
-        if ( command.getSchemaRule() instanceof PropertyConstraintRule )
+        if ( command.getSchemaRule() instanceof ConstraintRule )
         {
             switch ( command.getMode() )
             {

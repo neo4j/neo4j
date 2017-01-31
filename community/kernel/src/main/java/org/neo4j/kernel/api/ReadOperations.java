@@ -39,7 +39,7 @@ import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.schema.DuplicateIndexSchemaRuleException;
+import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
@@ -277,7 +277,7 @@ public interface ReadOperations
 
     /** Returns the constraint index for the given labelId and propertyKey. */
     IndexDescriptor uniqueIndexGetForLabelAndPropertyKey( NodePropertyDescriptor descriptor )
-            throws SchemaRuleNotFoundException, DuplicateIndexSchemaRuleException;
+            throws SchemaRuleNotFoundException, DuplicateSchemaRuleException;
 
     /** Get all constraint indexes for a label. */
     Iterator<IndexDescriptor> uniqueIndexesGetForLabel( int labelId );

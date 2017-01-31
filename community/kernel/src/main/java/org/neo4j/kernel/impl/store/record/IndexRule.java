@@ -22,74 +22,57 @@ package org.neo4j.kernel.impl.store.record;
 import java.nio.ByteBuffer;
 
 import org.neo4j.graphdb.Label;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
-import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.storageengine.api.schema.IndexSchemaRule;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaComputer;
+import org.neo4j.kernel.api.schema_new.SchemaProcessor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.string.UTF8;
 
+import static org.neo4j.kernel.api.schema_new.SchemaUtil.noopTokenNameLookup;
+import static org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory.forLabel;
+import static org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory.uniqueForLabel;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
+import static org.neo4j.storageengine.api.schema.SchemaRule.Kind.CONSTRAINT_INDEX_RULE;
+import static org.neo4j.storageengine.api.schema.SchemaRule.Kind.INDEX_RULE;
 import static org.neo4j.string.UTF8.getDecodedStringFrom;
 
 /**
  * A {@link Label} can have zero or more index rules which will have data specified in the rules indexed.
  */
-public class IndexRule extends AbstractSchemaRule implements IndexSchemaRule
+public class IndexRule extends AbstractSchemaRule
 {
     private static final long NO_OWNING_CONSTRAINT = -1;
     private final SchemaIndexProvider.Descriptor providerDescriptor;
+    private final NewIndexDescriptor descriptor;
     /**
      * Non-null for constraint indexes, equal to {@link #NO_OWNING_CONSTRAINT} for
      * constraint indexes with no owning constraint record.
      */
-    private final Long owningConstraint;
+    private final long owningConstraint;
 
     static IndexRule readIndexRule( long id, boolean constraintIndex, int label, ByteBuffer serialized )
     {
         SchemaIndexProvider.Descriptor providerDescriptor = readProviderDescriptor( serialized );
-        NodePropertyDescriptor descriptor = IndexDescriptorFactory.getNodePropertyDescriptor( label, readPropertyKeys( serialized ) );
-        if ( constraintIndex )
-        {
-            long owningConstraint = readOwningConstraint( serialized );
-            return constraintIndexRule( id, descriptor, providerDescriptor, owningConstraint );
-        }
-        else
-        {
-            return indexRule( id, descriptor, providerDescriptor );
-        }
+        int[] propertyKeyIds = readPropertyKeys( serialized );
+        NewIndexDescriptor descriptor = constraintIndex ?
+                                        uniqueForLabel( label, propertyKeyIds ) : forLabel( label, propertyKeyIds );
+        long owningConstraint = constraintIndex ? readOwningConstraint( serialized ) : NO_OWNING_CONSTRAINT;
+        return new IndexRule( id, providerDescriptor, descriptor, owningConstraint );
     }
 
-    public static IndexRule indexRule( long id, NodePropertyDescriptor descriptor,
-            SchemaIndexProvider.Descriptor providerDescriptor )
+    public static IndexRule indexRule( long id, NewIndexDescriptor descriptor,
+                                       SchemaIndexProvider.Descriptor providerDescriptor )
     {
-        return new IndexRule( id, descriptor, providerDescriptor, null );
+        return new IndexRule( id, providerDescriptor, descriptor, NO_OWNING_CONSTRAINT );
     }
 
-    public static IndexRule constraintIndexRule( long id, NodePropertyDescriptor descriptor,
+    public static IndexRule constraintIndexRule( long id, NewIndexDescriptor descriptor,
                                                  SchemaIndexProvider.Descriptor providerDescriptor,
-                                                 Long owningConstraint )
+                                                 long owningConstraint )
     {
-        return new IndexRule( id, descriptor, providerDescriptor,
-                              owningConstraint == null ? NO_OWNING_CONSTRAINT : owningConstraint );
-    }
-
-    public IndexRule( long id, NodePropertyDescriptor descriptor, SchemaIndexProvider.Descriptor providerDescriptor,
-                       Long owningConstraint )
-    {
-        super( id, indexKind( owningConstraint ), descriptor );
-        this.owningConstraint = owningConstraint;
-
-        if ( providerDescriptor == null )
-        {
-            throw new IllegalArgumentException( "null provider descriptor prohibited" );
-        }
-
-        this.providerDescriptor = providerDescriptor;
-    }
-
-    private static Kind indexKind( Long owningConstraint )
-    {
-        return owningConstraint == null ? Kind.INDEX_RULE : Kind.CONSTRAINT_INDEX_RULE;
+        return new IndexRule( id, providerDescriptor, descriptor, owningConstraint );
     }
 
     private static SchemaIndexProvider.Descriptor readProviderDescriptor( ByteBuffer serialized )
@@ -119,27 +102,33 @@ public class IndexRule extends AbstractSchemaRule implements IndexSchemaRule
         return serialized.getLong();
     }
 
+    private IndexRule( long id, SchemaIndexProvider.Descriptor providerDescriptor,
+            NewIndexDescriptor descriptor, long owningConstraint )
+    {
+        super( id );
+        if ( providerDescriptor == null )
+        {
+            throw new IllegalArgumentException( "null provider descriptor prohibited" );
+        }
+
+        this.descriptor = descriptor;
+        this.owningConstraint = owningConstraint;
+        this.providerDescriptor = providerDescriptor;
+    }
+
     public SchemaIndexProvider.Descriptor getProviderDescriptor()
     {
         return providerDescriptor;
     }
 
-    @Override
-    public NodePropertyDescriptor descriptor()
+    public boolean canSupportUniqueConstraint()
     {
-        return (NodePropertyDescriptor) descriptor;
+        return descriptor.type() == NewIndexDescriptor.Type.UNIQUE;
     }
 
-    @Override
-    public boolean isConstraintIndex()
-    {
-        return owningConstraint != null;
-    }
-
-    @Override
     public Long getOwningConstraint()
     {
-        if ( !isConstraintIndex() )
+        if ( !canSupportUniqueConstraint() )
         {
             throw new IllegalStateException( "Can only get owner from constraint indexes." );
         }
@@ -151,76 +140,122 @@ public class IndexRule extends AbstractSchemaRule implements IndexSchemaRule
         return owningConstraint;
     }
 
-    @Override
-    public int getLabel()
+    public IndexRule withOwningConstraint( long constraintId )
     {
-        return descriptor().getLabelId();
-    }
-
-    @Override
-    public int getRelationshipType()
-    {
-        throw new IllegalStateException( "Index rule is associated with nodes" );
+        if ( !canSupportUniqueConstraint() )
+        {
+            throw new IllegalStateException( this + " is not a constraint index" );
+        }
+        return constraintIndexRule( id, descriptor, providerDescriptor, constraintId );
     }
 
     @Override
     public int length()
     {
-        int propertyCount = descriptor().isComposite() ? descriptor.getPropertyKeyIds().length : 1;
-        return 4 /* label id */
-               + 1 /* kind id */
-               + UTF8.computeRequiredByteBufferSize( providerDescriptor.getKey() )
-               + UTF8.computeRequiredByteBufferSize( providerDescriptor.getVersion() )
-               + 2                                  /* number of property keys (short) */
-               + 8 * propertyCount                 /* the property keys, each 8 bytes (long) */
-               + (isConstraintIndex() ? 8 : 0)      /* constraint indexes have an owner field */;
+        return lengthComputer.computeSpecific( descriptor.schema() );
     }
 
     @Override
     public void serialize( ByteBuffer target )
     {
-        int[] propertyKeys =
-                descriptor().isComposite() ? descriptor.getPropertyKeyIds() : new int[]{descriptor.getPropertyKeyId()};
-        target.putInt( descriptor().getLabelId() );
-        // 0 is reserved, so use ordinal + 1
-        target.put( (byte) (kind.ordinal()+1) );
-        UTF8.putEncodedStringInto( providerDescriptor.getKey(), target );
-        UTF8.putEncodedStringInto( providerDescriptor.getVersion(), target );
-        target.putShort( (short) propertyKeys.length );
-        for ( int i = 0; i < propertyKeys.length; i++ )
-        {
-            target.putLong( propertyKeys[i] );
-        }
-        if ( isConstraintIndex() )
-        {
-            target.putLong( owningConstraint );
-        }
-    }
-
-    public boolean matches(NodePropertyDescriptor descriptor)
-    {
-        return descriptor.equals( this.descriptor );
+        new Serializer( target ).processSpecific( descriptor.schema() );
     }
 
     @Override
     public String toString()
     {
         String ownerString = "";
-        if ( owningConstraint != null )
+        if ( canSupportUniqueConstraint() )
         {
-            ownerString = ", owner=" + (owningConstraint == -1 ? "<not set>" : owningConstraint);
+            ownerString = ", owner=" + owningConstraint;
         }
 
-        return "IndexRule[id=" + id + ", label=" + descriptor().getLabelId() + ", kind=" + kind +
-               ", provider=" + providerDescriptor + ", properties=" + descriptor.propertyIdText() + ownerString + "]";
+        return "IndexRule[id=" + id + ", descriptor=" + descriptor.userDescription( noopTokenNameLookup ) +
+               ", provider=" + providerDescriptor + ownerString + "]";
     }
 
-    public IndexRule withOwningConstraint( long constraintId )
+    @Override
+    public LabelSchemaDescriptor getSchemaDescriptor()
     {
-        if ( !isConstraintIndex() )
+        return descriptor.schema();
+    }
+
+    public NewIndexDescriptor getIndexDescriptor()
+    {
+        return descriptor;
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( o != null && o instanceof IndexRule )
         {
-            throw new IllegalStateException( this + " is not a constraint index" );
+            IndexRule that = (IndexRule) o;
+            return this.descriptor.equals( that.descriptor );
         }
-        return constraintIndexRule( getId(), descriptor(), getProviderDescriptor(), constraintId );
+        return false;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return this.descriptor.hashCode();
+    }
+
+    // ------- HELPERS -------
+
+    private SchemaComputer<Integer> lengthComputer =
+            new SchemaComputer<Integer>() {
+                @Override
+                public Integer computeSpecific( LabelSchemaDescriptor schema )
+                {
+                    // regardless of descriptor.type()
+                    return    4 /* label id */
+                            + 1 /* kind id */
+                            + UTF8.computeRequiredByteBufferSize( providerDescriptor.getKey() )
+                            + UTF8.computeRequiredByteBufferSize( providerDescriptor.getVersion() )
+                            + 2                              /* number of property keys */
+                            + 8 * 1                          /* the property keys, for now only 1 */
+                            + (canSupportUniqueConstraint() ? 8 : 0)  /* constraint indexes have an owner field */;
+                }
+
+                @Override
+                public Integer computeSpecific( RelationTypeSchemaDescriptor schema )
+                {
+                    throw new UnsupportedOperationException( "This constraint type is not yet supported by the store" );
+                }
+            };
+
+    class Serializer implements SchemaProcessor
+    {
+        private final ByteBuffer buffer;
+
+        Serializer( ByteBuffer buffer )
+        {
+            this.buffer = buffer;
+        }
+
+        @Override
+        public void processSpecific( LabelSchemaDescriptor schema )
+        {
+            // regardless of descriptor.type()
+            buffer.putInt( schema.getLabelId() );
+            Kind kind = canSupportUniqueConstraint() ? CONSTRAINT_INDEX_RULE : INDEX_RULE;
+            buffer.put( kind.id() );
+            UTF8.putEncodedStringInto( providerDescriptor.getKey(), buffer );
+            UTF8.putEncodedStringInto( providerDescriptor.getVersion(), buffer );
+            buffer.putShort( (short) 1 /*propertyKeys.length*/ );
+            buffer.putLong( schema.getPropertyIds()[0] );
+            if ( canSupportUniqueConstraint() )
+            {
+                buffer.putLong( owningConstraint );
+            }
+        }
+
+        @Override
+        public void processSpecific( RelationTypeSchemaDescriptor schema )
+        {
+            throw new UnsupportedOperationException( "This index type is not yet supported by the store" );
+        }
     }
 }

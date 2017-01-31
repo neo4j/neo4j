@@ -87,11 +87,11 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
+import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
-import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
@@ -804,15 +804,15 @@ public class BatchInsertTest
             SchemaRule rule0 = storage.loadSingleSchemaRule( inUse.get( 0 ) );
             SchemaRule rule1 = storage.loadSingleSchemaRule( inUse.get( 1 ) );
             IndexRule indexRule;
-            UniquePropertyConstraintRule constraintRule;
+            ConstraintRule constraintRule;
             if ( rule0 instanceof IndexRule )
             {
                 indexRule = (IndexRule) rule0;
-                constraintRule = (UniquePropertyConstraintRule) rule1;
+                constraintRule = (ConstraintRule) rule1;
             }
             else
             {
-                constraintRule = (UniquePropertyConstraintRule) rule0;
+                constraintRule = (ConstraintRule) rule0;
                 indexRule = (IndexRule) rule1;
             }
             assertEquals( "index should reference constraint",

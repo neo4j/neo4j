@@ -51,8 +51,7 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
     private final PropertyReader propertyReader;
     private final CacheAccess cacheAccess;
 
-    public PropertyAndNodeIndexedCheck( IndexAccessors indexes,
-                                      PropertyReader propertyReader, CacheAccess cacheAccess )
+    public PropertyAndNodeIndexedCheck( IndexAccessors indexes, PropertyReader propertyReader, CacheAccess cacheAccess )
     {
         this.indexes = indexes;
         this.propertyReader = propertyReader;
@@ -82,7 +81,8 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
         List<PropertyBlock> properties = null;
         for ( IndexRule indexRule : indexes.rules() )
         {
-            if ( !labels.contains( (long) indexRule.getLabel() ) )
+            long labelId = indexRule.getSchemaDescriptor().getLabelId();
+            if ( !labels.contains( labelId ) )
             {
                 continue;
             }
@@ -91,8 +91,8 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
             {
                 properties = propertyReader.propertyBlocks( propertyRecs );
             }
-            //TODO: Support composite indexes
-            PropertyBlock property = propertyWithKey( properties, indexRule.descriptor().getPropertyKeyId() );
+            int propertyId = indexRule.getSchemaDescriptor().getPropertyIds()[0]; // assuming 1 property always
+            PropertyBlock property = propertyWithKey( properties, propertyId );
 
             if ( property == null )
             {
@@ -104,7 +104,7 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
                 Object propertyValue = propertyReader.propertyValue( property ).value();
                 long nodeId = record.getId();
 
-                if ( indexRule.isConstraintIndex() )
+                if ( indexRule.canSupportUniqueConstraint() )
                 {
                     verifyNodeCorrectlyIndexedUniquely( nodeId, property.getKeyIndexId(), propertyValue, engine,
                             indexRule, reader );

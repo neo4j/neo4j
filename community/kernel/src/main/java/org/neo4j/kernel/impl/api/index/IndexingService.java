@@ -43,12 +43,12 @@ import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelExceptio
 import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
-import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor;
+import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
@@ -196,12 +196,12 @@ public class IndexingService extends LifecycleAdapter
             IndexProxy indexProxy;
 
             long indexId = indexRule.getId();
-            IndexDescriptor descriptor = IndexDescriptorFactory.of( indexRule );
+            IndexDescriptor descriptor = IndexBoundary.map( indexRule.getIndexDescriptor() );
             SchemaIndexProvider.Descriptor providerDescriptor = indexRule.getProviderDescriptor();
             SchemaIndexProvider provider = providerMap.apply( providerDescriptor );
             InternalIndexState initialState = provider.getInitialState( indexId );
             log.info( indexStateInfo( "init", indexId, initialState, descriptor ) );
-            boolean constraint = indexRule.isConstraintIndex();
+            boolean constraint = indexRule.canSupportUniqueConstraint();
 
             switch ( initialState )
             {
@@ -532,9 +532,9 @@ public class IndexingService extends LifecycleAdapter
                 indexMapRef.setIndexMap( indexMap );
                 continue;
             }
-            final IndexDescriptor descriptor = IndexDescriptorFactory.of( rule );
+            final IndexDescriptor descriptor = IndexBoundary.map( rule.getIndexDescriptor() );
             SchemaIndexProvider.Descriptor providerDescriptor = rule.getProviderDescriptor();
-            boolean constraint = rule.isConstraintIndex();
+            boolean constraint = rule.canSupportUniqueConstraint();
             if ( state == State.RUNNING )
             {
                 populationJob = populationJob == null ? newIndexPopulationJob() : populationJob;

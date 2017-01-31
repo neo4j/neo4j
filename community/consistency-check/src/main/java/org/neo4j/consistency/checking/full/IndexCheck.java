@@ -38,7 +38,8 @@ public class IndexCheck implements RecordCheck<IndexEntry, ConsistencyReport.Ind
     @Override
     public void check( IndexEntry record, CheckerEngine<IndexEntry, ConsistencyReport.IndexConsistencyReport> engine, RecordAccess records )
     {
+        int labelId = indexRule.getSchemaDescriptor().getLabelId();
         engine.comparativeCheck( records.node( record.getId() ),
-                new NodeInUseWithCorrectLabelsCheck<IndexEntry,ConsistencyReport.IndexConsistencyReport>(new long[] {indexRule.getLabel()}, false ) );
+                new NodeInUseWithCorrectLabelsCheck<>( new long[]{labelId}, false ) );
     }
 }

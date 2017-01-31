@@ -32,12 +32,12 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProviderFactory;
 import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
@@ -85,8 +85,8 @@ public class IndexingServiceIntegrationTest
         int foodId = labelTokenHolder.getIdByName( FOOD_LABEL );
         int propertyId = propertyKeyTokenHolder.getIdByName( PROPERTY_NAME );
 
-        IndexRule rule = IndexRule.indexRule( schemaStore.nextId(), new NodePropertyDescriptor( foodId, propertyId ),
-                indexDescriptor );
+        IndexRule rule = IndexRule.indexRule(
+                schemaStore.nextId(), NewIndexDescriptorFactory.forLabel( foodId, propertyId ), indexDescriptor );
         indexingService.createIndexes( rule );
         IndexProxy indexProxy = indexingService.getIndexProxy( rule.getId() );
 

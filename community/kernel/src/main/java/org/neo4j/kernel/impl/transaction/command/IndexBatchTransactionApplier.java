@@ -230,7 +230,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
                 case UPDATE:
                     // Shouldn't we be more clear about that we are waiting for an index to come online here?
                     // right now we just assume that an update to index records means wait for it to be online.
-                    if ( ((IndexRule) command.getSchemaRule()).isConstraintIndex() )
+                    if ( ((IndexRule) command.getSchemaRule()).canSupportUniqueConstraint() )
                     {
                         try
                         {
