@@ -57,7 +57,7 @@ public class BuiltInDbmsProcedures
     public Stream<ProcedureResult> listProcedures()
     {
         return graph.getDependencyResolver().resolveDependency( Procedures.class ).getAllProcedures().stream()
-                .sorted( ( a, b ) -> a.name().toString().compareTo( b.name().toString() ) )
+                .sorted( Comparator.comparing( a -> a.name().toString() ) )
                 .map( ProcedureResult::new );
     }
 
@@ -66,7 +66,7 @@ public class BuiltInDbmsProcedures
     public Stream<FunctionResult> listFunctions()
     {
         return graph.getDependencyResolver().resolveDependency( Procedures.class ).getAllFunctions().stream()
-                .sorted( ( a, b ) -> a.name().toString().compareTo( b.name().toString() ) )
+                .sorted( Comparator.comparing( a -> a.name().toString() ) )
                 .map( FunctionResult::new );
     }
 
