@@ -72,7 +72,8 @@ public class BackupCoreIT
             // Run backup
             DbRepresentation beforeChange = DbRepresentation.of( createSomeData( cluster ) );
             String[] args = backupArguments( backupAddress( db.database() ), backupsDir, "" + db.serverId() );
-            assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( args ) );
+            assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode(
+                    clusterRule.clusterDirectory(), args ) );
 
             // Add some new data
             DbRepresentation afterChange = DbRepresentation.of( createSomeData( cluster ) );
