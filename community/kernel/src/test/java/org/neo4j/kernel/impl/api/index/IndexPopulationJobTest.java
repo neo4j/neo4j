@@ -130,6 +130,11 @@ public class IndexPopulationJobTest
         kernel = db.getDependencyResolver().resolveDependency( KernelAPI.class );
         stateHolder = new KernelSchemaStateStore( NullLogProvider.getInstance() );
         indexStoreView = indexStoreView();
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().indexFor( FIRST ).on( name ).create();
+            tx.success();
+        }
 
         try ( KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
               Statement statement = tx.acquireStatement() )
@@ -328,7 +333,7 @@ public class IndexPopulationJobTest
         verify( index, times( 0 ) ).flip( Matchers.any(), Matchers.any() );
 
         // AND ALSO
-        assertDoubleLongEquals( 0, 0, indexUpdatesAndSize( FIRST, name ) );
+        assertDoubleLongEquals( 1, 0, indexUpdatesAndSize( FIRST, name ) );
 
         // AND ALSO
         assertDoubleLongEquals( 0, 0, indexSample( FIRST, name ) );
@@ -424,7 +429,7 @@ public class IndexPopulationJobTest
         verify( populator ).markAsFailed( Matchers.contains( failureMessage ) );
 
         // AND ALSO
-        assertDoubleLongEquals( 0, 0, indexUpdatesAndSize( FIRST, name ) );
+        assertDoubleLongEquals( 1, 0, indexUpdatesAndSize( FIRST, name ) );
 
         // AND ALSO
         assertDoubleLongEquals( 0, 0, indexSample( FIRST, name ) );
@@ -449,7 +454,7 @@ public class IndexPopulationJobTest
         verify( populator ).markAsFailed( Matchers.contains( "duplicate value" ) );
 
         // AND ALSO
-        assertDoubleLongEquals( 0, 0, indexUpdatesAndSize( FIRST, name ) );
+        assertDoubleLongEquals( 1, 0, indexUpdatesAndSize( FIRST, name ) );
 
         // AND ALSO
         assertDoubleLongEquals( 0, 0, indexSample( FIRST, name ) );
@@ -695,17 +700,9 @@ public class IndexPopulationJobTest
         {
             int labelId = statement.readOperations().labelGetForName( label.name() );
             int propertyKeyId = statement.readOperations().propertyKeyGetForName( propertyKey );
-            DoubleLongRegister result = newDoubleLongRegister(0, 0);
-            try
-            {
-                result = statement.readOperations()
-                        .indexUpdatesAndSize( IndexDescriptorFactory.of( labelId, propertyKeyId ),
-                                newDoubleLongRegister() );
-            }
-            catch (IndexNotFoundKernelException e)
-            {
-                // Tests ignore this
-            }
+            DoubleLongRegister result = statement.readOperations()
+                    .indexUpdatesAndSize( IndexDescriptorFactory.of( labelId, propertyKeyId ),
+                            newDoubleLongRegister() );
             tx.success();
             return result;
         }
@@ -718,16 +715,8 @@ public class IndexPopulationJobTest
         {
             int labelId = statement.readOperations().labelGetForName( label.name() );
             int propertyKeyId = statement.readOperations().propertyKeyGetForName( propertyKey );
-            DoubleLongRegister result = newDoubleLongRegister(0, 0);
-            try
-            {
-                result = statement.readOperations()
-                        .indexSample( IndexDescriptorFactory.of( labelId, propertyKeyId ), newDoubleLongRegister() );
-            }
-            catch (IndexNotFoundKernelException e)
-            {
-                // Tests ignore this
-            }
+            DoubleLongRegister result = statement.readOperations()
+                    .indexSample( IndexDescriptorFactory.of( labelId, propertyKeyId ), newDoubleLongRegister() );
             tx.success();
             return result;
         }
