@@ -21,13 +21,13 @@ package org.neo4j.cypher.internal.compiler.v3_2
 
 import org.neo4j.cypher.internal.compiler.v3_2.ast.conditions._
 import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters._
-import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.{ApplyRewriter, RewriterCondition, RewriterStepSequencer}
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{NotEquals, Statement, UnaliasedReturnItem}
+import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.{ApplyRewriter, RewriterCondition, RewriterStepSequencer}
 import org.neo4j.cypher.internal.frontend.v3_2.{Rewriter, SemanticState}
 
 class ASTRewriter(rewriterSequencer: (String) => RewriterStepSequencer, shouldExtractParameters: Boolean = true) {
 
-  import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStep._
+  import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.RewriterStep._
 
   def rewrite(queryText: String, statement: Statement, semanticState: SemanticState): (Statement, Map[String, Any], Set[RewriterCondition]) = {
     val (extractParameters, extractedParameters) = if (shouldExtractParameters)

@@ -17,15 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters
-
-import org.neo4j.cypher.internal.compiler.v3_2.helpers.ListSupport
+package org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting
 
 final case class RewriterCondition(name: String, condition: Any => Seq[String])
-  extends (Any => Option[RewriterConditionFailure]) with ListSupport {
+  extends (Any => Option[RewriterConditionFailure]) {
 
-  def apply(input: Any): Option[RewriterConditionFailure] =
-    condition(input).asNonEmptyOption.map(RewriterConditionFailure(name, _))
+  def apply(input: Any): Option[RewriterConditionFailure] = {
+    val conditions = condition(input)
+    if (conditions.isEmpty) None else Some(RewriterConditionFailure(name, conditions))
+  }
 }
 
 case class RewriterConditionFailure(name: String, problems: Seq[String])

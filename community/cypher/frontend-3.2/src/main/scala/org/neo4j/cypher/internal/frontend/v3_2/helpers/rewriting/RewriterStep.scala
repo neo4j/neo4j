@@ -17,10 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters
+package org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting
 
 import org.neo4j.cypher.internal.frontend.v3_2.Rewriter
 
-sealed trait RewriterTask
-final case class RunConditions(previousName: Option[String], conditions: Set[RewriterCondition]) extends RewriterTask
-final case class RunRewriter(name: String, rewriter: Rewriter) extends RewriterTask
+object RewriterStep {
+   implicit def namedProductRewriter(p: Product with Rewriter): ApplyRewriter = ApplyRewriter(p.productPrefix, p)
+
+   def enableCondition(p: Condition) = EnableRewriterCondition(RewriterCondition(p.name, p))
+   def disableCondition(p: Condition) = DisableRewriterCondition(RewriterCondition(p.name, p))
+ }
+
+sealed trait RewriterStep
+final case class ApplyRewriter(name: String, rewriter: Rewriter) extends RewriterStep
+final case class EnableRewriterCondition(cond: RewriterCondition) extends RewriterStep
+final case class DisableRewriterCondition(cond: RewriterCondition) extends RewriterStep
+
+trait Condition extends (Any => Seq[String]) {
+   def name: String
+}
