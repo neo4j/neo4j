@@ -44,9 +44,7 @@ import org.neo4j.helpers.collection.Pair;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexConfiguration;
@@ -70,7 +68,6 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.AssertableLogProvider.LogMatcherBuilder;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.OtherThreadExecutor;
@@ -102,7 +99,6 @@ import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
 import static org.neo4j.kernel.impl.api.index.IndexingService.NO_MONITOR;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
-import static org.neo4j.register.Registers.newDoubleLongRegister;
 
 public class IndexPopulationJobTest
 {
@@ -130,11 +126,6 @@ public class IndexPopulationJobTest
         kernel = db.getDependencyResolver().resolveDependency( KernelAPI.class );
         stateHolder = new KernelSchemaStateStore( NullLogProvider.getInstance() );
         indexStoreView = indexStoreView();
-        try ( Transaction tx = db.beginTx() )
-        {
-            db.schema().indexFor( FIRST ).on( name ).create();
-            tx.success();
-        }
 
         try ( KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
               Statement statement = tx.acquireStatement() )
@@ -331,12 +322,6 @@ public class IndexPopulationJobTest
         // THEN
         verify( populator, times( 1 ) ).close( false );
         verify( index, times( 0 ) ).flip( Matchers.any(), Matchers.any() );
-
-        // AND ALSO
-        assertDoubleLongEquals( 1, 0, indexUpdatesAndSize( FIRST, name ) );
-
-        // AND ALSO
-        assertDoubleLongEquals( 0, 0, indexSample( FIRST, name ) );
     }
 
     @Test
@@ -401,12 +386,6 @@ public class IndexPopulationJobTest
 
         // Then
         verify( failureDelegateFactory ).create( any( Throwable.class ) );
-
-        // AND ALSO
-        assertDoubleLongEquals( 0, 0, indexUpdatesAndSize( FIRST, name ) );
-
-        // AND ALSO
-        assertDoubleLongEquals( 0, 0, indexSample( FIRST, name ) );
     }
 
     @Test
@@ -427,12 +406,6 @@ public class IndexPopulationJobTest
 
         // Then
         verify( populator ).markAsFailed( Matchers.contains( failureMessage ) );
-
-        // AND ALSO
-        assertDoubleLongEquals( 1, 0, indexUpdatesAndSize( FIRST, name ) );
-
-        // AND ALSO
-        assertDoubleLongEquals( 0, 0, indexSample( FIRST, name ) );
     }
 
     @Test
@@ -452,12 +425,6 @@ public class IndexPopulationJobTest
 
         // Then
         verify( populator ).markAsFailed( Matchers.contains( "duplicate value" ) );
-
-        // AND ALSO
-        assertDoubleLongEquals( 1, 0, indexUpdatesAndSize( FIRST, name ) );
-
-        // AND ALSO
-        assertDoubleLongEquals( 0, 0, indexSample( FIRST, name ) );
     }
 
     private static class ControlledStoreScan implements StoreScan<RuntimeException>
@@ -691,42 +658,6 @@ public class IndexPopulationJobTest
             tx.success();
             return descriptor;
         }
-    }
-
-    private DoubleLongRegister indexUpdatesAndSize( Label label, String propertyKey ) throws KernelException
-    {
-        try ( KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AnonymousContext.read() );
-              Statement statement = tx.acquireStatement() )
-        {
-            int labelId = statement.readOperations().labelGetForName( label.name() );
-            int propertyKeyId = statement.readOperations().propertyKeyGetForName( propertyKey );
-            DoubleLongRegister result = statement.readOperations()
-                    .indexUpdatesAndSize( IndexDescriptorFactory.of( labelId, propertyKeyId ),
-                            newDoubleLongRegister() );
-            tx.success();
-            return result;
-        }
-    }
-
-    private DoubleLongRegister indexSample( Label label, String propertyKey ) throws KernelException
-    {
-        try ( KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AnonymousContext.read() );
-              Statement statement = tx.acquireStatement() )
-        {
-            int labelId = statement.readOperations().labelGetForName( label.name() );
-            int propertyKeyId = statement.readOperations().propertyKeyGetForName( propertyKey );
-            DoubleLongRegister result = statement.readOperations()
-                    .indexSample( IndexDescriptorFactory.of( labelId, propertyKeyId ), newDoubleLongRegister() );
-            tx.success();
-            return result;
-        }
-    }
-
-    private void assertDoubleLongEquals( long expectedUniqueValue, long expectedSampledSize,
-                                         DoubleLongRegister register )
-    {
-        assertEquals( expectedUniqueValue, register.readFirst() );
-        assertEquals( expectedSampledSize, register.readSecond() );
     }
 
     private long createNode( Map<String, Object> properties, Label... labels )
