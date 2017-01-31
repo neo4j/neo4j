@@ -48,12 +48,17 @@ abstract class BaseAggregateExpression(expression: CodeGenExpression, distinct: 
     expression match {
       case NodeExpression(v) => primitiveIfNot(v, structure)(block(_))
       case RelationshipExpression(v) => primitiveIfNot(v, structure)(block(_))
-      case _ =>
+      case expr =>
         val tmpName = context.namer.newVarName()
         structure.assign(tmpName, expression.codeGenType, expression.generateExpression(structure))
-        structure.ifNonNullStatement(structure.loadVariable(tmpName)) { body =>
+        val perhapsCheckForNotNullStatement: ((MethodStructure[E]) => Unit) => Unit = if (expr.nullable)
+          structure.ifNonNullStatement(structure.loadVariable(tmpName))
+        else
+          _(structure)
+
+        perhapsCheckForNotNullStatement { body =>
           if (distinct) {
-            distinctCondition(structure.loadVariable(tmpName),expression.codeGenType, body) { inner =>
+            distinctCondition(structure.loadVariable(tmpName), expression.codeGenType, body) { inner =>
               block(inner)
             }
           }
