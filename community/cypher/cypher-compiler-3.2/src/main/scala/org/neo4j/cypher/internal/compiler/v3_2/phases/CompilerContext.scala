@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{GeneratedQuery, Pl
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.RuntimeTypeConverter
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.{Metrics, QueryGraphSolver}
 import org.neo4j.cypher.internal.compiler.v3_2.spi.PlanContext
+import org.neo4j.cypher.internal.frontend.v3_2.phases.{BaseContext, CompilationPhaseTracer, InternalNotificationLogger}
 import org.neo4j.cypher.internal.frontend.v3_2.{CypherException, InputPosition}
 
 case class CompilerContext(exceptionCreator: (String, InputPosition) => CypherException,
@@ -45,8 +46,3 @@ case class CompilerContext(exceptionCreator: (String, InputPosition) => CypherEx
                            codeStructure: CodeStructure[GeneratedQuery],
                            codeGenConfiguration: CodeGenConfiguration) extends BaseContext
 
-trait BaseContext {
-  def tracer: CompilationPhaseTracer
-  def notificationLogger: InternalNotificationLogger
-  def exceptionCreator: (String, InputPosition) => CypherException
-}

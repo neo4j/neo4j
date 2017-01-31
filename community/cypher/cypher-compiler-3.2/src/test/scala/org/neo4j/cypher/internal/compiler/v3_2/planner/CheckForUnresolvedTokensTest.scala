@@ -21,9 +21,10 @@ package org.neo4j.cypher.internal.compiler.v3_2.planner
 
 import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilationState
 import org.neo4j.cypher.internal.compiler.v3_2.test_helpers.ContextHelper
-import org.neo4j.cypher.internal.compiler.v3_2.{IDPPlannerName, RecordingNotificationLogger}
+import org.neo4j.cypher.internal.compiler.v3_2.IDPPlannerName
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Query
 import org.neo4j.cypher.internal.frontend.v3_2.notification.{InternalNotification, MissingLabelNotification, MissingPropertyNameNotification, MissingRelTypeNotification}
+import org.neo4j.cypher.internal.frontend.v3_2.phases.RecordingNotificationLogger
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, LabelId, PropertyKeyId, RelTypeId, SemanticTable}
 

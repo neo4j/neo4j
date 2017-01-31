@@ -19,10 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.executionplan
 
-import org.neo4j.cypher.internal.compiler.v3_2.{ExecutionMode, InternalNotificationLogger}
+import org.neo4j.cypher.internal.compiler.v3_2.ExecutionMode
 import org.neo4j.cypher.internal.compiler.v3_2.pipes._
 import org.neo4j.cypher.internal.compiler.v3_2.spi.QueryContext
 import org.neo4j.cypher.internal.frontend.v3_2.CypherException
+import org.neo4j.cypher.internal.frontend.v3_2.phases.InternalNotificationLogger
 
 trait ExecutionResultBuilder {
   def setQueryContext(context: QueryContext)

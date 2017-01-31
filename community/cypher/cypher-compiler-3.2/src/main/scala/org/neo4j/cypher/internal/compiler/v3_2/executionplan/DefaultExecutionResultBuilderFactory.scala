@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_2.spi.{CSVResources, QueryContext}
 import org.neo4j.cypher.internal.compiler.v3_2.{ExecutionMode, ExplainMode, _}
 import org.neo4j.cypher.internal.frontend.v3_2.CypherException
+import org.neo4j.cypher.internal.frontend.v3_2.phases.InternalNotificationLogger
 
 import scala.collection.mutable
 

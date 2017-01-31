@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_2
+package org.neo4j.cypher.internal.frontend.v3_2.phases
 
 import org.neo4j.cypher.internal.frontend.v3_2.notification.InternalNotification
 
@@ -31,8 +31,8 @@ sealed trait InternalNotificationLogger {
 }
 
 /**
- * A null implementation that discards all notifications.
- */
+  * A null implementation that discards all notifications.
+  */
 case object devNullLogger extends InternalNotificationLogger {
   override def log(notification: InternalNotification) {}
 
@@ -40,8 +40,8 @@ case object devNullLogger extends InternalNotificationLogger {
 }
 
 /**
- * NotificationLogger that records all notifications for later retrieval.
- */
+  * NotificationLogger that records all notifications for later retrieval.
+  */
 class RecordingNotificationLogger extends InternalNotificationLogger {
   private val builder = Set.newBuilder[InternalNotification]
 
@@ -49,4 +49,3 @@ class RecordingNotificationLogger extends InternalNotificationLogger {
 
   def notifications = builder.result()
 }
-

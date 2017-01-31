@@ -17,38 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_2;
+package org.neo4j.cypher.internal.frontend.v3_2.phases
 
-public interface CompilationPhaseTracer
-{
-    enum CompilationPhase
-    {
-        PARSING,
-        DEPRECATION_WARNINGS,
-        SEMANTIC_CHECK,
-        AST_REWRITE,
-        LOGICAL_PLANNING,
-        CODE_GENERATION,
-        PIPE_BUILDING,
-    }
+import org.neo4j.cypher.internal.frontend.v3_2.{CypherException, InputPosition}
 
-    CompilationPhaseEvent beginPhase( CompilationPhase phase );
-
-    interface CompilationPhaseEvent extends AutoCloseable
-    {
-        @Override
-        void close();
-    }
-
-    CompilationPhaseTracer NO_TRACING = new CompilationPhaseTracer()
-    {
-        @Override
-        public CompilationPhaseEvent beginPhase( CompilationPhase phase )
-        {
-            return NONE_PHASE;
-        }
-    };
-
-    CompilationPhaseEvent NONE_PHASE = () -> {
-    };
+trait BaseContext {
+  def tracer: CompilationPhaseTracer
+  def notificationLogger: InternalNotificationLogger
+  def exceptionCreator: (String, InputPosition) => CypherException
 }

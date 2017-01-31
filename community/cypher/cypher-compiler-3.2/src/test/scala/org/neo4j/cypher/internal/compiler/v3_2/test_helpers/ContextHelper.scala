@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.test_helpers
 
 import java.time.Clock
 
-import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.NO_TRACING
+import org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer.NO_TRACING
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.CodeGenConfiguration
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi.CodeStructure
@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.helpers.RuntimeTypeConverter
 import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilerContext
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.{Metrics, QueryGraphSolver}
 import org.neo4j.cypher.internal.compiler.v3_2.spi.PlanContext
+import org.neo4j.cypher.internal.frontend.v3_2.phases.{CompilationPhaseTracer, InternalNotificationLogger, devNullLogger}
 import org.neo4j.cypher.internal.frontend.v3_2.{CypherException, InputPosition, InternalException}
 import org.scalatest.mock.MockitoSugar
 

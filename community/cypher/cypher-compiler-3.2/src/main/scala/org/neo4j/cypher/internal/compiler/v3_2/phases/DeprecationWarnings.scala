@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.phases
 
-import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase.DEPRECATION_WARNINGS
 import org.neo4j.cypher.internal.compiler.v3_2.ast.ResolvedCall
 import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters.replaceAliasedFunctionInvocations.aliases
 import org.neo4j.cypher.internal.compiler.v3_2.spi.ProcedureSignature
 import org.neo4j.cypher.internal.frontend.v3_2.InternalException
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{FunctionInvocation, FunctionName, Statement, UnresolvedCall}
 import org.neo4j.cypher.internal.frontend.v3_2.notification.{DeprecatedFunctionNotification, DeprecatedProcedureNotification, InternalNotification, ProcedureWarningNotification}
-
+import org.neo4j.cypher.internal.frontend.v3_2.phases.BaseContext
+import org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer.CompilationPhase.DEPRECATION_WARNINGS
 
 object SyntaxDeprecationWarnings extends VisitorPhase[BaseContext] {
   override def visit(value: CompilationState, context: BaseContext): Unit = {
@@ -66,8 +66,8 @@ object ProcedureDeprecationWarnings extends VisitorPhase[BaseContext] {
   override def description = "find calls to deprecated procedures and generate warnings for them"
 }
 
-object ProcedureWarnings extends VisitorPhase {
-  override def visit(value: CompilationState, context: Context): Unit = {
+object ProcedureWarnings extends VisitorPhase[BaseContext] {
+  override def visit(value: CompilationState, context: BaseContext): Unit = {
     val warnings = findWarnings(value.statement)
 
     warnings.foreach(context.notificationLogger.log)

@@ -26,7 +26,8 @@ import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.frontend.v3_2
 import org.neo4j.cypher.internal.frontend.v3_2.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.fixedPoint
-import org.neo4j.cypher.{InvalidArgumentException, _}
+import org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer
+import org.neo4j.cypher.{InvalidArgumentException, SyntaxException, _}
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.graphdb.impl.notification.NotificationCode.{CREATE_UNIQUE_UNAVAILABLE_FALLBACK, RULE_PLANNER_UNAVAILABLE_FALLBACK}
 import org.neo4j.kernel.GraphDatabaseQueryService

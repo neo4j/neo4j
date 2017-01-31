@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.planner.{CheckForUnresolvedTokens
 import org.neo4j.cypher.internal.compiler.v3_2.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Statement
+import org.neo4j.cypher.internal.frontend.v3_2.phases.{BaseContext, CompilationPhaseTracer, InternalNotificationLogger}
 import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, SemanticState}
 
 case class CypherCompiler(createExecutionPlan: Transformer[CompilerContext],
@@ -152,7 +153,6 @@ case class CypherCompiler(createExecutionPlan: Transformer[CompilerContext],
       monitors, metrics, queryGraphSolver, config, updateStrategy, clock, structure, codeGenConfiguration)
   }
 }
-
 
 case class CypherCompilerConfiguration(queryCacheSize: Int,
                                        statsDivergenceThreshold: Double,
