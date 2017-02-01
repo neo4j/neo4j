@@ -42,6 +42,7 @@ import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
 import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -81,13 +82,14 @@ public class OnlineBackupKernelExtension implements Lifecycle
                                         final Supplier<LogicalTransactionStore> logicalTransactionStoreSupplier,
                                         final Supplier<LogFileInformation> logFileInformationSupplier,
                                         final FileSystemAbstraction fileSystemAbstraction,
-                                        final PageCache pageCache )
+                                        final PageCache pageCache,
+                                        final StoreCopyCheckPointMutex storeCopyCheckPointMutex )
     {
         this( config, graphDatabaseAPI, () -> {
             TransactionIdStore transactionIdStore = transactionIdStoreSupplier.get();
             StoreCopyServer copier = new StoreCopyServer( neoStoreDataSource, checkPointerSupplier.get(),
                     fileSystemAbstraction, new File( graphDatabaseAPI.getStoreDir() ),
-                    monitors.newMonitor( StoreCopyServer.Monitor.class ), pageCache );
+                    monitors.newMonitor( StoreCopyServer.Monitor.class ), pageCache, storeCopyCheckPointMutex );
             LogicalTransactionStore logicalTransactionStore = logicalTransactionStoreSupplier.get();
             LogFileInformation logFileInformation = logFileInformationSupplier.get();
             return new BackupImpl( copier, monitors, logicalTransactionStore, transactionIdStore, logFileInformation,

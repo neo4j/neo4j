@@ -37,12 +37,12 @@ import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintBoundary;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
+import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.IndexRule;
-import org.neo4j.kernel.impl.store.record.NodePropertyExistenceConstraintRule;
-import org.neo4j.kernel.impl.store.record.PropertyConstraintRule;
-import org.neo4j.kernel.impl.store.record.RelationshipPropertyExistenceConstraintRule;
-import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
 import static java.util.Arrays.asList;
@@ -50,47 +50,29 @@ import static java.util.Collections.singleton;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor.Type.EXISTS;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
-import static org.neo4j.kernel.impl.store.record.NodePropertyExistenceConstraintRule.nodePropertyExistenceConstraintRule;
-import static org.neo4j.kernel.impl.store.record.RelationshipPropertyExistenceConstraintRule.relPropertyExistenceConstraintRule;
-import static org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule.uniquenessConstraintRule;
 
 public class SchemaCacheTest
 {
-    final SchemaRule hans = newIndexRule( 1, new NodePropertyDescriptor( 0, 5 ) );
-    final SchemaRule witch = newIndexRule( 2, new NodePropertyDescriptor( 3, 6 ) );
-    final SchemaRule gretel = newIndexRule( 3, new NodePropertyDescriptor( 0, 7 ) );
+    final SchemaRule hans = newIndexRule( 1, 0, 5 );
+    final SchemaRule witch = nodePropertyExistenceConstraintRule( 2, 3, 6 );
+    final SchemaRule gretel = newIndexRule( 3, 0, 7 );
 
     @Test
     public void should_construct_schema_cache()
     {
         // GIVEN
         Collection<SchemaRule> rules = asList( hans, witch, gretel );
-        SchemaCache cache = new SchemaCache( new StandardConstraintSemantics(), rules );
+        SchemaCache cache = new SchemaCache( new ConstraintSemantics(), rules );
 
         // THEN
-        assertEquals( asSet( hans, gretel ), Iterables.asSet( cache.schemaRulesForLabel( 0 ) ) );
-        assertEquals( asSet( witch ), Iterables.asSet( cache.schemaRulesForLabel( 3 ) ) );
-        assertEquals( Iterables.asSet( rules ), Iterables.asSet( cache.schemaRules() ) );
+        assertEquals( asSet( hans, gretel ), Iterables.asSet( cache.indexRules() ) );
+        assertEquals( asSet( witch ), Iterables.asSet( cache.constraintRules() ) );
     }
 
     @Test
-    public void should_add_schema_rules_to_a_label()
-    {
-        // GIVEN
-        Collection<SchemaRule> rules = Collections.emptyList();
-        SchemaCache cache = new SchemaCache( new StandardConstraintSemantics(), rules );
-
-        // WHEN
-        cache.addSchemaRule( hans );
-        cache.addSchemaRule( gretel );
-
-        // THEN
-        assertEquals( asSet( hans, gretel ), Iterables.asSet( cache.schemaRulesForLabel( 0 ) ) );
-    }
-
-    @Test
-    public void should_to_retrieve_all_schema_rules()
+    public void should_add_schema_rules()
     {
         // GIVEN
         SchemaCache cache = newSchemaCache();
@@ -98,9 +80,11 @@ public class SchemaCacheTest
         // WHEN
         cache.addSchemaRule( hans );
         cache.addSchemaRule( gretel );
+        cache.addSchemaRule( witch );
 
         // THEN
-        assertEquals( asSet( hans, gretel ), Iterables.asSet( cache.schemaRules() ) );
+        assertEquals( asSet( hans, gretel ), Iterables.asSet( cache.indexRules() ) );
+        assertEquals( asSet( witch ), Iterables.asSet( cache.constraintRules() ) );
     }
 
     @Test
@@ -110,10 +94,10 @@ public class SchemaCacheTest
         SchemaCache cache = newSchemaCache();
 
         // WHEN
-        cache.addSchemaRule( uniquenessConstraintRule( 0L, new NodePropertyDescriptor( 1, 2 ), 133L ) );
-        cache.addSchemaRule( uniquenessConstraintRule( 1L, new NodePropertyDescriptor( 3, 4 ), 133L ) );
-        cache.addSchemaRule( relPropertyExistenceConstraintRule( 2L, new RelationshipPropertyDescriptor( 5, 6 ) ) );
-        cache.addSchemaRule( nodePropertyExistenceConstraintRule( 3L, new NodePropertyDescriptor( 7, 8 ) ) );
+        cache.addSchemaRule( uniquenessConstraintRule( 0L, 1, 2, 133L ) );
+        cache.addSchemaRule( uniquenessConstraintRule( 1L, 3, 4, 133L ) );
+        cache.addSchemaRule( relPropertyExistenceConstraintRule( 2L, 5, 6 ) );
+        cache.addSchemaRule( nodePropertyExistenceConstraintRule( 3L, 7, 8 ) );
 
         // THEN
         assertEquals(
@@ -149,8 +133,8 @@ public class SchemaCacheTest
         // GIVEN
         SchemaCache cache = newSchemaCache();
 
-        cache.addSchemaRule( uniquenessConstraintRule( 0L, new NodePropertyDescriptor( 1, 2 ), 133L ) );
-        cache.addSchemaRule( uniquenessConstraintRule( 1L, new NodePropertyDescriptor( 3, 4 ), 133L ) );
+        cache.addSchemaRule( uniquenessConstraintRule( 0L, 1, 2, 133L ) );
+        cache.addSchemaRule( uniquenessConstraintRule( 1L, 3, 4, 133L ) );
 
         // WHEN
         cache.removeSchemaRule( 0L );
@@ -175,10 +159,10 @@ public class SchemaCacheTest
         // given
         SchemaCache cache = newSchemaCache();
 
-        cache.addSchemaRule( uniquenessConstraintRule( 0L, new NodePropertyDescriptor( 1, 2 ), 133L ) );
+        cache.addSchemaRule( uniquenessConstraintRule( 0L, 1, 2, 133L ) );
 
         // when
-        cache.addSchemaRule( uniquenessConstraintRule( 0L, new NodePropertyDescriptor( 1, 2 ), 133L ) );
+        cache.addSchemaRule( uniquenessConstraintRule( 0L, 1, 2, 133L ) );
 
         // then
         assertEquals(
@@ -192,9 +176,9 @@ public class SchemaCacheTest
         // Given
         SchemaCache cache = newSchemaCache();
 
-        cache.addSchemaRule( newIndexRule( 1L, new NodePropertyDescriptor( 1, 2 ) ) );
-        cache.addSchemaRule( newIndexRule( 2L, new NodePropertyDescriptor( 1, 3 ) ) );
-        cache.addSchemaRule( newIndexRule( 3L, new NodePropertyDescriptor( 2, 2 ) ) );
+        cache.addSchemaRule( newIndexRule( 1L, 1, 2 ) );
+        cache.addSchemaRule( newIndexRule( 2L, 1, 3 ) );
+        cache.addSchemaRule( newIndexRule( 3L, 2, 2 ) );
 
         // When
         IndexDescriptor descriptor = cache.indexDescriptor( new NodePropertyDescriptor( 1, 3 ) );
@@ -221,9 +205,9 @@ public class SchemaCacheTest
     public void shouldListConstraintsForLabel()
     {
         // Given
-        UniquePropertyConstraintRule rule1 = uniquenessConstraintRule( 0, new NodePropertyDescriptor( 1, 1 ), 0 );
-        UniquePropertyConstraintRule rule2 = uniquenessConstraintRule( 1, new NodePropertyDescriptor( 2, 1 ), 0 );
-        NodePropertyExistenceConstraintRule rule3 = nodePropertyExistenceConstraintRule( 2, new NodePropertyDescriptor( 1, 2 ) );
+        ConstraintRule rule1 = uniquenessConstraintRule( 0, 1, 1, 0 );
+        ConstraintRule rule2 = uniquenessConstraintRule( 1, 2, 1, 0 );
+        ConstraintRule rule3 = nodePropertyExistenceConstraintRule( 2, 1, 2 );
 
         SchemaCache cache = newSchemaCache( rule1, rule2, rule3 );
 
@@ -231,7 +215,9 @@ public class SchemaCacheTest
         Set<NodePropertyConstraint> listed = asSet( cache.constraintsForLabel( 1 ) );
 
         // Then
-        Set<NodePropertyConstraint> expected = asSet( rule1.toConstraint(), rule3.toConstraint() );
+        Set<NodePropertyConstraint> expected = asSet(
+                ConstraintBoundary.mapNode( rule1.getConstraintDescriptor() ),
+                ConstraintBoundary.mapNode( rule3.getConstraintDescriptor() ) );
         assertEquals( expected, listed );
     }
 
@@ -239,9 +225,9 @@ public class SchemaCacheTest
     public void shouldListConstraintsForLabelAndProperty()
     {
         // Given
-        UniquePropertyConstraintRule rule1 = uniquenessConstraintRule( 0, new NodePropertyDescriptor( 1, 1 ), 0 );
-        UniquePropertyConstraintRule rule2 = uniquenessConstraintRule( 1, new NodePropertyDescriptor( 2, 1 ), 0 );
-        NodePropertyExistenceConstraintRule rule3 = nodePropertyExistenceConstraintRule( 2, new NodePropertyDescriptor( 1, 2 ) );
+        ConstraintRule rule1 = uniquenessConstraintRule( 0, 1, 1, 0 );
+        ConstraintRule rule2 = uniquenessConstraintRule( 1, 2, 1, 0 );
+        ConstraintRule rule3 = nodePropertyExistenceConstraintRule( 2, 1, 2 );
 
         SchemaCache cache = newSchemaCache( rule1, rule2, rule3 );
 
@@ -249,16 +235,16 @@ public class SchemaCacheTest
         Set<NodePropertyConstraint> listed = asSet( cache.constraintsForLabelAndProperty( new NodePropertyDescriptor( 1, 2 ) ) );
 
         // Then
-        assertEquals( singleton( rule3.toConstraint() ), listed );
+        assertEquals( singleton( ConstraintBoundary.mapNode( rule3.getConstraintDescriptor() ) ), listed );
     }
 
     @Test
     public void shouldListConstraintsForRelationshipType()
     {
         // Given
-        RelationshipPropertyExistenceConstraintRule rule1 = relPropertyExistenceConstraintRule( 0, new RelationshipPropertyDescriptor( 1, 1 ) );
-        RelationshipPropertyExistenceConstraintRule rule2 = relPropertyExistenceConstraintRule( 0, new RelationshipPropertyDescriptor( 2, 1 ) );
-        RelationshipPropertyExistenceConstraintRule rule3 = relPropertyExistenceConstraintRule( 0, new RelationshipPropertyDescriptor( 1, 2 ) );
+        ConstraintRule rule1 = relPropertyExistenceConstraintRule( 0, 1, 1 );
+        ConstraintRule rule2 = relPropertyExistenceConstraintRule( 0, 2, 1 );
+        ConstraintRule rule3 = relPropertyExistenceConstraintRule( 0, 1, 2 );
 
         SchemaCache cache = newSchemaCache( rule1, rule2, rule3 );
 
@@ -266,7 +252,9 @@ public class SchemaCacheTest
         Set<RelationshipPropertyConstraint> listed = asSet( cache.constraintsForRelationshipType( 1 ) );
 
         // Then
-        Set<RelationshipPropertyConstraint> expected = asSet( rule1.toConstraint(), rule3.toConstraint() );
+        Set<RelationshipPropertyConstraint> expected = asSet(
+                ConstraintBoundary.mapRelationship( rule1.getConstraintDescriptor() ),
+                ConstraintBoundary.mapRelationship( rule3.getConstraintDescriptor() ) );
         assertEquals( expected, listed );
     }
 
@@ -274,9 +262,9 @@ public class SchemaCacheTest
     public void shouldListConstraintsForRelationshipTypeAndProperty()
     {
         // Given
-        RelationshipPropertyExistenceConstraintRule rule1 = relPropertyExistenceConstraintRule( 0, new RelationshipPropertyDescriptor( 1, 1 ) );
-        RelationshipPropertyExistenceConstraintRule rule2 = relPropertyExistenceConstraintRule( 0, new RelationshipPropertyDescriptor( 2, 1 ) );
-        RelationshipPropertyExistenceConstraintRule rule3 = relPropertyExistenceConstraintRule( 0, new RelationshipPropertyDescriptor( 1, 2 ) );
+        ConstraintRule rule1 = relPropertyExistenceConstraintRule( 0, 1, 1 );
+        ConstraintRule rule2 = relPropertyExistenceConstraintRule( 0, 2, 1 );
+        ConstraintRule rule3 = relPropertyExistenceConstraintRule( 0, 1, 2 );
 
         SchemaCache cache = newSchemaCache( rule1, rule2, rule3 );
 
@@ -284,34 +272,48 @@ public class SchemaCacheTest
         Set<RelationshipPropertyConstraint> listed = asSet( cache.constraintsForRelationshipTypeAndProperty( new RelationshipPropertyDescriptor( 2, 1 ) ) );
 
         // Then
-        assertEquals( singleton( rule2.toConstraint() ), listed );
+        assertEquals( singleton( ConstraintBoundary.mapRelationship( rule2.getConstraintDescriptor() ) ), listed );
     }
 
-    private IndexRule newIndexRule( long id, NodePropertyDescriptor descriptor )
+    private IndexRule newIndexRule( long id, int label, int propertyKey )
     {
-        return IndexRule.indexRule( id, descriptor, PROVIDER_DESCRIPTOR );
+        return IndexRule.indexRule( id, NewIndexDescriptorFactory.forLabel( label, propertyKey ), PROVIDER_DESCRIPTOR );
+    }
+
+    private ConstraintRule nodePropertyExistenceConstraintRule( long ruleId, int labelId, int propertyId )
+    {
+        return ConstraintRule.constraintRule(
+                ruleId, ConstraintDescriptorFactory.existsForLabel( labelId, propertyId ) );
+    }
+
+    private ConstraintRule relPropertyExistenceConstraintRule( long ruleId, int relTypeId, int propertyId )
+    {
+        return ConstraintRule.constraintRule(
+                ruleId, ConstraintDescriptorFactory.existsForRelType( relTypeId, propertyId ) );
+    }
+
+    private ConstraintRule uniquenessConstraintRule( long ruleId, int labelId, int propertyId, long indexId )
+    {
+        return ConstraintRule.constraintRule(
+                ruleId, ConstraintDescriptorFactory.uniqueForLabel( labelId, propertyId ), indexId );
     }
 
     private static SchemaCache newSchemaCache( SchemaRule... rules )
     {
         return new SchemaCache( new ConstraintSemantics(), (rules == null || rules.length == 0)
-                                ? Collections.<SchemaRule>emptyList() : Arrays.asList( rules ) );
+                                                           ? Collections.emptyList() : Arrays.asList( rules ) );
     }
 
     private static class ConstraintSemantics extends StandardConstraintSemantics
     {
         @Override
-        protected PropertyConstraint readNonStandardConstraint( PropertyConstraintRule rule )
+        protected PropertyConstraint readNonStandardConstraint( ConstraintRule rule )
         {
-            if ( rule instanceof NodePropertyExistenceConstraintRule )
+            if ( rule.getConstraintDescriptor().type() != EXISTS )
             {
-                return ((NodePropertyExistenceConstraintRule) rule).toConstraint();
+                throw new IllegalStateException( "Unsupported constraint type: " + rule );
             }
-            if ( rule instanceof RelationshipPropertyExistenceConstraintRule )
-            {
-                return ((RelationshipPropertyExistenceConstraintRule) rule).toConstraint();
-            }
-            return super.readNonStandardConstraint( rule );
+            return ConstraintBoundary.map( rule.getConstraintDescriptor() );
         }
     }
 }

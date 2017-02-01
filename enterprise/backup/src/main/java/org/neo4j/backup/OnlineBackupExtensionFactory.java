@@ -33,6 +33,7 @@ import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -65,6 +66,8 @@ public class OnlineBackupExtensionFactory extends KernelExtensionFactory<OnlineB
         FileSystemAbstraction fileSystemAbstraction();
 
         PageCache pageCache();
+
+        StoreCopyCheckPointMutex storeCopyCheckPointMutex();
     }
 
     public OnlineBackupExtensionFactory()
@@ -89,6 +92,7 @@ public class OnlineBackupExtensionFactory extends KernelExtensionFactory<OnlineB
                 dependencies.logicalTransactionStoreSupplier(),
                 dependencies.logFileInformationSupplier(),
                 dependencies.fileSystemAbstraction(),
-                dependencies.pageCache() );
+                dependencies.pageCache(),
+                dependencies.storeCopyCheckPointMutex() );
     }
 }

@@ -342,6 +342,7 @@ public class StoreCopyClient
                 .setKernelExtensions( kernelExtensions )
                 .setUserLogProvider( NullLogProvider.getInstance() )
                 .newEmbeddedDatabaseBuilder( tempStore.getAbsoluteFile() )
+                .setConfig( GraphDatabaseSettings.label_index, config.get( GraphDatabaseSettings.label_index ) )
                 .setConfig( "dbms.backup.enabled", Settings.FALSE )
                 .setConfig( GraphDatabaseSettings.logs_directory, tempStore.getAbsolutePath() )
                 .setConfig( GraphDatabaseSettings.keep_logical_logs, Settings.TRUE )

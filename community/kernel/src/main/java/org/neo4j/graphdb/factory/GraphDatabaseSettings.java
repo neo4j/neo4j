@@ -42,6 +42,7 @@ import org.neo4j.kernel.configuration.Title;
 import org.neo4j.kernel.impl.cache.MonitorGc;
 import org.neo4j.logging.Level;
 
+import static org.neo4j.helpers.collection.Iterables.enumNames;
 import static org.neo4j.kernel.configuration.Settings.ANY;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.BYTES;
@@ -480,13 +481,16 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<Integer> batch_inserter_batch_size = setting( "unsupported.tools.batch_inserter.batch_size", INTEGER,
             "10000" );
 
-    @Description( "Overrides otherwise automatically selected label scan store to use. " +
-            "If this setting is specified then this configured name will be matched with one of the loaded " +
-            "label scan stores, or fail if not found. If this setting isn't specified then the loaded " +
-            "label scan store with highest priority will be selected. Both name and priority of each " +
-            "label scan store is set by the kernel extension loading it." )
+    public enum LabelIndex
+    {
+        NATIVE,
+        LUCENE;
+    }
+
+    @Description( "Backend to use for label --> nodes index" )
     @Internal
-    public static final Setting<String> label_scan_store = setting( "unsupported.dbms.label_scan_store", STRING, NO_DEFAULT );
+    public static final Setting<String> label_index = setting( "dbms.label_index",
+            options( enumNames( LabelIndex.class ), true ), LabelIndex.NATIVE.name() );
 
     // Security settings
 

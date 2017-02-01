@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api.scan;
 import java.util.function.Supplier;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings.LabelIndex;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.labelscan.LoggingMonitor;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
@@ -38,8 +39,7 @@ import org.neo4j.logging.Log;
 public class NativeLabelScanStoreExtension extends
         KernelExtensionFactory<NativeLabelScanStoreExtension.Dependencies>
 {
-    public static final String LABEL_SCAN_STORE_NAME = "native";
-    private final int priority;
+    private static final String NAME = LabelIndex.NATIVE.name();
     private final LabelScanStore.Monitor monitor;
 
     public interface Dependencies
@@ -55,13 +55,12 @@ public class NativeLabelScanStoreExtension extends
 
     public NativeLabelScanStoreExtension()
     {
-        this( 0 /*disabled by default*/, LabelScanStore.Monitor.EMPTY );
+        this( LabelScanStore.Monitor.EMPTY );
     }
 
-    public NativeLabelScanStoreExtension( int priority, LabelScanStore.Monitor monitor )
+    public NativeLabelScanStoreExtension( LabelScanStore.Monitor monitor )
     {
-        super( LABEL_SCAN_STORE_NAME );
-        this.priority = priority;
+        super( NAME );
         this.monitor = monitor;
     }
 
@@ -76,6 +75,6 @@ public class NativeLabelScanStoreExtension extends
                 new FullLabelStream( dependencies.indexStoreView() ),
                 dependencies.getConfig().get( GraphDatabaseSettings.read_only ),
                 monitor );
-        return new LabelScanStoreProvider( LABEL_SCAN_STORE_NAME, labelScanStore, priority );
+        return new LabelScanStoreProvider( NAME, labelScanStore );
     }
 }

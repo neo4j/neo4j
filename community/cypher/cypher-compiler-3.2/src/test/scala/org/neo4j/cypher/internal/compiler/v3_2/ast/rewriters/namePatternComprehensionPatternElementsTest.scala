@@ -28,12 +28,12 @@ class namePatternComprehensionPatternElementsTest extends CypherFunSuite with As
   test("should name all pattern elements in a comprehension") {
     val input: ASTNode = PatternComprehension(None, RelationshipsPattern(
       RelationshipChain(NodePattern(None, Seq.empty, None) _,
-                        RelationshipPattern(None, false, Seq.empty, None, None, SemanticDirection.OUTGOING) _,
+                        RelationshipPattern(None, Seq.empty, None, None, SemanticDirection.OUTGOING) _,
                         NodePattern(None, Seq.empty, None) _) _) _, None, StringLiteral("foo") _) _
 
     namePatternComprehensionPatternElements(input) match {
       case PatternComprehension(_, RelationshipsPattern(RelationshipChain(NodePattern(Some(_), _, _),
-                                                                          RelationshipPattern(Some(_), _, _, _, _, _),
+                                                                          RelationshipPattern(Some(_), _, _, _, _),
                                                                           NodePattern(Some(_), _, _))), _, _, _) => ()
       case _ => fail("All things were not named")
     }
@@ -42,7 +42,7 @@ class namePatternComprehensionPatternElementsTest extends CypherFunSuite with As
   test("should not change names of already named things") {
     val input: PatternComprehension = PatternComprehension(Some(varFor("p")),
                                                            RelationshipsPattern(RelationshipChain(NodePattern(Some(varFor("a")), Seq.empty, None) _,
-                                                                                                  RelationshipPattern(Some(varFor("r")), false, Seq.empty, None, None, SemanticDirection.OUTGOING) _,
+                                                                                                  RelationshipPattern(Some(varFor("r")), Seq.empty, None, None, SemanticDirection.OUTGOING) _,
                                                                                                   NodePattern(Some(varFor("b")), Seq.empty, None) _) _) _,
                                                            None,
                                                            StringLiteral("foo")_)_

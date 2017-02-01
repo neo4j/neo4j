@@ -60,7 +60,7 @@ trait Compatibility {
 
   implicit val executionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
 
-  def produceParsedQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer) = {
+  def produceParsedQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer, preParsingNotifications: Set[org.neo4j.graphdb.Notification]) = {
     import org.neo4j.cypher.internal.compatibility.v2_3.helpers.as2_3
     val notificationLogger = new RecordingNotificationLogger
     val preparedQueryForV_2_3 =
@@ -79,14 +79,15 @@ trait Compatibility {
         // Log notifications/warnings from planning
         planImpl.notifications(planContext).foreach(notificationLogger += _)
 
-        (new ExecutionPlanWrapper(planImpl), extractedParameters)
+        (new ExecutionPlanWrapper(planImpl, preParsingNotifications), extractedParameters)
       }
 
       override def hasErrors = preparedQueryForV_2_3.isFailure
     }
   }
 
-  class ExecutionPlanWrapper(inner: ExecutionPlan_v2_3) extends org.neo4j.cypher.internal.ExecutionPlan {
+  class ExecutionPlanWrapper(inner: ExecutionPlan_v2_3, preParsingNotifications: Set[org.neo4j.graphdb.Notification])
+    extends org.neo4j.cypher.internal.ExecutionPlan {
 
     private def queryContext(transactionalContext: TransactionalContextWrapper): QueryContext =
       new ExceptionTranslatingQueryContext(new TransactionBoundQueryContext(transactionalContext))
@@ -104,7 +105,7 @@ trait Compatibility {
         val innerResult = inner.run(queryContext(transactionalContext), transactionalContext.statement, innerExecutionMode, params)
         new ClosingExecutionResult(
           query,
-          new ExecutionResultWrapper(innerResult, inner.plannerUsed, inner.runtimeUsed),
+          new ExecutionResultWrapper(innerResult, inner.plannerUsed, inner.runtimeUsed, preParsingNotifications),
           exceptionHandler.runSafely
         )
       }

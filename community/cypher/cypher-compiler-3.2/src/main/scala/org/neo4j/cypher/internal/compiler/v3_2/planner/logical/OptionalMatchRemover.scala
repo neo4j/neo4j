@@ -166,7 +166,7 @@ case object OptionalMatchRemover extends PlannerQueryRewriter {
     val relName = createVariable(pattern.name)
     val leftNode = createNode(pattern.nodes._1)
     val rightNode = createNode(pattern.nodes._2)
-    val relPattern = RelationshipPattern(relName, optional = false, pattern.types, length = None, properties = None, pattern.dir)(pos)
+    val relPattern = RelationshipPattern(relName, pattern.types, length = None, properties = None, pattern.dir)(pos)
     val chain = RelationshipChain(leftNode, relPattern, rightNode)(pos)
     PatternExpression(RelationshipsPattern(chain)(pos))
   }

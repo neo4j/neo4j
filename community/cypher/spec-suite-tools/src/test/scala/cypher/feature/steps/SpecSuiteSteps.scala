@@ -26,6 +26,7 @@ import cypher.SpecSuiteResources
 import cypher.cucumber.db.DatabaseConfigProvider._
 import cypher.cucumber.db.{GraphArchive, GraphArchiveImporter, GraphArchiveLibrary, GraphFileRepository}
 import cypher.feature.parser._
+import cypher.feature.parser.matchers.ResultWrapper
 import org.neo4j.collection.RawIterator
 import org.neo4j.cypher.internal.frontend.v3_2.symbols.{CypherType, _}
 import org.neo4j.graphdb.factory.{GraphDatabaseFactory, GraphDatabaseSettings}
@@ -78,9 +79,7 @@ trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
   }
 
   Given(ANY_GRAPH) {
-    // We could do something fancy here, like randomising a state,
-    // in order to guarantee that we aren't implicitly relying on an empty db.
-    scenarioBuilder.setDb(DbBuilder.initEmpty(currentDatabaseConfig("8m")))
+    scenarioBuilder.setDb(DbBuilder.initAny(currentDatabaseConfig("8m")))
   }
 
   Given(EMPTY_GRAPH) {
@@ -117,7 +116,7 @@ trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
     scenarioBuilder.expect { r: Result =>
       val matcher = constructResultMatcher(expectedTable)
 
-      matcher should accept(r)
+      matcher should accept(new ResultWrapper(r))
     }
   }
 
@@ -125,7 +124,7 @@ trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
     scenarioBuilder.expect { r: Result =>
       val matcher = constructResultMatcher(expectedTable, unorderedLists = true)
 
-      matcher should accept(r)
+      matcher should accept(new ResultWrapper(r))
     }
   }
 
@@ -140,7 +139,7 @@ trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
     scenarioBuilder.expect { r: Result =>
       val matcher = constructResultMatcher(expectedTable)
 
-      matcher should acceptOrdered(r)
+      matcher should acceptOrdered(new ResultWrapper(r))
     }
   }
 
@@ -251,8 +250,18 @@ trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
 
 object DbBuilder {
   def initEmpty(config: Map[String, String]): GraphDatabaseAPI = {
-      val builder = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
-      builder.setConfig(config.asJava)
-      builder.newGraphDatabase().asInstanceOf[GraphDatabaseAPI]
+    val builder = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
+    builder.setConfig(config.asJava)
+    builder.newGraphDatabase().asInstanceOf[GraphDatabaseAPI]
+  }
+
+  /**
+    * Creates a database with 10 unlabeled nodes.
+    */
+  def initAny(config: Map[String, String]): GraphDatabaseAPI = {
+    val api = initEmpty(config)
+    // This may prevent mistakes where a scenario is actually reliant on an empty db
+    api.execute("CYPHER runtime=interpreted UNWIND range(0, 9) AS i CREATE ()")
+    api
   }
 }

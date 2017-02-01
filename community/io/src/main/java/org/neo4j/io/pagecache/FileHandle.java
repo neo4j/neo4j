@@ -84,6 +84,16 @@ public interface FileHandle
     File getFile();
 
     /**
+     * Get a {@link File} object for the abstract path name that this file handle represents, and that is
+     * <em>relative</em> to the base path that was passed into the {@link PageCache#streamFilesRecursive(File)} method.
+     * <p>
+     * This method is otherwise behaviourally the same as {@link #getFile()}.
+     *
+     * @return A {@link File} for this file handle.
+     */
+    File getRelativeFile();
+
+    /**
      * Rename source file to the given target file, effectively moving the file from source to target.
      *
      * Both files have to be unmapped when performing the rename, otherwise an exception will be thrown.

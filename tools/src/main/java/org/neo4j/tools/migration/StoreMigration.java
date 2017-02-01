@@ -36,6 +36,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.extension.dependency.HighestSelectionStrategy;
+import org.neo4j.kernel.extension.dependency.NamedLabelScanStoreSelectionStrategy;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.logging.StoreLogService;
@@ -105,26 +106,24 @@ public class StoreMigration
         // Add participants from kernel extensions...
         LegacyIndexProvider legacyIndexProvider = new LegacyIndexProvider();
 
-        Dependencies deps = new Dependencies();
-        deps.satisfyDependencies( fs, config );
-        deps.satisfyDependencies( legacyIndexProvider );
-
-        KernelContext kernelContext = new SimpleKernelContext( storeDirectory, DatabaseInfo.UNKNOWN, deps );
-        KernelExtensions kernelExtensions = life.add( new KernelExtensions(
-                kernelContext, GraphDatabaseDependencies.newDependencies().kernelExtensions(),
-                deps, ignore() ) );
-
-        // Add the kernel store migrator
-        life.start();
-        SchemaIndexProvider schemaIndexProvider = kernelExtensions.resolveDependency( SchemaIndexProvider.class,
-                HighestSelectionStrategy.getInstance() );
-
-        LabelScanStoreProvider labelScanStoreProvider = kernelExtensions
-                .resolveDependency( LabelScanStoreProvider.class, HighestSelectionStrategy.getInstance() );
-
         Log log = userLogProvider.getLog( StoreMigration.class );
         try ( PageCache pageCache = createPageCache( fs, config ) )
         {
+            Dependencies deps = new Dependencies();
+            deps.satisfyDependencies( fs, config, legacyIndexProvider, pageCache, logService );
+
+            KernelContext kernelContext = new SimpleKernelContext( storeDirectory, DatabaseInfo.UNKNOWN, deps );
+            KernelExtensions kernelExtensions = life.add( new KernelExtensions(
+                    kernelContext, GraphDatabaseDependencies.newDependencies().kernelExtensions(),
+                    deps, ignore() ) );
+
+            // Add the kernel store migrator
+            life.start();
+
+            SchemaIndexProvider schemaIndexProvider = kernelExtensions.resolveDependency( SchemaIndexProvider.class,
+                    HighestSelectionStrategy.getInstance() );
+            LabelScanStoreProvider labelScanStoreProvider = kernelExtensions.resolveDependency(
+                    LabelScanStoreProvider.class, new NamedLabelScanStoreSelectionStrategy( config ) );
             long startTime = System.currentTimeMillis();
             DatabaseMigrator migrator = new DatabaseMigrator( progressMonitor, fs, config, logService,
                     schemaIndexProvider, labelScanStoreProvider, legacyIndexProvider.getIndexProviders(),

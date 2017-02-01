@@ -28,6 +28,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.neo4j.concurrent.BinaryLatch;
@@ -181,8 +182,8 @@ public class CheckPointerImplTest
     public void forceCheckPointShouldWaitTheCurrentCheckPointingToCompleteBeforeRunning() throws Throwable
     {
         // Given
-        ReentrantLock reentrantLock = new ReentrantLock();
-        final Lock spyLock = spy( reentrantLock );
+        Lock lock = new ReentrantLock();
+        final Lock spyLock = spy( lock );
 
         doAnswer( invocation -> {
             verify( appender ).checkPoint( any( LogPosition.class ), any( LogCheckPointEvent.class ) );
@@ -191,7 +192,7 @@ public class CheckPointerImplTest
             return null;
         } ).when( spyLock ).unlock();
 
-        final CheckPointerImpl checkPointing = checkPointer( spyLock );
+        final CheckPointerImpl checkPointing = checkPointer( mutex( spyLock ) );
         mockTxIdStore();
 
         final CountDownLatch startSignal = new CountDownLatch( 2 );
@@ -231,13 +232,31 @@ public class CheckPointerImplTest
         verify( spyLock, times( 2 ) ).unlock();
     }
 
+    private StoreCopyCheckPointMutex mutex( Lock lock )
+    {
+        return new StoreCopyCheckPointMutex( new ReadWriteLock()
+        {
+            @Override
+            public Lock writeLock()
+            {
+                return lock;
+            }
+
+            @Override
+            public Lock readLock()
+            {
+                throw new UnsupportedOperationException();
+            }
+        } );
+    }
+
     @Test
     public void tryCheckPointShouldWaitTheCurrentCheckPointingToCompleteNoRunCheckPointButUseTheTxIdOfTheEarlierRun()
             throws Throwable
     {
         // Given
         Lock lock = mock( Lock.class );
-        final CheckPointerImpl checkPointing = checkPointer( lock );
+        final CheckPointerImpl checkPointing = checkPointer( mutex( lock ) );
         mockTxIdStore();
 
         checkPointing.forceCheckPoint( INFO );
@@ -383,15 +402,15 @@ public class CheckPointerImplTest
                 checkPointer -> checkPointer.tryCheckPoint( new SimpleTriggerInfo( "async" ) ) );
     }
 
-    private CheckPointerImpl checkPointer( Lock lock )
+    private CheckPointerImpl checkPointer( StoreCopyCheckPointMutex mutex )
     {
         return new CheckPointerImpl( txIdStore, threshold, storageEngine, logPruning, appender, health,
-                NullLogProvider.getInstance(), tracer, limiter, lock );
+                NullLogProvider.getInstance(), tracer, limiter, mutex );
     }
 
     private CheckPointerImpl checkPointer()
     {
-        return checkPointer( new ReentrantLock() );
+        return checkPointer( new StoreCopyCheckPointMutex() );
     }
 
     private void mockTxIdStore()

@@ -22,6 +22,11 @@ package org.neo4j.ha;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
@@ -29,12 +34,9 @@ import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.ha.ClusterRule;
 import org.neo4j.test.rule.SuppressOutput;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+
 import static org.neo4j.backup.OnlineBackupCommandIT.createSomeData;
 import static org.neo4j.backup.OnlineBackupCommandIT.runBackupToolFromOtherJvmToGetExitCode;
 
@@ -62,7 +64,7 @@ public class BackupHaIT
         // Run backup
         ManagedCluster cluster = clusterRule.startCluster();
         DbRepresentation beforeChange = DbRepresentation.of( cluster.getMaster() );
-        assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( backupArguments( "localhost:4445",
+        assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( backupPath, backupArguments( "localhost:4445",
                 backupPath, "basic" ) ) );
 
         // Add some new data
@@ -85,7 +87,7 @@ public class BackupHaIT
         {
             // Run backup
             DbRepresentation beforeChange = DbRepresentation.of( cluster.getMaster() );
-            assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( backupArguments( "localhost:" + port,
+            assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( backupPath, backupArguments( "localhost:" + port,
                     backupPath, "anyinstance" ) ) );
 
             // Add some new data

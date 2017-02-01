@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.aggregation
 
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.Instruction
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions._
-import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi.MethodStructure
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi.{HashableTupleDescriptor, MethodStructure}
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.{CodeGenContext, Variable}
 
 /*
@@ -76,7 +76,7 @@ class DynamicCount(opName: String, variable: Variable, expression: CodeGenExpres
     override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext): Unit = {
       generator.trace(opName) { body =>
         val keyArg = groupingKey.map(k => k.name -> k.codeGenType).toMap
-        body.aggregationMapIterate(mapName, keyArg, variable.name) { inner =>
+        body.aggregationMapIterate(mapName, HashableTupleDescriptor(keyArg), variable.name) { inner =>
           inner.incrementRows()
           instruction.body(inner)
         }

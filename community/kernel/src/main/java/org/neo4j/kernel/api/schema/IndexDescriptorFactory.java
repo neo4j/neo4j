@@ -24,6 +24,7 @@ import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 
 import static org.neo4j.kernel.impl.coreapi.schema.PropertyNameUtils.getOrCreatePropertyKeyIds;
@@ -59,7 +60,10 @@ public class IndexDescriptorFactory
 
     public static IndexDescriptor of( IndexRule rule )
     {
-        return of( rule.descriptor() );
+        LabelSchemaDescriptor schema = rule.getIndexDescriptor().schema();
+        return of( schema.getLabelId(), schema.getPropertyIds()[0] );
+        // here 1 property is assumed. That should be fine because this class will be gone before multiple props are
+        // supported
     }
 
     public static NodePropertyDescriptor getNodePropertyDescriptor( int labelId, int[] propertyKeyIds )

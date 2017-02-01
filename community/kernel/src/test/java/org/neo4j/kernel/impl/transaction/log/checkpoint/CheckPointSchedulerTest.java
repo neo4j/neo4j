@@ -154,6 +154,12 @@ public class CheckPointSchedulerTest
             {
                 throw new RuntimeException( "this should have not been called" );
             }
+
+            @Override
+            public long lastCheckPointedTransactionId()
+            {
+                return 42;
+            }
         };
 
         final CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, jobScheduler, 20L );

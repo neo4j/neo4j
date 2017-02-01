@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.aggregation
 
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.Instruction
-import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi.MethodStructure
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi.{HashableTupleDescriptor, MethodStructure}
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.{CodeGenContext, Variable}
 
 case class Distinct(opName: String, setName: String, vars: Iterable[Variable]) extends AggregateExpression {
@@ -44,7 +44,7 @@ case class Distinct(opName: String, setName: String, vars: Iterable[Variable]) e
     override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext): Unit = {
       generator.trace(opName) { body =>
         val keyArg = vars.map(k => k.name -> k.codeGenType).toMap
-        body.distinctSetIterate(setName, keyArg) { inner =>
+        body.distinctSetIterate(setName, HashableTupleDescriptor(keyArg)) { inner =>
           inner.incrementRows()
           instruction.body(inner)
         }

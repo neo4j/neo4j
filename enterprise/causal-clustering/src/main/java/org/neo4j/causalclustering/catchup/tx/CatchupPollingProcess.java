@@ -38,7 +38,6 @@ import org.neo4j.causalclustering.core.consensus.schedule.RenewableTimeoutServic
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.causalclustering.readreplica.UpstreamDatabaseSelectionException;
-import org.neo4j.causalclustering.readreplica.UpstreamDatabaseSelectionStrategy;
 import org.neo4j.causalclustering.readreplica.UpstreamDatabaseStrategySelector;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.internal.DatabaseHealth;

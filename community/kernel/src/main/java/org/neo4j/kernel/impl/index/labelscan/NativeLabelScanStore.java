@@ -39,7 +39,6 @@ import org.neo4j.kernel.api.labelscan.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.impl.api.scan.FullStoreChangeStream;
-import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 
@@ -72,7 +71,10 @@ import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
  */
 public class NativeLabelScanStore implements LabelScanStore
 {
-    static final String FILE_NAME = DEFAULT_NAME + ".labelscanstore.db";
+    /**
+     * Name of the file used for the native label scan store.
+     */
+    public static final String FILE_NAME = DEFAULT_NAME + ".labelscanstore.db";
 
     /**
      * Whether or not this label scan store is read-only.
@@ -192,7 +194,7 @@ public class NativeLabelScanStore implements LabelScanStore
                 recoveryStarted = true;
             }
 
-            return singleWriter.initialize( index.writer() );
+            return writer();
         }
         catch ( IOException e )
         {
@@ -276,12 +278,6 @@ public class NativeLabelScanStore implements LabelScanStore
         monitor.init();
 
         boolean storeExists = storeExists();
-        if ( readOnly && !storeExists )
-        {
-            throw new UnsupportedOperationException( "Tried to create native label scan store " +
-                    storeFile + " in read-only mode, but no such store exists" );
-        }
-
         try
         {
             needsRebuild = !storeExists;
@@ -341,17 +337,23 @@ public class NativeLabelScanStore implements LabelScanStore
     {
         if ( needsRebuild )
         {
-            if ( readOnly )
-            {
-                throw new IOException( "Tried to start label scan store " + storeFile +
-                        " as read-only and the index needs rebuild. This makes the label scan store unusable" );
-            }
             monitor.rebuilding();
-            long numberOfNodes = LabelScanStoreProvider.rebuild( this, fullStoreChangeStream );
+            long numberOfNodes;
+
+            // Intentionally ignore read-only flag here when rebuilding.
+            try ( LabelScanWriter writer = writer() )
+            {
+                numberOfNodes = fullStoreChangeStream.applyTo( writer );
+            }
             monitor.rebuilt( numberOfNodes );
             needsRebuild = false;
         }
         started = true;
+    }
+
+    private NativeLabelScanWriter writer() throws IOException
+    {
+        return singleWriter.initialize( index.writer() );
     }
 
     @Override

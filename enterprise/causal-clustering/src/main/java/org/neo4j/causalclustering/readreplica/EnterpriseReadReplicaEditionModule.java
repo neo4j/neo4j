@@ -198,8 +198,9 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         DelayedRenewableTimeoutService catchupTimeoutService =
                 new DelayedRenewableTimeoutService( Clocks.systemClock(), logProvider );
 
-        LocalDatabase localDatabase = new LocalDatabase( platformModule.storeDir, new StoreFiles( fileSystem ),
-                platformModule.dataSourceManager, pageCache, fileSystem, databaseHealthSupplier, logProvider );
+        StoreFiles storeFiles = new StoreFiles( fileSystem, pageCache );
+        LocalDatabase localDatabase = new LocalDatabase( platformModule.storeDir, storeFiles,
+                platformModule.dataSourceManager, databaseHealthSupplier, logProvider );
 
         RemoteStore remoteStore =
                 new RemoteStore( platformModule.logging.getInternalLogProvider(), fileSystem, platformModule.pageCache,
@@ -238,7 +239,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         }
 
         StoreCopyProcess storeCopyProcess =
-                new StoreCopyProcess( fileSystem, localDatabase, copiedStoreRecovery, remoteStore, logProvider );
+                new StoreCopyProcess( fileSystem, pageCache, localDatabase, copiedStoreRecovery, remoteStore, logProvider );
 
         ConnectToRandomUpstreamCoreServer defaultStrategy = new ConnectToRandomUpstreamCoreServer();
         defaultStrategy.setDiscoveryService( topologyService );

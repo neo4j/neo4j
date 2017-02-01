@@ -154,7 +154,13 @@ public class OnlineBackupCommandIT
         createSomeData( db );
     }
 
-    public static int runBackupToolFromOtherJvmToGetExitCode( String... args )
+    private static int runBackupToolFromOtherJvmToGetExitCode( String... args )
+            throws Exception
+    {
+        return runBackupToolFromOtherJvmToGetExitCode( testDirectory.absolutePath(), args );
+    }
+
+    public static int runBackupToolFromOtherJvmToGetExitCode( File neo4jHome, String... args )
             throws Exception
     {
         List<String> allArgs = new ArrayList<>( Arrays.asList(
@@ -163,7 +169,8 @@ public class OnlineBackupCommandIT
         allArgs.add( "backup" );
         allArgs.addAll( Arrays.asList( args ) );
 
-        Process process = Runtime.getRuntime().exec( allArgs.toArray( new String[allArgs.size()] ) );
+        Process process = Runtime.getRuntime().exec( allArgs.toArray( new String[allArgs.size()] ),
+                new String[] {"NEO4J_HOME=" + neo4jHome.getAbsolutePath()} );
         return new ProcessStreamHandler( process, false ).waitForResult();
     }
 

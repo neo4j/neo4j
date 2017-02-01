@@ -27,9 +27,9 @@ import java.util.Collections;
 import java.util.function.Supplier;
 
 import org.neo4j.concurrent.WorkSync;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -48,7 +48,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.store.record.DynamicRecord.dynamicRecord;
-import static org.neo4j.kernel.impl.store.record.IndexRule.indexRule;
 
 public class NeoTransactionIndexApplierTest
 {
@@ -105,7 +104,7 @@ public class NeoTransactionIndexApplierTest
     public void shouldCreateIndexGivenCreateSchemaRuleCommand() throws Exception
     {
         // Given
-        final IndexRule indexRule = indexRule( 1, new NodePropertyDescriptor( 42, 42 ), INDEX_DESCRIPTOR );
+        final IndexRule indexRule = indexRule( 1, 42, 42, INDEX_DESCRIPTOR );
 
         final IndexBatchTransactionApplier applier = newIndexTransactionApplier();
 
@@ -124,11 +123,16 @@ public class NeoTransactionIndexApplierTest
         verify( indexingService ).createIndexes( indexRule );
     }
 
+    private IndexRule indexRule( long ruleId, int labelId, int propertyId, Descriptor descriptor )
+    {
+        return IndexRule.indexRule( ruleId, NewIndexDescriptorFactory.forLabel( labelId, propertyId ), descriptor );
+    }
+
     @Test
     public void shouldDropIndexGivenDropSchemaRuleCommand() throws Exception
     {
         // Given
-        final IndexRule indexRule = indexRule( 1, new NodePropertyDescriptor( 42, 42 ), INDEX_DESCRIPTOR );
+        final IndexRule indexRule = indexRule( 1, 42, 42, INDEX_DESCRIPTOR );
 
         final IndexBatchTransactionApplier applier = newIndexTransactionApplier();
 

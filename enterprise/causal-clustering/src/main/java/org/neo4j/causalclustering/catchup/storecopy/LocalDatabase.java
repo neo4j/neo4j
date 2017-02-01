@@ -21,15 +21,16 @@ package org.neo4j.causalclustering.catchup.storecopy;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import org.neo4j.causalclustering.identity.StoreId;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
-import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
@@ -46,8 +47,6 @@ public class LocalDatabase implements Lifecycle
 
     private final StoreFiles storeFiles;
     private final DataSourceManager dataSourceManager;
-    private final PageCache pageCache;
-    private final FileSystemAbstraction fileSystemAbstraction;
     private final Supplier<DatabaseHealth> databaseHealthSupplier;
     private final Log log;
 
@@ -57,16 +56,12 @@ public class LocalDatabase implements Lifecycle
 
     private volatile TransactionCommitProcess localCommit;
 
-    public LocalDatabase( File storeDir, StoreFiles storeFiles,
-            DataSourceManager dataSourceManager,
-            PageCache pageCache, FileSystemAbstraction fileSystemAbstraction,
-            Supplier<DatabaseHealth> databaseHealthSupplier, LogProvider logProvider )
+    public LocalDatabase( File storeDir, StoreFiles storeFiles, DataSourceManager dataSourceManager,
+                          Supplier<DatabaseHealth> databaseHealthSupplier, LogProvider logProvider )
     {
         this.storeDir = storeDir;
         this.storeFiles = storeFiles;
         this.dataSourceManager = dataSourceManager;
-        this.pageCache = pageCache;
-        this.fileSystemAbstraction = fileSystemAbstraction;
         this.databaseHealthSupplier = databaseHealthSupplier;
         this.log = logProvider.getLog( getClass() );
     }
@@ -126,10 +121,7 @@ public class LocalDatabase implements Lifecycle
     {
         try
         {
-            File neoStoreFile = new File( storeDir, MetaDataStore.DEFAULT_NAME );
-            org.neo4j.kernel.impl.store.StoreId kernelStoreId = MetaDataStore.getStoreId( pageCache, neoStoreFile );
-            return new StoreId( kernelStoreId.getCreationTime(), kernelStoreId.getRandomId(),
-                    kernelStoreId.getUpgradeTime(), kernelStoreId.getUpgradeId() );
+            return storeFiles.readStoreId( storeDir );
         }
         catch ( IOException e )
         {
@@ -164,24 +156,13 @@ public class LocalDatabase implements Lifecycle
 
     public boolean isEmpty() throws IOException
     {
-        return !hasStoreFiles();
-    }
-
-    private boolean hasStoreFiles()
-    {
-        for ( StoreType storeType : StoreType.values() )
-        {
-            StoreFile storeFile = storeType.getStoreFile();
-            if(storeFile != null)
-            {
-                boolean exists = fileSystemAbstraction.fileExists( new File( storeDir, storeFile.storeFileName() ) );
-                if ( exists )
-                {
-                    return true;
-                }
-            }
-        }
-        return false;
+        List<File> filesToLookFor = Arrays.stream( StoreType.values() )
+                .map( StoreType::getStoreFile )
+                .filter( Objects::nonNull )
+                .map( StoreFile::storeFileName )
+                .map( name -> new File( storeDir, name ) )
+                .collect( Collectors.toList() );
+        return storeFiles.isEmpty( storeDir, filesToLookFor );
     }
 
     public File storeDir()

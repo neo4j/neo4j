@@ -81,6 +81,10 @@ public class ClusterIdentityIT
     {
         fs = fileSystemRule.get();
         cluster = clusterRule.startCluster();
+        cluster.coreTx( (db,tx) -> {
+            SampleData.createSchema( db );
+            tx.success();
+        } );
     }
 
     @Test

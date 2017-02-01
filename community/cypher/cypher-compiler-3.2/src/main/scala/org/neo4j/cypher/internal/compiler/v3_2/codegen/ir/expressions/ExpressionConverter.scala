@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.functions.functionConv
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi.MethodStructure
 import org.neo4j.cypher.internal.compiler.v3_2.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.frontend.v3_2.ast
+import org.neo4j.cypher.internal.frontend.v3_2.ast.PropertyKeyName
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 
 object ExpressionConverter {
@@ -80,14 +81,31 @@ object ExpressionConverter {
 
     val variable = context.getVariable(variableQueryVariable)
 
-    variable.codeGenType.ct match {
-      case CTNode => NodeProjection(variable)
-      case CTRelationship => RelationshipProjection(variable)
-      case CTString | CTBoolean | CTInteger | CTFloat => LoadVariable(variable)
-      case ListType(CTString) | ListType(CTBoolean) | ListType(CTInteger) | ListType(CTFloat) => LoadVariable(variable)
-      case CTAny => AnyProjection(variable)
-      case CTMap => AnyProjection(variable)
-      case ListType(_) => AnyProjection(variable) // TODO: We could have a more specialized projection when the inner type is known to be node or relationship
+    variable.codeGenType match {
+      case CodeGenType(CTNode, _) => NodeProjection(variable)
+      case CodeGenType(CTRelationship, _) => RelationshipProjection(variable)
+      case CodeGenType(CTString, _) |
+           CodeGenType(CTBoolean, _) |
+           CodeGenType(CTInteger, _) |
+           CodeGenType(CTFloat, _) =>
+        LoadVariable(variable)
+      case CodeGenType(ListType(CTInteger), ListReferenceType(IntType)) =>
+        // TODO: PrimitiveProjection(variable)
+        AnyProjection(variable) // Temporarily resort to runtime projection
+      case CodeGenType(ListType(CTFloat), ListReferenceType(FloatType)) =>
+        // TODO: PrimitiveProjection(variable)
+        AnyProjection(variable) // Temporarily resort to runtime projection
+      case CodeGenType(ListType(CTBoolean), ListReferenceType(BoolType)) =>
+        // TODO: PrimitiveProjection(variable)
+        AnyProjection(variable) // Temporarily resort to runtime projection
+      case CodeGenType(ListType(CTString), _) |
+           CodeGenType(ListType(CTBoolean), _) |
+           CodeGenType(ListType(CTInteger), _) |
+           CodeGenType(ListType(CTFloat), _) =>
+        LoadVariable(variable)
+      case CodeGenType(CTAny, _) => AnyProjection(variable)
+      case CodeGenType(CTMap, _) => AnyProjection(variable)
+      case CodeGenType(ListType(_), _) => AnyProjection(variable) // TODO: We could have a more specialized projection when the inner type is known to be node or relationship
       case _ => throw new CantCompileQueryException(s"The compiled runtime cannot handle results of type ${variable.codeGenType.ct}")
     }
   }
@@ -109,6 +127,9 @@ object ExpressionConverter {
       case ast.Property(rel@ast.Variable(name), propKey) if context.semanticTable.isRelationship(rel) =>
         val token = propKey.id(context.semanticTable).map(_.id)
         RelProperty(token, propKey.name, context.getVariable(name), context.namer.newVarName())
+
+      case ast.Property(variable@ast.Variable(name), PropertyKeyName(propKeyName)) =>
+        MapProperty(context.getVariable(name), propKeyName)
 
       case ast.Parameter(name, _) => expressions.Parameter(name, context.namer.newVarName())
 

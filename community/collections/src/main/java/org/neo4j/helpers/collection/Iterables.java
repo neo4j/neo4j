@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -885,6 +886,13 @@ public final class Iterables
     {
         Objects.requireNonNull( iterable );
         return Iterators.stream( iterable.iterator(), characteristics );
+    }
+
+    public static <T extends Enum<T>> List<String> enumNames( Class<T> cls )
+    {
+        List<String> names = new ArrayList<>();
+        EnumSet.allOf( cls ).forEach( item -> names.add( item.name() ) );
+        return names;
     }
 
     private static Iterable EMPTY = new Iterable()

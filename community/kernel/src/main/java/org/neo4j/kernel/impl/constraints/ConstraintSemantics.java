@@ -26,7 +26,7 @@ import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
-import org.neo4j.kernel.impl.store.record.PropertyConstraintRule;
+import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.StoreReadLayer;
@@ -44,16 +44,15 @@ public interface ConstraintSemantics
     void validateRelationshipPropertyExistenceConstraint( Cursor<RelationshipItem> allRels,
             RelationshipPropertyDescriptor descriptor ) throws CreateConstraintFailureException;
 
-    PropertyConstraint readConstraint( PropertyConstraintRule rule );
+    PropertyConstraint readConstraint( ConstraintRule rule );
 
-    PropertyConstraintRule writeUniquePropertyConstraint( long ruleId, NodePropertyDescriptor descriptor,
-            long indexId );
+    ConstraintRule writeUniquePropertyConstraint( long ruleId, NodePropertyDescriptor descriptor, long indexId );
 
-    PropertyConstraintRule writeNodePropertyExistenceConstraint( long ruleId, NodePropertyDescriptor descriptor )
+    ConstraintRule writeNodePropertyExistenceConstraint( long ruleId, NodePropertyDescriptor descriptor )
             throws CreateConstraintFailureException;
 
-    PropertyConstraintRule writeRelationshipPropertyExistenceConstraint( long ruleId,
-            RelationshipPropertyDescriptor descriptor ) throws CreateConstraintFailureException;
+    ConstraintRule writeRelationshipPropertyExistenceConstraint( long ruleId, RelationshipPropertyDescriptor descriptor )
+            throws CreateConstraintFailureException;
 
     TxStateVisitor decorateTxStateVisitor( StoreReadLayer storeLayer, ReadableTransactionState state,
             TxStateVisitor visitor );

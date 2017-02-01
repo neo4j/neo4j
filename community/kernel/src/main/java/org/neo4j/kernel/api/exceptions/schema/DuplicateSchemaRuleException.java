@@ -19,17 +19,16 @@
  */
 package org.neo4j.kernel.api.exceptions.schema;
 
-import org.neo4j.kernel.api.schema.EntityPropertyDescriptor;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
+import org.neo4j.storageengine.api.schema.SchemaRule;
 
-public abstract class DuplicateSchemaRuleException extends SchemaRuleException
+public class DuplicateSchemaRuleException extends SchemaRuleException
 {
-    protected static final String UNIQUE_CONSTRAINT_PREFIX = "uniqueness constraints";
-    protected static final String CONSTRAINT_PREFIX = "constraints";
+    private static final String NOT_FOUND_MESSAGE_TEMPLATE = "Multiple %ss found for %s.";
 
-    protected DuplicateSchemaRuleException( String messageTemplate, EntityPropertyDescriptor descriptor, String
-            messagePrefix )
+    public DuplicateSchemaRuleException( SchemaRule.Kind kind, SchemaDescriptor descriptor )
     {
-        super( Status.Schema.SchemaRuleDuplicateFound, messageTemplate, descriptor, messagePrefix );
+        super( Status.Schema.SchemaRuleDuplicateFound, NOT_FOUND_MESSAGE_TEMPLATE, kind, descriptor );
     }
 }

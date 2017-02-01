@@ -40,6 +40,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings.LabelIndex;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.index.IndexManager;
@@ -50,9 +51,9 @@ import org.neo4j.index.impl.lucene.legacy.LuceneIndexImplementation;
 import org.neo4j.index.impl.lucene.legacy.MyStandardAnalyzer;
 import org.neo4j.index.lucene.ValueContext;
 import org.neo4j.index.lucene.unsafe.batchinsert.LuceneBatchInserterIndexProvider;
+import org.neo4j.kernel.api.impl.labelscan.LuceneLabelScanStoreExtension;
+import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProviderFactory;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
-import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStoreExtension;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
@@ -91,7 +92,9 @@ public class TestLuceneBatchInsert
         storeDir = testDirectory.graphDbDir();
         Iterable filteredKernelExtensions = filter( onlyRealLuceneExtensions(),
                 Service.load( KernelExtensionFactory.class ) );
-        inserter = BatchInserters.inserter( storeDir, fileSystemRule.get(), stringMap(), filteredKernelExtensions );
+        inserter = BatchInserters.inserter( storeDir, fileSystemRule.get(),
+                stringMap( GraphDatabaseSettings.label_index.name(), LabelIndex.LUCENE.name() ),
+                filteredKernelExtensions );
     }
 
     @After
@@ -545,8 +548,9 @@ public class TestLuceneBatchInsert
     @SuppressWarnings( "rawtypes" )
     private Predicate<? super KernelExtensionFactory> onlyRealLuceneExtensions()
     {
-        return extension -> !(extension instanceof InMemoryLabelScanStoreExtension ||
-                          extension instanceof InMemoryIndexProviderFactory);
+        return extension ->
+            extension instanceof LuceneLabelScanStoreExtension ||
+            extension instanceof LuceneSchemaIndexProviderFactory;
     }
 
     private void switchToGraphDatabaseService( ConfigurationParameter... config )

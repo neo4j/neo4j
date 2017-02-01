@@ -108,7 +108,7 @@ public class ClusterSeedingIT
     private File createBackup( CoreGraphDatabase db, String backupName ) throws Exception
     {
         String[] args = BackupCoreIT.backupArguments( backupAddress( db ), baseBackupDir, backupName );
-        assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( args ) );
+        assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( testDir.absolutePath(), args ) );
         return new File( baseBackupDir, backupName );
     }
 

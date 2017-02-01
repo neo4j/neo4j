@@ -86,6 +86,8 @@ import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.SourceInf
  */
 public class EncodingIdMapper implements IdMapper
 {
+    static final int COUNTING_BATCH_SIZE = 10_000;
+
     public interface Monitor
     {
         /**
@@ -362,7 +364,7 @@ public class EncodingIdMapper implements IdMapper
         SameGroupDetector sameGroupDetector = new SameGroupDetector();
         for ( long i = 0; i < max; )
         {
-            int batch = (int) min( max-i, 10_000 );
+            int batch = (int) min( max-i, COUNTING_BATCH_SIZE );
             for ( int j = 0; j < batch; j++, i++ )
             {
                 long dataIndexA = trackerCache.get( i );
@@ -456,7 +458,7 @@ public class EncodingIdMapper implements IdMapper
         for ( long i = 0; ids.hasNext(); )
         {
             long j = 0;
-            for ( ; j < 10_000 && ids.hasNext(); j++, i++ )
+            for ( ; j < COUNTING_BATCH_SIZE && ids.hasNext(); j++, i++ )
             {
                 Object id = ids.next();
                 long eId = dataCache.get( i );
@@ -556,10 +558,10 @@ public class EncodingIdMapper implements IdMapper
         SourceInformation source = new SourceInformation();
         SameInputIdDetector detector = new SameInputIdDetector();
         progress.started( "DEDUPLICATE" );
-        for ( int i = 0; i < numberOfCollisions; i++ )
+        for ( int i = 0; i < numberOfCollisions; )
         {
             long j = 0;
-            for ( ; j < 10_000 && i < numberOfCollisions; j++, i++ )
+            for ( ; j < COUNTING_BATCH_SIZE && i < numberOfCollisions; j++, i++ )
             {
                 long collisionIndex = collisionTrackerCache.get( i );
                 long dataIndex = collisionNodeIdCache.get( collisionIndex );
