@@ -27,7 +27,7 @@ object LiteralTypeSupport {
   def deriveCypherType(obj: Any): CypherType = obj match {
     case _: String                          => CTString
     case _: Char                            => CTString
-    case _: Integer|_:Long|_:Short|_:Byte   => CTInteger
+    case _: Integer|_:java.lang.Long|_:Int|_:Long|_:Short|_:Byte => CTInteger
     case _: Number                          => CTFloat
     case _: Boolean                         => CTBoolean
     case IsMap(_)                           => CTMap

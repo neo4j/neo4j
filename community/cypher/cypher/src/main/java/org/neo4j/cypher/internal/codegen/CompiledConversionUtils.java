@@ -23,11 +23,14 @@ import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.DoubleStream;
+import java.util.stream.IntStream;
+import java.util.stream.LongStream;
 
-import org.neo4j.cypher.internal.compiler.v3_2.helpers.JavaListWrapper;
 import org.neo4j.cypher.internal.frontend.v3_2.CypherTypeException;
 import org.neo4j.cypher.internal.frontend.v3_2.IncomparableValuesException;
 import org.neo4j.graphdb.Node;
@@ -64,6 +67,7 @@ public abstract class CompiledConversionUtils
         {
             return ((Collection<?>) value);
         }
+        // TODO: Handle primitive streams
 
         throw new CypherTypeException( "Don't know how to create an iterable out of " + value.getClass().getSimpleName(), null );
     }
@@ -197,9 +201,66 @@ public abstract class CompiledConversionUtils
             ((Map) anyValue).replaceAll( (k, v) -> materializeAnyResult( nodeManager, v ) );
             return anyValue;
         }
+        else if ( anyValue instanceof PrimitiveNodeStream )
+        {
+            return ((PrimitiveNodeStream) anyValue).longStream()
+                    .mapToObj( nodeManager::newNodeProxyById )
+                    .collect( Collectors.toList() );
+        }
+        else if ( anyValue instanceof PrimitiveRelationshipStream )
+        {
+            return ((PrimitiveRelationshipStream) anyValue).longStream()
+                    .mapToObj( nodeManager::newRelationshipProxyById )
+                    .collect( Collectors.toList() );
+        }
+        else if ( anyValue instanceof LongStream )
+        {
+            return ((LongStream) anyValue).boxed().collect( Collectors.toList() );
+        }
+        else if ( anyValue instanceof DoubleStream )
+        {
+            return ((DoubleStream) anyValue).boxed().collect( Collectors.toList() );
+        }
+        else if ( anyValue instanceof IntStream )
+        {
+            // IntStream is only used for list of primitive booleans
+            return ((IntStream) anyValue).mapToObj( i -> i != 0 ).collect( Collectors.toList() );
+        }
         else
         {
             return anyValue;
+        }
+    }
+
+    public static final Iterator iteratorFrom( Object iterable )
+    {
+        if ( iterable instanceof Iterable )
+        {
+            return ((Iterable) iterable).iterator();
+        }
+        else if ( iterable instanceof PrimitiveEntityStream )
+        {
+            return ((PrimitiveEntityStream) iterable).iterator();
+        }
+        else if ( iterable instanceof LongStream )
+        {
+            return ((LongStream) iterable).iterator();
+        }
+        else if ( iterable instanceof DoubleStream )
+        {
+            return ((DoubleStream) iterable).iterator();
+        }
+        else if ( iterable instanceof IntStream )
+        {
+            return ((IntStream) iterable).iterator();
+        }
+        else if ( iterable == null )
+        {
+            return Collections.emptyIterator();
+        }
+        else
+        {
+            throw new CypherTypeException( "Don't know how to create an iterator out of " + iterable.getClass().getSimpleName(), null );
         }
     }
 }

@@ -20,7 +20,11 @@
 package org.neo4j.codegen;
 
 import java.util.Iterator;
+import java.util.PrimitiveIterator;
 import java.util.function.Consumer;
+import java.util.stream.DoubleStream;
+import java.util.stream.IntStream;
+import java.util.stream.LongStream;
 
 import static org.neo4j.codegen.LocalVariables.copy;
 import static org.neo4j.codegen.MethodReference.methodReference;
@@ -186,6 +190,12 @@ public class CodeBlock implements AutoCloseable
     public CodeBlock ifNonNullStatement( Expression...tests )
     {
         emitter.beginIfNonNull( tests );
+        return new CodeBlock( this );
+    }
+
+    public CodeBlock block()
+    {
+        emitter.beginBlock();
         return new CodeBlock( this );
     }
 

@@ -23,7 +23,9 @@ import org.neo4j.cypher.internal.frontend.v3_2.symbols
 import org.neo4j.cypher.internal.frontend.v3_2.symbols.CypherType
 
 case class CodeGenType(ct: CypherType, repr: RepresentationType) {
-  def isPrimitive = repr != ReferenceType
+  def isPrimitive = RepresentationType.isPrimitive(repr)
+
+  def canBeNullable = !isPrimitive || (ct == symbols.CTNode) || (ct == symbols.CTRelationship)
 }
 
 object CodeGenType {

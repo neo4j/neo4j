@@ -90,23 +90,27 @@ class GeneratedMethodStructureTest extends CypherFunSuite {
           }
         }),
        Operation("use a LongToList probe table", m => {
-         val table: LongToListTable = LongToListTable(Map("a" -> CodeGenType.primitiveNode), Map("b" -> "a"))
+         val table: LongToListTable =
+           LongToListTable(SimpleTupleDescriptor(Map("a" -> CodeGenType.primitiveNode)),
+                           localMap = Map("b" -> "a"))
          m.declareAndInitialize("a", CodeGenType.primitiveNode)
          m.allocateProbeTable("table", table)
-         val value: Expression = m.newTableValue("value", table.structure)
-         m.updateProbeTable(table.structure, "table", table, Seq("a"), value)
+         val value: Expression = m.newTableValue("value", table.tupleDescriptor)
+         m.updateProbeTable(table.tupleDescriptor, "table", table, Seq("a"), value)
          m.probe("table", table, Seq("a")) { inner =>
            inner.allNodesScan("foo")
          }
        }),
        Operation("use a LongsToList probe table", m => {
-         val table: LongsToListTable = LongsToListTable(Map("a" -> CodeGenType.primitiveNode, "b" -> CodeGenType.primitiveNode),
-                                                        Map("aa" -> "a", "bb" -> "b"))
+         val table: LongsToListTable =
+           LongsToListTable(SimpleTupleDescriptor(Map("a" -> CodeGenType.primitiveNode,
+                                                      "b" -> CodeGenType.primitiveNode)),
+                            localMap = Map("aa" -> "a", "bb" -> "b"))
          m.declareAndInitialize("a", CodeGenType.primitiveNode)
          m.declareAndInitialize("b", CodeGenType.primitiveNode)
          m.allocateProbeTable("table", table)
-         val value: Expression = m.newTableValue("value", table.structure)
-         m.updateProbeTable(table.structure, "table", table, Seq("a", "b"), value)
+         val value: Expression = m.newTableValue("value", table.tupleDescriptor)
+         m.updateProbeTable(table.tupleDescriptor, "table", table, Seq("a", "b"), value)
          m.probe("table", table, Seq("a", "b")) { inner =>
            inner.allNodesScan("foo")
          }

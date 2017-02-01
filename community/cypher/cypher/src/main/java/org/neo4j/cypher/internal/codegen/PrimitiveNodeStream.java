@@ -17,26 +17,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions
+package org.neo4j.cypher.internal.codegen;
 
-/**
-  * Type representation of a CodeGenExpression
-  */
-sealed trait RepresentationType
+import java.util.Iterator;
+import java.util.stream.LongStream;
 
-case object IntType extends RepresentationType
+public class PrimitiveNodeStream extends PrimitiveEntityStream<NodeIdWrapper>
+{
+    public PrimitiveNodeStream( LongStream inner )
+    {
+        super( inner );
+    }
 
-case object BoolType extends RepresentationType
+    public static PrimitiveNodeStream of( long[] array )
+    {
+        return new PrimitiveNodeStream( LongStream.of( array ) );
+    }
 
-case object FloatType extends RepresentationType
-
-case object ReferenceType extends RepresentationType
-
-case class ListReferenceType(inner: RepresentationType) extends RepresentationType
-
-object RepresentationType {
-  def isPrimitive(repr: RepresentationType) = repr match {
-    case IntType | FloatType | BoolType => true
-    case _ => false
-  }
+    @Override
+    // This method is only used when we do not know the element type at compile time, so it has to box the elements
+    public Iterator<NodeIdWrapper> iterator()
+    {
+        return inner.mapToObj( NodeIdWrapper::new ).iterator();
+    }
 }

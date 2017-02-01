@@ -32,17 +32,38 @@ case class Variable(name: String, codeGenType: CodeGenType, nullable: Boolean = 
 class CodeGenContext(val semanticTable: SemanticTable, idMap: Map[LogicalPlan, Id], val namer: Namer = Namer()) {
 
   private val variables: mutable.Map[String, Variable] = mutable.Map()
+  private val projectedVariables: mutable.Map[String, Variable] = mutable.Map.empty
   private val probeTables: mutable.Map[CodeGenPlan, JoinData] = mutable.Map()
   private val parents: mutable.Stack[CodeGenPlan] = mutable.Stack()
   val operatorIds: mutable.Map[Id, String] = mutable.Map()
 
   def addVariable(queryVariable: String, variable: Variable) {
+    //assert(!variables.isDefinedAt(queryVariable)) // TODO: Make the cases where overwriting the value is ok explicit (by using updateVariable)
+    variables.put(queryVariable, variable)
+  }
+
+  def updateVariable(queryVariable: String, variable: Variable) {
+    assert(variables.isDefinedAt(queryVariable))
     variables.put(queryVariable, variable)
   }
 
   def getVariable(queryVariable: String): Variable = variables(queryVariable)
 
   def variableQueryVariables(): Set[String] = variables.keySet.toSet
+
+  // We need to keep track of variables that are exposed by a QueryHorizon,
+  // e.g. Projection, Unwind, ProcedureCall, LoadCsv
+  // These variables are the only ones that needs to be considered for materialization by an eager operation, e.g. Sort
+  def addProjectedVariable(queryVariable: String, variable: Variable) {
+    projectedVariables.put(queryVariable, variable)
+  }
+
+  // We need to clear projected variables that are no longer exposed by a QueryHorizon, e.g a regular Projection
+  def clearProjectedVariables(): Unit = {
+    projectedVariables.clear()
+  }
+
+  def getProjectedVariables: Map[String, Variable] = projectedVariables.toMap
 
   def addProbeTable(plan: CodeGenPlan, codeThunk: JoinData) {
     probeTables.put(plan, codeThunk)
@@ -62,4 +83,8 @@ class CodeGenContext(val semanticTable: SemanticTable, idMap: Map[LogicalPlan, I
   def registerOperator(plan: LogicalPlan): String = {
     operatorIds.getOrElseUpdate(idMap(plan), namer.newOpName(plan.getClass.getSimpleName))
   }
+}
+
+object CodeGenContext {
+  def sanitizedName(name: String) = name.replace(" ", "_")
 }

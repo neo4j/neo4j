@@ -17,26 +17,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions
+package org.neo4j.cypher.internal.codegen;
 
-/**
-  * Type representation of a CodeGenExpression
-  */
-sealed trait RepresentationType
+import java.util.Iterator;
+import java.util.PrimitiveIterator;
+import java.util.stream.LongStream;
 
-case object IntType extends RepresentationType
+public abstract class PrimitiveEntityStream<T>
+{
+    protected final LongStream inner;
 
-case object BoolType extends RepresentationType
+    public PrimitiveEntityStream( LongStream inner )
+    {
+        this.inner = inner;
+    }
 
-case object FloatType extends RepresentationType
+    public PrimitiveIterator.OfLong primitiveIterator()
+    {
+        return inner.iterator();
+    }
 
-case object ReferenceType extends RepresentationType
+    public LongStream longStream()
+    {
+        return inner;
+    }
 
-case class ListReferenceType(inner: RepresentationType) extends RepresentationType
-
-object RepresentationType {
-  def isPrimitive(repr: RepresentationType) = repr match {
-    case IntType | FloatType | BoolType => true
-    case _ => false
-  }
+    public abstract Iterator<T> iterator();
 }

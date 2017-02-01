@@ -19,23 +19,23 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.codegen.ir
 
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.CodeGenContext
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi.MethodStructure
-import org.neo4j.cypher.internal.compiler.v3_2.codegen.{CodeGenContext, Variable}
 
-case class ScanAllNodes(opName: String) extends LoopDataGenerator {
+case class SortInstruction(opName: String,
+                           sortTableInfo: SortTableInfo)
+  extends Instruction {
 
-  override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {}
-
-  override def produceIterator[E](iterVar: String, generator: MethodStructure[E])(implicit context: CodeGenContext) = {
-    generator.allNodesScan(iterVar)
-    generator.incrementDbHits()
+  override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
   }
 
-  override def produceNext[E](nextVar: Variable, iterVar: String, generator: MethodStructure[E])
-                             (implicit context: CodeGenContext) = {
-    generator.incrementDbHits()
-    generator.nextNode(nextVar.name, iterVar)
+  override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
+    generator.trace(opName, Some(this.getClass.getSimpleName)) { body =>
+      body.sortTableSort(sortTableInfo.tableName, sortTableInfo.tupleDescriptor)
+    }
   }
 
-  override def hasNext[E](generator: MethodStructure[E], iterVar: String): E = generator.hasNextNode(iterVar)
+  override protected def children: Seq[Instruction] = Seq.empty
+
+  override protected def operatorId = Set(opName)
 }

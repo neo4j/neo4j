@@ -22,21 +22,27 @@ package org.neo4j.cypher.internal.compiler.v3_2.codegen.ir
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi.MethodStructure
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.{CodeGenContext, Variable}
 
-case class ScanForLabel(opName: String, labelName: String, labelVar: String) extends LoopDataGenerator {
+case class GetSortedResult(opName: String,
+                           variablesToKeep: Map[String, Variable],
+                           sortTableInfo: SortTableInfo,
+                           action: Instruction) extends Instruction {
 
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) =
-    generator.lookupLabelId(labelVar, labelName)
+    action.init(generator)
 
-  override def produceIterator[E](iterVar: String, generator: MethodStructure[E])(implicit context: CodeGenContext) = {
-    generator.labelScan(iterVar, labelVar)
-    generator.incrementDbHits()
-  }
+  override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext) =
+    generator.trace(opName, Some(this.getClass.getSimpleName)) { l1 =>
+      val variablesToGetFromFields = sortTableInfo.outgoingVariableNameToVariableInfo.collect {
+        case (_, FieldAndVariableInfo(fieldName, queryVariableName, incoming, outgoing))
+          if variablesToKeep.isDefinedAt(queryVariableName) => (outgoing.name, fieldName)
+      }
+      l1.sortTableIterate(sortTableInfo.tableName, sortTableInfo.tupleDescriptor, variablesToGetFromFields) { l2 =>
+        l2.incrementRows()
+        action.body(l2)
+      }
+    }
 
-  override def produceNext[E](nextVar: Variable, iterVar: String, generator: MethodStructure[E])
-                             (implicit context: CodeGenContext) = {
-    generator.incrementDbHits()
-    generator.nextNode(nextVar.name, iterVar)
-  }
+  override def children = Seq(action)
 
-  override def hasNext[E](generator: MethodStructure[E], iterVar: String): E = generator.hasNextNode(iterVar)
+  override protected def operatorId = Set(opName)
 }

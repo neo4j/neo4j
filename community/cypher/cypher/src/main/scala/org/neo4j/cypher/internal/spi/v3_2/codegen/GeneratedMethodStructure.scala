@@ -20,6 +20,8 @@
 package org.neo4j.cypher.internal.spi.v3_2.codegen
 
 import java.util
+import java.util.PrimitiveIterator
+import java.util.stream.{DoubleStream, IntStream, LongStream}
 
 import org.neo4j.codegen.Expression.{not, or, _}
 import org.neo4j.codegen.MethodReference.methodReference
@@ -30,11 +32,11 @@ import org.neo4j.cypher.internal.codegen.CompiledConversionUtils.CompositeKey
 import org.neo4j.cypher.internal.codegen._
 import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.commands.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.compiler.v3_2.codegen._
-import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions.{BoolType, CodeGenType, FloatType, IntType, ReferenceType, Parameter => _}
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions.{BoolType, CodeGenType, FloatType, IntType, Parameter => _, ReferenceType, _}
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi._
 import org.neo4j.cypher.internal.compiler.v3_2.helpers._
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
-import org.neo4j.cypher.internal.frontend.v3_2.symbols.{CTNode, CTRelationship}
+import org.neo4j.cypher.internal.frontend.v3_2.symbols.{CTNode, CTRelationship, ListType}
 import org.neo4j.cypher.internal.frontend.v3_2.{ParameterNotFoundException, SemanticDirection, symbols}
 import org.neo4j.cypher.internal.spi.v3_2.codegen.Methods._
 import org.neo4j.cypher.internal.spi.v3_2.codegen.Templates.{createNewInstance, handleKernelExceptions, newRelationshipDataExtractor, tryCatch}
@@ -75,9 +77,9 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   private implicit class RichTableType(tableType: RecordingJoinTableType) {
 
     def extractHashTable(): HashTable = tableType match {
-      case LongToListTable(structure, localMap) =>
+      case LongToListTable(tupleDescriptor, localMap) =>
         // compute the participating types
-        val valueType = aux.typeReference(structure)
+        val valueType = aux.typeReference(tupleDescriptor)
         val listType = parameterizedType(classOf[util.ArrayList[_]], valueType)
         val tableType = parameterizedType(classOf[PrimitiveLongObjectMap[_]], valueType)
         // the methods we use on those types
@@ -87,9 +89,9 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
         HashTable(valueType, listType, tableType, get, put, add)
 
-      case LongsToListTable(structure, localMap) =>
+      case LongsToListTable(tupleDescriptor, localMap) =>
         // compute the participating types
-        val valueType = aux.typeReference(structure)
+        val valueType = aux.typeReference(tupleDescriptor)
         val listType = parameterizedType(classOf[util.ArrayList[_]], valueType)
         val tableType = parameterizedType(classOf[util.HashMap[_, _]], typeRef[CompositeKey], valueType)
         // the methods we use on those types
@@ -299,9 +301,10 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   override def materializeAny(variable: String) =
     invoke(materializeAnyResult, nodeManager, generator.load(variable))
 
-  override def trace[V](planStepId: String)(block: MethodStructure[Expression] => V) = if (!tracing) block(this)
+  override def trace[V](planStepId: String, maybeSuffix: Option[String] = None)(block: MethodStructure[Expression] => V) = if (!tracing) block(this)
   else {
-    val eventName = s"event_$planStepId"
+    val suffix = maybeSuffix.map("_" +_ ).getOrElse("")
+    val eventName = s"event_$planStepId${suffix}"
     generator.assign(typeRef[QueryExecutionEvent], eventName, traceEvent(planStepId))
     val result = block(copy(events = eventName :: events, generator = generator))
     generator.expression(invoke(generator.load(eventName), method[QueryExecutionEvent, Unit]("close")))
@@ -326,6 +329,10 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     }
     generator.assign(typeRef[Object], variableName, invoke(loadParameter,
                                                            invoke(params, mapGet, constantExpression(key))))
+  }
+
+  override def mapGetExpression(mapName: String, key: String): Expression = {
+    invoke(cast(typeRef[java.util.Map[String, Object]], generator.load(mapName)), mapGet, constantExpression(key))
   }
 
   override def constantExpression(value: Object) = value match {
@@ -463,6 +470,91 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   override def asList(values: Seq[Expression]) = Templates.asList[Object](values)
 
+  override def asPrimitiveStream(values: Seq[Expression], codeGenType: CodeGenType) = {
+    codeGenType match {
+      case CodeGenType(ListType(CTNode), ListReferenceType(IntType)) =>
+        Templates.asPrimitiveNodeStream(values)
+      case CodeGenType(ListType(CTRelationship), ListReferenceType(IntType)) =>
+        Templates.asPrimitiveRelationshipStream(values)
+      case CodeGenType(_, ListReferenceType(IntType)) =>
+        Templates.asLongStream(values)
+      case CodeGenType(_, ListReferenceType(FloatType)) =>
+        Templates.asDoubleStream(values)
+      case CodeGenType(_, ListReferenceType(BoolType)) =>
+        // There are no primitive streams for booleans, so we use an IntStream with value conversions
+        // 0 = false, 1 = true
+        Templates.asIntStream(values.map(Expression.ternary(_, Expression.constant(1), Expression.constant(0))))
+      case _ =>
+        throw new IllegalArgumentException(s"CodeGenType $codeGenType not supported as primitive stream")
+    }
+  }
+
+  override def declarePrimitiveIterator(name: String, iterableCodeGenType: CodeGenType): Unit = {
+    val variable = iterableCodeGenType match {
+      case CodeGenType(symbols.ListType(_), ListReferenceType(IntType)) =>
+        generator.declare(typeRef[PrimitiveIterator.OfLong], name)
+      case CodeGenType(symbols.ListType(_), ListReferenceType(FloatType)) =>
+        generator.declare(typeRef[PrimitiveIterator.OfDouble], name)
+      case CodeGenType(symbols.ListType(_), ListReferenceType(BoolType)) =>
+        generator.declare(typeRef[PrimitiveIterator.OfInt], name)
+      case _ => throw new IllegalArgumentException(s"CodeGenType $iterableCodeGenType not supported as primitive iterator")
+    }
+    locals += (name -> variable)
+  }
+
+  override def primitiveIteratorFrom(iterable: Expression, iterableCodeGenType: CodeGenType) =
+    iterableCodeGenType match {
+      case CodeGenType(symbols.ListType(symbols.CTNode), ListReferenceType(IntType)) =>
+        invoke(cast(typeRef[PrimitiveNodeStream], iterable), method[PrimitiveNodeStream, PrimitiveIterator.OfLong]("primitiveIterator"))
+      case CodeGenType(symbols.ListType(symbols.CTRelationship), ListReferenceType(IntType)) =>
+        invoke(cast(typeRef[PrimitiveRelationshipStream], iterable), method[PrimitiveRelationshipStream, PrimitiveIterator.OfLong]("primitiveIterator"))
+      case CodeGenType(symbols.ListType(_), ListReferenceType(IntType)) =>
+        invoke(cast(typeRef[LongStream], iterable), method[LongStream, PrimitiveIterator.OfLong]("iterator"))
+      case CodeGenType(symbols.ListType(_), ListReferenceType(FloatType)) =>
+        invoke(cast(typeRef[DoubleStream], iterable), method[DoubleStream, PrimitiveIterator.OfDouble]("iterator"))
+      case CodeGenType(symbols.ListType(_), ListReferenceType(BoolType)) =>
+        invoke(cast(typeRef[IntStream], iterable), method[IntStream, PrimitiveIterator.OfInt]("iterator"))
+      case _ => throw new IllegalArgumentException(s"CodeGenType $iterableCodeGenType not supported as primitive iterator")
+    }
+
+  override def primitiveIteratorNext(iterator: Expression, iterableCodeGenType: CodeGenType) =
+    iterableCodeGenType match {
+      case CodeGenType(symbols.ListType(_), ListReferenceType(IntType)) =>
+        // Nodes & Relationships are also covered by this case
+        invoke(iterator, method[PrimitiveIterator.OfLong, Long]("nextLong"))
+      case CodeGenType(symbols.ListType(_), ListReferenceType(FloatType)) =>
+        invoke(iterator, method[PrimitiveIterator.OfDouble, Double]("nextDouble"))
+      case CodeGenType(symbols.ListType(_), ListReferenceType(BoolType)) =>
+        not(equal(constant(0), invoke(iterator, method[PrimitiveIterator.OfInt, Int]("nextInt"))))
+      case _ => throw new IllegalArgumentException(s"CodeGenType $iterableCodeGenType not supported as primitive iterator")
+    }
+
+  override def primitiveIteratorHasNext(iterator: Expression, iterableCodeGenType: CodeGenType) =
+    iterableCodeGenType match {
+      case CodeGenType(symbols.ListType(_), ListReferenceType(IntType)) =>
+        // Nodes & Relationships are also covered by this case
+        invoke(iterator, method[PrimitiveIterator.OfLong, Long]("hasNext"))
+      case CodeGenType(symbols.ListType(_), ListReferenceType(FloatType)) =>
+        invoke(iterator, method[PrimitiveIterator.OfDouble, Double]("hasNext"))
+      case CodeGenType(symbols.ListType(_), ListReferenceType(BoolType)) =>
+        invoke(iterator, method[PrimitiveIterator.OfInt, Int]("hasNext"))
+      case _ => throw new IllegalArgumentException(s"CodeGenType $iterableCodeGenType not supported as primitive iterator")
+    }
+
+  override def declareIterator(name: String): Unit = {
+    val variable = generator.declare(typeRef[java.util.Iterator[Object]], name)
+    locals += (name -> variable)
+  }
+
+  override def iteratorFrom(iterable: Expression) =
+    invoke(method[CompiledConversionUtils, java.util.Iterator[_]]("iteratorFrom", typeRef[Object]), iterable)
+
+  override def iteratorNext(iterator: Expression) =
+    invoke(iterator, method[java.util.Iterator[_], Object]("next"))
+
+  override def iteratorHasNext(iterator: Expression) =
+    invoke(iterator, method[java.util.Iterator[_], Boolean]("hasNext"))
+
   override def toSet(value: Expression) =
     createNewInstance(typeRef[util.HashSet[Object]], (typeRef[util.Collection[_]], value))
 
@@ -498,8 +590,9 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
       }
     }
   }
-  override def distinctSetIterate(name: String, key: Map[String, CodeGenType])
+  override def distinctSetIterate(name: String, keyTupleDescriptor: HashableTupleDescriptor)
                                     (block: (MethodStructure[Expression]) => Unit) = {
+    val key = keyTupleDescriptor.structure
     if (key.size == 1 && key.head._2.repr == IntType) {
       val (keyName, keyType) = key.head
       val localName = context.namer.newVarName()
@@ -517,7 +610,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
       val localName = context.namer.newVarName()
       val next = context.namer.newVarName()
       val variable = generator.declare(typeRef[java.util.Iterator[Object]], localName)
-      val keyStruct = aux.hashKey(key)
+      val keyStruct = aux.hashableTypeReference(keyTupleDescriptor)
       generator.assign(variable,
                        invoke(generator.load(name),method[util.HashSet[Object], util.Iterator[Object]]("iterator")))
       using(generator.whileLoop(
@@ -540,9 +633,9 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   }
 
   override def newUniqueAggregationKey(varName: String, structure: Map[String, (CodeGenType, Expression)]) = {
-    val typ = aux.hashKey(structure.map {
+    val typ = aux.hashableTypeReference(HashableTupleDescriptor(structure.map {
       case (n, (t, _)) => n -> t
-    })
+    }))
     val local = generator.declare(typ, varName)
     locals += varName -> local
     generator.assign(local, createNewInstance(typ))
@@ -587,6 +680,48 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
       val typ =  TypeReference.parameterizedType(typeRef[util.HashMap[_,_]], typeRef[Object], setType)
 
       generator.assign(generator.declare(typ, name ), createNewInstance(typ))
+    }
+  }
+
+  override def allocateSortTable(name: String, initialCapacity: Int, tupleDescriptor: OrderableTupleDescriptor): Unit = {
+    val typ = TypeReference.parameterizedType(classOf[util.ArrayList[_]], aux.comparableTypeReference(tupleDescriptor))
+    val localVariable = generator.declare(typ, name)
+    locals += name -> localVariable
+    generator.assign(localVariable, createNewInstance(typ, (typeRef[Int], constant(initialCapacity))))
+  }
+
+  override def sortTableAdd(name: String, tupleDescriptor: OrderableTupleDescriptor, value: Expression): Unit = {
+    generator.expression(pop(invoke(generator.load(name),
+      method[util.ArrayList[_], Boolean]("add", typeRef[Object]), box(value))))
+  }
+
+  override def sortTableSort(name: String, tupleDescriptor: OrderableTupleDescriptor): Unit = {
+    val tupleType = aux.comparableTypeReference(tupleDescriptor)
+    val tableType = TypeReference.parameterizedType(classOf[util.List[_]], tupleType)
+    generator.expression(invoke(
+      method[java.util.Collections, Unit]("sort", tableType), generator.load(name)))
+  }
+
+  override def sortTableIterate(tableName: String, tupleDescriptor: OrderableTupleDescriptor,
+                                varNameToField: Map[String, String])
+                               (block: (MethodStructure[Expression]) => Unit): Unit = {
+    val tupleType = aux.comparableTypeReference(tupleDescriptor)
+    val elementName = context.namer.newVarName()
+
+    using(generator.forEach(Parameter.param(tupleType, elementName), generator.load(tableName))) { body =>
+      varNameToField.foreach {
+        case (localName, fieldName) =>
+          val fieldType = lowerType(tupleDescriptor.structure(fieldName))
+
+          val localVariable: LocalVariable = body.declare(fieldType, localName)
+          locals += localName -> localVariable
+
+          body.assign(localVariable,
+            get(body.load(elementName),
+              FieldReference.field(tupleType, fieldType, fieldName))
+          )
+      }
+      block(copy(generator = body))
     }
   }
 
@@ -742,8 +877,9 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     }
   }
 
-  override def aggregationMapIterate(name: String, key: Map[String, CodeGenType], valueVar: String)
+  override def aggregationMapIterate(name: String, keyTupleDescriptor: HashableTupleDescriptor, valueVar: String)
                                     (block: (MethodStructure[Expression]) => Unit) = {
+    val key = keyTupleDescriptor.structure
     if (key.size == 1 && key.head._2.repr == IntType) {
       val (keyName, keyType) = key.head
       val localName = context.namer.newVarName()
@@ -765,7 +901,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
       val next = context.namer.newVarName()
       val variable = generator
         .declare(typeRef[java.util.Iterator[java.util.Map.Entry[Object, java.lang.Long]]], localName)
-      val keyStruct = aux.hashKey(key)
+      val keyStruct = aux.hashableTypeReference(keyTupleDescriptor)
       generator.assign(variable,
                        invoke(invoke(generator.load(name),
                                      method[util.HashMap[Object, java.lang.Long],
@@ -826,16 +962,19 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   private def joinTableType(resultType: JoinTableType): TypeReference = {
     val returnType = resultType match {
-      case LongToCountTable => typeRef[PrimitiveLongIntMap]
-      case LongsToCountTable => TypeReference
-        .parameterizedType(classOf[util.HashMap[_, _]], classOf[CompositeKey], classOf[java.lang.Integer])
-      case LongToListTable(structure, _) => parameterizedType(classOf[PrimitiveLongObjectMap[_]],
-                                                              parameterizedType(
-                                                                classOf[util.ArrayList[_]],
-                                                                aux.typeReference(structure)))
-      case LongsToListTable(structure, _) => TypeReference
-        .parameterizedType(classOf[util.HashMap[_, _]], typeRef[CompositeKey],
-                           parameterizedType(classOf[util.ArrayList[_]], aux.typeReference(structure)))
+      case LongToCountTable =>
+        typeRef[PrimitiveLongIntMap]
+      case LongsToCountTable =>
+        parameterizedType(classOf[util.HashMap[_, _]], classOf[CompositeKey], classOf[java.lang.Integer])
+      case LongToListTable(tupleDescriptor, _) =>
+        parameterizedType(classOf[PrimitiveLongObjectMap[_]],
+                          parameterizedType(classOf[util.ArrayList[_]],
+                                            aux.typeReference(tupleDescriptor)))
+      case LongsToListTable(tupleDescriptor, _) =>
+        parameterizedType(classOf[util.HashMap[_, _]],
+                          typeRef[CompositeKey],
+                          parameterizedType(classOf[util.ArrayList[_]],
+                                            aux.typeReference(tupleDescriptor)))
     }
     returnType
   }
@@ -913,7 +1052,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
         body.assign(times, subtract(times, constant(1)))
       }
 
-    case tableType@LongToListTable(structure, localVars) =>
+    case tableType@LongToListTable(tupleDescriptor, localVars) =>
       assert(keyVars.size == 1)
       val keyVar = keyVars.head
 
@@ -926,15 +1065,15 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
         using(onTrue.forEach(Parameter.param(hashTable.valueType, elementName), list)) { forEach =>
           localVars.foreach {
             case (l, f) =>
-              val fieldType = lowerType(structure(f))
+              val fieldType = lowerType(tupleDescriptor.structure(f))
               forEach.assign(fieldType, l, get(forEach.load(elementName),
-                                               field(structure, structure(f), f)))
+                                               field(tupleDescriptor, f)))
           }
           block(copy(generator = forEach))
         }
       }
 
-    case tableType@LongsToListTable(structure, localVars) =>
+    case tableType@LongsToListTable(tupleDescriptor, localVars) =>
       val hashTable = tableType.extractHashTable()
       val list = generator.declare(hashTable.listType, context.namer.newVarName())
       val elementName = context.namer.newVarName()
@@ -950,22 +1089,24 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
         using(onTrue.forEach(Parameter.param(hashTable.valueType, elementName), list)) { forEach =>
           localVars.foreach {
             case (l, f) =>
-              val fieldType = lowerType(structure(f))
+              val fieldType = lowerType(tupleDescriptor.structure(f))
               forEach.assign(fieldType, l, get(forEach.load(elementName),
-                                               field(structure, structure(f), f)))
+                                               field(tupleDescriptor, f)))
           }
           block(copy(generator = forEach))
         }
       }
   }
 
-  override def putField(structure: Map[String, CodeGenType], value: Expression, fieldType: CodeGenType,
+  override def putField(tupleDescriptor: TupleDescriptor, value: Expression,
                         fieldName: String,
                         localVar: String) = {
-    generator.put(value, field(structure, fieldType, fieldName), generator.load(localVar))
+    generator.put(value,
+      field(tupleDescriptor, fieldName),
+      generator.load(localVar))
   }
 
-  override def updateProbeTable(structure: Map[String, CodeGenType], tableVar: String,
+  override def updateProbeTable(tupleDescriptor: TupleDescriptor, tableVar: String,
                                 tableType: RecordingJoinTableType,
                                 keyVars: Seq[String], element: Expression) = tableType match {
     case _: LongToListTable =>
@@ -1174,12 +1315,14 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   override def coerceToBoolean(propertyExpression: Expression): Expression =
     invoke(coerceToPredicate, propertyExpression)
 
-  override def newTableValue(targetVar: String, structure: Map[String, CodeGenType]) = {
-    val valueType = aux.typeReference(structure)
-    generator.assign(valueType, targetVar, createNewInstance(valueType))
+  override def newTableValue(targetVar: String, tupleDescriptor: TupleDescriptor) = {
+    val tupleType = aux.typeReference(tupleDescriptor)
+    generator.assign(tupleType, targetVar, createNewInstance(tupleType))
     generator.load(targetVar)
   }
 
-  private def field(structure: Map[String, CodeGenType], fieldType: CodeGenType, fieldName: String) =
-    FieldReference.field(aux.typeReference(structure), lowerType(fieldType), fieldName)
+  private def field(tupleDescriptor: TupleDescriptor, fieldName: String) = {
+    val fieldType: CodeGenType = tupleDescriptor.structure(fieldName)
+    FieldReference.field(aux.typeReference(tupleDescriptor), lowerType(fieldType), fieldName)
+  }
 }

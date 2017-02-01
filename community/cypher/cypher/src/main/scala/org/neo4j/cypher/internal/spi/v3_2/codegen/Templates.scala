@@ -20,11 +20,13 @@
 package org.neo4j.cypher.internal.spi.v3_2.codegen
 import java.util
 import java.util.function.Consumer
+import java.util.stream.{DoubleStream, IntStream, LongStream}
 
 import org.neo4j.codegen.ExpressionTemplate._
 import org.neo4j.codegen.MethodReference._
 import org.neo4j.codegen._
 import org.neo4j.collection.primitive.{Primitive, PrimitiveLongIntMap, PrimitiveLongObjectMap}
+import org.neo4j.cypher.internal.codegen.{PrimitiveNodeStream, PrimitiveRelationshipStream}
 import org.neo4j.cypher.internal.compiler.v3_2.codegen._
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription
@@ -57,6 +59,26 @@ object Templates {
   def asList[T](values: Seq[Expression])(implicit manifest: Manifest[T]): Expression = Expression.invoke(
     methodReference(typeRef[util.Arrays], typeRef[util.List[T]], "asList", typeRef[Array[Object]]),
     Expression.newArray(typeRef[T], values: _*))
+
+  def asPrimitiveNodeStream(values: Seq[Expression]): Expression = Expression.invoke(
+    methodReference(typeRef[PrimitiveNodeStream], typeRef[PrimitiveNodeStream], "of", typeRef[Array[Long]]),
+    Expression.newArray(typeRef[Long], values: _*))
+
+  def asPrimitiveRelationshipStream(values: Seq[Expression]): Expression = Expression.invoke(
+    methodReference(typeRef[PrimitiveRelationshipStream], typeRef[PrimitiveRelationshipStream], "of", typeRef[Array[Long]]),
+    Expression.newArray(typeRef[Long], values: _*))
+
+  def asLongStream(values: Seq[Expression]): Expression = Expression.invoke(
+    methodReference(typeRef[LongStream], typeRef[LongStream], "of", typeRef[Array[Long]]),
+    Expression.newArray(typeRef[Long], values: _*))
+
+  def asDoubleStream(values: Seq[Expression]): Expression = Expression.invoke(
+    methodReference(typeRef[DoubleStream], typeRef[DoubleStream], "of", typeRef[Array[Double]]),
+    Expression.newArray(typeRef[Double], values: _*))
+
+  def asIntStream(values: Seq[Expression]): Expression = Expression.invoke(
+    methodReference(typeRef[IntStream], typeRef[IntStream], "of", typeRef[Array[Int]]),
+    Expression.newArray(typeRef[Int], values: _*))
 
   def handleKernelExceptions[V](generate: CodeBlock, ro: FieldReference, finalizers: Seq[CodeBlock => Unit])
                          (block: CodeBlock => V): V = {

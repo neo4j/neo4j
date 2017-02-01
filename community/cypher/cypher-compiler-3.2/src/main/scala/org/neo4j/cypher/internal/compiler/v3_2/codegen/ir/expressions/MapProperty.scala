@@ -17,25 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_2.codegen.ir
+package org.neo4j.cypher.internal.compiler.v3_2.codegen.ir.expressions
 
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.{Variable, CodeGenContext}
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi.MethodStructure
-import org.neo4j.cypher.internal.compiler.v3_2.codegen.{CodeGenContext, Variable}
 
-case class ScanAllNodes(opName: String) extends LoopDataGenerator {
-
+case class MapProperty(mapVariable: Variable, propertyKeyName: String) extends CodeGenExpression {
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {}
 
-  override def produceIterator[E](iterVar: String, generator: MethodStructure[E])(implicit context: CodeGenContext) = {
-    generator.allNodesScan(iterVar)
-    generator.incrementDbHits()
-  }
+  override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext): E =
+    structure.mapGetExpression(mapVariable.name, propertyKeyName)
 
-  override def produceNext[E](nextVar: Variable, iterVar: String, generator: MethodStructure[E])
-                             (implicit context: CodeGenContext) = {
-    generator.incrementDbHits()
-    generator.nextNode(nextVar.name, iterVar)
-  }
+  override def nullable(implicit context: CodeGenContext) = true
 
-  override def hasNext[E](generator: MethodStructure[E], iterVar: String): E = generator.hasNextNode(iterVar)
+  override def codeGenType(implicit context: CodeGenContext) = CodeGenType.Any
 }
