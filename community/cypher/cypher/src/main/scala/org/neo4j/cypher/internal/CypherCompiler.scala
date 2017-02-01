@@ -63,7 +63,7 @@ case class PreParsedQuery(statement: String, rawStatement: String, version: Cyph
       case _ => s"updateStrategy=${updateStrategy.name}"
     }
 
-    s"CYPHER ${version.name} $plannerInfo $runtimeInfo $updateStrategyInfo $statement".replaceAll("\\s+", " ")
+    s"CYPHER ${version.name} $plannerInfo $runtimeInfo $codeGenModeInfo $updateStrategyInfo $statement".replaceAll("\\s+", " ")
   }
 }
 
@@ -144,8 +144,8 @@ class CypherCompiler(graph: GraphDatabaseQueryService,
 
     var preParsingNotifications: Set[org.neo4j.graphdb.Notification] = Set.empty
     if (version == CypherVersion.v3_2 && planner == CypherPlanner.rule) {
-      val position = preParsedQuery.offset;
-      preParsingNotifications = preParsingNotifications + rulePlannerUnavaibleFallbackNotification(position)
+      val position = preParsedQuery.offset
+      preParsingNotifications = preParsingNotifications + rulePlannerUnavailableFallbackNotification(position)
       version = CypherVersion.v3_1
     }
 
@@ -159,7 +159,7 @@ class CypherCompiler(graph: GraphDatabaseQueryService,
     }
   }
 
-  private def rulePlannerUnavaibleFallbackNotification(offset: InputPosition): org.neo4j.graphdb.Notification = {
+  private def rulePlannerUnavailableFallbackNotification(offset: InputPosition): org.neo4j.graphdb.Notification = {
     val pos = new org.neo4j.graphdb.InputPosition(offset.offset, offset.line, offset.column)
     RULE_PLANNER_UNAVAILABLE_FALLBACK.notification(pos)
   }
