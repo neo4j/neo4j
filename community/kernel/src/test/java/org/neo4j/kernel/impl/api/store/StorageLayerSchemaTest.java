@@ -29,6 +29,8 @@ import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.Iterators.asSet;
@@ -82,7 +84,7 @@ public class StorageLayerSchemaTest extends StorageLayerTest
 
         // When
         Set<NodePropertyConstraint> constraints = asSet(
-                disk.constraintsGetForLabelAndPropertyKey( descriptorFrom( label1, propertyKey ) ) );
+                disk.constraintsGetForLabelAndPropertyKey( newDescriptorFrom( label1, propertyKey ) ) );
 
         // Then
         Set<?> expectedConstraints = asSet(
@@ -103,5 +105,10 @@ public class StorageLayerSchemaTest extends StorageLayerTest
     private NodePropertyDescriptor descriptorFrom( Label label, String propertyKey )
     {
         return new NodePropertyDescriptor( labelId( label ), propertyKeyId( propertyKey ) );
+    }
+
+    private LabelSchemaDescriptor newDescriptorFrom( Label label, String propertyKey )
+    {
+        return SchemaDescriptorFactory.forLabel( labelId( label ), propertyKeyId( propertyKey ) );
     }
 }

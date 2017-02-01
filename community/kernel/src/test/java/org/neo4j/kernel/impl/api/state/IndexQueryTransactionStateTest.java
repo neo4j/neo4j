@@ -35,6 +35,9 @@ import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaBoundary;
+import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.ConstraintEnforcingEntityOperations;
@@ -71,6 +74,7 @@ public class IndexQueryTransactionStateTest
     String value = "My Value";
     NodePropertyDescriptor descriptor = new NodePropertyDescriptor( labelId, propertyKeyId );
     IndexDescriptor indexDescriptor = IndexDescriptorFactory.of( descriptor );
+    List<NewIndexDescriptor> indexes = Collections.singletonList( IndexBoundary.map( indexDescriptor ) );
 
     private StoreReadLayer store;
     private StoreStatement statement;
@@ -93,7 +97,8 @@ public class IndexQueryTransactionStateTest
                 .<IndexDescriptor>emptyList() ) );
         when( store.indexesGetAll() ).then( answerAsIteratorFrom( Collections.<IndexDescriptor>emptyList() ) );
         when( store.constraintsGetForLabel( labelId ) ).thenReturn( Collections.<NodePropertyConstraint>emptyIterator() );
-        when( store.indexGetForLabelAndPropertyKey( descriptor ) ).thenReturn( indexDescriptor );
+        when( store.indexGetForLabelAndPropertyKey( SchemaBoundary.map( descriptor ) ) ).thenReturn(
+                IndexBoundary.map( indexDescriptor ) );
 
         statement = mock( StoreStatement.class );
         when( state.getStoreStatement() ).thenReturn( statement );
@@ -190,7 +195,6 @@ public class IndexQueryTransactionStateTest
         when( statement.acquireSingleNodeCursor( nodeId ) ).thenReturn(
                 asNodeCursor( nodeId, asPropertyCursor( stringProperty( propertyKeyId, value ) ) ) );
 
-        List<IndexDescriptor> indexes = Collections.singletonList( indexDescriptor );
         when( store.indexesGetForLabel( labelId ) ).thenReturn( indexes.iterator() );
         txContext.nodeAddLabel( state, nodeId, labelId );
 
@@ -213,7 +217,7 @@ public class IndexQueryTransactionStateTest
 
         when( statement.acquireSingleNodeCursor( nodeId ) )
                 .thenReturn( asNodeCursor( nodeId, asPropertyCursor( stringProperty( propertyKeyId, value ) ) ) );
-        List<IndexDescriptor> indexes = Collections.singletonList( indexDescriptor );
+
         when( store.indexesGetForLabel( labelId ) ).thenReturn( indexes.iterator() );
         txContext.nodeAddLabel( state, nodeId, labelId );
 
@@ -234,7 +238,7 @@ public class IndexQueryTransactionStateTest
 
         when( statement.acquireSingleNodeCursor( nodeId ) )
                 .thenReturn( asNodeCursor( nodeId, asPropertyCursor( stringProperty( propertyKeyId, value ) ) ) );
-        List<IndexDescriptor> indexes = Collections.singletonList( indexDescriptor );
+
         when( store.indexesGetForLabel( labelId ) ).thenReturn( indexes.iterator() );
         txContext.nodeAddLabel( state, nodeId, labelId );
 
@@ -257,7 +261,6 @@ public class IndexQueryTransactionStateTest
                 asNodeCursor( nodeId,
                         asPropertyCursor( stringProperty( propertyKeyId, value ) ) ) );
 
-        List<IndexDescriptor> indexes = Collections.singletonList( indexDescriptor );
         when( store.indexesGetForLabel( labelId ) ).thenReturn( indexes.iterator() );
         txContext.nodeAddLabel( state, nodeId, labelId );
 
