@@ -54,7 +54,7 @@ case object addUniquenessPredicates extends Rewriter {
       case _: ShortestPaths =>
         acc => (acc, None)
 
-      case RelationshipChain(_, patRel@RelationshipPattern(optIdent, _, types, _, _, _), _) =>
+      case RelationshipChain(_, patRel@RelationshipPattern(optIdent, types, _, _, _), _) =>
         acc => {
           val ident = optIdent.getOrElse(throw new InternalException("This rewriter cannot work with unnamed patterns"))
           (acc :+ UniqueRel(ident, types.toSet, patRel.isSingleLength), Some(identity))

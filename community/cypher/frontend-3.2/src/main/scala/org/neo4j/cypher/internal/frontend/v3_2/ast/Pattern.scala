@@ -38,7 +38,7 @@ object Pattern {
 
     def apply(pattern: Pattern): Set[Seq[Variable]] = {
       val (seen, duplicates) = pattern.fold((Set.empty[Variable], Seq.empty[Variable])) {
-        case RelationshipChain(_, RelationshipPattern(Some(rel), _, _, None, _, _), _) =>
+        case RelationshipChain(_, RelationshipPattern(Some(rel), _, None, _, _), _) =>
           (acc) =>
             val (seen, duplicates) = acc
 
@@ -292,7 +292,6 @@ case class NodePattern(variable: Option[Variable],
 
 case class RelationshipPattern(
     variable: Option[Variable],
-    optional: Boolean,
     types: Seq[RelTypeName],
     length: Option[Option[Range]],
     properties: Option[Expression],
@@ -311,9 +310,7 @@ case class RelationshipPattern(
     }
 
   def semanticCheck(ctx: SemanticContext): SemanticCheck =
-    checkNoOptionalRelsForAnExpression(ctx) chain
     checkNoVarLengthWhenUpdating(ctx) chain
-    checkNoLegacyOptionals(ctx) chain
     checkNoParamMapsWhenMatching(ctx) chain
     checkProperties(ctx) chain
     checkNotUndirectedWhenCreating(ctx)
@@ -326,16 +323,6 @@ case class RelationshipPattern(
         SemanticCheckResult.success
     }
   }
-
-  private def checkNoLegacyOptionals(ctx: SemanticContext): SemanticCheck =
-    when (optional) {
-      SemanticError("Question mark is no longer used for optional patterns - use OPTIONAL MATCH instead", position)
-    }
-
-  private def checkNoOptionalRelsForAnExpression(ctx: SemanticContext): SemanticCheck =
-    when (ctx == SemanticContext.Expression && optional) {
-      SemanticError("Optional relationships cannot be specified in this context", position)
-    }
 
   private def checkNoVarLengthWhenUpdating(ctx: SemanticContext): SemanticCheck =
     when (!isSingleLength) {

@@ -27,7 +27,7 @@ class PatternComprehensionTest extends CypherFunSuite with AstConstructionTestSu
 
   val n = NodePattern(Some(varFor("n")), Seq.empty, None)(pos)
   val x = NodePattern(Some(varFor("x")), Seq.empty, None)(pos)
-  val r = RelationshipPattern(None, optional = false, Seq.empty, None, None, SemanticDirection.OUTGOING)(pos)
+  val r = RelationshipPattern(None, Seq.empty, None, None, SemanticDirection.OUTGOING)(pos)
   val pattern = RelationshipsPattern(RelationshipChain(n, r, x)(pos))(pos)
   val property = Property(varFor("x"), PropertyKeyName("prop")(pos))(pos)
   val failingProperty = Property(varFor("missing"), PropertyKeyName("prop")(pos))(pos)

@@ -114,7 +114,7 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with CypherSerializer {
   test("badMatch4") {
     expectSyntaxError(
       "match (p) where id(p) = 2 match p-[!]->dude return dude.name",
-      "Invalid input '!': expected whitespace, a variable, '?', relationship types, a length specification, a property map or ']' (line 1, column 36 (offset: 35))",
+      "Invalid input '!': expected whitespace, a variable, relationship types, a length specification, a property map or ']' (line 1, column 36 (offset: 35))",
       35
     )
   }
@@ -177,13 +177,6 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with CypherSerializer {
     )
   }
 
-  test("can not use optional pattern as predicate") {
-    expectError(
-      "match (a) where id(a) = 1 RETURN (a)-[?]->()",
-      "Optional relationships cannot be specified in this context (line 1, column 37 (offset: 36))"
-    )
-  }
-
   test("trying to drop constraint index should return sensible error") {
     graph.createConstraint("LabelName", "Prop")
 
@@ -215,20 +208,6 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with CypherSerializer {
     expectError(
       "DROP CONSTRAINT ON (person:Person) ASSERT person.name IS UNIQUE",
       "No such constraint"
-    )
-  }
-
-  test("report deprecated use of property name with question mark") {
-    expectError(
-      "match (n) where id(n) = 0 return n.title? = \"foo\"",
-      "This syntax is no longer supported (missing properties are now returned as null). Please use (not(exists(<ident>.title)) OR <ident>.title=<value>) if you really need the old behavior."
-    )
-  }
-
-  test("report deprecated use of property name with exclamation mark") {
-    expectError(
-      "match (n) where id(n) = 0 return n.title! = \"foo\"",
-      "This syntax is no longer supported (missing properties are now returned as null)."
     )
   }
 

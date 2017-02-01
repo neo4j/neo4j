@@ -74,23 +74,21 @@ trait Patterns extends Parser
       | LeftArrowHead ~~ Dash ~~ RelationshipDetail ~~ Dash ~ push(SemanticDirection.INCOMING)
       | Dash ~~ RelationshipDetail ~~ Dash ~~ RightArrowHead ~ push(SemanticDirection.OUTGOING)
       | Dash ~~ RelationshipDetail ~~ Dash ~ push(SemanticDirection.BOTH)
-    ) ~~>> (ast.RelationshipPattern(_, _, _, _, _, _))
+    ) ~~>> (ast.RelationshipPattern(_, _, _, _, _))
   }
 
-  private def RelationshipDetail: Rule5[
+  private def RelationshipDetail: Rule4[
       Option[ast.Variable],
-      Boolean,
       Seq[ast.RelTypeName],
       Option[Option[ast.Range]],
       Option[ast.Expression]] = rule("[") {
     (
         "[" ~~
           MaybeVariable ~~
-          ("?" ~ push(true) | EMPTY ~ push(false)) ~~
           RelationshipTypes ~~ MaybeVariableLength ~
           MaybeProperties ~~
         "]"
-      | EMPTY ~ push(None) ~ push(false) ~ push(Seq()) ~ push(None) ~ push(None)
+      | EMPTY ~ push(None) ~ push(Seq()) ~ push(None) ~ push(None)
     )
   }
 

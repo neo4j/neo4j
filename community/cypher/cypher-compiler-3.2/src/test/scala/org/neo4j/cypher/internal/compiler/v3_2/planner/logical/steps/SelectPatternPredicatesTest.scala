@@ -42,7 +42,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
   // MATCH (a) WHERE (a)-->()
   val patternExp = PatternExpression(RelationshipsPattern(RelationshipChain(
     NodePattern(Some(varFor("a")), Seq(), None)_,
-    RelationshipPattern(Some(varFor(relName)), optional = false, types, None, None, sdir) _,
+    RelationshipPattern(Some(varFor(relName)), types, None, None, sdir) _,
     NodePattern(Some(varFor(nodeName)), Seq(), None)_
   )_)_)
 
@@ -221,7 +221,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     // Given
     val patternExp2 = PatternExpression(RelationshipsPattern(RelationshipChain(
       NodePattern(Some(varFor("a")), Seq(), None)_,
-      RelationshipPattern(Some(varFor("  UNNAMED3")), optional = false, types, None, None, sdir) _,
+      RelationshipPattern(Some(varFor("  UNNAMED3")), types, None, None, sdir) _,
       NodePattern(Some(varFor("  UNNAMED4")), Seq(), None)_
     )_)_)
 
@@ -268,7 +268,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     // Given
     val patternExp2: PatternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
       NodePattern(Some(varFor("a")), Seq(), None)_,
-      RelationshipPattern(Some(varFor("  UNNAMED3")), optional = false, types, None, None, sdir) _,
+      RelationshipPattern(Some(varFor("  UNNAMED3")), types, None, None, sdir) _,
       NodePattern(Some(varFor("  UNNAMED4")), Seq(), None)_
     )_)_)
     val patternRel2 = PatternRelationship("  UNNAMED3", ("a", "  UNNAMED4"), dir, types, SimplePatternLength)
@@ -314,7 +314,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     // Given
     val patternExp2: PatternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
       NodePattern(Some(varFor("a")), Seq(), None)_,
-      RelationshipPattern(Some(varFor("  UNNAMED3")), optional = false, types, None, None, sdir) _,
+      RelationshipPattern(Some(varFor("  UNNAMED3")), types, None, None, sdir) _,
       NodePattern(Some(varFor("  UNNAMED4")), Seq(), None)_
     )_)_)
     val patternRel2 = PatternRelationship("  UNNAMED3", ("a", "  UNNAMED4"), dir, types, SimplePatternLength)
@@ -365,7 +365,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
 
     val patternExp2: PatternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
       NodePattern(Some(varFor("a")), Seq(), None)_,
-      RelationshipPattern(Some(varFor("  UNNAMED3")), optional = false, types, None, None, sdir) _,
+      RelationshipPattern(Some(varFor("  UNNAMED3")), types, None, None, sdir) _,
       NodePattern(Some(varFor("  UNNAMED4")), Seq(), None)_
     )_)_)
     val patternRel2 = PatternRelationship("  UNNAMED3", ("a", "  UNNAMED4"), dir, types, SimplePatternLength)
@@ -416,7 +416,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
 
     val patternExp2: PatternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
       NodePattern(Some(varFor("a")), Seq(), None)_,
-      RelationshipPattern(Some(varFor("  UNNAMED3")), optional = false, types, None, None, sdir) _,
+      RelationshipPattern(Some(varFor("  UNNAMED3")), types, None, None, sdir) _,
       NodePattern(Some(varFor("  UNNAMED4")), Seq(), None)_
     )_)_)
     val patternRel2 = PatternRelationship("  UNNAMED3", ("a", "  UNNAMED4"), dir, types, SimplePatternLength)

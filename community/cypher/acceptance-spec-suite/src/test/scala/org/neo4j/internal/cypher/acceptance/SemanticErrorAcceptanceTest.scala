@@ -304,27 +304,6 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
     )
   }
 
-  test("should fail if using legacy optionals match") {
-    executeAndEnsureError(
-      "match (n)-[?]->(m) where id(n) = 0 return n",
-      "Question mark is no longer used for optional patterns - use OPTIONAL MATCH instead (line 1, column 10 (offset: 9))"
-    )
-  }
-
-  test("should fail if using legacy optionals match2") {
-    executeAndEnsureError(
-      "match (n)-[?*]->(m) where id(n) = 0 return n",
-      "Question mark is no longer used for optional patterns - use OPTIONAL MATCH instead (line 1, column 10 (offset: 9))"
-    )
-  }
-
-  test("should fail if using legacy optionals match3") {
-    executeAndEnsureError(
-      "match shortestPath((n)-[?*]->(m)) where id(n) = 0 return n",
-      "Question mark is no longer used for optional patterns - use OPTIONAL MATCH instead (line 1, column 23 (offset: 22))"
-    )
-  }
-
   test("should fail if using non update clause inside foreach") {
     executeAndEnsureError(
       "FOREACH (n in [1] | WITH foo RETURN bar)",
@@ -401,11 +380,6 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
     executeAndEnsureError("MATCH (m), (n) RETURN m, n, o LIMIT 25",
       "Variable `o` not defined (line 1, column 29 (offset: 28))")
   }
-
-  test("should give a nice error message if a user tries to use HAS") (
-    executeAndEnsureError("MATCH (n) WHERE HAS(n.prop) RETURN n.prop",
-      "HAS is no longer supported in Cypher, please use EXISTS instead (line 1, column 17 (offset: 16))")
-  )
 
   test("give a nice error message when using unknown arguments in point") {
     executeAndEnsureError("RETURN point({xxx: 2.3, yyy: 4.5}) as point",

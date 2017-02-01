@@ -27,14 +27,14 @@ class inlineNamedPathsInPatternComprehensionsTest extends CypherFunSuite with As
 
   // [ ()-->() | 'foo' ]
   test("does not touch comprehensions without named path") {
-    val input: ASTNode = PatternComprehension(None, RelationshipsPattern(RelationshipChain(NodePattern(None, Seq.empty, None) _, RelationshipPattern(None, false, Seq.empty, None, None, SemanticDirection.OUTGOING) _, NodePattern(None, Seq.empty, None) _) _)_, None, StringLiteral("foo")_)_
+    val input: ASTNode = PatternComprehension(None, RelationshipsPattern(RelationshipChain(NodePattern(None, Seq.empty, None) _, RelationshipPattern(None, Seq.empty, None, None, SemanticDirection.OUTGOING) _, NodePattern(None, Seq.empty, None) _) _)_, None, StringLiteral("foo")_)_
 
     inlineNamedPathsInPatternComprehensions(input) should equal(input)
   }
 
   // [ p = (a)-[r]->(b) | 'foo' ]
   test("removes named path if not used") {
-    val input: PatternComprehension = PatternComprehension(Some(varFor("p")), RelationshipsPattern(RelationshipChain(NodePattern(Some(varFor("a")), Seq.empty, None) _, RelationshipPattern(Some(varFor("r")), false, Seq.empty, None, None, SemanticDirection.OUTGOING) _, NodePattern(Some(varFor("b")), Seq.empty, None) _) _)_, None, StringLiteral("foo")_)_
+    val input: PatternComprehension = PatternComprehension(Some(varFor("p")), RelationshipsPattern(RelationshipChain(NodePattern(Some(varFor("a")), Seq.empty, None) _, RelationshipPattern(Some(varFor("r")), Seq.empty, None, None, SemanticDirection.OUTGOING) _, NodePattern(Some(varFor("b")), Seq.empty, None) _) _)_, None, StringLiteral("foo")_)_
 
     inlineNamedPathsInPatternComprehensions(input) should equal(input.copy(namedPath = None)(pos))
   }
@@ -42,7 +42,7 @@ class inlineNamedPathsInPatternComprehensionsTest extends CypherFunSuite with As
   // [ p = (a)-[r]->(b) | p ]
   test("replaces named path in projection") {
     val element: RelationshipChain = RelationshipChain(NodePattern(Some(varFor("a")), Seq.empty, None) _,
-                                                       RelationshipPattern(Some(varFor("r")), false, Seq.empty, None,
+                                                       RelationshipPattern(Some(varFor("r")), Seq.empty, None,
                                                                            None, SemanticDirection.OUTGOING) _,
                                                        NodePattern(Some(varFor("b")), Seq.empty, None) _) _
     val input: PatternComprehension = PatternComprehension(Some(varFor("p")), RelationshipsPattern(element)_, None, Variable("p")_)_
@@ -54,7 +54,7 @@ class inlineNamedPathsInPatternComprehensionsTest extends CypherFunSuite with As
   // [ p = (a)-[r]->(b) WHERE p | 'foo' ]
   test("replaces named path in predicate") {
     val element: RelationshipChain = RelationshipChain(NodePattern(Some(varFor("a")), Seq.empty, None) _,
-                                                       RelationshipPattern(Some(varFor("r")), false, Seq.empty, None,
+                                                       RelationshipPattern(Some(varFor("r")), Seq.empty, None,
                                                                            None, SemanticDirection.OUTGOING) _,
                                                        NodePattern(Some(varFor("b")), Seq.empty, None) _) _
     val input: PatternComprehension = PatternComprehension(Some(varFor("p")), RelationshipsPattern(element)_, Some(varFor("p")), StringLiteral("foo")_)_
@@ -70,7 +70,7 @@ class inlineNamedPathsInPatternComprehensionsTest extends CypherFunSuite with As
   // [ p = (a)-[r]->(b) WHERE p | p ]
   test("replaces named path in predicate and projection") {
     val element: RelationshipChain = RelationshipChain(NodePattern(Some(varFor("a")), Seq.empty, None) _,
-                                                       RelationshipPattern(Some(varFor("r")), false, Seq.empty, None,
+                                                       RelationshipPattern(Some(varFor("r")), Seq.empty, None,
                                                                            None, SemanticDirection.OUTGOING) _,
                                                        NodePattern(Some(varFor("b")), Seq.empty, None) _) _
     val input: PatternComprehension = PatternComprehension(Some(varFor("p")), RelationshipsPattern(element)_, Some(varFor("p")), Variable("p")_)_
