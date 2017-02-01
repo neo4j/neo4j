@@ -71,7 +71,10 @@ import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
  */
 public class NativeLabelScanStore implements LabelScanStore
 {
-    static final String FILE_NAME = DEFAULT_NAME + ".labelscanstore.db";
+    /**
+     * Name of the file used for the native label scan store.
+     */
+    public static final String FILE_NAME = DEFAULT_NAME + ".labelscanstore.db";
 
     /**
      * Whether or not this label scan store is read-only.
