@@ -39,14 +39,12 @@ import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.getInteger;
 
 public class ConfiguringPageCacheFactory
 {
+    private static final int pageSize = getInteger( ConfiguringPageCacheFactory.class, "pageSize", 8192 );
     private final PageSwapperFactory swapperFactory;
     private final Config config;
     private final PageCacheTracer tracer;
     private final Log log;
     private PageCache pageCache;
-    private int configuredPageSize;
-
-    private static final int pageSize = getInteger( ConfiguringPageCacheFactory.class, "pageSize", 8192 );
 
     public ConfiguringPageCacheFactory(
             FileSystemAbstraction fs, Config config, PageCacheTracer tracer, Log log )
@@ -55,16 +53,6 @@ public class ConfiguringPageCacheFactory
         this.config = config;
         this.tracer = tracer;
         this.log = log;
-        configuredPageSize = 0;
-    }
-
-    /**
-     * Sets the page size, used by the {@link StandalonePageCacheFactory} for testing purposes.
-     * @param pageSize The new page size.
-     */
-    public void setPageSize( int pageSize )
-    {
-        configuredPageSize = pageSize;
     }
 
     private PageSwapperFactory createAndConfigureSwapperFactory( FileSystemAbstraction fs, Config config, Log log )
@@ -196,10 +184,6 @@ public class ConfiguringPageCacheFactory
         {
             log.warn( "The setting unsupported.dbms.memory.pagecache.pagesize does not have any effect. It is " +
                     "deprecated and will be removed in a future version." );
-        }
-        if( configuredPageSize != 0 )
-        {
-            return configuredPageSize;
         }
         if ( swapperFactory.isCachePageSizeHintStrict() )
         {
