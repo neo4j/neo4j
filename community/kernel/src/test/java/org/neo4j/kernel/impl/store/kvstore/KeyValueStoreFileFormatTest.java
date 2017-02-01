@@ -36,6 +36,7 @@ import java.util.Map;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.ResourceRule;
@@ -189,7 +190,7 @@ public class KeyValueStoreFileFormatTest
         headers.put( "two", new byte[]{2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,} );
         Map<String,String> config = new HashMap<>();
         config.put( GraphDatabaseSettings.pagecache_memory.name(), "8M" );
-        config.put( GraphDatabaseSettings.mapped_memory_page_size.name(), "256" );
+        int pageSize = 256;
         Data data = data(
                 // page 0
                 entry( bytes( 17 ), bytes( 'v', 'a', 'l', 1 ) ),
@@ -210,7 +211,7 @@ public class KeyValueStoreFileFormatTest
                 entry( bytes( 2000 ), bytes( 'v', 'a', 'l', 14 ) ) );
 
         // when
-        try ( KeyValueStoreFile file = format.create( config, headers, data ) )
+        try ( KeyValueStoreFile file = format.create( config, pageSize, headers, data ) )
         // then
         {
             assertFind( file, 17, 17, true, new Bytes( 'v', 'a', 'l', 1 ) );
@@ -241,7 +242,7 @@ public class KeyValueStoreFileFormatTest
         Map<String,byte[]> metadata = new HashMap<>();
         Map<String,String> config = new HashMap<>();
         config.put( GraphDatabaseSettings.pagecache_memory.name(), "8M" );
-        config.put( GraphDatabaseSettings.mapped_memory_page_size.name(), "128" );
+        int pageSize = 128;
         Data data = data( // two full pages (and nothing more)
                 // page 0
                 entry( bytes( 12 ), bytes( 'v', 'a', 'l', 1 ) ),
@@ -253,7 +254,7 @@ public class KeyValueStoreFileFormatTest
                 entry( bytes( 18 ), bytes( 'v', 'a', 'l', 6 ) ) );
 
         // when
-        try ( KeyValueStoreFile file = format.create( config, metadata, data ) )
+        try ( KeyValueStoreFile file = format.create( config, pageSize, metadata, data ) )
         // then
         {
             assertFind( file, 14, 15, false, new Bytes( 'v', 'a', 'l', 3 ) ); // after the first page
@@ -267,7 +268,7 @@ public class KeyValueStoreFileFormatTest
     {
         Map<String,String> config = new HashMap<>();
         config.put( GraphDatabaseSettings.pagecache_memory.name(), "8M" );
-        config.put( GraphDatabaseSettings.mapped_memory_page_size.name(), "128" );
+        int pageSize = 128;
 
         // given a well written file
         {
@@ -286,7 +287,7 @@ public class KeyValueStoreFileFormatTest
                     entry( bytes( 17 ), bytes( 'v', 'a', 'l', 5 ) ),
                     entry( bytes( 18 ), bytes( 'v', 'a', 'l', 6 ) ) );
 
-            try ( KeyValueStoreFile ignored = format.create( config, headers, data ) )
+            try ( KeyValueStoreFile ignored = format.create( config, pageSize, headers, data ) )
             {
             }
         }
@@ -312,7 +313,7 @@ public class KeyValueStoreFileFormatTest
                 }
             };
 
-            try ( KeyValueStoreFile ignored = format.create( config, headers, data ) )
+            try ( KeyValueStoreFile ignored = format.create( config, pageSize, headers, data ) )
             {
             }
             catch ( IOException io )
@@ -553,11 +554,13 @@ public class KeyValueStoreFileFormatTest
                     data );
         }
 
-        KeyValueStoreFile create( Map<String,String> config, Map<String,byte[]> headers, DataProvider data )
+        KeyValueStoreFile create( Map<String,String> config, int pageSize, Map<String,byte[]> headers,
+                DataProvider data )
                 throws IOException
         {
-            return createStore( fs.get(), pages.getPageCache( fs.get(), new Config( config ) ), storeFile.get(), 16, 16,
-                    headers( headers ), data );
+            return createStore( fs.get(),
+                    pages.getPageCache( fs.get(), PageCacheTracer.NULL, pageSize, new Config( config ) ),
+                    storeFile.get(), 16, 16, headers( headers ), data );
         }
 
         private Headers headers( Map<String,byte[]> headers )

@@ -56,7 +56,6 @@ public class CheckPointingLogRotationStressTesting
     private static final String DEFAULT_NODE_COUNT = "100000";
     private static final String DEFAULT_WORKER_THREADS = "16";
     private static final String DEFAULT_PAGE_CACHE_MEMORY = "4g";
-    private static final String DEFAULT_PAGE_SIZE = "8k";
 
     private static final int CHECK_POINT_INTERVAL_MINUTES = 1;
 
@@ -69,7 +68,6 @@ public class CheckPointingLogRotationStressTesting
         long nodeCount = parseLong( fromEnv( "CHECK_POINT_LOG_ROTATION_NODE_COUNT", DEFAULT_NODE_COUNT ) );
         int threads = parseInt( fromEnv( "CHECK_POINT_LOG_ROTATION_WORKER_THREADS", DEFAULT_WORKER_THREADS ) );
         String pageCacheMemory = fromEnv( "CHECK_POINT_LOG_ROTATION_PAGE_CACHE_MEMORY", DEFAULT_PAGE_CACHE_MEMORY );
-        String pageSize = fromEnv( "CHECK_POINT_LOG_ROTATION_PAGE_SIZE", DEFAULT_PAGE_SIZE );
 
         System.out.println( "1/6\tBuilding initial store..." );
         new ParallelBatchImporter( ensureExistsAndEmpty( storeDir ), DEFAULT, NullLogService.getInstance(),
@@ -79,7 +77,6 @@ public class CheckPointingLogRotationStressTesting
         GraphDatabaseBuilder builder = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir );
         GraphDatabaseService db = builder
                 .setConfig( GraphDatabaseSettings.pagecache_memory, pageCacheMemory )
-                .setConfig( GraphDatabaseSettings.mapped_memory_page_size, pageSize )
                 .setConfig( GraphDatabaseSettings.keep_logical_logs, Settings.FALSE )
                 .setConfig( GraphDatabaseSettings.check_point_interval_time, CHECK_POINT_INTERVAL_MINUTES + "m" )
                 .setConfig( GraphDatabaseFacadeFactory.Configuration.tracer, "timer" )

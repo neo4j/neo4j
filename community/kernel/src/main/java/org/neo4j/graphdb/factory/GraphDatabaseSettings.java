@@ -364,6 +364,7 @@ public abstract class GraphDatabaseSettings
     @Description("Target size for pages of mapped memory. If set to 0, then a reasonable default is chosen, " +
                  "depending on the storage device used.")
     @Internal
+    @Deprecated
     public static final Setting<Long> mapped_memory_page_size = setting( "unsupported.dbms.memory.pagecache.pagesize", BYTES, "0" );
 
     @SuppressWarnings( "unchecked" )

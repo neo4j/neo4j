@@ -35,6 +35,7 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.mapped_memory_page
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_swapper;
 import static org.neo4j.kernel.configuration.Settings.BYTES;
+import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.getInteger;
 
 public class ConfiguringPageCacheFactory
 {
@@ -43,6 +44,9 @@ public class ConfiguringPageCacheFactory
     private final PageCacheTracer tracer;
     private final Log log;
     private PageCache pageCache;
+    private int configuredPageSize;
+
+    private static final int pageSize = getInteger( ConfiguringPageCacheFactory.class, "pageSize", 8192 );
 
     public ConfiguringPageCacheFactory(
             FileSystemAbstraction fs, Config config, PageCacheTracer tracer, Log log )
@@ -51,6 +55,16 @@ public class ConfiguringPageCacheFactory
         this.config = config;
         this.tracer = tracer;
         this.log = log;
+        configuredPageSize = 0;
+    }
+
+    /**
+     * Sets the page size, used by the {@link StandalonePageCacheFactory} for testing purposes.
+     * @param pageSize The new page size.
+     */
+    public void setPageSize( int pageSize )
+    {
+        configuredPageSize = pageSize;
     }
 
     private PageSwapperFactory createAndConfigureSwapperFactory( FileSystemAbstraction fs, Config config, Log log )
@@ -178,13 +192,20 @@ public class ConfiguringPageCacheFactory
 
     public int calculatePageSize( Config config, PageSwapperFactory swapperFactory )
     {
-        int pageSwappersPageSizeHint = swapperFactory.getCachePageSizeHint();
-        int configuredPageSize = config.get( mapped_memory_page_size ).intValue();
-        if ( configuredPageSize == 0 || swapperFactory.isCachePageSizeHintStrict() )
+        if ( config.get( mapped_memory_page_size ).intValue() != 0 )
         {
-            return pageSwappersPageSizeHint;
+            log.warn( "The setting unsupported.dbms.memory.pagecache.pagesize does not have any effect. It is " +
+                    "deprecated and will be removed in a future version." );
         }
-        return configuredPageSize;
+        if( configuredPageSize != 0 )
+        {
+            return configuredPageSize;
+        }
+        if ( swapperFactory.isCachePageSizeHintStrict() )
+        {
+            return swapperFactory.getCachePageSizeHint();
+        }
+        return pageSize;
     }
 
     public void dumpConfiguration()
