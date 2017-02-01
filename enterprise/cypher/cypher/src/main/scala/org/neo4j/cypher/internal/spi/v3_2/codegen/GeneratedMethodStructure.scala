@@ -41,6 +41,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.{ParameterNotFoundException, Sema
 import org.neo4j.cypher.internal.spi.v3_2.codegen.Methods._
 import org.neo4j.cypher.internal.spi.v3_2.codegen.Templates.{createNewInstance, handleKernelExceptions, newRelationshipDataExtractor, tryCatch}
 import org.neo4j.graphdb.Direction
+import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.api.schema.{IndexDescriptor, IndexDescriptorFactory, NodePropertyDescriptor}
 import org.neo4j.kernel.impl.api.RelationshipDataExtractor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
@@ -447,7 +448,11 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   private def math(method: MethodReference, lhs: Expression, rhs: Expression): Expression =
     invoke(method, lhs, rhs)
 
-  private def readOperations = get(generator.self(), fields.ro)
+  private val getOrLoadReadOperations: MethodReference =
+    methodReference(generator.owner(), typeRef[ReadOperations], "getOrLoadReadOperations")
+
+  private def readOperations: Expression =
+    invoke(generator.self(), getOrLoadReadOperations)
 
   private def nodeManager = get(generator.self(), fields.entityAccessor)
 

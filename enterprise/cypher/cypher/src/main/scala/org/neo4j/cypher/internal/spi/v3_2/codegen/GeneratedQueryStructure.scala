@@ -99,7 +99,8 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
         params = clazz.field(typeRef[util.Map[String, Object]], "params"),
         closeable = clazz.field(typeRef[SuccessfulCloseable], "closeable"),
         success = clazz.generate(Templates.success(clazz.handle())),
-        close = clazz.generate(Templates.close(clazz.handle())))
+        close = clazz.generate(Templates.close(clazz.handle())),
+        queryContext = clazz.field(typeRef[QueryContext], "queryContext"))
         // the "COLUMNS" static field
         clazz.staticField(typeRef[util.List[String]], "COLUMNS", Templates.asList[String](
         columns.map(key => constant(key))))
@@ -111,6 +112,7 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
 
       // simple methods
       clazz.generate(Templates.constructor(clazz.handle()))
+      Templates.getOrLoadReadOperations(clazz, fields)
       clazz.generate(Templates.setSuccessfulCloseable(clazz.handle()))
       clazz.generate(Templates.executionMode(clazz.handle()))
       clazz.generate(Templates.executionPlanDescription(clazz.handle()))

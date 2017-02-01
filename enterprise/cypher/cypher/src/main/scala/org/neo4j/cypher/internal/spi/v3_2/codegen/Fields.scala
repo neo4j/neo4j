@@ -22,12 +22,13 @@ package org.neo4j.cypher.internal.spi.v3_2.codegen
 import org.neo4j.codegen.{FieldReference, MethodReference}
 
 case class Fields(closer: FieldReference,
-                          ro: FieldReference,
-                          entityAccessor: FieldReference,
-                          executionMode: FieldReference,
-                          description: FieldReference,
-                          tracer: FieldReference,
-                          params: FieldReference,
-                          closeable: FieldReference,
-                          success: MethodReference,
-                          close: MethodReference)
+                  ro: FieldReference,
+                  entityAccessor: FieldReference,
+                  executionMode: FieldReference,
+                  description: FieldReference,
+                  tracer: FieldReference,
+                  params: FieldReference,
+                  closeable: FieldReference,
+                  success: MethodReference,
+                  close: MethodReference,
+                  queryContext: FieldReference)

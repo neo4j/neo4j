@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.{CodeGenContext, 
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{Provider, SuccessfulCloseable}
 import org.neo4j.cypher.internal.compiler.v3_2.helpers._
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compiler.v3_2.spi.QueryContext
 import org.neo4j.cypher.internal.compiler.v3_2.{ExecutionMode, TaskCloser}
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_2.{SemanticDirection, SemanticTable, symbols}
@@ -233,7 +234,8 @@ class GeneratedMethodStructureTest extends CypherFunSuite {
         params = body.field(typeRef[util.Map[String, Object]], "params"),
         closeable = body.field(typeRef[SuccessfulCloseable], "closeable"),
         success = body.generate(Templates.success(body.handle())),
-        close = body.generate(Templates.close(body.handle())))
+        close = body.generate(Templates.close(body.handle())),
+        queryContext = body.field(typeRef[QueryContext], "queryContext"))
       // the "COLUMNS" static field
       body.staticField(typeRef[util.List[String]], "COLUMNS", Templates.asList[String](Seq.empty))
       using(body.generate(MethodDeclaration.method(typeRef[Unit], "foo"))) { methodBody =>

@@ -23,15 +23,17 @@ import java.util.function.Consumer
 import java.util.stream.{DoubleStream, IntStream, LongStream}
 
 import org.neo4j.codegen.ExpressionTemplate._
+import org.neo4j.codegen.MethodDeclaration.Builder
 import org.neo4j.codegen.MethodReference._
 import org.neo4j.codegen._
 import org.neo4j.collection.primitive.{Primitive, PrimitiveLongIntMap, PrimitiveLongObjectMap}
 import org.neo4j.cypher.internal.codegen.{PrimitiveNodeStream, PrimitiveRelationshipStream}
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.QueryExecutionTracer
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan._
+import org.neo4j.cypher.internal.compiler.v3_2.helpers.using
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_2.spi.{QueryContext, QueryTransactionalContext}
-import org.neo4j.cypher.internal.compiler.v3_2.{ExecutionMode, ResultRowImpl, TaskCloser}
+import org.neo4j.cypher.internal.compiler.v3_2.{ExecutionMode, ResultRowImpl, TaskCloser, helpers}
 import org.neo4j.cypher.internal.frontend.v3_2.CypherExecutionException
 import org.neo4j.graphdb.Direction
 import org.neo4j.kernel.api.exceptions.KernelException
@@ -136,10 +138,7 @@ object Templates {
     param[util.Map[String, Object]]("params")).
     invokeSuper().
     put(self(classHandle), typeRef[TaskCloser], "closer", load("closer", typeRef[TaskCloser])).
-    put(self(classHandle), typeRef[ReadOperations], "ro",
-        cast(classOf[ReadOperations], invoke(
-          invoke(load("queryContext", typeRef[QueryContext]), method[QueryContext, QueryTransactionalContext]("transactionalContext")),
-          method[QueryTransactionalContext, Object]("readOperations")))).
+    put(self(classHandle), typeRef[QueryContext], "queryContext", load("queryContext", typeRef[QueryContext])).
     put(self(classHandle), typeRef[ExecutionMode], "executionMode", load("executionMode", typeRef[ExecutionMode])).
     put(self(classHandle), typeRef[Provider[InternalPlanDescription]], "description", load("description", typeRef[InternalPlanDescription])).
     put(self(classHandle), typeRef[QueryExecutionTracer], "tracer", load("tracer", typeRef[QueryExecutionTracer])).
@@ -148,6 +147,23 @@ object Templates {
         cast(typeRef[NodeManager],
              invoke(load("queryContext", typeRef[QueryContext]), method[QueryContext, Object]("entityAccessor")))).
     build()
+
+  def getOrLoadReadOperations(clazz: ClassGenerator, fields: Fields) = {
+    val methodBuilder: Builder = MethodDeclaration.method(typeRef[ReadOperations], "getOrLoadReadOperations")
+    using(clazz.generate(methodBuilder)) { generate =>
+      val ro = Expression.get(generate.self(), fields.ro)
+      using(generate.ifNullStatement(ro)) { block =>
+        val transactionalContext: MethodReference = method[QueryContext, QueryTransactionalContext]("transactionalContext")
+        val readOperations: MethodReference = method[QueryTransactionalContext, Object]("readOperations")
+        val queryContext = Expression.get(block.self(), fields.queryContext)
+        block.put(block.self(), fields.ro,
+          Expression.cast(typeRef[ReadOperations],
+            Expression.invoke(Expression.invoke(queryContext, transactionalContext),
+              readOperations)))
+      }
+      generate.returns(ro)
+    }
+  }
 
   def setSuccessfulCloseable(classHandle: ClassHandle) = MethodTemplate.method(typeRef[Unit], "setSuccessfulCloseable",
                                                                                param[SuccessfulCloseable]("closeable")).
