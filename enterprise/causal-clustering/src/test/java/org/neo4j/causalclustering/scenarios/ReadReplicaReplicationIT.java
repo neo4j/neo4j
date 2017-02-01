@@ -24,7 +24,10 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
@@ -49,13 +52,14 @@ import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.security.WriteOperationsNotAllowedException;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
+import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
@@ -63,6 +67,7 @@ import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
@@ -84,7 +89,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.causalclustering.scenarios.SampleData.createData;
-import static org.neo4j.com.storecopy.StoreUtil.TEMP_COPY_DIRECTORY_NAME;
 import static org.neo4j.function.Predicates.awaitEx;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -166,15 +170,22 @@ public class ReadReplicaReplicationIT
             } );
         }
 
+        Set<Path> labelScanStoreFiles = new HashSet<>();
+        cluster.coreTx( ( db, tx ) ->
+        {
+            gatherLabelScanStoreFiles( db, labelScanStoreFiles );
+        } );
+
         AtomicBoolean labelScanStoreCorrectlyPlaced = new AtomicBoolean( false );
         Monitors monitors = new Monitors();
         ReadReplica rr = cluster.addReadReplicaWithIdAndMonitors( 0, monitors );
-
-        File labelScanStore = LabelScanStoreProvider.getStoreDirectory( new File( rr.storeDir(), TEMP_COPY_DIRECTORY_NAME ) );
+        Path readReplicateStoreDir = rr.storeDir().toPath().toAbsolutePath();
 
         monitors.addMonitorListener( (FileCopyMonitor) file ->
         {
-            if ( file.getParent().contains( labelScanStore.getPath() ) )
+            Path relativPath = readReplicateStoreDir.relativize( file.toPath().toAbsolutePath() );
+            relativPath = relativPath.subpath( 1, relativPath.getNameCount() );
+            if ( labelScanStoreFiles.contains( relativPath ) )
             {
                 labelScanStoreCorrectlyPlaced.set( true );
             }
@@ -210,6 +221,21 @@ public class ReadReplicaReplicationIT
         }
 
         assertTrue( labelScanStoreCorrectlyPlaced.get() );
+    }
+
+    private void gatherLabelScanStoreFiles( GraphDatabaseAPI db, Set<Path> labelScanStoreFiles )
+    {
+        Path dbStoreDirectory = Paths.get( db.getStoreDir() ).toAbsolutePath();
+        LabelScanStore labelScanStore = db.getDependencyResolver().resolveDependency( LabelScanStore.class );
+        try ( ResourceIterator<File> files = labelScanStore.snapshotStoreFiles() )
+        {
+            Path relativePath = dbStoreDirectory.relativize( files.next().toPath().toAbsolutePath() );
+            labelScanStoreFiles.add( relativePath );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 
     @Test
