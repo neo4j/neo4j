@@ -47,6 +47,11 @@ import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorPredicates;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintBoundary;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.IteratingPropertyReceiver;
@@ -171,26 +176,26 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
-    public IndexDescriptor indexGetForLabelAndPropertyKey( NodePropertyDescriptor descriptor )
+    public NewIndexDescriptor indexGetForLabelAndPropertyKey( LabelSchemaDescriptor descriptor )
     {
         return schemaCache.indexDescriptor( descriptor );
     }
 
     @Override
-    public Iterator<IndexDescriptor> indexesGetForLabel( int labelId )
+    public Iterator<NewIndexDescriptor> indexesGetForLabel( int labelId )
     {
         return toIndexDescriptors( filter( rule -> hasLabel( rule, labelId ) && !rule.canSupportUniqueConstraint(),
                 schemaCache.indexRules() ) );
     }
 
     @Override
-    public Iterator<IndexDescriptor> indexesGetAll()
+    public Iterator<NewIndexDescriptor> indexesGetAll()
     {
         return toIndexDescriptors( filter( rule -> !rule.canSupportUniqueConstraint(), schemaCache.indexRules() ) );
     }
 
     @Override
-    public Iterator<IndexDescriptor> uniquenessIndexesGetForLabel( int labelId )
+    public Iterator<NewIndexDescriptor> uniquenessIndexesGetForLabel( int labelId )
     {
         Predicate<IndexRule> indexRulePredicate =
                 rule -> hasLabel( rule, labelId ) && rule.canSupportUniqueConstraint();
@@ -198,58 +203,46 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
-    public Iterator<IndexDescriptor> uniquenessIndexesGetAll()
+    public Iterator<NewIndexDescriptor> uniquenessIndexesGetAll()
     {
         return toIndexDescriptors( filter( IndexRule::canSupportUniqueConstraint, schemaCache.indexRules() ) );
     }
 
     @Override
-    public Long indexGetOwningUniquenessConstraintId( IndexDescriptor index ) throws SchemaRuleNotFoundException
+    public Long indexGetOwningUniquenessConstraintId( NewIndexDescriptor index ) throws SchemaRuleNotFoundException
     {
         IndexRule rule = indexRule( index, Predicates.alwaysTrue() );
         if ( rule != null )
         {
             return rule.getOwningConstraint();
         }
-
-        IndexRule indexRule =
-                schemaStorage.indexGetForSchema( forLabel( index.getLabelId(), index.getPropertyKeyId() ) );
-        return indexRule == null ? null : indexRule.getOwningConstraint();
+        return null;
     }
 
     @Override
-    public long indexGetCommittedId( IndexDescriptor index, Predicate<IndexRule> filter )
+    public long indexGetCommittedId( NewIndexDescriptor index, Predicate<IndexRule> filter )
             throws SchemaRuleNotFoundException
     {
         IndexRule rule = indexRule( index, filter );
-        if ( rule != null )
+        if ( rule == null )
         {
-            return rule.getId();
+            throw new SchemaRuleNotFoundException( SchemaRule.Kind.INDEX_RULE, index.schema() );
         }
-
-        LabelSchemaDescriptor schemaDescriptor = forLabel( index.getLabelId(), index.getPropertyKeyId() );
-        IndexRule indexRule = schemaStorage.indexGetForSchema( schemaDescriptor );
-        if ( indexRule == null )
-        {
-            throw new SchemaRuleNotFoundException( SchemaRule.Kind.INDEX_RULE, schemaDescriptor );
-        }
-        return indexRule.getId();
+        return rule.getId();
     }
 
-    @Override
-    public IndexRule indexRule( IndexDescriptor index, Predicate<IndexRule> filter )
+//    @Override
+    private IndexRule indexRule( NewIndexDescriptor index, Predicate<IndexRule> filter )
     {
-        LabelSchemaDescriptor schemaDescription = forLabel( index.getLabelId(), index.getPropertyKeyId() );
-
         for ( IndexRule rule : schemaCache.indexRules() )
         {
-            if ( filter.test( rule ) && rule.getSchemaDescriptor().equals( schemaDescription ) )
+            if ( filter.test( rule ) && rule.getSchemaDescriptor().equals( index.schema() ) )
             {
                 return rule;
             }
         }
 
-        return schemaStorage.indexGetForSchema( forLabel( index.getLabelId(), index.getPropertyKeyId() ), filter );
+        return schemaStorage.indexGetForSchema( index.schema(), filter );
     }
 
     @Override
@@ -285,7 +278,7 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
-    public Iterator<NodePropertyConstraint> constraintsGetForLabelAndPropertyKey( NodePropertyDescriptor descriptor )
+    public Iterator<NodePropertyConstraint> constraintsGetForLabelAndPropertyKey( LabelSchemaDescriptor descriptor )
     {
         return schemaCache.constraintsForLabelAndProperty( descriptor );
     }
@@ -298,7 +291,7 @@ public class StorageLayer implements StoreReadLayer
 
     @Override
     public Iterator<RelationshipPropertyConstraint> constraintsGetForRelationshipTypeAndPropertyKey(
-            RelationshipPropertyDescriptor descriptor )
+            RelationTypeSchemaDescriptor descriptor )
     {
         return schemaCache.constraintsForRelationshipTypeAndProperty( descriptor );
     }
@@ -522,8 +515,8 @@ public class StorageLayer implements StoreReadLayer
         return nodeStore.isInUse( id );
     }
 
-    private static Iterator<IndexDescriptor> toIndexDescriptors( Iterable<IndexRule> rules )
+    private static Iterator<NewIndexDescriptor> toIndexDescriptors( Iterable<IndexRule> rules )
     {
-        return Iterators.map( TO_INDEX_RULE, rules.iterator() );
+        return Iterators.map( IndexRule::getIndexDescriptor, rules.iterator() );
     }
 }

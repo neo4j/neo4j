@@ -28,17 +28,19 @@ import java.util.Set;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
-import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
+import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintBoundary;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
@@ -47,6 +49,8 @@ import org.neo4j.storageengine.api.schema.SchemaRule;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singleton;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.neo4j.helpers.collection.Iterators.asSet;
@@ -112,11 +116,11 @@ public class SchemaCacheTest
 
         assertEquals(
                 asSet( new UniquenessConstraint( new NodePropertyDescriptor( 1, 2 ) ) ),
-                asSet( cache.constraintsForLabelAndProperty( new NodePropertyDescriptor( 1, 2 ) ) ) );
+                asSet( cache.constraintsForLabelAndProperty( SchemaDescriptorFactory.forLabel( 1, 2 ) ) ) );
 
         assertEquals(
                 asSet(),
-                asSet( cache.constraintsForLabelAndProperty( new NodePropertyDescriptor( 1, 3 ) ) ) );
+                asSet( cache.constraintsForLabelAndProperty( SchemaDescriptorFactory.forLabel( 1, 3 ) ) ) );
 
         assertEquals(
                 asSet( new RelationshipPropertyExistenceConstraint( new RelationshipPropertyDescriptor( 5, 6 ) ) ),
@@ -124,7 +128,8 @@ public class SchemaCacheTest
 
         assertEquals(
                 asSet( new RelationshipPropertyExistenceConstraint( new RelationshipPropertyDescriptor( 5, 6 ) ) ),
-                asSet( cache.constraintsForRelationshipTypeAndProperty( new RelationshipPropertyDescriptor( 5, 6 ) ) ) );
+                asSet( cache.constraintsForRelationshipTypeAndProperty( SchemaDescriptorFactory.forRelType( 5, 6 ) )
+                ) );
     }
 
     @Test
@@ -150,7 +155,7 @@ public class SchemaCacheTest
 
         assertEquals(
                 asSet(),
-                asSet( cache.constraintsForLabelAndProperty( new NodePropertyDescriptor( 1, 2 ) ) ) );
+                asSet( cache.constraintsForLabelAndProperty( SchemaDescriptorFactory.forLabel( 1, 2 ) ) ) );
     }
 
     @Test
@@ -181,11 +186,11 @@ public class SchemaCacheTest
         cache.addSchemaRule( newIndexRule( 3L, 2, 2 ) );
 
         // When
-        IndexDescriptor descriptor = cache.indexDescriptor( new NodePropertyDescriptor( 1, 3 ) );
+        LabelSchemaDescriptor schema = SchemaDescriptorFactory.forLabel( 1, 3 );
+        NewIndexDescriptor descriptor = cache.indexDescriptor( schema );
 
         // Then
-        assertEquals( 1, descriptor.getLabelId() );
-        assertEquals( 3, descriptor.getPropertyKeyId() );
+        assertThat( descriptor.schema(), equalTo( schema ) );
     }
 
     @Test
@@ -195,7 +200,7 @@ public class SchemaCacheTest
         SchemaCache schemaCache = newSchemaCache();
 
         // When
-        IndexDescriptor indexDescriptor = schemaCache.indexDescriptor( new NodePropertyDescriptor( 1, 1 ) );
+        NewIndexDescriptor indexDescriptor = schemaCache.indexDescriptor( SchemaDescriptorFactory.forLabel( 1, 1 ) );
 
         // Then
         assertNull( indexDescriptor );
@@ -232,7 +237,8 @@ public class SchemaCacheTest
         SchemaCache cache = newSchemaCache( rule1, rule2, rule3 );
 
         // When
-        Set<NodePropertyConstraint> listed = asSet( cache.constraintsForLabelAndProperty( new NodePropertyDescriptor( 1, 2 ) ) );
+        Set<NodePropertyConstraint> listed = asSet( cache.constraintsForLabelAndProperty(
+                SchemaDescriptorFactory.forLabel( 1, 2 ) ) );
 
         // Then
         assertEquals( singleton( ConstraintBoundary.mapNode( rule3.getConstraintDescriptor() ) ), listed );
@@ -269,7 +275,8 @@ public class SchemaCacheTest
         SchemaCache cache = newSchemaCache( rule1, rule2, rule3 );
 
         // When
-        Set<RelationshipPropertyConstraint> listed = asSet( cache.constraintsForRelationshipTypeAndProperty( new RelationshipPropertyDescriptor( 2, 1 ) ) );
+        Set<RelationshipPropertyConstraint> listed = asSet( cache.constraintsForRelationshipTypeAndProperty(
+                SchemaDescriptorFactory.forRelType( 2, 1 ) ) );
 
         // Then
         assertEquals( singleton( ConstraintBoundary.mapRelationship( rule2.getConstraintDescriptor() ) ), listed );
