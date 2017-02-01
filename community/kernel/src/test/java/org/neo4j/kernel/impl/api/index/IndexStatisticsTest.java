@@ -502,7 +502,7 @@ public class IndexStatisticsTest
         }
     }
 
-    private long indexId(IndexDescriptor index)
+    private long indexId( IndexDescriptor index )
     {
         SchemaStorage storage = new SchemaStorage( neoStores().getSchemaStore() );
         LabelSchemaDescriptor descriptor =

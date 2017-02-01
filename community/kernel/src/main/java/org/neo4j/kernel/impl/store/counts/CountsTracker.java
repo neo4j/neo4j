@@ -184,8 +184,7 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey>
     }
 
     @Override
-    public Register.DoubleLongRegister indexUpdatesAndSize( long indexId,
-                                                            Register.DoubleLongRegister target )
+    public Register.DoubleLongRegister indexUpdatesAndSize( long indexId, Register.DoubleLongRegister target )
     {
         return get( indexStatisticsKey( indexId ), target );
     }
