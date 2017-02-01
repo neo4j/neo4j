@@ -558,17 +558,10 @@ Accept skip zero
 Handling non-string operands for STARTS WITH
 Handling non-string operands for CONTAINS
 Handling non-string operands for ENDS WITH
+Returning nested expressions based on list property
 
 Many CREATE clauses
 
-// unsupported comparability
-Fail when comparing nodes to parameters
-Fail when comparing parameters to nodes
-Comparing nodes to properties
-Fail when comparing nodes to relationships
-Fail when comparing relationships to nodes
-
-// Bug in spec, awaiting update
-ORDER BY should return results in ascending order
-ORDER BY DESC should return results in descending order
-Renaming columns before ORDER BY should return results in ascending order
+Comparing strings and integers using > in an AND'd predicate
+Comparing strings and integers using > in a OR'd predicate
+Comparing across types yields null, except numbers
