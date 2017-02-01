@@ -145,6 +145,9 @@ public class GBPTree<KEY,VALUE> implements Closeable
         {   // no-op by default
         }
 
+        /**
+         * Called when the tree was started on no existing store file and so will be created.
+         */
         default void noStoreFile()
         {   // no-op by default
         }
