@@ -105,7 +105,7 @@ public class BoltConnectorValidatorTest
 
         verify( warningConsumer ).accept(
                 format( DEPRECATED_CONNECTOR_MSG,
-                        format( "  %s%n  %s", randomEnabled, randomType ) ) );
+                        format( ">  %s%n>  %s%n", randomEnabled, randomType ) ) );
     }
 
     @Test

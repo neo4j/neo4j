@@ -172,8 +172,8 @@ public abstract class ConnectorValidator implements SettingGroup<Object>
                     DEPRECATED_CONNECTOR_MSG,
                     nonDefaultConnectors.stream()
                             .sorted()
-                            .map( s -> "  " + s )
-                            .collect( joining( System.lineSeparator() ) ) ) );
+                            .map( s -> format( ">  %s%n", s ) )
+                            .collect( joining() ) ) );
         }
     }
 
