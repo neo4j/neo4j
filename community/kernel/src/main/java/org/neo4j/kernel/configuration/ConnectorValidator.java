@@ -21,10 +21,12 @@ package org.neo4j.kernel.configuration;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
@@ -33,6 +35,8 @@ import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.config.SettingGroup;
 
+import static java.lang.String.format;
+import static java.util.stream.Collectors.joining;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
 import static org.neo4j.kernel.configuration.Settings.options;
@@ -44,6 +48,10 @@ public abstract class ConnectorValidator implements SettingGroup<Object>
             Arrays.stream( Connector.ConnectorType.values() )
                     .map( Enum::name )
                     .collect( Collectors.toList() );
+    public static final String DEPRECATED_CONNECTOR_MSG =
+            "Warning: connectors with names other than [http,https,bolt] are%n" +
+                    "deprecated and support for them will be removed in a future%n" +
+                    "version of Neo4j. Offending lines in neo4j.conf:%n%n%s";
     protected final Connector.ConnectorType type;
 
     public ConnectorValidator( @Nonnull Connector.ConnectorType type )
@@ -75,7 +83,7 @@ public abstract class ConnectorValidator implements SettingGroup<Object>
         // Do not allow invalid settings under 'dbms.connector.**'
         if ( parts.length != 4 )
         {
-            throw new InvalidSettingException( String.format( "Invalid connector setting: %s", key ) );
+            throw new InvalidSettingException( format( "Invalid connector setting: %s", key ) );
         }
 
         /*if ( !subSettings().contains( parts[3] ) )
@@ -104,14 +112,14 @@ public abstract class ConnectorValidator implements SettingGroup<Object>
         // If this is a connector not called bolt or http, then we require the type
         if ( typeValue == null )
         {
-            throw new InvalidSettingException( String.format( "Missing mandatory value for '%s'",
+            throw new InvalidSettingException( format( "Missing mandatory value for '%s'",
                     typeKey ) );
         }
 
         if ( !validTypes.contains( typeValue ) )
         {
             throw new InvalidSettingException(
-                    String.format( "'%s' must be one of %s; not '%s'",
+                    format( "'%s' must be one of %s; not '%s'",
                             typeKey, String.join( ", ", validTypes ), typeValue ) );
         }
 
@@ -128,7 +136,7 @@ public abstract class ConnectorValidator implements SettingGroup<Object>
 
     @Override
     @Nonnull
-    public Map<String,String> validate( @Nonnull Map<String,String> rawConfig )
+    public Map<String,String> validate( @Nonnull Map<String,String> rawConfig, @Nonnull Consumer<String> warningConsumer )
             throws InvalidSettingException
     {
         final HashMap<String,String> result = new HashMap<>();
@@ -136,10 +144,37 @@ public abstract class ConnectorValidator implements SettingGroup<Object>
         ownedEntries( rawConfig ).forEach( s ->
                 result.putAll( getSettingFor( s.getKey(), rawConfig )
                         .orElseThrow( () -> new InvalidSettingException(
-                                String.format( "Invalid connector setting: %s", s.getKey() ) ) )
-                        .validate( rawConfig ) ) );
+                                format( "Invalid connector setting: %s", s.getKey() ) ) )
+                        .validate( rawConfig, warningConsumer ) ) );
+
+        warnAboutDeprecatedConnectors( result, warningConsumer );
 
         return result;
+    }
+
+    private void warnAboutDeprecatedConnectors( @Nonnull Map<String,String> connectorSettings,
+            @Nonnull Consumer<String> warningConsumer )
+    {
+        final HashSet<String> nonDefaultConnectors = new HashSet<>();
+        connectorSettings.entrySet().stream()
+                .map( Entry::getKey )
+                .filter( settingKey ->
+                {
+                    String name = settingKey.split( "\\." )[2];
+                    return !( name.equalsIgnoreCase( "http" ) || name.equalsIgnoreCase( "https" ) || name
+                            .equalsIgnoreCase( "bolt" ) );
+                } )
+                .forEach( nonDefaultConnectors::add );
+
+        if ( !nonDefaultConnectors.isEmpty() )
+        {
+            warningConsumer.accept( format(
+                    DEPRECATED_CONNECTOR_MSG,
+                    nonDefaultConnectors.stream()
+                            .sorted()
+                            .map( s -> "  " + s )
+                            .collect( joining( System.lineSeparator() ) ) ) );
+        }
     }
 
     @Override
@@ -151,7 +186,7 @@ public abstract class ConnectorValidator implements SettingGroup<Object>
         ownedEntries( params ).forEach( s ->
                 result.putAll( getSettingFor( s.getKey(), params )
                         .orElseThrow( () -> new InvalidSettingException(
-                                String.format( "Invalid connector setting: %s", s.getKey() ) ) )
+                                format( "Invalid connector setting: %s", s.getKey() ) ) )
                         .values( params ) ) );
 
         return result;

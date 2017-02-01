@@ -60,7 +60,7 @@ public class IndividualSettingsValidator implements ConfigurationValidator
             @Nonnull Log log ) throws InvalidSettingException
     {
         Map<String,String> validConfig = settingValidators.stream()
-                .map( it -> it.validate( rawConfig ) )
+                .map( it -> it.validate( rawConfig, log::warn ) )
                 .flatMap( map -> map.entrySet().stream() )
                 .collect( Collectors.toMap( Entry::getKey, Entry::getValue ) );
 
