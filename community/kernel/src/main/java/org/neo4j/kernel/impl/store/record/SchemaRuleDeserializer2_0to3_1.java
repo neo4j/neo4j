@@ -135,14 +135,14 @@ public class SchemaRuleDeserializer2_0to3_1
     {
         return new ConstraintRule( id,
                 ConstraintDescriptorFactory.existsForLabel( labelId, readPropertyKey( buffer ) ),
-                Optional.empty() );
+                ConstraintRule.NO_OWNED_INDEX_RULE );
     }
 
     public static ConstraintRule readRelPropertyExistenceConstraintRule( long id, int relTypeId, ByteBuffer buffer )
     {
         return new ConstraintRule( id,
                 ConstraintDescriptorFactory.existsForRelType( relTypeId, readPropertyKey( buffer ) ),
-                Optional.empty() );
+                ConstraintRule.NO_OWNED_INDEX_RULE );
     }
 
     private static int readPropertyKey( ByteBuffer buffer )
@@ -160,8 +160,8 @@ public class SchemaRuleDeserializer2_0to3_1
         return keys;
     }
 
-    private static Optional<Long> readOwnedIndexRule( ByteBuffer buffer )
+    private static Long readOwnedIndexRule( ByteBuffer buffer )
     {
-        return Optional.of( buffer.getLong() );
+        return buffer.getLong();
     }
 }
