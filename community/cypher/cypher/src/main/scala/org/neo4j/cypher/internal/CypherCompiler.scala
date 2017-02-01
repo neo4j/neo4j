@@ -23,10 +23,12 @@ import java.time.Clock
 
 import org.neo4j.cypher.internal.compatibility.v3_2.exceptionHandler
 import org.neo4j.cypher.internal.compiler.v3_2._
+import org.neo4j.cypher.internal.frontend.v3_2
 import org.neo4j.cypher.internal.frontend.v3_2.InputPosition
-import org.neo4j.cypher.{InvalidArgumentException, SyntaxException, _}
+import org.neo4j.cypher.internal.frontend.v3_2.helpers.fixedPoint
+import org.neo4j.cypher.{InvalidArgumentException, _}
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
-import org.neo4j.graphdb.impl.notification.NotificationCode.RULE_PLANNER_UNAVAILABLE_FALLBACK
+import org.neo4j.graphdb.impl.notification.NotificationCode.{CREATE_UNIQUE_UNAVAILABLE_FALLBACK, RULE_PLANNER_UNAVAILABLE_FALLBACK}
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelAPI
 import org.neo4j.kernel.configuration.Config
@@ -149,20 +151,41 @@ class CypherCompiler(graph: GraphDatabaseQueryService,
       version = CypherVersion.v3_1
     }
 
-    version match {
-      case CypherVersion.v3_2 => planners(PlannerSpec_v3_2(planner, runtime, updateStrategy, codeGenMode))
-        .produceParsedQuery(preParsedQuery, tracer, preParsingNotifications)
-      case CypherVersion.v3_1 => planners(PlannerSpec_v3_1(planner, runtime, updateStrategy))
-        .produceParsedQuery(preParsedQuery, as3_1(tracer), preParsingNotifications)
-      case CypherVersion.v2_3 => planners(PlannerSpec_v2_3(planner, runtime))
-        .produceParsedQuery(preParsedQuery, as2_3(tracer), preParsingNotifications)
+    def planForVersion(input: Either[CypherVersion, ParsedQuery]): Either[CypherVersion, ParsedQuery] = input match {
+      case r@Right(_) => r
+      case Left(CypherVersion.v3_2) =>
+        val spec = PlannerSpec_v3_2(planner, runtime, updateStrategy, codeGenMode)
+        val result = planners(spec).produceParsedQuery(preParsedQuery, tracer, preParsingNotifications)
+        result.onError {
+          // if there is a create unique in the cypher 3.2 query try to fallback to 3.1
+          case ex: v3_2.SyntaxException if ex.getMessage.startsWith("CREATE UNIQUE") =>
+            preParsingNotifications = preParsingNotifications +
+              createUniqueUnavailableFallbackNotification(ex, preParsedQuery)
+            Left(CypherVersion.v3_1)
+          case _ => Right(result)
+        }.getOrElse(Right(result))
+      case Left(CypherVersion.v3_1) =>
+        val spec = PlannerSpec_v3_1(planner, runtime, updateStrategy)
+        Right(planners(spec).produceParsedQuery(preParsedQuery, as3_1(tracer), preParsingNotifications))
+      case Left(CypherVersion.v2_3) =>
+        val spec = PlannerSpec_v2_3(planner, runtime)
+        Right(planners(spec).produceParsedQuery(preParsedQuery, as2_3(tracer), preParsingNotifications))
     }
+
+    val result: Either[CypherVersion, ParsedQuery] = fixedPoint(planForVersion).apply(Left(version))
+    result.right.get
   }
 
-  private def rulePlannerUnavailableFallbackNotification(offset: InputPosition): org.neo4j.graphdb.Notification = {
-    val pos = new org.neo4j.graphdb.InputPosition(offset.offset, offset.line, offset.column)
-    RULE_PLANNER_UNAVAILABLE_FALLBACK.notification(pos)
+  private def createUniqueUnavailableFallbackNotification(ex: v3_2.SyntaxException, preParsedQuery: PreParsedQuery) = {
+    val pos = convertInputPosition(ex.pos.getOrElse(preParsedQuery.offset))
+    CREATE_UNIQUE_UNAVAILABLE_FALLBACK.notification(pos)
   }
+
+  private def rulePlannerUnavailableFallbackNotification(offset: InputPosition) =
+    RULE_PLANNER_UNAVAILABLE_FALLBACK.notification(convertInputPosition(offset))
+
+  private def convertInputPosition(offset: InputPosition) =
+    new org.neo4j.graphdb.InputPosition(offset.offset, offset.line, offset.column)
 
   private def getQueryCacheSize : Int = {
     val setting: (Config) => Int = config => config.get(GraphDatabaseSettings.query_cache_size).intValue()

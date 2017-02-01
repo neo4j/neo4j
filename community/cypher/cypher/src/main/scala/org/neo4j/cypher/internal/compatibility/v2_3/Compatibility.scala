@@ -70,9 +70,8 @@ trait Compatibility {
         preParsedQuery.planner.name,
         Some(as2_3(preParsedQuery.offset)), tracer))
     new ParsedQuery {
-      def isPeriodicCommit = preparedQueryForV_2_3.map(_.isPeriodicCommit).getOrElse(false)
-
-      def plan(transactionalContext: TransactionalContextWrapper, tracer: v3_2.CompilationPhaseTracer): (org.neo4j.cypher.internal.ExecutionPlan, Map[String, Any]) = exceptionHandler.runSafely {
+      override def plan(transactionalContext: TransactionalContextWrapper, tracer: v3_2.CompilationPhaseTracer): (org
+      .neo4j.cypher.internal.ExecutionPlan, Map[String, Any]) = exceptionHandler.runSafely {
         val planContext: PlanContext = new TransactionBoundPlanContext(transactionalContext)
         val (planImpl, extractedParameters) = compiler.planPreparedQuery(preparedQueryForV_2_3.get, planContext, as2_3(tracer))
 
@@ -82,7 +81,7 @@ trait Compatibility {
         (new ExecutionPlanWrapper(planImpl, preParsingNotifications), extractedParameters)
       }
 
-      override def hasErrors = preparedQueryForV_2_3.isFailure
+      override protected val trier: Try[PreparedQuery] = preparedQueryForV_2_3
     }
   }
 

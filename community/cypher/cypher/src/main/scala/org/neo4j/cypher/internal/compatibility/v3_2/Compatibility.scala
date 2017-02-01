@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compiler.v3_2
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{LegacyNodeIndexUsage, LegacyRelationshipIndexUsage, SchemaIndexScanUsage, SchemaIndexSeekUsage, ExecutionPlan => ExecutionPlan_v3_2}
+import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilationState
 import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.compiler.v3_2.{InfoLogger, ExplainMode => ExplainModev3_2, NormalMode => NormalModev3_2, ProfileMode => ProfileModev3_2, _}
 import org.neo4j.cypher.internal.spi.v3_2.TransactionBoundQueryContext.IndexSearchMonitor
@@ -62,8 +63,6 @@ trait Compatibility {
         preParsedQuery.planner.name,
         Some(preParsedQuery.offset), tracer))
     new ParsedQuery {
-      override def isPeriodicCommit: Boolean = preparedSyntacticQueryForV_3_2.map(_.isPeriodicCommit).getOrElse(false)
-
       override def plan(transactionalContext: TransactionalContextWrapper, tracer: CompilationPhaseTracer):
         (ExecutionPlan, Map[String, Any]) = exceptionHandler.runSafely {
         val planContext = new ExceptionTranslatingPlanContext(new TransactionBoundPlanContext(transactionalContext, notificationLogger))
@@ -76,7 +75,7 @@ trait Compatibility {
         (new ExecutionPlanWrapper(planImpl, preParsingNotifications), extractedParameters)
       }
 
-      override def hasErrors: Boolean = preparedSyntacticQueryForV_3_2.isFailure
+      override protected val trier: Try[CompilationState] = preparedSyntacticQueryForV_3_2
     }
   }
 
