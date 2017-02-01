@@ -41,11 +41,21 @@ public class Neo4jAdminUsageTest
         usageCmd.print( s -> sb.append( s ).append( "\n" ) );
 
         assertEquals("usage: neo4j-admin <command>\n" +
-                        "\n" + "available commands:\n" +
+                        "\n" +
+                        "Manage your Neo4j instance.\n" +
+                        "\n" +
+                        "environment variables:\n" +
+                        "    NEO4J_DEBUG   Set to anything to enable debug output.\n" +
+                        "    NEO4J_HOME    Neo4j home directory.\n" +
+                        "    NEO4J_CONF    Path to directory which contains neo4j.conf.\n" +
+                        "\n" +
+                        "available commands:\n" +
                         "    set-initial-password\n" +
                         "        Sets the initial password of the initial admin user ('neo4j').\n" +
                         "    restore\n" +
                         "        Restore a backed up database.\n" +
+                        "    version\n" +
+                        "        Check the version of a Neo4j database store.\n" +
                         "    backup\n" +
                         "        Perform an online backup from a running Neo4j enterprise server.\n" +
                         "    unbind\n" +

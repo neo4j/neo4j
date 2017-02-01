@@ -1,3 +1,4 @@
 org.neo4j.commandline.dbms.ImportCommand$Provider
 org.neo4j.commandline.dbms.DumpCommand$Provider
 org.neo4j.commandline.dbms.LoadCommand$Provider
+org.neo4j.commandline.dbms.VersionCommand$Provider
