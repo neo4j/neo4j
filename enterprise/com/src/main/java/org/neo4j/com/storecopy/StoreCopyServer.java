@@ -24,10 +24,11 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.util.Optional;
-
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.com.ServerFailureException;
+import org.neo4j.function.ThrowingAction;
+import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -36,6 +37,7 @@ import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 
 import static org.neo4j.com.RequestContext.anonymous;
@@ -118,13 +120,15 @@ public class StoreCopyServer
     private final File storeDirectory;
     private final Monitor monitor;
     private final PageCache pageCache;
+    private final StoreCopyCheckPointMutex mutex;
 
     public StoreCopyServer( NeoStoreDataSource dataSource, CheckPointer checkPointer, FileSystemAbstraction fileSystem,
-            File storeDirectory, Monitor monitor, PageCache pageCache )
+            File storeDirectory, Monitor monitor, PageCache pageCache, StoreCopyCheckPointMutex mutex )
     {
         this.dataSource = dataSource;
         this.checkPointer = checkPointer;
         this.fileSystem = fileSystem;
+        this.mutex = mutex;
         this.storeDirectory = getMostCanonicalFile( storeDirectory );
         this.monitor = monitor;
         this.pageCache = pageCache;
@@ -148,15 +152,20 @@ public class StoreCopyServer
     {
         try
         {
-            monitor.startTryCheckPoint();
-            long lastAppliedTransaction = checkPointer.tryCheckPoint( new SimpleTriggerInfo( triggerName ) );
-            monitor.finishTryCheckPoint();
-            ByteBuffer temporaryBuffer = ByteBuffer.allocateDirect( (int) ByteUnit.mebiBytes( 1 ) );
+            ThrowingAction<IOException> checkPointAction = () -> {
+                monitor.startTryCheckPoint();
+                checkPointer.tryCheckPoint( new SimpleTriggerInfo( triggerName ) );
+                monitor.finishTryCheckPoint();
+            };
 
             // Copy the store files
-            monitor.startStreamingStoreFiles();
-            try ( ResourceIterator<StoreFileMetadata> files = dataSource.listStoreFiles( includeLogs ) )
+            long lastAppliedTransaction;
+            try ( Resource lock = mutex.storeCopy( checkPointAction );
+                    ResourceIterator<StoreFileMetadata> files = dataSource.listStoreFiles( includeLogs ) )
             {
+                lastAppliedTransaction = checkPointer.lastCheckPointedTransactionId();
+                monitor.startStreamingStoreFiles();
+                ByteBuffer temporaryBuffer = ByteBuffer.allocateDirect( (int) ByteUnit.mebiBytes( 1 ) );
                 while ( files.hasNext() )
                 {
                     StoreFileMetadata meta = files.next();
@@ -169,15 +178,13 @@ public class StoreCopyServer
                     final Optional<PagedFile> optionalPagedFile = pageCache.getExistingMapping( file );
                     if ( optionalPagedFile.isPresent() )
                     {
-                        PagedFile pagedFile = optionalPagedFile.get();
-                        long fileSize = pagedFile.fileSize();
-                        try ( ReadableByteChannel fileChannel = pagedFile.openReadableByteChannel() )
+                        try ( PagedFile pagedFile = optionalPagedFile.get() )
                         {
-                            doWrite( writer, temporaryBuffer, file, recordSize, fileChannel, fileSize );
-                        }
-                        finally
-                        {
-                            pagedFile.close();
+                            long fileSize = pagedFile.fileSize();
+                            try ( ReadableByteChannel fileChannel = pagedFile.openReadableByteChannel() )
+                            {
+                                doWrite( writer, temporaryBuffer, file, recordSize, fileChannel, fileSize );
+                            }
                         }
                     }
                     else

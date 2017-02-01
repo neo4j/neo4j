@@ -70,6 +70,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
@@ -89,6 +90,7 @@ public class CatchupServer extends LifecycleAdapter
     private final BooleanSupplier dataSourceAvailabilitySupplier;
     private final FileSystemAbstraction fs;
     private final PageCache pageCache;
+    private final StoreCopyCheckPointMutex storeCopyCheckPointMutex;
 
     private final NamedThreadFactory threadFactory = new NamedThreadFactory( "catchup-server" );
     private final CoreState coreState;
@@ -96,17 +98,19 @@ public class CatchupServer extends LifecycleAdapter
 
     private EventLoopGroup workerGroup;
     private Channel channel;
-    private Supplier<CheckPointer> checkPointerSupplier;
-    private int txPullBatchSize;
+    private final Supplier<CheckPointer> checkPointerSupplier;
+    private final int txPullBatchSize;
 
     public CatchupServer( LogProvider logProvider, LogProvider userLogProvider, Supplier<StoreId> storeIdSupplier,
             Supplier<TransactionIdStore> transactionIdStoreSupplier,
             Supplier<LogicalTransactionStore> logicalTransactionStoreSupplier,
             Supplier<NeoStoreDataSource> dataSourceSupplier, BooleanSupplier dataSourceAvailabilitySupplier,
             CoreState coreState, Config config, Monitors monitors, Supplier<CheckPointer> checkPointerSupplier,
-            FileSystemAbstraction fs, PageCache pageCache )
+            FileSystemAbstraction fs, PageCache pageCache,
+            StoreCopyCheckPointMutex storeCopyCheckPointMutex )
     {
         this.coreState = coreState;
+        this.storeCopyCheckPointMutex = storeCopyCheckPointMutex;
         this.listenAddress = config.get( CausalClusteringSettings.transaction_listen_address );
         this.txPullBatchSize = config.get( CausalClusteringSettings.tx_pull_batch_size );
         this.transactionIdStoreSupplier = transactionIdStoreSupplier;
@@ -172,7 +176,7 @@ public class CatchupServer extends LifecycleAdapter
                                         monitors, logProvider ) );
                         pipeline.addLast( new ChunkedWriteHandler() );
                         pipeline.addLast( new GetStoreRequestHandler( protocol, dataSourceSupplier,
-                                checkPointerSupplier, fs, pageCache, logProvider ) );
+                                checkPointerSupplier, fs, pageCache, logProvider, storeCopyCheckPointMutex ) );
                         pipeline.addLast( new GetStoreIdRequestHandler( protocol, storeIdSupplier ) );
                         pipeline.addLast( new CoreSnapshotRequestHandler( protocol, coreState ) );
 

@@ -216,7 +216,8 @@ public class DataSourceModule
                 procedures,
                 editionModule.ioLimiter,
                 platformModule.availabilityGuard,
-                platformModule.clock, editionModule.accessCapability ) );
+                platformModule.clock, editionModule.accessCapability,
+                platformModule.storeCopyCheckPointMutex ) );
 
         dataSourceManager.register( neoStoreDataSource );
 

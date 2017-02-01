@@ -62,6 +62,7 @@ import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.DependenciesProxy;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -139,7 +140,8 @@ public class NeoStoreDataSourceRule extends ExternalResource
                 new Tracers( "null", NullLog.getInstance(), monitors, jobScheduler ),
                 mock( Procedures.class ),
                 IOLimiter.unlimited(),
-                mock( AvailabilityGuard.class ), Clocks.nanoClock(), new CanWrite() );
+                mock( AvailabilityGuard.class ), Clocks.nanoClock(),
+                new CanWrite(), new StoreCopyCheckPointMutex() );
 
         return dataSource;
     }

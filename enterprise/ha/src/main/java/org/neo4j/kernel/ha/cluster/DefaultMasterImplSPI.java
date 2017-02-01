@@ -47,6 +47,7 @@ import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -72,6 +73,7 @@ public class DefaultMasterImplSPI implements MasterImpl.SPI
 
     private final TransactionCommitProcess transactionCommitProcess;
     private final CheckPointer checkPointer;
+    private final StoreCopyCheckPointMutex mutex;
 
     public DefaultMasterImplSPI( final GraphDatabaseAPI graphDb,
                                  FileSystemAbstraction fileSystemAbstraction,
@@ -84,7 +86,8 @@ public class DefaultMasterImplSPI implements MasterImpl.SPI
                                  TransactionIdStore transactionIdStore,
                                  LogicalTransactionStore logicalTransactionStore,
                                  NeoStoreDataSource neoStoreDataSource,
-                                 PageCache pageCache )
+                                 PageCache pageCache,
+                                 StoreCopyCheckPointMutex mutex )
     {
         this.graphDb = graphDb;
         this.fileSystem = fileSystemAbstraction;
@@ -95,6 +98,7 @@ public class DefaultMasterImplSPI implements MasterImpl.SPI
         this.transactionCommitProcess = transactionCommitProcess;
         this.checkPointer = checkPointer;
         this.neoStoreDataSource = neoStoreDataSource;
+        this.mutex = mutex;
         this.storeDir = new File( graphDb.getStoreDir() );
         this.txChecksumLookup = new TransactionChecksumLookup( transactionIdStore, logicalTransactionStore );
         this.responsePacker = new ResponsePacker( logicalTransactionStore, transactionIdStore, graphDb::storeId );
@@ -159,7 +163,8 @@ public class DefaultMasterImplSPI implements MasterImpl.SPI
     public RequestContext flushStoresAndStreamStoreFiles( StoreWriter writer )
     {
         StoreCopyServer streamer = new StoreCopyServer( neoStoreDataSource,
-                checkPointer, fileSystem, storeDir, monitors.newMonitor( StoreCopyServer.Monitor.class ), pageCache );
+                checkPointer, fileSystem, storeDir, monitors.newMonitor( StoreCopyServer.Monitor.class ),
+                pageCache, mutex );
         return streamer.flushStoresAndStreamStoreFiles( STORE_COPY_CHECKPOINT_TRIGGER, writer, false );
     }
 
