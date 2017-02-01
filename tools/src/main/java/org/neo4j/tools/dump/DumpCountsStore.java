@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -31,14 +32,12 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.ReadOperations;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
-import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.SchemaStore;
+import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
@@ -47,12 +46,11 @@ import org.neo4j.kernel.impl.store.kvstore.Headers;
 import org.neo4j.kernel.impl.store.kvstore.MetadataVisitor;
 import org.neo4j.kernel.impl.store.kvstore.ReadableBuffer;
 import org.neo4j.kernel.impl.store.kvstore.UnknownKey;
+import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.Token;
-import org.neo4j.storageengine.api.schema.SchemaRule;
 
 import static org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory.createPageCache;
 
@@ -84,7 +82,8 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
                 StoreFactory factory = new StoreFactory( path, pages, fs, NullLogProvider.getInstance() );
 
                 NeoStores neoStores = factory.openAllNeoStores();
-                neoStores.getCounts().accept( new DumpCountsStore( out, neoStores ) );
+                SchemaStorage schemaStorage = new SchemaStorage( neoStores.getSchemaStore() );
+                neoStores.getCounts().accept( new DumpCountsStore( out, neoStores, schemaStorage ) );
             }
             else
             {
@@ -107,26 +106,26 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
         this( out, Collections.emptyMap(), Collections.emptyList(), Collections.emptyList(), Collections.emptyList() );
     }
 
-    DumpCountsStore( PrintStream out, NeoStores neoStores )
+    DumpCountsStore( PrintStream out, NeoStores neoStores, SchemaStorage schemaStorage )
     {
-        this( out, allSchemaRulesFrom( neoStores.getSchemaStore() ),
+        this( out, getAllIndexesFrom( schemaStorage ),
               allTokensFrom( neoStores.getLabelTokenStore() ),
               allTokensFrom( neoStores.getRelationshipTypeTokenStore() ),
               allTokensFrom( neoStores.getPropertyKeyTokenStore() ) );
     }
 
     private final PrintStream out;
-    private final Map<Long,IndexDescriptor> schemaRules;
+    private final Map<Long,NewIndexDescriptor> indexes;
     private final List<Token> labels;
     private final List<RelationshipTypeToken> relationshipTypes;
     private final List<Token> propertyKeys;
 
-    private DumpCountsStore( PrintStream out, Map<Long,IndexDescriptor> schemaRules, List<Token> labels,
+    private DumpCountsStore( PrintStream out, Map<Long,NewIndexDescriptor> indexes, List<Token> labels,
             List<RelationshipTypeToken> relationshipTypes,
             List<Token> propertyKeys )
     {
         this.out = out;
-        this.schemaRules = schemaRules;
+        this.indexes = indexes;
         this.labels = labels;
         this.relationshipTypes = relationshipTypes;
         this.propertyKeys = propertyKeys;
@@ -161,17 +160,17 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
     @Override
     public void visitIndexStatistics( long indexId, long updates, long size )
     {
-        IndexDescriptor index = schemaRules.get( indexId );
+        NewIndexDescriptor index = indexes.get( indexId );
         out.printf( "\tIndexStatistics[(%s {%s})]:\tupdates=%d, size=%d%n",
-                label( index.getLabelId() ), propertyKey( index.descriptor().getPropertyKeyId() ), updates, size );
+                label( index.schema().getLabelId() ), propertyKeys( index.schema().getPropertyIds() ), updates, size );
     }
 
     @Override
     public void visitIndexSample( long indexId, long unique, long size )
     {
-        IndexDescriptor index = schemaRules.get( indexId );
+        NewIndexDescriptor index = indexes.get( indexId );
         out.printf( "\tIndexSample[(%s {%s})]:\tunique=%d, size=%d%n",
-                label( index.getLabelId() ), propertyKey( index.descriptor().getPropertyKeyId() ), unique, size );
+                label( index.schema().getLabelId() ), propertyKeys( index.schema().getPropertyIds() ), unique, size );
     }
 
     @Override
@@ -190,9 +189,18 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
         return token( new StringBuilder(), labels, ":", "label", id ).toString();
     }
 
-    private String propertyKey( int id )
+    private String propertyKeys( int[] ids )
     {
-        return token( new StringBuilder(), propertyKeys, "", "key", id ).toString();
+        StringBuilder builder = new StringBuilder();
+        for ( int i = 0; i < ids.length; i++ )
+        {
+            if ( i > 0 )
+            {
+                builder.append( "," );
+            }
+            token( builder, propertyKeys, "", "key", ids[i] );
+        }
+        return builder.toString();
     }
 
     private String relationshipType( int id )
@@ -242,17 +250,16 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
         }
     }
 
-    private static Map<Long,IndexDescriptor> allSchemaRulesFrom( SchemaStore store )
+    private static Map<Long,NewIndexDescriptor> getAllIndexesFrom( SchemaStorage storage )
     {
-        HashMap<Long,IndexDescriptor> rules = new HashMap<>();
-        for ( SchemaRule rule : store )
+        HashMap<Long,NewIndexDescriptor> indexes = new HashMap<>();
+        Iterator<IndexRule> indexRules = storage.indexesGetAll();
+        while ( indexRules.hasNext() )
         {
-            if ( rule.descriptor().entityType() == EntityType.NODE )
-            {
-                rules.put( rule.getId(), IndexDescriptorFactory.of( (NodePropertyDescriptor) rule.descriptor() ) );
-            }
+            IndexRule rule = indexRules.next();
+            indexes.put( rule.getId(), rule.getIndexDescriptor() );
         }
-        return rules;
+        return indexes;
     }
 
     private static class VisitableCountsTracker extends CountsTracker

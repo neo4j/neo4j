@@ -52,9 +52,12 @@ import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -501,14 +504,10 @@ public class IndexStatisticsTest
 
     private long indexId(IndexDescriptor index)
     {
-        for ( SchemaRule rule : neoStores().getSchemaStore() )
-        {
-            if ( rule.descriptor().equals( index.descriptor() ) )
-            {
-                return rule.getId();
-            }
-        }
-        return -1;
+        SchemaStorage storage = new SchemaStorage( neoStores().getSchemaStore() );
+        LabelSchemaDescriptor descriptor =
+                SchemaDescriptorFactory.forLabel( index.getLabelId(), index.getPropertyKeyId() );
+        return storage.indexGetForSchema( descriptor ).getId();
     }
 
     private NeoStores neoStores()

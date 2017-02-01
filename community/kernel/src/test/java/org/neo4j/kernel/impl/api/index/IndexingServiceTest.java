@@ -525,7 +525,7 @@ public class IndexingServiceTest
         IndexSamplingMode mode = TRIGGER_REBUILD_ALL;
         IndexDescriptor descriptor = IndexDescriptorFactory.of( 0, 1 );
         IndexingService indexingService = newIndexingServiceWithMockedDependencies( populator, accessor, withData(),
-                indexRule( indexId, descriptor.descriptor(), PROVIDER_DESCRIPTOR ) );
+                indexRule( indexId, descriptor.getLabelId(), descriptor.getPropertyKeyId(), PROVIDER_DESCRIPTOR ) );
         life.init();
         life.start();
 

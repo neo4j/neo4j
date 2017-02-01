@@ -31,12 +31,13 @@ import java.util.List;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.store.LabelTokenStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.store.RelationshipTypeTokenStore;
-import org.neo4j.kernel.impl.store.SchemaStore;
+import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.kvstore.BigEndianByteArrayBuffer;
 import org.neo4j.kernel.impl.store.kvstore.HeaderField;
 import org.neo4j.kernel.impl.store.kvstore.Headers;
@@ -44,7 +45,6 @@ import org.neo4j.kernel.impl.store.kvstore.ReadableBuffer;
 import org.neo4j.kernel.impl.store.kvstore.WritableBuffer;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.storageengine.api.Token;
-import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.test.rule.SuppressOutput;
 
 import static org.hamcrest.Matchers.allOf;
@@ -148,7 +148,19 @@ public class DumpCountsStoreTest
 
     private DumpCountsStore getCountStore()
     {
-        return new DumpCountsStore( System.out, createNeoStores() );
+        return new DumpCountsStore( System.out, createNeoStores(), createSchemaStorage() );
+    }
+
+    private SchemaStorage createSchemaStorage()
+    {
+        SchemaStorage schemaStorage = mock(SchemaStorage.class);
+        SchemaIndexProvider.Descriptor providerDescriptor = new SchemaIndexProvider.Descriptor( "in-memory", "1.0" );
+        IndexRule rule = IndexRule.indexRule( indexId, IndexBoundary.map( descriptor ), providerDescriptor );
+        ArrayList<IndexRule> rules = new ArrayList<>();
+        rules.add( rule );
+
+        when( schemaStorage.indexesGetAll() ).thenReturn( rules.iterator() );
+        return schemaStorage;
     }
 
     private NeoStores createNeoStores()
@@ -157,18 +169,11 @@ public class DumpCountsStoreTest
         LabelTokenStore labelTokenStore = mock( LabelTokenStore.class );
         RelationshipTypeTokenStore typeTokenStore = mock( RelationshipTypeTokenStore.class );
         PropertyKeyTokenStore propertyKeyTokenStore = mock( PropertyKeyTokenStore.class );
-        SchemaStore schemaStore = mock( SchemaStore.class );
-        SchemaIndexProvider.Descriptor providerDescriptor = new SchemaIndexProvider.Descriptor( "in-memory", "1.0" );
-        IndexRule rule = IndexRule.indexRule( indexId, descriptor.descriptor(), providerDescriptor );
-        ArrayList<SchemaRule> rules = new ArrayList<>();
-        rules.add( rule );
 
         when( labelTokenStore.getTokens( Integer.MAX_VALUE ) ).thenReturn( getLabelTokens() );
         when( typeTokenStore.getTokens( Integer.MAX_VALUE ) ).thenReturn( getTypeTokes() );
         when( propertyKeyTokenStore.getTokens( Integer.MAX_VALUE ) ).thenReturn( getPropertyTokens() );
-        when( schemaStore.iterator() ).thenReturn( rules.iterator() );
 
-        when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
         when( neoStores.getLabelTokenStore() ).thenReturn( labelTokenStore );
         when( neoStores.getRelationshipTypeTokenStore() ).thenReturn( typeTokenStore );
         when( neoStores.getPropertyKeyTokenStore() ).thenReturn( propertyKeyTokenStore );

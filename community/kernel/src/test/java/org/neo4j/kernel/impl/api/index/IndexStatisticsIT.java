@@ -38,6 +38,8 @@ import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
@@ -45,6 +47,7 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
@@ -194,14 +197,10 @@ public class IndexStatisticsIT
 
     private long indexId(IndexDescriptor index)
     {
-        for ( SchemaRule rule : neoStores().getSchemaStore() )
-        {
-            if ( rule.descriptor().equals( index.descriptor() ) )
-            {
-                return rule.getId();
-            }
-        }
-        return -1;
+        SchemaStorage storage = new SchemaStorage( neoStores().getSchemaStore() );
+        LabelSchemaDescriptor descriptor =
+                SchemaDescriptorFactory.forLabel( index.getLabelId(), index.getPropertyKeyId() );
+        return storage.indexGetForSchema( descriptor ).getId();
     }
 
     private void resetIndexCounts( long indexId )
