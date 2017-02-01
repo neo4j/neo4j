@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.core;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.Test;
-import org.mockito.stubbing.Answer;
 
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
@@ -62,9 +61,9 @@ public class RelationshipProxyTest extends PropertyContainerProxyTest
         // GIVEN
         RelationshipActions actions = mock( RelationshipActions.class );
         when( actions.newNodeProxy( anyLong() ) ).then(
-                (Answer<Node>) invocation -> nodeWithId( (Long) invocation.getArguments()[0] ) );
+                invocation -> nodeWithId( (Long) invocation.getArguments()[0] ) );
         when( actions.getRelationshipTypeById( anyInt() ) ).then(
-                (Answer<RelationshipType>) invocation -> new RelationshipTypeToken( "whatever", (Integer) invocation.getArguments()[0] ) );
+                invocation -> new RelationshipTypeToken( "whatever", (Integer) invocation.getArguments()[0] ) );
 
         long[] ids = new long[]{
                 1437589437,
@@ -204,9 +203,13 @@ public class RelationshipProxyTest extends PropertyContainerProxyTest
         // our mock above is known to return RelationshipTypeToken
         assertEquals( typeId, ((RelationshipTypeToken) proxy.getType()).id() );
         assertEquals( nodeId1, proxy.getStartNode().getId() );
+        assertEquals( nodeId1, proxy.getStartNodeId() );
         assertEquals( nodeId2, proxy.getEndNode().getId() );
+        assertEquals( nodeId2, proxy.getEndNodeId() );
         assertEquals( nodeId2, proxy.getOtherNode( nodeWithId( nodeId1 ) ).getId() );
+        assertEquals( nodeId2, proxy.getOtherNodeId( nodeId1 ) );
         assertEquals( nodeId1, proxy.getOtherNode( nodeWithId( nodeId2 ) ).getId() );
+        assertEquals( nodeId1, proxy.getOtherNodeId( nodeId2 ) );
     }
 
     private Node nodeWithId( long id )
