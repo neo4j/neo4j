@@ -1,4 +1,0 @@
-// throwing exceptions when comparing
-Comparing strings and integers using > in an AND'd predicate
-Comparing strings and integers using > in a OR'd predicate
-Comparing across types yields null, except numbers

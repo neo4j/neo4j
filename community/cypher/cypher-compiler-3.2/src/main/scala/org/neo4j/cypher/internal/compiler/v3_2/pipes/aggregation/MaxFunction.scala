@@ -44,7 +44,7 @@ trait MinMax extends AggregationFunction with Comparer {
   private def checkIfLargest(value: Any)(implicit qtx: QueryState) {
     if (biggestSeen == null) {
       biggestSeen = value
-    } else if (keep(compare(Some(name), biggestSeen, value))) {
+    } else if (keep(compareForOrderability(Some(name), biggestSeen, value))) {
       biggestSeen = value
     }
   }

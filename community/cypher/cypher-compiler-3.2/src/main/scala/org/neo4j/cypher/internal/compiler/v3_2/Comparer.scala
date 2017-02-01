@@ -29,7 +29,7 @@ trait Comparer extends CypherSerializer {
 
   import Comparer._
 
-  def compare(operator: Option[String], l: Any, r: Any)(implicit qtx: QueryState): Int = {
+  def compareForOrderability(operator: Option[String], l: Any, r: Any)(implicit qtx: QueryState): Int = {
     try {
       if ((isString(l) && isString(r)) || (isNumber(l) && isNumber(r)) || (isBoolean(l) && isBoolean(r)))
         CypherOrdering.DEFAULT.compare(l, r)
@@ -45,6 +45,18 @@ trait Comparer extends CypherSerializer {
     (l, r) match {
       case (_: List[_], _: List[_]) => s"Cannot perform $operator on lists, consider using UNWIND."
       case _ => s"Cannot perform $operator on mixed types."
+    }
+  }
+
+  def compareForComparability(operator: Option[String], l: Any, r: Any)(implicit qtx: QueryState): Option[Int] = {
+    try {
+      if ((isString(l) && isString(r)) || (isNumber(l) && isNumber(r)) || (isBoolean(l) && isBoolean(r)))
+        Some(CypherOrdering.DEFAULT.compare(l, r))
+      else
+        None
+    } catch {
+      case _: IllegalArgumentException =>
+        None
     }
   }
 }
