@@ -20,13 +20,14 @@
 package org.neo4j.internal.cypher.acceptance
 
 import java.util
+import org.neo4j.graphdb.Result
 
 class ProcedureCallSupportAcceptanceTest extends ProcedureCallAcceptanceTest {
 
   test("should return correctly typed map result (even if converting to and from scala representation internally)") {
     val value = new util.HashMap[String, Any]()
     value.put("name", "Cypher")
-    value.put("level", 9001)
+    value.put("level", 9001L)
 
     registerProcedureReturningSingleValue(value)
 
@@ -61,5 +62,63 @@ class ProcedureCallSupportAcceptanceTest extends ProcedureCallAcceptanceTest {
     graph.execute("CALL my.first.value() YIELD out RETURN * LIMIT 1").stream().toArray.toList should equal(List(
       java.util.Collections.singletonMap("out", stream)
     ))
+  }
+
+  val types: List[(AnyRef, Class[_])] = List(
+    Byte.box(11.asInstanceOf[Byte]) -> classOf[java.lang.Long],
+    Short.box(11.asInstanceOf[Short]) -> classOf[java.lang.Long],
+    Int.box(11) -> classOf[java.lang.Long],
+    Long.box(11L) -> classOf[java.lang.Long],
+    Float.box(13.1F) -> classOf[java.lang.Double],
+    Double.box(13.1D) -> classOf[java.lang.Double],
+    Char.box('a') -> classOf[java.lang.String]
+  )
+
+  types.foreach {
+    case (given, expected) =>
+      test(s"${given.getClass.getSimpleName} should be ${expected.getSimpleName} in procedure") {
+        registerProcedureReturningSingleValue(given)
+        val result: Result = graph.execute("CALL my.first.value() YIELD out RETURN out")
+        result.next().get("out").getClass should equal(expected)
+        result.close()
+      }
+  }
+
+  val arrayTypes: List[(AnyRef, Class[_])] = List(
+    // Array -> Expected element type
+    //-------------------------------
+    // Primitive arrays
+    Array[Byte](42.asInstanceOf[Byte]) -> classOf[java.lang.Long],
+    Array[Short](42.asInstanceOf[Short]) -> classOf[java.lang.Long],
+    Array[Int](42) -> classOf[java.lang.Long],
+    Array[Long](42L) -> classOf[java.lang.Long],
+    Array[Float](42.0F) -> classOf[java.lang.Double],
+    Array[Double](42.0D) -> classOf[java.lang.Double],
+    Array[Char]('a') -> classOf[java.lang.String],
+
+    // Boxed arrays
+    Array[java.lang.Byte](Byte.box(42.asInstanceOf[Byte])) -> classOf[java.lang.Long],
+    Array[java.lang.Short](Short.box(42.asInstanceOf[Short])) -> classOf[java.lang.Long],
+    Array[java.lang.Integer](Int.box(42)) -> classOf[java.lang.Long],
+    Array[java.lang.Long](Long.box(42L)) -> classOf[java.lang.Long],
+    Array[java.lang.Float](Float.box(42.0F)) -> classOf[java.lang.Double],
+    Array[java.lang.Double](Double.box(42.0D)) -> classOf[java.lang.Double],
+    Array[java.lang.Character](Char.box('a')) -> classOf[java.lang.String]
+  )
+
+  arrayTypes.foreach {
+    case (given, expectedElementType) =>
+      test(s"${given.getClass.getSimpleName} should have elements of type ${expectedElementType.getSimpleName} in procedure") {
+        registerProcedureReturningSingleValue(given)
+        val result = graph.execute("CALL my.first.value() YIELD out RETURN out")
+        val resultValue = result.next().get("out")
+        resultValue match {
+          case r: Array[_] =>
+            r.foreach(_.getClass should equal(expectedElementType))
+        }
+
+        result.close()
+      }
+
   }
 }

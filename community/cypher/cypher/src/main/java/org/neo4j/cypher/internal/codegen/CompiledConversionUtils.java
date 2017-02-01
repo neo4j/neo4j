@@ -194,8 +194,8 @@ public abstract class CompiledConversionUtils
         }
         else if ( anyValue instanceof Map )
         {
-            ((Map) anyValue).replaceAll( (k, v) -> materializeAnyResult( nodeManager, v ) );
-            return anyValue;
+            return ((Map<String,Object>) anyValue).entrySet().stream().collect(
+                    Collectors.toMap( k -> k.getKey(), v -> materializeAnyResult( nodeManager, v.getValue() ) ) );
         }
         else
         {
