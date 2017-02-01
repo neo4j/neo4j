@@ -39,8 +39,10 @@ import static org.neo4j.storageengine.api.schema.SchemaRule.Kind.UNIQUENESS_CONS
 
 public class ConstraintRule implements SchemaRule, ConstraintDescriptor.Supplier
 {
+    static final Long NO_OWNED_INDEX_RULE = null;
+
     private final long id;
-    private final Optional<Long> ownedIndexRule;
+    private final Long ownedIndexRule;
     private final ConstraintDescriptor descriptor;
 
     @Override
@@ -52,16 +54,16 @@ public class ConstraintRule implements SchemaRule, ConstraintDescriptor.Supplier
     public static ConstraintRule constraintRule(
             long id, ConstraintDescriptor descriptor )
     {
-        return new ConstraintRule( id, descriptor, Optional.empty() );
+        return new ConstraintRule( id, descriptor, NO_OWNED_INDEX_RULE );
     }
 
     public static ConstraintRule constraintRule(
             long id, ConstraintDescriptor descriptor, long ownedIndexRule )
     {
-        return new ConstraintRule( id, descriptor, Optional.of( ownedIndexRule ) );
+        return new ConstraintRule( id, descriptor, ownedIndexRule );
     }
 
-    ConstraintRule( long id, ConstraintDescriptor descriptor, Optional<Long> ownedIndexRule )
+    ConstraintRule( long id, ConstraintDescriptor descriptor, Long ownedIndexRule )
     {
         this.id = id;
         this.descriptor = descriptor;
@@ -86,9 +88,14 @@ public class ConstraintRule implements SchemaRule, ConstraintDescriptor.Supplier
         return descriptor;
     }
 
+    @SuppressWarnings( "NumberEquality" )
     public long getOwnedIndex()
     {
-        return ownedIndexRule.orElseThrow( IllegalStateException::new );
+        if ( ownedIndexRule == NO_OWNED_INDEX_RULE )
+        {
+            throw new IllegalStateException( "This constraint does not own an index." );
+        }
+        return ownedIndexRule;
     }
 
     @Override
@@ -153,6 +160,7 @@ public class ConstraintRule implements SchemaRule, ConstraintDescriptor.Supplier
                 }
             };
 
+    @SuppressWarnings( "NumberEquality" )
     class Serializer implements SchemaProcessor {
 
         private final ByteBuffer buffer;
@@ -175,9 +183,9 @@ public class ConstraintRule implements SchemaRule, ConstraintDescriptor.Supplier
                 {
                     buffer.putLong( propertyKeyId );
                 }
-                if ( ownedIndexRule.isPresent() )
+                if ( ownedIndexRule != NO_OWNED_INDEX_RULE )
                 {
-                    buffer.putLong( ownedIndexRule.get() );
+                    buffer.putLong( ownedIndexRule );
                 }
                 break;
 
