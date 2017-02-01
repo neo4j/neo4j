@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir
+package org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen
 
 import org.mockito.Matchers._
 import org.mockito.Mockito._
@@ -25,7 +25,6 @@ import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.ExecutionPlanBuilder.tracer
-import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.{ByteCodeMode, CodeGenConfiguration, CodeGenerator, SourceCodeMode}
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v3_2.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.{Descending, Ascending}
