@@ -27,7 +27,7 @@ import org.neo4j.helpers.Service;
 
 public abstract class UpstreamDatabaseSelectionStrategy extends Service
 {
-    protected ReadReplicaTopologyService readReplicaTopologyService;
+    ReadReplicaTopologyService readReplicaTopologyService;
 
     public UpstreamDatabaseSelectionStrategy( String key, String... altKeys )
     {

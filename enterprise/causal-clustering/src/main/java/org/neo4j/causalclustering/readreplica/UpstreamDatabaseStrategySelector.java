@@ -61,8 +61,8 @@ public class UpstreamDatabaseStrategySelector
                 if ( strategy.upstreamDatabase().isPresent() )
                 {
                     result = strategy.upstreamDatabase().get();
+                    break;
                 }
-                break;
             }
             catch ( NoSuchElementException ex )
             {
