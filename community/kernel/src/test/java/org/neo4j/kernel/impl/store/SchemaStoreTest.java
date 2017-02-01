@@ -34,7 +34,7 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
-import org.neo4j.kernel.impl.store.record.AbstractSchemaRule;
+import org.neo4j.kernel.impl.store.record.SchemaRuleDeserializer2_0to3_1;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.RecordSerializer;
@@ -45,7 +45,6 @@ import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.nio.ByteBuffer.wrap;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.Iterators.asCollection;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 
@@ -100,7 +99,7 @@ public class SchemaStoreTest
 
         // WHEN
         byte[] serialized = new RecordSerializer().append( indexRule ).serialize();
-        IndexRule readIndexRule = (IndexRule) AbstractSchemaRule.deserialize( indexRule.getId(), wrap( serialized ) );
+        IndexRule readIndexRule = (IndexRule) SchemaRuleDeserializer2_0to3_1.deserialize( indexRule.getId(), wrap( serialized ) );
 
         // THEN
         assertEquals( indexRule.getId(), readIndexRule.getId() );
@@ -113,7 +112,7 @@ public class SchemaStoreTest
     public void storeAndLoadAllShortRules() throws Exception
     {
         // GIVEN
-        Collection<SchemaRule> rules = Arrays.<SchemaRule>asList(
+        Collection<SchemaRule> rules = Arrays.asList(
                 indexRule( store.nextId(), 0, 5, PROVIDER_DESCRIPTOR ),
                 indexRule( store.nextId(), 1, 6, PROVIDER_DESCRIPTOR ),
                 indexRule( store.nextId(), 1, 7, PROVIDER_DESCRIPTOR ) );

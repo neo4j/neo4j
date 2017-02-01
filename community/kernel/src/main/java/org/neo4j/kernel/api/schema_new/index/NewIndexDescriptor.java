@@ -37,7 +37,7 @@ public class NewIndexDescriptor
 
     public interface Supplier
     {
-        NewIndexDescriptor getNewIndexDescriptor();
+        NewIndexDescriptor getIndexDescriptor();
     }
 
     private final LabelSchemaDescriptor schema;
@@ -81,7 +81,7 @@ public class NewIndexDescriptor
      */
     public boolean isSame( Supplier supplier )
     {
-        return this.equals( supplier.getNewIndexDescriptor() );
+        return this.equals( supplier.getIndexDescriptor() );
     }
 
     @Override

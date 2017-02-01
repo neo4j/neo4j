@@ -37,7 +37,7 @@ import org.neo4j.kernel.impl.index.IndexCommand.RemoveCommand;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.PropertyType;
-import org.neo4j.kernel.impl.store.record.AbstractSchemaRule;
+import org.neo4j.kernel.impl.store.record.SchemaRuleDeserializer2_0to3_1;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
@@ -631,7 +631,7 @@ public class PhysicalLogCommandReaderV3_0 extends BaseCommandReader
         ByteBuffer deserialized = AbstractDynamicStore.concatData( recordsBefore, new byte[100] );
         try
         {
-            rule = AbstractSchemaRule.deserialize( Iterables.first( recordsBefore ).getId(), deserialized );
+            rule = SchemaRuleDeserializer2_0to3_1.deserialize( Iterables.first( recordsBefore ).getId(), deserialized );
         }
         catch ( MalformedSchemaRuleException e )
         {

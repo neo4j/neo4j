@@ -26,11 +26,12 @@ import org.neo4j.kernel.api.schema_new.SchemaComputer;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.impl.store.record.RecordSerializable;
 
 /**
  * Represents a stored schema rule.
  */
-public interface SchemaRule extends SchemaDescriptor.Supplier
+public interface SchemaRule extends SchemaDescriptor.Supplier, RecordSerializable
 {
     /**
      * The persistence id for this rule.

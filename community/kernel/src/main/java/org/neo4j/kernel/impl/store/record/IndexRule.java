@@ -28,6 +28,7 @@ import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaComputer;
 import org.neo4j.kernel.api.schema_new.SchemaProcessor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.string.UTF8;
 
 import static org.neo4j.kernel.api.schema_new.SchemaUtil.noopTokenNameLookup;
@@ -41,9 +42,11 @@ import static org.neo4j.string.UTF8.getDecodedStringFrom;
 /**
  * A {@link Label} can have zero or more index rules which will have data specified in the rules indexed.
  */
-public class IndexRule extends AbstractSchemaRule
+public class IndexRule implements SchemaRule, NewIndexDescriptor.Supplier
 {
-    private static final long NO_OWNING_CONSTRAINT = -1;
+    static final long NO_OWNING_CONSTRAINT = -1;
+
+    private final long id;
     private final SchemaIndexProvider.Descriptor providerDescriptor;
     private final NewIndexDescriptor descriptor;
     /**
@@ -51,16 +54,6 @@ public class IndexRule extends AbstractSchemaRule
      * constraint indexes with no owning constraint record.
      */
     private final long owningConstraint;
-
-    static IndexRule readIndexRule( long id, boolean constraintIndex, int label, ByteBuffer serialized )
-    {
-        SchemaIndexProvider.Descriptor providerDescriptor = readProviderDescriptor( serialized );
-        int[] propertyKeyIds = readPropertyKeys( serialized );
-        NewIndexDescriptor descriptor = constraintIndex ?
-                                        uniqueForLabel( label, propertyKeyIds ) : forLabel( label, propertyKeyIds );
-        long owningConstraint = constraintIndex ? readOwningConstraint( serialized ) : NO_OWNING_CONSTRAINT;
-        return new IndexRule( id, providerDescriptor, descriptor, owningConstraint );
-    }
 
     public static IndexRule indexRule( long id, NewIndexDescriptor descriptor,
                                        SchemaIndexProvider.Descriptor providerDescriptor )
@@ -75,37 +68,10 @@ public class IndexRule extends AbstractSchemaRule
         return new IndexRule( id, providerDescriptor, descriptor, owningConstraint );
     }
 
-    private static SchemaIndexProvider.Descriptor readProviderDescriptor( ByteBuffer serialized )
-    {
-        String providerKey = getDecodedStringFrom( serialized );
-        String providerVersion = getDecodedStringFrom( serialized );
-        return new SchemaIndexProvider.Descriptor( providerKey, providerVersion );
-    }
-
-    private static int[] readPropertyKeys( ByteBuffer serialized )
-    {
-        // Currently only one key is supported although the data format supports multiple
-        int count = serialized.getShort();
-        assert count >= 1;
-
-        // Changed from being a long to an int 2013-09-10, but keeps reading a long to not change the store format.
-        int[] props = new int[count];
-        for ( int i = 0; i < count; i++ )
-        {
-            props[i] = safeCastLongToInt( serialized.getLong() );
-        }
-        return props;
-    }
-
-    private static long readOwningConstraint( ByteBuffer serialized )
-    {
-        return serialized.getLong();
-    }
-
-    private IndexRule( long id, SchemaIndexProvider.Descriptor providerDescriptor,
+    IndexRule( long id, SchemaIndexProvider.Descriptor providerDescriptor,
             NewIndexDescriptor descriptor, long owningConstraint )
     {
-        super( id );
+        this.id = id;
         if ( providerDescriptor == null )
         {
             throw new IllegalArgumentException( "null provider descriptor prohibited" );
@@ -147,6 +113,12 @@ public class IndexRule extends AbstractSchemaRule
             throw new IllegalStateException( this + " is not a constraint index" );
         }
         return constraintIndexRule( id, descriptor, providerDescriptor, constraintId );
+    }
+
+    @Override
+    public long getId()
+    {
+        return id;
     }
 
     @Override
