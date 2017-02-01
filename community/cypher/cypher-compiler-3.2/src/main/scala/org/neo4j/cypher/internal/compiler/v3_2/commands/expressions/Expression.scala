@@ -86,6 +86,7 @@ object Expression {
             entityName == mapEntityName && propertyKey.name == k
         }
       }
+      case _ => false
     }
 
   def hasPropertyReadDependency(entityName: String, expression: Expression, propertyKey: String): Boolean =
