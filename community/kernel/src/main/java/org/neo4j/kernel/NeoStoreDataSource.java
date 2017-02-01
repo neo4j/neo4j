@@ -43,8 +43,8 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.legacyindex.AutoIndexing;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.extension.dependency.HighestPrioritizedLabelScanStore;
 import org.neo4j.kernel.extension.dependency.HighestSelectionStrategy;
+import org.neo4j.kernel.extension.dependency.NamedLabelScanStoreSelectionStrategy;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.ConstraintEnforcingEntityOperations;
@@ -397,10 +397,8 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         schemaIndexProvider = dependencyResolver.resolveDependency( SchemaIndexProvider.class,
                 HighestSelectionStrategy.getInstance() );
 
-        String configuredLabelScanStoreName = config.get( GraphDatabaseSettings.label_scan_store );
-        labelScanStoreProvider =
-                dependencyResolver.resolveDependency( LabelScanStoreProvider.class,
-                        new HighestPrioritizedLabelScanStore( configuredLabelScanStoreName ) );
+        labelScanStoreProvider = dependencyResolver.resolveDependency( LabelScanStoreProvider.class,
+                new NamedLabelScanStoreSelectionStrategy( config ) );
 
         IndexConfigStore indexConfigStore = new IndexConfigStore( storeDir, fs );
         dependencies.satisfyDependency( lockService );

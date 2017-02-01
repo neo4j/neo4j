@@ -20,7 +20,6 @@
 package org.neo4j.kernel.api.impl.labelscan;
 
 import org.hamcrest.Matcher;
-import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -123,10 +122,15 @@ public abstract class LabelScanStoreTest
     }
 
     @Test
-    public void failToStartIfLabelScanStoreIndexDoesNotExistInReadOnlyMode()
+    public void shouldStartIfLabelScanStoreIndexDoesNotExistInReadOnlyMode() throws IOException
     {
-        expectedException.expectCause( Matchers.instanceOf( UnsupportedOperationException.class ) );
+        // WHEN
         start( false, true );
+
+        // THEN
+
+        // no exception
+        assertTrue( store.isEmpty() );
     }
 
     @Test

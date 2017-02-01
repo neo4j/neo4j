@@ -78,6 +78,7 @@ import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies;
 import org.neo4j.kernel.extension.dependency.HighestSelectionStrategy;
+import org.neo4j.kernel.extension.dependency.NamedLabelScanStoreSelectionStrategy;
 import org.neo4j.kernel.impl.api.index.NodePropertyUpdates;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.index.StoreScan;
@@ -277,7 +278,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         indexStoreView = new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, neoStores );
 
         Dependencies deps = new Dependencies();
-        deps.satisfyDependencies( fileSystem, config, logService, indexStoreView );
+        deps.satisfyDependencies( fileSystem, config, logService, indexStoreView, pageCache );
 
         KernelExtensions extensions = life.add( new KernelExtensions(
                 new SimpleKernelContext( storeDir, DatabaseInfo.UNKNOWN, deps ),
@@ -287,7 +288,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
                 HighestSelectionStrategy.getInstance() );
         schemaIndexProviders = new DefaultSchemaIndexProviderMap( provider );
         labelScanStore = life.add( extensions.resolveDependency( LabelScanStoreProvider.class,
-                HighestSelectionStrategy.getInstance() ).getLabelScanStore() );
+                new NamedLabelScanStoreSelectionStrategy( config ) ).getLabelScanStore() );
         actions = new BatchSchemaActions();
 
         // Record access

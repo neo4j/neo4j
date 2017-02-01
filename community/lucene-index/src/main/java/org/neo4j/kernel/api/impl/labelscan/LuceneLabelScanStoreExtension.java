@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.impl.labelscan;
 
 import java.util.function.Supplier;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings.LabelIndex;
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.NeoStoreDataSource;
@@ -43,9 +44,8 @@ import static org.neo4j.kernel.api.impl.index.LuceneKernelExtensions.directoryFa
 @Service.Implementation(KernelExtensionFactory.class)
 public class LuceneLabelScanStoreExtension extends KernelExtensionFactory<LuceneLabelScanStoreExtension.Dependencies>
 {
-    public static final String LABEL_SCAN_STORE_NAME = "lucene";
+    private static final String NAME = LabelIndex.LUCENE.name();
 
-    private final int priority;
     private final Monitor monitor;
 
     public interface Dependencies
@@ -67,38 +67,39 @@ public class LuceneLabelScanStoreExtension extends KernelExtensionFactory<Lucene
 
     public LuceneLabelScanStoreExtension()
     {
-        this( 10, null );
+        this( Monitor.EMPTY );
     }
 
-    LuceneLabelScanStoreExtension( int priority, Monitor monitor )
+    LuceneLabelScanStoreExtension( Monitor monitor )
     {
         super( "lucene-scan-store" );
-        this.priority = priority;
-        this.monitor = (monitor == null) ? Monitor.EMPTY : monitor;
+        this.monitor = monitor;
     }
 
     @Override
     public LabelScanStoreProvider newInstance( KernelContext context, Dependencies dependencies ) throws Throwable
     {
-        boolean ephemeral = dependencies.getConfig().get( GraphDatabaseFacadeFactory.Configuration.ephemeral );
-        DirectoryFactory directoryFactory = directoryFactory( ephemeral, dependencies.fileSystem() );
+        Config config = dependencies.getConfig();
+        boolean ephemeral = config.get( GraphDatabaseFacadeFactory.Configuration.ephemeral );
+        FileSystemAbstraction fileSystem = dependencies.fileSystem();
+        DirectoryFactory directoryFactory = directoryFactory( ephemeral, fileSystem );
 
-        LabelScanIndex index = getLuceneIndex( context, directoryFactory, dependencies.fileSystem() );
+        LuceneLabelScanIndexBuilder indexBuilder = getIndexBuilder( context, directoryFactory, fileSystem, config );
         LogProvider logger = dependencies.getLogService().getInternalLogProvider();
         Monitor loggingMonitor = new LoggingMonitor( logger.getLog( LuceneLabelScanStore.class ), monitor );
-        LuceneLabelScanStore scanStore = new LuceneLabelScanStore( index,
+        LuceneLabelScanStore scanStore = new LuceneLabelScanStore( indexBuilder,
                 new FullLabelStream( dependencies.indexStoreView() ), loggingMonitor );
 
-        return new LabelScanStoreProvider( LABEL_SCAN_STORE_NAME, scanStore, priority );
+        return new LabelScanStoreProvider( NAME, scanStore );
     }
 
-    private LabelScanIndex getLuceneIndex( KernelContext context, DirectoryFactory directoryFactory,
-            FileSystemAbstraction fileSystem )
+    private LuceneLabelScanIndexBuilder getIndexBuilder( KernelContext context, DirectoryFactory directoryFactory,
+            FileSystemAbstraction fileSystem, Config config )
     {
         return LuceneLabelScanIndexBuilder.create()
                 .withDirectoryFactory( directoryFactory )
                 .withFileSystem( fileSystem )
                 .withIndexRootFolder( LabelScanStoreProvider.getStoreDirectory( context.storeDir() ) )
-                .build();
+                .withConfig( config );
     }
 }

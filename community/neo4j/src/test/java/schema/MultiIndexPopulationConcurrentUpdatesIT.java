@@ -59,7 +59,6 @@ import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
 import org.neo4j.kernel.impl.api.index.NodePropertyUpdates;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.index.StoreScan;
-import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
@@ -347,7 +346,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
 
     private LabelScanStore getLabelScanStore()
     {
-        return embeddedDatabase.resolveDependency( LabelScanStoreProvider.class ).getLabelScanStore();
+        return embeddedDatabase.resolveDependency( LabelScanStore.class );
     }
 
     private NeoStores getNeoStores()
@@ -394,7 +393,6 @@ public class MultiIndexPopulationConcurrentUpdatesIT
                     element -> false, propertyUpdatesVisitor, labelIds, propertyKeyIdFilter,
                     (LabelScanViewNodeStoreScan) storeScan, updates);
         }
-
     }
 
     private class LabelScanViewNodeStoreWrapper extends LabelScanViewNodeStoreScan

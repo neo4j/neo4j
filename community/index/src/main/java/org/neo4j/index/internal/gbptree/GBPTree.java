@@ -637,6 +637,8 @@ public class GBPTree<KEY,VALUE> implements Closeable
     @Override
     public void close() throws IOException
     {
+        writer.close();
+
         try
         {
             // Perform a checkpoint before closing. If no changes has happened since last checkpoint,

@@ -37,6 +37,8 @@ import java.util.Random;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings.LabelIndex;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -92,7 +94,15 @@ public class UniqueIndexRecoveryTests
         extensionFactories.add( kernelExtensionFactory );
         extensionFactories.add(new LuceneLabelScanStoreExtension());
         factory.setKernelExtensions( extensionFactories );
-        db = (GraphDatabaseAPI) factory.newEmbeddedDatabase( storeDir.absolutePath() );
+        db = newDb();
+    }
+
+    private GraphDatabaseAPI newDb()
+    {
+        return (GraphDatabaseAPI) factory
+                .newEmbeddedDatabaseBuilder( storeDir.absolutePath() )
+                .setConfig( GraphDatabaseSettings.label_index, LabelIndex.LUCENE.name() )
+                .newGraphDatabase();
     }
 
     @After
@@ -149,7 +159,7 @@ public class UniqueIndexRecoveryTests
     private void restart( File newStore )
     {
         db.shutdown();
-        db = (GraphDatabaseAPI) factory.newEmbeddedDatabase( newStore.getAbsoluteFile() );
+        db = newDb();
     }
 
     private File snapshot( final File path ) throws IOException

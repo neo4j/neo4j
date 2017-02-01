@@ -21,8 +21,10 @@ package org.neo4j.graphdb.factory;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 
 import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.helpers.Service;
@@ -39,13 +41,14 @@ public class GraphDatabaseFactoryState
     private final List<KernelExtensionFactory<?>> kernelExtensions;
     private Monitors monitors;
     private LogProvider userLogProvider;
-    private Map<String,URLAccessRule> urlAccessRules;
+    private final Map<String,URLAccessRule> urlAccessRules;
 
-    public GraphDatabaseFactoryState() {
+    public GraphDatabaseFactoryState()
+    {
         settingsClasses = new ArrayList<>();
         settingsClasses.add( GraphDatabaseSettings.class );
         kernelExtensions = new ArrayList<>();
-        for ( KernelExtensionFactory factory : Service.load( KernelExtensionFactory.class ) )
+        for ( KernelExtensionFactory<?> factory : Service.load( KernelExtensionFactory.class ) )
         {
             kernelExtensions.add( factory );
         }
@@ -65,6 +68,19 @@ public class GraphDatabaseFactoryState
     public Iterable<KernelExtensionFactory<?>> getKernelExtension()
     {
         return kernelExtensions;
+    }
+
+    public void removeKernelExtensions( Predicate<KernelExtensionFactory<?>> toRemove )
+    {
+        Iterator<KernelExtensionFactory<?>> iterator = kernelExtensions.iterator();
+        while ( iterator.hasNext() )
+        {
+            KernelExtensionFactory<?> extension = iterator.next();
+            if ( toRemove.test( extension ) )
+            {
+                iterator.remove();
+            }
+        }
     }
 
     public void setKernelExtensions( Iterable<KernelExtensionFactory<?>> newKernelExtensions )

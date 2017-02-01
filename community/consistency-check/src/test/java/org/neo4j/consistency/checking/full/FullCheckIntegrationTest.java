@@ -46,6 +46,7 @@ import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.GraphStoreFixture;
+import org.neo4j.consistency.checking.GraphStoreFixture.Applier;
 import org.neo4j.consistency.checking.GraphStoreFixture.IdGenerator;
 import org.neo4j.consistency.checking.GraphStoreFixture.TransactionDataBuilder;
 import org.neo4j.consistency.report.ConsistencyReport;
@@ -706,20 +707,23 @@ public class FullCheckIntegrationTest
     {
         final long[] labels = new long[labelCount+1]; // allocate enough labels to need three records
         final List<Integer> createdLabels = new ArrayList<>(  );
-        for ( int i = 1/*leave space for the node id*/; i < labels.length; i++ )
+        try ( Applier applier = fixture.createApplier() )
         {
-            final int offset = i;
-            fixture.apply( new GraphStoreFixture.Transaction()
-            { // Neo4j can create no more than one label per transaction...
-                @Override
-                protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
-                                                GraphStoreFixture.IdGenerator next )
-                {
-                    Integer label = next.label();
-                    tx.nodeLabel( (int) (labels[offset] = label), "label:" + offset );
-                    createdLabels.add( label );
-                }
-            } );
+            for ( int i = 1/*leave space for the node id*/; i < labels.length; i++ )
+            {
+                final int offset = i;
+                applier.apply( new GraphStoreFixture.Transaction()
+                { // Neo4j can create no more than one label per transaction...
+                    @Override
+                    protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+                                                    GraphStoreFixture.IdGenerator next )
+                    {
+                        Integer label = next.label();
+                        tx.nodeLabel( (int) (labels[offset] = label), "label:" + offset );
+                        createdLabels.add( label );
+                    }
+                } );
+            }
         }
         final List<DynamicRecord> chain = new ArrayList<>();
         fixture.apply( new GraphStoreFixture.Transaction()
