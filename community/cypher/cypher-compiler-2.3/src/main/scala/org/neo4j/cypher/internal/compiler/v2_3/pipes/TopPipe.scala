@@ -47,7 +47,7 @@ case class TopPipe(source: Pipe, sortDescription: List[SortItem], countExpressio
       val v2 = b._1
       var i = 0
       while (i < sortItemsCount) {
-        val res = signum(comparer.compare(v1(i), v2(i)))
+        val res = signum(comparer.compare(Some("ORDER BY"), v1(i), v2(i)))
         if (res != 0) {
           val sortItem = sortItems(i)
           return if (sortItem.ascending) res else -res

@@ -47,7 +47,7 @@ case class SortPipe(source: Pipe, orderBy: Seq[SortDescription])
       val aVal = a(column)
       val bVal = b(column)
 
-      Math.signum(compare(aVal, bVal)) match {
+      Math.signum(compare(Some("ORDER BY"), aVal, bVal)) match {
         case 1 => sort.isInstanceOf[Descending]
         case -1 => sort.isInstanceOf[Ascending]
         case 0 => compareBy(a, b, tail)

@@ -196,6 +196,10 @@ trait NewPlannerTestSupport extends CypherTestSupport {
   override def execute(queryText: String, params: (String, Any)*) =
     fail("Don't use execute together with NewPlannerTestSupport")
 
+  def withEachPlanner(body: ((String, Seq[(String, Any)]) => InternalExecutionResult) => Any) = {
+    List(executeWithRulePlanner _, executeWithCostPlannerOnly _).foreach(body)
+  }
+
   def executeWithRulePlanner(queryText: String, params: (String, Any)*) = {
     val plannerWatcher: (List[NewPlannerMonitorCall]) => Unit = unexpectedlyUsedNewPlanner(queryText)
     val runtimeWatcher: (List[NewRuntimeMonitorCall]) => Unit = unexpectedlyUsedNewRuntime(queryText)

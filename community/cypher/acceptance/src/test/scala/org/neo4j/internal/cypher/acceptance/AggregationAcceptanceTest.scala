@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, SyntaxException}
+import org.neo4j.cypher.{ExecutionEngineFunSuite, IncomparableValuesException, NewPlannerTestSupport, SyntaxException}
 import org.neo4j.graphdb.Node
 
 class AggregationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
@@ -293,5 +293,19 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
     val result2 = executeWithCostPlannerOnly(query2).toList
 
     result1.size should equal(result2.size)
+  }
+
+  test("should provide sensible error message when aggregating by min on mixed types") {
+    withEachPlanner { execute =>
+      val exception = intercept[IncomparableValuesException](execute("UNWIND {things} AS thing RETURN min(thing)", Seq("things" -> List("1", 2))))
+      exception.getMessage should startWith("Cannot perform MIN on mixed types.")
+    }
+  }
+
+  test("should provide sensible error message when aggregating by max on mixed types") {
+    withEachPlanner { execute =>
+      val exception = intercept[IncomparableValuesException](execute("UNWIND {things} AS thing RETURN max(thing)", Seq("things" -> List("1", 2))))
+      exception.getMessage should startWith("Cannot perform MAX on mixed types.")
+    }
   }
 }
