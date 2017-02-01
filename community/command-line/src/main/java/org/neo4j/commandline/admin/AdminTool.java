@@ -45,7 +45,7 @@ public class AdminTool
         }
     }
 
-    private final String scriptName = "neo4j-admin";
+    public static final String scriptName = "neo4j-admin";
     private final CommandLocator commandLocator;
     private final BlockerLocator blockerLocator;
     private final OutsideWorld outsideWorld;
