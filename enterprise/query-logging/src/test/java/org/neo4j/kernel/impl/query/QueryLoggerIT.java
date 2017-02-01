@@ -44,6 +44,7 @@ import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -297,16 +298,21 @@ public class QueryLoggerIT
 
     private List<String> readAllLines( File logFilename ) throws IOException
     {
+        return readAllLines( fileSystem.get(), logFilename );
+    }
+
+    public static List<String> readAllLines( FileSystemAbstraction fs, File logFilename ) throws IOException
+    {
         List<String> logLines = new ArrayList<>();
         // this is needed as the EphemeralFSA is broken, and creates a new file when reading a non-existent file from
         // a valid directory
-        if ( !fileSystem.get().fileExists( logFilename ) )
+        if ( !fs.fileExists( logFilename ) )
         {
             throw new FileNotFoundException( "File does not exist." );
         }
 
         try ( BufferedReader reader = new BufferedReader(
-                fileSystem.get().openAsReader( logFilename, StandardCharsets.UTF_8 ) ) )
+                fs.openAsReader( logFilename, StandardCharsets.UTF_8 ) ) )
         {
             for ( String line; (line = reader.readLine()) != null; )
             {

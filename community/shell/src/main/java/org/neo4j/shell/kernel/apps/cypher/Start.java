@@ -131,6 +131,7 @@ public class Start extends TransactionProvidingApp
             throws RemoteException, ShellException
     {
         printResult( out, result, startTime );
+        result.close();
     }
 
     private void printResult( Output out, Result result, long startTime ) throws RemoteException
