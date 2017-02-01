@@ -29,6 +29,7 @@ import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaProcessor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
+import org.neo4j.storageengine.api.schema.SchemaRule;
 
 import static org.neo4j.kernel.api.schema_new.SchemaUtil.noopTokenNameLookup;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
@@ -36,30 +37,16 @@ import static org.neo4j.storageengine.api.schema.SchemaRule.Kind.NODE_PROPERTY_E
 import static org.neo4j.storageengine.api.schema.SchemaRule.Kind.RELATIONSHIP_PROPERTY_EXISTENCE_CONSTRAINT;
 import static org.neo4j.storageengine.api.schema.SchemaRule.Kind.UNIQUENESS_CONSTRAINT;
 
-public class ConstraintRule extends AbstractSchemaRule implements ConstraintDescriptor.Supplier
+public class ConstraintRule implements SchemaRule, ConstraintDescriptor.Supplier
 {
+    private final long id;
     private final Optional<Long> ownedIndexRule;
     private final ConstraintDescriptor descriptor;
 
-    public static ConstraintRule readUniquenessConstraintRule( long id, int labelId, ByteBuffer buffer )
+    @Override
+    public final long getId()
     {
-        return new ConstraintRule( id,
-                ConstraintDescriptorFactory.uniqueForLabel( labelId, readPropertyKeys( buffer ) ),
-                readOwnedIndexRule( buffer ) );
-    }
-
-    public static ConstraintRule readNodePropertyExistenceConstraintRule( long id, int labelId, ByteBuffer buffer )
-    {
-        return new ConstraintRule( id,
-                ConstraintDescriptorFactory.existsForLabel( labelId, readPropertyKey( buffer ) ),
-                Optional.empty() );
-    }
-
-    public static ConstraintRule readRelPropertyExistenceConstraintRule( long id, int relTypeId, ByteBuffer buffer )
-    {
-        return new ConstraintRule( id,
-                ConstraintDescriptorFactory.existsForRelType( relTypeId, readPropertyKey( buffer ) ),
-                Optional.empty() );
+        return this.id;
     }
 
     public static ConstraintRule constraintRule(
@@ -74,29 +61,9 @@ public class ConstraintRule extends AbstractSchemaRule implements ConstraintDesc
         return new ConstraintRule( id, descriptor, Optional.of( ownedIndexRule ) );
     }
 
-    private static int readPropertyKey( ByteBuffer buffer )
+    ConstraintRule( long id, ConstraintDescriptor descriptor, Optional<Long> ownedIndexRule )
     {
-        return buffer.getInt();
-    }
-
-    private static int[] readPropertyKeys( ByteBuffer buffer )
-    {
-        int[] keys = new int[buffer.get()];
-        for ( int i = 0; i < keys.length; i++ )
-        {
-            keys[i] = safeCastLongToInt( buffer.getLong() );
-        }
-        return keys;
-    }
-
-    private static Optional<Long> readOwnedIndexRule( ByteBuffer buffer )
-    {
-        return Optional.of( buffer.getLong() );
-    }
-
-    private ConstraintRule( long id, ConstraintDescriptor descriptor, Optional<Long> ownedIndexRule )
-    {
-        super( id );
+        this.id = id;
         this.descriptor = descriptor;
         this.ownedIndexRule = ownedIndexRule;
     }
