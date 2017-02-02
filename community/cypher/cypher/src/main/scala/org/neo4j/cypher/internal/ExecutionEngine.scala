@@ -24,7 +24,7 @@ import java.util.{Map => JavaMap}
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.{RuntimeJavaValueConverter, RuntimeScalaValueConverter}
-import org.neo4j.cypher.internal.compiler.v3_2.prettifier.Prettifier
+import org.neo4j.cypher.internal.frontend.v3_2.prettifier.Pretty
 import org.neo4j.cypher.internal.spi.v3_2.TransactionalContextWrapper
 import org.neo4j.cypher.internal.tracing.{CompilationTracer, TimingCompilationTracer}
 import org.neo4j.graphdb.config.Setting
@@ -76,6 +76,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService, logProvider: 
 
   private val javaValues = new RuntimeJavaValueConverter(isGraphKernelResultValue, identity)
   private val scalaValues = new RuntimeScalaValueConverter(isGraphKernelResultValue, identity)
+  private val prettifier = Pretty(preserveColumnNames = true)
 
   @throws(classOf[SyntaxException])
   def profile(query: String, scalaParams: Map[String, Any], context: TransactionalContext): ExecutionResult = {
@@ -199,7 +200,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService, logProvider: 
     operations.schemaStateGetOrCreate(this, javaCreator)
   }
 
-  def prettify(query: String): String = Prettifier(query)
+  def prettify(query: String): String = prettifier.reformat(query)
 
   def isPeriodicCommit(query: String) = parseQuery(query).isPeriodicCommit
 

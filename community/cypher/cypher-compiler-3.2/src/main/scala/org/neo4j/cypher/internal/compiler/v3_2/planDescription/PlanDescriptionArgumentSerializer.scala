@@ -22,20 +22,24 @@ package org.neo4j.cypher.internal.compiler.v3_2.planDescription
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.UnNamedNameGenerator._
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
+import org.neo4j.cypher.internal.frontend.v3_2.prettifier.Pretty
+import org.neo4j.cypher.internal.frontend.v3_2.ast
 
 
 object PlanDescriptionArgumentSerializer {
   private val SEPARATOR = ", "
-  private val UNNAMED_PATTERN = """  (UNNAMED|FRESHID|AGGREGATION)(\d+)""".r
-  private val DEDUP_PATTERN =   """  (.+)@\d+""".r
+  private val UNNAMED_PATTERN = """`?  (UNNAMED|FRESHID|AGGREGATION)(\d+)`?""".r
+  private val DEDUP_PATTERN =   """`?  (.+)@\d+`?""".r
+  private val prettifier = Pretty(false)
+
   def serialize(arg: Argument): AnyRef = {
 
     arg match {
       case ColumnsLeft(columns) => s"keep columns ${columns.mkString(SEPARATOR)}"
       case LegacyExpression(expr) => removeGeneratedNames(expr.toString)
       case LegacyExpressions(expressions) => expressions.map({ case (k, v) => s"$k : $v" }).mkString("{", ", ", "}")
-      case Expression(expr) => removeGeneratedNames(expr.toString)
-      case Expressions(expressions) => expressions.map({ case (k, v) => s"$k : $v" }).mkString("{", ", ", "}")
+      case Expression(expr) => removeGeneratedNames(prettify(expr))
+      case Expressions(expressions) => expressions.map({ case (k, exp) => s"$k : ${prettify(exp)}" }).mkString("{", ", ", "}")
       case UpdateActionName(action) => action
       case MergePattern(startPoint) => s"MergePattern($startPoint)"
       case LegacyIndex(index) => index
@@ -44,7 +48,7 @@ object PlanDescriptionArgumentSerializer {
       case InequalityIndex(label, property, bounds) => s":$label($property) ${bounds.mkString(", ")}"
       case LabelName(label) => s":$label"
       case KeyNames(keys) => keys.map(removeGeneratedNames).mkString(SEPARATOR)
-      case KeyExpressions(expressions) => expressions.mkString(SEPARATOR)
+      case KeyExpressions(expressions) => expressions.map(prettify).mkString(SEPARATOR)
       case DbHits(value) => Long.box(value)
       case _: EntityByIdRhs => arg.toString
       case Rows(value) => Long.box(value)
@@ -89,5 +93,10 @@ object PlanDescriptionArgumentSerializer {
    def removeGeneratedNames(s: String) = {
     val named = UNNAMED_PATTERN.replaceAllIn(s, m => s"anon[${m group 2}]")
     DEDUP_PATTERN.replaceAllIn(named, _.group(1))
+  }
+
+  private def prettify(e: ast.Expression): String = {
+    val expDoc = prettifier.expr(e)
+    prettifier.pretty(expDoc).layout
   }
 }

@@ -31,7 +31,9 @@ Apache Software License, Version 2.0
   Caffeine cache
   Commons BeanUtils
   ConcurrentLinkedHashMap
+  FindBugs-jsr305
   Graphite Integration for Metrics
+  Guava: Google Core Libraries for Java
   hazelcast-all
   Lucene codecs
   Lucene Common Analyzers
@@ -50,9 +52,16 @@ BSD - Scala License
 
 BSD License
   ASM Core
+  JLine
   Scala Compiler
 
+GNU Lesser General Public License v3.0
+  dsinfo
+  dsprofile
+  kiama
+
 MIT License
+  scallop
   SLF4J API Module
   SLF4J NOP Binding
 

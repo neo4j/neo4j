@@ -51,6 +51,9 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def literalIntList(intValues: Int*): ListLiteral =
     ListLiteral(intValues.toSeq.map(literalInt))(pos)
 
+  def functionCall(name: String, arguments: Expression*): FunctionInvocation =
+    FunctionInvocation(FunctionName(name)(pos), distinct = false, arguments.toIndexedSeq)(pos)
+
   def literalFloatList(floatValues: Double*): ListLiteral =
     ListLiteral(floatValues.toSeq.map(literalFloat))(pos)
 
