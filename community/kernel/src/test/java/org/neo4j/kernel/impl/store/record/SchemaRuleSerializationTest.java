@@ -25,6 +25,7 @@ import java.nio.ByteBuffer;
 import java.util.stream.IntStream;
 
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
@@ -36,48 +37,108 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
 {
     private static final int VERY_LARGE_CAPACITY = 1024;
 
+    IndexRule indexRegular = IndexRule.indexRule( RULE_ID,
+            NewIndexDescriptorFactory.forLabel( LABEL_ID, PROPERTY_ID_1 ), PROVIDER_DESCRIPTOR );
+
+    IndexRule indexUnique = IndexRule.constraintIndexRule( RULE_ID_2,
+            NewIndexDescriptorFactory.uniqueForLabel( LABEL_ID, PROPERTY_ID_1 ), PROVIDER_DESCRIPTOR, RULE_ID );
+
+    IndexRule indexCompositeRegular = IndexRule.indexRule( RULE_ID,
+            NewIndexDescriptorFactory.forLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ), PROVIDER_DESCRIPTOR );
+
+    IndexRule indexCompositeUnique = IndexRule.constraintIndexRule( RULE_ID_2,
+            NewIndexDescriptorFactory.uniqueForLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ),
+            PROVIDER_DESCRIPTOR, RULE_ID );
+
+    IndexRule indexBigComposite = IndexRule.indexRule( RULE_ID,
+            NewIndexDescriptorFactory.forLabel( LABEL_ID, IntStream.range(1, 200).toArray() ), PROVIDER_DESCRIPTOR );
+
+    ConstraintRule constraintExistsLabel = ConstraintRule.constraintRule( RULE_ID,
+            ConstraintDescriptorFactory.existsForLabel( LABEL_ID, PROPERTY_ID_1 ) );
+
+    ConstraintRule constraintUniqueLabel = ConstraintRule.constraintRule( RULE_ID_2,
+            ConstraintDescriptorFactory.uniqueForLabel( LABEL_ID, PROPERTY_ID_1 ), RULE_ID );
+
+    ConstraintRule constraintExistsRelType = ConstraintRule.constraintRule( RULE_ID_2,
+            ConstraintDescriptorFactory.existsForRelType( REL_TYPE_ID, PROPERTY_ID_1 ) );
+
+    ConstraintRule constraintUniqueRelType = ConstraintRule.constraintRule( RULE_ID,
+            ConstraintDescriptorFactory.uniqueForRelType( REL_TYPE_ID, PROPERTY_ID_1 ), RULE_ID_2 );
+
+    ConstraintRule constraintCompositeLabel = ConstraintRule.constraintRule( RULE_ID,
+            ConstraintDescriptorFactory.existsForLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ) );
+
+    ConstraintRule constraintCompositeRelType = ConstraintRule.constraintRule( RULE_ID_2,
+            ConstraintDescriptorFactory.existsForRelType( REL_TYPE_ID, PROPERTY_ID_1, PROPERTY_ID_2 ) );
+
+    // INDEX RULES
+
     @Test
     public void shouldSerializeAndDeserializeIndexRules() throws MalformedSchemaRuleException
     {
-        IndexRule regular = IndexRule.indexRule( RULE_ID, NewIndexDescriptorFactory.forLabel( LABEL_ID, PROPERTY_ID_1 ),
-                PROVIDER_DESCRIPTOR );
-        assertSerializeAndDeserializeIndexRule( RULE_ID, regular );
-
-        IndexRule unique = IndexRule
-                .constraintIndexRule( RULE_ID_2, NewIndexDescriptorFactory.uniqueForLabel( LABEL_ID, PROPERTY_ID_1 ),
-                        PROVIDER_DESCRIPTOR, RULE_ID );
-        assertSerializeAndDeserializeIndexRule( RULE_ID_2, unique );
+        assertSerializeAndDeserializeIndexRule( indexRegular );
+        assertSerializeAndDeserializeIndexRule( indexUnique );
     }
 
     @Test
     public void shouldSerializeAndDeserializeCompositeIndexRules() throws MalformedSchemaRuleException
     {
-        IndexRule composite = IndexRule.indexRule( RULE_ID,
-                NewIndexDescriptorFactory.forLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ), PROVIDER_DESCRIPTOR );
-        assertSerializeAndDeserializeIndexRule( RULE_ID, composite );
-
-        IndexRule compositeUnique = IndexRule.constraintIndexRule( RULE_ID_2,
-                NewIndexDescriptorFactory.uniqueForLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ),
-                PROVIDER_DESCRIPTOR, RULE_ID );
-        assertSerializeAndDeserializeIndexRule( RULE_ID_2, compositeUnique );
+        assertSerializeAndDeserializeIndexRule( indexCompositeRegular );
+        assertSerializeAndDeserializeIndexRule( indexCompositeUnique );
     }
 
     @Test
     public void shouldSerializeAndDeserialize_Big_CompositeIndexRules() throws MalformedSchemaRuleException
     {
-        int[] propertIds = IntStream.range(1, 200).toArray();
-        IndexRule composite = IndexRule.indexRule( RULE_ID,
-                NewIndexDescriptorFactory.forLabel( LABEL_ID, propertIds ), PROVIDER_DESCRIPTOR );
-        assertSerializeAndDeserializeIndexRule( RULE_ID, composite );
+        assertSerializeAndDeserializeIndexRule( indexBigComposite );
     }
 
-    private void assertSerializeAndDeserializeIndexRule( long ruleId, IndexRule indexRule )
+    // CONSTRAINT RULES
+
+    @Test
+    public void shouldSerializeAndDeserializeConstraintRules() throws MalformedSchemaRuleException
+    {
+        assertSerializeAndDeserializeConstraintRule( constraintExistsLabel );
+        assertSerializeAndDeserializeConstraintRule( constraintUniqueLabel );
+        assertSerializeAndDeserializeConstraintRule( constraintExistsRelType );
+        assertSerializeAndDeserializeConstraintRule( constraintUniqueRelType );
+    }
+
+    @Test
+    public void shouldSerializeAndDeserializeCompositeConstraintRules() throws MalformedSchemaRuleException
+    {
+        assertSerializeAndDeserializeConstraintRule( constraintCompositeLabel );
+        assertSerializeAndDeserializeConstraintRule( constraintCompositeRelType );
+    }
+
+    @Test
+    public void shouldReturnCorrectLengthForIndexRules() throws MalformedSchemaRuleException
+    {
+        assertCorrectLength( indexRegular );
+        assertCorrectLength( indexUnique );
+        assertCorrectLength( indexCompositeRegular );
+        assertCorrectLength( indexCompositeUnique );
+        assertCorrectLength( indexBigComposite );
+    }
+
+    @Test
+    public void shouldReturnCorrectLengthForConstraintRules() throws MalformedSchemaRuleException
+    {
+        assertCorrectLength( constraintExistsLabel );
+    }
+
+    // HELPERS
+
+    private void assertSerializeAndDeserializeIndexRule( IndexRule indexRule )
             throws MalformedSchemaRuleException
     {
+        // GIVEN
         ByteBuffer buffer = ByteBuffer.allocate( VERY_LARGE_CAPACITY );
+
+        // WHEN
         SchemaRuleSerialization.serialize( indexRule, buffer );
         buffer.flip();
-        IndexRule deserialized = assertIndexRule( SchemaRuleSerialization.deserialize( ruleId, buffer ) );
+        IndexRule deserialized = assertIndexRule( SchemaRuleSerialization.deserialize( indexRule.getId(), buffer ) );
 
         // THEN
         assertThat( deserialized.getId(), equalTo( indexRule.getId() ) );
@@ -95,4 +156,50 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
         return (IndexRule)schemaRule;
     }
 
+    private void assertSerializeAndDeserializeConstraintRule( ConstraintRule constraintRule )
+            throws MalformedSchemaRuleException
+    {
+        // GIVEN
+        ByteBuffer buffer = ByteBuffer.allocate( VERY_LARGE_CAPACITY );
+
+        // WHEN
+        SchemaRuleSerialization.serialize( constraintRule, buffer );
+        buffer.flip();
+        ConstraintRule deserialized =
+                assertConstraintRule( SchemaRuleSerialization.deserialize( constraintRule.getId(), buffer ) );
+
+        // THEN
+        assertThat( deserialized.getId(), equalTo( constraintRule.getId() ) );
+        assertThat( deserialized.getConstraintDescriptor(), equalTo( constraintRule.getConstraintDescriptor() ) );
+        assertThat( deserialized.getSchemaDescriptor(), equalTo( constraintRule.getSchemaDescriptor() ) );
+    }
+
+    private ConstraintRule assertConstraintRule( SchemaRule schemaRule )
+    {
+        if ( !(schemaRule instanceof ConstraintRule) )
+        {
+            fail( "Expected ConstraintRule, but got "+schemaRule.getClass().getSimpleName() );
+        }
+        return (ConstraintRule)schemaRule;
+    }
+
+    private void assertCorrectLength( IndexRule indexRule ) throws MalformedSchemaRuleException
+    {
+        // GIVEN
+        ByteBuffer buffer = ByteBuffer.allocate( VERY_LARGE_CAPACITY );
+        SchemaRuleSerialization.serialize( indexRule, buffer );
+
+        // THEN
+        assertThat( SchemaRuleSerialization.lengthOf( indexRule ), equalTo( buffer.position() ) );
+    }
+
+    private void assertCorrectLength( ConstraintRule constraintRule ) throws MalformedSchemaRuleException
+    {
+        // GIVEN
+        ByteBuffer buffer = ByteBuffer.allocate( VERY_LARGE_CAPACITY );
+        SchemaRuleSerialization.serialize( constraintRule, buffer );
+
+        // THEN
+        assertThat( SchemaRuleSerialization.lengthOf( constraintRule ), equalTo( buffer.position() ) );
+    }
 }
