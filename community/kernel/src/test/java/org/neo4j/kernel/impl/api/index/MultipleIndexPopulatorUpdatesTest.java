@@ -112,8 +112,7 @@ public class MultipleIndexPopulatorUpdatesTest
         IndexUpdater indexUpdater = mock( IndexUpdater.class );
         when( populator.newPopulatingUpdater( storeView ) ).thenReturn( indexUpdater );
 
-        IndexDescriptor descriptor = IndexDescriptorFactory.of( 1, 1 );
-        addPopulator( indexPopulator, populator, descriptor );
+        addPopulator( indexPopulator, populator, 1, IndexDescriptorFactory.of( 1, 1 ) );
 
         indexPopulator.create();
         StoreScan<IndexPopulationFailedKernelException> storeScan = indexPopulator.indexAllNodes();
@@ -148,18 +147,19 @@ public class MultipleIndexPopulatorUpdatesTest
         return populator;
     }
 
-    private MultipleIndexPopulator.IndexPopulation addPopulator( MultipleIndexPopulator multipleIndexPopulator, IndexPopulator indexPopulator,
-            IndexDescriptor descriptor )
+    private MultipleIndexPopulator.IndexPopulation addPopulator( MultipleIndexPopulator multipleIndexPopulator,
+            IndexPopulator indexPopulator, long indexId, IndexDescriptor descriptor )
     {
-        return addPopulator( multipleIndexPopulator, descriptor, indexPopulator, mock( FlippableIndexProxy.class ),
+        return addPopulator( multipleIndexPopulator, indexId, descriptor, indexPopulator, mock( FlippableIndexProxy.class ),
                 mock( FailedIndexProxyFactory.class ) );
     }
 
-    private MultipleIndexPopulator.IndexPopulation addPopulator(MultipleIndexPopulator multipleIndexPopulator, IndexDescriptor descriptor,
+    private MultipleIndexPopulator.IndexPopulation addPopulator( MultipleIndexPopulator multipleIndexPopulator,
+            long indexId, IndexDescriptor descriptor,
             IndexPopulator indexPopulator,
             FlippableIndexProxy flippableIndexProxy, FailedIndexProxyFactory failedIndexProxyFactory )
     {
-        return multipleIndexPopulator.addPopulator( indexPopulator, descriptor,
+        return multipleIndexPopulator.addPopulator( indexPopulator, indexId, descriptor,
                 mock( SchemaIndexProvider.Descriptor.class ), IndexConfiguration.NON_UNIQUE,
                 flippableIndexProxy, failedIndexProxyFactory, "userIndexDescription" );
     }

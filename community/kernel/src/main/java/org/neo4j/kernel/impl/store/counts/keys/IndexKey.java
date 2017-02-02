@@ -24,25 +24,24 @@ import org.neo4j.kernel.api.schema.IndexDescriptor;
 
 abstract class IndexKey implements CountsKey
 {
-    private final IndexDescriptor descriptor;
+    private final long indexId;
     private final CountsKeyType type;
 
-    IndexKey( IndexDescriptor descriptor, CountsKeyType type )
+    IndexKey( long indexId, CountsKeyType type )
     {
-        this.descriptor = descriptor;
+        this.indexId = indexId;
         this.type = type;
     }
 
-    public IndexDescriptor descriptor()
+    public long indexId()
     {
-        return descriptor;
+        return indexId;
     }
 
     @Override
     public String toString()
     {
-        String propertyText = descriptor.descriptor().propertyIdText();
-        return String.format( "IndexKey[%s (%s {%s})]", type.name(), label( descriptor.getLabelId() ), propertyText );
+        return String.format( "IndexKey[%s:%d]", type.name(), indexId );
     }
 
     @Override
@@ -54,7 +53,7 @@ abstract class IndexKey implements CountsKey
     @Override
     public int hashCode()
     {
-        return 31 * descriptor.hashCode() + type.hashCode();
+        return 31 * (int) indexId + type.hashCode();
     }
 
     @Override
@@ -68,9 +67,7 @@ abstract class IndexKey implements CountsKey
         {
             return false;
         }
-
-        IndexKey indexKey = (IndexKey) other;
-        return indexKey.descriptor.equals( descriptor );
+        return ((IndexKey) other).indexId() == indexId;
     }
 
     @Override
@@ -78,8 +75,7 @@ abstract class IndexKey implements CountsKey
     {
         if ( other instanceof IndexKey )
         {
-            IndexKey that = (IndexKey) other;
-            return this.descriptor.descriptor().compareTo( that.descriptor.descriptor() );
+            return (int) (indexId - ((IndexKey) other).indexId());
         }
         return recordType().ordinal() - other.recordType().ordinal();
     }

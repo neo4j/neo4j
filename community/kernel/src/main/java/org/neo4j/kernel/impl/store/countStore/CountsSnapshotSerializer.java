@@ -85,7 +85,7 @@ public class CountsSnapshotSerializer
                 }
                 IndexSampleKey indexSampleKey = (IndexSampleKey) key;
                 channel.put( INDEX_SAMPLE.code );
-                writeIndexDescription( channel, indexSampleKey.descriptor() );
+                channel.putLong( indexSampleKey.indexId() );
                 channel.putLong( value[0] );
                 channel.putLong( value[1] );
                 break;
@@ -98,7 +98,7 @@ public class CountsSnapshotSerializer
                 }
                 IndexStatisticsKey indexStatisticsKey = (IndexStatisticsKey) key;
                 channel.put( INDEX_STATISTICS.code );
-                writeIndexDescription( channel, indexStatisticsKey.descriptor() );
+                channel.putLong( indexStatisticsKey.indexId() );
                 channel.putLong( value[0] );
                 channel.putLong( value[1] );
                 break;
@@ -109,25 +109,6 @@ public class CountsSnapshotSerializer
             default:
                 throw new IllegalArgumentException( "The read CountsKey has an unknown type." );
             }
-        }
-    }
-
-    private static void writeIndexDescription( FlushableChannel channel, IndexDescriptor descriptor ) throws IOException
-    {
-        channel.putInt( descriptor.getLabelId() );
-        if ( descriptor.isComposite() )
-        {
-            int[] propertyKeyIds = descriptor.getPropertyKeyIds();
-            channel.putShort( (short) propertyKeyIds.length );
-            for ( int prop : propertyKeyIds )
-            {
-                channel.putInt( prop );
-            }
-        }
-        else
-        {
-            channel.putShort( (short) 1 );
-            channel.putInt( descriptor.getPropertyKeyId() );
         }
     }
 }

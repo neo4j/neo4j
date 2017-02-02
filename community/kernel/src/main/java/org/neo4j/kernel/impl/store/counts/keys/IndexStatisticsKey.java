@@ -24,15 +24,15 @@ import org.neo4j.kernel.impl.api.CountsVisitor;
 
 public final class IndexStatisticsKey extends IndexKey
 {
-    IndexStatisticsKey( IndexDescriptor descriptor )
+    IndexStatisticsKey( long indexId )
     {
-        super( descriptor, CountsKeyType.INDEX_STATISTICS );
+        super( indexId, CountsKeyType.INDEX_STATISTICS );
     }
 
     @Override
     public void accept( CountsVisitor visitor, long updates, long size )
     {
-        visitor.visitIndexStatistics( descriptor(), updates, size );
+        visitor.visitIndexStatistics( indexId(), updates, size );
     }
 
     @Override

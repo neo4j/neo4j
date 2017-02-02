@@ -77,14 +77,14 @@ public class IndexProxyCreator
                 providerDescriptor,
                 populator,
                 indexUserDescription,
-                new IndexCountsRemover( storeView, descriptor ),
+                new IndexCountsRemover( storeView, ruleId ),
                 logProvider
         );
 
         PopulatingIndexProxy populatingIndex =
                 new PopulatingIndexProxy( descriptor, config, providerDescriptor, populationJob );
 
-        populationJob.addPopulator( populator, descriptor, config, providerDescriptor, indexUserDescription,
+        populationJob.addPopulator( populator, ruleId, descriptor, config, providerDescriptor, indexUserDescription,
                 flipper, failureDelegateFactory );
 
         flipper.flipTo( populatingIndex );
@@ -92,7 +92,7 @@ public class IndexProxyCreator
         // Prepare for flipping to online mode
         flipper.setFlipTarget( () -> {
             monitor.populationCompleteOn( descriptor );
-            OnlineIndexProxy onlineProxy = new OnlineIndexProxy(
+            OnlineIndexProxy onlineProxy = new OnlineIndexProxy(ruleId,
                     descriptor, config, onlineAccessorFromProvider( providerDescriptor, ruleId,
                     config, samplingConfig ), storeView, providerDescriptor, true
             );
@@ -127,7 +127,7 @@ public class IndexProxyCreator
             IndexAccessor onlineAccessor =
                     onlineAccessorFromProvider( providerDescriptor, ruleId, config, samplingConfig );
             IndexProxy proxy;
-            proxy = new OnlineIndexProxy( descriptor, config, onlineAccessor, storeView, providerDescriptor, false );
+            proxy = new OnlineIndexProxy( ruleId, descriptor, config, onlineAccessor, storeView, providerDescriptor, false );
             proxy = new ContractCheckingIndexProxy( proxy, true );
             return proxy;
         }
@@ -158,7 +158,7 @@ public class IndexProxyCreator
                 indexUserDescription,
                 indexPopulator,
                 populationFailure,
-                new IndexCountsRemover( storeView, descriptor ),
+                new IndexCountsRemover( storeView, ruleId ),
                 logProvider
         );
         proxy = new ContractCheckingIndexProxy( proxy, true );

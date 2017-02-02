@@ -52,16 +52,26 @@ public class IndexMapReference implements IndexMapSnapshotProvider
         return proxy;
     }
 
-    public IndexProxy getOnlineIndexProxy( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public long getIndexId( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    {
+        IndexProxy proxy = indexMap.getIndexProxy( descriptor );
+        if ( proxy == null )
+        {
+            throw new IndexNotFoundKernelException( "No index for " + descriptor + " exists." );
+        }
+        return indexMap.getIndexId( descriptor );
+    }
+
+    public long getOnlineIndexId( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         IndexProxy proxy = getIndexProxy( descriptor );
         switch ( proxy.getState() )
         {
-            case ONLINE:
-                return proxy;
+        case ONLINE:
+            return indexMap.getIndexId( descriptor );
 
-            default:
-                throw new IndexNotFoundKernelException( "Expected index on " + descriptor + " to be online.");
+        default:
+            throw new IndexNotFoundKernelException( "Expected index on " + descriptor + " to be online.");
         }
     }
 

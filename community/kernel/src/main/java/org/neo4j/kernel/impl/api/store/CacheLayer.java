@@ -411,12 +411,14 @@ public class CacheLayer implements StoreReadLayer
 
     @Override
     public DoubleLongRegister indexUpdatesAndSize( IndexDescriptor index, DoubleLongRegister target )
+            throws IndexNotFoundKernelException
     {
         return diskLayer.indexUpdatesAndSize( index, target );
     }
 
     @Override
     public DoubleLongRegister indexSample( IndexDescriptor index, DoubleLongRegister target )
+            throws IndexNotFoundKernelException
     {
         return diskLayer.indexSample( index, target );
     }

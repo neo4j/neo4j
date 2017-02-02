@@ -23,22 +23,27 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.store.LabelTokenStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.store.RelationshipTypeTokenStore;
+import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.kvstore.BigEndianByteArrayBuffer;
 import org.neo4j.kernel.impl.store.kvstore.HeaderField;
 import org.neo4j.kernel.impl.store.kvstore.Headers;
 import org.neo4j.kernel.impl.store.kvstore.ReadableBuffer;
 import org.neo4j.kernel.impl.store.kvstore.WritableBuffer;
+import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.storageengine.api.Token;
 import org.neo4j.test.rule.SuppressOutput;
 
@@ -65,6 +70,7 @@ public class DumpCountsStoreTest
     private static final int INDEX_PROPERTY_KEY_ID = 1;
     private static final String INDEX_PROPERTY = "indexProperty";
 
+    private static final long indexId = 0;
     private static final IndexDescriptor descriptor =
             IndexDescriptorFactory.of( INDEX_LABEL_ID, INDEX_PROPERTY_KEY_ID );
 
@@ -125,7 +131,7 @@ public class DumpCountsStoreTest
     public void dumpIndexStatistic()
     {
         DumpCountsStore countsStore = getCountStore();
-        countsStore.visitIndexStatistics( descriptor, 3, 4 );
+        countsStore.visitIndexStatistics( indexId, 3, 4 );
         assertThat( suppressOutput.getOutputVoice().toString(),
                 containsString( "IndexStatistics[(:indexLabel [labelId=3] {indexProperty [keyId=1]})" +
                                     "]:\tupdates=3, size=4" ) );
@@ -135,14 +141,26 @@ public class DumpCountsStoreTest
     public void dumpIndexSample()
     {
         DumpCountsStore countsStore = getCountStore();
-        countsStore.visitIndexSample( descriptor, 1, 2 );
+        countsStore.visitIndexSample( indexId, 1, 2 );
         assertThat( suppressOutput.getOutputVoice().toString(),
                 containsString( "IndexSample[(:indexLabel [labelId=3] {indexProperty [keyId=1]})]:\tunique=1, size=2" ));
     }
 
     private DumpCountsStore getCountStore()
     {
-        return new DumpCountsStore( System.out, createNeoStores() );
+        return new DumpCountsStore( System.out, createNeoStores(), createSchemaStorage() );
+    }
+
+    private SchemaStorage createSchemaStorage()
+    {
+        SchemaStorage schemaStorage = mock(SchemaStorage.class);
+        SchemaIndexProvider.Descriptor providerDescriptor = new SchemaIndexProvider.Descriptor( "in-memory", "1.0" );
+        IndexRule rule = IndexRule.indexRule( indexId, IndexBoundary.map( descriptor ), providerDescriptor );
+        ArrayList<IndexRule> rules = new ArrayList<>();
+        rules.add( rule );
+
+        when( schemaStorage.indexesGetAll() ).thenReturn( rules.iterator() );
+        return schemaStorage;
     }
 
     private NeoStores createNeoStores()

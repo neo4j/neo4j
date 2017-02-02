@@ -32,6 +32,7 @@ import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
@@ -130,18 +131,18 @@ public class HaCountsIT
         // when creating a node on the master
         createANode( master, LABEL, PROPERTY_VALUE, PROPERTY_NAME );
         IndexDescriptor indexDescriptor = createAnIndex( master, LABEL, PROPERTY_NAME );
-        awaitOnline( master, indexDescriptor );
+        long indexId = awaitOnline( master, indexDescriptor );
 
         // and the slaves got the updates
         cluster.sync( master );
 
-        awaitOnline( slave1, indexDescriptor );
-        awaitOnline( slave2, indexDescriptor );
+        long index1 = awaitOnline( slave1, indexDescriptor );
+        long index2 = awaitOnline( slave2, indexDescriptor );
 
         // then the slaves has updated counts
-        assertOnIndexCounts( 0, 1, 1, 1, indexDescriptor, master );
-        assertOnIndexCounts( 0, 1, 1, 1, indexDescriptor, slave1 );
-        assertOnIndexCounts( 0, 1, 1, 1, indexDescriptor, slave2 );
+        assertOnIndexCounts( 0, 1, 1, 1, indexId, master );
+        assertOnIndexCounts( 0, 1, 1, 1, index1, slave1 );
+        assertOnIndexCounts( 0, 1, 1, 1, index2, slave2 );
     }
 
     @Test
@@ -150,18 +151,18 @@ public class HaCountsIT
         // when creating a node on the master
         createANode( slave1, LABEL, PROPERTY_VALUE, PROPERTY_NAME );
         IndexDescriptor indexDescriptor = createAnIndex( master, LABEL, PROPERTY_NAME );
-        awaitOnline( master, indexDescriptor );
+        long indexId = awaitOnline( master, indexDescriptor );
 
         // and the updates are propagate in the cluster
         cluster.sync();
 
-        awaitOnline( slave1, indexDescriptor );
-        awaitOnline( slave2, indexDescriptor );
+        long index1 = awaitOnline( slave1, indexDescriptor );
+        long index2 = awaitOnline( slave2, indexDescriptor );
 
         // then the slaves has updated counts
-        assertOnIndexCounts( 0, 1, 1, 1, indexDescriptor, master );
-        assertOnIndexCounts( 0, 1, 1, 1, indexDescriptor, slave1 );
-        assertOnIndexCounts( 0, 1, 1, 1, indexDescriptor, slave2 );
+        assertOnIndexCounts( 0, 1, 1, 1, indexId, master );
+        assertOnIndexCounts( 0, 1, 1, 1, index1, slave1 );
+        assertOnIndexCounts( 0, 1, 1, 1, index2, slave2 );
     }
 
     private void createANode( HighlyAvailableGraphDatabase db, Label label, String value, String property )
@@ -203,13 +204,13 @@ public class HaCountsIT
 
     private void assertOnIndexCounts( int expectedIndexUpdates, int expectedIndexSize,
                                       int expectedUniqueValues, int expectedSampleSize,
-                                      IndexDescriptor descriptor, HighlyAvailableGraphDatabase db )
+                                      long indexId, HighlyAvailableGraphDatabase db )
     {
         CountsTracker counts = counts( db );
         assertDoubleLongEquals( expectedIndexUpdates, expectedIndexSize,
-                counts.indexUpdatesAndSize( descriptor, newDoubleLongRegister() ) );
+                counts.indexUpdatesAndSize( indexId, newDoubleLongRegister() ) );
         assertDoubleLongEquals( expectedUniqueValues, expectedSampleSize,
-                counts.indexSample( descriptor, newDoubleLongRegister() ) );
+                counts.indexSample( indexId, newDoubleLongRegister() ) );
     }
 
     private void assertDoubleLongEquals( int expectedFirst, int expectedSecond, DoubleLongRegister actualValues )
@@ -232,7 +233,12 @@ public class HaCountsIT
                  .get();
     }
 
-    private IndexDescriptor awaitOnline( HighlyAvailableGraphDatabase db, IndexDescriptor index )
+    private IndexingService indexingService( HighlyAvailableGraphDatabase db )
+    {
+        return db.getDependencyResolver().resolveDependency( IndexingService.class );
+    }
+
+    private long awaitOnline( HighlyAvailableGraphDatabase db, IndexDescriptor index )
             throws KernelException
     {
         long start = System.currentTimeMillis();
@@ -244,7 +250,7 @@ public class HaCountsIT
                 switch ( statement( db ).readOperations().indexGetState( index ) )
                 {
                 case ONLINE:
-                    return index;
+                    return indexingService( db ).getIndexId( index );
 
                 case FAILED:
                     throw new IllegalStateException( "Index failed instead of becoming ONLINE" );

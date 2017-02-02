@@ -65,7 +65,14 @@ public class IndexProcedures implements AutoCloseable
         int labelId = getLabelId( index.label() );
         int propertyKeyId = getPropertyKeyId( index.property() );
         //TODO: Support composite indexes
-        triggerSampling( getIndex( labelId, propertyKeyId, index ) );
+        try
+        {
+            triggerSampling( getIndex( labelId, propertyKeyId, index ) );
+        }
+        catch ( IndexNotFoundKernelException e )
+        {
+            throw new ProcedureException( e.status(), e.getMessage(), e );
+        }
     }
 
     public void resampleOutdatedIndexes()
@@ -157,7 +164,7 @@ public class IndexProcedures implements AutoCloseable
         }
     }
 
-    private void triggerSampling( IndexDescriptor index )
+    private void triggerSampling( IndexDescriptor index ) throws IndexNotFoundKernelException
     {
         indexingService.triggerIndexSampling( index, IndexSamplingMode.TRIGGER_REBUILD_ALL );
     }

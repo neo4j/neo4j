@@ -35,6 +35,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 public class OnlineIndexProxyTest
 {
+    private final long indexId = 1;
     private final IndexDescriptor descriptor = IndexDescriptorFactory.of( 1, 2 );
     private final IndexConfiguration config = IndexConfiguration.NON_UNIQUE;
     private final SchemaIndexProvider.Descriptor providerDescriptor = mock( SchemaIndexProvider.Descriptor.class );
@@ -45,7 +46,7 @@ public class OnlineIndexProxyTest
     public void shouldRemoveIndexCountsWhenTheIndexItselfIsDropped() throws IOException
     {
         // given
-        OnlineIndexProxy index = new OnlineIndexProxy( descriptor, config, accessor,
+        OnlineIndexProxy index = new OnlineIndexProxy( indexId, descriptor, config, accessor,
                 storeView, providerDescriptor, false );
 
         // when
@@ -53,7 +54,7 @@ public class OnlineIndexProxyTest
 
         // then
         verify( accessor ).drop();
-        verify( storeView ).replaceIndexCounts( descriptor, 0L, 0L, 0L );
+        verify( storeView ).replaceIndexCounts( indexId, 0L, 0L, 0L );
         verifyNoMoreInteractions( accessor, storeView );
     }
 }

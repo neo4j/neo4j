@@ -158,7 +158,7 @@ public class IndexingServiceTest
     public void setUp()
     {
         when( populator.sampleResult() ).thenReturn( new IndexSample() );
-        when( storeView.indexSample( any( IndexDescriptor.class ), any( DoubleLongRegister.class ) ) )
+        when( storeView.indexSample( anyLong(), any( DoubleLongRegister.class ) ) )
                 .thenAnswer( invocation -> invocation.getArguments()[1] );
     }
 
@@ -385,7 +385,7 @@ public class IndexingServiceTest
         when(mockLookup.labelGetName( 2 )).thenReturn( "LabelTwo" );
         when(mockLookup.propertyKeyGetName( 1 )).thenReturn( "propertyOne" );
         when(mockLookup.propertyKeyGetName( 2 )).thenReturn( "propertyTwo" );
-        when( storeView.indexSample( any( IndexDescriptor.class ), any( DoubleLongRegister.class ) ) ).thenReturn( newDoubleLongRegister( 32L, 32L ) );
+        when( storeView.indexSample( anyLong(), any( DoubleLongRegister.class ) ) ).thenReturn( newDoubleLongRegister( 32L, 32L ) );
 
         logProvider.clear();
 
@@ -444,7 +444,7 @@ public class IndexingServiceTest
         when( indexAccessor.snapshotFiles()).thenAnswer( newResourceIterator( theFile ) );
         when( indexProvider.getInitialState( indexId ) ).thenReturn( ONLINE );
         when( indexProvider.getInitialState( indexId2 ) ).thenReturn( ONLINE );
-        when( storeView.indexSample( any( IndexDescriptor.class ), any( DoubleLongRegister.class ) ) )
+        when( storeView.indexSample( anyLong(), any( DoubleLongRegister.class ) ) )
                 .thenReturn( newDoubleLongRegister( 32L, 32L ) );
 
         life.start();
@@ -476,7 +476,7 @@ public class IndexingServiceTest
         when( indexAccessor.snapshotFiles() ).thenAnswer( newResourceIterator( theFile ) );
         when( indexProvider.getInitialState( indexId ) ).thenReturn( POPULATING );
         when( indexProvider.getInitialState( indexId2 ) ).thenReturn( ONLINE );
-        when( storeView.indexSample( any( IndexDescriptor.class ), any( DoubleLongRegister.class ) ) ).thenReturn( newDoubleLongRegister( 32L, 32L ) );
+        when( storeView.indexSample( anyLong(), any( DoubleLongRegister.class ) ) ).thenReturn( newDoubleLongRegister( 32L, 32L ) );
         life.start();
 
         // WHEN
@@ -521,9 +521,13 @@ public class IndexingServiceTest
     public void shouldLogTriggerSamplingOnAnIndexes() throws Exception
     {
         // given
-        IndexingService indexingService = newIndexingServiceWithMockedDependencies( populator, accessor, withData() );
+        long indexId = 0;
         IndexSamplingMode mode = TRIGGER_REBUILD_ALL;
         IndexDescriptor descriptor = IndexDescriptorFactory.of( 0, 1 );
+        IndexingService indexingService = newIndexingServiceWithMockedDependencies( populator, accessor, withData(),
+                indexRule( indexId, descriptor.getLabelId(), descriptor.getPropertyKeyId(), PROVIDER_DESCRIPTOR ) );
+        life.init();
+        life.start();
 
         // when
         indexingService.triggerIndexSampling( descriptor, mode );
@@ -754,7 +758,7 @@ public class IndexingServiceTest
                 .nodeAsUpdates( eq( nodeId ), any( Collection.class ) );
         DoubleLongRegister register = mock( DoubleLongRegister.class );
         when( register.readSecond() ).thenReturn( 42L );
-        when( storeView.indexSample( any( IndexDescriptor.class ), any( DoubleLongRegister.class ) ) )
+        when( storeView.indexSample( anyLong(), any( DoubleLongRegister.class ) ) )
                 .thenReturn( register );
         // For some reason the usual accessor returned null from newUpdater, even when told to return the updater
         // so spying on a real object instead.
@@ -1004,6 +1008,7 @@ public class IndexingServiceTest
                                                                       IndexingService.Monitor monitor,
                                                                       IndexRule... rules ) throws IOException
     {
+        when( indexProvider.getInitialState( anyLong() ) ).thenReturn( ONLINE );
         when( indexProvider.getProviderDescriptor() ).thenReturn( PROVIDER_DESCRIPTOR );
         when( indexProvider.getPopulator( anyLong(), any( IndexDescriptor.class ), any( IndexConfiguration.class ),
                 any( IndexSamplingConfig.class ) ) ).thenReturn( populator );

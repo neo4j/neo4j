@@ -24,15 +24,15 @@ import org.neo4j.kernel.impl.api.CountsVisitor;
 
 public final class IndexSampleKey extends IndexKey
 {
-    IndexSampleKey( IndexDescriptor descriptor )
+    IndexSampleKey( long indexId )
     {
-        super( descriptor, CountsKeyType.INDEX_SAMPLE );
+        super( indexId, CountsKeyType.INDEX_SAMPLE );
     }
 
     @Override
     public void accept( CountsVisitor visitor, long unique, long size )
     {
-        visitor.visitIndexSample( descriptor(), unique, size );
+        visitor.visitIndexSample( indexId(), unique, size );
     }
 
     @Override

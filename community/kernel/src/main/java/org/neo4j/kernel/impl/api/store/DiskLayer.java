@@ -502,14 +502,21 @@ public class DiskLayer implements StoreReadLayer
 
     @Override
     public DoubleLongRegister indexUpdatesAndSize( IndexDescriptor descriptor, DoubleLongRegister target )
+            throws IndexNotFoundKernelException
     {
-        return counts.indexUpdatesAndSize( descriptor, target );
+        return counts.indexUpdatesAndSize( tryGetIndexId( descriptor ), target );
     }
 
     @Override
     public DoubleLongRegister indexSample( IndexDescriptor descriptor, DoubleLongRegister target )
+            throws IndexNotFoundKernelException
     {
-        return counts.indexSample( descriptor, target );
+        return counts.indexSample( tryGetIndexId( descriptor ), target );
+    }
+
+    private long tryGetIndexId(IndexDescriptor descriptor) throws IndexNotFoundKernelException
+    {
+        return indexService.getIndexId( descriptor );
     }
 
     @Override

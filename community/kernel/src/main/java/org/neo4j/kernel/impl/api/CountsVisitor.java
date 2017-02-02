@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.neo4j.kernel.api.schema.IndexDescriptor;
-
 public interface CountsVisitor
 {
     interface Visitable
@@ -32,9 +30,9 @@ public interface CountsVisitor
 
     void visitRelationshipCount( int startLabelId, int typeId, int endLabelId, long count );
 
-    void visitIndexStatistics( IndexDescriptor descriptor, long updates, long size );
+    void visitIndexStatistics( long indexId, long updates, long size );
 
-    void visitIndexSample( IndexDescriptor descriptor, long unique, long size );
+    void visitIndexSample( long indexId, long unique, long size );
 
     public static class Adapter implements CountsVisitor
     {
@@ -51,13 +49,13 @@ public interface CountsVisitor
         }
 
         @Override
-        public void visitIndexStatistics( IndexDescriptor descriptor, long updates, long size )
+        public void visitIndexStatistics( long indexId, long updates, long size )
         {
             // override in subclasses
         }
 
         @Override
-        public void visitIndexSample( IndexDescriptor descriptor, long unique, long size )
+        public void visitIndexSample( long indexId, long unique, long size )
         {
             // override in subclasses
         }
@@ -85,20 +83,20 @@ public interface CountsVisitor
                 }
 
                 @Override
-                public void visitIndexStatistics( IndexDescriptor descriptor, long updates, long size )
+                public void visitIndexStatistics( long indexId, long updates, long size )
                 {
                     for ( CountsVisitor visitor : visitors )
                     {
-                        visitor.visitIndexStatistics( descriptor, updates, size );
+                        visitor.visitIndexStatistics( indexId, updates, size );
                     }
                 }
 
                 @Override
-                public void visitIndexSample( IndexDescriptor descriptor, long unique, long size )
+                public void visitIndexSample( long indexId, long unique, long size )
                 {
                     for ( CountsVisitor visitor : visitors )
                     {
-                        visitor.visitIndexSample( descriptor, unique, size );
+                        visitor.visitIndexSample( indexId, unique, size );
                     }
                 }
             };

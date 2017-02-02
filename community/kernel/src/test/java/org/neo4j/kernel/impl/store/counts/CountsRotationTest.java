@@ -426,13 +426,13 @@ public class CountsRotationTest
             }
 
             @Override
-            public void visitIndexStatistics( IndexDescriptor index, long updates, long size) {
-                records.add( Pair.of( CountsKeyFactory.indexStatisticsKey( index ), size ) );
+            public void visitIndexStatistics( long indexId, long updates, long size) {
+                records.add( Pair.of( CountsKeyFactory.indexStatisticsKey( indexId ), size ) );
             }
 
             @Override
-            public void visitIndexSample( IndexDescriptor index, long unique, long size) {
-                records.add( Pair.of( CountsKeyFactory.indexSampleKey( index ), size ) );
+            public void visitIndexSample( long indexId, long unique, long size) {
+                records.add( Pair.of( CountsKeyFactory.indexSampleKey( indexId ), size ) );
             }
         } );
         return records;
