@@ -181,10 +181,7 @@ trait Expressions extends Parser
   }
 
   private def PropertyLookup: ReductionRule1[ast.Expression, ast.Property] = rule("'.'") {
-    operator(".") ~~ (
-        (group(PropertyKeyName ~~ group(anyOf("?!") ~ !OpCharTail) ~> ((s:String) => s)) ~~>> (ast.LegacyProperty(_: ast.Expression, _, _)))
-      | (PropertyKeyName ~~>> (ast.Property(_: ast.Expression, _)))
-    )
+    operator(".") ~~ (PropertyKeyName ~~>> (ast.Property(_: ast.Expression, _)))
   }
 
   private def FilterExpression: Rule3[ast.Variable, ast.Expression, Option[ast.Expression]] =

@@ -172,6 +172,9 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
       case Limit(_, count, DoNotIncludeTies) =>
         PlanDescriptionImpl(id, name = "Limit", children, Seq(Expression(count)), variables)
 
+      case LockNodes(_, nodesToLock) =>
+        PlanDescriptionImpl(id, name = "LockNodes", children, Seq(KeyNames(nodesToLock.map(_.name).toSeq)), variables)
+
       case OptionalExpand(_, IdName(fromName), dir, typeNames, IdName(toName), IdName(relName), mode, predicates) =>
         val expressions = predicates.map(Expression.apply) :+
           ExpandExpression(fromName, relName, typeNames.map(_.name), toName, dir, 1, Some(1))

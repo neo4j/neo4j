@@ -318,14 +318,6 @@ class OwnerCheck implements CheckDecorator
         };
     }
 
-    @Override
-    public RecordCheck<NodeRecord, ConsistencyReport.LabelsMatchReport> decorateLabelMatchChecker(
-            RecordCheck<NodeRecord, ConsistencyReport.LabelsMatchReport> checker )
-    {
-        // TODO: Understand what this does.
-        return checker;
-    }
-
     RecordCheck<DynamicRecord, ConsistencyReport.DynamicConsistencyReport> decorateDynamicChecker(
             final RecordType type, final RecordCheck<DynamicRecord, ConsistencyReport.DynamicConsistencyReport> checker )
     {

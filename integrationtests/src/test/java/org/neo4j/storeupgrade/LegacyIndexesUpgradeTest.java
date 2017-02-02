@@ -42,9 +42,9 @@ import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.index.lucene.ValueContext;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
-import org.neo4j.test.NestedThrowableMatcher;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.Unzip;
+import org.neo4j.test.matchers.NestedThrowableMatcher;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 

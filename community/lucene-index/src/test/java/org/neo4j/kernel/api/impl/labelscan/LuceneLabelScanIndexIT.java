@@ -48,7 +48,7 @@ public class LuceneLabelScanIndexIT
     @Rule
     public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
-    private int affectedNodes;
+    private final int affectedNodes;
 
     @Before
     public void before() throws Exception
@@ -89,7 +89,7 @@ public class LuceneLabelScanIndexIT
             {
                 for ( int i = 0; i < affectedNodes; i++ )
                 {
-                    long[] labels = PrimitiveLongCollections.asArray( labelScanReader.labelsForNode( i ) );
+                    long[] labels = PrimitiveLongCollections.asArray( labelScanReader.nodesWithLabel( i ) );
                     assertEquals( "Should have only one label", 1, labels.length );
                     assertEquals( "Label id should be equal to node id", i, labels[0] );
                 }

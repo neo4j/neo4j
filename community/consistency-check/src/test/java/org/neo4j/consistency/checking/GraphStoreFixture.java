@@ -26,6 +26,7 @@ import org.junit.runners.model.Statement;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Collection;
 
 import org.neo4j.consistency.statistics.AccessStatistics;
@@ -37,7 +38,6 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.index.lucene.LuceneLabelScanStoreBuilder;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -49,11 +49,18 @@ import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.extension.KernelExtensions;
+import org.neo4j.kernel.extension.dependency.NamedLabelScanStoreSelectionStrategy;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
+import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.locking.LockService;
+import org.neo4j.kernel.impl.logging.SimpleLogService;
+import org.neo4j.kernel.impl.spi.KernelContext;
+import org.neo4j.kernel.impl.spi.SimpleKernelContext;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
@@ -71,7 +78,9 @@ import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
+import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLog;
@@ -85,6 +94,9 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.System.currentTimeMillis;
 import static org.neo4j.consistency.ConsistencyCheckService.defaultConsistencyCheckThreadsNumber;
+import static org.neo4j.helpers.Service.load;
+import static org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies.ignore;
+import static org.neo4j.kernel.impl.factory.DatabaseInfo.UNKNOWN;
 
 public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implements TestRule
 {
@@ -170,14 +182,42 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
 
             Config config = Config.empty();
             OperationalMode operationalMode = OperationalMode.single;
-            IndexStoreView indexStoreView = new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, nativeStores.getRawNeoStores() );
-            LabelScanStore labelScanStore = new LuceneLabelScanStoreBuilder( directory, indexStoreView,
-                    fileSystem, config, operationalMode, FormattedLogProvider.toOutputStream( System.out ) )
-                    .build();
+            IndexStoreView indexStoreView =
+                    new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, nativeStores.getRawNeoStores() );
+
+            Dependencies dependencies = new Dependencies();
+            dependencies.satisfyDependencies( Config.defaults(), fileSystem,
+                    new SimpleLogService( logProvider, logProvider ), indexStoreView, pageCache );
+            KernelContext kernelContext = new SimpleKernelContext( directory, UNKNOWN, dependencies );
+            LabelScanStore labelScanStore = startLabelScanStore( config, dependencies, kernelContext );
             directStoreAccess = new DirectStoreAccess( nativeStores, labelScanStore, createIndexes( fileSystem,
                     config, operationalMode ) );
         }
         return directStoreAccess;
+    }
+
+    private LabelScanStore startLabelScanStore( Config config, Dependencies dependencies, KernelContext kernelContext )
+    {
+        // Load correct LSS from kernel extensions
+        LifeSupport life = new LifeSupport();
+        KernelExtensions extensions = life.add( new KernelExtensions(
+                kernelContext, (Iterable) load( KernelExtensionFactory.class ), dependencies, ignore() ) );
+        life.start();
+        LabelScanStore labelScanStore = extensions.resolveDependency( LabelScanStoreProvider.class,
+                new NamedLabelScanStoreSelectionStrategy( config ) ).getLabelScanStore();
+        life.shutdown();
+
+        // Start the selected LSS
+        try
+        {
+            labelScanStore.init();
+            labelScanStore.start();
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
+        return labelScanStore;
     }
 
     private SchemaIndexProvider createIndexes( FileSystemAbstraction fileSystem, Config config, OperationalMode operationalMode )
@@ -434,36 +474,57 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
         return -1;
     }
 
-    @SuppressWarnings("deprecation")
+    public class Applier implements AutoCloseable
+    {
+        private final GraphDatabaseAPI database;
+        private final TransactionRepresentationCommitProcess commitProcess;
+        private final TransactionIdStore transactionIdStore;
+        private final NeoStores neoStores;
+
+        public Applier()
+        {
+            database = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newEmbeddedDatabase( directory );
+            DependencyResolver dependencyResolver = database.getDependencyResolver();
+
+            commitProcess = new TransactionRepresentationCommitProcess(
+                    dependencyResolver.resolveDependency( TransactionAppender.class ),
+                    dependencyResolver.resolveDependency( StorageEngine.class ) );
+            transactionIdStore = database.getDependencyResolver().resolveDependency(
+                    TransactionIdStore.class );
+
+            neoStores = database.getDependencyResolver().resolveDependency( RecordStorageEngine.class )
+                    .testAccessNeoStores();
+        }
+
+        public void apply( Transaction transaction ) throws TransactionFailureException
+        {
+            TransactionRepresentation representation = transaction.representation( idGenerator(), masterId(), myId(),
+                    transactionIdStore.getLastCommittedTransactionId(), neoStores );
+            commitProcess.commit( new TransactionToApply( representation ), CommitEvent.NULL,
+                    TransactionApplicationMode.EXTERNAL );
+        }
+
+        @Override
+        public void close()
+        {
+            database.shutdown();
+        }
+    }
+
+    public Applier createApplier()
+    {
+        return new Applier();
+    }
+
     protected void applyTransaction( Transaction transaction ) throws TransactionFailureException
     {
         // TODO you know... we could have just appended the transaction representation to the log
         // and the next startup of the store would do recovery where the transaction would have been
         // applied and all would have been well.
 
-        GraphDatabaseAPI database = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newEmbeddedDatabase( directory );
-        try
+        try ( Applier applier = createApplier() )
         {
-            DependencyResolver dependencyResolver = database.getDependencyResolver();
-
-            TransactionRepresentationCommitProcess commitProcess =
-                    new TransactionRepresentationCommitProcess(
-                            dependencyResolver.resolveDependency( TransactionAppender.class ),
-                            dependencyResolver.resolveDependency( StorageEngine.class ) );
-            TransactionIdStore transactionIdStore = database.getDependencyResolver().resolveDependency(
-                    TransactionIdStore.class );
-
-            NeoStores neoStores = database.getDependencyResolver().resolveDependency( RecordStorageEngine.class )
-                    .testAccessNeoStores();
-
-            TransactionRepresentation representation = transaction.representation( idGenerator(), masterId(), myId(),
-                    transactionIdStore.getLastCommittedTransactionId(), neoStores );
-            commitProcess.commit( new TransactionToApply( representation ), CommitEvent.NULL,
-                    TransactionApplicationMode.EXTERNAL );
-        }
-        finally
-        {
-            database.shutdown();
+            applier.apply( transaction );
         }
     }
 

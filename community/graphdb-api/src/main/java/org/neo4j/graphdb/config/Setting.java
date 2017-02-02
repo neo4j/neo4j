@@ -22,6 +22,7 @@ package org.neo4j.graphdb.config;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static java.util.Collections.emptyMap;
@@ -69,7 +70,8 @@ public interface Setting<T> extends Function<Function<String,String>,T>, Setting
     }
 
     @Override
-    default Map<String,String> validate( Map<String,String> rawConfig ) throws InvalidSettingException
+    default Map<String,String> validate( Map<String,String> rawConfig, Consumer<String> warningConsumer )
+            throws InvalidSettingException
     {
         // Validate setting, if present or default value otherwise
         try

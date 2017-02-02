@@ -25,6 +25,8 @@ import java.util.Iterator;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
+import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
@@ -44,7 +46,7 @@ import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
@@ -56,6 +58,7 @@ import org.neo4j.kernel.impl.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
+import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.storageengine.api.schema.SchemaRule;
@@ -127,12 +130,12 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public IndexDescriptor indexCreate( KernelStatement state, int labelId, int propertyKey )
+    public IndexDescriptor indexCreate( KernelStatement state, NodePropertyDescriptor descriptor )
             throws AlreadyIndexedException, AlreadyConstrainedException
     {
         acquireExclusiveSchemaLock( state );
         state.assertOpen();
-        return schemaWriteDelegate.indexCreate( state, labelId, propertyKey );
+        return schemaWriteDelegate.indexCreate( state, descriptor );
     }
 
     @Override
@@ -184,11 +187,11 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public IndexDescriptor indexGetForLabelAndPropertyKey( KernelStatement state, int labelId, int propertyKey )
+    public IndexDescriptor indexGetForLabelAndPropertyKey( KernelStatement state, NodePropertyDescriptor descriptor )
     {
         acquireSharedSchemaLock( state );
         state.assertOpen();
-        return schemaReadDelegate.indexGetForLabelAndPropertyKey( state, labelId, propertyKey );
+        return schemaReadDelegate.indexGetForLabelAndPropertyKey( state, descriptor );
     }
 
     @Override
@@ -243,7 +246,7 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public long indexGetCommittedId( KernelStatement state, IndexDescriptor index, Predicate<SchemaRule.Kind> filter )
+    public long indexGetCommittedId( KernelStatement state, IndexDescriptor index, Predicate<IndexRule> filter )
             throws SchemaRuleNotFoundException
     {
         acquireSharedSchemaLock( state );
@@ -344,40 +347,39 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public UniquenessConstraint uniquePropertyConstraintCreate( KernelStatement state, int labelId, int propertyKeyId )
+    public UniquenessConstraint uniquePropertyConstraintCreate( KernelStatement state,NodePropertyDescriptor descriptor )
             throws CreateConstraintFailureException, AlreadyConstrainedException, AlreadyIndexedException
     {
         acquireExclusiveSchemaLock( state );
         state.assertOpen();
-        return schemaWriteDelegate.uniquePropertyConstraintCreate( state, labelId, propertyKeyId );
+        return schemaWriteDelegate.uniquePropertyConstraintCreate( state, descriptor );
     }
 
     @Override
-    public NodePropertyExistenceConstraint nodePropertyExistenceConstraintCreate( KernelStatement state, int labelId,
-            int propertyKeyId ) throws AlreadyConstrainedException, CreateConstraintFailureException
+    public NodePropertyExistenceConstraint nodePropertyExistenceConstraintCreate( KernelStatement state,
+            NodePropertyDescriptor descriptor ) throws AlreadyConstrainedException, CreateConstraintFailureException
     {
         acquireExclusiveSchemaLock( state );
         state.assertOpen();
-        return schemaWriteDelegate.nodePropertyExistenceConstraintCreate( state, labelId, propertyKeyId );
+        return schemaWriteDelegate.nodePropertyExistenceConstraintCreate( state, descriptor );
     }
 
     @Override
     public RelationshipPropertyExistenceConstraint relationshipPropertyExistenceConstraintCreate( KernelStatement state,
-            int relTypeId, int propertyKeyId ) throws AlreadyConstrainedException, CreateConstraintFailureException
+            RelationshipPropertyDescriptor descriptor ) throws AlreadyConstrainedException, CreateConstraintFailureException
     {
         acquireExclusiveSchemaLock( state );
         state.assertOpen();
-        return schemaWriteDelegate.relationshipPropertyExistenceConstraintCreate( state, relTypeId, propertyKeyId );
+        return schemaWriteDelegate.relationshipPropertyExistenceConstraintCreate( state, descriptor );
     }
 
     @Override
     public Iterator<NodePropertyConstraint> constraintsGetForLabelAndPropertyKey( KernelStatement state,
-            int labelId,
-            int propertyKeyId )
+            NodePropertyDescriptor descriptor )
     {
         acquireSharedSchemaLock( state );
         state.assertOpen();
-        return schemaReadDelegate.constraintsGetForLabelAndPropertyKey( state, labelId, propertyKeyId );
+        return schemaReadDelegate.constraintsGetForLabelAndPropertyKey( state, descriptor );
     }
 
     @Override
@@ -391,11 +393,11 @@ public class LockingStatementOperations implements
     @Override
     public Iterator<RelationshipPropertyConstraint> constraintsGetForRelationshipTypeAndPropertyKey(
             KernelStatement state,
-            int relTypeId, int propertyKeyId )
+            RelationshipPropertyDescriptor descriptor )
     {
         acquireSharedSchemaLock( state );
         state.assertOpen();
-        return schemaReadDelegate.constraintsGetForRelationshipTypeAndPropertyKey( state, relTypeId, propertyKeyId );
+        return schemaReadDelegate.constraintsGetForRelationshipTypeAndPropertyKey( state, descriptor );
     }
 
     @Override

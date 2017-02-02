@@ -27,7 +27,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntPredicate;
 
 import static java.util.Arrays.asList;
+
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -118,13 +120,13 @@ public class PrimitiveIntCollectionsTest
     }
 
     @Test
-    public void dedup() throws Exception
+    public void deduplicate() throws Exception
     {
         // GIVEN
         PrimitiveIntIterator items = PrimitiveIntCollections.iterator( 1, 1, 2, 3, 2 );
 
         // WHEN
-        PrimitiveIntIterator deduped = PrimitiveIntCollections.dedup( items );
+        PrimitiveIntIterator deduped = PrimitiveIntCollections.deduplicate( items );
 
         // THEN
         assertItems( deduped, 1, 2, 3 );
@@ -526,6 +528,45 @@ public class PrimitiveIntCollectionsTest
 
         // THEN
         assertTrue( Arrays.equals( new int[] { 1, 2, 3 }, array ) );
+    }
+
+    @Test
+    public void shouldDeduplicate() throws Exception
+    {
+        // GIVEN
+        int[] array = new int[] {1, 1, 2, 5, 6, 6};
+
+        // WHEN
+        int[] deduped = PrimitiveIntCollections.deduplicate( array );
+
+        // THEN
+        assertArrayEquals( new int[] {1, 2, 5, 6}, deduped );
+    }
+
+    @Test
+    public void shouldNotContinueToCallNextOnHasNextFalse() throws Exception
+    {
+        // GIVEN
+        AtomicInteger count = new AtomicInteger( 2 );
+        PrimitiveIntIterator iterator = new PrimitiveIntCollections.PrimitiveIntBaseIterator()
+        {
+            @Override
+            protected boolean fetchNext()
+            {
+                return count.decrementAndGet() >= 0 ? next( count.get() ) : false;
+            }
+        };
+
+        // WHEN/THEN
+        assertTrue( iterator.hasNext() );
+        assertTrue( iterator.hasNext() );
+        assertEquals( 1L, iterator.next() );
+        assertTrue( iterator.hasNext() );
+        assertTrue( iterator.hasNext() );
+        assertEquals( 0L, iterator.next() );
+        assertFalse( iterator.hasNext() );
+        assertFalse( iterator.hasNext() );
+        assertEquals( -1L, count.get() );
     }
 
     private void assertNoMoreItems( PrimitiveIntIterator iterator )

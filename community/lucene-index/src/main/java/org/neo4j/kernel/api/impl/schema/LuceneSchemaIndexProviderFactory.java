@@ -46,6 +46,8 @@ public class LuceneSchemaIndexProviderFactory extends
         Config getConfig();
 
         LogService getLogging();
+
+        FileSystemAbstraction fileSystem();
     }
 
     public LuceneSchemaIndexProviderFactory()
@@ -60,7 +62,7 @@ public class LuceneSchemaIndexProviderFactory extends
         LogProvider logging = dependencies.getLogging().getInternalLogProvider();
         boolean ephemeral = config.get( GraphDatabaseFacadeFactory.Configuration.ephemeral );
 
-        FileSystemAbstraction fileSystem = context.fileSystem();
+        FileSystemAbstraction fileSystem = dependencies.fileSystem();
         DirectoryFactory directoryFactory = directoryFactory( ephemeral, fileSystem );
 
         return new LuceneSchemaIndexProvider( fileSystem, directoryFactory, context.storeDir(), logging, config,

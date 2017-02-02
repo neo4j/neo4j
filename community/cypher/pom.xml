@@ -264,10 +264,11 @@
         <artifactId>neo4j-lucene-index</artifactId>
         <version>${project.version}</version>
       </dependency>
+      <!-- graph matching is used in old cypher compilers 3.1 and 2.3 we can use the old component -->
       <dependency>
         <groupId>org.neo4j</groupId>
         <artifactId>neo4j-graph-matching</artifactId>
-        <version>${project.version}</version>
+        <version>3.1.1</version>
       </dependency>
       <dependency>
         <groupId>org.neo4j</groupId>

@@ -97,7 +97,7 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
         indexFactory(index)
 
       asProducer[Node](startItem) { (m: ExecutionContext, state: QueryState) =>
-        indexQuery(expression, m, state, indexFactory(state), labelName, propertyName)
+        indexQuery(expression, m, state, indexFactory(state), labelName, Seq(propertyName))
       }
 
     case (planContext, startItem @ SchemaIndex(variable, labelName, propertyName, UniqueIndex, valueExp)) =>
@@ -114,7 +114,7 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
         indexFactory(index)
 
       asProducer[Node](startItem) { (m: ExecutionContext, state: QueryState) =>
-        indexQuery(expression, m, state, indexFactory(state), labelName, propertyName)
+        indexQuery(expression, m, state, indexFactory(state), labelName, Seq(propertyName))
       }
   }
 

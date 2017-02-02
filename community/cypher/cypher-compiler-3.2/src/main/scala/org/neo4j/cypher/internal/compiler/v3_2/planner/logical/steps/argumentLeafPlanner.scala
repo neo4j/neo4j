@@ -20,10 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_2.planner.QueryGraph
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.{LeafPlanner, LogicalPlanningContext}
 
 object argumentLeafPlanner extends LeafPlanner {
-  def apply(qg: QueryGraph)(implicit context: LogicalPlanningContext) = {
+  def apply(qg: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] = {
     val ids = qg.patternNodes ++ qg.patternRelationships.map(_.name)
     if ((qg.argumentIds intersect ids).isEmpty)
       Seq.empty

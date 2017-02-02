@@ -19,16 +19,14 @@
  */
 package org.neo4j.kernel.api.impl.labelscan;
 
+import org.apache.lucene.index.IndexFileNames;
+import org.hamcrest.Matcher;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.List;
-import java.util.Random;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
@@ -40,9 +38,9 @@ import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.OperationalMode;
-import org.neo4j.logging.NullLogProvider;
-
 import static java.util.Arrays.asList;
+import static org.hamcrest.Matchers.startsWith;
+import static org.hamcrest.core.IsCollectionContaining.hasItem;
 
 @RunWith( Parameterized.class )
 public class LuceneLabelScanStoreTest extends LabelScanStoreTest
@@ -70,19 +68,24 @@ public class LuceneLabelScanStoreTest extends LabelScanStoreTest
         Config config = Config.defaults().with( MapUtil.stringMap(
                 GraphDatabaseSettings.read_only.name(), String.valueOf( readOnly ) ) );
 
-        LabelScanIndex index = LuceneLabelScanIndexBuilder.create()
+        LuceneLabelScanIndexBuilder indexBuilder = LuceneLabelScanIndexBuilder.create()
                 .withDirectoryFactory( directoryFactory )
                 .withIndexStorage( indexStorage )
                 .withOperationalMode( OperationalMode.single )
                 .withConfig( config )
-                .withDocumentFormat( documentFormat )
-                .build();
+                .withDocumentFormat( documentFormat );
 
-        return new LuceneLabelScanStore( index, asStream( existingData ), NullLogProvider.getInstance(), monitor );
+        return new LuceneLabelScanStore( indexBuilder, asStream( existingData ), monitor );
     }
 
     @Override
-    protected void corruptIndex() throws IOException
+    protected Matcher<Iterable<? super String>> hasBareMinimumFileList()
+    {
+        return hasItem( startsWith( IndexFileNames.SEGMENTS ) );
+    }
+
+    @Override
+    protected void corruptIndex( FileSystemAbstraction fileSystem, File rootFolder ) throws IOException
     {
         List<File> indexPartitions = indexStorage.listFolders();
         for ( File partition : indexPartitions )
@@ -95,27 +98,6 @@ public class LuceneLabelScanStoreTest extends LabelScanStoreTest
                     scrambleFile( indexFile );
                 }
             }
-        }
-    }
-    private void scrambleFile( File file ) throws IOException
-    {
-        try ( RandomAccessFile fileAccess = new RandomAccessFile( file, "rw" );
-              FileChannel channel = fileAccess.getChannel() )
-        {
-            // The files will be small, so OK to allocate a buffer for the full size
-            byte[] bytes = new byte[(int) channel.size()];
-            putRandomBytes( random.random(), bytes );
-            ByteBuffer buffer = ByteBuffer.wrap( bytes );
-            channel.position( 0 );
-            channel.write( buffer );
-        }
-    }
-
-    private void putRandomBytes( Random random, byte[] bytes )
-    {
-        for ( int i = 0; i < bytes.length; i++ )
-        {
-            bytes[i] = (byte) random.nextInt();
         }
     }
 }

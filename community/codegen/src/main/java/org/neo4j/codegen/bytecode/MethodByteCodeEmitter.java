@@ -210,6 +210,12 @@ class MethodByteCodeEmitter implements MethodEmitter
     }
 
     @Override
+    public void beginBlock()
+    {
+        stateStack.push( () -> {} );
+    }
+
+    @Override
     public void endBlock()
     {
         if ( stateStack.isEmpty() )

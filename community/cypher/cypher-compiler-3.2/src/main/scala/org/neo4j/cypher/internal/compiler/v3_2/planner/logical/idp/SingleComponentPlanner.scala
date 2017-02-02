@@ -70,9 +70,11 @@ case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
 
         result
       } else {
-        val solutionPlans = leaves collect {
-          case plan if planFullyCoversQG(qg, plan) => kit.select(plan, qg)
-        }
+        val solutionPlans = if (qg.shortestPathPatterns.isEmpty)
+          leaves collect {
+            case plan if planFullyCoversQG(qg, plan) => kit.select(plan, qg)
+          }
+        else leaves map (kit.select(_, qg)) filter (planFullyCoversQG(qg, _))
         val result = kit.pickBest(solutionPlans).getOrElse(throw new InternalException("Found no leaf plan for connected component. This must not happen. QG: " + qg))
         monitor.noIDPIterationFor(qg, result)
         result

@@ -38,6 +38,7 @@ import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.api.schema.EntityPropertyDescriptor;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
@@ -47,7 +48,7 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchConstraintException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 
 import static java.util.Collections.singletonList;
@@ -62,21 +63,24 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.emptySetOf;
 import static org.neo4j.helpers.collection.Iterators.single;
 
-public abstract class AbstractConstraintCreationIT<Constraint extends PropertyConstraint> extends KernelIntegrationTest
+public abstract class AbstractConstraintCreationIT<Constraint extends PropertyConstraint, DESCRIPTOR extends
+        EntityPropertyDescriptor>
+        extends KernelIntegrationTest
 {
     protected static final String KEY = "Foo";
     protected static final String PROP = "bar";
 
     protected int typeId;
     protected int propertyKeyId;
+    protected DESCRIPTOR descriptor;
 
     abstract int initializeLabelOrRelType( SchemaWriteOperations writeOps, String name ) throws KernelException;
 
-    abstract Constraint createConstraint( SchemaWriteOperations writeOps, int type, int property ) throws Exception;
+    abstract Constraint createConstraint( SchemaWriteOperations writeOps, DESCRIPTOR descriptor ) throws Exception;
 
     abstract void createConstraintInRunningTx( GraphDatabaseService db, String type, String property );
 
-    abstract Constraint newConstraintObject( int type, int property );
+    abstract Constraint newConstraintObject( DESCRIPTOR descriptor );
 
     abstract void dropConstraint( SchemaWriteOperations writeOps, Constraint constraint ) throws Exception;
 
@@ -84,12 +88,15 @@ public abstract class AbstractConstraintCreationIT<Constraint extends PropertyCo
 
     abstract void removeOffendingDataInRunningTx( GraphDatabaseService db );
 
+    abstract DESCRIPTOR makeDescriptor( int typeId, int propertyKeyId );
+
     @Before
     public void createKeys() throws Exception
     {
         SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
         this.typeId = initializeLabelOrRelType( statement, KEY );
         this.propertyKeyId = statement.propertyKeyGetOrCreateForName( PROP );
+        this.descriptor = makeDescriptor( typeId, propertyKeyId );
         commit();
     }
 
@@ -111,7 +118,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends PropertyCo
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
 
             // when
-            constraint = createConstraint( statement, typeId, propertyKeyId );
+            constraint = createConstraint( statement, descriptor );
 
             // then
             assertEquals( constraint, single( statement.constraintsGetAll() ) );
@@ -137,7 +144,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends PropertyCo
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
 
-            createConstraint( statement, typeId, propertyKeyId );
+            createConstraint( statement, descriptor );
 
             // when
             rollback();
@@ -158,7 +165,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends PropertyCo
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
 
-            Constraint constraint = createConstraint( statement, typeId, propertyKeyId );
+            Constraint constraint = createConstraint( statement, descriptor );
 
             // when
             dropConstraint( statement, constraint );
@@ -184,7 +191,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends PropertyCo
         Constraint constraint;
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            constraint = createConstraint( statement, typeId, propertyKeyId );
+            constraint = createConstraint( statement, descriptor );
             commit();
         }
 
@@ -210,7 +217,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends PropertyCo
         // given
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            createConstraint( statement, typeId, propertyKeyId );
+            createConstraint( statement, descriptor );
             commit();
         }
 
@@ -219,7 +226,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends PropertyCo
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
 
-            createConstraint( statement, typeId, propertyKeyId );
+            createConstraint( statement, descriptor );
 
             fail( "Should not have validated" );
         }
@@ -237,7 +244,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends PropertyCo
         Constraint constraint;
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            constraint = createConstraint( statement, typeId, propertyKeyId );
+            constraint = createConstraint( statement, descriptor );
             commit();
         }
         SchemaStateCheck schemaState = new SchemaStateCheck().setUp();
@@ -246,7 +253,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends PropertyCo
 
             // when
             dropConstraint( statement, constraint );
-            createConstraint( statement, typeId, propertyKeyId );
+            createConstraint( statement, descriptor );
             commit();
         }
         {
@@ -267,7 +274,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends PropertyCo
         SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
 
         // when
-        createConstraint( statement, typeId, propertyKeyId );
+        createConstraint( statement, descriptor );
         commit();
 
         // then
@@ -283,7 +290,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends PropertyCo
         SchemaStateCheck schemaState;
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            constraint = createConstraint( statement, typeId, propertyKeyId );
+            constraint = createConstraint( statement, descriptor );
             commit();
 
             schemaState = new SchemaStateCheck().setUp();
@@ -306,7 +313,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends PropertyCo
     public void shouldNotDropConstraintThatDoesNotExist() throws Exception
     {
         // given
-        Constraint constraint = newConstraintObject( typeId, propertyKeyId );
+        Constraint constraint = newConstraintObject( descriptor );
 
         // when
         {
@@ -397,7 +404,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends PropertyCo
 
         // then - this should not fail
         SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-        createConstraint( statement, typeId, propertyKeyId );
+        createConstraint( statement, descriptor );
         commit();
     }
 

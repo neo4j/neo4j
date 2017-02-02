@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
@@ -36,49 +37,32 @@ public interface LabelScanStore extends Lifecycle
     interface Monitor
     {
         Monitor EMPTY = new Monitor()
-        {
-            @Override
-            public void init()
-            {
-            }
-
-            @Override
-            public void noIndex()
-            {
-            }
-
-            @Override
-            public void lockedIndex( Exception e )
-            {
-            }
-
-            @Override
-            public void notValidIndex()
-            {
-            }
-
-            @Override
-            public void rebuilding()
-            {
-            }
-
-            @Override
-            public void rebuilt( long roughNodeCount )
-            {
-            }
+        {   // empty
         };
 
-        void init();
+        default void init()
+        {   // empty
+        }
 
-        void noIndex();
+        default void noIndex()
+        {   // empty
+        }
 
-        void lockedIndex( Exception e );
+        default void lockedIndex( Exception e )
+        {   // empty
+        }
 
-        void notValidIndex();
+        default void notValidIndex()
+        {   // empty
+        }
 
-        void rebuilding();
+        default void rebuilding()
+        {   // empty
+        }
 
-        void rebuilt( long roughNodeCount );
+        default void rebuilt( long roughNodeCount )
+        {   // empty
+        }
     }
 
     /**
@@ -91,6 +75,8 @@ public interface LabelScanStore extends Lifecycle
 
     /**
      * Acquire a writer for updating the store.
+     *
+     * @return {@link LabelScanWriter} which can modify the {@link LabelScanStore}.
      */
     LabelScanWriter newWriter();
 
@@ -101,7 +87,7 @@ public interface LabelScanStore extends Lifecycle
      *
      * @throws UnderlyingStorageException if there was a problem forcing the state to persistent storage.
      */
-    void force() throws UnderlyingStorageException;
+    void force( IOLimiter limiter ) throws UnderlyingStorageException;
 
     /**
      * Acquire a reader for all {@link NodeLabelRange node label} ranges.
@@ -111,6 +97,12 @@ public interface LabelScanStore extends Lifecycle
     AllEntriesLabelScanReader allNodeLabelRanges();
 
     ResourceIterator<File> snapshotStoreFiles() throws IOException;
+
+    /**
+     * @return {@code true} if there's no data at all in this label scan store, otherwise {@code false}.
+     * @throws IOException on I/O error.
+     */
+    boolean isEmpty() throws IOException;
 
     /**
      * Initializes the store. After this has been called recovery updates can be processed.

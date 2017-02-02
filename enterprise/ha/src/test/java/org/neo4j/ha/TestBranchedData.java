@@ -29,7 +29,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.Set;
-
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -42,12 +41,14 @@ import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
+import org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
 import org.neo4j.kernel.impl.ha.ClusterManager.RepairKit;
 import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.com.storecopy.StoreUtil;
+import org.neo4j.function.ThrowingAction;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -57,8 +58,12 @@ import static java.lang.String.format;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.MASTER;
+import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.SLAVE;
+import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.UNKNOWN;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
+import static org.neo4j.kernel.impl.ha.ClusterManager.memberThinksItIsRole;
 
 public class TestBranchedData
 {
@@ -66,7 +71,8 @@ public class TestBranchedData
     private final TestDirectory directory = TestDirectory.testDirectory();
 
     @Rule
-    public final RuleChain ruleChain = RuleChain.outerRule( directory )
+    public final RuleChain ruleChain = RuleChain
+            .outerRule( directory )
             .around( life );
 
     @Test
@@ -155,29 +161,33 @@ public class TestBranchedData
         RepairKit thorRepairKit = cluster.fail( thor );
         // try to create a transaction on odin until it succeeds
         cluster.await( ClusterManager.masterAvailable( thor ) );
-        createNode( odin, "B2", andIndexInto( indexName ) );
+        cluster.await( ClusterManager.memberThinksItIsRole( odin, HighAvailabilityModeSwitcher.MASTER ) );
         assertTrue( odin.isMaster() );
+        retryOnTransactionFailure( () -> createNode( odin, "B2", andIndexInto( indexName ) ) );
         // perform transactions so that index files changes under the hood
         Set<File> odinLuceneFilesBefore = Iterables.asSet( gatherLuceneFiles( odin, indexName ) );
         for ( char prefix = 'C'; !changed( odinLuceneFilesBefore, Iterables.asSet( gatherLuceneFiles( odin, indexName ) ) ); prefix++ )
         {
-            createNodes( odin, String.valueOf( prefix ), 10_000, andIndexInto( indexName ) );
+            char fixedPrefix = prefix;
+            retryOnTransactionFailure( () ->
+                    createNodes( odin, String.valueOf( fixedPrefix ), 10_000, andIndexInto( indexName ) ) );
             cluster.force(); // Force will most likely cause lucene legacy indexes to commit and change file structure
         }
         // so anyways, when thor comes back into the cluster
         cluster.info( format( "%n   ==== REPAIRING CABLES ====%n" ) );
+        cluster.await( memberThinksItIsRole( thor, UNKNOWN ) );
         thorRepairKit.repair();
-        while ( thor.isMaster() )
-        {
-            Thread.sleep( 100 );
-        }
-        cluster.await( ClusterManager.masterSeesAllSlavesAsAvailable() );
+        cluster.await( memberThinksItIsRole( thor, SLAVE ) );
+        cluster.await( memberThinksItIsRole( odin, MASTER ) );
+        cluster.await( allSeesAllAsAvailable() );
         assertFalse( thor.isMaster() );
 
         // Now do some more transactions on current master (odin) and have thor pull those
         for( int i = 0; i < 3; i++ )
         {
-            createNodes( odin, String.valueOf( "" + i ), 100_000, andIndexInto( indexName ) );
+            int ii = i;
+            retryOnTransactionFailure( () ->
+                    createNodes( odin, String.valueOf( "" + ii ), 100_000, andIndexInto( indexName ) ) );
             cluster.sync();
             cluster.force();
         }
@@ -188,6 +198,26 @@ public class TestBranchedData
         assertTrue( hasNode( thor, "C-0" ) );
         assertTrue( hasNode( thor, "0-0" ) );
         assertTrue( hasNode( odin, "0-0" ) );
+    }
+
+    private void retryOnTransactionFailure( ThrowingAction<Exception> transaction ) throws Exception
+    {
+        Exception exception = null;
+        for ( int i = 0; i < 10; i++ )
+        {
+            try
+            {
+                transaction.apply();
+                return;
+            }
+            catch ( Exception e )
+            {
+                // Just retry
+                exception = e;
+            }
+        }
+
+        throw exception;
     }
 
     private boolean changed( Set<File> before, Set<File> after )

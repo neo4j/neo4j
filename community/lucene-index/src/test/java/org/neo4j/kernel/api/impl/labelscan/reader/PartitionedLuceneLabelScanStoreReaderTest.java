@@ -71,19 +71,6 @@ public class PartitionedLuceneLabelScanStoreReaderTest
     }
 
     @Test
-    public void labelsForNodeOverPartitions()
-    {
-        PartitionedLuceneLabelScanStoreReader storeReader = createPartitionedReaderWithReaders();
-
-        when( indexReader1.labelsForNode( 1 ) ).thenReturn( PrimitiveLongCollections.iterator( 1 ) );
-        when( indexReader2.labelsForNode( 1 ) ).thenReturn( PrimitiveLongCollections.iterator( 2 ) );
-        when( indexReader3.labelsForNode( 1 ) ).thenReturn( PrimitiveLongCollections.iterator( 3 ) );
-
-        PrimitiveLongSet result = PrimitiveLongCollections.asSet( storeReader.labelsForNode( 1 ) );
-        verifyResult( result );
-    }
-
-    @Test
     public void nodesWithLabelOverPartitions()
     {
         PartitionedLuceneLabelScanStoreReader storeReader = createPartitionedReaderWithReaders();

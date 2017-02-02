@@ -418,6 +418,12 @@ public class MuninnPageCache implements PageCache
             }
 
             @Override
+            public File getRelativeFile()
+            {
+                return fileHandle.getRelativeFile();
+            }
+
+            @Override
             public void rename( File targetFile, CopyOption... options ) throws IOException
             {
                 synchronized ( MuninnPageCache.this )
@@ -429,6 +435,12 @@ public class MuninnPageCache implements PageCache
                     assertNotMapped( targetFile, FileIsMappedException.Operation.RENAME );
                     fileHandle.rename( targetFile, options );
                 }
+            }
+
+            @Override
+            public String toString()
+            {
+                return fileHandle.toString();
             }
 
             @Override

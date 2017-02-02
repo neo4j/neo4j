@@ -48,8 +48,8 @@ import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernel
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.test.GraphDatabaseServiceCleaner;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
-import org.neo4j.test.RepeatRule;
 import org.neo4j.test.ha.ClusterRule;
+import org.neo4j.test.rule.RepeatRule;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.concurrent.OtherThreadRule;
 

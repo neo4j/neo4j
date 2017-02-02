@@ -95,7 +95,7 @@ public class BackupReadReplicaIT
         String backupAddress = backupAddress( readReplica );
         System.out.println( backupAddress );
         String[] args = backupArguments( backupAddress, backupPath, "readreplica" );
-        assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( args ) );
+        assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( clusterRule.clusterDirectory(), args ) );
 
         // Add some new data
         DbRepresentation afterChange = DbRepresentation.of( createSomeData( cluster ) );

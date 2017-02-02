@@ -419,7 +419,8 @@ public class HighlyAvailableEditionModule
                         platformModule.dependencies.resolveDependency( TransactionIdStore.class ),
                         platformModule.dependencies.resolveDependency( LogicalTransactionStore.class ),
                         platformModule.dependencies.resolveDependency( NeoStoreDataSource.class ),
-                        platformModule.dependencies.resolveDependency( PageCache.class ) );
+                        platformModule.dependencies.resolveDependency( PageCache.class ),
+                        platformModule.storeCopyCheckPointMutex );
 
         final Factory<ConversationSPI> conversationSPIFactory =
                 () -> new DefaultConversationSPI( lockManager, platformModule.jobScheduler );

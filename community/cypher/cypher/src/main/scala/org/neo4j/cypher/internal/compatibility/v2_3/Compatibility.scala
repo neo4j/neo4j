@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compatibility.v2_3
 
+import java.util.Collections.emptyList
+
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{EntityAccessor, ExecutionPlan => ExecutionPlan_v2_3}
@@ -30,7 +32,8 @@ import org.neo4j.cypher.internal.spi.v2_3.{TransactionBoundGraphStatistics, Tran
 import org.neo4j.cypher.internal.spi.v3_2.TransactionalContextWrapper
 import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.api.KernelAPI
+import org.neo4j.kernel.api.ExecutingQuery.PlannerInfo
+import org.neo4j.kernel.api.{IndexUsage, KernelAPI}
 import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
@@ -57,7 +60,7 @@ trait Compatibility {
 
   implicit val executionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
 
-  def produceParsedQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer) = {
+  def produceParsedQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer, preParsingNotifications: Set[org.neo4j.graphdb.Notification]) = {
     import org.neo4j.cypher.internal.compatibility.v2_3.helpers.as2_3
     val notificationLogger = new RecordingNotificationLogger
     val preparedQueryForV_2_3 =
@@ -67,23 +70,23 @@ trait Compatibility {
         preParsedQuery.planner.name,
         Some(as2_3(preParsedQuery.offset)), tracer))
     new ParsedQuery {
-      def isPeriodicCommit = preparedQueryForV_2_3.map(_.isPeriodicCommit).getOrElse(false)
-
-      def plan(transactionalContext: TransactionalContextWrapper, tracer: v3_2.CompilationPhaseTracer): (org.neo4j.cypher.internal.ExecutionPlan, Map[String, Any]) = exceptionHandler.runSafely {
+      override def plan(transactionalContext: TransactionalContextWrapper, tracer: v3_2.CompilationPhaseTracer): (org
+      .neo4j.cypher.internal.ExecutionPlan, Map[String, Any]) = exceptionHandler.runSafely {
         val planContext: PlanContext = new TransactionBoundPlanContext(transactionalContext)
         val (planImpl, extractedParameters) = compiler.planPreparedQuery(preparedQueryForV_2_3.get, planContext, as2_3(tracer))
 
         // Log notifications/warnings from planning
         planImpl.notifications(planContext).foreach(notificationLogger += _)
 
-        (new ExecutionPlanWrapper(planImpl), extractedParameters)
+        (new ExecutionPlanWrapper(planImpl, preParsingNotifications), extractedParameters)
       }
 
-      override def hasErrors = preparedQueryForV_2_3.isFailure
+      override protected val trier: Try[PreparedQuery] = preparedQueryForV_2_3
     }
   }
 
-  class ExecutionPlanWrapper(inner: ExecutionPlan_v2_3) extends org.neo4j.cypher.internal.ExecutionPlan {
+  class ExecutionPlanWrapper(inner: ExecutionPlan_v2_3, preParsingNotifications: Set[org.neo4j.graphdb.Notification])
+    extends org.neo4j.cypher.internal.ExecutionPlan {
 
     private def queryContext(transactionalContext: TransactionalContextWrapper): QueryContext =
       new ExceptionTranslatingQueryContext(new TransactionBoundQueryContext(transactionalContext))
@@ -101,7 +104,7 @@ trait Compatibility {
         val innerResult = inner.run(queryContext(transactionalContext), transactionalContext.statement, innerExecutionMode, params)
         new ClosingExecutionResult(
           query,
-          new ExecutionResultWrapper(innerResult, inner.plannerUsed, inner.runtimeUsed),
+          new ExecutionResultWrapper(innerResult, inner.plannerUsed, inner.runtimeUsed, preParsingNotifications),
           exceptionHandler.runSafely
         )
       }
@@ -112,6 +115,8 @@ trait Compatibility {
 
     def isStale(lastCommittedTxId: LastCommittedTxIdProvider, ctx: TransactionalContextWrapper): Boolean =
       inner.isStale(lastCommittedTxId, TransactionBoundGraphStatistics(ctx.readOperations))
+
+    override def plannerInfo = new PlannerInfo(inner.plannerUsed.name, inner.runtimeUsed.name, emptyList[IndexUsage])
   }
 
 }

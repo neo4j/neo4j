@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.spi.v3_2
 
+import org.neo4j.cypher.internal.ExecutionPlan
 import org.neo4j.cypher.internal.compiler.v3_2.spi.QueryTransactionalContext
 import org.neo4j.graphdb.{Lock, PropertyContainer}
 import org.neo4j.kernel.GraphDatabaseQueryService
@@ -45,7 +46,7 @@ case class TransactionalContextWrapper(tc: TransactionalContext) extends QueryTr
 
   def stateView: TxStateHolder = tc.stateView()
 
-  def cleanForReuse() = tc.cleanForReuse()
+  def cleanForReuse(): Unit = tc.cleanForReuse()
 
   // needed only for compatibility with 2.3
   def acquireWriteLock(p: PropertyContainer): Lock = tc.acquireWriteLock(p)
@@ -63,4 +64,6 @@ case class TransactionalContextWrapper(tc: TransactionalContext) extends QueryTr
   def restrictCurrentTransaction(context: SecurityContext): Revertable = tc.restrictCurrentTransaction(context)
 
   def securityContext: SecurityContext = tc.securityContext
+
+  def notifyPlanningCompleted(plan: ExecutionPlan): Unit = tc.executingQuery().planningCompleted(plan.plannerInfo)
 }

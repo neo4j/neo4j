@@ -1,12 +1,12 @@
 = Neo4j: Graphs for Everyone =
 
-http://neo4j.com[Neo4j] is the world's leading Graph Database. It is a high performance graph store with all the features expected of a mature and robust database, like a friendly query language and ACID transactions. The programmer works with a flexible network structure of nodes and relationships rather than static tables -- yet enjoys all the benefits of enterprise-quality database. For many applications, Neo4j offers orders of magnitude performance benefits compared to relational DBs.
+https://neo4j.com[Neo4j] is the world's leading Graph Database. It is a high performance graph store with all the features expected of a mature and robust database, like a friendly query language and ACID transactions. The programmer works with a flexible network structure of nodes and relationships rather than static tables -- yet enjoys all the benefits of enterprise-quality database. For many applications, Neo4j offers orders of magnitude performance benefits compared to relational DBs.
 
-Learn more on the http://neo4j.com[Neo4j website].
+Learn more on the https://neo4j.com[Neo4j website].
 
 == Using Neo4j ==
 
-Neo4j is available both as a standalone server, or an embeddable component. You can http://neo4j.com/download/[download] or http://console.neo4j.org[try online].
+Neo4j is available both as a standalone server, or an embeddable component. You can https://neo4j.com/download/[download] or http://console.neo4j.org[try online].
 
 == Extending Neo4j ==
 
@@ -47,7 +47,6 @@ On top of that, to build Debian packages and Neo4j Desktop:
 * To add execution of integration tests, use: `mvn clean install -DrunITs`.
 * In case you just want the jars, without running tests, this is for you: `mvn clean install -DskipTests`.
 * To skip building the browser module, use `-DskipBrowser` (note that you might not be able to build the server without it).
-* To build everything, including running all tests and assembling product packages, use `mvn clean install -DfullBuild`.
 * To build product packages, do `export PATH="bin:$PATH" && make clean all` in the packaging directory after building artifacts with Maven
 * To build the documentation see the link:manual/[Neo4j manual].
 * When building on Windows, use `-Dlicensing.skip` to avoid problems related to line endings.
@@ -57,7 +56,7 @@ On top of that, to build Debian packages and Neo4j Desktop:
 
 == Running Neo4j ==
 
-After running a `mvn clean install -DfullBuild` cd into `packaging/standalone/target` and extract the version you want, then
+After running a `mvn clean install` cd into `packaging/standalone/target` and extract the version you want, then
 
   bin/neo4j start
 
@@ -75,4 +74,4 @@ to start Neo4j.
 
 == Licensing ==
 
-Neo4j is an open source product. We support a Community edition under the GPLv3 license. The Enterprise edition is available under the AGPLv3 license for open source projects otherwise under a commercial license from http://info.neotechnology.com/contactus.html[Neo Technology].
+Neo4j is an open source product. We support a Community edition under the GPLv3 license. The Enterprise edition is available under the AGPLv3 license for open source projects otherwise under a commercial license from https://info.neotechnology.com/contactus.html[Neo Technology].

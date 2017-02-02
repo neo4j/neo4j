@@ -38,6 +38,7 @@ import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
 class StandardEnterpriseSecurityContext implements EnterpriseSecurityContext
 {
     private static final String SCHEMA_READ_WRITE = "schema:read,write";
+    private static final String TOKEN_CREATE = "token:create";
     private static final String READ_WRITE = "data:read,write";
     private static final String READ = "data:read";
 
@@ -76,6 +77,7 @@ class StandardEnterpriseSecurityContext implements EnterpriseSecurityContext
         return new StandardAccessMode(
                 isAuthenticated && shiroSubject.isPermitted( READ ),
                 isAuthenticated && shiroSubject.isPermitted( READ_WRITE ),
+                isAuthenticated && shiroSubject.isPermitted( TOKEN_CREATE ),
                 isAuthenticated && shiroSubject.isPermitted( SCHEMA_READ_WRITE ),
                 shiroSubject.getAuthenticationResult() == AuthenticationResult.PASSWORD_CHANGE_REQUIRED,
                 queryForRoleNames()
@@ -124,14 +126,16 @@ class StandardEnterpriseSecurityContext implements EnterpriseSecurityContext
         private final boolean allowsReads;
         private final boolean allowsWrites;
         private final boolean allowsSchemaWrites;
+        private final boolean allowsTokenCreates;
         private final boolean passwordChangeRequired;
         private final Set<String> roles;
 
-        StandardAccessMode( boolean allowsReads, boolean allowsWrites, boolean allowsSchemaWrites,
+        StandardAccessMode( boolean allowsReads, boolean allowsWrites, boolean allowsTokenCreates, boolean allowsSchemaWrites,
                 boolean passwordChangeRequired, Set<String> roles )
         {
             this.allowsReads = allowsReads;
             this.allowsWrites = allowsWrites;
+            this.allowsTokenCreates = allowsTokenCreates;
             this.allowsSchemaWrites = allowsSchemaWrites;
             this.passwordChangeRequired = passwordChangeRequired;
             this.roles = roles;
@@ -147,6 +151,12 @@ class StandardEnterpriseSecurityContext implements EnterpriseSecurityContext
         public boolean allowsWrites()
         {
             return allowsWrites;
+        }
+
+        @Override
+        public boolean allowsTokenCreates()
+        {
+            return allowsTokenCreates;
         }
 
         @Override

@@ -20,6 +20,8 @@
 package org.neo4j.graphdb.impl.notification;
 
 
+import java.util.Objects;
+
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.SeverityLevel;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -55,6 +57,12 @@ public enum NotificationCode
         SeverityLevel.WARNING,
         Status.Statement.PlannerUnsupportedWarning,
         "Using COST planner is unsupported for this query, please use RULE planner instead"
+    ),
+    RULE_PLANNER_UNAVAILABLE_FALLBACK(
+        SeverityLevel.WARNING,
+        Status.Statement.PlannerUnavailableWarning,
+        "Using RULE planner is unsupported for current CYPHER version, the query has been execute by an older CYPHER " +
+        "version"
     ),
     RUNTIME_UNSUPPORTED(
         SeverityLevel.WARNING,
@@ -101,6 +109,11 @@ public enum NotificationCode
             Status.Statement.FeatureDeprecationWarning,
             "The query used a deprecated procedure."
     ),
+    PROCEDURE_WARNING(
+            SeverityLevel.WARNING,
+            Status.Procedure.ProcedureWarning,
+            "The query used a procedure that generated a warning."
+    ),
     EAGER_LOAD_CSV(
         SeverityLevel.WARNING,
         Status.Statement.EagerOperatorWarning,
@@ -145,8 +158,12 @@ public enum NotificationCode
             "Using shortest path with an exhaustive search fallback might cause query slow down since shortest path " +
             "graph algorithms might not work for this use case. It is recommended to introduce a WITH to separate the " +
             "MATCH containing the shortest path from the existential predicates on that path."
-    )
-    ;
+    ),
+    CREATE_UNIQUE_UNAVAILABLE_FALLBACK(
+            SeverityLevel.WARNING,
+            Status.Statement.PlannerUnavailableWarning,
+        "CREATE UNIQUE is unsupported for current CYPHER version, the query has been execute by an older CYPHER version"
+    );
 
     private final Status status;
     private final String description;
@@ -228,6 +245,28 @@ public enum NotificationCode
                     "position=" + position +
                     ", detailedDescription='" + detailedDescription + '\'' +
                     '}';
+        }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() )
+            {
+                return false;
+            }
+            Notification that = (Notification) o;
+            return Objects.equals( position, that.position ) &&
+                    Objects.equals( detailedDescription, that.detailedDescription );
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return Objects.hash( position, detailedDescription );
         }
     }
 }

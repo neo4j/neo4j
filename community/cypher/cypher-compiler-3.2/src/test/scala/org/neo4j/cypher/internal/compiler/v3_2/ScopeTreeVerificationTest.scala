@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_2
 
 import org.neo4j.cypher.internal.frontend.v3_2.Scope
+import org.neo4j.cypher.internal.frontend.v3_2.helpers.StringHelper._
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 
 class ScopeTreeVerificationTest extends CypherFunSuite {
@@ -29,13 +30,13 @@ class ScopeTreeVerificationTest extends CypherFunSuite {
   test("should reject scopes mapping the wrong name to a symbol") {
     val given = Scope(Map("a" -> intSymbol("a", 3), "b" -> intSymbol("x", 5)), Seq())
 
-    val result = ScopeTreeVerifier.verify(given)
+    val result = ScopeTreeVerifier.verify(given).map(_.fixNewLines)
 
     result should equal(Seq(s"""'b' points to symbol with different name 'x@5(5): Integer' in scope ${given.toIdString}. Scope tree:
                                |${given.toIdString} {
                                |  a: 3
                                |  b: 5
                                |}
-                               |""".stripMargin))
+                               |""".stripMargin.fixNewLines))
   }
 }

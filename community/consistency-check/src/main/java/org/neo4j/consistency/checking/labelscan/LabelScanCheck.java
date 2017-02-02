@@ -37,7 +37,7 @@ public class LabelScanCheck implements RecordCheck<LabelScanDocument, Consistenc
         for ( long nodeId : range.nodes() )
         {
             engine.comparativeCheck( records.node( nodeId ),
-                    new NodeInUseWithCorrectLabelsCheck<>( record.getNodeLabelRange().labels( nodeId ) ) );
+                    new NodeInUseWithCorrectLabelsCheck<>( record.getNodeLabelRange().labels( nodeId ), true ) );
         }
     }
 }

@@ -204,11 +204,11 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
 
       case NodeIndexSeek(IdName(ident), label, propertyKey, valueExpr, _) =>
         val indexSeekMode = IndexSeekModeFactory(unique = false, readOnly = readOnly).fromQueryExpression(valueExpr)
-        NodeIndexSeekPipe(ident, label, propertyKey, valueExpr.map(buildExpression), indexSeekMode)(id = id)
+        NodeIndexSeekPipe(ident, label, Seq(propertyKey), valueExpr.map(buildExpression), indexSeekMode)(id = id)
 
       case NodeUniqueIndexSeek(IdName(ident), label, propertyKey, valueExpr, _) =>
         val indexSeekMode = IndexSeekModeFactory(unique = true, readOnly = readOnly).fromQueryExpression(valueExpr)
-        NodeIndexSeekPipe(ident, label, propertyKey, valueExpr.map(buildExpression), indexSeekMode)(id = id)
+        NodeIndexSeekPipe(ident, label, Seq(propertyKey), valueExpr.map(buildExpression), indexSeekMode)(id = id)
 
       case NodeIndexScan(IdName(ident), label, propertyKey, _) =>
         NodeIndexScanPipe(ident, label, propertyKey)(id = id)
@@ -256,6 +256,9 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
 
       case Expand(_, IdName(fromName), dir, types: Seq[RelTypeName], IdName(toName), IdName(relName), ExpandInto) =>
         ExpandIntoPipe(source, fromName, relName, toName, dir, LazyTypes(types))(id = id)
+
+      case LockNodes(_, nodesToLock) =>
+        LockNodesPipe(source, nodesToLock.map(_.name))()
 
       case OptionalExpand(_, IdName(fromName), dir, types, IdName(toName), IdName(relName), ExpandAll, predicates) =>
         val predicate = predicates.map(buildPredicate).reduceOption(_ andWith _).getOrElse(True())

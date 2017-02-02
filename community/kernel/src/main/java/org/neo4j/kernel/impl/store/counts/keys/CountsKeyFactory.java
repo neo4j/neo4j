@@ -31,13 +31,13 @@ public class CountsKeyFactory
         return new RelationshipKey( startLabelId, typeId, endLabelId );
     }
 
-    public static IndexStatisticsKey indexStatisticsKey( int labelId, int propertyKeyId )
+    public static IndexStatisticsKey indexStatisticsKey( long indexId )
     {
-        return new IndexStatisticsKey( labelId, propertyKeyId );
+        return new IndexStatisticsKey( indexId );
     }
 
-    public static IndexSampleKey indexSampleKey( int labelId, int propertyKeyId )
+    public static IndexSampleKey indexSampleKey( long indexId )
     {
-        return new IndexSampleKey( labelId, propertyKeyId );
+        return new IndexSampleKey( indexId );
     }
 }

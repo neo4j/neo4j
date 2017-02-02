@@ -106,7 +106,7 @@ public class GetServersProcedureTest
 
         final CoreTopology clusterTopology = new CoreTopology( clusterId, false, new HashMap<>() );
         when( coreTopologyService.coreServers() ).thenReturn( clusterTopology );
-        when( coreTopologyService.readReplicas() ).thenReturn( new ReadReplicaTopology( clusterId, emptySet() ) );
+        when( coreTopologyService.readReplicas() ).thenReturn( new ReadReplicaTopology( emptySet() ) );
 
         // set the TTL in minutes
         config = config.augment( stringMap( cluster_routing_ttl.name(), "10m" ) );
@@ -150,7 +150,7 @@ public class GetServersProcedureTest
 
         final CoreTopology clusterTopology = new CoreTopology( clusterId, false, coreMembers );
         when( coreTopologyService.coreServers() ).thenReturn( clusterTopology );
-        when( coreTopologyService.readReplicas() ).thenReturn( new ReadReplicaTopology( clusterId, emptySet() ) );
+        when( coreTopologyService.readReplicas() ).thenReturn( new ReadReplicaTopology( emptySet() ) );
 
         final GetServersProcedure proc =
                 new GetServersProcedure( coreTopologyService, leaderLocator, config, getInstance() );
@@ -182,7 +182,7 @@ public class GetServersProcedureTest
 
         final CoreTopology clusterTopology = new CoreTopology( clusterId, false, coreMembers );
         when( coreTopologyService.coreServers() ).thenReturn( clusterTopology );
-        when( coreTopologyService.readReplicas() ).thenReturn( new ReadReplicaTopology( clusterId, emptySet() ) );
+        when( coreTopologyService.readReplicas() ).thenReturn( new ReadReplicaTopology( emptySet() ) );
 
         final GetServersProcedure proc =
                 new GetServersProcedure( coreTopologyService, leaderLocator, config, getInstance() );
@@ -216,7 +216,7 @@ public class GetServersProcedureTest
 
         final CoreTopology clusterTopology = new CoreTopology( clusterId, false, coreMembers );
         when( coreTopologyService.coreServers() ).thenReturn( clusterTopology );
-        when( coreTopologyService.readReplicas() ).thenReturn( new ReadReplicaTopology( clusterId, emptySet() ) );
+        when( coreTopologyService.readReplicas() ).thenReturn( new ReadReplicaTopology( emptySet() ) );
 
         final GetServersProcedure proc =
                 new GetServersProcedure( coreTopologyService, leaderLocator, config, getInstance() );
@@ -244,7 +244,7 @@ public class GetServersProcedureTest
         coreMembers.put( theLeader, coreAddresses( 0 ) );
 
         when( topologyService.coreServers() ).thenReturn( new CoreTopology( clusterId, false, coreMembers ) );
-        when( topologyService.readReplicas() ).thenReturn( new ReadReplicaTopology( clusterId, addresses( 1 ) ) );
+        when( topologyService.readReplicas() ).thenReturn( new ReadReplicaTopology( addresses( 1 ) ) );
 
         LeaderLocator leaderLocator = mock( LeaderLocator.class );
         when( leaderLocator.getLeader() ).thenReturn( theLeader );
@@ -279,7 +279,7 @@ public class GetServersProcedureTest
         coreMembers.put( theLeader, coreAddresses( 0 ) );
 
         when( topologyService.coreServers() ).thenReturn( new CoreTopology( clusterId, false, coreMembers ) );
-        when( topologyService.readReplicas() ).thenReturn( new ReadReplicaTopology( clusterId, addresses() ) );
+        when( topologyService.readReplicas() ).thenReturn( new ReadReplicaTopology( addresses() ) );
 
         LeaderLocator leaderLocator = mock( LeaderLocator.class );
         when( leaderLocator.getLeader() ).thenReturn( theLeader );
@@ -309,7 +309,7 @@ public class GetServersProcedureTest
         coreMembers.put( member( 0 ), coreAddresses( 0 ) );
 
         when( topologyService.coreServers() ).thenReturn( new CoreTopology( clusterId, false, coreMembers ) );
-        when( topologyService.readReplicas() ).thenReturn( new ReadReplicaTopology( clusterId, addresses() ) );
+        when( topologyService.readReplicas() ).thenReturn( new ReadReplicaTopology( addresses() ) );
 
         LeaderLocator leaderLocator = mock( LeaderLocator.class );
         when( leaderLocator.getLeader() ).thenThrow( new NoLeaderFoundException() );
@@ -338,7 +338,7 @@ public class GetServersProcedureTest
         coreMembers.put( member( 0 ), coreAddresses( 0 ) );
 
         when( topologyService.coreServers() ).thenReturn( new CoreTopology( clusterId, false, coreMembers ) );
-        when( topologyService.readReplicas() ).thenReturn( new ReadReplicaTopology( clusterId, addresses() ) );
+        when( topologyService.readReplicas() ).thenReturn( new ReadReplicaTopology( addresses() ) );
 
         LeaderLocator leaderLocator = mock( LeaderLocator.class );
         when( leaderLocator.getLeader() ).thenReturn( member( 1 ) );

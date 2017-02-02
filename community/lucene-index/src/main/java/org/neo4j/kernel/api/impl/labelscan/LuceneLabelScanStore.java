@@ -23,37 +23,37 @@ import org.apache.lucene.store.LockObtainFailedException;
 
 import java.io.File;
 import java.io.IOException;
-
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.labelscan.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
-import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.FullStoreChangeStream;
+import org.neo4j.kernel.impl.api.scan.FullStoreChangeStream;
+import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 
 public class LuceneLabelScanStore implements LabelScanStore
 {
-    private final LabelScanIndex luceneIndex;
+    private final LuceneLabelScanIndexBuilder indexBuilder;
+    private volatile LabelScanIndex luceneIndex;
     // We get in a full store stream here in case we need to fully rebuild the store if it's missing or corrupted.
     private final FullStoreChangeStream fullStoreStream;
-    private final Log log;
     private final Monitor monitor;
     private boolean needsRebuild;
+    private boolean switchBackToReadOnly;
 
-    public LuceneLabelScanStore( LabelScanIndex luceneIndex, FullStoreChangeStream fullStoreStream,
-            LogProvider logProvider, Monitor monitor )
+    public LuceneLabelScanStore( LuceneLabelScanIndexBuilder indexBuilder,
+            FullStoreChangeStream fullStoreStream, Monitor monitor )
     {
-        this.luceneIndex = luceneIndex;
+        this.indexBuilder = indexBuilder;
+        this.luceneIndex = indexBuilder.build();
         this.fullStoreStream = fullStoreStream;
-        this.log = logProvider.getLog( getClass() );
         this.monitor = monitor;
     }
 
     @Override
-    public void force()
+    public void force( IOLimiter limiter )
     {
         try
         {
@@ -94,15 +94,13 @@ public class LuceneLabelScanStore implements LabelScanStore
         {
             if ( !luceneIndex.exists() )
             {
-                log.info( "No lucene scan store index found, this might just be first use. Preparing to rebuild." );
                 monitor.noIndex();
 
-                luceneIndex.create();
+                create();
                 needsRebuild = true;
             }
             else if ( !luceneIndex.isValid() )
             {
-                log.warn( "Lucene scan store index could not be read. Preparing to rebuild." );
                 monitor.notValidIndex();
                 luceneIndex.drop();
                 luceneIndex.create();
@@ -113,9 +111,20 @@ public class LuceneLabelScanStore implements LabelScanStore
         catch ( LockObtainFailedException e )
         {
             luceneIndex.close();
-            log.error( "Index is locked by another process or database", e );
             monitor.lockedIndex( e );
             throw e;
+        }
+    }
+
+    private void create() throws IOException
+    {
+        if ( luceneIndex.isReadOnly() )
+        {
+            luceneIndex.close();
+            luceneIndex = indexBuilder.buildWritable();
+            luceneIndex.create();
+            switchBackToReadOnly = true;
+            // We'll switch back in start() later
         }
     }
 
@@ -126,19 +135,29 @@ public class LuceneLabelScanStore implements LabelScanStore
         {   // we saw in init() that we need to rebuild the index, so do it here after the
             // neostore has been properly started.
             monitor.rebuilding();
-            log.info( "Rebuilding lucene scan store, this may take a while" );
-            long numberOfNodes = rebuild();
+            long numberOfNodes = LabelScanStoreProvider.rebuild( this, fullStoreStream );
             monitor.rebuilt( numberOfNodes );
-            log.info( "Lucene scan store rebuilt (roughly " + numberOfNodes + " nodes)" );
             needsRebuild = false;
+        }
+
+        if ( switchBackToReadOnly )
+        {
+            luceneIndex.close();
+            luceneIndex = indexBuilder.build();
+            luceneIndex.open();
         }
     }
 
-    private long rebuild() throws IOException
+    @Override
+    public boolean isEmpty() throws IOException
     {
-        try ( LabelScanWriter writer = newWriter() )
+        try ( AllEntriesLabelScanReader allEntries = allNodeLabelRanges() )
         {
-            return fullStoreStream.applyTo( writer );
+            return allEntries.maxCount() == 0;
+        }
+        catch ( Exception e )
+        {
+            throw new IOException( e );
         }
     }
 

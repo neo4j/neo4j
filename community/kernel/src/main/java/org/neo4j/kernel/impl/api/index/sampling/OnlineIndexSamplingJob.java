@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.api.index.sampling;
 
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.util.DurationLogger;
@@ -35,18 +35,18 @@ import static org.neo4j.kernel.api.index.InternalIndexState.ONLINE;
 
 class OnlineIndexSamplingJob implements IndexSamplingJob
 {
-    private final IndexDescriptor indexDescriptor;
+    private final long indexId;
     private final IndexProxy indexProxy;
     private final IndexStoreView storeView;
     private final Log log;
     private final String indexUserDescription;
 
-    public OnlineIndexSamplingJob( IndexProxy indexProxy,
+    public OnlineIndexSamplingJob( long indexId, IndexProxy indexProxy,
             IndexStoreView storeView,
             String indexUserDescription,
             LogProvider logProvider )
     {
-        this.indexDescriptor = indexProxy.getDescriptor();
+        this.indexId = indexId;
         this.indexProxy = indexProxy;
         this.storeView = storeView;
         this.log = logProvider.getLog( getClass() );
@@ -54,9 +54,9 @@ class OnlineIndexSamplingJob implements IndexSamplingJob
     }
 
     @Override
-    public IndexDescriptor descriptor()
+    public long indexId()
     {
-        return indexDescriptor;
+        return indexId;
     }
 
     @Override
@@ -74,7 +74,7 @@ class OnlineIndexSamplingJob implements IndexSamplingJob
                     // check again if the index is online before saving the counts in the store
                     if ( indexProxy.getState() == ONLINE )
                     {
-                        storeView.replaceIndexCounts( indexDescriptor, sample.uniqueValues(), sample.sampleSize(),
+                        storeView.replaceIndexCounts( indexId, sample.uniqueValues(), sample.sampleSize(),
                                 sample.indexSize() );
                         durationLogger.markAsFinished();
                         log.info(

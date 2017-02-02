@@ -22,12 +22,19 @@ package org.neo4j.causalclustering.discovery;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.helpers.collection.Pair;
+
+import static java.lang.String.format;
+import static java.util.stream.Collectors.toSet;
 
 public class CoreTopology
 {
@@ -72,7 +79,77 @@ public class CoreTopology
     @Override
     public String toString()
     {
-        return String.format( "{coreMembers=%s, bootstrappable=%s}", coreMembers, canBeBootstrapped() );
+        return format( "{clusterId=%s, bootstrappable=%s, coreMembers=%s}",
+                clusterId, canBeBootstrapped(), coreMembers );
     }
 
+    TopologyDifference difference( CoreTopology other )
+    {
+        Set<MemberId> members = coreMembers.keySet();
+        Set<MemberId> otherMembers = other.coreMembers.keySet();
+
+        Set<Difference> added = otherMembers.stream().filter( m -> !members.contains(m) )
+                .map( memberId -> asDifference( other, memberId ) ).collect( toSet() );
+
+        Set<Difference> removed = members.stream().filter( m -> !otherMembers.contains(m) )
+                .map( memberId -> asDifference(CoreTopology.this, memberId ) ).collect( toSet() );
+
+        return new TopologyDifference( added, removed );
+    }
+
+    private Difference asDifference( CoreTopology topology, MemberId memberId )
+    {
+        return new Difference( memberId, topology.find( memberId ).orElse( null ) );
+    }
+
+    class TopologyDifference
+    {
+        private Set<Difference> added;
+        private Set<Difference> removed;
+
+        TopologyDifference( Set<Difference> added, Set<Difference> removed )
+        {
+            this.added = added;
+            this.removed = removed;
+        }
+
+        Set<Difference> added()
+        {
+            return added;
+        }
+
+        Set<Difference> removed()
+        {
+            return removed;
+        }
+
+        boolean hasChanges()
+        {
+            return added.size() > 0 || removed.size() > 0;
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format( "{added=%s, removed=%s}", added, removed );
+        }
+    }
+
+    private class Difference
+    {
+        private MemberId memberId;
+        private CoreAddresses coreAddresses;
+
+        Difference( MemberId memberId, CoreAddresses coreAddresses )
+        {
+            this.memberId = memberId;
+            this.coreAddresses = coreAddresses;
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format( "{memberId=%s, coreAddresses=%s}", memberId, coreAddresses );
+        }
+    }
 }

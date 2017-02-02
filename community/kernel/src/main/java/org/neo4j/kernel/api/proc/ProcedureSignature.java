@@ -27,6 +27,7 @@ import java.util.Optional;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.proc.Neo4jTypes.AnyType;
+import org.neo4j.procedure.Mode;
 
 import static java.util.Collections.unmodifiableList;
 
@@ -45,6 +46,7 @@ public class ProcedureSignature
     private final Optional<String> deprecated;
     private final String[] allowed;
     private final Optional<String> description;
+    private final Optional<String> warning;
 
     public ProcedureSignature( QualifiedName name,
             List<FieldSignature> inputSignature,
@@ -52,7 +54,8 @@ public class ProcedureSignature
             Mode mode,
             Optional<String> deprecated,
             String[] allowed,
-            Optional<String> description )
+            Optional<String> description,
+            Optional<String> warning)
     {
         this.name = name;
         this.inputSignature = unmodifiableList( inputSignature );
@@ -61,6 +64,7 @@ public class ProcedureSignature
         this.deprecated = deprecated;
         this.allowed = allowed;
         this.description = description;
+        this.warning = warning;
     }
 
     public QualifiedName name()
@@ -95,6 +99,11 @@ public class ProcedureSignature
     public Optional<String> description()
     {
         return description;
+    }
+
+    public Optional<String> warning()
+    {
+        return warning;
     }
 
     @Override
@@ -138,10 +147,11 @@ public class ProcedureSignature
         private final QualifiedName name;
         private final List<FieldSignature> inputSignature = new LinkedList<>();
         private List<FieldSignature> outputSignature = new LinkedList<>();
-        private Mode mode = Mode.READ_ONLY;
+        private Mode mode = Mode.READ;
         private Optional<String> deprecated = Optional.empty();
         private String[] allowed = new String[0];
         private Optional<String> description = Optional.empty();
+        private Optional<String> warning = Optional.empty();
 
         public Builder( String[] namespace, String name )
         {
@@ -192,9 +202,15 @@ public class ProcedureSignature
             return this;
         }
 
+        public Builder warning( String warning )
+        {
+            this.warning = Optional.of( warning );
+            return this;
+        }
+
         public ProcedureSignature build()
         {
-            return new ProcedureSignature(name, inputSignature, outputSignature, mode, deprecated, allowed, description );
+            return new ProcedureSignature(name, inputSignature, outputSignature, mode, deprecated, allowed, description, warning );
         }
     }
 

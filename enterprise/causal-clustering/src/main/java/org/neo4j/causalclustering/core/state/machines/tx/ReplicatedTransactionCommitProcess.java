@@ -22,6 +22,7 @@ package org.neo4j.causalclustering.core.state.machines.tx;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
+import org.neo4j.causalclustering.core.consensus.NoLeaderFoundException;
 import org.neo4j.causalclustering.core.replication.Replicator;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
@@ -54,6 +55,10 @@ public class ReplicatedTransactionCommitProcess implements TransactionCommitProc
         catch ( InterruptedException e )
         {
             throw new TransactionFailureException( "Interrupted replicating transaction.", e );
+        }
+        catch ( NoLeaderFoundException e )
+        {
+            throw new TransactionFailureException( "No leader found while replicating transaction.", e );
         }
 
         try

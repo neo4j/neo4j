@@ -21,6 +21,7 @@ package org.neo4j.kernel.configuration;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.annotation.Nonnull;
 
@@ -39,6 +40,11 @@ import static org.neo4j.kernel.configuration.Settings.setting;
 
 public class HttpConnectorValidator extends ConnectorValidator
 {
+    private static final Consumer<String> nullConsumer = s ->
+    {
+
+    };
+
     public HttpConnectorValidator()
     {
         super( HTTP );
@@ -92,7 +98,7 @@ public class HttpConnectorValidator extends ConnectorValidator
             @Nonnull Setting<?> setting,
             @Nonnull Map<String,String> rawConfig )
     {
-        Map<String,String> result = setting.validate( rawConfig );
+        Map<String,String> result = setting.validate( rawConfig, nullConsumer );
 
         Optional<?> encryption = Optional.ofNullable( setting.apply( rawConfig::get ) );
 
@@ -163,9 +169,10 @@ public class HttpConnectorValidator extends ConnectorValidator
             }
 
             @Override
-            public Map<String,String> validate( Map<String,String> rawConfig ) throws InvalidSettingException
+            public Map<String,String> validate( Map<String,String> rawConfig, Consumer<String> warningConsumer )
+                    throws InvalidSettingException
             {
-                Map<String,String> result = s.validate( rawConfig );
+                Map<String,String> result = s.validate( rawConfig, warningConsumer );
                 assertEncryption( name, s, rawConfig );
                 return result;
             }

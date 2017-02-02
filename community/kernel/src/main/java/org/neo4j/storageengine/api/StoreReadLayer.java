@@ -24,6 +24,8 @@ import java.util.function.Predicate;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
+import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
@@ -34,12 +36,12 @@ import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
+import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.register.Register.DoubleLongRegister;
-import org.neo4j.storageengine.api.schema.IndexSchemaRule;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
@@ -90,7 +92,7 @@ public interface StoreReadLayer
      * @return schema rule id for matching index.
      * @throws SchemaRuleNotFoundException if no such index exists in storage.
      */
-    long indexGetCommittedId( IndexDescriptor index, Predicate<SchemaRule.Kind> filter )
+    long indexGetCommittedId( IndexDescriptor index, Predicate<IndexRule> filter )
             throws SchemaRuleNotFoundException;
 
     /**
@@ -99,7 +101,7 @@ public interface StoreReadLayer
      * @return index schema rule for matching index.
      * @throws SchemaRuleNotFoundException if no such index exists in storage.
      */
-    IndexSchemaRule indexRule( IndexDescriptor index, Predicate<SchemaRule.Kind> filter )
+    IndexRule indexRule( IndexDescriptor index, Predicate<IndexRule> filter )
             throws SchemaRuleNotFoundException;
 
     /**
@@ -119,25 +121,23 @@ public interface StoreReadLayer
     Iterator<StorageProperty> graphGetAllProperties();
 
     /**
-     * @param labelId label token id .
-     * @param propertyKeyId property key token id.
-     * @return node property constraints associated with the label and property key token ids.
+     * @param descriptor describing the label and property key (or keys) defining the requested constraint.
+     * @return node property constraints associated with the label and one or more property keys token ids.
      */
-    Iterator<NodePropertyConstraint> constraintsGetForLabelAndPropertyKey( int labelId, int propertyKeyId );
+    Iterator<NodePropertyConstraint> constraintsGetForLabelAndPropertyKey( NodePropertyDescriptor descriptor );
 
     /**
-     * @param labelId label token id .
+     * @param labelId label token id.
      * @return node property constraints associated with the label token id.
      */
     Iterator<NodePropertyConstraint> constraintsGetForLabel( int labelId );
 
     /**
-     * @param typeId relationship type token id .
-     * @param propertyKeyId property key token id.
-     * @return relationship property constraints associated with the relationship type and property key token ids.
+     * @param descriptor of the relationship.
+     * @return relationship property constraints associated with the relationship description.
      */
-    Iterator<RelationshipPropertyConstraint> constraintsGetForRelationshipTypeAndPropertyKey( int typeId,
-            int propertyKeyId );
+    Iterator<RelationshipPropertyConstraint> constraintsGetForRelationshipTypeAndPropertyKey(
+            RelationshipPropertyDescriptor descriptor );
 
     /**
      * @param typeId relationship type token id .
@@ -153,13 +153,12 @@ public interface StoreReadLayer
     PrimitiveLongIterator nodesGetForLabel( StorageStatement statement, int labelId );
 
     /**
-     * Looks for a stored index by given {@code labelId} and {@code propertyKey}
+     * Looks for a stored index by given {@code descriptor}
      *
-     * @param labelId label id.
-     * @param propertyKeyId property key id.
+     * @param descriptor a description of the node .
      * @return {@link IndexDescriptor} for matching index, or {@code null} if not found. TODO should throw exception.
      */
-    IndexDescriptor indexGetForLabelAndPropertyKey( int labelId, int propertyKeyId );
+    IndexDescriptor indexGetForLabelAndPropertyKey( NodePropertyDescriptor descriptor );
 
     /**
      * Returns state of a stored index.
@@ -374,9 +373,11 @@ public interface StoreReadLayer
 
     int relationshipTypeCount();
 
-    DoubleLongRegister indexUpdatesAndSize( IndexDescriptor index, DoubleLongRegister target );
+    DoubleLongRegister indexUpdatesAndSize( IndexDescriptor index, DoubleLongRegister target )
+            throws IndexNotFoundKernelException;
 
-    DoubleLongRegister indexSample( IndexDescriptor index, DoubleLongRegister target );
+    DoubleLongRegister indexSample( IndexDescriptor index, DoubleLongRegister target )
+            throws IndexNotFoundKernelException;
 
     boolean nodeExists( long id );
 }

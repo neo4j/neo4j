@@ -25,6 +25,7 @@ import java.time.Clock
 import java.util.{Collections, Date, Locale}
 
 import org.neo4j.cypher.internal.compatibility.v3_2.{WrappedMonitors, typeConversions}
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.CodeGenConfiguration
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical._
@@ -35,7 +36,8 @@ import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport}
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker
-import org.neo4j.kernel.impl.query.{Neo4jTransactionalContextFactory, QuerySource}
+import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
+import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.test.TestGraphDatabaseFactory
 
@@ -294,7 +296,7 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
     }
 
     CypherCompilerFactory.costBasedCompiler(config, Clock.systemUTC(), GeneratedQueryStructure, monitors, infoLogger,
-      newPlain, None, None, None, typeConversions)
+      newPlain, None, None, None, None, typeConversions)
   }
 
   case class QueryExecutionResult(compiler: String, dbHits: Option[Long], plan: InternalPlanDescription) {
@@ -495,19 +497,19 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
   }
 
   private def runQueryWith(query: String, compiler: CypherCompiler, db: GraphDatabaseQueryService): (List[Map[String, Any]], InternalExecutionResult) = {
-    val querySource = new QuerySource("<--!oO!-->")
+    val connectionInfo = ClientConnectionInfo.EMBEDDED_CONNECTION
     val locker = new PropertyContainerLocker()
 
     val contextFactory = Neo4jTransactionalContextFactory.create(db, locker)
 
     val (executionPlan: ExecutionPlan, extractedParams: Map[String, Any]) = db.withTx { tx =>
-      val transactionalContext = contextFactory.newContext(querySource, tx, query, Collections.emptyMap())
+      val transactionalContext = contextFactory.newContext(connectionInfo, tx, query, Collections.emptyMap())
       val planContext = new TransactionBoundPlanContext(TransactionalContextWrapper(transactionalContext), devNullLogger)
       compiler.planQuery(query, planContext, devNullLogger)
     }
 
     db.withTx { tx =>
-      val transactionalContext = contextFactory.newContext(querySource, tx, query, Collections.emptyMap())
+      val transactionalContext = contextFactory.newContext(connectionInfo, tx, query, Collections.emptyMap())
       val tcWrapper = TransactionalContextWrapper(transactionalContext)
       val queryContext = new TransactionBoundQueryContext(tcWrapper)(indexSearchMonitor)
       val result = executionPlan.run(queryContext, ProfileMode, extractedParams)

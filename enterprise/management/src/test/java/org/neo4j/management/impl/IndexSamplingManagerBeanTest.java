@@ -24,7 +24,8 @@ import org.junit.Test;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.NeoStoreDataSource;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
 import org.neo4j.storageengine.api.StoreReadLayer;
@@ -64,7 +65,7 @@ public class IndexSamplingManagerBeanTest
     }
 
     @Test
-    public void samplingTriggeredWhenIdsArePresent()
+    public void samplingTriggeredWhenIdsArePresent() throws IndexNotFoundKernelException
     {
         // Given
         IndexSamplingManagerBean.StoreAccess storeAccess = new IndexSamplingManagerBean.StoreAccess();
@@ -74,12 +75,12 @@ public class IndexSamplingManagerBeanTest
         storeAccess.triggerIndexSampling( EXISTING_LABEL, EXISTING_PROPERTY, false );
 
         // Then
-        verify( indexingService, times( 1 ) ).triggerIndexSampling( new IndexDescriptor( LABEL_ID, PROPERTY_ID ) ,
+        verify( indexingService, times( 1 ) ).triggerIndexSampling( IndexDescriptorFactory.of( LABEL_ID, PROPERTY_ID ) ,
                 IndexSamplingMode.TRIGGER_REBUILD_UPDATED);
     }
 
     @Test
-    public void forceSamplingTriggeredWhenIdsArePresent()
+    public void forceSamplingTriggeredWhenIdsArePresent() throws IndexNotFoundKernelException
     {
         // Given
         IndexSamplingManagerBean.StoreAccess storeAccess = new IndexSamplingManagerBean.StoreAccess();
@@ -89,7 +90,7 @@ public class IndexSamplingManagerBeanTest
         storeAccess.triggerIndexSampling( EXISTING_LABEL, EXISTING_PROPERTY, true );
 
         // Then
-        verify( indexingService, times( 1 ) ).triggerIndexSampling( new IndexDescriptor( LABEL_ID, PROPERTY_ID ) ,
+        verify( indexingService, times( 1 ) ).triggerIndexSampling( IndexDescriptorFactory.of( LABEL_ID, PROPERTY_ID ) ,
                 IndexSamplingMode.TRIGGER_REBUILD_ALL);
     }
 

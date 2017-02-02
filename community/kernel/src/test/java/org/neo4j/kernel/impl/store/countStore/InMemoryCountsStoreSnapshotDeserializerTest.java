@@ -29,6 +29,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory;
 import org.neo4j.kernel.impl.store.counts.keys.IndexSampleKey;
@@ -153,17 +155,17 @@ public class InMemoryCountsStoreSnapshotDeserializerTest
     public void correctlyDeserializeIndexSample() throws IOException
     {
         //GIVEN
+        long indexId = 1;
         serializedBytes = ByteBuffer.allocate( 1000 );
         InMemoryClosableChannel logChannel = new InMemoryClosableChannel( serializedBytes.array(), false );
         writeSimpleHeader( logChannel );
         logChannel.put( INDEX_SAMPLE.code );
-        logChannel.putInt( 1 );
-        logChannel.putInt( 1 );
+        logChannel.putLong( indexId );
         logChannel.putLong( 1 );
         logChannel.putLong( 1 );
 
         //WHEN
-        IndexSampleKey expectedNode = CountsKeyFactory.indexSampleKey( 1, 1 );
+        IndexSampleKey expectedNode = CountsKeyFactory.indexSampleKey( indexId );
         CountsSnapshot countsSnapshot = deserialize( logChannel );
 
         //THEN
@@ -175,17 +177,17 @@ public class InMemoryCountsStoreSnapshotDeserializerTest
     public void correctlyDeserializeIndexStatistics() throws IOException
     {
         //GIVEN
+        long indexId = 1;
         serializedBytes = ByteBuffer.allocate( 1000 );
         InMemoryClosableChannel logChannel = new InMemoryClosableChannel( serializedBytes.array(), false );
         writeSimpleHeader( logChannel );
         logChannel.put( INDEX_STATISTICS.code );
-        logChannel.putInt( 1 );
-        logChannel.putInt( 1 );
+        logChannel.putLong( indexId );
         logChannel.putLong( 1 );
         logChannel.putLong( 1 );
 
         //WHEN
-        IndexStatisticsKey expectedNode = CountsKeyFactory.indexStatisticsKey( 1, 1 );
+        IndexStatisticsKey expectedNode = CountsKeyFactory.indexStatisticsKey( indexId );
         CountsSnapshot countsSnapshot = deserialize( logChannel );
 
         //THEN

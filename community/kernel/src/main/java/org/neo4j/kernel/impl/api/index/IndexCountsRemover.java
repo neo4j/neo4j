@@ -19,21 +19,21 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
 
 public class IndexCountsRemover
 {
     private final IndexStoreView storeView;
-    private final IndexDescriptor descriptor;
+    private final long indexId;
 
-    public IndexCountsRemover( final IndexStoreView storeView, final IndexDescriptor descriptor )
+    public IndexCountsRemover( final IndexStoreView storeView, final long indexId )
     {
         this.storeView = storeView;
-        this.descriptor = descriptor;
+        this.indexId = indexId;
     }
 
     public void remove()
     {
-        storeView.replaceIndexCounts( descriptor, 0, 0, 0 );
+        storeView.replaceIndexCounts( indexId, 0, 0, 0 );
     }
 }

@@ -163,7 +163,9 @@ object PatternExpressionSolver {
     def extractQG(source: LogicalPlan, namedExpr: PatternComprehension) = {
       import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.plannerQuery.ExpressionConverters._
 
-      namedExpr.asQueryGraph.withArgumentIds(availableSymbols)
+      val queryGraph = namedExpr.asQueryGraph
+      val args = queryGraph.coveredIds intersect availableSymbols
+      queryGraph.withArgumentIds(args)
     }
 
     def createProjectionToCollect(pattern: PatternComprehension): Expression = pattern.projection
@@ -229,11 +231,9 @@ case class ListSubQueryExpressionSolver[T <: Expression](
     val (namedExpr, namedMap) = namer(expr)
 
     val qg = extractQG(source, namedExpr)
-
-    val argLeafPlan = Some(context.logicalPlanProducer.planQueryArgumentRow(qg))
     val innerContext = createPlannerContext(context, namedMap)
 
-    val innerPlan = innerContext.strategy.plan(qg)(innerContext, argLeafPlan)
+    val innerPlan = innerContext.strategy.plan(qg)(innerContext)
     val collectionName = FreshIdNameGenerator.name(expr.position)
     val projectedPath = projectionCreator(namedExpr)
     val projectedInner = context.logicalPlanProducer.planRegularProjection(innerPlan, Map(collectionName -> projectedPath), Map.empty)(innerContext)

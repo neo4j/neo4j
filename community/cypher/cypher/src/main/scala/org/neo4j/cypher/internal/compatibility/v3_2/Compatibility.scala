@@ -22,11 +22,14 @@ package org.neo4j.cypher.internal.compatibility.v3_2
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compiler.v3_2
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{ExecutionPlan => ExecutionPlan_v3_2}
+import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{LegacyNodeIndexUsage, LegacyRelationshipIndexUsage, SchemaIndexScanUsage, SchemaIndexSeekUsage, ExecutionPlan => ExecutionPlan_v3_2}
+import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilationState
 import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.compiler.v3_2.{InfoLogger, ExplainMode => ExplainModev3_2, NormalMode => NormalModev3_2, ProfileMode => ProfileModev3_2, _}
 import org.neo4j.cypher.internal.spi.v3_2.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.spi.v3_2._
+import org.neo4j.kernel.api.ExecutingQuery.PlannerInfo
+import org.neo4j.kernel.api.IndexUsage.{legacyIndexUsage, schemaIndexUsage}
 import org.neo4j.kernel.api.KernelAPI
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
@@ -48,9 +51,10 @@ trait Compatibility {
 
   protected val compiler: v3_2.CypherCompiler
 
-  implicit val executionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
+  implicit val executionMonitor: QueryExecutionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
 
-  def produceParsedQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer) = {
+  def produceParsedQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer,
+                         preParsingNotifications: Set[org.neo4j.graphdb.Notification]): ParsedQuery = {
     val notificationLogger = new RecordingNotificationLogger
     val preparedSyntacticQueryForV_3_2 =
       Try(compiler.parseQuery(preParsedQuery.statement,
@@ -59,9 +63,8 @@ trait Compatibility {
         preParsedQuery.planner.name,
         Some(preParsedQuery.offset), tracer))
     new ParsedQuery {
-      def isPeriodicCommit = preparedSyntacticQueryForV_3_2.map(_.isPeriodicCommit).getOrElse(false)
-
-      def plan(transactionalContext: TransactionalContextWrapper, tracer: CompilationPhaseTracer): (ExecutionPlan, Map[String, Any]) = exceptionHandler.runSafely {
+      override def plan(transactionalContext: TransactionalContextWrapper, tracer: CompilationPhaseTracer):
+        (ExecutionPlan, Map[String, Any]) = exceptionHandler.runSafely {
         val planContext = new ExceptionTranslatingPlanContext(new TransactionBoundPlanContext(transactionalContext, notificationLogger))
         val syntacticQuery = preparedSyntacticQueryForV_3_2.get
         val (planImpl, extractedParameters) = compiler.planPreparedQuery(syntacticQuery, notificationLogger, planContext, Some(preParsedQuery.offset), tracer)
@@ -69,14 +72,15 @@ trait Compatibility {
         // Log notifications/warnings from planning
         planImpl.notifications(planContext).foreach(notificationLogger.log)
 
-        (new ExecutionPlanWrapper(planImpl), extractedParameters)
+        (new ExecutionPlanWrapper(planImpl, preParsingNotifications), extractedParameters)
       }
 
-      override def hasErrors = preparedSyntacticQueryForV_3_2.isFailure
+      override protected val trier: Try[CompilationState] = preparedSyntacticQueryForV_3_2
     }
   }
 
-  class ExecutionPlanWrapper(inner: ExecutionPlan_v3_2) extends ExecutionPlan {
+  class ExecutionPlanWrapper(inner: ExecutionPlan_v3_2, preParsingNotifications: Set[org.neo4j.graphdb.Notification])
+    extends ExecutionPlan {
 
     private val searchMonitor = kernelMonitors.newMonitor(classOf[IndexSearchMonitor])
 
@@ -96,7 +100,7 @@ trait Compatibility {
         val innerResult = inner.run(queryContext(transactionalContext), innerExecutionMode, innerParams)
         new ClosingExecutionResult(
           transactionalContext.tc.executingQuery(),
-          new ExecutionResultWrapper(innerResult, inner.plannerUsed, inner.runtimeUsed),
+          new ExecutionResultWrapper(innerResult, inner.plannerUsed, inner.runtimeUsed, preParsingNotifications),
           exceptionHandler.runSafely
         )
       }
@@ -106,6 +110,16 @@ trait Compatibility {
 
     def isStale(lastCommittedTxId: LastCommittedTxIdProvider, ctx: TransactionalContextWrapper): Boolean =
       inner.isStale(lastCommittedTxId, TransactionBoundGraphStatistics(ctx.readOperations))
+
+    override def plannerInfo = {
+      import scala.collection.JavaConverters._
+      new PlannerInfo(inner.plannerUsed.name, inner.runtimeUsed.name, inner.plannedIndexUsage.map {
+        case SchemaIndexSeekUsage(identifier, label, propertyKey) => schemaIndexUsage(identifier, label, propertyKey)
+        case SchemaIndexScanUsage(identifier, label, propertyKey) => schemaIndexUsage(identifier, label, propertyKey)
+        case LegacyNodeIndexUsage(identifier, index) => legacyIndexUsage(identifier, "NODE", index)
+        case LegacyRelationshipIndexUsage(identifier, index) => legacyIndexUsage(identifier, "RELATIONSHIP", index)
+      }.asJava)
+    }
   }
 }
 

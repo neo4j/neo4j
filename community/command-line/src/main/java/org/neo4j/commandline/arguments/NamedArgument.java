@@ -19,6 +19,8 @@
  */
 package org.neo4j.commandline.arguments;
 
+import org.neo4j.helpers.Args;
+
 public interface NamedArgument
 {
     /**
@@ -50,4 +52,11 @@ public interface NamedArgument
      * Parses the option (or possible default value) out of program arguments.
      */
     String parse( String... args );
+
+    /**
+     * Returns true if this argument was given explicitly on the command line
+     */
+    default boolean has( String[] args ) {
+        return Args.parse( args ).has( name() );
+    }
 }

@@ -24,7 +24,7 @@ import java.util.function.Supplier;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.api.IndexReaderFactory;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -78,7 +78,7 @@ public class StoreStatement implements StorageStatement
             @Override
             protected StoreSingleNodeCursor create()
             {
-                return new StoreSingleNodeCursor( nodeStore.newRecord(), neoStores, StoreStatement.this, this,
+                return new StoreSingleNodeCursor( nodeStore.newRecord(), neoStores, this,
                         recordCursors, lockService );
             }
         };

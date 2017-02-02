@@ -614,7 +614,7 @@ public class ProcedureIT
         // Expect
         exception.expect( QueryExecutionException.class );
         exception.expectMessage(
-                "Schema operations are not allowed for AUTH_DISABLED with FULL restricted to WRITE." );
+                "Schema operations are not allowed for AUTH_DISABLED with FULL restricted to TOKEN_WRITE." );
 
         // Give
         try ( Transaction ignore = db.beginTx() )

@@ -26,7 +26,9 @@ import org.neo4j.jmx.impl.ManagementBeanProvider;
 import org.neo4j.jmx.impl.ManagementData;
 import org.neo4j.jmx.impl.Neo4jMBean;
 import org.neo4j.kernel.NeoStoreDataSource;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
@@ -126,8 +128,15 @@ public final class IndexSamplingManagerBean extends ManagementBeanProvider
                 throw new IllegalArgumentException( "No property or label key was found associated with " +
                         propertyKey + " and " + labelKey );
             }
-            state.indexingService.triggerIndexSampling( new IndexDescriptor( labelKeyId, propertyKeyId ),
-                    getIndexSamplingMode( forceSample ) );
+            try
+            {
+                state.indexingService.triggerIndexSampling( IndexDescriptorFactory.of( labelKeyId, propertyKeyId ),
+                        getIndexSamplingMode( forceSample ) );
+            }
+            catch ( IndexNotFoundKernelException e )
+            {
+                throw new IllegalArgumentException( e.getMessage() );
+            }
         }
 
         private IndexSamplingMode getIndexSamplingMode( boolean forceSample )

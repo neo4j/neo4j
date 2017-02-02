@@ -19,23 +19,23 @@
  */
 package org.neo4j.kernel.impl.coreapi.schema;
 
-import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.schema.ConstraintType;
+import org.neo4j.graphdb.schema.IndexDefinition;
 
 import static java.lang.String.format;
 
 public class UniquenessConstraintDefinition extends NodeConstraintDefinition
 {
-    public UniquenessConstraintDefinition( InternalSchemaActions actions, Label label, String propertyKey )
+    public UniquenessConstraintDefinition( InternalSchemaActions actions, IndexDefinition indexDefinition )
     {
-        super( actions, label, propertyKey );
+        super( actions, indexDefinition );
     }
 
     @Override
     public void drop()
     {
         assertInUnterminatedTransaction();
-        actions.dropPropertyUniquenessConstraint( label, propertyKey );
+        actions.dropPropertyUniquenessConstraint( new IndexDefinitionImpl( actions, label, propertyKeys, true ) );
     }
 
     @Override
@@ -48,7 +48,7 @@ public class UniquenessConstraintDefinition extends NodeConstraintDefinition
     @Override
     public String toString()
     {
-        return format( "ON (%1$s:%2$s) ASSERT %1$s.%3$s IS UNIQUE",
-                label.name().toLowerCase(), label.name(), propertyKey );
+        return format( "ON (%1$s:%2$s) ASSERT %3$s IS UNIQUE",
+                label.name().toLowerCase(), label.name(), propertyText() );
     }
 }

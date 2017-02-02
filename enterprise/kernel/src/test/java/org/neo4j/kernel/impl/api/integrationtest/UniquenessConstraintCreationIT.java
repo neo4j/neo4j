@@ -28,6 +28,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.api.DataWriteOperations;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
@@ -40,13 +41,16 @@ import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernel
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchConstraintException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaStorage;
+import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.IndexRule;
-import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
@@ -57,7 +61,8 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.emptySetOf;
 import static org.neo4j.helpers.collection.Iterators.single;
 
-public class UniquenessConstraintCreationIT extends AbstractConstraintCreationIT<UniquenessConstraint>
+public class UniquenessConstraintCreationIT
+        extends AbstractConstraintCreationIT<UniquenessConstraint,NodePropertyDescriptor>
 {
     private static final String DUPLICATED_VALUE = "apa";
 
@@ -68,9 +73,9 @@ public class UniquenessConstraintCreationIT extends AbstractConstraintCreationIT
     }
 
     @Override
-    UniquenessConstraint createConstraint( SchemaWriteOperations writeOps, int type, int property ) throws Exception
+    UniquenessConstraint createConstraint( SchemaWriteOperations writeOps, NodePropertyDescriptor descriptor ) throws Exception
     {
-        return writeOps.uniquePropertyConstraintCreate( type, property );
+        return writeOps.uniquePropertyConstraintCreate( descriptor );
     }
 
     @Override
@@ -80,9 +85,9 @@ public class UniquenessConstraintCreationIT extends AbstractConstraintCreationIT
     }
 
     @Override
-    UniquenessConstraint newConstraintObject( int type, int property )
+    UniquenessConstraint newConstraintObject( NodePropertyDescriptor descriptor )
     {
-        return new UniquenessConstraint( type, property );
+        return new UniquenessConstraint(descriptor);
     }
 
     @Override
@@ -108,6 +113,12 @@ public class UniquenessConstraintCreationIT extends AbstractConstraintCreationIT
                 nodes.next().delete();
             }
         }
+    }
+
+    @Override
+    NodePropertyDescriptor makeDescriptor( int typeId, int propertyKeyId )
+    {
+        return new NodePropertyDescriptor( typeId, propertyKeyId );
     }
 
     @Test
@@ -136,17 +147,18 @@ public class UniquenessConstraintCreationIT extends AbstractConstraintCreationIT
         }
 
         // when
+        NodePropertyDescriptor descriptor1 = new NodePropertyDescriptor(foo, name);
         try
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            statement.uniquePropertyConstraintCreate( foo, name );
+            statement.uniquePropertyConstraintCreate( descriptor1 );
 
             fail( "expected exception" );
         }
         // then
         catch ( CreateConstraintFailureException ex )
         {
-            assertEquals( new UniquenessConstraint( foo, name ), ex.constraint() );
+            assertEquals( new UniquenessConstraint( descriptor1 ), ex.constraint() );
             Throwable cause = ex.getCause();
             assertThat( cause, instanceOf( ConstraintVerificationFailedKernelException.class ) );
 
@@ -164,14 +176,14 @@ public class UniquenessConstraintCreationIT extends AbstractConstraintCreationIT
         // when
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            statement.uniquePropertyConstraintCreate( typeId, propertyKeyId );
+            statement.uniquePropertyConstraintCreate( descriptor );
             commit();
         }
 
         // then
         {
             ReadOperations statement = readOperationsInNewTransaction();
-            assertEquals( asSet( new IndexDescriptor( typeId, propertyKeyId ) ),
+            assertEquals( asSet( IndexDescriptorFactory.of( descriptor ) ),
                     asSet( statement.uniqueIndexesGetAll() ) );
         }
     }
@@ -182,8 +194,8 @@ public class UniquenessConstraintCreationIT extends AbstractConstraintCreationIT
         // given
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            statement.uniquePropertyConstraintCreate( typeId, propertyKeyId );
-            assertEquals( asSet( new IndexDescriptor( typeId, propertyKeyId ) ),
+            statement.uniquePropertyConstraintCreate( descriptor );
+            assertEquals( asSet( IndexDescriptorFactory.of( descriptor ) ),
                     asSet( statement.uniqueIndexesGetAll() ) );
         }
 
@@ -206,7 +218,7 @@ public class UniquenessConstraintCreationIT extends AbstractConstraintCreationIT
         NodePropertyExistenceConstraint constraint;
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            constraint = statement.nodePropertyExistenceConstraintCreate( typeId, propertyKeyId );
+            constraint = statement.nodePropertyExistenceConstraintCreate( descriptor );
             commit();
         }
 
@@ -214,7 +226,7 @@ public class UniquenessConstraintCreationIT extends AbstractConstraintCreationIT
         try
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            statement.constraintDrop( new UniquenessConstraint( constraint.label(), constraint.propertyKey() ) );
+            statement.constraintDrop( new UniquenessConstraint( constraint.descriptor() ) );
 
             fail( "expected exception" );
         }
@@ -233,7 +245,7 @@ public class UniquenessConstraintCreationIT extends AbstractConstraintCreationIT
             ReadOperations statement = readOperationsInNewTransaction();
 
             Iterator<NodePropertyConstraint> constraints =
-                    statement.constraintsGetForLabelAndPropertyKey( typeId, propertyKeyId );
+                    statement.constraintsGetForLabelAndPropertyKey( descriptor );
 
             assertEquals( constraint, single( constraints ) );
         }
@@ -244,13 +256,14 @@ public class UniquenessConstraintCreationIT extends AbstractConstraintCreationIT
     {
         // when
         SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-        statement.uniquePropertyConstraintCreate( typeId, propertyKeyId );
+        statement.uniquePropertyConstraintCreate( descriptor );
         commit();
 
         // then
         SchemaStorage schema = new SchemaStorage( neoStores().getSchemaStore() );
-        IndexRule indexRule = schema.indexRule( typeId, propertyKeyId );
-        UniquePropertyConstraintRule constraintRule = schema.uniquenessConstraint( typeId, propertyKeyId );
+        IndexRule indexRule = schema.indexGetForSchema( SchemaDescriptorFactory.forLabel( typeId, propertyKeyId ) );
+        ConstraintRule constraintRule = schema.constraintsGetSingle(
+                ConstraintDescriptorFactory.uniqueForLabel( typeId, propertyKeyId ) );
         assertEquals( constraintRule.getId(), indexRule.getOwningConstraint().longValue() );
         assertEquals( indexRule.getId(), constraintRule.getOwnedIndex() );
     }
@@ -267,8 +280,8 @@ public class UniquenessConstraintCreationIT extends AbstractConstraintCreationIT
         UniquenessConstraint constraint;
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            constraint = statement.uniquePropertyConstraintCreate( typeId, propertyKeyId );
-            assertEquals( asSet( new IndexDescriptor( typeId, propertyKeyId ) ),
+            constraint = statement.uniquePropertyConstraintCreate( descriptor );
+            assertEquals( asSet( IndexDescriptorFactory.of( descriptor ) ),
                     asSet( statement.uniqueIndexesGetAll() ) );
             commit();
         }

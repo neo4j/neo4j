@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.frontend.v3_2.parser
 
 import org.neo4j.cypher.internal.frontend.v3_2.ast
+import org.neo4j.cypher.internal.frontend.v3_2.ast.PropertyKeyName
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 import org.parboiled.scala._
 
@@ -41,6 +42,11 @@ trait Literals extends Parser
 
   def PropertyKeyName: Rule1[ast.PropertyKeyName] =
     rule("a property key name") { SymbolicNameString ~~>> (ast.PropertyKeyName(_) ) }.memoMismatches
+
+  def PropertyKeyNames: Rule1[List[ast.PropertyKeyName]] =
+    rule("a list of property key names") {
+      (oneOrMore(WS ~~ SymbolicNameString ~~ WS ~~>> (ast.PropertyKeyName(_) ), separator = ",") memoMismatches).suppressSubnodes
+    }
 
   def LabelName: Rule1[ast.LabelName] =
     rule("a label name") { SymbolicNameString ~~>> (ast.LabelName(_) ) }.memoMismatches

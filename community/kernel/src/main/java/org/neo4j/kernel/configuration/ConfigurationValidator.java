@@ -40,11 +40,12 @@ public interface ConfigurationValidator
      * @param settingValidators which are available
      * @param rawConfig to validate
      * @param log for logging with
+     * @param parsingFile true if reading config file, false otherwise
      * @return a Map of valid keys and values.
      * @throws InvalidSettingException in case of invalid values
      */
     @Nonnull
     Map<String,String> validate( @Nonnull Collection<SettingValidator> settingValidators,
             @Nonnull Map<String,String> rawConfig,
-            @Nonnull Log log ) throws InvalidSettingException;
+            @Nonnull Log log, boolean parsingFile ) throws InvalidSettingException;
 }

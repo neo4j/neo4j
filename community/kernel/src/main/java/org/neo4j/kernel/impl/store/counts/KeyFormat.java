@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.store.counts;
 
+import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory;
@@ -81,43 +83,40 @@ class KeyFormat implements CountsVisitor
      * Key format:
      * <pre>
      *  0 1 2 3 4 5 6 7   8 9 A B C D E F
-     * [t,0,0,0,l,l,l,l ; p,p,p,p,0,0,0,k]
+     * [t,0,0,0,i,i,i,i ; 0,0,0,0,0,0,0,k]
      *  t - index entry marker - "{@link #INDEX}"
      *  k - entry (sub)type - "{@link #INDEX_STATS}"
-     *  l - label id
-     *  p - property key id
+     *  i - index id
      * </pre>
-     * For value format, see {@link org.neo4j.kernel.impl.store.counts.CountsUpdater#replaceIndexUpdateAndSize(int, int, long, long)}.
+     * For value format, see {@link org.neo4j.kernel.impl.store.counts.CountsUpdater#replaceIndexUpdateAndSize(long, long, long)}.
      */
     @Override
-    public void visitIndexStatistics( int labelId, int propertyKeyId, long updates, long size )
+    public void visitIndexStatistics( long indexId, long updates, long size )
     {
-        indexKey( INDEX_STATS, labelId, propertyKeyId );
+        indexKey( INDEX_STATS, indexId );
     }
 
     /**
      * Key format:
      * <pre>
      *  0 1 2 3 4 5 6 7   8 9 A B C D E F
-     * [t,0,0,0,l,l,l,l ; p,p,p,p,0,0,0,k]
+     * [t,0,0,0,i,i,i,i ; 0,0,0,0,0,0,0,k]
      *  t - index entry marker - "{@link #INDEX}"
-     *  k - entry (sub)type - "{@link #INDEX_SAMPLE}"
-     *  l - label id
-     *  p - property key id
+     *  k - entry (sub)type - "{@link #INDEX_STATS}"
+     *  i - index id
      * </pre>
-     * For value format, see {@link org.neo4j.kernel.impl.store.counts.CountsUpdater#replaceIndexSample(int, int, long, long)}.
+     * For value format, see {@link org.neo4j.kernel.impl.store.counts.CountsUpdater#replaceIndexSample(long , long, long)}.
      */
     @Override
-    public void visitIndexSample( int labelId, int propertyKeyId, long unique, long size )
+    public void visitIndexSample( long indexId, long unique, long size )
     {
-        indexKey( INDEX_SAMPLE, labelId, propertyKeyId );
+        indexKey( INDEX_SAMPLE, indexId );
     }
 
-    private void indexKey( byte indexKey, int labelId, int propertyKeyId )
+    private void indexKey( byte indexKey, long indexId )
     {
         buffer.putByte( 0, INDEX )
-              .putInt( 4, labelId )
-              .putInt( 8, propertyKeyId )
+              .putInt( 4, (int) indexId )
               .putByte( 15, indexKey );
     }
 
@@ -131,12 +130,13 @@ class KeyFormat implements CountsVisitor
             return CountsKeyFactory.relationshipKey( key.getInt( 4 ), key.getInt( 8 ), key.getInt( 12 ) );
         case KeyFormat.INDEX:
             byte indexKeyByte = key.getByte( 15 );
+            long indexId = key.getInt( 4 );
             switch ( indexKeyByte )
             {
             case KeyFormat.INDEX_STATS:
-                return indexStatisticsKey( key.getInt( 4 ), key.getInt( 8 ) );
+                return indexStatisticsKey( indexId );
             case KeyFormat.INDEX_SAMPLE:
-                return CountsKeyFactory.indexSampleKey( key.getInt( 4 ), key.getInt( 8 ) );
+                return CountsKeyFactory.indexSampleKey( indexId );
             default:
                 throw new IllegalStateException( "Unknown index key: " + indexKeyByte );
             }

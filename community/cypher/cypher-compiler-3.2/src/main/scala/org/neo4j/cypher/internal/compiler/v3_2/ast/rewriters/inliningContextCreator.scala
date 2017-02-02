@@ -51,7 +51,7 @@ object inliningContextCreator extends (ast.Statement => InliningContext) {
         context =>
           (spoilVariableIfNotAliased(variable, context), Some(identity))
 
-      case RelationshipPattern(Some(variable), _, _, _, _, _) =>
+      case RelationshipPattern(Some(variable), _, _, _, _) =>
         context =>
           (spoilVariableIfNotAliased(variable, context), Some(identity))
     }

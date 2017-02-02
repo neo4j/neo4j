@@ -22,10 +22,11 @@ package org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans
 import java.lang.reflect.Method
 
 import org.neo4j.cypher.internal.compiler.v3_2.commands.QueryExpression
+import org.neo4j.cypher.internal.compiler.v3_2.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.frontend.v3_2.Foldable._
 import org.neo4j.cypher.internal.frontend.v3_2.Rewritable._
-import org.neo4j.cypher.internal.frontend.v3_2.ast.Expression
+import org.neo4j.cypher.internal.frontend.v3_2.ast.{Expression, NodeByIdentifiedIndex, NodeByIndexQuery, RelationshipByIdentifiedIndex, RelationshipByIndexQuery}
 import org.neo4j.cypher.internal.frontend.v3_2.{InternalException, Rewritable}
 import org.neo4j.cypher.internal.ir.v3_2.{IdName, Strictness}
 
@@ -113,6 +114,26 @@ abstract class LogicalPlan
   def debugId: String = f"0x${hashCode()}%08x"
 
   def flatten: Seq[LogicalPlan] = Flattener.create(this)
+
+  def indexUsage: Seq[IndexUsage] = {
+    import org.neo4j.cypher.internal.frontend.v3_2.Foldable._
+    this.fold(Seq.empty[IndexUsage]) {
+      case NodeIndexSeek(idName, label, propertyKey, _, _) =>
+        (acc) => acc :+ SchemaIndexSeekUsage(idName.name, label.name, propertyKey.name)
+      case NodeUniqueIndexSeek(idName, label, propertyKey, _, _) =>
+        (acc) => acc :+ SchemaIndexSeekUsage(idName.name, label.name, propertyKey.name)
+      case NodeIndexScan(idName, label, propertyKey, _) =>
+        (acc) => acc :+ SchemaIndexScanUsage(idName.name, label.name, propertyKey.name)
+      case LegacyNodeIndexSeek(idName, NodeByIdentifiedIndex(_, index, _, _), _) =>
+        (acc) => acc :+ LegacyNodeIndexUsage(idName.name, index)
+      case LegacyNodeIndexSeek(idName, NodeByIndexQuery(_, index, _), _) =>
+        (acc) => acc :+ LegacyNodeIndexUsage(idName.name, index)
+      case LegacyRelationshipIndexSeek(idName, RelationshipByIdentifiedIndex(_, index, _, _), _) =>
+        (acc) => acc :+ LegacyRelationshipIndexUsage(idName.name, index)
+      case LegacyRelationshipIndexSeek(idName, RelationshipByIndexQuery(_, index, _), _) =>
+        (acc) => acc :+ LegacyRelationshipIndexUsage(idName.name, index)
+    }
+  }
 }
 
 abstract class LogicalLeafPlan extends LogicalPlan with LazyLogicalPlan {

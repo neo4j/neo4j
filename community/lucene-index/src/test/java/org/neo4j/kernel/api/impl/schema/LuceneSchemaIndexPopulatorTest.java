@@ -39,7 +39,8 @@ import java.util.Set;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.index.IndexConfiguration;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
@@ -84,7 +85,7 @@ public class LuceneSchemaIndexPopulatorTest
                 new DirectoryFactory.UncloseableDirectory( directory ) );
         provider = new LuceneSchemaIndexProvider( fs.get(), directoryFactory, testDir.directory( "folder" ),
                 NullLogProvider.getInstance(), Config.empty(), OperationalMode.single );
-        indexDescriptor = new IndexDescriptor( 42, propertyKeyId );
+        indexDescriptor = IndexDescriptorFactory.of( 42, propertyKeyId );
         indexStoreView = mock( IndexStoreView.class );
         IndexConfiguration indexConfig = IndexConfiguration.NON_UNIQUE;
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.empty() );

@@ -45,6 +45,6 @@ public enum IndexConfiguration
 
     public static IndexConfiguration of( IndexRule rule )
     {
-        return of( rule.isConstraintIndex() );
+        return of( rule.canSupportUniqueConstraint() );
     }
 }

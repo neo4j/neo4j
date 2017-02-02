@@ -52,7 +52,6 @@
     <module>lucene-index</module>
     <module>lucene-index-upgrade</module>
     <module>graph-algo</module>
-    <module>graph-matching</module>
     <module>neo4j</module>
     <module>neo4j-community</module>
     <module>shell</module>
@@ -129,6 +128,7 @@ the relevant Commercial Agreement.
                     <include>org.neo4j.build:licensecheck-config:*</include>
                   </includes>
                   <excludes>
+                    <exclude>org.neo4j:neo4j-graph-matching</exclude>
                     <exclude>org.neo4j:neo4j-cypher-frontend-3.1</exclude>
                     <exclude>org.neo4j:neo4j-cypher-frontend-2.3</exclude>
                     <exclude>org.neo4j:neo4j-cypher-compiler-3.1</exclude>

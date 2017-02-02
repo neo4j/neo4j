@@ -281,13 +281,6 @@ public class ExecutionOrderIntegrationTest
         }
 
         @Override
-        public RecordCheck<NodeRecord, ConsistencyReport.LabelsMatchReport> decorateLabelMatchChecker(
-                RecordCheck<NodeRecord, ConsistencyReport.LabelsMatchReport> checker )
-        {
-            return logging( checker );
-        }
-
-        @Override
         public RecordCheck<RelationshipGroupRecord, ConsistencyReport.RelationshipGroupConsistencyReport> decorateRelationshipGroupChecker(
                 RecordCheck<RelationshipGroupRecord, ConsistencyReport.RelationshipGroupConsistencyReport> checker )
         {

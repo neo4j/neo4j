@@ -19,6 +19,7 @@
  */
 package org.neo4j.causalclustering.core.state;
 
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -57,7 +58,14 @@ public class DumpClusterStateTest
 {
     @Rule
     public EphemeralFileSystemRule fsa = new EphemeralFileSystemRule();
-    private File clusterStateDirectory = new File( "cluster-state" );
+    private File dataDir = new File( "data" );
+    private ClusterStateDirectory clusterStateDirectory = new ClusterStateDirectory( dataDir, false );
+
+    @Before
+    public void setup() throws ClusterStateException
+    {
+        clusterStateDirectory.initialize( fsa.get() );
+    }
 
     @Test
     public void shouldDumpClusterState() throws Exception
@@ -65,7 +73,7 @@ public class DumpClusterStateTest
         // given
         createStates();
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        DumpClusterState dumpTool = new DumpClusterState( fsa.get(), clusterStateDirectory, new PrintStream( out ) );
+        DumpClusterState dumpTool = new DumpClusterState( fsa.get(), dataDir, new PrintStream( out ) );
 
         // when
         dumpTool.dump();
@@ -77,7 +85,7 @@ public class DumpClusterStateTest
 
     private void createStates() throws IOException
     {
-        SimpleStorage<MemberId> memberIdStorage = new SimpleFileStorage<>( fsa.get(), clusterStateDirectory, CORE_MEMBER_ID_NAME, new MemberId.Marshal(), NullLogProvider.getInstance() );
+        SimpleStorage<MemberId> memberIdStorage = new SimpleFileStorage<>( fsa.get(), clusterStateDirectory.get(), CORE_MEMBER_ID_NAME, new MemberId.Marshal(), NullLogProvider.getInstance() );
         memberIdStorage.writeState( new MemberId( UUID.randomUUID() ) );
 
         createDurableState( LAST_FLUSHED_NAME, new LongIndexMarshal() );
@@ -94,7 +102,7 @@ public class DumpClusterStateTest
     private <T> void createDurableState( String name, StateMarshal<T> marshal ) throws IOException
     {
         DurableStateStorage<T> storage = new DurableStateStorage<>(
-                fsa.get(), clusterStateDirectory, name, marshal, 1024, NullLogProvider.getInstance() );
+                fsa.get(), clusterStateDirectory.get(), name, marshal, 1024, NullLogProvider.getInstance() );
 
         //noinspection EmptyTryBlock: Will create initial state.
         try ( Lifespan ignored = new Lifespan( storage ) )

@@ -225,7 +225,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             indexStoreView = new DynamicIndexStoreView( labelScanStore, lockService, neoStores, logProvider );
             indexingService = IndexingServiceFactory.createIndexingService( config, scheduler, schemaIndexProviderMap,
                     indexStoreView, tokenNameLookup,
-                    Iterators.asList( new SchemaStorage( neoStores.getSchemaStore() ).allIndexRules() ), logProvider,
+                    Iterators.asList( new SchemaStorage( neoStores.getSchemaStore() ).indexesGetAll() ), logProvider,
                     indexingServiceMonitor, schemaStateChangeCallback );
 
             integrityValidator = new IntegrityValidator( neoStores, indexingService );
@@ -471,7 +471,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     public void flushAndForce( IOLimiter limiter )
     {
         indexingService.forceAll();
-        labelScanStore.force();
+        labelScanStore.force( limiter );
         for ( IndexImplementation index : legacyIndexProviderLookup.all() )
         {
             index.force();

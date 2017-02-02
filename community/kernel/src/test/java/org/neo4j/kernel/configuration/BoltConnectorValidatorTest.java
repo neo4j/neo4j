@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.configuration;
 
+import java.util.function.Consumer;
+
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -26,10 +29,13 @@ import org.junit.rules.ExpectedException;
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.kernel.configuration.BoltConnector.EncryptionLevel;
 
-import static java.util.Collections.emptyMap;
-import static org.junit.Assert.*;
+import static java.lang.String.format;
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.configuration.Connector.ConnectorType.BOLT;
+import static org.neo4j.kernel.configuration.ConnectorValidator.DEPRECATED_CONNECTOR_MSG;
 
 
 public class BoltConnectorValidatorTest
@@ -38,12 +44,19 @@ public class BoltConnectorValidatorTest
 
     @Rule
     public ExpectedException expected = ExpectedException.none();
+    private Consumer<String> warningConsumer;
+
+    @Before
+    public void setup()
+    {
+        warningConsumer = mock( Consumer.class );
+    }
 
     @Test
     public void doesNotValidateUnrelatedStuff() throws Exception
     {
         assertEquals( 0, cv.validate( stringMap( "dbms.connector.http.enabled", "true",
-                "dbms.blabla.boo", "123" ) ).size() );
+                "dbms.blabla.boo", "123" ), warningConsumer ).size() );
     }
 
     @Test
@@ -52,7 +65,7 @@ public class BoltConnectorValidatorTest
         String boltEnabled = "dbms.connector.bolt.enabled";
 
         assertEquals( stringMap( boltEnabled, "true" ),
-                cv.validate( stringMap( boltEnabled, "true" ) ) );
+                cv.validate( stringMap( boltEnabled, "true" ), warningConsumer ) );
     }
 
     @Test
@@ -62,12 +75,12 @@ public class BoltConnectorValidatorTest
         String randomType = "dbms.connector.bla.type";
 
         assertEquals( stringMap( randomEnabled, "true", randomType, BOLT.name() ),
-                cv.validate( stringMap( randomEnabled, "true", randomType, BOLT.name() ) ) );
+                cv.validate( stringMap( randomEnabled, "true", randomType, BOLT.name() ), warningConsumer ) );
 
         expected.expect( InvalidSettingException.class );
         expected.expectMessage( "Missing mandatory value for 'dbms.connector.bla.type'" );
 
-        cv.validate( stringMap( randomEnabled, "true" ) );
+        cv.validate( stringMap( randomEnabled, "true" ), warningConsumer );
     }
 
     @Test
@@ -79,7 +92,20 @@ public class BoltConnectorValidatorTest
         expected.expect( InvalidSettingException.class );
         expected.expectMessage( "dbms.connector.bla.type' must be one of BOLT, HTTP; not 'woo'" );
 
-        cv.validate( stringMap( randomEnabled, "true", randomType, "woo" ) );
+        cv.validate( stringMap( randomEnabled, "true", randomType, "woo" ), warningConsumer );
+    }
+
+    @Test
+    public void warnsWhenNameIsNotBolt() throws Exception
+    {
+        String randomEnabled = "dbms.connector.bla.enabled";
+        String randomType = "dbms.connector.bla.type";
+
+        cv.validate( stringMap( randomEnabled, "true", randomType, "BOLT" ), warningConsumer );
+
+        verify( warningConsumer ).accept(
+                format( DEPRECATED_CONNECTOR_MSG,
+                        format( ">  %s%n>  %s%n", randomEnabled, randomType ) ) );
     }
 
     @Test
@@ -90,7 +116,7 @@ public class BoltConnectorValidatorTest
         expected.expect( InvalidSettingException.class );
         expected.expectMessage( "Invalid connector setting: dbms.connector.bla.0.enabled" );
 
-        cv.validate( stringMap( invalidSetting, "true" ) );
+        cv.validate( stringMap( invalidSetting, "true" ), warningConsumer );
     }
 
     @Test
@@ -101,7 +127,7 @@ public class BoltConnectorValidatorTest
         expected.expect( InvalidSettingException.class );
         expected.expectMessage( "Invalid connector setting: dbms.connector.bolt.foobar" );
 
-        cv.validate( stringMap( invalidSetting, "true" ) );
+        cv.validate( stringMap( invalidSetting, "true" ), warningConsumer );
     }
 
     @Test
@@ -110,32 +136,32 @@ public class BoltConnectorValidatorTest
         String key = "dbms.connector.bolt.tls_level";
 
         assertEquals( stringMap( key, EncryptionLevel.DISABLED.name() ),
-                cv.validate( stringMap( key, EncryptionLevel.DISABLED.name() ) ) );
+                cv.validate( stringMap( key, EncryptionLevel.DISABLED.name() ), warningConsumer ) );
 
         assertEquals( stringMap( key, EncryptionLevel.OPTIONAL.name() ),
-                cv.validate( stringMap( key, EncryptionLevel.OPTIONAL.name() ) ) );
+                cv.validate( stringMap( key, EncryptionLevel.OPTIONAL.name() ), warningConsumer ) );
 
         assertEquals( stringMap( key, EncryptionLevel.REQUIRED.name() ),
-                cv.validate( stringMap( key, EncryptionLevel.REQUIRED.name() ) ) );
+                cv.validate( stringMap( key, EncryptionLevel.REQUIRED.name() ), warningConsumer ) );
 
         key = "dbms.connector.bla.tls_level";
         String type = "dbms.connector.bla.type";
 
         assertEquals( stringMap( key, EncryptionLevel.DISABLED.name(), type, BOLT.name() ),
-                cv.validate( stringMap( key, EncryptionLevel.DISABLED.name(), type, BOLT.name() ) ) );
+                cv.validate( stringMap( key, EncryptionLevel.DISABLED.name(), type, BOLT.name() ), warningConsumer ) );
 
         assertEquals( stringMap( key, EncryptionLevel.OPTIONAL.name(), type, BOLT.name() ),
-                cv.validate( stringMap( key, EncryptionLevel.OPTIONAL.name(), type, BOLT.name() ) ) );
+                cv.validate( stringMap( key, EncryptionLevel.OPTIONAL.name(), type, BOLT.name() ), warningConsumer ) );
 
         assertEquals( stringMap( key, EncryptionLevel.REQUIRED.name(), type, BOLT.name() ),
-                cv.validate( stringMap( key, EncryptionLevel.REQUIRED.name(), type, BOLT.name() ) ) );
+                cv.validate( stringMap( key, EncryptionLevel.REQUIRED.name(), type, BOLT.name() ), warningConsumer ) );
 
         expected.expect( InvalidSettingException.class );
         expected.expectMessage(
                 "Bad value 'BOBO' for setting 'dbms.connector.bla.tls_level': must be one of [REQUIRED, OPTIONAL, " +
                         "DISABLED] case sensitive" );
 
-        cv.validate( stringMap( key, "BOBO", type, BOLT.name() ) );
+        cv.validate( stringMap( key, "BOBO", type, BOLT.name() ), warningConsumer );
     }
 
     @Test
@@ -144,24 +170,24 @@ public class BoltConnectorValidatorTest
         String key = "dbms.connector.bolt.address";
 
         assertEquals( stringMap( key, "localhost:123" ),
-                cv.validate( stringMap( key, "localhost:123" ) ) );
+                cv.validate( stringMap( key, "localhost:123" ), warningConsumer ) );
 
         key = "dbms.connector.bla.address";
         String type = "dbms.connector.bla.type";
 
         assertEquals( stringMap( key, "localhost:123",
                 type, BOLT.name() ),
-                cv.validate( stringMap( key, "localhost:123", type, BOLT.name() ) ) );
+                cv.validate( stringMap( key, "localhost:123", type, BOLT.name() ), warningConsumer ) );
 
         assertEquals( stringMap( key, "localhost:123",
                 type, BOLT.name() ),
-                cv.validate( stringMap( key, "localhost:123", type, BOLT.name() ) ) );
+                cv.validate( stringMap( key, "localhost:123", type, BOLT.name() ), warningConsumer ) );
 
         expected.expect( InvalidSettingException.class );
         expected.expectMessage( "Setting \"dbms.connector.bla.address\" must be in the format \"hostname:port\" or " +
                 "\":port\". \"BOBO\" does not conform to these formats" );
 
-        cv.validate( stringMap( key, "BOBO", type, BOLT.name() ) );
+        cv.validate( stringMap( key, "BOBO", type, BOLT.name() ), warningConsumer );
     }
 
     @Test
@@ -170,24 +196,24 @@ public class BoltConnectorValidatorTest
         String key = "dbms.connector.bolt.listen_address";
 
         assertEquals( stringMap( key, "localhost:123" ),
-                cv.validate( stringMap( key, "localhost:123" ) ) );
+                cv.validate( stringMap( key, "localhost:123" ), warningConsumer ) );
 
         key = "dbms.connector.bla.listen_address";
         String type = "dbms.connector.bla.type";
 
         assertEquals( stringMap( key, "localhost:123",
                 type, BOLT.name() ),
-                cv.validate( stringMap( key, "localhost:123", type, BOLT.name() ) ) );
+                cv.validate( stringMap( key, "localhost:123", type, BOLT.name() ), warningConsumer ) );
 
         assertEquals( stringMap( key, "localhost:123",
                 type, BOLT.name() ),
-                cv.validate( stringMap( key, "localhost:123", type, BOLT.name() ) ) );
+                cv.validate( stringMap( key, "localhost:123", type, BOLT.name() ), warningConsumer ) );
 
         expected.expect( InvalidSettingException.class );
         expected.expectMessage( "Setting \"dbms.connector.bla.listen_address\" must be in the format " +
                 "\"hostname:port\" or \":port\". \"BOBO\" does not conform to these formats" );
 
-        cv.validate( stringMap( key, "BOBO", type, BOLT.name() ) );
+        cv.validate( stringMap( key, "BOBO", type, BOLT.name() ), warningConsumer );
     }
 
     @Test
@@ -196,24 +222,24 @@ public class BoltConnectorValidatorTest
         String key = "dbms.connector.bolt.advertised_address";
 
         assertEquals( stringMap( key, "localhost:123" ),
-                cv.validate( stringMap( key, "localhost:123" ) ) );
+                cv.validate( stringMap( key, "localhost:123" ), warningConsumer ) );
 
         key = "dbms.connector.bla.advertised_address";
         String type = "dbms.connector.bla.type";
 
         assertEquals( stringMap( key, "localhost:123",
                 type, BOLT.name() ),
-                cv.validate( stringMap( key, "localhost:123", type, BOLT.name() ) ) );
+                cv.validate( stringMap( key, "localhost:123", type, BOLT.name() ), warningConsumer ) );
 
         assertEquals( stringMap( key, "localhost:123",
                 type, BOLT.name() ),
-                cv.validate( stringMap( key, "localhost:123", type, BOLT.name() ) ) );
+                cv.validate( stringMap( key, "localhost:123", type, BOLT.name() ), warningConsumer ) );
 
         expected.expect( InvalidSettingException.class );
         expected.expectMessage( "Setting \"dbms.connector.bla.advertised_address\" must be in the format " +
                 "\"hostname:port\" or \":port\". \"BOBO\" does not conform to these formats" );
 
-        cv.validate( stringMap( key, "BOBO", type, BOLT.name() ) );
+        cv.validate( stringMap( key, "BOBO", type, BOLT.name() ), warningConsumer );
     }
 
     @Test
@@ -224,6 +250,6 @@ public class BoltConnectorValidatorTest
         expected.expect( InvalidSettingException.class );
         expected.expectMessage( "'dbms.connector.bla.type' must be one of BOLT, HTTP; not 'BOBO'" );
 
-        cv.validate( stringMap( type, "BOBO" ) );
+        cv.validate( stringMap( type, "BOBO" ), warningConsumer );
     }
 }

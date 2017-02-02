@@ -41,7 +41,7 @@ object BuildCompiledExecutionPlan extends Phase {
 
   override def process(from: CompilationState, context: Context): CompilationState =
     try {
-      val codeGen = new CodeGenerator(context.codeStructure, CodeGenConfiguration(mode = ByteCodeMode, clock = context.clock))
+      val codeGen = new CodeGenerator(context.codeStructure, context.clock, context.codeGenConfiguration)
       val compiled: CompiledPlan = codeGen.generate(from.logicalPlan, context.planContext, from.semanticTable, from.plannerName)
       val executionPlan: ExecutionPlan = createExecutionPlan(context, compiled)
       from.copy(maybeExecutionPlan = Some(executionPlan))
@@ -81,6 +81,8 @@ object BuildCompiledExecutionPlan extends Phase {
     override def runtimeUsed = CompiledRuntimeName
 
     override def notifications(planContext: PlanContext): Seq[InternalNotification] = Seq.empty
+
+    override def plannedIndexUsage: Seq[IndexUsage] = compiled.plannedIndexUsage
   }
 
 

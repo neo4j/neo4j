@@ -48,7 +48,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
-import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStore;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.logging.StoreLogService;
@@ -68,6 +67,7 @@ import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UnableToUpgradeExcepti
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
+import org.neo4j.kernel.impl.storemigration.legacylogs.LegacyLogFilenames;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
@@ -76,6 +76,7 @@ import org.neo4j.kernel.impl.storemigration.participant.SchemaIndexMigrator;
 import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.NeoStoreDataSourceRule;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
@@ -130,8 +131,7 @@ public class StoreUpgraderTest
     private StoreVersionCheck check;
     private final String version;
     private final SchemaIndexProvider schemaIndexProvider = new InMemoryIndexProvider();
-    private final LabelScanStoreProvider labelScanStoreProvider = new LabelScanStoreProvider( new
-            InMemoryLabelScanStore(), 2 );
+    private LabelScanStoreProvider labelScanStoreProvider;
 
     private final Config allowMigrateConfig = Config.embeddedDefaults( MapUtil.stringMap( GraphDatabaseSettings
             .allow_store_upgrade.name(), "true" ) );
@@ -156,6 +156,8 @@ public class StoreUpgraderTest
     public void prepareDb() throws IOException
     {
         dbDirectory = directory.directory( "db_" + version );
+        labelScanStoreProvider = NeoStoreDataSourceRule.nativeLabelScanStoreProvider( dbDirectory, fileSystem,
+                pageCacheRule.getPageCache( fileSystem ) );
         File prepareDirectory = directory.directory( "prepare_" + version );
         prepareSampleDatabase( version, fileSystem, dbDirectory, prepareDirectory );
     }
@@ -170,14 +172,11 @@ public class StoreUpgraderTest
             @Override
             public File[] listFiles( File directory, FilenameFilter filter )
             {
-                sneakyThrow( new IOException( "Enforced IO Exception Fail to open file" ) );
+                if ( filter == LegacyLogFilenames.versionedLegacyLogFilesFilter )
+                {
+                    sneakyThrow( new IOException( "Enforced IO Exception Fail to open file" ) );
+                }
                 return super.listFiles( directory, filter );
-            }
-
-            @Override
-            public boolean fileExists( File fileName )
-            {
-                return true;
             }
         };
 
@@ -201,7 +200,7 @@ public class StoreUpgraderTest
         StoreMigrator defaultMigrator = new StoreMigrator( fs, pageCache, getTuningConfig(), NullLogService.getInstance(),
                 schemaIndexProvider );
         StoreUpgrader upgrader = new StoreUpgrader( upgradableDatabase, progressMonitor, allowMigrateConfig, fs,
-                NullLogProvider.getInstance() );
+                pageCache, NullLogProvider.getInstance() );
         upgrader.addParticipant( defaultMigrator );
 
         expectedException.expect( UnableToUpgradeException.class );
@@ -514,7 +513,7 @@ public class StoreUpgraderTest
         SchemaIndexMigrator indexMigrator =
                 new SchemaIndexMigrator( fileSystem, schemaIndexProvider, labelScanStoreProvider );
 
-        StoreUpgrader upgrader = new StoreUpgrader( upgradableDatabase, progressMonitor, config, fileSystem,
+        StoreUpgrader upgrader = new StoreUpgrader( upgradableDatabase, progressMonitor, config, fileSystem, pageCache,
                 NullLogProvider.getInstance() );
         upgrader.addParticipant( indexMigrator );
         upgrader.addParticipant( defaultMigrator );

@@ -33,6 +33,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.neo4j.adversaries.Adversary;
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.impl.DelegatingPageCursor;
 import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
 /**
@@ -57,7 +58,7 @@ import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
  * See {@link org.neo4j.io.pagecache.PagedFile#PF_SHARED_READ_LOCK} flag.
  */
 @SuppressWarnings( "unchecked" )
-class AdversarialReadPageCursor extends PageCursor
+class AdversarialReadPageCursor extends DelegatingPageCursor
 {
     private static final boolean enableInconsistencyTracing = FeatureToggles.flag(
             AdversarialReadPageCursor.class, "enableInconsistencyTracing", false );
@@ -169,19 +170,18 @@ class AdversarialReadPageCursor extends PageCursor
         }
     }
 
-    private final PageCursor delegate;
     private AdversarialReadPageCursor linkedCursor;
     private final State state;
 
     AdversarialReadPageCursor( PageCursor delegate, Adversary adversary )
     {
-        this.delegate = Objects.requireNonNull( delegate );
+        super( delegate );
         this.state = new State( Objects.requireNonNull( adversary ) );
     }
 
     private AdversarialReadPageCursor( PageCursor delegate, State state )
     {
-        this.delegate = Objects.requireNonNull( delegate );
+        super( delegate );
         this.state = state;
     }
 
@@ -415,7 +415,11 @@ class AdversarialReadPageCursor extends PageCursor
         state.injectFailure( IndexOutOfBoundsException.class );
         if ( !state.isInconsistent() )
         {
-            delegate.copyTo( sourceOffset, targetCursor, targetOffset, lengthInBytes );
+            while ( targetCursor instanceof DelegatingPageCursor )
+            {
+                targetCursor = ((DelegatingPageCursor) targetCursor).unwrap();
+            }
+            return delegate.copyTo( sourceOffset, targetCursor, targetOffset, lengthInBytes );
         }
         return lengthInBytes;
     }

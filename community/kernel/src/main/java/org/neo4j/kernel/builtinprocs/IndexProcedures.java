@@ -24,13 +24,14 @@ import java.util.concurrent.TimeoutException;
 
 import org.neo4j.function.Predicates;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
@@ -54,13 +55,24 @@ public class IndexProcedures implements AutoCloseable
         IndexSpecifier index = parse( indexSpecification );
         int labelId = getLabelId( index.label() );
         int propertyKeyId = getPropertyKeyId( index.property() );
+        //TODO: Support composite indexes
         waitUntilOnline( getIndex( labelId, propertyKeyId, index ), index, timeout, timeoutUnits );
     }
 
     public void resampleIndex( String indexSpecification ) throws ProcedureException
     {
         IndexSpecifier index = parse( indexSpecification );
-        triggerSampling( getIndex( getLabelId( index.label() ), getPropertyKeyId( index.property() ), index ) );
+        int labelId = getLabelId( index.label() );
+        int propertyKeyId = getPropertyKeyId( index.property() );
+        //TODO: Support composite indexes
+        try
+        {
+            triggerSampling( getIndex( labelId, propertyKeyId, index ) );
+        }
+        catch ( IndexNotFoundKernelException e )
+        {
+            throw new ProcedureException( e.status(), e.getMessage(), e );
+        }
     }
 
     public void resampleOutdatedIndexes()
@@ -99,7 +111,7 @@ public class IndexProcedures implements AutoCloseable
     {
         try
         {
-            return operations.indexGetForLabelAndPropertyKey( labelId, propertyKeyId );
+            return operations.indexGetForLabelAndPropertyKey( new NodePropertyDescriptor( labelId, propertyKeyId ) );
         }
         catch ( SchemaRuleNotFoundException e )
         {
@@ -152,7 +164,7 @@ public class IndexProcedures implements AutoCloseable
         }
     }
 
-    private void triggerSampling( IndexDescriptor index )
+    private void triggerSampling( IndexDescriptor index ) throws IndexNotFoundKernelException
     {
         indexingService.triggerIndexSampling( index, IndexSamplingMode.TRIGGER_REBUILD_ALL );
     }

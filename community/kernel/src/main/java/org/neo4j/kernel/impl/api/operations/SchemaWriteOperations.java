@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.operations;
 
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
+import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
@@ -29,7 +31,7 @@ import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.api.KernelStatement;
 
 public interface SchemaWriteOperations
@@ -38,7 +40,7 @@ public interface SchemaWriteOperations
      * Creates an index, indexing properties with the given {@code propertyKeyId} for nodes with the given
      * {@code labelId}.
      */
-    IndexDescriptor indexCreate( KernelStatement state, int labelId, int propertyKeyId )
+    IndexDescriptor indexCreate( KernelStatement state, NodePropertyDescriptor descriptor )
             throws AlreadyIndexedException, AlreadyConstrainedException;
 
     /** Drops a {@link IndexDescriptor} from the database */
@@ -50,15 +52,14 @@ public interface SchemaWriteOperations
      */
     void uniqueIndexDrop( KernelStatement state, IndexDescriptor descriptor ) throws DropIndexFailureException;
 
-    UniquenessConstraint uniquePropertyConstraintCreate( KernelStatement state, int labelId, int propertyKeyId )
+    UniquenessConstraint uniquePropertyConstraintCreate( KernelStatement state, NodePropertyDescriptor descriptor )
             throws AlreadyConstrainedException, CreateConstraintFailureException, AlreadyIndexedException;
 
-    NodePropertyExistenceConstraint nodePropertyExistenceConstraintCreate( KernelStatement state, int labelId,
-            int propertyKeyId )
-            throws AlreadyConstrainedException, CreateConstraintFailureException;
+    NodePropertyExistenceConstraint nodePropertyExistenceConstraintCreate( KernelStatement state,
+            NodePropertyDescriptor descriptor ) throws AlreadyConstrainedException, CreateConstraintFailureException;
 
     RelationshipPropertyExistenceConstraint relationshipPropertyExistenceConstraintCreate( KernelStatement state,
-            int relTypeId, int propertyKeyId ) throws AlreadyConstrainedException, CreateConstraintFailureException;
+            RelationshipPropertyDescriptor descriptor ) throws AlreadyConstrainedException, CreateConstraintFailureException;
 
     void constraintDrop( KernelStatement state, NodePropertyConstraint constraint ) throws DropConstraintFailureException;
 

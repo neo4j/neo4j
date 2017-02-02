@@ -28,12 +28,13 @@ import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
@@ -49,6 +50,7 @@ public class KernelSchemaStateFlushingTest
 
     private GraphDatabaseAPI db;
     private KernelAPI kernel;
+    private final NodePropertyDescriptor descriptor1 = new NodePropertyDescriptor( 1, 1 );
 
     @Test
     public void shouldKeepSchemaStateIfSchemaIsNotModified() throws TransactionFailureException
@@ -139,7 +141,7 @@ public class KernelSchemaStateFlushingTest
         try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
               Statement statement = transaction.acquireStatement() )
         {
-            UniquenessConstraint descriptor = statement.schemaWriteOperations().uniquePropertyConstraintCreate( 1, 1 );
+            UniquenessConstraint descriptor = statement.schemaWriteOperations().uniquePropertyConstraintCreate( descriptor1 );
             transaction.success();
             return descriptor;
         }
@@ -160,7 +162,7 @@ public class KernelSchemaStateFlushingTest
         try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
               Statement statement = transaction.acquireStatement() )
         {
-            IndexDescriptor descriptor = statement.schemaWriteOperations().indexCreate( 1, 1 );
+            IndexDescriptor descriptor = statement.schemaWriteOperations().indexCreate( descriptor1 );
             transaction.success();
             return descriptor;
         }

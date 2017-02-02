@@ -27,6 +27,9 @@ import java.util.function.Supplier;
 import org.neo4j.concurrent.WorkSync;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorPredicates;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.BatchTransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -39,11 +42,11 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.AbstractSchemaRule;
+import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.RecordSerializer;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
-import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.SchemaRuleCommand;
 import org.neo4j.kernel.impl.transaction.command.CommandHandlerContract;
@@ -60,11 +63,11 @@ import org.neo4j.storageengine.api.TransactionApplicationMode;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
-import static org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule.uniquenessConstraintRule;
 
 public class SchemaRuleCommandTest
 {
@@ -90,7 +93,8 @@ public class SchemaRuleCommandTest
             mock( PropertyLoader.class ), new PropertyPhysicalToLogicalConverter( propertyStore ),
             TransactionApplicationMode.INTERNAL );
     private final PhysicalLogCommandReaderV2_2 reader = new PhysicalLogCommandReaderV2_2();
-    private final IndexRule rule = IndexRule.indexRule( id, labelId, propertyKey, PROVIDER_DESCRIPTOR );
+    private final IndexRule rule = IndexRule.indexRule( id, NewIndexDescriptorFactory.forLabel( labelId, propertyKey ),
+            PROVIDER_DESCRIPTOR );
 
     @Test
     public void shouldWriteCreatedSchemaRuleToStore() throws Exception
@@ -134,7 +138,8 @@ public class SchemaRuleCommandTest
         when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
         when( neoStores.getMetaDataStore() ).thenReturn( metaDataStore );
 
-        UniquePropertyConstraintRule schemaRule = uniquenessConstraintRule( id, labelId, propertyKey, 0 );
+        ConstraintRule schemaRule = ConstraintRule.constraintRule( id,
+                ConstraintDescriptorFactory.uniqueForLabel( labelId, propertyKey ), 0 );
 
         // WHEN
         visitSchemaRuleCommand( storeApplier, new SchemaRuleCommand( beforeRecords, afterRecords, schemaRule ) );
@@ -239,8 +244,8 @@ public class SchemaRuleCommandTest
     private void assertSchemaRule( SchemaRuleCommand readSchemaCommand )
     {
         assertEquals( id, readSchemaCommand.getKey() );
-        assertEquals( labelId, readSchemaCommand.getSchemaRule().getLabel() );
-        assertEquals( propertyKey, ((IndexRule)readSchemaCommand.getSchemaRule()).getPropertyKey() );
+        assertTrue( SchemaDescriptorPredicates.hasLabel( readSchemaCommand.getSchemaRule(), labelId ) );
+        assertTrue( SchemaDescriptorPredicates.hasProperty( readSchemaCommand.getSchemaRule(), propertyKey ) );
     }
 
     private void visitSchemaRuleCommand( BatchTransactionApplier applier, SchemaRuleCommand command ) throws Exception

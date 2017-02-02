@@ -24,7 +24,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.function.BiConsumer;
 
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
 
 /**
  * Bundles various mappings to IndexProxy. Used by IndexingService via IndexMapReference.
@@ -36,16 +36,18 @@ public final class IndexMap implements Cloneable
 {
     private final Map<Long, IndexProxy> indexesById;
     private final Map<IndexDescriptor, IndexProxy> indexesByDescriptor;
+    private final Map<IndexDescriptor, Long> indexIdsByDescriptor;
 
     public IndexMap()
     {
-        this( new HashMap<>(), new HashMap<>() );
+        this( new HashMap<>(), new HashMap<>(), new HashMap<>() );
     }
 
-    private IndexMap( Map<Long, IndexProxy> indexesById, Map<IndexDescriptor, IndexProxy> indexesByDescriptor )
+    private IndexMap( Map<Long, IndexProxy> indexesById, Map<IndexDescriptor, IndexProxy> indexesByDescriptor, Map<IndexDescriptor, Long> indexIdsByDescriptor )
     {
         this.indexesById = indexesById;
         this.indexesByDescriptor = indexesByDescriptor;
+        this.indexIdsByDescriptor = indexIdsByDescriptor;
     }
 
     public IndexProxy getIndexProxy( long indexId )
@@ -58,10 +60,16 @@ public final class IndexMap implements Cloneable
         return indexesByDescriptor.get( descriptor );
     }
 
+    public long getIndexId( IndexDescriptor descriptor )
+    {
+        return indexIdsByDescriptor.get( descriptor );
+    }
+
     public void putIndexProxy( long indexId, IndexProxy indexProxy )
     {
         indexesById.put( indexId, indexProxy );
         indexesByDescriptor.put( indexProxy.getDescriptor(), indexProxy );
+        indexIdsByDescriptor.put( indexProxy.getDescriptor(), indexId );
     }
 
     public IndexProxy removeIndexProxy( long indexId )
@@ -90,7 +98,8 @@ public final class IndexMap implements Cloneable
     @Override
     public IndexMap clone()
     {
-        return new IndexMap( cloneMap( indexesById ), cloneMap( indexesByDescriptor ) );
+        return new IndexMap( cloneMap( indexesById ), cloneMap( indexesByDescriptor ),
+                cloneMap( indexIdsByDescriptor ) );
     }
 
     private <K, V> Map<K, V> cloneMap( Map<K, V> map )
@@ -103,6 +112,11 @@ public final class IndexMap implements Cloneable
     public Iterator<IndexDescriptor> descriptors()
     {
         return indexesByDescriptor.keySet().iterator();
+    }
+
+    public Iterator<Long> indexIds()
+    {
+        return indexesById.keySet().iterator();
     }
 
     public int size()

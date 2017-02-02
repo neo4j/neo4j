@@ -57,6 +57,7 @@ import org.neo4j.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.helpers.collection.ResourceClosingIterator;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
@@ -66,7 +67,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.legacyindex.AutoIndexing;
 import org.neo4j.kernel.api.properties.Property;
@@ -92,9 +93,9 @@ import org.neo4j.kernel.impl.coreapi.StandardRelationshipActions;
 import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
 import org.neo4j.kernel.impl.coreapi.schema.SchemaImpl;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
-import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.kernel.impl.query.TransactionalContextFactory;
+import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.traversal.BidirectionalTraversalDescriptionImpl;
 import org.neo4j.kernel.impl.traversal.MonoDirectionalTraversalDescription;
@@ -422,7 +423,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
             throws QueryExecutionException
     {
         TransactionalContext context =
-                contextFactory.newContext( QueryEngineProvider.describe(), transaction, query, parameters );
+                contextFactory.newContext( ClientConnectionInfo.EMBEDDED_CONNECTION, transaction, query, parameters );
         return spi.executeQuery( query, parameters, context );
     }
 
@@ -611,7 +612,8 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     {
         try
         {
-            IndexDescriptor descriptor = readOps.indexGetForLabelAndPropertyKey( labelId, propertyId );
+            IndexDescriptor descriptor =
+                    readOps.indexGetForLabelAndPropertyKey( new NodePropertyDescriptor( labelId, propertyId ) );
 
             if ( readOps.indexGetState( descriptor ) == InternalIndexState.ONLINE )
             {

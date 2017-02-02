@@ -22,11 +22,12 @@ package org.neo4j.kernel.enterprise.builtinprocs;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.util.List;
 import java.util.Map;
 
 import org.neo4j.kernel.api.ExecutingQuery;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
-import org.neo4j.kernel.impl.query.QuerySource;
+import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
 
 import static java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 import static java.util.concurrent.TimeUnit.HOURS;
@@ -41,54 +42,80 @@ public class QueryStatusResult
     public final String username;
     public final String query;
     public final Map<String,Object> parameters;
+    public final String planner;
+    public final String runtime;
     public final String startTime;
+    @Deprecated
     public final String elapsedTime;
+    /** EXPERIMENTAL: added in Neo4j 3.2 */
+    public final long elapsedTimeMillis; // TODO: this field should be of a Duration type (when Cypher supports that)
+    @Deprecated
     public final String connectionDetails;
-    public final long cpuTimeMillis;
+    /** EXPERIMENTAL: added in Neo4j 3.2 */
+    public final String requestScheme;
+    /** EXPERIMENTAL: added in Neo4j 3.2 */
+    public final String clientAddress;
+    /** EXPERIMENTAL: added in Neo4j 3.2 */
+    public final String requestUri;
+    /** EXPERIMENTAL: added in Neo4j 3.2 */
+    public final long cpuTimeMillis; // TODO: we want this field to be of a Duration type (when Cypher supports that)
+    /** EXPERIMENTAL: added in Neo4j 3.2 */
     public final Map<String,Object> status;
-    public final long waitTimeMillis;
+    /** EXPERIMENTAL: added in Neo4j 3.2 */
+    public final long activeLockCount;
+    /** EXPERIMENTAL: added in Neo4j 3.2 */
+    public final long waitTimeMillis; // TODO: we want this field to be of a Duration type (when Cypher supports that)
     public final Map<String,Object> metaData;
+    public final List<Map<String,String>> indexes;
 
     QueryStatusResult( ExecutingQuery q ) throws InvalidArgumentsException
     {
         this(
                 ofInternalId( q.internalQueryId() ),
                 q.username(),
-                q.queryText(),
-                q.queryParameters(),
+                q.query(),
                 q.startTime(),
                 q.elapsedTimeMillis(),
-                q.querySource(),
+                q.clientConnection(),
                 q.metaData(),
                 q.cpuTimeMillis(),
                 q.status(),
+                q.activeLockCount(),
                 q.waitTimeMillis() );
     }
 
     private QueryStatusResult(
             QueryId queryId,
             String username,
-            String query,
-            Map<String,Object> parameters,
+            ExecutingQuery.QueryInfo query,
             long startTime,
             long elapsedTime,
-            QuerySource querySource,
+            ClientConnectionInfo clientConnection,
             Map<String,Object> txMetaData,
             long cpuTimeMillis,
             Map<String,Object> status,
+            long activeLockCount,
             long waitTimeMillis
     ) {
         this.queryId = queryId.toString();
         this.username = username;
-        this.query = query;
-        this.parameters = parameters;
+        this.query = query.text;
+        this.parameters = query.parameters;
         this.startTime = formatTime( startTime );
         this.elapsedTime = formatInterval( elapsedTime );
-        this.connectionDetails = querySource.toString();
+        this.elapsedTimeMillis = elapsedTime;
+        this.connectionDetails = clientConnection.asConnectionDetails();
+        this.requestScheme = clientConnection.requestScheme();
+        this.clientAddress = clientConnection.clientAddress();
+        this.requestUri = clientConnection.requestURI();
         this.metaData = txMetaData;
         this.cpuTimeMillis = cpuTimeMillis;
         this.status = status;
+        this.activeLockCount = activeLockCount;
         this.waitTimeMillis = waitTimeMillis;
+        this.planner = query.planner;
+        this.runtime = query.runtime;
+        this.indexes = query.indexes();
     }
 
     private static String formatTime( final long startTime )

@@ -61,12 +61,14 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
@@ -131,8 +133,6 @@ import static org.neo4j.kernel.api.index.InternalIndexState.POPULATING;
 import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.RECOVERY;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.TRIGGER_REBUILD_ALL;
-import static org.neo4j.kernel.impl.store.record.IndexRule.constraintIndexRule;
-import static org.neo4j.kernel.impl.store.record.IndexRule.indexRule;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 import static org.neo4j.test.mockito.answer.AwaitAnswer.afterAwaiting;
@@ -158,7 +158,7 @@ public class IndexingServiceTest
     public void setUp()
     {
         when( populator.sampleResult() ).thenReturn( new IndexSample() );
-        when( storeView.indexSample( any( IndexDescriptor.class ), any( DoubleLongRegister.class ) ) )
+        when( storeView.indexSample( anyLong(), any( DoubleLongRegister.class ) ) )
                 .thenAnswer( invocation -> invocation.getArguments()[1] );
     }
 
@@ -205,8 +205,8 @@ public class IndexingServiceTest
         life.start();
 
         // when
-        indexingService.createIndexes( IndexRule.indexRule( 0, labelId, propertyKeyId, PROVIDER_DESCRIPTOR ) );
-        indexingService.createIndexes( IndexRule.indexRule( 0, labelId, propertyKeyId, PROVIDER_DESCRIPTOR ) );
+        indexingService.createIndexes( indexRule( 0, labelId, propertyKeyId, PROVIDER_DESCRIPTOR ) );
+        indexingService.createIndexes( indexRule( 0, labelId, propertyKeyId, PROVIDER_DESCRIPTOR ) );
 
         // We are asserting that the second call to createIndex does not throw an exception.
         waitForIndexesToComeOnline( indexingService, 0 );
@@ -276,7 +276,7 @@ public class IndexingServiceTest
         life.start();
 
         // when
-        indexingService.createIndexes( constraintIndexRule( 0, labelId, propertyKeyId, PROVIDER_DESCRIPTOR, null ) );
+        indexingService.createIndexes( constraintIndexRule( 0, labelId, propertyKeyId, PROVIDER_DESCRIPTOR ) );
         IndexProxy proxy = indexingService.getIndexProxy( 0 );
 
         // don't wait for index to come ONLINE here since we're testing that it doesn't
@@ -306,7 +306,7 @@ public class IndexingServiceTest
         life.start();
 
         // when
-        indexingService.createIndexes( constraintIndexRule( 0, labelId, propertyKeyId, PROVIDER_DESCRIPTOR, null ) );
+        indexingService.createIndexes( constraintIndexRule( 0, labelId, propertyKeyId, PROVIDER_DESCRIPTOR ) );
         IndexProxy proxy = indexingService.getIndexProxy( 0 );
 
         indexingService.activateIndex( 0 );
@@ -385,7 +385,7 @@ public class IndexingServiceTest
         when(mockLookup.labelGetName( 2 )).thenReturn( "LabelTwo" );
         when(mockLookup.propertyKeyGetName( 1 )).thenReturn( "propertyOne" );
         when(mockLookup.propertyKeyGetName( 2 )).thenReturn( "propertyTwo" );
-        when( storeView.indexSample( any( IndexDescriptor.class ), any( DoubleLongRegister.class ) ) ).thenReturn( newDoubleLongRegister( 32L, 32L ) );
+        when( storeView.indexSample( anyLong(), any( DoubleLongRegister.class ) ) ).thenReturn( newDoubleLongRegister( 32L, 32L ) );
 
         logProvider.clear();
 
@@ -444,7 +444,7 @@ public class IndexingServiceTest
         when( indexAccessor.snapshotFiles()).thenAnswer( newResourceIterator( theFile ) );
         when( indexProvider.getInitialState( indexId ) ).thenReturn( ONLINE );
         when( indexProvider.getInitialState( indexId2 ) ).thenReturn( ONLINE );
-        when( storeView.indexSample( any( IndexDescriptor.class ), any( DoubleLongRegister.class ) ) )
+        when( storeView.indexSample( anyLong(), any( DoubleLongRegister.class ) ) )
                 .thenReturn( newDoubleLongRegister( 32L, 32L ) );
 
         life.start();
@@ -476,7 +476,7 @@ public class IndexingServiceTest
         when( indexAccessor.snapshotFiles() ).thenAnswer( newResourceIterator( theFile ) );
         when( indexProvider.getInitialState( indexId ) ).thenReturn( POPULATING );
         when( indexProvider.getInitialState( indexId2 ) ).thenReturn( ONLINE );
-        when( storeView.indexSample( any( IndexDescriptor.class ), any( DoubleLongRegister.class ) ) ).thenReturn( newDoubleLongRegister( 32L, 32L ) );
+        when( storeView.indexSample( anyLong(), any( DoubleLongRegister.class ) ) ).thenReturn( newDoubleLongRegister( 32L, 32L ) );
         life.start();
 
         // WHEN
@@ -521,9 +521,13 @@ public class IndexingServiceTest
     public void shouldLogTriggerSamplingOnAnIndexes() throws Exception
     {
         // given
-        IndexingService indexingService = newIndexingServiceWithMockedDependencies( populator, accessor, withData() );
+        long indexId = 0;
         IndexSamplingMode mode = TRIGGER_REBUILD_ALL;
-        IndexDescriptor descriptor = new IndexDescriptor( 0, 1 );
+        IndexDescriptor descriptor = IndexDescriptorFactory.of( 0, 1 );
+        IndexingService indexingService = newIndexingServiceWithMockedDependencies( populator, accessor, withData(),
+                indexRule( indexId, descriptor.getLabelId(), descriptor.getPropertyKeyId(), PROVIDER_DESCRIPTOR ) );
+        life.init();
+        life.start();
 
         // when
         indexingService.triggerIndexSampling( descriptor, mode );
@@ -754,7 +758,7 @@ public class IndexingServiceTest
                 .nodeAsUpdates( eq( nodeId ), any( Collection.class ) );
         DoubleLongRegister register = mock( DoubleLongRegister.class );
         when( register.readSecond() ).thenReturn( 42L );
-        when( storeView.indexSample( any( IndexDescriptor.class ), any( DoubleLongRegister.class ) ) )
+        when( storeView.indexSample( anyLong(), any( DoubleLongRegister.class ) ) )
                 .thenReturn( register );
         // For some reason the usual accessor returned null from newUpdater, even when told to return the updater
         // so spying on a real object instead.
@@ -812,7 +816,7 @@ public class IndexingServiceTest
         life.init();
         // simulating an index being created as part of applying recovered transactions
         long fakeOwningConstraintRuleId = 1;
-        indexing.createIndexes( new IndexRule( 2, labelId, propertyKeyId, PROVIDER_DESCRIPTOR,
+        indexing.createIndexes( constraintIndexRule( 2, labelId, propertyKeyId, PROVIDER_DESCRIPTOR,
                 fakeOwningConstraintRuleId ) );
         // and then starting, i.e. considering recovery completed
         life.start();
@@ -838,11 +842,11 @@ public class IndexingServiceTest
         indexing.createIndexes( indexRule1, indexRule2, indexRule3 );
 
         // THEN
-        verify( indexProvider ).getPopulator( eq( 0L ), eq( new IndexDescriptor( 0, 0 ) ),
+        verify( indexProvider ).getPopulator( eq( 0L ), eq( IndexDescriptorFactory.of( 0, 0 ) ),
                 eq( IndexConfiguration.NON_UNIQUE ), any( IndexSamplingConfig.class ) );
-        verify( indexProvider ).getPopulator( eq( 1L ), eq( new IndexDescriptor( 0, 1 ) ),
+        verify( indexProvider ).getPopulator( eq( 1L ), eq( IndexDescriptorFactory.of( 0, 1 ) ),
                 eq( IndexConfiguration.NON_UNIQUE ), any( IndexSamplingConfig.class ) );
-        verify( indexProvider ).getPopulator( eq( 2L ), eq( new IndexDescriptor( 1, 0 ) ),
+        verify( indexProvider ).getPopulator( eq( 2L ), eq( IndexDescriptorFactory.of( 1, 0 ) ),
                 eq( IndexConfiguration.NON_UNIQUE ), any( IndexSamplingConfig.class ) );
 
         waitForIndexesToComeOnline( indexing, 0, 1, 2 );
@@ -1004,6 +1008,7 @@ public class IndexingServiceTest
                                                                       IndexingService.Monitor monitor,
                                                                       IndexRule... rules ) throws IOException
     {
+        when( indexProvider.getInitialState( anyLong() ) ).thenReturn( ONLINE );
         when( indexProvider.getProviderDescriptor() ).thenReturn( PROVIDER_DESCRIPTOR );
         when( indexProvider.getPopulator( anyLong(), any( IndexDescriptor.class ), any( IndexConfiguration.class ),
                 any( IndexSamplingConfig.class ) ) ).thenReturn( populator );
@@ -1199,5 +1204,26 @@ public class IndexingServiceTest
             target.addAll( asList( updates ) );
             return null;
         };
+    }
+
+    private IndexRule indexRule( long ruleId, int labelId, int propertyKeyId, SchemaIndexProvider.Descriptor
+            providerDescriptor )
+    {
+        return IndexRule.indexRule( ruleId, NewIndexDescriptorFactory.forLabel( labelId, propertyKeyId ),
+                providerDescriptor );
+    }
+
+    private IndexRule constraintIndexRule( long ruleId, int labelId, int propertyKeyId, SchemaIndexProvider.Descriptor
+            providerDescriptor )
+    {
+        return IndexRule.indexRule( ruleId, NewIndexDescriptorFactory.uniqueForLabel( labelId, propertyKeyId ),
+                providerDescriptor );
+    }
+
+    private IndexRule constraintIndexRule( long ruleId, int labelId, int propertyKeyId, SchemaIndexProvider.Descriptor
+            providerDescriptor, long constraintId )
+    {
+        return IndexRule.constraintIndexRule(
+                ruleId, NewIndexDescriptorFactory.uniqueForLabel( labelId, propertyKeyId ), providerDescriptor, constraintId );
     }
 }

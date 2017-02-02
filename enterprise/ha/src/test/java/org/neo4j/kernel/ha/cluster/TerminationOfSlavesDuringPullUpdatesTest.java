@@ -67,15 +67,15 @@ public class TerminationOfSlavesDuringPullUpdatesTest
             .withSharedSetting( HaSettings.pull_interval, "0" )
             .withSharedSetting( HaSettings.tx_push_factor, "0" );
 
-    @Parameter
+    @Parameter( 0 )
     public ReadContestantActions action;
     @Parameter( 1 )
     public String name;
 
     @Parameters( name = "{1}" )
-    public static Iterable<Object> data()
+    public static Iterable<Object[]> data()
     {
-        return Arrays.<Object>asList( new Object[][]
+        return Arrays.<Object[]>asList( new Object[][]
                 {
                         {new PropertyValueActions( longString( 'a' ), longString( 'b' ), true ),
                                 "NodeStringProperty[txTerminationAwareLocks=yes]"},

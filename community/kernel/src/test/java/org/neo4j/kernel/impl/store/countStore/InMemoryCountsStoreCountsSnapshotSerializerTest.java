@@ -29,14 +29,16 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKeyType;
+import org.neo4j.kernel.impl.store.counts.keys.IndexSampleKey;
+import org.neo4j.kernel.impl.store.counts.keys.IndexStatisticsKey;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 
 import static org.neo4j.kernel.impl.store.countStore.CountsSnapshotSerializer.serialize;
-import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.indexSampleKey;
-import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.indexStatisticsKey;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.nodeKey;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.relationshipKey;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyType.EMPTY;
@@ -146,17 +148,17 @@ public class InMemoryCountsStoreCountsSnapshotSerializerTest
     public void correctlySerializesIndexSample() throws IOException
     {
         //GIVEN
+        long indexId = 1;
         int serializedLength = Long.BYTES + Integer.BYTES //Serialization Prefix
-                + Byte.BYTES + (2 * Integer.BYTES) + (2 * Long.BYTES); //A single INDEX_SAMPLE from count store.
-        writeAndSerializeIndexSample( 1, 1, 1 );
+                + Byte.BYTES + Long.BYTES +
+                (2 * Long.BYTES); //A single INDEX_SAMPLE from count store.
+        writeAndSerializeIndexSample( indexId, 1 );
         initializeBuffers( serializedLength );
         expectedBytes.put( INDEX_SAMPLE.code );
-        expectedBytes.putInt( 1 );
-        expectedBytes.putInt( 1 );
+        expectedBytes.putLong( indexId );
         expectedBytes.putLong( 1 );
         expectedBytes.putLong( 1 );
         expectedBytes.position( 0 );
-
         //WHEN
         logChannel.get( serializedBytes.array(), serializedLength );
 
@@ -168,13 +170,14 @@ public class InMemoryCountsStoreCountsSnapshotSerializerTest
     public void correctlySerializesIndexStatistics() throws IOException
     {
         //GIVEN
+        long indexId = 1;
         int serializedLength = Long.BYTES + Integer.BYTES //Serialization Prefix
-                + Byte.BYTES + (2 * Integer.BYTES) + (2 * Long.BYTES); //A single INDEX_STATISTICS from count store.
-        writeAndSerializeIndexStatistics( 1, 1, 1 );
+                + Byte.BYTES + Long.BYTES +
+                (2 * Long.BYTES); //A single INDEX_STATISTICS from count store.
+        writeAndSerializeIndexStatistics( indexId, 1 );
         initializeBuffers( serializedLength );
         expectedBytes.put( INDEX_STATISTICS.code );
-        expectedBytes.putInt( 1 );
-        expectedBytes.putInt( 1 );
+        expectedBytes.putLong( indexId );
         expectedBytes.putLong( 1 );
         expectedBytes.putLong( 1 );
         expectedBytes.position( 0 );
@@ -208,7 +211,7 @@ public class InMemoryCountsStoreCountsSnapshotSerializerTest
     public void throwsExceptionOnWrongValueLengthForIndexSample() throws IOException
     {
         Map<CountsKey,long[]> brokenMap = new ConcurrentHashMap<>();
-        brokenMap.put( indexSampleKey( 1, 1 ), new long[]{1} );
+        brokenMap.put( indexSampleKey( 1 ), new long[]{1} );
         CountsSnapshot brokenSnapshot = new CountsSnapshot( 1, brokenMap );
         serialize( logChannel, brokenSnapshot );
     }
@@ -217,7 +220,7 @@ public class InMemoryCountsStoreCountsSnapshotSerializerTest
     public void throwsExceptionOnWrongValueLengthForIndexStatistics() throws IOException
     {
         Map<CountsKey,long[]> brokenMap = new ConcurrentHashMap<>();
-        brokenMap.put( indexStatisticsKey( 1, 1 ), new long[]{1} );
+        brokenMap.put( indexStatisticsKey( 1 ), new long[]{1} );
         CountsSnapshot brokenSnapshot = new CountsSnapshot( 1, brokenMap );
         serialize( logChannel, brokenSnapshot );
     }
@@ -227,6 +230,16 @@ public class InMemoryCountsStoreCountsSnapshotSerializerTest
     {
         Assert.assertArrayEquals( CountsKeyType.values(),
                 new CountsKeyType[]{EMPTY, ENTITY_NODE, ENTITY_RELATIONSHIP, INDEX_STATISTICS, INDEX_SAMPLE} );
+    }
+
+    public static IndexSampleKey indexSampleKey( long indexId )
+    {
+        return CountsKeyFactory.indexSampleKey( indexId );
+    }
+
+    public static IndexStatisticsKey indexStatisticsKey( long indexId)
+    {
+        return CountsKeyFactory.indexStatisticsKey( indexId );
     }
 
     private void initializeBuffers( int serializedLength )
@@ -260,19 +273,19 @@ public class InMemoryCountsStoreCountsSnapshotSerializerTest
         serialize( logChannel, countsSnapshot );
     }
 
-    private void writeAndSerializeIndexSample( int labelId, int propertyKeyId, long count )
+    private void writeAndSerializeIndexSample( long indexId, long count )
             throws IOException
     {
         countsSnapshot.getMap()
-                .put( CountsKeyFactory.indexSampleKey( labelId, propertyKeyId ), new long[]{count, count} );
+                .put( indexSampleKey( indexId ), new long[]{count, count} );
         serialize( logChannel, countsSnapshot );
     }
 
-    private void writeAndSerializeIndexStatistics( int labelId, int propertyKeyId, long count )
+    private void writeAndSerializeIndexStatistics( long indexId, long count )
             throws IOException
     {
         countsSnapshot.getMap()
-                .put( CountsKeyFactory.indexStatisticsKey( labelId, propertyKeyId ), new long[]{count, count} );
+                .put( indexStatisticsKey( indexId ), new long[]{count, count} );
         serialize( logChannel, countsSnapshot );
     }
 }

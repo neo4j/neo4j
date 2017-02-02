@@ -104,11 +104,13 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.kernel.api.index.NodePropertyUpdate.add;
 import static org.neo4j.kernel.api.index.NodePropertyUpdate.change;
 import static org.neo4j.kernel.api.index.NodePropertyUpdate.remove;
+import static org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory.uniqueForLabel;
+import static org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory.forLabel;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
+import static org.neo4j.kernel.impl.store.record.ConstraintRule.constraintRule;
 import static org.neo4j.kernel.impl.store.record.IndexRule.indexRule;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
-import static org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule.uniquenessConstraintRule;
 
 public class TransactionRecordStateTest
 {
@@ -201,7 +203,7 @@ public class TransactionRecordStateTest
         // -- an index
         long ruleId = 0;
         TransactionRecordState recordState = newTransactionRecordState( neoStores );
-        SchemaRule rule = indexRule( ruleId, labelId, propertyKeyId, PROVIDER_DESCRIPTOR );
+        SchemaRule rule = indexRule( ruleId, forLabel( labelId, propertyKeyId ), PROVIDER_DESCRIPTOR );
         recordState.createSchemaRule( rule );
         apply( neoStores, recordState );
 
@@ -678,7 +680,7 @@ public class TransactionRecordStateTest
         final long indexId = neoStores.getSchemaStore().nextId();
         final long constraintId = neoStores.getSchemaStore().nextId();
 
-        recordState.createSchemaRule( uniquenessConstraintRule( constraintId, 1, 1, indexId ) );
+        recordState.createSchemaRule( constraintRule( constraintId, uniqueForLabel( 1, 1 ), indexId ) );
 
         // WHEN
         recordState.extractCommands( new ArrayList<>() );

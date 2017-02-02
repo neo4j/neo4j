@@ -24,58 +24,24 @@ import java.nio.ByteBuffer;
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
+/**
+ * Partial implementation of SchemaRule. Note that the id of a SchemaRule is a fixed property that should
+ * never be modified of overridden by subclasses.
+ */
 public abstract class AbstractSchemaRule implements SchemaRule, RecordSerializable
 {
-    protected final Kind kind;
     protected final long id;
 
-    public AbstractSchemaRule( long id, Kind kind )
+    public AbstractSchemaRule( long id )
     {
         this.id = id;
-        this.kind = kind;
     }
 
     @Override
-    public long getId()
+    public final long getId()
     {
         return this.id;
     }
-
-    @Override
-    public final Kind getKind()
-    {
-        return this.kind;
-    }
-
-    @Override
-    public abstract int length();
-
-    @Override
-    public abstract void serialize( ByteBuffer target );
-
-    @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
-            return true;
-        }
-        if ( o == null || getClass() != o.getClass() )
-        {
-            return false;
-        }
-        AbstractSchemaRule that = (AbstractSchemaRule) o;
-        return kind == that.kind;
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return kind.hashCode();
-    }
-
-    @Override
-    public abstract String toString();
 
     public static SchemaRule deserialize( long id, ByteBuffer buffer ) throws MalformedSchemaRuleException
     {
@@ -98,7 +64,7 @@ public abstract class AbstractSchemaRule implements SchemaRule, RecordSerializab
         }
     }
 
-    protected static SchemaRule newRule( Kind kind, long id, int labelId, ByteBuffer buffer )
+    private static SchemaRule newRule( Kind kind, long id, int labelId, ByteBuffer buffer )
     {
         switch ( kind )
         {
@@ -107,30 +73,11 @@ public abstract class AbstractSchemaRule implements SchemaRule, RecordSerializab
         case CONSTRAINT_INDEX_RULE:
             return IndexRule.readIndexRule( id, true, labelId, buffer );
         case UNIQUENESS_CONSTRAINT:
-            return UniquePropertyConstraintRule.readUniquenessConstraintRule( id, labelId, buffer );
+            return ConstraintRule.readUniquenessConstraintRule( id, labelId, buffer );
         case NODE_PROPERTY_EXISTENCE_CONSTRAINT:
-            return NodePropertyExistenceConstraintRule.readNodePropertyExistenceConstraintRule( id, labelId, buffer );
+            return ConstraintRule.readNodePropertyExistenceConstraintRule( id, labelId, buffer );
         case RELATIONSHIP_PROPERTY_EXISTENCE_CONSTRAINT:
-            return RelationshipPropertyExistenceConstraintRule
-                    .readRelPropertyExistenceConstraintRule( id, labelId, buffer );
-        default:
-            throw new IllegalArgumentException( kind.name() );
-        }
-    }
-
-    public static Class<?> getRuleClass( Kind kind )
-    {
-        switch ( kind )
-        {
-        case INDEX_RULE:
-        case CONSTRAINT_INDEX_RULE:
-            return IndexRule.class;
-        case UNIQUENESS_CONSTRAINT:
-            return UniquePropertyConstraintRule.class;
-        case NODE_PROPERTY_EXISTENCE_CONSTRAINT:
-            return NodePropertyExistenceConstraintRule.class;
-        case RELATIONSHIP_PROPERTY_EXISTENCE_CONSTRAINT:
-            return RelationshipPropertyExistenceConstraintRule.class;
+            return ConstraintRule.readRelPropertyExistenceConstraintRule( id, labelId, buffer );
         default:
             throw new IllegalArgumentException( kind.name() );
         }

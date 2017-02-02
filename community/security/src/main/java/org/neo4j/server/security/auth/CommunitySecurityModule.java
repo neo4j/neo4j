@@ -29,7 +29,6 @@ import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.security.SecurityModule;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
-import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.time.Clocks;
@@ -54,6 +53,7 @@ public class CommunitySecurityModule extends SecurityModule
 
         final PasswordPolicy passwordPolicy = new BasicPasswordPolicy();
 
+        procedures.writerCreateToken( true );
         BasicAuthManager authManager =
                 new BasicAuthManager( userRepository, passwordPolicy, Clocks.systemClock(), initialUserRepository );
 

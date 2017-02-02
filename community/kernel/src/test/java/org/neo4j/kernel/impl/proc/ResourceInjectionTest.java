@@ -24,6 +24,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import org.neo4j.helpers.collection.Iterators;
@@ -128,6 +129,7 @@ public class ResourceInjectionTest
     {
         ComponentRegistry components = new ComponentRegistry();
         components.register( MyAwesomeAPI.class, (ctx) -> new MyAwesomeAPI() );
-        return new ReflectiveProcedureCompiler( new TypeMappers(), components, NullLog.getInstance(), ProcedureAllowedConfig.DEFAULT ).compileProcedure( clazz );
+        return new ReflectiveProcedureCompiler( new TypeMappers(), components, NullLog.getInstance(),
+                ProcedureAllowedConfig.DEFAULT ).compileProcedure( clazz, Optional.empty() );
     }
 }

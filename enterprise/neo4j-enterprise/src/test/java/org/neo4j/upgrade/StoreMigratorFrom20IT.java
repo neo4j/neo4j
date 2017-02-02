@@ -43,7 +43,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.EnterpriseGraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.watcher.FileWatcher;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProvider;
@@ -52,7 +51,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.MyRelTypes;
-import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStore;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.ha.ClusterManager;
@@ -72,6 +70,7 @@ import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.test.rule.NeoStoreDataSourceRule;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
@@ -122,9 +121,10 @@ public class StoreMigratorFrom20IT
         fs = fileSystemRule.get();
         pageCache = pageCacheRule.getPageCache( fs );
 
-        schemaIndexProvider = new LuceneSchemaIndexProvider( fs, DirectoryFactory.PERSISTENT, storeDir.directory(),
+        File storeDirectory = storeDir.directory();
+        schemaIndexProvider = new LuceneSchemaIndexProvider( fs, DirectoryFactory.PERSISTENT, storeDirectory,
                 NullLogProvider.getInstance(), Config.empty(), OperationalMode.single );
-        labelScanStoreProvider = new LabelScanStoreProvider( new InMemoryLabelScanStore(), 1 );
+        labelScanStoreProvider = NeoStoreDataSourceRule.nativeLabelScanStoreProvider( storeDirectory, fs, pageCache );
 
         upgradableDatabase = new UpgradableDatabase( fs, new StoreVersionCheck( pageCache ),
                 new LegacyStoreVersionCheck( fs ), recordFormat );
@@ -250,7 +250,7 @@ public class StoreMigratorFrom20IT
     private StoreUpgrader upgrader( SchemaIndexMigrator indexMigrator, StoreMigrator storeMigrator )
     {
         Config config = getConfig().augment( stringMap( GraphDatabaseSettings.allow_store_upgrade.name(), "true" ) );
-        StoreUpgrader upgrader = new StoreUpgrader( upgradableDatabase, monitor, config, fs,
+        StoreUpgrader upgrader = new StoreUpgrader( upgradableDatabase, monitor, config, fs, pageCache,
                 NullLogProvider.getInstance() );
         upgrader.addParticipant( indexMigrator );
         upgrader.addParticipant( storeMigrator );

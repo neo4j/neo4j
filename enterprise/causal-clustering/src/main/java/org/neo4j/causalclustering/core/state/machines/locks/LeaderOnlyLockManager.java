@@ -21,12 +21,14 @@ package org.neo4j.causalclustering.core.state.machines.locks;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.stream.Stream;
 
 import org.neo4j.causalclustering.core.consensus.LeaderLocator;
 import org.neo4j.causalclustering.core.consensus.NoLeaderFoundException;
 import org.neo4j.causalclustering.core.replication.Replicator;
 import org.neo4j.causalclustering.core.state.machines.tx.ReplicatedTransactionStateMachine;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.kernel.impl.locking.ActiveLock;
 import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
@@ -112,6 +114,10 @@ public class LeaderOnlyLockManager implements Locks
         catch ( InterruptedException e )
         {
             throw new AcquireLockTimeoutException( e, "Interrupted acquiring token.", Interrupted );
+        }
+        catch ( NoLeaderFoundException e )
+        {
+            throw new AcquireLockTimeoutException( e, "Could not acquire lock token because no leader was found.", NoLeaderAvailable );
         }
 
         try
@@ -229,6 +235,19 @@ public class LeaderOnlyLockManager implements Locks
         }
 
         @Override
+        public boolean reEnterShared( ResourceType resourceType, long resourceId )
+        {
+            return localClient.reEnterShared( resourceType, resourceId );
+        }
+
+        @Override
+        public boolean reEnterExclusive( ResourceType resourceType, long resourceId )
+        {
+            ensureHoldingToken();
+            return localClient.reEnterExclusive( resourceType, resourceId );
+        }
+
+        @Override
         public void releaseShared( ResourceType resourceType, long resourceId )
         {
             localClient.releaseShared( resourceType, resourceId );
@@ -256,6 +275,18 @@ public class LeaderOnlyLockManager implements Locks
         public int getLockSessionId()
         {
             return lockTokenId;
+        }
+
+        @Override
+        public Stream<? extends ActiveLock> activeLocks()
+        {
+            return localClient.activeLocks();
+        }
+
+        @Override
+        public long activeLockCount()
+        {
+            return localClient.activeLockCount();
         }
     }
 }

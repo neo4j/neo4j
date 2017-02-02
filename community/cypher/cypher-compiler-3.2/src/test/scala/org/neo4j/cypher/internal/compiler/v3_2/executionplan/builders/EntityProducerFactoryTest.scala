@@ -20,14 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v3_2.executionplan.builders
 
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
+import org.neo4j.cypher.internal.compiler.v3_2.{ExecutionContext, IndexDescriptor}
 import org.neo4j.cypher.internal.compiler.v3_2.commands._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Literal
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.compiler.v3_2.spi.{PlanContext, QueryContext}
 import org.neo4j.cypher.internal.frontend.v3_2.IndexHintException
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
-import org.neo4j.kernel.api.index.IndexDescriptor
 
 class EntityProducerFactoryTest extends CypherFunSuite {
   var planContext: PlanContext = null
@@ -54,7 +53,7 @@ class EntityProducerFactoryTest extends CypherFunSuite {
     //GIVEN
     val label: String = "label"
     val prop: String = "prop"
-    val index: IndexDescriptor = new IndexDescriptor(123,456)
+    val index: IndexDescriptor = IndexDescriptor(123, 456)
     val value = 42
     val queryContext: QueryContext = mock[QueryContext]
     when(planContext.getIndexRule(label, prop)).thenReturn(Some(index))
@@ -71,7 +70,7 @@ class EntityProducerFactoryTest extends CypherFunSuite {
     //GIVEN
     val labelName = "Label"
     val propertyKey = "prop"
-    val index: IndexDescriptor = new IndexDescriptor(123, 456)
+    val index: IndexDescriptor = IndexDescriptor(123, 456)
     when(planContext.getIndexRule(labelName, propertyKey)).thenReturn(Some(index))
     val producer = factory.nodeByIndexHint(readOnly = true)(planContext -> SchemaIndex("x", labelName, propertyKey, AnyIndex, Some(SingleQueryExpression(Literal(Seq(1,2,3))))))
     val queryContext: QueryContext = mock[QueryContext]

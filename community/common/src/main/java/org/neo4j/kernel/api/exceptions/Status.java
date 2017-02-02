@@ -258,6 +258,9 @@ public interface Status
                 "might be used in order to find the requested shortest path." ),
 
         // client notifications (not supported/deprecated)
+        PlannerUnavailableWarning( ClientNotification,
+                "The RULE planner is not available in the current CYPHER version, the query has been run by an older " +
+                        "CYPHER version." ),
         PlannerUnsupportedWarning( ClientNotification,
                 "This query is not supported by the COST planner." ),
         RuntimeUnsupportedWarning( ClientNotification,
@@ -273,7 +276,10 @@ public interface Status
         UnknownRelationshipTypeWarning( ClientNotification,
                 "The provided relationship type is not in the database." ),
         UnknownPropertyKeyWarning( ClientNotification,
-                "The provided property key is not in the database" );
+                "The provided property key is not in the database" ),
+        CreateUniqueUnavailableWarning( ClientNotification,
+                "CREATE UNIQUE is not available in the current CYPHER version, the query has been run by an older " +
+                "CYPHER version." );
 
         private final Code code;
 
@@ -389,7 +395,8 @@ public interface Status
                 "A procedure is using or receiving a value of an invalid type." ),
         ProcedureTimedOut( ClientError,
                 "The procedure has not completed within the specified timeout. You may want to retry with a longer " +
-                "timeout." );
+                "timeout." ),
+        ProcedureWarning( ClientNotification, "The query used a procedure that generated a warning." );
 
         private final Code code;
 

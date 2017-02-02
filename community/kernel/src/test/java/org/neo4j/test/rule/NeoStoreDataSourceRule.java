@@ -20,7 +20,6 @@
 package org.neo4j.test.rule;
 
 import java.io.File;
-import java.time.Clock;
 import java.util.Map;
 
 import org.neo4j.graphdb.DependencyResolver;
@@ -33,10 +32,11 @@ import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
+import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexing;
-import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStore;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
+import org.neo4j.kernel.impl.api.scan.NativeLabelScanStoreExtension;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
@@ -45,12 +45,15 @@ import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
 import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.factory.CommunityCommitProcessFactory;
+import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.impl.spi.KernelContext;
+import org.neo4j.kernel.impl.spi.SimpleKernelContext;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
@@ -59,6 +62,9 @@ import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
+import org.neo4j.kernel.impl.util.Dependencies;
+import org.neo4j.kernel.impl.util.DependenciesProxy;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.TransactionEventHandlers;
@@ -71,7 +77,8 @@ import org.neo4j.time.Clocks;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
+
+import static org.neo4j.helpers.Exceptions.launderedException;
 
 public class NeoStoreDataSourceRule extends ExternalResource
 {
@@ -117,10 +124,12 @@ public class NeoStoreDataSourceRule extends ExternalResource
 
         JobScheduler jobScheduler = mock( JobScheduler.class, RETURNS_MOCKS );
         Monitors monitors = new Monitors();
+        LabelScanStoreProvider labelScanStoreProvider =
+                nativeLabelScanStoreProvider( storeDir, fs, pageCache, config, logService );
         dataSource = new NeoStoreDataSource( storeDir, config, idGeneratorFactory, IdReuseEligibility.ALWAYS,
                 idConfigurationProvider,
                 logService, mock( JobScheduler.class, RETURNS_MOCKS ), mock( TokenNameLookup.class ),
-                dependencyResolverForNoIndexProvider(), mock( PropertyKeyTokenHolder.class ),
+                dependencyResolverForNoIndexProvider( labelScanStoreProvider ), mock( PropertyKeyTokenHolder.class ),
                 mock( LabelTokenHolder.class ), mock( RelationshipTypeTokenHolder.class ), locksFactory,
                 mock( SchemaWriteGuard.class ), mock( TransactionEventHandlers.class ), IndexingService.NO_MONITOR,
                 fs, mock( TransactionMonitor.class ), databaseHealth,
@@ -131,9 +140,35 @@ public class NeoStoreDataSourceRule extends ExternalResource
                 new Tracers( "null", NullLog.getInstance(), monitors, jobScheduler ),
                 mock( Procedures.class ),
                 IOLimiter.unlimited(),
-                mock( AvailabilityGuard.class ), Clocks.nanoClock(), new CanWrite() );
+                mock( AvailabilityGuard.class ), Clocks.nanoClock(),
+                new CanWrite(), new StoreCopyCheckPointMutex() );
 
         return dataSource;
+    }
+
+    public static LabelScanStoreProvider nativeLabelScanStoreProvider( File storeDir, FileSystemAbstraction fs,
+            PageCache pageCache )
+    {
+        return nativeLabelScanStoreProvider( storeDir, fs, pageCache, Config.defaults(), NullLogService.getInstance() );
+    }
+
+    public static LabelScanStoreProvider nativeLabelScanStoreProvider( File storeDir, FileSystemAbstraction fs,
+            PageCache pageCache, Config config, LogService logService )
+    {
+        try
+        {
+            Dependencies dependencies = new Dependencies();
+            dependencies.satisfyDependencies( pageCache, config, IndexStoreView.EMPTY, logService );
+            KernelContext kernelContext =
+                    new SimpleKernelContext( storeDir, DatabaseInfo.COMMUNITY, dependencies );
+            return (LabelScanStoreProvider) new NativeLabelScanStoreExtension()
+                    .newInstance( kernelContext, DependenciesProxy.dependencies( dependencies,
+                            NativeLabelScanStoreExtension.Dependencies.class ) );
+        }
+        catch ( Throwable e )
+        {
+            throw launderedException( e );
+        }
     }
 
     public NeoStoreDataSource getDataSource( File storeDir, FileSystemAbstraction fs,
@@ -144,13 +179,10 @@ public class NeoStoreDataSourceRule extends ExternalResource
         return getDataSource( storeDir, fs, pageCache, additionalConfig, databaseHealth );
     }
 
-    private DependencyResolver dependencyResolverForNoIndexProvider()
+    private DependencyResolver dependencyResolverForNoIndexProvider( LabelScanStoreProvider labelScanStoreProvider )
     {
         return new DependencyResolver.Adapter()
         {
-            private final LabelScanStoreProvider labelScanStoreProvider =
-                    new LabelScanStoreProvider( new InMemoryLabelScanStore(), 10 );
-
             @Override
             public <T> T resolveDependency( Class<T> type, SelectionStrategy selector ) throws IllegalArgumentException
             {

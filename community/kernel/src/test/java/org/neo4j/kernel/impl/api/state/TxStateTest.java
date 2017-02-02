@@ -40,11 +40,14 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Pair;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
+import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.cursor.RelationshipItemHelper;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.txstate.TransactionState;
@@ -56,8 +59,8 @@ import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
-import org.neo4j.test.RepeatRule;
 import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.rule.RepeatRule;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
@@ -178,7 +181,7 @@ public class TxStateTest
         state.indexRuleDoAdd( indexOn_2_1 );
 
         // THEN
-        assertEquals( asSet( indexOn_1_1 ), state.indexDiffSetsByLabel( labelId1 ).getAdded() );
+        assertEquals( asSet( indexOn_1_1 ), state.indexDiffSetsByLabel( descriptorOn_1_1.getLabelId() ).getAdded() );
     }
 
     @Test
@@ -933,7 +936,7 @@ public class TxStateTest
     public void shouldAddUniquenessConstraint() throws Exception
     {
         // when
-        UniquenessConstraint constraint = new UniquenessConstraint( 1, 17 );
+        UniquenessConstraint constraint = new UniquenessConstraint( descriptor1 );
         state.constraintDoAdd( constraint, 7 );
 
         // then
@@ -947,11 +950,11 @@ public class TxStateTest
     public void addingUniquenessConstraintShouldBeIdempotent() throws Exception
     {
         // given
-        UniquenessConstraint constraint1 = new UniquenessConstraint( 1, 17 );
+        UniquenessConstraint constraint1 = new UniquenessConstraint( descriptor1 );
         state.constraintDoAdd( constraint1, 7 );
 
         // when
-        UniquenessConstraint constraint2 = new UniquenessConstraint( 1, 17 );
+        UniquenessConstraint constraint2 = new UniquenessConstraint( descriptor1 );
         state.constraintDoAdd( constraint2, 19 );
 
         // then
@@ -963,9 +966,9 @@ public class TxStateTest
     public void shouldDifferentiateBetweenUniquenessConstraintsForDifferentLabels() throws Exception
     {
         // when
-        UniquenessConstraint constraint1 = new UniquenessConstraint( 1, 17 );
+        UniquenessConstraint constraint1 = new UniquenessConstraint( descriptor1 );
         state.constraintDoAdd( constraint1, 7 );
-        UniquenessConstraint constraint2 = new UniquenessConstraint( 2, 17 );
+        UniquenessConstraint constraint2 = new UniquenessConstraint( descriptor2 );
         state.constraintDoAdd( constraint2, 19 );
 
         // then
@@ -977,7 +980,7 @@ public class TxStateTest
     public void shouldAddRelationshipPropertyExistenceConstraint()
     {
         // Given
-        RelationshipPropertyExistenceConstraint constraint = new RelationshipPropertyExistenceConstraint( 1, 42 );
+        RelationshipPropertyExistenceConstraint constraint = new RelationshipPropertyExistenceConstraint( relDescriptor1 );
 
         // When
         state.constraintDoAdd( constraint );
@@ -990,8 +993,8 @@ public class TxStateTest
     public void addingRelationshipPropertyExistenceConstraintConstraintShouldBeIdempotent()
     {
         // Given
-        RelationshipPropertyExistenceConstraint constraint1 = new RelationshipPropertyExistenceConstraint( 1, 42 );
-        RelationshipPropertyExistenceConstraint constraint2 = new RelationshipPropertyExistenceConstraint( 1, 42 );
+        RelationshipPropertyExistenceConstraint constraint1 = new RelationshipPropertyExistenceConstraint( relDescriptor1 );
+        RelationshipPropertyExistenceConstraint constraint2 = new RelationshipPropertyExistenceConstraint( relDescriptor1 );
 
         // When
         state.constraintDoAdd( constraint1 );
@@ -1006,7 +1009,7 @@ public class TxStateTest
     public void shouldDropRelationshipPropertyExistenceConstraint()
     {
         // Given
-        RelationshipPropertyExistenceConstraint constraint = new RelationshipPropertyExistenceConstraint( 1, 42 );
+        RelationshipPropertyExistenceConstraint constraint = new RelationshipPropertyExistenceConstraint( relDescriptor1 );
         state.constraintDoAdd( constraint );
 
         // When
@@ -1020,9 +1023,13 @@ public class TxStateTest
     public void shouldDifferentiateRelationshipPropertyExistenceConstraints() throws Exception
     {
         // Given
-        RelationshipPropertyExistenceConstraint constraint1 = new RelationshipPropertyExistenceConstraint( 1, 11 );
-        RelationshipPropertyExistenceConstraint constraint2 = new RelationshipPropertyExistenceConstraint( 1, 22 );
-        RelationshipPropertyExistenceConstraint constraint3 = new RelationshipPropertyExistenceConstraint( 3, 33 );
+        RelationshipPropertyDescriptor rel1 = new RelationshipPropertyDescriptor( 1, 11 );
+        RelationshipPropertyDescriptor rel2 = new RelationshipPropertyDescriptor( 1, 22 );
+        RelationshipPropertyDescriptor rel3 = new RelationshipPropertyDescriptor( 3, 33 );
+
+        RelationshipPropertyExistenceConstraint constraint1 = new RelationshipPropertyExistenceConstraint( rel1 );
+        RelationshipPropertyExistenceConstraint constraint2 = new RelationshipPropertyExistenceConstraint( rel2 );
+        RelationshipPropertyExistenceConstraint constraint3 = new RelationshipPropertyExistenceConstraint( rel3 );
 
         // When
         state.constraintDoAdd( constraint1 );
@@ -1032,12 +1039,12 @@ public class TxStateTest
         // Then
         assertEquals( asSet( constraint1, constraint2 ), state.constraintsChangesForRelationshipType( 1 ).getAdded() );
         assertEquals( singleton( constraint1 ),
-                state.constraintsChangesForRelationshipTypeAndProperty( 1, 11 ).getAdded() );
+                state.constraintsChangesForRelationshipTypeAndProperty( rel1 ).getAdded() );
         assertEquals( singleton( constraint2 ),
-                state.constraintsChangesForRelationshipTypeAndProperty( 1, 22 ).getAdded() );
+                state.constraintsChangesForRelationshipTypeAndProperty( rel2 ).getAdded() );
         assertEquals( singleton( constraint3 ), state.constraintsChangesForRelationshipType( 3 ).getAdded() );
         assertEquals( singleton( constraint3 ),
-                state.constraintsChangesForRelationshipTypeAndProperty( 3, 33 ).getAdded() );
+                state.constraintsChangesForRelationshipTypeAndProperty( rel3 ).getAdded() );
     }
 
     @Test
@@ -1694,15 +1701,15 @@ public class TxStateTest
         };
     }
 
-    private final int labelId1 = 2;
-    private final int labelId2 = 5;
-
-    private final int propertyKeyId1 = 3;
-    private final int propertyKeyId2 = 4;
-
-    private final IndexDescriptor indexOn_1_1 = new IndexDescriptor( labelId1, propertyKeyId1 );
-    private final IndexDescriptor indexOn_1_2 = new IndexDescriptor( labelId1, propertyKeyId2 );
-    private final IndexDescriptor indexOn_2_1 = new IndexDescriptor( labelId2, propertyKeyId1 );
+    private final NodePropertyDescriptor descriptor1 = new NodePropertyDescriptor( 1, 17 );
+    private final NodePropertyDescriptor descriptor2 = new NodePropertyDescriptor( 2, 17 );
+    private final RelationshipPropertyDescriptor relDescriptor1 = new RelationshipPropertyDescriptor( 1, 42 );
+    private final NodePropertyDescriptor descriptorOn_1_1 = new NodePropertyDescriptor( 2, 3 );
+    private final NodePropertyDescriptor descriptorOn_1_2 = new NodePropertyDescriptor( 2, 4 );
+    private final NodePropertyDescriptor descriptorOn_2_1 = new NodePropertyDescriptor( 3, 3 );
+    private final IndexDescriptor indexOn_1_1 = IndexDescriptorFactory.of( descriptorOn_1_1 );
+    private final IndexDescriptor indexOn_1_2 = IndexDescriptorFactory.of( descriptorOn_1_2 );
+    private final IndexDescriptor indexOn_2_1 = IndexDescriptorFactory.of( descriptorOn_2_1 );
 
     private TransactionState state;
 

@@ -50,6 +50,7 @@ class UniqueInMemoryIndex extends InMemoryIndex
 
     public UniqueInMemoryIndex( int propertyKeyId )
     {
+        //TODO: Consider supporting composite indexes
         this.propertyKeyId = propertyKeyId;
     }
 

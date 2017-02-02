@@ -34,6 +34,7 @@ import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.QualifiedName;
 import org.neo4j.kernel.api.proc.UserFunctionSignature;
+import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.builtinprocs.SpecialBuiltInProcedures;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
@@ -53,6 +54,7 @@ public class Procedures extends LifecycleAdapter
     private final ThrowingConsumer<Procedures, ProcedureException> builtin;
     private final File pluginDir;
     private final Log log;
+    private AccessMode writeMode;
 
     public Procedures()
     {
@@ -134,10 +136,24 @@ public class Procedures extends LifecycleAdapter
     /**
      * Register a new procedure defined with annotations on a java class.
      * @param proc the procedure class
+     * @param overrideCurrentImplementation set to true if procedures within this class should override older procedures with the same name
      */
     public void registerProcedure( Class<?> proc, boolean overrideCurrentImplementation ) throws KernelException
     {
-        for ( CallableProcedure procedure : compiler.compileProcedure( proc ) )
+        registerProcedure( proc, overrideCurrentImplementation, Optional.empty() );
+    }
+
+    /**
+     * Register a new procedure defined with annotations on a java class.
+     * @param proc the procedure class
+     * @param overrideCurrentImplementation set to true if procedures within this class should override older procedures with the same name
+     * @param warning the warning the procedure should generate when called
+     */
+    public void registerProcedure( Class<?> proc, boolean overrideCurrentImplementation, Optional<String> warning )
+            throws
+            KernelException
+    {
+        for ( CallableProcedure procedure : compiler.compileProcedure( proc, warning ) )
         {
             register( procedure, overrideCurrentImplementation );
         }
@@ -271,5 +287,26 @@ public class Procedures extends LifecycleAdapter
 
         // And register built-in procedures
         builtin.accept( this );
+    }
+
+    private boolean changed = false;
+
+    public void writerCreateToken( boolean allow )
+    {
+        if ( !changed )
+        {
+            writeMode = allow ? AccessMode.Static.TOKEN_WRITE : AccessMode.Static.WRITE;
+            changed = true;
+        }
+    }
+
+    public AccessMode getWriteMode()
+    {
+        return writeMode;
+    }
+
+    public boolean isAllowWriteTokenCreate()
+    {
+        return writeMode.equals( AccessMode.Static.TOKEN_WRITE );
     }
 }

@@ -24,6 +24,7 @@ import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestName;
 import org.junit.rules.TestRule;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -38,11 +39,13 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.CheckerEngine;
 import org.neo4j.consistency.checking.ComparativeRecordChecker;
 import org.neo4j.consistency.checking.RecordCheck;
+import org.neo4j.consistency.report.ConsistencyReport.NodeConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.RecordReference;
 import org.neo4j.consistency.store.synthetic.CountsEntry;
@@ -50,6 +53,7 @@ import org.neo4j.consistency.store.synthetic.IndexEntry;
 import org.neo4j.consistency.store.synthetic.LabelScanDocument;
 import org.neo4j.kernel.api.impl.labelscan.LuceneNodeLabelRange;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
@@ -65,9 +69,14 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
 import static java.lang.String.format;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -82,6 +91,9 @@ public class ConsistencyReporterTest
 {
     public static class TestReportLifecycle
     {
+        @Rule
+        public final TestName testName = new TestName();
+
         @Test
         public void shouldSummarizeStatisticsAfterCheck()
         {
@@ -136,6 +148,57 @@ public class ConsistencyReporterTest
             // then
             verify( summary ).update( RecordType.PROPERTY, 0, 0 );
             verifyNoMoreInteractions( summary );
+        }
+
+        @Test
+        public void shouldIncludeStackTraceInUnexpectedCheckException() throws Exception
+        {
+            // GIVEN
+            ConsistencySummaryStatistics summary = mock( ConsistencySummaryStatistics.class );
+            RecordAccess records = mock( RecordAccess.class );
+            final AtomicReference<String> loggedError = new AtomicReference<>();
+            InconsistencyLogger logger = new InconsistencyLogger()
+            {
+                @Override
+                public void error( RecordType recordType, AbstractBaseRecord record, String message, Object[] args )
+                {
+                    assertTrue( loggedError.compareAndSet( null, message ) );
+                }
+
+                @Override
+                public void error( RecordType recordType, AbstractBaseRecord oldRecord, AbstractBaseRecord newRecord,
+                        String message, Object[] args )
+                {
+                    assertTrue( loggedError.compareAndSet( null, message ) );
+                }
+
+                @Override
+                public void warning( RecordType recordType, AbstractBaseRecord record, String message, Object[] args )
+                {
+                }
+
+                @Override
+                public void warning( RecordType recordType, AbstractBaseRecord oldRecord, AbstractBaseRecord newRecord,
+                        String message, Object[] args )
+                {
+                }
+            };
+            InconsistencyReport inconsistencyReport = new InconsistencyReport( logger, summary );
+            ConsistencyReporter reporter = new ConsistencyReporter( records, inconsistencyReport );
+            NodeRecord node = new NodeRecord( 10 );
+            RecordCheck<NodeRecord,NodeConsistencyReport> checker = mock( RecordCheck.class );
+            RuntimeException exception = new RuntimeException( "My specific exception" );
+            doThrow( exception ).when( checker )
+                    .check( any( NodeRecord.class ), any( CheckerEngine.class ), any( RecordAccess.class ) );
+
+            // WHEN
+            reporter.forNode( node, checker );
+
+            // THEN
+            assertNotNull( loggedError.get() );
+            String error = loggedError.get();
+            assertThat( error, containsString( "at " ) );
+            assertThat( error, containsString( testName.getMethodName() ) );
         }
     }
 
@@ -332,7 +395,8 @@ public class ConsistencyReporterTest
             }
             if ( type == IndexRule.class )
             {
-                return IndexRule.indexRule( 1, 2, 3, new SchemaIndexProvider.Descriptor( "provider", "version" ) );
+                return IndexRule.indexRule( 1, NewIndexDescriptorFactory.forLabel( 2, 3 ),
+                        new SchemaIndexProvider.Descriptor( "provider", "version" ) );
             }
             if ( type == RelationshipGroupRecord.class )
             {

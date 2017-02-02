@@ -25,6 +25,8 @@ import org.junit.Test;
 
 import org.neo4j.SchemaHelper;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
+import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.impl.coreapi.schema.InternalSchemaActions;
 import org.neo4j.kernel.impl.coreapi.schema.NodePropertyExistenceConstraintDefinition;
 import org.neo4j.kernel.impl.coreapi.schema.RelationshipPropertyExistenceConstraintDefinition;
@@ -122,13 +124,16 @@ public class SchemaWithPECAcceptanceTest
     {
         SchemaHelper.createUniquenessConstraint( db, label, propertyKey );
         SchemaHelper.awaitIndexes( db );
-        return new UniquenessConstraintDefinition( mock( InternalSchemaActions.class ), label, propertyKey );
+        InternalSchemaActions actions = mock( InternalSchemaActions.class );
+        IndexDefinition index = new IndexDefinitionImpl( actions, label, new String[]{propertyKey}, true );
+        return new UniquenessConstraintDefinition( actions, index );
     }
 
     private ConstraintDefinition createNodePropertyExistenceConstraint( Label label, String propertyKey )
     {
         SchemaHelper.createNodePropertyExistenceConstraint( db, label, propertyKey );
-        return new NodePropertyExistenceConstraintDefinition( mock( InternalSchemaActions.class ), label, propertyKey );
+        return new NodePropertyExistenceConstraintDefinition( mock( InternalSchemaActions.class ), label,
+                new String[]{propertyKey} );
     }
 
     private ConstraintDefinition createRelationshipPropertyExistenceConstraint( Types type, String propertyKey )

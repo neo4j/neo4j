@@ -29,13 +29,11 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.BatchTransactionApplierFacade;
 import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
 import org.neo4j.kernel.impl.api.LegacyIndexProviderLookup;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStore;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
@@ -67,6 +65,8 @@ import org.neo4j.test.impl.EphemeralIdGenerator;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import static org.neo4j.test.rule.NeoStoreDataSourceRule.nativeLabelScanStoreProvider;
+
 /**
  * Conveniently manages a {@link RecordStorageEngine} in a test. Needs {@link FileSystemAbstraction} and
  * {@link PageCache}, which usually are managed by test rules themselves. That's why they are passed in
@@ -92,7 +92,7 @@ public class RecordStorageEngineRule extends ExternalResource
         return new Builder( fs, pageCache );
     }
 
-    private RecordStorageEngine get( FileSystemAbstraction fs, PageCache pageCache, LabelScanStore labelScanStore,
+    private RecordStorageEngine get( FileSystemAbstraction fs, PageCache pageCache,
             SchemaIndexProvider schemaIndexProvider, DatabaseHealth databaseHealth, File storeDirectory,
             Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade> transactionApplierTransformer )
     {
@@ -101,7 +101,7 @@ public class RecordStorageEngineRule extends ExternalResource
             throw new IllegalStateException();
         }
         IdGeneratorFactory idGeneratorFactory = new EphemeralIdGenerator.Factory();
-        LabelScanStoreProvider labelScanStoreProvider = new LabelScanStoreProvider( labelScanStore, 42 );
+        LabelScanStoreProvider labelScanStoreProvider = nativeLabelScanStoreProvider( storeDirectory, fs, pageCache );
         LegacyIndexProviderLookup legacyIndexProviderLookup = mock( LegacyIndexProviderLookup.class );
         when( legacyIndexProviderLookup.all() ).thenReturn( Iterables.empty() );
         IndexConfigStore indexConfigStore = new IndexConfigStore( storeDirectory, fs );
@@ -131,7 +131,6 @@ public class RecordStorageEngineRule extends ExternalResource
     {
         private final FileSystemAbstraction fs;
         private final PageCache pageCache;
-        private LabelScanStore labelScanStore = new InMemoryLabelScanStore();
         private DatabaseHealth databaseHealth = new DatabaseHealth(
                 new DatabasePanicEventGenerator( new KernelEventHandlers( NullLog.getInstance() ) ),
                 NullLog.getInstance() );
@@ -144,12 +143,6 @@ public class RecordStorageEngineRule extends ExternalResource
         {
             this.fs = fs;
             this.pageCache = pageCache;
-        }
-
-        public Builder labelScanStore( LabelScanStore labelScanStore )
-        {
-            this.labelScanStore = labelScanStore;
-            return this;
         }
 
         public Builder transactionApplierTransformer(
@@ -181,10 +174,9 @@ public class RecordStorageEngineRule extends ExternalResource
 
         public RecordStorageEngine build()
         {
-            return get( fs, pageCache, labelScanStore, schemaIndexProvider, databaseHealth, storeDirectory,
+            return get( fs, pageCache, schemaIndexProvider, databaseHealth, storeDirectory,
                     transactionApplierTransformer );
         }
-
     }
 
     private class ExtendedRecordStorageEngine extends RecordStorageEngine

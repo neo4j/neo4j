@@ -37,35 +37,43 @@ import org.neo4j.function.Suppliers;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
-import org.neo4j.index.lucene.LuceneLabelScanStoreBuilder;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
-import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
-import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.extension.KernelExtensions;
+import org.neo4j.kernel.extension.dependency.HighestSelectionStrategy;
+import org.neo4j.kernel.extension.dependency.NamedLabelScanStoreSelectionStrategy;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
-import org.neo4j.kernel.impl.factory.OperationalMode;
+import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.locking.LockService;
+import org.neo4j.kernel.impl.logging.SimpleLogService;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
+import org.neo4j.kernel.impl.spi.KernelContext;
+import org.neo4j.kernel.impl.spi.SimpleKernelContext;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
+import org.neo4j.kernel.impl.util.Dependencies;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.DuplicatingLog;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
-
+import static org.neo4j.helpers.Service.load;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
+import static org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies.ignore;
+import static org.neo4j.kernel.impl.factory.DatabaseInfo.UNKNOWN;
 
 public class ConsistencyCheckService
 {
@@ -173,53 +181,45 @@ public class ConsistencyCheckService
             }
         } ) );
 
+        // Bootstrap kernel extensions
+        LifeSupport life = new LifeSupport();
         try ( NeoStores neoStores = factory.openAllNeoStores() )
         {
-            LabelScanStore labelScanStore = null;
-            try
-            {
-                IndexStoreView indexStoreView = new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, neoStores );
-                OperationalMode operationalMode = OperationalMode.single;
-                labelScanStore = new LuceneLabelScanStoreBuilder( storeDir, indexStoreView, fileSystem,
-                        consistencyCheckerConfig, operationalMode, logProvider )
-                        .build();
+            IndexStoreView indexStoreView = new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, neoStores );
+            Dependencies dependencies = new Dependencies();
+            dependencies.satisfyDependencies( consistencyCheckerConfig, fileSystem,
+                    new SimpleLogService( logProvider, logProvider ), indexStoreView, pageCache );
+            KernelContext kernelContext = new SimpleKernelContext( storeDir, UNKNOWN, dependencies );
+            KernelExtensions extensions = life.add( new KernelExtensions(
+                    kernelContext, (Iterable) load( KernelExtensionFactory.class ), dependencies, ignore() ) );
+            life.start();
+            LabelScanStore labelScanStore = life.add( extensions.resolveDependency( LabelScanStoreProvider.class,
+                    new NamedLabelScanStoreSelectionStrategy( consistencyCheckerConfig ) ).getLabelScanStore() );
+            SchemaIndexProvider indexes = life.add( extensions.resolveDependency( SchemaIndexProvider.class,
+                    HighestSelectionStrategy.getInstance() ) );
 
-                SchemaIndexProvider indexes = new LuceneSchemaIndexProvider( fileSystem, DirectoryFactory.PERSISTENT,
-                        storeDir, logProvider, consistencyCheckerConfig, operationalMode );
-
-                int numberOfThreads = defaultConsistencyCheckThreadsNumber();
-                Statistics statistics;
-                StoreAccess storeAccess;
-                AccessStatistics stats = new AccessStatistics();
-                if ( verbose )
-                {
-                    statistics = new VerboseStatistics( stats, new DefaultCounts( numberOfThreads ), log );
-                    storeAccess = new AccessStatsKeepingStoreAccess( neoStores, stats );
-                }
-                else
-                {
-                    statistics = Statistics.NONE;
-                    storeAccess = new StoreAccess( neoStores );
-                }
-                storeAccess.initialize();
-                DirectStoreAccess stores = new DirectStoreAccess( storeAccess, labelScanStore, indexes );
-                FullCheck check = new FullCheck( tuningConfiguration, progressFactory, statistics, numberOfThreads );
-                summary = check.execute( stores, new DuplicatingLog( log, reportLog ) );
-            }
-            finally
+            int numberOfThreads = defaultConsistencyCheckThreadsNumber();
+            Statistics statistics;
+            StoreAccess storeAccess;
+            AccessStatistics stats = new AccessStatistics();
+            if ( verbose )
             {
-                try
-                {
-                    if ( null != labelScanStore )
-                    {
-                        labelScanStore.shutdown();
-                    }
-                }
-                catch ( IOException e )
-                {
-                    log.error( "Failure during shutdown of label scan store", e );
-                }
+                statistics = new VerboseStatistics( stats, new DefaultCounts( numberOfThreads ), log );
+                storeAccess = new AccessStatsKeepingStoreAccess( neoStores, stats );
             }
+            else
+            {
+                statistics = Statistics.NONE;
+                storeAccess = new StoreAccess( neoStores );
+            }
+            storeAccess.initialize();
+            DirectStoreAccess stores = new DirectStoreAccess( storeAccess, labelScanStore, indexes );
+            FullCheck check = new FullCheck( tuningConfiguration, progressFactory, statistics, numberOfThreads );
+            summary = check.execute( stores, new DuplicatingLog( log, reportLog ) );
+        }
+        finally
+        {
+            life.shutdown();
         }
 
         if ( !summary.isConsistent() )

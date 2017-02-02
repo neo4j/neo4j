@@ -25,7 +25,7 @@ import java.util.function.IntPredicate;
 
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
@@ -57,13 +57,13 @@ public interface IndexStoreView extends PropertyAccessor
      */
     void nodeAsUpdates( long nodeId, Collection<NodePropertyUpdate> target );
 
-    DoubleLongRegister indexUpdatesAndSize( IndexDescriptor descriptor, DoubleLongRegister output );
+    DoubleLongRegister indexUpdatesAndSize( long indexId, DoubleLongRegister output );
 
-    DoubleLongRegister indexSample( IndexDescriptor descriptor, DoubleLongRegister output );
+    DoubleLongRegister indexSample( long indexId, DoubleLongRegister output );
 
-    void replaceIndexCounts( IndexDescriptor descriptor, long uniqueElements, long maxUniqueElements, long indexSize );
+    void replaceIndexCounts( long indexId, long uniqueElements, long maxUniqueElements, long indexSize );
 
-    void incrementIndexUpdates( IndexDescriptor descriptor, long updatesDelta );
+    void incrementIndexUpdates( long indexId, long updatesDelta );
 
     StoreScan EMPTY_SCAN = new StoreScan()
     {
@@ -114,7 +114,7 @@ public interface IndexStoreView extends PropertyAccessor
         }
 
         @Override
-        public void replaceIndexCounts( IndexDescriptor descriptor, long uniqueElements, long maxUniqueElements,
+        public void replaceIndexCounts( long indexId, long uniqueElements, long maxUniqueElements,
                 long indexSize )
         {
         }
@@ -125,19 +125,19 @@ public interface IndexStoreView extends PropertyAccessor
         }
 
         @Override
-        public DoubleLongRegister indexUpdatesAndSize( IndexDescriptor descriptor, DoubleLongRegister output )
+        public DoubleLongRegister indexUpdatesAndSize( long indexId, DoubleLongRegister output )
         {
             return output;
         }
 
         @Override
-        public DoubleLongRegister indexSample( IndexDescriptor descriptor, DoubleLongRegister output )
+        public DoubleLongRegister indexSample( long indexId, DoubleLongRegister output )
         {
             return output;
         }
 
         @Override
-        public void incrementIndexUpdates( IndexDescriptor descriptor, long updatesDelta )
+        public void incrementIndexUpdates( long indexId, long updatesDelta )
         {
         }
 

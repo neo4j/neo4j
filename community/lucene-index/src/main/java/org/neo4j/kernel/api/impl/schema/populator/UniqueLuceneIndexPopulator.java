@@ -23,7 +23,7 @@ import java.io.IOException;
 
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.SchemaIndex;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PropertyAccessor;
@@ -44,6 +44,7 @@ public class UniqueLuceneIndexPopulator extends LuceneIndexPopulator
     public UniqueLuceneIndexPopulator( SchemaIndex index, IndexDescriptor descriptor )
     {
         super( index );
+        //TODO: Composite index make lucene handel Composite indexes
         this.propertyKeyId = descriptor.getPropertyKeyId();
         this.sampler = new UniqueIndexSampler();
     }

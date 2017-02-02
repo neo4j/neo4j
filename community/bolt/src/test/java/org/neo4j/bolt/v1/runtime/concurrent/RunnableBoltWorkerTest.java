@@ -29,7 +29,13 @@ import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.logging.AssertableLogProvider;
 
-import static org.mockito.Mockito.*;
+import static org.hamcrest.Matchers.equalTo;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class RunnableBoltWorkerTest
@@ -62,7 +68,7 @@ public class RunnableBoltWorkerTest
         // Given
         RunnableBoltWorker worker = new RunnableBoltWorker( machine, NullLogService.getInstance() );
         worker.enqueue( s -> s.run( "Hello, world!", null, null ) );
-        worker.enqueue( RunnableBoltWorker.SHUTDOWN );
+        worker.enqueue( s -> worker.halt() );
 
         // When
         worker.run();
@@ -124,5 +130,68 @@ public class RunnableBoltWorkerTest
         internalLog.assertExactly( inLog( RunnableBoltWorker.class ).error( "Bolt protocol breach in session " +
                 "'test-session'" ) );
         userLog.assertNone( inLog( RunnableBoltWorker.class ).any() );
+    }
+
+    @Test
+    public void workerCanBeHaltedMultipleTimes()
+    {
+        RunnableBoltWorker worker = new RunnableBoltWorker( machine, logService );
+
+        worker.halt();
+        worker.halt();
+        worker.halt();
+
+        worker.run();
+
+        verify( machine ).close();
+    }
+
+    @Test
+    public void stateMachineIsClosedOnExit()
+    {
+        RunnableBoltWorker worker = new RunnableBoltWorker( machine, logService );
+        worker.enqueue( s -> s.run( "RETURN 1", null, null ) );
+        worker.enqueue( s -> s.run( "RETURN 2", null, null ) );
+        worker.enqueue( s -> worker.halt() );
+
+        worker.run();
+
+        verify( machine ).close();
+    }
+
+    @Test
+    public void stateMachineNotClosedOnHalt()
+    {
+        RunnableBoltWorker worker = new RunnableBoltWorker( machine, logService );
+
+        worker.halt();
+
+        verify( machine, never() ).close();
+    }
+
+    @Test
+    public void stateMachineInterrupted()
+    {
+        RunnableBoltWorker worker = new RunnableBoltWorker( machine, logService );
+
+        worker.interrupt();
+
+        verify( machine ).interrupt();
+    }
+
+    @Test
+    public void stateMachineCloseFailureIsLogged()
+    {
+        RunnableBoltWorker worker = new RunnableBoltWorker( machine, logService );
+
+        RuntimeException closeError = new RuntimeException( "Oh!" );
+        doThrow( closeError ).when( machine ).close();
+
+        worker.enqueue( s -> worker.halt() );
+        worker.run();
+
+        internalLog.assertExactly( inLog( RunnableBoltWorker.class ).error(
+                equalTo( "Unable to close Bolt session 'test-session'" ),
+                equalTo( closeError ) ) );
     }
 }

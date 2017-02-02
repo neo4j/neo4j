@@ -19,13 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
+import org.mockito.Matchers.any
 import org.mockito.Mockito._
+import org.neo4j.cypher.internal.compiler.v3_2.IndexDescriptor
 import org.neo4j.cypher.internal.compiler.v3_2.spi.QueryContext
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{LabelToken, PropertyKeyToken, _}
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_2.{LabelId, PropertyKeyId}
 import org.neo4j.graphdb.Node
-import org.neo4j.kernel.api.index.IndexDescriptor
 
 class NodeIndexScanPipeTest extends CypherFunSuite with AstConstructionTestSupport {
 
@@ -33,7 +34,7 @@ class NodeIndexScanPipeTest extends CypherFunSuite with AstConstructionTestSuppo
 
   private val label = LabelToken(LabelName("LabelName")_, LabelId(11))
   private val propertyKey = PropertyKeyToken(PropertyKeyName("PropertyName")_, PropertyKeyId(10))
-  private val descriptor = new IndexDescriptor(label.nameId.id, propertyKey.nameId.id)
+  private val descriptor = IndexDescriptor(label.nameId.id, propertyKey.nameId.id)
   private val node = mock[Node]
 
   test("should return nodes found by index scan when both labelId and property key id are solved at compile time") {
@@ -52,7 +53,7 @@ class NodeIndexScanPipeTest extends CypherFunSuite with AstConstructionTestSuppo
 
   private def scanFor(nodes: Iterator[Node]): QueryContext = {
     val query = mock[QueryContext]
-    when(query.indexScan(descriptor)).thenReturn(nodes)
+    when(query.indexScan(any())).thenReturn(nodes)
     query
   }
 }

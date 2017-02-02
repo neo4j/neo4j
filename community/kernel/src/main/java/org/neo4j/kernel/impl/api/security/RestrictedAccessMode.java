@@ -46,6 +46,12 @@ public class RestrictedAccessMode extends WrappedAccessMode
     }
 
     @Override
+    public boolean allowsTokenCreates()
+    {
+        return original.allowsTokenCreates() && wrapping.allowsTokenCreates();
+    }
+
+    @Override
     public boolean allowsSchemaWrites()
     {
         return original.allowsSchemaWrites() && wrapping.allowsSchemaWrites();

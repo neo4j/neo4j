@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.locking;
 
+import java.util.stream.Stream;
+
 import org.neo4j.kernel.impl.api.KernelStatement;
 
 /**
@@ -58,4 +60,23 @@ public interface StatementLocks extends AutoCloseable
      */
     @Override
     void close();
+
+    /**
+     * List the locks held by this transaction.
+     *
+     * This method is invoked by concurrent threads in order to inspect the lock state in this transaction.
+     *
+     * @return the locks held by this transaction.
+     */
+    Stream<? extends ActiveLock> activeLocks();
+
+    /**
+     * Get the current number of active locks.
+     *
+     * Note that the value returned by this method might differ from the number of locks returned by
+     * {@link #activeLocks()}, since they would introspect the lock state at different points in time.
+     *
+     * @return the number of active locks in this transaction.
+     */
+    long activeLockCount();
 }

@@ -45,7 +45,8 @@ case class CompiledPlan(updating: Boolean,
                         plannerUsed: PlannerName,
                         planDescription: InternalPlanDescription,
                         columns: Seq[String],
-                        executionResultBuilder: RunnablePlan )
+                        executionResultBuilder: RunnablePlan,
+                        plannedIndexUsage: Seq[IndexUsage] = Seq.empty )
 
 case class PipeInfo(pipe: Pipe,
                     updating: Boolean,

@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{Expander, K
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
 import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
-import org.neo4j.kernel.api.index.IndexDescriptor
+import org.neo4j.cypher.internal.compiler.v3_2.IndexDescriptor
 
 import scala.collection.Iterator
 
@@ -88,9 +88,9 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
 
   override def getOrCreatePropertyKeyId(propertyKey: String) = singleDbHit(inner.getOrCreatePropertyKeyId(propertyKey))
 
-  override def addIndexRule(labelId: Int, propertyKeyId: Int) = singleDbHit(inner.addIndexRule(labelId, propertyKeyId))
+  override def addIndexRule(descriptor: IndexDescriptor) = singleDbHit(inner.addIndexRule(descriptor))
 
-  override def dropIndexRule(labelId: Int, propertyKeyId: Int) = singleDbHit(inner.dropIndexRule(labelId, propertyKeyId))
+  override def dropIndexRule(descriptor: IndexDescriptor) = singleDbHit(inner.dropIndexRule(descriptor))
 
   override def indexSeek(index: IndexDescriptor, value: Any): Iterator[Node] = manyDbHits(inner.indexSeek(index, value))
 
@@ -110,11 +110,11 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
   override def getOrCreateFromSchemaState[K, V](key: K, creator: => V): V =
     singleDbHit(inner.getOrCreateFromSchemaState(key, creator))
 
-  override def createUniqueConstraint(labelId: Int, propertyKeyId: Int) =
-    singleDbHit(inner.createUniqueConstraint(labelId, propertyKeyId))
+  override def createUniqueConstraint(descriptor: IndexDescriptor) =
+    singleDbHit(inner.createUniqueConstraint(descriptor))
 
-  override def dropUniqueConstraint(labelId: Int, propertyKeyId: Int) =
-    singleDbHit(inner.dropUniqueConstraint(labelId, propertyKeyId))
+  override def dropUniqueConstraint(descriptor: IndexDescriptor) =
+    singleDbHit(inner.dropUniqueConstraint(descriptor))
 
   override def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int) =
     singleDbHit(inner.createNodePropertyExistenceConstraint(labelId, propertyKeyId))
@@ -160,12 +160,12 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
                                         relTypes: Seq[String]): Iterator[Path] =
     manyDbHits(inner.variableLengthPathExpand(node, realNode, minHops, maxHops, direction, relTypes))
 
-  override def isLabelSetOnNode(label: Int, node: Long): Boolean = getLabelsForNode(node).contains(label)
+  override def isLabelSetOnNode(label: Int, node: Long): Boolean = singleDbHit(inner.isLabelSetOnNode(label, node))
 
-  override def nodeCountByCountStore(labelId: Int): Long = inner.nodeCountByCountStore(labelId)
+  override def nodeCountByCountStore(labelId: Int): Long = singleDbHit(inner.nodeCountByCountStore(labelId))
 
   override def relationshipCountByCountStore(startLabelId: Int, typeId: Int, endLabelId: Int): Long =
-    inner.relationshipCountByCountStore(startLabelId, typeId, endLabelId)
+    singleDbHit(inner.relationshipCountByCountStore(startLabelId, typeId, endLabelId))
 
   override def lockNodes(nodeIds: Long*): Unit = inner.lockNodes(nodeIds:_*)
 
@@ -187,6 +187,9 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
   override def callReadWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) =
     singleDbHit(inner.callReadWriteProcedure(name, args, allowed))
 
+  override def callTokenWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) =
+    singleDbHit(inner.callTokenWriteProcedure(name, args, allowed))
+
   override def callSchemaWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) =
     singleDbHit(inner.callSchemaWriteProcedure(name, args, allowed))
 
@@ -195,7 +198,6 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
 
   override def callFunction(name: QualifiedName, args: Seq[Any], allowed: Array[String]) =
     singleDbHit(inner.callFunction(name, args, allowed))
-
 
   override def aggregateFunction(name: QualifiedName,
                                  allowed: Array[String]): UserDefinedAggregator =

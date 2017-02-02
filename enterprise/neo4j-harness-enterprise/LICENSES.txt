@@ -6,13 +6,13 @@ Apache Software License, Version 2.0
   Apache Commons Compress
   Apache Commons Configuration
   Apache Commons Lang
+  Apache Commons Logging
   Apache Shiro :: Core
   Caffeine cache
   Commons BeanUtils
   Commons Digester
   Commons IO
   Commons Lang
-  Commons Logging
   ConcurrentLinkedHashMap
   Data Mapper for Jackson
   Graphite Integration for Metrics

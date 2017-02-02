@@ -44,6 +44,11 @@ public class AnonymousContext implements SecurityContext
         return new AnonymousContext( AccessMode.Static.WRITE );
     }
 
+    public static AnonymousContext writeToken()
+    {
+        return new AnonymousContext( AccessMode.Static.TOKEN_WRITE );
+    }
+
     public static AnonymousContext writeOnly()
     {
         return new AnonymousContext( AccessMode.Static.WRITE_ONLY );

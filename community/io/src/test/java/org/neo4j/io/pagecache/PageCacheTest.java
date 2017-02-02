@@ -72,7 +72,7 @@ import org.neo4j.io.pagecache.randomharness.StandardRecordFormat;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PinEvent;
-import org.neo4j.test.RepeatRule;
+import org.neo4j.test.rule.RepeatRule;
 
 import static java.lang.Long.toHexString;
 import static java.lang.System.currentTimeMillis;
@@ -93,6 +93,7 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -101,8 +102,8 @@ import static org.neo4j.io.pagecache.PagedFile.PF_NO_FAULT;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
-import static org.neo4j.test.ByteArrayMatcher.byteArray;
 import static org.neo4j.test.ThreadTestUtils.fork;
+import static org.neo4j.test.matchers.ByteArrayMatcher.byteArray;
 
 @SuppressWarnings( "OptionalGetWithoutIsPresent" )
 public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSupport<T>
@@ -2772,6 +2773,44 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         }
     }
 
+    @Test
+    public void pageCursorCloseShouldNotReturnAlreadyClosedLinkedCursorToPool() throws Exception
+    {
+        File file = file( "a" );
+        generateFileWithRecords( file, recordsPerFilePage * 2, recordSize );
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        try ( PagedFile pf = pageCache.map( file, filePageSize ) )
+        {
+            PageCursor a = pf.io( 0, PF_SHARED_WRITE_LOCK );
+            PageCursor b = a.openLinkedCursor( 0 );
+            b.close();
+            PageCursor c = a.openLinkedCursor( 0 ); // Will close b again, creating a loop in the CursorPool
+            PageCursor d = pf.io( 0, PF_SHARED_WRITE_LOCK ); // Same object as c because of loop in pool
+            assertNotSame( c, d );
+            c.close();
+            d.close();
+        }
+    }
+
+    @Test
+    public void pageCursorCloseShouldNotReturnSameObjectToCursorPoolTwice() throws Exception
+    {
+        File file = file( "a" );
+        generateFileWithRecords( file, recordsPerFilePage * 2, recordSize );
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        try ( PagedFile pf = pageCache.map( file, filePageSize ) )
+        {
+            PageCursor a = pf.io( 0, PF_SHARED_WRITE_LOCK );
+            a.close();
+            a.close(); // Return same object to CursorPool again, creating a Loop
+            PageCursor b = pf.io( 0, PF_SHARED_WRITE_LOCK );
+            PageCursor c = pf.io( 0, PF_SHARED_WRITE_LOCK );
+            assertNotSame( b, c );
+            b.close();
+            c.close();
+        }
+    }
+
     private interface PageCursorAction
     {
         void apply( PageCursor cursor );
@@ -4897,6 +4936,20 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         assertThat( filepaths, containsInAnyOrder(
                 a.getCanonicalFile(), // file in our sub directory
                 file( "a" ).getCanonicalFile() ) ); // this file is always created by the test setup
+    }
+
+    @Test
+    public void streamFilesRecursiveMustBeAbleToGivePathRelativeToBase() throws Exception
+    {
+        configureStandardPageCache();
+        File sub = existingDirectory( "sub" );
+        File a = file( "a" );
+        File b = new File( sub, "b" );
+        ensureExists( b );
+        File base = a.getParentFile();
+        Set<File> set = pageCache.streamFilesRecursive( base ).map( FileHandle::getRelativeFile ).collect( toSet() );
+        assertThat( "Files relative to base directory " + base,
+                set, containsInAnyOrder( new File( "a" ), new File( "sub" + File.separator + "b" ) ) );
     }
 
     @Test

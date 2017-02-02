@@ -37,9 +37,11 @@ import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ExecutingQuery;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.LegacyIndexHits;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.ProcedureCallOperations;
 import org.neo4j.kernel.api.QueryRegistryOperations;
 import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
@@ -64,13 +66,12 @@ import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelExceptio
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
-import org.neo4j.kernel.api.exceptions.schema.DuplicateIndexSchemaRuleException;
+import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
-import org.neo4j.kernel.api.exceptions.schema.IndexSchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
@@ -80,6 +81,7 @@ import org.neo4j.kernel.api.proc.QualifiedName;
 import org.neo4j.kernel.api.proc.UserFunctionSignature;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.api.operations.CountsOperations;
@@ -95,17 +97,24 @@ import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.api.security.OverriddenAccessMode;
 import org.neo4j.kernel.impl.api.security.RestrictedAccessMode;
+import org.neo4j.kernel.impl.api.store.CursorRelationshipIterator;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.proc.Procedures;
-import org.neo4j.kernel.impl.query.QuerySource;
+import org.neo4j.kernel.impl.util.Cursors;
+import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
 import org.neo4j.register.Register.DoubleLongRegister;
+import org.neo4j.storageengine.api.LabelItem;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.RelationshipItem;
+import org.neo4j.storageengine.api.RelationshipTypeItem;
 import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
+import org.neo4j.storageengine.api.schema.SchemaRule;
 
 import static java.lang.String.format;
+
+import static org.neo4j.collection.primitive.PrimitiveIntCollections.deduplicate;
 
 public class OperationsFacade
         implements ReadOperations, DataWriteOperations, SchemaWriteOperations, QueryRegistryOperations,
@@ -136,6 +145,7 @@ public class OperationsFacade
 
     final KeyWriteOperations tokenWrite()
     {
+        statement.assertAllows( AccessMode::allowsTokenCreates, "Token create" );
         return operations.keyWriteOperations();
     }
 
@@ -319,7 +329,7 @@ public class OperationsFacade
         statement.assertOpen();
         try ( Cursor<NodeItem> node = dataRead().nodeCursorById( statement, nodeId ) )
         {
-            return node.get().getLabels();
+            return Cursors.intIterator( node.get().labels(), LabelItem::getAsInt );
         }
     }
 
@@ -362,7 +372,8 @@ public class OperationsFacade
         statement.assertOpen();
         try ( Cursor<NodeItem> node = dataRead().nodeCursorById( statement, nodeId ) )
         {
-            return node.get().getRelationships( direction( direction ), relTypes );
+            return new CursorRelationshipIterator(
+                    node.get().relationships( direction( direction ), deduplicate( relTypes ) ) );
         }
     }
 
@@ -382,10 +393,9 @@ public class OperationsFacade
             throws EntityNotFoundException
     {
         statement.assertOpen();
-
         try ( Cursor<NodeItem> node = dataRead().nodeCursorById( statement, nodeId ) )
         {
-            return node.get().getRelationships( direction( direction ) );
+            return new CursorRelationshipIterator( node.get().relationships( direction( direction ) ) );
         }
     }
 
@@ -425,7 +435,7 @@ public class OperationsFacade
         statement.assertOpen();
         try ( Cursor<NodeItem> node = dataRead().nodeCursorById( statement, nodeId ) )
         {
-            return node.get().getRelationshipTypes();
+            return Cursors.intIterator( node.get().relationshipTypes(), RelationshipTypeItem::getAsInt );
         }
     }
 
@@ -604,16 +614,17 @@ public class OperationsFacade
 
     // <SchemaRead>
     @Override
-    public IndexDescriptor indexGetForLabelAndPropertyKey( int labelId, int propertyKeyId )
+    public IndexDescriptor indexGetForLabelAndPropertyKey( NodePropertyDescriptor descriptor )
             throws SchemaRuleNotFoundException
     {
         statement.assertOpen();
-        IndexDescriptor descriptor = schemaRead().indexGetForLabelAndPropertyKey( statement, labelId, propertyKeyId );
-        if ( descriptor == null )
+        IndexDescriptor indexDescriptor = schemaRead().indexGetForLabelAndPropertyKey( statement, descriptor );
+        if ( indexDescriptor == null )
         {
-            throw new IndexSchemaRuleNotFoundException( labelId, propertyKeyId );
+            throw new SchemaRuleNotFoundException( SchemaRule.Kind.INDEX_RULE,
+                    SchemaDescriptorFactory.forLabel( descriptor.getLabelId(), descriptor.getPropertyKeyId() ) );
         }
-        return descriptor;
+        return indexDescriptor;
     }
 
     @Override
@@ -631,16 +642,16 @@ public class OperationsFacade
     }
 
     @Override
-    public IndexDescriptor uniqueIndexGetForLabelAndPropertyKey( int labelId, int propertyKeyId )
-            throws SchemaRuleNotFoundException, DuplicateIndexSchemaRuleException
+    public IndexDescriptor uniqueIndexGetForLabelAndPropertyKey( NodePropertyDescriptor descriptor )
+            throws SchemaRuleNotFoundException, DuplicateSchemaRuleException
 
     {
         IndexDescriptor result = null;
-        Iterator<IndexDescriptor> indexes = uniqueIndexesGetForLabel( labelId );
+        Iterator<IndexDescriptor> indexes = uniqueIndexesGetForLabel( descriptor.getLabelId() );
         while ( indexes.hasNext() )
         {
             IndexDescriptor index = indexes.next();
-            if ( index.getPropertyKeyId() == propertyKeyId )
+            if ( index.equals( descriptor ) )
             {
                 if ( null == result )
                 {
@@ -648,14 +659,16 @@ public class OperationsFacade
                 }
                 else
                 {
-                    throw new DuplicateIndexSchemaRuleException( labelId, propertyKeyId, true );
+                    throw new DuplicateSchemaRuleException( SchemaRule.Kind.CONSTRAINT_INDEX_RULE,
+                            SchemaDescriptorFactory.forLabel( descriptor.getLabelId(), descriptor.getPropertyKeyId() ) );
                 }
             }
         }
 
         if ( null == result )
         {
-            throw new IndexSchemaRuleNotFoundException( labelId, propertyKeyId, true );
+            throw new SchemaRuleNotFoundException( SchemaRule.Kind.CONSTRAINT_INDEX_RULE,
+                    SchemaDescriptorFactory.forLabel( descriptor.getLabelId(), descriptor.getPropertyKeyId() ) );
         }
 
         return result;
@@ -718,10 +731,10 @@ public class OperationsFacade
     }
 
     @Override
-    public Iterator<NodePropertyConstraint> constraintsGetForLabelAndPropertyKey( int labelId, int propertyKeyId )
+    public Iterator<NodePropertyConstraint> constraintsGetForLabelAndPropertyKey( NodePropertyDescriptor descriptor )
     {
         statement.assertOpen();
-        return schemaRead().constraintsGetForLabelAndPropertyKey( statement, labelId, propertyKeyId );
+        return schemaRead().constraintsGetForLabelAndPropertyKey( statement, descriptor );
     }
 
     @Override
@@ -739,11 +752,11 @@ public class OperationsFacade
     }
 
     @Override
-    public Iterator<RelationshipPropertyConstraint> constraintsGetForRelationshipTypeAndPropertyKey( int typeId,
-            int propertyKeyId )
+    public Iterator<RelationshipPropertyConstraint> constraintsGetForRelationshipTypeAndPropertyKey(
+            RelationshipPropertyDescriptor descriptor )
     {
         statement.assertOpen();
-        return schemaRead().constraintsGetForRelationshipTypeAndPropertyKey( statement, typeId, propertyKeyId );
+        return schemaRead().constraintsGetForRelationshipTypeAndPropertyKey( statement, descriptor );
     }
 
     @Override
@@ -846,6 +859,12 @@ public class OperationsFacade
     public int labelGetOrCreateForName( String labelName ) throws IllegalTokenNameException, TooManyLabelsException
     {
         statement.assertOpen();
+        int id = tokenRead().labelGetForName( statement, labelName );
+        if (id != KeyReadOperations.NO_SUCH_LABEL )
+        {
+            return id;
+        }
+
         return tokenWrite().labelGetOrCreateForName( statement, labelName );
     }
 
@@ -853,6 +872,11 @@ public class OperationsFacade
     public int propertyKeyGetOrCreateForName( String propertyKeyName ) throws IllegalTokenNameException
     {
         statement.assertOpen();
+        int id = tokenRead().propertyKeyGetForName( statement, propertyKeyName );
+        if (id != KeyReadOperations.NO_SUCH_PROPERTY_KEY )
+        {
+            return id;
+        }
         return tokenWrite().propertyKeyGetOrCreateForName( statement,
                 propertyKeyName );
     }
@@ -861,6 +885,11 @@ public class OperationsFacade
     public int relationshipTypeGetOrCreateForName( String relationshipTypeName ) throws IllegalTokenNameException
     {
         statement.assertOpen();
+        int id = tokenRead().relationshipTypeGetForName( statement, relationshipTypeName );
+        if (id != KeyReadOperations.NO_SUCH_RELATIONSHIP_TYPE )
+        {
+            return id;
+        }
         return tokenWrite().relationshipTypeGetOrCreateForName( statement, relationshipTypeName );
     }
 
@@ -1011,11 +1040,11 @@ public class OperationsFacade
 
     // <SchemaWrite>
     @Override
-    public IndexDescriptor indexCreate( int labelId, int propertyKeyId )
+    public IndexDescriptor indexCreate( NodePropertyDescriptor descriptor )
             throws AlreadyIndexedException, AlreadyConstrainedException
     {
         statement.assertOpen();
-        return schemaWrite().indexCreate( statement, labelId, propertyKeyId );
+        return schemaWrite().indexCreate( statement, descriptor );
     }
 
     @Override
@@ -1026,28 +1055,28 @@ public class OperationsFacade
     }
 
     @Override
-    public UniquenessConstraint uniquePropertyConstraintCreate( int labelId, int propertyKeyId )
+    public UniquenessConstraint uniquePropertyConstraintCreate( NodePropertyDescriptor descriptor )
             throws CreateConstraintFailureException, AlreadyConstrainedException, AlreadyIndexedException
     {
         statement.assertOpen();
-        return schemaWrite().uniquePropertyConstraintCreate( statement, labelId, propertyKeyId );
+        return schemaWrite().uniquePropertyConstraintCreate( statement, descriptor );
     }
 
     @Override
-    public NodePropertyExistenceConstraint nodePropertyExistenceConstraintCreate( int labelId, int propertyKeyId )
+    public NodePropertyExistenceConstraint nodePropertyExistenceConstraintCreate( NodePropertyDescriptor descriptor )
             throws CreateConstraintFailureException, AlreadyConstrainedException
     {
         statement.assertOpen();
-        return schemaWrite().nodePropertyExistenceConstraintCreate( statement, labelId, propertyKeyId );
+        return schemaWrite().nodePropertyExistenceConstraintCreate( statement, descriptor );
     }
 
     @Override
     public RelationshipPropertyExistenceConstraint relationshipPropertyExistenceConstraintCreate(
-            int relTypeId, int propertyKeyId )
+            RelationshipPropertyDescriptor descriptor )
             throws CreateConstraintFailureException, AlreadyConstrainedException
     {
         statement.assertOpen();
-        return schemaWrite().relationshipPropertyExistenceConstraintCreate( statement, relTypeId, propertyKeyId );
+        return schemaWrite().relationshipPropertyExistenceConstraintCreate( statement, descriptor );
     }
 
     @Override
@@ -1390,7 +1419,7 @@ public class OperationsFacade
 
     @Override
     public ExecutingQuery startQueryExecution(
-        QuerySource descriptor,
+        ClientConnectionInfo descriptor,
         String queryText,
         Map<String,Object> queryParameters )
     {
@@ -1447,16 +1476,36 @@ public class OperationsFacade
             throw accessMode.onViolation( format( "Write operations are not allowed for %s.",
                     tx.securityContext().description() ) );
         }
-        return callProcedure( name, input,
-                new RestrictedAccessMode( tx.securityContext().mode(), AccessMode.Static.WRITE ) );
+        return callProcedure( name, input, new RestrictedAccessMode( tx.securityContext().mode(), procedures.getWriteMode() ) );
     }
 
     @Override
     public RawIterator<Object[],ProcedureException> procedureCallWriteOverride( QualifiedName name, Object[] input )
             throws ProcedureException
     {
+        return callProcedure( name, input, new OverriddenAccessMode( tx.securityContext().mode(), procedures.getWriteMode() ) );
+    }
+
+    @Override
+    public RawIterator<Object[],ProcedureException> procedureCallToken( QualifiedName name, Object[] input )
+            throws ProcedureException
+    {
+        AccessMode accessMode = tx.securityContext().mode();
+        if ( !accessMode.allowsTokenCreates() )
+        {
+            throw accessMode.onViolation( format( "Token create operations are not allowed for %s.",
+                    tx.securityContext().description() ) );
+        }
         return callProcedure( name, input,
-                new OverriddenAccessMode( tx.securityContext().mode(), AccessMode.Static.WRITE ) );
+                new RestrictedAccessMode( tx.securityContext().mode(), AccessMode.Static.TOKEN_WRITE ) );
+    }
+
+    @Override
+    public RawIterator<Object[],ProcedureException> procedureCallTokenOverride( QualifiedName name, Object[] input )
+            throws ProcedureException
+    {
+        return callProcedure( name, input,
+                new OverriddenAccessMode( tx.securityContext().mode(), AccessMode.Static.TOKEN_WRITE ) );
     }
 
     @Override

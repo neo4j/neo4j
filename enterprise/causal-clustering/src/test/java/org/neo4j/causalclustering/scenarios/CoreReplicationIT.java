@@ -31,6 +31,7 @@ import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.core.consensus.roles.Role;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
+import org.neo4j.causalclustering.discovery.HazelcastDiscoveryServiceFactory;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -161,7 +162,10 @@ public class CoreReplicationIT
     public void shouldReplicateTransactionToCoreMemberAddedAfterInitialStartUp() throws Exception
     {
         // given
+        cluster.getCoreMemberById( 0 ).shutdown();
+
         cluster.addCoreMemberWithId( 3 ).start();
+        cluster.getCoreMemberById( 0 ).start();
 
         cluster.coreTx( ( db, tx ) ->
         {

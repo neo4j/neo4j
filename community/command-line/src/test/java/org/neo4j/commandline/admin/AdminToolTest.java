@@ -35,6 +35,7 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 public class AdminToolTest
@@ -238,6 +239,21 @@ public class AdminToolTest
         new AdminTool( cannedCommand( "command", command ), blockerLocator, new NullOutsideWorld(), false )
                 .execute( null, null, "command", "the", "other", "args" );
         verify( command ).execute( new String[]{"the", "other", "args"} );
+    }
+
+    @Test
+    public void helpArgumentShouldAlwaysPrintHelp() throws CommandFailed, IncorrectUsage
+    {
+        AdminCommand command = mock( AdminCommand.class );
+        OutsideWorld outsideWorld = mock( OutsideWorld.class );
+
+        new AdminTool( cannedCommand( "command", command ), new NullBlockerLocator(), outsideWorld, false )
+                .execute( null, null, "command", "--help" );
+
+        verifyNoMoreInteractions( command );
+        verify( outsideWorld ).stdErrLine( "unknown argument: --help" );
+        verify( outsideWorld ).stdErrLine( "usage: neo4j-admin command " );
+        verify( outsideWorld ).exit( 1 );
     }
 
     private CannedLocator cannedCommand( final String name, AdminCommand command )

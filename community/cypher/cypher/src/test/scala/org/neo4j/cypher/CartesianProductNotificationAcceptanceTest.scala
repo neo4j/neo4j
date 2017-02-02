@@ -25,6 +25,7 @@ import org.mockito.Matchers._
 import org.mockito.Mockito.{verify, _}
 import org.neo4j.cypher.internal.compatibility.v3_2.{StringInfoLogger, WrappedMonitors}
 import org.neo4j.cypher.internal.compiler.v3_2._
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.CodeGenConfiguration
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.IdentityTypeConverter
 import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_2.InputPosition
@@ -114,6 +115,7 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
       new StringInfoLogger(NullLog.getInstance),
       plannerName = Some(IDPPlannerName),
       runtimeName = Some(CompiledRuntimeName),
+      codeGenMode = None,
       updateStrategy = None,
       rewriterSequencer = RewriterStepSequencer.newValidating,
       typeConverter = IdentityTypeConverter

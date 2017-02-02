@@ -19,16 +19,16 @@
  */
 package org.neo4j.kernel.builtinprocs;
 
+import org.hamcrest.Matcher;
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.stubbing.Answer;
+
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-
-import org.hamcrest.Matcher;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.stubbing.Answer;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Node;
@@ -36,13 +36,15 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.Key;
@@ -51,12 +53,10 @@ import org.neo4j.kernel.impl.factory.Edition;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.proc.TypeMappers;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.kernel.internal.Version;
 import org.neo4j.storageengine.api.Token;
 
 import static java.util.Collections.emptyIterator;
 import static java.util.Collections.singletonList;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -65,9 +65,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.kernel.api.proc.Context.KERNEL_TRANSACTION;
-
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTNode;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTPath;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTRelationship;
@@ -184,6 +182,11 @@ public class BuiltInProceduresTest
     {
         // When/Then
         assertThat( call( "dbms.procedures" ), containsInAnyOrder(
+                record( "dbms.listConfig",
+                        "dbms.listConfig(searchString =  :: STRING?) :: (name :: STRING?, description :: STRING?, " +
+                                "value" +
+                                " :: STRING?)",
+                        "List the currently active config of Neo4j." ),
             record( "db.awaitIndex", "db.awaitIndex(index :: STRING?, timeOutSeconds = 300 :: INTEGER?) :: VOID", "Wait for an index to come online (for example: CALL db.awaitIndex(\":Person(name)\"))." ),
             record( "db.constraints", "db.constraints() :: (description :: STRING?)", "List all constraints in the database." ),
             record( "db.indexes", "db.indexes() :: (description :: STRING?, state :: STRING?, type :: STRING?)", "List all indexes in the database." ),
@@ -220,7 +223,8 @@ public class BuiltInProceduresTest
         int labelId = token( label, labels );
         int propId = token( propKey, propKeys );
 
-        indexes.add( new IndexDescriptor( labelId, propId ) );
+        IndexDescriptor index = IndexDescriptorFactory.of( labelId, propId );
+        indexes.add( index );
     }
 
     private void givenUniqueConstraint( String label, String propKey )
@@ -228,8 +232,9 @@ public class BuiltInProceduresTest
         int labelId = token( label, labels );
         int propId = token( propKey, propKeys );
 
-        uniqueIndexes.add( new IndexDescriptor( labelId, propId )  );
-        constraints.add( new UniquenessConstraint( labelId, propId ) );
+        IndexDescriptor index = IndexDescriptorFactory.of( labelId, propId );
+        uniqueIndexes.add( index );
+        constraints.add( new UniquenessConstraint( index.descriptor() ) );
     }
 
     private void givenNodePropExistenceConstraint( String label, String propKey )
@@ -237,7 +242,8 @@ public class BuiltInProceduresTest
         int labelId = token( label, labels );
         int propId = token( propKey, propKeys );
 
-        constraints.add( new NodePropertyExistenceConstraint( labelId, propId ) );
+        NodePropertyDescriptor descriptor = new NodePropertyDescriptor( labelId, propId );
+        constraints.add( new NodePropertyExistenceConstraint( descriptor ) );
     }
 
     private void givenPropertyKeys( String ... keys )

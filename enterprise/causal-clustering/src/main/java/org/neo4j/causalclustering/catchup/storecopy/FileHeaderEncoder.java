@@ -34,5 +34,6 @@ public class FileHeaderEncoder extends MessageToByteEncoder<FileHeader>
         byte[] bytes = UTF8.encode( name );
         out.writeInt( bytes.length );
         out.writeBytes( bytes );
+        out.writeInt( msg.requiredAlignment() );
     }
 }

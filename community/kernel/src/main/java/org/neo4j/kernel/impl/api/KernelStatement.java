@@ -109,7 +109,6 @@ public class KernelStatement implements TxStateHolder, Statement
     {
         accessCapability.assertCanWrite();
 
-        assertAllows( AccessMode::allowsWrites, "Write" );
         return facade;
     }
 
@@ -259,7 +258,7 @@ public class KernelStatement implements TxStateHolder, Statement
         return transaction;
     }
 
-    private void assertAllows( Function<AccessMode,Boolean> allows, String mode )
+    void assertAllows( Function<AccessMode,Boolean> allows, String mode )
     {
         AccessMode accessMode = transaction.securityContext().mode();
         if ( !allows.apply( accessMode ) )

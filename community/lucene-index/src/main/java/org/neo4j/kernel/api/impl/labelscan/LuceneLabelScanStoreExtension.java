@@ -21,26 +21,31 @@ package org.neo4j.kernel.api.impl.labelscan;
 
 import java.util.function.Supplier;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings.LabelIndex;
 import org.neo4j.helpers.Service;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
+import org.neo4j.kernel.api.labelscan.LabelScanStore.Monitor;
+import org.neo4j.kernel.api.labelscan.LoggingMonitor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
+import org.neo4j.kernel.impl.api.scan.FullLabelStream;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.kernel.api.impl.index.LuceneKernelExtensions.directoryFactory;
-import static org.neo4j.kernel.api.labelscan.LabelScanStore.Monitor;
-import static org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.fullStoreLabelUpdateStream;
 
 @Service.Implementation(KernelExtensionFactory.class)
 public class LuceneLabelScanStoreExtension extends KernelExtensionFactory<LuceneLabelScanStoreExtension.Dependencies>
 {
-    private final int priority;
+    private static final String NAME = LabelIndex.LUCENE.name();
+
     private final Monitor monitor;
 
     public interface Dependencies
@@ -56,41 +61,45 @@ public class LuceneLabelScanStoreExtension extends KernelExtensionFactory<Lucene
         Supplier<IndexStoreView> indexStoreView();
 
         LogService getLogService();
+
+        FileSystemAbstraction fileSystem();
     }
 
     public LuceneLabelScanStoreExtension()
     {
-        this( 10, null );
+        this( Monitor.EMPTY );
     }
 
-    LuceneLabelScanStoreExtension( int priority, Monitor monitor )
+    LuceneLabelScanStoreExtension( Monitor monitor )
     {
-        super( "lucene-scan-store");
-        this.priority = priority;
-        this.monitor = (monitor == null) ? Monitor.EMPTY : monitor;
+        super( "lucene-scan-store" );
+        this.monitor = monitor;
     }
 
     @Override
     public LabelScanStoreProvider newInstance( KernelContext context, Dependencies dependencies ) throws Throwable
     {
-        boolean ephemeral = dependencies.getConfig().get( GraphDatabaseFacadeFactory.Configuration.ephemeral );
-        DirectoryFactory directoryFactory = directoryFactory( ephemeral, context.fileSystem() );
+        Config config = dependencies.getConfig();
+        boolean ephemeral = config.get( GraphDatabaseFacadeFactory.Configuration.ephemeral );
+        FileSystemAbstraction fileSystem = dependencies.fileSystem();
+        DirectoryFactory directoryFactory = directoryFactory( ephemeral, fileSystem );
 
-        LabelScanIndex index = getLuceneIndex( context, directoryFactory );
-        LuceneLabelScanStore scanStore = new LuceneLabelScanStore( index,
-                fullStoreLabelUpdateStream( dependencies.indexStoreView() ),
-                dependencies.getLogService().getInternalLogProvider(), monitor );
+        LuceneLabelScanIndexBuilder indexBuilder = getIndexBuilder( context, directoryFactory, fileSystem, config );
+        LogProvider logger = dependencies.getLogService().getInternalLogProvider();
+        Monitor loggingMonitor = new LoggingMonitor( logger.getLog( LuceneLabelScanStore.class ), monitor );
+        LuceneLabelScanStore scanStore = new LuceneLabelScanStore( indexBuilder,
+                new FullLabelStream( dependencies.indexStoreView() ), loggingMonitor );
 
-        return new LabelScanStoreProvider( scanStore, priority );
+        return new LabelScanStoreProvider( NAME, scanStore );
     }
 
-    private LabelScanIndex getLuceneIndex( KernelContext context, DirectoryFactory directoryFactory )
+    private LuceneLabelScanIndexBuilder getIndexBuilder( KernelContext context, DirectoryFactory directoryFactory,
+            FileSystemAbstraction fileSystem, Config config )
     {
         return LuceneLabelScanIndexBuilder.create()
                 .withDirectoryFactory( directoryFactory )
-                .withFileSystem( context.fileSystem() )
+                .withFileSystem( fileSystem )
                 .withIndexRootFolder( LabelScanStoreProvider.getStoreDirectory( context.storeDir() ) )
-                .build();
+                .withConfig( config );
     }
-
 }

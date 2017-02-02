@@ -19,6 +19,8 @@
  */
 package org.neo4j.function;
 
+import java.util.function.Supplier;
+
 /**
  * Represents a supplier of results, that may throw an exception.
  *
@@ -34,4 +36,22 @@ public interface ThrowingSupplier<T, E extends Exception>
      * @throws E an exception if the function fails
      */
     T get() throws E;
+
+    static <TYPE> ThrowingSupplier<TYPE,RuntimeException> throwingSupplier( Supplier<TYPE> supplier )
+    {
+        return new ThrowingSupplier<TYPE,RuntimeException>()
+        {
+            @Override
+            public TYPE get()
+            {
+                return supplier.get();
+            }
+
+            @Override
+            public String toString()
+            {
+                return supplier.toString();
+            }
+        };
+    }
 }

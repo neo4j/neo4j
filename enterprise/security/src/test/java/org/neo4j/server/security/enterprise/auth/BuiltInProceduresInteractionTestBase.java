@@ -31,9 +31,11 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -318,6 +320,45 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         read.closeAndAssertSuccess();
     }
 
+    //---------- Create Tokens query -------
+
+    @Test
+    public void shouldCreateLabel()
+    {
+        assertFail( writeSubject, "CREATE (:MySpecialLabel)", TOKEN_CREATE_OPS_NOT_ALLOWED );
+        assertFail( writeSubject, "CALL db.createLabel('MySpecialLabel')", TOKEN_CREATE_OPS_NOT_ALLOWED );
+        assertEmpty( schemaSubject, "CALL db.createLabel('MySpecialLabel')" );
+        assertSuccess( writeSubject, "MATCH (n:MySpecialLabel) RETURN count(n) AS count",
+                r -> r.next().get( "count" ).equals( 0 ) );
+        assertEmpty( writeSubject, "CREATE (:MySpecialLabel)" );
+    }
+
+    @Test
+    public void shouldCreateRelationshipType()
+    {
+        assertEmpty( schemaSubject, "CREATE (a:Node {id:0}) CREATE ( b:Node {id:1} )" );
+        assertFail( writeSubject,
+                "MATCH (a:Node), (b:Node) WHERE a.id = 0 AND b.id = 1 CREATE (a)-[:MySpecialRelationship]->(b)",
+                TOKEN_CREATE_OPS_NOT_ALLOWED );
+        assertFail( writeSubject, "CALL db.createRelationshipType('MySpecialRelationship')", TOKEN_CREATE_OPS_NOT_ALLOWED );
+        assertEmpty( schemaSubject, "CALL db.createRelationshipType('MySpecialRelationship')" );
+        assertSuccess( writeSubject, "MATCH (n)-[c:MySpecialRelationship]-(m) RETURN count(c) AS count",
+                r -> r.next().get( "count" ).equals( 0 ) );
+        assertEmpty( writeSubject,
+                "MATCH (a:Node), (b:Node) WHERE a.id = 0 AND b.id = 1 CREATE (a)-[:MySpecialRelationship]->(b)" );
+    }
+
+    @Test
+    public void shouldCreateProperty()
+    {
+        assertFail( writeSubject, "CREATE (a) SET a.MySpecialProperty = 'a'", TOKEN_CREATE_OPS_NOT_ALLOWED );
+        assertFail( writeSubject, "CALL db.createProperty('MySpecialProperty')", TOKEN_CREATE_OPS_NOT_ALLOWED );
+        assertEmpty( schemaSubject, "CALL db.createProperty('MySpecialProperty')" );
+        assertSuccess( writeSubject, "MATCH (n) WHERE n.MySpecialProperty IS NULL RETURN count(n) AS count",
+                r -> r.next().get( "count" ).equals( 0 ) );
+        assertEmpty( writeSubject, "CREATE (a) SET a.MySpecialProperty = 'a'" );
+    }
+
     //---------- terminate query -----------
 
     /*
@@ -467,7 +508,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     @Test
     public void shouldTerminateQueriesEvenIfUsingPeriodicCommit() throws Throwable
     {
-        for ( int i = 8; i <= 11; i++ )
+        for ( int batchSize = 8; batchSize <= 11; batchSize++ )
         {
             // Spawns a throttled HTTP server, runs a PERIODIC COMMIT that fetches data from this server,
             // and checks that the query is visible when using listQueries()
@@ -477,7 +518,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
             final Barrier.Control barrier = new Barrier.Control();
 
             // Serve CSV via local web server, let Jetty find a random port for us
-            Server server = createHttpServer( latch, barrier, i, 50 - i );
+            Server server = createHttpServer( latch, barrier, batchSize, 50 - batchSize );
             server.start();
             int localPort = getLocalPort( server );
 
@@ -513,10 +554,13 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
                 // When
                 barrier.release();
                 latch.finishAndWaitForAllToFinish();
-                server.stop();
 
                 // Then
                 write.closeAndAssertTransactionTermination();
+
+                // stop server after assertion to avoid other kind of failures due to races (e.g., already closed
+                // lock clients )
+                server.stop();
             }
         }
     }
@@ -1063,19 +1107,19 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     @SuppressWarnings( "unchecked" )
     private Matcher<Map<String, Object>> hasQuery( String query )
     {
-        return (Matcher<Map<String, Object>>) (Matcher) hasEntry( equalTo( "query" ), equalTo( query ) );
+        return (Matcher) hasEntry( equalTo( "query" ), equalTo( query ) );
     }
 
     @SuppressWarnings( "unchecked" )
     private Matcher<Map<String, Object>> hasUsername( String username )
     {
-        return (Matcher<Map<String, Object>>) (Matcher) hasEntry( equalTo( "username" ), equalTo( username ) );
+        return (Matcher) hasEntry( equalTo( "username" ), equalTo( username ) );
     }
 
     @SuppressWarnings( "unchecked" )
     private Matcher<Map<String, Object>> hasQueryId()
     {
-        return (Matcher<Map<String, Object>>) (Matcher) hasEntry(
+        return hasEntry(
             equalTo( "queryId" ),
             allOf( (Matcher) isA( String.class ), (Matcher) containsString( QueryId.QUERY_ID_PREFIX ) )
         );
@@ -1084,7 +1128,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     @SuppressWarnings( "unchecked" )
     private Matcher<Map<String, Object>> hasStartTimeAfter( OffsetDateTime startTime )
     {
-        return (Matcher<Map<String, Object>>) (Matcher) hasEntry( equalTo( "startTime" ), new BaseMatcher<String>()
+        return (Matcher) hasEntry( equalTo( "startTime" ), new BaseMatcher<String>()
         {
             @Override
             public void describeTo( Description description )
@@ -1104,28 +1148,33 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     @SuppressWarnings( "unchecked" )
     private Matcher<Map<String, Object>> hasNoParameters()
     {
-        return (Matcher<Map<String, Object>>) (Matcher) hasEntry( equalTo( "parameters" ), equalTo( emptyMap() ) );
+        return (Matcher) hasEntry( equalTo( "parameters" ), equalTo( emptyMap() ) );
     }
 
     @SuppressWarnings( "unchecked" )
     private Matcher<Map<String, Object>> hasConnectionDetails( String expected )
     {
-        return (Matcher<Map<String, Object>>) (Matcher) hasEntry( equalTo( "connectionDetails" ),
+        return (Matcher) hasEntry( equalTo( "connectionDetails" ),
                 containsString( expected ) );
     }
 
     @SuppressWarnings( "unchecked" )
     private Matcher<Map<String, Object>> hasMetaData( Map<String,Object> expected )
     {
-        return (Matcher<Map<String, Object>>) (Matcher) hasEntry( equalTo( "metaData" ),
-                allOf(
-                    expected.entrySet().stream().map(
-                            entry -> hasEntry(
-                                    equalTo( entry.getKey() ),
-                                    equalTo( entry.getValue() )
-                            )
+        return (Matcher) hasEntry( equalTo( "metaData" ), allOf(
+                expected.entrySet().stream().map(
+                        entryMapper()
                         ).collect( Collectors.toList() )
                 ) );
     }
 
+    @SuppressWarnings( {"rawtypes", "unchecked"} )
+    private Function<Entry<String,Object>,Matcher<Entry<String,Object>>> entryMapper()
+    {
+        return entry -> {
+            Matcher keyMatcher = equalTo( entry.getKey() );
+            Matcher valueMatcher = equalTo( entry.getValue() );
+            return hasEntry( keyMatcher, valueMatcher );
+        };
+    }
 }

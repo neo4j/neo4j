@@ -39,7 +39,7 @@ public class CausalClusterConfigurationValidator implements ConfigurationValidat
     @Override
     @Nonnull
     public Map<String,String> validate( @Nonnull Collection<SettingValidator> settingValidators,
-            @Nonnull Map<String,String> rawConfig, @Nonnull Log log ) throws InvalidSettingException
+            @Nonnull Map<String,String> rawConfig, @Nonnull Log log, boolean parsingFile ) throws InvalidSettingException
     {
         // Make sure mode is CC
         Mode mode = ClusterSettings.mode.apply( rawConfig::get );

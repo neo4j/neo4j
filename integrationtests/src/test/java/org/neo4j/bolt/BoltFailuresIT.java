@@ -46,7 +46,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.anyObject;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
@@ -79,7 +79,7 @@ public class BoltFailuresIT
     public void throwsWhenWorkerCreationFails()
     {
         WorkerFactory workerFactory = mock( WorkerFactory.class );
-        when( workerFactory.newWorker( anyString(), any() ) ).thenThrow( new IllegalStateException( "Oh!" ) );
+        when( workerFactory.newWorker( anyObject(), any() ) ).thenThrow( new IllegalStateException( "Oh!" ) );
 
         BoltKernelExtension extension = new BoltKernelExtensionWithWorkerFactory( workerFactory );
 
@@ -164,9 +164,8 @@ public class BoltFailuresIT
         db = startTestDb( monitors );
         driver = createDriver();
 
-        try
+        try ( Session session = driver.session() )
         {
-            Session session = driver.session();
             if ( shouldBeAbleToGetSession )
             {
                 session.run( "CREATE ()" ).consume();
@@ -191,10 +190,12 @@ public class BoltFailuresIT
         driver = createDriver();
 
         Session session = driver.session();
+
+        // setup monitor to throw before running the query to make processing of the RUN message fail
+        monitorSetup.accept( sessionMonitor );
         session.run( "CREATE ()" );
         try
         {
-            monitorSetup.accept( sessionMonitor );
             session.close();
             fail( "Exception expected" );
         }

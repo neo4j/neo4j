@@ -26,20 +26,15 @@ import org.neo4j.causalclustering.core.consensus.RaftMachine;
 import org.neo4j.causalclustering.core.consensus.roles.Role;
 import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
 import org.neo4j.causalclustering.discovery.HazelcastDiscoveryServiceFactory;
-import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.PlatformModule;
-import org.neo4j.kernel.impl.util.CustomIOConfigValidator;
 
 public class CoreGraphDatabase extends GraphDatabaseFacade
 {
-    public static final String CUSTOM_IO_EXCEPTION_MESSAGE =
-            "Core cluster mode is not allowed with custom IO integrations";
-
     public CoreGraphDatabase( File storeDir, Config config,
             GraphDatabaseFacadeFactory.Dependencies dependencies )
     {
@@ -49,16 +44,9 @@ public class CoreGraphDatabase extends GraphDatabaseFacade
     public CoreGraphDatabase( File storeDir, Config config,
             GraphDatabaseFacadeFactory.Dependencies dependencies, DiscoveryServiceFactory discoveryServiceFactory )
     {
-        CustomIOConfigValidator.assertCustomIOConfigNotUsed( config,
-                CUSTOM_IO_EXCEPTION_MESSAGE );
         Function<PlatformModule,EditionModule> factory =
                 ( platformModule ) -> new EnterpriseCoreEditionModule( platformModule, discoveryServiceFactory );
         new GraphDatabaseFacadeFactory( DatabaseInfo.CORE, factory ).initFacade( storeDir, config, dependencies, this );
-    }
-
-    public MemberId id()
-    {
-        return getDependencyResolver().resolveDependency( RaftMachine.class ).identity();
     }
 
     public Role getRole()

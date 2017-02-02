@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.locking;
 
 import java.time.Clock;
+import java.util.stream.Stream;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.configuration.Config;
@@ -93,6 +94,10 @@ public interface Locks
         /** Try grabbing shared lock, not waiting and returning a boolean indicating if we got the lock. */
         boolean trySharedLock( ResourceType resourceType, long resourceId );
 
+        boolean reEnterShared( ResourceType resourceType, long resourceId );
+
+        boolean reEnterExclusive( ResourceType resourceType, long resourceId );
+
         /** Release a set of shared locks */
         void releaseShared( ResourceType resourceType, long resourceId );
 
@@ -112,6 +117,10 @@ public interface Locks
 
         /** For slave transactions, this tracks an identifier for the lock session running on the master */
         int getLockSessionId();
+
+        Stream<? extends ActiveLock> activeLocks();
+
+        long activeLockCount();
     }
 
     /**

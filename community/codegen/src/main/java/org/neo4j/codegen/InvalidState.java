@@ -119,6 +119,12 @@ class InvalidState implements MethodEmitter
     }
 
     @Override
+    public void beginBlock()
+    {
+        throw new IllegalStateException( reason );
+    }
+
+    @Override
     public void endBlock()
     {
         throw new IllegalStateException( reason );

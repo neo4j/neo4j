@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_1
 
+import java.util.Collections.emptyList
+
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compatibility.v3_1.helpers._
@@ -30,13 +32,13 @@ import org.neo4j.cypher.internal.spi.v3_1.TransactionBoundQueryContext.IndexSear
 import org.neo4j.cypher.internal.spi.v3_1.{TransactionalContextWrapper => TransactionalContextWrapperV3_1, _}
 import org.neo4j.cypher.internal.spi.v3_2.{TransactionalContextWrapper => TransactionalContextWrapperV3_2}
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.api.KernelAPI
+import org.neo4j.kernel.api.ExecutingQuery.PlannerInfo
+import org.neo4j.kernel.api.{IndexUsage, KernelAPI}
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
 
 import scala.util.Try
-
 
 trait Compatibility {
   val graph: GraphDatabaseQueryService
@@ -55,18 +57,18 @@ trait Compatibility {
 
   implicit val executionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
 
-  def produceParsedQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer) = {
-    val notificationLogger = new RecordingNotificationLogger
-    val preparedSyntacticQueryForV_3_1 =
+  def produceParsedQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer,
+                         preParsingNotifications: Set[org.neo4j.graphdb.Notification]): ParsedQuery = {
+      val notificationLogger = new RecordingNotificationLogger
+      val preparedSyntacticQueryForV_3_1: Try[PreparedQuerySyntax] =
       Try(compiler.prepareSyntacticQuery(preParsedQuery.statement,
         preParsedQuery.rawStatement,
         notificationLogger,
         preParsedQuery.planner.name,
         Some(as3_1(preParsedQuery.offset)), tracer))
     new ParsedQuery {
-      def isPeriodicCommit = preparedSyntacticQueryForV_3_1.map(_.isPeriodicCommit).getOrElse(false)
-
-      def plan(transactionalContext: TransactionalContextWrapperV3_2, tracer: v3_2.CompilationPhaseTracer): (ExecutionPlan, Map[String, Any]) =
+      override def plan(transactionalContext: TransactionalContextWrapperV3_2, tracer: v3_2.CompilationPhaseTracer):
+        (ExecutionPlan, Map[String, Any]) =
         exceptionHandler.runSafely {
           val tc = TransactionalContextWrapperV3_1(transactionalContext.tc)
           val planContext = new ExceptionTranslatingPlanContext(new TransactionBoundPlanContext(tc, notificationLogger))
@@ -76,14 +78,14 @@ trait Compatibility {
           // Log notifications/warnings from planning
           planImpl.notifications(planContext).foreach(notificationLogger += _)
 
-          (new ExecutionPlanWrapper(planImpl), extractedParameters)
+          (new ExecutionPlanWrapper(planImpl, preParsingNotifications), extractedParameters)
         }
 
-      override def hasErrors = preparedSyntacticQueryForV_3_1.isFailure
+      override protected val trier: Try[PreparedQuerySyntax] = preparedSyntacticQueryForV_3_1
     }
   }
 
-  class ExecutionPlanWrapper(inner: ExecutionPlan_v3_1) extends ExecutionPlan {
+  class ExecutionPlanWrapper(inner: ExecutionPlan_v3_1, preParsingNotifications: Set[org.neo4j.graphdb.Notification]) extends ExecutionPlan {
 
     private val searchMonitor = kernelMonitors.newMonitor(classOf[IndexSearchMonitor])
 
@@ -103,7 +105,7 @@ trait Compatibility {
         val innerResult = inner.run(queryContext(transactionalContext), innerExecutionMode, innerParams)
         new ClosingExecutionResult(
           transactionalContext.tc.executingQuery(),
-          new ExecutionResultWrapper(innerResult, inner.plannerUsed, inner.runtimeUsed),
+          new ExecutionResultWrapper(innerResult, inner.plannerUsed, inner.runtimeUsed, preParsingNotifications),
           exceptionHandler.runSafely
         )
       }
@@ -113,6 +115,8 @@ trait Compatibility {
 
     def isStale(lastCommittedTxId: LastCommittedTxIdProvider, ctx: TransactionalContextWrapperV3_2): Boolean =
       inner.isStale(lastCommittedTxId, TransactionBoundGraphStatistics(ctx.readOperations))
+
+    override def plannerInfo = new PlannerInfo(inner.plannerUsed.name, inner.runtimeUsed.name, emptyList[IndexUsage])
   }
 }
 

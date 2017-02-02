@@ -20,16 +20,20 @@
 package org.neo4j.kernel.impl.api.index;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.store.MultipleUnderlyingStorageExceptions;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
@@ -43,20 +47,35 @@ import org.neo4j.kernel.impl.store.UnderlyingStorageException;
  * All updaters retrieved from this map must be either closed manually or handle duplicate calls to close
  * or must all be closed indirectly by calling close on this updater map.
  */
-public class IndexUpdaterMap implements AutoCloseable, Iterable<IndexUpdater>
+class IndexUpdaterMap implements AutoCloseable, Iterable<IndexUpdater>
 {
     private final IndexUpdateMode indexUpdateMode;
     private final IndexMap indexMap;
     private final Map<IndexDescriptor, IndexUpdater> updaterMap;
 
-    public IndexUpdaterMap( IndexMap indexMap, IndexUpdateMode indexUpdateMode )
+    IndexUpdaterMap( IndexMap indexMap, IndexUpdateMode indexUpdateMode )
     {
         this.indexUpdateMode = indexUpdateMode;
         this.indexMap = indexMap;
         this.updaterMap = new HashMap<>();
     }
 
-    public IndexUpdater getUpdater( IndexDescriptor descriptor )
+    List<IndexUpdater> getUpdaters( int labelId, int propertyKeyId )
+    {
+        IndexDescriptor key = IndexDescriptorFactory.of( labelId, propertyKeyId );
+        IndexUpdater updater = getUpdater( key );
+        if ( updater != null )
+        {
+            return Arrays.asList(updater);
+        }
+        else
+        {
+            return Collections.emptyList();
+        }
+    }
+
+    // exposed only for testing
+    IndexUpdater getUpdater( IndexDescriptor descriptor )
     {
         IndexUpdater updater = updaterMap.get( descriptor );
         if ( null == updater )

@@ -20,6 +20,7 @@
 package org.neo4j.kernel.builtinprocs;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -36,9 +37,7 @@ import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.proc.ProcedureSignature;
-import org.neo4j.kernel.api.proc.UserFunctionSignature;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.api.TokenAccess;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -67,22 +66,30 @@ public class BuiltInProcedures
     @Procedure( name = "db.labels", mode = READ )
     public Stream<LabelResult> listLabels()
     {
-        return TokenAccess.LABELS.inUse( tx.acquireStatement() ).map( LabelResult::new ).stream();
+        try ( Statement statement = tx.acquireStatement() )
+        {
+            return TokenAccess.LABELS.inUse( statement ).map( LabelResult::new ).stream();
+        }
     }
 
     @Description( "List all property keys in the database." )
     @Procedure( name = "db.propertyKeys", mode = READ )
     public Stream<PropertyKeyResult> listPropertyKeys()
     {
-        return TokenAccess.PROPERTY_KEYS.inUse( tx.acquireStatement() ).map( PropertyKeyResult::new ).stream();
+        try ( Statement statement = tx.acquireStatement() )
+        {
+            return TokenAccess.PROPERTY_KEYS.inUse( statement ).map( PropertyKeyResult::new ).stream();
+        }
     }
 
     @Description( "List all relationship types in the database." )
     @Procedure( name = "db.relationshipTypes", mode = READ )
     public Stream<RelationshipTypeResult> listRelationshipTypes()
     {
-        return TokenAccess.RELATIONSHIP_TYPES.inUse( tx.acquireStatement() )
-                .map( RelationshipTypeResult::new ).stream();
+        try ( Statement statement = tx.acquireStatement() )
+        {
+            return TokenAccess.RELATIONSHIP_TYPES.inUse( statement ).map( RelationshipTypeResult::new ).stream();
+        }
     }
 
     @Description( "List all indexes in the database." )
@@ -99,7 +106,7 @@ public class BuiltInProcedures
 
             Set<IndexDescriptor> uniqueIndexes = asSet( operations.uniqueIndexesGetAll() );
             indexes.addAll( uniqueIndexes );
-            indexes.sort( ( a, b ) -> a.userDescription( tokens ).compareTo( b.userDescription( tokens ) ) );
+            indexes.sort( Comparator.comparing( a -> a.userDescription( tokens ) ) );
 
             ArrayList<IndexResult> result = new ArrayList<>();
             for ( IndexDescriptor index : indexes )

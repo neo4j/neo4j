@@ -417,10 +417,10 @@ public class Config implements DiagnosticsProvider, Configuration
                 .map( ConfigOptions::settingGroup )
                 .collect( Collectors.toList() );
         validSettings = new IndividualSettingsValidator( warnOnUnknownSettings )
-                .validate( settingValidators, validSettings, log );
+                .validate( settingValidators, validSettings, log, configFile.isPresent() );
         for ( ConfigurationValidator validator : validators )
         {
-            validSettings = validator.validate( settingValidators, validSettings, log );
+            validSettings = validator.validate( settingValidators, validSettings, log, configFile.isPresent() );
         }
         params.clear();
         params.putAll( validSettings );

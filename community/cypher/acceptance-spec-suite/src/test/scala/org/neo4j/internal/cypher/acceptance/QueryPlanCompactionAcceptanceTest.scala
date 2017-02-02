@@ -19,10 +19,13 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
+import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.WindowsStringSafe
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport}
 
 class QueryPlanCompactionAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport
   with NewPlannerTestSupport {
+
+  implicit val windowsSafe = WindowsStringSafe
 
   test("Compact very long query containing consecutive update operations") {
     val query =
@@ -746,7 +749,6 @@ class QueryPlanCompactionAcceptanceTest extends ExecutionEngineFunSuite with Que
     val query = "EXPLAIN LOAD CSV WITH HEADERS FROM {csv_filename} AS line MERGE (u1:User {login: line.user1}) MERGE " +
       "(u2:User {login: line.user2}) CREATE (u1)-[:FRIEND]->(u2)"
     val result = executeWithCostPlannerOnly(query)
-    println(result.executionPlanDescription())
     result should havePlanLike(
       """
         |+-------------------------+----------------+---------------------------+------------------------+

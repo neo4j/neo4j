@@ -32,13 +32,14 @@ import org.hamcrest.TypeSafeMatcher;
 import org.junit.Test;
 
 import org.neo4j.kernel.impl.locking.LockWaitEvent;
-import org.neo4j.kernel.impl.query.QuerySource;
+import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.lock.WaitStrategy;
 import org.neo4j.test.FakeCpuClock;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
+import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonMap;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.hasEntry;
@@ -49,14 +50,15 @@ public class ExecutingQueryTest
 {
     private final FakeClock clock = Clocks.fakeClock( ZonedDateTime.parse( "2016-12-03T15:10:00+01:00" ) );
     private final FakeCpuClock cpuClock = new FakeCpuClock();
+    private long lockCount;
     private ExecutingQuery query = new ExecutingQuery(
             1,
-            new QuerySource(),
+            ClientConnectionInfo.EMBEDDED_CONNECTION,
             "neo4j",
             "hello world",
             Collections.emptyMap(),
             Collections.emptyMap(),
-            Thread.currentThread(),
+            () -> lockCount, Thread.currentThread(),
             clock,
             cpuClock );
 
@@ -72,9 +74,53 @@ public class ExecutingQueryTest
     }
 
     @Test
-    public void shouldReportWaitTime() throws Exception
+    public void shouldTransitionBetweenStates() throws Exception
     {
         // initial
+        assertThat( query.status(), hasEntry( "state", "PLANNING" ) );
+
+        // when
+        query.planningCompleted( new ExecutingQuery.PlannerInfo( "the-planner", "the-runtime", emptyList() ) );
+
+        // then
+        assertThat( query.status(), hasEntry( "state", "RUNNING" ) );
+
+        // when
+        try ( LockWaitEvent event = lock( "NODE", 17 ) )
+        {
+            // then
+            assertThat( query.status(), hasEntry( "state", "WAITING" ) );
+        }
+        // then
+        assertThat( query.status(), hasEntry( "state", "RUNNING" ) );
+    }
+
+    @Test
+    public void shouldReportPlanningTime() throws Exception
+    {
+        // when
+        clock.forward( 124, TimeUnit.MILLISECONDS );
+
+        // then
+        assertEquals( query.planningTimeMillis(), query.elapsedTimeMillis() );
+
+        // when
+        clock.forward( 16, TimeUnit.MILLISECONDS );
+        query.planningCompleted( new ExecutingQuery.PlannerInfo( "the-planner", "the-runtime", emptyList() ) );
+        clock.forward( 200, TimeUnit.MILLISECONDS );
+
+        // then
+        assertEquals( 140, query.planningTimeMillis() );
+        assertEquals( 340, query.elapsedTimeMillis() );
+    }
+
+    @Test
+    public void shouldReportWaitTime() throws Exception
+    {
+        // given
+        query.planningCompleted( new ExecutingQuery.PlannerInfo( "the-planner", "the-runtime", emptyList() ) );
+
+        // then
         assertEquals( singletonMap( "state", "RUNNING" ), query.status() );
 
         // when
@@ -125,19 +171,35 @@ public class ExecutingQueryTest
         assertEquals( 60, cpuTime );
     }
 
-    private LockWaitEvent lock( String resourceType, long resourceId )
+    @Test
+    public void shouldReportLockCount() throws Exception
     {
-        return query.lockTracer().waitForLock( resourceType( resourceType ), resourceId );
+        // given
+        lockCount = 11;
+
+        // then
+        assertEquals( 11, query.activeLockCount() );
+
+        // given
+        lockCount = 2;
+
+        // then
+        assertEquals( 2, query.activeLockCount() );
     }
 
-    static ResourceType resourceType( String string )
+    private LockWaitEvent lock( String resourceType, long resourceId )
+    {
+        return query.lockTracer().waitForLock( false, resourceType( resourceType ), resourceId );
+    }
+
+    static ResourceType resourceType( String name )
     {
         return new ResourceType()
         {
             @Override
             public String toString()
             {
-                return string;
+                return name();
             }
 
             @Override
@@ -150,6 +212,12 @@ public class ExecutingQueryTest
             public WaitStrategy waitStrategy()
             {
                 throw new UnsupportedOperationException( "not used" );
+            }
+
+            @Override
+            public String name()
+            {
+                return name;
             }
         };
     }

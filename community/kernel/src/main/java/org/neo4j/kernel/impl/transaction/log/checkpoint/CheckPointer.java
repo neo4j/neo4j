@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
 import java.io.IOException;
 
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+
 /**
  * This interface represent a check pointer which is responsible to write check points in the transaction log.
  */
@@ -61,4 +63,10 @@ public interface CheckPointer
      * @throws IOException if writing the check point fails
      */
     long forceCheckPoint( TriggerInfo triggerInfo ) throws IOException;
+
+    /**
+     * @return the transaction id which the last checkpoint was made it. If there's no checkpoint then
+     * {@link TransactionIdStore#BASE_TX_ID} is returned.
+     */
+    long lastCheckPointedTransactionId();
 }

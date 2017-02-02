@@ -28,6 +28,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.impl.locking.ActiveLock;
 
 /**
  * A test implementation of {@link KernelTransactionHandle} that simply wraps a given {@link KernelTransaction}.
@@ -92,6 +93,12 @@ public class TestKernelTransactionHandle implements KernelTransactionHandle
 
     @Override
     public Stream<ExecutingQuery> executingQueries()
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Stream<? extends ActiveLock> activeLocks()
     {
         throw new UnsupportedOperationException();
     }

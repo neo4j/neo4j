@@ -179,16 +179,7 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
     public Node getOtherNode( Node node )
     {
         assertInUnterminatedTransaction();
-        if ( sourceId() == node.getId() )
-        {
-            return actions.newNodeProxy( targetId() );
-        }
-        if ( targetId() == node.getId() )
-        {
-            return actions.newNodeProxy( sourceId() );
-        }
-        throw new NotFoundException( "Node[" + node.getId()
-                                     + "] not connected to this relationship[" + getId() + "]" );
+        return actions.newNodeProxy( getOtherNodeId( node.getId() ) );
     }
 
     @Override
@@ -203,6 +194,34 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
     {
         assertInUnterminatedTransaction();
         return actions.newNodeProxy( targetId() );
+    }
+
+    @Override
+    public long getStartNodeId()
+    {
+        return sourceId();
+    }
+
+    @Override
+    public long getEndNodeId()
+    {
+        return targetId();
+    }
+
+    @Override
+    public long getOtherNodeId( long id )
+    {
+        long start = sourceId();
+        long end = targetId();
+        if ( start == id )
+        {
+            return end;
+        }
+        if ( end == id )
+        {
+            return start;
+        }
+        throw new NotFoundException( "Node[" + id + "] not connected to this relationship[" + getId() + "]" );
     }
 
     @Override

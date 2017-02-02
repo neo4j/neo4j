@@ -25,7 +25,7 @@ import org.neo4j.storageengine.api.lock.ResourceType;
 
 /**
  * A {@link LockTracer} that combines multiple {@linkplain LockTracer tracers} into one, invoking each of them for
- * the {@linkplain #waitForLock(ResourceType, long...) wait events} received.
+ * the {@linkplain LockTracer#waitForLock(boolean, ResourceType, long...) wait events} received.
  * <p>
  * This is used for when there is a stack of queries in a transaction, or when a system-configured tracer combines with
  * the query specific tracers.
@@ -40,12 +40,12 @@ final class CombinedTracer implements LockTracer
     }
 
     @Override
-    public LockWaitEvent waitForLock( ResourceType resourceType, long... resourceIds )
+    public LockWaitEvent waitForLock( boolean exclusive, ResourceType resourceType, long... resourceIds )
     {
         LockWaitEvent[] events = new LockWaitEvent[tracers.length];
         for ( int i = 0; i < events.length; i++ )
         {
-            events[i] = tracers[i].waitForLock( resourceType, resourceIds );
+            events[i] = tracers[i].waitForLock( exclusive, resourceType, resourceIds );
         }
         return new CombinedEvent( events );
     }

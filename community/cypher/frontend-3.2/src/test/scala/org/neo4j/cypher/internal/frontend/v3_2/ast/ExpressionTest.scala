@@ -86,7 +86,7 @@ class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
     val pat: RelationshipsPattern = RelationshipsPattern(
       RelationshipChain(
         NodePattern(Some(varFor("n")), Seq.empty, None)_,
-        RelationshipPattern(None, optional = false, Seq.empty, None, None, SemanticDirection.OUTGOING)_,
+        RelationshipPattern(None, Seq.empty, None, None, SemanticDirection.OUTGOING)_,
         NodePattern(Some(varFor("k")), Seq.empty, None)_
       )_
     )_
@@ -105,7 +105,7 @@ class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
     val pat: RelationshipsPattern = RelationshipsPattern(
       RelationshipChain(
         NodePattern(Some(varFor("n")), Seq.empty, None)_,
-        RelationshipPattern(None, optional = false, Seq.empty, None, None, SemanticDirection.OUTGOING)_,
+        RelationshipPattern(None, Seq.empty, None, None, SemanticDirection.OUTGOING)_,
         NodePattern(Some(varFor("k")), Seq.empty, None)_
       )_
     )_
@@ -130,7 +130,7 @@ class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
     val pat: RelationshipsPattern = RelationshipsPattern(
       RelationshipChain(
         NodePattern(Some(varFor("n")), Seq.empty, None)_,
-        RelationshipPattern(None, optional = false, Seq.empty, None, None, SemanticDirection.OUTGOING)_,
+        RelationshipPattern(None, Seq.empty, None, None, SemanticDirection.OUTGOING)_,
         NodePattern(Some(varFor("k")), Seq.empty, None)_
       )_
     )_
@@ -166,7 +166,7 @@ class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
     val pat = PatternExpression(RelationshipsPattern(
       RelationshipChain(
         NodePattern(Some(varFor("n")), Seq.empty, None)_,
-        RelationshipPattern(None, optional = false, Seq.empty, None, None, SemanticDirection.OUTGOING)_,
+        RelationshipPattern(None, Seq.empty, None, None, SemanticDirection.OUTGOING)_,
         NodePattern(Some(varFor("k")), Seq.empty, None)_
       )_
     )_)

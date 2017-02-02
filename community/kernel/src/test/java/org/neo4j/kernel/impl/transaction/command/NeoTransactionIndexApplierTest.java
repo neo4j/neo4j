@@ -29,6 +29,7 @@ import java.util.function.Supplier;
 import org.neo4j.concurrent.WorkSync;
 import org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -47,7 +48,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.store.record.DynamicRecord.dynamicRecord;
-import static org.neo4j.kernel.impl.store.record.IndexRule.indexRule;
 
 public class NeoTransactionIndexApplierTest
 {
@@ -121,6 +121,11 @@ public class NeoTransactionIndexApplierTest
         // Then
         assertFalse( result );
         verify( indexingService ).createIndexes( indexRule );
+    }
+
+    private IndexRule indexRule( long ruleId, int labelId, int propertyId, Descriptor descriptor )
+    {
+        return IndexRule.indexRule( ruleId, NewIndexDescriptorFactory.forLabel( labelId, propertyId ), descriptor );
     }
 
     @Test

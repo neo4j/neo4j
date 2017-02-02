@@ -29,6 +29,7 @@
   </scm>
 
   <modules>
+    <module>neo4j-desktop</module>
     <module>standalone</module>
   </modules>
 
@@ -53,19 +54,6 @@ terms of the relevant Commercial Agreement.
   </licenses>
 
   <profiles>
-    <!-- Only include desktop installer in full build -->
-    <profile>
-      <id>neo-full-build</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-        <property>
-          <name>fullBuild</name>
-        </property>
-      </activation>
-      <modules>
-        <module>neo4j-desktop</module>
-      </modules>
-    </profile>
     <profile>
       <id>freeze</id>
       <activation>
@@ -115,9 +103,10 @@ terms of the relevant Commercial Agreement.
                     <include>org.neo4j.server.plugin:*</include>
                   </includes>
                   <excludes>
-                    <exclude>org.neo4j:neo4j-cypher-compiler-1.9</exclude>
-                    <exclude>org.neo4j:neo4j-cypher-compiler-2.0</exclude>
-                    <exclude>org.neo4j:neo4j-cypher-compiler-2.1</exclude>
+                    <exclude>org.neo4j:neo4j-graph-matching</exclude>
+                    <exclude>org.neo4j:neo4j-cypher-frontend-3.1</exclude>
+                    <exclude>org.neo4j:neo4j-cypher-frontend-2.3</exclude>
+                    <exclude>org.neo4j:neo4j-cypher-compiler-3.1</exclude>
                   </excludes>
                 </configuration>
               </execution>

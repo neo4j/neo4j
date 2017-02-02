@@ -19,24 +19,40 @@
  */
 package org.neo4j.kernel.api.exceptions.schema;
 
+import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaUtil;
+import org.neo4j.storageengine.api.schema.SchemaRule;
 
 import static java.lang.String.format;
 
-public class SchemaRuleException extends SchemaKernelException
+/**
+ * Represent something gone wrong related to SchemaRules
+ */
+class SchemaRuleException extends SchemaKernelException
 {
-    protected final int ruleEntityId;
-    protected final int propertyKeyId;
+    protected final SchemaDescriptor descriptor;
     protected final String messageTemplate;
-    protected final String messagePrefix;
+    protected final SchemaRule.Kind kind;
 
-    protected SchemaRuleException( Status status, String messageTemplate, int ruleEntityId, int propertyKeyId,
-            String messagePrefix)
+    /**
+     * @param messageTemplate Template for String.format. Must match two strings representing the schema kind and the
+     *                        descriptor
+     */
+    protected SchemaRuleException( Status status, String messageTemplate, SchemaRule.Kind kind,
+            SchemaDescriptor descriptor )
     {
-        super( status, format( messageTemplate, messagePrefix, ruleEntityId, propertyKeyId ) );
-        this.ruleEntityId = ruleEntityId;
-        this.propertyKeyId = propertyKeyId;
+        super( status, format( messageTemplate, kind.userString().toLowerCase(),
+                descriptor.userDescription( SchemaUtil.noopTokenNameLookup ) ) );
+        this.descriptor = descriptor;
         this.messageTemplate = messageTemplate;
-        this.messagePrefix = messagePrefix;
+        this.kind = kind;
+    }
+
+    @Override
+    public String getUserMessage( TokenNameLookup tokenNameLookup )
+    {
+        return format( messageTemplate, kind.userString().toLowerCase(), descriptor.userDescription( tokenNameLookup ) );
     }
 }

@@ -86,8 +86,6 @@ public interface ConsistencyReport
         void forIndexEntry( IndexEntry entry,
                             RecordCheck<IndexEntry, ConsistencyReport.IndexConsistencyReport> checker );
 
-        void forNodeLabelMatch( NodeRecord nodeRecord, RecordCheck<NodeRecord, LabelsMatchReport> nodeLabelCheck );
-
         void forRelationshipGroup( RelationshipGroupRecord record,
                 RecordCheck<RelationshipGroupRecord, ConsistencyReport.RelationshipGroupConsistencyReport> checker );
 
@@ -463,6 +461,8 @@ public interface ConsistencyReport
         void nodeNotInUse( NodeRecord referredNodeRecord );
 
         void nodeDoesNotHaveExpectedLabel( NodeRecord referredNodeRecord, long expectedLabelId );
+
+        void nodeLabelNotInIndex( NodeRecord referredNodeRecord, long missingLabelId );
     }
 
     interface LabelScanConsistencyReport extends NodeInUseWithCorrectLabelsReport
@@ -474,6 +474,10 @@ public interface ConsistencyReport
         @Override
         @Documented( "This label scan document refers to a node that does not have the expected label." )
         void nodeDoesNotHaveExpectedLabel( NodeRecord referredNodeRecord, long expectedLabelId );
+
+        @Override
+        @Documented( "This node record has a label that is not found in the label scan store entry for this node" )
+        void nodeLabelNotInIndex( NodeRecord referredNodeRecord, long missingLabelId );
     }
 
     interface IndexConsistencyReport extends NodeInUseWithCorrectLabelsReport
@@ -485,11 +489,9 @@ public interface ConsistencyReport
         @Override
         @Documented( "This index entry refers to a node that does not have the expected label." )
         void nodeDoesNotHaveExpectedLabel( NodeRecord referredNodeRecord, long expectedLabelId );
-    }
 
-    interface LabelsMatchReport extends ConsistencyReport
-    {
-        @Documented( "This node record has a label that is not found in the label scan store entry for this node" )
+        @Override
+        @Documented( "This node record has a label that is not found in the index for this node" )
         void nodeLabelNotInIndex( NodeRecord referredNodeRecord, long missingLabelId );
     }
 

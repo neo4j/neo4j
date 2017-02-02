@@ -38,7 +38,7 @@ import org.neo4j.cypher.internal.frontend.v3_1.{ParameterNotFoundException, Sema
 import org.neo4j.cypher.internal.spi.v3_1.codegen.Methods._
 import org.neo4j.cypher.internal.spi.v3_1.codegen.Templates.{createNewInstance, handleKernelExceptions, newRelationshipDataExtractor, tryCatch}
 import org.neo4j.graphdb.Direction
-import org.neo4j.kernel.api.index.IndexDescriptor
+import org.neo4j.kernel.api.schema.{IndexDescriptor, IndexDescriptorFactory, NodePropertyDescriptor}
 import org.neo4j.kernel.impl.api.RelationshipDataExtractor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 
@@ -737,9 +737,15 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
     generator.assign(typeRef[Int], propIdVar, invoke(readOperations, propertyKeyGetForName, constant(propName)))
 
   override def newIndexDescriptor(descriptorVar: String, labelVar: String, propKeyVar: String) = {
+    val getNodePropertyDescriptor =
+      method[IndexDescriptorFactory, NodePropertyDescriptor]("getNodePropertyDescriptor", typeRef[Int], typeRef[Int])
+    val getIndexDescriptor =
+      method[IndexDescriptorFactory, IndexDescriptor]("of", typeRef[NodePropertyDescriptor])
     generator.assign(typeRef[IndexDescriptor], descriptorVar,
-                     createNewInstance(typeRef[IndexDescriptor], (typeRef[Int], generator.load(labelVar)),
-                                       (typeRef[Int], generator.load(propKeyVar)))
+      invoke(
+        getIndexDescriptor,
+        invoke(getNodePropertyDescriptor, generator.load(labelVar), generator.load(propKeyVar))
+      )
     )
   }
 

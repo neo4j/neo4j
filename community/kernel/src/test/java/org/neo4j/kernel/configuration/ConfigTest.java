@@ -45,6 +45,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -197,7 +198,7 @@ public class ConfigTest
             @Nonnull
             @Override
             public Map<String,String> validate( @Nonnull Collection<SettingValidator> settingValidators,
-                    @Nonnull Map<String,String> rawConfig, @Nonnull Log log ) throws InvalidSettingException
+                    @Nonnull Map<String,String> rawConfig, @Nonnull Log log, boolean parsingFile ) throws InvalidSettingException
             {
                 return rawConfig;
             }
@@ -211,6 +212,6 @@ public class ConfigTest
         second.with( stringMap( "third.jibberish", "baah" ) );
 
         // Then
-        verify( validator, times( 3 ) ).validate( any(), any(), any() );
+        verify( validator, times( 3 ) ).validate( any(), any(), any(), anyBoolean() );
     }
 }

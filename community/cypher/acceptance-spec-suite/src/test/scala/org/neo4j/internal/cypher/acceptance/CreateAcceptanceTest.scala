@@ -25,15 +25,6 @@ import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QuerySt
 class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport
   with CreateTempFileTestSupport {
 
-  // TCK'd
-  test("create relationship with multiple hops and changing directions 2") {
-    val result = updateWithBothPlannersAndCompatibilityMode("CREATE (a:A)<-[r1:R]-(b:B)-[r2:R]->(c:C)")
-
-    assertStats(result, nodesCreated = 3, relationshipsCreated = 2, labelsAdded = 3)
-
-    executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a:A)<-[r1:R]-(b:B)-[r2:R]->(c:C) RETURN *").toList should have size 1
-  }
-
   //Not TCK material
   test("should have bound node recognized after projection with WITH + LOAD CSV") {
     val url = createCSVTempFileURL( writer => writer.println("Foo") )

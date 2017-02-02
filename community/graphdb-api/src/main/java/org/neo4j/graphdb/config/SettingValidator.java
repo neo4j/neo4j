@@ -20,6 +20,7 @@
 package org.neo4j.graphdb.config;
 
 import java.util.Map;
+import java.util.function.Consumer;
 
 public interface SettingValidator
 {
@@ -27,9 +28,11 @@ public interface SettingValidator
      * Validate one or several setting values, throwing on invalid values.
      *
      * @param settings available to be validated
+     * @param warningConsumer a consumer for configuration warnings
      * @return the set of settings considered valid by this validator
      * @throws InvalidSettingException if invalid value detected
      */
-    Map<String,String> validate( Map<String,String> settings ) throws InvalidSettingException;
+    Map<String,String> validate( Map<String,String> settings, Consumer<String> warningConsumer )
+            throws InvalidSettingException;
 }
 

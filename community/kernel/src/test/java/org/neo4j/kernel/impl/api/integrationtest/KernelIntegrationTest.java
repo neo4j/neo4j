@@ -59,14 +59,14 @@ public abstract class KernelIntegrationTest
 
     protected TokenWriteOperations tokenWriteOperationsInNewTransaction() throws KernelException
     {
-        transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AnonymousContext.write() );
+        transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AnonymousContext.writeToken() );
         statement = transaction.acquireStatement();
         return statement.tokenWriteOperations();
     }
 
     protected DataWriteOperations dataWriteOperationsInNewTransaction() throws KernelException
     {
-        transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AnonymousContext.write() );
+        transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AnonymousContext.writeToken() );
         statement = transaction.acquireStatement();
         return statement.dataWriteOperations();
     }

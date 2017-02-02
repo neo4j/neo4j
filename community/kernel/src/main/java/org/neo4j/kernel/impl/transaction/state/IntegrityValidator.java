@@ -25,11 +25,12 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
-import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
 /**
@@ -78,22 +79,28 @@ public class IntegrityValidator
 
     public void validateSchemaRule( SchemaRule schemaRule ) throws TransactionFailureException
     {
-        if ( schemaRule instanceof UniquePropertyConstraintRule )
+        if ( schemaRule instanceof ConstraintRule )
         {
-            try
+            ConstraintRule constraintRule = (ConstraintRule) schemaRule;
+            if ( constraintRule.getConstraintDescriptor().type() == ConstraintDescriptor.Type.UNIQUE )
             {
-                indexes.validateIndex( ((UniquePropertyConstraintRule)schemaRule).getOwnedIndex() );
-            }
-            catch ( ConstraintVerificationFailedKernelException e )
-            {
-                throw new TransactionFailureException( Status.Transaction.TransactionValidationFailed, e, "Index validation failed" );
-            }
-            catch ( IndexNotFoundKernelException | IndexPopulationFailedKernelException e )
-            {
-                // We don't expect this to occur, and if they do, it is because we are in a very bad state - out of
-                // disk or index corruption, or similar. This will kill the database such that it can be shut down
-                // and have recovery performed. It's the safest bet to avoid loosing data.
-                throw new TransactionFailureException( Status.Transaction.TransactionValidationFailed, e, "Index population failure" );
+                try
+                {
+                    indexes.validateIndex( constraintRule.getOwnedIndex() );
+                }
+                catch ( ConstraintVerificationFailedKernelException e )
+                {
+                    throw new TransactionFailureException( Status.Transaction.TransactionValidationFailed, e,
+                            "Index validation failed" );
+                }
+                catch ( IndexNotFoundKernelException | IndexPopulationFailedKernelException e )
+                {
+                    // We don't expect this to occur, and if they do, it is because we are in a very bad state - out of
+                    // disk or index corruption, or similar. This will kill the database such that it can be shut down
+                    // and have recovery performed. It's the safest bet to avoid loosing data.
+                    throw new TransactionFailureException( Status.Transaction.TransactionValidationFailed, e,
+                            "Index population failure" );
+                }
             }
         }
     }

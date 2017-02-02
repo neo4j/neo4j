@@ -58,8 +58,9 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.Pair;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.index.IndexConfiguration;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
@@ -73,9 +74,8 @@ import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStoreExtension;
-import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStoreExtension.NoDependencies;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
+import org.neo4j.kernel.impl.api.scan.NativeLabelScanStoreExtension;
 import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
@@ -86,11 +86,11 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
+import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
-import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
@@ -103,8 +103,6 @@ import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
 import org.neo4j.unsafe.batchinsert.BatchRelationship;
 
-import static java.lang.Integer.parseInt;
-import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.arrayContaining;
 import static org.hamcrest.Matchers.emptyArray;
@@ -121,6 +119,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+
+import static java.lang.Integer.parseInt;
+import static java.util.Collections.singletonList;
+
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterables.addToCollection;
 import static org.neo4j.helpers.collection.Iterables.map;
@@ -236,8 +238,7 @@ public class BatchInsertTest
 
     private BatchInserter newBatchInserterWithSchemaIndexProvider( KernelExtensionFactory<?> provider ) throws Exception
     {
-        List<KernelExtensionFactory<?>> extensions = Arrays.asList(
-                provider, new InMemoryLabelScanStoreExtension() );
+        List<KernelExtensionFactory<?>> extensions = Arrays.asList( provider, new NativeLabelScanStoreExtension() );
         return BatchInserters.inserter( storeDir.absolutePath(), fileSystemRule.get(), configuration(), extensions );
     }
 
@@ -801,15 +802,15 @@ public class BatchInsertTest
             SchemaRule rule0 = storage.loadSingleSchemaRule( inUse.get( 0 ) );
             SchemaRule rule1 = storage.loadSingleSchemaRule( inUse.get( 1 ) );
             IndexRule indexRule;
-            UniquePropertyConstraintRule constraintRule;
+            ConstraintRule constraintRule;
             if ( rule0 instanceof IndexRule )
             {
                 indexRule = (IndexRule) rule0;
-                constraintRule = (UniquePropertyConstraintRule) rule1;
+                constraintRule = (ConstraintRule) rule1;
             }
             else
             {
-                constraintRule = (UniquePropertyConstraintRule) rule0;
+                constraintRule = (ConstraintRule) rule0;
                 indexRule = (IndexRule) rule1;
             }
             assertEquals( "index should reference constraint",
@@ -1457,7 +1458,7 @@ public class BatchInsertTest
         }
 
         @Override
-        public void force() throws UnderlyingStorageException
+        public void force( IOLimiter limiter ) throws UnderlyingStorageException
         {
         }
 
@@ -1500,6 +1501,12 @@ public class BatchInsertTest
         }
 
         @Override
+        public boolean isEmpty() throws IOException
+        {
+            return allUpdates.isEmpty();
+        }
+
+        @Override
         public LabelScanWriter newWriter()
         {
             writersCreated++;
@@ -1519,6 +1526,10 @@ public class BatchInsertTest
         }
     }
 
+    interface NoDependencies
+    {
+    }
+
     private static class ControlledLabelScanStore extends KernelExtensionFactory<NoDependencies>
     {
         private final LabelScanStore labelScanStore;
@@ -1532,7 +1543,7 @@ public class BatchInsertTest
         @Override
         public Lifecycle newInstance( KernelContext context, NoDependencies dependencies ) throws Throwable
         {
-            return new LabelScanStoreProvider( labelScanStore, 100 );
+            return new LabelScanStoreProvider( GraphDatabaseSettings.label_index.getDefaultValue(), labelScanStore );
         }
     }
 

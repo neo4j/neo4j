@@ -19,18 +19,24 @@
  */
 package org.neo4j.kernel.api;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+import java.util.function.LongSupplier;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
+import org.neo4j.kernel.impl.locking.ActiveLock;
 import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.LockWaitEvent;
-import org.neo4j.kernel.impl.query.QuerySource;
+import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.time.CpuClock;
 import org.neo4j.time.SystemNanoClock;
 
+import static java.util.Collections.emptyList;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.atomic.AtomicLongFieldUpdater.newUpdater;
 
@@ -39,47 +45,112 @@ import static java.util.concurrent.atomic.AtomicLongFieldUpdater.newUpdater;
  */
 public class ExecutingQuery
 {
+    public static class QueryInfo
+    {
+        public final String text;
+        public final Map<String, Object> parameters;
+        public final String planner;
+        public final String runtime;
+        private final List<IndexUsage> indexes;
+
+        private QueryInfo( String text, Map<String, Object> parameters, PlannerInfo plannerInfo )
+        {
+            this.text = text;
+            this.parameters = parameters;
+            if ( plannerInfo != null )
+            {
+                this.planner = plannerInfo.planner;
+                this.runtime = plannerInfo.runtime;
+                this.indexes = plannerInfo.indexes;
+            }
+            else
+            {
+                this.planner = null;
+                this.runtime = null;
+                this.indexes = emptyList();
+            }
+        }
+
+        public List<Map<String, String>> indexes()
+        {
+            List<Map<String,String>> used = new ArrayList<>( this.indexes.size() );
+            for ( IndexUsage index : indexes )
+            {
+                used.add( index.asMap() );
+            }
+            return used;
+        }
+    }
+
+    public static class PlannerInfo
+    {
+        final String planner;
+        final String runtime;
+        final List<IndexUsage> indexes;
+
+        public PlannerInfo( String planner, String runtime, List<IndexUsage> indexes )
+        {
+            this.planner = planner;
+            this.runtime = runtime;
+            this.indexes = indexes;
+        }
+    }
+
     private static final AtomicLongFieldUpdater<ExecutingQuery> WAIT_TIME =
             newUpdater( ExecutingQuery.class, "waitTimeNanos" );
     private final long queryId;
-    private final LockTracer lockTracer = ExecutingQuery.this::waitForLock;
+    private final LockTracer lockTracer = this::waitForLock;
     private final String username;
-    private final QuerySource querySource;
+    private final ClientConnectionInfo clientConnection;
     private final String queryText;
     private final Map<String, Object> queryParameters;
     private final long startTime; // timestamp in milliseconds
+    /** Uses write barrier of {@link #status}. */
+    private long planningDone;
     private final Thread threadExecutingTheQuery;
+    private final LongSupplier activeLockCount;
     private final SystemNanoClock clock;
     private final CpuClock cpuClock;
     private final long cpuTimeNanosWhenQueryStarted;
-    private Map<String,Object> metaData;
-    private volatile ExecutingQueryStatus status = ExecutingQueryStatus.RUNNING;
+    private final Map<String,Object> metaData;
+    /** Uses write barrier of {@link #status}. */
+    private PlannerInfo plannerInfo;
+    private volatile ExecutingQueryStatus status = ExecutingQueryStatus.planning();
     /** Updated through {@link #WAIT_TIME} */
     @SuppressWarnings( "unused" )
     private volatile long waitTimeNanos;
 
     public ExecutingQuery(
             long queryId,
-            QuerySource querySource,
+            ClientConnectionInfo clientConnection,
             String username,
             String queryText,
             Map<String,Object> queryParameters,
             Map<String,Object> metaData,
+            LongSupplier activeLockCount,
             Thread threadExecutingTheQuery,
             SystemNanoClock clock,
-            CpuClock cpuClock
-    ) {
+            CpuClock cpuClock )
+    {
         this.queryId = queryId;
-        this.querySource = querySource;
+        this.clientConnection = clientConnection;
         this.username = username;
         this.queryText = queryText;
         this.queryParameters = queryParameters;
+        this.activeLockCount = activeLockCount;
         this.clock = clock;
         this.startTime = clock.millis();
         this.metaData = metaData;
         this.threadExecutingTheQuery = threadExecutingTheQuery;
         this.cpuClock = cpuClock;
         this.cpuTimeNanosWhenQueryStarted = cpuClock.cpuTimeNanos( threadExecutingTheQuery );
+    }
+
+    public void planningCompleted( PlannerInfo plannerInfo )
+    {
+        this.plannerInfo = plannerInfo;
+        this.planningDone = clock.millis();
+        this.status = ExecutingQueryStatus.running(); // write barrier - must be last
     }
 
     @Override
@@ -115,9 +186,16 @@ public class ExecutingQuery
         return username;
     }
 
-    public QuerySource querySource()
+    public ClientConnectionInfo clientConnection()
     {
-        return querySource;
+        return clientConnection;
+    }
+
+    public QueryInfo query()
+    {
+        return status.isPlanning() // read barrier - must be first
+                ? new QueryInfo( queryText, queryParameters, null )
+                : new QueryInfo( queryText, queryParameters, plannerInfo );
     }
 
     public String queryText()
@@ -133,6 +211,18 @@ public class ExecutingQuery
     public long startTime()
     {
         return startTime;
+    }
+
+    public long planningTimeMillis()
+    {
+        if ( status.isPlanning() ) // read barrier - must be first
+        {
+            return elapsedTimeMillis();
+        }
+        else
+        {
+            return planningDone - startTime;
+        }
     }
 
     public long elapsedTimeMillis()
@@ -169,14 +259,27 @@ public class ExecutingQuery
         return lockTracer;
     }
 
+    public long activeLockCount()
+    {
+        return activeLockCount.getAsLong();
+    }
+
     public Map<String,Object> status()
     {
         return status.toMap( clock );
     }
 
-    private LockWaitEvent waitForLock( ResourceType resourceType, long[] resourceIds )
+    public String connectionDetailsForLogging()
     {
-        WaitingOnLockEvent event = new WaitingOnLockEvent( resourceType, resourceIds );
+        return clientConnection.asConnectionDetails();
+    }
+
+    private LockWaitEvent waitForLock( boolean exclusive, ResourceType resourceType, long[] resourceIds )
+    {
+        WaitingOnLockEvent event = new WaitingOnLockEvent(
+                exclusive ? ActiveLock.EXCLUSIVE_MODE : ActiveLock.SHARED_MODE,
+                resourceType,
+                resourceIds );
         status = event;
         return event;
     }
@@ -185,9 +288,9 @@ public class ExecutingQuery
     {
         private final ExecutingQueryStatus previous = status;
 
-        WaitingOnLockEvent( ResourceType resourceType, long[] resourceIds )
+        WaitingOnLockEvent( String mode, ResourceType resourceType, long[] resourceIds )
         {
-            super( resourceType, resourceIds, clock.nanos() );
+            super( mode, resourceType, resourceIds, clock.nanos() );
         }
 
         @Override
@@ -199,6 +302,12 @@ public class ExecutingQuery
             }
             WAIT_TIME.addAndGet( ExecutingQuery.this, waitTimeNanos( clock ) );
             status = previous;
+        }
+
+        @Override
+        boolean isPlanning()
+        {
+            return previous.isPlanning();
         }
     }
 }

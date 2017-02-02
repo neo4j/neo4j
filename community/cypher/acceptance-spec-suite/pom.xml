@@ -175,10 +175,6 @@
         </exclusion>
         <exclusion>
           <groupId>org.neo4j</groupId>
-          <artifactId>neo4j-graph-matching</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.neo4j</groupId>
           <artifactId>neo4j-graph-algo</artifactId>
         </exclusion>
         <exclusion>
@@ -255,6 +251,17 @@
     <dependency>
       <groupId>com.google.code.findbugs</groupId>
       <artifactId>annotations</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-server</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-servlet</artifactId>
+      <scope>test</scope>
     </dependency>
 
   </dependencies>

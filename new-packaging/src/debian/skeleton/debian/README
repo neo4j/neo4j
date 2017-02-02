@@ -1,7 +1,7 @@
-The Neo4j Server debian package
+The Neo4j Debian package
 -------------------------------
 
-This is a debian packaged version of the neo4j server. For neo4j documentation, please see
-the neo4j documentation site:
+This is a Debian packaged version of Neo4j. For Neo4j documentation, please see
+the Neo4j documentation site:
 
-http://docs.neo4j.org/
+https://neo4j.com/docs/

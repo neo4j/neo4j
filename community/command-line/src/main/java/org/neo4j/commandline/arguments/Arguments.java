@@ -237,4 +237,18 @@ public class Arguments
     {
         return converter.apply( parse( argName, args ) );
     }
+
+    /**
+     * @param argName name of argument
+     * @param args the given arguments
+     * @return true if argName was given as an explicit argument, false otherwise
+     */
+    public boolean has( String argName, String[] args )
+    {
+        if ( namedArgs.containsKey( argName ) )
+        {
+            return namedArgs.get( argName ).has( args );
+        }
+        throw new IllegalArgumentException( "No such argument available: " + argName );
+    }
 }

@@ -29,7 +29,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.index.IndexProviderCompatibilityTestSuite;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
@@ -60,7 +60,8 @@ public class LuceneSchemaIndexProviderTest extends IndexProviderCompatibilityTes
                 new DirectoryFactory.InMemoryDirectoryFactory() );
         expectedException.expect( UnsupportedOperationException.class );
 
-        readOnlyIndexProvider.getPopulator( 1L, new IndexDescriptor( 1, 1 ), IndexConfiguration.NON_UNIQUE,
+        readOnlyIndexProvider.getPopulator( 1L, IndexDescriptorFactory.of( 1, 1 ),
+                IndexConfiguration.NON_UNIQUE,
                 new IndexSamplingConfig( readOnlyConfig ) );
     }
 

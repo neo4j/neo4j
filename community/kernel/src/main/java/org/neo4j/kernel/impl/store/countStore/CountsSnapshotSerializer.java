@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.store.countStore;
 import java.io.IOException;
 import java.util.Map;
 
+import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.store.counts.keys.IndexSampleKey;
 import org.neo4j.kernel.impl.store.counts.keys.IndexStatisticsKey;
@@ -84,8 +85,7 @@ public class CountsSnapshotSerializer
                 }
                 IndexSampleKey indexSampleKey = (IndexSampleKey) key;
                 channel.put( INDEX_SAMPLE.code );
-                channel.putInt( indexSampleKey.labelId() );
-                channel.putInt( indexSampleKey.propertyKeyId() );
+                channel.putLong( indexSampleKey.indexId() );
                 channel.putLong( value[0] );
                 channel.putLong( value[1] );
                 break;
@@ -98,8 +98,7 @@ public class CountsSnapshotSerializer
                 }
                 IndexStatisticsKey indexStatisticsKey = (IndexStatisticsKey) key;
                 channel.put( INDEX_STATISTICS.code );
-                channel.putInt( indexStatisticsKey.labelId() );
-                channel.putInt( indexStatisticsKey.propertyKeyId() );
+                channel.putLong( indexStatisticsKey.indexId() );
                 channel.putLong( value[0] );
                 channel.putLong( value[1] );
                 break;

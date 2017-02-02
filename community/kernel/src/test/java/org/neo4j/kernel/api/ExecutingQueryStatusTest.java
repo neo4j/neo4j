@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
 
+import org.neo4j.kernel.impl.locking.ActiveLock;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
@@ -41,10 +42,20 @@ public class ExecutingQueryStatusTest
     public void shouldProduceSensibleMapRepresentationInRunningState() throws Exception
     {
         // when
-        Map<String,Object> status = ExecutingQueryStatus.RUNNING.toMap( clock );
+        Map<String,Object> status = ExecutingQueryStatus.running().toMap( clock );
 
         // then
         assertEquals( singletonMap( "state", "RUNNING" ), status );
+    }
+
+    @Test
+    public void shouldProduceSensibleMapRepresentationInPlanningState() throws Exception
+    {
+        // when
+        Map<String,Object> status = ExecutingQueryStatus.planning().toMap( clock );
+
+        // then
+        assertEquals( singletonMap( "state", "PLANNING" ), status );
     }
 
     @Test
@@ -53,7 +64,11 @@ public class ExecutingQueryStatusTest
         // given
         long[] resourceIds = {17};
         ExecutingQueryStatus.WaitingOnLock status =
-                new ExecutingQueryStatus.WaitingOnLock( resourceType( "NODE" ), resourceIds, clock.nanos() );
+                new ExecutingQueryStatus.WaitingOnLock(
+                        ActiveLock.EXCLUSIVE_MODE,
+                        resourceType( "NODE" ),
+                        resourceIds,
+                        clock.nanos() );
         clock.forward( 17, TimeUnit.MILLISECONDS );
 
         // when
@@ -63,6 +78,7 @@ public class ExecutingQueryStatusTest
         Map<String,Object> expected = new HashMap<>();
         expected.put( "state", "WAITING" );
         expected.put( "waitTimeMillis", 17L );
+        expected.put( "lockMode", "EXCLUSIVE" );
         expected.put( "resourceType", "NODE" );
         expected.put( "resourceIds", resourceIds );
         assertEquals( expected, statusMap );

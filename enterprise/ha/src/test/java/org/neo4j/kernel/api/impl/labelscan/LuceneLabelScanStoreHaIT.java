@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.labelscan;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings.LabelIndex;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 
@@ -27,6 +28,12 @@ public class LuceneLabelScanStoreHaIT extends LabelScanStoreHaIT
     @Override
     protected KernelExtensionFactory<?> labelScanStoreExtension( LabelScanStore.Monitor monitor )
     {
-        return new LuceneLabelScanStoreExtension( 100, monitor );
+        return new LuceneLabelScanStoreExtension( monitor );
+    }
+
+    @Override
+    protected String labelIndexSettingName()
+    {
+        return LabelIndex.LUCENE.name();
     }
 }

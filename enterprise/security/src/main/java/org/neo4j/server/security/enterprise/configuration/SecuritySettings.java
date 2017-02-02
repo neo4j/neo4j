@@ -321,8 +321,13 @@ public class SecuritySettings implements LoadableConfig
     // Misc settings
     //=========================================================================
 
+    @Internal
     @Description( "Set to true if connection pooling should be used for authorization searches using the " +
                   "system account." )
     public static final Setting<Boolean> ldap_authorization_connection_pooling =
             setting( "unsupported.dbms.security.ldap.authorization.connection_pooling", BOOLEAN, "true" );
+
+    @Description( "Set to true if users with role `publisher` are allowed to create new tokens." )
+    public static final Setting<Boolean> allow_publisher_create_token =
+            setting( "dbms.security.allow_publisher_create_token", BOOLEAN, "false" );
 }

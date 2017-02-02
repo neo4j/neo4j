@@ -42,7 +42,7 @@ class ShortestPathRelationshipUniquenessAcceptanceTest extends ExecutionEngineFu
       """MATCH p=shortestpath((a:Model)-[r*]-(b:Model))
     WHERE a.id="2228" AND b.id="2638" AND ANY ( n IN nodes(p)[1..-1] WHERE (n.id = "32") )
     RETURN nodes(p) as nodes"""
-        .stripMargin
+
     val result = executeUsingCostPlannerOnly(query).columnAs("nodes").toList
     result should be(List.empty)
   }
@@ -62,7 +62,6 @@ class ShortestPathRelationshipUniquenessAcceptanceTest extends ExecutionEngineFu
     val pLongPath4 = createLabeledNode(Map("id" -> "5"), "Model")
     val pLongPath5 = createLabeledNode(Map("id" -> "6"), "Model")
 
-
     relate(p0, pLongPath0, "10")
     relate(pLongPath0, pLongPath1, "20")
     relate(pLongPath1, pLongPath2, "30")
@@ -80,8 +79,7 @@ class ShortestPathRelationshipUniquenessAcceptanceTest extends ExecutionEngineFu
       """MATCH p=shortestpath((a:Model)-[r*]-(b:Model))
     WHERE a.id="2228" AND b.id="2638" AND ANY ( n IN nodes(p)[1..-1] WHERE (n.id = "32") )
     RETURN nodes(p) as nodes"""
-        .stripMargin
-    println(query)
+
     val result = executeUsingCostPlannerOnly(query).columnAs("nodes").toList
     result should be(List(List(p0, pLongPath0, pLongPath1, pLongPath2, pLongPath3, pLongPath4, pLongPath5, p3, p2, p4, p5)))
   }

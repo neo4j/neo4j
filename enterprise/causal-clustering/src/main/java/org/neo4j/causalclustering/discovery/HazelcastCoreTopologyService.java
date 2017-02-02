@@ -232,8 +232,23 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
     @Override
     public void refreshCoreTopology()
     {
-        latestCoreTopology = HazelcastClusterTopology.getCoreTopology( hazelcastInstance, log );
-        log.info( "Current core topology is %s", coreServers() );
+        CoreTopology newCoreTopology = HazelcastClusterTopology.getCoreTopology( hazelcastInstance, log );
+
+        if ( coreServers() != null )
+        {
+            CoreTopology.TopologyDifference difference = coreServers().difference( newCoreTopology );
+            if ( difference.hasChanges() )
+            {
+                log.info( "Core topology changed %s", difference );
+            }
+        }
+        else
+        {
+            log.info( "Initial Core topology %s", newCoreTopology );
+        }
+
+        latestCoreTopology = newCoreTopology;
+
         listenerService.notifyListeners( coreServers() );
     }
 

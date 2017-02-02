@@ -45,11 +45,12 @@ import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelExceptio
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -58,7 +59,6 @@ import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
 import org.neo4j.kernel.impl.api.index.NodePropertyUpdates;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.index.StoreScan;
-import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
@@ -209,7 +209,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
 
     private IndexReader getIndexReader( int propertyId, Integer countryLabelId ) throws IndexNotFoundKernelException
     {
-        return indexService.getIndexProxy( new IndexDescriptor( countryLabelId, propertyId ) ).newReader();
+        return indexService.getIndexProxy( IndexDescriptorFactory.of( countryLabelId, propertyId ) ).newReader();
     }
 
     private void launchCustomIndexPopulation( Map<String,Integer> labelNameIdMap, int propertyId,
@@ -276,7 +276,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
             throws IndexNotFoundKernelException, IndexPopulationFailedKernelException, InterruptedException,
             IndexActivationFailedKernelException
     {
-        IndexProxy indexProxy = indexService.getIndexProxy( new IndexDescriptor( labelId, propertyId ) );
+        IndexProxy indexProxy = indexService.getIndexProxy( IndexDescriptorFactory.of( labelId, propertyId ) );
         indexProxy.awaitStoreScanCompleted();
         indexProxy.activate();
     }
@@ -284,14 +284,14 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     private IndexRule[] createIndexRules( Map<String,Integer> labelNameIdMap, int propertyId )
     {
         return labelNameIdMap.values().stream()
-                .map( index -> new IndexRule( index, index, propertyId,
-                        new SchemaIndexProvider.Descriptor( "lucene", "version" ), null ) )
+                .map( index -> IndexRule.indexRule( index, NewIndexDescriptorFactory.forLabel( index, propertyId ),
+                        new SchemaIndexProvider.Descriptor( "lucene", "version" ) ) )
                 .toArray( IndexRule[]::new );
     }
 
     private List<IndexRule> getIndexRules( NeoStores neoStores )
     {
-        return Iterators.asList( new SchemaStorage( neoStores.getSchemaStore() ).allIndexRules() );
+        return Iterators.asList( new SchemaStorage( neoStores.getSchemaStore() ).indexesGetAll() );
     }
 
     private Map<String, Integer> getLabelIdsByName( String... names )
@@ -346,7 +346,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
 
     private LabelScanStore getLabelScanStore()
     {
-        return embeddedDatabase.resolveDependency( LabelScanStoreProvider.class ).getLabelScanStore();
+        return embeddedDatabase.resolveDependency( LabelScanStore.class );
     }
 
     private NeoStores getNeoStores()
@@ -393,7 +393,6 @@ public class MultiIndexPopulationConcurrentUpdatesIT
                     element -> false, propertyUpdatesVisitor, labelIds, propertyKeyIdFilter,
                     (LabelScanViewNodeStoreScan) storeScan, updates);
         }
-
     }
 
     private class LabelScanViewNodeStoreWrapper extends LabelScanViewNodeStoreScan

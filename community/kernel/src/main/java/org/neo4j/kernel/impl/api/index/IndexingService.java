@@ -42,12 +42,13 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexConfiguration;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor;
+import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
@@ -195,12 +196,12 @@ public class IndexingService extends LifecycleAdapter
             IndexProxy indexProxy;
 
             long indexId = indexRule.getId();
-            IndexDescriptor descriptor = new IndexDescriptor( indexRule.getLabel(), indexRule.getPropertyKey() );
+            IndexDescriptor descriptor = IndexBoundary.map( indexRule.getIndexDescriptor() );
             SchemaIndexProvider.Descriptor providerDescriptor = indexRule.getProviderDescriptor();
             SchemaIndexProvider provider = providerMap.apply( providerDescriptor );
             InternalIndexState initialState = provider.getInitialState( indexId );
             log.info( indexStateInfo( "init", indexId, initialState, descriptor ) );
-            boolean constraint = indexRule.isConstraintIndex();
+            boolean constraint = indexRule.canSupportUniqueConstraint();
 
             switch ( initialState )
             {
@@ -370,17 +371,17 @@ public class IndexingService extends LifecycleAdapter
 
     public DoubleLongRegister indexUpdatesAndSize( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
-        final IndexProxy indexProxy = indexMapRef.getOnlineIndexProxy( descriptor );
+        final long indexId = indexMapRef.getOnlineIndexId( descriptor );
         final DoubleLongRegister output = Registers.newDoubleLongRegister();
-        storeView.indexUpdatesAndSize( indexProxy.getDescriptor(), output );
+        storeView.indexUpdatesAndSize( indexId, output );
         return output;
     }
 
     public double indexUniqueValuesPercentage( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
-        final IndexProxy indexProxy = indexMapRef.getOnlineIndexProxy( descriptor );
+        final long indexId = indexMapRef.getOnlineIndexId( descriptor );
         final DoubleLongRegister output = Registers.newDoubleLongRegister();
-        storeView.indexSample( indexProxy.getDescriptor(), output );
+        storeView.indexSample( indexId, output );
         long unique = output.readFirst();
         long size = output.readSecond();
         if ( size == 0 )
@@ -490,9 +491,7 @@ public class IndexingService extends LifecycleAdapter
     private void processUpdate( NodePropertyUpdate update, IndexUpdaterMap updaterMap, int labelId,
             int propertyKeyId ) throws IOException, IndexEntryConflictException
     {
-        IndexDescriptor descriptor = new IndexDescriptor( labelId, propertyKeyId );
-        IndexUpdater updater = updaterMap.getUpdater( descriptor );
-        if ( updater != null )
+        for ( IndexUpdater updater : updaterMap.getUpdaters( labelId, propertyKeyId ) )
         {
             updater.process( update );
         }
@@ -533,9 +532,9 @@ public class IndexingService extends LifecycleAdapter
                 indexMapRef.setIndexMap( indexMap );
                 continue;
             }
-            final IndexDescriptor descriptor = new IndexDescriptor( rule.getLabel(), rule.getPropertyKey() );
+            final IndexDescriptor descriptor = IndexBoundary.map( rule.getIndexDescriptor() );
             SchemaIndexProvider.Descriptor providerDescriptor = rule.getProviderDescriptor();
-            boolean constraint = rule.isConstraintIndex();
+            boolean constraint = rule.canSupportUniqueConstraint();
             if ( state == State.RUNNING )
             {
                 populationJob = populationJob == null ? newIndexPopulationJob() : populationJob;
@@ -625,10 +624,11 @@ public class IndexingService extends LifecycleAdapter
     }
 
     public void triggerIndexSampling( IndexDescriptor descriptor, IndexSamplingMode mode )
+            throws IndexNotFoundKernelException
     {
         String description = descriptor.userDescription( tokenNameLookup );
         log.info( "Manual trigger for sampling index " + description + " [" + mode + "]" );
-        samplingController.sampleIndex( descriptor, mode );
+        samplingController.sampleIndex( indexMapRef.getIndexId( descriptor ), mode );
     }
 
     private void awaitIndexFuture( Future<Void> future ) throws Exception
@@ -681,6 +681,11 @@ public class IndexingService extends LifecycleAdapter
     public IndexProxy getIndexProxy( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         return indexMapRef.getIndexProxy( descriptor );
+    }
+
+    public long getIndexId( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    {
+        return indexMapRef.getIndexId( descriptor );
     }
 
     public void validateIndex( long indexId ) throws IndexNotFoundKernelException, ConstraintVerificationFailedKernelException, IndexPopulationFailedKernelException

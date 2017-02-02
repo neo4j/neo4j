@@ -22,7 +22,6 @@ package org.neo4j.causalclustering.core;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.function.Supplier;
 
@@ -34,6 +33,8 @@ import org.neo4j.causalclustering.core.consensus.RaftMachine;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.core.consensus.roles.Role;
 import org.neo4j.causalclustering.core.server.CoreServerModule;
+import org.neo4j.causalclustering.core.state.ClusterStateDirectory;
+import org.neo4j.causalclustering.core.state.ClusterStateException;
 import org.neo4j.causalclustering.core.state.ClusteringModule;
 import org.neo4j.causalclustering.core.state.machines.CoreStateMachinesModule;
 import org.neo4j.causalclustering.discovery.CoreTopologyService;
@@ -51,6 +52,7 @@ import org.neo4j.causalclustering.messaging.Outbound;
 import org.neo4j.causalclustering.messaging.RaftChannelInitializer;
 import org.neo4j.causalclustering.messaging.RaftOutbound;
 import org.neo4j.causalclustering.messaging.SenderService;
+import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -94,8 +96,6 @@ import org.neo4j.udc.UsageData;
  */
 public class EnterpriseCoreEditionModule extends EditionModule
 {
-    public static final String CLUSTER_STATE_DIRECTORY_NAME = "cluster-state";
-
     private final ConsensusModule consensusModule;
     private final CoreTopologyService topologyService;
     private final LogProvider logProvider;
@@ -125,9 +125,19 @@ public class EnterpriseCoreEditionModule extends EditionModule
         final LogService logging = platformModule.logging;
         final FileSystemAbstraction fileSystem = platformModule.fileSystem;
         final File storeDir = platformModule.storeDir;
-        final File clusterStateDirectory = createClusterStateDirectory( storeDir, fileSystem );
         final LifeSupport life = platformModule.life;
         final Monitors monitors = platformModule.monitors;
+
+        final File dataDir = config.get( DatabaseManagementSystemSettings.data_directory );
+        final ClusterStateDirectory clusterStateDirectory = new ClusterStateDirectory( dataDir, storeDir, false );
+        try
+        {
+            clusterStateDirectory.initialize( fileSystem );
+        }
+        catch ( ClusterStateException e )
+        {
+            throw new RuntimeException( e );
+        }
 
         eligibleForIdReuse = IdReuseEligibility.ALWAYS;
 
@@ -135,17 +145,15 @@ public class EnterpriseCoreEditionModule extends EditionModule
         final Supplier<DatabaseHealth> databaseHealthSupplier = dependencies.provideDependency( DatabaseHealth.class );
 
         LocalDatabase localDatabase = new LocalDatabase( platformModule.storeDir,
-                new StoreFiles( fileSystem ),
+                new StoreFiles( fileSystem, platformModule.pageCache ),
                 platformModule.dataSourceManager,
-                platformModule.pageCache,
-                fileSystem,
                 databaseHealthSupplier,
                 logProvider );
 
-        IdentityModule identityModule = new IdentityModule( platformModule, clusterStateDirectory );
+        IdentityModule identityModule = new IdentityModule( platformModule, clusterStateDirectory.get() );
 
         ClusteringModule clusteringModule = new ClusteringModule( discoveryServiceFactory, identityModule.myself(),
-                platformModule, clusterStateDirectory );
+                platformModule, clusterStateDirectory.get() );
         topologyService = clusteringModule.topologyService();
 
         long logThresholdMillis = config.get( CausalClusteringSettings.unknown_address_logging_throttle );
@@ -164,16 +172,15 @@ public class EnterpriseCoreEditionModule extends EditionModule
                 identityModule.myself(), messageLogger );
 
         consensusModule = new ConsensusModule( identityModule.myself(), platformModule, loggingOutbound,
-                clusterStateDirectory, topologyService );
+                clusterStateDirectory.get(), topologyService );
 
         dependencies.satisfyDependency( consensusModule.raftMachine() );
 
         ReplicationModule replicationModule = new ReplicationModule( identityModule.myself(), platformModule, config, consensusModule,
-                loggingOutbound, clusterStateDirectory, fileSystem, logProvider );
+                loggingOutbound, clusterStateDirectory.get(), fileSystem, logProvider );
 
-        CoreStateMachinesModule coreStateMachinesModule = new CoreStateMachinesModule( identityModule.myself(), platformModule, clusterStateDirectory,
-                config,
-                replicationModule.getReplicator(), consensusModule.raftMachine(), dependencies, localDatabase );
+        CoreStateMachinesModule coreStateMachinesModule = new CoreStateMachinesModule( identityModule.myself(), platformModule, clusterStateDirectory.get(),
+                config, replicationModule.getReplicator(), consensusModule.raftMachine(), dependencies, localDatabase );
 
         this.idGeneratorFactory = coreStateMachinesModule.idGeneratorFactory;
         this.idTypeConfigurationProvider = coreStateMachinesModule.idTypeConfigurationProvider;
@@ -185,7 +192,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
         this.accessCapability = new LeaderCanWrite( consensusModule.raftMachine() );
 
         CoreServerModule coreServerModule = new CoreServerModule( identityModule, platformModule, consensusModule,
-                coreStateMachinesModule, replicationModule, clusterStateDirectory, clusteringModule, localDatabase,
+                coreStateMachinesModule, replicationModule, clusterStateDirectory.get(), clusteringModule, localDatabase,
                 messageLogger, databaseHealthSupplier );
 
         editionInvariants( platformModule, dependencies, config, logging, life );
@@ -243,21 +250,6 @@ public class EnterpriseCoreEditionModule extends EditionModule
     public boolean isLeader()
     {
         return consensusModule.raftMachine().currentRole() == Role.LEADER;
-    }
-
-    private File createClusterStateDirectory( File dir, FileSystemAbstraction fileSystem )
-    {
-        File raftLogDir = new File( dir, CLUSTER_STATE_DIRECTORY_NAME );
-
-        try
-        {
-            fileSystem.mkdirs( raftLogDir );
-            return raftLogDir;
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
     }
 
     private static PrintWriter raftMessagesLog( File logsDir )

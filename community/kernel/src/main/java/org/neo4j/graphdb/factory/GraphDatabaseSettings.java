@@ -42,6 +42,7 @@ import org.neo4j.kernel.configuration.Title;
 import org.neo4j.kernel.impl.cache.MonitorGc;
 import org.neo4j.logging.Level;
 
+import static org.neo4j.helpers.collection.Iterables.enumNames;
 import static org.neo4j.kernel.configuration.Settings.ANY;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.BYTES;
@@ -109,7 +110,8 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<Boolean> dump_configuration = setting("unsupported.dbms.report_configuration", BOOLEAN, FALSE );
 
     @Description( "A strict configuration validation will prevent the database from starting up if unknown " +
-            "configuration options are specified in the neo4j settings namespace (such as dbms., ha., cypher., etc)." )
+            "configuration options are specified in the neo4j settings namespace (such as dbms., ha., cypher., etc). " +
+            "This is currently false by default but will be true by default in 4.0." )
     public static final Setting<Boolean> strict_config_validation =
             setting("dbms.config.strict_validation", BOOLEAN, FALSE );
 
@@ -478,6 +480,17 @@ public class GraphDatabaseSettings implements LoadableConfig
     @Internal
     public static final Setting<Integer> batch_inserter_batch_size = setting( "unsupported.tools.batch_inserter.batch_size", INTEGER,
             "10000" );
+
+    public enum LabelIndex
+    {
+        NATIVE,
+        LUCENE;
+    }
+
+    @Description( "Backend to use for label --> nodes index" )
+    @Internal
+    public static final Setting<String> label_index = setting( "dbms.label_index",
+            options( enumNames( LabelIndex.class ), true ), LabelIndex.NATIVE.name() );
 
     // Security settings
 

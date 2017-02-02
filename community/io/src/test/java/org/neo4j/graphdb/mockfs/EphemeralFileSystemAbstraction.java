@@ -386,18 +386,22 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public void deleteRecursively( File directory ) throws IOException
+    public void deleteRecursively( File path ) throws IOException
     {
-        List<String> directoryPathItems = splitPath( canonicalFile( directory ) );
-        for ( Map.Entry<File,EphemeralFileData> file : files.entrySet() )
+        if ( isDirectory( path ) )
         {
-            File fileName = file.getKey();
-            List<String> fileNamePathItems = splitPath( fileName );
-            if ( directoryMatches( directoryPathItems, fileNamePathItems ) )
+            List<String> directoryPathItems = splitPath( canonicalFile( path ) );
+            for ( Map.Entry<File,EphemeralFileData> file : files.entrySet() )
             {
-                deleteFile( fileName );
+                File fileName = file.getKey();
+                List<String> fileNamePathItems = splitPath( fileName );
+                if ( directoryMatches( directoryPathItems, fileNamePathItems ) )
+                {
+                    deleteFile( fileName );
+                }
             }
         }
+        deleteFile( path );
     }
 
     @Override
@@ -446,7 +450,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
             List<String> fileNamePathItems = splitPath( file );
             if ( directoryMatches( directoryPathItems, fileNamePathItems ) )
             {
-                found.add( constructPath( fileNamePathItems, directoryPathItems.size() + 1 ) );
+                found.add( constructPath( fileNamePathItems, directoryPathItems ) );
             }
         }
 
@@ -472,7 +476,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
             List<String> fileNamePathItems = splitPath( file );
             if ( directoryMatches( directoryPathItems, fileNamePathItems ) )
             {
-                File path = constructPath( fileNamePathItems, directoryPathItems.size() + 1 );
+                File path = constructPath( fileNamePathItems, directoryPathItems );
                 if ( filter.accept( path.getParentFile(), path.getName() ) )
                 {
                     found.add( path );
@@ -482,10 +486,15 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         return found.toArray( new File[found.size()] );
     }
 
-    private File constructPath( List<String> pathItems, int count )
+    private File constructPath( List<String> pathItems, List<String> base )
     {
         File file = null;
-        for ( String pathItem : pathItems.subList( 0, count ) )
+        if ( base.size() > 0 )
+        {
+            // We're not directly basing off the root directory
+            pathItems = pathItems.subList( 0, base.size() + 1 );
+        }
+        for ( String pathItem : pathItems )
         {
             file = file == null ? new File( pathItem ) : new File( file, pathItem );
         }
@@ -506,12 +515,25 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
     @Override
     public void moveToDirectory( File file, File toDirectory ) throws IOException
     {
-        EphemeralFileData fileToMove = files.remove( canonicalFile( file ) );
-        if ( fileToMove == null )
+        if ( isDirectory( file ) )
         {
-            throw new FileNotFoundException( file.getPath() );
+            File inner = new File( toDirectory, file.getName() );
+            mkdir( inner );
+            for ( File f : listFiles( file ) )
+            {
+                moveToDirectory( f, inner );
+            }
+            deleteFile( file );
         }
-        files.put( canonicalFile( new File( toDirectory, file.getName() ) ), fileToMove );
+        else
+        {
+            EphemeralFileData fileToMove = files.remove( canonicalFile( file ) );
+            if ( fileToMove == null )
+            {
+                throw new FileNotFoundException( file.getPath() );
+            }
+            files.put( canonicalFile( new File( toDirectory, file.getName() ) ), fileToMove );
+        }
     }
 
     @Override

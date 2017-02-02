@@ -65,10 +65,19 @@ public class PropertyAndNode2LabelIndexProcessor extends RecordProcessor.Adapter
         try ( MandatoryProperties.Check<NodeRecord,ConsistencyReport.NodeConsistencyReport> mandatoryCheck =
                 mandatoryProperties.apply( nodeRecord ) )
         {
-            for ( PropertyRecord property : client.getPropertiesFromCache() )
+            Iterable<PropertyRecord> properties = client.getPropertiesFromCache();
+
+            // We do this null-check here because even if nodeIndexCheck should provide the properties for us,
+            // or an empty list at least, it may fail in one way or another and exception be caught by
+            // broad exception handler in reporter. The caught exception will produce an ERROR so it will not
+            // go by unnoticed.
+            if ( properties != null )
             {
-                reporter.forProperty( property, propertyCheck );
-                mandatoryCheck.receive( ChainCheck.keys( property ) );
+                for ( PropertyRecord property : properties )
+                {
+                    reporter.forProperty( property, propertyCheck );
+                    mandatoryCheck.receive( ChainCheck.keys( property ) );
+                }
             }
         }
     }

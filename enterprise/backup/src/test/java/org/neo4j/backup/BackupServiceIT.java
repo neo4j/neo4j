@@ -105,7 +105,6 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.kernel.impl.storemigration.StoreFile.COUNTS_STORE_LEFT;
 import static org.neo4j.kernel.impl.storemigration.StoreFile.COUNTS_STORE_RIGHT;
 
@@ -810,7 +809,7 @@ public class BackupServiceIT
 
         OnlineBackupKernelExtension backup = (OnlineBackupKernelExtension)
                 new OnlineBackupExtensionFactory().newInstance(
-                        new SimpleKernelContext( fileSystem, storeDir, DatabaseInfo.UNKNOWN, dependencies ),
+                        new SimpleKernelContext( storeDir, DatabaseInfo.UNKNOWN, dependencies ),
                         DependenciesProxy.dependencies( dependencies, OnlineBackupExtensionFactory.Dependencies.class )
                 );
         backup.start();
@@ -880,7 +879,7 @@ public class BackupServiceIT
 
         OnlineBackupKernelExtension backup = (OnlineBackupKernelExtension)
                 new OnlineBackupExtensionFactory().newInstance(
-                        new SimpleKernelContext( fileSystem, storeDir, DatabaseInfo.UNKNOWN, dependencies ),
+                        new SimpleKernelContext( storeDir, DatabaseInfo.UNKNOWN, dependencies ),
                         DependenciesProxy.dependencies( dependencies, OnlineBackupExtensionFactory.Dependencies.class )
                 );
 

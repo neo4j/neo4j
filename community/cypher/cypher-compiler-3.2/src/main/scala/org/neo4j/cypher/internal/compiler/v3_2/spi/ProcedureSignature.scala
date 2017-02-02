@@ -27,7 +27,8 @@ case class ProcedureSignature(name: QualifiedName,
                               outputSignature: Option[IndexedSeq[FieldSignature]],
                               deprecationInfo: Option[String],
                               accessMode: ProcedureAccessMode,
-                              description: Option[String] = None) {
+                              description: Option[String] = None,
+                              warning: Option[String] = None) {
 
   def outputFields = outputSignature.getOrElse(Seq.empty)
 
@@ -72,5 +73,6 @@ sealed trait  ProcedureAccessMode
 
 case class ProcedureReadOnlyAccess(allowed: Array[String]) extends ProcedureAccessMode
 case class ProcedureReadWriteAccess(allowed: Array[String]) extends ProcedureAccessMode
+case class ProcedureTokenWriteAccess(allowed: Array[String]) extends ProcedureAccessMode
 case class ProcedureSchemaWriteAccess(allowed: Array[String]) extends ProcedureAccessMode
 case class ProcedureDbmsAccess(allowed: Array[String]) extends ProcedureAccessMode

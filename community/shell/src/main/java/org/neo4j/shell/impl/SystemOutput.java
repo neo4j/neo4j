@@ -40,9 +40,14 @@ public class SystemOutput implements Output
         this( System.out );
     }
 
+    public SystemOutput( PrintWriter out )
+    {
+        this.out = out;
+    }
+
     public SystemOutput( OutputStream out )
     {
-        this.out = new PrintWriter( new OutputStreamWriter( out, StandardCharsets.UTF_8 ) );
+        this( new PrintWriter( new OutputStreamWriter( out, StandardCharsets.UTF_8 ) ) );
     }
 
     public void print( Serializable object )

@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.locking;
 
+import java.util.stream.Stream;
+
 import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
 import org.neo4j.storageengine.api.lock.ResourceType;
 
@@ -47,6 +49,18 @@ public class NoOpClient implements Locks.Client
     }
 
     @Override
+    public boolean reEnterShared( ResourceType resourceType, long resourceId )
+    {
+        return false;
+    }
+
+    @Override
+    public boolean reEnterExclusive( ResourceType resourceType, long resourceId )
+    {
+        return false;
+    }
+
+    @Override
     public void releaseShared( ResourceType resourceType, long resourceId )
     {
     }
@@ -70,5 +84,17 @@ public class NoOpClient implements Locks.Client
     public int getLockSessionId()
     {
         return -1;
+    }
+
+    @Override
+    public Stream<? extends ActiveLock> activeLocks()
+    {
+        return Stream.empty();
+    }
+
+    @Override
+    public long activeLockCount()
+    {
+        return 0;
     }
 }

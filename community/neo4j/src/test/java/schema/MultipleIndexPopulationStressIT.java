@@ -31,7 +31,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.ConsistencyCheckService.Result;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -44,7 +43,6 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.TimeUtil;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.io.fs.watcher.FileWatcher;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.api.index.BatchingMultipleIndexPopulator;
@@ -54,10 +52,10 @@ import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.Randoms;
-import org.neo4j.test.RepeatRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.CleanupRule;
 import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.rule.RepeatRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
@@ -76,12 +74,10 @@ import org.neo4j.unsafe.impl.batchimport.input.SimpleInputIteratorWrapper;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
 import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.helpers.progress.ProgressMonitorFactory.NONE;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
@@ -96,7 +92,7 @@ import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
 public class MultipleIndexPopulationStressIT
 {
     private static final String[] TOKENS = new String[]{"One", "Two", "Three", "Four"};
-    private final TestDirectory directory = TestDirectory.testDirectory();
+    private final TestDirectory directory = TestDirectory.testDirectory( getClass() );
 
     private final RandomRule random = new RandomRule();
     private final CleanupRule cleanup = new CleanupRule();
@@ -108,14 +104,12 @@ public class MultipleIndexPopulationStressIT
                                                 .around( cleanup ).around( fileSystemRule );
 
     @Test
-    @RepeatRule.Repeat( times = 10 )
     public void populateMultipleIndexWithSeveralNodesSingleThreaded() throws Exception
     {
         prepareAndRunTest( false, 10, TimeUnit.SECONDS.toMillis( 5 ) );
     }
 
     @Test
-    @RepeatRule.Repeat( times = 10 )
     public void populateMultipleIndexWithSeveralNodesMultiThreaded() throws Exception
     {
         prepareAndRunTest( true, 10, TimeUnit.SECONDS.toMillis( 5 ) );
@@ -147,7 +141,7 @@ public class MultipleIndexPopulationStressIT
     private void readConfigAndRunTest( boolean multiThreaded ) throws Exception
     {
         // GIVEN a database with random data in it
-        int nodeCount = (int) Settings.parseLongWithUnit( System.getProperty( getClass().getName() + ".nodes", "1m" ) );
+        int nodeCount = (int) Settings.parseLongWithUnit( System.getProperty( getClass().getName() + ".nodes", "200k" ) );
         long duration = TimeUtil.parseTimeMillis.apply( System.getProperty( getClass().getName() + ".duration", "5s" ) );
         prepareAndRunTest( multiThreaded, nodeCount, duration );
     }
@@ -180,7 +174,6 @@ public class MultipleIndexPopulationStressIT
     {
         final GraphDatabaseService db = new TestGraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( directory.graphDbDir() )
-                .setConfig( GraphDatabaseSettings.pagecache_memory, "8m" )
                 .setConfig( GraphDatabaseSettings.multi_threaded_schema_index_population_enabled, multiThreaded + "" )
                 .newGraphDatabase();
         try

@@ -19,11 +19,10 @@
  */
 package org.neo4j.cypher
 
-import org.apache.commons.lang3.SystemUtils
 import org.hamcrest.CoreMatchers._
 import org.junit.Assert._
 import org.neo4j.cypher.internal.compiler.v3_2.CypherSerializer
-import org.neo4j.cypher.internal.frontend.v3_2.helpers.StringHelper
+import org.neo4j.cypher.internal.frontend.v3_2.helpers.StringHelper._
 
 class ErrorMessagesTest extends ExecutionEngineFunSuite with CypherSerializer {
 
@@ -115,7 +114,7 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with CypherSerializer {
   test("badMatch4") {
     expectSyntaxError(
       "match (p) where id(p) = 2 match p-[!]->dude return dude.name",
-      "Invalid input '!': expected whitespace, a variable, '?', relationship types, a length specification, a property map or ']' (line 1, column 36 (offset: 35))",
+      "Invalid input '!': expected whitespace, a variable, relationship types, a length specification, a property map or ']' (line 1, column 36 (offset: 35))",
       35
     )
   }
@@ -178,13 +177,6 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with CypherSerializer {
     )
   }
 
-  test("can not use optional pattern as predicate") {
-    expectError(
-      "match (a) where id(a) = 1 RETURN (a)-[?]->()",
-      "Optional relationships cannot be specified in this context (line 1, column 37 (offset: 36))"
-    )
-  }
-
   test("trying to drop constraint index should return sensible error") {
     graph.createConstraint("LabelName", "Prop")
 
@@ -219,20 +211,6 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with CypherSerializer {
     )
   }
 
-  test("report deprecated use of property name with question mark") {
-    expectError(
-      "match (n) where id(n) = 0 return n.title? = \"foo\"",
-      "This syntax is no longer supported (missing properties are now returned as null). Please use (not(exists(<ident>.title)) OR <ident>.title=<value>) if you really need the old behavior."
-    )
-  }
-
-  test("report deprecated use of property name with exclamation mark") {
-    expectError(
-      "match (n) where id(n) = 0 return n.title! = \"foo\"",
-      "This syntax is no longer supported (missing properties are now returned as null)."
-    )
-  }
-
   test("report wrong usage of index hint") {
     graph.createConstraint("Person", "id")
     expectError(
@@ -260,26 +238,18 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with CypherSerializer {
       "Expected exactly one statement per query but got: 2")
   }
 
-  def expectError(query: String, expectedError: String) {
-    import StringHelper._
+  private def expectError(query: String, expectedError: String) {
     val error = intercept[CypherException](executeQuery(query))
-    assertThat(error.getMessage, containsString(expectedError.fixPosition))
+    assertThat(error.getMessage, containsString(expectedError))
   }
 
   private def expectSyntaxError(query: String, expectedError: String, expectedOffset: Int) {
-    import StringHelper._
     val error = intercept[SyntaxException](executeQuery(query))
-    assertThat(error.getMessage(), containsString(expectedError.fixPosition))
-    assertThat(error.offset, equalTo(Some(fixPosition(query, expectedOffset)): Option[Int]))
+    assertThat(error.getMessage(), containsString(expectedError))
+    assertThat(error.offset, equalTo(Some(expectedOffset): Option[Int]))
   }
 
-  private def fixPosition(q: String, originalOffset: Int): Int = if (SystemUtils.IS_OS_WINDOWS) {
-    val subString = q.replaceAll("\n\r", "\n").substring(0, originalOffset)
-    val numberOfNewLines = subString.filter(_ == '\n').length
-    originalOffset + numberOfNewLines
-  } else originalOffset
-
-  def executeQuery(query: String) {
-    execute(query).toList
+  private def executeQuery(query: String) {
+    execute(query.fixNewLines).toList
   }
 }

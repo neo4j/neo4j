@@ -20,19 +20,19 @@
 package org.neo4j.graphdb;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 
+import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings.LabelIndex;
 import org.neo4j.kernel.api.impl.labelscan.LuceneLabelScanIndexBuilder;
 import org.neo4j.test.rule.DatabaseRule;
 
 import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.assertTrue;
+
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.label_index;
 import static org.neo4j.io.fs.FileUtils.deleteRecursively;
 
 public class LuceneLabelScanStoreChaosIT extends LabelScanStoreChaosIT
@@ -41,44 +41,31 @@ public class LuceneLabelScanStoreChaosIT extends LabelScanStoreChaosIT
     protected DatabaseRule.RestartAction corruptTheLabelScanStoreIndex()
     {
         return ( fs, storeDirectory ) -> {
-            try
+            int filesCorrupted = 0;
+            List<File> partitionDirs = labelScanStoreIndexDirectories( storeDirectory );
+            for ( File partitionDir : partitionDirs )
             {
-                int filesCorrupted = 0;
-                List<File> partitionDirs = labelScanStoreIndexDirectories( storeDirectory );
-                for ( File partitionDir : partitionDirs )
+                for ( File file : partitionDir.listFiles() )
                 {
-                    for ( File file : partitionDir.listFiles() )
-                    {
-                        scrambleFile( file );
-                        filesCorrupted++;
-                    }
+                    scrambleFile( file );
+                    filesCorrupted++;
                 }
-                assertTrue( "No files found to corrupt", filesCorrupted > 0 );
             }
-            catch ( IOException e )
-            {
-                throw new RuntimeException( e );
-            }
+            assertTrue( "No files found to corrupt", filesCorrupted > 0 );
         };
     }
 
     @Override
     protected DatabaseRule.RestartAction deleteTheLabelScanStoreIndex()
     {
-        return ( fs, storeDirectory ) -> {
-            try
+        return ( fs, storeDirectory ) ->
+        {
+            List<File> partitionDirs = labelScanStoreIndexDirectories( storeDirectory );
+            for ( File dir : partitionDirs )
             {
-                List<File> partitionDirs = labelScanStoreIndexDirectories( storeDirectory );
-                for ( File dir : partitionDirs )
-                {
-                    assertTrue( "We seem to want to delete the wrong directory here", dir.exists() );
-                    assertTrue( "No index files to delete", dir.listFiles().length > 0 );
-                    deleteRecursively( dir );
-                }
-            }
-            catch ( IOException e )
-            {
-                throw new RuntimeException( e );
+                assertTrue( "We seem to want to delete the wrong directory here", dir.exists() );
+                assertTrue( "No index files to delete", dir.listFiles().length > 0 );
+                deleteRecursively( dir );
             }
         };
     }
@@ -92,25 +79,9 @@ public class LuceneLabelScanStoreChaosIT extends LabelScanStoreChaosIT
         return (partitionDirs == null) ? Collections.emptyList() : Stream.of( partitionDirs ).collect( toList() );
     }
 
-    private void scrambleFile( File file ) throws IOException
+    @Override
+    protected void addSpecificConfig( GraphDatabaseBuilder builder )
     {
-        try ( RandomAccessFile fileAccess = new RandomAccessFile( file, "rw" );
-              FileChannel channel = fileAccess.getChannel() )
-        {
-            // The files will be small, so OK to allocate a buffer for the full size
-            byte[] bytes = new byte[(int) channel.size()];
-            putRandomBytes( bytes );
-            ByteBuffer buffer = ByteBuffer.wrap( bytes );
-            channel.position( 0 );
-            channel.write( buffer );
-        }
-    }
-
-    private void putRandomBytes( byte[] bytes )
-    {
-        for ( int i = 0; i < bytes.length; i++ )
-        {
-            bytes[i] = (byte) randomRule.nextInt();
-        }
+        builder.setConfig( label_index, LabelIndex.LUCENE.name() );
     }
 }

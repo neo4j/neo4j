@@ -24,7 +24,6 @@ import java.util.function.IntPredicate;
 
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.properties.Property;
@@ -67,37 +66,34 @@ public class NeoStoreIndexStoreView implements IndexStoreView
     }
 
     @Override
-    public DoubleLongRegister indexUpdatesAndSize( IndexDescriptor descriptor, DoubleLongRegister output )
+    public DoubleLongRegister indexUpdatesAndSize( long indexId, DoubleLongRegister output )
     {
-        return counts.indexUpdatesAndSize( descriptor.getLabelId(), descriptor.getPropertyKeyId(), output );
+        return counts.indexUpdatesAndSize( indexId, output );
     }
 
     @Override
-    public void replaceIndexCounts( IndexDescriptor descriptor,
-                                    long uniqueElements, long maxUniqueElements, long indexSize )
+    public void replaceIndexCounts( long indexId, long uniqueElements, long maxUniqueElements, long indexSize )
     {
-        int labelId = descriptor.getLabelId();
-        int propertyKeyId = descriptor.getPropertyKeyId();
         try ( CountsAccessor.IndexStatsUpdater updater = counts.updateIndexCounts() )
         {
-            updater.replaceIndexSample( labelId, propertyKeyId, uniqueElements, maxUniqueElements );
-            updater.replaceIndexUpdateAndSize( labelId, propertyKeyId, 0L, indexSize );
+            updater.replaceIndexSample( indexId, uniqueElements, maxUniqueElements );
+            updater.replaceIndexUpdateAndSize( indexId, 0L, indexSize );
         }
     }
 
     @Override
-    public void incrementIndexUpdates( IndexDescriptor descriptor, long updatesDelta )
+    public void incrementIndexUpdates( long indexId, long updatesDelta )
     {
         try ( CountsAccessor.IndexStatsUpdater updater = counts.updateIndexCounts() )
         {
-            updater.incrementIndexUpdates( descriptor.getLabelId(), descriptor.getPropertyKeyId(), updatesDelta );
+            updater.incrementIndexUpdates( indexId, updatesDelta );
         }
     }
 
     @Override
-    public DoubleLongRegister indexSample( IndexDescriptor descriptor, DoubleLongRegister output )
+    public DoubleLongRegister indexSample( long indexId, DoubleLongRegister output )
     {
-        return counts.indexSample( descriptor.getLabelId(), descriptor.getPropertyKeyId(), output );
+        return counts.indexSample( indexId, output );
     }
 
     @Override

@@ -30,9 +30,9 @@ public interface CountsVisitor
 
     void visitRelationshipCount( int startLabelId, int typeId, int endLabelId, long count );
 
-    void visitIndexStatistics( int labelId, int propertyKeyId, long updates, long size );
+    void visitIndexStatistics( long indexId, long updates, long size );
 
-    void visitIndexSample( int labelId, int propertyKeyId, long unique, long size );
+    void visitIndexSample( long indexId, long unique, long size );
 
     public static class Adapter implements CountsVisitor
     {
@@ -49,13 +49,13 @@ public interface CountsVisitor
         }
 
         @Override
-        public void visitIndexStatistics( int labelId, int propertyKeyId, long updates, long size )
+        public void visitIndexStatistics( long indexId, long updates, long size )
         {
             // override in subclasses
         }
 
         @Override
-        public void visitIndexSample( int labelId, int propertyKeyId, long unique, long size )
+        public void visitIndexSample( long indexId, long unique, long size )
         {
             // override in subclasses
         }
@@ -83,20 +83,20 @@ public interface CountsVisitor
                 }
 
                 @Override
-                public void visitIndexStatistics( int labelId, int propertyKeyId, long updates, long size )
+                public void visitIndexStatistics( long indexId, long updates, long size )
                 {
                     for ( CountsVisitor visitor : visitors )
                     {
-                        visitor.visitIndexStatistics( labelId, propertyKeyId, updates, size );
+                        visitor.visitIndexStatistics( indexId, updates, size );
                     }
                 }
 
                 @Override
-                public void visitIndexSample( int labelId, int propertyKeyId, long unique, long size )
+                public void visitIndexSample( long indexId, long unique, long size )
                 {
                     for ( CountsVisitor visitor : visitors )
                     {
-                        visitor.visitIndexSample( labelId, propertyKeyId, unique, size );
+                        visitor.visitIndexSample( indexId, unique, size );
                     }
                 }
             };

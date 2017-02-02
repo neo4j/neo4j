@@ -31,7 +31,8 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexConfiguration;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
@@ -290,15 +291,19 @@ public class BatchingMultipleIndexPopulatorTest
     private static IndexPopulator addPopulator( BatchingMultipleIndexPopulator batchingPopulator, int id )
     {
         IndexPopulator populator = mock( IndexPopulator.class );
-        IndexDescriptor descriptor = new IndexDescriptor( id, id );
+        IndexDescriptor descriptor = IndexDescriptorFactory.of( id, id );
+        long indexId = id;
 
         IndexProxyFactory indexProxyFactory = mock( IndexProxyFactory.class );
         FailedIndexProxyFactory failedIndexProxyFactory = mock( FailedIndexProxyFactory.class );
         FlippableIndexProxy flipper = new FlippableIndexProxy();
         flipper.setFlipTarget( indexProxyFactory );
 
-        batchingPopulator.addPopulator( populator, descriptor, new SchemaIndexProvider.Descriptor( "foo", "1" ),
-                IndexConfiguration.NON_UNIQUE, flipper, failedIndexProxyFactory, "testIndex" );
+        batchingPopulator.addPopulator(
+                populator, indexId, descriptor,
+                new SchemaIndexProvider.Descriptor( "foo", "1" ),
+                IndexConfiguration.NON_UNIQUE, flipper,
+                failedIndexProxyFactory, "testIndex" );
 
         return populator;
     }

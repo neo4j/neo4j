@@ -83,6 +83,19 @@
         </executions>
       </plugin>
       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>attach-sources</id>
+            <phase>package</phase>
+            <goals>
+              <goal>jar-no-fork</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
         <artifactId>maven-checkstyle-plugin</artifactId>
         <version>2.17</version>
         <configuration>
@@ -106,6 +119,11 @@
     </plugins>
     <pluginManagement>
       <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-source-plugin</artifactId>
+          <version>3.0.1</version>
+        </plugin>
         <plugin>
           <groupId>org.neo4j.build.plugins</groupId>
           <artifactId>clirr-maven-plugin</artifactId>
@@ -144,8 +162,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-shade-plugin</artifactId>
-          <version>2.1</version>
-          <!-- 2.1 ? Yes, 2.0 has maven3 issues -->
+          <version>2.4.3</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -294,21 +311,6 @@
 
     <!-- Build configuration profiles -->
     <profile>
-      <id>neo-full-build</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-        <property>
-          <name>fullBuild</name>
-        </property>
-      </activation>
-      <modules>
-        <module>packaging</module>
-      </modules>
-      <properties>
-        <attach-docs-phase>verify</attach-docs-phase>
-      </properties>
-    </profile>
-    <profile>
       <id>neodev</id>
       <activation>
         <activeByDefault>false</activeByDefault>
@@ -438,21 +440,18 @@
       <dependency>
         <groupId>org.apache.httpcomponents</groupId>
         <artifactId>httpclient</artifactId>
-        <version>4.3.4</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.httpcomponents</groupId>
-        <artifactId>httpcore</artifactId>
-        <version>4.3.2</version>
-        <scope>test</scope>
+        <version>4.5.2</version>
       </dependency>
       <dependency>
         <groupId>org.apache.httpcomponents</groupId>
         <artifactId>httpclient</artifactId>
-        <version>4.3.4</version>
+        <version>4.5.2</version>
         <classifier>tests</classifier>
-        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.httpcomponents</groupId>
+        <artifactId>httpcore</artifactId>
+        <version>4.4.5</version>
       </dependency>
       <dependency>
         <groupId>org.picocontainer</groupId>

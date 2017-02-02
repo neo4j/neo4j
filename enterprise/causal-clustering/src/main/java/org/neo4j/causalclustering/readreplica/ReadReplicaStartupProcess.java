@@ -19,20 +19,17 @@
  */
 package org.neo4j.causalclustering.readreplica;
 
-import java.util.concurrent.locks.LockSupport;
+import java.io.IOException;
 
-import org.neo4j.causalclustering.catchup.storecopy.CopiedStoreRecovery;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
+import org.neo4j.causalclustering.catchup.storecopy.RemoteStore;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFailedException;
-import org.neo4j.causalclustering.catchup.storecopy.StoreFetcher;
+import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
 import org.neo4j.causalclustering.catchup.storecopy.StoreIdDownloadFailedException;
 import org.neo4j.causalclustering.catchup.storecopy.StreamingTransactionsFailedException;
-import org.neo4j.causalclustering.core.state.machines.tx.RetryStrategy;
+import org.neo4j.causalclustering.helper.RetryStrategy;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
-import org.neo4j.causalclustering.messaging.routing.CoreMemberSelectionException;
-import org.neo4j.causalclustering.messaging.routing.CoreMemberSelectionStrategy;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -41,27 +38,30 @@ import static java.lang.String.format;
 
 class ReadReplicaStartupProcess implements Lifecycle
 {
-    private final FileSystemAbstraction fs;
-    private final StoreFetcher storeFetcher;
+    private final RemoteStore remoteStore;
     private final LocalDatabase localDatabase;
     private final Lifecycle txPulling;
-    private final CoreMemberSelectionStrategy connectionStrategy;
-    private final Log log;
-    private final RetryStrategy.Timeout timeout;
-    private final CopiedStoreRecovery copiedStoreRecovery;
+    private final Log debugLog;
+    private final Log userLog;
 
-    ReadReplicaStartupProcess( FileSystemAbstraction fs, StoreFetcher storeFetcher, LocalDatabase localDatabase,
-            Lifecycle txPulling, CoreMemberSelectionStrategy connectionStrategy, RetryStrategy retryStrategy,
-            LogProvider logProvider, CopiedStoreRecovery copiedStoreRecovery )
+    private final RetryStrategy retryStrategy;
+    private final UpstreamDatabaseStrategySelector selectionStrategyPipeline;
+
+    private String lastIssue;
+    private final StoreCopyProcess storeCopyProcess;
+
+    ReadReplicaStartupProcess( RemoteStore remoteStore, LocalDatabase localDatabase,
+            Lifecycle txPulling, UpstreamDatabaseStrategySelector selectionStrategyPipeline, RetryStrategy retryStrategy,
+            LogProvider debugLogProvider, LogProvider userLogProvider, StoreCopyProcess storeCopyProcess )
     {
-        this.fs = fs;
-        this.storeFetcher = storeFetcher;
+        this.remoteStore = remoteStore;
         this.localDatabase = localDatabase;
         this.txPulling = txPulling;
-        this.connectionStrategy = connectionStrategy;
-        this.copiedStoreRecovery = copiedStoreRecovery;
-        this.timeout = retryStrategy.newTimeout();
-        this.log = logProvider.getLog( getClass() );
+        this.selectionStrategyPipeline = selectionStrategyPipeline;
+        this.retryStrategy = retryStrategy;
+        this.debugLog = debugLogProvider.getLog( getClass() );
+        this.userLog = userLogProvider.getLog( getClass() );
+        this.storeCopyProcess = storeCopyProcess;
     }
 
     @Override
@@ -71,102 +71,111 @@ class ReadReplicaStartupProcess implements Lifecycle
         txPulling.init();
     }
 
-    @Override
-    public void start() throws Throwable
+    private String issueOf( String operation, int attempt )
     {
-        long retryInterval = 5_000;
-        int attempts = 0;
-        while ( attempts++ < 5 )
+        return format( "Failed attempt %d of %s", attempt, operation );
+    }
+
+    @Override
+    public void start() throws IOException
+    {
+        boolean syncedWithCore = false;
+        RetryStrategy.Timeout timeout = retryStrategy.newTimeout();
+        int attempt = 0;
+        while ( !syncedWithCore )
         {
-            MemberId source = findCoreMemberToCopyFrom();
+            attempt++;
+            MemberId source = null;
             try
             {
-                tryToStart( source );
-                return;
+                source = selectionStrategyPipeline.bestUpstreamDatabase();
+                syncStoreWithCore( source );
+                syncedWithCore = true;
+            }
+            catch ( UpstreamDatabaseSelectionException e )
+            {
+                lastIssue = issueOf( "finding core member", attempt );
+                debugLog.warn( lastIssue );
             }
             catch ( StoreCopyFailedException e )
             {
-                log.info( "Attempt #%d to start read replica failed while copying store files from %s.",
-                        attempts,
-                        source );
+                lastIssue = issueOf( format( "copying store files from %s", source ), attempt );
+                debugLog.warn( lastIssue );
             }
             catch ( StreamingTransactionsFailedException e )
             {
-                log.info( "Attempt #%d to start read replica failed while streaming transactions from %s.", attempts,
-                        source );
+                lastIssue = issueOf( format( "streaming transactions from %s", source ), attempt );
+                debugLog.warn( lastIssue );
             }
             catch ( StoreIdDownloadFailedException e )
             {
-                log.info( "Attempt #%d to start read replica failed while getting store id from %s.", attempts, source );
+                lastIssue = issueOf( format( "getting store id from %s", source ), attempt );
+                debugLog.warn( lastIssue );
             }
 
             try
             {
-                Thread.sleep( retryInterval );
-                retryInterval = Math.min( 60_000, retryInterval * 2 );
+                Thread.sleep( timeout.getMillis() );
+                timeout.increment();
             }
             catch ( InterruptedException e )
             {
                 Thread.interrupted();
-                throw new RuntimeException( "Interrupted while trying to start read replica.", e );
+                lastIssue = "Interrupted while trying to start read replica";
+                debugLog.warn( lastIssue );
+                break;
             }
         }
-        throw new Exception( "Failed to start read replica after " + (attempts - 1) + " attempts" );
+
+        if ( !syncedWithCore )
+        {
+            userLog.error( lastIssue );
+            throw new RuntimeException( lastIssue );
+        }
+
+        try
+        {
+            localDatabase.start();
+            txPulling.start();
+        }
+        catch ( Throwable e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 
-    private void tryToStart( MemberId source ) throws Throwable
+    private void syncStoreWithCore( MemberId source )
+            throws IOException, StoreIdDownloadFailedException, StoreCopyFailedException,
+            StreamingTransactionsFailedException
     {
         if ( localDatabase.isEmpty() )
         {
-            log.info( "Local database is empty, attempting to replace with copy from core server %s", source );
+            debugLog.info( "Local database is empty, attempting to replace with copy from core server %s", source );
 
-            log.info( "Finding store id of core server %s", source );
-            StoreId storeId = storeFetcher.getStoreIdOf( source );
+            debugLog.info( "Finding store id of core server %s", source );
+            StoreId storeId = remoteStore.getStoreId( source );
 
-            log.info( "Copying store from core server %s", source );
+            debugLog.info( "Copying store from core server %s", source );
             localDatabase.delete();
-            new CopyStoreSafely( fs, localDatabase, copiedStoreRecovery, log )
-                    .copyWholeStoreFrom( source, storeId, storeFetcher );
+            storeCopyProcess.replaceWithStoreFrom( source, storeId );
 
-            log.info( "Restarting local database after copy.", source );
+            debugLog.info( "Restarting local database after copy.", source );
         }
         else
         {
             ensureSameStoreIdAs( source );
         }
-
-        localDatabase.start();
-        txPulling.start();
     }
 
     private void ensureSameStoreIdAs( MemberId remoteCore ) throws StoreIdDownloadFailedException
     {
         StoreId localStoreId = localDatabase.storeId();
-        StoreId remoteStoreId = storeFetcher.getStoreIdOf( remoteCore );
+        StoreId remoteStoreId = remoteStore.getStoreId( remoteCore );
         if ( !localStoreId.equals( remoteStoreId ) )
         {
             throw new IllegalStateException( format( "This read replica cannot join the cluster. " +
                             "The local database is not empty and has a mismatching storeId: expected %s actual %s.",
                     remoteStoreId, localStoreId ) );
-        }
-    }
-
-    private MemberId findCoreMemberToCopyFrom()
-    {
-        while ( true )
-        {
-            try
-            {
-                MemberId memberId = connectionStrategy.coreMember();
-                log.info( "Server starting, connecting to core server %s", memberId );
-                return memberId;
-            }
-            catch ( CoreMemberSelectionException ex )
-            {
-                log.info( "Failed to connect to core server. Retrying in %d ms.", timeout.getMillis() );
-                LockSupport.parkUntil( timeout.getMillis() + System.currentTimeMillis() );
-                timeout.increment();
-            }
         }
     }
 

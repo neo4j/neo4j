@@ -31,12 +31,14 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.DataWriteOperations;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
@@ -139,7 +141,7 @@ public class GraphDbStructureGuideTest
         commitAndReOpen();
 
         UniquenessConstraint constraint = createUniqueConstraint( labelId, pkId );
-        IndexDescriptor descriptor = new IndexDescriptor( labelId, pkId );
+        IndexDescriptor descriptor = IndexDescriptorFactory.of( labelId, pkId );
 
         // WHEN
         accept( visitor );
@@ -221,12 +223,12 @@ public class GraphDbStructureGuideTest
 
     private IndexDescriptor createSchemaIndex( int labelId, int pkId ) throws Exception
     {
-        return schemaWrite().indexCreate( labelId, pkId );
+        return schemaWrite().indexCreate( new NodePropertyDescriptor( labelId, pkId ) );
     }
 
     private UniquenessConstraint createUniqueConstraint( int labelId, int pkId ) throws Exception
     {
-        return schemaWrite().uniquePropertyConstraintCreate( labelId, pkId );
+        return schemaWrite().uniquePropertyConstraintCreate( new NodePropertyDescriptor( labelId, pkId ) );
     }
 
     private int createLabeledNodes( String labelName, int amount ) throws Exception

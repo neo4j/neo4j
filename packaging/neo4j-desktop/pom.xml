@@ -20,7 +20,6 @@
 
   <properties>
     <neo4j.version>${project.version}</neo4j.version>
-    <config.destination>${project.build.outputDirectory}/org/neo4j/desktop/config/</config.destination>
   </properties>
 
   <dependencies>
@@ -33,6 +32,10 @@
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>commons-codec</groupId>
+      <artifactId>commons-codec</artifactId>
     </dependency>
     <dependency>
       <groupId>org.mockito</groupId>
@@ -57,6 +60,15 @@
       <version>${project.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-kernel</artifactId>
+      <version>${project.version}</version>
     </dependency>
   </dependencies>
 
@@ -84,15 +96,12 @@
                 <licensingRequirementFile>licensing-requirements-installer.xml</licensingRequirementFile>
               </licensingRequirementFiles>
               <thirdPartyLicensingFilename>${project.artifactId}-${neo4j.version}-NOTICE-win.txt</thirdPartyLicensingFilename>
-              <checkExistingNoticeFile>${project.build.directory}/../src/main/distribution/text/community/NOTICE.txt</checkExistingNoticeFile>
               <listPrependText>list-prefix.txt</listPrependText>
               <listReport>${project.artifactId}-${neo4j.version}-LICENSES-win.txt</listReport>
-              <checkExistingLicensesFile>${project.build.directory}/../src/main/distribution/text/community/LICENSES.txt</checkExistingLicensesFile>
             </configuration>
           </execution>
         </executions>
       </plugin>
-
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-shade-plugin</artifactId>
@@ -103,16 +112,12 @@
               <goal>shade</goal>
             </goals>
             <configuration>
-              <!--This line is needed to prevent maven shade plugin from getting stuck in infinite loop when building dependency reduced POM https://jira.codehaus.org/browse/MSHADE-148-->
-              <createDependencyReducedPom>false</createDependencyReducedPom>
               <transformers>
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                   <mainClass>org.neo4j.desktop.Neo4jDesktop</mainClass>
                 </transformer>
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
-
               </transformers>
-
               <filters>
                 <filter>
                   <artifact>*:*</artifact>
@@ -127,79 +132,6 @@
           </execution>
         </executions>
       </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-antrun-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>fetch-static-files</id>
-            <phase>generate-resources</phase>
-            <goals>
-              <goal>run</goal>
-            </goals>
-            <configuration>
-              <target name="fetch-static-files">
-                <mkdir dir="${project.build.directory}/licenses" />
-                <mkdir dir="${project.build.directory}/plugins" />
-                <mkdir dir="${project.build.directory}/shell-scripts" />
-                <mkdir dir="${project.build.directory}/shell-scripts/tools" />
-                <mkdir dir="${project.build.directory}/cypher-shell" />
-                <mkdir dir="${project.build.directory}/cypher-shell/tools" />
-                <mkdir dir="${project.build.directory}/shell-scripts/Neo4j-Management" />
-                <fixcrlf file="${project.basedir}/../../community/LICENSE.txt" destDir="${project.build.directory}/licenses" eol="dos" />
-                <fixcrlf file="src/main/distribution/text/community/LICENSES.txt" destDir="${project.build.directory}/licenses" eol="dos" />
-                <fixcrlf file="src/main/distribution/text/community/NOTICE.txt" destDir="${project.build.directory}/licenses" eol="dos" />
-                <fixcrlf file="src/main/distribution/text/plugins/README.txt" destDir="${project.build.directory}/plugins" eol="dos" />
-                <copy file="${project.basedir}/../standalone/src/main/distribution/shell-scripts/bin/neo4j-shared.sh" todir="${project.build.directory}/shell-scripts" />
-                <copy file="${project.basedir}/../standalone/src/main/distribution/shell-scripts/bin/neo4j-import" todir="${project.build.directory}/shell-scripts" />
-                <copy file="${project.basedir}/../standalone/src/main/distribution/shell-scripts/bin/neo4j-shell" todir="${project.build.directory}/shell-scripts" />
-                <copy file="${project.basedir}/../standalone/src/main/distribution/shell-scripts/bin/neo4j-admin" todir="${project.build.directory}/shell-scripts" />
-                <copy file="${project.basedir}/../standalone/src/main/distribution/shell-scripts/bin/neo4j-backup" todir="${project.build.directory}/shell-scripts" />
-                <copy todir="${project.build.directory}/cypher-shell">
-                  <fileset dir="${project.basedir}/../standalone/src/main/distribution/cypher-shell">
-                    <exclude name="*.bat"/>
-                    <exclude name="*.jar"/>
-                  </fileset>
-                </copy>
-                <copy todir="${project.build.directory}/cypher-shell/tools">
-                  <fileset dir="${project.basedir}/../standalone/src/main/distribution/cypher-shell">
-                    <include name="*.jar"/>
-                  </fileset>
-                </copy>
-                <copy file="${project.basedir}/../standalone/src/main/distribution/shell-scripts/bin/tools/2.x-config-migrator.jar" todir="${project.build.directory}/shell-scripts/tools" />
-
-                <copy file="${project.basedir}/../standalone/src/main/distribution/shell-scripts/bin/Neo4j-Management.psd1" todir="${project.build.directory}/shell-scripts" />
-                <copy file="${project.basedir}/../standalone/src/main/distribution/shell-scripts/bin/Neo4j-Management/Get-Java.ps1" todir="${project.build.directory}/shell-scripts/Neo4j-Management" />
-                <copy file="${project.basedir}/../standalone/src/main/distribution/shell-scripts/bin/Neo4j-Management/Get-KeyValuePairsFromConfFile.ps1" todir="${project.build.directory}/shell-scripts/Neo4j-Management" />
-                <copy file="${project.basedir}/../standalone/src/main/distribution/shell-scripts/bin/Neo4j-Management/Get-Neo4jEnv.ps1" todir="${project.build.directory}/shell-scripts/Neo4j-Management" />
-                <copy file="${project.basedir}/../standalone/src/main/distribution/shell-scripts/bin/Neo4j-Management/Set-Neo4jEnv.ps1" todir="${project.build.directory}/shell-scripts/Neo4j-Management" />
-                <copy file="${project.basedir}/../standalone/src/main/distribution/shell-scripts/bin/Neo4j-Management/Get-Neo4jServer.ps1" todir="${project.build.directory}/shell-scripts/Neo4j-Management" />
-                <copy file="${project.basedir}/../standalone/src/main/distribution/shell-scripts/bin/Neo4j-Management/Get-Neo4jSetting.ps1" todir="${project.build.directory}/shell-scripts/Neo4j-Management" />
-                <copy file="${project.basedir}/../standalone/src/main/distribution/shell-scripts/bin/Neo4j-Management/Get-Neo4jStatus.ps1" todir="${project.build.directory}/shell-scripts/Neo4j-Management" />
-                <copy file="${project.basedir}/../standalone/src/main/distribution/shell-scripts/bin/Neo4j-Management/Get-Neo4jWindowsServiceName.ps1" todir="${project.build.directory}/shell-scripts/Neo4j-Management" />
-                <copy file="${project.basedir}/../standalone/src/main/distribution/shell-scripts/bin/Neo4j-Management/Install-Neo4jServer.ps1" todir="${project.build.directory}/shell-scripts/Neo4j-Management" />
-                <copy file="${project.basedir}/../standalone/src/main/distribution/shell-scripts/bin/Neo4j-Management/Invoke-Neo4j.ps1" todir="${project.build.directory}/shell-scripts/Neo4j-Management" />
-                <copy file="${project.basedir}/../standalone/src/main/distribution/shell-scripts/bin/Neo4j-Management/Invoke-Neo4jAdmin.ps1" todir="${project.build.directory}/shell-scripts/Neo4j-Management" />
-                <copy file="${project.basedir}/../standalone/src/main/distribution/shell-scripts/bin/Neo4j-Management/Invoke-Neo4jBackup.ps1" todir="${project.build.directory}/shell-scripts/Neo4j-Management" />
-                <copy file="${project.basedir}/../standalone/src/main/distribution/shell-scripts/bin/Neo4j-Management/Invoke-Neo4jImport.ps1" todir="${project.build.directory}/shell-scripts/Neo4j-Management" />
-                <copy file="${project.basedir}/../standalone/src/main/distribution/shell-scripts/bin/Neo4j-Management/Invoke-Neo4jShell.ps1" todir="${project.build.directory}/shell-scripts/Neo4j-Management" />
-                <copy file="${project.basedir}/../standalone/src/main/distribution/shell-scripts/bin/Neo4j-Management/Invoke-Neo4jUtility.ps1" todir="${project.build.directory}/shell-scripts/Neo4j-Management" />
-                <copy file="${project.basedir}/../standalone/src/main/distribution/shell-scripts/bin/Neo4j-Management/Neo4j-Management.psm1" todir="${project.build.directory}/shell-scripts/Neo4j-Management" />
-                <copy file="${project.basedir}/../standalone/src/main/distribution/shell-scripts/bin/Neo4j-Management/Start-Neo4jServer.ps1" todir="${project.build.directory}/shell-scripts/Neo4j-Management" />
-                <copy file="${project.basedir}/../standalone/src/main/distribution/shell-scripts/bin/Neo4j-Management/Stop-Neo4jServer.ps1" todir="${project.build.directory}/shell-scripts/Neo4j-Management" />
-                <copy file="${project.basedir}/../standalone/src/main/distribution/shell-scripts/bin/Neo4j-Management/Uninstall-Neo4jServer.ps1" todir="${project.build.directory}/shell-scripts/Neo4j-Management" />
-
-                <fixcrlf srcdir="${project.basedir}/../standalone/src/main/distribution/shell-scripts/bin" includes="**/*.bat"
-                         destDir="${project.build.directory}/shell-scripts" eol="dos" />
-                <fixcrlf srcdir="${project.basedir}/../standalone/src/main/distribution/cypher-shell" includes="**/*.bat"
-                         destDir="${project.build.directory}/cypher-shell" eol="dos" />
-              </target>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-deploy-plugin</artifactId>
@@ -208,86 +140,5 @@
         </configuration>
       </plugin>
     </plugins>
-
   </build>
-
-  <profiles>
-    <profile>
-      <id>install4j</id>
-      <activation>
-        <property><name>install4j.home</name></property>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-antrun-plugin</artifactId>
-            <executions>
-
-              <execution>
-                <id>generate-installer-configuration</id>
-                <phase>generate-resources</phase>
-                <goals>
-                  <goal>run</goal>
-                </goals>
-                <configuration>
-                  <target name="media">
-                    <mkdir dir="${project.build.directory}/install4j" />
-                    <!--suppress MavenModelInspection -->
-                    <condition property="install4j.code.signing.mac.enabled" value="true">
-                      <isset property="install4j.mac.pkcs12" />
-                    </condition>
-                    <property name="install4j.code.signing.mac.enabled" value="false" />
-                    <property name="install4j.mac.pkcs12" value="" />
-                    <condition property="install4j.code.signing.win.enabled" value="true">
-                      <isset property="install4j.win.pkcs12" />
-                    </condition>
-                    <property name="install4j.code.signing.win.enabled" value="false" />
-                    <property name="install4j.win.pkcs12" value="" />
-                    <property name="install4j.code.signing" value="&lt;codeSigning macEnabled=&quot;${install4j.code.signing.mac.enabled}&quot; macPkcs12File=&quot;${install4j.mac.pkcs12}&quot; windowsEnabled=&quot;${install4j.code.signing.win.enabled}&quot; windowsKeySource=&quot;pkcs12&quot; windowsPvkFile=&quot;&quot; windowsSpcFile=&quot;&quot; windowsPkcs12File=&quot;${install4j.win.pkcs12}&quot; /&gt;"/>
-                    <copy file="${project.basedir}/neo4j-desktop.install4j" toFile="${project.build.directory}/install4j/neo4j-desktop.install4j">
-                      <filterset begintoken="@" endtoken="@">
-                        <filter token="NEO4J_VERSION" value="${project.version}"/>
-                        <!--suppress MavenModelInspection -->
-                        <filter token="CODE_SIGNING" value="${install4j.code.signing}"/>
-                      </filterset>
-                      <filterset begintoken="." endtoken="/">
-                        <filter token="/src" value="${project.basedir}/src/"/>
-                        <filter token="/target" value="${project.basedir}/target/"/>
-                      </filterset>
-                    </copy>
-                  </target>
-                </configuration>
-              </execution>
-
-              <execution>
-                <id>build-installer</id>
-                <phase>package</phase>
-                <goals>
-                  <goal>run</goal>
-                </goals>
-                <configuration>
-                  <target name="media">
-                    <taskdef name="install4j"
-                             classname="com.install4j.Install4JTask"
-                             classpath="${install4j.home}\bin\ant.jar"/>
-
-                    <!--suppress MavenModelInspection -->
-                    <install4j projectfile="${project.basedir}/target/install4j/neo4j-desktop.install4j"
-                               mediatypes="windows,macosArchive"
-                               verbose="true"
-                               release="${project.version}"
-                               winKeystorePassword="${install4j.win.key.store.password}"
-                               macKeystorePassword="${install4j.mac.key.store.password}"
-                               destination="${project.basedir}/target/install4j" />
-                  </target>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
-
 </project>

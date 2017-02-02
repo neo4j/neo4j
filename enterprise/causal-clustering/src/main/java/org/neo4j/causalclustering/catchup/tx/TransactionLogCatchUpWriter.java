@@ -56,8 +56,8 @@ public class TransactionLogCatchUpWriter implements TxPullResponseListener, Auto
     private long lastTxId = -1;
     private long expectedTxId;
 
-    TransactionLogCatchUpWriter( File storeDir, FileSystemAbstraction fs, PageCache pageCache, LogProvider logProvider, long fromTxId, boolean asPartOfStoreCopy )
-            throws IOException
+    TransactionLogCatchUpWriter( File storeDir, FileSystemAbstraction fs, PageCache pageCache,
+            LogProvider logProvider, long fromTxId, boolean asPartOfStoreCopy ) throws IOException
     {
         this.pageCache = pageCache;
         this.log = logProvider.getLog( getClass() );

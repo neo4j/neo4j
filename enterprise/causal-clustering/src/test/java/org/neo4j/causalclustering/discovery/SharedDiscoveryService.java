@@ -101,15 +101,12 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
         }
     }
 
-    ReadReplicaTopology readReplicaTopology()
+    private ReadReplicaTopology readReplicaTopology()
     {
         lock.lock();
         try
         {
-            return new ReadReplicaTopology(
-                    clusterId,
-                    unmodifiableSet( readReplicaAddresses )
-            );
+            return new ReadReplicaTopology( unmodifiableSet( readReplicaAddresses ) );
         }
         finally
         {

@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.RawIterator;
@@ -214,6 +215,7 @@ public class ReflectiveProcedureWithArgumentsTest
 
     private List<CallableProcedure> compile( Class<?> clazz ) throws KernelException
     {
-        return new ReflectiveProcedureCompiler( new TypeMappers(), new ComponentRegistry(), NullLog.getInstance(), ProcedureAllowedConfig.DEFAULT ).compileProcedure( clazz );
+        return new ReflectiveProcedureCompiler( new TypeMappers(), new ComponentRegistry(), NullLog.getInstance(),
+                ProcedureAllowedConfig.DEFAULT ).compileProcedure( clazz, Optional.empty() );
     }
 }

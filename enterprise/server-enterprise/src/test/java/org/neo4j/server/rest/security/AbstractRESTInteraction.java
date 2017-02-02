@@ -313,6 +313,10 @@ abstract class AbstractRESTInteraction extends CommunityServerTestBase implement
         {
             value = valueNode.getLongValue();
         }
+        else if ( valueNode.isNull() )
+        {
+            return null;
+        }
         else
         {
             throw new RuntimeException( String.format(

@@ -36,6 +36,7 @@ import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.api.ExecutingQuery;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.bolt.ManagedBoltStateMachine;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
@@ -92,7 +93,10 @@ public class EnterpriseBuiltInDbmsProcedures
                             "keys and values to be less than %d, got %d", HARD_CHAR_LIMIT, totalCharSize ) );
         }
 
-        getCurrentTx().acquireStatement().queryRegistration().setMetaData( data );
+        try ( Statement statement = getCurrentTx().acquireStatement() )
+        {
+            statement.queryRegistration().setMetaData( data );
+        }
     }
 
     private KernelTransaction getCurrentTx()
@@ -186,9 +190,10 @@ public class EnterpriseBuiltInDbmsProcedures
     @Procedure( name = "dbms.procedures", mode = DBMS )
     public Stream<ProcedureResult> listProcedures()
     {
-        return graph.getDependencyResolver().resolveDependency( Procedures.class ).getAllProcedures().stream()
+        Procedures procedures = graph.getDependencyResolver().resolveDependency( Procedures.class );
+        return procedures.getAllProcedures().stream()
                 .sorted( ( a, b ) -> a.name().toString().compareTo( b.name().toString() ) )
-                .map( ProcedureResult::new );
+                .map( sig -> new ProcedureResult( sig, procedures.isAllowWriteTokenCreate() ) );
     }
 
     @SuppressWarnings( "WeakerAccess" )
@@ -199,7 +204,7 @@ public class EnterpriseBuiltInDbmsProcedures
         public final String description;
         public final List<String> roles;
 
-        public ProcedureResult( ProcedureSignature signature )
+        public ProcedureResult( ProcedureSignature signature, boolean publisherTokenCreate )
         {
             this.name = signature.name().toString();
             this.signature = signature.toString();
@@ -210,11 +215,18 @@ public class EnterpriseBuiltInDbmsProcedures
             case DBMS:
                 roles.add( "admin" );
                 break;
-            case READ_ONLY:
+            case DEFAULT:
                 roles.add( "reader" );
-            case READ_WRITE:
+            case READ:
+                roles.add( "reader" );
+            case WRITE:
                 roles.add( "publisher" );
-            case SCHEMA_WRITE:
+            case TOKEN:
+                if ( publisherTokenCreate )
+                {
+                    roles.add( "publisher" );
+                }
+            case SCHEMA:
                 roles.add( "architect" );
             default:
                 roles.add( "admin" );
@@ -245,6 +257,24 @@ public class EnterpriseBuiltInDbmsProcedures
         }
     }
 
+    @Description( "List the active lock requests granted for the transaction executing the query with the given query id." )
+    @Procedure( name = "dbms.listActiveLocks", mode = DBMS )
+    public Stream<ActiveLocksQueryResult> listActiveLocks( @Name( "queryId" ) String queryId )
+            throws InvalidArgumentsException
+    {
+        try
+        {
+            long id = fromExternalString( queryId ).kernelQueryId();
+            return getActiveTransactions( tx -> executingQueriesWithId( id, tx ) )
+                    .flatMap( pair -> pair.first().activeLocks().map( ActiveLocksQueryResult::new ) );
+        }
+        catch ( UncaughtCheckedException uncaught )
+        {
+            throwIfPresent( uncaught.getCauseIfOfType( InvalidArgumentsException.class ) );
+            throw uncaught;
+        }
+    }
+
     @Description( "Kill all transactions executing the query with the given query id." )
     @Procedure( name = "dbms.killQuery", mode = DBMS )
     public Stream<QueryTerminationResult> killQuery( @Name( "id" ) String idText )
@@ -254,11 +284,7 @@ public class EnterpriseBuiltInDbmsProcedures
         {
             long queryId = fromExternalString( idText ).kernelQueryId();
 
-            Set<Pair<KernelTransactionHandle,ExecutingQuery>> executingQueries =
-                getActiveTransactions( tx -> executingQueriesWithId( queryId, tx ) );
-
-            return executingQueries
-                .stream()
+            return getActiveTransactions( tx -> executingQueriesWithId( queryId, tx ) )
                 .map( catchThrown( InvalidArgumentsException.class, this::killQueryTransaction ) );
          }
         catch ( UncaughtCheckedException uncaught )
@@ -281,11 +307,7 @@ public class EnterpriseBuiltInDbmsProcedures
                 .map( catchThrown( InvalidArgumentsException.class, QueryId::kernelQueryId ) )
                 .collect( toSet() );
 
-            Set<Pair<KernelTransactionHandle,ExecutingQuery>> executingQueries =
-                getActiveTransactions( tx -> executingQueriesWithIds( queryIds, tx ) );
-
-            return executingQueries
-                .stream()
+            return getActiveTransactions( tx -> executingQueriesWithIds( queryIds, tx ) )
                 .map( catchThrown( InvalidArgumentsException.class, this::killQueryTransaction ) );
         }
         catch ( UncaughtCheckedException uncaught )
@@ -295,14 +317,13 @@ public class EnterpriseBuiltInDbmsProcedures
         }
     }
 
-    private <T> Set<Pair<KernelTransactionHandle, T>> getActiveTransactions(
+    private <T> Stream<Pair<KernelTransactionHandle, T>> getActiveTransactions(
             Function<KernelTransactionHandle,Stream<T>> selector
     )
     {
         return getActiveTransactions( graph.getDependencyResolver() )
             .stream()
-            .flatMap( tx -> selector.apply( tx ).map( data -> Pair.of( tx, data ) ) )
-            .collect( toSet() );
+            .flatMap( tx -> selector.apply( tx ).map( data -> Pair.of( tx, data ) ) );
     }
 
     private Stream<ExecutingQuery> executingQueriesWithIds( Set<Long> ids, KernelTransactionHandle txHandle )

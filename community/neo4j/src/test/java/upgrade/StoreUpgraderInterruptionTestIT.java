@@ -19,6 +19,7 @@
  */
 package upgrade;
 
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -39,7 +40,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
-import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStore;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.NullLogService;
@@ -59,6 +59,7 @@ import org.neo4j.kernel.impl.storemigration.participant.SchemaIndexMigrator;
 import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.NeoStoreDataSourceRule;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
@@ -88,8 +89,7 @@ public class StoreUpgraderInterruptionTestIT
     @Parameterized.Parameter
     public String version;
     private final SchemaIndexProvider schemaIndexProvider = new InMemoryIndexProvider();
-    private final LabelScanStoreProvider labelScanStoreProvider = new LabelScanStoreProvider( new
-            InMemoryLabelScanStore(), 2 );
+    private LabelScanStoreProvider labelScanStoreProvider;
     protected static final Config CONFIG = Config.defaults().augment(
             stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m" ) );
 
@@ -105,13 +105,22 @@ public class StoreUpgraderInterruptionTestIT
     }
 
     private final FileSystemAbstraction fs = fileSystemRule.get();
+    private File workingDirectory;
+    private File prepareDirectory;
+
+    @Before
+    public void setUpLabelScanStore()
+    {
+        workingDirectory = directory.directory( "working" );
+        prepareDirectory = directory.directory( "prepare" );
+        labelScanStoreProvider = NeoStoreDataSourceRule.nativeLabelScanStoreProvider( workingDirectory, fs,
+                pageCacheRule.getPageCache( fs ) );
+    }
 
     @Test
     public void shouldSucceedWithUpgradeAfterPreviousAttemptDiedDuringMigration()
             throws IOException, ConsistencyCheckIncompleteException
     {
-        File workingDirectory = directory.directory( "working" );
-        File prepareDirectory = directory.directory( "prepare" );
         MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, workingDirectory, prepareDirectory );
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         StoreVersionCheck check = new StoreVersionCheck( pageCache );
@@ -137,7 +146,7 @@ public class StoreUpgraderInterruptionTestIT
 
         try
         {
-            newUpgrader( upgradableDatabase, progressMonitor, createIndexMigrator(), failingStoreMigrator )
+            newUpgrader( upgradableDatabase, pageCache, progressMonitor, createIndexMigrator(), failingStoreMigrator )
                     .migrateIfNeeded( workingDirectory );
             fail( "Should throw exception" );
         }
@@ -152,7 +161,8 @@ public class StoreUpgraderInterruptionTestIT
         progressMonitor = new SilentMigrationProgressMonitor();
         StoreMigrator migrator = new StoreMigrator( fs, pageCache, CONFIG, logService, schemaIndexProvider );
         SchemaIndexMigrator indexMigrator = createIndexMigrator();
-        newUpgrader(upgradableDatabase, progressMonitor, indexMigrator, migrator ).migrateIfNeeded( workingDirectory );
+        newUpgrader(upgradableDatabase, pageCache, progressMonitor, indexMigrator, migrator ).migrateIfNeeded(
+                workingDirectory );
 
         assertTrue( checkNeoStoreHasDefaultFormatVersion( check, workingDirectory ) );
         assertTrue( allStoreFilesHaveNoTrailer( fs, workingDirectory ) );
@@ -196,7 +206,7 @@ public class StoreUpgraderInterruptionTestIT
 
         try
         {
-            newUpgrader( upgradableDatabase, progressMonitor, createIndexMigrator(), failingStoreMigrator )
+            newUpgrader( upgradableDatabase, pageCache, progressMonitor, createIndexMigrator(), failingStoreMigrator )
                     .migrateIfNeeded( workingDirectory );
             fail( "Should throw exception" );
         }
@@ -210,7 +220,7 @@ public class StoreUpgraderInterruptionTestIT
 
         progressMonitor = new SilentMigrationProgressMonitor();
         StoreMigrator migrator = new StoreMigrator( fs, pageCache, CONFIG, logService, schemaIndexProvider );
-        newUpgrader( upgradableDatabase, progressMonitor, createIndexMigrator(), migrator )
+        newUpgrader( upgradableDatabase, pageCache, progressMonitor, createIndexMigrator(), migrator )
                 .migrateIfNeeded( workingDirectory );
 
         assertTrue( checkNeoStoreHasDefaultFormatVersion( check, workingDirectory ) );
@@ -223,14 +233,13 @@ public class StoreUpgraderInterruptionTestIT
         assertConsistentStore( workingDirectory );
     }
 
-    private StoreUpgrader newUpgrader(UpgradableDatabase upgradableDatabase, MigrationProgressMonitor progressMonitor,
-            SchemaIndexMigrator indexMigrator,
-            StoreMigrator migrator )
+    private StoreUpgrader newUpgrader( UpgradableDatabase upgradableDatabase, PageCache pageCache,
+            MigrationProgressMonitor progressMonitor, SchemaIndexMigrator indexMigrator, StoreMigrator migrator )
     {
         Config allowUpgrade = Config.embeddedDefaults( stringMap( GraphDatabaseSettings
                 .allow_store_upgrade.name(), "true" ) );
 
-        StoreUpgrader upgrader = new StoreUpgrader( upgradableDatabase, progressMonitor, allowUpgrade, fs,
+        StoreUpgrader upgrader = new StoreUpgrader( upgradableDatabase, progressMonitor, allowUpgrade, fs, pageCache,
                 NullLogProvider.getInstance() );
         upgrader.addParticipant( indexMigrator );
         upgrader.addParticipant( migrator );

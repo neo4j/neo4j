@@ -23,18 +23,20 @@ import java.util.Optional
 
 import org.neo4j.cypher.MissingIndexException
 import org.neo4j.cypher.internal.LastCommittedTxIdProvider
-import org.neo4j.cypher.internal.compiler.v3_2.InternalNotificationLogger
+import org.neo4j.cypher.internal.compiler.v3_2.{IndexDescriptor, InternalNotificationLogger}
 import org.neo4j.cypher.internal.compiler.v3_2.spi._
 import org.neo4j.cypher.internal.frontend.v3_2.symbols.CypherType
 import org.neo4j.cypher.internal.frontend.v3_2.{CypherExecutionException, symbols}
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.exceptions.KernelException
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException
-import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
-import org.neo4j.kernel.api.proc
+import org.neo4j.kernel.api.index.InternalIndexState
 import org.neo4j.kernel.api.proc.Neo4jTypes.AnyType
 import org.neo4j.kernel.api.proc.{Neo4jTypes, QualifiedName => KernelQualifiedName}
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor
+import org.neo4j.kernel.api.schema.{IndexDescriptor => KernelIndexDescriptor}
 import org.neo4j.kernel.impl.proc.Neo4jValue
+import org.neo4j.procedure.Mode
 
 import scala.collection.JavaConverters._
 
@@ -46,7 +48,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     val labelId = tc.statement.readOperations().labelGetForName(labelName)
     val propertyKeyId = tc.statement.readOperations().propertyKeyGetForName(propertyKey)
 
-    getOnlineIndex(tc.statement.readOperations().indexGetForLabelAndPropertyKey(labelId, propertyKeyId))
+    getOnlineIndex(tc.statement.readOperations().indexGetForLabelAndPropertyKey(new NodePropertyDescriptor(labelId, propertyKeyId)))
   }
 
   def hasIndexRule(labelName: String): Boolean = {
@@ -63,7 +65,8 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     val propertyKeyId = tc.statement.readOperations().propertyKeyGetForName(propertyKey)
 
     // here we do not need to use getOnlineIndex method because uniqueness constraint creation is synchronous
-    Some(tc.statement.readOperations().uniqueIndexGetForLabelAndPropertyKey(labelId, propertyKeyId))
+    val index = tc.statement.readOperations().uniqueIndexGetForLabelAndPropertyKey(new NodePropertyDescriptor(labelId, propertyKeyId))
+    Some(IndexDescriptor(index.getLabelId, index.getPropertyKeyId))
   }
 
   private def evalOrNone[T](f: => Option[T]): Option[T] =
@@ -73,9 +76,9 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
       case _: SchemaKernelException => None
     }
 
-  private def getOnlineIndex(descriptor: IndexDescriptor): Option[IndexDescriptor] =
+  private def getOnlineIndex(descriptor: KernelIndexDescriptor): Option[IndexDescriptor] =
     tc.statement.readOperations().indexGetState(descriptor) match {
-      case InternalIndexState.ONLINE => Some(descriptor)
+      case InternalIndexState.ONLINE => Some(IndexDescriptor(descriptor.getLabelId, descriptor.getPropertyKeyId))
       case _ => None
     }
 
@@ -84,7 +87,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     val propertyKeyId = tc.statement.readOperations().propertyKeyGetForName(propertyKey)
 
     import scala.collection.JavaConverters._
-    tc.statement.readOperations().constraintsGetForLabelAndPropertyKey(labelId, propertyKeyId).asScala.collectFirst {
+    tc.statement.readOperations().constraintsGetForLabelAndPropertyKey(new NodePropertyDescriptor(labelId, propertyKeyId)).asScala.collectFirst {
       case unique: UniquenessConstraint => unique
     }
   } catch {
@@ -95,7 +98,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     val labelId = tc.statement.readOperations().labelGetForName(labelName)
     val propertyKeyId = tc.statement.readOperations().propertyKeyGetForName(propertyKey)
 
-    tc.statement.readOperations().constraintsGetForLabelAndPropertyKey(labelId, propertyKeyId).hasNext
+    tc.statement.readOperations().constraintsGetForLabelAndPropertyKey(new NodePropertyDescriptor(labelId, propertyKeyId)).hasNext
   }
 
   def checkNodeIndex(idxName: String) {
@@ -134,8 +137,9 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     val deprecationInfo = asOption(ks.deprecated())
     val mode = asCypherProcMode(ks.mode(), ks.allowed())
     val description = asOption(ks.description())
+    val warning = asOption(ks.warning())
 
-    ProcedureSignature(name, input, output, deprecationInfo, mode, description)
+    ProcedureSignature(name, input, output, deprecationInfo, mode, description, warning)
   }
 
   override def functionSignature(name: QualifiedName): Option[UserFunctionSignature] = {
@@ -157,11 +161,13 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
 
   private def asOption[T](optional: Optional[T]): Option[T] = if (optional.isPresent) Some(optional.get()) else None
 
-  private def asCypherProcMode(mode: proc.Mode, allowed: Array[String]): ProcedureAccessMode = mode match {
-    case proc.Mode.READ_ONLY => ProcedureReadOnlyAccess(allowed)
-    case proc.Mode.READ_WRITE => ProcedureReadWriteAccess(allowed)
-    case proc.Mode.SCHEMA_WRITE => ProcedureSchemaWriteAccess(allowed)
-    case proc.Mode.DBMS => ProcedureDbmsAccess(allowed)
+  private def asCypherProcMode(mode: Mode, allowed: Array[String]): ProcedureAccessMode = mode match {
+    case Mode.READ => ProcedureReadOnlyAccess(allowed)
+    case Mode.DEFAULT => ProcedureReadOnlyAccess(allowed)
+    case Mode.WRITE => ProcedureReadWriteAccess(allowed)
+    case Mode.TOKEN => ProcedureTokenWriteAccess(allowed)
+    case Mode.SCHEMA => ProcedureSchemaWriteAccess(allowed)
+    case Mode.DBMS => ProcedureDbmsAccess(allowed)
 
     case _ => throw new CypherExecutionException(
       "Unable to execute procedure, because it requires an unrecognized execution mode: " + mode.name(), null)

@@ -59,14 +59,15 @@ Failing when performing property access on a non-map 1
 `toString()` failing on invalid arguments
 `max()` should aggregate strings
 `min()` should aggregate strings
+Handling non-string operands for STARTS WITH
+Handling non-string operands for CONTAINS
+Handling non-string operands for ENDS WITH
 
 // other
-Combine MATCH, WITH and CREATE
 `percentileCont()` failing on bad arguments
 `percentileDisc()` failing on bad arguments
 `percentileDisc()` failing in more involved query
 Fail when adding new label predicate on a node that is already bound 5
-Null-setting one property with ON CREATE
 Fail when imposing new predicates on a variable that is already bound
 Ignore null when setting properties using an appending map
 Ignore null when setting properties using an overriding map
@@ -141,3 +142,8 @@ Fail when comparing parameters to nodes
 Comparing nodes to properties
 Fail when comparing nodes to relationships
 Fail when comparing relationships to nodes
+
+// Bug in spec, awaiting update
+ORDER BY should return results in ascending order
+ORDER BY DESC should return results in descending order
+Renaming columns before ORDER BY should return results in ascending order

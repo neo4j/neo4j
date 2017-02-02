@@ -260,6 +260,38 @@ public class RecoveryTest
     }
 
     @Test
+    public void shouldTruncateLogAfterSinglePartialTransaction() throws Exception
+    {
+        // GIVEN
+        final PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), "log", fileSystemRule.get() );
+        File file = logFiles.getLogFileForVersion( logVersion );
+        final LogPositionMarker marker = new LogPositionMarker();
+
+        writeSomeData( file, new Visitor<Pair<LogEntryWriter, Consumer<LogPositionMarker>>,IOException>()
+        {
+            @Override
+            public boolean visit( Pair<LogEntryWriter,Consumer<LogPositionMarker>> pair ) throws IOException
+            {
+                LogEntryWriter writer = pair.first();
+                Consumer<LogPositionMarker> consumer = pair.other();
+
+                // incomplete tx
+                consumer.accept( marker ); // <-- marker has the last good position
+                writer.writeStartEntry( 0, 1, 5L, 4L, new byte[0] );
+
+                return true;
+            }
+        } );
+
+        // WHEN
+        boolean recoveryRequired = recover( logFiles );
+
+        // THEN
+        assertTrue( recoveryRequired );
+        assertEquals( marker.getByteOffset(), file.length() );
+    }
+
+    @Test
     public void shouldTruncateLogAfterLastCompleteTransactionAfterSuccessfullRecovery() throws Exception
     {
         // GIVEN

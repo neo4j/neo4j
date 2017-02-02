@@ -1,25 +1,46 @@
 #!/usr/bin/env bash
 set -eu
 # build-debian-packages:
-# Build Debian packages for Neo4j Community from tarball
+# Build Debian packages for Neo4j from tarball
 
-if [ $# -ne 5 ]
+if [ $# -ne 3 ]
 then
-  echo "Usage: ${0} <workspace> <package name> <package contents> <distribution> <version>"
+  echo "Usage: ${0} <workspace> <tarball> <distribution>"
   exit 1
 fi
 
-workspace=${1}
-package_name=${2}
-package_contents=${3}
-distribution=${4}
-version_file=${5}
+# Read in shared functions
+. "$(dirname ${0})/shared.sh"
 
-# Prepare workspace
-package_directory=${workspace}/${package_name}
-mkdir -p ${package_directory}
+package_directory=${1}
+tarball=${2}
+distribution=${3}
+
+echo "Building Debian package"
+echo "Package directory: ${package_directory}"
+echo "Tarball: ${tarball}"
+echo "Distribution: ${distribution}"
+
+# Get version(s)
+parse_version ${tarball}
+
+echo "Deb version: ${deb_version}"
+
+# Figure if community or enterprise
+parse_pkgname ${tarball}
+
+echo "Package name: ${package_name}"
+
+# Extract tarball and prepare workspace
+mkdir -p ${package_directory}/server
+tar --strip-components=1 -xf ${tarball} -C ${package_directory}/server
 skeleton_directory=src/debian/skeleton
 cp -r ${skeleton_directory}/* ${package_directory}
+
+# Rename service files to match package-name so we still get a service called neo4j
+cp src/common/neo4j.service ${package_directory}/debian/${package_name}.neo4j.service
+cp src/common/neo4j.default ${package_directory}/debian/${package_name}.neo4j.default
+cp src/common/neo4j.init ${package_directory}/debian/${package_name}.neo4j.init
 
 # Rename rules input files to match package
 for file in $(cd ${package_directory}/debian && ls package.*)
@@ -33,20 +54,16 @@ done
 extras_directory=src/debian/extras/${package_name}
 cp -r ${extras_directory}/* ${package_directory}
 
-# Copy in tarball contents
-cp -r ${package_contents}/* ${package_directory}/server
-
 # Update changelog, control and files with package name etc
-version=$(cat ${version_file})
-DISTRIBUTION=${distribution} DATE=`date -R` PACKAGE_NAME=${package_name} VERSION=${version} envsubst '${DATE} ${DISTRIBUTION} ${PACKAGE_NAME} ${VERSION}' < ${skeleton_directory}/debian/changelog > ${package_directory}/debian/changelog
+DISTRIBUTION=${distribution} DATE=`date -R` PACKAGE_NAME=${package_name} VERSION=${deb_version} envsubst '${DATE} ${DISTRIBUTION} ${PACKAGE_NAME} ${VERSION}' < ${skeleton_directory}/debian/changelog > ${package_directory}/debian/changelog
 [[ ${package_name} = "neo4j" ]] && replaces="neo4j-enterprise" || replaces="neo4j"
 PACKAGE_NAME=${package_name} REPLACES=${replaces} envsubst '${PACKAGE_NAME} ${REPLACES}' < ${skeleton_directory}/debian/control > ${package_directory}/debian/control
-PACKAGE_NAME=${package_name} VERSION=${version} envsubst '${PACKAGE_NAME} ${VERSION}' < ${skeleton_directory}/debian/files > ${package_directory}/debian/files
+PACKAGE_NAME=${package_name} VERSION=${deb_version} envsubst '${PACKAGE_NAME} ${VERSION}' < ${skeleton_directory}/debian/files > ${package_directory}/debian/files
 
 # Make the Neo4j wrapper scripts available to debuild
 scripts_directory=${package_directory}/server/scripts
 mkdir -p ${scripts_directory}
-script=src/debian/neo4j-script
+script=src/common/neo4j-script
 cp ${script} ${scripts_directory}/neo4j
 cp ${script} ${scripts_directory}/neo4j-admin
 cp ${script} ${scripts_directory}/neo4j-import
@@ -57,6 +74,9 @@ then
   cp ${script} ${scripts_directory}/neo4j-backup
 fi
 
+# Copy manpages
+cp -r src/common/manpages ${package_directory}
+
 # Make UDC successful
 sed -i 's/unsupported.dbms.udc.source=tarball/unsupported.dbms.udc.source=debian/' ${package_directory}/server/conf/neo4j.conf
 
@@ -65,7 +85,7 @@ configuration_file=${package_directory}/server/conf/neo4j.conf
 sed -i 's/#dbms.directories.data=data/dbms.directories.data=\/var\/lib\/neo4j\/data/'             ${configuration_file}
 sed -i 's/#dbms.directories.plugins=plugins/dbms.directories.plugins=\/var\/lib\/neo4j\/plugins/' ${configuration_file}
 sed -i 's/#dbms.directories.import=import/dbms.directories.import=\/var\/lib\/neo4j\/import/'     ${configuration_file}
-cat src/debian/directories.conf >>${configuration_file}
+cat src/common/directories.conf >>${configuration_file}
 
 # Make scripts executable
 chmod 700 ${package_directory}/server/bin/*
@@ -73,4 +93,3 @@ chmod 700 ${scripts_directory}/*
 
 # build package and metadata files
 (cd ${package_directory} && debuild -B -uc -us --lintian-opts --profile debian)
-

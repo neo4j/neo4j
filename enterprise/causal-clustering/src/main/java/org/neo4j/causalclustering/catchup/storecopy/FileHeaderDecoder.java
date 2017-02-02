@@ -36,6 +36,7 @@ public class FileHeaderDecoder extends ByteToMessageDecoder
         byte[] bytes = new byte[length];
         msg.readBytes( bytes );
         String name = UTF8.decode( bytes );
-        out.add( new FileHeader( name ) );
+        int requiredAlignment = msg.readInt();
+        out.add( new FileHeader( name, requiredAlignment ) );
     }
 }

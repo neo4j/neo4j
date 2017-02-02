@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.constraints;
 
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 
@@ -27,9 +28,9 @@ import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
  */
 public class NodePropertyExistenceConstraint extends NodePropertyConstraint
 {
-    public NodePropertyExistenceConstraint( int labelId, int propertyKeyId )
+    public NodePropertyExistenceConstraint( NodePropertyDescriptor descriptor )
     {
-        super( labelId, propertyKeyId );
+        super( descriptor );
     }
 
     @Override
@@ -50,13 +51,14 @@ public class NodePropertyExistenceConstraint extends NodePropertyConstraint
         String labelName = labelName( tokenNameLookup );
         String boundIdentifier = labelName.toLowerCase();
         return String.format( "CONSTRAINT ON ( %s:%s ) ASSERT exists(%s.%s)",
-                boundIdentifier, labelName, boundIdentifier, tokenNameLookup.propertyKeyGetName( propertyKeyId ) );
+                boundIdentifier, labelName, boundIdentifier,
+                descriptor.propertyNameText( tokenNameLookup ) );
     }
 
     @Override
     public String toString()
     {
         return String.format( "CONSTRAINT ON ( n:label[%s] ) ASSERT exists(n.property[%s])",
-                labelId, propertyKeyId );
+                descriptor.getLabelId(), descriptor.propertyIdText() );
     }
 }

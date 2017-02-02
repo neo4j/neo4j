@@ -279,8 +279,11 @@ public class RecordFormatSelector
                 .reduce( ( a, b ) -> a.generation() < b.generation() ? a : b );
     }
 
-    @Nonnull
-    private static Iterable<RecordFormats> allFormats()
+    /**
+     * Gets all {@link RecordFormats} that the selector is aware of.
+     * @return An iterable over all known record formats.
+     */
+    public static Iterable<RecordFormats> allFormats()
     {
         Iterable<RecordFormats.Factory> loadableFormatFactories = Service.load( RecordFormats.Factory.class );
         Iterable<RecordFormats> loadableFormats = map( RecordFormats.Factory::newInstance, loadableFormatFactories );

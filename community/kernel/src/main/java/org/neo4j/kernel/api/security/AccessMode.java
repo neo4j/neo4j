@@ -29,60 +29,10 @@ public interface AccessMode
     enum Static implements AccessMode
     {
         /** No reading or writing allowed. */
-        NONE
-                {
-                    @Override
-                    public boolean allowsReads()
-                    {
-                        return false;
-                    }
-
-                    @Override
-                    public boolean allowsWrites()
-                    {
-                        return false;
-                    }
-
-                    @Override
-                    public boolean allowsSchemaWrites()
-                    {
-                        return false;
-                    }
-
-                    @Override
-                    public boolean allowsProcedureWith( String[] allowed )
-                    {
-                        return false;
-                    }
-                },
-
+        NONE( false, false, false, false, false ),
         /** No reading or writing allowed because of expired credentials. */
-        CREDENTIALS_EXPIRED
+        CREDENTIALS_EXPIRED( false, false, false, false, false )
                 {
-                    @Override
-                    public boolean allowsReads()
-                    {
-                        return false;
-                    }
-
-                    @Override
-                    public boolean allowsWrites()
-                    {
-                        return false;
-                    }
-
-                    @Override
-                    public boolean allowsSchemaWrites()
-                    {
-                        return false;
-                    }
-
-                    @Override
-                    public boolean allowsProcedureWith( String[] allowed )
-                    {
-                        return false;
-                    }
-
                     @Override
                     public AuthorizationViolationException onViolation( String msg )
                     {
@@ -102,116 +52,57 @@ public interface AccessMode
                 },
 
         /** Allows reading data and schema, but not writing. */
-        READ
-                {
-                    @Override
-                    public boolean allowsReads()
-                    {
-                        return true;
-                    }
-
-                    @Override
-                    public boolean allowsWrites()
-                    {
-                        return false;
-                    }
-
-                    @Override
-                    public boolean allowsSchemaWrites()
-                    {
-                        return false;
-                    }
-
-                    @Override
-                    public boolean allowsProcedureWith( String[] allowed )
-                    {
-                        return false;
-                    }
-                },
-
+        READ( true, false, false, false, false ),
         /** Allows writing data */
-        WRITE_ONLY
-                {
-                    @Override
-                    public boolean allowsReads()
-                    {
-                        return false;
-                    }
-
-                    @Override
-                    public boolean allowsWrites()
-                    {
-                        return true;
-                    }
-
-                    @Override
-                    public boolean allowsSchemaWrites()
-                    {
-                        return false;
-                    }
-
-                    @Override
-                    public boolean allowsProcedureWith( String[] allowed )
-                    {
-                        return false;
-                    }
-                },
-
+        WRITE_ONLY( false, true, false, false, false ),
         /** Allows reading and writing data, but not schema. */
-        WRITE
-                {
-                    @Override
-                    public boolean allowsReads()
-                    {
-                        return true;
-                    }
-
-                    @Override
-                    public boolean allowsWrites()
-                    {
-                        return true;
-                    }
-
-                    @Override
-                    public boolean allowsSchemaWrites()
-                    {
-                        return false;
-                    }
-
-                    @Override
-                    public boolean allowsProcedureWith( String[] allowed )
-                    {
-                        return false;
-                    }
-                },
-
+        WRITE( true, true, false, false, false ),
+        /** Allows reading and writing data and creating new tokens, but not schema. */
+        TOKEN_WRITE( true, true, true, false, false ),
         /** Allows all operations. */
-        FULL
-                {
-                    @Override
-                    public boolean allowsReads()
-                    {
-                        return true;
-                    }
+        FULL( true, true, true, true, true );
 
-                    @Override
-                    public boolean allowsWrites()
-                    {
-                        return true;
-                    }
+        private boolean read;
+        private boolean write;
+        private boolean token;
+        private boolean schema;
+        private boolean procedure;
 
-                    @Override
-                    public boolean allowsSchemaWrites()
-                    {
-                        return true;
-                    }
+        Static( boolean read, boolean write, boolean token, boolean schema, boolean procedure )
+        {
+            this.read = read;
+            this.write = write;
+            this.token = token;
+            this.schema = schema;
+            this.procedure = procedure;
+        }
 
-                    @Override
-                    public boolean allowsProcedureWith( String[] allowed )
-                    {
-                        return true;
-                    }
-                };
+        @Override
+        public boolean allowsReads()
+        {
+            return read;
+        }
+
+        @Override
+        public boolean allowsWrites() { return write; }
+
+        @Override
+        public boolean allowsTokenCreates()
+        {
+            return token;
+        }
+
+        @Override
+        public boolean allowsSchemaWrites()
+        {
+            return schema;
+        }
+
+        @Override
+        public boolean allowsProcedureWith( String[] allowed )
+        {
+            return procedure;
+        }
 
         @Override
         public AuthorizationViolationException onViolation( String msg )
@@ -222,6 +113,7 @@ public interface AccessMode
 
     boolean allowsReads();
     boolean allowsWrites();
+    boolean allowsTokenCreates();
     boolean allowsSchemaWrites();
 
     /**

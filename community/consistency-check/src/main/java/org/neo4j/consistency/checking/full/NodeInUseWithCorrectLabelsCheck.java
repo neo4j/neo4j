@@ -19,6 +19,7 @@
  */
 package org.neo4j.consistency.checking.full;
 
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.consistency.checking.CheckerEngine;
 import org.neo4j.consistency.checking.ComparativeRecordChecker;
 import org.neo4j.consistency.checking.LabelChainWalker;
@@ -32,18 +33,25 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 
-import static java.util.Arrays.binarySearch;
 import static java.util.Arrays.sort;
 
 public class NodeInUseWithCorrectLabelsCheck
         <RECORD extends AbstractBaseRecord, REPORT extends ConsistencyReport.NodeInUseWithCorrectLabelsReport>
         implements ComparativeRecordChecker<RECORD, NodeRecord, REPORT>
 {
-    private final long[] expectedLabels;
+    private final long[] indexLabels;
+    private final boolean checkStoreToIndex;
 
-    public NodeInUseWithCorrectLabelsCheck( long[] expectedLabels )
+    public NodeInUseWithCorrectLabelsCheck( long[] expectedLabels, boolean checkStoreToIndex )
     {
-        this.expectedLabels = expectedLabels;
+        this.checkStoreToIndex = checkStoreToIndex;
+        this.indexLabels = sortAndDeduplicate( expectedLabels );
+    }
+
+    private static long[] sortAndDeduplicate( long[] labels )
+    {
+        sort( labels );
+        return PrimitiveLongCollections.deduplicate( labels );
     }
 
     @Override
@@ -65,9 +73,9 @@ public class NodeInUseWithCorrectLabelsCheck
             }
             else
             {
-                long[] actualLabels = nodeLabels.get( null );
+                long[] storeLabels = nodeLabels.get( null );
                 REPORT report = engine.report();
-                validateLabelIds( nodeRecord, actualLabels, report );
+                validateLabelIds( nodeRecord, storeLabels, report );
             }
         }
         else
@@ -76,16 +84,51 @@ public class NodeInUseWithCorrectLabelsCheck
         }
     }
 
-    private void validateLabelIds( NodeRecord nodeRecord, long[] actualLabels, REPORT report )
+    private void validateLabelIds( NodeRecord nodeRecord, long[] storeLabels, REPORT report )
     {
-        sort(actualLabels);
-        for ( long expectedLabel : expectedLabels )
+        storeLabels = sortAndDeduplicate( storeLabels );
+
+        int indexLabelsCursor = 0;
+        int storeLabelsCursor = 0;
+
+        do
         {
-            int labelIndex = binarySearch( actualLabels, expectedLabel );
-            if (labelIndex < 0)
-            {
-                report.nodeDoesNotHaveExpectedLabel( nodeRecord, expectedLabel );
+            long indexLabel = indexLabels[indexLabelsCursor];
+            long storeLabel = storeLabels[storeLabelsCursor];
+            if ( indexLabel < storeLabel )
+            {   // node store has a label which isn't in label scan store
+                report.nodeDoesNotHaveExpectedLabel( nodeRecord, indexLabel );
+                indexLabelsCursor++;
             }
+            else if ( indexLabel > storeLabel )
+            {   // label scan store has a label which isn't in node store
+                reportNodeLabelNotInIndex( report, nodeRecord, storeLabel );
+                storeLabelsCursor++;
+            }
+            else
+            {   // both match
+                indexLabelsCursor++;
+                storeLabelsCursor++;
+            }
+        }
+        while ( indexLabelsCursor < indexLabels.length && storeLabelsCursor < storeLabels.length );
+
+        while ( indexLabelsCursor < indexLabels.length )
+        {
+            report.nodeDoesNotHaveExpectedLabel( nodeRecord, indexLabels[indexLabelsCursor++] );
+        }
+        while ( storeLabelsCursor < storeLabels.length )
+        {
+            reportNodeLabelNotInIndex( report, nodeRecord, storeLabels[storeLabelsCursor] );
+            storeLabelsCursor++;
+        }
+    }
+
+    private void reportNodeLabelNotInIndex( REPORT report, NodeRecord nodeRecord, long storeLabel )
+    {
+        if ( checkStoreToIndex )
+        {
+            report.nodeLabelNotInIndex( nodeRecord, storeLabel );
         }
     }
 

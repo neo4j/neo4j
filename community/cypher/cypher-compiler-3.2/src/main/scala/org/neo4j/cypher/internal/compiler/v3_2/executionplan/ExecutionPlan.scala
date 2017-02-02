@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.executionplan
 
-import org.neo4j.cypher.internal.compiler.v3_2.spi.{PlanContext, GraphStatistics, QueryContext}
+import org.neo4j.cypher.internal.compiler.v3_2.spi.{GraphStatistics, PlanContext, QueryContext}
 import org.neo4j.cypher.internal.compiler.v3_2.{ExecutionMode, PlannerName, RuntimeName}
 import org.neo4j.cypher.internal.frontend.v3_2.notification.InternalNotification
 
@@ -30,4 +30,14 @@ abstract class ExecutionPlan {
   def isStale(lastTxId: () => Long, statistics: GraphStatistics): Boolean
   def runtimeUsed: RuntimeName
   def notifications(planContext: PlanContext): Seq[InternalNotification]
+  def plannedIndexUsage: Seq[IndexUsage] = Seq.empty
 }
+
+sealed trait IndexUsage {
+  def identifier:String
+}
+
+final case class SchemaIndexSeekUsage(identifier: String, label: String, propertyKey: String) extends IndexUsage
+final case class SchemaIndexScanUsage(identifier: String, label: String, propertyKey: String) extends IndexUsage
+final case class LegacyNodeIndexUsage(identifier: String, index: String) extends IndexUsage
+final case class LegacyRelationshipIndexUsage(identifier: String, index: String) extends IndexUsage

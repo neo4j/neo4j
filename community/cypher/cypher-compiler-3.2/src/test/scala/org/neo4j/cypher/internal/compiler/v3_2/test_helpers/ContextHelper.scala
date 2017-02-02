@@ -23,6 +23,7 @@ import java.time.Clock
 
 import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.NO_TRACING
 import org.neo4j.cypher.internal.compiler.v3_2._
+import org.neo4j.cypher.internal.compiler.v3_2.codegen.CodeGenConfiguration
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi.CodeStructure
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{GeneratedQuery, PlanFingerprint, PlanFingerprintReference}
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.RuntimeTypeConverter
@@ -45,7 +46,8 @@ object ContextHelper extends MockitoSugar {
              config: CypherCompilerConfiguration = mock[CypherCompilerConfiguration],
              updateStrategy: UpdateStrategy = mock[UpdateStrategy],
              clock: Clock = Clock.systemUTC(),
-             codeStructure: CodeStructure[GeneratedQuery] = mock[CodeStructure[GeneratedQuery]]): Context =
+             codeStructure: CodeStructure[GeneratedQuery] = mock[CodeStructure[GeneratedQuery]],
+             codeGenConfiguration: CodeGenConfiguration = CodeGenConfiguration()): Context =
     Context(exceptionCreator, tracer, notificationLogger, planContext, typeConverter, createFingerprintReference,
-      monitors, metrics, queryGraphSolver, config, updateStrategy, clock, codeStructure)
+      monitors, metrics, queryGraphSolver, config, updateStrategy, clock, codeStructure, codeGenConfiguration)
 }

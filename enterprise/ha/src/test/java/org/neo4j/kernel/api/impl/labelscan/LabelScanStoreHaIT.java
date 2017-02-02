@@ -24,11 +24,10 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.Collections;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -40,6 +39,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.helpers.collection.Iterators.count;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allAvailabilityGuardsReleased;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
@@ -52,7 +52,9 @@ public abstract class LabelScanStoreHaIT
         // This check is here o check so that the extension provided by this test is selected.
         // It can be higher than 3 (number of cluster members) since some members may restart
         // some services to switch role.
-        assertTrue( monitor.callsTo_init >= 3 );
+        assertTrue( "Expected initial calls to init to be at least one per cluster member (>= 3), " +
+                "but was " + monitor.callsTo_init,
+                monitor.callsTo_init >= 3 );
 
         // GIVEN
         // An HA cluster where the master started with initial data consisting
@@ -109,14 +111,18 @@ public abstract class LabelScanStoreHaIT
     {
         KernelExtensionFactory<?> testExtension = labelScanStoreExtension( monitor );
         TestHighlyAvailableGraphDatabaseFactory factory = new TestHighlyAvailableGraphDatabaseFactory();
-        factory.addKernelExtensions( Collections.singletonList( testExtension ) );
+        factory.removeKernelExtensions( extension -> extension.getClass().getName().contains( "LabelScan" ) );
+        factory.addKernelExtension( testExtension );
         ClusterManager clusterManager = new ClusterManager.Builder( testDirectory.directory( "root" ) )
                 .withDbFactory( factory )
+                .withSharedSetting( GraphDatabaseSettings.label_index, labelIndexSettingName() )
                 .withStoreDirInitializer( ( serverId, storeDir ) -> {
                     if ( serverId == 1 )
                     {
                         GraphDatabaseService db = new TestGraphDatabaseFactory()
+                                .addKernelExtension( testExtension )
                                 .newEmbeddedDatabaseBuilder( storeDir.getAbsoluteFile() )
+                                .setConfig( GraphDatabaseSettings.label_index, labelIndexSettingName() )
                                 .newGraphDatabase();
                         try
                         {
@@ -137,6 +143,8 @@ public abstract class LabelScanStoreHaIT
         cluster.await( allSeesAllAsAvailable() );
         cluster.await( allAvailabilityGuardsReleased() );
     }
+
+    protected abstract String labelIndexSettingName();
 
     protected abstract KernelExtensionFactory<?> labelScanStoreExtension( LabelScanStore.Monitor monitor );
 

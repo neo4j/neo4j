@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.exceptions.schema;
 
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -50,19 +51,19 @@ public abstract class SchemaKernelException extends KernelException
     }
 
     protected static String messageWithLabelAndPropertyName( TokenNameLookup tokenNameLookup, String formatString,
-            int labelId, int propertyKeyId )
+            NodePropertyDescriptor descriptor )
     {
         if ( tokenNameLookup != null )
         {
             return String.format( formatString,
-                    tokenNameLookup.labelGetName( labelId ),
-                    tokenNameLookup.propertyKeyGetName( propertyKeyId ) );
+                    tokenNameLookup.labelGetName( descriptor.getLabelId() ),
+                    descriptor.propertyNameText( tokenNameLookup ) );
         }
         else
         {
             return String.format( formatString,
-                    "label[" + labelId + "]",
-                    "key[" + propertyKeyId + "]" );
+                    "label[" + descriptor.getLabelId() + "]",
+                    "key[" + descriptor.propertyIdText() + "]" );
         }
     }
 }

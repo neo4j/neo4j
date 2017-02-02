@@ -116,14 +116,6 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
     )
   }
 
-  // TCK'd -- kept because of possible exclusion of this feature
-  test("cant re-use relationship variable") {
-    executeAndEnsureError(
-      "match (a)-[r]->(b)-[r]->(a) where id(a) = 0 return r",
-      "Cannot use the same relationship variable 'r' for multiple patterns (line 1, column 21 (offset: 20))"
-    )
-  }
-
   // Not TCK material; shortestPath, regex, constraints, hints, etc
 
   test("should know not to compare strings and numbers") {
@@ -228,13 +220,6 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
     )
   }
 
-  test("should fail when using CREATE UNIQUE") {
-    executeAndEnsureError(
-      "match (a), (b) create unique (a)-[:T]->(b)",
-      "CREATE UNIQUE is no longer supported. You can achieve the same result using MERGE (line 1, column 16 (offset: 15))"
-    )
-  }
-
   test("should fail when reduce used with wrong separator") {
     executeAndEnsureError("""MATCH topRoute = (s)<-[:CONNECTED_TO*1..3]-(e)
                             |WHERE id(s) = 1 AND id(e) = 2
@@ -309,27 +294,6 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
     executeAndEnsureError(
       "match n {foo: 'bar'} return n",
       "Parentheses are required to identify nodes in patterns, i.e. (n) (line 1, column 7 (offset: 6))"
-    )
-  }
-
-  test("should fail if using legacy optionals match") {
-    executeAndEnsureError(
-      "match (n)-[?]->(m) where id(n) = 0 return n",
-      "Question mark is no longer used for optional patterns - use OPTIONAL MATCH instead (line 1, column 10 (offset: 9))"
-    )
-  }
-
-  test("should fail if using legacy optionals match2") {
-    executeAndEnsureError(
-      "match (n)-[?*]->(m) where id(n) = 0 return n",
-      "Question mark is no longer used for optional patterns - use OPTIONAL MATCH instead (line 1, column 10 (offset: 9))"
-    )
-  }
-
-  test("should fail if using legacy optionals match3") {
-    executeAndEnsureError(
-      "match shortestPath((n)-[?*]->(m)) where id(n) = 0 return n",
-      "Question mark is no longer used for optional patterns - use OPTIONAL MATCH instead (line 1, column 23 (offset: 22))"
     )
   }
 
@@ -410,11 +374,6 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
       "Variable `o` not defined (line 1, column 29 (offset: 28))")
   }
 
-  test("should give a nice error message if a user tries to use HAS") (
-    executeAndEnsureError("MATCH (n) WHERE HAS(n.prop) RETURN n.prop",
-      "HAS is no longer supported in Cypher, please use EXISTS instead (line 1, column 17 (offset: 16))")
-  )
-
   test("give a nice error message when using unknown arguments in point") {
     executeAndEnsureError("RETURN point({xxx: 2.3, yyy: 4.5}) as point",
                           "A map with keys 'xxx', 'yyy' is not describing a valid point, a point is described either by " +
@@ -481,22 +440,20 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
       "integer, 10508455564958384115, is too large")
   }
 
-  def executeAndEnsureError(query: String, expected: String, params: (String,Any)*) {
+  private def executeAndEnsureError(query: String, expected: String, params: (String,Any)*) {
     import org.neo4j.cypher.internal.frontend.v3_2.helpers.StringHelper._
-
     import scala.collection.JavaConverters._
 
-    val fixedExpected = expected.fixPosition
     try {
       val jParams = new util.HashMap[String, Object]()
       params.foreach(kv => jParams.put(kv._1, kv._2.asInstanceOf[AnyRef]))
 
-      graph.execute(query, jParams).asScala.size
-      fail(s"Did not get the expected syntax error, expected: $fixedExpected")
+      graph.execute(query.fixNewLines, jParams).asScala.size
+      fail(s"Did not get the expected syntax error, expected: $expected")
     } catch {
       case x: QueryExecutionException =>
         val actual = x.getMessage.lines.next().trim
-        actual should equal(fixedExpected)
+        actual should equal(expected)
     }
   }
 }

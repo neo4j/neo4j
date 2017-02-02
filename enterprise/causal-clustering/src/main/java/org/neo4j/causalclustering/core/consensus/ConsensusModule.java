@@ -59,7 +59,7 @@ import org.neo4j.logging.LogProvider;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.catchup_batch_size;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.join_catch_up_timeout;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.log_shipping_max_lag;
-import static org.neo4j.causalclustering.core.consensus.log.RaftLog.PHYSICAL_LOG_DIRECTORY_NAME;
+import static org.neo4j.causalclustering.core.consensus.log.RaftLog.RAFT_LOG_DIRECTORY_NAME;
 import static org.neo4j.time.Clocks.systemClock;
 
 public class ConsensusModule
@@ -163,7 +163,7 @@ public class ConsensusModule
 
                 CoreLogPruningStrategy pruningStrategy = new CoreLogPruningStrategyFactory(
                         config.get( CausalClusteringSettings.raft_log_pruning_strategy ), logProvider ).newInstance();
-                File directory = new File( clusterStateDirectory, PHYSICAL_LOG_DIRECTORY_NAME );
+                File directory = new File( clusterStateDirectory, RAFT_LOG_DIRECTORY_NAME );
                 return life.add( new SegmentedRaftLog( fileSystem, directory, rotateAtSize, marshal,
                         logProvider, readerPoolSize, systemClock(), scheduler, pruningStrategy ) );
             }
