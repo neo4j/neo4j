@@ -29,10 +29,9 @@ import java.util.stream.Stream;
 
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.CallableProcedure;
-import org.neo4j.logging.NullLog;
+import org.neo4j.logging.Log;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Procedure;
 
@@ -40,12 +39,16 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 @SuppressWarnings( "WeakerAccess" )
 public class ResourceInjectionTest
 {
     @Rule
     public ExpectedException exception = ExpectedException.none();
+
+    private Log log = mock(Log.class);
 
     @Test
     public void shouldCompileAndRunProcedure() throws Throwable
@@ -64,14 +67,15 @@ public class ResourceInjectionTest
     @Test
     public void shouldFailNicelyWhenUnknownAPI() throws Throwable
     {
-        //Expect
-        exception.expect( ProcedureException.class );
-        exception.expectMessage( "Unable to set up injection for procedure `procedureWithUnknownAPI`, " +
-                                 "the field `api` has type `class org.neo4j.kernel.impl.proc.ResourceInjectionTest$UnknownAPI` " +
-                                 "which is not a known injectable component." );
-
         // When
-        compile( procedureWithUnknownAPI.class, true ).get( 0 );
+        List<CallableProcedure> procList = compile( procedureWithUnknownAPI.class, true );
+
+        //Then
+        verify( log ).warn(  "Unable to set up injection for procedure `procedureWithUnknownAPI`," +
+                " the field `api` has type `class org.neo4j.kernel.impl.proc.ResourceInjectionTest$UnknownAPI`" +
+                " which is not a known injectable component.");
+
+        assert(procList.size() == 0);
     }
 
     @Test
@@ -93,14 +97,15 @@ public class ResourceInjectionTest
     @Test
     public void shouldFailNicelyWhenUnsafeAPISafeMode() throws Throwable
     {
-        //Expect
-        exception.expect( ProcedureException.class );
-        exception.expectMessage( "Unable to set up injection for procedure `procedureWithUnsafeAPI`, " +
-                "the field `api` has type `class org.neo4j.kernel.impl.proc.ResourceInjectionTest$MyUnsafeAPI` " +
-                "which is not a known injectable component." );
+        //When
+        List<CallableProcedure> procList = compile( procedureWithUnsafeAPI.class, false );
+        verify( log )
+                .warn( "Unable to set up injection for procedure `procedureWithUnsafeAPI`, " + "the field `api` has " +
+                        "type `class org.neo4j.kernel.impl.proc.ResourceInjectionTest$MyUnsafeAPI` " +
+                        "which is not a known injectable component." );
 
-        // When
-        compile( procedureWithUnsafeAPI.class, false ).get( 0 );
+        assert(procList.size() == 0);
+
     }
 
     public static class MyOutputRecord
@@ -183,7 +188,7 @@ public class ResourceInjectionTest
         allComponents.register( MyAwesomeAPI.class, (ctx) -> new MyAwesomeAPI() );
         allComponents.register( MyUnsafeAPI.class, (ctx) -> new MyUnsafeAPI() );
 
-        return new ReflectiveProcedureCompiler( new TypeMappers(), safeComponents, allComponents, NullLog.getInstance(),
+        return new ReflectiveProcedureCompiler( new TypeMappers(), safeComponents, allComponents, log,
                 ProcedureConfig.DEFAULT ).compileProcedure( clazz, Optional.empty(), safe );
     }
 }

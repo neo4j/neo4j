@@ -37,6 +37,7 @@ import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Name;
@@ -47,6 +48,8 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.procedure_unrestricted;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.helpers.collection.MapUtil.genericMap;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTInteger;
@@ -60,9 +63,10 @@ public class ProcedureJarLoaderTest
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
+    private Log log = mock( Log.class );
     private final ProcedureJarLoader jarloader =
             new ProcedureJarLoader( new ReflectiveProcedureCompiler( new TypeMappers(), new ComponentRegistry(),
-                    registryWithUnsafeAPI(), NullLog.getInstance(), procedureConfig() ), NullLog.getInstance() );
+                    registryWithUnsafeAPI(), log, procedureConfig() ), NullLog.getInstance());
 
     @Test
     public void shouldLoadProcedureFromJar() throws Throwable
@@ -205,19 +209,20 @@ public class ProcedureJarLoaderTest
     }
 
     @Test
-    public void shouldGiveHelpfulErrorOnUnsafeRestrictedProcedure() throws Throwable
+    public void shouldGiveHelpfulLogOnUnsafeRestrictedProcedure() throws Throwable
     {
         // Given
         URL jar = createJarFor( ClassWithUnsafeComponent.class );
 
-        // Expect
-        exception.expect( ProcedureException.class );
-        exception.expectMessage( "Unable to set up injection for procedure `ClassWithUnsafeComponent`, the field" +
-                " `api` has type `class org.neo4j.kernel.impl.proc.ProcedureJarLoaderTest$UnsafeAPI` which is not a" +
-                " known injectable component.");
-
         // When
         jarloader.loadProcedures( jar );
+
+        // Then
+        verify( log )
+                .warn( "Unable to set up injection for procedure `ClassWithUnsafeComponent`, " +
+                        "the field `api` has type `class org.neo4j.kernel.impl.proc.ProcedureJarLoaderTest$UnsafeAPI`" +
+                        " which is not a known injectable component." );
+
     }
 
     @Test
