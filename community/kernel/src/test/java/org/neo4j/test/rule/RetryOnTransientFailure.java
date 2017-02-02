@@ -23,10 +23,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.graphdb.TransientFailureException;
+import org.neo4j.kernel.api.exceptions.Status;
 
 /**
- * Retries on {@link TransientFailureException} a configurable number of times and with a configurable
- * delay between retries.
+ * Retries on {@link TransientFailureException} and any {@link Throwable} implementing
+ * {@link org.neo4j.kernel.api.exceptions.Status.HasStatus} with
+ * {@link org.neo4j.kernel.api.exceptions.Status.Classification#TransientError} classification.
+ * a configurable number of times and with a configurable delay between retries.
  */
 public class RetryOnTransientFailure implements RetryHandler
 {
@@ -50,10 +53,27 @@ public class RetryOnTransientFailure implements RetryHandler
     @Override
     public boolean retryOn( Throwable t )
     {
-        if ( t instanceof TransientFailureException )
+        if ( isTransientFailure( t ) )
         {
             LockSupport.parkNanos( unit.toNanos( timeBetweenTries ) );
             return retries++ < maxRetryCount;
+        }
+        return false;
+    }
+
+    private boolean isTransientFailure( Throwable t )
+    {
+        if ( t instanceof TransientFailureException )
+        {
+            return true;
+        }
+        if ( t instanceof Status.HasStatus )
+        {
+            Status status = ((Status.HasStatus) t).status();
+            if ( status.code().classification() == Status.Classification.TransientError )
+            {
+                return true;
+            }
         }
         return false;
     }
