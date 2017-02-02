@@ -28,8 +28,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
+import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.collection.PrefetchingIterator;
@@ -358,22 +360,22 @@ public class RelationshipChangesForNode
         return degree;
     }
 
-    public PrimitiveIntIterator relationshipTypes()
+    public PrimitiveIntSet relationshipTypes()
     {
-        Set<Integer> types = new HashSet<>();
+        PrimitiveIntSet types = Primitive.intSet();
         if ( outgoing != null && !outgoing.isEmpty() )
         {
-            types.addAll( outgoing.keySet() );
+            outgoing.keySet().forEach( types::add );
         }
         if ( incoming != null && !incoming.isEmpty() )
         {
-            types.addAll( incoming.keySet() );
+            incoming.keySet().forEach( types::add );
         }
         if ( loops != null && !loops.isEmpty() )
         {
-            types.addAll( loops.keySet() );
+            loops.keySet().forEach( types::add );
         }
-        return PrimitiveIntCollections.toPrimitiveIterator( types.iterator() );
+        return types;
     }
 
     public void clear()

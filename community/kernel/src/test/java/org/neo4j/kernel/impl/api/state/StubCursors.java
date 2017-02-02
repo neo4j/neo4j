@@ -20,15 +20,10 @@
 package org.neo4j.kernel.impl.api.state;
 
 import java.util.Arrays;
-import java.util.List;
-import java.util.function.Function;
 
-import org.neo4j.collection.primitive.PrimitiveIntCollection;
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.cursor.IntCursor;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.cursor.EntityItemHelper;
 import org.neo4j.kernel.api.cursor.RelationshipItemHelper;
 import org.neo4j.kernel.api.properties.DefinedProperty;
@@ -39,11 +34,9 @@ import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 
-import static org.neo4j.collection.primitive.PrimitiveIntCollections.emptyIterator;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.emptySet;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.kernel.impl.util.Cursors.empty;
-import static org.neo4j.kernel.impl.util.Cursors.emptyInt;
 
 /**
  * Stub cursors to be used for testing.
@@ -163,7 +156,7 @@ public class StubCursors
         }
 
         @Override
-        public IntCursor relationshipTypes()
+        public PrimitiveIntSet relationshipTypes()
         {
             throw new UnsupportedOperationException();
         }
@@ -191,84 +184,6 @@ public class StubCursors
         {
             throw new UnsupportedOperationException();
         }
-    }
-
-    public static RelationshipItem asRelationship( final long relId, final int type,
-            final long startNode, final long endNode, final Cursor<PropertyItem> propertyCursor )
-    {
-        return new RelationshipItemHelper()
-        {
-            @Override
-            public long id()
-            {
-                return relId;
-            }
-
-            @Override
-            public int type()
-            {
-                return type;
-            }
-
-            @Override
-            public long startNode()
-            {
-                return startNode;
-            }
-
-            @Override
-            public long endNode()
-            {
-                return endNode;
-            }
-
-            @Override
-            public long otherNode( long nodeId )
-            {
-                return startNode == nodeId ? endNode : startNode;
-            }
-
-            @Override
-            public Cursor<PropertyItem> property( final int propertyKeyId )
-            {
-                return new Cursor<PropertyItem>()
-                {
-                    Cursor<PropertyItem> cursor = properties();
-
-                    @Override
-                    public boolean next()
-                    {
-                        while ( cursor.next() )
-                        {
-                            if ( cursor.get().propertyKeyId() == propertyKeyId )
-                            {
-                                return true;
-                            }
-                        }
-
-                        return false;
-                    }
-
-                    @Override
-                    public void close()
-                    {
-                        cursor.close();
-                    }
-
-                    @Override
-                    public PropertyItem get()
-                    {
-                        return cursor.get();
-                    }
-                };
-            }
-
-            @Override
-            public Cursor<PropertyItem> properties()
-            {
-                return propertyCursor;
-            }
-        };
     }
 
     public static Cursor<RelationshipItem> asRelationshipCursor( final long relId, final int type,

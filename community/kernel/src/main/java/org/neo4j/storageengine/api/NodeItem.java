@@ -21,7 +21,6 @@ package org.neo4j.storageengine.api;
 
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.cursor.IntCursor;
 
 /**
  * Represents a single node from a cursor.
@@ -51,7 +50,7 @@ public interface NodeItem
      * @return relationship type cursor for relationships attached to this node.
      * @throws IllegalStateException if no current node is selected
      */
-    IntCursor relationshipTypes();
+    PrimitiveIntSet relationshipTypes();
 
     /**
      * Returns degree, e.g. number of relationships for this node.

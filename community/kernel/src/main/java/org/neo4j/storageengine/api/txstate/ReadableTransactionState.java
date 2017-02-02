@@ -93,7 +93,7 @@ public interface ReadableTransactionState
 
     boolean nodeModifiedInThisTx( long nodeId );
 
-    PrimitiveIntIterator nodeRelationshipTypes( long nodeId );
+    PrimitiveIntSet nodeRelationshipTypes( long nodeId );
 
     int augmentNodeDegree( long node, int committedDegree, Direction direction );
 

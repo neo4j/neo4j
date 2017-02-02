@@ -432,7 +432,7 @@ public class OperationsFacade
         statement.assertOpen();
         try ( Cursor<NodeItem> node = dataRead().nodeCursorById( statement, nodeId ) )
         {
-            return node.get().relationshipTypes().collect( intSet() ).iterator();
+            return node.get().relationshipTypes().iterator();
         }
     }
 

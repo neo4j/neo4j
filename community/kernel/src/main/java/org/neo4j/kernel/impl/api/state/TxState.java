@@ -949,7 +949,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public PrimitiveIntIterator nodeRelationshipTypes( long nodeId )
+    public PrimitiveIntSet nodeRelationshipTypes( long nodeId )
     {
         return NODE_STATE.get( this, nodeId ).relationshipTypes();
     }

@@ -25,8 +25,7 @@ import java.util.Iterator;
 import java.util.Set;
 
 import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveIntCollections;
-import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.collection.Iterators;
@@ -40,6 +39,8 @@ import org.neo4j.storageengine.api.txstate.NodeState;
 import org.neo4j.storageengine.api.txstate.PropertyContainerState;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 import org.neo4j.storageengine.api.txstate.UpdateTriState;
+
+import static org.neo4j.collection.primitive.Primitive.intSet;
 
 public class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
 {
@@ -189,13 +190,13 @@ public class NodeStateImpl extends PropertyContainerStateImpl implements NodeSta
     }
 
     @Override
-    public PrimitiveIntIterator relationshipTypes()
+    public PrimitiveIntSet relationshipTypes()
     {
         if ( hasAddedRelationships() )
         {
             return relationshipsAdded.relationshipTypes();
         }
-        return PrimitiveIntCollections.emptyIterator();
+        return intSet();
     }
 
     @Override
@@ -356,9 +357,9 @@ public class NodeStateImpl extends PropertyContainerStateImpl implements NodeSta
             }
 
             @Override
-            public PrimitiveIntIterator relationshipTypes()
+            public PrimitiveIntSet relationshipTypes()
             {
-                return Primitive.intSet().iterator();
+                return Primitive.intSet();
             }
 
             @Override

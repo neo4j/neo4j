@@ -820,10 +820,15 @@ public class PrimitiveIntCollections
      */
     public static Set<Integer> toSet( PrimitiveIntIterator iterator )
     {
-        Set<Integer> set = new HashSet<>();
+        return mapToSet( iterator, Integer::new );
+    }
+
+    public static <T> Set<T> mapToSet( PrimitiveIntIterator iterator, IntFunction<T> map )
+    {
+        Set<T> set = new HashSet<>();
         while ( iterator.hasNext() )
         {
-            addUnique( set, iterator.next() );
+            addUnique( set, map.apply( iterator.next() ) );
         }
         return set;
     }

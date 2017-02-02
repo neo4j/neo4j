@@ -28,7 +28,6 @@ import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.cursor.IntCursor;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.cursor.EntityItemHelper;
 import org.neo4j.kernel.impl.locking.Lock;
@@ -52,9 +51,12 @@ import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 
 import static java.util.function.Function.identity;
+import static org.neo4j.collection.primitive.Primitive.intSet;
 import static org.neo4j.kernel.impl.api.store.DegreeCounter.countRelationshipsInGroup;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
+import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
 
 /**
@@ -246,17 +248,25 @@ public class StoreSingleNodeCursor extends EntityItemHelper implements Cursor<No
     }
 
     @Override
-    public IntCursor relationshipTypes()
+    public PrimitiveIntSet relationshipTypes()
     {
+        PrimitiveIntSet set = intSet();
         if ( nodeRecord.isDense() )
         {
-            long groupId = nodeRecord.getNextRel();
-            return new RelationshipTypeDenseCursor( groupId, relationshipGroupStore.newRecord(), recordCursors );
+            RelationshipGroupRecord groupRecord = relationshipGroupStore.newRecord();
+            for ( long id = nodeRecord.getNextRel(); id != NO_NEXT_RELATIONSHIP.intValue(); id = groupRecord.getNext() )
+            {
+                if ( recordCursors.relationshipGroup().next( id, groupRecord, FORCE ) )
+                {
+                    set.add( groupRecord.getType() );
+                }
+            }
         }
         else
         {
-            return new RelationshipTypeCursor( relationships( Direction.BOTH ) );
+            relationships( Direction.BOTH ).collect( set, RelationshipItem::type );
         }
+        return set;
     }
 
     @Override
@@ -329,5 +339,4 @@ public class StoreSingleNodeCursor extends EntityItemHelper implements Cursor<No
                 "Node " + nodeId + " neither start nor end node of relationship " + relationshipId +
                         " with startNode:" + startNode + " and endNode:" + endNode );
     }
-
 }

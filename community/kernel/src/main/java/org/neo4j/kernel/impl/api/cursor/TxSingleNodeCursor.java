@@ -21,11 +21,9 @@ package org.neo4j.kernel.impl.api.cursor;
 
 import java.util.function.Consumer;
 
-import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.cursor.IntCursor;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.cursor.EntityItemHelper;
 import org.neo4j.kernel.api.txstate.TransactionState;
@@ -36,7 +34,8 @@ import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.txstate.NodeState;
 
-import static org.neo4j.collection.primitive.PrimitiveIntCollections.emptySet;
+import static org.neo4j.collection.primitive.Primitive.intSet;
+import static org.neo4j.collection.primitive.PrimitiveIntCollections.filter;
 import static org.neo4j.kernel.impl.util.Cursors.empty;
 
 /**
@@ -123,7 +122,7 @@ public class TxSingleNodeCursor extends EntityItemHelper implements Cursor<NodeI
     @Override
     public PrimitiveIntSet labels()
     {
-        return state.augmentLabels( nodeIsAddedInThisTx ? emptySet() : this.cursor.get().labels(), nodeState );
+        return state.augmentLabels( nodeIsAddedInThisTx ? intSet() : this.cursor.get().labels(), nodeState );
     }
 
     @Override
@@ -169,36 +168,22 @@ public class TxSingleNodeCursor extends EntityItemHelper implements Cursor<NodeI
     }
 
     @Override
-    public IntCursor relationshipTypes()
+    public PrimitiveIntSet relationshipTypes()
     {
         if ( nodeIsAddedInThisTx )
         {
-            return new RelationshipTypeCursor( nodeState.relationshipTypes() );
+            return nodeState.relationshipTypes();
         }
 
-        PrimitiveIntSet types = Primitive.intSet();
-
-        // Add types in the current transaction
-        PrimitiveIntIterator typesInTx = nodeState.relationshipTypes();
-        while ( typesInTx.hasNext() )
-        {
-            types.add( typesInTx.next() );
-        }
+        // Read types in the current transaction
+        PrimitiveIntSet types =  nodeState.relationshipTypes();
 
         // Augment with types stored on disk, minus any types where all rels of that type are deleted
         // in current tx.
-        try ( IntCursor storeTypes = cursor.get().relationshipTypes() )
-        {
-            while ( storeTypes.next() )
-            {
-                int current = storeTypes.getAsInt();
-                if ( !types.contains( current ) && degree( Direction.BOTH, current ) > 0 )
-                {
-                    types.add( current );
-                }
-            }
-        }
-        return new RelationshipTypeCursor( types.iterator() );
+        types.addAll( filter( cursor.get().relationshipTypes().iterator(),
+                ( current ) -> !types.contains( current ) && degree( Direction.BOTH, current ) > 0 ) );
+
+        return types;
     }
 
     @Override
@@ -217,7 +202,7 @@ public class TxSingleNodeCursor extends EntityItemHelper implements Cursor<NodeI
     @Override
     public Cursor<DegreeItem> degrees()
     {
-        return new DegreeCursor( relationshipTypes() );
+        return new DegreeCursor( relationshipTypes().iterator() );
     }
 
     @Override
@@ -226,49 +211,14 @@ public class TxSingleNodeCursor extends EntityItemHelper implements Cursor<NodeI
         return cursor.get().isDense();
     }
 
-    private class RelationshipTypeCursor implements IntCursor
-    {
-        private final PrimitiveIntIterator primitiveIntIterator;
-        private int current = StatementConstants.NO_SUCH_RELATIONSHIP_TYPE;
-
-        RelationshipTypeCursor( PrimitiveIntIterator primitiveIntIterator )
-        {
-            this.primitiveIntIterator = primitiveIntIterator;
-        }
-
-        @Override
-        public boolean next()
-        {
-            if ( primitiveIntIterator.hasNext() )
-            {
-                current = primitiveIntIterator.next();
-                return true;
-            }
-
-            current = StatementConstants.NO_SUCH_RELATIONSHIP_TYPE;
-            return false;
-        }
-
-        @Override
-        public void close()
-        {
-        }
-
-        @Override
-        public int getAsInt()
-        {
-            return current;
-        }
-    }
-
     private class DegreeCursor implements Cursor<DegreeItem>, DegreeItem
     {
-        private final IntCursor relTypeCursor;
+        private final PrimitiveIntIterator relTypeCursor;
         private int type;
         private long outgoing;
         private long incoming;
 
-        DegreeCursor( IntCursor relTypeCursor )
+        DegreeCursor( PrimitiveIntIterator relTypeCursor )
         {
             this.relTypeCursor = relTypeCursor;
         }
@@ -276,24 +226,19 @@ public class TxSingleNodeCursor extends EntityItemHelper implements Cursor<NodeI
         @Override
         public boolean next()
         {
-            if ( relTypeCursor.next() )
+            boolean hasNext = relTypeCursor.hasNext();
+            if ( hasNext )
             {
-                type = relTypeCursor.getAsInt();
+                type = relTypeCursor.next();
                 outgoing = degree( Direction.OUTGOING, type );
                 incoming = degree( Direction.INCOMING, type );
-
-                return true;
             }
-            else
-            {
-                return false;
-            }
+            return hasNext;
         }
 
         @Override
         public void close()
         {
-            relTypeCursor.close();
         }
 
         @Override
