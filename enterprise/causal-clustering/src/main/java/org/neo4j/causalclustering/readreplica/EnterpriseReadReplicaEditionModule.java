@@ -20,7 +20,6 @@
 package org.neo4j.causalclustering.readreplica;
 
 import java.io.File;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
@@ -177,7 +176,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         long readReplicaTimeToLiveTimeout = config.get( CausalClusteringSettings.read_replica_time_to_live );
         long readReplicaRefreshRate = config.get( CausalClusteringSettings.read_replica_refresh_rate );
 
-        logProvider.getLog( getClass() ).info( String.format( "Generated new id: %s", myself) );
+        logProvider.getLog( getClass() ).info( String.format( "Generated new id: %s", myself ) );
 
         ReadReplicaTopologyService readReplicaTopologyService = discoveryServiceFactory
                 .readReplicaTopologyService( config, logProvider, refreshReadReplicaTimeoutService,
@@ -186,7 +185,8 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
 
         long inactivityTimeoutMillis = config.get( CausalClusteringSettings.catch_up_client_inactivity_timeout );
         CatchUpClient catchUpClient = life.add(
-                new CatchUpClient( readReplicaTopologyService, logProvider, Clocks.systemClock(), inactivityTimeoutMillis,
+                new CatchUpClient( readReplicaTopologyService, logProvider, Clocks.systemClock(),
+                        inactivityTimeoutMillis,
 
                         monitors ) );
 
@@ -206,8 +206,9 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
                 new DelayedRenewableTimeoutService( Clocks.systemClock(), logProvider );
 
         StoreFiles storeFiles = new StoreFiles( fileSystem, pageCache );
-        LocalDatabase localDatabase = new LocalDatabase( platformModule.storeDir, storeFiles,
-                platformModule.dataSourceManager, databaseHealthSupplier, logProvider );
+        LocalDatabase localDatabase =
+                new LocalDatabase( platformModule.storeDir, storeFiles, platformModule.dataSourceManager,
+                        databaseHealthSupplier, logProvider );
 
         RemoteStore remoteStore =
                 new RemoteStore( platformModule.logging.getInternalLogProvider(), fileSystem, platformModule.pageCache,
@@ -246,7 +247,8 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         }
 
         StoreCopyProcess storeCopyProcess =
-                new StoreCopyProcess( fileSystem, pageCache, localDatabase, copiedStoreRecovery, remoteStore, logProvider );
+                new StoreCopyProcess( fileSystem, pageCache, localDatabase, copiedStoreRecovery, remoteStore,
+                        logProvider );
 
         ConnectToRandomCoreServer defaultStrategy = new ConnectToRandomCoreServer();
         defaultStrategy.setDiscoveryService( readReplicaTopologyService );
@@ -268,15 +270,17 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         txPulling.add( new WaitForUpToDateStore( catchupProcess, logProvider ) );
 
         ExponentialBackoffStrategy retryStrategy = new ExponentialBackoffStrategy( 1, 30, TimeUnit.SECONDS );
-        life.add( new ReadReplicaStartupProcess( remoteStore, localDatabase, txPulling, upstreamDatabaseStrategySelector,
-                retryStrategy, logProvider, platformModule.logging.getUserLogProvider(), storeCopyProcess ) );
+        life.add(
+                new ReadReplicaStartupProcess( remoteStore, localDatabase, txPulling, upstreamDatabaseStrategySelector,
+                        retryStrategy, logProvider, platformModule.logging.getUserLogProvider(), storeCopyProcess ) );
 
         CatchupServer catchupServer = new CatchupServer( platformModule.logging.getInternalLogProvider(),
                 platformModule.logging.getUserLogProvider(), localDatabase::storeId,
                 platformModule.dependencies.provideDependency( TransactionIdStore.class ),
                 platformModule.dependencies.provideDependency( LogicalTransactionStore.class ),
                 localDatabase::dataSource, localDatabase::isAvailable, null, config, platformModule.monitors,
-                new CheckpointerSupplier( platformModule.dependencies ), fileSystem, pageCache);
+                new CheckpointerSupplier( platformModule.dependencies ), fileSystem, pageCache,
+                platformModule.storeCopyCheckPointMutex );
 
         servicesToStopOnStoreCopy.add( catchupServer );
 
