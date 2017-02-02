@@ -25,9 +25,12 @@ import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaComputer;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.SchemaProcessor;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.storageengine.api.schema.SchemaRule;
@@ -42,15 +45,27 @@ public class SchemaRuleSerialization
     private final static byte INDEX_RULE = 1, CONSTRAINT_RULE = 2;
 
     // Index type
-    private final static byte GENERAL_INDEX = 51, UNIQUE_INDEX = 52;
+    private final static byte GENERAL_INDEX = 31, UNIQUE_INDEX = 32;
+
+    // Constraint type
+    private final static byte EXISTS_CONSTRAINT = 61, UNIQUE_CONSTRAINT = 62;
 
     // Schema type
-    private final static byte SIMPLE_LABEL = 101, SIMPLE_REL_TYPE = 102;
+    private final static byte SIMPLE_LABEL = 91, SIMPLE_REL_TYPE = 92;
 
     private SchemaRuleSerialization()
     {
     }
 
+    // PUBLIC
+
+    /**
+     * Parse a SchemaRule from the provided buffer.
+     * @param id the id to give the returned Schema Rule
+     * @param source the buffer to parse from
+     * @return a SchemaRule
+     * @throws MalformedSchemaRuleException if bytes in the buffer do encode a valid SchemaRule
+     */
     public static SchemaRule deserialize( long id, ByteBuffer source ) throws MalformedSchemaRuleException
     {
         byte schemaRuleType = source.get();
@@ -58,80 +73,19 @@ public class SchemaRuleSerialization
         {
         case INDEX_RULE:
             return readIndexRule( id, source );
-        default:
-            throw new UnsupportedOperationException( format( "Got unknown schema rule type '%d'.", schemaRuleType ) );
+        case CONSTRAINT_RULE:
+            return readConstraintRule( id, source );
         }
+        throw new UnsupportedOperationException( format( "Got unknown schema rule type '%d'.", schemaRuleType ) );
     }
 
-    private static IndexRule readIndexRule( long id, ByteBuffer source ) throws MalformedSchemaRuleException
-    {
-        SchemaIndexProvider.Descriptor indexProvider = readIndexProviderDescriptor( source );
-        byte indexRuleType = source.get();
-        switch ( indexRuleType )
-        {
-        case GENERAL_INDEX:
-            return IndexRule.indexRule(
-                    id,
-                    NewIndexDescriptorFactory.forSchema( readLabelSchema( source ) ),
-                    indexProvider
-                );
-
-        case UNIQUE_INDEX:
-            long owningConstraint = source.getLong();
-            return IndexRule.constraintIndexRule(
-                    id,
-                    NewIndexDescriptorFactory.uniqueForSchema( readLabelSchema( source ) ),
-                    indexProvider,
-                    owningConstraint
-                );
-
-        default:
-            throw new UnsupportedOperationException( format( "Got unknown index rule type '%d'.", indexRuleType ) );
-        }
-    }
-
-    private static LabelSchemaDescriptor readLabelSchema( ByteBuffer source ) throws MalformedSchemaRuleException
-    {
-        SchemaDescriptor schemaDescriptor = readSchema( source );
-        if ( !(schemaDescriptor instanceof LabelSchemaDescriptor) )
-        {
-            throw new MalformedSchemaRuleException( "IndexRules must have LabelSchemaDescriptors, got " +
-                    ""+schemaDescriptor.getClass().getSimpleName() );
-        }
-        return (LabelSchemaDescriptor)schemaDescriptor;
-    }
-
-    private static SchemaDescriptor readSchema( ByteBuffer source )
-    {
-        byte schemaDescriptorType = source.get();
-        switch ( schemaDescriptorType )
-        {
-        case SIMPLE_LABEL:
-            return SchemaDescriptorFactory.forLabel( source.getInt(), readPropertyIds( source ) );
-        default:
-            throw new UnsupportedOperationException( format( "Got unknown schema descriptor type '%d'.",
-                    schemaDescriptorType ) );
-        }
-    }
-
-    private static int[] readPropertyIds( ByteBuffer source )
-    {
-        short numProperties = source.getShort();
-        int[] propertyIds = new int[numProperties];
-        for ( int i = 0; i < numProperties; i++ )
-        {
-            propertyIds[i] = source.getInt();
-        }
-        return propertyIds;
-    }
-
-    private static SchemaIndexProvider.Descriptor readIndexProviderDescriptor( ByteBuffer source )
-    {
-        String providerKey = getDecodedStringFrom( source );
-        String providerVersion = getDecodedStringFrom( source );
-        return new SchemaIndexProvider.Descriptor( providerKey, providerVersion );
-    }
-
+    /**
+     * Serialize the provided IndexRule onto the target buffer
+     * @param indexRule the IndexRule to serialize
+     * @param target the target buffer
+     * @throws MalformedSchemaRuleException if the IndexRule is of type unique, but the owning constrain
+     *                                      has not been set
+     */
     public static void serialize( IndexRule indexRule, ByteBuffer target ) throws MalformedSchemaRuleException
     {
         target.put( INDEX_RULE );
@@ -164,6 +118,186 @@ public class SchemaRuleSerialization
 
         indexDescriptor.schema().processWith( new SchemaDescriptorSerializer( target ) );
     }
+
+    /**
+     * Serialize the provided ConstraintRule onto the target buffer
+     * @param constraintRule the ConstraintRule to serialize
+     * @param target the target buffer
+     * @throws MalformedSchemaRuleException if the ConstraintRule is of type unique, but the owned index
+     *                                      has not been set
+     */
+    public static void serialize( ConstraintRule constraintRule, ByteBuffer target ) throws MalformedSchemaRuleException
+    {
+        target.put( CONSTRAINT_RULE );
+
+        ConstraintDescriptor constraintDescriptor = constraintRule.getConstraintDescriptor();
+        switch ( constraintDescriptor.type() )
+        {
+        case EXISTS:
+            target.put( EXISTS_CONSTRAINT );
+            break;
+
+        case UNIQUE:
+            target.put( UNIQUE_CONSTRAINT );
+            target.putLong( constraintRule.getOwnedIndex() );
+            break;
+
+        default:
+            throw new UnsupportedOperationException( format( "Got unknown index descriptor type '%s'.",
+                    constraintDescriptor.type() ) );
+        }
+
+        constraintDescriptor.schema().processWith( new SchemaDescriptorSerializer( target ) );
+    }
+
+    /**
+     * Compute the byte size needed to serialize the provided IndexRule using serialize.
+     * @param indexRule the IndexRule
+     * @return the byte size of indexRule
+     */
+    public static int lengthOf( IndexRule indexRule )
+    {
+        int length = 1; // schema rule type
+
+        SchemaIndexProvider.Descriptor providerDescriptor = indexRule.getProviderDescriptor();
+        length += UTF8.computeRequiredByteBufferSize( providerDescriptor.getKey() );
+        length += UTF8.computeRequiredByteBufferSize( providerDescriptor.getVersion() );
+
+        length += 1; // index type
+        NewIndexDescriptor indexDescriptor = indexRule.getIndexDescriptor();
+        switch ( indexDescriptor.type() )
+        {
+        case UNIQUE:
+            length += 8; // owning constraint id
+        }
+
+        length += schemaSizeComputer.compute( indexDescriptor.schema() );
+        return length;
+    }
+
+    /**
+     * Compute the byte size needed to serialize the provided ConstraintRule using serialize.
+     * @param constraintRule the ConstraintRule
+     * @return the byte size of ConstraintRule
+     */
+    public static int lengthOf( ConstraintRule constraintRule )
+    {
+        int length = 1; // schema rule type
+
+        length += 1; // constraint type
+        ConstraintDescriptor constraintDescriptor = constraintRule.getConstraintDescriptor();
+        switch ( constraintDescriptor.type() )
+        {
+        case UNIQUE:
+            length += 8; // owned index id
+        }
+
+        length += schemaSizeComputer.compute( constraintDescriptor.schema() );
+        return length;
+    }
+
+    // PRIVATE
+
+    // READ INDEX
+
+    private static IndexRule readIndexRule( long id, ByteBuffer source ) throws MalformedSchemaRuleException
+    {
+        SchemaIndexProvider.Descriptor indexProvider = readIndexProviderDescriptor( source );
+        byte indexRuleType = source.get();
+        switch ( indexRuleType )
+        {
+        case GENERAL_INDEX:
+            return IndexRule.indexRule(
+                    id,
+                    NewIndexDescriptorFactory.forSchema( readLabelSchema( source ) ),
+                    indexProvider
+                );
+
+        case UNIQUE_INDEX:
+            long owningConstraint = source.getLong();
+            return IndexRule.constraintIndexRule(
+                    id,
+                    NewIndexDescriptorFactory.uniqueForSchema( readLabelSchema( source ) ),
+                    indexProvider,
+                    owningConstraint
+                );
+        }
+
+        throw new MalformedSchemaRuleException( format( "Got unknown index rule type '%d'.", indexRuleType ) );
+    }
+
+    private static LabelSchemaDescriptor readLabelSchema( ByteBuffer source ) throws MalformedSchemaRuleException
+    {
+        SchemaDescriptor schemaDescriptor = readSchema( source );
+        if ( !(schemaDescriptor instanceof LabelSchemaDescriptor) )
+        {
+            throw new MalformedSchemaRuleException( "IndexRules must have LabelSchemaDescriptors, got " +
+                    ""+schemaDescriptor.getClass().getSimpleName() );
+        }
+        return (LabelSchemaDescriptor)schemaDescriptor;
+    }
+
+    private static SchemaIndexProvider.Descriptor readIndexProviderDescriptor( ByteBuffer source )
+    {
+        String providerKey = getDecodedStringFrom( source );
+        String providerVersion = getDecodedStringFrom( source );
+        return new SchemaIndexProvider.Descriptor( providerKey, providerVersion );
+    }
+
+    // READ CONSTRAINT
+
+    private static ConstraintRule readConstraintRule( long id, ByteBuffer source ) throws MalformedSchemaRuleException
+    {
+        byte constraintRuleType = source.get();
+        switch ( constraintRuleType )
+        {
+        case EXISTS_CONSTRAINT:
+            return ConstraintRule.constraintRule(
+                    id,
+                    ConstraintDescriptorFactory.existsForSchema( readSchema( source ) )
+            );
+
+        case UNIQUE_CONSTRAINT:
+            long ownedIndex = source.getLong();
+            return ConstraintRule.constraintRule(
+                    id,
+                    ConstraintDescriptorFactory.uniqueForSchema( readSchema( source ) ),
+                    ownedIndex
+            );
+        }
+
+        throw new MalformedSchemaRuleException( format( "Got unknown constraint rule type '%d'.", constraintRuleType ) );
+    }
+
+    // READ HELP
+
+    private static SchemaDescriptor readSchema( ByteBuffer source )
+    {
+        byte schemaDescriptorType = source.get();
+        switch ( schemaDescriptorType )
+        {
+        case SIMPLE_LABEL:
+            return SchemaDescriptorFactory.forLabel( source.getInt(), readPropertyIds( source ) );
+        case SIMPLE_REL_TYPE:
+            return SchemaDescriptorFactory.forRelType( source.getInt(), readPropertyIds( source ) );
+        default:
+            throw new UnsupportedOperationException( format( "Got unknown schema descriptor type '%d'.",
+                    schemaDescriptorType ) );
+        }
+    }
+
+    private static int[] readPropertyIds( ByteBuffer source )
+    {
+        short numProperties = source.getShort();
+        int[] propertyIds = new int[numProperties];
+        for ( int i = 0; i < numProperties; i++ )
+        {
+            propertyIds[i] = source.getInt();
+        }
+        return propertyIds;
+    }
+
+    // WRITE
 
     private static class SchemaDescriptorSerializer implements SchemaProcessor
     {
@@ -202,4 +336,27 @@ public class SchemaRuleSerialization
             }
         }
     }
+
+    // LENGTH OF
+
+    private static SchemaComputer<Integer> schemaSizeComputer = new SchemaComputer<Integer>()
+    {
+        @Override
+        public Integer computeSpecific( LabelSchemaDescriptor schema )
+        {
+            return     1 // schema descriptor type
+                     + 4 // label id
+                     + 2 // property id count
+                     + 4 * schema.getPropertyIds().length; // the actual property ids
+        }
+
+        @Override
+        public Integer computeSpecific( RelationTypeSchemaDescriptor schema )
+        {
+            return    1 // schema descriptor type
+                    + 4 // rel type id
+                    + 2 // property id count
+                    + 4 * schema.getPropertyIds().length; // the actual property ids
+        }
+    };
 }
