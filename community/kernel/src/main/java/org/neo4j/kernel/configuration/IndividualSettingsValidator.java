@@ -29,7 +29,6 @@ import javax.annotation.Nonnull;
 
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.SettingValidator;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.logging.Log;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.strict_config_validation;
@@ -57,10 +56,16 @@ public class IndividualSettingsValidator implements ConfigurationValidator
     @Nonnull
     public Map<String,String> validate( @Nonnull Collection<SettingValidator> settingValidators,
             @Nonnull Map<String,String> rawConfig,
-            @Nonnull Log log ) throws InvalidSettingException
+            @Nonnull Log log, boolean parsingFile ) throws InvalidSettingException
     {
         Map<String,String> validConfig = settingValidators.stream()
-                .map( it -> it.validate( rawConfig ) )
+                .map( it -> it.validate( rawConfig, msg ->
+                {
+                    if ( parsingFile )
+                    {
+                        log.warn( msg );
+                    }
+                } ) )
                 .flatMap( map -> map.entrySet().stream() )
                 .collect( Collectors.toMap( Entry::getKey, Entry::getValue ) );
 

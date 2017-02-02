@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.configuration;
 
+import java.util.function.Consumer;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -26,10 +28,13 @@ import org.junit.rules.ExpectedException;
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.kernel.configuration.HttpConnector.Encryption;
 
-import static java.util.Collections.emptyMap;
+import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.configuration.Connector.ConnectorType.HTTP;
+import static org.neo4j.kernel.configuration.ConnectorValidator.DEPRECATED_CONNECTOR_MSG;
 
 public class HttpConnectorValidatorTest
 {
@@ -38,11 +43,13 @@ public class HttpConnectorValidatorTest
     @Rule
     public ExpectedException expected = ExpectedException.none();
 
+    Consumer<String> warningConsumer = mock( Consumer.class );
+
     @Test
     public void doesNotValidateUnrelatedStuff() throws Exception
     {
         assertEquals( 0, cv.validate( stringMap( "dbms.connector.bolt.enabled", "true",
-                "dbms.blabla.boo", "123" ) ).size() );
+                "dbms.blabla.boo", "123" ), warningConsumer ).size() );
     }
 
     @Test
@@ -52,10 +59,10 @@ public class HttpConnectorValidatorTest
         String httpsEnabled = "dbms.connector.https.enabled";
 
         assertEquals( stringMap( httpEnabled, "true" ),
-                cv.validate( stringMap( httpEnabled, "true" ) ) );
+                cv.validate( stringMap( httpEnabled, "true" ), warningConsumer ) );
 
         assertEquals( stringMap( httpsEnabled, "true" ),
-                cv.validate( stringMap( httpsEnabled, "true" ) ) );
+                cv.validate( stringMap( httpsEnabled, "true" ), warningConsumer ) );
     }
 
     @Test
@@ -65,12 +72,25 @@ public class HttpConnectorValidatorTest
         String randomType = "dbms.connector.bla.type";
 
         assertEquals( stringMap( randomEnabled, "true", randomType, HTTP.name() ),
-                cv.validate( stringMap( randomEnabled, "true", randomType, HTTP.name() ) ) );
+                cv.validate( stringMap( randomEnabled, "true", randomType, HTTP.name() ), warningConsumer ) );
 
         expected.expect( InvalidSettingException.class );
         expected.expectMessage( "Missing mandatory value for 'dbms.connector.bla.type'" );
 
-        cv.validate( stringMap( randomEnabled, "true" ) );
+        cv.validate( stringMap( randomEnabled, "true" ), warningConsumer );
+    }
+
+    @Test
+    public void warnsWhenNameIsNotHttpOrHttps() throws Exception
+    {
+        String randomEnabled = "dbms.connector.bla.enabled";
+        String randomType = "dbms.connector.bla.type";
+
+        cv.validate( stringMap( randomEnabled, "true", randomType, "HTTP" ), warningConsumer );
+
+        verify( warningConsumer ).accept(
+                format( DEPRECATED_CONNECTOR_MSG,
+                        format( ">  %s%n>  %s%n", randomEnabled, randomType ) ) );
     }
 
     @Test
@@ -81,7 +101,7 @@ public class HttpConnectorValidatorTest
         expected.expect( InvalidSettingException.class );
         expected.expectMessage( "Invalid connector setting: dbms.connector.bla.0.enabled" );
 
-        cv.validate( stringMap( invalidSetting, "true" ) );
+        cv.validate( stringMap( invalidSetting, "true" ), warningConsumer );
     }
 
     @Test
@@ -92,7 +112,7 @@ public class HttpConnectorValidatorTest
         expected.expect( InvalidSettingException.class );
         expected.expectMessage( "Invalid connector setting: dbms.connector.http.foobar" );
 
-        cv.validate( stringMap( invalidSetting, "true" ) );
+        cv.validate( stringMap( invalidSetting, "true" ), warningConsumer );
     }
 
     @Test
@@ -103,18 +123,18 @@ public class HttpConnectorValidatorTest
 
         assertEquals( stringMap( key, Encryption.NONE.name(),
                 type, HTTP.name() ),
-                cv.validate( stringMap( key, Encryption.NONE.name(), type, HTTP.name() ) ) );
+                cv.validate( stringMap( key, Encryption.NONE.name(), type, HTTP.name() ), warningConsumer ) );
 
         assertEquals( stringMap( key, Encryption.TLS.name(),
                 type, HTTP.name() ),
-                cv.validate( stringMap( key, Encryption.TLS.name(), type, HTTP.name() ) ) );
+                cv.validate( stringMap( key, Encryption.TLS.name(), type, HTTP.name() ), warningConsumer ) );
 
         expected.expect( InvalidSettingException.class );
         expected.expectMessage(
                 "Bad value 'BOBO' for setting 'dbms.connector.bla.encryption': must be one of [NONE, TLS] case " +
                         "sensitive" );
 
-        cv.validate( stringMap( key, "BOBO", type, HTTP.name() ) );
+        cv.validate( stringMap( key, "BOBO", type, HTTP.name() ), warningConsumer );
     }
 
     @Test
@@ -123,12 +143,12 @@ public class HttpConnectorValidatorTest
         String key = "dbms.connector.https.encryption";
 
         assertEquals( stringMap( key, Encryption.TLS.name() ),
-                cv.validate( stringMap( key, Encryption.TLS.name() ) ) );
+                cv.validate( stringMap( key, Encryption.TLS.name() ), warningConsumer ) );
 
         expected.expect( InvalidSettingException.class );
         expected.expectMessage(
                 "'dbms.connector.https.encryption' is only allowed to be 'TLS'; not 'NONE'" );
-        cv.validate( stringMap( key, Encryption.NONE.name() ) );
+        cv.validate( stringMap( key, Encryption.NONE.name() ), warningConsumer );
     }
 
     @Test
@@ -137,12 +157,12 @@ public class HttpConnectorValidatorTest
         String key = "dbms.connector.http.encryption";
 
         assertEquals( stringMap( key, Encryption.NONE.name() ),
-                cv.validate( stringMap( key, Encryption.NONE.name() ) ) );
+                cv.validate( stringMap( key, Encryption.NONE.name() ), warningConsumer ) );
 
         expected.expect( InvalidSettingException.class );
         expected.expectMessage(
                 "'dbms.connector.http.encryption' is only allowed to be 'NONE'; not 'TLS'" );
-        cv.validate( stringMap( key, Encryption.TLS.name() ) );
+        cv.validate( stringMap( key, Encryption.TLS.name() ), warningConsumer );
     }
 
     @Test
@@ -151,24 +171,24 @@ public class HttpConnectorValidatorTest
         String key = "dbms.connector.http.address";
 
         assertEquals( stringMap( key, "localhost:123" ),
-                cv.validate( stringMap( key, "localhost:123" ) ) );
+                cv.validate( stringMap( key, "localhost:123" ), warningConsumer ) );
 
         key = "dbms.connector.bla.address";
         String type = "dbms.connector.bla.type";
 
         assertEquals( stringMap( key, "localhost:123",
                 type, HTTP.name() ),
-                cv.validate( stringMap( key, "localhost:123", type, HTTP.name() ) ) );
+                cv.validate( stringMap( key, "localhost:123", type, HTTP.name() ), warningConsumer ) );
 
         assertEquals( stringMap( key, "localhost:123",
                 type, HTTP.name() ),
-                cv.validate( stringMap( key, "localhost:123", type, HTTP.name() ) ) );
+                cv.validate( stringMap( key, "localhost:123", type, HTTP.name() ), warningConsumer ) );
 
         expected.expect( InvalidSettingException.class );
         expected.expectMessage( "Setting \"dbms.connector.bla.address\" must be in the format \"hostname:port\" or " +
                 "\":port\". \"BOBO\" does not conform to these formats" );
 
-        cv.validate( stringMap( key, "BOBO", type, HTTP.name() ) );
+        cv.validate( stringMap( key, "BOBO", type, HTTP.name() ), warningConsumer );
     }
 
     @Test
@@ -177,24 +197,24 @@ public class HttpConnectorValidatorTest
         String key = "dbms.connector.http.listen_address";
 
         assertEquals( stringMap( key, "localhost:123" ),
-                cv.validate( stringMap( key, "localhost:123" ) ) );
+                cv.validate( stringMap( key, "localhost:123" ), warningConsumer ) );
 
         key = "dbms.connector.bla.listen_address";
         String type = "dbms.connector.bla.type";
 
         assertEquals( stringMap( key, "localhost:123",
                 type, HTTP.name() ),
-                cv.validate( stringMap( key, "localhost:123", type, HTTP.name() ) ) );
+                cv.validate( stringMap( key, "localhost:123", type, HTTP.name() ), warningConsumer ) );
 
         assertEquals( stringMap( key, "localhost:123",
                 type, HTTP.name() ),
-                cv.validate( stringMap( key, "localhost:123", type, HTTP.name() ) ) );
+                cv.validate( stringMap( key, "localhost:123", type, HTTP.name() ), warningConsumer ) );
 
         expected.expect( InvalidSettingException.class );
         expected.expectMessage( "Setting \"dbms.connector.bla.listen_address\" must be in the format " +
                 "\"hostname:port\" or \":port\". \"BOBO\" does not conform to these formats" );
 
-        cv.validate( stringMap( key, "BOBO", type, HTTP.name() ) );
+        cv.validate( stringMap( key, "BOBO", type, HTTP.name() ), warningConsumer );
     }
 
     @Test
@@ -203,24 +223,24 @@ public class HttpConnectorValidatorTest
         String key = "dbms.connector.http.advertised_address";
 
         assertEquals( stringMap( key, "localhost:123" ),
-                cv.validate( stringMap( key, "localhost:123" ) ) );
+                cv.validate( stringMap( key, "localhost:123" ), warningConsumer ) );
 
         key = "dbms.connector.bla.advertised_address";
         String type = "dbms.connector.bla.type";
 
         assertEquals( stringMap( key, "localhost:123",
                 type, HTTP.name() ),
-                cv.validate( stringMap( key, "localhost:123", type, HTTP.name() ) ) );
+                cv.validate( stringMap( key, "localhost:123", type, HTTP.name() ), warningConsumer ) );
 
         assertEquals( stringMap( key, "localhost:123",
                 type, HTTP.name() ),
-                cv.validate( stringMap( key, "localhost:123", type, HTTP.name() ) ) );
+                cv.validate( stringMap( key, "localhost:123", type, HTTP.name() ), warningConsumer ) );
 
         expected.expect( InvalidSettingException.class );
         expected.expectMessage( "Setting \"dbms.connector.bla.advertised_address\" must be in the format " +
                 "\"hostname:port\" or \":port\". \"BOBO\" does not conform to these formats" );
 
-        cv.validate( stringMap( key, "BOBO", type, HTTP.name() ) );
+        cv.validate( stringMap( key, "BOBO", type, HTTP.name() ), warningConsumer );
     }
 
     @Test
@@ -231,6 +251,6 @@ public class HttpConnectorValidatorTest
         expected.expect( InvalidSettingException.class );
         expected.expectMessage( "'dbms.connector.bla.type' must be one of BOLT, HTTP; not 'BOBO'" );
 
-        cv.validate( stringMap( type, "BOBO" ) );
+        cv.validate( stringMap( type, "BOBO" ), warningConsumer );
     }
 }

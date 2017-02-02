@@ -62,7 +62,7 @@ public class IndividualSettingsValidatorTest
 
         final Map<String,String> result = iv.validate( singletonList( strict_config_validation ),
                 fullConfig,
-                log );
+                log, false );
 
         assertEquals( fullConfig, result );
         verify( log ).warn( "Unknown config option: %s", "dbms.jibber.jabber" );
@@ -84,7 +84,7 @@ public class IndividualSettingsValidatorTest
 
         iv.validate( singletonList( strict_config_validation ),
                 fullConfig,
-                log );
+                log, false );
     }
 
     @Test
@@ -97,7 +97,7 @@ public class IndividualSettingsValidatorTest
 
         final Map<String,String> result = iv.validate( singletonList( strict_config_validation ),
                 fullConfig,
-                log );
+                log, false );
 
         assertEquals( fullConfig, result );
         verifyNoMoreInteractions( log );

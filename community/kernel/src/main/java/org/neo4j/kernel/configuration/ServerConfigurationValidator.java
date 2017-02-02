@@ -45,7 +45,7 @@ public class ServerConfigurationValidator implements ConfigurationValidator
     @Nonnull
     public Map<String,String> validate( @Nonnull Collection<SettingValidator> settingValidators,
             @Nonnull Map<String,String> rawConfig,
-            @Nonnull Log log ) throws InvalidSettingException
+            @Nonnull Log log, boolean parsingFile ) throws InvalidSettingException
     {
         Pattern pattern = Pattern.compile(
                 Pattern.quote( "dbms.connector." ) + "([^\\.]+)\\.(.+)" );
