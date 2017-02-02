@@ -24,9 +24,9 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.util.Arrays;
+import java.util.HashMap;
 
 import org.neo4j.cypher.internal.frontend.v3_2.IncomparableValuesException;
-import org.neo4j.kernel.impl.api.PropertyValueComparison;
 
 import static java.lang.String.format;
 
@@ -38,23 +38,43 @@ public class CompiledOrderabilityUtilsTest
     @Rule
     public ExpectedException thrown = ExpectedException.none();
 
-    // TODO add acceptance tests too
-
     public static Object[] values = new Object[]{
-            // OTHER
-            PropertyValueComparison.LOWEST_OBJECT,
-            new Object(),
+            // MAP
+            new HashMap<Long,Long>(),
+
+            // NODE
+            new NodeIdWrapper( 1 ),
+            //new NodeIdWrapper( 2 ), TODO: FIXME
+
+            // RELATIONSHIP
+            new RelationshipIdWrapper( 1 ),
+            //new RelationshipIdWrapper( 2 ), TODO: FIXME
+
+            // LIST
+            new String[]{"foo"},
             new Object[]{1, "foo"},
             new Object[]{1, "foo", 3},
             new Object[]{1, true, "car"},
             new Object[]{1, 2, "bar"},
             new Object[]{1, 2, "car"},
-            new int[]{1, 2, 3},
+            new int[]   {1, 2, 3},
+            new Object[]{1,  2, 3L, Double.NEGATIVE_INFINITY},
+            new long[]  {1,  2, 3,  Long.MIN_VALUE},
+            new int[]   {1,  2, 3,  Integer.MIN_VALUE},
+            new Object[]{1L, 2, 3,  Double.NaN},
+            new Object[]{1L, 2, 3,  new NodeIdWrapper(-1)},
+            new int[]   {2},
+            new Object[]{new RelationshipIdWrapper(-1)},
+
+            // TODO: PATH
+
             // STRING
             "",
             Character.MIN_VALUE,
             " ",
             "20",
+            "X",
+            "Y",
             "x",
             "y",
             Character.MIN_HIGH_SURROGATE,
@@ -96,7 +116,10 @@ public class CompiledOrderabilityUtilsTest
             Float.MAX_VALUE,
             Double.MAX_VALUE,
             Double.POSITIVE_INFINITY,
-            Double.NaN
+            Double.NaN,
+
+            // VOID
+            null,
     };
 
     @Test
@@ -126,6 +149,11 @@ public class CompiledOrderabilityUtilsTest
 
     private String toString( Object o )
     {
+        if ( o == null )
+        {
+            return "null";
+        }
+
         Class clazz = o.getClass();
         if ( clazz.equals( Object[].class ) )
         {

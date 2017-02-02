@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
 
+import org.neo4j.cypher.UnorderableValueException;
 import org.neo4j.cypher.internal.frontend.v3_2.IncomparableValuesException;
 import org.neo4j.graphdb.Path;
 import org.neo4j.helpers.MathUtil;
@@ -130,7 +131,7 @@ public class CompiledOrderabilityUtils
         STRING( 5, STRING_COMPARATOR ),
         BOOLEAN( 6, BOOLEAN_COMPARATOR ),
         NUMBER( 7, NUMBER_COMPARATOR ),
-        VOID( 8, FALLBACK_COMPARATOR /*TODO*/ );
+        VOID( 8, VOID_COMPARATOR );
 
         public final int typeId;
         public final Comparator comparator;
@@ -170,17 +171,25 @@ public class CompiledOrderabilityUtils
             }
             else if ( value instanceof NodeIdWrapper )
             {
+                if ( ((NodeIdWrapper) value).id() == -1 )
+                {
+                    return VOID;
+                }
                 return NODE;
             }
             else if ( value instanceof RelationshipIdWrapper )
             {
+                if ( ((RelationshipIdWrapper) value).id() == -1 )
+                {
+                    return VOID;
+                }
                 return RELATIONSHIP;
             }
             else if ( value instanceof Path )
             {
                 return PATH;
             }
-            return VOID;
+            throw new UnorderableValueException( value.getClass().getSimpleName() );
         }
 
         public static Comparator<SuperType> TYPE_ID_COMPARATOR = new Comparator<SuperType>()
@@ -212,12 +221,21 @@ public class CompiledOrderabilityUtils
         }
     };
 
+    private static Comparator VOID_COMPARATOR = new Comparator<Object>()
+    {
+        @Override
+        public int compare( Object lhs, Object rhs )
+        {
+            return 0;
+        }
+    };
+
     private static Comparator NUMBER_COMPARATOR = new Comparator<Number>()
     {
         @Override
         public int compare( Number lhs, Number rhs )
         {
-            //if floats compare float values if integer types, compare long values
+            // If floats, compare float values. If integer types, compare long values
             if ( lhs instanceof Double && rhs instanceof Float )
             {
                 return ((Double) lhs).compareTo( rhs.doubleValue() );
@@ -244,7 +262,7 @@ public class CompiledOrderabilityUtils
             {
                 return -MathUtil.compareDoubleAgainstLong( rhs.doubleValue(), lhs.longValue() );
             }
-            //everything else is a long from cyphers point-of-view
+            // Everything else is a long from Cypher's point-of-view
             return Long.compare( lhs.longValue(), rhs.longValue() );
         }
     };
@@ -334,8 +352,7 @@ public class CompiledOrderabilityUtils
             }
             else
             {
-                // TODO which exception to throw here?
-                throw new RuntimeException( format( "Can not convert to iterator: %s", clazz.getName() ) );
+                throw new UnsupportedOperationException( format( "Can not convert to iterator: %s", clazz.getName() ) );
             }
         }
     };
