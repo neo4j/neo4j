@@ -35,6 +35,7 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.graphdb.impl.notification.NotificationCode.CREATE_UNIQUE_UNAVAILABLE_FALLBACK;
 import static org.neo4j.graphdb.impl.notification.NotificationCode.RULE_PLANNER_UNAVAILABLE_FALLBACK;
 
 public class NotificationAcceptanceTest
@@ -85,6 +86,50 @@ public class NotificationAcceptanceTest
             Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
             assertThat( arguments.get( "version" ), equalTo( version ) );
             assertThat( arguments.get( "planner" ), equalTo( "RULE" ) );
+            result.close();
+        });
+    }
+
+    @Test
+    public void shouldNotifyWhenUsingCreateUniqueWhenCypherVersionIsDefault() throws Exception
+    {
+        // when
+        Result result = db().execute( "MATCH (b) WITH b LIMIT 1 CREATE UNIQUE (b)-[:REL]->()" );
+        InputPosition position = new InputPosition( 25, 1, 26 );
+
+        // then
+        assertThat( result.getNotifications(), contains( CREATE_UNIQUE_UNAVAILABLE_FALLBACK.notification( position ) ) );
+        Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
+        assertThat( arguments.get( "version" ), equalTo( "CYPHER 3.1" ) );
+        result.close();
+    }
+
+    @Test
+    public void shouldNotifyWhenUsingCreateUniqueWhenCypherVersionIs3_2() throws Exception
+    {
+        // when
+        Result result = db().execute( "CYPHER 3.2 MATCH (b) WITH b LIMIT 1 CREATE UNIQUE (b)-[:REL]->()" );
+        InputPosition position = new InputPosition( 36, 1, 37 );
+
+        // then
+        assertThat( result.getNotifications(), contains( CREATE_UNIQUE_UNAVAILABLE_FALLBACK.notification( position ) ) );
+        Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
+        assertThat( arguments.get( "version" ), equalTo( "CYPHER 3.1" ) );
+        result.close();
+    }
+
+    @Test
+    public void shouldNotNotifyWhenUsingCreateUniqueWhenCypherVersionIsNot3_2() throws Exception
+    {
+        Stream.of( "CYPHER 3.1", "CYPHER 2.3" ).forEach( version ->
+        {
+            // when
+            Result result = db().execute( version + " MATCH (b) WITH b LIMIT 1 CREATE UNIQUE (b)-[:REL]->()" );
+
+            // then
+            assertThat( Iterables.asList( result.getNotifications() ), empty() );
+            Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
+            assertThat( arguments.get( "version" ), equalTo( version ) );
             result.close();
         });
     }

@@ -220,13 +220,6 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
     )
   }
 
-  test("should fail when using CREATE UNIQUE") {
-    executeAndEnsureError(
-      "match (a), (b) create unique (a)-[:T]->(b)",
-      "CREATE UNIQUE is no longer supported. You can achieve the same result using MERGE (line 1, column 16 (offset: 15))"
-    )
-  }
-
   test("should fail when reduce used with wrong separator") {
     executeAndEnsureError("""MATCH topRoute = (s)<-[:CONNECTED_TO*1..3]-(e)
                             |WHERE id(s) = 1 AND id(e) = 2

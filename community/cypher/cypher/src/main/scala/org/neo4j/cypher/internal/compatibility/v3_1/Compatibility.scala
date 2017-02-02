@@ -60,15 +60,13 @@ trait Compatibility {
   def produceParsedQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer,
                          preParsingNotifications: Set[org.neo4j.graphdb.Notification]): ParsedQuery = {
       val notificationLogger = new RecordingNotificationLogger
-      val preparedSyntacticQueryForV_3_1 =
+      val preparedSyntacticQueryForV_3_1: Try[PreparedQuerySyntax] =
       Try(compiler.prepareSyntacticQuery(preParsedQuery.statement,
         preParsedQuery.rawStatement,
         notificationLogger,
         preParsedQuery.planner.name,
         Some(as3_1(preParsedQuery.offset)), tracer))
     new ParsedQuery {
-      override def isPeriodicCommit: Boolean = preparedSyntacticQueryForV_3_1.map(_.isPeriodicCommit).getOrElse(false)
-
       override def plan(transactionalContext: TransactionalContextWrapperV3_2, tracer: v3_2.CompilationPhaseTracer):
         (ExecutionPlan, Map[String, Any]) =
         exceptionHandler.runSafely {
@@ -83,7 +81,7 @@ trait Compatibility {
           (new ExecutionPlanWrapper(planImpl, preParsingNotifications), extractedParameters)
         }
 
-      override def hasErrors: Boolean = preparedSyntacticQueryForV_3_1.isFailure
+      override protected val trier: Try[PreparedQuerySyntax] = preparedSyntacticQueryForV_3_1
     }
   }
 

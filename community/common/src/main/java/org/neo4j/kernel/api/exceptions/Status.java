@@ -276,7 +276,10 @@ public interface Status
         UnknownRelationshipTypeWarning( ClientNotification,
                 "The provided relationship type is not in the database." ),
         UnknownPropertyKeyWarning( ClientNotification,
-                "The provided property key is not in the database" );
+                "The provided property key is not in the database" ),
+        CreateUniqueUnavailableWarning( ClientNotification,
+                "CREATE UNIQUE is not available in the current CYPHER version, the query has been run by an older " +
+                "CYPHER version." );
 
         private final Code code;
 

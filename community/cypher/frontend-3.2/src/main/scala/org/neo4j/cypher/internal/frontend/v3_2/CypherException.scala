@@ -116,12 +116,13 @@ class LoadCsvStatusWrapCypherException(extraInfo: String, cause: CypherException
     mapper.loadCsvStatusWrapCypherException(extraInfo, cause)
 }
 
-class SyntaxException(message: String, val query: String, val offset: Option[Int]) extends CypherException(message) {
-  def this(message: String, query: String, offset: Int) = this(message, query, Some(offset))
+class SyntaxException(message: String, val query: String, val pos: Option[InputPosition]) extends CypherException(message) {
+  def this(message: String, query: String, offset: InputPosition) = this(message, query, Some(offset))
 
   def this(message: String) = this(message, "", None)
 
-  def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) = mapper.syntaxException(message, query, offset, this)
+  def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) =
+    mapper.syntaxException(message, query, pos.map(_.offset), this)
 }
 
 class CypherExecutionException(message: String, cause: Throwable) extends CypherException(message, cause) {

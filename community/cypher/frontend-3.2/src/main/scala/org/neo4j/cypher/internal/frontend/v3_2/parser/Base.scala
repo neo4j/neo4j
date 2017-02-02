@@ -139,7 +139,7 @@ trait Base extends Parser {
 
           val bufferPosition = BufferPosition(error.getInputBuffer, error.getStartIndex)
           val position = bufferPosition.withOffset(initialOffset)
-          throw new SyntaxException(s"$message ($position)", input, position.offset)
+          throw new SyntaxException(s"$message ($position)", input, position)
         }
 
         throw new InternalException("Parsing failed but no parse errors were provided")
