@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters
 
-import org.neo4j.cypher.internal.compiler.v3_2.helpers.AggregationNameGenerator
 import org.neo4j.cypher.internal.frontend.v3_2.Foldable._
 import org.neo4j.cypher.internal.frontend.v3_2.Rewritable._
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.fixedPoint
 import org.neo4j.cypher.internal.frontend.v3_2.{Rewriter, bottomUp}
+import org.neo4j.cypher.internal.ir.v3_2.AggregationNameGenerator
 
 /**
   * This rewriter makes sure that aggregations are on their own in RETURN/WITH clauses, so

@@ -17,15 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_2.planner
+package org.neo4j.cypher.internal.ir.v3_2
 
-import org.neo4j.cypher.internal.compiler.v3_2.ast.ResolvedCall
-import org.neo4j.cypher.internal.compiler.v3_2.spi.ProcedureReadOnlyAccess
 import org.neo4j.cypher.internal.frontend.v3_2.InternalException
-import org.neo4j.cypher.internal.frontend.v3_2.ast._
-import org.neo4j.cypher.internal.ir.v3_2.{CSVFormat, _}
+import org.neo4j.cypher.internal.frontend.v3_2.ast.{AliasedReturnItem, Expression, StringLiteral, Variable}
 
-sealed trait QueryHorizon {
+trait QueryHorizon {
 
   def exposedSymbols(coveredIds: Set[IdName]): Set[IdName]
 
@@ -37,6 +34,30 @@ sealed trait QueryHorizon {
     case id: Variable =>
       acc => (acc + IdName(id.name), Some(identity))
   }
+}
+
+final case class PassthroughAllHorizon() extends QueryHorizon {
+  override def exposedSymbols(coveredIds: Set[IdName]): Set[IdName] = coveredIds
+
+  override def dependingExpressions = Seq.empty
+
+  override def preferredStrictness = None
+}
+
+case class UnwindProjection(variable: IdName, exp: Expression) extends QueryHorizon {
+  override def exposedSymbols(coveredIds: Set[IdName]): Set[IdName] = coveredIds + variable
+
+  override def dependingExpressions = Seq(exp)
+
+  override def preferredStrictness = None
+}
+
+case class LoadCSVProjection(variable: IdName, url: Expression, format: CSVFormat, fieldTerminator: Option[StringLiteral]) extends QueryHorizon {
+  override def exposedSymbols(coveredIds: Set[IdName]): Set[IdName] = coveredIds + variable
+
+  override def dependingExpressions = Seq(url)
+
+  override def preferredStrictness = None
 }
 
 sealed abstract class QueryProjection extends QueryHorizon {
@@ -67,14 +88,6 @@ object QueryProjection {
     case _ =>
       throw new InternalException("Aggregations cannot be combined")
   }
-}
-
-final case class PassthroughAllHorizon() extends QueryHorizon {
-  override def exposedSymbols(coveredIds: Set[IdName]): Set[IdName] = coveredIds
-
-  override def dependingExpressions = Seq.empty
-
-  override def preferredStrictness = None
 }
 
 final case class RegularQueryProjection(projections: Map[String, Expression] = Map.empty,
@@ -123,31 +136,4 @@ final case class AggregatingQueryProjection(groupingKeys: Map[String, Expression
     copy(shuffle = shuffle)
 
   override def exposedSymbols(coveredIds: Set[IdName]): Set[IdName] = (groupingKeys.keys ++  aggregationExpressions.keys).map(IdName.apply).toSet
-}
-
-case class UnwindProjection(variable: IdName, exp: Expression) extends QueryHorizon {
-  override def exposedSymbols(coveredIds: Set[IdName]): Set[IdName] = coveredIds + variable
-
-  override def dependingExpressions = Seq(exp)
-
-  override def preferredStrictness = None
-}
-
-case class ProcedureCallProjection(call: ResolvedCall) extends QueryHorizon {
-  override def exposedSymbols(coveredIds: Set[IdName]): Set[IdName] = coveredIds ++ call.callResults.map { result => IdName.fromVariable(result.variable) }
-
-  override def dependingExpressions = call.callArguments
-
-  override def preferredStrictness = call.signature.accessMode match {
-    case _:ProcedureReadOnlyAccess => Some(LazyMode)
-    case _ => Some(EagerMode)
-  }
-}
-
-case class LoadCSVProjection(variable: IdName, url: Expression, format: CSVFormat, fieldTerminator: Option[StringLiteral]) extends QueryHorizon {
-  override def exposedSymbols(coveredIds: Set[IdName]): Set[IdName] = coveredIds + variable
-
-  override def dependingExpressions = Seq(url)
-
-  override def preferredStrictness = None
 }
