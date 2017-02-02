@@ -61,13 +61,13 @@ case class Pretty(preserveColumnNames: Boolean) extends PrettyPrinter {
      maybe(periodicCommitHint, (pc: PeriodicCommitHint) => periodicCommit(pc) <> space) <> show(part)
 
     case CreateIndex(l, p) =>
-      "CREATE INDEX ON" <+> group(show(l) <> parens(show(p)))
+      "CREATE INDEX ON" <+> group(show(l) <> parens(hlist(p.map(show), comma)))
 
     case CreateUniquePropertyConstraint(v, l, p) =>
       "CREATE CONSTRAINT ON" <+> parens(expr(v) <> show(l)) <+> group("ASSERT" <+> expr(p) <+> "IS UNIQUE")
 
     case DropIndex(l, p) =>
-      "DROP INDEX ON" <+> group(show(l) <> parens(show(p)))
+      "DROP INDEX ON" <+> group(show(l) <> parens(hlist(p.map(show), comma)))
 
     case DropUniquePropertyConstraint(v, l, p) =>
       "DROP CONSTRAINT ON" <+> parens(expr(v) <> show(l)) <+> "ASSERT" <+> expr(p) <+> "IS UNIQUE"
