@@ -69,7 +69,7 @@ public class ReflectiveProcedureTest
     {
         components = new ComponentRegistry();
         procedureCompiler = new ReflectiveProcedureCompiler( new TypeMappers(), components, components,
-                NullLog.getInstance(), ProcedureAllowedConfig.DEFAULT );
+                NullLog.getInstance(), ProcedureConfig.DEFAULT );
     }
 
     @Test
@@ -276,7 +276,7 @@ public class ReflectiveProcedureTest
         // Given
         Log log = mock(Log.class);
         ReflectiveProcedureCompiler procedureCompiler = new ReflectiveProcedureCompiler( new TypeMappers(), components,
-                components, log, ProcedureAllowedConfig.DEFAULT );
+                components, log, ProcedureConfig.DEFAULT );
 
         // When
         List<CallableProcedure> procs =

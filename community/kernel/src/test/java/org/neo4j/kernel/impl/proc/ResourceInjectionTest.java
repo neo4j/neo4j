@@ -184,6 +184,6 @@ public class ResourceInjectionTest
         allComponents.register( MyUnsafeAPI.class, (ctx) -> new MyUnsafeAPI() );
 
         return new ReflectiveProcedureCompiler( new TypeMappers(), safeComponents, allComponents, NullLog.getInstance(),
-                ProcedureAllowedConfig.DEFAULT ).compileProcedure( clazz, Optional.empty(), safe );
+                ProcedureConfig.DEFAULT ).compileProcedure( clazz, Optional.empty(), safe );
     }
 }

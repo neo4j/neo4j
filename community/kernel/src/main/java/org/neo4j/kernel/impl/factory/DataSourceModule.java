@@ -63,7 +63,7 @@ import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.kernel.impl.proc.ProcedureAllowedConfig;
+import org.neo4j.kernel.impl.proc.ProcedureConfig;
 import org.neo4j.kernel.impl.proc.ProcedureGDSFactory;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.proc.TerminationGuardProvider;
@@ -350,7 +350,7 @@ public class DataSourceModule
         Procedures procedures = new Procedures(
                 new SpecialBuiltInProcedures( Version.getNeo4jVersion(),
                         platform.databaseInfo.edition.toString() ),
-                pluginDir, internalLog, new ProcedureAllowedConfig( platform.config ) );
+                pluginDir, internalLog, new ProcedureConfig( platform.config ) );
         platform.life.add( procedures );
         platform.dependencies.satisfyDependency( procedures );
 
