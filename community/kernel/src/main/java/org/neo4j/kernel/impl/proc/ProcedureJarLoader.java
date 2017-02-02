@@ -91,7 +91,7 @@ public class ProcedureJarLoader
         while ( classes.hasNext() )
         {
             Class<?> next = classes.next();
-            target.addAllProcedures( compiler.compileProcedure( next, Optional.empty() ) );
+            target.addAllProcedures( compiler.compileProcedure( next, Optional.empty(), false ) );
             target.addAllFunctions( compiler.compileFunction( next ) );
             target.addAllAggregationFunctions( compiler.compileAggregationFunction( next ) );
         }

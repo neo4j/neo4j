@@ -41,6 +41,7 @@ import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 
+@SuppressWarnings( "WeakerAccess" )
 public class ResourceInjectionTest
 {
     @Rule
@@ -50,7 +51,7 @@ public class ResourceInjectionTest
     public void shouldCompileAndRunProcedure() throws Throwable
     {
         // Given
-        CallableProcedure proc = compile( ProcedureWithInjectedAPI.class ).get( 0 );
+        CallableProcedure proc = compile( ProcedureWithInjectedAPI.class, true ).get( 0 );
 
         // Then
         List<Object[]> out = Iterators.asList( proc.apply( new BasicContext(), new Object[0] ) );
@@ -70,7 +71,36 @@ public class ResourceInjectionTest
                                  "which is not a known injectable component." );
 
         // When
-        compile( procedureWithUnknownAPI.class ).get( 0 );
+        compile( procedureWithUnknownAPI.class, true ).get( 0 );
+    }
+
+    @Test
+    public void shouldCompileAndRunUnsafeProcedureUnsafeMode() throws Throwable
+    {
+        // Given
+        CallableProcedure proc = compile( procedureWithUnsafeAPI.class, true ).get( 0 );
+
+        // Then
+        List<Object[]> out = Iterators.asList( proc.apply( new BasicContext(), new Object[0] ) );
+
+        // Then
+        assertThat( out.get( 0 ), equalTo( (new Object[]{"Morpheus"}) ) );
+        assertThat( out.get( 1 ), equalTo( (new Object[]{"Trinity"}) ) );
+        assertThat( out.get( 2 ), equalTo( (new Object[]{"Neo"}) ) );
+        assertThat( out.get( 3 ), equalTo( (new Object[]{"Emil"}) ) );
+    }
+
+    @Test
+    public void shouldFailNicelyWhenUnsafeAPISafeMode() throws Throwable
+    {
+        //Expect
+        exception.expect( ProcedureException.class );
+        exception.expectMessage( "Unable to set up injection for procedure `procedureWithUnsafeAPI`, " +
+                "the field `api` has type `class org.neo4j.kernel.impl.proc.ResourceInjectionTest$MyUnsafeAPI` " +
+                "which is not a known injectable component." );
+
+        // When
+        compile( procedureWithUnsafeAPI.class, false ).get( 0 );
     }
 
     public static class MyOutputRecord
@@ -101,6 +131,14 @@ public class ResourceInjectionTest
         }
     }
 
+    public static class MyUnsafeAPI
+    {
+        List<String> listCoolPeople()
+        {
+            return asList( "Morpheus", "Trinity", "Neo", "Emil" );
+        }
+    }
+
     public static class ProcedureWithInjectedAPI
     {
         @Context
@@ -125,11 +163,27 @@ public class ResourceInjectionTest
         }
     }
 
-    private List<CallableProcedure> compile( Class<?> clazz ) throws KernelException
+    public static class procedureWithUnsafeAPI
     {
-        ComponentRegistry components = new ComponentRegistry();
-        components.register( MyAwesomeAPI.class, (ctx) -> new MyAwesomeAPI() );
-        return new ReflectiveProcedureCompiler( new TypeMappers(), components, NullLog.getInstance(),
-                ProcedureAllowedConfig.DEFAULT ).compileProcedure( clazz, Optional.empty() );
+        @Context
+        public MyUnsafeAPI api;
+
+        @Procedure
+        public Stream<MyOutputRecord> listCoolPeople()
+        {
+            return api.listCoolPeople().stream().map( MyOutputRecord::new );
+        }
+    }
+
+    private List<CallableProcedure> compile( Class<?> clazz, boolean safe ) throws KernelException
+    {
+        ComponentRegistry safeComponents = new ComponentRegistry();
+        ComponentRegistry allComponents = new ComponentRegistry();
+        safeComponents.register( MyAwesomeAPI.class, (ctx) -> new MyAwesomeAPI() );
+        allComponents.register( MyAwesomeAPI.class, (ctx) -> new MyAwesomeAPI() );
+        allComponents.register( MyUnsafeAPI.class, (ctx) -> new MyUnsafeAPI() );
+
+        return new ReflectiveProcedureCompiler( new TypeMappers(), safeComponents, allComponents, NullLog.getInstance(),
+                ProcedureAllowedConfig.DEFAULT ).compileProcedure( clazz, Optional.empty(), safe );
     }
 }

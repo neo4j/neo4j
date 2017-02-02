@@ -59,7 +59,7 @@ public class CommunitySecurityModule extends SecurityModule
 
         dependencies.lifeSupport().add( dependencies.dependencySatisfier().satisfyDependency( authManager ) );
 
-        procedures.registerComponent( UserManager.class, ctx -> authManager );
+        procedures.registerComponent( UserManager.class, ctx -> authManager, false );
         procedures.registerProcedure( AuthProcedures.class );
     }
 
