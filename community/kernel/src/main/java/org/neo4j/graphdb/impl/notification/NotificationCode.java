@@ -108,6 +108,11 @@ public enum NotificationCode
             Status.Statement.FeatureDeprecationWarning,
             "The query used a deprecated procedure."
     ),
+    PROCEDURE_WARNING(
+            SeverityLevel.WARNING,
+            Status.Procedure.ProcedureWarning,
+            "The query used a procedure that generated a warning."
+    ),
     EAGER_LOAD_CSV(
         SeverityLevel.WARNING,
         Status.Statement.EagerOperatorWarning,

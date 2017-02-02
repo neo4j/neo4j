@@ -27,7 +27,8 @@ case class ProcedureSignature(name: QualifiedName,
                               outputSignature: Option[IndexedSeq[FieldSignature]],
                               deprecationInfo: Option[String],
                               accessMode: ProcedureAccessMode,
-                              description: Option[String] = None) {
+                              description: Option[String] = None,
+                              warning: Option[String] = None) {
 
   def outputFields = outputSignature.getOrElse(Seq.empty)
 

@@ -26,6 +26,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.RawIterator;
@@ -75,7 +76,8 @@ public class ReflectiveProcedureTest
         // Given
         Log log = spy( Log.class );
         components.register( Log.class, (ctx) -> log );
-        CallableProcedure procedure = procedureCompiler.compileProcedure( LoggingProcedure.class ).get( 0 );
+        CallableProcedure procedure =
+                procedureCompiler.compileProcedure( LoggingProcedure.class, Optional.empty() ).get( 0 );
 
         // When
         procedure.apply( new BasicContext(), new Object[0] );
@@ -275,7 +277,8 @@ public class ReflectiveProcedureTest
                 ProcedureAllowedConfig.DEFAULT );
 
         // When
-        List<CallableProcedure> procs = procedureCompiler.compileProcedure( ProcedureWithDeprecation.class );
+        List<CallableProcedure> procs =
+                procedureCompiler.compileProcedure( ProcedureWithDeprecation.class, Optional.empty() );
 
         // Then
         verify( log ).warn( "Use of @Procedure(deprecatedBy) without @Deprecated in badProc" );
@@ -521,6 +524,6 @@ public class ReflectiveProcedureTest
 
     private List<CallableProcedure> compile( Class<?> clazz ) throws KernelException
     {
-        return procedureCompiler.compileProcedure( clazz );
+        return procedureCompiler.compileProcedure( clazz, Optional.empty() );
     }
 }

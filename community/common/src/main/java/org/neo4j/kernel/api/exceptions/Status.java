@@ -392,7 +392,8 @@ public interface Status
                 "A procedure is using or receiving a value of an invalid type." ),
         ProcedureTimedOut( ClientError,
                 "The procedure has not completed within the specified timeout. You may want to retry with a longer " +
-                "timeout." );
+                "timeout." ),
+        ProcedureWarning( ClientNotification, "The query used a procedure that generated a warning." );
 
         private final Code code;
 

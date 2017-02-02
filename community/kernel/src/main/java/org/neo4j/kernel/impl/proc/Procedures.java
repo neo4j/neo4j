@@ -136,10 +136,24 @@ public class Procedures extends LifecycleAdapter
     /**
      * Register a new procedure defined with annotations on a java class.
      * @param proc the procedure class
+     * @param overrideCurrentImplementation set to true if procedures within this class should override older procedures with the same name
      */
     public void registerProcedure( Class<?> proc, boolean overrideCurrentImplementation ) throws KernelException
     {
-        for ( CallableProcedure procedure : compiler.compileProcedure( proc ) )
+        registerProcedure( proc, overrideCurrentImplementation, Optional.empty() );
+    }
+
+    /**
+     * Register a new procedure defined with annotations on a java class.
+     * @param proc the procedure class
+     * @param overrideCurrentImplementation set to true if procedures within this class should override older procedures with the same name
+     * @param warning the warning the procedure should generate when called
+     */
+    public void registerProcedure( Class<?> proc, boolean overrideCurrentImplementation, Optional<String> warning )
+            throws
+            KernelException
+    {
+        for ( CallableProcedure procedure : compiler.compileProcedure( proc, warning ) )
         {
             register( procedure, overrideCurrentImplementation );
         }
