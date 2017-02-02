@@ -20,26 +20,15 @@
 package org.neo4j.cypher.internal.compiler.v3_2.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_2._
-import org.neo4j.cypher.internal.compiler.v3_2.commands._
-import org.neo4j.cypher.internal.compiler.v3_2.commands.predicates.{CoercedPredicate, Not, True}
 import org.neo4j.cypher.internal.compiler.v3_2.commands.values.TokenType._
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
+import org.neo4j.cypher.internal.frontend.v3_2.Foldable._
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 
 import scala.collection.Map
 
 class ExpressionTest extends CypherFunSuite {
-  test("replacePropWithCache") {
-    val a = Collect(Property(Variable("r"), PropertyKey("age")))
-
-    val b = a.rewrite {
-      case Property(n, p) => Literal(n + "." + p.name)
-      case x              => x
-    }
-
-    b should equal(Collect(Literal("r.age")))
-  }
 
   test("merge_two_different_variables") {
     testMerge(
@@ -67,35 +56,10 @@ class ExpressionTest extends CypherFunSuite {
     val e = LengthFunction(Collect(Property(Variable("n"), PropertyKey("bar"))))
 
     //WHEN
-    val aggregates = e.filter(e => e.isInstanceOf[AggregationExpression])
+    val aggregates = e.findByAllClass[AggregationExpression]
 
     //THEN
-    aggregates.toList should equal( List(Collect(Property(Variable("n"), PropertyKey("bar")))))
-  }
-
-  test("should_find_inner_aggregations2") {
-    //GIVEN
-    val r = ReturnItem(Avg(Property(Variable("a"), PropertyKey("age"))), "avg(a.age)")
-
-    //WHEN
-    val aggregates = r.expression.filter(e => e.isInstanceOf[AggregationExpression])
-
-    //THEN
-    aggregates.toList should equal( List(Avg(Property(Variable("a"), PropertyKey("age")))))
-  }
-
-  test("should_handle_rewriting_to_non_predicates") {
-    // given
-    val expression = Not(True())
-
-    // when
-    val result = expression.rewrite {
-      case True() => Literal(true)
-      case e      => e
-    }
-
-    // then
-    result should equal(Not(CoercedPredicate(Literal(true))))
+    aggregates.toList should equal( Seq(Collect(Property(Variable("n"), PropertyKey("bar")))))
   }
 
   private def testMerge(a: Map[String, CypherType], b: Map[String, CypherType], expected: Map[String, CypherType]) {
@@ -133,11 +97,5 @@ Expected: %s""".format(a, b, result, expected))
 }
 
 class TestExpression extends Expression {
-  def arguments = Nil
-
-  def rewrite(f: (Expression) => Expression): Expression = null
-
-  def symbolTableDependencies = Set()
-
   def apply(v1: ExecutionContext)(implicit state: QueryState) = null
 }

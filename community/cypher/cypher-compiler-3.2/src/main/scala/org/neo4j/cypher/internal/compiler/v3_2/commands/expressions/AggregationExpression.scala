@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.aggregation._
 import org.neo4j.cypher.internal.frontend.v3_2.SyntaxException
-import org.neo4j.cypher.internal.frontend.v3_2.symbols.CypherType
 
 abstract class AggregationExpression extends Expression {
   def apply(ctx: ExecutionContext)(implicit state: QueryState) =
@@ -38,10 +37,4 @@ abstract class AggregationWithInnerExpression(inner:Expression) extends Aggregat
 
   if(! inner.isDeterministic)
     throw new SyntaxException("Can't use non-deterministic (random) functions inside of aggregate functions.")
-
-  def expectedInnerType: CypherType
-
-  def arguments = Seq(inner)
-
-  def symbolTableDependencies = inner.symbolTableDependencies
 }

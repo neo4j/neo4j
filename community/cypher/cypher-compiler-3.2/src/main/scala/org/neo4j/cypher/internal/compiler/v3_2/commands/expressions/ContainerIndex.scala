@@ -26,8 +26,6 @@ import org.neo4j.cypher.internal.frontend.v3_2.{CypherTypeException, InvalidArgu
 
 case class ContainerIndex(expression: Expression, index: Expression) extends NullInNullOutExpression(expression)
 with ListSupport {
-  def arguments = Seq(expression, index)
-
   def compute(value: Any, ctx: ExecutionContext)(implicit state: QueryState): Any = {
     value match {
       case IsMap(m) =>
@@ -61,8 +59,4 @@ with ListSupport {
           s"`$value` is not a collection or a map. Element access is only possible by performing a collection lookup using an integer index, or by performing a map lookup using a string key (found: $value[${index(ctx)}])")
     }
   }
-
-  def rewrite(f: (Expression) => Expression): Expression = f(ContainerIndex(expression.rewrite(f), index.rewrite(f)))
-
-  def symbolTableDependencies: Set[String] = expression.symbolTableDependencies ++ index.symbolTableDependencies
 }

@@ -24,20 +24,17 @@ import org.neo4j.cypher.internal.compiler.v3_2.commands.predicates.True
 import org.neo4j.cypher.internal.compiler.v3_2.commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.UnNamedNameGenerator
 import org.neo4j.cypher.internal.compiler.v3_2.mutation.GraphElementPropertyFunctions
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.TypeSafe
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection.{INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 
 import scala.collection.{Map, Seq}
-trait Pattern extends TypeSafe with AstNode[Pattern] {
+trait Pattern {
   def possibleStartPoints: Seq[(String,CypherType)]
   def relTypes:Seq[String]
 
   protected def leftArrow(dir: SemanticDirection) = if (dir == INCOMING) "<-" else "-"
   protected def rightArrow(dir: SemanticDirection) = if (dir == OUTGOING) "->" else "-"
-
-  def rewrite( f : Expression => Expression) : Pattern
 
   def rels:Seq[String]
 
@@ -74,12 +71,6 @@ case class SingleNode(name: String,
 
   def relTypes = Seq.empty
 
-  def rewrite(f: (Expression) => Expression) = SingleNode(name, labels.map(_.typedRewrite[KeyToken](f)), properties.rewrite(f))
-
-  def children = Seq.empty
-
-  def symbolTableDependencies = properties.symboltableDependencies
-
   override def toString: String = {
     val namePart = if (UnNamedNameGenerator.notNamed(name)) s"${name.drop(9)}" else name
     val labelPart = if (labels.isEmpty) "" else labels.mkString(":", ":", "")
@@ -115,17 +106,7 @@ case class RelatedTo(left: SingleNode,
 
   val possibleStartPoints: Seq[(String, CypherType)] = left.possibleStartPoints ++ right.possibleStartPoints :+ relName->CTRelationship
 
-  def rewrite(f: (Expression) => Expression) =
-    new RelatedTo(left.rewrite(f), right.rewrite(f), relName, relTypes, direction, properties.rewrite(f))
-
   def rels = Seq(relName)
-
-  def symbolTableDependencies =
-      properties.symboltableDependencies ++
-      left.symbolTableDependencies ++
-      right.symbolTableDependencies
-
-  def children = Seq.empty
 
   def changeEnds(left: SingleNode = this.left, right: SingleNode = this.right): RelatedTo =
     copy(left = left, right = right)
@@ -157,11 +138,6 @@ case class VarLengthRelatedTo(pathName: String,
 
   override def toString: String = pathName + "=" + left + leftArrow(direction) + relInfo + rightArrow(direction) + right
 
-  def symbolTableDependencies =
-    properties.symboltableDependencies ++
-      left.symbolTableDependencies ++
-      right.symbolTableDependencies
-
   def cloneWithOtherName(newName: String) = copy(pathName = newName)
 
   private def relInfo: String = {
@@ -180,18 +156,12 @@ case class VarLengthRelatedTo(pathName: String,
     if (info == "") "" else "[" + info + "]"
   }
 
-  def rewrite(f: (Expression) => Expression) =
-    new VarLengthRelatedTo(pathName, left.rewrite(f), right.rewrite(f),
-      minHops, maxHops, relTypes, direction, relIterator, properties.rewrite(f))
-
   lazy val possibleStartPoints: Seq[(String, CypherType)] =
     left.possibleStartPoints ++
       right.possibleStartPoints :+
       pathName -> CTPath
 
   def rels = Seq()
-
-  def children = Seq.empty
 
   def changeEnds(left: SingleNode = this.left, right: SingleNode = this.right): VarLengthRelatedTo =
     copy(left = left, right = right)
@@ -214,9 +184,6 @@ case class ShortestPath(pathName: String,
 
   def cloneWithOtherName(newName: String) = copy(pathName = newName)
 
-  def symbolTableDependencies =
-      Set(left.name, right.name)
-
   private def relInfo: String = {
     var info = "["
     if (relTypes.nonEmpty) info += ":" + relTypes.mkString("|")
@@ -229,12 +196,7 @@ case class ShortestPath(pathName: String,
 
   lazy val possibleStartPoints: Seq[(String, NodeType)] = left.possibleStartPoints ++ right.possibleStartPoints
 
-  def rewrite(f: Expression => Expression) =
-    new ShortestPath(pathName, left.rewrite(f), right.rewrite(f), relTypes, dir, allowZeroLength, maxDepth, single, relIterator)
-
   def rels = Seq()
-
-  def children = Seq.empty
 
   def changeEnds(left: SingleNode = this.left, right: SingleNode = this.right): ShortestPath =
     copy(left = left, right = right)

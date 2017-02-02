@@ -20,14 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v3_2.commands.predicates
 
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{Expression, Variable, Property}
+import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{Property, Variable}
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.NonEmptyList
 
 case class Ands(predicates: NonEmptyList[Predicate]) extends CompositeBooleanPredicate {
   override def shouldExitWhen = false
   override def andWith(other: Predicate): Predicate = Ands(predicates :+ other)
-  override def rewrite(f: (Expression) => Expression): Expression = f(Ands(predicates.map(_.rewriteAsPredicate(f))))
   override def toString = {
     predicates.foldLeft("") {
       case (acc, next) if acc.isEmpty => next.toString
@@ -48,12 +47,7 @@ object Ands {
 class And(val a: Predicate, val b: Predicate) extends Predicate {
   def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = Ands(NonEmptyList(a, b)).isMatch(m)
 
-  override def atoms: Seq[Predicate] = a.atoms ++ b.atoms
   override def toString: String = s"($a AND $b)"
-  def containsIsNull = a.containsIsNull || b.containsIsNull
-  def rewrite(f: (Expression) => Expression) = f(And(a.rewriteAsPredicate(f), b.rewriteAsPredicate(f)))
-
-  def arguments = Seq(a, b)
 
   override def hashCode() = a.hashCode + 37 * b.hashCode
 
@@ -62,8 +56,6 @@ class And(val a: Predicate, val b: Predicate) extends Predicate {
     case other: And => a == other.a && b == other.b
     case _          => false
   }
-
-  def symbolTableDependencies = a.symbolTableDependencies ++ b.symbolTableDependencies
 }
 
 @deprecated("Use Ands (plural) instead")
@@ -78,18 +70,5 @@ object And {
 case class AndedPropertyComparablePredicates(ident: Variable, prop: Property,
                                              override val predicates: NonEmptyList[ComparablePredicate])
   extends CompositeBooleanPredicate {
-
-  // some rewriters change the type of this, and we can't allow that
-  private def rewriteVariableIfNotTypeChanged(f: (Expression) => Expression) =
-    ident.rewrite(f) match {
-      case i: Variable => i
-      case _ => ident
-    }
-
-  def rewrite(f: (Expression) => Expression): Expression =
-    f(AndedPropertyComparablePredicates(rewriteVariableIfNotTypeChanged(f),
-      prop.rewrite(f).asInstanceOf[Property],
-      predicates.map(_.rewriteAsPredicate(f).asInstanceOf[ComparablePredicate])))
-
   override def shouldExitWhen: Boolean = false
 }

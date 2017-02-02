@@ -31,10 +31,4 @@ case class PropertiesFunction(a: Expression) extends NullInNullOutExpression(a) 
       case v =>
         throw new CypherTypeException(s"Expected a Node, Relationship, or Map, got: $v")
     }
-
-  override def symbolTableDependencies = a.symbolTableDependencies
-
-  override def arguments = Seq(a)
-
-  override def rewrite(f: (Expression) => Expression) = f(PropertiesFunction(a.rewrite(f)))
 }

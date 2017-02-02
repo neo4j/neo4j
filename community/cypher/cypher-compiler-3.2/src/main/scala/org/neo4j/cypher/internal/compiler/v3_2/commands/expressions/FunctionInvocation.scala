@@ -41,10 +41,5 @@ case class FunctionInvocation(signature: UserFunctionSignature, arguments: Index
     scalaValues.asDeepScalaValue(result)
   }
 
-  override def rewrite(f: (Expression) => Expression) =
-    f(FunctionInvocation(signature, arguments.map(a => a.rewrite(f))))
-
-  override def symbolTableDependencies = arguments.flatMap(_.symbolTableDependencies).toSet
-
   override def toString = s"${signature.name}(${arguments.mkString(",")})"
 }

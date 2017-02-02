@@ -22,9 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 import org.mockito.Matchers._
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Variable
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v3_2.test_helpers.TestableIterator
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 
 class ValueHashJoinPipeTest extends CypherFunSuite {
@@ -37,10 +35,10 @@ class ValueHashJoinPipeTest extends CypherFunSuite {
     // given
     val queryState = QueryStateHelper.empty
 
-    val left = newMockedPipe(SymbolTable(Map("a" -> CTInteger)))
+    val left = mock[Pipe]
     when(left.createResults(queryState)).thenReturn(rows("a", 1, 2))
 
-    val right = newMockedPipe(SymbolTable(Map("b" -> CTInteger)))
+    val right = mock[Pipe]
     when(right.createResults(queryState)).thenReturn(rows("b", 2, 3))
 
     // when
@@ -54,10 +52,10 @@ class ValueHashJoinPipeTest extends CypherFunSuite {
     // given
     val queryState = QueryStateHelper.empty
 
-    val left = newMockedPipe(SymbolTable(Map("a" -> CTInteger)))
+    val left = mock[Pipe]
     when(left.createResults(queryState)).thenReturn(rows("a", 1, 2, null))
 
-    val right = newMockedPipe(SymbolTable(Map("b" -> CTInteger)))
+    val right = mock[Pipe]
     when(right.createResults(queryState)).thenReturn(rows("b", 2, 3, null))
 
     // when
@@ -84,10 +82,10 @@ class ValueHashJoinPipeTest extends CypherFunSuite {
     val queryState = QueryStateHelper.empty
 
 
-    val left = newMockedPipe(SymbolTable(Map("b" -> CTNode)))
+    val left = mock[Pipe]
     when(left.createResults(queryState)).thenReturn(leftSide)
 
-    val right = newMockedPipe(SymbolTable(Map("b" -> CTNode)))
+    val right = mock[Pipe]
     when(right.createResults(queryState)).thenReturn(rightSide)
 
     // when
@@ -106,10 +104,10 @@ class ValueHashJoinPipeTest extends CypherFunSuite {
     // given
     val queryState = QueryStateHelper.empty
 
-    val left = newMockedPipe(SymbolTable(Map("a" -> CTInteger)))
+    val left = mock[Pipe]
     when(left.createResults(queryState)).thenReturn(Iterator.empty)
 
-    val right = newMockedPipe(SymbolTable(Map("b" -> CTInteger)))
+    val right = mock[Pipe]
 
     // when
     val result = ValueHashJoinPipe(Variable("a"), Variable("b"), left, right)().createResults(queryState)
@@ -123,10 +121,10 @@ class ValueHashJoinPipeTest extends CypherFunSuite {
     // given
     val queryState = QueryStateHelper.empty
 
-    val left = newMockedPipe(SymbolTable(Map("a" -> CTInteger)))
+    val left = mock[Pipe]
     when(left.createResults(queryState)).thenReturn(rows("a", null, null, null))
 
-    val right = newMockedPipe(SymbolTable(Map("b" -> CTInteger)))
+    val right = mock[Pipe]
     val rhsIter = new TestableIterator(rows("b", 1, 2, 3))
     when(right.createResults(queryState)).thenReturn(rhsIter)
 
@@ -138,17 +136,16 @@ class ValueHashJoinPipeTest extends CypherFunSuite {
     rhsIter.fetched should equal(0)
   }
 
-
   test("if RHS is empty, terminate building of the probe map early") {
     // given
     val queryState = QueryStateHelper.empty
 
-    val left = newMockedPipe(SymbolTable(Map("b" -> CTInteger)))
+    val left = mock[Pipe]
 
     val lhsIterator = new TestableIterator(rows("a", 1, 2, 3))
     when(left.createResults(queryState)).thenReturn(lhsIterator)
 
-    val right = newMockedPipe(SymbolTable(Map("b" -> CTNode)))
+    val right = mock[Pipe]
     when(right.createResults(queryState)).thenReturn(Iterator.empty)
 
     // when
@@ -166,10 +163,10 @@ class ValueHashJoinPipeTest extends CypherFunSuite {
 
     val queryState = QueryStateHelper.empty
 
-    val left = newMockedPipe(SymbolTable(Map("a" -> CTInteger)))
+    val left = mock[Pipe]
     when(left.createResults(queryState)).thenReturn(rows("a", ints, Array(2, 3, 4)))
 
-    val right = newMockedPipe(SymbolTable(Map("b" -> CTInteger)))
+    val right = mock[Pipe]
     when(right.createResults(queryState)).thenReturn(rows("b",  doubles, Array(0, 1, 2)))
 
     // when
@@ -184,10 +181,5 @@ class ValueHashJoinPipeTest extends CypherFunSuite {
 
   private def rows(variable: String, values: Any*): Iterator[ExecutionContext] =
     values.map(x => ExecutionContext.from(variable -> x)).iterator
-
-  private def newMockedPipe(symbolTable: SymbolTable): Pipe = {
-    val pipe = mock[Pipe]
-    pipe
-  }
 }
 

@@ -20,36 +20,16 @@
 package org.neo4j.cypher.internal.compiler.v3_2.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_2._
-import org.neo4j.cypher.internal.compiler.v3_2.commands._
-import org.neo4j.cypher.internal.compiler.v3_2.commands.predicates.{CoercedPredicate, Predicate}
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.TypeSafeMathSupport
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.TypeSafe
 import org.neo4j.cypher.internal.frontend.v3_2.CypherTypeException
+import org.neo4j.cypher.internal.frontend.v3_2.Foldable._
 import org.neo4j.cypher.internal.frontend.v3_2.symbols.CypherType
 
-abstract class Expression extends TypeSafe with AstNode[Expression] {
-  def rewrite(f: Expression => Expression): Expression
-
-  def rewriteAsPredicate(f: Expression => Expression): Predicate = rewrite(f) match {
-    case pred: Predicate => pred
-    case e               => CoercedPredicate(e)
+abstract class Expression {
+  def containsAggregate = this.exists {
+    case _: AggregationExpression => true
   }
-
-  def subExpressions: Seq[Expression] = {
-    def expandAll(e: AstNode[_]): Seq[AstNode[_]] = e.children ++ e.children.flatMap(expandAll)
-    expandAll(this).collect {
-      case e:Expression => e
-    }
-  }
-
-  // Expressions that do not get anything in their context from this expression.
-  def arguments:Seq[Expression]
-
-  // Any expressions that this expression builds on
-  def children: Seq[AstNode[_]] = arguments
-
-  def containsAggregate = exists(_.isInstanceOf[AggregationExpression])
 
   def apply(ctx: ExecutionContext)(implicit state: QueryState):Any
 
@@ -58,7 +38,7 @@ abstract class Expression extends TypeSafe with AstNode[Expression] {
     case _          => getClass.getSimpleName
   }
 
-  val isDeterministic = ! exists {
+  def isDeterministic: Boolean = ! this.exists {
     case RandFunction() => true
     case _              => false
   }
@@ -66,12 +46,6 @@ abstract class Expression extends TypeSafe with AstNode[Expression] {
 
 case class CachedExpression(key:String, typ:CypherType) extends Expression {
   def apply(ctx: ExecutionContext)(implicit state: QueryState) = ctx(key)
-
-  def rewrite(f: (Expression) => Expression) = f(this)
-
-  def arguments = Seq()
-
-  def symbolTableDependencies = Set(key)
 
   override def toString = "Cached(%s of type %s)".format(key, typ)
 }
@@ -95,8 +69,6 @@ abstract class Arithmetics(left: Expression, right: Expression)
   }
 
   def calc(a: Number, b: Number): Any
-
-  def arguments = Seq(left, right)
 }
 
 trait ExpressionWInnerExpression extends Expression {
@@ -109,20 +81,17 @@ object Expression {
   def mapExpressionHasPropertyReadDependency(mapEntityName: String, mapExpression: Expression): Boolean =
     mapExpression match {
       case LiteralMap(map) => map.exists {
-        case (k, v) => v.subExpressions.exists {
+        case (k, v) => v.exists {
           case Property(Variable(entityName), propertyKey) =>
             entityName == mapEntityName && propertyKey.name == k
-          case _ => false
         }
       }
       case _ => false
     }
 
   def hasPropertyReadDependency(entityName: String, expression: Expression, propertyKey: String): Boolean =
-    expression.subExpressions.exists {
+    expression.exists {
       case Property(Variable(name), key) =>
         name == entityName && key.name == propertyKey
-      case _ =>
-        false
     }
 }

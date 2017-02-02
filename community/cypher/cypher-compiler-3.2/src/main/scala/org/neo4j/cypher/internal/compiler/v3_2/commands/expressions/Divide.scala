@@ -42,8 +42,4 @@ case class Divide(a: Expression, b: Expression) extends Arithmetics(a, b) {
   }
 
   def calc(a: Number, b: Number) = divide(a, b)
-
-  def rewrite(f: (Expression) => Expression) = f(Divide(a.rewrite(f), b.rewrite(f)))
-
-  def symbolTableDependencies = a.symbolTableDependencies ++ b.symbolTableDependencies
 }

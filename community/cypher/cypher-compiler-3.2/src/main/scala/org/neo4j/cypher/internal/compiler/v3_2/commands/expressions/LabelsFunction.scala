@@ -33,10 +33,4 @@ case class LabelsFunction(nodeExpr: Expression) extends NullInNullOutExpression(
       ctx.getLabelsForNode(n.getId).map(ctx.getLabelName).toList
     case x => throw new ParameterWrongTypeException("Expected a Node, got: " + x)
   }
-
-  override def rewrite(f: (Expression) => Expression) = f(LabelsFunction(nodeExpr.rewrite(f)))
-
-  override def arguments = Seq(nodeExpr)
-
-  override def symbolTableDependencies = nodeExpr.symbolTableDependencies
 }

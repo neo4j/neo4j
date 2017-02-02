@@ -24,10 +24,4 @@ import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
 
 case class Null() extends Expression {
   def apply(v1: ExecutionContext)(implicit state: QueryState) = null
-
-  def rewrite(f: (Expression) => Expression): Expression = f(this)
-
-  def arguments = Seq()
-
-  def symbolTableDependencies = Set()
 }

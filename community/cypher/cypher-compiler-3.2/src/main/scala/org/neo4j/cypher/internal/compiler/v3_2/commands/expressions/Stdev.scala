@@ -20,21 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v3_2.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.aggregation.StdevFunction
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 
 case class Stdev(anInner: Expression) extends AggregationWithInnerExpression(anInner) {
   def createAggregationFunction = new StdevFunction(anInner, false)
-
-  def expectedInnerType = CTNumber
-
-  def rewrite(f: (Expression) => Expression) = f(Stdev(anInner.rewrite(f)))
 }
 
 case class StdevP(anInner: Expression) extends AggregationWithInnerExpression(anInner) {
   def createAggregationFunction = new StdevFunction(anInner, true)
-
-  def expectedInnerType = CTNumber
-
-  def rewrite(f: (Expression) => Expression) = f(StdevP(anInner.rewrite(f)))
 }
 

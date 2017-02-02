@@ -20,10 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v3_2.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_2._
-import org.neo4j.cypher.internal.compiler.v3_2.helpers.ListSupport
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_2.CypherTypeException
-import org.neo4j.graphdb.Path
 
 case class ReverseFunction(argument: Expression) extends NullInNullOutExpression(argument) {
   override def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = {
@@ -36,11 +34,4 @@ case class ReverseFunction(argument: Expression) extends NullInNullOutExpression
           .format(toString(), a.toString))
     }
   }
-
-  override def rewrite(f: (Expression) => Expression) = f(ReverseFunction(argument.rewrite(f)))
-
-  def arguments = Seq(argument)
-
-  def symbolTableDependencies = argument.symbolTableDependencies
-
 }

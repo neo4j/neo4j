@@ -29,8 +29,4 @@ case class Modulo(a: Expression, b: Expression) extends Arithmetics(a, b) {
     //no floating point values, then we treat everything else as longs
     case _ => a.longValue() % b.longValue()
   }
-
-  def rewrite(f: (Expression) => Expression) = f(Modulo(a.rewrite(f), b.rewrite(f)))
-
-  def symbolTableDependencies = a.symbolTableDependencies ++ b.symbolTableDependencies
 }

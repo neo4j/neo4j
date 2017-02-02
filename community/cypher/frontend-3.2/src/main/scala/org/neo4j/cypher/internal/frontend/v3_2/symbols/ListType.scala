@@ -56,8 +56,6 @@ object ListType {
       case _ =>
         super.greatestLowerBound(other)
     }
-
-    override def rewrite(f: CypherType => CypherType) = f(copy(innerType.rewrite(f)))
   }
 
   def unapply(x: CypherType): Option[CypherType] = x match {

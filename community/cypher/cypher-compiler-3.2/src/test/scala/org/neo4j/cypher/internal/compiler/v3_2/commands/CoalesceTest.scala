@@ -54,10 +54,4 @@ case class BreakingExpression() extends Expression {
     import org.scalatest.Assertions._
     fail("Coalesce is not lazy")
   }
-
-  def rewrite(f: (Expression) => Expression) = null
-
-  def arguments = Nil
-
-  def symbolTableDependencies = Set()
 }

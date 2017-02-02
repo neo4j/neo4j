@@ -27,10 +27,4 @@ case class PrefixSeekRangeExpression(range: PrefixRange[Expression]) extends Exp
 
   override def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = throw new
       InternalException("This should never be called")
-
-  override def rewrite(f: (Expression) => Expression): Expression = f(this)
-
-  override def arguments: Seq[Expression] = Seq.empty
-
-  override def symbolTableDependencies: Set[String] = Set.empty
 }

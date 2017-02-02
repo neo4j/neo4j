@@ -83,14 +83,6 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath, predicates:
   private def anyStartpointsContainNull(m: Map[String, Any]): Boolean =
     m(shortestPathPattern.left.name) == null || m(shortestPathPattern.right.name) == null
 
-  override def children = Seq(shortestPathPattern)
-
-  def arguments = Seq.empty
-
-  def rewrite(f: (Expression) => Expression): Expression = f(ShortestPathExpression(shortestPathPattern.rewrite(f)))
-
-  def symbolTableDependencies = shortestPathPattern.symbolTableDependencies + shortestPathPattern.left.name + shortestPathPattern.right.name
-
   private def propertyExistsExpander(name: String) = new KernelPredicate[PropertyContainer] {
     override def test(t: PropertyContainer): Boolean = {
       t.hasProperty(name)
@@ -176,7 +168,5 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath, predicates:
           }
       }
 
-  private def doesNotDependOnFullPath(predicate: Predicate): Boolean = {
-    (predicate.symbolTableDependencies intersect pathVariables).isEmpty
-  }
+  private def doesNotDependOnFullPath(predicate: Predicate): Boolean = false // TODO: This is not correct!
 }

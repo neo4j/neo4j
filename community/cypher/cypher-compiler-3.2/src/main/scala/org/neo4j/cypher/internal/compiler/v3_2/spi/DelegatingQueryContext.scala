@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v3_2.spi
 import java.net.URL
 
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{Expander, KernelPredicate, UserDefinedAggregator}
-import org.neo4j.cypher.internal.compiler.v3_2.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
 import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
 import org.neo4j.cypher.internal.compiler.v3_2.IndexDescriptor
@@ -151,14 +150,6 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
     singleDbHit(inner.nodeGetDegree(node, dir, relTypeId))
 
   override def nodeIsDense(node: Long): Boolean = singleDbHit(inner.nodeIsDense(node))
-
-  override def variableLengthPathExpand(node: PatternNode,
-                                        realNode: Node,
-                                        minHops: Option[Int],
-                                        maxHops: Option[Int],
-                                        direction: SemanticDirection,
-                                        relTypes: Seq[String]): Iterator[Path] =
-    manyDbHits(inner.variableLengthPathExpand(node, realNode, minHops, maxHops, direction, relTypes))
 
   override def isLabelSetOnNode(label: Int, node: Long): Boolean = singleDbHit(inner.isLabelSetOnNode(label, node))
 

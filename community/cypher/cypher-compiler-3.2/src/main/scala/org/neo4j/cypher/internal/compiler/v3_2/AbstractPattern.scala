@@ -23,13 +23,12 @@ import org.neo4j.cypher.internal.compiler.v3_2.commands._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{Expression, Variable}
 import org.neo4j.cypher.internal.compiler.v3_2.commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v3_2.mutation.GraphElementPropertyFunctions
-import org.neo4j.cypher.internal.frontend.v3_2.SyntaxException
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
-import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
+import org.neo4j.cypher.internal.frontend.v3_2.{SemanticDirection, SyntaxException}
 
 import scala.collection.Map
 
-abstract sealed class AbstractPattern extends AstNode[AbstractPattern] {
+abstract sealed class AbstractPattern {
   def makeOutgoing: AbstractPattern
 
   def parsedEntities: Seq[ParsedEntity]
@@ -62,11 +61,6 @@ case class ParsedEntity(name: String,
   def makeOutgoing = this
 
   def parsedEntities = Seq(this)
-
-  def children: Seq[AstNode[_]] = Seq(expression) ++ props.values
-
-  def rewrite(f: (Expression) => Expression) =
-    copy(expression = expression.rewrite(f), props = props.rewrite(f), labels = labels.map(_.rewrite(f)))
 
   def possibleStartPoints: Seq[(String, CypherType)] = Seq(name -> CTNode)
 
@@ -101,11 +95,6 @@ with GraphElementPropertyFunctions {
     copy(start = start, end = end, dir = dir)
 
   def parsedEntities = Seq(start, end)
-
-  def children: Seq[AstNode[_]] = Seq(start, end) ++ props.values
-
-  def rewrite(f: (Expression) => Expression) =
-    copy(props = props.rewrite(f), start = start.rewrite(f), end = end.rewrite(f))
 
   def possibleStartPoints: Seq[(String, CypherType)] =
     (start.possibleStartPoints :+ name -> CTRelationship) ++ end.possibleStartPoints
@@ -157,11 +146,6 @@ case class ParsedVarLengthRelation(name: String,
 
   def parsedEntities = Seq(start, end)
 
-  def children: Seq[AstNode[_]] = Seq(start, end) ++ props.values
-
-  def rewrite(f: (Expression) => Expression) =
-    copy(props = props.rewrite(f), start = start.rewrite(f), end = end.rewrite(f))
-
   def possibleStartPoints: Seq[(String, CypherType)] =
     (start.possibleStartPoints :+ name -> CTList(CTRelationship)) ++ end.possibleStartPoints
 }
@@ -183,11 +167,6 @@ case class ParsedShortestPath(name: String,
 
   def parsedEntities = Seq(start, end)
 
-  def children: Seq[AstNode[_]] = Seq(start, end) ++ props.values
-
-  def rewrite(f: (Expression) => Expression) =
-    copy(props = props.rewrite(f), start = start.rewrite(f), end = end.rewrite(f))
-
   def possibleStartPoints: Seq[(String, CypherType)] =
     (start.possibleStartPoints :+ name -> CTPath) ++ end.possibleStartPoints
 }
@@ -201,10 +180,6 @@ case class ParsedNamedPath(name: String, pieces: Seq[AbstractPattern]) extends P
   def makeOutgoing = this
 
   def parsedEntities = pieces.flatMap(_.parsedEntities)
-
-  def children: Seq[AstNode[_]] = pieces
-
-  def rewrite(f: (Expression) => Expression): AbstractPattern = copy(pieces = pieces.map(_.rewrite(f)))
 
   def possibleStartPoints: Seq[(String, CypherType)] = pieces.flatMap(_.possibleStartPoints)
 

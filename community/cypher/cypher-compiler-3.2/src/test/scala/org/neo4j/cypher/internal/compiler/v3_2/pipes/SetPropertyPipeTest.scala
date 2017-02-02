@@ -39,7 +39,6 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
   when(state.query).thenReturn(qtx)
   when(state.decorator).thenReturn(NullPipeDecorator)
   val emptyExpression = mock[Expression]
-  when(emptyExpression.children).thenReturn(Seq.empty)
 
   // match (n) set n.prop = n.prop + 1
   test("should grab an exclusive lock if the rhs reads from the same node property") {

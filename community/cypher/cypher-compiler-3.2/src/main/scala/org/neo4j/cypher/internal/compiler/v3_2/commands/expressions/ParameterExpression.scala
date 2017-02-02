@@ -26,10 +26,4 @@ case class ParameterExpression(parameterName: String) extends Expression {
   def apply(ctx: ExecutionContext)(implicit state: QueryState) = state.getParam(parameterName)
 
   override def toString(): String = "{" + parameterName + "}"
-
-  def rewrite(f: (Expression) => Expression) = f(this)
-
-  def arguments = Seq()
-
-  def symbolTableDependencies = Set()
 }

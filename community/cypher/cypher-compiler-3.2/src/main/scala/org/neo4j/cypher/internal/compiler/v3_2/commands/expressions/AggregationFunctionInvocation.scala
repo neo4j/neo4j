@@ -50,12 +50,5 @@ case class AggregationFunctionInvocation(signature: UserFunctionSignature, argum
       }
       inner
     }
-
-
   }
-
-  override def rewrite(f: (Expression) => Expression): Expression = f(
-    AggregationFunctionInvocation(signature, arguments.map(a => a.rewrite(f))))
-
-  override def symbolTableDependencies: Set[String] = arguments.flatMap(_.symbolTableDependencies).toSet
 }

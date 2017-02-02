@@ -29,10 +29,4 @@ case class Variable(entityName: String) extends Expression {
     ctx.getOrElse(entityName, throw new NotFoundException("Unknown variable `%s`.".format(entityName)))
 
   override def toString: String = entityName
-
-  def rewrite(f: (Expression) => Expression) = f(this)
-
-  def arguments = Seq()
-
-  def symbolTableDependencies = Set(entityName)
 }

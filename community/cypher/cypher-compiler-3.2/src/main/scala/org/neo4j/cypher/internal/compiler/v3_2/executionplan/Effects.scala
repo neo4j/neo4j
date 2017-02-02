@@ -19,10 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.executionplan
 
-import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{Expression, Variable}
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
-
 case class Effects(effectsSet: Set[Effect] = Set.empty) {
 
   def writeEffects: Effects = Effects(effectsSet.collect[Effect, Set[Effect]] {
@@ -78,27 +74,6 @@ object AllEffects extends Effects((AllWriteEffects ++ AllReadEffects).effectsSet
 object Effects {
 
   def apply(effectsSeq: Effect*): Effects = Effects(effectsSeq.toSet)
-
-  def propertyRead(expression: Expression, symbols: SymbolTable)(propertyKey: String) = {
-    (expression match {
-      case i: Variable => symbols.variables.get(i.entityName).map {
-        case _: NodeType => Effects(ReadsGivenNodeProperty(propertyKey))
-        case _: RelationshipType => Effects(ReadsGivenRelationshipProperty(propertyKey))
-        case _ => Effects()
-      }
-      case _ => None
-    }).getOrElse(Effects())
-  }
-
-  def propertyWrite(expression: Expression, symbols: SymbolTable)(propertyKey: String) =
-    (expression match {
-      case i: Variable => symbols.variables.get(i.entityName).map {
-        case _: NodeType => Effects(SetGivenNodeProperty(propertyKey))
-        case _: RelationshipType => Effects(SetGivenRelationshipProperty(propertyKey))
-        case _ => Effects()
-      }
-      case _ => None
-    }).getOrElse(Effects())
 }
 
 //-----------------------------------------------------------------------------

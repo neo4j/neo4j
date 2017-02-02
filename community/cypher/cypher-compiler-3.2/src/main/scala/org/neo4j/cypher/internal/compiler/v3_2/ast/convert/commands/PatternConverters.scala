@@ -28,10 +28,6 @@ import org.neo4j.cypher.internal.frontend.v3_2.{SyntaxException, ast}
 
 object PatternConverters {
 
-  implicit class RelationshipsPatternConverter(val pattern: ast.RelationshipsPattern) extends AnyVal {
-    def asLegacyPatterns = pattern.element.asLegacyPatterns
-  }
-
   implicit class ShortestPathsConverter(val part: ast.ShortestPaths) extends AnyVal {
     def asLegacyPatterns(maybePathName: Option[String]): Seq[commands.ShortestPath] = {
       val pathName = maybePathName.getOrElse(UnNamedNameGenerator.name(part.position))
@@ -52,19 +48,6 @@ object PatternConverters {
     }
   }
 
-  implicit class RelationshipChainConverter(val chain: ast.RelationshipChain) extends AnyVal {
-    def asLegacyPatterns: Seq[commands.Pattern] = {
-      val (patterns, leftNode) = chain.element match {
-        case node: ast.NodePattern            =>
-          (Vector(), node)
-        case leftChain: ast.RelationshipChain =>
-          (leftChain.asLegacyPatterns, leftChain.rightNode)
-      }
-
-      patterns :+ chain.relationship.asLegacyPattern(leftNode, chain.rightNode)
-    }
-  }
-
   implicit class NodePatternConverter(val node: ast.NodePattern) extends AnyVal {
 
 
@@ -79,34 +62,6 @@ object PatternConverters {
       case Some(p: ast.Parameter)     => Map[String, CommandExpression]("*" -> toCommandExpression(p))
       case Some(p)                    => throw new SyntaxException(s"Properties of a node must be a map or parameter (${p.position})")
       case None                       => Map[String, CommandExpression]()
-    }
-  }
-
-  implicit class RelationshipPatternConverter(val relationship: ast.RelationshipPattern) extends AnyVal {
-    def asLegacyPattern(leftNode: ast.NodePattern, rightNode: ast.NodePattern): commands.Pattern = {
-      relationship.length match {
-        case Some(maybeRange) =>
-          val pathName = UnNamedNameGenerator.name(relationship.position)
-          val (min, max) = maybeRange match {
-            case Some(range) => (for (i <- range.lower) yield i.value.toInt, for (i <- range.upper) yield i.value.toInt)
-            case None        => (None, None)
-          }
-          val relIterator = relationship.variable.map(_.name)
-          commands.VarLengthRelatedTo(pathName, leftNode.asLegacyNode, rightNode.asLegacyNode, min, max,
-            relationship.types.map(_.name).distinct, relationship.direction, relIterator, properties = legacyProperties)
-        case None             =>
-          commands.RelatedTo(leftNode.asLegacyNode, rightNode.asLegacyNode, relationship.legacyName,
-            relationship.types.map(_.name).distinct, relationship.direction, legacyProperties)
-      }
-    }
-
-    def legacyName = relationship.variable.fold(UnNamedNameGenerator.name(relationship.position))(_.name)
-
-    def legacyProperties: Map[String, CommandExpression] = relationship.properties match {
-      case None                       => Map.empty[String, CommandExpression]
-      case Some(m: ast.MapExpression) => m.items.map(p => p._1.name -> toCommandExpression(p._2))(collection.breakOut)
-      case Some(p: ast.Parameter)     => Map("*" -> toCommandExpression(p))
-      case Some(p)                    => throw new SyntaxException(s"Properties of a node must be a map or parameter (${p.position})")
     }
   }
 }

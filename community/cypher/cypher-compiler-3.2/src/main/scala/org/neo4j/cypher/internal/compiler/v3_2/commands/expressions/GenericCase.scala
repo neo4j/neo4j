@@ -37,24 +37,4 @@ case class GenericCase(alternatives: IndexedSeq[(Predicate, Expression)], defaul
       case None         => default.getOrElse(Null()).apply(ctx)
     }
   }
-
-  private def alternativePredicates: IndexedSeq[Predicate] = alternatives.map(_._1)
-  private def alternativeExpressions: IndexedSeq[Expression] = alternatives.map(_._2)
-
-  def arguments = alternatives.map(_._1) ++ alternatives.map(_._2) ++ default.toIndexedSeq
-
-  def rewrite(f: (Expression) => Expression): Expression = {
-    val newAlternatives: IndexedSeq[(Predicate, Expression)] = alternatives map {
-      case (p, e) => (p.rewriteAsPredicate(f), e.rewrite(f))
-    }
-
-    val newDefault = default.map(_.rewrite(f))
-
-    f(GenericCase(newAlternatives, newDefault))
-  }
-
-  def symbolTableDependencies: Set[String] = {
-    val expressions = alternativePredicates ++ default.toIndexedSeq ++ alternativeExpressions
-    expressions.flatMap(_.symbolTableDependencies).toSet
-  }
 }

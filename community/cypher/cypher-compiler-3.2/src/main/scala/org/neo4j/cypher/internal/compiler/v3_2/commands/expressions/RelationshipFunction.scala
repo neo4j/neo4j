@@ -32,10 +32,4 @@ case class RelationshipFunction(path: Expression) extends NullInNullOutExpressio
     case p: Path => p.relationships().asScala.toIndexedSeq
     case x       => throw new SyntaxException("Expected " + path + " to be a path.")
   }
-
-  def rewrite(f: (Expression) => Expression) = f(RelationshipFunction(path.rewrite(f)))
-
-  def arguments = Seq(path)
-
-  def symbolTableDependencies = path.symbolTableDependencies
 }

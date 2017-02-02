@@ -28,8 +28,4 @@ object ListLiteral {
 
 case class ListLiteral(arguments: Expression*) extends Expression {
   def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = arguments.map(e => e(ctx))
-
-  def rewrite(f: (Expression) => Expression): Expression = f(ListLiteral(arguments.map(f): _*))
-
-  def symbolTableDependencies = arguments.flatMap(_.symbolTableDependencies).toSet
 }

@@ -31,10 +31,4 @@ case class RelationshipTypeFunction(relationship: Expression) extends NullInNull
 
     case x => throw new ParameterWrongTypeException("Expected a Relationship, got: " + x)
   }
-
-  override def rewrite(f: (Expression) => Expression) = f(RelationshipTypeFunction(relationship.rewrite(f)))
-
-  override def arguments = Seq(relationship)
-
-  override def symbolTableDependencies = relationship.symbolTableDependencies
 }

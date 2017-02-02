@@ -27,10 +27,4 @@ case class TimestampFunction() extends Expression {
   def apply(ctx: ExecutionContext)(implicit state: QueryState):Any = state.readTimeStamp()
 
   def innerExpectedType = CTString
-
-  def arguments = Seq()
-
-  def rewrite(f: (Expression) => Expression) = f(this)
-
-  def symbolTableDependencies = Set.empty
 }

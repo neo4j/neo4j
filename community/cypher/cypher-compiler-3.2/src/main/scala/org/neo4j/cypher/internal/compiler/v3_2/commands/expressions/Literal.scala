@@ -25,11 +25,5 @@ import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
 case class Literal(v: Any) extends Expression {
   def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = v
 
-  def rewrite(f: (Expression) => Expression) = f(this)
-
-  def arguments = Nil
-
-  def symbolTableDependencies = Set()
-
   override def toString = "Literal(" + v + ")"
 }

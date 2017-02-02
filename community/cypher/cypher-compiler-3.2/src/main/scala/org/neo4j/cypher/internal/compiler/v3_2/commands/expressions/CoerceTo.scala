@@ -28,10 +28,4 @@ import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 case class CoerceTo(expr: Expression, typ: CypherType) extends Expression {
 
   def apply(ctx: ExecutionContext)(implicit state: QueryState) = coerce(expr(ctx), typ)(state.query)
-
-  def symbolTableDependencies = expr.symbolTableDependencies
-
-  override def rewrite(f: (Expression) => Expression): Expression = copy(f(expr), typ)
-
-  override def arguments: Seq[Expression] = Seq(expr)
 }

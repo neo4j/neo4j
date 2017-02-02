@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{Limit => L
 import org.neo4j.cypher.internal.compiler.v3_2.planner.{CantHandleQueryException, logical}
 import org.neo4j.cypher.internal.compiler.v3_2.spi.{InstrumentedGraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.compiler.v3_2.{ExecutionContext, Monitors, pipes, ast => compilerAst}
+import org.neo4j.cypher.internal.frontend.v3_2.Rewritable._
 import org.neo4j.cypher.internal.frontend.v3_2._
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.Eagerly
@@ -217,7 +218,7 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
         val source = SingleRowPipe()(id = id)
         val startItem = StatementConverters.StartItemConverter(hint).asCommandStartItem
         val ep = entityProducerFactory.readNodeStartItems((planContext, startItem))
-        NodeStartPipe(source, ident.name, ep, Effects(ReadsAllNodes))(id = id)
+        NodeStartPipe(source, ident.name, ep)(id = id)
 
       case LegacyRelationshipIndexSeek(ident, hint: RelationshipStartItem, _) =>
         val source = SingleRowPipe()(id = id)
@@ -513,7 +514,6 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
     }
   }
 
-  private val resolver = new KeyTokenResolver
   private val entityProducerFactory = new EntityProducerFactory
   implicit private val monitor = monitors.newMonitor[PipeMonitor]()
   implicit val table: SemanticTable = context.semanticTable
@@ -532,13 +532,13 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
   private def buildExpression(expr: ast.Expression)(implicit planContext: PlanContext): CommandExpression = {
     val rewrittenExpr = expr.endoRewrite(buildPipeExpressions) // TODO
 
-    toCommandExpression(rewrittenExpr).rewrite(resolver.resolveExpressions(_, planContext))
+    toCommandExpression(rewrittenExpr).endoRewrite(KeyTokenResolver(planContext))
   }
 
   private def buildPredicate(expr: ast.Expression)(implicit context: PipeExecutionBuilderContext, planContext: PlanContext): Predicate = {
     val rewrittenExpr: Expression = expr.endoRewrite(buildPipeExpressions)
 
-    toCommandPredicate(rewrittenExpr).rewrite(resolver.resolveExpressions(_, planContext)).asInstanceOf[Predicate]
+    toCommandPredicate(rewrittenExpr).endoRewrite(KeyTokenResolver(planContext))
   }
 
   private def translateSortDescription(s: logical.SortDescription): pipes.SortDescription = s match {

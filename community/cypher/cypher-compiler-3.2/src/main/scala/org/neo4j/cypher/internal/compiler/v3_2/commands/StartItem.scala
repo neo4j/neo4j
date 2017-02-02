@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v3_2.commands
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions._
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Argument
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments
-import org.neo4j.cypher.internal.compiler.v3_2.symbols.TypeSafe
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 
 trait NodeStartItemVariables extends StartItem {
@@ -33,18 +32,12 @@ trait RelationshipStartItemVariables extends StartItem {
   def variables: Seq[(String, CypherType)] = Seq(variableName -> CTRelationship)
 }
 
-abstract class StartItem(val variableName: String, val arguments: Seq[Argument])
-  extends TypeSafe with AstNode[StartItem] {
+abstract class StartItem(val variableName: String, val arguments: Seq[Argument]) {
   def producerType: String = getClass.getSimpleName
   def variables: Seq[(String, CypherType)]
 }
 
-trait ReadOnlyStartItem {
-  // AstNode implementations
-  def children: Seq[AstNode[_]] = Nil
-  def symbolTableDependencies:Set[String] = Set.empty
-  def rewrite(f: (Expression) => Expression): this.type = this
-}
+trait ReadOnlyStartItem
 
 case class RelationshipById(varName: String, expression: Expression)
   extends StartItem(varName, Seq(Arguments.LegacyExpression(expression))) with ReadOnlyStartItem with RelationshipStartItemVariables

@@ -43,12 +43,5 @@ case class DesugaredMapProjection(id: String, includeAllProps: Boolean, literalE
     mapOfProperties ++ mapOfLiteralValues
   }
 
-  override def rewrite(f: (Expression) => Expression) =
-    f(DesugaredMapProjection(id, includeAllProps, literalExpressions.rewrite(f)))
-
-  override def arguments = literalExpressions.values.toIndexedSeq
-
-  override def symbolTableDependencies = literalExpressions.symboltableDependencies + id
-
   override def toString = s"$id{.*, " + literalExpressions.mkString + "}"
 }

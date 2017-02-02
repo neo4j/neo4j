@@ -62,7 +62,5 @@ abstract class CypherType {
   lazy val invariant: TypeSpec = TypeSpec.exact(this)
   lazy val contravariant: TypeSpec = TypeSpec.all leastUpperBounds this
 
-  def rewrite(f: CypherType => CypherType) = f(this)
-
   def toNeoTypeString: String
 }

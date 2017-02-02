@@ -19,14 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.commands.expressions
 
-import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.aggregation.AvgFunction
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 
 case class Avg(anInner: Expression) extends AggregationWithInnerExpression(anInner) {
   def createAggregationFunction = new AvgFunction(anInner)
-
-  val expectedInnerType = CTNumber
-
-  def rewrite(f: (Expression) => Expression) = f(Avg(anInner.rewrite(f)))
 }
