@@ -19,15 +19,7 @@
  */
 package org.neo4j.kernel.impl.util;
 
-import java.io.IOException;
-import java.util.Iterator;
-
 import org.neo4j.cursor.Cursor;
-import org.neo4j.cursor.IOCursor;
-import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 
 public class Cursors
 {
@@ -57,105 +49,20 @@ public class Cursors
         return (Cursor<T>) EMPTY;
     }
 
-    public static <T> Cursor<T> cursor( final T... items )
+    public static int count( Cursor<?> cursor )
     {
-        return cursor( Iterables.asIterable( items ) );
-    }
-
-    public static <T> Cursor<T> cursor( final Iterable<T> items )
-    {
-        return new Cursor<T>()
+        try
         {
-            Iterator<T> iterator = items.iterator();
-
-            T current;
-
-            @Override
-            public boolean next()
+            int count = 0;
+            while ( cursor.next() )
             {
-                if ( iterator.hasNext() )
-                {
-                    current = iterator.next();
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
+                count++;
             }
-
-            @Override
-            public void close()
-            {
-                iterator = items.iterator();
-                current = null;
-            }
-
-            @Override
-            public T get()
-            {
-                if ( current == null )
-                {
-                    throw new IllegalStateException();
-                }
-
-                return current;
-            }
-        };
-    }
-
-    public static TransactionCursor txCursor( Cursor<CommittedTransactionRepresentation> cursor )
-    {
-        return new TransactionCursor()
+            return count;
+        }
+        finally
         {
-            @Override
-            public LogPosition position()
-            {
-                throw new UnsupportedOperationException(
-                        "LogPosition does not apply when moving a generic cursor over a list of transactions" );
-            }
-
-            @Override
-            public boolean next() throws IOException
-            {
-                return cursor.next();
-            }
-
-            @Override
-            public void close() throws IOException
-            {
-                cursor.close();
-            }
-
-            @Override
-            public CommittedTransactionRepresentation get()
-            {
-                return cursor.get();
-            }
-        };
-    }
-
-    public static <T> IOCursor<T> io( Cursor<T> cursor )
-    {
-        return new IOCursor<T>()
-        {
-            @Override
-            public boolean next() throws IOException
-            {
-                return cursor.next();
-            }
-
-            @Override
-            public void close() throws IOException
-            {
-                cursor.close();
-            }
-
-            @Override
-            public T get()
-            {
-                return cursor.get();
-            }
-        };
+            cursor.close();
+        }
     }
 }

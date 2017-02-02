@@ -80,6 +80,7 @@ import static org.neo4j.kernel.api.properties.Property.booleanProperty;
 import static org.neo4j.kernel.api.properties.Property.noNodeProperty;
 import static org.neo4j.kernel.api.properties.Property.numberProperty;
 import static org.neo4j.kernel.api.properties.Property.stringProperty;
+import static org.neo4j.kernel.impl.api.state.StubCursors.cursor;
 
 public class TxStateTest
 {
@@ -1454,7 +1455,7 @@ public class TxStateTest
         {
             Direction direction = Direction.values()[random.nextInt( Direction.values().length )];
             int[] relationshipTypes = randomTypes( relationshipTypeCount, random.random() );
-            Cursor<RelationshipItem> committed = Cursors.cursor(
+            Cursor<RelationshipItem> committed = cursor(
                     relationshipsForNode( i, committedRelationships, direction, relationshipTypes ).values() );
             Cursor<RelationshipItem> augmented =
                     state.augmentNodeRelationshipCursor( committed, state.getNodeState( i ), direction,

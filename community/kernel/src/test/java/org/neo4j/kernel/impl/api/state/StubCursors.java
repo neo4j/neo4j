@@ -20,14 +20,15 @@
 package org.neo4j.kernel.impl.api.state;
 
 import java.util.Arrays;
+import java.util.Iterator;
 
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.cursor.EntityItemHelper;
 import org.neo4j.kernel.api.cursor.RelationshipItemHelper;
 import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.impl.util.Cursors;
 import org.neo4j.storageengine.api.DegreeItem;
 import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.NodeItem;
@@ -55,20 +56,20 @@ public class StubCursors
         {
             nodeItems[i] = new StubNodeItem( nodeIds[i], empty(), emptySet() );
         }
-        return Cursors.cursor( nodeItems );
+        return cursor( nodeItems );
     }
 
     public static Cursor<NodeItem> asNodeCursor( final long nodeId,
             final Cursor<PropertyItem> propertyCursor )
     {
-        return Cursors.cursor( new StubNodeItem( nodeId, propertyCursor, emptySet() ) );
+        return cursor( new StubNodeItem( nodeId, propertyCursor, emptySet() ) );
     }
 
     public static Cursor<NodeItem> asNodeCursor( final long nodeId,
             final Cursor<PropertyItem> propertyCursor,
             final PrimitiveIntSet labels )
     {
-        return Cursors.cursor( new StubNodeItem( nodeId, propertyCursor, labels ) );
+        return cursor( new StubNodeItem( nodeId, propertyCursor, labels ) );
     }
 
     private static class StubNodeItem extends EntityItemHelper implements NodeItem
@@ -189,7 +190,7 @@ public class StubCursors
     public static Cursor<RelationshipItem> asRelationshipCursor( final long relId, final int type,
             final long startNode, final long endNode, final Cursor<PropertyItem> propertyCursor )
     {
-        return Cursors.<RelationshipItem>cursor( new RelationshipItemHelper()
+        return cursor( new RelationshipItemHelper()
         {
             @Override
             public long id()
@@ -271,7 +272,7 @@ public class StubCursors
 
     public static Cursor<PropertyItem> asPropertyCursor( final DefinedProperty... properties )
     {
-        return Cursors.cursor( map( StubCursors::asPropertyItem, Arrays.asList( properties ) ) );
+        return cursor( map( StubCursors::asPropertyItem, Arrays.asList( properties ) ) );
     }
 
     private static PropertyItem asPropertyItem( final DefinedProperty property )
@@ -288,6 +289,54 @@ public class StubCursors
             public Object value()
             {
                 return property.value();
+            }
+        };
+    }
+
+    @SafeVarargs
+    public static <T> Cursor<T> cursor( final T... items )
+    {
+        return cursor( Iterables.asIterable( items ) );
+    }
+
+    public static <T> Cursor<T> cursor( final Iterable<T> items )
+    {
+        return new Cursor<T>()
+        {
+            Iterator<T> iterator = items.iterator();
+
+            T current;
+
+            @Override
+            public boolean next()
+            {
+                if ( iterator.hasNext() )
+                {
+                    current = iterator.next();
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+
+            @Override
+            public void close()
+            {
+                iterator = items.iterator();
+                current = null;
+            }
+
+            @Override
+            public T get()
+            {
+                if ( current == null )
+                {
+                    throw new IllegalStateException();
+                }
+
+                return current;
             }
         };
     }

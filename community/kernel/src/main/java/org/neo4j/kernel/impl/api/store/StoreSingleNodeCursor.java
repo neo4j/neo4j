@@ -50,13 +50,13 @@ import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 
-import static java.util.function.Function.identity;
 import static org.neo4j.collection.primitive.Primitive.intSet;
 import static org.neo4j.kernel.impl.api.store.DegreeCounter.countRelationshipsInGroup;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
+import static org.neo4j.kernel.impl.util.Cursors.count;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
 
 /**
@@ -264,7 +264,7 @@ public class StoreSingleNodeCursor extends EntityItemHelper implements Cursor<No
         }
         else
         {
-            relationships( Direction.BOTH ).collect( set, RelationshipItem::type );
+            relationships( Direction.BOTH ).forAll( relationship -> set.add( relationship.type() ) );
         }
         return set;
     }
@@ -279,7 +279,7 @@ public class StoreSingleNodeCursor extends EntityItemHelper implements Cursor<No
         }
         else
         {
-            return relationships( direction ).count();
+            return count( relationships( direction ) );
         }
     }
 
@@ -293,7 +293,7 @@ public class StoreSingleNodeCursor extends EntityItemHelper implements Cursor<No
         }
         else
         {
-            return relationships( direction, relType ).count();
+            return count( relationships( direction, relType ) );
         }
     }
 
@@ -306,17 +306,21 @@ public class StoreSingleNodeCursor extends EntityItemHelper implements Cursor<No
 
     private PrimitiveIntObjectMap<int[]> buildDegreeMap()
     {
-        return relationships( Direction.BOTH )
-                .mapReduce( Primitive.<int[]>intObjectMap( 5 ), identity(), ( rel, currentDegrees ) ->
+        PrimitiveIntObjectMap<int[]> currentDegrees = Primitive.intObjectMap( 5 );
+        try( Cursor<RelationshipItem> relationships = relationships( Direction.BOTH ) )
+        {
+            while ( relationships.next() )
+            {
+                RelationshipItem rel = relationships.get();
+                int[] byType = currentDegrees.get( rel.type() );
+                if ( byType == null )
                 {
-                    int[] byType = currentDegrees.get( rel.type() );
-                    if ( byType == null )
-                    {
-                        currentDegrees.put( rel.type(), byType = new int[3] );
-                    }
-                    byType[directionOf( nodeRecord.getId(), rel.id(), rel.startNode(), rel.endNode() ).ordinal()]++;
-                    return currentDegrees;
-                } );
+                    currentDegrees.put( rel.type(), byType = new int[3] );
+                }
+                byType[directionOf( nodeRecord.getId(), rel.id(), rel.startNode(), rel.endNode() ).ordinal()]++;
+            }
+        }
+        return currentDegrees;
     }
 
     @Override

@@ -22,14 +22,18 @@ package org.neo4j.causalclustering.catchup.tx;
 import io.netty.channel.ChannelHandlerContext;
 import org.junit.Test;
 
+import java.io.IOException;
+
 import org.neo4j.causalclustering.catchup.CatchupServerProtocol;
 import org.neo4j.causalclustering.catchup.ResponseMessageType;
 import org.neo4j.causalclustering.identity.StoreId;
+import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Commands;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
+import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
@@ -47,9 +51,8 @@ import static org.neo4j.causalclustering.catchup.CatchupResult.E_STORE_UNAVAILAB
 import static org.neo4j.causalclustering.catchup.CatchupResult.E_TRANSACTION_PRUNED;
 import static org.neo4j.causalclustering.catchup.CatchupResult.SUCCESS_END_OF_BATCH;
 import static org.neo4j.causalclustering.catchup.CatchupResult.SUCCESS_END_OF_STREAM;
+import static org.neo4j.kernel.impl.api.state.StubCursors.cursor;
 import static org.neo4j.kernel.impl.transaction.command.Commands.createNode;
-import static org.neo4j.kernel.impl.util.Cursors.cursor;
-import static org.neo4j.kernel.impl.util.Cursors.txCursor;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class TxPullRequestHandlerTest
@@ -224,5 +227,36 @@ public class TxPullRequestHandlerTest
         return new CommittedTransactionRepresentation(
                 new LogEntryStart( id, id, id, id - 1, new byte[]{}, LogPosition.UNSPECIFIED ),
                 Commands.transactionRepresentation( createNode( 0 ) ), new OnePhaseCommit( id, id ) );
+    }
+
+    private static TransactionCursor txCursor( Cursor<CommittedTransactionRepresentation> cursor )
+    {
+        return new TransactionCursor()
+        {
+            @Override
+            public LogPosition position()
+            {
+                throw new UnsupportedOperationException(
+                        "LogPosition does not apply when moving a generic cursor over a list of transactions" );
+            }
+
+            @Override
+            public boolean next() throws IOException
+            {
+                return cursor.next();
+            }
+
+            @Override
+            public void close() throws IOException
+            {
+                cursor.close();
+            }
+
+            @Override
+            public CommittedTransactionRepresentation get()
+            {
+                return cursor.get();
+            }
+        };
     }
 }
