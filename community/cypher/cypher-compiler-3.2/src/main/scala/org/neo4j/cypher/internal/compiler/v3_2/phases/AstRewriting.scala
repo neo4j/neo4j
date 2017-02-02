@@ -20,18 +20,19 @@
 package org.neo4j.cypher.internal.compiler.v3_2.phases
 
 import org.neo4j.cypher.internal.compiler.v3_2.ASTRewriter
-import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
+import org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
 import org.neo4j.cypher.internal.compiler.v3_2.ast.conditions._
 import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters._
-import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.{RewriterCondition, RewriterStepSequencer, Condition => Rewriter_Condition}
 import org.neo4j.cypher.internal.frontend.v3_2.ast.NotEquals
+import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.{RewriterCondition, RewriterStepSequencer}
+import org.neo4j.cypher.internal.frontend.v3_2.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.v3_2.{Rewriter, inSequence}
 
-case class AstRewriting(sequencer: String => RewriterStepSequencer, shouldExtractParams: Boolean) extends Phase {
+case class AstRewriting(sequencer: String => RewriterStepSequencer, shouldExtractParams: Boolean) extends Phase[BaseContext] {
 
   private val astRewriter = new ASTRewriter(sequencer, shouldExtractParams)
 
-  override def process(in: CompilationState, context: Context): CompilationState = {
+  override def process(in: CompilationState, context: BaseContext): CompilationState = {
 
     val (rewrittenStatement, extractedParams, postConditions) = astRewriter.rewrite(in.queryText, in.statement, in.semantics)
 
@@ -62,7 +63,7 @@ case class AstRewriting(sequencer: String => RewriterStepSequencer, shouldExtrac
 }
 
 object LateAstRewriting extends StatementRewriter {
-  override def instance(context: Context): Rewriter = inSequence(
+  override def instance(context: BaseContext): Rewriter = inSequence(
     collapseMultipleInPredicates,
     nameUpdatingClauses,
     projectNamedPaths,

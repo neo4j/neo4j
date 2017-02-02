@@ -19,13 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.phases
 
-import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
+import org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
 import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters.{expandCallWhere, normalizeReturnClauses, normalizeWithClauses, replaceAliasedFunctionInvocations}
 import org.neo4j.cypher.internal.frontend.v3_2.inSequence
+import org.neo4j.cypher.internal.frontend.v3_2.phases.BaseContext
 
-case object PreparatoryRewriting extends Phase {
+case object PreparatoryRewriting extends Phase[BaseContext] {
 
-  override def process(from: CompilationState, context: Context): CompilationState = {
+  override def process(from: CompilationState, context: BaseContext): CompilationState = {
 
     val rewrittenStatement = from.statement.endoRewrite(inSequence(
       normalizeReturnClauses(context.exceptionCreator),

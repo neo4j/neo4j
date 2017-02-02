@@ -21,13 +21,13 @@ package org.neo4j.cypher.internal.compiler.v3_2.planner.logical
 
 import org.mockito.Matchers.any
 import org.mockito.Mockito.{times, verify, when}
-import org.neo4j.cypher.internal.compiler.v3_2.devNullLogger
 import org.neo4j.cypher.internal.compiler.v3_2.planner._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.v3_2.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{ASTAnnotationMap, Expression, Hint}
+import org.neo4j.cypher.internal.frontend.v3_2.phases.devNullLogger
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_2.{ExpressionTypeInfo, SemanticTable}

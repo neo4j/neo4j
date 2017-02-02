@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.spi
 
-import org.neo4j.cypher.internal.compiler.v3_2.InternalNotificationLogger
 import org.neo4j.cypher.internal.compiler.v3_2.IndexDescriptor
+import org.neo4j.cypher.internal.frontend.v3_2.phases.InternalNotificationLogger
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 
 /**

@@ -28,19 +28,21 @@ import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{GeneratedQuery, Pl
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.RuntimeTypeConverter
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.{Metrics, QueryGraphSolver}
 import org.neo4j.cypher.internal.compiler.v3_2.spi.PlanContext
+import org.neo4j.cypher.internal.frontend.v3_2.phases.{BaseContext, CompilationPhaseTracer, InternalNotificationLogger, Monitors}
 import org.neo4j.cypher.internal.frontend.v3_2.{CypherException, InputPosition}
 
-case class Context(exceptionCreator: (String, InputPosition) => CypherException,
-                   tracer: CompilationPhaseTracer,
-                   notificationLogger: InternalNotificationLogger,
-                   planContext: PlanContext,
-                   typeConverter: RuntimeTypeConverter,
-                   createFingerprintReference: Option[PlanFingerprint] => PlanFingerprintReference,
-                   monitors: Monitors,
-                   metrics: Metrics,
-                   queryGraphSolver: QueryGraphSolver,
-                   config: CypherCompilerConfiguration,
-                   updateStrategy: UpdateStrategy,
-                   clock: Clock,
-                   codeStructure: CodeStructure[GeneratedQuery],
-                   codeGenConfiguration: CodeGenConfiguration)
+case class CompilerContext(exceptionCreator: (String, InputPosition) => CypherException,
+                           tracer: CompilationPhaseTracer,
+                           notificationLogger: InternalNotificationLogger,
+                           planContext: PlanContext,
+                           typeConverter: RuntimeTypeConverter,
+                           createFingerprintReference: Option[PlanFingerprint] => PlanFingerprintReference,
+                           monitors: Monitors,
+                           metrics: Metrics,
+                           queryGraphSolver: QueryGraphSolver,
+                           config: CypherCompilerConfiguration,
+                           updateStrategy: UpdateStrategy,
+                           clock: Clock,
+                           codeStructure: CodeStructure[GeneratedQuery],
+                           codeGenConfiguration: CodeGenConfiguration) extends BaseContext
+

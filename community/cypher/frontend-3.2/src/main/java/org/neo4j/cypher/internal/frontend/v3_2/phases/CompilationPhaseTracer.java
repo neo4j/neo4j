@@ -17,22 +17,38 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters
+package org.neo4j.cypher.internal.frontend.v3_2.phases;
 
-import org.neo4j.cypher.internal.frontend.v3_2.Rewriter
+public interface CompilationPhaseTracer
+{
+    enum CompilationPhase
+    {
+        PARSING,
+        DEPRECATION_WARNINGS,
+        SEMANTIC_CHECK,
+        AST_REWRITE,
+        LOGICAL_PLANNING,
+        CODE_GENERATION,
+        PIPE_BUILDING,
+    }
 
-object RewriterStep {
-   implicit def namedProductRewriter(p: Product with Rewriter): ApplyRewriter = ApplyRewriter(p.productPrefix, p)
+    CompilationPhaseEvent beginPhase( CompilationPhase phase );
 
-   def enableCondition(p: Condition) = EnableRewriterCondition(RewriterCondition(p.name, p))
-   def disableCondition(p: Condition) = DisableRewriterCondition(RewriterCondition(p.name, p))
- }
+    interface CompilationPhaseEvent extends AutoCloseable
+    {
+        @Override
+        void close();
+    }
 
-sealed trait RewriterStep
-final case class ApplyRewriter(name: String, rewriter: Rewriter) extends RewriterStep
-final case class EnableRewriterCondition(cond: RewriterCondition) extends RewriterStep
-final case class DisableRewriterCondition(cond: RewriterCondition) extends RewriterStep
+    CompilationPhaseTracer NO_TRACING = new CompilationPhaseTracer()
+    {
+        @Override
+        public CompilationPhaseEvent beginPhase( CompilationPhase phase )
+        {
+            return NONE_PHASE;
+        }
+    };
 
-trait Condition extends (Any => Seq[String]) {
-   def name: String
+    CompilationPhaseEvent NONE_PHASE = () -> {
+    };
 }

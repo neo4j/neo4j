@@ -19,20 +19,26 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.phases
 
-import org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer.CompilationPhase.PARSING
+import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters.{CNFNormalizer, Namespacer, rewriteEqualityToInPredicate}
+import org.neo4j.cypher.internal.frontend.v3_2.SemanticState
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Statement
-import org.neo4j.cypher.internal.frontend.v3_2.parser.CypherParser
+import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_2.phases.BaseContext
 
-case object Parsing extends Phase[BaseContext] {
-  private val parser = new CypherParser
+object CompilationPhases {
 
-  override def process(in: CompilationState, ignored: BaseContext): CompilationState =
-    in.copy(maybeStatement = Some(parser.parse(in.queryText, in.startPosition)))
+  def parsing(sequencer: String => RewriterStepSequencer): Transformer[BaseContext] =
+    Parsing.adds[Statement] andThen
+      SyntaxDeprecationWarnings andThen
+      PreparatoryRewriting andThen
+      SemanticAnalysis(warn = true).adds[SemanticState] andThen
+      AstRewriting(sequencer, shouldExtractParams = true)
 
-  override val phase = PARSING
+  def lateAstRewriting: Transformer[BaseContext] =
+    SemanticAnalysis(warn = false) andThen
+      Namespacer andThen
+      rewriteEqualityToInPredicate andThen
+      CNFNormalizer andThen
+      LateAstRewriting
 
-  override val description = "parse text into an AST object"
-
-  override def postConditions: Set[Condition] = Set(Contains[Statement])
 }

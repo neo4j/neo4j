@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2
 
-import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase.CODE_GENERATION
+import org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer.CompilationPhase.CODE_GENERATION
 import org.neo4j.cypher.internal.compiler.v3_2.codegen._
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.profiling.ProfilingTracer
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.ExecutionPlanBuilder.DescriptionProvider
@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v3_2.spi.{GraphStatistics, PlanContext, QueryContext}
 import org.neo4j.cypher.internal.frontend.v3_2.notification.InternalNotification
 
-object BuildCompiledExecutionPlan extends Phase {
+object BuildCompiledExecutionPlan extends Phase[CompilerContext] {
 
   override def phase = CODE_GENERATION
 
@@ -39,7 +39,7 @@ object BuildCompiledExecutionPlan extends Phase {
 
   override def postConditions = Set.empty// Can't yet guarantee that we can build an execution plan
 
-  override def process(from: CompilationState, context: Context): CompilationState =
+  override def process(from: CompilationState, context: CompilerContext): CompilationState =
     try {
       val codeGen = new CodeGenerator(context.codeStructure, context.clock, context.codeGenConfiguration)
       val compiled: CompiledPlan = codeGen.generate(from.logicalPlan, context.planContext, from.semanticTable, from.plannerName)
@@ -50,7 +50,7 @@ object BuildCompiledExecutionPlan extends Phase {
         from.copy(maybeExecutionPlan = None)
     }
 
-  private def createExecutionPlan(context: Context, compiled: CompiledPlan) = new ExecutionPlan {
+  private def createExecutionPlan(context: CompilerContext, compiled: CompiledPlan) = new ExecutionPlan {
     private val fingerprint = context.createFingerprintReference(compiled.fingerprint)
 
     override def isStale(lastTxId: () => Long, statistics: GraphStatistics) = fingerprint.isStale(lastTxId, statistics)

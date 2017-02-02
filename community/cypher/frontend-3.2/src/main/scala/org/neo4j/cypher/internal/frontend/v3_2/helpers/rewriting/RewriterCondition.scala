@@ -17,37 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_2;
+package org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting
 
-public interface CompilationPhaseTracer
-{
-    enum CompilationPhase
-    {
-        PARSING,
-        DEPRECATION_WARNINGS,
-        SEMANTIC_CHECK,
-        AST_REWRITE,
-        LOGICAL_PLANNING,
-        CODE_GENERATION,
-        PIPE_BUILDING,
-    }
+final case class RewriterCondition(name: String, condition: Any => Seq[String])
+  extends (Any => Option[RewriterConditionFailure]) {
 
-    CompilationPhaseEvent beginPhase( CompilationPhase phase );
-
-    interface CompilationPhaseEvent extends AutoCloseable
-    {
-        @Override
-        void close();
-    }
-
-    CompilationPhaseTracer NO_TRACING = new CompilationPhaseTracer()
-    {
-        @Override
-        public CompilationPhaseEvent beginPhase( CompilationPhase phase )
-        {
-            return NONE_PHASE;
-        }
-    };
-    CompilationPhaseEvent NONE_PHASE = () -> {
-    };
+  def apply(input: Any): Option[RewriterConditionFailure] = {
+    val conditions = condition(input)
+    if (conditions.isEmpty) None else Some(RewriterConditionFailure(name, conditions))
+  }
 }
+
+case class RewriterConditionFailure(name: String, problems: Seq[String])

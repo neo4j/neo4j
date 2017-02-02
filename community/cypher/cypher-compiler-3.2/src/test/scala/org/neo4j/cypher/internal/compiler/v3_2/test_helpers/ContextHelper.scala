@@ -21,15 +21,16 @@ package org.neo4j.cypher.internal.compiler.v3_2.test_helpers
 
 import java.time.Clock
 
-import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.NO_TRACING
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.CodeGenConfiguration
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi.CodeStructure
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{GeneratedQuery, PlanFingerprint, PlanFingerprintReference}
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.RuntimeTypeConverter
-import org.neo4j.cypher.internal.compiler.v3_2.phases.Context
+import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilerContext
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.{Metrics, QueryGraphSolver}
 import org.neo4j.cypher.internal.compiler.v3_2.spi.PlanContext
+import org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer.NO_TRACING
+import org.neo4j.cypher.internal.frontend.v3_2.phases.{CompilationPhaseTracer, InternalNotificationLogger, Monitors, devNullLogger}
 import org.neo4j.cypher.internal.frontend.v3_2.{CypherException, InputPosition, InternalException}
 import org.scalatest.mock.MockitoSugar
 
@@ -47,7 +48,7 @@ object ContextHelper extends MockitoSugar {
              updateStrategy: UpdateStrategy = mock[UpdateStrategy],
              clock: Clock = Clock.systemUTC(),
              codeStructure: CodeStructure[GeneratedQuery] = mock[CodeStructure[GeneratedQuery]],
-             codeGenConfiguration: CodeGenConfiguration = CodeGenConfiguration()): Context =
-    Context(exceptionCreator, tracer, notificationLogger, planContext, typeConverter, createFingerprintReference,
+             codeGenConfiguration: CodeGenConfiguration = CodeGenConfiguration()): CompilerContext =
+    CompilerContext(exceptionCreator, tracer, notificationLogger, planContext, typeConverter, createFingerprintReference,
       monitors, metrics, queryGraphSolver, config, updateStrategy, clock, codeStructure, codeGenConfiguration)
 }

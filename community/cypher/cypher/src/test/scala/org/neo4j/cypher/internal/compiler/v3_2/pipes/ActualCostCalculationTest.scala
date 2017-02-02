@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.commands.SingleQueryExpression
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{Literal, Property, Variable}
 import org.neo4j.cypher.internal.compiler.v3_2.commands.predicates.Equals
 import org.neo4j.cypher.internal.compiler.v3_2.commands.values.TokenType.{Label => _, _}
-import org.neo4j.cypher.internal.compiler.v3_2.devNullLogger
+import org.neo4j.cypher.internal.frontend.v3_2.phases.devNullLogger
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_2.{LabelId, PropertyKeyId, SemanticDirection, ast}
 import org.neo4j.cypher.internal.spi.v3_2.TransactionBoundQueryContext.IndexSearchMonitor

@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.rewriter
 
-import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase
-import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
-import org.neo4j.cypher.internal.compiler.v3_2.phases.{CompilationState, Condition, Context, Phase}
-import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSequencer
+import org.neo4j.cypher.internal.compiler.v3_2.phases.{CompilationState, CompilerContext, Condition, Phase}
 import org.neo4j.cypher.internal.frontend.v3_2.Rewriter
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.fixedPoint
+import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.RewriterStepSequencer
+import org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer.CompilationPhase
+import org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
 
 /*
  * Rewriters that live here are required to adhere to the contract of
@@ -36,7 +36,7 @@ case class PlanRewriter(rewriterSequencer: String => RewriterStepSequencer) exte
 
   override def postConditions: Set[Condition] = Set.empty
 
-  override def instance(context: Context) = fixedPoint(rewriterSequencer("LogicalPlanRewriter")(
+  override def instance(context: CompilerContext) = fixedPoint(rewriterSequencer("LogicalPlanRewriter")(
     fuseSelections,
     unnestApply,
     cleanUpEager,
@@ -48,12 +48,12 @@ case class PlanRewriter(rewriterSequencer: String => RewriterStepSequencer) exte
   ).rewriter)
 }
 
-trait LogicalPlanRewriter extends Phase {
+trait LogicalPlanRewriter extends Phase[CompilerContext] {
   override def phase: CompilationPhase = LOGICAL_PLANNING
 
-  def instance(context: Context): Rewriter
+  def instance(context: CompilerContext): Rewriter
 
-  override def process(from: CompilationState, context: Context): CompilationState = {
+  override def process(from: CompilationState, context: CompilerContext): CompilationState = {
     val rewritten = from.logicalPlan.endoRewrite(instance(context))
     from.copy(maybeLogicalPlan = Some(rewritten))
   }

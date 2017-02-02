@@ -17,22 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_2.phases
+package org.neo4j.cypher.internal.frontend.v3_2.phases
 
-import org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer.CompilationPhase.PARSING
-import org.neo4j.cypher.internal.frontend.v3_2.ast.Statement
-import org.neo4j.cypher.internal.frontend.v3_2.parser.CypherParser
-import org.neo4j.cypher.internal.frontend.v3_2.phases.BaseContext
+import org.neo4j.cypher.internal.frontend.v3_2.{CypherException, InputPosition}
 
-case object Parsing extends Phase[BaseContext] {
-  private val parser = new CypherParser
-
-  override def process(in: CompilationState, ignored: BaseContext): CompilationState =
-    in.copy(maybeStatement = Some(parser.parse(in.queryText, in.startPosition)))
-
-  override val phase = PARSING
-
-  override val description = "parse text into an AST object"
-
-  override def postConditions: Set[Condition] = Set(Contains[Statement])
+trait BaseContext {
+  def tracer: CompilationPhaseTracer
+  def notificationLogger: InternalNotificationLogger
+  def exceptionCreator: (String, InputPosition) => CypherException
+  def monitors: Monitors
 }

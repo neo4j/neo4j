@@ -19,22 +19,23 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters
 
-import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase
-import org.neo4j.cypher.internal.compiler.v3_2.phases.{CompilationState, Condition, Context, Phase}
+import org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer.CompilationPhase
+import org.neo4j.cypher.internal.compiler.v3_2.phases._
 import org.neo4j.cypher.internal.frontend.v3_2.Foldable._
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
+import org.neo4j.cypher.internal.frontend.v3_2.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.v3_2.{Ref, Rewriter, SemanticTable, bottomUp, _}
 
-object Namespacer extends Phase {
+object Namespacer extends Phase[BaseContext] {
   type VariableRenamings = Map[Ref[Variable], Variable]
 
-  import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
+  import org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
 
   override def phase: CompilationPhase = AST_REWRITE
 
   override def description: String = "rename variables so they are all unique"
 
-  override def process(from: CompilationState, ignored: Context): CompilationState = {
+  override def process(from: CompilationState, ignored: BaseContext): CompilationState = {
     val ambiguousNames = shadowedNames(from.semantics.scopeTree)
     val variableDefinitions: Map[SymbolUse, SymbolUse] = from.semantics.scopeTree.allVariableDefinitions
     val protectedVariables = returnAliases(from.statement)

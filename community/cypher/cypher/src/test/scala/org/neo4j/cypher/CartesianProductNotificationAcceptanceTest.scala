@@ -27,9 +27,10 @@ import org.neo4j.cypher.internal.compatibility.v3_2.{StringInfoLogger, WrappedMo
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.codegen.CodeGenConfiguration
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.IdentityTypeConverter
-import org.neo4j.cypher.internal.compiler.v3_2.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_2.InputPosition
+import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_2.notification.CartesianProductNotification
+import org.neo4j.cypher.internal.frontend.v3_2.phases.InternalNotificationLogger
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.spi.v3_2.codegen.GeneratedQueryStructure
 import org.neo4j.logging.NullLog

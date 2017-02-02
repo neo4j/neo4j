@@ -19,15 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.phases
 
-import org.neo4j.cypher.internal.compiler.v3_2.CompilationPhaseTracer.CompilationPhase.SEMANTIC_CHECK
+import org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer.CompilationPhase.SEMANTIC_CHECK
 import org.neo4j.cypher.internal.compiler.v3_2.SemanticChecker
 import org.neo4j.cypher.internal.compiler.v3_2.ast.conditions.containsNoNodesOfType
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticState
 import org.neo4j.cypher.internal.frontend.v3_2.ast.UnaliasedReturnItem
+import org.neo4j.cypher.internal.frontend.v3_2.phases.BaseContext
 
-case class SemanticAnalysis(warn: Boolean) extends Phase {
+case class SemanticAnalysis(warn: Boolean) extends Phase[BaseContext] {
 
-  override def process(from: CompilationState, context: Context): CompilationState = {
+  override def process(from: CompilationState, context: BaseContext): CompilationState = {
     val semanticState = SemanticChecker.check(from.statement, context.exceptionCreator)
     if (warn) semanticState.notifications.foreach(context.notificationLogger.log)
     from.copy(maybeSemantics = Some(semanticState))

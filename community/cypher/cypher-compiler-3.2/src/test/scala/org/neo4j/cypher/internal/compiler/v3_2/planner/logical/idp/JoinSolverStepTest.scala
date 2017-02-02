@@ -20,13 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v3_2.planner.logical.idp
 
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.compiler.v3_2.InternalNotificationLogger
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.{LogicalPlanningContext, Metrics, QueryGraphSolver}
 import org.neo4j.cypher.internal.compiler.v3_2.planner._
 import org.neo4j.cypher.internal.compiler.v3_2.spi.PlanContext
+import org.neo4j.cypher.internal.frontend.v3_2.phases.InternalNotificationLogger
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_2.{SemanticDirection, SemanticTable}
 import org.neo4j.cypher.internal.ir.v3_2.{Cardinality, IdName, PatternRelationship, SimplePatternLength}
