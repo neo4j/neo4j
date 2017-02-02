@@ -28,7 +28,7 @@ class AggregationFunctionCallSupportAcceptanceTest extends ProcedureCallAcceptan
   test("should return correctly typed map result (even if converting to and from scala representation internally)") {
     val value = new util.HashMap[String, Any]()
     value.put("name", "Cypher")
-    value.put("level", 9001)
+    value.put("level", 9001L)
 
     registerUserAggregationFunction(value)
 
