@@ -109,7 +109,8 @@ class Segments implements AutoCloseable
         if ( prevFileLastIndex != prevIndex )
         {
             throw new IllegalArgumentException( format( "Cannot rotate file and have append index go from %d " +
-                                                        "to %d. Going backwards is a truncation operation, going forwards is a skip operation.",
+                                                        "to %d. Going backwards is a truncation operation, going " +
+                                                        "forwards is a skip operation.",
                     prevFileLastIndex, prevIndex ) );
         }
         return createNext( prevFileLastIndex, prevIndex, prevTerm );
