@@ -24,7 +24,6 @@ import java.util.Iterator;
 
 import org.neo4j.cursor.Cursor;
 import org.neo4j.cursor.IOCursor;
-import org.neo4j.cursor.IntCursor;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -51,36 +50,11 @@ public class Cursors
         {
         }
     };
-   private static IntCursor EMPTY_INT = new IntCursor()
-    {
-        @Override
-        public boolean next()
-        {
-            return false;
-        }
-
-        @Override
-        public int getAsInt()
-        {
-            throw new IllegalStateException( "no elements" );
-        }
-
-        @Override
-        public void close()
-        {
-        }
-    };
 
     @SuppressWarnings("unchecked")
     public static <T> Cursor<T> empty()
     {
         return (Cursor<T>) EMPTY;
-    }
-
-    @SuppressWarnings("unchecked")
-    public static IntCursor emptyInt()
-    {
-        return EMPTY_INT;
     }
 
     public static <T> Cursor<T> cursor( final T... items )
@@ -181,56 +155,6 @@ public class Cursors
             public T get()
             {
                 return cursor.get();
-            }
-        };
-    }
-
-    public static IntCursor intCursor( int... integers )
-    {
-        return intCursor( Iterables.asIterable( integers ) );
-    }
-
-    private static IntCursor intCursor( Iterable<Integer> integers )
-    {
-        return new IntCursor()
-        {
-            Iterator<Integer> iterator = integers.iterator();
-
-            boolean valid = false;
-            int current;
-
-            @Override
-            public boolean next()
-            {
-                if ( iterator.hasNext() )
-                {
-                    valid = true;
-                    current = iterator.next();
-                    return true;
-                }
-                else
-                {
-                    valid = false;
-                    return false;
-                }
-            }
-
-            @Override
-            public void close()
-            {
-                iterator = integers.iterator();
-                valid = false;
-            }
-
-            @Override
-            public int getAsInt()
-            {
-                if ( valid )
-                {
-                    return current;
-                }
-
-                throw new IllegalStateException();
             }
         };
     }
