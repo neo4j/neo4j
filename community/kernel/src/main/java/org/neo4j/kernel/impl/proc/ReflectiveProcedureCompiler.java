@@ -72,10 +72,10 @@ class ReflectiveProcedureCompiler
     private final FieldInjections allFieldInjections;
     private final Log log;
     private final TypeMappers typeMappers;
-    private final ProcedureAllowedConfig config;
+    private final ProcedureConfig config;
 
     ReflectiveProcedureCompiler( TypeMappers typeMappers, ComponentRegistry safeComponents,
-            ComponentRegistry allComponents, Log log, ProcedureAllowedConfig config )
+            ComponentRegistry allComponents, Log log, ProcedureConfig config )
     {
         inputSignatureDeterminer = new MethodSignatureCompiler( typeMappers );
         outputMappers = new OutputMappers( typeMappers );
@@ -201,7 +201,7 @@ class ReflectiveProcedureCompiler
         OutputMapper outputMapper = outputMappers.mapper( method );
         MethodHandle procedureMethod = lookup.unreflect( method );
         List<FieldInjections.FieldSetter> setters;
-        if ( fullAccess )
+        if ( fullAccess || config.fullAccessFor( procName.toString() ) )
         {
             setters = allFieldInjections.setters( procDefinition );
         }

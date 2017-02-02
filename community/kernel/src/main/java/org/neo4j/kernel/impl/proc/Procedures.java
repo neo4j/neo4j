@@ -59,11 +59,11 @@ public class Procedures extends LifecycleAdapter
 
     public Procedures()
     {
-        this( new SpecialBuiltInProcedures( "N/A", "N/A" ), null, NullLog.getInstance(), ProcedureAllowedConfig.DEFAULT );
+        this( new SpecialBuiltInProcedures( "N/A", "N/A" ), null, NullLog.getInstance(), ProcedureConfig.DEFAULT );
     }
 
     public Procedures( ThrowingConsumer<Procedures,ProcedureException> builtin, File pluginDir, Log log,
-            ProcedureAllowedConfig config )
+            ProcedureConfig config )
     {
         this.builtin = builtin;
         this.pluginDir = pluginDir;

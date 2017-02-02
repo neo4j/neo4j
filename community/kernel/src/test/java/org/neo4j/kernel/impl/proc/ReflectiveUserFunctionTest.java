@@ -66,7 +66,7 @@ public class ReflectiveUserFunctionTest
     {
         components = new ComponentRegistry();
         procedureCompiler = new ReflectiveProcedureCompiler( new TypeMappers(), components, new ComponentRegistry(),
-                NullLog.getInstance(), ProcedureAllowedConfig.DEFAULT );
+                NullLog.getInstance(), ProcedureConfig.DEFAULT );
     }
 
     @Test
@@ -251,7 +251,7 @@ public class ReflectiveUserFunctionTest
         // Given
         Log log = mock(Log.class);
         ReflectiveProcedureCompiler procedureCompiler = new ReflectiveProcedureCompiler( new TypeMappers(), components,
-                new ComponentRegistry(), log, ProcedureAllowedConfig.DEFAULT );
+                new ComponentRegistry(), log, ProcedureConfig.DEFAULT );
 
         // When
         List<CallableUserFunction> funcs = procedureCompiler.compileFunction( FunctionWithDeprecation.class );

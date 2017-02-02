@@ -60,7 +60,6 @@ import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AnonymousContext;
-import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.proc.JarBuilder;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -78,6 +77,7 @@ import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterables.asList;
 import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Configuration.procedure_full_access;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.procedure.Mode.SCHEMA;
 import static org.neo4j.procedure.Mode.WRITE;
@@ -477,6 +477,7 @@ public class ProcedureIT
                 .setUserLogProvider( logProvider )
                 .newImpermanentDatabaseBuilder()
                 .setConfig( GraphDatabaseSettings.plugin_dir, plugins.getRoot().getAbsolutePath() )
+                .setConfig( procedure_full_access, "org.neo4j.procedure.*" )
                 .newGraphDatabase();
 
         // When
@@ -1137,8 +1138,8 @@ public class ProcedureIT
         db = new TestGraphDatabaseFactory()
                 .newImpermanentDatabaseBuilder()
                 .setConfig( GraphDatabaseSettings.plugin_dir, plugins.getRoot().getAbsolutePath() )
+                .setConfig( procedure_full_access, "org.neo4j.procedure.*" )
                 .newGraphDatabase();
-
     }
 
     @After

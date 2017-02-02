@@ -70,8 +70,7 @@ public class ReflectiveUserAggregationFunctionTest
     {
         components = new ComponentRegistry();
         procedureCompiler = new ReflectiveProcedureCompiler( new TypeMappers(), components, new ComponentRegistry(),
-                NullLog.getInstance(),
-                ProcedureAllowedConfig.DEFAULT );
+                NullLog.getInstance(), ProcedureConfig.DEFAULT );
     }
 
     @Test
@@ -344,8 +343,8 @@ public class ReflectiveUserAggregationFunctionTest
     {
         // Given
         Log log = mock(Log.class);
-        ReflectiveProcedureCompiler procedureCompiler = new ReflectiveProcedureCompiler( new TypeMappers(),
- components, new ComponentRegistry(), log, ProcedureAllowedConfig.DEFAULT );
+        ReflectiveProcedureCompiler procedureCompiler = new ReflectiveProcedureCompiler( new TypeMappers(), components,
+                new ComponentRegistry(), log, ProcedureConfig.DEFAULT );
 
         // When
         List<CallableUserAggregationFunction> funcs = procedureCompiler.compileAggregationFunction( FunctionWithDeprecation.class );

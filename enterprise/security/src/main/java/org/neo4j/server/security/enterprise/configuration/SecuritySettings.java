@@ -43,8 +43,8 @@ import static org.neo4j.kernel.configuration.Settings.max;
 import static org.neo4j.kernel.configuration.Settings.min;
 import static org.neo4j.kernel.configuration.Settings.options;
 import static org.neo4j.kernel.configuration.Settings.setting;
-import static org.neo4j.kernel.impl.proc.ProcedureAllowedConfig.PROC_ALLOWED_SETTING_DEFAULT_NAME;
-import static org.neo4j.kernel.impl.proc.ProcedureAllowedConfig.PROC_ALLOWED_SETTING_ROLES;
+import static org.neo4j.kernel.impl.proc.ProcedureConfig.PROC_ALLOWED_SETTING_DEFAULT_NAME;
+import static org.neo4j.kernel.impl.proc.ProcedureConfig.PROC_ALLOWED_SETTING_ROLES;
 
 /**
  * Settings for security module
