@@ -31,14 +31,12 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.impl.api.state.RelationshipChangesForNode.DiffStrategy;
-import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.util.diffsets.DiffSets;
 import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.txstate.NodeState;
 import org.neo4j.storageengine.api.txstate.PropertyContainerState;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
-import org.neo4j.storageengine.api.txstate.UpdateTriState;
 
 import static org.neo4j.collection.primitive.Primitive.intSet;
 
@@ -62,7 +60,7 @@ public class NodeStateImpl extends PropertyContainerStateImpl implements NodeSta
         return ReadableDiffSets.Empty.ifNull( labelDiffSets );
     }
 
-    public DiffSets<Integer> getOrCreateLabelDiffSets()
+    DiffSets<Integer> getOrCreateLabelDiffSets()
     {
         if ( null == labelDiffSets )
         {
@@ -118,27 +116,6 @@ public class NodeStateImpl extends PropertyContainerStateImpl implements NodeSta
         {
             indexDiffs.clear();
         }
-    }
-
-    @Override
-    public RelationshipIterator augmentRelationships( Direction direction, RelationshipIterator rels )
-    {
-        if ( hasAddedRelationships() )
-        {
-            return relationshipsAdded.augmentRelationships( direction, rels );
-        }
-        return rels;
-    }
-
-    @Override
-    public RelationshipIterator augmentRelationships( Direction direction, int[] types,
-            RelationshipIterator rels )
-    {
-        if ( hasAddedRelationships() )
-        {
-            return relationshipsAdded.augmentRelationships( direction, types, rels );
-        }
-        return rels;
     }
 
     @Override
@@ -199,22 +176,7 @@ public class NodeStateImpl extends PropertyContainerStateImpl implements NodeSta
         return intSet();
     }
 
-    @Override
-    public UpdateTriState labelState( int labelId )
-    {
-        ReadableDiffSets<Integer> labelDiff = labelDiffSets();
-        if ( labelDiff.isAdded( labelId ) )
-        {
-            return UpdateTriState.ADDED;
-        }
-        if ( labelDiff.isRemoved( labelId ) )
-        {
-            return UpdateTriState.REMOVED;
-        }
-        return UpdateTriState.UNTOUCHED;
-    }
-
-    public void addIndexDiff( DiffSets<Long> diff )
+    void addIndexDiff( DiffSets<Long> diff )
     {
         if ( indexDiffs == null )
         {
@@ -223,7 +185,7 @@ public class NodeStateImpl extends PropertyContainerStateImpl implements NodeSta
         indexDiffs.add( diff );
     }
 
-    public void removeIndexDiff( DiffSets<Long> diff )
+    void removeIndexDiff( DiffSets<Long> diff )
     {
         if ( indexDiffs != null )
         {
@@ -231,7 +193,7 @@ public class NodeStateImpl extends PropertyContainerStateImpl implements NodeSta
         }
     }
 
-    public void clearIndexDiffs( long nodeId )
+    void clearIndexDiffs( long nodeId )
     {
         if ( indexDiffs != null )
         {
@@ -327,19 +289,6 @@ public class NodeStateImpl extends PropertyContainerStateImpl implements NodeSta
             }
 
             @Override
-            public RelationshipIterator augmentRelationships( Direction direction, RelationshipIterator rels )
-            {
-                return rels;
-            }
-
-            @Override
-            public RelationshipIterator augmentRelationships( Direction direction, int[] types,
-                    RelationshipIterator rels )
-            {
-                return rels;
-            }
-
-            @Override
             public int augmentDegree( Direction direction, int degree )
             {
                 return degree;
@@ -360,12 +309,6 @@ public class NodeStateImpl extends PropertyContainerStateImpl implements NodeSta
             public PrimitiveIntSet relationshipTypes()
             {
                 return Primitive.intSet();
-            }
-
-            @Override
-            public UpdateTriState labelState( int labelId )
-            {
-                return UpdateTriState.UNTOUCHED;
             }
 
             @Override

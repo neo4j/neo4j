@@ -24,7 +24,6 @@ import java.util.Set;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
-import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.storageengine.api.Direction;
 
 /**
@@ -46,10 +45,6 @@ public interface NodeState extends PropertyContainerState
 
     ReadableDiffSets<Integer> labelDiffSets();
 
-    RelationshipIterator augmentRelationships( Direction direction, RelationshipIterator rels );
-
-    RelationshipIterator augmentRelationships( Direction direction, int[] types, RelationshipIterator rels );
-
     int augmentDegree( Direction direction, int degree );
 
     int augmentDegree( Direction direction, int degree, int typeId );
@@ -57,8 +52,6 @@ public interface NodeState extends PropertyContainerState
     void accept( NodeState.Visitor visitor ) throws ConstraintValidationKernelException;
 
     PrimitiveIntSet relationshipTypes();
-
-    UpdateTriState labelState( int labelId );
 
     long getId();
 
