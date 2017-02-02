@@ -567,3 +567,8 @@ Fail when comparing parameters to nodes
 Comparing nodes to properties
 Fail when comparing nodes to relationships
 Fail when comparing relationships to nodes
+
+// Bug in spec, awaiting update
+ORDER BY should return results in ascending order
+ORDER BY DESC should return results in descending order
+Renaming columns before ORDER BY should return results in ascending order
