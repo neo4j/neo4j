@@ -239,7 +239,7 @@ public class GBPTreeConcurrencyIT
             this.random = random;
             this.forwardsSeek = forwardsSeek;
             this.writePercentage = writePercentage;
-            this.writeBatchSize = random.nextInt( 990 ) + 10; // 10-1000
+            this.writeBatchSize = random.nextInt( 990 ) + 10; // 10-999
             currentReaderInstruction = new AtomicReference<>();
             Comparator<Long> comparator = forwardsSeek ? Comparator.naturalOrder() : Comparator.reverseOrder();
             readersShouldSee = new TreeSet<>( comparator );
