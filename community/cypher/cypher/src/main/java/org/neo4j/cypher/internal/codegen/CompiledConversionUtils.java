@@ -364,4 +364,23 @@ public abstract class CompiledConversionUtils
         }
         throw new IllegalArgumentException( format( "Can not be converted to stream: %s", list.getClass().getName() ) );
     }
+
+    public static long unboxNodeOrNull( NodeIdWrapper value )
+    {
+        if ( value == null )
+        {
+            return -1L;
+        }
+        return value.id();
+    }
+
+    public static long unboxRelationshipOrNull( RelationshipIdWrapper value )
+    {
+        if ( value == null )
+        {
+            return -1L;
+        }
+        return value.id();
+    }
+
 }

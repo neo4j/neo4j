@@ -412,8 +412,8 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   override def unbox(expression: Expression, codeGenType: CodeGenType) = codeGenType match {
     case c if c.isPrimitive => expression
-    case CodeGenType(symbols.CTNode, ReferenceType) => invoke(expression, Methods.unboxNode)
-    case CodeGenType(symbols.CTRelationship, ReferenceType) => invoke(expression, Methods.unboxRel)
+    case CodeGenType(symbols.CTNode, ReferenceType) => invoke(Methods.unboxNode, expression)
+    case CodeGenType(symbols.CTRelationship, ReferenceType) => invoke(Methods.unboxRel, expression)
     case _ => Expression.unbox(expression)
   }
 
