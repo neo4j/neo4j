@@ -33,7 +33,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.spi.QueryContext
 import org.neo4j.cypher.internal.compiler.v3_2.{ExecutionMode, TaskCloser}
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_2.{SemanticDirection, SemanticTable, symbols}
-import org.neo4j.cypher.internal.spi.v3_1.codegen.GeneratedQueryStructure.{method, typeRef}
+import org.neo4j.cypher.internal.spi.v3_2.codegen.GeneratedQueryStructure.typeRef
 import org.neo4j.cypher.internal.spi.v3_2.codegen._
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
@@ -241,6 +241,7 @@ class GeneratedMethodStructureTest extends CypherFunSuite {
       using(body.generate(MethodDeclaration.method(typeRef[Unit], "foo"))) { methodBody =>
         block(new GeneratedMethodStructure(fields, methodBody, new AuxGenerator(packageName, codeGen)))
       }
+      Templates.getOrLoadReadOperations(body, fields)
       body.handle()
     }
     clazz.newInstance()
