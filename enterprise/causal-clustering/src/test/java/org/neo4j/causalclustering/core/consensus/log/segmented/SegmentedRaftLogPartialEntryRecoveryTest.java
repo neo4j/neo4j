@@ -37,7 +37,7 @@ import org.neo4j.causalclustering.core.state.machines.token.TokenType;
 import org.neo4j.causalclustering.core.state.machines.tx.ReplicatedTransaction;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.messaging.CoreReplicatedContentMarshal;
-import org.neo4j.io.fs.StoreFileChannel;
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.test.OnDemandJobScheduler;
@@ -168,7 +168,7 @@ public class SegmentedRaftLogPartialEntryRecoveryTest
         State recoveryState = recovery.run();
         String logFilename = recoveryState.segments.last().getFilename();
         File logFile = new File( logDirectory, logFilename );
-        StoreFileChannel lastFile = fsRule.get().open( logFile, "rw" );
+        StoreChannel lastFile = fsRule.get().open( logFile, "rw" );
         long currentSize = lastFile.size();
         lastFile.close();
 
@@ -208,7 +208,7 @@ public class SegmentedRaftLogPartialEntryRecoveryTest
     private void truncateAndRecover( File logFile, long truncateDownToSize )
             throws IOException, DamagedLogStorageException, DisposedException
     {
-        StoreFileChannel lastFile = fsRule.get().open( logFile, "rw" );
+        StoreChannel lastFile = fsRule.get().open( logFile, "rw" );
         long currentSize = lastFile.size();
         lastFile.close();
         RecoveryProtocol recovery;
