@@ -334,15 +334,23 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     val invokeLoadParameter = invoke(loadParameter, invoke(params, mapGet, constantExpression(key)))
     generator.assign(lowerType(codeGenType), variableName,
       // We assume the value in the parameter map will always be boxed, so if we are declaring
-      // a primitive variable we need to unbox
-      if (codeGenType.isPrimitive)
-        unbox(invokeLoadParameter, codeGenType)
-      else {
-        codeGenType match {
-          case CodeGenType(_, ListReferenceType(repr)) if RepresentationType.isPrimitive(repr) =>
-            asPrimitiveStream(invokeLoadParameter, codeGenType)
-          case _ => invokeLoadParameter
-        }
+      // a primitive variable we need to force it to be unboxed
+      codeGenType match {
+        case CodeGenType.primitiveNode =>
+          unbox(Expression.cast(typeRef[NodeIdWrapper], invokeLoadParameter),
+            CodeGenType(symbols.CTNode, ReferenceType))
+        case CodeGenType.primitiveRel =>
+          unbox(Expression.cast(typeRef[RelationshipIdWrapper], invokeLoadParameter),
+            CodeGenType(symbols.CTRelationship, ReferenceType))
+        case CodeGenType.primitiveInt =>
+          Expression.unbox(Expression.cast(typeRef[java.lang.Long], invokeLoadParameter))
+        case CodeGenType.primitiveFloat =>
+          Expression.unbox(Expression.cast(typeRef[java.lang.Double], invokeLoadParameter))
+        case CodeGenType.primitiveBool =>
+          Expression.unbox(Expression.cast(typeRef[java.lang.Boolean], invokeLoadParameter))
+        case CodeGenType(_, ListReferenceType(repr)) if RepresentationType.isPrimitive(repr) =>
+          asPrimitiveStream(invokeLoadParameter, codeGenType)
+        case _ => invokeLoadParameter
       }
     )
   }
