@@ -19,11 +19,43 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
+import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport}
 
-class ParameterValuesAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
+class ParameterValuesAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport with QueryStatisticsTestSupport {
 
   // Not TCK material below; sending graph types or characters as parameters is not supported
+
+  test("should not erase the type of an empty array sent as parameter") {
+    import Array._
+
+    Seq(emptyLongArray, emptyShortArray, emptyByteArray, emptyIntArray,
+      emptyDoubleArray, emptyFloatArray,
+      emptyBooleanArray, Array[String]()).foreach { array =>
+
+      val q = "CREATE (n) SET n.prop = $param RETURN n.prop AS p"
+      val r = executeWithAllPlanners(q, "param" -> array)
+
+      assertStats(r, nodesCreated = 1, propertiesWritten = 1)
+      val returned = r.columnAs[Array[_]]("p").next()
+      returned should equal(array)
+      returned.getClass.getComponentType should equal(array.getClass.getComponentType)
+    }
+  }
+
+  test("should not erase the type of nonempty arrays sent as parameter") {
+    Seq(Array[Long](1l), Array[Short](2), Array[Byte](3), Array[Int](4),
+      Array[Double](3.14), Array[Float](5.56f),
+      Array[Boolean](false, true), Array[String]("", " ")).foreach { array =>
+
+      val q = "CREATE (n) SET n.prop = $param RETURN n.prop AS p"
+      val r = executeWithAllPlanners(q, "param" -> array)
+
+      assertStats(r, nodesCreated = 1, propertiesWritten = 1)
+      val returned = r.columnAs[Array[_]]("p").next()
+      returned should equal(array)
+      returned.getClass.getComponentType should equal(array.getClass.getComponentType)
+    }
+  }
 
   test("should be able to send in node via parameter") {
     // given

@@ -21,6 +21,8 @@ package org.neo4j.cypher.internal.compiler.v3_2.mutation
 
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.{CastSupport, ListSupport}
 
+import scala.collection.mutable
+
 object makeValueNeoSafe extends (Any => Any) with ListSupport {
 
   def apply(a: Any): Any = if (isList(a)) {
@@ -35,9 +37,17 @@ object makeValueNeoSafe extends (Any => Any) with ListSupport {
   can be coerced to according to Cypher coercion rules
    */
   private def transformTraversableToArray(a: Any): Any = {
-    val seq: Seq[Any] = a.asInstanceOf[Traversable[_]].toIndexedSeq
+    val traversable = a.asInstanceOf[Traversable[_]]
+    val seq: Seq[Any] = traversable.toIndexedSeq
 
-    if (seq.isEmpty) {
+    if (seq.isEmpty && traversable.isInstanceOf[mutable.WrappedArray[_]]) {
+      // if the user sent an array by parameter we can use it directly
+      val array = a.asInstanceOf[mutable.WrappedArray[_]].array
+      if (array.getClass.getComponentType.isPrimitive)
+        array
+      else
+        Array[String]()
+    } else if (seq.isEmpty) {
       Array[String]()
     } else {
       val typeValue = seq.reduce(CastSupport.merge)
