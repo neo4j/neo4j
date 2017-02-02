@@ -24,9 +24,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
-import javax.swing.text.html.Option;
 
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.config.SettingGroup;
 
 /**
