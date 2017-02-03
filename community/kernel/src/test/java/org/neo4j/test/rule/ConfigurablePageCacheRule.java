@@ -19,11 +19,15 @@
  */
 package org.neo4j.test.rule;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.pagecache.ConfigurableStandalonePageCacheFactory;
+import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
+import org.neo4j.logging.FormattedLogProvider;
 
 public class ConfigurablePageCacheRule extends PageCacheRule
 {
@@ -35,9 +39,30 @@ public class ConfigurablePageCacheRule extends PageCacheRule
     public PageCache getPageCache( FileSystemAbstraction fs, PageCacheConfig pageCacheConfig, Config config )
     {
         closeExistingPageCache();
-        PageCacheTracer tracer = selectConfig( baseConfig.tracer, pageCacheConfig.tracer, PageCacheTracer.NULL );
-        pageCache = ConfigurableStandalonePageCacheFactory.createPageCache( fs, tracer, config );
+        pageCache = createPageCache( fs, pageCacheConfig, config );
         pageCachePostConstruct( pageCacheConfig );
         return pageCache;
+    }
+
+    private PageCache createPageCache( FileSystemAbstraction fs, PageCacheConfig pageCacheConfig, Config config )
+    {
+        PageCacheTracer tracer = selectConfig( baseConfig.tracer, pageCacheConfig.tracer, PageCacheTracer.NULL );
+        Config finalConfig = config.withDefaults( MapUtil.stringMap(
+                GraphDatabaseSettings.pagecache_memory.name(), "8M" ) );
+        FormattedLogProvider logProvider = FormattedLogProvider.toOutputStream( System.err );
+        ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
+                fs, finalConfig, tracer, logProvider.getLog( PageCache.class ) )
+        {
+            @Override
+            public int calculatePageSize( Config config, PageSwapperFactory swapperFactory )
+            {
+                if ( pageCacheConfig.pageSize != null )
+                {
+                    return pageCacheConfig.pageSize;
+                }
+                return super.calculatePageSize( config, swapperFactory );
+            }
+        };
+        return pageCacheFactory.getOrCreatePageCache();
     }
 }

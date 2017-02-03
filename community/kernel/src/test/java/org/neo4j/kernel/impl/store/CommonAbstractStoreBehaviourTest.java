@@ -28,7 +28,6 @@ import org.junit.rules.TestRule;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.StandardOpenOption;
-import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -45,6 +44,7 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.ConfigurablePageCacheRule;
+import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
@@ -62,7 +62,7 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 public class CommonAbstractStoreBehaviourTest
 {
     /**
-     * Note that tests MUST use the non-modifying {@link #with(Map} method, to make alternate copies
+     * Note that tests MUST use the non-modifying methods, to make alternate copies
      * of this settings class.
      */
     private static final Config CONFIG = Config.empty().augment( stringMap(
@@ -154,8 +154,8 @@ public class CommonAbstractStoreBehaviourTest
     public void writingOfHeaderRecordDuringInitialiseNewStoreFileMustThrowOnPageOverflow() throws Exception
     {
         // 16-byte header will overflow an 8-byte page size
-        Config config = CONFIG.with( stringMap( GraphDatabaseSettings.mapped_memory_page_size.name(), "8" ) );
-        MyStore store = new MyStore( config, pageCacheRule.getPageCache( fs.get(), config ) );
+        PageCacheRule.PageCacheConfig pageCacheConfig = PageCacheRule.config().withPageSize( 8 );
+        MyStore store = new MyStore( config, pageCacheRule.getPageCache( fs.get(), pageCacheConfig, config ) );
         assertThrowsUnderlyingStorageException( () -> store.initialise( true ) );
     }
 
@@ -166,8 +166,8 @@ public class CommonAbstractStoreBehaviourTest
         first.initialise( true );
         first.close();
 
-        config = CONFIG.with( stringMap( GraphDatabaseSettings.mapped_memory_page_size.name(), "8" ) );
-        MyStore second = new MyStore( config, pageCacheRule.getPageCache( fs.get(), config ) );
+        PageCacheRule.PageCacheConfig pageCacheConfig = PageCacheRule.config().withPageSize( 8 );
+        MyStore second = new MyStore( config, pageCacheRule.getPageCache( fs.get(), pageCacheConfig, config ) );
         assertThrowsUnderlyingStorageException( () -> second.initialise( false ) );
     }
 

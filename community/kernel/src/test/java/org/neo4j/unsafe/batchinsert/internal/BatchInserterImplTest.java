@@ -59,8 +59,7 @@ public class BatchInserterImplTest
     public void testHonorsPassedInParams() throws Exception
     {
         BatchInserter inserter = BatchInserters.inserter( testDirectory.graphDbDir(), fileSystemRule.get(),
-                stringMap( GraphDatabaseSettings.pagecache_memory.name(), "280K",
-                GraphDatabaseSettings.mapped_memory_page_size.name(), "1K" ) );
+                stringMap( GraphDatabaseSettings.pagecache_memory.name(), "280K" ) );
         NeoStores neoStores = ReflectionUtil.getPrivateField( inserter, "neoStores", NeoStores.class );
         PageCache pageCache = ReflectionUtil.getPrivateField( neoStores, "pageCache", PageCache.class );
         inserter.shutdown();

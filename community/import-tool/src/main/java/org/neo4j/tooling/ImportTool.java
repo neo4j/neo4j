@@ -218,10 +218,7 @@ public class ImportTool
                         + "Examples of supported config are:\n"
                         + GraphDatabaseSettings.dense_node_threshold.name() + "\n"
                         + GraphDatabaseSettings.string_block_size.name() + "\n"
-                        + GraphDatabaseSettings.array_block_size.name(), true ),
-        PAGE_SIZE( "page-size", Format.bytes( org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT.pageSize() ),
-                "<page size in bytes",
-                "Page size in bytes, or e.g. 4M or 8k", true );
+                        + GraphDatabaseSettings.array_block_size.name(), true );
 
         private final String key;
         private final Object defaultValue;
@@ -405,11 +402,6 @@ public class ImportTool
 
             dbConfig = loadDbConfig( args.interpretOption( Options.DATABASE_CONFIG.key(), Converters.<File>optional(),
                     Converters.toFile(), Validators.REGEX_FILE_EXISTS ) );
-            if ( args.has( Options.PAGE_SIZE.key() ) )
-            {
-                pageSize = toIntExact( parseLongWithUnit( args.get( Options.PAGE_SIZE.key(),
-                        String.valueOf( UNSPECIFIED ) ) ) );
-            }
             configuration = importConfiguration( processors, defaultSettingsSuitableForTests, dbConfig, pageSize );
             input = new CsvInput( nodeData( inputEncoding, nodesFiles ), defaultFormatNodeFileHeader(),
                     relationshipData( inputEncoding, relationshipsFiles ), defaultFormatRelationshipFileHeader(),
@@ -619,13 +611,6 @@ public class ImportTool
             public int denseNodeThreshold()
             {
                 return dbConfig.get( GraphDatabaseSettings.dense_node_threshold );
-            }
-
-            @Override
-            public int pageSize()
-            {
-                // Let's call super if not specifically configured, so that proper calculations can be made
-                return pageSize == UNSPECIFIED ? super.pageSize() : pageSize;
             }
         };
     }
