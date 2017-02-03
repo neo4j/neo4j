@@ -29,7 +29,6 @@ import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.causalclustering.discovery.HazelcastDiscoveryServiceFactory;
 
-import org.neo4j.causalclustering.discovery.procedures.GetServersProcedure;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -42,6 +41,7 @@ import org.neo4j.test.causalclustering.ClusterRule;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.neo4j.causalclustering.load_balancing.ProcedureNames.GET_SERVERS_V1;
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureName;
 
@@ -92,6 +92,6 @@ public class ClusterMembershipChangeIT
 
         // when
         return asList( statement.procedureCallOperations().procedureCallRead(
-                procedureName( "dbms", "cluster", GetServersProcedure.NAME ), new Object[0] ) );
+                procedureName( GET_SERVERS_V1.fullyQualifiedProcedureName() ), new Object[0] ) );
     }
 }
