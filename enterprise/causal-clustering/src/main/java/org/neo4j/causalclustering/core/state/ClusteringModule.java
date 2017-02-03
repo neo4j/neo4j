@@ -20,13 +20,15 @@
 package org.neo4j.causalclustering.core.state;
 
 import java.io.File;
+import java.util.Optional;
+import java.util.function.Supplier;
 
 import org.neo4j.causalclustering.core.state.storage.SimpleFileStorage;
 import org.neo4j.causalclustering.core.state.storage.SimpleStorage;
 import org.neo4j.causalclustering.discovery.CoreTopologyService;
 import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
 import org.neo4j.causalclustering.identity.ClusterId;
-import org.neo4j.causalclustering.identity.ClusterIdentity;
+import org.neo4j.causalclustering.identity.ClusterBinder;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
@@ -42,7 +44,7 @@ import static org.neo4j.causalclustering.core.server.CoreServerModule.CLUSTER_ID
 public class ClusteringModule
 {
     private final CoreTopologyService topologyService;
-    private final ClusterIdentity clusterIdentity;
+    private final ClusterBinder clusterBinder;
 
     public ClusteringModule( DiscoveryServiceFactory discoveryServiceFactory, MemberId myself,
             PlatformModule platformModule, File clusterStateDirectory )
@@ -68,7 +70,7 @@ public class ClusteringModule
         CoreBootstrapper coreBootstrapper =
                 new CoreBootstrapper( platformModule.storeDir, platformModule.pageCache, fileSystem, config, logProvider );
 
-        clusterIdentity = new ClusterIdentity( clusterIdStorage, topologyService, logProvider, Clocks.systemClock(),
+        clusterBinder = new ClusterBinder( clusterIdStorage, topologyService, logProvider, Clocks.systemClock(),
                 () -> sleep( 100 ), 300_000, coreBootstrapper );
     }
 
@@ -77,8 +79,13 @@ public class ClusteringModule
         return topologyService;
     }
 
-    public ClusterIdentity clusterIdentity()
+    public Supplier<Optional<ClusterId>> clusterIdentity()
     {
-        return clusterIdentity;
+        return clusterBinder;
+    }
+
+    public ClusterBinder clusterBinder()
+    {
+        return clusterBinder;
     }
 }

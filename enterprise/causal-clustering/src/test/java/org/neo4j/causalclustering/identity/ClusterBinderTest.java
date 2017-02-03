@@ -20,6 +20,7 @@
 package org.neo4j.causalclustering.identity;
 
 import java.io.IOException;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -39,6 +40,7 @@ import org.neo4j.time.FakeClock;
 import static java.util.Collections.emptyMap;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.atLeast;
@@ -46,7 +48,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class ClusterIdentityTest
+public class ClusterBinderTest
 {
     private final CoreBootstrapper coreBootstrapper = mock( CoreBootstrapper.class );
     private final FakeClock clock = Clocks.fakeClock();
@@ -59,7 +61,7 @@ public class ClusterIdentityTest
         CoreTopologyService topologyService = mock( CoreTopologyService.class );
         when( topologyService.coreServers() ).thenReturn( unboundTopology );
 
-        ClusterIdentity binder = new ClusterIdentity( new StubClusterIdStorage(), topologyService,
+        ClusterBinder binder = new ClusterBinder( new StubClusterIdStorage(), topologyService,
                 NullLogProvider.getInstance(), clock, () -> clock.forward( 1, TimeUnit.SECONDS ), 3_000,
                 coreBootstrapper );
 
@@ -89,7 +91,7 @@ public class ClusterIdentityTest
         CoreTopologyService topologyService = mock( CoreTopologyService.class );
         when( topologyService.coreServers() ).thenReturn( unboundTopology ).thenReturn( boundTopology );
 
-        ClusterIdentity binder = new ClusterIdentity( new StubClusterIdStorage(), topologyService,
+        ClusterBinder binder = new ClusterBinder( new StubClusterIdStorage(), topologyService,
                 NullLogProvider.getInstance(), clock, () -> clock.forward( 1, TimeUnit.SECONDS ), 3_000,
                 coreBootstrapper );
 
@@ -97,7 +99,9 @@ public class ClusterIdentityTest
         binder.bindToCluster( null );
 
         // then
-        assertEquals( publishedClusterId, binder.clusterId() );
+        Optional<ClusterId> clusterId = binder.get();
+        assertTrue( clusterId.isPresent() );
+        assertEquals( publishedClusterId, clusterId.get() );
         verify( topologyService, atLeast( 2 ) ).coreServers();
     }
 
@@ -113,7 +117,7 @@ public class ClusterIdentityTest
         StubClusterIdStorage clusterIdStorage = new StubClusterIdStorage();
         clusterIdStorage.writeState( previouslyBoundClusterId );
 
-        ClusterIdentity binder = new ClusterIdentity( clusterIdStorage, topologyService,
+        ClusterBinder binder = new ClusterBinder( clusterIdStorage, topologyService,
                 NullLogProvider.getInstance(), clock, () -> clock.forward( 1, TimeUnit.SECONDS ), 3_000,
                 coreBootstrapper );
 
@@ -122,7 +126,9 @@ public class ClusterIdentityTest
 
         // then
         verify( topologyService ).setClusterId( previouslyBoundClusterId );
-        assertEquals( previouslyBoundClusterId, binder.clusterId() );
+        Optional<ClusterId> clusterId = binder.get();
+        assertTrue( clusterId.isPresent() );
+        assertEquals( previouslyBoundClusterId, clusterId.get() );
     }
 
     @Test
@@ -137,7 +143,7 @@ public class ClusterIdentityTest
         StubClusterIdStorage clusterIdStorage = new StubClusterIdStorage();
         clusterIdStorage.writeState( previouslyBoundClusterId );
 
-        ClusterIdentity binder = new ClusterIdentity( clusterIdStorage, topologyService,
+        ClusterBinder binder = new ClusterBinder( clusterIdStorage, topologyService,
                 NullLogProvider.getInstance(), clock, () -> clock.forward( 1, TimeUnit.SECONDS ), 3_000,
                 coreBootstrapper );
 
@@ -163,7 +169,7 @@ public class ClusterIdentityTest
         when( topologyService.coreServers() ).thenReturn( bootstrappableTopology );
         when( topologyService.setClusterId( any() ) ).thenReturn( true );
 
-        ClusterIdentity binder = new ClusterIdentity( new StubClusterIdStorage(), topologyService,
+        ClusterBinder binder = new ClusterBinder( new StubClusterIdStorage(), topologyService,
                 NullLogProvider.getInstance(), clock, () -> clock.forward( 1, TimeUnit.SECONDS ), 3_000,
                 coreBootstrapper );
 
@@ -174,7 +180,9 @@ public class ClusterIdentityTest
 
         // then
         verify( coreBootstrapper ).bootstrap( any() );
-        verify( topologyService ).setClusterId( binder.clusterId() );
+        Optional<ClusterId> clusterId = binder.get();
+        assertTrue( clusterId.isPresent() );
+        verify( topologyService ).setClusterId( clusterId.get() );
         verify( snapshotInstaller ).accept( any() );
     }
 

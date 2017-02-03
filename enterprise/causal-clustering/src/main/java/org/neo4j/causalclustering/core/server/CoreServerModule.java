@@ -168,7 +168,7 @@ public class CoreServerModule
                 replicationModule.getSessionTracker(), coreStateApplier, consensusModule.inFlightMap(),
                 platformModule.monitors );
         CoreState coreState = new CoreState( consensusModule.raftMachine(), localDatabase,
-                clusteringModule.clusterIdentity(), logProvider, downloader, commandApplicationProcess,
+                clusteringModule.clusterBinder(), logProvider, downloader, commandApplicationProcess,
                 coreStateMachinesModule.coreStateMachines );
 
         dependencies.satisfyDependency( coreState );

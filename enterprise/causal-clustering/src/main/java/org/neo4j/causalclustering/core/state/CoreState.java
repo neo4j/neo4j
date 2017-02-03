@@ -20,6 +20,7 @@
 package org.neo4j.causalclustering.core.state;
 
 import java.io.IOException;
+import java.util.Optional;
 
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFailedException;
@@ -31,7 +32,7 @@ import org.neo4j.causalclustering.core.state.machines.CoreStateMachines;
 import org.neo4j.causalclustering.core.state.snapshot.CoreSnapshot;
 import org.neo4j.causalclustering.core.state.snapshot.CoreStateDownloader;
 import org.neo4j.causalclustering.identity.ClusterId;
-import org.neo4j.causalclustering.identity.ClusterIdentity;
+import org.neo4j.causalclustering.identity.ClusterBinder;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.messaging.Inbound.MessageHandler;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -45,7 +46,7 @@ public class CoreState implements MessageHandler<RaftMessages.ClusterIdAwareMess
     private final RaftMachine raftMachine;
     private final LocalDatabase localDatabase;
     private final Log log;
-    private final ClusterIdentity clusterIdentity;
+    private final ClusterBinder clusterBinder;
     private final CoreStateDownloader downloader;
     private final CommandApplicationProcess applicationProcess;
     private final CoreStateMachines coreStateMachines;
@@ -54,7 +55,7 @@ public class CoreState implements MessageHandler<RaftMessages.ClusterIdAwareMess
     public CoreState(
             RaftMachine raftMachine,
             LocalDatabase localDatabase,
-            ClusterIdentity clusterIdentity,
+            ClusterBinder clusterBinder,
             LogProvider logProvider,
             CoreStateDownloader downloader,
             CommandApplicationProcess commandApplicationProcess,
@@ -62,7 +63,7 @@ public class CoreState implements MessageHandler<RaftMessages.ClusterIdAwareMess
     {
         this.raftMachine = raftMachine;
         this.localDatabase = localDatabase;
-        this.clusterIdentity = clusterIdentity;
+        this.clusterBinder = clusterBinder;
         this.downloader = downloader;
         this.log = logProvider.getLog( getClass() );
         this.applicationProcess = commandApplicationProcess;
@@ -71,13 +72,15 @@ public class CoreState implements MessageHandler<RaftMessages.ClusterIdAwareMess
 
     public synchronized void handle( RaftMessages.ClusterIdAwareMessage clusterIdAwareMessage )
     {
-        if ( !allowMessageHandling )
+        Optional<ClusterId> optionalClusterId = clusterBinder.get();
+        if ( !allowMessageHandling || !optionalClusterId.isPresent() )
         {
             return;
         }
 
-        ClusterId clusterId = clusterIdAwareMessage.clusterId();
-        if ( clusterId.equals( clusterIdentity.clusterId() ) )
+        ClusterId boundClusterId = optionalClusterId.get();
+        ClusterId msgClusterId = clusterIdAwareMessage.clusterId();
+        if ( msgClusterId.equals( boundClusterId ) )
         {
             try
             {
@@ -100,8 +103,8 @@ public class CoreState implements MessageHandler<RaftMessages.ClusterIdAwareMess
         }
         else
         {
-            log.info( "Discarding message[%s] owing to mismatched storeId. Expected: %s, Encountered: %s",
-                    clusterIdAwareMessage.message(), clusterId, clusterIdentity.clusterId() );
+            log.info( "Discarding message[%s] owing to mismatched clusterId. Expected: %s, Encountered: %s",
+                    clusterIdAwareMessage.message(), boundClusterId, msgClusterId );
         }
     }
 
@@ -166,7 +169,7 @@ public class CoreState implements MessageHandler<RaftMessages.ClusterIdAwareMess
         // 2. Bootstrap (single selected server)
         // 3. Download from someone else (others)
 
-        clusterIdentity.bindToCluster( this::installSnapshot );
+        clusterBinder.bindToCluster( this::installSnapshot );
         allowMessageHandling = true;
 
         // TODO: Move haveState and CoreBootstrapper into CommandApplicationProcess, which perhaps needs a better name.
