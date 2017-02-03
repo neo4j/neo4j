@@ -35,6 +35,20 @@ import static org.neo4j.index.internal.gbptree.PageCursorUtil.checkOutOfBounds;
 class TreeStatePair
 {
     /**
+     * Initialize state pages because new pages are expected to be allocated directly after
+     * the existing highest allocated page. Otherwise there'd be a hole between meta and root pages
+     * until they would have been written, which isn't guaranteed to be handled correctly by the page cache.
+     *
+     * @param cursor {@link PageCursor} assumed to be opened with write capabilities.
+     * @throws IOException on {@link PageCursor} error.
+     */
+    static void initializeStatePages( PageCursor cursor ) throws IOException
+    {
+        PageCursorUtil.goTo( cursor, "State page A", IdSpace.STATE_PAGE_A );
+        PageCursorUtil.goTo( cursor, "State page B", IdSpace.STATE_PAGE_B );
+    }
+
+    /**
      * Reads the tree state pair, one from each of {@code pageIdA} and {@code pageIdB}, deciding their validity
      * and returning them as a {@link Pair}.
      * do-shouldRetry is managed inside this method because data is read from two pages.
