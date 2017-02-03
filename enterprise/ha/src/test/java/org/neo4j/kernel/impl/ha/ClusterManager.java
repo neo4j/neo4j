@@ -424,8 +424,10 @@ public class ClusterManager
                     return false;
                 }
 
+                int clusterMembersChecked = 0;
                 for ( HighlyAvailableGraphDatabase database : cluster.getAllMembers() )
                 {
+                    clusterMembersChecked++;
                     ClusterMembers members = database.getDependencyResolver().resolveDependency( ClusterMembers.class );
 
                     for ( ClusterMember clusterMember : members.getMembers() )
@@ -435,6 +437,10 @@ public class ClusterManager
                             return false;
                         }
                     }
+                }
+                if ( clusterMembersChecked == 0 )
+                {
+                    return false;
                 }
 
                 // Everyone sees everyone else as available!
@@ -463,9 +469,11 @@ public class ClusterManager
             public boolean test( ManagedCluster cluster )
             {
                 int clusterSize = cluster.size();
+                int clusterMembersChecked = 0;
 
                 for ( HighlyAvailableGraphDatabase database : cluster.getAllMembers() )
                 {
+                    clusterMembersChecked++;
                     ClusterMembers members = database.getDependencyResolver().resolveDependency( ClusterMembers.class );
 
                     if ( count( members.getMembers() ) < clusterSize )
@@ -476,6 +484,7 @@ public class ClusterManager
 
                 for ( ObservedClusterMembers arbiter : cluster.getArbiters() )
                 {
+                    clusterMembersChecked++;
                     if ( count( arbiter.getMembers() ) < clusterSize )
                     {
                         return false;
@@ -483,7 +492,7 @@ public class ClusterManager
                 }
 
                 // Everyone sees everyone else as joined!
-                return true;
+                return clusterMembersChecked > 0;
             }
 
             @Override
@@ -497,8 +506,10 @@ public class ClusterManager
     public static Predicate<ManagedCluster> allAvailabilityGuardsReleased()
     {
         return item -> {
+            int clusterMembersChecked = 0;
             for ( HighlyAvailableGraphDatabase member : item.getAllMembers())
             {
+                clusterMembersChecked++;
                 try
                 {
                     member.beginTx().close();
@@ -507,8 +518,9 @@ public class ClusterManager
                 {
                     return false;
                 }
+                clusterMembersChecked++;
             }
-            return true;
+            return clusterMembersChecked > 0;
         };
     }
 
@@ -561,9 +573,11 @@ public class ClusterManager
         return cluster -> {
             InstanceId observedServerId = observed.getDependencyResolver().resolveDependency( Config.class ).get(
                     ClusterSettings.server_id );
+            int clusterMembersChecked = 0;
 
             for ( HighlyAvailableGraphDatabase observer : cluster.getAllMembers( observed ) )
             {
+                clusterMembersChecked++;
                 for ( ClusterMember member : observer.getDependencyResolver().resolveDependency( ClusterMembers.class )
                         .getMembers() )
                 {
@@ -577,7 +591,7 @@ public class ClusterManager
                 }
             }
             // No one could see it as alive
-            return true;
+            return clusterMembersChecked > 0;
         };
     }
 
