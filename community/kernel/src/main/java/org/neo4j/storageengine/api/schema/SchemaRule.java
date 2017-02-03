@@ -38,6 +38,10 @@ public interface SchemaRule extends SchemaDescriptor.Supplier, RecordSerializabl
      */
     long getId();
 
+    /**
+     * This enum is used for the legacy schema store, and should not be extended.
+     */
+    @Deprecated
     enum Kind
     {
         INDEX_RULE( "Index" ),

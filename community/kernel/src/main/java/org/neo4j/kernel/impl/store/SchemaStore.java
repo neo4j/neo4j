@@ -34,9 +34,9 @@ import org.neo4j.kernel.impl.store.allocator.ReusableRecordsAllocator;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
-import org.neo4j.kernel.impl.store.record.SchemaRuleDeserializer2_0to3_1;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.RecordSerializer;
+import org.neo4j.kernel.impl.store.record.SchemaRuleSerialization;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
@@ -94,6 +94,6 @@ public class SchemaStore extends AbstractDynamicStore implements Iterable<Schema
             throws MalformedSchemaRuleException
     {
         ByteBuffer scratchBuffer = concatData( records, buffer );
-        return SchemaRuleDeserializer2_0to3_1.deserialize( id, scratchBuffer );
+        return SchemaRuleSerialization.deserialize( id, scratchBuffer );
     }
 }

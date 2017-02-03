@@ -28,7 +28,6 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.PropertyType;
-import org.neo4j.kernel.impl.store.record.SchemaRuleDeserializer2_0to3_1;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
@@ -40,6 +39,7 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.record.SchemaRuleSerialization;
 import org.neo4j.kernel.impl.transaction.command.CommandReading.DynamicRecordAdder;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.schema.SchemaRule;
@@ -474,7 +474,7 @@ public class PhysicalLogCommandReaderV2_1 extends BaseCommandReader
         ByteBuffer deserialized = AbstractDynamicStore.concatData( recordsBefore, new byte[100] );
         try
         {
-            rule = SchemaRuleDeserializer2_0to3_1.deserialize( Iterables.first( recordsBefore ).getId(), deserialized );
+            rule = SchemaRuleSerialization.deserialize( Iterables.first( recordsBefore ).getId(), deserialized );
         }
         catch ( MalformedSchemaRuleException e )
         {
