@@ -42,16 +42,20 @@ import static org.neo4j.string.UTF8.getDecodedStringFrom;
 public class SchemaRuleSerialization
 {
     // Schema rule type
-    private final static byte INDEX_RULE = 1, CONSTRAINT_RULE = 2;
+    // Legacy schema store reserves 1,2,3,4 and 5
+    private static final byte INDEX_RULE = 11, CONSTRAINT_RULE = 12;
 
     // Index type
-    private final static byte GENERAL_INDEX = 31, UNIQUE_INDEX = 32;
+    private static final byte GENERAL_INDEX = 31, UNIQUE_INDEX = 32;
 
     // Constraint type
-    private final static byte EXISTS_CONSTRAINT = 61, UNIQUE_CONSTRAINT = 62;
+    private static final byte EXISTS_CONSTRAINT = 61, UNIQUE_CONSTRAINT = 62;
 
     // Schema type
-    private final static byte SIMPLE_LABEL = 91, SIMPLE_REL_TYPE = 92;
+    private static final byte SIMPLE_LABEL = 91, SIMPLE_REL_TYPE = 92;
+
+    private static final long NO_OWNING_CONSTRAINT_YET = -1;
+    private static final int LEGACY_LABEL_OR_REL_TYPE_ID = -1;
 
     private SchemaRuleSerialization()
     {
@@ -68,26 +72,33 @@ public class SchemaRuleSerialization
      */
     public static SchemaRule deserialize( long id, ByteBuffer source ) throws MalformedSchemaRuleException
     {
+        int legacyLabelOrRelTypeId = source.getInt();
         byte schemaRuleType = source.get();
+
         switch ( schemaRuleType )
         {
         case INDEX_RULE:
             return readIndexRule( id, source );
         case CONSTRAINT_RULE:
             return readConstraintRule( id, source );
+        default:
+            if ( SchemaRuleDeserializer2_0to3_1.isLegacySchemaRule( schemaRuleType ) )
+            {
+                return SchemaRuleDeserializer2_0to3_1.deserialize( id, legacyLabelOrRelTypeId, schemaRuleType, source );
+            }
+            throw new MalformedSchemaRuleException( format( "Got unknown schema rule type '%d'.", schemaRuleType ) );
         }
-        throw new UnsupportedOperationException( format( "Got unknown schema rule type '%d'.", schemaRuleType ) );
     }
 
     /**
      * Serialize the provided IndexRule onto the target buffer
      * @param indexRule the IndexRule to serialize
      * @param target the target buffer
-     * @throws MalformedSchemaRuleException if the IndexRule is of type unique, but the owning constrain
-     *                                      has not been set
+     * @throws IllegalStateException if the IndexRule is of type unique, but the owning constrain has not been set
      */
-    public static void serialize( IndexRule indexRule, ByteBuffer target ) throws MalformedSchemaRuleException
+    public static void serialize( IndexRule indexRule, ByteBuffer target )
     {
+        target.putInt( LEGACY_LABEL_OR_REL_TYPE_ID );
         target.put( INDEX_RULE );
 
         SchemaIndexProvider.Descriptor providerDescriptor = indexRule.getProviderDescriptor();
@@ -103,12 +114,10 @@ public class SchemaRuleSerialization
 
         case UNIQUE:
             target.put( UNIQUE_INDEX );
+
+            // The owning constraint can be null. See IndexRule.getOwningConstraint()
             Long owningConstraint = indexRule.getOwningConstraint();
-            if ( owningConstraint == null )
-            {
-                throw new MalformedSchemaRuleException( "Cannot serialize Unique Index before the owning constraint is set." );
-            }
-            target.putLong( owningConstraint );
+            target.putLong( owningConstraint == null ? NO_OWNING_CONSTRAINT_YET : owningConstraint );
             break;
 
         default:
@@ -123,11 +132,11 @@ public class SchemaRuleSerialization
      * Serialize the provided ConstraintRule onto the target buffer
      * @param constraintRule the ConstraintRule to serialize
      * @param target the target buffer
-     * @throws MalformedSchemaRuleException if the ConstraintRule is of type unique, but the owned index
-     *                                      has not been set
+     * @throws IllegalStateException if the ConstraintRule is of type unique, but the owned index has not been set
      */
-    public static void serialize( ConstraintRule constraintRule, ByteBuffer target ) throws MalformedSchemaRuleException
+    public static void serialize( ConstraintRule constraintRule, ByteBuffer target )
     {
+        target.putInt( LEGACY_LABEL_OR_REL_TYPE_ID );
         target.put( CONSTRAINT_RULE );
 
         ConstraintDescriptor constraintDescriptor = constraintRule.getConstraintDescriptor();
@@ -157,7 +166,8 @@ public class SchemaRuleSerialization
      */
     public static int lengthOf( IndexRule indexRule )
     {
-        int length = 1; // schema rule type
+        int length = 4; // legacy label or relType id
+        length += 1;    // schema rule type
 
         SchemaIndexProvider.Descriptor providerDescriptor = indexRule.getProviderDescriptor();
         length += UTF8.computeRequiredByteBufferSize( providerDescriptor.getKey() );
@@ -165,9 +175,8 @@ public class SchemaRuleSerialization
 
         length += 1; // index type
         NewIndexDescriptor indexDescriptor = indexRule.getIndexDescriptor();
-        switch ( indexDescriptor.type() )
+        if ( indexDescriptor.type() == NewIndexDescriptor.Type.UNIQUE )
         {
-        case UNIQUE:
             length += 8; // owning constraint id
         }
 
@@ -182,13 +191,13 @@ public class SchemaRuleSerialization
      */
     public static int lengthOf( ConstraintRule constraintRule )
     {
-        int length = 1; // schema rule type
+        int length = 4; // legacy label or relType id
+        length += 1; // schema rule type
 
         length += 1; // constraint type
         ConstraintDescriptor constraintDescriptor = constraintRule.getConstraintDescriptor();
-        switch ( constraintDescriptor.type() )
+        if ( constraintDescriptor.type() == ConstraintDescriptor.Type.UNIQUE )
         {
-        case UNIQUE:
             length += 8; // owned index id
         }
 
@@ -219,11 +228,12 @@ public class SchemaRuleSerialization
                     id,
                     NewIndexDescriptorFactory.uniqueForSchema( readLabelSchema( source ) ),
                     indexProvider,
-                    owningConstraint
+                    owningConstraint == NO_OWNING_CONSTRAINT_YET ? null : owningConstraint
                 );
-        }
 
-        throw new MalformedSchemaRuleException( format( "Got unknown index rule type '%d'.", indexRuleType ) );
+        default:
+            throw new MalformedSchemaRuleException( format( "Got unknown index rule type '%d'.", indexRuleType ) );
+        }
     }
 
     private static LabelSchemaDescriptor readLabelSchema( ByteBuffer source ) throws MalformedSchemaRuleException
@@ -264,14 +274,15 @@ public class SchemaRuleSerialization
                     ConstraintDescriptorFactory.uniqueForSchema( readSchema( source ) ),
                     ownedIndex
             );
-        }
 
-        throw new MalformedSchemaRuleException( format( "Got unknown constraint rule type '%d'.", constraintRuleType ) );
+        default:
+            throw new MalformedSchemaRuleException( format( "Got unknown constraint rule type '%d'.", constraintRuleType ) );
+        }
     }
 
     // READ HELP
 
-    private static SchemaDescriptor readSchema( ByteBuffer source )
+    private static SchemaDescriptor readSchema( ByteBuffer source ) throws MalformedSchemaRuleException
     {
         byte schemaDescriptorType = source.get();
         switch ( schemaDescriptorType )
@@ -281,7 +292,7 @@ public class SchemaRuleSerialization
         case SIMPLE_REL_TYPE:
             return SchemaDescriptorFactory.forRelType( source.getInt(), readPropertyIds( source ) );
         default:
-            throw new UnsupportedOperationException( format( "Got unknown schema descriptor type '%d'.",
+            throw new MalformedSchemaRuleException( format( "Got unknown schema descriptor type '%d'.",
                     schemaDescriptorType ) );
         }
     }

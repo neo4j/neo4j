@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.store.record;
 
 import java.nio.ByteBuffer;
-import java.util.Optional;
 
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -38,14 +37,22 @@ import static org.neo4j.string.UTF8.getDecodedStringFrom;
  */
 public class SchemaRuleDeserializer2_0to3_1
 {
+    private static final Long NO_OWNED_INDEX_RULE = null;
+    private static final long NO_OWNING_CONSTRAINT = -1;
+
     private SchemaRuleDeserializer2_0to3_1()
     {
     }
 
-    public static SchemaRule deserialize( long id, ByteBuffer buffer ) throws MalformedSchemaRuleException
+    static boolean isLegacySchemaRule( byte schemaRuleType )
     {
-        int labelId = buffer.getInt();
-        Kind kind = Kind.forId( buffer.get() );
+        return schemaRuleType >= 1 && schemaRuleType <= SchemaRule.Kind.values().length;
+    }
+
+    static SchemaRule deserialize( long id, int labelId, byte kindByte, ByteBuffer buffer ) throws
+            MalformedSchemaRuleException
+    {
+        Kind kind = Kind.forId( kindByte );
         try
         {
             SchemaRule rule = newRule( kind, id, labelId, buffer );
@@ -91,7 +98,7 @@ public class SchemaRuleDeserializer2_0to3_1
         NewIndexDescriptor descriptor = constraintIndex ?
                 NewIndexDescriptorFactory.uniqueForLabel( label, propertyKeyIds ) :
                 NewIndexDescriptorFactory.forLabel( label, propertyKeyIds );
-        long owningConstraint = constraintIndex ? readOwningConstraint( serialized ) : IndexRule.NO_OWNING_CONSTRAINT;
+        long owningConstraint = constraintIndex ? readOwningConstraint( serialized ) : NO_OWNING_CONSTRAINT;
         return new IndexRule( id, providerDescriptor, descriptor, owningConstraint );
     }
 
@@ -135,14 +142,14 @@ public class SchemaRuleDeserializer2_0to3_1
     {
         return new ConstraintRule( id,
                 ConstraintDescriptorFactory.existsForLabel( labelId, readPropertyKey( buffer ) ),
-                ConstraintRule.NO_OWNED_INDEX_RULE );
+                NO_OWNED_INDEX_RULE );
     }
 
     public static ConstraintRule readRelPropertyExistenceConstraintRule( long id, int relTypeId, ByteBuffer buffer )
     {
         return new ConstraintRule( id,
                 ConstraintDescriptorFactory.existsForRelType( relTypeId, readPropertyKey( buffer ) ),
-                ConstraintRule.NO_OWNED_INDEX_RULE );
+                NO_OWNED_INDEX_RULE );
     }
 
     private static int readPropertyKey( ByteBuffer buffer )
