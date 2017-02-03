@@ -33,6 +33,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
+import org.neo4j.kernel.impl.pagecache.TestConfiguringPageCacheFactory;
 
 public class PageCacheRule extends ExternalResource
 {
@@ -63,6 +64,11 @@ public class PageCacheRule extends ExternalResource
 
     public PageCache getPageCache( FileSystemAbstraction fs, PageCacheTracer tracer, Config config )
     {
+        return getPageCache( fs, tracer, 0, config );
+    }
+
+    public PageCache getPageCache( FileSystemAbstraction fs, PageCacheTracer tracer, int pageSize, Config config )
+    {
         if ( pageCache != null )
         {
             try
@@ -71,12 +77,11 @@ public class PageCacheRule extends ExternalResource
             }
             catch ( Exception e )
             {
-                throw new AssertionError(
-                        "Failed to stop existing PageCache prior to creating a new one", e );
+                throw new AssertionError( "Failed to stop existing PageCache prior to creating a new one", e );
             }
         }
 
-        pageCache = StandalonePageCacheFactory.createPageCache( fs, tracer, config );
+        pageCache = TestConfiguringPageCacheFactory.createPageCache( fs, tracer, pageSize, config );
 
         if ( automaticallyProduceInconsistentReads )
         {

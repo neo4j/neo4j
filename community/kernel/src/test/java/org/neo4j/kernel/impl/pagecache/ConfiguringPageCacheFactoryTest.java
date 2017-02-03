@@ -35,7 +35,6 @@ import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.mapped_memory_page_size;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_swapper;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -56,24 +55,43 @@ public class ConfiguringPageCacheFactoryTest
     }
 
     @Test
-    public void shouldUseConfiguredPageSizeAndFitAsManyPagesAsItCan() throws Throwable
+    public void shouldFitAsManyPagesAsItCan() throws Throwable
     {
         // Given
-        final int pageSize = 4096;
+        final int pageSize = 8192;
         final int maxPages = 60;
-        Config config = new Config( stringMap(
-                mapped_memory_page_size.name(), "" + pageSize,
-                pagecache_memory.name(), Integer.toString( pageSize * maxPages ) ) );
+        Config config = new Config( stringMap( pagecache_memory.name(), Integer.toString( pageSize * maxPages ) ) );
 
         // When
         ConfiguringPageCacheFactory factory = new ConfiguringPageCacheFactory(
                 fsRule.get(), config, PageCacheTracer.NULL, NullLog.getInstance() );
-
         // Then
         try ( PageCache cache = factory.getOrCreatePageCache() )
         {
             assertThat( cache.pageSize(), equalTo( pageSize ) );
             assertThat( cache.maxCachedPages(), equalTo( maxPages ) );
+        }
+    }
+
+    @Test
+    public void shouldWarnWhenCreatedWithConfiguredPageCache() throws Exception
+    {
+        // Given
+        Config config = new Config( stringMap( GraphDatabaseSettings.mapped_memory_page_size.name(), "4096",
+                pagecache_swapper.name(), TEST_PAGESWAPPER_NAME ) );
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+        Log log = logProvider.getLog( PageCache.class );
+
+        // When
+        ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory( fsRule.get(), config,
+                PageCacheTracer.NULL, log );
+
+        // Then
+        try( PageCache pageCache = pageCacheFactory.getOrCreatePageCache() )
+        {
+            logProvider.assertContainsLogCallContaining(
+                    "The setting unsupported.dbms.memory.pagecache.pagesize does not have any effect. It is " +
+                    "deprecated and will be removed in a future version." );
         }
     }
 
@@ -109,26 +127,6 @@ public class ConfiguringPageCacheFactoryTest
     }
 
     @Test
-    public void mustUsePageSwapperCachePageSizeHintAsDefault() throws Exception
-    {
-        // Given
-        int cachePageSizeHint = 16 * 1024;
-        PageSwapperFactoryForTesting.cachePageSizeHint.set( cachePageSizeHint );
-        Config config = new Config( stringMap(
-                GraphDatabaseSettings.pagecache_swapper.name(), TEST_PAGESWAPPER_NAME ) );
-
-        // When
-        ConfiguringPageCacheFactory factory = new ConfiguringPageCacheFactory(
-                fsRule.get(), config, PageCacheTracer.NULL, NullLog.getInstance() );
-
-        // Then
-        try ( PageCache cache = factory.getOrCreatePageCache() )
-        {
-            assertThat( cache.pageSize(), is( cachePageSizeHint ) );
-        }
-    }
-
-    @Test
     public void mustIgnoreExplicitlySpecifiedCachePageSizeIfPageSwapperHintIsStrict() throws Exception
     {
         // Given
@@ -136,7 +134,6 @@ public class ConfiguringPageCacheFactoryTest
         PageSwapperFactoryForTesting.cachePageSizeHint.set( cachePageSizeHint );
         PageSwapperFactoryForTesting.cachePageSizeHintIsStrict.set( true );
         Config config = new Config( stringMap(
-                GraphDatabaseSettings.mapped_memory_page_size.name(), "4096",
                 GraphDatabaseSettings.pagecache_swapper.name(), TEST_PAGESWAPPER_NAME ) );
 
         // When

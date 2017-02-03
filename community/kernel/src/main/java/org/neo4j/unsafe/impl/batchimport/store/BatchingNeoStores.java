@@ -67,7 +67,6 @@ import org.neo4j.unsafe.impl.batchimport.store.io.IoTracer;
 import static java.lang.String.valueOf;
 import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.mapped_memory_page_size;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
@@ -202,8 +201,7 @@ public class BatchingNeoStores implements AutoCloseable
     {
         return new Config( stringMap( dbConfig.getParams(),
                 dense_node_threshold.name(), valueOf( config.denseNodeThreshold() ),
-                pagecache_memory.name(), valueOf( config.pageCacheMemory() ),
-                mapped_memory_page_size.name(), valueOf( config.pageSize() ) ),
+                pagecache_memory.name(), valueOf( config.pageCacheMemory() ) ),
                 GraphDatabaseSettings.class );
     }
 

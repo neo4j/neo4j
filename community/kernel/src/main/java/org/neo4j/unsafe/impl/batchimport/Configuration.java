@@ -54,8 +54,6 @@ public interface Configuration extends org.neo4j.unsafe.impl.batchimport.staging
      */
     long pageCacheMemory();
 
-    int pageSize();
-
     class Default
             extends org.neo4j.unsafe.impl.batchimport.staging.Configuration.Default
             implements Configuration
@@ -73,27 +71,6 @@ public interface Configuration extends org.neo4j.unsafe.impl.batchimport.staging
         public int denseNodeThreshold()
         {
             return Integer.parseInt( dense_node_threshold.getDefaultValue() );
-        }
-
-        private static int calculateOptimalPageSize( long memorySize, int numberOfPages )
-        {
-            int pageSize = (int) mebiBytes( 8 );
-            int lowest = (int) kibiBytes( 8 );
-            while ( pageSize > lowest )
-            {
-                if ( memorySize / pageSize >= numberOfPages )
-                {
-                    return pageSize;
-                }
-                pageSize >>>= 1;
-            }
-            return lowest;
-        }
-
-        @Override
-        public int pageSize()
-        {
-            return calculateOptimalPageSize( pageCacheMemory(), 60 );
         }
     }
 
@@ -144,12 +121,6 @@ public interface Configuration extends org.neo4j.unsafe.impl.batchimport.staging
         public int movingAverageSize()
         {
             return defaults.movingAverageSize();
-        }
-
-        @Override
-        public int pageSize()
-        {
-            return defaults.pageSize();
         }
     }
 

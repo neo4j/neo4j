@@ -35,6 +35,7 @@ import org.neo4j.function.ThrowingAction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.BaseRecordFormat;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
@@ -151,8 +152,7 @@ public class CommonAbstractStoreBehaviourTest
     public void writingOfHeaderRecordDuringInitialiseNewStoreFileMustThrowOnPageOverflow() throws Exception
     {
         // 16-byte header will overflow an 8-byte page size
-        Config config = CONFIG.with( stringMap( GraphDatabaseSettings.mapped_memory_page_size.name(), "8" ) );
-        MyStore store = new MyStore( config, pageCacheRule.getPageCache( fs.get(), config ) );
+        MyStore store = new MyStore( config, pageCacheRule.getPageCache( fs.get(), PageCacheTracer.NULL, 8, config ) );
         assertThrowsUnderlyingStorageException( () -> store.initialise( true ) );
     }
 
@@ -163,8 +163,7 @@ public class CommonAbstractStoreBehaviourTest
         first.initialise( true );
         first.close();
 
-        config = CONFIG.with( stringMap( GraphDatabaseSettings.mapped_memory_page_size.name(), "8" ) );
-        MyStore second = new MyStore( config, pageCacheRule.getPageCache( fs.get(), config ) );
+        MyStore second = new MyStore( config, pageCacheRule.getPageCache( fs.get(), PageCacheTracer.NULL, 8, config ) );
         assertThrowsUnderlyingStorageException( () -> second.initialise( false ) );
     }
 
