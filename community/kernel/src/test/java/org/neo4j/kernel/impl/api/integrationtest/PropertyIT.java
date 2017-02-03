@@ -21,17 +21,18 @@ package org.neo4j.kernel.impl.api.integrationtest;
 
 import org.junit.Test;
 
-import java.util.Arrays;
 import java.util.Iterator;
 
-import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.storageengine.api.Token;
 
+import static java.util.Arrays.asList;
 import static junit.framework.TestCase.fail;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
@@ -41,6 +42,7 @@ import static org.hamcrest.core.IsCollectionContaining.hasItems;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.collection.primitive.PrimitiveIntCollections.toList;
 import static org.neo4j.helpers.collection.Iterators.asCollection;
 import static org.neo4j.kernel.api.properties.Property.byteArrayProperty;
 import static org.neo4j.kernel.api.properties.Property.property;
@@ -52,84 +54,68 @@ public class PropertyIT extends KernelIntegrationTest
     public void shouldBeAbleToSetAndReadLargeByteArray() throws Exception
     {
         // GIVEN
-        int propertyKeyId;
-        long nodeId;
-        {
-            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
-            nodeId = statement.nodeCreate();
+        Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
+        long nodeId = statement.dataWriteOperations().nodeCreate();
 
-            // WHEN
-            propertyKeyId = statement.propertyKeyGetOrCreateForName( "clown" );
-            statement.nodeSetProperty( nodeId, byteArrayProperty( propertyKeyId, new byte[100_000] ) );
+        // WHEN
+        int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "clown" );
+        DefinedProperty property = byteArrayProperty( propertyKeyId, new byte[100_000] );
+        statement.dataWriteOperations().nodeSetProperty( nodeId, property );
 
-            // WHEN
-            commit();
-        }
-        {
-            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
+        // WHEN
+        commit();
+        ReadOperations readOperations = readOperationsInNewTransaction();
 
-            // THEN
-            Object value = statement.nodeGetProperty( nodeId, propertyKeyId );
-        }
+        // THEN
+        readOperations.nodeGetProperty( nodeId, propertyKeyId );
     }
 
     @Test
     public void shouldSetNodePropertyValue() throws Exception
     {
         // GIVEN
-        int propertyKeyId;
         String value = "bozo";
-        long nodeId;
-        {
-            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
-            nodeId = statement.nodeCreate();
+        Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
 
-            // WHEN
-            propertyKeyId = statement.propertyKeyGetOrCreateForName( "clown" );
-            statement.nodeSetProperty( nodeId, stringProperty( propertyKeyId, value ) );
+        long nodeId = statement.dataWriteOperations().nodeCreate();
 
-            // THEN
-            assertEquals( value, statement.nodeGetProperty(
-                    nodeId, propertyKeyId ) );
+        // WHEN
+        int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "clown" );
+        statement.dataWriteOperations().nodeSetProperty( nodeId, stringProperty( propertyKeyId, value ) );
 
-            // WHEN
-            commit();
-        }
-        {
-            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
+        // THEN
+        assertEquals( value, statement.readOperations().nodeGetProperty( nodeId, propertyKeyId ) );
 
-            // THEN
-            assertEquals( value, statement.nodeGetProperty( nodeId, propertyKeyId ) );
-        }
+        // WHEN
+        commit();
+        ReadOperations readOperations = readOperationsInNewTransaction();
+
+        // THEN
+        assertEquals( value, readOperations.nodeGetProperty( nodeId, propertyKeyId ) );
     }
 
     @Test
     public void shouldRemoveSetNodeProperty() throws Exception
     {
         // GIVEN
-        int propertyKeyId;
-        long nodeId;
-        {
-            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
-            nodeId = statement.nodeCreate();
-            propertyKeyId = statement.propertyKeyGetOrCreateForName( "clown" );
-            statement.nodeSetProperty( nodeId, stringProperty( propertyKeyId, "bozo" ) );
+        Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
 
-            // WHEN
-            statement.nodeRemoveProperty( nodeId, propertyKeyId );
+        long nodeId = statement.dataWriteOperations().nodeCreate();
+        int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "clown" );
+        statement.dataWriteOperations().nodeSetProperty( nodeId, stringProperty( propertyKeyId, "bozo" ) );
 
-            // THEN
-            assertThat( statement.nodeGetProperty( nodeId, propertyKeyId ), nullValue() );
-
-            // WHEN
-            commit();
-        }
+        // WHEN
+        statement.dataWriteOperations().nodeRemoveProperty( nodeId, propertyKeyId );
 
         // THEN
-        {
-            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
-            assertThat( statement.nodeGetProperty( nodeId, propertyKeyId ), nullValue() );
-        }
+        assertThat( statement.readOperations().nodeGetProperty( nodeId, propertyKeyId ), nullValue() );
+
+        // WHEN
+        commit();
+
+        // THEN
+        ReadOperations readOperations = readOperationsInNewTransaction();
+        assertThat( readOperations.nodeGetProperty( nodeId, propertyKeyId ), nullValue() );
     }
 
     @Test
@@ -139,31 +125,29 @@ public class PropertyIT extends KernelIntegrationTest
         int propertyKeyId;
         long nodeId;
         {
-            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
-            nodeId = statement.nodeCreate();
-            propertyKeyId = statement.propertyKeyGetOrCreateForName( "clown" );
-            statement.nodeSetProperty( nodeId, stringProperty( propertyKeyId, "bozo" ) );
+            Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
+            nodeId = statement.dataWriteOperations().nodeCreate();
+            propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "clown" );
+            statement.dataWriteOperations().nodeSetProperty( nodeId, stringProperty( propertyKeyId, "bozo" ) );
             commit();
         }
         {
-            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
+            Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
 
             // WHEN
-            Object previous = statement.nodeRemoveProperty( nodeId, propertyKeyId ).value();
+            Object previous = statement.dataWriteOperations().nodeRemoveProperty( nodeId, propertyKeyId ).value();
 
             // THEN
             assertEquals( "bozo", previous );
-            assertThat( statement.nodeGetProperty( nodeId, propertyKeyId ), nullValue() );
+            assertThat( statement.readOperations().nodeGetProperty( nodeId, propertyKeyId ), nullValue() );
 
             // WHEN
             commit();
         }
 
         // THEN
-        {
-            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
-            assertThat( statement.nodeGetProperty( nodeId, propertyKeyId ), nullValue() );
-        }
+        ReadOperations readOperations = readOperationsInNewTransaction();
+        assertThat( readOperations.nodeGetProperty( nodeId, propertyKeyId ), nullValue() );
     }
 
     @Test
@@ -175,24 +159,25 @@ public class PropertyIT extends KernelIntegrationTest
         int propertyKeyId;
         long nodeId;
         {
-            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
-            nodeId = statement.nodeCreate();
-            propertyKeyId = statement.propertyKeyGetOrCreateForName( "clown" );
-            statement.nodeSetProperty( nodeId, stringProperty( propertyKeyId, "bozo" ) );
+            Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
+            nodeId = statement.dataWriteOperations().nodeCreate();
+            propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "clown" );
+            statement.dataWriteOperations().nodeSetProperty( nodeId, stringProperty( propertyKeyId, "bozo" ) );
             commit();
         }
 
         DefinedProperty newProperty = stringProperty( propertyKeyId, "ozob" );
 
         {
-            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
+            Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
 
             // WHEN
-            statement.nodeRemoveProperty( nodeId, propertyKeyId );
-            statement.nodeSetProperty( nodeId, newProperty );
+            statement.dataWriteOperations().nodeRemoveProperty( nodeId, propertyKeyId );
+            statement.dataWriteOperations().nodeSetProperty( nodeId, newProperty );
 
             // THEN
-            assertThat( statement.nodeGetProperty( nodeId, propertyKeyId ), equalTo( newProperty.value() ) );
+            assertThat( statement.readOperations().nodeGetProperty( nodeId, propertyKeyId ),
+                    equalTo( newProperty.value() ) );
 
             // WHEN
             commit();
@@ -200,10 +185,10 @@ public class PropertyIT extends KernelIntegrationTest
 
         // THEN
         {
-            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
-            assertThat( statement.nodeGetProperty( nodeId, propertyKeyId ), equalTo( newProperty.value() ) );
-            assertThat( PrimitiveIntCollections.toList( statement.nodeGetPropertyKeys( nodeId ) ), equalTo( Arrays.asList(
-                    newProperty.propertyKeyId() ) ) );
+            ReadOperations readOperations = readOperationsInNewTransaction();
+            assertThat( readOperations.nodeGetProperty( nodeId, propertyKeyId ), equalTo( newProperty.value() ) );
+            assertThat( toList( readOperations.nodeGetPropertyKeys( nodeId ) ),
+                    equalTo( asList( newProperty.propertyKeyId() ) ) );
         }
     }
 
@@ -214,9 +199,9 @@ public class PropertyIT extends KernelIntegrationTest
         int propertyId;
         long nodeId;
         {
-            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
-            nodeId = statement.nodeCreate();
-            propertyId = statement.propertyKeyGetOrCreateForName( "clown" );
+            Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
+            nodeId = statement.dataWriteOperations().nodeCreate();
+            propertyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "clown" );
             commit();
         }
         {
@@ -234,116 +219,88 @@ public class PropertyIT extends KernelIntegrationTest
     public void nodeHasPropertyIfSet() throws Exception
     {
         // GIVEN
-        int propertyKeyId;
-        long nodeId;
-        {
-            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
-            nodeId = statement.nodeCreate();
+        Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
+        long nodeId = statement.dataWriteOperations().nodeCreate();
 
-            // WHEN
-            propertyKeyId = statement.propertyKeyGetOrCreateForName( "clown" );
-            statement.nodeSetProperty( nodeId, stringProperty( propertyKeyId, "bozo" ) );
+        // WHEN
+        int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "clown" );
+        statement.dataWriteOperations().nodeSetProperty( nodeId, stringProperty( propertyKeyId, "bozo" ) );
 
-            // THEN
-            assertThat( statement.nodeHasProperty( nodeId, propertyKeyId ), is( true ) );
-            assertThat( statement.nodeGetProperty( nodeId, propertyKeyId ), notNullValue() );
+        // THEN
+        assertThat( statement.readOperations().nodeHasProperty( nodeId, propertyKeyId ), is( true ) );
+        assertThat( statement.readOperations().nodeGetProperty( nodeId, propertyKeyId ), notNullValue() );
 
-            // WHEN
-            commit();
-        }
-        {
-            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
+        // WHEN
+        commit();
+        ReadOperations readOperations = readOperationsInNewTransaction();
 
-            // THEN
-            assertThat( statement.nodeHasProperty( nodeId, propertyKeyId ), is( true ) );
-            assertThat( statement.nodeGetProperty( nodeId, propertyKeyId ), notNullValue() );
-        }
+        // THEN
+        assertThat( readOperations.nodeHasProperty( nodeId, propertyKeyId ), is( true ) );
+        assertThat( readOperations.nodeGetProperty( nodeId, propertyKeyId ), notNullValue() );
     }
 
     @Test
     public void nodeHasNotPropertyIfUnset() throws Exception
     {
-        int propertyKeyId;
-        long nodeId;
-        {
-            // GIVEN
-            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
-            nodeId = statement.nodeCreate();
+        // GIVEN
+        Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
+        long nodeId = statement.dataWriteOperations().nodeCreate();
 
-            // WHEN
-            propertyKeyId = statement.propertyKeyGetOrCreateForName( "clown" );
+        // WHEN
+        int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "clown" );
 
-            // THEN
-            assertThat( statement.nodeHasProperty( nodeId, propertyKeyId ), is( false ) );
-            assertThat( statement.nodeGetProperty( nodeId, propertyKeyId ), nullValue() );
+        // THEN
+        assertThat( statement.readOperations().nodeHasProperty( nodeId, propertyKeyId ), is( false ) );
+        assertThat( statement.readOperations().nodeGetProperty( nodeId, propertyKeyId ), nullValue() );
 
-            // WHEN
-            commit();
-        }
+        // WHEN
+        commit();
 
-        {
-            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
+        ReadOperations readOperations = readOperationsInNewTransaction();
 
-            // THEN
-            assertThat( statement.nodeHasProperty( nodeId, propertyKeyId ), is( false ) );
-            assertThat( statement.nodeGetProperty( nodeId, propertyKeyId ), nullValue() );
-        }
+        // THEN
+        assertThat( readOperations.nodeHasProperty( nodeId, propertyKeyId ), is( false ) );
+        assertThat( readOperations.nodeGetProperty( nodeId, propertyKeyId ), nullValue() );
     }
 
     @Test
     public void shouldRollbackSetNodePropertyValue() throws Exception
     {
         // GIVEN
-        int propertyKeyId;
-        long nodeId;
-        {
-            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
-            nodeId = statement.nodeCreate();
-            propertyKeyId = statement.propertyKeyGetOrCreateForName( "clown" );
-            commit();
-        }
+        Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
+        long nodeId = statement.dataWriteOperations().nodeCreate();
+        int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "clown" );
+        commit();
 
         // WHEN
-        {
-            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
-            statement.nodeSetProperty( nodeId, stringProperty( propertyKeyId, "bozo" ) );
-            rollback();
-        }
+        DataWriteOperations dataWriteOperations = dataWriteOperationsInNewTransaction();
+        dataWriteOperations.nodeSetProperty( nodeId, stringProperty( propertyKeyId, "bozo" ) );
+        rollback();
 
         // THEN
-        {
-            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
-            assertThat( statement.nodeHasProperty( nodeId, propertyKeyId ), is( false ) );
-            assertThat( statement.nodeGetProperty( nodeId, propertyKeyId ), nullValue() );
-        }
+        ReadOperations readOperations = readOperationsInNewTransaction();
+        assertThat( readOperations.nodeHasProperty( nodeId, propertyKeyId ), is( false ) );
+        assertThat( readOperations.nodeGetProperty( nodeId, propertyKeyId ), nullValue() );
     }
 
     @Test
     public void shouldUpdateNodePropertyValue() throws Exception
     {
         // GIVEN
-        int propertyId;
-        long nodeId;
-        {
-            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
-            nodeId = statement.nodeCreate();
-            propertyId = statement.propertyKeyGetOrCreateForName( "clown" );
-            statement.nodeSetProperty( nodeId, stringProperty( propertyId, "bozo" ) );
-            commit();
-        }
+        Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
+        long nodeId = statement.dataWriteOperations().nodeCreate();
+        int propertyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "clown" );
+        statement.dataWriteOperations().nodeSetProperty( nodeId, stringProperty( propertyId, "bozo" ) );
+        commit();
 
         // WHEN
-        {
-            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
-            statement.nodeSetProperty( nodeId, Property.intProperty( propertyId, 42 ) );
-            commit();
-        }
+        DataWriteOperations dataWriteOperations = dataWriteOperationsInNewTransaction();
+        dataWriteOperations.nodeSetProperty( nodeId, Property.intProperty( propertyId, 42 ) );
+        commit();
 
         // THEN
-        {
-            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
-            assertEquals( 42, statement.nodeGetProperty( nodeId, propertyId ) );
-        }
+        ReadOperations readOperations = readOperationsInNewTransaction();
+        assertEquals( 42, readOperations.nodeGetProperty( nodeId, propertyId ) );
     }
 
     @Test
@@ -352,58 +309,47 @@ public class PropertyIT extends KernelIntegrationTest
         // given
         dbWithNoCache();
 
-        long prop1;
-        long prop2;
-        {
-            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
-            prop1 = statement.propertyKeyGetOrCreateForName( "prop1" );
-            prop2 = statement.propertyKeyGetOrCreateForName( "prop2" );
+        Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
+        int prop1 = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "prop1" );
+        int prop2 = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "prop2" );
 
-            // when
-            Iterator<Token> propIdsBeforeCommit = statement.propertyKeyGetAllTokens();
+        // when
+        Iterator<Token> propIdsBeforeCommit = statement.readOperations().propertyKeyGetAllTokens();
 
-            // then
-            assertThat( asCollection( propIdsBeforeCommit ),
-                    hasItems( new Token( "prop1", (int) prop1 ), new Token( "prop2", (int) prop2 ) ) );
+        // then
+        assertThat( asCollection( propIdsBeforeCommit ),
+                hasItems( new Token( "prop1", prop1 ), new Token( "prop2", prop2 ) ) );
 
-            // when
-            commit();
-        }
-        {
-            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
-            Iterator<Token> propIdsAfterCommit = statement.propertyKeyGetAllTokens();
+        // when
+        commit();
+        ReadOperations readOperations = readOperationsInNewTransaction();
+        Iterator<Token> propIdsAfterCommit = readOperations.propertyKeyGetAllTokens();
 
-            // then
-            assertThat( asCollection( propIdsAfterCommit ),
-                    hasItems( new Token( "prop1", (int) prop1 ), new Token( "prop2", (int) prop2 ) ) );
-        }
+        // then
+        assertThat( asCollection( propIdsAfterCommit ),
+                hasItems( new Token( "prop1", prop1 ), new Token( "prop2", prop2 ) ) );
     }
 
     @Test
     public void shouldNotAllowModifyingPropertiesOnDeletedNode() throws Exception
     {
         // given
-        int prop1;
-        long node;
+        Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
+        int prop1 = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "prop1" );
+        long node = statement.dataWriteOperations().nodeCreate();
+
+        statement.dataWriteOperations().nodeSetProperty( node, stringProperty( prop1, "As" ) );
+        statement.dataWriteOperations().nodeDelete( node );
+
+        // When
+        try
         {
-            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
-            prop1 = statement.propertyKeyGetOrCreateForName( "prop1" );
-            node = statement.nodeCreate();
-
-            statement.nodeSetProperty( node, stringProperty( prop1, "As" ) );
-            statement.nodeDelete( node );
-
-            // When
-            try
-            {
-                statement.nodeRemoveProperty( node, prop1 );
-                fail( "Should have failed." );
-            }
-            catch ( EntityNotFoundException e )
-            {
-                assertThat( e.getMessage(),
-                            equalTo( "Unable to load NODE with id " + node + "." ) );
-            }
+            statement.dataWriteOperations().nodeRemoveProperty( node, prop1 );
+            fail( "Should have failed." );
+        }
+        catch ( EntityNotFoundException e )
+        {
+            assertThat( e.getMessage(), equalTo( "Unable to load NODE with id " + node + "." ) );
         }
     }
 
@@ -411,28 +357,25 @@ public class PropertyIT extends KernelIntegrationTest
     public void shouldNotAllowModifyingPropertiesOnDeletedRelationship() throws Exception
     {
         // given
-        int prop1;
-        long rel;
+        Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
+        int prop1 = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "prop1" );
+        int type = statement.tokenWriteOperations().relationshipTypeGetOrCreateForName( "RELATED" );
+        long startNodeId = statement.dataWriteOperations().nodeCreate();
+        long endNodeId = statement.dataWriteOperations().nodeCreate();
+        long rel = statement.dataWriteOperations().relationshipCreate( type, startNodeId, endNodeId );
+
+        statement.dataWriteOperations().relationshipSetProperty( rel, stringProperty( prop1, "As" ) );
+        statement.dataWriteOperations().relationshipDelete( rel );
+
+        // When
+        try
         {
-            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
-            prop1 = statement.propertyKeyGetOrCreateForName( "prop1" );
-            int type = statement.relationshipTypeGetOrCreateForName( "RELATED" );
-            rel = statement.relationshipCreate( type, statement.nodeCreate(), statement.nodeCreate() );
-
-            statement.relationshipSetProperty( rel, stringProperty( prop1, "As" ) );
-            statement.relationshipDelete( rel );
-
-            // When
-            try
-            {
-                statement.relationshipRemoveProperty( rel, prop1 );
-                fail( "Should have failed." );
-            }
-            catch ( EntityNotFoundException e )
-            {
-                assertThat( e.getMessage(),
-                            equalTo( "Unable to load RELATIONSHIP with id " + rel + "." ) );
-            }
+            statement.dataWriteOperations().relationshipRemoveProperty( rel, prop1 );
+            fail( "Should have failed." );
+        }
+        catch ( EntityNotFoundException e )
+        {
+            assertThat( e.getMessage(), equalTo( "Unable to load RELATIONSHIP with id " + rel + "." ) );
         }
     }
 
@@ -440,69 +383,55 @@ public class PropertyIT extends KernelIntegrationTest
     public void shouldBeAbleToRemoveResetAndTwiceRemovePropertyOnNode() throws Exception
     {
         // given
-        long node;
-        int prop;
-        {
-            DataWriteOperations ops = dataWriteOperationsInNewTransaction();
-            prop = ops.propertyKeyGetOrCreateForName( "foo" );
+        Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
+        int prop = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "foo" );
 
-            node = ops.nodeCreate();
-            ops.nodeSetProperty( node, property( prop, "bar" ) );
+        long node = statement.dataWriteOperations().nodeCreate();
+        statement.dataWriteOperations().nodeSetProperty( node, property( prop, "bar" ) );
 
-            commit();
-        }
+        commit();
 
         // when
-        {
-            DataWriteOperations ops = dataWriteOperationsInNewTransaction();
-            ops.nodeRemoveProperty( node, prop );
-            ops.nodeSetProperty( node, property( prop, "bar" ) );
-            ops.nodeRemoveProperty( node, prop );
-            ops.nodeRemoveProperty( node, prop );
+        DataWriteOperations dataWriteOperations = dataWriteOperationsInNewTransaction();
+        dataWriteOperations.nodeRemoveProperty( node, prop );
+        dataWriteOperations.nodeSetProperty( node, property( prop, "bar" ) );
+        dataWriteOperations.nodeRemoveProperty( node, prop );
+        dataWriteOperations.nodeRemoveProperty( node, prop );
 
-            commit();
-        }
+        commit();
 
         // then
-        {
-            ReadOperations ops = readOperationsInNewTransaction();
-            assertThat( ops.nodeGetProperty( node, prop ), nullValue() );
-        }
+        ReadOperations readOperations = readOperationsInNewTransaction();
+        assertThat( readOperations.nodeGetProperty( node, prop ), nullValue() );
     }
 
     @Test
     public void shouldBeAbleToRemoveResetAndTwiceRemovePropertyOnRelationship() throws Exception
     {
         // given
-        long rel;
-        int prop;
-        {
-            DataWriteOperations ops = dataWriteOperationsInNewTransaction();
-            prop = ops.propertyKeyGetOrCreateForName( "foo" );
-            int type = ops.relationshipTypeGetOrCreateForName( "RELATED" );
+        Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
+        int prop = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "foo" );
+        int type = statement.tokenWriteOperations().relationshipTypeGetOrCreateForName( "RELATED" );
 
-            rel = ops.relationshipCreate( type, ops.nodeCreate(), ops.nodeCreate() );
-            ops.relationshipSetProperty( rel, property( prop, "bar" ) );
+        long startNodeId = statement.dataWriteOperations().nodeCreate();
+        long endNodeId = statement.dataWriteOperations().nodeCreate();
+        long rel = statement.dataWriteOperations().relationshipCreate( type, startNodeId, endNodeId );
+        statement.dataWriteOperations().relationshipSetProperty( rel, property( prop, "bar" ) );
 
-            commit();
-        }
+        commit();
 
         // when
-        {
-            DataWriteOperations ops = dataWriteOperationsInNewTransaction();
-            ops.relationshipRemoveProperty( rel, prop );
-            ops.relationshipSetProperty( rel, property( prop, "bar" ) );
-            ops.relationshipRemoveProperty( rel, prop );
-            ops.relationshipRemoveProperty( rel, prop );
+        DataWriteOperations dataWriteOperations = dataWriteOperationsInNewTransaction();
+        dataWriteOperations.relationshipRemoveProperty( rel, prop );
+        dataWriteOperations.relationshipSetProperty( rel, property( prop, "bar" ) );
+        dataWriteOperations.relationshipRemoveProperty( rel, prop );
+        dataWriteOperations.relationshipRemoveProperty( rel, prop );
 
-            commit();
-        }
+        commit();
 
         // then
-        {
-            ReadOperations ops = readOperationsInNewTransaction();
-            assertThat( ops.relationshipGetProperty( rel, prop ), nullValue() );
-        }
+        ReadOperations readOperations = readOperationsInNewTransaction();
+        assertThat( readOperations.relationshipGetProperty( rel, prop ), nullValue() );
     }
 }
 

@@ -38,14 +38,15 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
-import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.security.AnonymousContext;
+import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.api.Kernel;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -81,7 +82,7 @@ public class KernelIT extends KernelIntegrationTest
         //    same transaction.
         Node node = db.createNode();
 
-        int labelId = statement.dataWriteOperations().labelGetOrCreateForName( "labello" );
+        int labelId = statement.tokenWriteOperations().labelGetOrCreateForName( "labello" );
         statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId );
 
         // 4: Close the StatementContext
@@ -101,7 +102,7 @@ public class KernelIT extends KernelIntegrationTest
 
         // WHEN
         Node node = db.createNode();
-        int labelId = statement.dataWriteOperations().labelGetOrCreateForName( "labello" );
+        int labelId = statement.tokenWriteOperations().labelGetOrCreateForName( "labello" );
         statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId );
         statement.close();
         outerTx.close();
@@ -119,7 +120,7 @@ public class KernelIT extends KernelIntegrationTest
 
             // WHEN
             node = db.createNode();
-            labelId = statement.dataWriteOperations().labelGetOrCreateForName( "labello" );
+            labelId = statement.tokenWriteOperations().labelGetOrCreateForName( "labello" );
             statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId );
             statement.close();
         }
@@ -150,7 +151,7 @@ public class KernelIT extends KernelIntegrationTest
         {
             Statement statement = statementContextSupplier.get();
             node = db.createNode();
-            labelId = statement.dataWriteOperations().labelGetOrCreateForName( "labello" );
+            labelId = statement.tokenWriteOperations().labelGetOrCreateForName( "labello" );
             statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId );
             statement.close();
             transaction.failure();
@@ -190,8 +191,8 @@ public class KernelIT extends KernelIntegrationTest
 
         // WHEN
         Node node = db.createNode();
-        int labelId1 = statement.dataWriteOperations().labelGetOrCreateForName( "labello1" );
-        int labelId2 = statement.dataWriteOperations().labelGetOrCreateForName( "labello2" );
+        int labelId1 = statement.tokenWriteOperations().labelGetOrCreateForName( "labello1" );
+        int labelId2 = statement.tokenWriteOperations().labelGetOrCreateForName( "labello2" );
         statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId1 );
         statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId2 );
         statement.dataWriteOperations().nodeRemoveLabel( node.getId(), labelId2 );
@@ -215,8 +216,8 @@ public class KernelIT extends KernelIntegrationTest
 
         // WHEN
         Node node = db.createNode();
-        int labelId1 = statement.dataWriteOperations().labelGetOrCreateForName( "labello1" );
-        int labelId2 = statement.dataWriteOperations().labelGetOrCreateForName( "labello2" );
+        int labelId1 = statement.tokenWriteOperations().labelGetOrCreateForName( "labello1" );
+        int labelId2 = statement.tokenWriteOperations().labelGetOrCreateForName( "labello2" );
         statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId1 );
         statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId2 );
         statement.dataWriteOperations().nodeRemoveLabel( node.getId(), labelId2 );
@@ -239,8 +240,8 @@ public class KernelIT extends KernelIntegrationTest
         Transaction tx = db.beginTx();
         Statement statement = statementContextSupplier.get();
         Node node = db.createNode();
-        int labelId1 = statement.dataWriteOperations().labelGetOrCreateForName( "labello1" );
-        int labelId2 = statement.dataWriteOperations().labelGetOrCreateForName( "labello2" );
+        int labelId1 = statement.tokenWriteOperations().labelGetOrCreateForName( "labello1" );
+        int labelId2 = statement.tokenWriteOperations().labelGetOrCreateForName( "labello2" );
         statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId1 );
         statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId2 );
         statement.close();
@@ -270,7 +271,7 @@ public class KernelIT extends KernelIntegrationTest
         Transaction tx = db.beginTx();
         Statement statement = statementContextSupplier.get();
         Node node = db.createNode();
-        int labelId1 = statement.dataWriteOperations().labelGetOrCreateForName( "labello1" );
+        int labelId1 = statement.tokenWriteOperations().labelGetOrCreateForName( "labello1" );
         statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId1 );
         statement.close();
         tx.success();
@@ -304,7 +305,7 @@ public class KernelIT extends KernelIntegrationTest
         Transaction tx = db.beginTx();
         Node node = db.createNode();
         Statement statement = statementContextSupplier.get();
-        int labelId = statement.dataWriteOperations().labelGetOrCreateForName( "mylabel" );
+        int labelId = statement.tokenWriteOperations().labelGetOrCreateForName( "mylabel" );
         statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId );
         statement.close();
         tx.success();
@@ -327,7 +328,7 @@ public class KernelIT extends KernelIntegrationTest
         Transaction tx = db.beginTx();
         Node node = db.createNode();
         Statement statement = statementContextSupplier.get();
-        int labelId = statement.dataWriteOperations().labelGetOrCreateForName( "mylabel" );
+        int labelId = statement.tokenWriteOperations().labelGetOrCreateForName( "mylabel" );
         statement.close();
         tx.success();
         tx.close();
@@ -349,7 +350,7 @@ public class KernelIT extends KernelIntegrationTest
         Transaction tx = db.beginTx();
         Node node = db.createNode();
         Statement statement = statementContextSupplier.get();
-        int labelId = statement.dataWriteOperations().labelGetOrCreateForName( "mylabel" );
+        int labelId = statement.tokenWriteOperations().labelGetOrCreateForName( "mylabel" );
         statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId );
         statement.close();
         tx.success();
@@ -372,7 +373,7 @@ public class KernelIT extends KernelIntegrationTest
         Transaction tx = db.beginTx();
         Node node = db.createNode();
         Statement statement = statementContextSupplier.get();
-        int labelId = statement.dataWriteOperations().labelGetOrCreateForName( "mylabel" );
+        int labelId = statement.tokenWriteOperations().labelGetOrCreateForName( "mylabel" );
         statement.close();
         tx.success();
         tx.close();
@@ -473,7 +474,7 @@ public class KernelIT extends KernelIntegrationTest
         commit();
 
         // WHEN
-        createIndex( schemaWriteOperationsInNewTransaction() );
+        createIndex( statementInNewTransaction( SecurityContext.AUTH_DISABLED ) );
         commit();
 
         try ( Transaction tx = db.beginTx() )
@@ -489,7 +490,7 @@ public class KernelIT extends KernelIntegrationTest
     public void schemaStateShouldBeEvictedOnIndexDropped() throws Exception
     {
         // GIVEN
-        IndexDescriptor idx = createIndex( schemaWriteOperationsInNewTransaction() );
+        IndexDescriptor idx = createIndex( statementInNewTransaction( SecurityContext.AUTH_DISABLED ) );
         commit();
 
         try ( Transaction tx = db.beginTx() )
@@ -626,11 +627,12 @@ public class KernelIT extends KernelIntegrationTest
         return txIdStore.getLastCommittedTransactionId();
     }
 
-    private IndexDescriptor createIndex( SchemaWriteOperations schemaWriteOperations ) throws SchemaKernelException
+    private IndexDescriptor createIndex( Statement statement )
+            throws SchemaKernelException, InvalidTransactionTypeKernelException
     {
-        return schemaWriteOperations.indexCreate( new NodePropertyDescriptor(
-                schemaWriteOperations.labelGetOrCreateForName( "hello" ),
-                schemaWriteOperations.propertyKeyGetOrCreateForName( "hepp" ) ) );
+        return statement.schemaWriteOperations().indexCreate( new NodePropertyDescriptor(
+                statement.tokenWriteOperations().labelGetOrCreateForName( "hello" ),
+                statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "hepp" ) ) );
     }
 
     private String getOrCreateSchemaState( String key, final String maybeSetThisState )

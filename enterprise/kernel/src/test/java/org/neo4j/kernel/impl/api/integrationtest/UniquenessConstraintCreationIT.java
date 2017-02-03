@@ -27,11 +27,11 @@ import org.neo4j.SchemaHelper;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.kernel.api.DataWriteOperations;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
+import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
@@ -41,11 +41,14 @@ import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernel
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchConstraintException;
+import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
-import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.security.AnonymousContext;
+import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaStorage;
@@ -67,9 +70,9 @@ public class UniquenessConstraintCreationIT
     private static final String DUPLICATED_VALUE = "apa";
 
     @Override
-    int initializeLabelOrRelType( SchemaWriteOperations writeOps, String name ) throws KernelException
+    int initializeLabelOrRelType( TokenWriteOperations tokenWriteOperations, String name ) throws KernelException
     {
-        return writeOps.labelGetOrCreateForName( KEY );
+        return tokenWriteOperations.labelGetOrCreateForName( KEY );
     }
 
     @Override
@@ -125,33 +128,29 @@ public class UniquenessConstraintCreationIT
     public void shouldAbortConstraintCreationWhenDuplicatesExist() throws Exception
     {
         // given
-        long node1, node2;
-        int foo, name;
-        {
-            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
-            // name is not unique for Foo in the existing data
+        Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
+        // name is not unique for Foo in the existing data
 
-            foo = statement.labelGetOrCreateForName( "Foo" );
-            name = statement.propertyKeyGetOrCreateForName( "name" );
+        int foo = statement.tokenWriteOperations().labelGetOrCreateForName( "Foo" );
+        int name = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "name" );
 
-            long node = statement.nodeCreate();
-            node1 = node;
-            statement.nodeAddLabel( node, foo );
-            statement.nodeSetProperty( node, Property.stringProperty( name, "foo" ) );
+        long node1 = statement.dataWriteOperations().nodeCreate();
 
-            node = statement.nodeCreate();
-            statement.nodeAddLabel( node, foo );
-            node2 = node;
-            statement.nodeSetProperty( node, Property.stringProperty( name, "foo" ) );
-            commit();
-        }
+        statement.dataWriteOperations().nodeAddLabel( node1, foo );
+        statement.dataWriteOperations().nodeSetProperty( node1, Property.stringProperty( name, "foo" ) );
+
+        long node2 = statement.dataWriteOperations().nodeCreate();
+        statement.dataWriteOperations().nodeAddLabel( node2, foo );
+
+        statement.dataWriteOperations().nodeSetProperty( node2, Property.stringProperty( name, "foo" ) );
+        commit();
 
         // when
-        NodePropertyDescriptor descriptor1 = new NodePropertyDescriptor(foo, name);
+        NodePropertyDescriptor descriptor1 = new NodePropertyDescriptor( foo, name );
         try
         {
-            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            statement.uniquePropertyConstraintCreate( descriptor1 );
+            SchemaWriteOperations schemaWriteOperations = schemaWriteOperationsInNewTransaction();
+            schemaWriteOperations.uniquePropertyConstraintCreate( descriptor1 );
 
             fail( "expected exception" );
         }
@@ -162,9 +161,9 @@ public class UniquenessConstraintCreationIT
             Throwable cause = ex.getCause();
             assertThat( cause, instanceOf( ConstraintVerificationFailedKernelException.class ) );
 
-            String expectedMessage = String.format(
-                    "Multiple nodes with label `%s` have property `%s` = '%s':%n  node(%d)%n  node(%d)",
-                    "Foo", "name", "foo", node1, node2 );
+            String expectedMessage =
+                    String.format( "Multiple nodes with label `%s` have property `%s` = '%s':%n  node(%d)%n  node(%d)",
+                            "Foo", "name", "foo", node1, node2 );
             String actualMessage = userMessage( (ConstraintVerificationFailedKernelException) cause );
             assertEquals( expectedMessage, actualMessage );
         }
@@ -174,40 +173,31 @@ public class UniquenessConstraintCreationIT
     public void shouldCreateAnIndexToGoAlongWithAUniquePropertyConstraint() throws Exception
     {
         // when
-        {
-            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            statement.uniquePropertyConstraintCreate( descriptor );
-            commit();
-        }
+        SchemaWriteOperations schemaWriteOperations = schemaWriteOperationsInNewTransaction();
+        schemaWriteOperations.uniquePropertyConstraintCreate( descriptor );
+        commit();
 
         // then
-        {
-            ReadOperations statement = readOperationsInNewTransaction();
-            assertEquals( asSet( IndexDescriptorFactory.of( descriptor ) ),
-                    asSet( statement.uniqueIndexesGetAll() ) );
-        }
+        ReadOperations readOperations = readOperationsInNewTransaction();
+        assertEquals( asSet( IndexDescriptorFactory.of( descriptor ) ), asSet( readOperations.uniqueIndexesGetAll() ) );
     }
 
     @Test
     public void shouldDropCreatedConstraintIndexWhenRollingBackConstraintCreation() throws Exception
     {
         // given
-        {
-            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            statement.uniquePropertyConstraintCreate( descriptor );
-            assertEquals( asSet( IndexDescriptorFactory.of( descriptor ) ),
-                    asSet( statement.uniqueIndexesGetAll() ) );
-        }
+        Statement statement = statementInNewTransaction( SecurityContext.AUTH_DISABLED );
+        statement.schemaWriteOperations().uniquePropertyConstraintCreate( descriptor );
+        assertEquals( asSet( IndexDescriptorFactory.of( descriptor ) ),
+                asSet( statement.readOperations().uniqueIndexesGetAll() ) );
 
         // when
         rollback();
 
         // then
-        {
-            ReadOperations statement = readOperationsInNewTransaction();
-            assertEquals( emptySetOf( IndexDescriptor.class ), asSet( statement.uniqueIndexesGetAll() ) );
-            commit();
-        }
+        ReadOperations readOperations = readOperationsInNewTransaction();
+        assertEquals( emptySetOf( IndexDescriptor.class ), asSet( readOperations.uniqueIndexesGetAll() ) );
+        commit();
     }
 
     @Test
@@ -215,12 +205,10 @@ public class UniquenessConstraintCreationIT
             throws Exception
     {
         // given
-        NodePropertyExistenceConstraint constraint;
-        {
-            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            constraint = statement.nodePropertyExistenceConstraintCreate( descriptor );
-            commit();
-        }
+        SchemaWriteOperations schemaWriteOperations = schemaWriteOperationsInNewTransaction();
+        NodePropertyExistenceConstraint constraint =
+                schemaWriteOperations.nodePropertyExistenceConstraintCreate( descriptor );
+        commit();
 
         // when
         try
@@ -277,28 +265,22 @@ public class UniquenessConstraintCreationIT
     public void shouldDropConstraintIndexWhenDroppingConstraint() throws Exception
     {
         // given
-        UniquenessConstraint constraint;
-        {
-            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            constraint = statement.uniquePropertyConstraintCreate( descriptor );
-            assertEquals( asSet( IndexDescriptorFactory.of( descriptor ) ),
-                    asSet( statement.uniqueIndexesGetAll() ) );
-            commit();
-        }
+        Statement statement = statementInNewTransaction( SecurityContext.AUTH_DISABLED );
+        UniquenessConstraint constraint =
+                statement.schemaWriteOperations().uniquePropertyConstraintCreate( descriptor );
+        assertEquals( asSet( IndexDescriptorFactory.of( descriptor ) ),
+                asSet( statement.readOperations().uniqueIndexesGetAll() ) );
+        commit();
 
         // when
-        {
-            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            statement.constraintDrop( constraint );
-            commit();
-        }
+        SchemaWriteOperations schemaWriteOperations = schemaWriteOperationsInNewTransaction();
+        schemaWriteOperations.constraintDrop( constraint );
+        commit();
 
         // then
-        {
-            ReadOperations statement = readOperationsInNewTransaction();
-            assertEquals( emptySetOf( IndexDescriptor.class ), asSet( statement.uniqueIndexesGetAll() ) );
-            commit();
-        }
+        ReadOperations readOperations = readOperationsInNewTransaction();
+        assertEquals( emptySetOf( IndexDescriptor.class ), asSet( readOperations.uniqueIndexesGetAll() ) );
+        commit();
     }
 
     private String userMessage( ConstraintVerificationFailedKernelException cause )

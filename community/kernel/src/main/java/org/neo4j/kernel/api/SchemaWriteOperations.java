@@ -33,7 +33,7 @@ import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 
-public interface SchemaWriteOperations extends TokenWriteOperations
+public interface SchemaWriteOperations
 {
     /**
      * Creates an index, indexing properties with the given {@code propertyKeyId} for nodes with the given

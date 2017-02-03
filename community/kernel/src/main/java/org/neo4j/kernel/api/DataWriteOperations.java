@@ -31,7 +31,7 @@ import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelExceptio
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 
-public interface DataWriteOperations extends TokenWriteOperations
+public interface DataWriteOperations
 {
     //===========================================
     //== DATA OPERATIONS ========================

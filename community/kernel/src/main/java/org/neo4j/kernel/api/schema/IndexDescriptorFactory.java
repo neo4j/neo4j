@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.schema;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
+import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
@@ -77,7 +78,7 @@ public class IndexDescriptorFactory
         return new NodePropertyDescriptor( labelId, propertyKeyId );
     }
 
-    public static NodePropertyDescriptor getOrCreateTokens( SchemaWriteOperations schemaWriteOperations,
+    public static NodePropertyDescriptor getOrCreateTokens( TokenWriteOperations schemaWriteOperations,
             IndexDefinition indexDefinition ) throws IllegalTokenNameException, TooManyLabelsException
     {
         int labelId = schemaWriteOperations.labelGetOrCreateForName( indexDefinition.getLabel().name() );

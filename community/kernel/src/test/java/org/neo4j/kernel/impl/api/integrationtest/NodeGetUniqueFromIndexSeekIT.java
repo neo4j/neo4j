@@ -25,15 +25,17 @@ import org.junit.Test;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.DataWriteOperations;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
-import org.neo4j.kernel.api.SchemaWriteOperations;
+import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementConstants;
+import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
+import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.test.DoubleLatch;
 
@@ -47,9 +49,9 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
     @Before
     public void createKeys() throws Exception
     {
-        SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-        this.labelId = statement.labelGetOrCreateForName( "Person" );
-        this.propertyKeyId = statement.propertyKeyGetOrCreateForName( "foo" );
+        TokenWriteOperations tokenWriteOperations = tokenWriteOperationsInNewTransaction();
+        this.labelId = tokenWriteOperations.labelGetOrCreateForName( "Person" );
+        this.propertyKeyId = tokenWriteOperations.propertyKeyGetOrCreateForName( "foo" );
         commit();
     }
 
@@ -79,8 +81,8 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
         long nodeId = createNodeWithValue( value );
 
         // when looking for it
-        DataWriteOperations statement = dataWriteOperationsInNewTransaction();
-        long foundId = statement.nodeGetFromUniqueIndexSeek( index, value );
+        ReadOperations readOperations = readOperationsInNewTransaction();
+        long foundId = readOperations.nodeGetFromUniqueIndexSeek( index, value );
         commit();
 
         // then
@@ -96,8 +98,8 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
         createNodeWithValue( "other_" + value );
 
         // when looking for it
-        DataWriteOperations statement = dataWriteOperationsInNewTransaction();
-        long foundId = statement.nodeGetFromUniqueIndexSeek( index, value );
+        ReadOperations readOperations = readOperationsInNewTransaction();
+        long foundId = readOperations.nodeGetFromUniqueIndexSeek( index, value );
         commit();
 
         // then
@@ -123,9 +125,6 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
         // *unblock* <-------------‘
         // assert that we complete before timeout
         final DoubleLatch latch = new DoubleLatch();
-
-        DependencyResolver resolver = db.getDependencyResolver();
-        Locks manager = resolver.resolveDependency( Locks.class );
 
         final IndexDescriptor index = createUniquenessConstraint();
         final String value = "value";
@@ -193,10 +192,10 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
 
     private IndexDescriptor createUniquenessConstraint() throws Exception
     {
-        SchemaWriteOperations schemaStatement = schemaWriteOperationsInNewTransaction();
+        Statement statement = statementInNewTransaction( SecurityContext.AUTH_DISABLED );
         NodePropertyDescriptor descriptor = new NodePropertyDescriptor( labelId, propertyKeyId );
-        schemaStatement.uniquePropertyConstraintCreate( descriptor );
-        IndexDescriptor result = schemaStatement.uniqueIndexGetForLabelAndPropertyKey( descriptor );
+        statement.schemaWriteOperations().uniquePropertyConstraintCreate( descriptor );
+        IndexDescriptor result = statement.readOperations().uniqueIndexGetForLabelAndPropertyKey( descriptor );
         commit();
         return result;
     }

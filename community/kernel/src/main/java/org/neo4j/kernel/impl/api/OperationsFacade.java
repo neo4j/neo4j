@@ -37,6 +37,7 @@ import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ExecutingQuery;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.LegacyIndexHits;
+import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.ProcedureCallOperations;
 import org.neo4j.kernel.api.QueryRegistryOperations;
@@ -114,8 +115,8 @@ import static org.neo4j.collection.primitive.Primitive.intSet;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.deduplicate;
 
 public class OperationsFacade
-        implements ReadOperations, DataWriteOperations, SchemaWriteOperations, QueryRegistryOperations,
-        ProcedureCallOperations
+        implements ReadOperations, DataWriteOperations, TokenWriteOperations, SchemaWriteOperations,
+        QueryRegistryOperations, ProcedureCallOperations
 {
     private final KernelTransaction tx;
     private final KernelStatement statement;

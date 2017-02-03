@@ -76,6 +76,7 @@ import static org.neo4j.graphdb.schema.Schema.IndexState.POPULATING;
 import static org.neo4j.helpers.collection.Iterators.addToCollection;
 import static org.neo4j.helpers.collection.Iterators.asCollection;
 import static org.neo4j.helpers.collection.Iterators.map;
+import static org.neo4j.kernel.api.schema.IndexDescriptorFactory.getOrCreateTokens;
 import static org.neo4j.kernel.impl.coreapi.schema.PropertyNameUtils.getIndexDescriptor;
 import static org.neo4j.kernel.impl.coreapi.schema.PropertyNameUtils.getPropertyKeys;
 
@@ -381,8 +382,8 @@ public class SchemaImpl implements Schema
                 try
                 {
                     IndexDefinition indexDefinition = new IndexDefinitionImpl( this, label, propertyKeys, false );
-                    NodePropertyDescriptor descriptor = IndexDescriptorFactory
-                            .getOrCreateTokens( statement.schemaWriteOperations(), indexDefinition );
+                    NodePropertyDescriptor descriptor =
+                            getOrCreateTokens( statement.tokenWriteOperations(), indexDefinition );
                     statement.schemaWriteOperations().indexCreate( descriptor );
                     return indexDefinition;
                 }
@@ -439,8 +440,8 @@ public class SchemaImpl implements Schema
             {
                 try
                 {
-                    NodePropertyDescriptor descriptor = IndexDescriptorFactory
-                            .getOrCreateTokens( statement.schemaWriteOperations(), indexDefinition );
+                    NodePropertyDescriptor descriptor =
+                            getOrCreateTokens( statement.tokenWriteOperations(), indexDefinition );
                     statement.schemaWriteOperations().uniquePropertyConstraintCreate( descriptor );
                     return new UniquenessConstraintDefinition( this, indexDefinition );
                 }
@@ -472,8 +473,8 @@ public class SchemaImpl implements Schema
                 try
                 {
                     IndexDefinition indexDefinition = new IndexDefinitionImpl( this, label, propertyKeys, false );
-                    NodePropertyDescriptor descriptor = IndexDescriptorFactory
-                            .getOrCreateTokens( statement.schemaWriteOperations(), indexDefinition );
+                    NodePropertyDescriptor descriptor =
+                            getOrCreateTokens( statement.tokenWriteOperations(), indexDefinition );
                     statement.schemaWriteOperations().nodePropertyExistenceConstraintCreate( descriptor );
                     return new NodePropertyExistenceConstraintDefinition( this, label, propertyKeys );
                 }
@@ -505,8 +506,8 @@ public class SchemaImpl implements Schema
             {
                 try
                 {
-                    int typeId = statement.schemaWriteOperations().relationshipTypeGetOrCreateForName( type.name() );
-                    int propertyKeyId = statement.schemaWriteOperations().propertyKeyGetOrCreateForName( propertyKey );
+                    int typeId = statement.tokenWriteOperations().relationshipTypeGetOrCreateForName( type.name() );
+                    int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( propertyKey );
                     statement.schemaWriteOperations().relationshipPropertyExistenceConstraintCreate(
                             new RelationshipPropertyDescriptor( typeId, propertyKeyId ) );
                     return new RelationshipPropertyExistenceConstraintDefinition( this, type, propertyKey );
@@ -582,8 +583,8 @@ public class SchemaImpl implements Schema
             {
                 try
                 {
-                    int typeId = statement.schemaWriteOperations().relationshipTypeGetForName( type.name() );
-                    int propertyKeyId = statement.schemaWriteOperations().propertyKeyGetForName( propertyKey );
+                    int typeId = statement.readOperations().relationshipTypeGetForName( type.name() );
+                    int propertyKeyId = statement.readOperations().propertyKeyGetForName( propertyKey );
                     RelationshipPropertyConstraint constraint = new RelationshipPropertyExistenceConstraint(
                             new RelationshipPropertyDescriptor( typeId, propertyKeyId ) );
                     statement.schemaWriteOperations().constraintDrop( constraint );

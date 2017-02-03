@@ -19,33 +19,36 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
-import java.util.UUID;
-
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
 
+import java.util.UUID;
+
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.kernel.api.DataWriteOperations;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.ReadOperations;
-import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.SchemaWriteOperations;
+import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
+import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
+import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.neo4j.kernel.api.properties.Property.property;
 import static org.neo4j.kernel.impl.api.integrationtest.PropertyExistenceConstraintValidationIT.NodePropertyExistenceExistenceConstraintValidationIT;
 import static org.neo4j.kernel.impl.api.integrationtest.PropertyExistenceConstraintValidationIT.RelationshipPropertyExistenceExistenceConstraintValidationIT;
 
@@ -65,10 +68,11 @@ public class PropertyExistenceConstraintValidationIT
             // given
             long entityId = createConstraintAndEntity( "Label1", "key1", "value1" );
 
-            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
+            Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
 
             // when
-            statement.nodeAddLabel( entityId, statement.labelGetOrCreateForName( "Label1" ) );
+            int label = statement.tokenWriteOperations().labelGetOrCreateForName( "Label1" );
+            statement.dataWriteOperations().nodeAddLabel( entityId, label );
 
             // then should not throw exception
         }
@@ -76,9 +80,9 @@ public class PropertyExistenceConstraintValidationIT
         @Override
         void createConstraint( String key, String property ) throws KernelException
         {
-            DataWriteOperations dataWrite = dataWriteOperationsInNewTransaction();
-            int label = dataWrite.labelGetOrCreateForName( key );
-            int propertyKey = dataWrite.propertyKeyGetOrCreateForName( property );
+            TokenWriteOperations tokenWriteOperations = tokenWriteOperationsInNewTransaction();
+            int label = tokenWriteOperations.labelGetOrCreateForName( key );
+            int propertyKey = tokenWriteOperations.propertyKeyGetOrCreateForName( property );
             commit();
 
             SchemaWriteOperations schemaWrite = schemaWriteOperationsInNewTransaction();
@@ -87,40 +91,41 @@ public class PropertyExistenceConstraintValidationIT
         }
 
         @Override
-        long createEntity( DataWriteOperations writeOps, String type ) throws Exception
+        long createEntity( Statement statement, String type ) throws Exception
         {
-            long node = writeOps.nodeCreate();
-            writeOps.nodeAddLabel( node, writeOps.labelGetOrCreateForName( type ) );
+            long node = statement.dataWriteOperations().nodeCreate();
+            int labelId = statement.tokenWriteOperations().labelGetOrCreateForName( type );
+            statement.dataWriteOperations().nodeAddLabel( node, labelId );
             return node;
         }
 
         @Override
-        long createEntity( DataWriteOperations writeOps, String property, String value ) throws Exception
+        long createEntity( Statement statement, String property, String value ) throws Exception
         {
-            long node = writeOps.nodeCreate();
-            int propertyKey = writeOps.propertyKeyGetOrCreateForName( property );
-            writeOps.nodeSetProperty( node, Property.property( propertyKey, value ) );
+            long node = statement.dataWriteOperations().nodeCreate();
+            int propertyKey = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( property );
+            statement.dataWriteOperations().nodeSetProperty( node, property( propertyKey, value ) );
             return node;
         }
 
         @Override
-        long createEntity( DataWriteOperations writeOps, String type, String property, String value ) throws Exception
+        long createEntity( Statement statement, String type, String property, String value ) throws Exception
         {
-            long node = createEntity( writeOps, type );
-            int propertyKey = writeOps.propertyKeyGetOrCreateForName( property );
-            writeOps.nodeSetProperty( node, Property.property( propertyKey, value ) );
+            long node = createEntity( statement, type );
+            int propertyKey = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( property );
+            statement.dataWriteOperations().nodeSetProperty( node, property( propertyKey, value ) );
             return node;
         }
 
         @Override
         long createConstraintAndEntity( String type, String property, String value ) throws Exception
         {
-            DataWriteOperations dataWrite = dataWriteOperationsInNewTransaction();
-            int label = dataWrite.labelGetOrCreateForName( type );
-            long node = dataWrite.nodeCreate();
-            dataWrite.nodeAddLabel( node, label );
-            int propertyKey = dataWrite.propertyKeyGetOrCreateForName( property );
-            dataWrite.nodeSetProperty( node, Property.property( propertyKey, value ) );
+            Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
+            int label = statement.tokenWriteOperations().labelGetOrCreateForName( type );
+            long node = statement.dataWriteOperations().nodeCreate();
+            statement.dataWriteOperations().nodeAddLabel( node, label );
+            int propertyKey = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( property );
+            statement.dataWriteOperations().nodeSetProperty( node, property( propertyKey, value ) );
             commit();
 
             createConstraint( type, property );
@@ -156,9 +161,9 @@ public class PropertyExistenceConstraintValidationIT
         @Override
         void createConstraint( String key, String property ) throws KernelException
         {
-            DataWriteOperations dataWrite = dataWriteOperationsInNewTransaction();
-            int relTypeId = dataWrite.relationshipTypeGetOrCreateForName( key );
-            int propertyKeyId = dataWrite.propertyKeyGetOrCreateForName( property );
+            TokenWriteOperations tokenWriteOperations = tokenWriteOperationsInNewTransaction();
+            int relTypeId = tokenWriteOperations.relationshipTypeGetOrCreateForName( key );
+            int propertyKeyId = tokenWriteOperations.propertyKeyGetOrCreateForName( property );
             commit();
 
             SchemaWriteOperations schemaWrite = schemaWriteOperationsInNewTransaction();
@@ -168,46 +173,47 @@ public class PropertyExistenceConstraintValidationIT
         }
 
         @Override
-        long createEntity( DataWriteOperations writeOps, String type ) throws Exception
+        long createEntity( Statement statement, String type ) throws Exception
         {
-            long start = writeOps.nodeCreate();
-            long end = writeOps.nodeCreate();
-            int relType = writeOps.relationshipTypeGetOrCreateForName( type );
-            return writeOps.relationshipCreate( relType, start, end );
+            long start = statement.dataWriteOperations().nodeCreate();
+            long end = statement.dataWriteOperations().nodeCreate();
+            int relType = statement.tokenWriteOperations().relationshipTypeGetOrCreateForName( type );
+            return statement.dataWriteOperations().relationshipCreate( relType, start, end );
         }
 
         @Override
-        long createEntity( DataWriteOperations writeOps, String property, String value ) throws Exception
+        long createEntity( Statement statement, String property, String value ) throws Exception
         {
-            long start = writeOps.nodeCreate();
-            long end = writeOps.nodeCreate();
-            int relType = writeOps.relationshipTypeGetOrCreateForName( UUID.randomUUID().toString() );
-            long relationship = writeOps.relationshipCreate( relType, start, end );
+            long start = statement.dataWriteOperations().nodeCreate();
+            long end = statement.dataWriteOperations().nodeCreate();
+            String relationshipTypeName = UUID.randomUUID().toString();
+            int relType = statement.tokenWriteOperations().relationshipTypeGetOrCreateForName( relationshipTypeName );
+            long relationship = statement.dataWriteOperations().relationshipCreate( relType, start, end );
 
-            int propertyKey = writeOps.propertyKeyGetOrCreateForName( property );
-            writeOps.relationshipSetProperty( relationship, Property.property( propertyKey, value ) );
+            int propertyKey = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( property );
+            statement.dataWriteOperations().relationshipSetProperty( relationship, property( propertyKey, value ) );
             return relationship;
         }
 
         @Override
-        long createEntity( DataWriteOperations writeOps, String type, String property, String value ) throws Exception
+        long createEntity( Statement statement, String type, String property, String value ) throws Exception
         {
-            long relationship = createEntity( writeOps, type );
-            int propertyKey = writeOps.propertyKeyGetOrCreateForName( property );
-            writeOps.relationshipSetProperty( relationship, Property.property( propertyKey, value ) );
+            long relationship = createEntity( statement, type );
+            int propertyKey = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( property );
+            statement.dataWriteOperations().relationshipSetProperty( relationship, property( propertyKey, value ) );
             return relationship;
         }
 
         @Override
         long createConstraintAndEntity( String type, String property, String value ) throws Exception
         {
-            DataWriteOperations dataWrite = dataWriteOperationsInNewTransaction();
-            int relType = dataWrite.relationshipTypeGetOrCreateForName( type );
-            long start = dataWrite.nodeCreate();
-            long end = dataWrite.nodeCreate();
-            long relationship = dataWrite.relationshipCreate( relType, start, end );
-            int propertyKey = dataWrite.propertyKeyGetOrCreateForName( property );
-            dataWrite.relationshipSetProperty( relationship, Property.property( propertyKey, value ) );
+            Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
+            int relType = statement.tokenWriteOperations().relationshipTypeGetOrCreateForName( type );
+            long start = statement.dataWriteOperations().nodeCreate();
+            long end = statement.dataWriteOperations().nodeCreate();
+            long relationship = statement.dataWriteOperations().relationshipCreate( relType, start, end );
+            int propertyKey = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( property );
+            statement.dataWriteOperations().relationshipSetProperty( relationship, property( propertyKey, value ) );
             commit();
 
             createConstraint( type, property );
@@ -241,11 +247,11 @@ public class PropertyExistenceConstraintValidationIT
     {
         abstract void createConstraint( String key, String property ) throws KernelException;
 
-        abstract long createEntity( DataWriteOperations writeOps, String type ) throws Exception;
+        abstract long createEntity( Statement statement, String type ) throws Exception;
 
-        abstract long createEntity( DataWriteOperations writeOps, String property, String value ) throws Exception;
+        abstract long createEntity( Statement statement, String property, String value ) throws Exception;
 
-        abstract long createEntity( DataWriteOperations writeOps, String type, String property, String value )
+        abstract long createEntity( Statement statement, String type, String property, String value )
                 throws Exception;
 
         abstract long createConstraintAndEntity( String type, String property, String value ) throws Exception;
@@ -272,7 +278,7 @@ public class PropertyExistenceConstraintValidationIT
             // given
             createConstraint( "Type1", "key1" );
 
-            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
+            Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
 
             // when
             createEntity( statement, "Type1" );
@@ -294,11 +300,11 @@ public class PropertyExistenceConstraintValidationIT
         {
             // given
             long entity = createConstraintAndEntity( "Type1", "key1", "value1" );
-            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
+            Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
 
             // when
-            int key = statement.propertyKeyGetOrCreateForName( "key1" );
-            removeProperty( statement, entity, key );
+            int key = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "key1" );
+            removeProperty( statement.dataWriteOperations(), entity, key );
             try
             {
                 commit();
@@ -317,13 +323,13 @@ public class PropertyExistenceConstraintValidationIT
         {
             // given
             long entity = createConstraintAndEntity( "Type1", "key1", "value1" );
-            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
+            Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
 
             // when
-            int key = statement.propertyKeyGetOrCreateForName( "key1" );
+            int key = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "key1" );
             //remove and put back
-            removeProperty( statement, entity, key );
-            setProperty( statement, entity, Property.property( key, "value2" ) );
+            removeProperty( statement.dataWriteOperations(), entity, key );
+            setProperty( statement.dataWriteOperations(), entity, property( key, "value2" ) );
 
             commit();
         }
@@ -334,11 +340,11 @@ public class PropertyExistenceConstraintValidationIT
             // given
             long entity = createConstraintAndEntity( "Type1", "key1", "value1" );
 
-            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
+            Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
 
             // when
-            int key = statement.propertyKeyGetOrCreateForName( "key1" );
-            setProperty( statement, entity, Property.property( key, "value1" ) );
+            int key = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "key1" );
+            setProperty( statement.dataWriteOperations(), entity, property( key, "value1" ) );
 
             // then should not throw exception
         }
@@ -349,7 +355,7 @@ public class PropertyExistenceConstraintValidationIT
             // given
             createConstraintAndEntity( "Type1", "key1", "value1" );
 
-            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
+            Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
 
             // when
             createEntity( statement, "key1", "value1" );
