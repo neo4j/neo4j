@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.configuration;
 
-import java.util.function.Consumer;
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+
+import java.util.function.Consumer;
 
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.kernel.configuration.HttpConnector.Encryption;

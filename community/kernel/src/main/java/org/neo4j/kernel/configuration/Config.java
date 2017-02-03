@@ -348,6 +348,24 @@ public class Config implements DiagnosticsProvider, Configuration
                 } ) );
     }
 
+    // Used for documentation
+    /**
+     * @return all config options with their documented default values
+     */
+    public Map<String,Optional<String>> getDocumentedDefaults()
+    {
+        HashMap<String,Optional<String>> result = new HashMap<>();
+        for ( ConfigOptions co : configOptions )
+        {
+            Optional<String> docDef = co.documentedDefaultValue();
+            co.settingGroup().settings( params )
+                    .forEach( s ->
+                            result.put( s.name(),
+                                    Optional.ofNullable( docDef.orElse( s.getDefaultValue() ) ) ) );
+        }
+        return result;
+    }
+
     @Override
     public String getDiagnosticsIdentifier()
     {

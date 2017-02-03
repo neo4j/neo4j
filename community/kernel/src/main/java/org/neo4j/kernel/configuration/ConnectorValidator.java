@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 
@@ -37,6 +36,7 @@ import org.neo4j.graphdb.config.SettingGroup;
 
 import static java.lang.String.format;
 import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toList;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
 import static org.neo4j.kernel.configuration.Settings.options;
@@ -47,7 +47,7 @@ public abstract class ConnectorValidator implements SettingGroup<Object>
     public static final List<String> validTypes =
             Arrays.stream( Connector.ConnectorType.values() )
                     .map( Enum::name )
-                    .collect( Collectors.toList() );
+                    .collect( toList() );
     public static final String DEPRECATED_CONNECTOR_MSG =
             "Warning: connectors with names other than [http,https,bolt] are%n" +
                     "deprecated and support for them will be removed in a future%n" +
@@ -208,5 +208,15 @@ public abstract class ConnectorValidator implements SettingGroup<Object>
         default:
             return Optional.empty();
         }
+    }
+
+    @Override
+    public List<Setting> settings( @Nonnull Map<String,String> params )
+    {
+        return ownedEntries( params )
+                .map( e -> getSettingFor( e.getKey(), params ) )
+                .filter( Optional::isPresent )
+                .map( Optional::get )
+                .collect( toList() );
     }
 }

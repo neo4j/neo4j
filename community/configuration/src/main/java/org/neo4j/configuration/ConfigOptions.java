@@ -34,11 +34,14 @@ public class ConfigOptions
 {
     private final SettingGroup<?> settingGroup;
     private final Optional<String> description;
+    private final Optional<String> documentedDefaultValue;
 
-    public ConfigOptions( @Nonnull SettingGroup<?> settingGroup, @Nonnull Optional<String> description )
+    public ConfigOptions( @Nonnull SettingGroup<?> settingGroup, @Nonnull Optional<String> description,
+            Optional<String> documentedDefaultValue )
     {
         this.settingGroup = settingGroup;
         this.description = description;
+        this.documentedDefaultValue = documentedDefaultValue;
     }
 
     @Nonnull
@@ -51,6 +54,11 @@ public class ConfigOptions
     public Optional<String> description()
     {
         return description;
+    }
+
+    @Nonnull
+    public Optional<String> documentedDefaultValue() {
+        return documentedDefaultValue;
     }
 
     @Nonnull

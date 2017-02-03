@@ -17,27 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphdb.config;
 
-import java.util.List;
-import java.util.Map;
+package org.neo4j.configuration;
+
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
- * This interface represents a setting group. One example can be group defined by a common prefix, such as
- * `dbms.connector.*`. The important aspect is that config keys can only be known after a config has been parsed.
+ * Used to override the default value which is printed in the documentation.
  */
-public interface SettingGroup<T> extends SettingValidator
+@Retention( RetentionPolicy.RUNTIME )
+@Target( {ElementType.TYPE, ElementType.FIELD} )
+public @interface DocumentedDefaultValue
 {
-    /**
-     * Apply this setting group to the config and return all of its configured keys and their corresponding values.
-     *
-     * @param validConfig which can be examined
-     * @return the map of this group's configured keys and values
-     */
-    Map<String,T> values( Map<String,String> validConfig );
-
-    /**
-     * @return a list of the settings this group contains
-     */
-    List<Setting> settings( Map<String,String> params );
+    String value();
 }
