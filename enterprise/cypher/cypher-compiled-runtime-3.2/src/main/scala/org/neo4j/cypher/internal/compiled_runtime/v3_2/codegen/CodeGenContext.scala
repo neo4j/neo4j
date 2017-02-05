@@ -51,6 +51,8 @@ class CodeGenContext(val semanticTable: SemanticTable, idMap: Map[LogicalPlan, I
 
   def hasVariable(queryVariable: String): Boolean = variables.isDefinedAt(queryVariable)
 
+  def isProjectedVariable(queryVariable: String): Boolean = projectedVariables.contains(queryVariable)
+
   def variableQueryVariables(): Set[String] = variables.keySet.toSet
 
   // We need to keep track of variables that are exposed by a QueryHorizon,

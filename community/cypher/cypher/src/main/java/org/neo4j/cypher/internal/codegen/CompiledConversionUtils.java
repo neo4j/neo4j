@@ -183,22 +183,6 @@ public abstract class CompiledConversionUtils
         }
     }
 
-    public static Object loadPrimitiveListParameter( Object value )
-    {
-        if ( value instanceof Node )
-        {
-            return new NodeIdWrapper( ((Node) value).getId() );
-        }
-        else if ( value instanceof Relationship )
-        {
-            return new RelationshipIdWrapper( ((Relationship) value).getId() );
-        }
-        else
-        {
-            return value;
-        }
-    }
-
     public static final Object materializeAnyResult( NodeManager nodeManager, Object anyValue )
     {
         if ( anyValue instanceof NodeIdWrapper )

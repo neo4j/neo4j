@@ -86,9 +86,12 @@ object LogicalPlanConverter {
                                        (e: ast.Expression) => ExpressionConverter.createExpression(e)(context))
       context.retainProjectedVariables(projection.expressions.keySet)
       val vars = columns.collect {
-        case (name, expr) if !context.hasVariable(name) =>
+        case (name, expr) if !context.isProjectedVariable(name) =>
           val variable = Variable(context.namer.newVarName(), expr.codeGenType(context), expr.nullable(context))
-          context.addVariable(name, variable)
+          if (context.hasVariable(name))
+            context.updateVariable(name, variable)
+          else
+            context.addVariable(name, variable)
           context.addProjectedVariable(name, variable)
           variable -> expr
       }
