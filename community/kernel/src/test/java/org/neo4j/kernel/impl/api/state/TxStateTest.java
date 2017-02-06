@@ -46,10 +46,10 @@ import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.cursor.RelationshipItemHelper;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
-import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
@@ -81,6 +81,7 @@ import static org.neo4j.kernel.api.properties.Property.noNodeProperty;
 import static org.neo4j.kernel.api.properties.Property.numberProperty;
 import static org.neo4j.kernel.api.properties.Property.stringProperty;
 import static org.neo4j.kernel.impl.api.state.StubCursors.cursor;
+import static org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor.Filter.GENERAL;
 
 public class TxStateTest
 {
@@ -183,7 +184,8 @@ public class TxStateTest
         state.indexRuleDoAdd( indexOn_2_1 );
 
         // THEN
-        assertEquals( asSet( indexOn_1_1 ), state.indexDiffSetsByLabel( descriptorOn_1_1.getLabelId() ).getAdded() );
+        assertEquals( asSet( indexOn_1_1 ),
+                state.indexDiffSetsByLabel( indexOn_1_1.schema().getLabelId(), GENERAL ).getAdded() );
     }
 
     @Test
@@ -193,7 +195,7 @@ public class TxStateTest
         state.indexRuleDoAdd( indexOn_1_1 );
 
         // THEN
-        assertEquals( asSet( indexOn_1_1 ), state.indexChanges().getAdded() );
+        assertEquals( asSet( indexOn_1_1 ), state.indexChanges( GENERAL ).getAdded() );
     }
 
     // endregion
@@ -1706,12 +1708,9 @@ public class TxStateTest
     private final NodePropertyDescriptor descriptor1 = new NodePropertyDescriptor( 1, 17 );
     private final NodePropertyDescriptor descriptor2 = new NodePropertyDescriptor( 2, 17 );
     private final RelationshipPropertyDescriptor relDescriptor1 = new RelationshipPropertyDescriptor( 1, 42 );
-    private final NodePropertyDescriptor descriptorOn_1_1 = new NodePropertyDescriptor( 2, 3 );
-    private final NodePropertyDescriptor descriptorOn_1_2 = new NodePropertyDescriptor( 2, 4 );
-    private final NodePropertyDescriptor descriptorOn_2_1 = new NodePropertyDescriptor( 3, 3 );
-    private final IndexDescriptor indexOn_1_1 = IndexDescriptorFactory.of( descriptorOn_1_1 );
-    private final IndexDescriptor indexOn_1_2 = IndexDescriptorFactory.of( descriptorOn_1_2 );
-    private final IndexDescriptor indexOn_2_1 = IndexDescriptorFactory.of( descriptorOn_2_1 );
+    private final NewIndexDescriptor indexOn_1_1 = NewIndexDescriptorFactory.forLabel( 2, 3 );
+    private final NewIndexDescriptor indexOn_1_2 = NewIndexDescriptorFactory.forLabel( 2, 4 );
+    private final NewIndexDescriptor indexOn_2_1 = NewIndexDescriptorFactory.forLabel( 3, 3 );
 
     private TransactionState state;
 
@@ -1732,7 +1731,7 @@ public class TxStateTest
         void withBooleanProperties( Collection<Pair<Long,Boolean>> nodesWithValues );
     }
 
-    private IndexUpdater addNodesToIndex( final IndexDescriptor descriptor )
+    private IndexUpdater addNodesToIndex( final NewIndexDescriptor descriptor )
     {
         return new IndexUpdater()
         {
@@ -1750,8 +1749,8 @@ public class TxStateTest
             @Override
             public void withStringProperties( Collection<Pair<Long,String>> nodesWithValues )
             {
-                final int labelId = descriptor.getLabelId();
-                final int propertyKeyId = descriptor.getPropertyKeyId();
+                final int labelId = descriptor.schema().getLabelId();
+                final int propertyKeyId = descriptor.schema().getPropertyIds()[0];
                 for ( Pair<Long,String> entry : nodesWithValues )
                 {
                     long nodeId = entry.first();
@@ -1760,15 +1759,15 @@ public class TxStateTest
                     Property propertyBefore = noNodeProperty( nodeId, propertyKeyId );
                     DefinedProperty propertyAfter = stringProperty( propertyKeyId, entry.other() );
                     state.nodeDoReplaceProperty( nodeId, propertyBefore, propertyAfter );
-                    state.indexDoUpdateProperty( descriptor, nodeId, null, propertyAfter );
+                    state.indexDoUpdateProperty( descriptor.schema(), nodeId, null, propertyAfter );
                 }
             }
 
             @Override
             public <T extends Number> void withNumberProperties( Collection<Pair<Long,T>> nodesWithValues )
             {
-                final int labelId = descriptor.getLabelId();
-                final int propertyKeyId = descriptor.getPropertyKeyId();
+                final int labelId = descriptor.schema().getLabelId();
+                final int propertyKeyId = descriptor.schema().getPropertyIds()[0];
                 for ( Pair<Long,T> entry : nodesWithValues )
                 {
                     long nodeId = entry.first();
@@ -1777,15 +1776,15 @@ public class TxStateTest
                     Property propertyBefore = noNodeProperty( nodeId, propertyKeyId );
                     DefinedProperty propertyAfter = numberProperty( propertyKeyId, entry.other() );
                     state.nodeDoReplaceProperty( nodeId, propertyBefore, propertyAfter );
-                    state.indexDoUpdateProperty( descriptor, nodeId, null, propertyAfter );
+                    state.indexDoUpdateProperty( descriptor.schema(), nodeId, null, propertyAfter );
                 }
             }
 
             @Override
             public void withBooleanProperties( Collection<Pair<Long,Boolean>> nodesWithValues )
             {
-                final int labelId = descriptor.getLabelId();
-                final int propertyKeyId = descriptor.getPropertyKeyId();
+                final int labelId = descriptor.schema().getLabelId();
+                final int propertyKeyId = descriptor.schema().getPropertyIds()[0];
                 for ( Pair<Long,Boolean> entry : nodesWithValues )
                 {
                     long nodeId = entry.first();
@@ -1794,7 +1793,7 @@ public class TxStateTest
                     Property propertyBefore = noNodeProperty( nodeId, propertyKeyId );
                     DefinedProperty propertyAfter = booleanProperty( propertyKeyId, entry.other() );
                     state.nodeDoReplaceProperty( nodeId, propertyBefore, propertyAfter );
-                    state.indexDoUpdateProperty( descriptor, nodeId, null, propertyAfter );
+                    state.indexDoUpdateProperty( descriptor.schema(), nodeId, null, propertyAfter );
                 }
             }
         };

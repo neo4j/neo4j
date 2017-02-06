@@ -27,7 +27,7 @@ import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.storageengine.api.StorageProperty;
 
 /**
@@ -56,9 +56,9 @@ public interface TxStateVisitor extends AutoCloseable
     void visitNodeLabelChanges( long id, Set<Integer> added, Set<Integer> removed )
             throws ConstraintValidationKernelException;
 
-    void visitAddedIndex( IndexDescriptor element, boolean isConstraintIndex );
+    void visitAddedIndex( NewIndexDescriptor element );
 
-    void visitRemovedIndex( IndexDescriptor element, boolean isConstraintIndex );
+    void visitRemovedIndex( NewIndexDescriptor element );
 
     void visitAddedUniquePropertyConstraint( UniquenessConstraint element );
 
@@ -133,12 +133,12 @@ public interface TxStateVisitor extends AutoCloseable
         }
 
         @Override
-        public void visitAddedIndex( IndexDescriptor element, boolean isConstraintIndex )
+        public void visitAddedIndex( NewIndexDescriptor index )
         {
         }
 
         @Override
-        public void visitRemovedIndex( IndexDescriptor element, boolean isConstraintIndex )
+        public void visitRemovedIndex( NewIndexDescriptor index )
         {
         }
 
@@ -264,15 +264,15 @@ public interface TxStateVisitor extends AutoCloseable
         }
 
         @Override
-        public void visitAddedIndex( IndexDescriptor element, boolean isConstraintIndex )
+        public void visitAddedIndex( NewIndexDescriptor index )
         {
-            actual.visitAddedIndex( element, isConstraintIndex );
+            actual.visitAddedIndex( index );
         }
 
         @Override
-        public void visitRemovedIndex( IndexDescriptor element, boolean isConstraintIndex )
+        public void visitRemovedIndex( NewIndexDescriptor index )
         {
-            actual.visitRemovedIndex( element, isConstraintIndex );
+            actual.visitRemovedIndex( index );
         }
 
         @Override

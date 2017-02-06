@@ -42,7 +42,7 @@ public class ConstraintRuleTest extends SchemaRuleTestBase
 
         // THEN
         assertThat( constraintRule.getId(), equalTo( RULE_ID ) );
-        assertThat( constraintRule.getSchemaDescriptor(), equalTo( descriptor.schema() ) );
+        assertThat( constraintRule.schema(), equalTo( descriptor.schema() ) );
         assertThat( constraintRule.getConstraintDescriptor(), equalTo( descriptor ) );
         assertException( constraintRule::getOwnedIndex, IllegalStateException.class, "" );
     }
@@ -68,7 +68,7 @@ public class ConstraintRuleTest extends SchemaRuleTestBase
 
         // THEN
         assertThat( constraintRule.getId(), equalTo( RULE_ID ) );
-        assertThat( constraintRule.getSchemaDescriptor(), equalTo( descriptor.schema() ) );
+        assertThat( constraintRule.schema(), equalTo( descriptor.schema() ) );
         assertThat( constraintRule.getConstraintDescriptor(), equalTo( descriptor ) );
         assertException( constraintRule::getOwnedIndex, IllegalStateException.class, "" );
     }
