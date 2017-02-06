@@ -78,14 +78,10 @@ public interface NodeItem
     boolean isDense();
 
     /**
-     * @return {@link Cursor} over all {@link DegreeItem}, i.e. all combinations of {@link Direction} and
-     * relationship type ids for this node.
-     */
-    Cursor<DegreeItem> degrees();
-
-    /**
      * @param labelId label token id to check.
      * @return whether or not this node has the given label.
      */
     boolean hasLabel( int labelId );
+
+    long nextGroupId();
 }

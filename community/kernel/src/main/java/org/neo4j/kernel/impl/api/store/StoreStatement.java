@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.api.store;
 
 import java.util.function.Supplier;
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
@@ -186,5 +185,11 @@ public class StoreStatement implements StorageStatement
     public IndexReader getFreshIndexReader( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         return indexReaderFactory().newUnCachedReader( descriptor );
+    }
+
+    @Override
+    public RecordCursors recordCursors()
+    {
+        return recordCursors;
     }
 }

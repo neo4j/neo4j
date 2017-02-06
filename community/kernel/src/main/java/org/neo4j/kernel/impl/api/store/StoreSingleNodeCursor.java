@@ -23,16 +23,13 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
-import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.cursor.EntityItemHelper;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
-import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.RecordCursor;
@@ -44,7 +41,6 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
-import org.neo4j.storageengine.api.DegreeItem;
 import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
@@ -225,36 +221,35 @@ public class StoreSingleNodeCursor extends EntityItemHelper implements Cursor<No
     @Override
     public Cursor<PropertyItem> properties()
     {
-        return cursors.properties( nodeRecord.getNextProp(), shortLivedReadLock() );
+        return cursors.properties( nextProp(), shortLivedReadLock() );
     }
 
     @Override
     public Cursor<PropertyItem> property( int propertyKeyId )
     {
-        return cursors.property( nodeRecord.getNextProp(), propertyKeyId, shortLivedReadLock() );
+        return cursors.property( nextProp(), propertyKeyId, shortLivedReadLock() );
     }
 
     @Override
     public Cursor<RelationshipItem> relationships( Direction direction )
     {
-        return cursors.relationships( nodeRecord.isDense(), nodeRecord.getNextRel(), nodeRecord.getId(), direction );
+        return cursors.relationships( isDense(), nextRel(), id(), direction );
     }
 
     @Override
     public Cursor<RelationshipItem> relationships( Direction direction, int... relTypes )
     {
-        return cursors.relationships( nodeRecord.isDense(), nodeRecord.getNextRel(), nodeRecord.getId(), direction,
-                relTypes );
+        return cursors.relationships( isDense(), nextRel(), id(), direction, relTypes );
     }
 
     @Override
     public PrimitiveIntSet relationshipTypes()
     {
         PrimitiveIntSet set = intSet();
-        if ( nodeRecord.isDense() )
+        if ( isDense() )
         {
             RelationshipGroupRecord groupRecord = relationshipGroupStore.newRecord();
-            for ( long id = nodeRecord.getNextRel(); id != NO_NEXT_RELATIONSHIP.intValue(); id = groupRecord.getNext() )
+            for ( long id = nextGroupId(); id != NO_NEXT_RELATIONSHIP.intValue(); id = groupRecord.getNext() )
             {
                 if ( recordCursors.relationshipGroup().next( id, groupRecord, FORCE ) )
                 {
@@ -272,10 +267,10 @@ public class StoreSingleNodeCursor extends EntityItemHelper implements Cursor<No
     @Override
     public int degree( Direction direction )
     {
-        if ( nodeRecord.isDense() )
+        if ( isDense() )
         {
-            return countRelationshipsInGroup( nodeRecord.getNextRel(), direction, null, nodeRecord,
-                    relationshipStore.newRecord(), relationshipGroupStore.newRecord(), recordCursors );
+            return countRelationshipsInGroup( nextGroupId(), direction, null, id(), relationshipStore.newRecord(),
+                    relationshipGroupStore.newRecord(), recordCursors );
         }
         else
         {
@@ -286,10 +281,10 @@ public class StoreSingleNodeCursor extends EntityItemHelper implements Cursor<No
     @Override
     public int degree( Direction direction, int relType )
     {
-        if ( nodeRecord.isDense() )
+        if ( isDense() )
         {
-            return countRelationshipsInGroup( nodeRecord.getNextRel(), direction, relType, nodeRecord,
-                    relationshipStore.newRecord(), relationshipGroupStore.newRecord(), recordCursors );
+            return countRelationshipsInGroup( nextGroupId(), direction, relType, id(), relationshipStore.newRecord(),
+                    relationshipGroupStore.newRecord(), recordCursors );
         }
         else
         {
@@ -298,49 +293,25 @@ public class StoreSingleNodeCursor extends EntityItemHelper implements Cursor<No
     }
 
     @Override
-    public Cursor<DegreeItem> degrees()
-    {
-        return nodeRecord.isDense() ? cursors.degrees( nodeRecord.getNextRel(), nodeRecord, recordCursors )
-                                    : cursors.degrees( buildDegreeMap() );
-    }
-
-    private PrimitiveIntObjectMap<int[]> buildDegreeMap()
-    {
-        PrimitiveIntObjectMap<int[]> currentDegrees = Primitive.intObjectMap( 5 );
-        try( Cursor<RelationshipItem> relationships = relationships( Direction.BOTH ) )
-        {
-            while ( relationships.next() )
-            {
-                RelationshipItem rel = relationships.get();
-                int[] byType = currentDegrees.get( rel.type() );
-                if ( byType == null )
-                {
-                    currentDegrees.put( rel.type(), byType = new int[3] );
-                }
-                byType[directionOf( nodeRecord.getId(), rel.id(), rel.startNode(), rel.endNode() ).ordinal()]++;
-            }
-        }
-        return currentDegrees;
-    }
-
-    @Override
     public boolean isDense()
     {
         return nodeRecord.isDense();
     }
 
-    private Direction directionOf( long nodeId, long relationshipId, long startNode, long endNode )
+    @Override
+    public long nextGroupId()
     {
-        if ( startNode == nodeId )
-        {
-            return endNode == nodeId ? Direction.BOTH : Direction.OUTGOING;
-        }
-        if ( endNode == nodeId )
-        {
-            return Direction.INCOMING;
-        }
-        throw new InvalidRecordException(
-                "Node " + nodeId + " neither start nor end node of relationship " + relationshipId +
-                        " with startNode:" + startNode + " and endNode:" + endNode );
+        assert isDense();
+        return nextRel();
+    }
+
+    private long nextRel()
+    {
+        return nodeRecord.getNextRel();
+    }
+
+    private long nextProp()
+    {
+        return nodeRecord.getNextProp();
     }
 }

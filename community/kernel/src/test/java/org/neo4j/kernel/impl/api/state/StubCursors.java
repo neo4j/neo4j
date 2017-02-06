@@ -29,7 +29,6 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.cursor.EntityItemHelper;
 import org.neo4j.kernel.api.cursor.RelationshipItemHelper;
 import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.storageengine.api.DegreeItem;
 import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
@@ -95,6 +94,12 @@ public class StubCursors
         public boolean hasLabel( int labelId )
         {
             return labelCursor.contains( labelId );
+        }
+
+        @Override
+        public long nextGroupId()
+        {
+            throw new UnsupportedOperationException( "not supported" );
         }
 
         @Override
@@ -178,12 +183,6 @@ public class StubCursors
         public boolean isDense()
         {
             throw new UnsupportedOperationException(  );
-        }
-
-        @Override
-        public Cursor<DegreeItem> degrees()
-        {
-            throw new UnsupportedOperationException();
         }
     }
 
