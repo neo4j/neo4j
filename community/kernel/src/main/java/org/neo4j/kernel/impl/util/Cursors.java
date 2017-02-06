@@ -19,18 +19,7 @@
  */
 package org.neo4j.kernel.impl.util;
 
-import java.io.IOException;
-import java.util.Iterator;
-import java.util.NoSuchElementException;
-import java.util.function.ToIntFunction;
-
-import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.cursor.IOCursor;
-import org.neo4j.graphdb.Resource;
-import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 
 public class Cursors
 {
@@ -45,13 +34,12 @@ public class Cursors
         @Override
         public Object get()
         {
-            return null;
+            throw new IllegalStateException( "no elements" );
         }
 
         @Override
         public void close()
         {
-
         }
     };
 
@@ -61,213 +49,20 @@ public class Cursors
         return (Cursor<T>) EMPTY;
     }
 
-    public static <T> Cursor<T> cursor( final T... items )
+    public static int count( Cursor<?> cursor )
     {
-        return new Cursor<T>()
+        try
         {
-            int idx = 0;
-            T current;
-
-            @Override
-            public boolean next()
+            int count = 0;
+            while ( cursor.next() )
             {
-                if ( idx < items.length )
-                {
-                    current = items[idx++];
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
+                count++;
             }
-
-            @Override
-            public void close()
-            {
-                idx = 0;
-                current = null;
-            }
-
-            @Override
-            public T get()
-            {
-                if ( current == null )
-                {
-                    throw new IllegalStateException();
-                }
-
-                return current;
-            }
-        };
-    }
-
-    public static <T> Cursor<T> cursor( final Iterable<T> items )
-    {
-        return new Cursor<T>()
-        {
-            Iterator<T> iterator = items.iterator();
-
-            T current;
-
-            @Override
-            public boolean next()
-            {
-                if ( iterator.hasNext() )
-                {
-                    current = iterator.next();
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
-            }
-
-            @Override
-            public void close()
-            {
-                iterator = items.iterator();
-                current = null;
-            }
-
-            @Override
-            public T get()
-            {
-                if ( current == null )
-                {
-                    throw new IllegalStateException();
-                }
-
-                return current;
-            }
-        };
-    }
-
-    public static TransactionCursor txCursor( Cursor<CommittedTransactionRepresentation> cursor )
-    {
-        return new TransactionCursor()
-        {
-            @Override
-            public LogPosition position()
-            {
-                throw new UnsupportedOperationException(
-                        "LogPosition does not apply when moving a generic cursor over a list of transactions" );
-            }
-
-            @Override
-            public boolean next() throws IOException
-            {
-                return cursor.next();
-            }
-
-            @Override
-            public void close() throws IOException
-            {
-                cursor.close();
-            }
-
-            @Override
-            public CommittedTransactionRepresentation get()
-            {
-                return cursor.get();
-            }
-        };
-    }
-
-    public static <T> IOCursor<T> io( Cursor<T> cursor )
-    {
-        return new IOCursor<T>()
-        {
-            @Override
-            public boolean next() throws IOException
-            {
-                return cursor.next();
-            }
-
-            @Override
-            public void close() throws IOException
-            {
-                cursor.close();
-            }
-
-            @Override
-            public T get()
-            {
-                return cursor.get();
-            }
-        };
-    }
-    public static <T> PrimitiveIntIterator intIterator( final Cursor<T> resourceCursor, final ToIntFunction<T> map )
-    {
-        return new CursorPrimitiveIntIterator<>( resourceCursor, map );
-    }
-
-    private static class CursorPrimitiveIntIterator<T> implements PrimitiveIntIterator, Resource
-    {
-        private final ToIntFunction<T> map;
-        private Cursor<T> cursor;
-        private boolean hasNext;
-
-        public CursorPrimitiveIntIterator( Cursor<T> resourceCursor, ToIntFunction<T> map )
-        {
-            this.map = map;
-            cursor = resourceCursor;
-            hasNext = nextCursor();
+            return count;
         }
-
-        private boolean nextCursor()
+        finally
         {
-            if ( cursor != null )
-            {
-                boolean hasNext = cursor.next();
-                if ( !hasNext )
-                {
-                    close();
-                }
-                return hasNext;
-            }
-            else
-            {
-                return false;
-            }
-        }
-
-        @Override
-        public boolean hasNext()
-        {
-            return hasNext;
-        }
-
-        @Override
-        public int next()
-        {
-            if ( hasNext )
-            {
-                try
-                {
-                    return map.applyAsInt( cursor.get() );
-                }
-                finally
-                {
-                    hasNext = nextCursor();
-                }
-            }
-            else
-            {
-                throw new NoSuchElementException();
-            }
-        }
-
-        @Override
-        public void close()
-        {
-            if ( cursor != null )
-            {
-                cursor.close();
-                cursor = null;
-            }
+            cursor.close();
         }
     }
-
 }

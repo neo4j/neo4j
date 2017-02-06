@@ -22,10 +22,9 @@ package org.neo4j.storageengine.api.txstate;
 import java.util.Iterator;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
-import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
@@ -33,10 +32,11 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
+import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.storageengine.api.Direction;
-import org.neo4j.storageengine.api.LabelItem;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
@@ -93,7 +93,7 @@ public interface ReadableTransactionState
 
     boolean nodeModifiedInThisTx( long nodeId );
 
-    PrimitiveIntIterator nodeRelationshipTypes( long nodeId );
+    PrimitiveIntSet nodeRelationshipTypes( long nodeId );
 
     int augmentNodeDegree( long node, int committedDegree, Direction direction );
 
@@ -160,9 +160,7 @@ public interface ReadableTransactionState
             PropertyContainerState propertyContainerState,
             int propertyKeyId );
 
-    Cursor<LabelItem> augmentLabelCursor( Cursor<LabelItem> cursor, NodeState nodeState );
-
-    Cursor<LabelItem> augmentSingleLabelCursor( Cursor<LabelItem> cursor, NodeState nodeState, int labelId );
+    PrimitiveIntSet augmentLabels( PrimitiveIntSet cursor, NodeState nodeState );
 
     Cursor<RelationshipItem> augmentSingleRelationshipCursor( Cursor<RelationshipItem> cursor, long relationshipId );
 

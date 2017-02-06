@@ -73,12 +73,14 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.collection.primitive.PrimitiveIntCollections.toList;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Pair.of;
 import static org.neo4j.kernel.api.properties.Property.booleanProperty;
 import static org.neo4j.kernel.api.properties.Property.noNodeProperty;
 import static org.neo4j.kernel.api.properties.Property.numberProperty;
 import static org.neo4j.kernel.api.properties.Property.stringProperty;
+import static org.neo4j.kernel.impl.api.state.StubCursors.cursor;
 
 public class TxStateTest
 {
@@ -1096,7 +1098,7 @@ public class TxStateTest
         state.relationshipDoDelete( relC, relType + 1, startNode, endNode );
 
         // Then
-        assertThat( PrimitiveIntCollections.toList( state.nodeRelationshipTypes( startNode ) ), equalTo( asList( relType ) ) );
+        assertThat( toList( state.nodeRelationshipTypes( startNode ).iterator() ), equalTo( asList( relType ) ) );
     }
 
     @Test
@@ -1453,7 +1455,7 @@ public class TxStateTest
         {
             Direction direction = Direction.values()[random.nextInt( Direction.values().length )];
             int[] relationshipTypes = randomTypes( relationshipTypeCount, random.random() );
-            Cursor<RelationshipItem> committed = Cursors.cursor(
+            Cursor<RelationshipItem> committed = cursor(
                     relationshipsForNode( i, committedRelationships, direction, relationshipTypes ).values() );
             Cursor<RelationshipItem> augmented =
                     state.augmentNodeRelationshipCursor( committed, state.getNodeState( i ), direction,

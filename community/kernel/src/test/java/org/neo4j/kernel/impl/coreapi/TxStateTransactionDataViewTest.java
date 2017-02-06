@@ -57,7 +57,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.MapUtil.genericMap;
 import static org.neo4j.kernel.api.properties.Property.stringProperty;
-import static org.neo4j.kernel.impl.api.state.StubCursors.asLabelCursor;
+import static org.neo4j.kernel.impl.api.state.StubCursors.labels;
 import static org.neo4j.kernel.impl.api.state.StubCursors.asNodeCursor;
 import static org.neo4j.kernel.impl.api.state.StubCursors.asPropertyCursor;
 import static org.neo4j.kernel.impl.api.state.StubCursors.asRelationshipCursor;
@@ -98,10 +98,10 @@ public class TxStateTransactionDataViewTest
         state.nodeDoDelete( 2L );
 
         when( storeStatement.acquireSingleNodeCursor( 2L ) ).
-                thenReturn( asNodeCursor( 2L, asPropertyCursor( stringProperty( 1, "p" ) ), asLabelCursor( 15 ) ) );
+                thenReturn( asNodeCursor( 2L, asPropertyCursor( stringProperty( 1, "p" ) ), labels( 15 ) ) );
 
         when( storeStatement.acquireSingleNodeCursor( 1L ) ).
-                thenReturn( asNodeCursor( 1L, asPropertyCursor(), asLabelCursor() ) );
+                thenReturn( asNodeCursor( 1L, asPropertyCursor(), labels() ) );
 
         when( ops.propertyKeyGetName( 1 ) ).thenReturn( "key" );
         when( ops.labelGetName( 15 ) ).thenReturn( "label" );
@@ -181,7 +181,7 @@ public class TxStateTransactionDataViewTest
         state.nodeDoReplaceProperty( 1L, prevProp, stringProperty( 1, "newValue" ) );
         when( ops.propertyKeyGetName( 1 ) ).thenReturn( "theKey" );
         when( storeStatement.acquireSingleNodeCursor( 1L ) ).thenReturn(
-                asNodeCursor( 1L, asPropertyCursor( prevProp ), asLabelCursor() ) );
+                asNodeCursor( 1L, asPropertyCursor( prevProp ), labels() ) );
 
         // When
         Iterable<PropertyEntry<Node>> propertyEntries = snapshot().assignedNodeProperties();
@@ -202,7 +202,7 @@ public class TxStateTransactionDataViewTest
         state.nodeDoRemoveProperty( 1L, prevProp );
         when( ops.propertyKeyGetName( 1 ) ).thenReturn( "theKey" );
         when( storeStatement.acquireSingleNodeCursor( 1L ) ).thenReturn(
-                asNodeCursor( 1L, asPropertyCursor( prevProp ), asLabelCursor() ) );
+                asNodeCursor( 1L, asPropertyCursor( prevProp ), labels() ) );
 
         // When
         Iterable<PropertyEntry<Node>> propertyEntries = snapshot().removedNodeProperties();

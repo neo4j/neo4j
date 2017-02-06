@@ -100,20 +100,17 @@ import org.neo4j.kernel.impl.api.security.RestrictedAccessMode;
 import org.neo4j.kernel.impl.api.store.CursorRelationshipIterator;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.proc.Procedures;
-import org.neo4j.kernel.impl.util.Cursors;
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
 import org.neo4j.register.Register.DoubleLongRegister;
-import org.neo4j.storageengine.api.LabelItem;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.RelationshipItem;
-import org.neo4j.storageengine.api.RelationshipTypeItem;
 import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
 import static java.lang.String.format;
-
+import static org.neo4j.collection.primitive.Primitive.intSet;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.deduplicate;
 
 public class OperationsFacade
@@ -329,7 +326,7 @@ public class OperationsFacade
         statement.assertOpen();
         try ( Cursor<NodeItem> node = dataRead().nodeCursorById( statement, nodeId ) )
         {
-            return Cursors.intIterator( node.get().labels(), LabelItem::getAsInt );
+            return node.get().labels().iterator();
         }
     }
 
@@ -435,7 +432,7 @@ public class OperationsFacade
         statement.assertOpen();
         try ( Cursor<NodeItem> node = dataRead().nodeCursorById( statement, nodeId ) )
         {
-            return Cursors.intIterator( node.get().relationshipTypes(), RelationshipTypeItem::getAsInt );
+            return node.get().relationshipTypes().iterator();
         }
     }
 

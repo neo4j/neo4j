@@ -24,7 +24,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Optional;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
@@ -41,13 +40,10 @@ import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.security.AccessMode;
-import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy.RelationshipActions;
-import org.neo4j.storageengine.api.LabelItem;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
@@ -220,14 +216,11 @@ public class TxStateTransactionDataSnapshot implements TransactionData
                             }
                         }
 
-                        try ( Cursor<LabelItem> labels = node.get().labels() )
+                        node.get().labels().visitKeys( labelId ->
                         {
-                            while ( labels.next() )
-                            {
-                                removedLabels.add( new LabelEntryView( nodeId,
-                                        store.labelGetName( labels.get().getAsInt() ) ) );
-                            }
-                        }
+                            removedLabels.add( new LabelEntryView( nodeId, store.labelGetName( labelId ) ) );
+                            return false;
+                        } );
                     }
                 }
             }

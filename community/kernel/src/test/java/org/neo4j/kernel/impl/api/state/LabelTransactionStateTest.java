@@ -28,7 +28,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.IntSupplier;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
@@ -52,7 +51,6 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterators.asSet;
-import static org.neo4j.kernel.impl.api.state.StubCursors.asLabelCursor;
 import static org.neo4j.kernel.impl.api.state.StubCursors.asNodeCursor;
 import static org.neo4j.kernel.impl.api.state.StubCursors.asPropertyCursor;
 import static org.neo4j.test.mockito.answer.Neo4jMockitoAnswers.answerAsIteratorFrom;
@@ -264,7 +262,7 @@ public class LabelTransactionStateTest
     {
         // GIVEN
         when( storeStatement.acquireSingleNodeCursor( 1337 ) ).thenReturn( asNodeCursor( 1337, asPropertyCursor(),
-                asLabelCursor( 12 ) ) );
+                StubCursors.labels( 12 ) ) );
 
         // WHEN
         boolean added = txContext.nodeAddLabel( state, 1337, 12 );
@@ -278,7 +276,7 @@ public class LabelTransactionStateTest
     {
         // GIVEN
         when( storeStatement.acquireSingleNodeCursor( 1337 ) ).thenReturn( asNodeCursor( 1337, asPropertyCursor(),
-                asLabelCursor( 12 ) ) );
+                StubCursors.labels( 12 ) ) );
 
         // WHEN
         boolean added = txContext.nodeRemoveLabel( state, 1337, 12 );
@@ -315,16 +313,16 @@ public class LabelTransactionStateTest
     private static class Labels
     {
         private final long nodeId;
-        private final Integer[] labelIds;
+        private final int[] labelIds;
 
-        Labels( long nodeId, Integer... labelIds )
+        Labels( long nodeId, int... labelIds )
         {
             this.nodeId = nodeId;
             this.labelIds = labelIds;
         }
     }
 
-    private static Labels labels( long nodeId, Integer... labelIds )
+    private static Labels labels( long nodeId, int... labelIds )
     {
         return new Labels( nodeId, labelIds );
     }
@@ -335,7 +333,7 @@ public class LabelTransactionStateTest
         for ( Labels nodeLabels : labels )
         {
             when( storeStatement.acquireSingleNodeCursor( nodeLabels.nodeId ) ).thenReturn( StubCursors.asNodeCursor(
-                    nodeLabels.nodeId, asPropertyCursor(), asLabelCursor( nodeLabels.labelIds ) ) );
+                    nodeLabels.nodeId, asPropertyCursor(), StubCursors.labels( nodeLabels.labelIds ) ) );
 
             for ( int label : nodeLabels.labelIds )
             {
@@ -353,21 +351,18 @@ public class LabelTransactionStateTest
 
     private void commitNoLabels() throws Exception
     {
-        commitLabels( new Integer[0] );
+        commitLabels( new int[0] );
     }
 
-    private void commitLabels( Integer... labels ) throws Exception
+    private void commitLabels( int... labels ) throws Exception
     {
         commitLabels( labels( nodeId, labels ) );
     }
 
     private void assertLabels( int... labels ) throws EntityNotFoundException
     {
-        txContext.nodeCursorById( state, nodeId ).forAll( node ->
-        {
-            PrimitiveIntSet collect = node.labels().collect( Primitive.intSet(), IntSupplier::getAsInt );
-            assertEquals( PrimitiveIntCollections.asSet( labels ), collect );
-        } );
+        txContext.nodeCursorById( state, nodeId )
+                .forAll( node -> assertEquals( PrimitiveIntCollections.asSet( labels ), node.labels() ) );
 
         txContext.nodeCursorById( state, nodeId ).forAll( node ->
         {

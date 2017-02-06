@@ -27,7 +27,6 @@ import org.junit.rules.RuleChain;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Consumer;
-import java.util.function.IntSupplier;
 import java.util.function.LongConsumer;
 
 import org.neo4j.cursor.Cursor;
@@ -49,7 +48,6 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.storageengine.api.DegreeItem;
-import org.neo4j.storageengine.api.RelationshipTypeItem;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 import org.neo4j.test.rule.RandomRule;
@@ -60,6 +58,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.collection.primitive.PrimitiveIntCollections.mapToSet;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.kernel.impl.core.TokenHolder.NO_ID;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
@@ -462,16 +461,7 @@ public class StoreSingleNodeCursorTest
 
     private Set<TestRelType> relTypes( StoreSingleNodeCursor cursor )
     {
-        Set<TestRelType> types = new HashSet<>();
-
-        Cursor<RelationshipTypeItem> relTypesCursor = cursor.relationshipTypes();
-        while ( relTypesCursor.next() )
-        {
-            int typeId = relTypesCursor.get().getAsInt();
-            types.add( relTypeForId( typeId ) );
-        }
-
-        return types;
+        return mapToSet( cursor.relationshipTypes().iterator(), this::relTypeForId );
     }
 
     private TestRelType relTypeForId( int id )

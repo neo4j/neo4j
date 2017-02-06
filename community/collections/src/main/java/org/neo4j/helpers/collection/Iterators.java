@@ -495,6 +495,27 @@ public abstract class Iterators
         };
     }
 
+    public static Iterator<Integer> asIterator( final int... array )
+    {
+        return new PrefetchingIterator<Integer>()
+        {
+            private int index;
+
+            @Override
+            protected Integer fetchNextOrNull()
+            {
+                try
+                {
+                    return index < array.length ? array[index] : null;
+                }
+                finally
+                {
+                    index++;
+                }
+            }
+        };
+    }
+
     @SafeVarargs
     public static <T> Iterator<T> asIterator( final int maxItems, final T... array )
     {

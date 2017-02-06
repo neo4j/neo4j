@@ -27,8 +27,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.function.IntConsumer;
 import java.util.function.IntFunction;
 import java.util.function.IntPredicate;
+import java.util.function.LongToIntFunction;
 
 import org.neo4j.collection.primitive.base.Empty;
 
@@ -740,6 +742,14 @@ public class PrimitiveIntCollections
         };
     }
 
+    public static void consume( PrimitiveIntIterator source, IntConsumer consumer )
+    {
+        while ( source.hasNext() )
+        {
+            consumer.accept( source.next() );
+        }
+    }
+
     public static PrimitiveIntIterator constant( final int value )
     {
         return new PrimitiveIntBaseIterator()
@@ -762,6 +772,16 @@ public class PrimitiveIntCollections
         return set;
     }
 
+    public static PrimitiveIntSet asSet( long[] values, LongToIntFunction converter )
+    {
+        PrimitiveIntSet set = Primitive.intSet( values.length );
+        for ( long value : values )
+        {
+            set.add( converter.applyAsInt( value ) );
+        }
+        return set;
+    }
+
     public static boolean contains( int[] values, int candidate )
     {
         for ( int i = 0; i < values.length; i++ )
@@ -772,23 +792,6 @@ public class PrimitiveIntCollections
             }
         }
         return false;
-    }
-
-    /**
-     * Adds all the items in {@code iterator} to {@code collection}.
-     * @param <C> the type of {@link Collection} to add to items to.
-     * @param iterator the {@link Iterator} to grab the items from.
-     * @param collection the {@link Collection} to add the items to.
-     * @return the {@code collection} which was passed in, now filled
-     * with the items from {@code iterator}.
-     */
-    public static <C extends Collection<Integer>> C addToCollection( PrimitiveIntIterator iterator, C collection )
-    {
-        while ( iterator.hasNext() )
-        {
-            collection.add( iterator.next() );
-        }
-        return collection;
     }
 
     /**
@@ -817,10 +820,15 @@ public class PrimitiveIntCollections
      */
     public static Set<Integer> toSet( PrimitiveIntIterator iterator )
     {
-        Set<Integer> set = new HashSet<>();
+        return mapToSet( iterator, Integer::new );
+    }
+
+    public static <T> Set<T> mapToSet( PrimitiveIntIterator iterator, IntFunction<T> map )
+    {
+        Set<T> set = new HashSet<>();
         while ( iterator.hasNext() )
         {
-            addUnique( set, iterator.next() );
+            addUnique( set, map.apply( iterator.next() ) );
         }
         return set;
     }

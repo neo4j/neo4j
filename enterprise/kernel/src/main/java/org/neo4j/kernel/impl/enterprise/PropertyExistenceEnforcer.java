@@ -19,19 +19,19 @@
  */
 package org.neo4j.kernel.impl.enterprise;
 
-import java.util.*;
+import java.util.Iterator;
+import java.util.Set;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.exceptions.schema.NodePropertyExistenceConstraintViolationKernelException;
 import org.neo4j.kernel.api.exceptions.schema.RelationshipPropertyExistenceConstraintViolationKernelException;
-import org.neo4j.storageengine.api.LabelItem;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
@@ -47,7 +47,6 @@ class PropertyExistenceEnforcer extends TxStateVisitor.Delegator
 {
     private final StoreReadLayer storeLayer;
     private final ReadableTransactionState txState;
-    private final PrimitiveIntSet labelIds = Primitive.intSet();
     private final PrimitiveIntSet propertyKeyIds = Primitive.intSet();
     private StorageStatement storageStatement;
 
@@ -100,15 +99,7 @@ class PropertyExistenceEnforcer extends TxStateVisitor.Delegator
             if ( node.next() )
             {
                 // Get all labels into a set for quick lookup
-                labelIds.clear();
-                try ( Cursor<LabelItem> labels = node.get().labels() )
-                {
-                    while ( labels.next() )
-                    {
-                        labelIds.add( labels.get().getAsInt() );
-                    }
-                }
-
+                PrimitiveIntSet labelIds = node.get().labels();
                 // Iterate all constraints and find property existence constraints that matches labels
                 propertyKeyIds.clear();
                 Iterator<PropertyConstraint> constraints = storeLayer.constraintsGetAll();

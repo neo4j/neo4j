@@ -20,52 +20,40 @@
 package org.neo4j.kernel.impl.api.cursor;
 
 import java.util.Iterator;
-import java.util.function.Consumer;
 
-import org.neo4j.cursor.Cursor;
-import org.neo4j.kernel.api.StatementConstants;
-import org.neo4j.storageengine.api.LabelItem;
+import org.neo4j.collection.primitive.PrimitiveIntCollections;
+import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 
 /**
- * Overlays transaction state on a {@link LabelItem} cursor.
+ * Overlays transaction state on a label cursor.
  */
-public class TxLabelCursor
-        implements Cursor<LabelItem>, LabelItem
+public class TxLabelIterator extends PrimitiveIntCollections.PrimitiveIntBaseIterator
 {
-    private final Consumer<TxLabelCursor> instanceCache;
-
-    protected Cursor<LabelItem> cursor;
-    protected ReadableDiffSets<Integer> labelDiffSet;
-
-    protected int label;
+    private PrimitiveIntIterator iterator;
+    private ReadableDiffSets<Integer> labelDiffSet;
     private Iterator<Integer> added;
 
-    public TxLabelCursor( Consumer<TxLabelCursor> instanceCache )
+    public TxLabelIterator( PrimitiveIntIterator iterator, ReadableDiffSets<Integer> labelDiffSet )
     {
-        this.instanceCache = instanceCache;
-    }
-
-    public TxLabelCursor init( Cursor<LabelItem> cursor, ReadableDiffSets<Integer> labelDiffSet )
-    {
-        this.cursor = cursor;
+        this.iterator = iterator;
         this.labelDiffSet = labelDiffSet;
         this.added = null;
-        return this;
     }
 
     @Override
-    public boolean next()
+    protected boolean fetchNext()
     {
         if ( added == null )
         {
-            while ( cursor != null && cursor.next() )
+            while ( iterator != null && iterator.hasNext() )
             {
-                label = cursor.get().getAsInt();
+                int label = iterator.next();
                 if ( labelDiffSet.isRemoved( label ) )
                 {
                     continue;
                 }
+                next( label );
                 return true;
             }
 
@@ -74,38 +62,10 @@ public class TxLabelCursor
 
         if ( added.hasNext() )
         {
-            label = added.next();
+            next( added.next() );
             return true;
         }
-        else
-        {
-            label = StatementConstants.NO_SUCH_LABEL;
-            return false;
-        }
-    }
 
-    @Override
-    public LabelItem get()
-    {
-        if ( label == StatementConstants.NO_SUCH_LABEL )
-        {
-            throw new IllegalStateException();
-        }
-
-        return this;
-    }
-
-    @Override
-    public int getAsInt()
-    {
-        return label;
-    }
-
-    @Override
-    public void close()
-    {
-        cursor.close();
-        cursor = null;
-        instanceCache.accept( this );
+        return false;
     }
 }

@@ -55,7 +55,6 @@ import org.neo4j.kernel.impl.store.id.configuration.CommunityIdTypeConfiguration
 import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfiguration;
 import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.storageengine.api.LabelItem;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.test.ImpermanentGraphDatabase;
@@ -72,6 +71,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.collection.primitive.PrimitiveIntCollections.consume;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterables.asList;
 import static org.neo4j.helpers.collection.Iterables.map;
@@ -596,13 +596,7 @@ public class LabelsAcceptanceTest
                         while ( properties.next() )
                         {
                             seenProperties.add( properties.get().propertyKeyId() );
-                            try ( Cursor<LabelItem> labels = nodeCursor.get().labels() )
-                            {
-                                while ( labels.next() )
-                                {
-                                    seenLabels.add( labels.get().getAsInt() );
-                                }
-                            }
+                            consume( nodeCursor.get().labels().iterator(), seenLabels::add );
                         }
                     }
                 }

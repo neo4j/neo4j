@@ -29,12 +29,12 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.graphdb.Resource;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
-import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.ConstraintEnforcingEntityOperations;
@@ -46,8 +46,6 @@ import org.neo4j.kernel.impl.api.operations.EntityOperations;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.index.LegacyIndexStore;
-import org.neo4j.kernel.impl.util.Cursors;
-import org.neo4j.storageengine.api.LabelItem;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.schema.IndexReader;
 
@@ -60,9 +58,9 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 import static org.neo4j.kernel.api.properties.Property.noNodeProperty;
 import static org.neo4j.kernel.api.properties.Property.stringProperty;
-import static org.neo4j.kernel.impl.api.state.StubCursors.asLabelCursor;
 import static org.neo4j.kernel.impl.api.state.StubCursors.asNodeCursor;
 import static org.neo4j.kernel.impl.api.state.StubCursors.asPropertyCursor;
+import static org.neo4j.kernel.impl.api.state.StubCursors.labels;
 import static org.neo4j.test.mockito.answer.Neo4jMockitoAnswers.answerAsIteratorFrom;
 import static org.neo4j.test.mockito.answer.Neo4jMockitoAnswers.answerAsPrimitiveLongIteratorFrom;
 
@@ -190,9 +188,7 @@ public class IndexQueryTransactionStateTest
                 stringProperty( propertyKeyId, value ) );
 
         when( statement.acquireSingleNodeCursor( nodeId ) ).thenReturn(
-                asNodeCursor( nodeId,
-                        asPropertyCursor( stringProperty( propertyKeyId, value ) ),
-                        Cursors.<LabelItem>empty() ) );
+                asNodeCursor( nodeId, asPropertyCursor( stringProperty( propertyKeyId, value ) ) ) );
 
         List<IndexDescriptor> indexes = Collections.singletonList( indexDescriptor );
         when( store.indexesGetForLabel( labelId ) ).thenReturn( indexes.iterator() );
@@ -215,10 +211,8 @@ public class IndexQueryTransactionStateTest
         state.txState().nodeDoReplaceProperty( nodeId, noNodeProperty( nodeId, propertyKeyId ),
                 stringProperty( propertyKeyId, value ) );
 
-        when( statement.acquireSingleNodeCursor( nodeId ) ).thenReturn(
-                asNodeCursor( nodeId,
-                        asPropertyCursor( stringProperty( propertyKeyId, value ) ),
-                        Cursors.<LabelItem>empty() ) );
+        when( statement.acquireSingleNodeCursor( nodeId ) )
+                .thenReturn( asNodeCursor( nodeId, asPropertyCursor( stringProperty( propertyKeyId, value ) ) ) );
         List<IndexDescriptor> indexes = Collections.singletonList( indexDescriptor );
         when( store.indexesGetForLabel( labelId ) ).thenReturn( indexes.iterator() );
         txContext.nodeAddLabel( state, nodeId, labelId );
@@ -238,10 +232,8 @@ public class IndexQueryTransactionStateTest
 
         long nodeId = 1L;
 
-        when( statement.acquireSingleNodeCursor( nodeId ) ).thenReturn(
-                asNodeCursor( nodeId,
-                        asPropertyCursor( stringProperty( propertyKeyId, value ) ),
-                        asLabelCursor() ) );
+        when( statement.acquireSingleNodeCursor( nodeId ) )
+                .thenReturn( asNodeCursor( nodeId, asPropertyCursor( stringProperty( propertyKeyId, value ) ) ) );
         List<IndexDescriptor> indexes = Collections.singletonList( indexDescriptor );
         when( store.indexesGetForLabel( labelId ) ).thenReturn( indexes.iterator() );
         txContext.nodeAddLabel( state, nodeId, labelId );
@@ -263,8 +255,7 @@ public class IndexQueryTransactionStateTest
 
         when( statement.acquireSingleNodeCursor( nodeId ) ).thenReturn(
                 asNodeCursor( nodeId,
-                        asPropertyCursor( stringProperty( propertyKeyId, value ) ),
-                        asLabelCursor() ) );
+                        asPropertyCursor( stringProperty( propertyKeyId, value ) ) ) );
 
         List<IndexDescriptor> indexes = Collections.singletonList( indexDescriptor );
         when( store.indexesGetForLabel( labelId ) ).thenReturn( indexes.iterator() );
@@ -287,7 +278,7 @@ public class IndexQueryTransactionStateTest
         when( statement.acquireSingleNodeCursor( nodeId ) ).thenReturn(
                 asNodeCursor( nodeId,
                         asPropertyCursor( stringProperty( propertyKeyId, value ) ),
-                        asLabelCursor( labelId ) ) );
+                        labels( labelId ) ) );
 
         txContext.nodeRemoveLabel( state, nodeId, labelId );
 
@@ -308,7 +299,7 @@ public class IndexQueryTransactionStateTest
         when( statement.acquireSingleNodeCursor( nodeId ) ).thenReturn(
                 asNodeCursor( nodeId,
                         asPropertyCursor( stringProperty( propertyKeyId, value ) ),
-                        asLabelCursor( labelId ) ) );
+                        labels( labelId ) ) );
 
         txContext.nodeRemoveLabel( state, nodeId, labelId );
 
@@ -332,7 +323,7 @@ public class IndexQueryTransactionStateTest
         when( statement.acquireSingleNodeCursor( nodeId ) ).thenReturn(
                 asNodeCursor( nodeId,
                         asPropertyCursor(),
-                        asLabelCursor( labelId ) ) );
+                        labels( labelId ) ) );
 
         txContext.nodeAddLabel( state, nodeId, labelId );
 
@@ -353,7 +344,7 @@ public class IndexQueryTransactionStateTest
         when( statement.acquireSingleNodeCursor( nodeId ) ).thenReturn(
                 asNodeCursor( nodeId,
                         asPropertyCursor( stringProperty( propertyKeyId, value ) ),
-                        asLabelCursor( labelId ) ) );
+                        labels( labelId ) ) );
 
         txContext.nodeRemoveProperty( state, nodeId, propertyKeyId );
 

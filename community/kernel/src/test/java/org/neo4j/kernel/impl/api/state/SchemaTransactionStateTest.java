@@ -44,7 +44,6 @@ import org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexing;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.index.LegacyIndexStore;
 import org.neo4j.kernel.impl.util.Cursors;
-import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.StoreReadLayer;
 
 import static org.junit.Assert.assertEquals;
@@ -264,16 +263,16 @@ public class SchemaTransactionStateTest
     private static class Labels
     {
         private final long nodeId;
-        private final Integer[] labelIds;
+        private final int[] labelIds;
 
-        Labels( long nodeId, Integer... labelIds )
+        Labels( long nodeId, int... labelIds )
         {
             this.nodeId = nodeId;
             this.labelIds = labelIds;
         }
     }
 
-    private static Labels labels( long nodeId, Integer... labelIds )
+    private static Labels labels( long nodeId, int... labelIds )
     {
         return new Labels( nodeId, labelIds );
     }
@@ -285,12 +284,8 @@ public class SchemaTransactionStateTest
         {
             when( storeStatement.acquireSingleNodeCursor( nodeLabels.nodeId ) ).thenReturn(
                     StubCursors.asNodeCursor( nodeLabels.nodeId,
-                            Cursors.<PropertyItem>empty(), StubCursors.asLabelCursor( nodeLabels.labelIds ) ) );
+                            Cursors.empty(), StubCursors.labels( nodeLabels.labelIds ) ) );
 
-/*
-            when( store.nodeGetLabels( storeStatement, nodeLabels.nodeId ) ).then(
-                    asAnswer( Arrays.<Integer>asList( nodeLabels.labelIds ) ) );
-*/
             for ( int label : nodeLabels.labelIds )
             {
 
@@ -313,10 +308,10 @@ public class SchemaTransactionStateTest
 
     private void commitNoLabels() throws Exception
     {
-        commitLabels( new Integer[0] );
+        commitLabels( new int[0] );
     }
 
-    private void commitLabels( Integer... labels ) throws Exception
+    private void commitLabels( int... labels ) throws Exception
     {
         commitLabels( labels( nodeId, labels ) );
     }

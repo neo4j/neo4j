@@ -19,12 +19,8 @@
  */
 package org.neo4j.storageengine.api;
 
-import java.util.function.IntSupplier;
-import java.util.function.ToIntFunction;
-
-import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 
 /**
  * Represents a single node from a cursor.
@@ -36,14 +32,7 @@ public interface NodeItem
      * @return label cursor for current node
      * @throws IllegalStateException if no current node is selected
      */
-    Cursor<LabelItem> labels();
-
-    /**
-     * @param labelId for specific label to find
-     * @return label cursor for current node
-     * @throws IllegalStateException if no current node is selected
-     */
-    Cursor<LabelItem> label( int labelId );
+    PrimitiveIntSet labels();
 
     /**
      * @return relationship cursor for current node
@@ -61,7 +50,7 @@ public interface NodeItem
      * @return relationship type cursor for relationships attached to this node.
      * @throws IllegalStateException if no current node is selected
      */
-    Cursor<RelationshipTypeItem> relationshipTypes();
+    PrimitiveIntSet relationshipTypes();
 
     /**
      * Returns degree, e.g. number of relationships for this node.

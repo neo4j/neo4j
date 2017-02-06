@@ -647,10 +647,15 @@ public final class Iterables
      */
     public static <T> Set<T> asUniqueSet( Iterable<T> iterable )
     {
-        return Iterators.addToCollectionUnique( iterable, new HashSet<T>() );
+        return Iterators.addToCollectionUnique( iterable, new HashSet<>() );
     }
 
     public static Iterable<Long> asIterable( final long... array )
+    {
+        return () -> Iterators.asIterator( array );
+    }
+
+    public static Iterable<Integer> asIterable( final int... array )
     {
         return () -> Iterators.asIterator( array );
     }

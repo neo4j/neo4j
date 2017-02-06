@@ -26,8 +26,6 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.Strings;
 import org.neo4j.helpers.collection.CastingIterator;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
-import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
@@ -47,9 +45,11 @@ import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.exceptions.schema.UnableToValidateConstraintKernelException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyConstraintViolationKernelException;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
+import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.impl.api.operations.EntityOperations;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
@@ -59,7 +59,6 @@ import org.neo4j.kernel.impl.api.store.EntityLoadingIterator;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.storageengine.api.LabelItem;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 
@@ -119,34 +118,27 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     {
         try ( Cursor<NodeItem> cursor = nodeCursorById( state, nodeId ) )
         {
-
             NodeItem node = cursor.get();
-
-            try ( Cursor<LabelItem> labels = node.labels() )
+            node.labels().visitKeys( labelId ->
             {
-                while ( labels.next() )
+                int propertyKeyId = property.propertyKeyId();
+                Iterator<UniquenessConstraint> constraintIterator = uniquePropertyConstraints( schemaReadOperations
+                        .constraintsGetForLabelAndPropertyKey( state,
+                                new NodePropertyDescriptor( labelId, propertyKeyId ) ) );
+                if ( constraintIterator.hasNext() )
                 {
-                    int labelId = labels.get().getAsInt();
-                    int propertyKeyId = property.propertyKeyId();
-                    Iterator<UniquenessConstraint> constraintIterator =
-                            uniquePropertyConstraints( schemaReadOperations.constraintsGetForLabelAndPropertyKey( state,
-                                    new NodePropertyDescriptor( labelId, propertyKeyId ) ) );
-                    if ( constraintIterator.hasNext() )
-                    {
-                        UniquenessConstraint constraint = constraintIterator.next();
-                        validateNoExistingNodeWithLabelAndProperty( state, constraint, property.value(), node.id() );
-                    }
+                    UniquenessConstraint constraint = constraintIterator.next();
+                    validateNoExistingNodeWithLabelAndProperty( state, constraint, property.value(), node.id() );
                 }
-            }
-
+                return false;
+            } );
         }
 
         return entityWriteOperations.nodeSetProperty( state, nodeId, property );
     }
 
     private void validateNoExistingNodeWithLabelAndProperty( KernelStatement state,  UniquenessConstraint constraint,
-            Object value, long modifiedNode )
-            throws ConstraintValidationKernelException
+            Object value, long modifiedNode ) throws ConstraintValidationKernelException
     {
         try
         {
