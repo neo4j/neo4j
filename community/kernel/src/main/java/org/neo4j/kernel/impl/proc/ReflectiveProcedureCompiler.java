@@ -43,6 +43,7 @@ import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
 import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.api.proc.FieldSignature;
+import org.neo4j.kernel.api.proc.LoadFailProcedure;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.QualifiedName;
 import org.neo4j.kernel.api.proc.UserFunctionSignature;
@@ -174,13 +175,25 @@ class ReflectiveProcedureCompiler
             ArrayList<CallableProcedure> out = new ArrayList<>( procedureMethods.size() );
             for ( Method method : procedureMethods )
             {
+                String valueName = method.getAnnotation( Procedure.class ).value();
+                String definedName = method.getAnnotation( Procedure.class ).name();
+                QualifiedName procName = extractName( procDefinition, method, valueName, definedName );
+                List<FieldSignature> inputSignature = inputSignatureDeterminer.signatureFor( method );
+                OutputMapper outputMapper = outputMappers.mapper( method );
                 try
                 {
-                    out.add( compileProcedure( procDefinition, constructor, method, warning, fullAccess ) );
+                    out.add( compileProcedure( procDefinition, constructor, method, warning, fullAccess, procName,
+                            inputSignature, outputMapper ) );
                 }
                 catch ( InjectionProcedureException e )
                 {
                     log.warn( e.getMessage() );
+                    Optional<String> description = Optional.of(
+                            procName + " is not available due to not having access to one or more components." );
+                    ProcedureSignature signature =
+                            new ProcedureSignature( procName, inputSignature, outputMapper.signature(), Mode.DEFAULT,
+                                    Optional.empty(), new String[0], description, warning );
+                    out.add( new LoadFailProcedure( signature ) );
                 }
 
             }
@@ -199,15 +212,10 @@ class ReflectiveProcedureCompiler
     }
 
     private ReflectiveProcedure compileProcedure( Class<?> procDefinition, MethodHandle constructor, Method method,
-            Optional<String> warning, boolean fullAccess )
+            Optional<String> warning, boolean fullAccess, QualifiedName procName, List<FieldSignature> inputSignature,
+            OutputMapper outputMapper )
             throws ProcedureException, IllegalAccessException
     {
-        String valueName = method.getAnnotation( Procedure.class ).value();
-        String definedName = method.getAnnotation( Procedure.class ).name();
-        QualifiedName procName = extractName( procDefinition, method, valueName, definedName );
-
-        List<FieldSignature> inputSignature = inputSignatureDeterminer.signatureFor( method );
-        OutputMapper outputMapper = outputMappers.mapper( method );
         MethodHandle procedureMethod = lookup.unreflect( method );
         List<FieldInjections.FieldSetter> setters;
         if ( fullAccess || config.fullAccessFor( procName.toString() ) )

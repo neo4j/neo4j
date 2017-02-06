@@ -29,6 +29,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.logging.Log;
@@ -37,8 +38,10 @@ import org.neo4j.procedure.Procedure;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -71,11 +74,22 @@ public class ResourceInjectionTest
         List<CallableProcedure> procList = compile( procedureWithUnknownAPI.class, true );
 
         //Then
-        verify( log ).warn(  "Unable to set up injection for procedure `procedureWithUnknownAPI`," +
-                " the field `api` has type `class org.neo4j.kernel.impl.proc.ResourceInjectionTest$UnknownAPI`" +
-                " which is not a known injectable component.");
+        verify( log )
+                .warn( "Unable to set up injection for procedure `procedureWithUnknownAPI`, the field `api` has type" +
+                        " `class org.neo4j.kernel.impl.proc.ResourceInjectionTest$UnknownAPI`" +
+                        " which is not a known injectable component." );
 
-        assert(procList.size() == 0);
+        assertThat( procList.size(), equalTo( 1 ) );
+        try
+        {
+            procList.get( 0 ).apply( new BasicContext(), new Object[0] );
+            fail();
+        }
+        catch ( ProcedureException e )
+        {
+            assertThat( e.getMessage(), containsString(
+                    "org.neo4j.kernel.impl.proc.listCoolPeople is not available due to not having access to one or more components." ) );
+        }
     }
 
     @Test
@@ -100,11 +114,21 @@ public class ResourceInjectionTest
         //When
         List<CallableProcedure> procList = compile( procedureWithUnsafeAPI.class, false );
         verify( log )
-                .warn( "Unable to set up injection for procedure `procedureWithUnsafeAPI`, " + "the field `api` has " +
-                        "type `class org.neo4j.kernel.impl.proc.ResourceInjectionTest$MyUnsafeAPI` " +
-                        "which is not a known injectable component." );
+                .warn( "Unable to set up injection for procedure `procedureWithUnsafeAPI`, the field `api` has type" +
+                        " `class org.neo4j.kernel.impl.proc.ResourceInjectionTest$MyUnsafeAPI`" +
+                        " which is not a known injectable component." );
 
-        assert(procList.size() == 0);
+        assertThat( procList.size(), equalTo( 1 ) );
+        try
+        {
+            procList.get( 0 ).apply( new BasicContext(), new Object[0] );
+            fail();
+        }
+        catch ( ProcedureException e )
+        {
+            assertThat( e.getMessage(), containsString(
+                    "org.neo4j.kernel.impl.proc.listCoolPeople is not available due to not having access to one or more components." ) );
+        }
 
     }
 
