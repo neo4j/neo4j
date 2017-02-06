@@ -155,8 +155,8 @@ trait MethodStructure[E] {
   def relationshipGetPropertyById(nodeIdVar: String, propId: Int, propValueVar: String): Unit
   def relationshipGetPropertyForVar(nodeIdVar: String, propIdVar: String, propValueVar: String): Unit
   def lookupPropertyKey(propName: String, propVar: String)
-  def indexSeek(iterVar: String, descriptorVar: String, value: E): Unit
-  def indexUniqueSeek(name: String, descriptorVar: String, value: E)
+  def indexSeek(iterVar: String, descriptorVar: String, value: E, codeGenType: CodeGenType): Unit
+  def indexUniqueSeek(name: String, descriptorVar: String, value: E, codeGenType: CodeGenType): Unit
   def relType(relIdVar: String, typeVar: String): Unit
   def newIndexDescriptor(descriptorVar: String, labelVar: String, propKeyVar: String): Unit
   def createRelExtractor(extractorName: String): Unit

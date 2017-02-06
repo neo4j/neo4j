@@ -39,7 +39,7 @@ case class IndexUniqueSeek(opName: String, labelName: String, propName: String, 
   override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
     generator.trace(opName) { body =>
       body.incrementDbHits()
-      body.indexUniqueSeek(node.name, descriptorVar, expression.generateExpression(body))
+      body.indexUniqueSeek(node.name, descriptorVar, expression.generateExpression(body), expression.codeGenType)
       body.ifNotStatement(body.isNull(node.name, CodeGenType.primitiveNode)) { ifBody =>
         ifBody.incrementRows()
         inner.body(ifBody)

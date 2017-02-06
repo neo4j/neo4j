@@ -1348,18 +1348,20 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     )
   }
 
-  override def indexSeek(iterVar: String, descriptorVar: String, value: Expression) = {
+  override def indexSeek(iterVar: String, descriptorVar: String, value: Expression, codeGenType: CodeGenType) = {
     val local = generator.declare(typeRef[PrimitiveLongIterator], iterVar)
+    val boxedValue = if (codeGenType.isPrimitive) Expression.box(value) else value
     handleKernelExceptions(generator, fields.ro, _finalizers) { body =>
-      body.assign(local, invoke(readOperations, nodesGetFromIndexLookup, generator.load(descriptorVar), value))
+      body.assign(local, invoke(readOperations, nodesGetFromIndexLookup, generator.load(descriptorVar), boxedValue))
     }
   }
 
-  override def indexUniqueSeek(nodeVar: String, descriptorVar: String, value: Expression) = {
+  override def indexUniqueSeek(nodeVar: String, descriptorVar: String, value: Expression, codeGenType: CodeGenType) = {
     val local = generator.declare(typeRef[Long], nodeVar)
+    val boxedValue = if (codeGenType.isPrimitive) Expression.box(value) else value
     handleKernelExceptions(generator, fields.ro, _finalizers) { body =>
       body.assign(local,
-                  invoke(readOperations, nodeGetUniqueFromIndexLookup, generator.load(descriptorVar), value))
+                  invoke(readOperations, nodeGetUniqueFromIndexLookup, generator.load(descriptorVar), boxedValue))
     }
   }
 
