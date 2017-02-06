@@ -19,8 +19,11 @@
  */
 package org.neo4j.kernel.api.schema_new.index;
 
+import java.util.function.Predicate;
+
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
 
 import static java.lang.String.format;
 
@@ -31,9 +34,37 @@ import static java.lang.String.format;
  * This will be renamed to IndexDescriptor, once the old org.neo4j.kernel.api.schema.IndexDescriptor is completely
  * removed.
  */
-public class NewIndexDescriptor
+public class NewIndexDescriptor implements SchemaDescriptor.Supplier
 {
     public enum Type { GENERAL, UNIQUE }
+
+    public enum Filter implements Predicate<NewIndexDescriptor>
+    {
+        GENERAL
+                {
+                    @Override
+                    public boolean test( NewIndexDescriptor rule )
+                    {
+                        return rule.type == Type.GENERAL;
+                    }
+                },
+        UNIQUE
+                {
+                    @Override
+                    public boolean test( NewIndexDescriptor rule )
+                    {
+                        return rule.type == Type.UNIQUE;
+                    }
+                },
+        ANY
+                {
+                    @Override
+                    public boolean test( NewIndexDescriptor rule )
+                    {
+                        return true;
+                    }
+                }
+    }
 
     public interface Supplier
     {
@@ -60,6 +91,7 @@ public class NewIndexDescriptor
      * This method currently returns the specific LabelSchemaDescriptor, as we do not support indexes on relations.
      * When we do, consider down-typing this to a SchemaDescriptor.
      */
+    @Override
     public LabelSchemaDescriptor schema()
     {
         return schema;

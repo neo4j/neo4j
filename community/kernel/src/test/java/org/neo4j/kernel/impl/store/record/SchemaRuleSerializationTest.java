@@ -282,7 +282,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
         // THEN
         assertThat( deserialized.getId(), equalTo( indexRule.getId() ) );
         assertThat( deserialized.getIndexDescriptor(), equalTo( indexRule.getIndexDescriptor() ) );
-        assertThat( deserialized.getSchemaDescriptor(), equalTo( indexRule.getSchemaDescriptor() ) );
+        assertThat( deserialized.schema(), equalTo( indexRule.schema() ) );
         assertThat( deserialized.getProviderDescriptor(), equalTo( indexRule.getProviderDescriptor() ) );
     }
 
@@ -310,7 +310,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
         // THEN
         assertThat( deserialized.getId(), equalTo( constraintRule.getId() ) );
         assertThat( deserialized.getConstraintDescriptor(), equalTo( constraintRule.getConstraintDescriptor() ) );
-        assertThat( deserialized.getSchemaDescriptor(), equalTo( constraintRule.getSchemaDescriptor() ) );
+        assertThat( deserialized.schema(), equalTo( constraintRule.schema() ) );
     }
 
     private ConstraintRule assertConstraintRule( SchemaRule schemaRule )

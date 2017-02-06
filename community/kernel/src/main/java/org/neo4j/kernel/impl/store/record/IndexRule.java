@@ -139,7 +139,7 @@ public class IndexRule implements SchemaRule, NewIndexDescriptor.Supplier
     }
 
     @Override
-    public LabelSchemaDescriptor getSchemaDescriptor()
+    public LabelSchemaDescriptor schema()
     {
         return descriptor.schema();
     }

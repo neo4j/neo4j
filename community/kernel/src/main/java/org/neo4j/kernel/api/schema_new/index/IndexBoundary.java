@@ -24,6 +24,7 @@ import java.util.Iterator;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 
 /**
@@ -57,6 +58,24 @@ public class IndexBoundary
             return null;
         }
         return NewIndexDescriptorFactory.forLabel( descriptor.getLabelId(), descriptor.getPropertyKeyId() );
+    }
+
+    public static NewIndexDescriptor map( NodePropertyDescriptor descriptor )
+    {
+        if ( descriptor == null )
+        {
+            return null;
+        }
+        return NewIndexDescriptorFactory.forLabel( descriptor.getLabelId(), descriptor.getPropertyKeyId() );
+    }
+
+    public static NewIndexDescriptor mapUnique( IndexDescriptor descriptor )
+    {
+        if ( descriptor == null )
+        {
+            return null;
+        }
+        return NewIndexDescriptorFactory.uniqueForLabel( descriptor.getLabelId(), descriptor.getPropertyKeyId() );
     }
 
     public static Iterator<IndexDescriptor> map( Iterator<NewIndexDescriptor> iterator )

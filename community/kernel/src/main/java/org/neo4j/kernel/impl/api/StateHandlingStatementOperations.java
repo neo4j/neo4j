@@ -67,8 +67,12 @@ import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaBoundary;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.SchemaUtil;
 import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.txstate.TransactionCountingStateVisitor;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.operations.CountsOperations;
@@ -98,10 +102,14 @@ import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 
+import static java.lang.String.format;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.single;
+import static org.neo4j.helpers.collection.Iterators.filter;
 import static org.neo4j.helpers.collection.Iterators.iterator;
 import static org.neo4j.helpers.collection.Iterators.singleOrNull;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
+import static org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor.Filter.GENERAL;
+import static org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor.Filter.UNIQUE;
 import static org.neo4j.kernel.impl.api.PropertyValueComparison.COMPARE_NUMBERS;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 import static org.neo4j.storageengine.api.txstate.TxStateVisitor.EMPTY;
@@ -296,14 +304,15 @@ public class StateHandlingStatementOperations implements
                 while ( properties.next() )
                 {
                     PropertyItem propertyItem = properties.get();
-                    IndexDescriptor descriptor = indexGetForLabelAndPropertyKey( state,
-                            new NodePropertyDescriptor( labelId, propertyItem.propertyKeyId() ) );
+                    NodePropertyDescriptor nodePropDescriptor =
+                            new NodePropertyDescriptor( labelId, propertyItem.propertyKeyId() );
+                    IndexDescriptor descriptor = indexGetForLabelAndPropertyKey( state, nodePropDescriptor );
                     if ( descriptor != null )
                     {
                         DefinedProperty after = Property.property( propertyItem.propertyKeyId(),
                                 propertyItem.value() );
 
-                        state.txState().indexDoUpdateProperty( descriptor, node.id(), null, after );
+                        state.txState().indexDoUpdateProperty( SchemaBoundary.map( nodePropDescriptor ), node.id(), null, after );
                     }
                 }
 
@@ -333,7 +342,7 @@ public class StateHandlingStatementOperations implements
                     PropertyItem propItem = properties.get();
                     DefinedProperty property = Property.property( propItem.propertyKeyId(), propItem.value() );
                     indexUpdateProperty( state, node.id(),
-                            new NodePropertyDescriptor( labelId, property.propertyKeyId() ), property, null );
+                            SchemaDescriptorFactory.forLabel( labelId, property.propertyKeyId() ), property, null );
                 }
             }
 
@@ -372,21 +381,20 @@ public class StateHandlingStatementOperations implements
     @Override
     public IndexDescriptor indexCreate( KernelStatement state, NodePropertyDescriptor descriptor )
     {
-        IndexDescriptor indexDescriptor = IndexDescriptorFactory.of(descriptor);
-        state.txState().indexRuleDoAdd( indexDescriptor );
-        return indexDescriptor;
+        state.txState().indexRuleDoAdd( IndexBoundary.map( descriptor ) );
+        return IndexDescriptorFactory.of( descriptor );
     }
 
     @Override
     public void indexDrop( KernelStatement state, IndexDescriptor descriptor ) throws DropIndexFailureException
     {
-        state.txState().indexDoDrop( descriptor );
+        state.txState().indexDoDrop( IndexBoundary.map( descriptor ) );
     }
 
     @Override
     public void uniqueIndexDrop( KernelStatement state, IndexDescriptor descriptor ) throws DropIndexFailureException
     {
-        state.txState().constraintIndexDoDrop( descriptor );
+        state.txState().indexDoDrop( IndexBoundary.mapUnique( descriptor ) );
     }
 
     @Override
@@ -396,7 +404,6 @@ public class StateHandlingStatementOperations implements
         UniquenessConstraint constraint = new UniquenessConstraint( descriptor );
         try
         {
-
             if ( state.hasTxStateWithChanges() &&
                  state.txState().constraintIndexDoUnRemove( constraint ) ) // ..., DROP, *CREATE*
             { // creation is undoing a drop
@@ -527,24 +534,20 @@ public class StateHandlingStatementOperations implements
     @Override
     public IndexDescriptor indexGetForLabelAndPropertyKey( KernelStatement state, NodePropertyDescriptor descriptor )
     {
-        IndexDescriptor indexDescriptor = IndexBoundary.map(
-                storeLayer.indexGetForLabelAndPropertyKey( SchemaBoundary.map( descriptor ) ) );
-
-        Iterator<IndexDescriptor> rules = iterator( indexDescriptor );
-        if ( state.hasTxStateWithChanges() )
-        {
-            rules = filterByPropertyKeyId(
-                    state.txState().indexDiffSetsByLabel( descriptor.getLabelId() ).apply( rules ),
-                    descriptor );
-        }
-        return singleOrNull( rules );
+        return indexGetForLabelAndPropertyKey( state, SchemaBoundary.map( descriptor ) );
     }
 
-    private Iterator<IndexDescriptor> filterByPropertyKeyId(
-            Iterator<IndexDescriptor> descriptorIterator,
-            NodePropertyDescriptor descriptor )
+    private IndexDescriptor indexGetForLabelAndPropertyKey( KernelStatement state, LabelSchemaDescriptor descriptor )
     {
-        return Iterators.filter( item -> descriptor.equals( item ), descriptorIterator );
+        NewIndexDescriptor indexDescriptor = storeLayer.indexGetForLabelAndPropertyKey( descriptor );
+        Iterator<NewIndexDescriptor> rules = iterator( indexDescriptor );
+        if ( state.hasTxStateWithChanges() )
+        {
+            rules = filter(
+                    descriptor::isSame,
+                    state.txState().indexDiffSetsByLabel( descriptor.getLabelId(), GENERAL ).apply( rules ) );
+        }
+        return singleOrNull( IndexBoundary.map( rules ) );
     }
 
     @Override
@@ -554,13 +557,8 @@ public class StateHandlingStatementOperations implements
         // If index is in our state, then return populating
         if ( state.hasTxStateWithChanges() )
         {
-            if ( checkIndexState( descriptor, state.txState().indexDiffSetsByLabel( descriptor.getLabelId() ) ) )
-            {
-                return InternalIndexState.POPULATING;
-            }
-            ReadableDiffSets<IndexDescriptor> changes =
-                    state.txState().constraintIndexDiffSetsByLabel( descriptor.getLabelId() );
-            if ( checkIndexState( descriptor, changes ) )
+            if ( checkIndexState( IndexBoundary.map( descriptor ),
+                    state.txState().indexDiffSetsByLabel( descriptor.getLabelId(), NewIndexDescriptor.Filter.ANY ) ) )
             {
                 return InternalIndexState.POPULATING;
             }
@@ -576,13 +574,8 @@ public class StateHandlingStatementOperations implements
         // If index is in our state, then return 0%
         if ( state.hasTxStateWithChanges() )
         {
-            if ( checkIndexState( descriptor, state.txState().indexDiffSetsByLabel( descriptor.getLabelId() ) ) )
-            {
-                return PopulationProgress.NONE;
-            }
-            ReadableDiffSets<IndexDescriptor> changes =
-                    state.txState().constraintIndexDiffSetsByLabel( descriptor.getLabelId() );
-            if ( checkIndexState( descriptor, changes ) )
+            if ( checkIndexState( IndexBoundary.map( descriptor ),
+                    state.txState().indexDiffSetsByLabel( descriptor.getLabelId(), NewIndexDescriptor.Filter.ANY ) ) )
             {
                 return PopulationProgress.NONE;
             }
@@ -591,19 +584,17 @@ public class StateHandlingStatementOperations implements
         return storeLayer.indexGetPopulationProgress( SchemaBoundary.map( descriptor.descriptor() ) );
     }
 
-    private boolean checkIndexState( IndexDescriptor indexRule, ReadableDiffSets<IndexDescriptor> diffSet )
+    private boolean checkIndexState( NewIndexDescriptor index, ReadableDiffSets<NewIndexDescriptor> diffSet )
             throws IndexNotFoundKernelException
     {
-        if ( diffSet.isAdded( indexRule ) )
+        if ( diffSet.isAdded( index ) )
         {
             return true;
         }
-        if ( diffSet.isRemoved( indexRule ) )
+        if ( diffSet.isRemoved( index ) )
         {
-            throw new IndexNotFoundKernelException( String.format( "Index for label id %d on property id %d has been " +
-                            "dropped in this transaction.",
-                    indexRule.getLabelId(),
-                    indexRule.getPropertyKeyIds() ) );
+            throw new IndexNotFoundKernelException( format( "Index on %s has been dropped in this transaction.",
+                    index.userDescription( SchemaUtil.noopTokenNameLookup ) ) );
         }
         return false;
     }
@@ -613,10 +604,9 @@ public class StateHandlingStatementOperations implements
     {
         if ( state.hasTxStateWithChanges() )
         {
-            return state.txState().indexDiffSetsByLabel( labelId )
-                    .apply( IndexBoundary.map( storeLayer.indexesGetForLabel( labelId ) ) );
+            return IndexBoundary.map( state.txState().indexDiffSetsByLabel( labelId, GENERAL )
+                                        .apply( storeLayer.indexesGetForLabel( labelId ) ) );
         }
-
         return IndexBoundary.map( storeLayer.indexesGetForLabel( labelId ) );
     }
 
@@ -625,7 +615,7 @@ public class StateHandlingStatementOperations implements
     {
         if ( state.hasTxStateWithChanges() )
         {
-            return state.txState().indexChanges().apply( IndexBoundary.map( storeLayer.indexesGetAll() ) );
+            return IndexBoundary.map( state.txState().indexChanges( GENERAL ).apply( storeLayer.indexesGetAll() ) );
         }
 
         return IndexBoundary.map( storeLayer.indexesGetAll() );
@@ -636,8 +626,10 @@ public class StateHandlingStatementOperations implements
     {
         if ( state.hasTxStateWithChanges() )
         {
-            return state.txState().constraintIndexDiffSetsByLabel( labelId )
-                    .apply( IndexBoundary.map( storeLayer.uniquenessIndexesGetForLabel( labelId ) ) );
+            return IndexBoundary.map(
+                    state.txState().indexDiffSetsByLabel( labelId, UNIQUE )
+                        .apply( storeLayer.uniquenessIndexesGetForLabel( labelId ) )
+                );
         }
 
         return IndexBoundary.map( storeLayer.uniquenessIndexesGetForLabel( labelId ) );
@@ -648,8 +640,9 @@ public class StateHandlingStatementOperations implements
     {
         if ( state.hasTxStateWithChanges() )
         {
-            return state.txState().constraintIndexChanges()
-                    .apply( IndexBoundary.map( storeLayer.uniquenessIndexesGetAll() ) );
+            return IndexBoundary.map(
+                    state.txState().indexChanges( UNIQUE ).apply( storeLayer.uniquenessIndexesGetAll() )
+                );
         }
 
         return IndexBoundary.map( storeLayer.uniquenessIndexesGetAll() );
@@ -796,7 +789,9 @@ public class StateHandlingStatementOperations implements
     {
         if ( state.hasTxStateWithChanges() )
         {
-            ReadableDiffSets<Long> labelPropertyChanges = state.txState().indexUpdatesForScanOrSeek( index, value );
+            ReadableDiffSets<Long> labelPropertyChanges =
+                    state.txState().indexUpdatesForScanOrSeek(
+                        IndexBoundary.map( index ), value );
             ReadableDiffSets<Long> nodes = state.txState().addedAndRemovedNodes();
 
             // Apply to actual index lookup
@@ -814,7 +809,8 @@ public class StateHandlingStatementOperations implements
         if ( state.hasTxStateWithChanges() )
         {
             ReadableDiffSets<Long> labelPropertyChangesForNumber =
-                    state.txState().indexUpdatesForRangeSeekByNumber( index, lower, includeLower, upper, includeUpper );
+                    state.txState().indexUpdatesForRangeSeekByNumber(
+                            IndexBoundary.map( index ), lower, includeLower, upper, includeUpper );
             ReadableDiffSets<Long> nodes = state.txState().addedAndRemovedNodes();
 
             // Apply to actual index lookup
@@ -833,7 +829,8 @@ public class StateHandlingStatementOperations implements
         if ( state.hasTxStateWithChanges() )
         {
             ReadableDiffSets<Long> labelPropertyChangesForString =
-                    state.txState().indexUpdatesForRangeSeekByString( index, lower, includeLower, upper, includeUpper );
+                    state.txState().indexUpdatesForRangeSeekByString(
+                            IndexBoundary.map( index ), lower, includeLower, upper, includeUpper );
             ReadableDiffSets<Long> nodes = state.txState().addedAndRemovedNodes();
 
             // Apply to actual index lookup
@@ -851,7 +848,7 @@ public class StateHandlingStatementOperations implements
         if ( state.hasTxStateWithChanges() )
         {
             ReadableDiffSets<Long> labelPropertyChangesForPrefix =
-                    state.txState().indexUpdatesForRangeSeekByPrefix( index, prefix );
+                    state.txState().indexUpdatesForRangeSeekByPrefix( IndexBoundary.map( index ), prefix );
             ReadableDiffSets<Long> nodes = state.txState().addedAndRemovedNodes();
 
             // Apply to actual index lookup
@@ -1011,12 +1008,12 @@ public class StateHandlingStatementOperations implements
     {
         node.labels().visitKeys( labelId ->
         {
-            indexUpdateProperty( state, node.id(), new NodePropertyDescriptor( labelId, propertyKey ), before, after );
+            indexUpdateProperty( state, node.id(), SchemaDescriptorFactory.forLabel( labelId, propertyKey ), before, after );
             return false;
         } );
     }
 
-    private void indexUpdateProperty( KernelStatement state, long nodeId, NodePropertyDescriptor descriptor,
+    private void indexUpdateProperty( KernelStatement state, long nodeId, LabelSchemaDescriptor descriptor,
             DefinedProperty before, DefinedProperty after )
     {
         // TODO: Update this to handle composite indexes
@@ -1028,7 +1025,7 @@ public class StateHandlingStatementOperations implements
                 Validators.INDEX_VALUE_VALIDATOR.validate( after.value() );
             }
 
-            state.txState().indexDoUpdateProperty( indexDescriptor, nodeId, before, after );
+            state.txState().indexDoUpdateProperty( descriptor, nodeId, before, after );
         }
     }
 

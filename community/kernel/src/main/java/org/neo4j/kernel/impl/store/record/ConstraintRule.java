@@ -66,7 +66,7 @@ public class ConstraintRule implements SchemaRule, ConstraintDescriptor.Supplier
     }
 
     @Override
-    public SchemaDescriptor getSchemaDescriptor()
+    public SchemaDescriptor schema()
     {
         return descriptor.schema();
     }

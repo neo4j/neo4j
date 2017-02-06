@@ -451,8 +451,8 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         for ( int i = 0; i < labelIds.length; i++ )
         {
             IndexRule rule = rules[i];
-            int labelId = rule.getSchemaDescriptor().getLabelId();
-            int propertyKeyId = rule.getSchemaDescriptor().getPropertyIds()[0];
+            int labelId = rule.schema().getLabelId();
+            int propertyKeyId = rule.schema().getPropertyIds()[0];
 
             labelIds[i] = labelId;
             // TODO: Support composite indexes

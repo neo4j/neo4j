@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.api.state;
 
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.util.diffsets.DiffSets;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 
@@ -29,9 +29,7 @@ import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
  * <ul>
  * <li>{@linkplain #nodeDiffSets() Nodes} where the label has been {@linkplain ReadableDiffSets#getAdded() added}
  * or {@linkplain ReadableDiffSets#getRemoved() removed}.</li>
- * <li>{@linkplain #indexChanges() Indexes} for the label that have been
- * {@linkplain ReadableDiffSets#getAdded() created} or {@linkplain ReadableDiffSets#getRemoved() dropped}.</li>
- * <li>{@linkplain #constraintIndexChanges() Unique indexes} for the label that have been
+ * <li>{@linkplain #indexChanges(NewIndexDescriptor.Filter) Indexes} for the label that have been
  * {@linkplain ReadableDiffSets#getAdded() created} or {@linkplain ReadableDiffSets#getRemoved() dropped}.</li>
  * <li>{@linkplain #nodeConstraintsChanges() Constraints} for the label that have been
  * {@linkplain ReadableDiffSets#getAdded() created} or {@linkplain ReadableDiffSets#getRemoved() dropped}.</li>
@@ -41,17 +39,14 @@ public abstract class LabelState
 {
     public abstract ReadableDiffSets<Long> nodeDiffSets();
 
-    public abstract ReadableDiffSets<IndexDescriptor> indexChanges();
-
-    public abstract ReadableDiffSets<IndexDescriptor> constraintIndexChanges();
+    public abstract ReadableDiffSets<NewIndexDescriptor> indexChanges( NewIndexDescriptor.Filter indexType );
 
     public abstract ReadableDiffSets<NodePropertyConstraint> nodeConstraintsChanges();
 
     public static class Mutable extends LabelState
     {
         private DiffSets<Long> nodeDiffSets;
-        private DiffSets<IndexDescriptor> indexChanges;
-        private DiffSets<IndexDescriptor> constraintIndexChanges;
+        private DiffSets<NewIndexDescriptor> indexChanges;
         private DiffSets<NodePropertyConstraint> nodeConstraintsChanges;
         private final int labelId;
 
@@ -81,33 +76,18 @@ public abstract class LabelState
         }
 
         @Override
-        public ReadableDiffSets<IndexDescriptor> indexChanges()
+        public ReadableDiffSets<NewIndexDescriptor> indexChanges( NewIndexDescriptor.Filter indexType )
         {
-            return ReadableDiffSets.Empty.ifNull( indexChanges );
+            return ReadableDiffSets.Empty.ifNull( indexChanges ).filterAdded( indexType );
         }
 
-        public DiffSets<IndexDescriptor> getOrCreateIndexChanges()
+        public DiffSets<NewIndexDescriptor> getOrCreateIndexChanges()
         {
             if ( indexChanges == null )
             {
                 indexChanges = new DiffSets<>();
             }
             return indexChanges;
-        }
-
-        @Override
-        public ReadableDiffSets<IndexDescriptor> constraintIndexChanges()
-        {
-            return ReadableDiffSets.Empty.ifNull( constraintIndexChanges );
-        }
-
-        public DiffSets<IndexDescriptor> getOrCreateConstraintIndexChanges()
-        {
-            if ( constraintIndexChanges == null )
-            {
-                constraintIndexChanges = new DiffSets<>();
-            }
-            return constraintIndexChanges;
         }
 
         @Override
@@ -150,13 +130,7 @@ public abstract class LabelState
         }
 
         @Override
-        public ReadableDiffSets<IndexDescriptor> indexChanges()
-        {
-            return ReadableDiffSets.Empty.instance();
-        }
-
-        @Override
-        public ReadableDiffSets<IndexDescriptor> constraintIndexChanges()
+        public ReadableDiffSets<NewIndexDescriptor> indexChanges( NewIndexDescriptor.Filter indexType )
         {
             return ReadableDiffSets.Empty.instance();
         }

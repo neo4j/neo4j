@@ -41,6 +41,9 @@ import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
+import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelStatement;
@@ -51,6 +54,7 @@ import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -91,7 +95,7 @@ public class ConstraintIndexCreatorTest
         // then
         assertEquals( 2468L, indexId );
         assertEquals( 1, kernel.statements.size() );
-        verify( kernel.statements.get( 0 ).txState() ).constraintIndexRuleDoAdd( index );
+        verify( kernel.statements.get( 0 ).txState() ).indexRuleDoAdd( eq( IndexBoundary.mapUnique( index ) ) );
         verifyNoMoreInteractions( indexCreationContext.schemaWriteOperations() );
         verify( constraintCreationContext.schemaReadOperations() ).indexGetCommittedId( state, index, CONSTRAINT );
         verifyNoMoreInteractions( constraintCreationContext.schemaReadOperations() );
@@ -135,12 +139,13 @@ public class ConstraintIndexCreatorTest
         }
         assertEquals( 2, kernel.statements.size() );
         TransactionState tx1 = kernel.statements.get( 0 ).txState();
-        verify( tx1 ).constraintIndexRuleDoAdd( IndexDescriptorFactory.of( 123, 456 ) );
+        NewIndexDescriptor newIndex = NewIndexDescriptorFactory.uniqueForLabel( 123, 456 );
+        verify( tx1 ).indexRuleDoAdd( newIndex );
         verifyNoMoreInteractions( tx1 );
         verify( constraintCreationContext.schemaReadOperations() ).indexGetCommittedId( state, index, CONSTRAINT );
         verifyNoMoreInteractions( constraintCreationContext.schemaReadOperations() );
         TransactionState tx2 = kernel.statements.get( 1 ).txState();
-        verify( tx2 ).constraintIndexDoDrop( IndexDescriptorFactory.of( 123, 456 ) );
+        verify( tx2 ).indexDoDrop( newIndex );
         verifyNoMoreInteractions( tx2 );
     }
 
@@ -151,16 +156,16 @@ public class ConstraintIndexCreatorTest
         StubKernel kernel = new StubKernel();
         IndexingService indexingService = mock( IndexingService.class );
 
-        IndexDescriptor descriptor = IndexDescriptorFactory.of( 123, 456 );
+        NewIndexDescriptor index = NewIndexDescriptorFactory.uniqueForLabel( 123, 456 );
 
         ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService );
 
         // when
-        creator.dropUniquenessConstraintIndex( descriptor );
+        creator.dropUniquenessConstraintIndex( index );
 
         // then
         assertEquals( 1, kernel.statements.size() );
-        verify( kernel.statements.get( 0 ).txState() ).constraintIndexDoDrop( descriptor );
+        verify( kernel.statements.get( 0 ).txState() ).indexDoDrop( index );
         verifyZeroInteractions( indexingService );
     }
 

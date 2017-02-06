@@ -43,7 +43,7 @@ public class IndexRuleTest extends SchemaRuleTestBase
         // THEN
         assertThat( indexRule.getId(), equalTo( RULE_ID ) );
         assertFalse( indexRule.canSupportUniqueConstraint() );
-        assertThat( indexRule.getSchemaDescriptor(), equalTo( descriptor.schema() ) );
+        assertThat( indexRule.schema(), equalTo( descriptor.schema() ) );
         assertThat( indexRule.getIndexDescriptor(), equalTo( descriptor ) );
         assertThat( indexRule.getProviderDescriptor(), equalTo( PROVIDER_DESCRIPTOR ) );
         assertException( indexRule::getOwningConstraint, IllegalStateException.class, "" );
@@ -60,7 +60,7 @@ public class IndexRuleTest extends SchemaRuleTestBase
         // THEN
         assertThat( indexRule.getId(), equalTo( RULE_ID ) );
         assertTrue( indexRule.canSupportUniqueConstraint() );
-        assertThat( indexRule.getSchemaDescriptor(), equalTo( descriptor.schema() ) );
+        assertThat( indexRule.schema(), equalTo( descriptor.schema() ) );
         assertThat( indexRule.getIndexDescriptor(), equalTo( descriptor ) );
         assertThat( indexRule.getProviderDescriptor(), equalTo( PROVIDER_DESCRIPTOR ) );
         assertThat( indexRule.getOwningConstraint(), equalTo( null ) );

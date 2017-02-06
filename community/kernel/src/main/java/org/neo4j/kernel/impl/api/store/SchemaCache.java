@@ -101,7 +101,7 @@ public class SchemaCache
     {
         for ( IndexRule rule : indexRuleById.values() )
         {
-            if ( rule.getSchemaDescriptor().equals( descriptor ) )
+            if ( rule.schema().equals( descriptor ) )
             {
                 return true;
             }
@@ -165,7 +165,7 @@ public class SchemaCache
         {
             IndexRule indexRule = (IndexRule) rule;
             indexRuleById.put( indexRule.getId(), indexRule );
-            indexDescriptors.put( indexRule.getSchemaDescriptor(), indexRule.getIndexDescriptor() );
+            indexDescriptors.put( indexRule.schema(), indexRule.getIndexDescriptor() );
         }
     }
 
@@ -205,7 +205,7 @@ public class SchemaCache
         else if ( indexRuleById.containsKey( id ) )
         {
             IndexRule rule = indexRuleById.remove( id );
-            indexDescriptors.remove( rule.getSchemaDescriptor() );
+            indexDescriptors.remove( rule.schema() );
         }
     }
 
