@@ -56,4 +56,17 @@ public class ReadReplicaTopology
     {
         return String.format( "{readReplicas=%s}", readReplicaMembers );
     }
+
+    public Optional<MemberId> anyReadReplicaMemberId()
+    {
+        if ( readReplicaMembers.keySet().size() == 0 )
+        {
+            return Optional.empty();
+        }
+        else
+        {
+            return readReplicaMembers.keySet().stream().findAny();
+        }
+
+    }
 }

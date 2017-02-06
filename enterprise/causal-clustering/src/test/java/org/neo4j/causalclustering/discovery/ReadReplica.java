@@ -118,7 +118,8 @@ public class ReadReplica implements ClusterMember
     public void start()
     {
         database = new ReadReplicaGraphDatabase( storeDir, Config.embeddedDefaults( config ),
-                GraphDatabaseDependencies.newDependencies().monitors( monitors ), discoveryServiceFactory, memberId().get() );
+                GraphDatabaseDependencies.newDependencies().monitors( monitors ), discoveryServiceFactory,
+                memberId().get() );
     }
 
     @Override
@@ -127,8 +128,8 @@ public class ReadReplica implements ClusterMember
         if ( database != null )
         {
             database.shutdown();
+            database = null;
         }
-        database = null;
     }
 
     public CatchupPollingProcess txPollingClient()

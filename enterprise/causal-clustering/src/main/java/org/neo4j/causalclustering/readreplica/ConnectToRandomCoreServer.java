@@ -34,7 +34,7 @@ public class ConnectToRandomCoreServer extends UpstreamDatabaseSelectionStrategy
 
     public ConnectToRandomCoreServer()
     {
-        super( "random" );
+        super( "connect-to-random-core-server" );
     }
 
     @Override

@@ -22,29 +22,25 @@ package org.neo4j.causalclustering.discovery;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.helpers.collection.Pair;
 
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toSet;
 
 public class CoreTopology
 {
-    public static CoreTopology EMPTY = new CoreTopology( null, false, Collections.emptyMap() );
+    static CoreTopology EMPTY = new CoreTopology( null, false, Collections.emptyMap() );
 
     private final ClusterId clusterId;
     private final boolean canBeBootstrapped;
-    private final Map<MemberId, CoreAddresses> coreMembers;
+    private final Map<MemberId,CoreAddresses> coreMembers;
 
-    public CoreTopology( ClusterId clusterId, boolean canBeBootstrapped, Map<MemberId, CoreAddresses> coreMembers )
+    public CoreTopology( ClusterId clusterId, boolean canBeBootstrapped, Map<MemberId,CoreAddresses> coreMembers )
     {
         this.clusterId = clusterId;
         this.canBeBootstrapped = canBeBootstrapped;
@@ -79,8 +75,8 @@ public class CoreTopology
     @Override
     public String toString()
     {
-        return format( "{clusterId=%s, bootstrappable=%s, coreMembers=%s}",
-                clusterId, canBeBootstrapped(), coreMembers );
+        return format( "{clusterId=%s, bootstrappable=%s, coreMembers=%s}", clusterId, canBeBootstrapped(),
+                coreMembers );
     }
 
     TopologyDifference difference( CoreTopology other )
@@ -88,11 +84,11 @@ public class CoreTopology
         Set<MemberId> members = coreMembers.keySet();
         Set<MemberId> otherMembers = other.coreMembers.keySet();
 
-        Set<Difference> added = otherMembers.stream().filter( m -> !members.contains(m) )
+        Set<Difference> added = otherMembers.stream().filter( m -> !members.contains( m ) )
                 .map( memberId -> asDifference( other, memberId ) ).collect( toSet() );
 
-        Set<Difference> removed = members.stream().filter( m -> !otherMembers.contains(m) )
-                .map( memberId -> asDifference(CoreTopology.this, memberId ) ).collect( toSet() );
+        Set<Difference> removed = members.stream().filter( m -> !otherMembers.contains( m ) )
+                .map( memberId -> asDifference( CoreTopology.this, memberId ) ).collect( toSet() );
 
         return new TopologyDifference( added, removed );
     }
@@ -100,6 +96,18 @@ public class CoreTopology
     private Difference asDifference( CoreTopology topology, MemberId memberId )
     {
         return new Difference( memberId, topology.find( memberId ).orElse( null ) );
+    }
+
+    public Optional<MemberId> anyCoreMemberId()
+    {
+        if ( coreMembers.keySet().size() == 0 )
+        {
+            return Optional.empty();
+        }
+        else
+        {
+            return coreMembers.keySet().stream().findAny();
+        }
     }
 
     class TopologyDifference

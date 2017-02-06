@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -64,7 +63,7 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
             DelayedRenewableTimeoutService timeoutService, long readReplicaTimeToLiveTimeout,
             long readReplicaRefreshRate, MemberId myself )
     {
-        return new SharedDiscoveryReadReplicaClient( this, config, logProvider );
+        return new SharedDiscoveryReadReplicaClient( this, config, myself, logProvider );
     }
 
     void waitForClusterFormation() throws InterruptedException
@@ -97,7 +96,7 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
         }
     }
 
-    public ReadReplicaTopology readReplicaTopology()
+    ReadReplicaTopology readReplicaTopology()
     {
         lock.lock();
         try
@@ -150,12 +149,12 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
         }
     }
 
-    void registerReadReplica( ReadReplicaAddresses readReplicaAddresses )
+    void registerReadReplica( MemberId memberId, ReadReplicaAddresses readReplicaAddresses )
     {
         lock.lock();
         try
         {
-            this.readReplicaAddresses.put( new MemberId( UUID.randomUUID() ), readReplicaAddresses );
+            this.readReplicaAddresses.put( memberId, readReplicaAddresses );
             notifyCoreClients();
         }
         finally
@@ -164,12 +163,12 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
         }
     }
 
-    void unRegisterReadReplica( ReadReplicaAddresses readReplicaAddresses )
+    void unRegisterReadReplica( MemberId memberId )
     {
         lock.lock();
         try
         {
-            this.readReplicaAddresses.remove( readReplicaAddresses );
+            ReadReplicaAddresses removed = this.readReplicaAddresses.remove( memberId );
             notifyCoreClients();
         }
         finally

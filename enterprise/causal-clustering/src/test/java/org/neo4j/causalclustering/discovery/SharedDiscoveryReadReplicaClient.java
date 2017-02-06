@@ -20,6 +20,7 @@
 package org.neo4j.causalclustering.discovery;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
+import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -32,28 +33,30 @@ class SharedDiscoveryReadReplicaClient extends LifecycleAdapter implements ReadR
 {
     private final SharedDiscoveryService sharedDiscoveryService;
     private final ReadReplicaAddresses addresses;
+    private final MemberId memberId;
     private final Log log;
 
-    SharedDiscoveryReadReplicaClient( SharedDiscoveryService sharedDiscoveryService, Config config,
+    SharedDiscoveryReadReplicaClient( SharedDiscoveryService sharedDiscoveryService, Config config, MemberId memberId,
             LogProvider logProvider )
     {
         this.sharedDiscoveryService = sharedDiscoveryService;
         this.addresses = new ReadReplicaAddresses( ClientConnectorAddresses.extractFromConfig( config ),
                 socketAddress( config.get( CausalClusteringSettings.transaction_advertised_address ).toString(), AdvertisedSocketAddress::new ) );
+        this.memberId = memberId;
         this.log = logProvider.getLog( getClass() );
     }
 
     @Override
     public void start() throws Throwable
     {
-        sharedDiscoveryService.registerReadReplica( addresses );
-        log.info( "Registered read replica at %s", addresses );
+        sharedDiscoveryService.registerReadReplica( memberId, addresses );
+        log.info( "Registered read replica member id: %s at %s", memberId, addresses );
     }
 
     @Override
     public void stop() throws Throwable
     {
-        sharedDiscoveryService.unRegisterReadReplica( addresses );
+        sharedDiscoveryService.unRegisterReadReplica( memberId);
     }
 
     @Override
