@@ -23,10 +23,6 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.neo4j.kernel.api.schema.NodeMultiPropertyDescriptor;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
-import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKeyType;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosableChannel;
@@ -50,7 +46,6 @@ public class CountsSnapshotDeserializer
         for ( int i = 0; i < size; i++ )
         {
             CountsKeyType type = value( channel.get() );
-            IndexDescriptor descriptor;
             switch ( type )
             {
             case ENTITY_NODE:

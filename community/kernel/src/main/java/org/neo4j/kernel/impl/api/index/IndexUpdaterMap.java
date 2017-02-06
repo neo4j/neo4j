@@ -35,6 +35,8 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.store.MultipleUnderlyingStorageExceptions;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 
@@ -93,7 +95,7 @@ class IndexUpdaterMap implements AutoCloseable, Iterable<IndexUpdater>
     @Override
     public void close() throws UnderlyingStorageException
     {
-        Set<Pair<IndexDescriptor, UnderlyingStorageException>> exceptions = null;
+        Set<Pair<NewIndexDescriptor, UnderlyingStorageException>> exceptions = null;
 
         for ( Map.Entry<IndexDescriptor, IndexUpdater> updaterEntry : updaterMap.entrySet() )
         {
@@ -108,7 +110,8 @@ class IndexUpdaterMap implements AutoCloseable, Iterable<IndexUpdater>
                 {
                     exceptions = new HashSet<>();
                 }
-                exceptions.add( Pair.of( updaterEntry.getKey(), new UnderlyingStorageException( e ) ) );
+                exceptions.add( Pair.of( IndexBoundary.map( updaterEntry.getKey() ),
+                        new UnderlyingStorageException( e ) ) );
             }
         }
 
