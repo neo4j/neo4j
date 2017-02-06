@@ -28,7 +28,7 @@ class FunctionCallSupportAcceptanceTest extends ProcedureCallAcceptanceTest {
   test("should return correctly typed map result (even if converting to and from scala representation internally)") {
     val value = new util.HashMap[String, Any]()
     value.put("name", "Cypher")
-    value.put("level", 9001L)
+    value.put("level", 9001)
 
     registerUserFunction(value)
 

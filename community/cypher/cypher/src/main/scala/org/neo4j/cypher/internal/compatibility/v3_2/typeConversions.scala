@@ -40,14 +40,9 @@ object typeConversions extends RuntimeTypeConverter {
     case seq: Seq[_] => seq.map(asPrivateType)
     case javaMap: java.util.Map[_, _] => Eagerly.immutableMapValues(javaMap.asScala, asPrivateType)
     case javaIterable: java.lang.Iterable[_] => javaIterable.asScala.map(asPrivateType)
-    case arr: Array[_] => arr.map(asPrivateType)
+    case arr: Array[Any] => arr.map(asPrivateType)
     case point: spatial.Point => asPrivatePoint(point)
     case geometry: spatial.Geometry => asPrivateGeometry(geometry)
-    case float: Float => float.toDouble
-    case double: Double => double
-    case number: Number => number.longValue()
-    case char: Char => String.valueOf(char)
-    case character: Character => character.toString
     case value => value
   }
 

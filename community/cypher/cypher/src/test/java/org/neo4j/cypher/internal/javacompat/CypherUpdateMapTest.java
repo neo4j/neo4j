@@ -52,7 +52,7 @@ public class CypherUpdateMapTest
         Node node1 = getNodeByIdInTx( 0 );
 
         assertThat( node1, inTxS( hasProperty( "key1" ).withValue( "value1" ) ) );
-        assertThat( node1, inTxS( hasProperty( "key2" ).withValue( 1234L ) ) );
+        assertThat( node1, inTxS( hasProperty( "key2" ).withValue( 1234 ) ) );
 
         db.execute(
                 "MATCH (n:Reference) SET n = {data} RETURN n",
@@ -65,7 +65,7 @@ public class CypherUpdateMapTest
 
         assertThat( node2, inTxS( not( hasProperty( "key1" ) ) ) );
         assertThat( node2, inTxS( not( hasProperty( "key2" ) ) ) );
-        assertThat( node2, inTxS( hasProperty( "key3" ).withValue(5678L) ) );
+        assertThat( node2, inTxS( hasProperty( "key3" ).withValue(5678) ) );
     }
 
     public <T> Matcher<? super T> inTxS( final Matcher<T> inner )
