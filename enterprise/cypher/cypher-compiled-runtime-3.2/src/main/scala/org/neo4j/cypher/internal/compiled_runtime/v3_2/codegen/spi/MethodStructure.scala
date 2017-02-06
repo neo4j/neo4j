@@ -151,7 +151,7 @@ trait MethodStructure[E] {
   def hasNextRelationship(iterVar: String): E
   def nodeGetPropertyById(nodeIdVar: String, propId: Int, propValueVar: String): Unit
   def nodeGetPropertyForVar(nodeIdVar: String, propIdVar: String, propValueVar: String): Unit
-  def nodeIdSeek(nodeIdVar: String, expression: E)(block: MethodStructure[E] => Unit): Unit
+  def nodeIdSeek(nodeIdVar: String, expression: E, codeGenType: CodeGenType)(block: MethodStructure[E] => Unit): Unit
   def relationshipGetPropertyById(nodeIdVar: String, propId: Int, propValueVar: String): Unit
   def relationshipGetPropertyForVar(nodeIdVar: String, propIdVar: String, propValueVar: String): Unit
   def lookupPropertyKey(propName: String, propVar: String)

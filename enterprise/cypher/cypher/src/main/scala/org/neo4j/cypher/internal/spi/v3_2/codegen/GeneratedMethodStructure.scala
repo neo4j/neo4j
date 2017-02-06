@@ -1300,8 +1300,15 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     }
   }
 
-  override def nodeIdSeek(nodeIdVar: String, expression: Expression)(block: MethodStructure[Expression] => Unit) = {
-    generator.assign(typeRef[Long], nodeIdVar, invoke(Methods.mathCastToLong, expression))
+  override def nodeIdSeek(nodeIdVar: String, expression: Expression, codeGenType: CodeGenType)(block: MethodStructure[Expression] => Unit) = {
+    codeGenType match {
+      case CodeGenType(symbols.CTInteger, IntType) =>
+        generator.assign(typeRef[Long], nodeIdVar, expression)
+      case CodeGenType(symbols.CTInteger, ReferenceType) =>
+        generator.assign(typeRef[Long], nodeIdVar, invoke(Methods.mathCastToLong, expression))
+      case _ =>
+        throw new IllegalArgumentException(s"CodeGenType $codeGenType can not be converted to long")
+    }
     using(generator.ifStatement(
       gt(generator.load(nodeIdVar), constant(-1L)),
       invoke(readOperations, nodeExists, generator.load(nodeIdVar))

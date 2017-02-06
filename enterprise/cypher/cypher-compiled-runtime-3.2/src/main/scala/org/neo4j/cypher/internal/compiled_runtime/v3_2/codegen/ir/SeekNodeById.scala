@@ -28,7 +28,7 @@ case class SeekNodeById(opName: String, nodeVar: Variable, expression: CodeGenEx
   override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
     generator.trace(opName) { body =>
       body.incrementDbHits()
-      body.nodeIdSeek(nodeVar.name, expression.generateExpression(body)) { seekBody =>
+      body.nodeIdSeek(nodeVar.name, expression.generateExpression(body), expression.codeGenType) { seekBody =>
         seekBody.incrementRows()
         action.body(seekBody)
       }
