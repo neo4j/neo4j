@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.discovery.procedures;
+package org.neo4j.causalclustering.load_balancing;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -45,13 +45,13 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.runners.Parameterized.Parameters;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.causalclustering.discovery.procedures.GetServersProcedureTest.coreAddresses;
+import static org.neo4j.causalclustering.discovery.TopologyHelper.adressesForCore;
 import static org.neo4j.causalclustering.identity.RaftTestMember.member;
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.logging.NullLogProvider.getInstance;
 
 @RunWith( Parameterized.class )
-public class GetServersProcedureRoutingTest
+public class GetServersProcedureV1RoutingTest
 {
     @Parameters
     public static Collection<Object> data()
@@ -75,16 +75,16 @@ public class GetServersProcedureRoutingTest
         when( leaderLocator.getLeader() ).thenReturn( member( 0 ) );
 
         Map<MemberId,CoreAddresses> coreMembers = new HashMap<>();
-        coreMembers.put( member( 0 ), coreAddresses( 0 ) );
-        coreMembers.put( member( 1 ), coreAddresses( 1 ) );
-        coreMembers.put( member( 2 ), coreAddresses( 2 ) );
+        coreMembers.put( member( 0 ), adressesForCore( 0 ) );
+        coreMembers.put( member( 1 ), adressesForCore( 1 ) );
+        coreMembers.put( member( 2 ), adressesForCore( 2 ) );
 
         final CoreTopology clusterTopology = new CoreTopology( clusterId, false, coreMembers );
         when( coreTopologyService.coreServers() ).thenReturn( clusterTopology );
         when( coreTopologyService.readReplicas() ).thenReturn( new ReadReplicaTopology( emptySet() ) );
 
-        final GetServersProcedure proc =
-                new GetServersProcedure( coreTopologyService, leaderLocator, config, getInstance() );
+        final GetServersProcedureV1 proc =
+                new GetServersProcedureV1( coreTopologyService, leaderLocator, config, getInstance() );
 
         // when
         Object[] endpoints = getEndpoints( proc );
@@ -106,7 +106,7 @@ public class GetServersProcedureRoutingTest
         assertFalse( Arrays.deepEquals( endpoints, endpointsInDifferentOrder ) );
     }
 
-    private Object[] getEndpoints( GetServersProcedure proc )
+    private Object[] getEndpoints( GetServersProcedureV1 proc )
             throws org.neo4j.kernel.api.exceptions.ProcedureException
     {
         List<Object[]> results = asList( proc.apply( null, new Object[0] ) );

@@ -41,8 +41,9 @@ import org.neo4j.causalclustering.discovery.CoreTopologyService;
 import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
 import org.neo4j.causalclustering.discovery.procedures.ClusterOverviewProcedure;
 import org.neo4j.causalclustering.discovery.procedures.CoreRoleProcedure;
-import org.neo4j.causalclustering.discovery.procedures.GetServersProcedure;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.causalclustering.load_balancing.GetServersProcedureV1;
+import org.neo4j.causalclustering.load_balancing.GetServersProcedureV2;
 import org.neo4j.causalclustering.logging.BetterMessageLogger;
 import org.neo4j.causalclustering.logging.MessageLogger;
 import org.neo4j.causalclustering.logging.NullMessageLogger;
@@ -111,7 +112,9 @@ public class EnterpriseCoreEditionModule extends EditionModule
     {
         procedures.registerProcedure( EnterpriseBuiltInDbmsProcedures.class, true );
         procedures.register(
-                new GetServersProcedure( topologyService, consensusModule.raftMachine(), config, logProvider ) );
+                new GetServersProcedureV1( topologyService, consensusModule.raftMachine(), config, logProvider ) );
+        procedures.register(
+                new GetServersProcedureV2( topologyService, consensusModule.raftMachine(), config, logProvider ) );
         procedures.register(
                 new ClusterOverviewProcedure( topologyService, consensusModule.raftMachine(), logProvider ) );
         procedures.register( new CoreRoleProcedure( consensusModule.raftMachine() ) );

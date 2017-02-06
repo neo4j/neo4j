@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.causalclustering.discovery.Cluster;
-import org.neo4j.causalclustering.discovery.procedures.GetServersProcedure;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransaction.Type;
@@ -48,6 +47,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.cluster_allow_reads_on_followers;
+import static org.neo4j.causalclustering.load_balancing.ProcedureNames.GET_SERVERS_V1;
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureName;
 
@@ -129,7 +129,7 @@ public class ClusterDiscoveryIT
         {
             // when
             List<Object[]> currentMembers = asList( statement.procedureCallOperations()
-                    .procedureCallRead( procedureName( "dbms", "cluster", "routing", GetServersProcedure.NAME ),
+                    .procedureCallRead( procedureName( GET_SERVERS_V1.fullyQualifiedProcedureName() ),
                             new Object[0] ) );
 
             return (List<Map<String, Object>>) currentMembers.get( 0 )[1];

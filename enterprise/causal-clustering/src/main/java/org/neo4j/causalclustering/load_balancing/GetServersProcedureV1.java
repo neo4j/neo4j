@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.discovery.procedures;
+package org.neo4j.causalclustering.load_balancing;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -40,7 +40,7 @@ import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.api.proc.Neo4jTypes;
-import org.neo4j.kernel.api.proc.QualifiedName;
+import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -50,35 +50,38 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Stream.concat;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.cluster_allow_reads_on_followers;
+import static org.neo4j.causalclustering.load_balancing.Role.READ;
+import static org.neo4j.causalclustering.load_balancing.Role.ROUTE;
+import static org.neo4j.causalclustering.load_balancing.Role.WRITE;
+import static org.neo4j.causalclustering.load_balancing.GetServersParameters.SERVERS;
+import static org.neo4j.causalclustering.load_balancing.GetServersParameters.TTL;
+import static org.neo4j.causalclustering.load_balancing.ProcedureNames.GET_SERVERS_V1;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
 
-/*
-C: RUN "CALL dbms.cluster.routing.getServers" {}
-   PULL_ALL
-S: SUCCESS {"fields": ["ttl", "servers"]}
-   RECORD [9223372036854775807, [
-{"role": "WRITE", "addresses": ["127.0.0.1:9001"]},
-{"role": "READ", "addresses": ["127.0.0.1:9002", "127.0.0.1:9003"]},
-{"role": "ROUTE", "addresses": ["127.0.0.1:9001", "127.0.0.1:9002", "127.0.0.1:9003"]}
-]]
+/**
+ * Returns endpoints and their capabilities.
+ *
+ * TODO: Detail signature (input and output).
  */
-public class GetServersProcedure extends CallableProcedure.BasicProcedure
+public class GetServersProcedureV1 implements CallableProcedure
 {
-    public static final String NAME = "getServers";
+    private final String DESCRIPTION = "Returns cluster endpoints and their capabilities.";
+
+    private final ProcedureSignature procedureSignature =
+            procedureSignature( GET_SERVERS_V1.fullyQualifiedProcedureName() )
+                    .out( TTL.parameterName(), Neo4jTypes.NTInteger )
+                    .out( SERVERS.parameterName(), Neo4jTypes.NTMap )
+                    .description( DESCRIPTION )
+                    .build();
+
     private final CoreTopologyService discoveryService;
     private final LeaderLocator leaderLocator;
     private final Config config;
     private final Log log;
 
-    public GetServersProcedure( CoreTopologyService discoveryService, LeaderLocator leaderLocator, Config config,
-            LogProvider logProvider )
+    public GetServersProcedureV1( CoreTopologyService discoveryService, LeaderLocator leaderLocator,
+            Config config, LogProvider logProvider )
     {
-        super( procedureSignature( new QualifiedName( new String[]{"dbms", "cluster", "routing"}, NAME ) )
-                .out( "ttl", Neo4jTypes.NTInteger ).out( "servers", Neo4jTypes.NTMap )
-                .description( "Provides recommendations about servers that support reads, writes, and can act as " +
-                        "routers." )
-                .build() );
-
         this.discoveryService = discoveryService;
         this.leaderLocator = leaderLocator;
         this.config = config;
@@ -86,11 +89,17 @@ public class GetServersProcedure extends CallableProcedure.BasicProcedure
     }
 
     @Override
+    public ProcedureSignature signature()
+    {
+        return procedureSignature;
+    }
+
+    @Override
     public RawIterator<Object[],ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
     {
-        List<ReadWriteRouteEndPoint> writeEndpoints = writeEndpoints();
-        List<ReadWriteRouteEndPoint> readEndpoints = readEndpoints();
-        List<ReadWriteRouteEndPoint> routeEndpoints = routeEndpoints();
+        List<EndPoint> routeEndpoints = routeEndpoints();
+        List<EndPoint> writeEndpoints = writeEndpoints();
+        List<EndPoint> readEndpoints = readEndpoints();
         return wrapUpEndpoints( routeEndpoints, writeEndpoints, readEndpoints );
     }
 
@@ -111,30 +120,30 @@ public class GetServersProcedure extends CallableProcedure.BasicProcedure
                 .map( server -> server.getClientConnectorAddresses().getBoltAddress() );
     }
 
-    private List<ReadWriteRouteEndPoint> routeEndpoints()
+    private List<EndPoint> routeEndpoints()
     {
         Stream<AdvertisedSocketAddress> routers =
                 discoveryService.coreServers().addresses().stream()
                         .map( server -> server.getClientConnectorAddresses().getBoltAddress() );
-        List<ReadWriteRouteEndPoint> routeEndpoints = routers.map( ReadWriteRouteEndPoint::route ).collect( toList() );
+        List<EndPoint> routeEndpoints = routers.map( EndPoint::route ).collect( toList() );
         Collections.shuffle( routeEndpoints );
         return routeEndpoints;
     }
 
-    private List<ReadWriteRouteEndPoint> writeEndpoints()
+    private List<EndPoint> writeEndpoints()
     {
         return leaderAdvertisedSocketAddress()
-                .map( ReadWriteRouteEndPoint::write ).map( Collections::singletonList ).orElse( emptyList() );
+                .map( EndPoint::write ).map( Collections::singletonList ).orElse( emptyList() );
     }
 
-    private List<ReadWriteRouteEndPoint> readEndpoints()
+    private List<EndPoint> readEndpoints()
     {
         List<AdvertisedSocketAddress> readReplicas = discoveryService.readReplicas().members().stream()
                 .map( server -> server.getClientConnectorAddresses().getBoltAddress() ).collect( toList() );
         boolean addFollowers = readReplicas.isEmpty() || config.get( cluster_allow_reads_on_followers );
         Stream<AdvertisedSocketAddress> readCore = addFollowers ? coreReadEndPoints() : Stream.empty();
-        List<ReadWriteRouteEndPoint> readEndPoints =
-                concat( readReplicas.stream(), readCore ).map( ReadWriteRouteEndPoint::read ).collect( toList() );
+        List<EndPoint> readEndPoints =
+                concat( readReplicas.stream(), readCore ).map( EndPoint::read ).collect( toList() );
         Collections.shuffle( readEndPoints );
         return readEndPoints;
     }
@@ -158,12 +167,12 @@ public class GetServersProcedure extends CallableProcedure.BasicProcedure
         return allAddresses;
     }
 
-    private RawIterator<Object[],ProcedureException> wrapUpEndpoints( List<ReadWriteRouteEndPoint> routeEndpoints,
-            List<ReadWriteRouteEndPoint> writeEndpoints, List<ReadWriteRouteEndPoint> readEndpoints )
+    private RawIterator<Object[],ProcedureException> wrapUpEndpoints( List<EndPoint> routeEndpoints,
+            List<EndPoint> writeEndpoints, List<EndPoint> readEndpoints )
     {
-        Object[] routers = routeEndpoints.stream().map( ReadWriteRouteEndPoint::address ).toArray();
-        Object[] readers = readEndpoints.stream().map( ReadWriteRouteEndPoint::address ).toArray();
-        Object[] writers = writeEndpoints.stream().map( ReadWriteRouteEndPoint::address ).toArray();
+        Object[] routers = routeEndpoints.stream().map( EndPoint::address ).toArray();
+        Object[] readers = readEndpoints.stream().map( EndPoint::address ).toArray();
+        Object[] writers = writeEndpoints.stream().map( EndPoint::address ).toArray();
 
         List<Map<String,Object>> servers = new ArrayList<>();
 
@@ -171,7 +180,7 @@ public class GetServersProcedure extends CallableProcedure.BasicProcedure
         {
             Map<String,Object> map = new TreeMap<>();
 
-            map.put( "role",  Type.WRITE.name());
+            map.put( "role", WRITE.name() );
             map.put( "addresses", writers );
 
             servers.add( map );
@@ -181,75 +190,24 @@ public class GetServersProcedure extends CallableProcedure.BasicProcedure
         {
             Map<String,Object> map = new TreeMap<>();
 
-            map.put( "role",  Type.READ.name());
-            map.put( "addresses", readers);
+            map.put( "role", READ.name() );
+            map.put( "addresses", readers );
 
             servers.add( map );
-
         }
 
         if ( routers.length > 0 )
         {
             Map<String,Object> map = new TreeMap<>();
 
-            map.put( "role",  Type.ROUTE.name());
-            map.put( "addresses", routers);
+            map.put( "role", ROUTE.name() );
+            map.put( "addresses", routers );
 
             servers.add( map );
         }
 
         long ttl = MILLISECONDS.toSeconds( config.get( CausalClusteringSettings.cluster_routing_ttl ) );
-        Object[] row = new Object[] {ttl, servers };
-        return RawIterator.<Object[], ProcedureException>of(row);
-    }
-
-    public enum Type
-    {
-        READ,
-        WRITE,
-        ROUTE
-    }
-
-    private static class ReadWriteRouteEndPoint
-    {
-        private final AdvertisedSocketAddress address;
-        private final Type type;
-
-        public String address()
-        {
-            return address.toString();
-        }
-
-        public String type()
-        {
-            return type.toString().toUpperCase();
-        }
-
-        ReadWriteRouteEndPoint( AdvertisedSocketAddress address, Type type )
-        {
-            this.address = address;
-            this.type = type;
-        }
-
-        public static ReadWriteRouteEndPoint write( AdvertisedSocketAddress address )
-        {
-            return new ReadWriteRouteEndPoint( address, Type.WRITE );
-        }
-
-        public static ReadWriteRouteEndPoint read( AdvertisedSocketAddress address )
-        {
-            return new ReadWriteRouteEndPoint( address, Type.READ );
-        }
-
-        static ReadWriteRouteEndPoint route( AdvertisedSocketAddress address )
-        {
-            return new ReadWriteRouteEndPoint( address, Type.ROUTE );
-        }
-
-        @Override
-        public String toString()
-        {
-            return "ReadWriteRouteEndPoint{" + "address=" + address + ", type=" + type + '}';
-        }
+        Object[] row = new Object[]{ttl, servers};
+        return RawIterator.<Object[],ProcedureException>of( row );
     }
 }

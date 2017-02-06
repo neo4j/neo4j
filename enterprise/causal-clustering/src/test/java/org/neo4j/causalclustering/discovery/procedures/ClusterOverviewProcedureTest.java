@@ -41,8 +41,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import static org.neo4j.causalclustering.discovery.procedures.GetServersProcedureTest.*;
-import static org.neo4j.causalclustering.discovery.procedures.GetServersProcedureTest.addresses;
+import static org.neo4j.causalclustering.discovery.TopologyHelper.addressesForReadReplicas;
+import static org.neo4j.causalclustering.discovery.TopologyHelper.adressesForCore;
 import static org.neo4j.helpers.collection.Iterators.asList;
 
 public class ClusterOverviewProcedureTest
@@ -58,11 +58,11 @@ public class ClusterOverviewProcedureTest
         MemberId follower1 = new MemberId( UUID.randomUUID() );
         MemberId follower2 = new MemberId( UUID.randomUUID() );
 
-        coreMembers.put( theLeader, coreAddresses( 0 ) );
-        coreMembers.put( follower1, coreAddresses( 1 ) );
-        coreMembers.put( follower2, coreAddresses( 2 ) );
+        coreMembers.put( theLeader, adressesForCore( 0 ) );
+        coreMembers.put( follower1, adressesForCore( 1 ) );
+        coreMembers.put( follower2, adressesForCore( 2 ) );
 
-        Set<ReadReplicaAddresses> readReplicas = addresses( 4, 5 );
+        Set<ReadReplicaAddresses> readReplicas = addressesForReadReplicas( 4, 5 );
 
         when( topologyService.coreServers() ).thenReturn( new CoreTopology( null, false, coreMembers ) );
         when( topologyService.readReplicas() ).thenReturn( new ReadReplicaTopology( readReplicas ) );
