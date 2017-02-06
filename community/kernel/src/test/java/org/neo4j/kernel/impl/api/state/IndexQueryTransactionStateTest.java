@@ -90,7 +90,8 @@ public class IndexQueryTransactionStateTest
 
         int labelId1 = 10, labelId2 = 12;
         store = mock( StoreReadLayer.class );
-        when( store.indexGetState( indexDescriptor ) ).thenReturn( InternalIndexState.ONLINE );
+        when( store.indexGetState( SchemaBoundary.map( indexDescriptor.descriptor() ) )
+            ).thenReturn( InternalIndexState.ONLINE );
         when( store.indexesGetForLabel( labelId1 ) ).then( answerAsIteratorFrom( Collections
                 .<IndexDescriptor>emptyList() ) );
         when( store.indexesGetForLabel( labelId2 ) ).then( answerAsIteratorFrom( Collections

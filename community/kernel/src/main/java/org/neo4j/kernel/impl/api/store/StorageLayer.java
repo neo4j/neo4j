@@ -95,9 +95,6 @@ import static org.neo4j.register.Registers.newDoubleLongRegister;
  */
 public class StorageLayer implements StoreReadLayer
 {
-    private static final Function<? super IndexRule,IndexDescriptor> TO_INDEX_RULE =
-            rule -> IndexBoundary.map( rule.getIndexDescriptor() );
-
     // These token holders should perhaps move to the cache layer.. not really any reason to have them here?
     private final PropertyKeyTokenHolder propertyKeyTokenHolder;
     private final LabelTokenHolder labelTokenHolder;
@@ -240,35 +237,35 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
-    public InternalIndexState indexGetState( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public InternalIndexState indexGetState( LabelSchemaDescriptor descriptor ) throws IndexNotFoundKernelException
     {
-        return indexService.getIndexProxy( descriptor ).getState();
+        return indexService.getIndexProxy( IndexBoundary.map( descriptor ) ).getState();
     }
 
     @Override
-    public PopulationProgress indexGetPopulationProgress( IndexDescriptor descriptor )
+    public PopulationProgress indexGetPopulationProgress( LabelSchemaDescriptor descriptor )
             throws IndexNotFoundKernelException
     {
-        return indexService.getIndexProxy( descriptor ).getIndexPopulationProgress();
+        return indexService.getIndexProxy( IndexBoundary.map( descriptor ) ).getIndexPopulationProgress();
     }
 
     @Override
-    public long indexSize( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public long indexSize( LabelSchemaDescriptor descriptor ) throws IndexNotFoundKernelException
     {
-        Register.DoubleLongRegister result = indexService.indexUpdatesAndSize( descriptor );
+        Register.DoubleLongRegister result = indexService.indexUpdatesAndSize( IndexBoundary.map( descriptor ) );
         return result.readSecond();
     }
 
     @Override
-    public double indexUniqueValuesPercentage( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public double indexUniqueValuesPercentage( LabelSchemaDescriptor descriptor ) throws IndexNotFoundKernelException
     {
-        return indexService.indexUniqueValuesPercentage( descriptor );
+        return indexService.indexUniqueValuesPercentage( IndexBoundary.map( descriptor ) );
     }
 
     @Override
-    public String indexGetFailure( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public String indexGetFailure( LabelSchemaDescriptor descriptor ) throws IndexNotFoundKernelException
     {
-        return indexService.getIndexProxy( descriptor ).getPopulationFailure().asString();
+        return indexService.getIndexProxy( IndexBoundary.map( descriptor ) ).getPopulationFailure().asString();
     }
 
     @Override
@@ -485,22 +482,22 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
-    public DoubleLongRegister indexUpdatesAndSize( IndexDescriptor descriptor, DoubleLongRegister target )
+    public DoubleLongRegister indexUpdatesAndSize( LabelSchemaDescriptor descriptor, DoubleLongRegister target )
             throws IndexNotFoundKernelException
     {
         return counts.indexUpdatesAndSize( tryGetIndexId( descriptor ), target );
     }
 
     @Override
-    public DoubleLongRegister indexSample( IndexDescriptor descriptor, DoubleLongRegister target )
+    public DoubleLongRegister indexSample( LabelSchemaDescriptor descriptor, DoubleLongRegister target )
             throws IndexNotFoundKernelException
     {
         return counts.indexSample( tryGetIndexId( descriptor ), target );
     }
 
-    private long tryGetIndexId( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    private long tryGetIndexId( LabelSchemaDescriptor descriptor) throws IndexNotFoundKernelException
     {
-        return indexService.getIndexId( descriptor );
+        return indexService.getIndexId( IndexBoundary.map( descriptor ) );
     }
 
     @Override

@@ -566,7 +566,7 @@ public class StateHandlingStatementOperations implements
             }
         }
 
-        return storeLayer.indexGetState( descriptor );
+        return storeLayer.indexGetState( SchemaBoundary.map( descriptor.descriptor() ) );
     }
 
     @Override
@@ -588,7 +588,7 @@ public class StateHandlingStatementOperations implements
             }
         }
 
-        return storeLayer.indexGetPopulationProgress( descriptor );
+        return storeLayer.indexGetPopulationProgress( SchemaBoundary.map( descriptor.descriptor() ) );
     }
 
     private boolean checkIndexState( IndexDescriptor indexRule, ReadableDiffSets<IndexDescriptor> diffSet )
@@ -1140,28 +1140,28 @@ public class StateHandlingStatementOperations implements
     public long indexSize( KernelStatement statement, IndexDescriptor descriptor )
             throws IndexNotFoundKernelException
     {
-        return storeLayer.indexSize( descriptor );
+        return storeLayer.indexSize( SchemaBoundary.map( descriptor.descriptor() ) );
     }
 
     @Override
     public double indexUniqueValuesPercentage( KernelStatement statement, IndexDescriptor descriptor )
             throws IndexNotFoundKernelException
     {
-        return storeLayer.indexUniqueValuesPercentage( descriptor );
+        return storeLayer.indexUniqueValuesPercentage( SchemaBoundary.map( descriptor.descriptor() ) );
     }
 
     @Override
     public DoubleLongRegister indexUpdatesAndSize( KernelStatement statement, IndexDescriptor index,
             DoubleLongRegister target ) throws IndexNotFoundKernelException
     {
-        return storeLayer.indexUpdatesAndSize( index, target );
+        return storeLayer.indexUpdatesAndSize( SchemaBoundary.map( index.descriptor() ), target );
     }
 
     @Override
     public DoubleLongRegister indexSample( KernelStatement statement, IndexDescriptor index, DoubleLongRegister target )
             throws IndexNotFoundKernelException
     {
-        return storeLayer.indexSample( index, target );
+        return storeLayer.indexSample( SchemaBoundary.map( index.descriptor() ), target );
     }
 
     //
@@ -1186,7 +1186,7 @@ public class StateHandlingStatementOperations implements
     public String indexGetFailure( Statement state, IndexDescriptor descriptor )
             throws IndexNotFoundKernelException
     {
-        return storeLayer.indexGetFailure( descriptor );
+        return storeLayer.indexGetFailure( SchemaBoundary.map( descriptor.descriptor() ) );
     }
 
     @Override
