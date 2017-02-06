@@ -36,6 +36,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.impl.DelegatingPageCursor;
 
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -71,6 +72,8 @@ public class SeekCursorTest
 
     private final MutableLong insertKey = layout.newKey();
     private final MutableLong insertValue = layout.newValue();
+
+    private final MutableLong readKey = layout.newKey();
 
     private final MutableLong from = layout.newKey();
     private final MutableLong to = layout.newKey();
@@ -1216,10 +1219,187 @@ public class SeekCursorTest
     }
 
     /* REBALANCE (when rebalance is implemented) */
-    // todo mustFindRangeWhenCompletelyRebalancedToTheRightAndSeekPointOutsideRange
-    // todo mustFindRangeWhenCompletelyRebalancedToTheRightAndSeekPointInRange
-    // todo mustFindEntireRangeWhenPartlyRebalancedToTheRightAndSeekPointToTheLeft
-    // todo mustFindEntireRangeWhenPartlyRebalancedToTheRightAndSeekPointToTheRight
+
+    @Test
+    public void mustFindRangeWhenCompletelyRebalancedToTheRightBeforeCallToNext() throws Exception
+    {
+        // given
+        long key = 10;
+        while ( numberOfRootSplits == 0 )
+        {
+            insert( key );
+            key++;
+        }
+
+        // ... enough keys in left child to be rebalanced to the right
+        for ( long smallKey = 0; smallKey < 2; smallKey++ )
+        {
+            insert( smallKey );
+        }
+
+        PageAwareByteArrayCursor readCursor = cursor.duplicate( rootId );
+        readCursor.next();
+        long leftChild = childAt( readCursor, 0, stableGen, unstableGen );
+        long rightChild = childAt( readCursor, 1, stableGen, unstableGen );
+        readCursor.next( pointer( leftChild ) );
+        int keyCount = node.keyCount( readCursor );
+        node.keyAt( readCursor, from, keyCount - 1 );
+        long fromInclusive = from.longValue();
+        long toExclusive = fromInclusive + 1;
+
+        // when
+        PageAwareByteArrayCursor seekCursor = cursor.duplicate( rootId );
+        seekCursor.next();
+        try ( SeekCursor<MutableLong,MutableLong> seeker = seekCursor( fromInclusive, toExclusive, seekCursor ) )
+        {
+            // ... rebalance happens before first call to next
+            triggerRebalance( rightChild );
+
+            // ... then seeker should still find range
+            assertTrue( seeker.next() );
+            assertThat( seeker.get().key().longValue(), is( fromInclusive ) );
+            assertFalse( seeker.next() );
+        }
+    }
+
+    @Test
+    public void mustFindRangeWhenCompletelyRebalancedToTheRightBeforeCallToNextBackwards() throws Exception
+    {
+        // given
+        long key = 10;
+        while ( numberOfRootSplits == 0 )
+        {
+            insert( key );
+            key++;
+        }
+
+        // ... enough keys in left child to be rebalanced to the right
+        for ( long smallKey = 0; smallKey < 2; smallKey++ )
+        {
+            insert( smallKey );
+        }
+
+        PageAwareByteArrayCursor readCursor = cursor.duplicate( rootId );
+        readCursor.next();
+        long leftChild = childAt( readCursor, 0, stableGen, unstableGen );
+        long rightChild = childAt( readCursor, 1, stableGen, unstableGen );
+        readCursor.next( pointer( leftChild ) );
+        int keyCount = node.keyCount( readCursor );
+        node.keyAt( readCursor, from, keyCount - 1 );
+        long fromInclusive = from.longValue();
+        long toExclusive = fromInclusive - 1;
+
+        // when
+        TestPageCursor seekCursor = new TestPageCursor( cursor.duplicate( rootId ) );
+        seekCursor.next();
+        try ( SeekCursor<MutableLong,MutableLong> seeker = seekCursor( fromInclusive, toExclusive, seekCursor ) )
+        {
+            // ... rebalance happens before first call to next
+            triggerRebalance( rightChild );
+            seekCursor.changed(); // ByteArrayPageCursor is not aware of should retry, so fake it here
+
+            // ... then seeker should still find range
+            assertTrue( seeker.next() );
+            assertThat( seeker.get().key().longValue(), is( fromInclusive ) );
+            assertFalse( seeker.next() );
+        }
+    }
+
+    @Test
+    public void mustFindRangeWhenCompletelyRebalancedToTheRightAfterCallToNext() throws Exception
+    {
+        // given
+        long key = 10;
+        while ( numberOfRootSplits == 0 )
+        {
+            insert( key );
+            key++;
+        }
+
+        // ... enough keys in left child to be rebalanced to the right
+        for ( long smallKey = 0; smallKey < 2; smallKey++ )
+        {
+            insert( smallKey );
+        }
+
+        PageAwareByteArrayCursor readCursor = cursor.duplicate( rootId );
+        readCursor.next();
+        long leftChild = childAt( readCursor, 0, stableGen, unstableGen );
+        long rightChild = childAt( readCursor, 1, stableGen, unstableGen );
+        readCursor.next( pointer( leftChild ) );
+        int keyCount = node.keyCount( readCursor );
+        node.keyAt( readCursor, from, keyCount - 2 );
+        node.keyAt( readCursor, to, keyCount - 1 );
+        long fromInclusive = from.longValue();
+        long toExclusive = to.longValue() + 1;
+
+        // when
+        TestPageCursor seekCursor = new TestPageCursor( cursor.duplicate( rootId ) );
+        seekCursor.next();
+        try ( SeekCursor<MutableLong,MutableLong> seeker = seekCursor( fromInclusive, toExclusive, seekCursor ) )
+        {
+            // ... after call to next
+            assertTrue( seeker.next() );
+            assertThat( seeker.get().key().longValue(), is( fromInclusive ) );
+
+            // ... rebalance happens
+            triggerRebalance( rightChild );
+            seekCursor.changed(); // ByteArrayPageCursor is not aware of should retry, so fake it here
+            assertTrue( seeker.next() );
+
+            // ... should still find rest of range
+            assertThat( seeker.get().key().longValue(), is( fromInclusive + 1 ) );
+            assertFalse( seeker.next() );
+        }
+    }
+
+    @Test
+    public void mustFindRangeWhenCompletelyRebalancedToTheRightAfterCallToNextBackwards() throws Exception
+    {
+        // given
+        long key = 10;
+        while ( numberOfRootSplits == 0 )
+        {
+            insert( key );
+            key++;
+        }
+
+        // ... enough keys in left child to be rebalanced to the right
+        for ( long smallKey = 0; smallKey < 2; smallKey++ )
+        {
+            insert( smallKey );
+        }
+
+        PageAwareByteArrayCursor readCursor = cursor.duplicate( rootId );
+        readCursor.next();
+        long leftChild = childAt( readCursor, 0, stableGen, unstableGen );
+        long rightChild = childAt( readCursor, 1, stableGen, unstableGen );
+        readCursor.next( pointer( leftChild ) );
+        int keyCount = node.keyCount( readCursor );
+        node.keyAt( readCursor, from, keyCount - 1 );
+        node.keyAt( readCursor, to, keyCount - 2 );
+        long fromInclusive = from.longValue();
+        long toExclusive = to.longValue() - 1;
+
+        // when
+        TestPageCursor seekCursor = new TestPageCursor( cursor.duplicate( rootId ) );
+        seekCursor.next();
+        try ( SeekCursor<MutableLong,MutableLong> seeker = seekCursor( fromInclusive, toExclusive, seekCursor ) )
+        {
+            // ... after call to next
+            assertTrue( seeker.next() );
+            assertThat( seeker.get().key().longValue(), is( fromInclusive ) );
+
+            // ... rebalance happens
+            triggerRebalance( rightChild );
+            seekCursor.changed(); // ByteArrayPageCursor is not aware of should retry, so fake it here
+
+            // ... should still find rest of range
+            assertTrue( seeker.next() );
+            assertThat( seeker.get().key().longValue(), is( fromInclusive - 1 ) );
+            assertFalse( seeker.next() );
+        }
+    }
 
     /* MERGE (when merge is implemented) */
     // todo mustFindRangeWhenRemoveInLeftSiblingCausesMerge
@@ -1241,11 +1421,12 @@ public class SeekCursorTest
             i++;
         }
 
+        long currentNode = cursor.getCurrentPageId();
         try ( SeekCursor<MutableLong,MutableLong> seek = seekCursor( 0L, i, cursor ) )
         {
             // when new generation of right sibling
             checkpoint();
-            PageAwareByteArrayCursor duplicate = cursor.duplicate( rootId );
+            PageAwareByteArrayCursor duplicate = cursor.duplicate( currentNode );
             duplicate.next();
             insert( i, i * 10, duplicate );
 
@@ -1269,10 +1450,11 @@ public class SeekCursorTest
             i++;
         }
 
+        long currentNode = cursor.getCurrentPageId();
         try ( SeekCursor<MutableLong,MutableLong> seek = seekCursor( 0L, i, cursor ) )
         {
             // when right sibling pointer is corrupt
-            PageAwareByteArrayCursor duplicate = cursor.duplicate( rootId );
+            PageAwareByteArrayCursor duplicate = cursor.duplicate( currentNode );
             duplicate.next();
             long leftChild = childAt( duplicate, 0, stableGen, unstableGen );
             duplicate.next( leftChild );
@@ -1311,11 +1493,12 @@ public class SeekCursorTest
             expected.add( i );
         }
 
+        long currentNode = cursor.getCurrentPageId();
         try ( SeekCursor<MutableLong,MutableLong> seek = seekCursor( 0L, maxKeyCount, cursor ) )
         {
             // when
             checkpoint();
-            PageAwareByteArrayCursor duplicate = cursor.duplicate( cursor.getCurrentPageId() );
+            PageAwareByteArrayCursor duplicate = cursor.duplicate( currentNode );
             duplicate.next();
             insert( i, i * 10, duplicate ); // Create new gen of leaf
             expected.add( i );
@@ -1341,11 +1524,12 @@ public class SeekCursorTest
             insert( i, i * 10 );
         }
 
+        long currentNode = cursor.getCurrentPageId();
         try ( SeekCursor<MutableLong,MutableLong> seek = seekCursor( 0L, maxKeyCount, cursor ) )
         {
             // when
             checkpoint();
-            PageAwareByteArrayCursor duplicate = cursor.duplicate( cursor.getCurrentPageId() );
+            PageAwareByteArrayCursor duplicate = cursor.duplicate( currentNode );
             duplicate.next();
             insert( i, i * 10, duplicate ); // Create new gen of leaf
 
@@ -1744,6 +1928,21 @@ public class SeekCursorTest
         {
             assertThat( e.getMessage(), containsString( "keyCount:" + keyCount ) );
         }
+    }
+
+    private void triggerRebalance( long nodeId ) throws IOException
+    {
+        PageCursor readCursor = cursor.duplicate( nodeId );
+        readCursor.next();
+        node.keyAt( readCursor, readKey, 0 );
+        long leftmostBeforeRebalance = readKey.longValue();
+        long toRemove = leftmostBeforeRebalance;
+        do
+        {
+            remove( toRemove );
+            toRemove++;
+            node.keyAt( readCursor, readKey, 0 );
+        } while ( readKey.longValue() >= leftmostBeforeRebalance );
     }
 
     private void checkpoint()
