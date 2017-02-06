@@ -35,6 +35,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.test.rule.RandomRule;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -42,7 +43,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
-
 import static org.neo4j.index.internal.gbptree.ConsistencyChecker.assertNoCrashOrBrokenPointerInGSPP;
 import static org.neo4j.index.internal.gbptree.GenSafePointerPair.pointer;
 import static org.neo4j.index.internal.gbptree.ValueMergers.overwrite;
@@ -505,6 +505,111 @@ public class InternalTreeLogicTest
     }
 
     /* REBALANCE (when rebalance is implemented) */
+
+    @Test
+    public void mustNotRebalanceFromRightToLeft() throws Exception
+    {
+        // given
+        initialize();
+        long key = 0;
+        while ( numberOfRootSplits == 0 )
+        {
+            insert( key, key );
+            key++;
+        }
+
+        // ... enough keys in right child to share with left child if rebalance is needed
+        insert( key, key );
+        key++;
+
+        // ... and the prim key diving key range for left child and right child
+        goTo( readCursor, rootId );
+        long primKey = keyAt( 0 );
+
+        // when
+        // ... removing all keys from left child
+        for ( long i = 0; i < primKey; i++ )
+        {
+            remove( i, readValue );
+        }
+
+        // then
+        // ... looking a right child
+        long rightChild = childAt( readCursor, 1, stableGen, unstableGen );
+        goTo( readCursor, rightChild );
+
+        // ... no keys should have moved from right sibling
+        int pos = 0;
+        long expected = primKey;
+        while ( expected < key )
+        {
+            assertThat( keyAt( pos ), is ( expected ) );
+            pos++;
+            expected++;
+        }
+    }
+
+    @Test
+    public void mustPropagateAllStructureChanges() throws Exception
+    {
+        assumeTrue( "No checkpointing, no new gen", isCheckpointing );
+
+        //given
+        initialize();
+        long key = 10;
+        while ( numberOfRootSplits == 0 )
+        {
+            insert( key, key );
+            key++;
+        }
+        // ... enough keys in left child to share with right child if rebalance is needed
+        for ( long smallKey = 0; smallKey < 2; smallKey++ )
+        {
+            insert( smallKey, smallKey );
+        }
+
+        // ... and the prim key dividing key range for left and right child
+        goTo( readCursor, rootId );
+        long oldPrimKey = keyAt( 0 );
+
+        // ... and left and right child
+        long originalLeftChild = childAt( readCursor, 0, stableGen, unstableGen );
+        long originalRightChild = childAt( readCursor, 1, stableGen, unstableGen );
+        goTo( readCursor, originalRightChild );
+        long[] keysInRightChild = allKeys( readCursor );
+
+        // when
+        // ... after checkpoint
+        generationManager.checkpoint();
+
+        // ... removing keys from right child until rebalance is triggered
+        int index = 0;
+        long rightChild;
+        long leftmostInRightChild;
+        do
+        {
+            remove( keysInRightChild[index], readValue );
+            index++;
+            goTo( readCursor, rootId );
+            rightChild = childAt( readCursor, 1, stableGen, unstableGen );
+            goTo( readCursor, rightChild );
+            leftmostInRightChild = keyAt( 0 );
+        } while ( leftmostInRightChild >= keysInRightChild[0] );
+
+        // then
+        // ... primKey in root is updated
+        goTo( readCursor, rootId );
+        Long primKey = keyAt( 0 );
+        assertThat( primKey, is( leftmostInRightChild ) );
+        assertThat( primKey, is( not( oldPrimKey ) ) );
+
+        // ... new versions of left and right child
+        long newLeftChild = childAt( readCursor, 0, stableGen, unstableGen );
+        long newRightChild = childAt( readCursor, 1, stableGen, unstableGen );
+        assertThat( newLeftChild, is( not( originalLeftChild ) ) );
+        assertThat( newRightChild, is( not( originalRightChild ) ) );
+    }
+
     /* MERGE (when merge is implemented) */
 
     @Test
@@ -977,6 +1082,18 @@ public class InternalTreeLogicTest
         assertNewGenPointerNotCrashOrBroken();
     }
 
+    private long[] allKeys( PageCursor cursor )
+    {
+        int keyCount = node.keyCount( cursor );
+        long[] keys = new long[keyCount];
+        for ( int i = 0; i < keyCount; i++ )
+        {
+            node.keyAt( cursor, readKey, i );
+            keys[i] = readKey.longValue();
+        }
+        return keys;
+    }
+
     private int keyCount( long nodeId ) throws IOException
     {
         long prevId = readCursor.getCurrentPageId();
@@ -1053,7 +1170,10 @@ public class InternalTreeLogicTest
     // KEEP even if unused
     private void printTree() throws IOException
     {
+        long currentPageId = cursor.getCurrentPageId();
+        cursor.next( rootId );
         new TreePrinter<>( node, layout, stableGen, unstableGen ).printTree( cursor, System.out, true, true );
+        cursor.next( currentPageId );
     }
 
     private static MutableLong key( long key )
