@@ -93,7 +93,19 @@ public class DynamicRecord extends AbstractBaseRecord
         return startRecord;
     }
 
-    public int getType()
+    /**
+     * @return The {@link PropertyType} of this record or null if unset or non valid
+     */
+    public PropertyType getType()
+    {
+        return PropertyType.getPropertyTypeOrNull( (long) (this.type << 24) );
+    }
+
+    /**
+     * @return The {@link #type} field of this record, as set by previous invocations to {@link #setType(int)} or
+     * {@link #initialize(boolean, boolean, long, int, int)}
+     */
+    public int getTypeAsInt()
     {
         return type;
     }
@@ -148,7 +160,7 @@ public class DynamicRecord extends AbstractBaseRecord
                 .append( getId() )
                 .append( ",used=" ).append(inUse() ).append( "," )
                 .append("(" ).append( length ).append( "),type=" );
-        PropertyType type = PropertyType.getPropertyTypeOrNull( (long) (this.type << 24) );
+        PropertyType type = getType();
         if ( type == null ) buf.append( this.type ); else buf.append( type.name() );
         buf.append( ",data=" );
         if ( type == PropertyType.STRING && data.length <= MAX_CHARS_IN_TO_STRING )
