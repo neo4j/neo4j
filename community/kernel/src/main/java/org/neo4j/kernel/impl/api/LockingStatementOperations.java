@@ -50,6 +50,7 @@ import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
 import org.neo4j.kernel.impl.api.operations.LockOperations;
@@ -246,7 +247,7 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public long indexGetCommittedId( KernelStatement state, IndexDescriptor index, Predicate<IndexRule> filter )
+    public long indexGetCommittedId( KernelStatement state, IndexDescriptor index, Predicate<NewIndexDescriptor> filter )
             throws SchemaRuleNotFoundException
     {
         acquireSharedSchemaLock( state );

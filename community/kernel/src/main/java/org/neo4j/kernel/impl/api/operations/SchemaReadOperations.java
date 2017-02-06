@@ -32,6 +32,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
@@ -131,6 +132,6 @@ public interface SchemaReadOperations
      * Get the index id (the id or the schema rule record) for a committed index
      * - throws exception for indexes that aren't committed.
      */
-    long indexGetCommittedId( KernelStatement state, IndexDescriptor index, Predicate<IndexRule> filter )
+    long indexGetCommittedId( KernelStatement state, IndexDescriptor index, Predicate<NewIndexDescriptor> filter )
             throws SchemaRuleNotFoundException;
 }

@@ -61,9 +61,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor.Filter.UNIQUE;
 import static org.neo4j.kernel.impl.api.StatementOperationsTestHelper.mockedParts;
 import static org.neo4j.kernel.impl.api.StatementOperationsTestHelper.mockedState;
-import static org.neo4j.kernel.impl.store.SchemaStorage.IndexRuleKind.CONSTRAINT;
 
 public class ConstraintIndexCreatorTest
 {
@@ -82,7 +82,7 @@ public class ConstraintIndexCreatorTest
         IndexingService indexingService = mock( IndexingService.class );
         StubKernel kernel = new StubKernel();
 
-        when( constraintCreationContext.schemaReadOperations().indexGetCommittedId( state, index, CONSTRAINT ) )
+        when( constraintCreationContext.schemaReadOperations().indexGetCommittedId( state, index, UNIQUE ) )
                 .thenReturn( 2468L );
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexingService.getIndexProxy( 2468L ) ).thenReturn( indexProxy );
@@ -97,7 +97,7 @@ public class ConstraintIndexCreatorTest
         assertEquals( 1, kernel.statements.size() );
         verify( kernel.statements.get( 0 ).txState() ).indexRuleDoAdd( eq( IndexBoundary.mapUnique( index ) ) );
         verifyNoMoreInteractions( indexCreationContext.schemaWriteOperations() );
-        verify( constraintCreationContext.schemaReadOperations() ).indexGetCommittedId( state, index, CONSTRAINT );
+        verify( constraintCreationContext.schemaReadOperations() ).indexGetCommittedId( state, index, UNIQUE );
         verifyNoMoreInteractions( constraintCreationContext.schemaReadOperations() );
         verify( indexProxy ).awaitStoreScanCompleted();
     }
@@ -114,7 +114,7 @@ public class ConstraintIndexCreatorTest
         IndexingService indexingService = mock( IndexingService.class );
         StubKernel kernel = new StubKernel();
 
-        when( constraintCreationContext.schemaReadOperations().indexGetCommittedId( state, index, CONSTRAINT ) )
+        when( constraintCreationContext.schemaReadOperations().indexGetCommittedId( state, index, UNIQUE ) )
                 .thenReturn( 2468L );
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexingService.getIndexProxy( 2468L ) ).thenReturn( indexProxy );
@@ -142,7 +142,7 @@ public class ConstraintIndexCreatorTest
         NewIndexDescriptor newIndex = NewIndexDescriptorFactory.uniqueForLabel( 123, 456 );
         verify( tx1 ).indexRuleDoAdd( newIndex );
         verifyNoMoreInteractions( tx1 );
-        verify( constraintCreationContext.schemaReadOperations() ).indexGetCommittedId( state, index, CONSTRAINT );
+        verify( constraintCreationContext.schemaReadOperations() ).indexGetCommittedId( state, index, UNIQUE );
         verifyNoMoreInteractions( constraintCreationContext.schemaReadOperations() );
         TransactionState tx2 = kernel.statements.get( 1 ).txState();
         verify( tx2 ).indexDoDrop( newIndex );
