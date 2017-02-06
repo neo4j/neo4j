@@ -1173,7 +1173,7 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public long indexGetCommittedId( KernelStatement state, IndexDescriptor index, Predicate<IndexRule> filter )
+    public long indexGetCommittedId( KernelStatement state, IndexDescriptor index, Predicate<NewIndexDescriptor> filter )
             throws SchemaRuleNotFoundException
     {
         return storeLayer.indexGetCommittedId( IndexBoundary.map( index ), filter );

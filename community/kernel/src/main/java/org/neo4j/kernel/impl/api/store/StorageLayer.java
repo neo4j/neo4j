@@ -225,7 +225,7 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
-    public long indexGetCommittedId( NewIndexDescriptor index, Predicate<IndexRule> filter )
+    public long indexGetCommittedId( NewIndexDescriptor index, Predicate<NewIndexDescriptor> filter )
             throws SchemaRuleNotFoundException
     {
         IndexRule rule = indexRule( index, filter );

@@ -192,10 +192,10 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
     @Override
     public void visitRemovedIndex( NewIndexDescriptor index )
     {
-        SchemaStorage.IndexRuleKind kind = index.type() == UNIQUE ?
-                SchemaStorage.IndexRuleKind.CONSTRAINT
-                : SchemaStorage.IndexRuleKind.INDEX;
-        IndexRule rule = schemaStorage.indexGetForSchema( index.schema(), kind );
+        NewIndexDescriptor.Filter filter = index.type() == UNIQUE ?
+                                          NewIndexDescriptor.Filter.UNIQUE
+                                        : NewIndexDescriptor.Filter.GENERAL;
+        IndexRule rule = schemaStorage.indexGetForSchema( index.schema(), filter );
         recordState.dropSchemaRule( rule );
     }
 
@@ -207,8 +207,7 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
         int propertyKeyId = element.descriptor().getPropertyKeyId();
 
         IndexRule indexRule = schemaStorage.indexGetForSchema(
-                SchemaDescriptorFactory.forLabel( element.label(), propertyKeyId ),
-                SchemaStorage.IndexRuleKind.CONSTRAINT );
+                SchemaDescriptorFactory.forLabel( element.label(), propertyKeyId ), NewIndexDescriptor.Filter.UNIQUE );
         recordState.createSchemaRule(
                 constraintSemantics.writeUniquePropertyConstraint(
                         constraintId, element.descriptor(), indexRule.getId() ) );

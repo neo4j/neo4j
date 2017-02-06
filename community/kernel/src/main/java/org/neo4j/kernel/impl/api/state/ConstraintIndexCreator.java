@@ -43,7 +43,6 @@ import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 
 import static java.util.Collections.singleton;
 import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
-import static org.neo4j.kernel.impl.store.SchemaStorage.IndexRuleKind.CONSTRAINT;
 
 public class ConstraintIndexCreator
 {
@@ -69,7 +68,7 @@ public class ConstraintIndexCreator
         boolean success = false;
         try
         {
-            long indexId = schema.indexGetCommittedId( state, IndexBoundary.map( index ), CONSTRAINT );
+            long indexId = schema.indexGetCommittedId( state, IndexBoundary.map( index ), NewIndexDescriptor.Filter.UNIQUE );
 
             awaitConstrainIndexPopulation( constraint, indexId );
             success = true;
