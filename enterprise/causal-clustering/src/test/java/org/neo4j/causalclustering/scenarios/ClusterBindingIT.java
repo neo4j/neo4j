@@ -59,10 +59,10 @@ import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.RANDOM_NUMBER;
 import static org.neo4j.test.rule.SuppressOutput.suppress;
 
-public class ClusterIdentityIT
+public class ClusterBindingIT
 {
     private final SuppressOutput suppressOutput = suppress( SuppressOutput.System.err );
-    private final ClusterRule clusterRule = new ClusterRule( ClusterIdentityIT.class )
+    private final ClusterRule clusterRule = new ClusterRule( ClusterBindingIT.class )
                         .withNumberOfCoreMembers( 3 )
                         .withNumberOfReadReplicas( 0 )
                         .withSharedCoreParam( CausalClusteringSettings.raft_log_pruning_strategy, "3 entries" )

@@ -21,8 +21,10 @@ package org.neo4j.causalclustering.identity;
 
 import java.io.IOException;
 import java.time.Clock;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Supplier;
 
 import org.neo4j.causalclustering.core.state.CoreBootstrapper;
 import org.neo4j.causalclustering.core.state.snapshot.CoreSnapshot;
@@ -34,7 +36,7 @@ import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-public class ClusterIdentity
+public class ClusterBinder implements Supplier<Optional<ClusterId>>
 {
     private final SimpleStorage<ClusterId> clusterIdStorage;
     private final CoreTopologyService topologyService;
@@ -46,7 +48,7 @@ public class ClusterIdentity
 
     private ClusterId clusterId;
 
-    public ClusterIdentity( SimpleStorage<ClusterId> clusterIdStorage, CoreTopologyService topologyService,
+    public ClusterBinder( SimpleStorage<ClusterId> clusterIdStorage, CoreTopologyService topologyService,
                             LogProvider logProvider, Clock clock, ThrowingAction<InterruptedException> retryWaiter,
                             long timeoutMillis, CoreBootstrapper coreBootstrapper )
     {
@@ -118,9 +120,9 @@ public class ClusterIdentity
         }
     }
 
-    public ClusterId clusterId()
+    public Optional<ClusterId> get()
     {
-        return clusterId;
+        return Optional.ofNullable( clusterId );
     }
 
     private void publishClusterId( ClusterId localClusterId ) throws BindingException
