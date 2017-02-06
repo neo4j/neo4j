@@ -80,7 +80,7 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
         labelIds.visitKeys( labelId ->
         {
             counts.incrementNodeCount( labelId, -1 );
-            return true;
+            return false;
         } );
 
         node.degrees().forAll(
