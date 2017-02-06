@@ -22,10 +22,10 @@ package org.neo4j.kernel.impl.proc;
 import java.io.File;
 import java.net.URL;
 import java.util.Map;
-import java.util.function.Supplier;
 
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
@@ -33,49 +33,36 @@ import org.neo4j.graphdb.security.URLAccessValidationError;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.legacyindex.AutoIndexing;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
+import org.neo4j.kernel.impl.factory.DataSourceModule;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.kernel.impl.query.QueryExecutionEngine;
+import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.kernel.impl.store.StoreId;
 
 class ProcedureGDBFacadeSPI implements GraphDatabaseFacade.SPI
 {
-    private final Thread transactionThread;
-    private final KernelTransaction transaction;
-
-    private final Supplier<QueryExecutionEngine> queryExecutor;
-
     private final File storeDir;
+    private final DataSourceModule sourceModule;
     private final DependencyResolver resolver;
-    private final AutoIndexing autoIndexing;
-    private final Supplier<StoreId> storeId;
     private final CoreAPIAvailabilityGuard availability;
     private final ThrowingFunction<URL,URL,URLAccessValidationError> urlValidator;
+    private final SecurityContext securityContext;
 
-    public ProcedureGDBFacadeSPI(
-            Thread transactionThread,
-            KernelTransaction transaction,
-            Supplier<QueryExecutionEngine> queryExecutor,
-            File storeDir,
-            DependencyResolver resolver,
-            AutoIndexing autoIndexing,
-            Supplier<StoreId> storeId,
-            CoreAPIAvailabilityGuard availability,
-            ThrowingFunction<URL,URL,URLAccessValidationError> urlValidator )
+    public ProcedureGDBFacadeSPI( PlatformModule platform, DataSourceModule sourceModule, DependencyResolver resolver,
+            CoreAPIAvailabilityGuard availability, ThrowingFunction<URL,URL,URLAccessValidationError> urlValidator,
+            SecurityContext securityContext )
     {
-        this.transactionThread = transactionThread;
-        this.transaction = transaction;
-        this.queryExecutor = queryExecutor;
-        this.storeDir = storeDir;
+        this.storeDir = platform.storeDir;
+        this.sourceModule = sourceModule;
         this.resolver = resolver;
-        this.autoIndexing = autoIndexing;
-        this.storeId = storeId;
         this.availability = availability;
         this.urlValidator = urlValidator;
+        this.securityContext = securityContext;
     }
 
     @Override
@@ -93,7 +80,7 @@ class ProcedureGDBFacadeSPI implements GraphDatabaseFacade.SPI
     @Override
     public StoreId storeId()
     {
-        return storeId.get();
+        return sourceModule.storeId.get();
     }
 
     @Override
@@ -108,35 +95,28 @@ class ProcedureGDBFacadeSPI implements GraphDatabaseFacade.SPI
         return "ProcedureGraphDatabaseService";
     }
 
-    private void assertSameThread()
-    {
-        if ( transactionThread != Thread.currentThread() )
-        {
-            throw new UnsupportedOperationException( "Creating new transactions and/or spawning threads are " +
-                                                     "not supported operations in store procedures." );
-        }
-    }
-
     @Override
     public KernelTransaction currentTransaction()
     {
         availability.assertDatabaseAvailable();
-        assertSameThread();
-        return transaction;
+        KernelTransaction tx = sourceModule.threadToTransactionBridge.getKernelTransactionBoundToThisThread( false );
+        if( tx == null )
+        {
+            throw new NotInTransactionException();
+        }
+        return tx;
     }
 
     @Override
     public boolean isInOpenTransaction()
     {
-        assertSameThread();
-        return transaction.isOpen();
+        return sourceModule.threadToTransactionBridge.hasTransaction();
     }
 
     @Override
     public Statement currentStatement()
     {
-        assertSameThread();
-        return transaction.acquireStatement();
+        return sourceModule.threadToTransactionBridge.get();
     }
 
     @Override
@@ -145,8 +125,7 @@ class ProcedureGDBFacadeSPI implements GraphDatabaseFacade.SPI
         try
         {
             availability.assertDatabaseAvailable();
-            assertSameThread();
-            return queryExecutor.get().executeQuery( query, parameters, tc );
+            return sourceModule.queryExecutor.get().executeQuery( query, parameters, tc );
         }
         catch ( QueryExecutionKernelException e )
         {
@@ -157,7 +136,7 @@ class ProcedureGDBFacadeSPI implements GraphDatabaseFacade.SPI
     @Override
     public AutoIndexing autoIndexing()
     {
-        return autoIndexing;
+        return sourceModule.autoIndexing;
     }
 
     @Override
@@ -205,6 +184,18 @@ class ProcedureGDBFacadeSPI implements GraphDatabaseFacade.SPI
     @Override
     public KernelTransaction beginTransaction( KernelTransaction.Type type, SecurityContext securityContext, long timeout )
     {
-        throw new UnsupportedOperationException();
+        try
+        {
+            availability.assertDatabaseAvailable();
+            KernelTransaction kernelTx = sourceModule.kernelAPI.get().newTransaction( type, this.securityContext, timeout );
+            kernelTx.registerCloseListener(
+                    ( txId ) -> sourceModule.threadToTransactionBridge.unbindTransactionFromCurrentThread() );
+            sourceModule.threadToTransactionBridge.bindTransactionToCurrentThread( kernelTx );
+            return kernelTx;
+        }
+        catch ( TransactionFailureException e )
+        {
+            throw new org.neo4j.graphdb.TransactionFailureException( e.getMessage(), e );
+        }
     }
 }

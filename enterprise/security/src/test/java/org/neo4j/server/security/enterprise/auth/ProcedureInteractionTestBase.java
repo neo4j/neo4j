@@ -29,7 +29,9 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -42,8 +44,10 @@ import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
 import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.helpers.HostnamePort;
@@ -528,6 +532,8 @@ public abstract class ProcedureInteractionTestBase<S>
 
         public static volatile DoubleLatch volatileLatch = null;
 
+        public static List<Exception> exceptionsInProcedure = Collections.synchronizedList( new ArrayList<>() );
+
         @Context
         public TerminationGuard guard;
 
@@ -683,6 +689,37 @@ public abstract class ProcedureInteractionTestBase<S>
             {
                 testLatch.get().doubleLatch.finishAndWaitForAllToFinish();
             }
+        }
+
+        @Procedure( name = "test.threadTransaction", mode = WRITE )
+        public void newThreadTransaction()
+        {
+            startWriteThread();
+        }
+
+        @Procedure( name = "test.threadReadDoingWriteTransaction" )
+        public void threadReadDoingWriteTransaction()
+        {
+            startWriteThread();
+        }
+
+        private void startWriteThread()
+        {
+            new Thread( () -> {
+                doubleLatch.start();
+                try ( Transaction tx = db.beginTx() ) {
+                    db.createNode( Label.label( "VeryUniqueLabel" ) );
+                    tx.success();
+                }
+                catch ( Exception e )
+                {
+                    exceptionsInProcedure.add( e );
+                }
+                finally
+                {
+                    doubleLatch.finish();
+                }
+            } ).start();
         }
 
         protected static class LatchedRunnables implements AutoCloseable

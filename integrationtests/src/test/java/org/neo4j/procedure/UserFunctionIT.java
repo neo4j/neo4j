@@ -470,7 +470,7 @@ public class UserFunctionIT
     private static List<Exception> exceptionsInFunction = Collections.<Exception>synchronizedList( new ArrayList<>() );
 
     @Test
-    public void shouldGracefullyFailWhenSpawningThreadsCreatingTransactionInFunctions() throws Throwable
+    public void shouldBeAbleToSpawnThreadsCreatingTransactionInFunctions() throws Throwable
     {
         // given
         Runnable doIt = () -> {
@@ -497,17 +497,14 @@ public class UserFunctionIT
             threads[i].join();
         }
 
-        // then
-        Predicates.await( () -> exceptionsInFunction.size() >= numThreads, 5, TimeUnit.SECONDS );
-
-        for ( Exception exceptionInFunction : exceptionsInFunction )
+        // Then
+        Result result = db.execute( "MATCH () RETURN count(*) as n" );
+        assertThat( result.hasNext(), equalTo( true ) );
+        while ( result.hasNext() )
         {
-            assertThat( Exceptions.stringify( exceptionInFunction ),
-                    exceptionInFunction, instanceOf( UnsupportedOperationException.class ) );
-            assertThat( Exceptions.stringify( exceptionInFunction ), exceptionInFunction.getMessage(),
-                    equalTo( "Creating new transactions and/or spawning threads " +
-                             "are not supported operations in store procedures." ) );
+            assertThat( result.next().get( "n" ), equalTo( (long) numThreads ) );
         }
+        result.close();
     }
 
     @Test

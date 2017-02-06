@@ -26,10 +26,12 @@ import java.util.stream.Stream;
 
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
+import org.neo4j.test.DoubleLatch;
 
 import static java.lang.String.format;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasItem;
@@ -41,6 +43,7 @@ import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISS
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.api.security.AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
 import static org.neo4j.server.security.enterprise.auth.InternalFlatFileRealm.IS_SUSPENDED;
+import static org.neo4j.server.security.enterprise.auth.ProcedureInteractionTestBase.ClassWithProcedures.exceptionsInProcedure;
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.ADMIN;
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.ARCHITECT;
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.PUBLISHER;
@@ -883,6 +886,35 @@ public abstract class AuthProceduresInteractionTestBase<S> extends ProcedureInte
         // UDFs
         assertFail( mats, "RETURN test.allowedFunction1()",
                 "Read operations are not allowed for user 'mats' with roles [failer]." );
+    }
+
+    @Test
+    public void shouldAllowProcedureStartingTransactionInNewThread() throws Throwable
+    {
+        exceptionsInProcedure.clear();
+        DoubleLatch latch = new DoubleLatch( 2 );
+        ClassWithProcedures.doubleLatch = latch;
+        latch.start();
+        assertEmpty( writeSubject, "CALL test.threadTransaction" );
+        latch.finishAndWaitForAllToFinish();
+        assertThat( exceptionsInProcedure.size(), equalTo( 0 ) );
+        assertSuccess( adminSubject, "MATCH (:VeryUniqueLabel) RETURN toString(count(*)) as n",
+                r -> assertKeyIs( r, "n", "1" ) );
+    }
+
+    @Test
+    public void shouldInheritSecurityContextWhenProcedureStartingTransactionInNewThread() throws Throwable
+    {
+        exceptionsInProcedure.clear();
+        DoubleLatch latch = new DoubleLatch( 2 );
+        ClassWithProcedures.doubleLatch = latch;
+        latch.start();
+        assertEmpty( readSubject, "CALL test.threadReadDoingWriteTransaction" );
+        latch.finishAndWaitForAllToFinish();
+        assertThat( exceptionsInProcedure.size(), equalTo( 1 ) );
+        assertThat( exceptionsInProcedure.get( 0 ).getMessage(), containsString( WRITE_OPS_NOT_ALLOWED ) );
+        assertSuccess( adminSubject, "MATCH (:VeryUniqueLabel) RETURN toString(count(*)) as n",
+                r -> assertKeyIs( r, "n", "0" ) );
     }
 
     @Test

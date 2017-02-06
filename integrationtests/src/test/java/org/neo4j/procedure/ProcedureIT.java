@@ -820,7 +820,7 @@ public class ProcedureIT
     private static List<Exception> exceptionsInProcedure = Collections.<Exception>synchronizedList( new ArrayList<>() );
 
     @Test
-    public void shouldGracefullyFailWhenSpawningThreadsCreatingTransactionInProcedures() throws Throwable
+    public void shouldBeAbleToSpawnThreadsCreatingTransactionInProcedures() throws Throwable
     {
         // given
         Runnable doIt = () -> {
@@ -850,17 +850,14 @@ public class ProcedureIT
             threads[i].join();
         }
 
-        // then
-        Predicates.await( () -> exceptionsInProcedure.size() >= numThreads, 5, TimeUnit.SECONDS );
-
-        for ( Exception exceptionInProcedure : exceptionsInProcedure )
+        Result result = db.execute( "MATCH () RETURN count(*) as n" );
+        assertThat( result.hasNext(), equalTo( true ) );
+        while ( result.hasNext() )
         {
-            assertThat( Exceptions.stringify( exceptionInProcedure ),
-                    exceptionInProcedure, instanceOf( UnsupportedOperationException.class ) );
-            assertThat( Exceptions.stringify( exceptionInProcedure ), exceptionInProcedure.getMessage(),
-                    equalTo( "Creating new transactions and/or spawning threads " +
-                             "are not supported operations in store procedures." ) );
+            assertThat( result.next().get( "n" ), equalTo( (long) numThreads ) );
         }
+        result.close();
+        assertThat( "Should be no exceptions in procedures", exceptionsInProcedure.isEmpty(), equalTo( true ) );
     }
 
     @Test
