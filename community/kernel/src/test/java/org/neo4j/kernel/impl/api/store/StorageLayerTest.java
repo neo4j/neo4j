@@ -47,7 +47,7 @@ import static org.neo4j.graphdb.Label.label;
 /**
  * Base class for disk layer tests, which test read-access to committed data.
  */
-public abstract class DiskLayerTest
+public abstract class StorageLayerTest
 {
     @SuppressWarnings( "deprecation" )
     protected GraphDatabaseAPI db;

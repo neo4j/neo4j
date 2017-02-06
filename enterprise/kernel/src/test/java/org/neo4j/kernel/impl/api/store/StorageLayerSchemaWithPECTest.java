@@ -39,7 +39,7 @@ import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
-public class DiskLayerSchemaWithPECTest extends DiskLayerTest
+public class StorageLayerSchemaWithPECTest extends StorageLayerTest
 {
     @Override
     protected GraphDatabaseService createGraphDatabase()

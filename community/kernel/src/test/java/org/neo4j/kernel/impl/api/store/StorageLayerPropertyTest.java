@@ -38,7 +38,7 @@ import static org.junit.Assert.fail;
 /**
  * Test read access to committed properties.
  */
-public class DiskLayerPropertyTest extends DiskLayerTest
+public class StorageLayerPropertyTest extends StorageLayerTest
 {
     @Test
     public void should_get_all_node_properties() throws Exception

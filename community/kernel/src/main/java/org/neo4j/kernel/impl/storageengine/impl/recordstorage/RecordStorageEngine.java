@@ -57,8 +57,7 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.IndexingServiceFactory;
 import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
-import org.neo4j.kernel.impl.api.store.CacheLayer;
-import org.neo4j.kernel.impl.api.store.DiskLayer;
+import org.neo4j.kernel.impl.api.store.StorageLayer;
 import org.neo4j.kernel.impl.api.store.SchemaCache;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.cache.BridgingCacheAccess;
@@ -233,11 +232,10 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
                     propertyKeyTokenHolder, relationshipTypeTokens, labelTokens );
 
             storeStatementSupplier = storeStatementSupplier( neoStores );
-            DiskLayer diskLayer = new DiskLayer(
+            storeLayer = new StorageLayer(
                     propertyKeyTokenHolder, labelTokens, relationshipTypeTokens,
                     schemaStorage, neoStores, indexingService,
-                    storeStatementSupplier );
-            storeLayer = new CacheLayer( diskLayer, schemaCache );
+                    storeStatementSupplier, schemaCache );
 
             legacyIndexApplierLookup = new LegacyIndexApplierLookup.Direct( legacyIndexProviderLookup );
 

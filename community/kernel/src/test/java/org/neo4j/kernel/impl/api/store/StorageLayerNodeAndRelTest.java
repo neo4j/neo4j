@@ -35,7 +35,7 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 /**
  * Test reading committed node and relationships from disk.
  */
-public class DiskLayerNodeAndRelTest extends DiskLayerTest
+public class StorageLayerNodeAndRelTest extends StorageLayerTest
 {
     @Test
     public void shouldTellIfNodeExists() throws Exception
