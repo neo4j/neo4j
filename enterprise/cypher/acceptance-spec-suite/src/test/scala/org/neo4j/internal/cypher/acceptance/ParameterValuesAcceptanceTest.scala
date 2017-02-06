@@ -65,14 +65,6 @@ class ParameterValuesAcceptanceTest extends ExecutionEngineFunSuite with NewRunt
     result.toList should equal(List(Map("b" -> node)))
   }
 
-  test("should be able to send in an array of nodes via parameter") {
-    // given
-    val node = createLabeledNode("Person")
-
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("WITH {param} as p RETURN p", "param" -> Array(node))
-    result.toList should equal(List(Map("p" -> Array(node))))
-  }
-
   test("should be able to send in relationship via parameter") {
     // given
     val rel = relate(createLabeledNode("Person"), createLabeledNode("Person"))
