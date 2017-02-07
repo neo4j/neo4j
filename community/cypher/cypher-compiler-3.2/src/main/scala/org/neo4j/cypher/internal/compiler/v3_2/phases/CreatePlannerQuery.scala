@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.InternalException
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Query
 import org.neo4j.cypher.internal.frontend.v3_2.phases.BaseContext
 
-object CreatePlannerQuery extends Phase[BaseContext] {
+object CreatePlannerQuery extends Phase[BaseContext, CompilationState, CompilationState] {
   override def phase = LOGICAL_PLANNING
 
   override def description = "from the normalized ast, create the corresponding PlannerQuery"

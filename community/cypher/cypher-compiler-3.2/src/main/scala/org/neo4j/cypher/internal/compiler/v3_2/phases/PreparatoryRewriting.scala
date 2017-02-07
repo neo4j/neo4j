@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters.{expandCallWhere, n
 import org.neo4j.cypher.internal.frontend.v3_2.inSequence
 import org.neo4j.cypher.internal.frontend.v3_2.phases.BaseContext
 
-case object PreparatoryRewriting extends Phase[BaseContext] {
+case object PreparatoryRewriting extends Phase[BaseContext, CompilationState, CompilationState] {
 
   override def process(from: CompilationState, context: BaseContext): CompilationState = {
 

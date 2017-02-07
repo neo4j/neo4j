@@ -48,7 +48,7 @@ case object rewriteEqualityToInPredicate extends StatementRewriter {
   override def postConditions: Set[Condition] = Set.empty
 }
 
-trait StatementRewriter extends Phase[BaseContext] {
+trait StatementRewriter extends Phase[BaseContext, CompilationState, CompilationState] {
   override def phase: CompilationPhase = AST_REWRITE
 
   def instance(context: BaseContext): Rewriter

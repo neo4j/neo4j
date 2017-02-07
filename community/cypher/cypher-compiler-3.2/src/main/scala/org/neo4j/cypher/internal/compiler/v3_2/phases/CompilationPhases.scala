@@ -27,14 +27,14 @@ import org.neo4j.cypher.internal.frontend.v3_2.phases.BaseContext
 
 object CompilationPhases {
 
-  def parsing(sequencer: String => RewriterStepSequencer): Transformer[BaseContext] =
+  def parsing(sequencer: String => RewriterStepSequencer): Transformer[BaseContext, CompilationState, CompilationState] =
     Parsing.adds[Statement] andThen
       SyntaxDeprecationWarnings andThen
       PreparatoryRewriting andThen
       SemanticAnalysis(warn = true).adds[SemanticState] andThen
       AstRewriting(sequencer, shouldExtractParams = true)
 
-  def lateAstRewriting: Transformer[BaseContext] =
+  def lateAstRewriting: Transformer[BaseContext, CompilationState, CompilationState] =
     SemanticAnalysis(warn = false) andThen
       Namespacer andThen
       rewriteEqualityToInPredicate andThen

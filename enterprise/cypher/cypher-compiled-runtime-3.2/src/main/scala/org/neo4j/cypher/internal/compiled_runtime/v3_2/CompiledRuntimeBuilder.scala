@@ -20,17 +20,17 @@
 package org.neo4j.cypher.internal.compiled_runtime.v3_2
 
 import org.neo4j.cypher.internal.compiler.v3_2._
-import org.neo4j.cypher.internal.compiler.v3_2.phases.{Do, If, Transformer}
+import org.neo4j.cypher.internal.compiler.v3_2.phases.{CompilationState, Do, If, Transformer}
 import org.neo4j.cypher.internal.frontend.v3_2.InvalidArgumentException
 import org.neo4j.cypher.internal.frontend.v3_2.notification.RuntimeUnsupportedNotification
 
-class CompiledRuntimeBuilder extends RuntimeBuilder[Transformer[CompiledRuntimeContext]] {
+class CompiledRuntimeBuilder extends RuntimeBuilder[Transformer[CompiledRuntimeContext, CompilationState, CompilationState]] {
 
-  override def create(runtimeName: Option[RuntimeName], useErrorsOverWarnings: Boolean): Transformer[CompiledRuntimeContext] =
+  override def create(runtimeName: Option[RuntimeName], useErrorsOverWarnings: Boolean): Transformer[CompiledRuntimeContext, CompilationState, CompilationState] =
     runtimeName match {
       case None =>
         BuildCompiledExecutionPlan andThen
-          If(_.maybeExecutionPlan.isEmpty)(
+          If[CompiledRuntimeContext, CompilationState](_.maybeExecutionPlan.isEmpty)(
             BuildInterpretedExecutionPlan
           )
 
@@ -39,13 +39,13 @@ class CompiledRuntimeBuilder extends RuntimeBuilder[Transformer[CompiledRuntimeC
 
       case Some(CompiledRuntimeName) if useErrorsOverWarnings =>
         BuildCompiledExecutionPlan andThen
-          If(_.maybeExecutionPlan.isEmpty)(
+          If[CompiledRuntimeContext, CompilationState](_.maybeExecutionPlan.isEmpty)(
             Do(_ => throw new InvalidArgumentException("The given query is not currently supported in the selected runtime"))
           )
 
       case Some(CompiledRuntimeName) =>
         BuildCompiledExecutionPlan andThen
-          If(_.maybeExecutionPlan.isEmpty)(
+          If[CompiledRuntimeContext, CompilationState](_.maybeExecutionPlan.isEmpty)(
             Do((ctx: CompiledRuntimeContext) => warnThatCompiledRuntimeDoesNotYetSupportQuery(ctx)) andThen
               BuildInterpretedExecutionPlan
           )

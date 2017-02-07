@@ -36,7 +36,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.RewriterStepSeq
 import org.neo4j.cypher.internal.frontend.v3_2.phases.{CompilationPhaseTracer, InternalNotificationLogger, Monitors}
 import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilerContext
 
-case class CypherCompiler[Context <: CompilerContext](createExecutionPlan: Transformer[Context],
+case class CypherCompiler[Context <: CompilerContext](createExecutionPlan: Transformer[Context, CompilationState, CompilationState],
                           astRewriter: ASTRewriter,
                           cacheAccessor: CacheAccessor[Statement, ExecutionPlan],
                           planCacheFactory: () => LFUCache[Statement, ExecutionPlan],
@@ -93,26 +93,26 @@ case class CypherCompiler[Context <: CompilerContext](createExecutionPlan: Trans
     CompilationPhases.parsing(sequencer).transform(startState, context)
   }
 
-  val irConstruction: Transformer[Context] =
+  val irConstruction: Transformer[CompilerContext, CompilationState, CompilationState] =
     ResolveTokens andThen
     CreatePlannerQuery.adds[UnionQuery] andThen
     OptionalMatchRemover
 
-  val prepareForCaching: Transformer[Context] =
+  val prepareForCaching: Transformer[CompilerContext, CompilationState, CompilationState] =
     RewriteProcedureCalls andThen
     ProcedureDeprecationWarnings andThen
     ProcedureWarnings
 
-  val costBasedPlanning: Transformer[Context] =
+  val costBasedPlanning: Transformer[CompilerContext, CompilationState, CompilationState] =
     QueryPlanner().adds[LogicalPlan] andThen
     PlanRewriter(sequencer) andThen
-    If(_.unionQuery.readOnly) (
+    If[CompilerContext, CompilationState](_.unionQuery.readOnly) (
       CheckForUnresolvedTokens
     )
 
-  val planAndCreateExecPlan: Transformer[Context] =
+  val planAndCreateExecPlan: Transformer[Context, CompilationState, CompilationState] =
     ProcedureCallOrSchemaCommandPlanBuilder andThen
-    If(_.maybeExecutionPlan.isEmpty)(
+    If[Context, CompilationState](_.maybeExecutionPlan.isEmpty)(
       CompilationPhases.lateAstRewriting andThen
       irConstruction andThen
       costBasedPlanning andThen

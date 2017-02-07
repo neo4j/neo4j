@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.PeriodicCommitInOpenTransactionEx
 import org.neo4j.cypher.internal.frontend.v3_2.notification.InternalNotification
 import org.neo4j.cypher.internal.frontend.v3_2.phases.InternalNotificationLogger
 
-object BuildInterpretedExecutionPlan extends Phase[CompilerContext] {
+object BuildInterpretedExecutionPlan extends Phase[CompilerContext, CompilationState, CompilationState] {
   override def phase = PIPE_BUILDING
 
   override def description = "create interpreted execution plan"

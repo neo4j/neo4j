@@ -33,19 +33,19 @@ import scala.reflect.ClassTag
 A phase is a leaf component of the tree structure that is the compilation pipe line.
 It passes through the compilation state, and might add values to it
  */
-trait Phase[-C <: BaseContext] extends Transformer[C] {
+trait Phase[-C <: BaseContext, FROM, TO] extends Transformer[C, FROM, TO] {
   self =>
 
   def phase: CompilationPhase
 
   def description: String
 
-  override def transform(from: CompilationState, context: C): CompilationState =
+  override def transform(from: FROM, context: C): TO =
     closing(context.tracer.beginPhase(phase)) {
       process(from, context)
     }
 
-  def process(from: CompilationState, context: C): CompilationState
+  def process(from: FROM, context: C): TO
 
   def postConditions: Set[Condition]
 
@@ -55,77 +55,68 @@ trait Phase[-C <: BaseContext] extends Transformer[C] {
 /*
 A visitor is a phase that does not change the compilation state. All it's behaviour is side effects
  */
-trait VisitorPhase[-C <: BaseContext] extends Phase[C] {
-  override def process(from: CompilationState, context: C): CompilationState = {
+trait VisitorPhase[-C <: BaseContext, STATE] extends Phase[C, STATE, STATE] {
+  override def process(from: STATE, context: C): STATE = {
     visit(from, context)
     from
   }
 
-  def visit(value: CompilationState, context: C): Unit
+  def visit(value: STATE, context: C): Unit
 
   override def postConditions: Set[Condition] = Set.empty
 }
 
-trait Transformer[-C <: BaseContext] {
-  def transform(from: CompilationState, context: C): CompilationState
+trait Transformer[-C <: BaseContext, FROM, TO] {
+  def transform(from: FROM, context: C): TO
 
-  def andThen[D <: C](other: Transformer[D]): Transformer[D] =
+  def andThen[D <: C, TO2](other: Transformer[D, TO, TO2]): Transformer[D, FROM, TO2] =
     new PipeLine(this, other)
 
-  def adds[T: ClassTag](implicit manifest: Manifest[T]): Transformer[C] = this andThen AddCondition[C](Contains[T])
+  def adds[T: ClassTag](implicit manifest: Manifest[T]): Transformer[C, FROM, TO] = this andThen AddCondition[C, TO](Contains[T])
 
   def name: String
 }
 
-case class AddCondition[-C <: BaseContext](postCondition: Condition) extends Phase[C] {
+case class AddCondition[-C <: BaseContext, STATE](postCondition: Condition) extends Phase[C, STATE, STATE] {
   override def phase: CompilationPhase = PIPE_BUILDING
 
   override def description: String = "adds a condition"
 
-  override def process(from: CompilationState, context: C): CompilationState = from
+  override def process(from: STATE, context: C): STATE = from
 
   override def postConditions: Set[Condition] = Set(postCondition)
 }
 
 object Transformer {
-  val identity = new Transformer[BaseContext] {
-    override def transform(from: CompilationState, context: BaseContext) = from
+  val identity = new Transformer[BaseContext, Unit, Unit] {
+    override def transform(from: Unit, context: BaseContext) = ()
 
     override def name: String = "identity"
   }
 }
 
-class PipeLine[-C <: BaseContext](first: Transformer[C], after: Transformer[C]) extends Transformer[C] {
+class PipeLine[-C <: BaseContext, FROM, MID, TO](first: Transformer[C, FROM, MID], after: Transformer[C, MID, TO]) extends Transformer[C, FROM, TO] {
 
-  override def transform(from: CompilationState, context: C): CompilationState = {
-    var step = first.transform(from, context)
+  override def transform(from: FROM, context: C): TO = {
+    val step1 = first.transform(from, context)
 
     // Checking conditions inside assert so they are not run in production
-    ifAssertionsEnabled({ step = accumulateAndCheckConditions(step, first) })
-    step = after.transform(step, context)
-    ifAssertionsEnabled({ step = accumulateAndCheckConditions(step, after) })
+    ifAssertionsEnabled(accumulateAndCheckConditions(step1, first))
+    val step2 = after.transform(step1, context)
+    ifAssertionsEnabled(accumulateAndCheckConditions(step2, after))
 
-    step
+    step2
   }
 
-  private def accumulateAndCheckConditions[D <: C](from: CompilationState, transformer: Transformer[D]): CompilationState = {
-    // Checking conditions inside assert so they are not run in production
-    val result = transformer match {
-      case phase: Phase[_] => from.copy(accumulatedConditions = from.accumulatedConditions ++ phase.postConditions)
-      case _ => from
-    }
-
-    val messages = result.accumulatedConditions.flatMap(condition => condition.check(result))
-    if (messages.nonEmpty) {
-      throw new InternalException(messages.mkString(", "))
-    }
-
-    result
-  }
-  private def addConditions[D <: C](state: CompilationState, transformer: Transformer[D]): CompilationState = {
-    transformer match {
-      case phase: Phase[_] => state.copy(accumulatedConditions = state.accumulatedConditions ++ phase.postConditions)
-      case _ => state
+  private def accumulateAndCheckConditions[D <: C, STATE](from: STATE, transformer: Transformer[D, _, _]): Unit = {
+    (from, transformer) match {
+      case (f: CompilationState, phase: Phase[_, _, _]) =>
+        val conditions = f.accumulatedConditions ++ phase.postConditions
+        val messages = conditions.flatMap(condition => condition.check(f))
+        if (messages.nonEmpty) {
+          throw new InternalException(messages.mkString(", "))
+        }
+      case _ =>
     }
   }
 
@@ -138,8 +129,8 @@ class PipeLine[-C <: BaseContext](first: Transformer[C], after: Transformer[C]) 
   }
 }
 
-case class If[-C <: BaseContext](f: CompilationState => Boolean)(thenT: Transformer[C]) extends Transformer[C] {
-  override def transform(from: CompilationState, context: C): CompilationState = {
+case class If[-C <: BaseContext, STATE](f: STATE => Boolean)(thenT: Transformer[C, STATE, STATE]) extends Transformer[C, STATE, STATE] {
+  override def transform(from: STATE, context: C): STATE = {
     if (f(from))
       thenT.transform(from, context)
     else
@@ -150,14 +141,14 @@ case class If[-C <: BaseContext](f: CompilationState => Boolean)(thenT: Transfor
 }
 
 object Do {
-  def apply[C <: BaseContext](voidFunction: C => Unit) = new Do[C]((from, context) => {
+  def apply[C <: BaseContext, STATE](voidFunction: C => Unit) = new Do[C, STATE, STATE]((from, context) => {
     voidFunction(context)
     from
   })
 }
 
-case class Do[-C <: BaseContext](f: (CompilationState, C) => CompilationState) extends Transformer[C] {
-  override def transform(from: CompilationState, context: C): CompilationState =
+case class Do[-C <: BaseContext, FROM, TO](f: (FROM, C) => TO) extends Transformer[C, FROM, TO] {
+  override def transform(from: FROM, context: C): TO =
     f(from, context)
 
   override def name: String = "do <f>"

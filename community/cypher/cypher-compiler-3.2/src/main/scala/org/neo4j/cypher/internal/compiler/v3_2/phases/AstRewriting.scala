@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.{RewriterCondit
 import org.neo4j.cypher.internal.frontend.v3_2.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.v3_2.{Rewriter, inSequence}
 
-case class AstRewriting(sequencer: String => RewriterStepSequencer, shouldExtractParams: Boolean) extends Phase[BaseContext] {
+case class AstRewriting(sequencer: String => RewriterStepSequencer, shouldExtractParams: Boolean) extends Phase[BaseContext, CompilationState, CompilationState] {
 
   private val astRewriter = new ASTRewriter(sequencer, shouldExtractParams)
 

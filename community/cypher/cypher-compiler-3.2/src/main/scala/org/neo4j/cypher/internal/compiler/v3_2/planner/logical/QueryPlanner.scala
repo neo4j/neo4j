@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{LogicalPla
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.ir.v3_2.PeriodicCommit
 
-case class QueryPlanner(planSingleQuery: LogicalPlanningFunction1[PlannerQuery, LogicalPlan] = PlanSingleQuery()) extends Phase[CompilerContext] {
+case class QueryPlanner(planSingleQuery: LogicalPlanningFunction1[PlannerQuery, LogicalPlan] = PlanSingleQuery()) extends Phase[CompilerContext, CompilationState, CompilationState] {
 
   override def phase = LOGICAL_PLANNING
 

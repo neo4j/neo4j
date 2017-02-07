@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.SemanticState
 import org.neo4j.cypher.internal.frontend.v3_2.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.frontend.v3_2.phases.BaseContext
 
-case class SemanticAnalysis(warn: Boolean) extends Phase[BaseContext] {
+case class SemanticAnalysis(warn: Boolean) extends Phase[BaseContext, CompilationState, CompilationState] {
 
   override def process(from: CompilationState, context: BaseContext): CompilationState = {
     val semanticState = SemanticChecker.check(from.statement, context.exceptionCreator)

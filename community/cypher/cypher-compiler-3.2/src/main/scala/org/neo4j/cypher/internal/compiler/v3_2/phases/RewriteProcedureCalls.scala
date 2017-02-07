@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.{Rewriter, bottomUp}
 
 // Given a way to lookup procedure signatures, this phase rewrites unresolved calls into resolved calls
-case object RewriteProcedureCalls extends Phase[CompilerContext] {
+case object RewriteProcedureCalls extends Phase[CompilerContext, CompilationState, CompilationState] {
 
   // Current procedure calling syntax allows simplified short-hand syntax for queries
   // that only consist of a standalone procedure call. In all other cases attempts to

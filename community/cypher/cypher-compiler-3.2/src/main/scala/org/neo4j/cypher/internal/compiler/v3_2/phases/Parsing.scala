@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_2.parser.CypherParser
 import org.neo4j.cypher.internal.frontend.v3_2.phases.BaseContext
 
-case object Parsing extends Phase[BaseContext] {
+case object Parsing extends Phase[BaseContext, CompilationState, CompilationState] {
   private val parser = new CypherParser
 
   override def process(in: CompilationState, ignored: BaseContext): CompilationState =

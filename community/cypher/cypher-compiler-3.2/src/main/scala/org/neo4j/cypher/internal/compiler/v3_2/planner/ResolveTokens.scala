@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.spi.TokenContext
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{Query, _}
 import org.neo4j.cypher.internal.frontend.v3_2.{LabelId, PropertyKeyId, RelTypeId, SemanticTable}
 
-object ResolveTokens extends VisitorPhase[CompilerContext] {
+object ResolveTokens extends VisitorPhase[CompilerContext, CompilationState] {
   def resolve(ast: Query)(implicit semanticTable: SemanticTable, tokenContext: TokenContext) {
     ast.fold(()) {
       case token: PropertyKeyName =>
