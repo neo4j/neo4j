@@ -537,18 +537,58 @@ public abstract class SwitchToSlave
         }
     }
 
+    /**
+     * Monitors events in {@link SwitchToSlave}
+     */
     public interface Monitor
     {
-        void switchToSlaveStarted();
+        /**
+         * Called before any other slave-switching code is executed.
+         */
+        default void switchToSlaveStarted()
+        {   // no-op by default
+        }
 
-        void switchToSlaveCompleted( boolean wasSuccessful );
+        /**
+         * Called after all slave-switching code has been executed, regardless of whether it was successful or not.
+         *
+         * @param wasSuccessful whether or not the slave switch was successful. Depending on the type of failure
+         * other failure handling outside this class kicks in and there may be a switch retry later.
+         */
+        default void switchToSlaveCompleted( boolean wasSuccessful )
+        {   // no-op by default
+        }
 
-        void storeCopyStarted();
+        /**
+         * A full store-copy is required, either if this is the first time this db starts up or if this
+         * store has branched and needs to fetch a new copy from master.
+         */
+        default void storeCopyStarted()
+        {   // no-op by default
+        }
 
-        void storeCopyCompleted( boolean wasSuccessful );
+        /**
+         * A full store-copy has completed.
+         *
+         * @param wasSuccessful whether or not this store-copy was successful.
+         */
+        default void storeCopyCompleted( boolean wasSuccessful )
+        {   // no-op by default
+        }
 
-        void catchupStarted();
+        /**
+         * After a successful handshake with master an optimized catch-up is performed.
+         * This call marks the start of that.
+         */
+        default void catchupStarted()
+        {   // no-op by default
+        }
 
-        void catchupCompleted();
+        /**
+         * This db is now caught up with the master.
+         */
+        default void catchupCompleted()
+        {   // no-op by default
+        }
     }
 }
