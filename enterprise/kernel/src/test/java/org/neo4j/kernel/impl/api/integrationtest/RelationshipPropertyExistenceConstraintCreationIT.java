@@ -23,6 +23,7 @@ import org.neo4j.SchemaHelper;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
@@ -34,9 +35,9 @@ public class RelationshipPropertyExistenceConstraintCreationIT
         extends AbstractConstraintCreationIT<RelationshipPropertyExistenceConstraint,RelationshipPropertyDescriptor>
 {
     @Override
-    int initializeLabelOrRelType( SchemaWriteOperations writeOps, String name ) throws KernelException
+    int initializeLabelOrRelType( TokenWriteOperations tokenWriteOperations, String name ) throws KernelException
     {
-        return writeOps.relationshipTypeGetOrCreateForName( name );
+        return tokenWriteOperations.relationshipTypeGetOrCreateForName( name );
     }
 
     @Override

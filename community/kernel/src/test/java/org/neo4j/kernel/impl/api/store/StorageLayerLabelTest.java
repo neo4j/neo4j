@@ -21,24 +21,14 @@ package org.neo4j.kernel.impl.api.store;
 
 import org.junit.Test;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.function.IntSupplier;
-
-import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
-import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.helpers.collection.Iterators.asSet;
@@ -49,7 +39,7 @@ import static org.neo4j.test.mockito.matcher.Neo4jMatchers.getPropertyKeys;
 /**
  * Test read access to committed label data.
  */
-public class DiskLayerLabelTest extends DiskLayerTest
+public class StorageLayerLabelTest extends StorageLayerTest
 {
     @Test
     public void should_be_able_to_list_labels_for_node() throws Exception

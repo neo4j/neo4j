@@ -36,6 +36,7 @@ import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AnonymousContext;
+import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -48,7 +49,7 @@ public abstract class KernelIntegrationTest
 {
     @SuppressWarnings("deprecation")
     protected GraphDatabaseAPI db;
-    protected ThreadToStatementContextBridge statementContextSupplier;
+    ThreadToStatementContextBridge statementContextSupplier;
     protected KernelAPI kernel;
     protected IndexingService indexingService;
 
@@ -56,6 +57,13 @@ public abstract class KernelIntegrationTest
     private Statement statement;
     private EphemeralFileSystemAbstraction fs;
     private DbmsOperations dbmsOperations;
+
+    protected Statement statementInNewTransaction( SecurityContext securityContext ) throws KernelException
+    {
+        transaction = kernel.newTransaction( KernelTransaction.Type.implicit, securityContext );
+        statement = transaction.acquireStatement();
+        return statement;
+    }
 
     protected TokenWriteOperations tokenWriteOperationsInNewTransaction() throws KernelException
     {
@@ -66,7 +74,7 @@ public abstract class KernelIntegrationTest
 
     protected DataWriteOperations dataWriteOperationsInNewTransaction() throws KernelException
     {
-        transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AnonymousContext.writeToken() );
+        transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AnonymousContext.write() );
         statement = transaction.acquireStatement();
         return statement.dataWriteOperations();
     }
@@ -163,13 +171,13 @@ public abstract class KernelIntegrationTest
         return graphDatabaseBuilder;
     }
 
-    protected void dbWithNoCache() throws TransactionFailureException
+    void dbWithNoCache() throws TransactionFailureException
     {
         stopDb();
         startDb();
     }
 
-    protected void stopDb() throws TransactionFailureException
+    private void stopDb() throws TransactionFailureException
     {
         if ( transaction != null )
         {

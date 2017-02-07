@@ -22,8 +22,8 @@ package org.neo4j.kernel.impl.api;
 import org.junit.Test;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.impl.proc.Procedures;
 
@@ -38,7 +38,7 @@ public class DataStatementArgumentVerificationTest
             throws Exception
     {
         // given
-        DataWriteOperations statement = stubStatement();
+        ReadOperations statement = stubStatement();
 
         // when
         Object value = statement.nodeGetProperty( 17, StatementConstants.NO_SUCH_PROPERTY_KEY );
@@ -52,7 +52,7 @@ public class DataStatementArgumentVerificationTest
             throws Exception
     {
         // given
-        DataWriteOperations statement = stubStatement();
+        ReadOperations statement = stubStatement();
 
         // when
         Object value = statement.relationshipGetProperty( 17, StatementConstants.NO_SUCH_PROPERTY_KEY );
@@ -66,7 +66,7 @@ public class DataStatementArgumentVerificationTest
             throws Exception
     {
         // given
-        DataWriteOperations statement = stubStatement();
+        ReadOperations statement = stubStatement();
 
         // when
         Object value = statement.graphGetProperty( StatementConstants.NO_SUCH_PROPERTY_KEY );
@@ -79,7 +79,7 @@ public class DataStatementArgumentVerificationTest
     public void shouldReturnEmptyIdIteratorFromNodesGetForLabelForNoSuchLabelConstant() throws Exception
     {
         // given
-        DataWriteOperations statement = stubStatement();
+        ReadOperations statement = stubStatement();
 
         // when
         PrimitiveLongIterator nodes = statement.nodesGetForLabel( StatementConstants.NO_SUCH_LABEL );
@@ -92,7 +92,7 @@ public class DataStatementArgumentVerificationTest
     public void shouldAlwaysReturnFalseFromNodeHasLabelForNoSuchLabelConstant() throws Exception
     {
         // given
-        DataWriteOperations statement = stubStatement();
+        ReadOperations statement = stubStatement();
 
         // when
         boolean hasLabel = statement.nodeHasLabel( 17, StatementConstants.NO_SUCH_LABEL );

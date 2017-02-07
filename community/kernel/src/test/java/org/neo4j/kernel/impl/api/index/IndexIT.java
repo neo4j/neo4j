@@ -27,12 +27,16 @@ import java.util.Set;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
+import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
+import org.neo4j.kernel.api.security.AnonymousContext;
+import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 
@@ -66,45 +70,33 @@ public class IndexIT extends KernelIntegrationTest
     public void addIndexRuleInATransaction() throws Exception
     {
         // GIVEN
-        IndexDescriptor expectedRule;
-        {
-            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
+        SchemaWriteOperations schemaWriteOperations = schemaWriteOperationsInNewTransaction();
 
-            // WHEN
-            expectedRule = statement.indexCreate( descriptor );
-            commit();
-        }
+        // WHEN
+        IndexDescriptor expectedRule = schemaWriteOperations.indexCreate( descriptor );
+        commit();
 
         // THEN
-        {
-            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            assertEquals( asSet( expectedRule ),
-                          asSet( statement.indexesGetForLabel( labelId ) ) );
-            assertEquals( expectedRule, statement.indexGetForLabelAndPropertyKey( descriptor ) );
-            commit();
-        }
+        ReadOperations readOperations = readOperationsInNewTransaction();
+        assertEquals( asSet( expectedRule ), asSet( readOperations.indexesGetForLabel( labelId ) ) );
+        assertEquals( expectedRule, readOperations.indexGetForLabelAndPropertyKey( descriptor ) );
+        commit();
     }
 
     @Test
     public void committedAndTransactionalIndexRulesShouldBeMerged() throws Exception
     {
         // GIVEN
-        IndexDescriptor existingRule;
-        {
-            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            existingRule = statement.indexCreate( descriptor );
-            commit();
-        }
+        SchemaWriteOperations schemaWriteOperations = schemaWriteOperationsInNewTransaction();
+        IndexDescriptor existingRule = schemaWriteOperations.indexCreate( descriptor );
+        commit();
 
         // WHEN
-        IndexDescriptor addedRule;
-        Set<IndexDescriptor> indexRulesInTx;
-        {
-            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            addedRule = statement.indexCreate( new NodePropertyDescriptor( labelId, 10 ) );
-            indexRulesInTx = asSet( statement.indexesGetForLabel( labelId ) );
-            commit();
-        }
+        Statement statement = statementInNewTransaction( AnonymousContext.AUTH_DISABLED );
+        IndexDescriptor addedRule =
+                statement.schemaWriteOperations().indexCreate( new NodePropertyDescriptor( labelId, 10 ) );
+        Set<IndexDescriptor> indexRulesInTx = asSet( statement.readOperations().indexesGetForLabel( labelId ) );
+        commit();
 
         // THEN
         assertEquals( asSet( existingRule, addedRule ), indexRulesInTx );
@@ -114,21 +106,17 @@ public class IndexIT extends KernelIntegrationTest
     public void rollBackIndexRuleShouldNotBeCommitted() throws Exception
     {
         // GIVEN
-        {
-            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
+        SchemaWriteOperations schemaWriteOperations = schemaWriteOperationsInNewTransaction();
 
-            // WHEN
-            statement.indexCreate( descriptor );
-            // don't mark as success
-            rollback();
-        }
+        // WHEN
+        schemaWriteOperations.indexCreate( descriptor );
+        // don't mark as success
+        rollback();
 
         // THEN
-        {
-            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            assertEquals( emptySetOf( IndexDescriptor.class ), asSet( statement.indexesGetForLabel( labelId ) ) );
-            commit();
-        }
+        ReadOperations readOperations = readOperationsInNewTransaction();
+        assertEquals( emptySetOf( IndexDescriptor.class ), asSet( readOperations.indexesGetForLabel( labelId ) ) );
+        commit();
     }
 
     @Test
@@ -142,11 +130,9 @@ public class IndexIT extends KernelIntegrationTest
         restartDb();
 
         // then
-        {
-            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            assertEquals( emptySetOf( IndexDescriptor.class ), asSet( statement.indexesGetForLabel( labelId ) ) );
-            commit();
-        }
+        ReadOperations readOperations = readOperationsInNewTransaction();
+        assertEquals( emptySetOf( IndexDescriptor.class ), asSet( readOperations.indexesGetForLabel( labelId ) ) );
+        commit();
     }
 
     @Test
@@ -211,13 +197,11 @@ public class IndexIT extends KernelIntegrationTest
     public void shouldListConstraintIndexesInTheBeansAPI() throws Exception
     {
         // given
-        {
-            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            statement.uniquePropertyConstraintCreate( new NodePropertyDescriptor(
-                    statement.labelGetOrCreateForName( "Label1" ),
-                    statement.propertyKeyGetOrCreateForName( "property1" ) ) );
-            commit();
-        }
+        Statement statement = statementInNewTransaction( SecurityContext.AUTH_DISABLED );
+        statement.schemaWriteOperations().uniquePropertyConstraintCreate(
+                new NodePropertyDescriptor( statement.tokenWriteOperations().labelGetOrCreateForName( "Label1" ),
+                        statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "property1" ) ) );
+        commit();
 
         // when
         try ( Transaction tx = db.beginTx() )
@@ -253,35 +237,27 @@ public class IndexIT extends KernelIntegrationTest
     public void shouldNotListConstraintIndexesAmongIndexes() throws Exception
     {
         // given
-        {
-            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            statement.uniquePropertyConstraintCreate( descriptor );
-            commit();
-        }
+        SchemaWriteOperations schemaWriteOperations = schemaWriteOperationsInNewTransaction();
+        schemaWriteOperations.uniquePropertyConstraintCreate( descriptor );
+        commit();
 
         // then/when
-        {
-            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            assertFalse( statement.indexesGetAll().hasNext() );
-            assertFalse( statement.indexesGetForLabel( labelId ).hasNext() );
-        }
+        ReadOperations readOperations = readOperationsInNewTransaction();
+        assertFalse( readOperations.indexesGetAll().hasNext() );
+        assertFalse( readOperations.indexesGetForLabel( labelId ).hasNext() );
     }
 
     @Test
     public void shouldNotListIndexesAmongConstraintIndexes() throws Exception
     {
         // given
-        {
-            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            statement.indexCreate( descriptor );
-            commit();
-        }
+        SchemaWriteOperations schemaWriteOperations = schemaWriteOperationsInNewTransaction();
+        schemaWriteOperations.indexCreate( descriptor );
+        commit();
 
         // then/when
-        {
-            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            assertFalse( statement.uniqueIndexesGetAll().hasNext() );
-            assertFalse( statement.uniqueIndexesGetForLabel( labelId ).hasNext() );
-        }
+        ReadOperations readOperations = readOperationsInNewTransaction();
+        assertFalse( readOperations.uniqueIndexesGetAll().hasNext() );
+        assertFalse( readOperations.uniqueIndexesGetForLabel( labelId ).hasNext() );
     }
 }

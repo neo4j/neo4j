@@ -33,10 +33,9 @@ import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.store.RecordStore;
+import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
-
-import static org.neo4j.consistency.checking.schema.IndexRules.loadAllIndexRules;
 
 public class IndexAccessors implements Closeable
 {
@@ -47,7 +46,7 @@ public class IndexAccessors implements Closeable
                            RecordStore<DynamicRecord> schemaStore,
                            IndexSamplingConfig samplingConfig ) throws IOException
     {
-        Iterator<IndexRule> rules = loadAllIndexRules( schemaStore ).iterator();
+        Iterator<IndexRule> rules = new SchemaStorage( schemaStore ).indexesGetAll();
         for (; ; )
         {
             try

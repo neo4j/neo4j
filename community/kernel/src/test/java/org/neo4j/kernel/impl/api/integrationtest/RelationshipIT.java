@@ -33,9 +33,9 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ReadOperations;
-import org.neo4j.test.OtherThreadExecutor;
+import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.test.rule.concurrent.OtherThreadRule;
 
 import static org.hamcrest.CoreMatchers.hasItem;
@@ -55,62 +55,55 @@ public class RelationshipIT extends KernelIntegrationTest
     public void shouldListRelationshipsInCurrentAndSubsequentTx() throws Exception
     {
         // given
-        long refNode, fromRefToOther1, fromRefToOther2, fromOtherToRef, fromRefToRef, fromRefToThird;
-        int relType1, relType2;
-        {
-            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
+        Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
+        int relType1 = statement.tokenWriteOperations().relationshipTypeGetOrCreateForName( "Type1" );
+        int relType2 = statement.tokenWriteOperations().relationshipTypeGetOrCreateForName( "Type2" );
 
-            relType1 = statement.relationshipTypeGetOrCreateForName( "Type1" );
-            relType2 = statement.relationshipTypeGetOrCreateForName( "Type2" );
+        long refNode = statement.dataWriteOperations().nodeCreate();
+        long otherNode = statement.dataWriteOperations().nodeCreate();
+        long fromRefToOther1 = statement.dataWriteOperations().relationshipCreate( relType1, refNode, otherNode );
+        long fromRefToOther2 = statement.dataWriteOperations().relationshipCreate( relType2, refNode, otherNode );
+        long fromOtherToRef = statement.dataWriteOperations().relationshipCreate( relType1, otherNode, refNode );
+        long fromRefToRef = statement.dataWriteOperations().relationshipCreate( relType2, refNode, refNode );
+        long endNode = statement.dataWriteOperations().nodeCreate();
+        long fromRefToThird = statement.dataWriteOperations().relationshipCreate( relType2, refNode, endNode );
 
-            refNode = statement.nodeCreate();
-            long otherNode = statement.nodeCreate();
-            fromRefToOther1 = statement.relationshipCreate( relType1, refNode, otherNode );
-            fromRefToOther2 = statement.relationshipCreate( relType2, refNode, otherNode );
-            fromOtherToRef = statement.relationshipCreate( relType1, otherNode, refNode );
-            fromRefToRef = statement.relationshipCreate( relType2, refNode, refNode );
-            fromRefToThird = statement.relationshipCreate( relType2, refNode, statement.nodeCreate() );
+        // when & then
+        assertRels( statement.readOperations().nodeGetRelationships( refNode, BOTH ), fromRefToOther1, fromRefToOther2,
+                fromRefToRef, fromRefToThird, fromOtherToRef );
 
-            // when & then
-            assertRels( statement.nodeGetRelationships( refNode, BOTH ),
-                        fromRefToOther1, fromRefToOther2, fromRefToRef, fromRefToThird, fromOtherToRef);
+        assertRels( statement.readOperations().nodeGetRelationships( refNode, BOTH, relType1 ), fromRefToOther1,
+                fromOtherToRef );
 
-            assertRels( statement.nodeGetRelationships( refNode, BOTH, relType1 ),
-                    fromRefToOther1, fromOtherToRef);
+        assertRels( statement.readOperations().nodeGetRelationships( refNode, BOTH, relType1, relType2 ),
+                fromRefToOther1, fromRefToOther2, fromRefToRef, fromRefToThird, fromOtherToRef );
 
-            assertRels( statement.nodeGetRelationships( refNode, BOTH, relType1, relType2 ),
-                    fromRefToOther1, fromRefToOther2, fromRefToRef, fromRefToThird, fromOtherToRef);
+        assertRels( statement.readOperations().nodeGetRelationships( refNode, INCOMING ), fromOtherToRef );
 
-            assertRels( statement.nodeGetRelationships( refNode, INCOMING ), fromOtherToRef );
+        assertRels( statement.readOperations().nodeGetRelationships( refNode, INCOMING, relType1 ) /* none */ );
 
-            assertRels( statement.nodeGetRelationships( refNode, INCOMING, relType1 ) /* none */);
+        assertRels( statement.readOperations().nodeGetRelationships( refNode, OUTGOING, relType1, relType2 ),
+                fromRefToOther1, fromRefToOther2, fromRefToThird, fromRefToRef );
 
-            assertRels( statement.nodeGetRelationships( refNode, OUTGOING, relType1, relType2 ),
-                    fromRefToOther1, fromRefToOther2, fromRefToThird, fromRefToRef);
+        // when
+        commit();
+        ReadOperations readOperations = readOperationsInNewTransaction();
 
-            // when
-            commit();
-        }
-        {
-            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
+        // when & then
+        assertRels( readOperations.nodeGetRelationships( refNode, BOTH ), fromRefToOther1, fromRefToOther2,
+                fromRefToRef, fromRefToThird, fromOtherToRef );
 
-            // when & then
-            assertRels( statement.nodeGetRelationships( refNode, BOTH ),
-                    fromRefToOther1, fromRefToOther2, fromRefToRef, fromRefToThird, fromOtherToRef);
+        assertRels( readOperations.nodeGetRelationships( refNode, BOTH, relType1 ), fromRefToOther1, fromOtherToRef );
 
-            assertRels( statement.nodeGetRelationships( refNode, BOTH, relType1 ),
-                    fromRefToOther1, fromOtherToRef);
+        assertRels( readOperations.nodeGetRelationships( refNode, BOTH, relType1, relType2 ), fromRefToOther1,
+                fromRefToOther2, fromRefToRef, fromRefToThird, fromOtherToRef );
 
-            assertRels( statement.nodeGetRelationships( refNode, BOTH, relType1, relType2 ),
-                    fromRefToOther1, fromRefToOther2, fromRefToRef, fromRefToThird, fromOtherToRef);
+        assertRels( readOperations.nodeGetRelationships( refNode, INCOMING ), fromOtherToRef );
 
-            assertRels( statement.nodeGetRelationships( refNode, INCOMING ), fromOtherToRef );
+        assertRels( readOperations.nodeGetRelationships( refNode, INCOMING, relType1 ) /* none */ );
 
-            assertRels( statement.nodeGetRelationships( refNode, INCOMING, relType1 ) /* none */);
-
-            assertRels( statement.nodeGetRelationships( refNode, OUTGOING, relType1, relType2 ),
-                    fromRefToOther1, fromRefToOther2, fromRefToThird, fromRefToRef);
-        }
+        assertRels( readOperations.nodeGetRelationships( refNode, OUTGOING, relType1, relType2 ), fromRefToOther1,
+                fromRefToOther2, fromRefToThird, fromRefToRef );
     }
 
     @Test
@@ -120,57 +113,27 @@ public class RelationshipIT extends KernelIntegrationTest
         long refNode, fromRefToOther1, fromRefToOther2;
         int relType1, relType2;
         {
-            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
+            Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
 
-            relType1 = statement.relationshipTypeGetOrCreateForName( "Type1" );
-            relType2 = statement.relationshipTypeGetOrCreateForName( "Type2" );
+            relType1 = statement.tokenWriteOperations().relationshipTypeGetOrCreateForName( "Type1" );
+            relType2 = statement.tokenWriteOperations().relationshipTypeGetOrCreateForName( "Type2" );
 
-            refNode = statement.nodeCreate();
-            long otherNode = statement.nodeCreate();
-            fromRefToOther1 = statement.relationshipCreate( relType1, refNode, otherNode );
-            fromRefToOther2 = statement.relationshipCreate( relType2, refNode, otherNode );
+            refNode = statement.dataWriteOperations().nodeCreate();
+            long otherNode = statement.dataWriteOperations().nodeCreate();
+            fromRefToOther1 = statement.dataWriteOperations().relationshipCreate( relType1, refNode, otherNode );
+            fromRefToOther2 = statement.dataWriteOperations().relationshipCreate( relType2, refNode, otherNode );
             commit();
         }
         {
-            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
+            Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
 
             // When
-            statement.relationshipDelete( fromRefToOther1 );
-            long localTxRel = statement.relationshipCreate( relType1, refNode, statement.nodeCreate() );
+            statement.dataWriteOperations().relationshipDelete( fromRefToOther1 );
+            long endNode = statement.dataWriteOperations().nodeCreate();
+            long localTxRel = statement.dataWriteOperations().relationshipCreate( relType1, refNode, endNode );
 
             // Then
-            assertRels( statement.nodeGetRelationships( refNode, BOTH ), fromRefToOther2, localTxRel);
-            assertRelsInSeparateTx( refNode, BOTH, fromRefToOther1, fromRefToOther2);
-        }
-    }
-
-    @Test
-    public void shouldAllowIteratingAndDeletingRelsAtTheSameTime() throws Exception
-    {
-        // given
-        long refNode, fromRefToOther1, fromRefToOther2;
-        int relType1, relType2;
-        {
-            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
-
-            relType1 = statement.relationshipTypeGetOrCreateForName( "Type1" );
-            relType2 = statement.relationshipTypeGetOrCreateForName( "Type2" );
-
-            refNode = statement.nodeCreate();
-            long otherNode = statement.nodeCreate();
-            fromRefToOther1 = statement.relationshipCreate( relType1, refNode, otherNode );
-            fromRefToOther2 = statement.relationshipCreate( relType2, refNode, otherNode );
-            commit();
-        }
-        {
-            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
-
-            // When
-            statement.relationshipDelete( fromRefToOther1 );
-            long localTxRel = statement.relationshipCreate( relType1, refNode, statement.nodeCreate() );
-
-            // Then
-            assertRels( statement.nodeGetRelationships( refNode, BOTH ), fromRefToOther2, localTxRel);
+            assertRels( statement.readOperations().nodeGetRelationships( refNode, BOTH ), fromRefToOther2, localTxRel);
             assertRelsInSeparateTx( refNode, BOTH, fromRefToOther1, fromRefToOther2);
         }
     }
@@ -178,23 +141,18 @@ public class RelationshipIT extends KernelIntegrationTest
     @Test
     public void shouldReturnRelsWhenAskingForRelsWhereOnlySomeTypesExistInCurrentRel() throws Exception
     {
-        // given
-        long refNode, theRel;
-        int relType1, relType2;
-        {
-            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
+        Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
 
-            relType1 = statement.relationshipTypeGetOrCreateForName( "Type1" );
-            relType2 = statement.relationshipTypeGetOrCreateForName( "Type2" );
+        int relType1 = statement.tokenWriteOperations().relationshipTypeGetOrCreateForName( "Type1" );
+        int relType2 = statement.tokenWriteOperations().relationshipTypeGetOrCreateForName( "Type2" );
 
-            refNode = statement.nodeCreate();
-            long otherNode = statement.nodeCreate();
-            theRel = statement.relationshipCreate( relType1, refNode, otherNode );
+        long refNode = statement.dataWriteOperations().nodeCreate();
+        long otherNode = statement.dataWriteOperations().nodeCreate();
+        long theRel = statement.dataWriteOperations().relationshipCreate( relType1, refNode, otherNode );
 
-            assertRels( statement.nodeGetRelationships( refNode, Direction.OUTGOING, relType2, relType1 ), theRel );
-
-            commit();
-        }
+        assertRels( statement.readOperations().nodeGetRelationships( refNode, Direction.OUTGOING, relType2, relType1 ),
+                theRel );
+        commit();
     }
 
     @Test
@@ -205,47 +163,41 @@ public class RelationshipIT extends KernelIntegrationTest
         long refNode;
         int relTypeTheNodeDoesUse, relTypeTheNodeDoesNotUse;
         {
-            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
+            Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
 
-            relTypeTheNodeDoesUse = statement.relationshipTypeGetOrCreateForName( "Type1" );
-            relTypeTheNodeDoesNotUse = statement.relationshipTypeGetOrCreateForName( "Type2" );
+            relTypeTheNodeDoesUse = statement.tokenWriteOperations().relationshipTypeGetOrCreateForName( "Type1" );
+            relTypeTheNodeDoesNotUse = statement.tokenWriteOperations().relationshipTypeGetOrCreateForName( "Type2" );
 
-            refNode = statement.nodeCreate();
-            long otherNode = statement.nodeCreate();
+            refNode = statement.dataWriteOperations().nodeCreate();
+            long otherNode = statement.dataWriteOperations().nodeCreate();
 
             for ( int i = 0; i < rels.length; i++ )
             {
-                rels[i] = statement.relationshipCreate( relTypeTheNodeDoesUse, refNode, otherNode );
+                rels[i] =
+                        statement.dataWriteOperations().relationshipCreate( relTypeTheNodeDoesUse, refNode, otherNode );
             }
             commit();
         }
+        ReadOperations stmt = readOperationsInNewTransaction();
 
-        {
-            ReadOperations stmt = readOperationsInNewTransaction();
+        // When I've asked for rels that the node does not have
+        assertRels( stmt.nodeGetRelationships( refNode, Direction.INCOMING, relTypeTheNodeDoesNotUse ) );
 
-            // When I've asked for rels that the node does not have
-            assertRels( stmt.nodeGetRelationships(refNode, Direction.INCOMING, relTypeTheNodeDoesNotUse ) );
-
-            // Then the node should still load the real rels
-            assertRels( stmt.nodeGetRelationships(refNode, Direction.BOTH, relTypeTheNodeDoesUse ), rels );
-        }
+        // Then the node should still load the real rels
+        assertRels( stmt.nodeGetRelationships( refNode, Direction.BOTH, relTypeTheNodeDoesUse ), rels );
     }
 
     private void assertRelsInSeparateTx( final long refNode, final Direction both, final long ... longs ) throws
             InterruptedException, ExecutionException, TimeoutException
     {
-        assertTrue( otherThread.execute( new OtherThreadExecutor.WorkerCommand<Object, Boolean>()
+        assertTrue( otherThread.execute( state ->
         {
-            @Override
-            public Boolean doWork( Object state ) throws Exception
+            try ( Transaction tx = db.beginTx() )
             {
-                try ( Transaction tx = db.beginTx() )
-                {
-                    ReadOperations stmt = statementContextSupplier.get().readOperations();
-                    assertRels( stmt.nodeGetRelationships( refNode, both ), longs );
-                }
-                return true;
+                ReadOperations stmt = statementContextSupplier.get().readOperations();
+                assertRels( stmt.nodeGetRelationships( refNode, both ), longs );
             }
+            return true;
         } ).get( 10, TimeUnit.SECONDS ) );
     }
 

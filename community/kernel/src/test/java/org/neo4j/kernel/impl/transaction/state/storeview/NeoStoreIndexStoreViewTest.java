@@ -229,8 +229,8 @@ public class NeoStoreIndexStoreViewTest
 
             try ( Statement statement = bridge.get() )
             {
-                labelId = statement.dataWriteOperations().labelGetOrCreateForName( "Person" );
-                propertyKeyId = statement.dataWriteOperations().propertyKeyGetOrCreateForName( "name" );
+                labelId = statement.tokenWriteOperations().labelGetOrCreateForName( "Person" );
+                propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "name" );
             }
             tx.success();
         }

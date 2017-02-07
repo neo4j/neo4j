@@ -38,17 +38,16 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
@@ -91,9 +90,9 @@ public class IndexCRUDIT
         // Then, for now, this should trigger two NodePropertyUpdates
         try ( Transaction tx = db.beginTx() )
         {
-            DataWriteOperations statement = ctxSupplier.get().dataWriteOperations();
-            int propertyKey1 = statement.propertyKeyGetForName( indexProperty );
-            long[] labels = new long[]{statement.labelGetForName( myLabel.name() )};
+            ReadOperations readOperations = ctxSupplier.get().readOperations();
+            int propertyKey1 = readOperations.propertyKeyGetForName( indexProperty );
+            long[] labels = new long[]{readOperations.labelGetForName( myLabel.name() )};
             assertThat( writer.updatesCommitted, equalTo( asSet(
                     NodePropertyUpdate.add( node.getId(), propertyKey1, value1, labels ) ) ) );
             tx.success();
@@ -130,9 +129,9 @@ public class IndexCRUDIT
         // THEN
         try ( Transaction tx = db.beginTx() )
         {
-            DataWriteOperations statement = ctxSupplier.get().dataWriteOperations();
-            int propertyKey1 = statement.propertyKeyGetForName( indexProperty );
-            long[] labels = new long[]{statement.labelGetForName( myLabel.name() )};
+            ReadOperations readOperations = ctxSupplier.get().readOperations();
+            int propertyKey1 = readOperations.propertyKeyGetForName( indexProperty );
+            long[] labels = new long[]{readOperations.labelGetForName( myLabel.name() )};
             assertThat( writer.updatesCommitted, equalTo( asSet(
                     NodePropertyUpdate.add( node.getId(), propertyKey1, value, labels ) ) ) );
             tx.success();

@@ -31,6 +31,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.DataWriteOperations;
+import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
@@ -250,17 +251,17 @@ public class GraphDbStructureGuideTest
 
     private int createLabel( String name ) throws Exception
     {
-        return dataWrite().labelGetOrCreateForName( name );
+        return tokenWrite().labelGetOrCreateForName( name );
     }
 
     private int createPropertyKey( String name ) throws Exception
     {
-        return dataWrite().propertyKeyGetOrCreateForName( name );
+        return tokenWrite().propertyKeyGetOrCreateForName( name );
     }
 
     private int createRelTypeId( String name ) throws Exception
     {
-        return dataWrite().relationshipTypeGetOrCreateForName( name );
+        return tokenWrite().relationshipTypeGetOrCreateForName( name );
     }
 
     @Rule
@@ -299,6 +300,11 @@ public class GraphDbStructureGuideTest
     private ReadOperations read()
     {
         return statement().readOperations();
+    }
+
+    private TokenWriteOperations tokenWrite() throws Exception
+    {
+        return statement().tokenWriteOperations();
     }
 
     private DataWriteOperations dataWrite() throws Exception

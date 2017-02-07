@@ -28,11 +28,12 @@ import java.util.Set;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.api.DataWriteOperations;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
-import org.neo4j.kernel.api.SchemaWriteOperations;
+import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.security.AnonymousContext;
+import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.internal.Version;
 
 import static java.util.Collections.singletonList;
@@ -54,10 +55,10 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
     public void listAllLabels() throws Throwable
     {
         // Given
-        DataWriteOperations ops = dataWriteOperationsInNewTransaction();
-        long nodeId = ops.nodeCreate();
-        int labelId = ops.labelGetOrCreateForName( "MyLabel" );
-        ops.nodeAddLabel( nodeId, labelId );
+        Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
+        long nodeId = statement.dataWriteOperations().nodeCreate();
+        int labelId = statement.tokenWriteOperations().labelGetOrCreateForName( "MyLabel" );
+        statement.dataWriteOperations().nodeAddLabel( nodeId, labelId );
         commit();
 
         // When
@@ -72,7 +73,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
     public void listPropertyKeys() throws Throwable
     {
         // Given
-        DataWriteOperations ops = dataWriteOperationsInNewTransaction();
+        TokenWriteOperations ops = tokenWriteOperationsInNewTransaction();
         ops.propertyKeyGetOrCreateForName( "MyProp" );
         commit();
 
@@ -88,9 +89,11 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
     public void listRelationshipTypes() throws Throwable
     {
         // Given
-        DataWriteOperations ops = dataWriteOperationsInNewTransaction();
-        int relType = ops.relationshipTypeGetOrCreateForName( "MyRelType" );
-        ops.relationshipCreate( relType, ops.nodeCreate(), ops.nodeCreate() );
+        Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
+        int relType = statement.tokenWriteOperations().relationshipTypeGetOrCreateForName( "MyRelType" );
+        long startNodeId = statement.dataWriteOperations().nodeCreate();
+        long endNodeId = statement.dataWriteOperations().nodeCreate();
+        statement.dataWriteOperations().relationshipCreate( relType, startNodeId, endNodeId );
         commit();
 
         // When
@@ -185,13 +188,14 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
     public void listAllIndexes() throws Throwable
     {
         // Given
-        SchemaWriteOperations ops = schemaWriteOperationsInNewTransaction();
-        int labelId1 = ops.labelGetOrCreateForName( "Person" );
-        int labelId2 = ops.labelGetOrCreateForName( "Age" );
-        int propertyKeyId = ops.propertyKeyGetOrCreateForName( "foo" );
+        Statement statement = statementInNewTransaction( SecurityContext.AUTH_DISABLED );
+        int labelId1 = statement.tokenWriteOperations().labelGetOrCreateForName( "Person" );
+        int labelId2 = statement.tokenWriteOperations().labelGetOrCreateForName( "Age" );
+        int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "foo" );
         //TODO: Add test support for composite indexes
-        ops.indexCreate( new NodePropertyDescriptor( labelId1, propertyKeyId ) );
-        ops.uniquePropertyConstraintCreate( new NodePropertyDescriptor( labelId2, propertyKeyId ) );
+        statement.schemaWriteOperations().indexCreate( new NodePropertyDescriptor( labelId1, propertyKeyId ) );
+        statement.schemaWriteOperations()
+                .uniquePropertyConstraintCreate( new NodePropertyDescriptor( labelId2, propertyKeyId ) );
         commit();
 
         //let indexes come online

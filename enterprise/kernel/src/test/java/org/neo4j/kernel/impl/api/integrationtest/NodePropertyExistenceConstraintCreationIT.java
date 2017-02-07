@@ -27,6 +27,7 @@ import org.neo4j.SchemaHelper;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
@@ -48,9 +49,9 @@ public class NodePropertyExistenceConstraintCreationIT
         extends AbstractConstraintCreationIT<NodePropertyExistenceConstraint,NodePropertyDescriptor>
 {
     @Override
-    int initializeLabelOrRelType( SchemaWriteOperations writeOps, String name ) throws KernelException
+    int initializeLabelOrRelType( TokenWriteOperations tokenWriteOperations, String name ) throws KernelException
     {
-        return writeOps.labelGetOrCreateForName( name );
+        return tokenWriteOperations.labelGetOrCreateForName( name );
     }
 
     @Override

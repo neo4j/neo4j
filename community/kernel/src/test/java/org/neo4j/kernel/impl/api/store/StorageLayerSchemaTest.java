@@ -33,7 +33,7 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
-public class DiskLayerSchemaTest extends DiskLayerTest
+public class StorageLayerSchemaTest extends StorageLayerTest
 {
     @Test
     public void shouldListAllConstraints()

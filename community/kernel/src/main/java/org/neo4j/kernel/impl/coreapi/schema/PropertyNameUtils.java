@@ -25,6 +25,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.ReadOperations;
@@ -138,7 +139,7 @@ public class PropertyNameUtils
         return Iterables.stream( propertyKeys ).mapToInt( statement::propertyKeyGetForName ).toArray();
     }
 
-    public static int[] getOrCreatePropertyKeyIds( SchemaWriteOperations statement, String[] propertyKeys )
+    public static int[] getOrCreatePropertyKeyIds( TokenWriteOperations statement, String[] propertyKeys )
             throws IllegalTokenNameException
     {
         int[] propertyKeyIds = new int[propertyKeys.length];
@@ -149,7 +150,7 @@ public class PropertyNameUtils
         return propertyKeyIds;
     }
 
-    public static int[] getOrCreatePropertyKeyIds( SchemaWriteOperations statement, IndexDefinition indexDefinition )
+    public static int[] getOrCreatePropertyKeyIds( TokenWriteOperations statement, IndexDefinition indexDefinition )
             throws IllegalTokenNameException
     {
         ArrayList<Integer> propertyKeyIds = new ArrayList<>();
