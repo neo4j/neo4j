@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.api.exceptions;
 
-public class InjectionProcedureException extends ProcedureException
+public class ProcedureInjectionException extends ProcedureException
 {
-    public InjectionProcedureException( Status statusCode, String message,
+    public ProcedureInjectionException( Status statusCode, String message,
                                Object... parameters )
     {
         super( statusCode, message, parameters );

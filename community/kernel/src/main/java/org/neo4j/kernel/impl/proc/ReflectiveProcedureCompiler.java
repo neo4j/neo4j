@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.RawIterator;
-import org.neo4j.kernel.api.exceptions.InjectionProcedureException;
+import org.neo4j.kernel.api.exceptions.ProcedureInjectionException;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -178,11 +178,10 @@ class ReflectiveProcedureCompiler
                 {
                     out.add( compileProcedure( procDefinition, constructor, method, warning, fullAccess ) );
                 }
-                catch ( InjectionProcedureException e )
+                catch ( ProcedureInjectionException e )
                 {
                     log.warn( e.getMessage() );
                 }
-
             }
             out.sort( Comparator.comparing( a -> a.signature().name().toString() ) );
             return out;
