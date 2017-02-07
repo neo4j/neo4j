@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.load_balancing;
+package org.neo4j.causalclustering.load_balancing.procedure;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -42,10 +42,10 @@ import org.neo4j.causalclustering.discovery.CoreTopologyService;
 import org.neo4j.causalclustering.discovery.ReadReplicaTopology;
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.causalclustering.load_balancing.Role;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.FieldSignature;
-import org.neo4j.kernel.api.proc.Neo4jTypes;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
@@ -61,12 +61,13 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.cluster_allow_reads_on_followers;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.cluster_routing_ttl;
-import static org.neo4j.causalclustering.discovery.TopologyHelper.addressesForReadReplicas;
-import static org.neo4j.causalclustering.discovery.TopologyHelper.adressesForCore;
-import static org.neo4j.causalclustering.discovery.TopologyHelper.addressesForReadReplica;
+import static org.neo4j.causalclustering.discovery.TestTopology.addressesForReadReplicas;
+import static org.neo4j.causalclustering.discovery.TestTopology.adressesForCore;
+import static org.neo4j.causalclustering.discovery.TestTopology.addressesForReadReplica;
 import static org.neo4j.causalclustering.identity.RaftTestMember.member;
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.api.proc.Neo4jTypes.NTInteger;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTMap;
 import static org.neo4j.logging.NullLogProvider.getInstance;
 
@@ -76,7 +77,7 @@ public class GetServersProcedureV1Test
     private final ClusterId clusterId = new ClusterId( UUID.randomUUID() );
 
     @Parameterized.Parameter( 0 )
-    public String ignored; // <- JUnit is happy only if this is here!
+    public String description;
     @Parameterized.Parameter( 1 )
     public Config config;
     @Parameterized.Parameter( 2 )
@@ -130,7 +131,8 @@ public class GetServersProcedureV1Test
         ProcedureSignature signature = proc.signature();
 
         // then
-        assertThat( signature.outputSignature(), containsInAnyOrder( new FieldSignature( "ttl", Neo4jTypes.NTInteger ),
+        assertThat( signature.outputSignature(), containsInAnyOrder(
+                new FieldSignature( "ttl", NTInteger ),
                 new FieldSignature( "servers", NTMap ) ) );
     }
 
@@ -157,8 +159,8 @@ public class GetServersProcedureV1Test
 
         // then
         ClusterView.Builder builder = new ClusterView.Builder();
-        builder.readAddress( adressesForCore( 0 ).getRaftServer() );
-        builder.routeAddress( adressesForCore( 0 ).getRaftServer() );
+        builder.readAddress( adressesForCore( 0 ).connectors().boltAddress() );
+        builder.routeAddress( adressesForCore( 0 ).connectors().boltAddress() );
 
         assertEquals( builder.build(), clusterView );
     }
@@ -189,12 +191,12 @@ public class GetServersProcedureV1Test
 
         // then
         ClusterView.Builder builder = new ClusterView.Builder();
-        builder.writeAddress( adressesForCore( 0 ).getRaftServer() );
-        builder.readAddress( adressesForCore( 1 ).getRaftServer() );
-        builder.readAddress( adressesForCore( 2 ).getRaftServer() );
-        builder.routeAddress( adressesForCore( 0 ).getRaftServer() );
-        builder.routeAddress( adressesForCore( 1 ).getRaftServer() );
-        builder.routeAddress( adressesForCore( 2 ).getRaftServer() );
+        builder.writeAddress( adressesForCore( 0 ).connectors().boltAddress() );
+        builder.readAddress( adressesForCore( 1 ).connectors().boltAddress() );
+        builder.readAddress( adressesForCore( 2 ).connectors().boltAddress() );
+        builder.routeAddress( adressesForCore( 0 ).connectors().boltAddress() );
+        builder.routeAddress( adressesForCore( 1 ).connectors().boltAddress() );
+        builder.routeAddress( adressesForCore( 2 ).connectors().boltAddress() );
 
         assertEquals( builder.build(), clusterView );
     }
@@ -223,9 +225,9 @@ public class GetServersProcedureV1Test
 
         // then
         ClusterView.Builder builder = new ClusterView.Builder();
-        builder.writeAddress( adressesForCore( 0 ).getRaftServer()  );
-        builder.readAddress( adressesForCore( 0 ).getRaftServer() );
-        builder.routeAddress( adressesForCore( 0 ).getRaftServer() );
+        builder.writeAddress( adressesForCore( 0 ).connectors().boltAddress()  );
+        builder.readAddress( adressesForCore( 0 ).connectors().boltAddress() );
+        builder.routeAddress( adressesForCore( 0 ).connectors().boltAddress() );
 
         assertEquals( builder.build(), clusterView );
     }
@@ -254,13 +256,13 @@ public class GetServersProcedureV1Test
 
         // then
         ClusterView.Builder builder = new ClusterView.Builder();
-        builder.writeAddress( adressesForCore( 0 ).getRaftServer() );
+        builder.writeAddress( adressesForCore( 0 ).connectors().boltAddress() );
         if ( expectFollowersAsReadEndPoints )
         {
-            builder.readAddress( adressesForCore( 0 ).getRaftServer() );
+            builder.readAddress( adressesForCore( 0 ).connectors().boltAddress() );
         }
-        builder.readAddress( addressesForReadReplica( 1 ).getClientConnectorAddresses().getBoltAddress() );
-        builder.routeAddress( adressesForCore( 0 ).getRaftServer() );
+        builder.readAddress( addressesForReadReplica( 1 ).connectors().boltAddress() );
+        builder.routeAddress( adressesForCore( 0 ).connectors().boltAddress() );
 
         assertEquals( builder.build(), clusterView );
     }
@@ -289,9 +291,9 @@ public class GetServersProcedureV1Test
 
         // then
         ClusterView.Builder builder = new ClusterView.Builder();
-        builder.writeAddress( adressesForCore( 0 ).getRaftServer() );
-        builder.readAddress( adressesForCore( 0 ).getRaftServer() );
-        builder.routeAddress( adressesForCore( 0 ).getRaftServer() );
+        builder.writeAddress( adressesForCore( 0 ).connectors().boltAddress() );
+        builder.readAddress( adressesForCore( 0 ).connectors().boltAddress() );
+        builder.routeAddress( adressesForCore( 0 ).connectors().boltAddress() );
 
         assertEquals( builder.build(), clusterView );
     }
@@ -319,8 +321,8 @@ public class GetServersProcedureV1Test
 
         // then
         ClusterView.Builder builder = new ClusterView.Builder();
-        builder.readAddress( adressesForCore( 0 ).getRaftServer() );
-        builder.routeAddress( adressesForCore( 0 ).getRaftServer() );
+        builder.readAddress( adressesForCore( 0 ).connectors().boltAddress() );
+        builder.routeAddress( adressesForCore( 0 ).connectors().boltAddress() );
 
         assertEquals( builder.build(), clusterView );
     }
@@ -349,8 +351,8 @@ public class GetServersProcedureV1Test
         // then
 
         ClusterView.Builder builder = new ClusterView.Builder();
-        builder.readAddress( adressesForCore( 0 ).getRaftServer() );
-        builder.routeAddress( adressesForCore( 0 ).getRaftServer() );
+        builder.readAddress( adressesForCore( 0 ).connectors().boltAddress() );
+        builder.routeAddress( adressesForCore( 0 ).connectors().boltAddress() );
 
         assertEquals( builder.build(), clusterView );
     }

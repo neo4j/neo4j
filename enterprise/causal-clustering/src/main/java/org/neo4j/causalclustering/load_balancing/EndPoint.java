@@ -19,13 +19,15 @@
  */
 package org.neo4j.causalclustering.load_balancing;
 
+import java.util.Objects;
+
 import org.neo4j.helpers.AdvertisedSocketAddress;
 
 /**
  * This class binds a certain role with an address and
  * thus defines a reachable endpoint with defined capabilities.
  */
-class EndPoint
+public class EndPoint
 {
     private final AdvertisedSocketAddress address;
     private final Role role;
@@ -35,7 +37,7 @@ class EndPoint
         return address.toString();
     }
 
-    private EndPoint( AdvertisedSocketAddress address, Role role )
+    public EndPoint( AdvertisedSocketAddress address, Role role )
     {
         this.address = address;
         this.role = role;
@@ -51,9 +53,27 @@ class EndPoint
         return new EndPoint( address, Role.READ );
     }
 
-    static EndPoint route( AdvertisedSocketAddress address )
+    public static EndPoint route( AdvertisedSocketAddress address )
     {
         return new EndPoint( address, Role.ROUTE );
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        { return true; }
+        if ( o == null || getClass() != o.getClass() )
+        { return false; }
+        EndPoint endPoint = (EndPoint) o;
+        return Objects.equals( address, endPoint.address ) &&
+               role == endPoint.role;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash( address, role );
     }
 
     @Override

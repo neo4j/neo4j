@@ -17,25 +17,27 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.discovery;
+package org.neo4j.causalclustering.load_balancing;
 
-public class ReadReplicaAddresses implements ClientConnector
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Function;
+
+import org.neo4j.causalclustering.discovery.ClientConnector;
+import org.neo4j.helpers.AdvertisedSocketAddress;
+
+import static java.util.Collections.emptyList;
+
+public class Util
 {
-    private final ClientConnectorAddresses clientConnectorAddresses;
-
-    ReadReplicaAddresses( ClientConnectorAddresses clientConnectorAddresses )
+    public static <T> List<T> asList( @SuppressWarnings( "OptionalUsedAsFieldOrParameterType" ) Optional<T> optional )
     {
-        this.clientConnectorAddresses = clientConnectorAddresses;
+        return optional.map( Collections::singletonList ).orElse( emptyList() );
     }
 
-    public ClientConnectorAddresses connectors()
+    public static Function<ClientConnector,AdvertisedSocketAddress> extractBoltAddress()
     {
-        return clientConnectorAddresses;
-    }
-
-    @Override
-    public String toString()
-    {
-        return String.format( "ReadReplicaAddresses{clientConnectorAddresses=%s}", clientConnectorAddresses );
+        return c -> c.connectors().boltAddress();
     }
 }

@@ -42,8 +42,11 @@ import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
 import org.neo4j.causalclustering.discovery.procedures.ClusterOverviewProcedure;
 import org.neo4j.causalclustering.discovery.procedures.CoreRoleProcedure;
 import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.causalclustering.load_balancing.GetServersProcedureV1;
-import org.neo4j.causalclustering.load_balancing.GetServersProcedureV2;
+import org.neo4j.causalclustering.load_balancing.LoadBalancingStrategy;
+import org.neo4j.causalclustering.load_balancing.procedure.GetServersProcedureV1;
+import org.neo4j.causalclustering.load_balancing.procedure.GetServersProcedureV2;
+import org.neo4j.causalclustering.load_balancing.strategy.AllServersStrategy;
+import org.neo4j.causalclustering.load_balancing.strategy.ServerShufflingStrategy;
 import org.neo4j.causalclustering.logging.BetterMessageLogger;
 import org.neo4j.causalclustering.logging.MessageLogger;
 import org.neo4j.causalclustering.logging.NullMessageLogger;
@@ -110,11 +113,14 @@ public class EnterpriseCoreEditionModule extends EditionModule
     @Override
     public void registerEditionSpecificProcedures( Procedures procedures ) throws KernelException
     {
+        LoadBalancingStrategy loadBalancingStrategy = new ServerShufflingStrategy(
+                new AllServersStrategy( topologyService, consensusModule.raftMachine(), config ) );
+
         procedures.registerProcedure( EnterpriseBuiltInDbmsProcedures.class, true );
         procedures.register(
                 new GetServersProcedureV1( topologyService, consensusModule.raftMachine(), config, logProvider ) );
         procedures.register(
-                new GetServersProcedureV2( topologyService, consensusModule.raftMachine(), config, logProvider ) );
+                new GetServersProcedureV2( loadBalancingStrategy ) );
         procedures.register(
                 new ClusterOverviewProcedure( topologyService, consensusModule.raftMachine(), logProvider ) );
         procedures.register( new CoreRoleProcedure( consensusModule.raftMachine() ) );

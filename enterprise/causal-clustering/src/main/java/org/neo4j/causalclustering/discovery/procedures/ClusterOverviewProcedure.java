@@ -88,7 +88,7 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
         for ( MemberId memberId : coreMembers )
         {
             Optional<ClientConnectorAddresses> clientConnectorAddresses =
-                    coreTopology.find( memberId ).map( CoreAddresses::getClientConnectorAddresses );
+                    coreTopology.find( memberId ).map( CoreAddresses::connectors );
             if ( clientConnectorAddresses.isPresent() )
             {
                 Role role = memberId.equals( leader ) ? Role.LEADER : Role.FOLLOWER;
@@ -101,7 +101,7 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
         }
         for ( ReadReplicaAddresses readReplicaAddresses : discoveryService.readReplicas().members() )
         {
-            endpoints.add( new ReadWriteEndPoint( readReplicaAddresses.getClientConnectorAddresses(), Role.READ_REPLICA ) );
+            endpoints.add( new ReadWriteEndPoint( readReplicaAddresses.connectors(), Role.READ_REPLICA ) );
         }
 
         Collections.sort( endpoints, ( o1, o2 ) -> o1.addresses().toString().compareTo( o2.addresses().toString() ) );

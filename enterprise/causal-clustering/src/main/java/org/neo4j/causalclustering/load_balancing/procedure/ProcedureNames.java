@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.load_balancing;
+package org.neo4j.causalclustering.load_balancing.procedure;
 
 import java.util.Arrays;
 
@@ -34,7 +34,7 @@ import java.util.Arrays;
 public enum ProcedureNames
 {
     GET_SERVERS_V1( "getServers" ),
-    GET_SERVERS_V2( "getServers_v2" );
+    GET_SERVERS_V2( "getServersV2" );
 
     private static final String[] nameSpace = new String[]{"dbms", "cluster", "routing"};
     private final String name;
