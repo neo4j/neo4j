@@ -82,7 +82,9 @@ import org.neo4j.kernel.api.proc.QualifiedName;
 import org.neo4j.kernel.api.proc.UserFunctionSignature;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.schema_new.SchemaBoundary;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.api.operations.CountsOperations;
@@ -612,11 +614,11 @@ public class OperationsFacade
 
     // <SchemaRead>
     @Override
-    public IndexDescriptor indexGetForLabelAndPropertyKey( NodePropertyDescriptor descriptor )
+    public NewIndexDescriptor indexGetForLabelAndPropertyKey( NodePropertyDescriptor descriptor )
             throws SchemaRuleNotFoundException
     {
         statement.assertOpen();
-        IndexDescriptor indexDescriptor = schemaRead().indexGetForLabelAndPropertyKey( statement, descriptor );
+        NewIndexDescriptor indexDescriptor = schemaRead().indexGetForLabelAndPropertyKey( statement, descriptor );
         if ( indexDescriptor == null )
         {
             throw new SchemaRuleNotFoundException( SchemaRule.Kind.INDEX_RULE,
@@ -626,30 +628,30 @@ public class OperationsFacade
     }
 
     @Override
-    public Iterator<IndexDescriptor> indexesGetForLabel( int labelId )
+    public Iterator<NewIndexDescriptor> indexesGetForLabel( int labelId )
     {
         statement.assertOpen();
         return schemaRead().indexesGetForLabel( statement, labelId );
     }
 
     @Override
-    public Iterator<IndexDescriptor> indexesGetAll()
+    public Iterator<NewIndexDescriptor> indexesGetAll()
     {
         statement.assertOpen();
         return schemaRead().indexesGetAll( statement );
     }
 
     @Override
-    public IndexDescriptor uniqueIndexGetForLabelAndPropertyKey( NodePropertyDescriptor descriptor )
+    public NewIndexDescriptor uniqueIndexGetForLabelAndPropertyKey( NodePropertyDescriptor descriptor )
             throws SchemaRuleNotFoundException, DuplicateSchemaRuleException
 
     {
-        IndexDescriptor result = null;
-        Iterator<IndexDescriptor> indexes = uniqueIndexesGetForLabel( descriptor.getLabelId() );
+        NewIndexDescriptor result = null;
+        Iterator<NewIndexDescriptor> indexes = uniqueIndexesGetForLabel( descriptor.getLabelId() );
         while ( indexes.hasNext() )
         {
-            IndexDescriptor index = indexes.next();
-            if ( index.equals( descriptor ) )
+            NewIndexDescriptor index = indexes.next();
+            if ( index.schema().equals( SchemaBoundary.map( descriptor ) ) )
             {
                 if ( null == result )
                 {
@@ -657,8 +659,7 @@ public class OperationsFacade
                 }
                 else
                 {
-                    throw new DuplicateSchemaRuleException( SchemaRule.Kind.CONSTRAINT_INDEX_RULE,
-                            SchemaDescriptorFactory.forLabel( descriptor.getLabelId(), descriptor.getPropertyKeyId() ) );
+                    throw new DuplicateSchemaRuleException( SchemaRule.Kind.CONSTRAINT_INDEX_RULE, index.schema() );
                 }
             }
         }
@@ -673,56 +674,56 @@ public class OperationsFacade
     }
 
     @Override
-    public Iterator<IndexDescriptor> uniqueIndexesGetForLabel( int labelId )
+    public Iterator<NewIndexDescriptor> uniqueIndexesGetForLabel( int labelId )
     {
         statement.assertOpen();
         return schemaRead().uniqueIndexesGetForLabel( statement, labelId );
     }
 
     @Override
-    public Long indexGetOwningUniquenessConstraintId( IndexDescriptor index ) throws SchemaRuleNotFoundException
+    public Long indexGetOwningUniquenessConstraintId( NewIndexDescriptor index ) throws SchemaRuleNotFoundException
     {
         statement.assertOpen();
         return schemaRead().indexGetOwningUniquenessConstraintId( statement, index );
     }
 
     @Override
-    public Iterator<IndexDescriptor> uniqueIndexesGetAll()
+    public Iterator<NewIndexDescriptor> uniqueIndexesGetAll()
     {
         statement.assertOpen();
         return schemaRead().uniqueIndexesGetAll( statement );
     }
 
     @Override
-    public InternalIndexState indexGetState( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public InternalIndexState indexGetState( NewIndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         statement.assertOpen();
         return schemaRead().indexGetState( statement, descriptor );
     }
 
     @Override
-    public PopulationProgress indexGetPopulationProgress( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public PopulationProgress indexGetPopulationProgress( NewIndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         statement.assertOpen();
         return schemaRead().indexGetPopulationProgress( statement, descriptor );
     }
 
     @Override
-    public long indexSize( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public long indexSize( NewIndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         statement.assertOpen();
         return schemaRead().indexSize( statement, descriptor );
     }
 
     @Override
-    public double indexUniqueValuesSelectivity( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public double indexUniqueValuesSelectivity( NewIndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         statement.assertOpen();
         return schemaRead().indexUniqueValuesPercentage( statement, descriptor );
     }
 
     @Override
-    public String indexGetFailure( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public String indexGetFailure( NewIndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         statement.assertOpen();
         return schemaRead().indexGetFailure( statement, descriptor );

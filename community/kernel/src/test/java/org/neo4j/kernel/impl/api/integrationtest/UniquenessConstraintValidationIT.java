@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.integrationtest;
 
 import org.junit.Test;
 
+import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
@@ -29,8 +30,9 @@ import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyConstraintViolationKernelException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
+import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.security.AnonymousContext;
 
 import static org.hamcrest.CoreMatchers.containsString;
@@ -324,16 +326,17 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         }
 
         Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
-        int person = statement.readOperations().labelGetForName( "Person" );
-        int id = statement.readOperations().propertyKeyGetForName( "id" );
-        IndexDescriptor idx = statement.readOperations()
+        ReadOperations readOps = statement.readOperations();
+        int person = readOps.labelGetForName( "Person" );
+        int id = readOps.propertyKeyGetForName( "id" );
+        NewIndexDescriptor idx = readOps
                 .uniqueIndexGetForLabelAndPropertyKey( new NodePropertyDescriptor( person, id ) );
 
         // when
         createLabeledNode( statement, "Item", "id", 2 );
 
         // then I should find the original node
-        assertThat( statement.readOperations().nodeGetFromUniqueIndexSeek( idx, 1 ), equalTo( ourNode ) );
+        assertThat( readOps.nodeGetFromUniqueIndexSeek( IndexBoundary.map( idx ), 1 ), equalTo( ourNode ) );
     }
 
     @Test
@@ -350,16 +353,17 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         }
 
         Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
-        int person = statement.readOperations().labelGetForName( "Person" );
-        int id = statement.readOperations().propertyKeyGetForName( "id" );
-        IndexDescriptor idx = statement.readOperations()
+        ReadOperations readOps = statement.readOperations();
+        int person = readOps.labelGetForName( "Person" );
+        int id = readOps.propertyKeyGetForName( "id" );
+        NewIndexDescriptor idx = readOps
                 .uniqueIndexGetForLabelAndPropertyKey( new NodePropertyDescriptor( person, id ) );
 
         // when
         createLabeledNode( statement, "Person", "id", 2 );
 
         // then I should find the original node
-        assertThat( statement.readOperations().nodeGetFromUniqueIndexSeek( idx, 1 ), equalTo( ourNode ));
+        assertThat( readOps.nodeGetFromUniqueIndexSeek( IndexBoundary.map( idx ), 1 ), equalTo( ourNode ));
     }
 
     private long constrainedNode( String labelName, String propertyKey, Object propertyValue )

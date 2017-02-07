@@ -36,19 +36,22 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
-import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.Key;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaBoundary;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.impl.factory.Edition;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.proc.TypeMappers;
@@ -72,8 +75,8 @@ import static org.neo4j.kernel.api.proc.Neo4jTypes.NTRelationship;
 
 public class BuiltInProceduresTest
 {
-    private final List<IndexDescriptor> indexes = new LinkedList<>();
-    private final List<IndexDescriptor> uniqueIndexes = new LinkedList<>();
+    private final List<NewIndexDescriptor> indexes = new LinkedList<>();
+    private final List<NewIndexDescriptor> uniqueIndexes = new LinkedList<>();
     private final List<PropertyConstraint> constraints = new LinkedList<>();
     private final Map<Integer, String> labels = new HashMap<>();
     private final Map<Integer, String> propKeys = new HashMap<>();
@@ -223,7 +226,7 @@ public class BuiltInProceduresTest
         int labelId = token( label, labels );
         int propId = token( propKey, propKeys );
 
-        IndexDescriptor index = IndexDescriptorFactory.of( labelId, propId );
+        NewIndexDescriptor index = NewIndexDescriptorFactory.forLabel( labelId, propId );
         indexes.add( index );
     }
 
@@ -232,9 +235,10 @@ public class BuiltInProceduresTest
         int labelId = token( label, labels );
         int propId = token( propKey, propKeys );
 
-        IndexDescriptor index = IndexDescriptorFactory.of( labelId, propId );
+        NewIndexDescriptor index = NewIndexDescriptorFactory.uniqueForLabel( labelId, propId );
         uniqueIndexes.add( index );
-        constraints.add( new UniquenessConstraint( index.descriptor() ) );
+        constraints.add( new UniquenessConstraint(
+                IndexDescriptorFactory.getNodePropertyDescriptor( labelId, propId ) ) );
     }
 
     private void givenNodePropExistenceConstraint( String label, String propKey )
@@ -323,7 +327,7 @@ public class BuiltInProceduresTest
         when(read.constraintsGetForLabel( anyInt() )).thenReturn( emptyIterator() );
         when(read.countsForNode( anyInt() )).thenReturn( 1L );
         when(read.countsForRelationship( anyInt(), anyInt(), anyInt() )).thenReturn( 1L );
-        when(read.indexGetState( any( IndexDescriptor.class)  )).thenReturn( InternalIndexState.ONLINE );
+        when(read.indexGetState( any( NewIndexDescriptor.class)  )).thenReturn( InternalIndexState.ONLINE );
     }
 
     private Answer<Iterator<Token>> asTokens( Map<Integer,String> tokens )

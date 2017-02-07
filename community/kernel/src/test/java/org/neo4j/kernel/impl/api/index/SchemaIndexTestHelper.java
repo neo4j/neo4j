@@ -31,6 +31,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.spi.KernelContext;
@@ -110,13 +111,13 @@ public class SchemaIndexTestHelper
         }
     }
 
-    public static void awaitIndexOnline( ReadOperations readOperations, IndexDescriptor indexRule )
+    public static void awaitIndexOnline( ReadOperations readOperations, NewIndexDescriptor index )
             throws IndexNotFoundKernelException
     {
         long start = System.currentTimeMillis();
         while(true)
         {
-            if ( readOperations.indexGetState( indexRule ) == InternalIndexState.ONLINE )
+            if ( readOperations.indexGetState( index ) == InternalIndexState.ONLINE )
            {
                break;
            }

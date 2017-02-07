@@ -19,16 +19,16 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import java.util.Iterator;
-
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
+import static org.neo4j.helpers.collection.Iterators.loop;
 import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
 
 /**
@@ -52,14 +52,12 @@ public class RemoveOrphanConstraintIndexesOnStartup
         try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
               Statement statement = transaction.acquireStatement() )
         {
-            for ( Iterator<IndexDescriptor> indexes = statement.readOperations().uniqueIndexesGetAll();
-                  indexes.hasNext(); )
+            for ( NewIndexDescriptor index : loop( statement.readOperations().uniqueIndexesGetAll() ) )
             {
-                IndexDescriptor index = indexes.next();
                 if ( statement.readOperations().indexGetOwningUniquenessConstraintId( index ) == null )
                 {
                     log.info( "Removing orphan constraint index: " + index );
-                    statement.schemaWriteOperations().uniqueIndexDrop( index );
+                    statement.schemaWriteOperations().uniqueIndexDrop( IndexBoundary.map( index ) );
                 }
             }
             transaction.success();

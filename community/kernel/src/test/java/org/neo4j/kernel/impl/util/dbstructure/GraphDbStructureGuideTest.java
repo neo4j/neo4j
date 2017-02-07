@@ -40,10 +40,14 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.graphdb.DynamicLabel.label;
@@ -123,7 +127,7 @@ public class GraphDbStructureGuideTest
 
         commitAndReOpen();
 
-        IndexDescriptor descriptor = createSchemaIndex( labelId, pkId );
+        NewIndexDescriptor descriptor = createSchemaIndex( labelId, pkId );
 
         // WHEN
         accept( visitor );
@@ -142,7 +146,7 @@ public class GraphDbStructureGuideTest
         commitAndReOpen();
 
         UniquenessConstraint constraint = createUniqueConstraint( labelId, pkId );
-        IndexDescriptor descriptor = IndexDescriptorFactory.of( labelId, pkId );
+        NewIndexDescriptor descriptor = NewIndexDescriptorFactory.uniqueForLabel( labelId, pkId );
 
         // WHEN
         accept( visitor );
@@ -222,9 +226,9 @@ public class GraphDbStructureGuideTest
         dataWrite().relationshipCreate( relTypeId, startId, endId );
     }
 
-    private IndexDescriptor createSchemaIndex( int labelId, int pkId ) throws Exception
+    private NewIndexDescriptor createSchemaIndex( int labelId, int pkId ) throws Exception
     {
-        return schemaWrite().indexCreate( new NodePropertyDescriptor( labelId, pkId ) );
+        return IndexBoundary.map( schemaWrite().indexCreate( new NodePropertyDescriptor( labelId, pkId ) ) );
     }
 
     private UniquenessConstraint createUniqueConstraint( int labelId, int pkId ) throws Exception

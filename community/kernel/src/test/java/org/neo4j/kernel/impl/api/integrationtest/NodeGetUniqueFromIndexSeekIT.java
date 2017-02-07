@@ -36,6 +36,8 @@ import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.test.DoubleLatch;
 
@@ -76,13 +78,13 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
     public void shouldFindMatchingNode() throws Exception
     {
         // given
-        IndexDescriptor index = createUniquenessConstraint();
+        NewIndexDescriptor index = createUniquenessConstraint();
         String value = "value";
         long nodeId = createNodeWithValue( value );
 
         // when looking for it
         ReadOperations readOperations = readOperationsInNewTransaction();
-        long foundId = readOperations.nodeGetFromUniqueIndexSeek( index, value );
+        long foundId = readOperations.nodeGetFromUniqueIndexSeek( IndexBoundary.map( index ), value );
         commit();
 
         // then
@@ -93,13 +95,13 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
     public void shouldNotFindNonMatchingNode() throws Exception
     {
         // given
-        IndexDescriptor index = createUniquenessConstraint();
+        NewIndexDescriptor index = createUniquenessConstraint();
         String value = "value";
         createNodeWithValue( "other_" + value );
 
         // when looking for it
         ReadOperations readOperations = readOperationsInNewTransaction();
-        long foundId = readOperations.nodeGetFromUniqueIndexSeek( index, value );
+        long foundId = readOperations.nodeGetFromUniqueIndexSeek( IndexBoundary.map( index ), value );
         commit();
 
         // then
@@ -126,7 +128,7 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
         // assert that we complete before timeout
         final DoubleLatch latch = new DoubleLatch();
 
-        final IndexDescriptor index = createUniquenessConstraint();
+        final NewIndexDescriptor index = createUniquenessConstraint();
         final String value = "value";
 
         DataWriteOperations dataStatement = dataWriteOperationsInNewTransaction();
@@ -143,7 +145,7 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
             {
                 try ( Statement statement1 = statementContextSupplier.get() )
                 {
-                    statement1.readOperations().nodeGetFromUniqueIndexSeek( index, value );
+                    statement1.readOperations().nodeGetFromUniqueIndexSeek( IndexBoundary.map( index ), value );
                 }
                 tx.success();
             }
@@ -190,12 +192,12 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
         return nodeId;
     }
 
-    private IndexDescriptor createUniquenessConstraint() throws Exception
+    private NewIndexDescriptor createUniquenessConstraint() throws Exception
     {
         Statement statement = statementInNewTransaction( SecurityContext.AUTH_DISABLED );
         NodePropertyDescriptor descriptor = new NodePropertyDescriptor( labelId, propertyKeyId );
         statement.schemaWriteOperations().uniquePropertyConstraintCreate( descriptor );
-        IndexDescriptor result = statement.readOperations().uniqueIndexGetForLabelAndPropertyKey( descriptor );
+        NewIndexDescriptor result = statement.readOperations().uniqueIndexGetForLabelAndPropertyKey( descriptor );
         commit();
         return result;
     }

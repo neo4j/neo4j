@@ -216,7 +216,7 @@ public class StorageLayer implements StoreReadLayer
     @Override
     public Long indexGetOwningUniquenessConstraintId( NewIndexDescriptor index ) throws SchemaRuleNotFoundException
     {
-        IndexRule rule = indexRule( index, Predicates.alwaysTrue() );
+        IndexRule rule = indexRule( index, NewIndexDescriptor.Filter.ANY );
         if ( rule != null )
         {
             return rule.getOwningConstraint();
@@ -225,7 +225,7 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
-    public long indexGetCommittedId( NewIndexDescriptor index, Predicate<NewIndexDescriptor> filter )
+    public long indexGetCommittedId( NewIndexDescriptor index, NewIndexDescriptor.Filter filter )
             throws SchemaRuleNotFoundException
     {
         IndexRule rule = indexRule( index, filter );
@@ -519,11 +519,11 @@ public class StorageLayer implements StoreReadLayer
         }
     }
 
-    private IndexRule indexRule( NewIndexDescriptor index, Predicate<IndexRule> filter )
+    private IndexRule indexRule( NewIndexDescriptor index, NewIndexDescriptor.Filter filter )
     {
         for ( IndexRule rule : schemaCache.indexRules() )
         {
-            if ( filter.test( rule ) && rule.getSchemaDescriptor().equals( index.schema() ) )
+            if ( filter.test( rule.getIndexDescriptor() ) && rule.schema().equals( index.schema() ) )
             {
                 return rule;
             }

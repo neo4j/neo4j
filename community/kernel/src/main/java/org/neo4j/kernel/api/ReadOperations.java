@@ -49,6 +49,7 @@ import org.neo4j.kernel.api.proc.UserFunctionSignature;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.register.Register.DoubleLongRegister;
@@ -266,39 +267,44 @@ public interface ReadOperations
     //===========================================
 
     /** Returns the index rule for the given labelId and propertyKey. */
-    IndexDescriptor indexGetForLabelAndPropertyKey( NodePropertyDescriptor descriptor )
+    NewIndexDescriptor indexGetForLabelAndPropertyKey( NodePropertyDescriptor descriptor )
             throws SchemaRuleNotFoundException;
 
     /** Get all indexes for a label. */
-    Iterator<IndexDescriptor> indexesGetForLabel( int labelId );
+    Iterator<NewIndexDescriptor> indexesGetForLabel( int labelId );
 
     /** Returns all indexes. */
-    Iterator<IndexDescriptor> indexesGetAll();
+    Iterator<NewIndexDescriptor> indexesGetAll();
 
     /** Returns the constraint index for the given labelId and propertyKey. */
-    IndexDescriptor uniqueIndexGetForLabelAndPropertyKey( NodePropertyDescriptor descriptor )
+    NewIndexDescriptor uniqueIndexGetForLabelAndPropertyKey( NodePropertyDescriptor descriptor )
             throws SchemaRuleNotFoundException, DuplicateSchemaRuleException;
 
     /** Get all constraint indexes for a label. */
-    Iterator<IndexDescriptor> uniqueIndexesGetForLabel( int labelId );
+    Iterator<NewIndexDescriptor> uniqueIndexesGetForLabel( int labelId );
 
     /** Returns all constraint indexes. */
-    Iterator<IndexDescriptor> uniqueIndexesGetAll();
+    Iterator<NewIndexDescriptor> uniqueIndexesGetAll();
 
-    /** Retrieve the state of an index. */
-    InternalIndexState indexGetState( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+    /** Retrieve the state of an index.
+     * @param descriptor*/
+    InternalIndexState indexGetState( NewIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
-    /** Retrieve the population progress of an index. */
-    PopulationProgress indexGetPopulationProgress( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+    /** Retrieve the population progress of an index.
+     * @param descriptor*/
+    PopulationProgress indexGetPopulationProgress( NewIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
-    /** Get the index size. */
-    long indexSize( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+    /** Get the index size.
+     * @param descriptor*/
+    long indexSize( NewIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
-    /** Calculate the index unique values percentage (range: {@code 0.0} exclusive to {@code 1.0} inclusive). */
-    double indexUniqueValuesSelectivity( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+    /** Calculate the index unique values percentage (range: {@code 0.0} exclusive to {@code 1.0} inclusive).
+     * @param descriptor*/
+    double indexUniqueValuesSelectivity( NewIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
-    /** Returns the failure description of a failed index. */
-    String indexGetFailure( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+    /** Returns the failure description of a failed index.
+     * @param descriptor*/
+    String indexGetFailure( NewIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /**
      * Get all constraints applicable to label and propertyKey. There are only {@link NodePropertyConstraint}
@@ -334,7 +340,7 @@ public interface ReadOperations
     /**
      * Get the owning constraint for a constraint index. Returns null if the index does not have an owning constraint.
      */
-    Long indexGetOwningUniquenessConstraintId( IndexDescriptor index ) throws SchemaRuleNotFoundException;
+    Long indexGetOwningUniquenessConstraintId( NewIndexDescriptor index ) throws SchemaRuleNotFoundException;
 
     <K, V> V schemaStateGetOrCreate( K key, Function<K, V> creator );
 

@@ -71,6 +71,8 @@ import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.legacyindex.AutoIndexing;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.guard.Guard;
@@ -612,13 +614,13 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     {
         try
         {
-            IndexDescriptor descriptor =
+            NewIndexDescriptor descriptor =
                     readOps.indexGetForLabelAndPropertyKey( new NodePropertyDescriptor( labelId, propertyId ) );
 
             if ( readOps.indexGetState( descriptor ) == InternalIndexState.ONLINE )
             {
                 // Ha! We found an index - let's use it to find matching nodes
-                return descriptor;
+                return IndexBoundary.map( descriptor );
             }
         }
         catch ( SchemaRuleNotFoundException | IndexNotFoundKernelException e )
