@@ -23,7 +23,7 @@ import org.junit.Test;
 
 import java.util.List;
 
-import org.neo4j.causalclustering.load_balancing.EndPoint;
+import org.neo4j.causalclustering.load_balancing.Endpoint;
 import org.neo4j.causalclustering.load_balancing.LoadBalancingResult;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.helpers.AdvertisedSocketAddress;
@@ -41,17 +41,17 @@ public class ResultFormatV1Test
     public void shouldSerializeToAndFromRecordFormat() throws Exception
     {
         // given
-        List<EndPoint> writers = asList(
-                EndPoint.write( new AdvertisedSocketAddress( "write", 1 ) ),
-                EndPoint.write( new AdvertisedSocketAddress( "write", 2 ) ),
-                EndPoint.write( new AdvertisedSocketAddress( "write", 3 ) ) );
-        List<EndPoint> readers = asList(
-                EndPoint.read( new AdvertisedSocketAddress( "read", 4 ) ),
-                EndPoint.read( new AdvertisedSocketAddress( "read", 5 ) ),
-                EndPoint.read( new AdvertisedSocketAddress( "read", 6 ) ),
-                EndPoint.read( new AdvertisedSocketAddress( "read", 7 ) ) );
-        List<EndPoint> routers = singletonList(
-                EndPoint.route( new AdvertisedSocketAddress( "route", 8 ) )
+        List<Endpoint> writers = asList(
+                Endpoint.write( new AdvertisedSocketAddress( "write", 1 ) ),
+                Endpoint.write( new AdvertisedSocketAddress( "write", 2 ) ),
+                Endpoint.write( new AdvertisedSocketAddress( "write", 3 ) ) );
+        List<Endpoint> readers = asList(
+                Endpoint.read( new AdvertisedSocketAddress( "read", 4 ) ),
+                Endpoint.read( new AdvertisedSocketAddress( "read", 5 ) ),
+                Endpoint.read( new AdvertisedSocketAddress( "read", 6 ) ),
+                Endpoint.read( new AdvertisedSocketAddress( "read", 7 ) ) );
+        List<Endpoint> routers = singletonList(
+                Endpoint.route( new AdvertisedSocketAddress( "route", 8 ) )
         );
 
         long ttlSeconds = 5;

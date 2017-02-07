@@ -31,7 +31,7 @@ import org.neo4j.causalclustering.core.consensus.NoLeaderFoundException;
 import org.neo4j.causalclustering.discovery.CoreAddresses;
 import org.neo4j.causalclustering.discovery.CoreTopologyService;
 import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.causalclustering.load_balancing.EndPoint;
+import org.neo4j.causalclustering.load_balancing.Endpoint;
 import org.neo4j.causalclustering.load_balancing.LoadBalancingResult;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.helpers.AdvertisedSocketAddress;
@@ -90,9 +90,9 @@ public class GetServersProcedureV1 implements CallableProcedure
     @Override
     public RawIterator<Object[],ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
     {
-        List<EndPoint> routeEndpoints = routeEndpoints();
-        List<EndPoint> writeEndpoints = writeEndpoints();
-        List<EndPoint> readEndpoints = readEndpoints();
+        List<Endpoint> routeEndpoints = routeEndpoints();
+        List<Endpoint> writeEndpoints = writeEndpoints();
+        List<Endpoint> readEndpoints = readEndpoints();
 
         return ResultFormatV1.build( new LoadBalancingResult( routeEndpoints, writeEndpoints, readEndpoints,
                 config.get( CausalClusteringSettings.cluster_routing_ttl ) ) );
@@ -114,28 +114,28 @@ public class GetServersProcedureV1 implements CallableProcedure
         return discoveryService.coreServers().find( leader ).map( extractBoltAddress() );
     }
 
-    private List<EndPoint> routeEndpoints()
+    private List<Endpoint> routeEndpoints()
     {
         Stream<AdvertisedSocketAddress> routers = discoveryService.coreServers()
                 .addresses().stream().map( extractBoltAddress() );
-        List<EndPoint> routeEndpoints = routers.map( EndPoint::route ).collect( toList() );
+        List<Endpoint> routeEndpoints = routers.map( Endpoint::route ).collect( toList() );
         Collections.shuffle( routeEndpoints );
         return routeEndpoints;
     }
 
-    private List<EndPoint> writeEndpoints()
+    private List<Endpoint> writeEndpoints()
     {
-        return asList( leaderBoltAddress().map( EndPoint::write ) );
+        return asList( leaderBoltAddress().map( Endpoint::write ) );
     }
 
-    private List<EndPoint> readEndpoints()
+    private List<Endpoint> readEndpoints()
     {
         List<AdvertisedSocketAddress> readReplicas = discoveryService.readReplicas().members().stream()
                 .map( extractBoltAddress() ).collect( toList() );
         boolean addFollowers = readReplicas.isEmpty() || config.get( cluster_allow_reads_on_followers );
         Stream<AdvertisedSocketAddress> readCore = addFollowers ? coreReadEndPoints() : Stream.empty();
-        List<EndPoint> readEndPoints =
-                concat( readReplicas.stream(), readCore ).map( EndPoint::read ).collect( toList() );
+        List<Endpoint> readEndPoints =
+                concat( readReplicas.stream(), readCore ).map( Endpoint::read ).collect( toList() );
         Collections.shuffle( readEndPoints );
         return readEndPoints;
     }

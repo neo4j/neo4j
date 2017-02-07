@@ -31,7 +31,7 @@ import org.neo4j.causalclustering.discovery.CoreTopology;
 import org.neo4j.causalclustering.discovery.CoreTopologyService;
 import org.neo4j.causalclustering.discovery.ReadReplicaTopology;
 import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.causalclustering.load_balancing.EndPoint;
+import org.neo4j.causalclustering.load_balancing.Endpoint;
 import org.neo4j.causalclustering.load_balancing.LoadBalancingResult;
 import org.neo4j.causalclustering.load_balancing.LoadBalancingStrategy;
 import org.neo4j.kernel.configuration.Config;
@@ -67,13 +67,13 @@ public class AllServersStrategy implements LoadBalancingStrategy
                 readEndpoints( cores, readers ), timeToLive );
     }
 
-    private List<EndPoint> routeEndpoints( CoreTopology cores )
+    private List<Endpoint> routeEndpoints( CoreTopology cores )
     {
         return cores.addresses().stream().map( extractBoltAddress() )
-                .map( EndPoint::route ).collect( Collectors.toList() );
+                .map( Endpoint::route ).collect( Collectors.toList() );
     }
 
-    private List<EndPoint> writeEndpoints( CoreTopology cores )
+    private List<Endpoint> writeEndpoints( CoreTopology cores )
     {
         MemberId leader;
         try
@@ -85,18 +85,18 @@ public class AllServersStrategy implements LoadBalancingStrategy
             return emptyList();
         }
 
-        Optional<EndPoint> endPoint = cores.find( leader )
+        Optional<Endpoint> endPoint = cores.find( leader )
                 .map( extractBoltAddress() )
-                .map( EndPoint::write );
+                .map( Endpoint::write );
 
         return asList( endPoint );
     }
 
-    private List<EndPoint> readEndpoints( CoreTopology cores, ReadReplicaTopology readers )
+    private List<Endpoint> readEndpoints( CoreTopology cores, ReadReplicaTopology readers )
     {
         return concat( readers.members().stream(), cores.addresses().stream() )
                 .map( extractBoltAddress() )
-                .map( EndPoint::read )
+                .map( Endpoint::read )
                 .collect( Collectors.toList() );
     }
 }

@@ -38,17 +38,17 @@ public interface LoadBalancingStrategy
         /**
          * @return List of ROUTE-capable endpoints.
          */
-        List<EndPoint> routeEndpoints();
+        List<Endpoint> routeEndpoints();
 
         /**
          * @return List of WRITE-capable endpoints.
          */
-        List<EndPoint> writeEndpoints();
+        List<Endpoint> writeEndpoints();
 
         /**
          * @return List of READ-capable endpoints.
          */
-        List<EndPoint> readEndpoints();
+        List<Endpoint> readEndpoints();
     }
 
     /**

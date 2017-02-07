@@ -25,7 +25,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import org.neo4j.causalclustering.load_balancing.EndPoint;
+import org.neo4j.causalclustering.load_balancing.Endpoint;
 import org.neo4j.causalclustering.load_balancing.LoadBalancingResult;
 import org.neo4j.causalclustering.load_balancing.LoadBalancingStrategy;
 import org.neo4j.helpers.AdvertisedSocketAddress;
@@ -47,18 +47,18 @@ public class ServerShufflingStrategyTest
         // given
         LoadBalancingStrategy delegate = mock( LoadBalancingStrategy.class );
 
-        List<EndPoint> routers = asList(
-                EndPoint.route( new AdvertisedSocketAddress( "route", 1 ) ),
-                EndPoint.route( new AdvertisedSocketAddress( "route", 2 ) ) );
-        List<EndPoint> writers = asList(
-                EndPoint.write( new AdvertisedSocketAddress( "write", 3 ) ),
-                EndPoint.write( new AdvertisedSocketAddress( "write", 4 ) ),
-                EndPoint.write( new AdvertisedSocketAddress( "write", 5 ) ) );
-        List<EndPoint> readers = asList(
-                EndPoint.read( new AdvertisedSocketAddress( "read", 6 ) ),
-                EndPoint.read( new AdvertisedSocketAddress( "read", 7 ) ),
-                EndPoint.read( new AdvertisedSocketAddress( "read", 8 ) ),
-                EndPoint.read( new AdvertisedSocketAddress( "read", 9 ) ) );
+        List<Endpoint> routers = asList(
+                Endpoint.route( new AdvertisedSocketAddress( "route", 1 ) ),
+                Endpoint.route( new AdvertisedSocketAddress( "route", 2 ) ) );
+        List<Endpoint> writers = asList(
+                Endpoint.write( new AdvertisedSocketAddress( "write", 3 ) ),
+                Endpoint.write( new AdvertisedSocketAddress( "write", 4 ) ),
+                Endpoint.write( new AdvertisedSocketAddress( "write", 5 ) ) );
+        List<Endpoint> readers = asList(
+                Endpoint.read( new AdvertisedSocketAddress( "read", 6 ) ),
+                Endpoint.read( new AdvertisedSocketAddress( "read", 7 ) ),
+                Endpoint.read( new AdvertisedSocketAddress( "read", 8 ) ),
+                Endpoint.read( new AdvertisedSocketAddress( "read", 9 ) ) );
 
         long ttl = 1000;
         LoadBalancingStrategy.Result result = new LoadBalancingResult(

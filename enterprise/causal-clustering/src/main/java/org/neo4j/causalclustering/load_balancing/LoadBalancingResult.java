@@ -28,13 +28,13 @@ import java.util.Objects;
  */
 public class LoadBalancingResult implements LoadBalancingStrategy.Result
 {
-    private final List<EndPoint> routeEndpoints;
-    private final List<EndPoint> writeEndpoints;
-    private final List<EndPoint> readEndpoints;
+    private final List<Endpoint> routeEndpoints;
+    private final List<Endpoint> writeEndpoints;
+    private final List<Endpoint> readEndpoints;
     private final long timeToLiveMillis;
 
-    public LoadBalancingResult( List<EndPoint> routeEndpoints, List<EndPoint> writeEndpoints,
-            List<EndPoint> readEndpoints, long timeToLiveMillis )
+    public LoadBalancingResult( List<Endpoint> routeEndpoints, List<Endpoint> writeEndpoints,
+            List<Endpoint> readEndpoints, long timeToLiveMillis )
     {
         this.routeEndpoints = routeEndpoints;
         this.writeEndpoints = writeEndpoints;
@@ -49,19 +49,19 @@ public class LoadBalancingResult implements LoadBalancingStrategy.Result
     }
 
     @Override
-    public List<EndPoint> routeEndpoints()
+    public List<Endpoint> routeEndpoints()
     {
         return routeEndpoints;
     }
 
     @Override
-    public List<EndPoint> writeEndpoints()
+    public List<Endpoint> writeEndpoints()
     {
         return writeEndpoints;
     }
 
     @Override
-    public List<EndPoint> readEndpoints()
+    public List<Endpoint> readEndpoints()
     {
         return readEndpoints;
     }

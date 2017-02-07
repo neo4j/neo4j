@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.Stream;
 
-import org.neo4j.causalclustering.load_balancing.EndPoint;
+import org.neo4j.causalclustering.load_balancing.Endpoint;
 import org.neo4j.causalclustering.load_balancing.LoadBalancingResult;
 import org.neo4j.causalclustering.load_balancing.Role;
 import org.neo4j.collection.RawIterator;
@@ -49,9 +49,9 @@ class ResultFormatV1
 
     static RawIterator<Object[],ProcedureException> build( LoadBalancingResult result )
     {
-        Object[] routers = result.routeEndpoints().stream().map( EndPoint::address ).toArray();
-        Object[] readers = result.readEndpoints().stream().map( EndPoint::address ).toArray();
-        Object[] writers = result.writeEndpoints().stream().map( EndPoint::address ).toArray();
+        Object[] routers = result.routeEndpoints().stream().map( Endpoint::address ).toArray();
+        Object[] readers = result.readEndpoints().stream().map( Endpoint::address ).toArray();
+        Object[] writers = result.writeEndpoints().stream().map( Endpoint::address ).toArray();
 
         List<Map<String,Object>> servers = new ArrayList<>();
 
@@ -98,7 +98,7 @@ class ResultFormatV1
         @SuppressWarnings( "unchecked" )
         List<Map<String,Object>> endpointData = (List<Map<String,Object>>) record[1];
 
-        Map<Role,List<EndPoint>> endpoints = parse( endpointData );
+        Map<Role,List<Endpoint>> endpoints = parse( endpointData );
         assert !records.hasNext();
 
         return new LoadBalancingResult(
@@ -108,23 +108,23 @@ class ResultFormatV1
                 timeToLiveSeconds * 1000 );
     }
 
-    private static Map<Role,List<EndPoint>> parse( List<Map<String,Object>> result )
+    private static Map<Role,List<Endpoint>> parse( List<Map<String,Object>> result )
     {
-        Map<Role,List<EndPoint>> endpoints = new HashMap<>();
+        Map<Role,List<Endpoint>> endpoints = new HashMap<>();
         for ( Map<String,Object> single : result )
         {
             Role role = Role.valueOf( (String) single.get( "role" ) );
-            List<EndPoint> addresses = parse( (Object[]) single.get( "addresses" ), role );
+            List<Endpoint> addresses = parse( (Object[]) single.get( "addresses" ), role );
             endpoints.put( role, addresses );
         }
         return endpoints;
     }
 
-    private static List<EndPoint> parse( Object[] addresses, Role role )
+    private static List<Endpoint> parse( Object[] addresses, Role role )
     {
         return Stream.of( addresses )
                 .map( rawAddress -> parse( (String) rawAddress ) )
-                .map( address -> new EndPoint( address, role ) )
+                .map( address -> new Endpoint( address, role ) )
                 .collect( toList() );
     }
 

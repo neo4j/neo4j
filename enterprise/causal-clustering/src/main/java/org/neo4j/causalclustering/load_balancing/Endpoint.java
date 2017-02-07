@@ -27,7 +27,7 @@ import org.neo4j.helpers.AdvertisedSocketAddress;
  * This class binds a certain role with an address and
  * thus defines a reachable endpoint with defined capabilities.
  */
-public class EndPoint
+public class Endpoint
 {
     private final AdvertisedSocketAddress address;
     private final Role role;
@@ -37,25 +37,25 @@ public class EndPoint
         return address.toString();
     }
 
-    public EndPoint( AdvertisedSocketAddress address, Role role )
+    public Endpoint( AdvertisedSocketAddress address, Role role )
     {
         this.address = address;
         this.role = role;
     }
 
-    public static EndPoint write( AdvertisedSocketAddress address )
+    public static Endpoint write( AdvertisedSocketAddress address )
     {
-        return new EndPoint( address, Role.WRITE );
+        return new Endpoint( address, Role.WRITE );
     }
 
-    public static EndPoint read( AdvertisedSocketAddress address )
+    public static Endpoint read( AdvertisedSocketAddress address )
     {
-        return new EndPoint( address, Role.READ );
+        return new Endpoint( address, Role.READ );
     }
 
-    public static EndPoint route( AdvertisedSocketAddress address )
+    public static Endpoint route( AdvertisedSocketAddress address )
     {
-        return new EndPoint( address, Role.ROUTE );
+        return new Endpoint( address, Role.ROUTE );
     }
 
     @Override
@@ -65,7 +65,7 @@ public class EndPoint
         { return true; }
         if ( o == null || getClass() != o.getClass() )
         { return false; }
-        EndPoint endPoint = (EndPoint) o;
+        Endpoint endPoint = (Endpoint) o;
         return Objects.equals( address, endPoint.address ) &&
                role == endPoint.role;
     }
