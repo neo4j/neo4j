@@ -131,7 +131,7 @@ public class DataIntegrityValidatingStatementOperationsTest
         // WHEN
         try
         {
-            ctx.indexDrop( state, IndexBoundary.map( index ) );
+            ctx.indexDrop( state, index );
             fail( "Should have thrown exception." );
         }
         catch ( DropIndexFailureException e )
@@ -157,7 +157,7 @@ public class DataIntegrityValidatingStatementOperationsTest
         // WHEN
         try
         {
-            ctx.indexDrop( state, IndexBoundary.map( index ) );
+            ctx.indexDrop( state, index );
             fail( "Should have thrown exception." );
         }
         catch ( DropIndexFailureException e )
@@ -183,7 +183,7 @@ public class DataIntegrityValidatingStatementOperationsTest
         // WHEN
         try
         {
-            ctx.indexDrop( state, IndexBoundary.map( index ) );
+            ctx.indexDrop( state, index );
             fail( "Should have thrown exception." );
         }
         catch ( DropIndexFailureException e )
@@ -209,7 +209,7 @@ public class DataIntegrityValidatingStatementOperationsTest
         // WHEN
         try
         {
-            ctx.indexDrop( state, IndexBoundary.map( index ) );
+            ctx.indexDrop( state, index );
             fail( "Should have thrown exception." );
         }
         catch ( DropIndexFailureException e )

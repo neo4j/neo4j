@@ -65,7 +65,7 @@ public class SchemaTransactionStateTest
     private static NewIndexDescriptor indexCreate( StateHandlingStatementOperations txContext, KernelStatement state,
             int labelId, int propertyKey )
     {
-        return IndexBoundary.map( txContext.indexCreate( state, new NodePropertyDescriptor( labelId, propertyKey ) ) );
+        return txContext.indexCreate( state, new NodePropertyDescriptor( labelId, propertyKey ) );
     }
 
     private static NewIndexDescriptor indexGetForLabelAndPropertyKey(
@@ -210,10 +210,10 @@ public class SchemaTransactionStateTest
     {
         // GIVEN
         // -- a rule that exists in the store
-        NewIndexDescriptor rule = NewIndexDescriptorFactory.forLabel( labelId1, key1 );
-        when( store.indexesGetForLabel( labelId1 ) ).thenReturn( option( rule ).iterator() );
+        NewIndexDescriptor index = NewIndexDescriptorFactory.forLabel( labelId1, key1 );
+        when( store.indexesGetForLabel( labelId1 ) ).thenReturn( option( index ).iterator() );
         // -- that same rule dropped in the transaction
-        txContext.indexDrop( state, IndexBoundary.map( rule ) );
+        txContext.indexDrop( state, index );
 
         // WHEN
         assertNull( indexGetForLabelAndPropertyKey( txContext, state, labelId1, key1 ) );

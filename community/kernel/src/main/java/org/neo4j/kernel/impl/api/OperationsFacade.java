@@ -1039,7 +1039,7 @@ public class OperationsFacade
 
     // <SchemaWrite>
     @Override
-    public IndexDescriptor indexCreate( NodePropertyDescriptor descriptor )
+    public NewIndexDescriptor indexCreate( NodePropertyDescriptor descriptor )
             throws AlreadyIndexedException, AlreadyConstrainedException
     {
         statement.assertOpen();
@@ -1047,7 +1047,7 @@ public class OperationsFacade
     }
 
     @Override
-    public void indexDrop( IndexDescriptor descriptor ) throws DropIndexFailureException
+    public void indexDrop( NewIndexDescriptor descriptor ) throws DropIndexFailureException
     {
         statement.assertOpen();
         schemaWrite().indexDrop( statement, descriptor );
@@ -1093,7 +1093,7 @@ public class OperationsFacade
     }
 
     @Override
-    public void uniqueIndexDrop( IndexDescriptor descriptor ) throws DropIndexFailureException
+    public void uniqueIndexDrop( NewIndexDescriptor descriptor ) throws DropIndexFailureException
     {
         statement.assertOpen();
         schemaWrite().uniqueIndexDrop( statement, descriptor );

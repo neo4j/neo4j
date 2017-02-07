@@ -76,7 +76,7 @@ public class IndexIT extends KernelIntegrationTest
         SchemaWriteOperations schemaWriteOperations = schemaWriteOperationsInNewTransaction();
 
         // WHEN
-        NewIndexDescriptor expectedRule = IndexBoundary.map( schemaWriteOperations.indexCreate( descriptor ) );
+        NewIndexDescriptor expectedRule = schemaWriteOperations.indexCreate( descriptor );
         commit();
 
         // THEN
@@ -91,16 +91,14 @@ public class IndexIT extends KernelIntegrationTest
     {
         // GIVEN
         SchemaWriteOperations schemaWriteOperations = schemaWriteOperationsInNewTransaction();
-        NewIndexDescriptor existingRule = IndexBoundary.map( schemaWriteOperations.indexCreate( descriptor ) );
+        NewIndexDescriptor existingRule = schemaWriteOperations.indexCreate( descriptor );
         commit();
 
         // WHEN
-        NewIndexDescriptor addedRule;
-        Set<NewIndexDescriptor> indexRulesInTx;
         Statement statement = statementInNewTransaction( AnonymousContext.AUTH_DISABLED );
-        addedRule = IndexBoundary.map( statement.schemaWriteOperations().indexCreate(
-                new NodePropertyDescriptor( labelId, 10 ) ) );
-        indexRulesInTx = asSet( statement.readOperations().indexesGetForLabel( labelId ) );
+        NewIndexDescriptor addedRule = statement.schemaWriteOperations()
+                                            .indexCreate( new NodePropertyDescriptor( labelId, 10 ) );
+        Set<NewIndexDescriptor> indexRulesInTx = asSet( statement.readOperations().indexesGetForLabel( labelId ) );
         commit();
 
         // THEN
@@ -144,7 +142,7 @@ public class IndexIT extends KernelIntegrationTest
     public void shouldDisallowDroppingIndexThatDoesNotExist() throws Exception
     {
         // given
-        IndexDescriptor index;
+        NewIndexDescriptor index;
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
             index = statement.indexCreate( descriptor );

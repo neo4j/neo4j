@@ -42,7 +42,6 @@ import org.neo4j.kernel.api.exceptions.schema.NoSuchConstraintException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchIndexException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException.OperationContext;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaBoundary;
 import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
@@ -112,7 +111,7 @@ public class DataIntegrityValidatingStatementOperations implements
     }
 
     @Override
-    public IndexDescriptor indexCreate( KernelStatement state, NodePropertyDescriptor descriptor )
+    public NewIndexDescriptor indexCreate( KernelStatement state, NodePropertyDescriptor descriptor )
             throws AlreadyIndexedException, AlreadyConstrainedException
     {
         checkIndexExistence( state, OperationContext.INDEX_CREATION, descriptor );
@@ -120,24 +119,23 @@ public class DataIntegrityValidatingStatementOperations implements
     }
 
     @Override
-    public void indexDrop( KernelStatement state, IndexDescriptor index ) throws DropIndexFailureException
+    public void indexDrop( KernelStatement state, NewIndexDescriptor index ) throws DropIndexFailureException
     {
         try
         {
-            NewIndexDescriptor newIndex = IndexBoundary.map( index );
-            assertIsNotUniqueIndex( newIndex, schemaReadDelegate.uniqueIndexesGetForLabel(
-                    state, index.getLabelId() ) );
-            assertIndexExists( newIndex, schemaReadDelegate.indexesGetForLabel( state, index.getLabelId() ) );
+            assertIsNotUniqueIndex( index, schemaReadDelegate.uniqueIndexesGetForLabel(
+                    state, index.schema().getLabelId() ) );
+            assertIndexExists( index, schemaReadDelegate.indexesGetForLabel( state, index.schema().getLabelId() ) );
         }
         catch ( IndexBelongsToConstraintException | NoSuchIndexException e )
         {
-            throw new DropIndexFailureException( index.descriptor(), e );
+            throw new DropIndexFailureException( index.schema(), e );
         }
         schemaWriteDelegate.indexDrop( state, index );
     }
 
     @Override
-    public void uniqueIndexDrop( KernelStatement state, IndexDescriptor index ) throws DropIndexFailureException
+    public void uniqueIndexDrop( KernelStatement state, NewIndexDescriptor index ) throws DropIndexFailureException
     {
         schemaWriteDelegate.uniqueIndexDrop( state, index );
     }

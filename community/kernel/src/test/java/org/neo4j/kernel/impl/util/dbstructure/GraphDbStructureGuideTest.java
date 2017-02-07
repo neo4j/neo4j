@@ -228,7 +228,7 @@ public class GraphDbStructureGuideTest
 
     private NewIndexDescriptor createSchemaIndex( int labelId, int pkId ) throws Exception
     {
-        return IndexBoundary.map( schemaWrite().indexCreate( new NodePropertyDescriptor( labelId, pkId ) ) );
+        return schemaWrite().indexCreate( new NodePropertyDescriptor( labelId, pkId ) );
     }
 
     private UniquenessConstraint createUniqueConstraint( int labelId, int pkId ) throws Exception

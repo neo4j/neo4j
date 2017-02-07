@@ -162,9 +162,9 @@ public class KernelSchemaStateFlushingTest
         try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
               Statement statement = transaction.acquireStatement() )
         {
-            IndexDescriptor descriptor = statement.schemaWriteOperations().indexCreate( descriptor1 );
+            NewIndexDescriptor descriptor = statement.schemaWriteOperations().indexCreate( descriptor1 );
             transaction.success();
-            return IndexBoundary.map( descriptor );
+            return descriptor;
         }
     }
 
@@ -173,7 +173,7 @@ public class KernelSchemaStateFlushingTest
         try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
               Statement statement = transaction.acquireStatement() )
         {
-            statement.schemaWriteOperations().indexDrop( IndexBoundary.map( descriptor ) );
+            statement.schemaWriteOperations().indexDrop( descriptor );
             transaction.success();
         }
     }

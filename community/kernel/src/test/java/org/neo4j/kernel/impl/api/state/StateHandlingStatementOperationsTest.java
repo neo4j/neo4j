@@ -99,7 +99,7 @@ public class StateHandlingStatementOperationsTest
         NodePropertyDescriptor descriptor = new NodePropertyDescriptor( 0, 0 );
         ctx.indexCreate( state, descriptor );
         ctx.nodeAddLabel( state, 0, 0 );
-        ctx.indexDrop( state, IndexDescriptorFactory.of( descriptor ) );
+        ctx.indexDrop( state, IndexBoundary.map( descriptor ) );
         ctx.nodeRemoveLabel( state, 0, 0 );
 
         // one for add and one for remove
