@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.schema_new;
 
+import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 
@@ -42,5 +43,10 @@ public class SchemaBoundary
     public static RelationTypeSchemaDescriptor map( RelationshipPropertyDescriptor descriptor )
     {
         return SchemaDescriptorFactory.forRelType( descriptor.getRelationshipTypeId(), descriptor.getPropertyKeyId() );
+    }
+
+    public static NodePropertyDescriptor map( LabelSchemaDescriptor descriptor )
+    {
+        return IndexDescriptorFactory.getNodePropertyDescriptor( descriptor.getLabelId(), descriptor.getPropertyIds() );
     }
 }
